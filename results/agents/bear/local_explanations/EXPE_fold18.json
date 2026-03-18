@@ -1,0 +1,60 @@
+{
+  "ticker": "EXPE",
+  "score": 0.4145,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.018136900551362363,
+      "raw_value": 188.82,
+      "direction": "negative"
+    }
+  ],
+  "text": "EXPE — Score: 0.41 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio deuda / fondos propios = 2.929  [contribucion SHAP: +0.020]\n  + Deuda neta / EBITDA = -23.00x  [contribucion SHAP: +0.011]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.79x  [contribucion SHAP: +0.010]\n  + Eps Revision = -1.143  [contribucion SHAP: +0.010]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 188.820  [contribucion SHAP: -0.018]",
+  "top_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": 0.019679064973781992,
+      "raw_value": 2.928838951310861,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.018136900551362363,
+      "raw_value": 188.82,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.011014007793593461,
+      "raw_value": -23.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.010103758626150063,
+      "raw_value": 0.7933183424349503,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.010000776489346693,
+      "raw_value": -1.1428571428571428,
+      "direction": "positive"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": 0.005776445202260735,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

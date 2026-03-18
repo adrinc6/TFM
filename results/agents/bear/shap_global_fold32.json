@@ -1,0 +1,82 @@
+{
+  "fcf": {
+    "shap_importance": 0.06137867711153884,
+    "description": "Fcf"
+  },
+  "current_ratio": {
+    "shap_importance": 0.026064318596232133,
+    "description": "Ratio de liquidez corriente (activo / pasivo cte.)"
+  },
+  "eps_surprise_pct": {
+    "shap_importance": 0.020705783048106326,
+    "description": "Eps Surprise Pct"
+  },
+  "debt_to_ebitda": {
+    "shap_importance": 0.0165712535150392,
+    "description": "Deuda neta / EBITDA"
+  },
+  "debt_equity": {
+    "shap_importance": 0.015408694184174742,
+    "description": "Ratio deuda / fondos propios"
+  },
+  "interest_coverage": {
+    "shap_importance": 0.010357602809701542,
+    "description": "Cobertura de intereses (EBIT / intereses)"
+  },
+  "insider_net_shares_90d": {
+    "shap_importance": 0.009266543044157888,
+    "description": "Acciones compradas netas por insiders (90 días)"
+  },
+  "total_debt_yoy_growth": {
+    "shap_importance": 0.007676661236728679,
+    "description": "Crecimiento de la deuda total interanual"
+  },
+  "eps_revision": {
+    "shap_importance": 0.003308762883578653,
+    "description": "Eps Revision"
+  },
+  "debt_ebitda_high": {
+    "shap_importance": 0.002264914818842952,
+    "description": "Debt Ebitda High"
+  },
+  "revenue_decline": {
+    "shap_importance": 0.002176734925012595,
+    "description": "Revenue Decline"
+  },
+  "insider_sell_ratio": {
+    "shap_importance": 0.001551031649006037,
+    "description": "Proporción de ventas de insiders (>0.7 = red flag)"
+  },
+  "debt_growth_high": {
+    "shap_importance": 0.0010541986357584959,
+    "description": "FLAG: Deuda creciendo >20% interanual"
+  },
+  "low_coverage": {
+    "shap_importance": 0.0010043013048612864,
+    "description": "FLAG: Cobertura intereses < 1.5x"
+  },
+  "liquidity_risk": {
+    "shap_importance": 0.0008136801402638638,
+    "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)"
+  },
+  "insider_selling": {
+    "shap_importance": 0.0007673424352542049,
+    "description": "FLAG: Insiders vendiendo >70% de operaciones"
+  },
+  "eps_miss": {
+    "shap_importance": 0.000676737006972022,
+    "description": "Eps Miss"
+  },
+  "debt_equity_high": {
+    "shap_importance": 0.00030198359516582095,
+    "description": "Debt Equity High"
+  },
+  "consecutive_losses": {
+    "shap_importance": 0.00010655612748301194,
+    "description": "Trimestres consecutivos con pérdidas"
+  },
+  "fcf_negative": {
+    "shap_importance": 4.3796840525695396e-05,
+    "description": "FLAG: FCF negativo"
+  }
+}

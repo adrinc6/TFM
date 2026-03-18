@@ -1,0 +1,74 @@
+{
+  "ticker": "HWM",
+  "score": 0.7977,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.043911444485759406,
+      "raw_value": -775004.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.04030702875686721,
+      "raw_value": 0.6936560934891486,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.00703124829677514,
+      "raw_value": 10.5,
+      "direction": "negative"
+    }
+  ],
+  "text": "HWM — Score: 0.80 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Fcf = 134000000.000  [contribucion SHAP: +0.103]\n  + Deuda neta / EBITDA = 5.95x  [contribucion SHAP: +0.042]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.30x  [contribucion SHAP: +0.010]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -775004.000  [contribucion SHAP: -0.044]\n  - Ratio deuda / fondos propios = 0.694  [contribucion SHAP: -0.040]\n  - Eps Surprise Pct = 10.500  [contribucion SHAP: -0.007]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.10343990483741092,
+      "raw_value": 134000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.043911444485759406,
+      "raw_value": -775004.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.04230585761731668,
+      "raw_value": 5.946332737030412,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.04030702875686721,
+      "raw_value": 0.6936560934891486,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.01015647963722622,
+      "raw_value": 2.295865633074935,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.00703124829677514,
+      "raw_value": 10.5,
+      "direction": "negative"
+    }
+  ]
+}

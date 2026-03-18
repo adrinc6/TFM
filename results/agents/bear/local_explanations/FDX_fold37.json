@@ -1,0 +1,67 @@
+{
+  "ticker": "FDX",
+  "score": 0.4365,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.01498613253132904,
+      "raw_value": 4.42,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.006759210074309664,
+      "raw_value": 8.859414225941423,
+      "direction": "negative"
+    }
+  ],
+  "text": "FDX — Score: 0.44 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 1093000000.000  [contribucion SHAP: +0.031]\n  + Acciones compradas netas por insiders (90 días) = 22390.000  [contribucion SHAP: +0.018]\n  + Proporción de ventas de insiders (>0.7 = red flag) = 0.12x  [contribucion SHAP: +0.014]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.25x  [contribucion SHAP: +0.014]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 4.420  [contribucion SHAP: -0.015]\n  - Deuda neta / EBITDA = 8.86x  [contribucion SHAP: -0.007]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.030860914366577293,
+      "raw_value": 1093000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.018095048424925587,
+      "raw_value": 22390.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.01498613253132904,
+      "raw_value": 4.42,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": 0.014328206191814942,
+      "raw_value": 0.12191827085444107,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.013717293552161976,
+      "raw_value": 1.2460706003607318,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.006759210074309664,
+      "raw_value": 8.859414225941423,
+      "direction": "negative"
+    }
+  ]
+}

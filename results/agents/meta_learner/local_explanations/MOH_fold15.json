@@ -1,0 +1,74 @@
+{
+  "ticker": "MOH",
+  "score": 0.8131,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.31392502253389837,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sp500_momentum_12m",
+      "description": "Momentum del S&P 500 a 12 meses",
+      "shap_value": -0.0839911688621023,
+      "raw_value": 0.2086704267706183,
+      "direction": "negative"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.021034815443234066,
+      "raw_value": 0.29383075149438004,
+      "direction": "negative"
+    }
+  ],
+  "text": "MOH — Score: 0.81 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.793  [contribucion SHAP: +0.845]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.038]\n  + Sector Consumer Staples = 0.000  [contribucion SHAP: +0.020]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.314]\n  - Momentum del S&P 500 a 12 meses = 20.9%  [contribucion SHAP: -0.084]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.294  [contribucion SHAP: -0.021]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.8450878475490731,
+      "raw_value": 0.7932722946831898,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.31392502253389837,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sp500_momentum_12m",
+      "description": "Momentum del S&P 500 a 12 meses",
+      "shap_value": -0.0839911688621023,
+      "raw_value": 0.2086704267706183,
+      "direction": "negative"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": 0.03838676777148751,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.021034815443234066,
+      "raw_value": 0.29383075149438004,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Consumer Staples",
+      "description": "Sector Consumer Staples",
+      "shap_value": 0.02021705211433827,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

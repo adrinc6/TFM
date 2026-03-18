@@ -1,0 +1,41 @@
+{
+  "agent": "fundamental",
+  "timestamp": "2026-03-06T19:00:05.148201",
+  "fold": 16,
+  "class_balance": {
+    "n_samples": 1498,
+    "n_positive": 750,
+    "n_negative": 748,
+    "positive_ratio": 0.5006675567423231
+  },
+  "cv_metrics": {
+    "mean_auc": 0.4784516032811335,
+    "std_auc": 0.026338066624504358,
+    "mean_acc": 0.49263991081382386,
+    "mean_f1": 0.4763042567283427
+  },
+  "n_features": 59,
+  "top_features": {
+    "sector_Consumer Staples": 0.04823155701160431,
+    "sector_Finance": 0.029893923550844193,
+    "ev_to_ebitda_zsector": 0.02806887961924076,
+    "quick_ratio": 0.025541814044117928,
+    "net_income_yoy_growth": 0.025417836382985115,
+    "roic": 0.02463899366557598,
+    "roi_zsector": 0.02412085048854351,
+    "operating_margin": 0.023360786959528923,
+    "debt_to_ebitda": 0.02259908616542816,
+    "eps_yoy_growth_zsector": 0.02258777990937233,
+    "accruals_ratio": 0.022273123264312744,
+    "operating_margin_zsector": 0.02208687923848629,
+    "roa_zsector": 0.02205844037234783,
+    "total_debt_yoy_growth": 0.021927451714873314,
+    "current_ratio_zsector": 0.021764274686574936
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.4784516032811335,
+    "std_auc": 0.026338066624504358,
+    "mean_acc": 0.49263991081382386,
+    "mean_f1": 0.4763042567283427
+  }
+}

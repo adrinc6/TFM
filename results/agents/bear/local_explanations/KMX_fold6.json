@@ -1,0 +1,88 @@
+{
+  "ticker": "KMX",
+  "score": 0.709,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.05528794391354289,
+      "raw_value": -0.4964028776978417,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.043031780985249464,
+      "raw_value": -65.61,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.017644283699177234,
+      "raw_value": -140.4354395075235,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.017374483171047606,
+      "raw_value": 3.321602646561604,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.014741553076263195,
+      "raw_value": -2.4018573797678275,
+      "direction": "negative"
+    }
+  ],
+  "text": "KMX — Score: 0.71 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = 1.2%  [contribucion SHAP: +0.007]\n\nFactores EN CONTRA:\n  - Eps Revision = -0.496  [contribucion SHAP: -0.055]\n  - Eps Surprise Pct = -65.610  [contribucion SHAP: -0.043]\n  - Deuda neta / EBITDA = -140.44x  [contribucion SHAP: -0.018]\n  - Ratio deuda / fondos propios = 3.322  [contribucion SHAP: -0.017]",
+  "top_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.05528794391354289,
+      "raw_value": -0.4964028776978417,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.043031780985249464,
+      "raw_value": -65.61,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.017644283699177234,
+      "raw_value": -140.4354395075235,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.017374483171047606,
+      "raw_value": 3.321602646561604,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.014741553076263195,
+      "raw_value": -2.4018573797678275,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.00748932697252731,
+      "raw_value": 0.012365412324723435,
+      "direction": "positive"
+    }
+  ]
+}

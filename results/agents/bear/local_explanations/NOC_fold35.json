@@ -1,0 +1,74 @@
+{
+  "ticker": "NOC",
+  "score": 0.545,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.0914021807374665,
+      "raw_value": -13593.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.022417503970367257,
+      "raw_value": 0.9798978734406308,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.016734012538755408,
+      "raw_value": -3.07,
+      "direction": "negative"
+    }
+  ],
+  "text": "NOC — Score: 0.54 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 9.82x  [contribucion SHAP: +0.041]\n  + Fcf = 637000000.000  [contribucion SHAP: +0.032]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.04x  [contribucion SHAP: +0.012]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -13593.000  [contribucion SHAP: -0.091]\n  - Ratio deuda / fondos propios = 0.980  [contribucion SHAP: -0.022]\n  - Eps Surprise Pct = -3.070  [contribucion SHAP: -0.017]",
+  "top_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.0914021807374665,
+      "raw_value": -13593.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.04107779176550512,
+      "raw_value": 9.818652849740932,
+      "direction": "positive"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.03198702968003687,
+      "raw_value": 637000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.022417503970367257,
+      "raw_value": 0.9798978734406308,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.016734012538755408,
+      "raw_value": -3.07,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.01162902598168107,
+      "raw_value": 1.0421279441266067,
+      "direction": "positive"
+    }
+  ]
+}

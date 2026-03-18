@@ -1,0 +1,82 @@
+{
+  "debt_equity": {
+    "shap_importance": 0.03911437345244389,
+    "description": "Ratio deuda / fondos propios"
+  },
+  "debt_to_ebitda": {
+    "shap_importance": 0.03532039535544976,
+    "description": "Deuda neta / EBITDA"
+  },
+  "insider_net_shares_90d": {
+    "shap_importance": 0.017984746840340245,
+    "description": "Acciones compradas netas por insiders (90 días)"
+  },
+  "eps_surprise_pct": {
+    "shap_importance": 0.017924042983542676,
+    "description": "Eps Surprise Pct"
+  },
+  "fcf": {
+    "shap_importance": 0.016418095123464725,
+    "description": "Fcf"
+  },
+  "current_ratio": {
+    "shap_importance": 0.015126295411943077,
+    "description": "Ratio de liquidez corriente (activo / pasivo cte.)"
+  },
+  "interest_coverage": {
+    "shap_importance": 0.008553782142788737,
+    "description": "Cobertura de intereses (EBIT / intereses)"
+  },
+  "eps_revision": {
+    "shap_importance": 0.008330960025001591,
+    "description": "Eps Revision"
+  },
+  "insider_sell_ratio": {
+    "shap_importance": 0.0047242022514698105,
+    "description": "Proporción de ventas de insiders (>0.7 = red flag)"
+  },
+  "total_debt_yoy_growth": {
+    "shap_importance": 0.0037304302354098902,
+    "description": "Crecimiento de la deuda total interanual"
+  },
+  "debt_ebitda_high": {
+    "shap_importance": 0.0029616657596566935,
+    "description": "Debt Ebitda High"
+  },
+  "revenue_decline": {
+    "shap_importance": 0.0015153925406726164,
+    "description": "Revenue Decline"
+  },
+  "liquidity_risk": {
+    "shap_importance": 0.0012211027977114982,
+    "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)"
+  },
+  "insider_selling": {
+    "shap_importance": 0.0009758964173304796,
+    "description": "FLAG: Insiders vendiendo >70% de operaciones"
+  },
+  "debt_equity_high": {
+    "shap_importance": 0.0008191248273955779,
+    "description": "Debt Equity High"
+  },
+  "debt_growth_high": {
+    "shap_importance": 0.0007763208567210293,
+    "description": "FLAG: Deuda creciendo >20% interanual"
+  },
+  "low_coverage": {
+    "shap_importance": 0.0007215440746859561,
+    "description": "FLAG: Cobertura intereses < 1.5x"
+  },
+  "eps_miss": {
+    "shap_importance": 0.0005262646110750736,
+    "description": "Eps Miss"
+  },
+  "consecutive_losses": {
+    "shap_importance": 0.00042668296592097114,
+    "description": "Trimestres consecutivos con pérdidas"
+  },
+  "fcf_negative": {
+    "shap_importance": 0.000382965889068288,
+    "description": "FLAG: FCF negativo"
+  }
+}

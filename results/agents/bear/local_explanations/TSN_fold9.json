@@ -1,0 +1,88 @@
+{
+  "ticker": "TSN",
+  "score": 0.254,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.031810248698190616,
+      "raw_value": -42.31,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.013554251952827197,
+      "raw_value": 1.7952708164915117,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.010136058761540239,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.008816253553594973,
+      "raw_value": 1.180722891566265,
+      "direction": "negative"
+    },
+    {
+      "feature": "liquidity_risk",
+      "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+      "shap_value": -0.00788727331558187,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "TSN — Score: 0.25 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Eps Revision = -0.675  [contribucion SHAP: +0.011]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = -42.310  [contribucion SHAP: -0.032]\n  - Ratio de liquidez corriente (activo / pasivo cte.) = 1.80x  [contribucion SHAP: -0.014]\n  - Revenue Decline = 1.000  [contribucion SHAP: -0.010]\n  - Cobertura de intereses (EBIT / intereses) = 1.18x  [contribucion SHAP: -0.009]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.031810248698190616,
+      "raw_value": -42.31,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.013554251952827197,
+      "raw_value": 1.7952708164915117,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.011179005010406912,
+      "raw_value": -0.675,
+      "direction": "positive"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.010136058761540239,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.008816253553594973,
+      "raw_value": 1.180722891566265,
+      "direction": "negative"
+    },
+    {
+      "feature": "liquidity_risk",
+      "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+      "shap_value": -0.00788727331558187,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

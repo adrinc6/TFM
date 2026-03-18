@@ -1,0 +1,74 @@
+{
+  "ticker": "WBD",
+  "score": 0.0849,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.039601704687865204,
+      "raw_value": 2.3398692810457518,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.039575819770213225,
+      "raw_value": -86.22155688622755,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_growth_high",
+      "description": "FLAG: Deuda creciendo >20% interanual",
+      "shap_value": -0.00446280457179384,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "WBD — Score: 0.08 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Ratio deuda / fondos propios = 1.062  [contribucion SHAP: +0.031]\n  + Crecimiento de la deuda total interanual = -4.2%  [contribucion SHAP: +0.020]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.01x  [contribucion SHAP: +0.008]\n\nFactores EN CONTRA:\n  - Cobertura de intereses (EBIT / intereses) = 2.34x  [contribucion SHAP: -0.040]\n  - Deuda neta / EBITDA = -86.22x  [contribucion SHAP: -0.040]\n  - FLAG: Deuda creciendo >20% interanual = 0.000  [contribucion SHAP: -0.004]",
+  "top_drivers": [
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.039601704687865204,
+      "raw_value": 2.3398692810457518,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.039575819770213225,
+      "raw_value": -86.22155688622755,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": 0.030511921365558713,
+      "raw_value": 1.0617165609792063,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.020067413781462595,
+      "raw_value": -0.04172767203513905,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.007514968044927871,
+      "raw_value": 2.013756316676025,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_growth_high",
+      "description": "FLAG: Deuda creciendo >20% interanual",
+      "shap_value": -0.00446280457179384,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

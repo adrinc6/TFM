@@ -1,0 +1,81 @@
+{
+  "ticker": "KMX",
+  "score": 0.6935,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.04074148350230103,
+      "raw_value": -0.4964028776978417,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03881339868216094,
+      "raw_value": -65.61,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.022556622218848733,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.013826545659434827,
+      "raw_value": 0.012365412324723435,
+      "direction": "negative"
+    }
+  ],
+  "text": "KMX — Score: 0.69 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = -140.44x  [contribucion SHAP: +0.042]\n  + Ratio deuda / fondos propios = 3.322  [contribucion SHAP: +0.039]\n\nFactores EN CONTRA:\n  - Eps Revision = -0.496  [contribucion SHAP: -0.041]\n  - Eps Surprise Pct = -65.610  [contribucion SHAP: -0.039]\n  - Revenue Decline = 1.000  [contribucion SHAP: -0.023]\n  - Crecimiento de la deuda total interanual = 1.2%  [contribucion SHAP: -0.014]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.04241056735846096,
+      "raw_value": -140.4354395075235,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.04074148350230103,
+      "raw_value": -0.4964028776978417,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": 0.039406668131134824,
+      "raw_value": 3.321602646561604,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03881339868216094,
+      "raw_value": -65.61,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.022556622218848733,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.013826545659434827,
+      "raw_value": 0.012365412324723435,
+      "direction": "negative"
+    }
+  ]
+}

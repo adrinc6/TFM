@@ -1,0 +1,67 @@
+{
+  "ticker": "HON",
+  "score": 0.219,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.14578941200433426,
+      "raw_value": 0.5237444040569326,
+      "direction": "negative"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.08473673678095493,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "HON — Score: 0.22 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.302  [contribucion SHAP: +0.290]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.106]\n  + Momentum del S&P 500 a 12 meses = 12.5%  [contribucion SHAP: +0.042]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.412  [contribucion SHAP: +0.040]\n\nFactores EN CONTRA:\n  - Score del Agente de Valoración (infravaloración) = 0.524  [contribucion SHAP: -0.146]\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.085]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.28964732056393244,
+      "raw_value": 0.30194986875542923,
+      "direction": "positive"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.14578941200433426,
+      "raw_value": 0.5237444040569326,
+      "direction": "negative"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": 0.10574562421180356,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.08473673678095493,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sp500_momentum_12m",
+      "description": "Momentum del S&P 500 a 12 meses",
+      "shap_value": 0.042081359111279255,
+      "raw_value": 0.1253544206334416,
+      "direction": "positive"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": 0.04028831786334153,
+      "raw_value": 0.41248586673850784,
+      "direction": "positive"
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "ticker": "TOL",
+  "score": 0.7127,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.05603267842976405,
+      "raw_value": 10.45,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.007388249542020973,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.00707239343454151,
+      "raw_value": 0.3098591549295775,
+      "direction": "negative"
+    }
+  ],
+  "text": "TOL — Score: 0.71 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.85x  [contribucion SHAP: +0.028]\n  + Crecimiento de la deuda total interanual = -20.0%  [contribucion SHAP: +0.023]\n  + Cobertura de intereses (EBIT / intereses) = 0.00x  [contribucion SHAP: +0.012]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 10.450  [contribucion SHAP: -0.056]\n  - Revenue Decline = 1.000  [contribucion SHAP: -0.007]\n  - Eps Revision = 0.310  [contribucion SHAP: -0.007]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.05603267842976405,
+      "raw_value": 10.45,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.02805420873588635,
+      "raw_value": 2.845597076249385,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.022531071497905824,
+      "raw_value": -0.20001593768465542,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.012205290628650717,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.007388249542020973,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.00707239343454151,
+      "raw_value": 0.3098591549295775,
+      "direction": "negative"
+    }
+  ]
+}

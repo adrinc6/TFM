@@ -1,0 +1,74 @@
+{
+  "ticker": "KMX",
+  "score": 0.709,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "sector_Finance",
+      "description": "Sector Finance",
+      "shap_value": -0.027424557865916355,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.024547257086934088,
+      "raw_value": 0.5065989927599005,
+      "direction": "negative"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.022470792930800936,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "KMX — Score: 0.71 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.640  [contribucion SHAP: +0.510]\n  + VIX (volatilidad implícita de mercado) = 18.4  [contribucion SHAP: +0.106]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.348  [contribucion SHAP: +0.085]\n\nFactores EN CONTRA:\n  - Sector Finance = 0.000  [contribucion SHAP: -0.027]\n  - Score del Agente de Valoración (infravaloración) = 0.507  [contribucion SHAP: -0.025]\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.022]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.5102758454514528,
+      "raw_value": 0.6404836225901988,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.10564991313771441,
+      "raw_value": 18.350000381469727,
+      "direction": "positive"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": 0.0850705202570187,
+      "raw_value": 0.34841781215875145,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Finance",
+      "description": "Sector Finance",
+      "shap_value": -0.027424557865916355,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.024547257086934088,
+      "raw_value": 0.5065989927599005,
+      "direction": "negative"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.022470792930800936,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

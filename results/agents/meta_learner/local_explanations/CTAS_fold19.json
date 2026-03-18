@@ -1,0 +1,88 @@
+{
+  "ticker": "CTAS",
+  "score": 0.2654,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.23883005826851797,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": -0.14149333433319652,
+      "raw_value": 13.119999885559082,
+      "direction": "negative"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.11860872399102869,
+      "raw_value": 0.54372647662793,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.06683279647573534,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sp500_momentum_3m",
+      "description": "Momentum del S&P 500 a 3 meses",
+      "shap_value": -0.055234341489744654,
+      "raw_value": 0.099115636481744,
+      "direction": "negative"
+    }
+  ],
+  "text": "CTAS — Score: 0.27 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.448  [contribucion SHAP: +0.482]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.239]\n  - VIX (volatilidad implícita de mercado) = 13.1  [contribucion SHAP: -0.141]\n  - Score del Agente de Valoración (infravaloración) = 0.544  [contribucion SHAP: -0.119]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.067]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.4823298838444813,
+      "raw_value": 0.44767974110744685,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.23883005826851797,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": -0.14149333433319652,
+      "raw_value": 13.119999885559082,
+      "direction": "negative"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.11860872399102869,
+      "raw_value": 0.54372647662793,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.06683279647573534,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sp500_momentum_3m",
+      "description": "Momentum del S&P 500 a 3 meses",
+      "shap_value": -0.055234341489744654,
+      "raw_value": 0.099115636481744,
+      "direction": "negative"
+    }
+  ]
+}

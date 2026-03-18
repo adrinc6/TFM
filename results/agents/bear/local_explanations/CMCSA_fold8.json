@@ -1,0 +1,88 @@
+{
+  "ticker": "CMCSA",
+  "score": 0.1626,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.05221758155163209,
+      "raw_value": 12.19,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.02952428399809505,
+      "raw_value": 53.88228999464955,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.02891678787741863,
+      "raw_value": 0.0649350649350648,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.020528679186082168,
+      "raw_value": 5.59009900990099,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.01577684959531195,
+      "raw_value": 1.2067102031034689,
+      "direction": "negative"
+    }
+  ],
+  "text": "CMCSA — Score: 0.16 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.69x  [contribucion SHAP: +0.008]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 12.190  [contribucion SHAP: -0.052]\n  - Deuda neta / EBITDA = 53.88x  [contribucion SHAP: -0.030]\n  - Eps Revision = 0.065  [contribucion SHAP: -0.029]\n  - Cobertura de intereses (EBIT / intereses) = 5.59x  [contribucion SHAP: -0.021]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.05221758155163209,
+      "raw_value": 12.19,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.02952428399809505,
+      "raw_value": 53.88228999464955,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.02891678787741863,
+      "raw_value": 0.0649350649350648,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.020528679186082168,
+      "raw_value": 5.59009900990099,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.01577684959531195,
+      "raw_value": 1.2067102031034689,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.008089786642500025,
+      "raw_value": 0.6903498488307521,
+      "direction": "positive"
+    }
+  ]
+}

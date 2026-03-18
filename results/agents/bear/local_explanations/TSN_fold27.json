@@ -1,0 +1,74 @@
+{
+  "ticker": "TSN",
+  "score": 0.2647,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.021452897884211834,
+      "raw_value": 0.5264401138132818,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.018097455800539706,
+      "raw_value": 29.97,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.007057689187220895,
+      "raw_value": 0.013225873114279807,
+      "direction": "negative"
+    }
+  ],
+  "text": "TSN — Score: 0.26 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Acciones compradas netas por insiders (90 días) = 6349.000  [contribucion SHAP: +0.019]\n  + Cobertura de intereses (EBIT / intereses) = 6.11x  [contribucion SHAP: +0.017]\n  + Revenue Decline = 0.000  [contribucion SHAP: +0.004]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.526  [contribucion SHAP: -0.021]\n  - Eps Surprise Pct = 29.970  [contribucion SHAP: -0.018]\n  - Crecimiento de la deuda total interanual = 1.3%  [contribucion SHAP: -0.007]",
+  "top_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.021452897884211834,
+      "raw_value": 0.5264401138132818,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.01886245312305811,
+      "raw_value": 6349.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.018097455800539706,
+      "raw_value": 29.97,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.016670409217681023,
+      "raw_value": 6.105263157894737,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.007057689187220895,
+      "raw_value": 0.013225873114279807,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": 0.004358548606100232,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

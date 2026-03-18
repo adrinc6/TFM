@@ -1,0 +1,67 @@
+{
+  "ticker": "CSX",
+  "score": 0.2566,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.03440659983683392,
+      "raw_value": 1.4665610142630745,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.028987389999730363,
+      "raw_value": 2.67,
+      "direction": "negative"
+    }
+  ],
+  "text": "CSX — Score: 0.26 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 17.83x  [contribucion SHAP: +0.069]\n  + Cobertura de intereses (EBIT / intereses) = 6.93x  [contribucion SHAP: +0.038]\n  + Acciones compradas netas por insiders (90 días) = 1165.000  [contribucion SHAP: +0.029]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.16x  [contribucion SHAP: +0.015]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 1.467  [contribucion SHAP: -0.034]\n  - Eps Surprise Pct = 2.670  [contribucion SHAP: -0.029]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.06854580833053497,
+      "raw_value": 17.83044315992293,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.037529371106786426,
+      "raw_value": 6.92822966507177,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.03440659983683392,
+      "raw_value": 1.4665610142630745,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.029415296598534296,
+      "raw_value": 1165.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.028987389999730363,
+      "raw_value": 2.67,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.015488537655009106,
+      "raw_value": 1.1610076670317635,
+      "direction": "positive"
+    }
+  ]
+}

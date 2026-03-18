@@ -1,0 +1,88 @@
+{
+  "ticker": "KMX",
+  "score": 0.2865,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.0716665704572502,
+      "raw_value": -4.34,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.023885795320292728,
+      "raw_value": -0.0126582278481012,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.01619634945042107,
+      "raw_value": -2880.3993600487584,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.009436072295829925,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.0049053842565641905,
+      "raw_value": 1.6543929080259616,
+      "direction": "negative"
+    }
+  ],
+  "text": "KMX — Score: 0.29 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 9.65x  [contribucion SHAP: +0.020]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = -4.340  [contribucion SHAP: -0.072]\n  - Eps Revision = -0.013  [contribucion SHAP: -0.024]\n  - Deuda neta / EBITDA = -2880.40x  [contribucion SHAP: -0.016]\n  - Revenue Decline = 1.000  [contribucion SHAP: -0.009]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.0716665704572502,
+      "raw_value": -4.34,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.023885795320292728,
+      "raw_value": -0.0126582278481012,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.02010236968919017,
+      "raw_value": 9.647576612187272,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.01619634945042107,
+      "raw_value": -2880.3993600487584,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.009436072295829925,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.0049053842565641905,
+      "raw_value": 1.6543929080259616,
+      "direction": "negative"
+    }
+  ]
+}

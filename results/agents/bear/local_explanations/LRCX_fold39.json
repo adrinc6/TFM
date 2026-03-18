@@ -1,0 +1,74 @@
+{
+  "ticker": "LRCX",
+  "score": 0.5638,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.07070087521989872,
+      "raw_value": -86258.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.03366292707264397,
+      "raw_value": 0.4399148532211909,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.01306183119429341,
+      "raw_value": 3.44,
+      "direction": "negative"
+    }
+  ],
+  "text": "LRCX — Score: 0.56 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 2.32x  [contribucion SHAP: +0.026]\n  + Fcf = 1593843000.000  [contribucion SHAP: +0.017]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.21x  [contribucion SHAP: +0.011]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -86258.000  [contribucion SHAP: -0.071]\n  - Ratio deuda / fondos propios = 0.440  [contribucion SHAP: -0.034]\n  - Eps Surprise Pct = 3.440  [contribucion SHAP: -0.013]",
+  "top_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.07070087521989872,
+      "raw_value": -86258.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.03366292707264397,
+      "raw_value": 0.4399148532211909,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.0260537103154367,
+      "raw_value": 2.3224056989784185,
+      "direction": "positive"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.017499188827186124,
+      "raw_value": 1593843000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.01306183119429341,
+      "raw_value": 3.44,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.010588825748411792,
+      "raw_value": 2.2073513210523097,
+      "direction": "positive"
+    }
+  ]
+}

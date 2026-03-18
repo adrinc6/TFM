@@ -1,0 +1,74 @@
+{
+  "ticker": "EXR",
+  "score": 0.6223,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.06385613161172728,
+      "raw_value": 0.8292426013983643,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.033151389728600024,
+      "raw_value": -7500.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.01804035728076206,
+      "raw_value": 0.0873786407766992,
+      "direction": "negative"
+    }
+  ],
+  "text": "EXR — Score: 0.62 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 84.33x  [contribucion SHAP: +0.051]\n  + Cobertura de intereses (EBIT / intereses) = 3.30x  [contribucion SHAP: +0.026]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.31x  [contribucion SHAP: +0.024]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.829  [contribucion SHAP: -0.064]\n  - Acciones compradas netas por insiders (90 días) = -7500.000  [contribucion SHAP: -0.033]\n  - Eps Revision = 0.087  [contribucion SHAP: -0.018]",
+  "top_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.06385613161172728,
+      "raw_value": 0.8292426013983643,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.05082900752177659,
+      "raw_value": 84.33036765309754,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.033151389728600024,
+      "raw_value": -7500.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.0261252267098853,
+      "raw_value": 3.2977659605213723,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.02413803316389161,
+      "raw_value": 0.3093005126090317,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.01804035728076206,
+      "raw_value": 0.0873786407766992,
+      "direction": "negative"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "ticker": "CZR",
+  "score": 0.5363,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.04155073445952272,
+      "raw_value": 1.1019677996422181,
+      "direction": "negative"
+    },
+    {
+      "feature": "consecutive_losses",
+      "description": "Trimestres consecutivos con pérdidas",
+      "shap_value": -0.004142970379803193,
+      "raw_value": 4.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "CZR — Score: 0.54 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.00x  [contribucion SHAP: +0.015]\n  + Deuda neta / EBITDA = 84.71x  [contribucion SHAP: +0.012]\n  + Crecimiento de la deuda total interanual = -0.1%  [contribucion SHAP: +0.006]\n  + Revenue Decline = 0.000  [contribucion SHAP: +0.005]\n\nFactores EN CONTRA:\n  - Cobertura de intereses (EBIT / intereses) = 1.10x  [contribucion SHAP: -0.042]\n  - Trimestres consecutivos con pérdidas = 4.000  [contribucion SHAP: -0.004]",
+  "top_drivers": [
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.04155073445952272,
+      "raw_value": 1.1019677996422181,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.014949126796723841,
+      "raw_value": 1.0006126199714112,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.011948590881538141,
+      "raw_value": 84.71290322580646,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.006326693377517128,
+      "raw_value": -0.0006849575706837641,
+      "direction": "positive"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": 0.005077521395240623,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "consecutive_losses",
+      "description": "Trimestres consecutivos con pérdidas",
+      "shap_value": -0.004142970379803193,
+      "raw_value": 4.0,
+      "direction": "negative"
+    }
+  ]
+}

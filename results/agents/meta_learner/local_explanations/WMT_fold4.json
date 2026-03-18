@@ -1,0 +1,74 @@
+{
+  "ticker": "WMT",
+  "score": 0.8122,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.05753662022276214,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.04594868273689812,
+      "raw_value": 0.49618771975543136,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Medical",
+      "description": "Sector Medical",
+      "shap_value": -0.039446208551540525,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "WMT — Score: 0.81 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.725  [contribucion SHAP: +0.608]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.122]\n  + Score del Agente Fundamental (salud financiera) = 0.484  [contribucion SHAP: +0.044]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.058]\n  - Score del Agente de Valoración (infravaloración) = 0.496  [contribucion SHAP: -0.046]\n  - Sector Medical = 0.000  [contribucion SHAP: -0.039]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.6082624455553542,
+      "raw_value": 0.7246570081480009,
+      "direction": "positive"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": 0.122054111520383,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.05753662022276214,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.04594868273689812,
+      "raw_value": 0.49618771975543136,
+      "direction": "negative"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": 0.04356187462343688,
+      "raw_value": 0.4838674267133077,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Medical",
+      "description": "Sector Medical",
+      "shap_value": -0.039446208551540525,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "ticker": "ORCL",
+  "score": 0.6312,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": -0.05870812335390065,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Finance",
+      "description": "Sector Finance",
+      "shap_value": -0.05181698569510899,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "ORCL — Score: 0.63 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.613  [contribucion SHAP: +0.763]\n  + Score del Agente de Valoración (infravaloración) = 0.506  [contribucion SHAP: +0.123]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.493  [contribucion SHAP: +0.120]\n  + VIX (volatilidad implícita de mercado) = 20.6  [contribucion SHAP: +0.105]\n\nFactores EN CONTRA:\n  - Fund X Val = 0.000  [contribucion SHAP: -0.059]\n  - Sector Finance = 0.000  [contribucion SHAP: -0.052]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.7634680217389921,
+      "raw_value": 0.6127417320797374,
+      "direction": "positive"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": 0.12320267226674517,
+      "raw_value": 0.5062084025479533,
+      "direction": "positive"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": 0.11980728411227047,
+      "raw_value": 0.49334480017470217,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.10482546223127828,
+      "raw_value": 20.63999938964844,
+      "direction": "positive"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": -0.05870812335390065,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Finance",
+      "description": "Sector Finance",
+      "shap_value": -0.05181698569510899,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

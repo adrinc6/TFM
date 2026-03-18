@@ -1,0 +1,81 @@
+{
+  "ticker": "CTSH",
+  "score": 0.2407,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.14812050540661195,
+      "raw_value": 0.5115929527121647,
+      "direction": "negative"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.10978846360262504,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.08216084145331481,
+      "raw_value": 0.14578431332483888,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Medical",
+      "description": "Sector Medical",
+      "shap_value": -0.039446208551540525,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "CTSH — Score: 0.24 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Fund X Val = 0.000  [contribucion SHAP: +0.107]\n  + Sector Computer And Technology = 0.000  [contribucion SHAP: +0.044]\n\nFactores EN CONTRA:\n  - Score del Agente de Valoración (infravaloración) = 0.512  [contribucion SHAP: -0.148]\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.110]\n  - Score del Agente Fundamental (salud financiera) = 0.146  [contribucion SHAP: -0.082]\n  - Sector Medical = 0.000  [contribucion SHAP: -0.039]",
+  "top_drivers": [
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.14812050540661195,
+      "raw_value": 0.5115929527121647,
+      "direction": "negative"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.10978846360262504,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": 0.10662730955535284,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.08216084145331481,
+      "raw_value": 0.14578431332483888,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": 0.04419204537094119,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Medical",
+      "description": "Sector Medical",
+      "shap_value": -0.039446208551540525,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

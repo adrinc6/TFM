@@ -1,0 +1,82 @@
+{
+  "vix": {
+    "shap_importance": 0.4588973638831938,
+    "description": "VIX (volatilidad implícita de mercado)"
+  },
+  "momentum_score": {
+    "shap_importance": 0.36596354587541297,
+    "description": "Score del Agente de Momentum (tendencia técnica)"
+  },
+  "sector_Computer And Technology": {
+    "shap_importance": 0.10774731820686005,
+    "description": "Sector Computer And Technology"
+  },
+  "mom_minus_bear": {
+    "shap_importance": 0.10219647481347621,
+    "description": "Mom Minus Bear"
+  },
+  "bear_score": {
+    "shap_importance": 0.0973875642256421,
+    "description": "Score del Agente Bear (riesgo, <0.5 es bueno)"
+  },
+  "sector_Finance": {
+    "shap_importance": 0.048270395048602435,
+    "description": "Sector Finance"
+  },
+  "yield_curve": {
+    "shap_importance": 0.045049245900471435,
+    "description": "Pendiente curva de tipos (10Y - 2Y)"
+  },
+  "sp500_momentum_3m": {
+    "shap_importance": 0.03504512794838607,
+    "description": "Momentum del S&P 500 a 3 meses"
+  },
+  "sector_Consumer Staples": {
+    "shap_importance": 0.026809339329038107,
+    "description": "Sector Consumer Staples"
+  },
+  "valuation_score": {
+    "shap_importance": 0.025063262025379122,
+    "description": "Score del Agente de Valoración (infravaloración)"
+  },
+  "fundamental_score": {
+    "shap_importance": 0.020059203710040472,
+    "description": "Score del Agente Fundamental (salud financiera)"
+  },
+  "sector_Utilities": {
+    "shap_importance": 0.014609397341356517,
+    "description": "Sector Utilities"
+  },
+  "fund_x_val": {
+    "shap_importance": 0.009669258327376232,
+    "description": "Fund X Val"
+  },
+  "sector_Aerospace": {
+    "shap_importance": 0.009027162033781507,
+    "description": "Sector Aerospace"
+  },
+  "sector_Transportation": {
+    "shap_importance": 0.008078206218238949,
+    "description": "Sector Transportation"
+  },
+  "sp500_momentum_12m": {
+    "shap_importance": 0.0076559423928043565,
+    "description": "Momentum del S&P 500 a 12 meses"
+  },
+  "sector_Auto-Tires-Trucks": {
+    "shap_importance": 0.00531273281604699,
+    "description": "Sector Auto-Tires-Trucks"
+  },
+  "sector_Consumer Discretionary": {
+    "shap_importance": 0.005081652329209363,
+    "description": "Sector Consumer Discretionary"
+  },
+  "sector_Retail-Wholesale": {
+    "shap_importance": 0.004942812264690128,
+    "description": "Sector Retail-Wholesale"
+  },
+  "sector_Construction": {
+    "shap_importance": 0.004884277834933056,
+    "description": "Sector Construction"
+  }
+}

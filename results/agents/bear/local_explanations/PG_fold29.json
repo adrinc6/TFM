@@ -1,0 +1,74 @@
+{
+  "ticker": "PG",
+  "score": 0.4147,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.06680919915860542,
+      "raw_value": 0.6497478351888857,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.051497040546628826,
+      "raw_value": -63426.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.01010723800798097,
+      "raw_value": 0.06750672253142387,
+      "direction": "negative"
+    }
+  ],
+  "text": "PG — Score: 0.41 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 2846000000.000  [contribucion SHAP: +0.088]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.71x  [contribucion SHAP: +0.033]\n  + Eps Surprise Pct = 0.950  [contribucion SHAP: +0.025]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.650  [contribucion SHAP: -0.067]\n  - Acciones compradas netas por insiders (90 días) = -63426.000  [contribucion SHAP: -0.051]\n  - Crecimiento de la deuda total interanual = 6.8%  [contribucion SHAP: -0.010]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.08774435841311268,
+      "raw_value": 2846000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.06680919915860542,
+      "raw_value": 0.6497478351888857,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.051497040546628826,
+      "raw_value": -63426.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.03344449818920826,
+      "raw_value": 0.7134723195515067,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": 0.024818013053435898,
+      "raw_value": 0.95,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.01010723800798097,
+      "raw_value": 0.06750672253142387,
+      "direction": "negative"
+    }
+  ]
+}

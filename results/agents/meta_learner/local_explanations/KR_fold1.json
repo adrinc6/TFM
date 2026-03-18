@@ -1,0 +1,67 @@
+{
+  "ticker": "KR",
+  "score": 0.2195,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": -0.36021884172485036,
+      "raw_value": 25.670000076293945,
+      "direction": "negative"
+    },
+    {
+      "feature": "sp500_momentum_3m",
+      "description": "Momentum del S&P 500 a 3 meses",
+      "shap_value": -0.045327237192145355,
+      "raw_value": -0.0633099078736354,
+      "direction": "negative"
+    }
+  ],
+  "text": "KR — Score: 0.22 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.315  [contribucion SHAP: +0.559]\n  + Score del Agente de Momentum (tendencia técnica) = 0.250  [contribucion SHAP: +0.180]\n  + Pendiente curva de tipos (10Y - 2Y) = 1.832  [contribucion SHAP: +0.160]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.139]\n\nFactores EN CONTRA:\n  - VIX (volatilidad implícita de mercado) = 25.7  [contribucion SHAP: -0.360]\n  - Momentum del S&P 500 a 3 meses = -6.3%  [contribucion SHAP: -0.045]",
+  "top_drivers": [
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": 0.558558223584046,
+      "raw_value": 0.3147027318566354,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": -0.36021884172485036,
+      "raw_value": 25.670000076293945,
+      "direction": "negative"
+    },
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.17961945924154507,
+      "raw_value": 0.25036482426912915,
+      "direction": "positive"
+    },
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": 0.16029809165430042,
+      "raw_value": 1.831999897956848,
+      "direction": "positive"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": 0.1394976365912316,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "sp500_momentum_3m",
+      "description": "Momentum del S&P 500 a 3 meses",
+      "shap_value": -0.045327237192145355,
+      "raw_value": -0.0633099078736354,
+      "direction": "negative"
+    }
+  ]
+}

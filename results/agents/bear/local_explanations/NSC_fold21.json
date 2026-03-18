@@ -1,0 +1,74 @@
+{
+  "ticker": "NSC",
+  "score": 0.2702,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.060632362890781555,
+      "raw_value": 6.93,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.031843651321989366,
+      "raw_value": 1.3554202943215965,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.02361558914555192,
+      "raw_value": 0.16279992068213356,
+      "direction": "negative"
+    }
+  ],
+  "text": "NSC — Score: 0.27 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 24.16x  [contribucion SHAP: +0.042]\n  + Acciones compradas netas por insiders (90 días) = 19655.000  [contribucion SHAP: +0.022]\n  + Cobertura de intereses (EBIT / intereses) = 5.21x  [contribucion SHAP: +0.017]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 6.930  [contribucion SHAP: -0.061]\n  - Ratio deuda / fondos propios = 1.355  [contribucion SHAP: -0.032]\n  - Crecimiento de la deuda total interanual = 16.3%  [contribucion SHAP: -0.024]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.060632362890781555,
+      "raw_value": 6.93,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.04248979487408464,
+      "raw_value": 24.164835164835164,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.031843651321989366,
+      "raw_value": 1.3554202943215965,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.02361558914555192,
+      "raw_value": 0.16279992068213356,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.02153124124358394,
+      "raw_value": 19655.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.016850112730831115,
+      "raw_value": 5.21078431372549,
+      "direction": "positive"
+    }
+  ]
+}

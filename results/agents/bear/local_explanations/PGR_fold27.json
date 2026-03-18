@@ -1,0 +1,88 @@
+{
+  "ticker": "PGR",
+  "score": 0.6487,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03941700572332352,
+      "raw_value": 13.91,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.031415390678426795,
+      "raw_value": -73857.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.013421560505696348,
+      "raw_value": 0.269352506740651,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.011204786792532208,
+      "raw_value": -0.0245231607629426,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.008435331532419767,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "PGR — Score: 0.65 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 2.21x  [contribucion SHAP: +0.022]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 13.910  [contribucion SHAP: -0.039]\n  - Acciones compradas netas por insiders (90 días) = -73857.000  [contribucion SHAP: -0.031]\n  - Ratio deuda / fondos propios = 0.269  [contribucion SHAP: -0.013]\n  - Eps Revision = -0.025  [contribucion SHAP: -0.011]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03941700572332352,
+      "raw_value": 13.91,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.031415390678426795,
+      "raw_value": -73857.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.022105417696290305,
+      "raw_value": 2.2138360739979444,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.013421560505696348,
+      "raw_value": 0.269352506740651,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.011204786792532208,
+      "raw_value": -0.0245231607629426,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.008435331532419767,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "ticker": "SWK",
+  "score": 0.2187,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.10978846360262504,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.08216084145331481,
+      "raw_value": 0.17348960041999817,
+      "direction": "negative"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.0522656610872222,
+      "raw_value": 0.48234138870293836,
+      "direction": "negative"
+    }
+  ],
+  "text": "SWK — Score: 0.22 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Fund X Val = 0.000  [contribucion SHAP: +0.119]\n  + Score del Agente de Momentum (tendencia técnica) = 0.360  [contribucion SHAP: +0.061]\n  + Sector Computer And Technology = 0.000  [contribucion SHAP: +0.047]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.110]\n  - Score del Agente Fundamental (salud financiera) = 0.173  [contribucion SHAP: -0.082]\n  - Score del Agente de Valoración (infravaloración) = 0.482  [contribucion SHAP: -0.052]",
+  "top_drivers": [
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": 0.11873485356055548,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.10978846360262504,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.08216084145331481,
+      "raw_value": 0.17348960041999817,
+      "direction": "negative"
+    },
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.06129607263808328,
+      "raw_value": 0.36002218295763794,
+      "direction": "positive"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.0522656610872222,
+      "raw_value": 0.48234138870293836,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": 0.04708853393528702,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

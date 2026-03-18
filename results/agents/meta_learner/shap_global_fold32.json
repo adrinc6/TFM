@@ -1,0 +1,82 @@
+{
+  "momentum_score": {
+    "shap_importance": 0.4859913334424386,
+    "description": "Score del Agente de Momentum (tendencia técnica)"
+  },
+  "vix": {
+    "shap_importance": 0.14649141238728344,
+    "description": "VIX (volatilidad implícita de mercado)"
+  },
+  "mom_minus_bear": {
+    "shap_importance": 0.11953980592775477,
+    "description": "Mom Minus Bear"
+  },
+  "yield_curve": {
+    "shap_importance": 0.06692424704608442,
+    "description": "Pendiente curva de tipos (10Y - 2Y)"
+  },
+  "sector_Computer And Technology": {
+    "shap_importance": 0.06575869085166523,
+    "description": "Sector Computer And Technology"
+  },
+  "bear_score": {
+    "shap_importance": 0.028122476112650535,
+    "description": "Score del Agente Bear (riesgo, <0.5 es bueno)"
+  },
+  "sector_Consumer Staples": {
+    "shap_importance": 0.026307512740494098,
+    "description": "Sector Consumer Staples"
+  },
+  "sector_Finance": {
+    "shap_importance": 0.02583922812610368,
+    "description": "Sector Finance"
+  },
+  "sector_Medical": {
+    "shap_importance": 0.019351919979967814,
+    "description": "Sector Medical"
+  },
+  "sector_Consumer Discretionary": {
+    "shap_importance": 0.015206538215905814,
+    "description": "Sector Consumer Discretionary"
+  },
+  "fund_x_val": {
+    "shap_importance": 0.01111578151534122,
+    "description": "Fund X Val"
+  },
+  "valuation_score": {
+    "shap_importance": 0.009164770084340676,
+    "description": "Score del Agente de Valoración (infravaloración)"
+  },
+  "sector_Aerospace": {
+    "shap_importance": 0.00875018238310023,
+    "description": "Sector Aerospace"
+  },
+  "sp500_momentum_3m": {
+    "shap_importance": 0.007311771198741387,
+    "description": "Momentum del S&P 500 a 3 meses"
+  },
+  "fundamental_score": {
+    "shap_importance": 0.0050977551221430125,
+    "description": "Score del Agente Fundamental (salud financiera)"
+  },
+  "sp500_momentum_12m": {
+    "shap_importance": 0.004549778516791787,
+    "description": "Momentum del S&P 500 a 12 meses"
+  },
+  "sector_Transportation": {
+    "shap_importance": 0.003906535936558633,
+    "description": "Sector Transportation"
+  },
+  "sector_Business Services": {
+    "shap_importance": 0.001960674788144381,
+    "description": "Sector Business Services"
+  },
+  "sector_Retail-Wholesale": {
+    "shap_importance": 0.0018498673145739748,
+    "description": "Sector Retail-Wholesale"
+  },
+  "sector_Oils-Energy": {
+    "shap_importance": 0.0017611870359282439,
+    "description": "Sector Oils-Energy"
+  }
+}

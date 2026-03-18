@@ -1,0 +1,60 @@
+{
+  "ticker": "TSN",
+  "score": 0.3246,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.03331872200687615,
+      "raw_value": 0.5264401138132818,
+      "direction": "negative"
+    }
+  ],
+  "text": "TSN — Score: 0.32 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Acciones compradas netas por insiders (90 días) = 6349.000  [contribucion SHAP: +0.016]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.11x  [contribucion SHAP: +0.012]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.006]\n  + Cobertura de intereses (EBIT / intereses) = 6.11x  [contribucion SHAP: +0.006]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.526  [contribucion SHAP: -0.033]",
+  "top_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.03331872200687615,
+      "raw_value": 0.5264401138132818,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.015522310490226744,
+      "raw_value": 6349.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.012016439343629021,
+      "raw_value": 2.109205020920502,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.0061755456013571075,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.006143947712442399,
+      "raw_value": 6.105263157894737,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": 0.005228958481418124,
+      "raw_value": 0.49617258512366,
+      "direction": "positive"
+    }
+  ]
+}

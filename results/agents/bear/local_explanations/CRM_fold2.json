@@ -1,0 +1,74 @@
+{
+  "ticker": "CRM",
+  "score": 0.3342,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.017839627334379514,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.013628293289294163,
+      "raw_value": -0.0268199233716474,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.012255906223062104,
+      "raw_value": 1.38,
+      "direction": "negative"
+    }
+  ],
+  "text": "CRM — Score: 0.33 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 6297000000.000  [contribucion SHAP: +0.064]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.07x  [contribucion SHAP: +0.030]\n  + Deuda neta / EBITDA = 3.20x  [contribucion SHAP: +0.027]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = 0.000  [contribucion SHAP: -0.018]\n  - Eps Revision = -0.027  [contribucion SHAP: -0.014]\n  - Eps Surprise Pct = 1.380  [contribucion SHAP: -0.012]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.06427446859684192,
+      "raw_value": 6297000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.029733920964130498,
+      "raw_value": 1.069019672673169,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.0271448711930017,
+      "raw_value": 3.200283587380361,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.017839627334379514,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.013628293289294163,
+      "raw_value": -0.0268199233716474,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.012255906223062104,
+      "raw_value": 1.38,
+      "direction": "negative"
+    }
+  ]
+}

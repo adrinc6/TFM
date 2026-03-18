@@ -1,0 +1,74 @@
+{
+  "ticker": "ETN",
+  "score": 0.3254,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.04972738842431308,
+      "raw_value": -103627.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.011469034916024197,
+      "raw_value": -0.0355871886120996,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.007827511436308185,
+      "raw_value": 0.09720256884728418,
+      "direction": "negative"
+    }
+  ],
+  "text": "ETN — Score: 0.33 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 91000000.000  [contribucion SHAP: +0.060]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.31x  [contribucion SHAP: +0.021]\n  + Deuda neta / EBITDA = 7.03x  [contribucion SHAP: +0.013]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -103627.000  [contribucion SHAP: -0.050]\n  - Eps Revision = -0.036  [contribucion SHAP: -0.011]\n  - Crecimiento de la deuda total interanual = 9.7%  [contribucion SHAP: -0.008]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.06002264230209303,
+      "raw_value": 91000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.04972738842431308,
+      "raw_value": -103627.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.021497598398707615,
+      "raw_value": 1.3058181054400335,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.012609367817749899,
+      "raw_value": 7.034193998604327,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.011469034916024197,
+      "raw_value": -0.0355871886120996,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.007827511436308185,
+      "raw_value": 0.09720256884728418,
+      "direction": "negative"
+    }
+  ]
+}

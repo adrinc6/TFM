@@ -1,0 +1,41 @@
+{
+  "agent": "fundamental",
+  "timestamp": "2026-03-06T18:43:12.420912",
+  "fold": 12,
+  "class_balance": {
+    "n_samples": 2962,
+    "n_positive": 1480,
+    "n_negative": 1482,
+    "positive_ratio": 0.49966239027683995
+  },
+  "cv_metrics": {
+    "mean_auc": 0.5483919499966797,
+    "std_auc": 0.00993239297966955,
+    "mean_acc": 0.5280194612825305,
+    "mean_f1": 0.527607289576673
+  },
+  "n_features": 59,
+  "top_features": {
+    "sector_Computer And Technology": 0.02667151391506195,
+    "sector_Consumer Staples": 0.024899721145629883,
+    "operating_margin": 0.0227526668459177,
+    "roic_zsector": 0.02271970734000206,
+    "operating_income_yoy_growth": 0.022574856877326965,
+    "volatility_20d_zsector": 0.022249650210142136,
+    "net_income_yoy_growth": 0.02185884863138199,
+    "revenue_yoy_growth_zsector": 0.021835004910826683,
+    "eps_yoy_growth_zsector": 0.021813921630382538,
+    "roi_zsector": 0.02177949622273445,
+    "operating_margin_zsector": 0.021672984585165977,
+    "ebitda_margin": 0.021480616182088852,
+    "roa": 0.021420452743768692,
+    "gross_margin": 0.021325569599866867,
+    "pb_ratio_zsector": 0.02127060666680336
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.5483919499966797,
+    "std_auc": 0.00993239297966955,
+    "mean_acc": 0.5280194612825305,
+    "mean_f1": 0.527607289576673
+  }
+}

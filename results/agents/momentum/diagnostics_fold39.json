@@ -1,0 +1,42 @@
+{
+  "agent": "momentum",
+  "timestamp": "2026-03-06T20:40:00.187087",
+  "fold": 39,
+  "class_balance": {
+    "n_samples": 3994,
+    "n_positive": 1997,
+    "n_negative": 1997,
+    "positive_ratio": 0.5
+  },
+  "cv_metrics": {
+    "mean_auc": 0.7104066997066601,
+    "std_auc": 0.012826169415417315,
+    "mean_acc": 0.6467184858265814,
+    "mean_f1": 0.6404130701125587
+  },
+  "regime_summary": {
+    "pct_high_vix": 0.017776664997496243,
+    "pct_inverted_curve": 0.7508763144717076,
+    "pct_above_sma200": 0.6502253380070105,
+    "pct_rsi_overbought": 0.09939909864797196,
+    "pct_rsi_oversold": 0.030045067601402103
+  },
+  "top_features": {
+    "sp500_momentum_3m": 0.10549245325251058,
+    "sp500_momentum_12m": 0.06554212554879521,
+    "yield_curve": 0.05628220798977588,
+    "volatility_20d": 0.05497477935636456,
+    "macd_hist": 0.05043521959427995,
+    "volatility_60d": 0.04694891860508766,
+    "momentum_3m": 0.04562416207623831,
+    "vix": 0.04397151154153327,
+    "bb_pct": 0.042750674892313524,
+    "momentum_quality": 0.03801743428657833
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.7104066997066601,
+    "std_auc": 0.012826169415417315,
+    "mean_acc": 0.6467184858265814,
+    "mean_f1": 0.6404130701125587
+  }
+}

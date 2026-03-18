@@ -1,0 +1,81 @@
+{
+  "ticker": "FTNT",
+  "score": 0.644,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.02184348450386338,
+      "raw_value": 21.97,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.02022113933153953,
+      "raw_value": 0.6656178872673718,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.013418975190022496,
+      "raw_value": -158867.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.006693850048484094,
+      "raw_value": 0.1730769230769229,
+      "direction": "negative"
+    }
+  ],
+  "text": "FTNT — Score: 0.64 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Cobertura de intereses (EBIT / intereses) = 15.32x  [contribucion SHAP: +0.019]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.47x  [contribucion SHAP: +0.009]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 21.970  [contribucion SHAP: -0.022]\n  - Ratio deuda / fondos propios = 0.666  [contribucion SHAP: -0.020]\n  - Acciones compradas netas por insiders (90 días) = -158867.000  [contribucion SHAP: -0.013]\n  - Eps Revision = 0.173  [contribucion SHAP: -0.007]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.02184348450386338,
+      "raw_value": 21.97,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.02022113933153953,
+      "raw_value": 0.6656178872673718,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.019457234860309657,
+      "raw_value": 15.318181818181818,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.013418975190022496,
+      "raw_value": -158867.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.008536246745698134,
+      "raw_value": 1.470559263181225,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.006693850048484094,
+      "raw_value": 0.1730769230769229,
+      "direction": "negative"
+    }
+  ]
+}

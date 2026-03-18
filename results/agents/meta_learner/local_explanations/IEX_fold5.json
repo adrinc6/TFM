@@ -1,0 +1,67 @@
+{
+  "ticker": "IEX",
+  "score": 0.313,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.05453830572678908,
+      "raw_value": 0.5487781763076782,
+      "direction": "negative"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.04177873224495399,
+      "raw_value": 0.5001743036266956,
+      "direction": "negative"
+    }
+  ],
+  "text": "IEX — Score: 0.31 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.356  [contribucion SHAP: +0.456]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.245  [contribucion SHAP: +0.444]\n  + Mom Minus Bear = 0.000  [contribucion SHAP: +0.239]\n  + Sector Consumer Discretionary = 0.000  [contribucion SHAP: +0.037]\n\nFactores EN CONTRA:\n  - Score del Agente Fundamental (salud financiera) = 0.549  [contribucion SHAP: -0.055]\n  - Score del Agente de Valoración (infravaloración) = 0.500  [contribucion SHAP: -0.042]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.4561794646196042,
+      "raw_value": 0.3561191393155682,
+      "direction": "positive"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": 0.4444499361608832,
+      "raw_value": 0.24456810447457522,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": 0.2388703048115648,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.05453830572678908,
+      "raw_value": 0.5487781763076782,
+      "direction": "negative"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.04177873224495399,
+      "raw_value": 0.5001743036266956,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Consumer Discretionary",
+      "description": "Sector Consumer Discretionary",
+      "shap_value": 0.03741498203265893,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

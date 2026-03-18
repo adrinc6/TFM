@@ -1,0 +1,41 @@
+{
+  "agent": "fundamental",
+  "timestamp": "2026-03-06T19:56:29.792023",
+  "fold": 30,
+  "class_balance": {
+    "n_samples": 3013,
+    "n_positive": 1510,
+    "n_negative": 1503,
+    "positive_ratio": 0.5011616329239961
+  },
+  "cv_metrics": {
+    "mean_auc": 0.49063762440137,
+    "std_auc": 0.01632313644196829,
+    "mean_acc": 0.49452240458835395,
+    "mean_f1": 0.4955390407415381
+  },
+  "n_features": 63,
+  "top_features": {
+    "sector_Utilities": 0.03338368237018585,
+    "sector_Computer And Technology": 0.025589866563677788,
+    "fcf_margin_zsector": 0.024995192885398865,
+    "capex_to_revenue": 0.02303585596382618,
+    "sector_Retail-Wholesale": 0.022822467610239983,
+    "roa": 0.022350333631038666,
+    "operating_margin": 0.021832097321748734,
+    "debt_to_ebitda": 0.021098149940371513,
+    "ev_to_ebitda_zsector": 0.020970389246940613,
+    "net_margin_zsector": 0.020930523052811623,
+    "roa_zsector": 0.020838402211666107,
+    "ebitda_margin_zsector": 0.020838266238570213,
+    "current_ratio": 0.02074415422976017,
+    "quick_ratio": 0.020676633343100548,
+    "roi_zsector": 0.020241109654307365
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.49063762440137,
+    "std_auc": 0.01632313644196829,
+    "mean_acc": 0.49452240458835395,
+    "mean_f1": 0.4955390407415381
+  }
+}

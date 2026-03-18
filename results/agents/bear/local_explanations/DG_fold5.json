@@ -1,0 +1,81 @@
+{
+  "ticker": "DG",
+  "score": 0.6901,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03658570193248701,
+      "raw_value": -0.17,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.02862688324507415,
+      "raw_value": 0.6800778414925164,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.01492503467927572,
+      "raw_value": 0.1692913385826773,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.007985127347063194,
+      "raw_value": 1.2875862296204603,
+      "direction": "negative"
+    }
+  ],
+  "text": "DG — Score: 0.69 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Cobertura de intereses (EBIT / intereses) = 12.47x  [contribucion SHAP: +0.013]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.005]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = -0.170  [contribucion SHAP: -0.037]\n  - Crecimiento de la deuda total interanual = 68.0%  [contribucion SHAP: -0.029]\n  - Eps Revision = 0.169  [contribucion SHAP: -0.015]\n  - Ratio de liquidez corriente (activo / pasivo cte.) = 1.29x  [contribucion SHAP: -0.008]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03658570193248701,
+      "raw_value": -0.17,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.02862688324507415,
+      "raw_value": 0.6800778414925164,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.01492503467927572,
+      "raw_value": 0.1692913385826773,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.013274627587741923,
+      "raw_value": 12.472586810660536,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.007985127347063194,
+      "raw_value": 1.2875862296204603,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.004822902576896637,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

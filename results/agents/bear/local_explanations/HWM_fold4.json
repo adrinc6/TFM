@@ -1,0 +1,74 @@
+{
+  "ticker": "HWM",
+  "score": 0.4947,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.0340253572855531,
+      "raw_value": 10.5,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.01972672368681758,
+      "raw_value": 0.6200661092747424,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.019609831313199693,
+      "raw_value": 0.0833333333333334,
+      "direction": "negative"
+    }
+  ],
+  "text": "HWM — Score: 0.49 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 5.19x  [contribucion SHAP: +0.031]\n  + Acciones compradas netas por insiders (90 días) = 383.000  [contribucion SHAP: +0.015]\n  + Fcf = 423000000.000  [contribucion SHAP: +0.008]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 10.500  [contribucion SHAP: -0.034]\n  - Ratio deuda / fondos propios = 0.620  [contribucion SHAP: -0.020]\n  - Eps Revision = 0.083  [contribucion SHAP: -0.020]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.0340253572855531,
+      "raw_value": 10.5,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.03132024970074648,
+      "raw_value": 5.193811074918567,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.01972672368681758,
+      "raw_value": 0.6200661092747424,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.019609831313199693,
+      "raw_value": 0.0833333333333334,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.014515780080216846,
+      "raw_value": 383.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.00813395976353835,
+      "raw_value": 423000000.0,
+      "direction": "positive"
+    }
+  ]
+}

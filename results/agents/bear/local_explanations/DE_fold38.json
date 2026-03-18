@@ -1,0 +1,60 @@
+{
+  "ticker": "DE",
+  "score": 0.3482,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.05176592976802161,
+      "raw_value": 2.456915445841504,
+      "direction": "negative"
+    }
+  ],
+  "text": "DE — Score: 0.35 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 2628000000.000  [contribucion SHAP: +0.036]\n  + Deuda neta / EBITDA = 26.02x  [contribucion SHAP: +0.031]\n  + Acciones compradas netas por insiders (90 días) = 17009.000  [contribucion SHAP: +0.030]\n  + Proporción de ventas de insiders (>0.7 = red flag) = 0.28x  [contribucion SHAP: +0.018]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 2.457  [contribucion SHAP: -0.052]",
+  "top_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.05176592976802161,
+      "raw_value": 2.456915445841504,
+      "direction": "negative"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.03583460024059291,
+      "raw_value": 2628000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.030941482438300177,
+      "raw_value": 26.01669381107492,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.03028317700007967,
+      "raw_value": 17009.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": 0.018263208770786507,
+      "raw_value": 0.2831646311924734,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.011104332043110194,
+      "raw_value": 2.307872438761362,
+      "direction": "positive"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "ticker": "MDT",
+  "score": 0.3644,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.026638908278692842,
+      "raw_value": 2.6,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.015286139266044638,
+      "raw_value": 0.5933143581326741,
+      "direction": "negative"
+    }
+  ],
+  "text": "MDT — Score: 0.36 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 12.61x  [contribucion SHAP: +0.035]\n  + Fcf = 584000000.000  [contribucion SHAP: +0.026]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.01x  [contribucion SHAP: +0.020]\n  + Acciones compradas netas por insiders (90 días) = 107876.000  [contribucion SHAP: +0.018]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 2.600  [contribucion SHAP: -0.027]\n  - Ratio deuda / fondos propios = 0.593  [contribucion SHAP: -0.015]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.03486701607313508,
+      "raw_value": 12.613957597173146,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.026638908278692842,
+      "raw_value": 2.6,
+      "direction": "negative"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.026436856071399076,
+      "raw_value": 584000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.01992089950858702,
+      "raw_value": 2.014137033824805,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.01750266398665323,
+      "raw_value": 107876.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.015286139266044638,
+      "raw_value": 0.5933143581326741,
+      "direction": "negative"
+    }
+  ]
+}

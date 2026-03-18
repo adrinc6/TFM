@@ -1,0 +1,74 @@
+{
+  "ticker": "TTWO",
+  "score": 0.0785,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.007201495594576922,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.007100100705324757,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.006221405015931039,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "TTWO — Score: 0.08 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = 0.0%  [contribucion SHAP: +0.026]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.84x  [contribucion SHAP: +0.009]\n  + FLAG: Ratio corriente < 1 (riesgo liquidez) = 0.000  [contribucion SHAP: +0.006]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.000  [contribucion SHAP: -0.007]\n  - Cobertura de intereses (EBIT / intereses) = 0.00x  [contribucion SHAP: -0.007]\n  - Deuda neta / EBITDA = 0.00x  [contribucion SHAP: -0.006]",
+  "top_drivers": [
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.026044139941257323,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.008589615215058072,
+      "raw_value": 1.839002375296912,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.007201495594576922,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.007100100705324757,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.006221405015931039,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "liquidity_risk",
+      "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+      "shap_value": 0.005641242158541349,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "ticker": "HWM",
+  "score": 0.5087,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.024467264725188335,
+      "raw_value": 10.5,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.013888427049771215,
+      "raw_value": 0.6200661092747424,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.010925307979094417,
+      "raw_value": 0.0833333333333334,
+      "direction": "negative"
+    }
+  ],
+  "text": "HWM — Score: 0.51 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 5.19x  [contribucion SHAP: +0.048]\n  + Acciones compradas netas por insiders (90 días) = 383.000  [contribucion SHAP: +0.022]\n  + Fcf = 423000000.000  [contribucion SHAP: +0.011]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 10.500  [contribucion SHAP: -0.024]\n  - Ratio deuda / fondos propios = 0.620  [contribucion SHAP: -0.014]\n  - Eps Revision = 0.083  [contribucion SHAP: -0.011]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.04817917349558544,
+      "raw_value": 5.193811074918567,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.024467264725188335,
+      "raw_value": 10.5,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.022440284337072864,
+      "raw_value": 383.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.013888427049771215,
+      "raw_value": 0.6200661092747424,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.010925307979094417,
+      "raw_value": 0.0833333333333334,
+      "direction": "negative"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.010601209804832767,
+      "raw_value": 423000000.0,
+      "direction": "positive"
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "ticker": "CL",
+  "score": 0.2113,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.38784680210518224,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.1450517462505217,
+      "raw_value": 0.30380192772973524,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.1372984962164124,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": -0.06816410475902908,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "CL — Score: 0.21 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.344  [contribucion SHAP: +0.466]\n  + VIX (volatilidad implícita de mercado) = 14.2  [contribucion SHAP: +0.116]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.388]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.304  [contribucion SHAP: -0.145]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.137]\n  - Fund X Val = 0.000  [contribucion SHAP: -0.068]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.46609855201581657,
+      "raw_value": 0.34446242101700414,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.38784680210518224,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.1450517462505217,
+      "raw_value": 0.30380192772973524,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.1372984962164124,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.11582834935019243,
+      "raw_value": 14.15999984741211,
+      "direction": "positive"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": -0.06816410475902908,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

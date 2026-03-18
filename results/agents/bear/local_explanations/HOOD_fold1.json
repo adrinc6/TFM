@@ -1,0 +1,67 @@
+{
+  "ticker": "HOOD",
+  "score": 0.6458,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.05157859571023392,
+      "raw_value": 1.2535122930255895,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.008666940396548792,
+      "raw_value": 1.4444444444444446,
+      "direction": "negative"
+    }
+  ],
+  "text": "HOOD — Score: 0.65 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.58x  [contribucion SHAP: +0.018]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.010]\n  + Eps Surprise Pct = 129.500  [contribucion SHAP: +0.004]\n  + Acciones compradas netas por insiders (90 días) = 0.000  [contribucion SHAP: +0.004]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 1.254  [contribucion SHAP: -0.052]\n  - Eps Revision = 1.444  [contribucion SHAP: -0.009]",
+  "top_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.05157859571023392,
+      "raw_value": 1.2535122930255895,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.017700345227491632,
+      "raw_value": 1.579876717606267,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.0102297172083915,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.008666940396548792,
+      "raw_value": 1.4444444444444446,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": 0.004064179894688964,
+      "raw_value": 129.5,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.003984179109825227,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

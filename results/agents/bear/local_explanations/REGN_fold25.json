@@ -1,0 +1,60 @@
+{
+  "ticker": "REGN",
+  "score": 0.3566,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.012546534959562199,
+      "raw_value": 7.02,
+      "direction": "negative"
+    }
+  ],
+  "text": "REGN — Score: 0.36 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 6.67x  [contribucion SHAP: +0.020]\n  + Cobertura de intereses (EBIT / intereses) = 95.62x  [contribucion SHAP: +0.015]\n  + Acciones compradas netas por insiders (90 días) = 16986.000  [contribucion SHAP: +0.009]\n  + Crecimiento de la deuda total interanual = 0.1%  [contribucion SHAP: +0.006]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 7.020  [contribucion SHAP: -0.013]",
+  "top_drivers": [
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.020106359973406485,
+      "raw_value": 6.673365617433414,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.015162726469035576,
+      "raw_value": 95.61904761904762,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.012546534959562199,
+      "raw_value": 7.02,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.008628787732587264,
+      "raw_value": 16986.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.005777716353286712,
+      "raw_value": 0.0007564677996874103,
+      "direction": "positive"
+    },
+    {
+      "feature": "liquidity_risk",
+      "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+      "shap_value": 0.004861536379371529,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

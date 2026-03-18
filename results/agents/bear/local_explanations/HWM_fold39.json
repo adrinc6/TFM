@@ -1,0 +1,67 @@
+{
+  "ticker": "HWM",
+  "score": 0.5599,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.050623911171364944,
+      "raw_value": 0.6200661092747424,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.018102620804365827,
+      "raw_value": 10.5,
+      "direction": "negative"
+    }
+  ],
+  "text": "HWM — Score: 0.56 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Acciones compradas netas por insiders (90 días) = 383.000  [contribucion SHAP: +0.022]\n  + Deuda neta / EBITDA = 5.19x  [contribucion SHAP: +0.019]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.35x  [contribucion SHAP: +0.015]\n  + Fcf = 423000000.000  [contribucion SHAP: +0.014]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.620  [contribucion SHAP: -0.051]\n  - Eps Surprise Pct = 10.500  [contribucion SHAP: -0.018]",
+  "top_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.050623911171364944,
+      "raw_value": 0.6200661092747424,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.021833442905949473,
+      "raw_value": 383.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.01933788844947536,
+      "raw_value": 5.193811074918567,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.018102620804365827,
+      "raw_value": 10.5,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.014820392821503933,
+      "raw_value": 2.353230769230769,
+      "direction": "positive"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.014286985673928174,
+      "raw_value": 423000000.0,
+      "direction": "positive"
+    }
+  ]
+}

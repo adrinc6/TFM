@@ -1,0 +1,74 @@
+{
+  "ticker": "PGR",
+  "score": 0.5203,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.05044300558051619,
+      "raw_value": Infinity,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.007324403955716208,
+      "raw_value": 0.2114771193718562,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.005899015892953703,
+      "raw_value": -3.12,
+      "direction": "negative"
+    }
+  ],
+  "text": "PGR — Score: 0.52 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 3938000000.000  [contribucion SHAP: +0.024]\n  + Deuda neta / EBITDA = 1.67x  [contribucion SHAP: +0.023]\n  + Acciones compradas netas por insiders (90 días) = 146031.000  [contribucion SHAP: +0.005]\n\nFactores EN CONTRA:\n  - Crecimiento de la deuda total interanual = inf%  [contribucion SHAP: -0.050]\n  - Ratio deuda / fondos propios = 0.211  [contribucion SHAP: -0.007]\n  - Eps Surprise Pct = -3.120  [contribucion SHAP: -0.006]",
+  "top_drivers": [
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.05044300558051619,
+      "raw_value": Infinity,
+      "direction": "negative"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.02443168003481442,
+      "raw_value": 3938000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.02331712967367343,
+      "raw_value": 1.6694915254237288,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.007324403955716208,
+      "raw_value": 0.2114771193718562,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.005899015892953703,
+      "raw_value": -3.12,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.004859321729316837,
+      "raw_value": 146031.0,
+      "direction": "positive"
+    }
+  ]
+}

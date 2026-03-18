@@ -1,0 +1,81 @@
+{
+  "ticker": "FDX",
+  "score": 0.2496,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.07725625428651038,
+      "raw_value": 0.49643781781196594,
+      "direction": "negative"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.06562726513831127,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.042658517615242024,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.02640122844171443,
+      "raw_value": 0.502251769970503,
+      "direction": "negative"
+    }
+  ],
+  "text": "FDX — Score: 0.25 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.300  [contribucion SHAP: +0.246]\n  + VIX (volatilidad implícita de mercado) = 17.4  [contribucion SHAP: +0.090]\n\nFactores EN CONTRA:\n  - Score del Agente Fundamental (salud financiera) = 0.496  [contribucion SHAP: -0.077]\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.066]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.043]\n  - Score del Agente de Valoración (infravaloración) = 0.502  [contribucion SHAP: -0.026]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.24638223006646867,
+      "raw_value": 0.2995265820427267,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.08964278292739263,
+      "raw_value": 17.3799991607666,
+      "direction": "positive"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.07725625428651038,
+      "raw_value": 0.49643781781196594,
+      "direction": "negative"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.06562726513831127,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.042658517615242024,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.02640122844171443,
+      "raw_value": 0.502251769970503,
+      "direction": "negative"
+    }
+  ]
+}

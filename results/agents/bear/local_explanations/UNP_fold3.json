@@ -1,0 +1,74 @@
+{
+  "ticker": "UNP",
+  "score": 0.3627,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.022036745604913827,
+      "raw_value": 2.018267929634641,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.014895443290639855,
+      "raw_value": -0.0107913669064747,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.009873053006323745,
+      "raw_value": -1.79,
+      "direction": "negative"
+    }
+  ],
+  "text": "UNP — Score: 0.36 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 10.46x  [contribucion SHAP: +0.046]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.65x  [contribucion SHAP: +0.024]\n  + Fcf = 1397000000.000  [contribucion SHAP: +0.011]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 2.018  [contribucion SHAP: -0.022]\n  - Eps Revision = -0.011  [contribucion SHAP: -0.015]\n  - Eps Surprise Pct = -1.790  [contribucion SHAP: -0.010]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.045574322288245754,
+      "raw_value": 10.45666029318037,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.024465488795551764,
+      "raw_value": 0.648326100433974,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.022036745604913827,
+      "raw_value": 2.018267929634641,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.014895443290639855,
+      "raw_value": -0.0107913669064747,
+      "direction": "negative"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.011207145340308441,
+      "raw_value": 1397000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.009873053006323745,
+      "raw_value": -1.79,
+      "direction": "negative"
+    }
+  ]
+}

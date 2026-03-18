@@ -1,0 +1,74 @@
+{
+  "ticker": "GDDY",
+  "score": 0.6955,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03888430878124565,
+      "raw_value": 25.74,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.020948818910310713,
+      "raw_value": 0.2631578947368422,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.007091876497865744,
+      "raw_value": -3.924696938565852,
+      "direction": "negative"
+    }
+  ],
+  "text": "GDDY — Score: 0.70 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 28.03x  [contribucion SHAP: +0.018]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.46x  [contribucion SHAP: +0.016]\n  + Cobertura de intereses (EBIT / intereses) = 4.02x  [contribucion SHAP: +0.013]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 25.740  [contribucion SHAP: -0.039]\n  - Eps Revision = 0.263  [contribucion SHAP: -0.021]\n  - Ratio deuda / fondos propios = -3.925  [contribucion SHAP: -0.007]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03888430878124565,
+      "raw_value": 25.74,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.020948818910310713,
+      "raw_value": 0.2631578947368422,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.017653532069121985,
+      "raw_value": 28.02861335289802,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.01571030835665707,
+      "raw_value": 0.4560769698813507,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.013391410019622,
+      "raw_value": 4.0204545454545455,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.007091876497865744,
+      "raw_value": -3.924696938565852,
+      "direction": "negative"
+    }
+  ]
+}

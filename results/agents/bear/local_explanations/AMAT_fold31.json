@@ -1,0 +1,74 @@
+{
+  "ticker": "AMAT",
+  "score": 0.3078,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.027468402288307825,
+      "raw_value": 3.32,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.022630842434417014,
+      "raw_value": 0.3302041031591161,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.006482043490380598,
+      "raw_value": 0.12567421790722766,
+      "direction": "negative"
+    }
+  ],
+  "text": "AMAT — Score: 0.31 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 1061000000.000  [contribucion SHAP: +0.114]\n  + Deuda neta / EBITDA = 2.76x  [contribucion SHAP: +0.021]\n  + Acciones compradas netas por insiders (90 días) = 49550.000  [contribucion SHAP: +0.012]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 3.320  [contribucion SHAP: -0.027]\n  - Ratio deuda / fondos propios = 0.330  [contribucion SHAP: -0.023]\n  - Crecimiento de la deuda total interanual = 12.6%  [contribucion SHAP: -0.006]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.11386328691833232,
+      "raw_value": 1061000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.027468402288307825,
+      "raw_value": 3.32,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.022630842434417014,
+      "raw_value": 0.3302041031591161,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.021231709146111416,
+      "raw_value": 2.7557218309859155,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.012462429994263589,
+      "raw_value": 49550.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.006482043490380598,
+      "raw_value": 0.12567421790722766,
+      "direction": "negative"
+    }
+  ]
+}

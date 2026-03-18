@@ -1,0 +1,60 @@
+{
+  "ticker": "PLTR",
+  "score": 0.7111,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03446192069803065,
+      "raw_value": 6.16,
+      "direction": "negative"
+    }
+  ],
+  "text": "PLTR — Score: 0.71 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 5.98x  [contribucion SHAP: +0.036]\n  + Eps Revision = 0.333  [contribucion SHAP: +0.027]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.020]\n  + Ratio deuda / fondos propios = 0.000  [contribucion SHAP: +0.018]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 6.160  [contribucion SHAP: -0.034]",
+  "top_drivers": [
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.035761323642619046,
+      "raw_value": 5.982027688402844,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03446192069803065,
+      "raw_value": 6.16,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.02660999608653415,
+      "raw_value": 0.3333333333333335,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.019931837675736575,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": 0.01800517312310441,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.007845395678674752,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

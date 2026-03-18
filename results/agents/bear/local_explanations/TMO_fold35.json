@@ -1,0 +1,67 @@
+{
+  "ticker": "TMO",
+  "score": 0.3235,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.08365650191265962,
+      "raw_value": -6768.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.01987971505578328,
+      "raw_value": 0.6961977787439232,
+      "direction": "negative"
+    }
+  ],
+  "text": "TMO — Score: 0.32 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 13.54x  [contribucion SHAP: +0.031]\n  + Fcf = 1105000000.000  [contribucion SHAP: +0.027]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.93x  [contribucion SHAP: +0.017]\n  + Eps Surprise Pct = 0.930  [contribucion SHAP: +0.009]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -6768.000  [contribucion SHAP: -0.084]\n  - Ratio deuda / fondos propios = 0.696  [contribucion SHAP: -0.020]",
+  "top_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.08365650191265962,
+      "raw_value": -6768.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.03114615164508023,
+      "raw_value": 13.539200614911609,
+      "direction": "positive"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.027138389389130366,
+      "raw_value": 1105000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.01987971505578328,
+      "raw_value": 0.6961977787439232,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.017265513711039952,
+      "raw_value": 1.933008334643812,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": 0.00880213727905626,
+      "raw_value": 0.93,
+      "direction": "positive"
+    }
+  ]
+}

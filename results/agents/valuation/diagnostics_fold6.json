@@ -1,0 +1,453 @@
+{
+  "agent": "valuation",
+  "timestamp": "2026-03-06T18:22:03.101548",
+  "fold": 6,
+  "class_balance": {
+    "n_samples": 2697,
+    "n_positive": 1346,
+    "n_negative": 1351,
+    "positive_ratio": 0.4990730441230997
+  },
+  "cv_metrics": {
+    "mean_auc": 0.5122934369368478,
+    "std_auc": 0.025681931927919822,
+    "mean_acc": 0.5094516594516594,
+    "mean_f1": 0.5092498959486099
+  },
+  "sector_multiples_distribution": {
+    "pe_ratio": {
+      "Aerospace": {
+        "mean": 125.60318432344278,
+        "median": 84.97399143292462,
+        "std": 130.73098030878862,
+        "count": 59
+      },
+      "Auto-Tires-Trucks": {
+        "mean": 270.68516766111674,
+        "median": 57.748128757046416,
+        "std": 603.8158012335666,
+        "count": 44
+      },
+      "Basic Materials": {
+        "mean": 245.2513612623038,
+        "median": 47.367912705395554,
+        "std": 1446.543545207923,
+        "count": 90
+      },
+      "Business Services": {
+        "mean": 1722.758607491042,
+        "median": 120.67572188543969,
+        "std": 19538.00549488173,
+        "count": 154
+      },
+      "Computer And Technology": {
+        "mean": 291.22803818106814,
+        "median": 115.79058367883336,
+        "std": 937.3645134049013,
+        "count": 540
+      },
+      "Conglomerates": {
+        "mean": 142.1063232910434,
+        "median": 51.680329050797994,
+        "std": 271.9231361988166,
+        "count": 8
+      },
+      "Construction": {
+        "mean": 140.95955057508192,
+        "median": 69.07139019541923,
+        "std": 356.4894715608802,
+        "count": 98
+      },
+      "Consumer Discretionary": {
+        "mean": 347.9842460476316,
+        "median": 114.73163169812682,
+        "std": 1806.1679161086045,
+        "count": 121
+      },
+      "Consumer Staples": {
+        "mean": 253.02302395793208,
+        "median": 92.34807135826176,
+        "std": 1853.0030215466818,
+        "count": 202
+      },
+      "Finance": {
+        "mean": 217.87928636371254,
+        "median": 74.31812152501124,
+        "std": 1431.3049627965827,
+        "count": 402
+      },
+      "Industrial Products": {
+        "mean": 99.18350169746934,
+        "median": 92.66353746933355,
+        "std": 40.90675929104676,
+        "count": 159
+      },
+      "Medical": {
+        "mean": 237.58159357162285,
+        "median": 116.89822453120209,
+        "std": 1333.7642957970224,
+        "count": 386
+      },
+      "Oils-Energy": {
+        "mean": 148.57454758247172,
+        "median": 58.77307706370073,
+        "std": 295.5880331293257,
+        "count": 78
+      },
+      "Retail-Wholesale": {
+        "mean": 109.08749089232907,
+        "median": 82.80681928443592,
+        "std": 117.14323158162168,
+        "count": 205
+      },
+      "Transportation": {
+        "mean": 87.88092805341026,
+        "median": 76.01157446367537,
+        "std": 82.19048673227071,
+        "count": 88
+      },
+      "Unknown": {
+        "mean": 34.85529200517394,
+        "median": 34.0755449377548,
+        "std": 10.072586308026807,
+        "count": 8
+      },
+      "Utilities": {
+        "mean": 100.2197665121651,
+        "median": 86.70655916321952,
+        "std": 79.23486540699433,
+        "count": 65
+      }
+    },
+    "pb_ratio": {
+      "Aerospace": {
+        "mean": 4.2825274543870755,
+        "median": 3.349887524743626,
+        "std": 2.932444844483546,
+        "count": 64
+      },
+      "Auto-Tires-Trucks": {
+        "mean": 7.202007052839723,
+        "median": 2.7230410178515334,
+        "std": 11.149795965030634,
+        "count": 48
+      },
+      "Basic Materials": {
+        "mean": 4.227645882195514,
+        "median": 2.083159918177542,
+        "std": 6.900327460372095,
+        "count": 95
+      },
+      "Business Services": {
+        "mean": 13.226870049752456,
+        "median": 7.933738286147799,
+        "std": 19.32061789377379,
+        "count": 148
+      },
+      "Computer And Technology": {
+        "mean": 15.272301641340228,
+        "median": 7.805202161698703,
+        "std": 29.57324304628342,
+        "count": 528
+      },
+      "Conglomerates": {
+        "mean": 4.956208598653275,
+        "median": 4.923998241703085,
+        "std": 0.8049708619907007,
+        "count": 8
+      },
+      "Construction": {
+        "mean": 8.75955266809746,
+        "median": 3.115088301260704,
+        "std": 27.398687860282802,
+        "count": 96
+      },
+      "Consumer Discretionary": {
+        "mean": 9.732637001413432,
+        "median": 3.7633805754789487,
+        "std": 18.504136719398808,
+        "count": 168
+      },
+      "Consumer Staples": {
+        "mean": 12.248682880469811,
+        "median": 4.448125397940227,
+        "std": 17.744091916452767,
+        "count": 195
+      },
+      "Finance": {
+        "mean": 3.7376772489497045,
+        "median": 2.108370830812054,
+        "std": 6.68150841309746,
+        "count": 405
+      },
+      "Industrial Products": {
+        "mean": 6.781366651882,
+        "median": 5.696368904588319,
+        "std": 4.120686724834611,
+        "count": 152
+      },
+      "Medical": {
+        "mean": 24.14737622510851,
+        "median": 4.962362961649426,
+        "std": 218.26778067014288,
+        "count": 398
+      },
+      "Oils-Energy": {
+        "mean": 6.6325506509775,
+        "median": 1.704087899121681,
+        "std": 16.898570718454852,
+        "count": 96
+      },
+      "Retail-Wholesale": {
+        "mean": 27.0984801448616,
+        "median": 7.290403290990379,
+        "std": 98.82235096035282,
+        "count": 160
+      },
+      "Transportation": {
+        "mean": 8.537090936448449,
+        "median": 5.6499942554024685,
+        "std": 18.019678778177227,
+        "count": 96
+      },
+      "Unknown": {
+        "mean": 1.238929220955564,
+        "median": 1.2158119171882589,
+        "std": 0.23628023290699227,
+        "count": 8
+      },
+      "Utilities": {
+        "mean": 1.9379915522781883,
+        "median": 1.7696791021127085,
+        "std": 0.7736323523106281,
+        "count": 72
+      }
+    },
+    "ev_to_ebitda": {
+      "Aerospace": {
+        "mean": 35.31091339036237,
+        "median": 30.752118216561875,
+        "std": 14.714082395511944,
+        "count": 16
+      },
+      "Auto-Tires-Trucks": {
+        "mean": 28.865695679163995,
+        "median": 17.973750845427396,
+        "std": 24.897166936528002,
+        "count": 16
+      },
+      "Basic Materials": {
+        "mean": 73.06456685303662,
+        "median": 23.938479347566588,
+        "std": 188.11673803167488,
+        "count": 39
+      },
+      "Business Services": {
+        "mean": 44.021528981688824,
+        "median": 39.12290377316432,
+        "std": 45.495453039824234,
+        "count": 95
+      },
+      "Computer And Technology": {
+        "mean": 44.19679798162853,
+        "median": 30.32640520000823,
+        "std": 56.43878701219887,
+        "count": 237
+      },
+      "Conglomerates": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      },
+      "Construction": {
+        "mean": 33.11060597214772,
+        "median": 21.02408645333802,
+        "std": 34.99794018175753,
+        "count": 15
+      },
+      "Consumer Discretionary": {
+        "mean": 97.31362480797402,
+        "median": 30.291481065258537,
+        "std": 217.09109857554412,
+        "count": 79
+      },
+      "Consumer Staples": {
+        "mean": 18.897872761542207,
+        "median": 18.477576166862413,
+        "std": 7.712285163179891,
+        "count": 24
+      },
+      "Finance": {
+        "mean": 155.59511831613852,
+        "median": 33.66237500090741,
+        "std": 468.5521394262784,
+        "count": 161
+      },
+      "Industrial Products": {
+        "mean": 37.89266471155465,
+        "median": 37.195607862657326,
+        "std": 10.761411645961905,
+        "count": 25
+      },
+      "Medical": {
+        "mean": 42.85773944768717,
+        "median": 31.211828604984728,
+        "std": 48.47304448251649,
+        "count": 163
+      },
+      "Oils-Energy": {
+        "mean": 31.49084876293154,
+        "median": 10.14502869256561,
+        "std": 71.30677057047804,
+        "count": 40
+      },
+      "Retail-Wholesale": {
+        "mean": 38.13622519775854,
+        "median": 21.5649661945869,
+        "std": 40.88446981144597,
+        "count": 86
+      },
+      "Transportation": {
+        "mean": 24.645631721600648,
+        "median": 22.06551856556158,
+        "std": 13.85048152681516,
+        "count": 75
+      },
+      "Unknown": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      },
+      "Utilities": {
+        "mean": 310.4751666076795,
+        "median": 60.481570633907516,
+        "std": 1191.954174290588,
+        "count": 47
+      }
+    },
+    "fcf_yield": {
+      "Aerospace": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      },
+      "Auto-Tires-Trucks": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      },
+      "Basic Materials": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      },
+      "Business Services": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      },
+      "Computer And Technology": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      },
+      "Conglomerates": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      },
+      "Construction": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      },
+      "Consumer Discretionary": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      },
+      "Consumer Staples": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      },
+      "Finance": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      },
+      "Industrial Products": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      },
+      "Medical": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      },
+      "Oils-Energy": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      },
+      "Retail-Wholesale": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      },
+      "Transportation": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      },
+      "Unknown": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      },
+      "Utilities": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    }
+  },
+  "top_features": {
+    "pb_vs_5y_median": 0.13021141508336886,
+    "pe_sector_pct": 0.10655886034134526,
+    "pe_vs_5y_median": 0.10413733450877298,
+    "pb_ratio": 0.08960211386692961,
+    "ps_ratio": 0.08645094305328402,
+    "pb_sector_pct": 0.07700087540033596,
+    "ev_ebitda_vs_5y_median": 0.07231894775662849,
+    "ev_to_ebitda": 0.06053709563722586,
+    "eps_surprise_pct": 0.0530565397048499,
+    "earnings_yield": 0.048625158010896216
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.5122934369368478,
+    "std_auc": 0.025681931927919822,
+    "mean_acc": 0.5094516594516594,
+    "mean_f1": 0.5092498959486099
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "ticker": "MNST",
+  "score": 0.6695,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.008910702923320355,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_ebitda_high",
+      "description": "Debt Ebitda High",
+      "shap_value": -0.004699984792268994,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "MNST — Score: 0.67 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = 0.0%  [contribucion SHAP: +0.062]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 4.85x  [contribucion SHAP: +0.026]\n  + Cobertura de intereses (EBIT / intereses) = 0.00x  [contribucion SHAP: +0.019]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.012]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.000  [contribucion SHAP: -0.009]\n  - Debt Ebitda High = 0.000  [contribucion SHAP: -0.005]",
+  "top_drivers": [
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.06216618276711653,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.02565385231516645,
+      "raw_value": 4.851545370520042,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.01907313438456198,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.011520351226295343,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.008910702923320355,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_ebitda_high",
+      "description": "Debt Ebitda High",
+      "shap_value": -0.004699984792268994,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

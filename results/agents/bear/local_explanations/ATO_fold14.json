@@ -1,0 +1,74 @@
+{
+  "ticker": "ATO",
+  "score": 0.2576,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03870840300381919,
+      "raw_value": 1.54,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.010624304814956662,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.005159398514204868,
+      "raw_value": -0.1385221469577287,
+      "direction": "negative"
+    }
+  ],
+  "text": "ATO — Score: 0.26 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 32.16x  [contribucion SHAP: +0.063]\n  + Cobertura de intereses (EBIT / intereses) = 7.69x  [contribucion SHAP: +0.028]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.44x  [contribucion SHAP: +0.008]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 1.540  [contribucion SHAP: -0.039]\n  - Revenue Decline = 1.000  [contribucion SHAP: -0.011]\n  - Crecimiento de la deuda total interanual = -13.9%  [contribucion SHAP: -0.005]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.06306379701710191,
+      "raw_value": 32.15715339641872,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03870840300381919,
+      "raw_value": 1.54,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.028401607511149844,
+      "raw_value": 7.693590361445783,
+      "direction": "positive"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.010624304814956662,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.008454591425402051,
+      "raw_value": 1.4350655841487387,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.005159398514204868,
+      "raw_value": -0.1385221469577287,
+      "direction": "negative"
+    }
+  ]
+}

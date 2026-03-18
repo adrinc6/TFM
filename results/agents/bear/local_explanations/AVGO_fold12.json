@@ -1,0 +1,74 @@
+{
+  "ticker": "AVGO",
+  "score": 0.7222,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.021644773669227974,
+      "raw_value": 0.71,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.014809061587882259,
+      "raw_value": 1.6353593463398366,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.009892096864420049,
+      "raw_value": 0.0537428023032628,
+      "direction": "negative"
+    }
+  ],
+  "text": "AVGO — Score: 0.72 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.82x  [contribucion SHAP: +0.038]\n  + Deuda neta / EBITDA = 10.05x  [contribucion SHAP: +0.011]\n  + Cobertura de intereses (EBIT / intereses) = 10.50x  [contribucion SHAP: +0.010]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 0.710  [contribucion SHAP: -0.022]\n  - Ratio deuda / fondos propios = 1.635  [contribucion SHAP: -0.015]\n  - Eps Revision = 0.054  [contribucion SHAP: -0.010]",
+  "top_drivers": [
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.03840371506066159,
+      "raw_value": 2.8152599594868333,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.021644773669227974,
+      "raw_value": 0.71,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.014809061587882259,
+      "raw_value": 1.6353593463398366,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.011169732128929938,
+      "raw_value": 10.04583866837388,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.010436895827347463,
+      "raw_value": 10.501234567901234,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.009892096864420049,
+      "raw_value": 0.0537428023032628,
+      "direction": "negative"
+    }
+  ]
+}

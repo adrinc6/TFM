@@ -1,0 +1,74 @@
+{
+  "ticker": "APTV",
+  "score": 0.2758,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.042458380686964184,
+      "raw_value": 5.8,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.00544737616385049,
+      "raw_value": 0.01731738035264474,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.0034595191634625225,
+      "raw_value": 0.583581685180168,
+      "direction": "negative"
+    }
+  ],
+  "text": "APTV — Score: 0.28 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 15.57x  [contribucion SHAP: +0.025]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.81x  [contribucion SHAP: +0.017]\n  + Cobertura de intereses (EBIT / intereses) = 6.32x  [contribucion SHAP: +0.014]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 5.800  [contribucion SHAP: -0.042]\n  - Crecimiento de la deuda total interanual = 1.7%  [contribucion SHAP: -0.005]\n  - Ratio deuda / fondos propios = 0.584  [contribucion SHAP: -0.003]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.042458380686964184,
+      "raw_value": 5.8,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.025157963878361934,
+      "raw_value": 15.571084337349395,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.017482378090707677,
+      "raw_value": 1.8079216354344123,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.014132903913598173,
+      "raw_value": 6.32,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.00544737616385049,
+      "raw_value": 0.01731738035264474,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.0034595191634625225,
+      "raw_value": 0.583581685180168,
+      "direction": "negative"
+    }
+  ]
+}

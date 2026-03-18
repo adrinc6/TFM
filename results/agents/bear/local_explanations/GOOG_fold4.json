@@ -1,0 +1,74 @@
+{
+  "ticker": "GOOG",
+  "score": 0.2143,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.04586954012268344,
+      "raw_value": -15.09,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.01779608676029249,
+      "raw_value": 0.0577740452477269,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_growth_high",
+      "description": "FLAG: Deuda creciendo >20% interanual",
+      "shap_value": -0.003176660534492404,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "GOOG — Score: 0.21 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.52x  [contribucion SHAP: +0.022]\n  + Cobertura de intereses (EBIT / intereses) = 0.00x  [contribucion SHAP: +0.010]\n  + Revenue Decline = 0.000  [contribucion SHAP: +0.004]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = -15.090  [contribucion SHAP: -0.046]\n  - Ratio deuda / fondos propios = 0.058  [contribucion SHAP: -0.018]\n  - FLAG: Deuda creciendo >20% interanual = 0.000  [contribucion SHAP: -0.003]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.04586954012268344,
+      "raw_value": -15.09,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.02247751007377134,
+      "raw_value": 2.517604086148623,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.01779608676029249,
+      "raw_value": 0.0577740452477269,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.009821571640813192,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": 0.0038728232756315996,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_growth_high",
+      "description": "FLAG: Deuda creciendo >20% interanual",
+      "shap_value": -0.003176660534492404,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

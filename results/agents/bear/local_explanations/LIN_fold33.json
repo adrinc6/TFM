@@ -1,0 +1,67 @@
+{
+  "ticker": "LIN",
+  "score": 0.3651,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.08388806289030201,
+      "raw_value": -59557.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": -0.010906077095868941,
+      "raw_value": 1.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "LIN — Score: 0.37 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.93x  [contribucion SHAP: +0.040]\n  + Eps Surprise Pct = 0.630  [contribucion SHAP: +0.021]\n  + Fcf = 954000000.000  [contribucion SHAP: +0.019]\n  + Crecimiento de la deuda total interanual = 20.5%  [contribucion SHAP: +0.019]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -59557.000  [contribucion SHAP: -0.084]\n  - Proporción de ventas de insiders (>0.7 = red flag) = 1.00x  [contribucion SHAP: -0.011]",
+  "top_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.08388806289030201,
+      "raw_value": -59557.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.04013300842880864,
+      "raw_value": 0.9261247791219248,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": 0.021265284901412856,
+      "raw_value": 0.63,
+      "direction": "positive"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.018790885641923372,
+      "raw_value": 954000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.018597419671887216,
+      "raw_value": 0.20457291569848501,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": -0.010906077095868941,
+      "raw_value": 1.0,
+      "direction": "negative"
+    }
+  ]
+}

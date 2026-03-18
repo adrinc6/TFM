@@ -1,0 +1,81 @@
+{
+  "ticker": "LMT",
+  "score": 0.5929,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": -0.05679080087354912,
+      "raw_value": -150000000.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.04870070908613464,
+      "raw_value": 4.056617922759655,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.01179716053074661,
+      "raw_value": 0.123643350469959,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.011608584060837547,
+      "raw_value": 14.91,
+      "direction": "negative"
+    }
+  ],
+  "text": "LMT — Score: 0.59 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.98x  [contribucion SHAP: +0.031]\n  + Deuda neta / EBITDA = 18.86x  [contribucion SHAP: +0.017]\n\nFactores EN CONTRA:\n  - Fcf = -150000000.000  [contribucion SHAP: -0.057]\n  - Ratio deuda / fondos propios = 4.057  [contribucion SHAP: -0.049]\n  - Crecimiento de la deuda total interanual = 12.4%  [contribucion SHAP: -0.012]\n  - Eps Surprise Pct = 14.910  [contribucion SHAP: -0.012]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": -0.05679080087354912,
+      "raw_value": -150000000.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.04870070908613464,
+      "raw_value": 4.056617922759655,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.03059801556093822,
+      "raw_value": 0.9849716678984972,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.017299579974902668,
+      "raw_value": 18.864864864864863,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.01179716053074661,
+      "raw_value": 0.123643350469959,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.011608584060837547,
+      "raw_value": 14.91,
+      "direction": "negative"
+    }
+  ]
+}

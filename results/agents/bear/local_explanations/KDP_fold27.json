@@ -1,0 +1,67 @@
+{
+  "ticker": "KDP",
+  "score": 0.2624,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.022485136195923905,
+      "raw_value": 0.6415872623025203,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.007590020680827391,
+      "raw_value": 0.1333333333333333,
+      "direction": "negative"
+    }
+  ],
+  "text": "KDP — Score: 0.26 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Acciones compradas netas por insiders (90 días) = 3619600.000  [contribucion SHAP: +0.021]\n  + Cobertura de intereses (EBIT / intereses) = 3.16x  [contribucion SHAP: +0.014]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.49x  [contribucion SHAP: +0.007]\n  + Revenue Decline = 0.000  [contribucion SHAP: +0.007]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.642  [contribucion SHAP: -0.022]\n  - Eps Revision = 0.133  [contribucion SHAP: -0.008]",
+  "top_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.022485136195923905,
+      "raw_value": 0.6415872623025203,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.020525951068947133,
+      "raw_value": 3619600.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.014497740835146091,
+      "raw_value": 3.161943319838057,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.007590020680827391,
+      "raw_value": 0.1333333333333333,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.007254287726660271,
+      "raw_value": 0.4942500309138123,
+      "direction": "positive"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": 0.006893090294099622,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

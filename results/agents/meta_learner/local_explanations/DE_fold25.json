@@ -1,0 +1,81 @@
+{
+  "ticker": "DE",
+  "score": 0.6436,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": -0.15468397260238712,
+      "raw_value": 0.1180000305175781,
+      "direction": "negative"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.12666461323231162,
+      "raw_value": 0.4978448375377238,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Finance",
+      "description": "Sector Finance",
+      "shap_value": -0.0634849795094409,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.060803133860409836,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "DE — Score: 0.64 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.495  [contribucion SHAP: +0.384]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.460  [contribucion SHAP: +0.131]\n\nFactores EN CONTRA:\n  - Pendiente curva de tipos (10Y - 2Y) = 0.118  [contribucion SHAP: -0.155]\n  - Score del Agente de Valoración (infravaloración) = 0.498  [contribucion SHAP: -0.127]\n  - Sector Finance = 0.000  [contribucion SHAP: -0.063]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.061]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.38382635280123667,
+      "raw_value": 0.4952094103917049,
+      "direction": "positive"
+    },
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": -0.15468397260238712,
+      "raw_value": 0.1180000305175781,
+      "direction": "negative"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": 0.13050180665801456,
+      "raw_value": 0.46027245118149074,
+      "direction": "positive"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.12666461323231162,
+      "raw_value": 0.4978448375377238,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Finance",
+      "description": "Sector Finance",
+      "shap_value": -0.0634849795094409,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.060803133860409836,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "ticker": "CCL",
+  "score": 0.597,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.012746641865532628,
+      "raw_value": 550.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.011920227100087633,
+      "raw_value": 2.9421757595557008,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.005128856092178907,
+      "raw_value": -0.75,
+      "direction": "negative"
+    }
+  ],
+  "text": "CCL — Score: 0.60 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.26x  [contribucion SHAP: +0.018]\n  + Deuda neta / EBITDA = -241.23x  [contribucion SHAP: +0.007]\n  + Fcf = 0.000  [contribucion SHAP: +0.004]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 550.000  [contribucion SHAP: -0.013]\n  - Ratio deuda / fondos propios = 2.942  [contribucion SHAP: -0.012]\n  - Eps Revision = -0.750  [contribucion SHAP: -0.005]",
+  "top_drivers": [
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.0182017303317341,
+      "raw_value": 0.2571255830022456,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.012746641865532628,
+      "raw_value": 550.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.011920227100087633,
+      "raw_value": 2.9421757595557008,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.007359991814514885,
+      "raw_value": -241.2321428571429,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.005128856092178907,
+      "raw_value": -0.75,
+      "direction": "negative"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.003928075418387279,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

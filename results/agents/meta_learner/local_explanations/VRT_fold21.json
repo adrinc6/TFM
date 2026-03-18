@@ -1,0 +1,74 @@
+{
+  "ticker": "VRT",
+  "score": 0.6489,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.07941842279742296,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.047555214745074785,
+      "raw_value": 0.3681090564800983,
+      "direction": "negative"
+    },
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": -0.037759979322341625,
+      "raw_value": -1.2430002689361572,
+      "direction": "negative"
+    }
+  ],
+  "text": "VRT — Score: 0.65 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.600  [contribucion SHAP: +0.767]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.098]\n  + VIX (volatilidad implícita de mercado) = 16.2  [contribucion SHAP: +0.056]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.079]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.368  [contribucion SHAP: -0.048]\n  - Pendiente curva de tipos (10Y - 2Y) = -1.243  [contribucion SHAP: -0.038]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.7665706618065674,
+      "raw_value": 0.5996344625650002,
+      "direction": "positive"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": 0.09774226890886246,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.07941842279742296,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.056363477208807716,
+      "raw_value": 16.190000534057617,
+      "direction": "positive"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.047555214745074785,
+      "raw_value": 0.3681090564800983,
+      "direction": "negative"
+    },
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": -0.037759979322341625,
+      "raw_value": -1.2430002689361572,
+      "direction": "negative"
+    }
+  ]
+}

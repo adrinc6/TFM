@@ -1,0 +1,41 @@
+{
+  "agent": "fundamental",
+  "timestamp": "2026-03-06T18:06:42.253073",
+  "fold": 1,
+  "class_balance": {
+    "n_samples": 1464,
+    "n_positive": 732,
+    "n_negative": 732,
+    "positive_ratio": 0.5
+  },
+  "cv_metrics": {
+    "mean_auc": 0.5219290418362879,
+    "std_auc": 0.024537854595367864,
+    "mean_acc": 0.5074945065220441,
+    "mean_f1": 0.5060612769885123
+  },
+  "n_features": 59,
+  "top_features": {
+    "sector_Retail-Wholesale": 0.03509509563446045,
+    "eps_yoy_growth": 0.028128476813435555,
+    "ev_to_ebitda_zsector": 0.02590903267264366,
+    "net_income_yoy_growth": 0.025429099798202515,
+    "operating_income_yoy_growth": 0.0252572912722826,
+    "revenue_yoy_growth_zsector": 0.024809837341308594,
+    "eps_yoy_growth_zsector": 0.0247220229357481,
+    "momentum_12m_zsector": 0.024505415931344032,
+    "sector_Consumer Staples": 0.024326864629983902,
+    "quick_ratio": 0.02432137168943882,
+    "pb_ratio_zsector": 0.024167515337467194,
+    "gross_margin": 0.02395651675760746,
+    "debt_to_ebitda_zsector": 0.023796021938323975,
+    "net_income_yoy_growth_zsector": 0.023758118972182274,
+    "volatility_20d_zsector": 0.023616626858711243
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.5219290418362879,
+    "std_auc": 0.024537854595367864,
+    "mean_acc": 0.5074945065220441,
+    "mean_f1": 0.5060612769885123
+  }
+}

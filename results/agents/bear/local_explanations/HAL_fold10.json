@@ -1,0 +1,74 @@
+{
+  "ticker": "HAL",
+  "score": 0.7586,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.08087348454268968,
+      "raw_value": 0.1194029850746267,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.06883354739363973,
+      "raw_value": 3.07,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.019930810734817037,
+      "raw_value": 2.140478862701085,
+      "direction": "negative"
+    }
+  ],
+  "text": "HAL — Score: 0.76 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Cobertura de intereses (EBIT / intereses) = 9.91x  [contribucion SHAP: +0.022]\n  + Crecimiento de la deuda total interanual = -7.0%  [contribucion SHAP: +0.012]\n  + Ratio deuda / fondos propios = 0.909  [contribucion SHAP: +0.011]\n\nFactores EN CONTRA:\n  - Eps Revision = 0.119  [contribucion SHAP: -0.081]\n  - Eps Surprise Pct = 3.070  [contribucion SHAP: -0.069]\n  - Ratio de liquidez corriente (activo / pasivo cte.) = 2.14x  [contribucion SHAP: -0.020]",
+  "top_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.08087348454268968,
+      "raw_value": 0.1194029850746267,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.06883354739363973,
+      "raw_value": 3.07,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.022404284360716488,
+      "raw_value": 9.911764705882353,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.019930810734817037,
+      "raw_value": 2.140478862701085,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.01162037157831356,
+      "raw_value": -0.06967741935483873,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": 0.010867881285797042,
+      "raw_value": 0.9087888163171766,
+      "direction": "positive"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "ticker": "ISRG",
+  "score": 0.3893,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.06943930055646784,
+      "raw_value": -18679.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.004981263719644283,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "ISRG — Score: 0.39 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 465000000.000  [contribucion SHAP: +0.083]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 4.98x  [contribucion SHAP: +0.021]\n  + Ratio deuda / fondos propios = 0.000  [contribucion SHAP: +0.006]\n  + Eps Revision = -0.039  [contribucion SHAP: +0.004]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -18679.000  [contribucion SHAP: -0.069]\n  - Revenue Decline = 0.000  [contribucion SHAP: -0.005]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.08294620675722178,
+      "raw_value": 465000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.06943930055646784,
+      "raw_value": -18679.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.021274006492357094,
+      "raw_value": 4.978740003900917,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": 0.006320924720720156,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.004981263719644283,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.004378610671529792,
+      "raw_value": -0.0391061452513966,
+      "direction": "positive"
+    }
+  ]
+}

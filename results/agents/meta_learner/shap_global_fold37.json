@@ -1,0 +1,82 @@
+{
+  "mom_minus_bear": {
+    "shap_importance": 0.2665334063249504,
+    "description": "Mom Minus Bear"
+  },
+  "vix": {
+    "shap_importance": 0.23812787035054495,
+    "description": "VIX (volatilidad implícita de mercado)"
+  },
+  "fundamental_score": {
+    "shap_importance": 0.11402318956585394,
+    "description": "Score del Agente Fundamental (salud financiera)"
+  },
+  "sector_Computer And Technology": {
+    "shap_importance": 0.10181618579143244,
+    "description": "Sector Computer And Technology"
+  },
+  "sp500_momentum_12m": {
+    "shap_importance": 0.09718107092350586,
+    "description": "Momentum del S&P 500 a 12 meses"
+  },
+  "momentum_score": {
+    "shap_importance": 0.05519472812277191,
+    "description": "Score del Agente de Momentum (tendencia técnica)"
+  },
+  "sector_Consumer Staples": {
+    "shap_importance": 0.04949693825726766,
+    "description": "Sector Consumer Staples"
+  },
+  "fund_x_val": {
+    "shap_importance": 0.03843861060492112,
+    "description": "Fund X Val"
+  },
+  "sector_Aerospace": {
+    "shap_importance": 0.031940558163270204,
+    "description": "Sector Aerospace"
+  },
+  "valuation_score": {
+    "shap_importance": 0.018605996487922157,
+    "description": "Score del Agente de Valoración (infravaloración)"
+  },
+  "yield_curve": {
+    "shap_importance": 0.016545384113142294,
+    "description": "Pendiente curva de tipos (10Y - 2Y)"
+  },
+  "sector_Transportation": {
+    "shap_importance": 0.015602377700065263,
+    "description": "Sector Transportation"
+  },
+  "sector_Utilities": {
+    "shap_importance": 0.013431666693951645,
+    "description": "Sector Utilities"
+  },
+  "sector_Industrial Products": {
+    "shap_importance": 0.012794060469119047,
+    "description": "Sector Industrial Products"
+  },
+  "sp500_momentum_3m": {
+    "shap_importance": 0.00715824918608437,
+    "description": "Momentum del S&P 500 a 3 meses"
+  },
+  "bear_score": {
+    "shap_importance": 0.0035951165150859467,
+    "description": "Score del Agente Bear (riesgo, <0.5 es bueno)"
+  },
+  "sector_Construction": {
+    "shap_importance": 0.002176920177208518,
+    "description": "Sector Construction"
+  },
+  "sector_Retail-Wholesale": {
+    "shap_importance": 0.0021631112368329475,
+    "description": "Sector Retail-Wholesale"
+  },
+  "sector_Oils-Energy": {
+    "shap_importance": 0.0018918120421401105,
+    "description": "Sector Oils-Energy"
+  },
+  "sector_Business Services": {
+    "shap_importance": 0.0018247818182797612,
+    "description": "Sector Business Services"
+  }
+}

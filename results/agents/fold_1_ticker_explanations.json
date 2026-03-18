@@ -1,0 +1,2005 @@
+{
+  "fold": 1,
+  "tickers": {
+    "FSLR": {
+      "score": 0.7739,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "FSLR — Score: 0.77 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 4.39x  [contribucion SHAP: +0.049]\n  + Crecimiento de la deuda total interanual = -14.1%  [contribucion SHAP: +0.026]\n  + Ratio deuda / fondos propios = 0.040  [contribucion SHAP: +0.013]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.012]\n\nFactores EN CONTRA:\n  - Cobertura de intereses (EBIT / intereses) = 499.02x  [contribucion SHAP: -0.026]",
+          "top_drivers": [
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.048889108482127144,
+              "raw_value": 4.390341983111334,
+              "direction": "positive"
+            },
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.025910056477220507,
+              "raw_value": -0.14085112326353444,
+              "direction": "positive"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.0258320513109788,
+              "raw_value": 499.01729106628244,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": 0.013342291891277837,
+              "raw_value": 0.0402548782618019,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.011871522909875401,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "liquidity_risk",
+              "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+              "shap_value": 0.002802597198351045,
+              "raw_value": 0.0,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "FSLR — Score: 0.77 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.698  [contribucion SHAP: +0.768]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.302  [contribucion SHAP: +0.306]\n  + Pendiente curva de tipos (10Y - 2Y) = 1.636  [contribucion SHAP: +0.164]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.141]\n\nFactores EN CONTRA:\n  - VIX (volatilidad implícita de mercado) = 28.3  [contribucion SHAP: -0.342]\n  - Momentum del S&P 500 a 3 meses = -6.0%  [contribucion SHAP: -0.070]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.7678202689119015,
+              "raw_value": 0.6983896893102969,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": -0.3422803436734954,
+              "raw_value": 28.32999992370605,
+              "direction": "negative"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.30622624166250245,
+              "raw_value": 0.3015032703363126,
+              "direction": "positive"
+            },
+            {
+              "feature": "yield_curve",
+              "description": "Pendiente curva de tipos (10Y - 2Y)",
+              "shap_value": 0.1639841875958827,
+              "raw_value": 1.6360000371932983,
+              "direction": "positive"
+            },
+            {
+              "feature": "fund_x_val",
+              "description": "Fund X Val",
+              "shap_value": 0.14135829984138495,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "sp500_momentum_3m",
+              "description": "Momentum del S&P 500 a 3 meses",
+              "shap_value": -0.07043794288987311,
+              "raw_value": -0.0600446672256239,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "ENPH": {
+      "score": 0.7292,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "ENPH — Score: 0.73 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 3.33x  [contribucion SHAP: +0.034]\n  + Crecimiento de la deuda total interanual = 213.6%  [contribucion SHAP: +0.026]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.010]\n  + FLAG: Ratio corriente < 1 (riesgo liquidez) = 0.000  [contribucion SHAP: +0.003]\n\nFactores EN CONTRA:\n  - Cobertura de intereses (EBIT / intereses) = 4.70x  [contribucion SHAP: -0.019]\n  - Revenue Decline = 0.000  [contribucion SHAP: -0.003]",
+          "top_drivers": [
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.033714846976399745,
+              "raw_value": 3.325316737760234,
+              "direction": "positive"
+            },
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.02627803247595841,
+              "raw_value": 2.1361612742357154,
+              "direction": "positive"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.019066085086957597,
+              "raw_value": 4.70020366598778,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.01035818411049892,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "liquidity_risk",
+              "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+              "shap_value": 0.00305752875826732,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "revenue_decline",
+              "description": "Revenue Decline",
+              "shap_value": -0.0026936210251539243,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "ENPH — Score: 0.73 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.635  [contribucion SHAP: +0.895]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.376  [contribucion SHAP: +0.490]\n  + Pendiente curva de tipos (10Y - 2Y) = 1.636  [contribucion SHAP: +0.160]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.144]\n\nFactores EN CONTRA:\n  - VIX (volatilidad implícita de mercado) = 28.3  [contribucion SHAP: -0.342]\n  - Momentum del S&P 500 a 3 meses = -6.0%  [contribucion SHAP: -0.070]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.8951946574369808,
+              "raw_value": 0.6354291928357927,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.4895532317030715,
+              "raw_value": 0.37608960544544345,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": -0.3422803436734954,
+              "raw_value": 28.32999992370605,
+              "direction": "negative"
+            },
+            {
+              "feature": "yield_curve",
+              "description": "Pendiente curva de tipos (10Y - 2Y)",
+              "shap_value": 0.1603363286419492,
+              "raw_value": 1.6360000371932983,
+              "direction": "positive"
+            },
+            {
+              "feature": "fund_x_val",
+              "description": "Fund X Val",
+              "shap_value": 0.14401930954979744,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "sp500_momentum_3m",
+              "description": "Momentum del S&P 500 a 3 meses",
+              "shap_value": -0.07043794288987311,
+              "raw_value": -0.0600446672256239,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "ROL": {
+      "score": 0.7242,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "ROL — Score: 0.72 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = -23.6%  [contribucion SHAP: +0.030]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.72x  [contribucion SHAP: +0.028]\n  + Deuda neta / EBITDA = 1.87x  [contribucion SHAP: +0.003]\n  + FLAG: Ratio corriente < 1 (riesgo liquidez) = 0.000  [contribucion SHAP: +0.003]\n\nFactores EN CONTRA:\n  - Cobertura de intereses (EBIT / intereses) = 196.50x  [contribucion SHAP: -0.025]\n  - Ratio deuda / fondos propios = 0.139  [contribucion SHAP: -0.006]",
+          "top_drivers": [
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.03026051866830739,
+              "raw_value": -0.2364532019704434,
+              "direction": "positive"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.028182092998237162,
+              "raw_value": 0.717441495881196,
+              "direction": "positive"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.024510965497501026,
+              "raw_value": 196.50198412698413,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.005703241803612269,
+              "raw_value": 0.1394867069168308,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.0033174571231881617,
+              "raw_value": 1.8675148798766237,
+              "direction": "positive"
+            },
+            {
+              "feature": "liquidity_risk",
+              "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+              "shap_value": 0.0028108230823295707,
+              "raw_value": 0.0,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "ROL — Score: 0.72 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.743  [contribucion SHAP: +0.770]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.338  [contribucion SHAP: +0.562]\n  + Pendiente curva de tipos (10Y - 2Y) = 1.636  [contribucion SHAP: +0.160]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.138]\n\nFactores EN CONTRA:\n  - VIX (volatilidad implícita de mercado) = 28.3  [contribucion SHAP: -0.342]\n  - Momentum del S&P 500 a 3 meses = -6.0%  [contribucion SHAP: -0.070]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.7701594384308225,
+              "raw_value": 0.7431503385986798,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.5615161496385577,
+              "raw_value": 0.33838241619433573,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": -0.3422803436734954,
+              "raw_value": 28.32999992370605,
+              "direction": "negative"
+            },
+            {
+              "feature": "yield_curve",
+              "description": "Pendiente curva de tipos (10Y - 2Y)",
+              "shap_value": 0.1603363286419492,
+              "raw_value": 1.6360000371932983,
+              "direction": "positive"
+            },
+            {
+              "feature": "fund_x_val",
+              "description": "Fund X Val",
+              "shap_value": 0.1381629559804515,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "sp500_momentum_3m",
+              "description": "Momentum del S&P 500 a 3 meses",
+              "shap_value": -0.07043794288987311,
+              "raw_value": -0.0600446672256239,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "SBUX": {
+      "score": 0.7016,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "SBUX — Score: 0.70 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.81x  [contribucion SHAP: +0.020]\n  + Deuda neta / EBITDA = 19.35x  [contribucion SHAP: +0.009]\n  + Crecimiento de la deuda total interanual = -7.1%  [contribucion SHAP: +0.007]\n\nFactores EN CONTRA:\n  - Cobertura de intereses (EBIT / intereses) = 9.80x  [contribucion SHAP: -0.024]\n  - Ratio deuda / fondos propios = -1.750  [contribucion SHAP: -0.001]\n  - Trimestres consecutivos con pérdidas = 0.000  [contribucion SHAP: -0.001]",
+          "top_drivers": [
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.023815972626407684,
+              "raw_value": 9.800520381613183,
+              "direction": "negative"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.02015189275341401,
+              "raw_value": 0.8132517290259331,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.00860620806026209,
+              "raw_value": 19.352879581151832,
+              "direction": "positive"
+            },
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.006645662289974315,
+              "raw_value": -0.07102870678118378,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.0012874277419620732,
+              "raw_value": -1.7497130279398363,
+              "direction": "negative"
+            },
+            {
+              "feature": "consecutive_losses",
+              "description": "Trimestres consecutivos con pérdidas",
+              "shap_value": -0.0011131571484931343,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "SBUX — Score: 0.70 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.711  [contribucion SHAP: +0.769]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.357  [contribucion SHAP: +0.492]\n  + Pendiente curva de tipos (10Y - 2Y) = 1.636  [contribucion SHAP: +0.160]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.138]\n\nFactores EN CONTRA:\n  - VIX (volatilidad implícita de mercado) = 28.3  [contribucion SHAP: -0.342]\n  - Momentum del S&P 500 a 3 meses = -6.0%  [contribucion SHAP: -0.070]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.7694166320007833,
+              "raw_value": 0.7107199288685867,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.4915878549429713,
+              "raw_value": 0.3567848396484079,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": -0.3422803436734954,
+              "raw_value": 28.32999992370605,
+              "direction": "negative"
+            },
+            {
+              "feature": "yield_curve",
+              "description": "Pendiente curva de tipos (10Y - 2Y)",
+              "shap_value": 0.1603363286419492,
+              "raw_value": 1.6360000371932983,
+              "direction": "positive"
+            },
+            {
+              "feature": "fund_x_val",
+              "description": "Fund X Val",
+              "shap_value": 0.1381629559804515,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "sp500_momentum_3m",
+              "description": "Momentum del S&P 500 a 3 meses",
+              "shap_value": -0.07043794288987311,
+              "raw_value": -0.0600446672256239,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "INTC": {
+      "score": 0.6888,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "INTC — Score: 0.69 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = 4.7%  [contribucion SHAP: +0.051]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.13x  [contribucion SHAP: +0.034]\n  + Cobertura de intereses (EBIT / intereses) = 0.00x  [contribucion SHAP: +0.017]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.009]\n\nFactores EN CONTRA:\n  - Debt Ebitda High = 0.000  [contribucion SHAP: -0.005]",
+          "top_drivers": [
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.050860795203823084,
+              "raw_value": 0.046702013680942844,
+              "direction": "positive"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.034173492015770815,
+              "raw_value": 2.1323283082077054,
+              "direction": "positive"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": 0.01706203379549678,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.008658451444657198,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": 0.008159411908333986,
+              "raw_value": 0.3994192324223459,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_ebitda_high",
+              "description": "Debt Ebitda High",
+              "shap_value": -0.004830957880742876,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "INTC — Score: 0.69 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.738  [contribucion SHAP: +0.770]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.311  [contribucion SHAP: +0.562]\n  + Pendiente curva de tipos (10Y - 2Y) = 1.636  [contribucion SHAP: +0.160]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.138]\n\nFactores EN CONTRA:\n  - VIX (volatilidad implícita de mercado) = 28.3  [contribucion SHAP: -0.342]\n  - Momentum del S&P 500 a 3 meses = -6.0%  [contribucion SHAP: -0.070]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.7701594384308225,
+              "raw_value": 0.7379474686025856,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.5615161496385577,
+              "raw_value": 0.3109091854379523,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": -0.3422803436734954,
+              "raw_value": 28.32999992370605,
+              "direction": "negative"
+            },
+            {
+              "feature": "yield_curve",
+              "description": "Pendiente curva de tipos (10Y - 2Y)",
+              "shap_value": 0.1603363286419492,
+              "raw_value": 1.6360000371932983,
+              "direction": "positive"
+            },
+            {
+              "feature": "fund_x_val",
+              "description": "Fund X Val",
+              "shap_value": 0.1381629559804515,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "sp500_momentum_3m",
+              "description": "Momentum del S&P 500 a 3 meses",
+              "shap_value": -0.07043794288987311,
+              "raw_value": -0.0600446672256239,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "REG": {
+      "score": 0.6864,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "REG — Score: 0.69 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Cobertura de intereses (EBIT / intereses) = 3.12x  [contribucion SHAP: +0.012]\n  + Ratio deuda / fondos propios = 0.609  [contribucion SHAP: +0.002]\n\nFactores EN CONTRA:\n  - Deuda neta / EBITDA = -323.44x  [contribucion SHAP: -0.064]\n  - Ratio de liquidez corriente (activo / pasivo cte.) = 0.00x  [contribucion SHAP: -0.013]\n  - Crecimiento de la deuda total interanual = -5.2%  [contribucion SHAP: -0.005]\n  - Revenue Decline = 0.000  [contribucion SHAP: -0.004]",
+          "top_drivers": [
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": -0.06435916047583277,
+              "raw_value": -323.4426856844669,
+              "direction": "negative"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": -0.013282819573709232,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": 0.01152063198297143,
+              "raw_value": 3.1248455900518817,
+              "direction": "positive"
+            },
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": -0.004969801497367695,
+              "raw_value": -0.052035592406382336,
+              "direction": "negative"
+            },
+            {
+              "feature": "revenue_decline",
+              "description": "Revenue Decline",
+              "shap_value": -0.004342090142101991,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": 0.002265820365604284,
+              "raw_value": 0.6086719132062354,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "REG — Score: 0.69 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.632  [contribucion SHAP: +0.879]\n  + Pendiente curva de tipos (10Y - 2Y) = 1.636  [contribucion SHAP: +0.163]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.147]\n\nFactores EN CONTRA:\n  - VIX (volatilidad implícita de mercado) = 28.3  [contribucion SHAP: -0.348]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.215  [contribucion SHAP: -0.106]\n  - Momentum del S&P 500 a 3 meses = -6.0%  [contribucion SHAP: -0.064]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.8788593191467701,
+              "raw_value": 0.632423940735816,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": -0.3480909450952395,
+              "raw_value": 28.32999992370605,
+              "direction": "negative"
+            },
+            {
+              "feature": "yield_curve",
+              "description": "Pendiente curva de tipos (10Y - 2Y)",
+              "shap_value": 0.16342102094161157,
+              "raw_value": 1.6360000371932983,
+              "direction": "positive"
+            },
+            {
+              "feature": "fund_x_val",
+              "description": "Fund X Val",
+              "shap_value": 0.14721465341073095,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": -0.10635357476095694,
+              "raw_value": 0.2146342375374833,
+              "direction": "negative"
+            },
+            {
+              "feature": "sp500_momentum_3m",
+              "description": "Momentum del S&P 500 a 3 meses",
+              "shap_value": -0.06357136014589294,
+              "raw_value": -0.0600446672256239,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "IFF": {
+      "score": 0.6824,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "IFF — Score: 0.68 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = 158.3%  [contribucion SHAP: +0.034]\n  + Ratio deuda / fondos propios = 0.537  [contribucion SHAP: +0.031]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.92x  [contribucion SHAP: +0.024]\n\nFactores EN CONTRA:\n  - Deuda neta / EBITDA = -2280.00x  [contribucion SHAP: -0.057]\n  - Cobertura de intereses (EBIT / intereses) = 2.47x  [contribucion SHAP: -0.015]\n  - Debt Ebitda High = 0.000  [contribucion SHAP: -0.004]",
+          "top_drivers": [
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": -0.05669104659206697,
+              "raw_value": -2280.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.034205120703938656,
+              "raw_value": 1.5832766825288918,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": 0.030888813058066924,
+              "raw_value": 0.5371783997738196,
+              "direction": "positive"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.023639559678720595,
+              "raw_value": 1.9232039636663916,
+              "direction": "positive"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.014757995452872244,
+              "raw_value": 2.4657534246575343,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_ebitda_high",
+              "description": "Debt Ebitda High",
+              "shap_value": -0.0038011493063715763,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "IFF — Score: 0.68 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.636  [contribucion SHAP: +0.896]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.338  [contribucion SHAP: +0.559]\n  + Pendiente curva de tipos (10Y - 2Y) = 1.636  [contribucion SHAP: +0.160]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.144]\n\nFactores EN CONTRA:\n  - VIX (volatilidad implícita de mercado) = 28.3  [contribucion SHAP: -0.342]\n  - Momentum del S&P 500 a 3 meses = -6.0%  [contribucion SHAP: -0.070]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.89593746386702,
+              "raw_value": 0.6356939371757936,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.5594815263986579,
+              "raw_value": 0.338452221365572,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": -0.3422803436734954,
+              "raw_value": 28.32999992370605,
+              "direction": "negative"
+            },
+            {
+              "feature": "yield_curve",
+              "description": "Pendiente curva de tipos (10Y - 2Y)",
+              "shap_value": 0.1603363286419492,
+              "raw_value": 1.6360000371932983,
+              "direction": "positive"
+            },
+            {
+              "feature": "fund_x_val",
+              "description": "Fund X Val",
+              "shap_value": 0.14401930954979744,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "sp500_momentum_3m",
+              "description": "Momentum del S&P 500 a 3 meses",
+              "shap_value": -0.07043794288987311,
+              "raw_value": -0.0600446672256239,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "MNST": {
+      "score": 0.6695,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "MNST — Score: 0.67 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = 0.0%  [contribucion SHAP: +0.062]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 4.85x  [contribucion SHAP: +0.026]\n  + Cobertura de intereses (EBIT / intereses) = 0.00x  [contribucion SHAP: +0.019]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.012]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.000  [contribucion SHAP: -0.009]\n  - Debt Ebitda High = 0.000  [contribucion SHAP: -0.005]",
+          "top_drivers": [
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.06216618276711653,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.02565385231516645,
+              "raw_value": 4.851545370520042,
+              "direction": "positive"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": 0.01907313438456198,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.011520351226295343,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.008910702923320355,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_ebitda_high",
+              "description": "Debt Ebitda High",
+              "shap_value": -0.004699984792268994,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "MNST — Score: 0.67 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.729  [contribucion SHAP: +0.770]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.327  [contribucion SHAP: +0.562]\n  + Pendiente curva de tipos (10Y - 2Y) = 1.636  [contribucion SHAP: +0.160]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.138]\n\nFactores EN CONTRA:\n  - VIX (volatilidad implícita de mercado) = 28.3  [contribucion SHAP: -0.342]\n  - Momentum del S&P 500 a 3 meses = -6.0%  [contribucion SHAP: -0.070]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.7701594384308225,
+              "raw_value": 0.7294250741360938,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.5615161496385577,
+              "raw_value": 0.3271277929020954,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": -0.3422803436734954,
+              "raw_value": 28.32999992370605,
+              "direction": "negative"
+            },
+            {
+              "feature": "yield_curve",
+              "description": "Pendiente curva de tipos (10Y - 2Y)",
+              "shap_value": 0.1603363286419492,
+              "raw_value": 1.6360000371932983,
+              "direction": "positive"
+            },
+            {
+              "feature": "fund_x_val",
+              "description": "Fund X Val",
+              "shap_value": 0.1381629559804515,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "sp500_momentum_3m",
+              "description": "Momentum del S&P 500 a 3 meses",
+              "shap_value": -0.07043794288987311,
+              "raw_value": -0.0600446672256239,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "CSGP": {
+      "score": 0.6646,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "CSGP — Score: 0.66 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = 0.1%  [contribucion SHAP: +0.052]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 11.79x  [contribucion SHAP: +0.019]\n  + Ratio deuda / fondos propios = 0.173  [contribucion SHAP: +0.015]\n  + FLAG: Deuda creciendo >20% interanual = 0.000  [contribucion SHAP: +0.005]\n\nFactores EN CONTRA:\n  - Cobertura de intereses (EBIT / intereses) = 24.40x  [contribucion SHAP: -0.027]\n  - Deuda neta / EBITDA = 5.68x  [contribucion SHAP: -0.004]",
+          "top_drivers": [
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.052254355905013476,
+              "raw_value": 0.0012455470931322932,
+              "direction": "positive"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.02653401441217024,
+              "raw_value": 24.40496076942546,
+              "direction": "negative"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.019084113457213815,
+              "raw_value": 11.790046325685216,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": 0.015328541737303705,
+              "raw_value": 0.1729693161652139,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_growth_high",
+              "description": "FLAG: Deuda creciendo >20% interanual",
+              "shap_value": 0.005101062047831669,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": -0.0037432256689617187,
+              "raw_value": 5.6800262169916005,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "CSGP — Score: 0.66 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.725  [contribucion SHAP: +0.759]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.337  [contribucion SHAP: +0.538]\n  + Pendiente curva de tipos (10Y - 2Y) = 1.636  [contribucion SHAP: +0.160]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.138]\n\nFactores EN CONTRA:\n  - VIX (volatilidad implícita de mercado) = 28.3  [contribucion SHAP: -0.325]\n  - Momentum del S&P 500 a 3 meses = -6.0%  [contribucion SHAP: -0.070]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.7592035114244081,
+              "raw_value": 0.7251113893754587,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.5379829041726711,
+              "raw_value": 0.33739022224523413,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": -0.32545660394807063,
+              "raw_value": 28.32999992370605,
+              "direction": "negative"
+            },
+            {
+              "feature": "yield_curve",
+              "description": "Pendiente curva de tipos (10Y - 2Y)",
+              "shap_value": 0.1603363286419492,
+              "raw_value": 1.6360000371932983,
+              "direction": "positive"
+            },
+            {
+              "feature": "fund_x_val",
+              "description": "Fund X Val",
+              "shap_value": 0.1381629559804515,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "sp500_momentum_3m",
+              "description": "Momentum del S&P 500 a 3 meses",
+              "shap_value": -0.07043794288987311,
+              "raw_value": -0.0600446672256239,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "LUV": {
+      "score": 0.6508,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "LUV — Score: 0.65 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = 3.8%  [contribucion SHAP: +0.064]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.97x  [contribucion SHAP: +0.026]\n  + Ratio deuda / fondos propios = 1.030  [contribucion SHAP: +0.025]\n  + FLAG: Ratio corriente < 1 (riesgo liquidez) = 0.000  [contribucion SHAP: +0.004]\n\nFactores EN CONTRA:\n  - Deuda neta / EBITDA = -83.80x  [contribucion SHAP: -0.058]\n  - Cobertura de intereses (EBIT / intereses) = 1.67x  [contribucion SHAP: -0.005]",
+          "top_drivers": [
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.06420728074442987,
+              "raw_value": 0.038331236085567655,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": -0.05777489248455759,
+              "raw_value": -83.8046875,
+              "direction": "negative"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.025760700209892885,
+              "raw_value": 1.968136185072021,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": 0.025104202104407888,
+              "raw_value": 1.03005569425773,
+              "direction": "positive"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.005212099636792207,
+              "raw_value": 1.6666666666666667,
+              "direction": "negative"
+            },
+            {
+              "feature": "liquidity_risk",
+              "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+              "shap_value": 0.0035230394455775123,
+              "raw_value": 0.0,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "LUV — Score: 0.65 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.697  [contribucion SHAP: +0.762]\n  + Pendiente curva de tipos (10Y - 2Y) = 1.636  [contribucion SHAP: +0.163]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.141]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.260  [contribucion SHAP: +0.092]\n\nFactores EN CONTRA:\n  - VIX (volatilidad implícita de mercado) = 28.3  [contribucion SHAP: -0.342]\n  - Momentum del S&P 500 a 3 meses = -6.0%  [contribucion SHAP: -0.070]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.7619904465941921,
+              "raw_value": 0.6966424424274944,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": -0.3422803436734954,
+              "raw_value": 28.32999992370605,
+              "direction": "negative"
+            },
+            {
+              "feature": "yield_curve",
+              "description": "Pendiente curva de tipos (10Y - 2Y)",
+              "shap_value": 0.16342102094161157,
+              "raw_value": 1.6360000371932983,
+              "direction": "positive"
+            },
+            {
+              "feature": "fund_x_val",
+              "description": "Fund X Val",
+              "shap_value": 0.14135829984138495,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.09180614441011894,
+              "raw_value": 0.25989425109063674,
+              "direction": "positive"
+            },
+            {
+              "feature": "sp500_momentum_3m",
+              "description": "Momentum del S&P 500 a 3 meses",
+              "shap_value": -0.07043794288987311,
+              "raw_value": -0.0600446672256239,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "MU": {
+      "score": 0.1493,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "MU — Score: 0.15 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = 5.9%  [contribucion SHAP: +0.038]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 3.10x  [contribucion SHAP: +0.027]\n  + Ratio deuda / fondos propios = 0.153  [contribucion SHAP: +0.020]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.010]\n\nFactores EN CONTRA:\n  - Cobertura de intereses (EBIT / intereses) = 75.17x  [contribucion SHAP: -0.042]\n  - Debt Ebitda High = 0.000  [contribucion SHAP: -0.005]",
+          "top_drivers": [
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.042129328654570246,
+              "raw_value": 75.17142857142858,
+              "direction": "negative"
+            },
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.03770496413954386,
+              "raw_value": 0.0592849600241363,
+              "direction": "positive"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.027313075795663135,
+              "raw_value": 3.100583538083538,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": 0.02005138569344029,
+              "raw_value": 0.1529580900932299,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.009915384299290312,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_ebitda_high",
+              "description": "Debt Ebitda High",
+              "shap_value": -0.004595997675218485,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "MU — Score: 0.15 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.213  [contribucion SHAP: +0.171]\n  + Pendiente curva de tipos (10Y - 2Y) = 1.654  [contribucion SHAP: +0.163]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.143]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.281  [contribucion SHAP: +0.089]\n\nFactores EN CONTRA:\n  - VIX (volatilidad implícita de mercado) = 19.2  [contribucion SHAP: -0.360]\n  - Score del Agente de Valoración (infravaloración) = 0.510  [contribucion SHAP: -0.047]",
+          "top_drivers": [
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": -0.36021884172485036,
+              "raw_value": 19.190000534057617,
+              "direction": "negative"
+            },
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.1714504674049147,
+              "raw_value": 0.2132246749332796,
+              "direction": "positive"
+            },
+            {
+              "feature": "yield_curve",
+              "description": "Pendiente curva de tipos (10Y - 2Y)",
+              "shap_value": 0.16338278395396286,
+              "raw_value": 1.6539999544620514,
+              "direction": "positive"
+            },
+            {
+              "feature": "fund_x_val",
+              "description": "Fund X Val",
+              "shap_value": 0.1426929804521651,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.08884821835560723,
+              "raw_value": 0.2811629625949345,
+              "direction": "positive"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": -0.04702212917579008,
+              "raw_value": 0.5097021657407993,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "DLTR": {
+      "score": 0.1659,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "DLTR — Score: 0.17 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = 5.9%  [contribucion SHAP: +0.045]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.34x  [contribucion SHAP: +0.016]\n  + Ratio deuda / fondos propios = 0.443  [contribucion SHAP: +0.012]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.009]\n\nFactores EN CONTRA:\n  - Cobertura de intereses (EBIT / intereses) = 7.28x  [contribucion SHAP: -0.042]\n  - Debt Ebitda High = 0.000  [contribucion SHAP: -0.006]",
+          "top_drivers": [
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.045115193780412156,
+              "raw_value": 0.059140784824251336,
+              "direction": "positive"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.04186564707962492,
+              "raw_value": 7.280503144654088,
+              "direction": "negative"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.016408197495333437,
+              "raw_value": 1.3430062730450605,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": 0.011921824946139924,
+              "raw_value": 0.4427025976549847,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.009021199377234087,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_ebitda_high",
+              "description": "Debt Ebitda High",
+              "shap_value": -0.005551251176723238,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "DLTR — Score: 0.17 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.301  [contribucion SHAP: +0.303]\n  + Score del Agente de Momentum (tendencia técnica) = 0.232  [contribucion SHAP: +0.177]\n  + Pendiente curva de tipos (10Y - 2Y) = 1.832  [contribucion SHAP: +0.164]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.143]\n\nFactores EN CONTRA:\n  - VIX (volatilidad implícita de mercado) = 25.7  [contribucion SHAP: -0.360]\n  - Momentum del S&P 500 a 3 meses = -6.3%  [contribucion SHAP: -0.045]",
+          "top_drivers": [
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": -0.36021884172485036,
+              "raw_value": 25.670000076293945,
+              "direction": "negative"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.3032683156079907,
+              "raw_value": 0.301231307322318,
+              "direction": "positive"
+            },
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.17728028972262422,
+              "raw_value": 0.2319617559797843,
+              "direction": "positive"
+            },
+            {
+              "feature": "yield_curve",
+              "description": "Pendiente curva de tipos (10Y - 2Y)",
+              "shap_value": 0.16394595060823394,
+              "raw_value": 1.831999897956848,
+              "direction": "positive"
+            },
+            {
+              "feature": "fund_x_val",
+              "description": "Fund X Val",
+              "shap_value": 0.1426929804521651,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "sp500_momentum_3m",
+              "description": "Momentum del S&P 500 a 3 meses",
+              "shap_value": -0.045327237192145355,
+              "raw_value": -0.0633099078736354,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "MCK": {
+      "score": 0.1719,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "MCK — Score: 0.17 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.98x  [contribucion SHAP: +0.024]\n  + Crecimiento de la deuda total interanual = -14.4%  [contribucion SHAP: +0.015]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.010]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = -8.041  [contribucion SHAP: -0.016]\n  - Cobertura de intereses (EBIT / intereses) = 7.88x  [contribucion SHAP: -0.014]\n  - Trimestres consecutivos con pérdidas = 1.000  [contribucion SHAP: -0.001]",
+          "top_drivers": [
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.024447801057942056,
+              "raw_value": 0.979895473320408,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.015599791122225514,
+              "raw_value": -8.040660736975857,
+              "direction": "negative"
+            },
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.014631965439723182,
+              "raw_value": -0.1444023796646836,
+              "direction": "positive"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.014434210278706226,
+              "raw_value": 7.878048780487805,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.009705801168405423,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "consecutive_losses",
+              "description": "Trimestres consecutivos con pérdidas",
+              "shap_value": -0.0010855357163014948,
+              "raw_value": 1.0,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "MCK — Score: 0.17 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Pendiente curva de tipos (10Y - 2Y) = 1.636  [contribucion SHAP: +0.163]\n  + Score del Agente de Momentum (tendencia técnica) = 0.256  [contribucion SHAP: +0.162]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.143]\n\nFactores EN CONTRA:\n  - VIX (volatilidad implícita de mercado) = 28.3  [contribucion SHAP: -0.366]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.243  [contribucion SHAP: -0.097]\n  - Score del Agente de Valoración (infravaloración) = 0.504  [contribucion SHAP: -0.047]",
+          "top_drivers": [
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": -0.3660294431465944,
+              "raw_value": 28.32999992370605,
+              "direction": "negative"
+            },
+            {
+              "feature": "yield_curve",
+              "description": "Pendiente curva de tipos (10Y - 2Y)",
+              "shap_value": 0.16342102094161157,
+              "raw_value": 1.6360000371932983,
+              "direction": "positive"
+            },
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.16246484054599766,
+              "raw_value": 0.25610726405898543,
+              "direction": "positive"
+            },
+            {
+              "feature": "fund_x_val",
+              "description": "Fund X Val",
+              "shap_value": 0.1426929804521651,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": -0.09741700326588974,
+              "raw_value": 0.24325070501583707,
+              "direction": "negative"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": -0.04702212917579008,
+              "raw_value": 0.5035183633566741,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "EXPE": {
+      "score": 0.2023,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "EXPE — Score: 0.20 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = 2.8%  [contribucion SHAP: +0.076]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.87x  [contribucion SHAP: +0.020]\n  + Ratio deuda / fondos propios = 2.379  [contribucion SHAP: +0.020]\n  + FLAG: Ratio corriente < 1 (riesgo liquidez) = 0.000  [contribucion SHAP: +0.004]\n\nFactores EN CONTRA:\n  - Deuda neta / EBITDA = -563.33x  [contribucion SHAP: -0.062]\n  - Cobertura de intereses (EBIT / intereses) = 2.30x  [contribucion SHAP: -0.008]",
+          "top_drivers": [
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.07565186812858012,
+              "raw_value": 0.028481012658227778,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": -0.062120972886281385,
+              "raw_value": -563.3333333333334,
+              "direction": "negative"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.0203208283159552,
+              "raw_value": 0.8657142857142858,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": 0.020192569611893404,
+              "raw_value": 2.3789414414414414,
+              "direction": "positive"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.007641695326345788,
+              "raw_value": 2.3,
+              "direction": "negative"
+            },
+            {
+              "feature": "liquidity_risk",
+              "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+              "shap_value": 0.004027851138234796,
+              "raw_value": 0.0,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "EXPE — Score: 0.20 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.295  [contribucion SHAP: +0.303]\n  + Score del Agente de Momentum (tendencia técnica) = 0.292  [contribucion SHAP: +0.177]\n  + Pendiente curva de tipos (10Y - 2Y) = 1.636  [contribucion SHAP: +0.164]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.143]\n\nFactores EN CONTRA:\n  - VIX (volatilidad implícita de mercado) = 28.3  [contribucion SHAP: -0.360]\n  - Momentum del S&P 500 a 3 meses = -6.0%  [contribucion SHAP: -0.045]",
+          "top_drivers": [
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": -0.36021884172485036,
+              "raw_value": 28.32999992370605,
+              "direction": "negative"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.30330655259563943,
+              "raw_value": 0.2952462329226978,
+              "direction": "positive"
+            },
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.17720381574732674,
+              "raw_value": 0.2918906500544462,
+              "direction": "positive"
+            },
+            {
+              "feature": "yield_curve",
+              "description": "Pendiente curva de tipos (10Y - 2Y)",
+              "shap_value": 0.1639841875958827,
+              "raw_value": 1.6360000371932983,
+              "direction": "positive"
+            },
+            {
+              "feature": "fund_x_val",
+              "description": "Fund X Val",
+              "shap_value": 0.1426929804521651,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "sp500_momentum_3m",
+              "description": "Momentum del S&P 500 a 3 meses",
+              "shap_value": -0.045327237192145355,
+              "raw_value": -0.0600446672256239,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "AXP": {
+      "score": 0.213,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "AXP — Score: 0.21 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Cobertura de intereses (EBIT / intereses) = 0.00x  [contribucion SHAP: +0.016]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.007]\n  + FLAG: Ratio corriente < 1 (riesgo liquidez) = 0.000  [contribucion SHAP: +0.004]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 1.845  [contribucion SHAP: -0.062]\n  - Crecimiento de la deuda total interanual = -8.7%  [contribucion SHAP: -0.006]\n  - Revenue Decline = 0.000  [contribucion SHAP: -0.004]",
+          "top_drivers": [
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.06224802506120205,
+              "raw_value": 1.8450647066780896,
+              "direction": "negative"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": 0.01568814735191669,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.006591150891121955,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": -0.006380273958462048,
+              "raw_value": -0.08726299353111755,
+              "direction": "negative"
+            },
+            {
+              "feature": "liquidity_risk",
+              "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+              "shap_value": 0.003922132491254003,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "revenue_decline",
+              "description": "Revenue Decline",
+              "shap_value": -0.0038114817308962964,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "AXP — Score: 0.21 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Pendiente curva de tipos (10Y - 2Y) = 1.636  [contribucion SHAP: +0.163]\n  + Score del Agente de Momentum (tendencia técnica) = 0.235  [contribucion SHAP: +0.162]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.143]\n\nFactores EN CONTRA:\n  - VIX (volatilidad implícita de mercado) = 28.3  [contribucion SHAP: -0.366]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.240  [contribucion SHAP: -0.095]\n  - Score del Agente de Valoración (infravaloración) = 0.508  [contribucion SHAP: -0.047]",
+          "top_drivers": [
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": -0.3660294431465944,
+              "raw_value": 28.32999992370605,
+              "direction": "negative"
+            },
+            {
+              "feature": "yield_curve",
+              "description": "Pendiente curva de tipos (10Y - 2Y)",
+              "shap_value": 0.16338278395396286,
+              "raw_value": 1.6360000371932983,
+              "direction": "positive"
+            },
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.1623812772265649,
+              "raw_value": 0.23460711751430688,
+              "direction": "positive"
+            },
+            {
+              "feature": "fund_x_val",
+              "description": "Fund X Val",
+              "shap_value": 0.1426929804521651,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": -0.09457332621309973,
+              "raw_value": 0.24026789950716412,
+              "direction": "negative"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": -0.04726632702942978,
+              "raw_value": 0.5076111076160034,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "KR": {
+      "score": 0.2195,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "KR — Score: 0.22 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = -0.4%  [contribucion SHAP: +0.081]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.75x  [contribucion SHAP: +0.038]\n  + FLAG: Deuda creciendo >20% interanual = 0.000  [contribucion SHAP: +0.005]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 1.417  [contribucion SHAP: -0.018]\n  - Cobertura de intereses (EBIT / intereses) = 5.98x  [contribucion SHAP: -0.011]\n  - Deuda neta / EBITDA = 30.10x  [contribucion SHAP: -0.007]",
+          "top_drivers": [
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.08095433201093723,
+              "raw_value": -0.0036531722955341905,
+              "direction": "positive"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.03779154187816092,
+              "raw_value": 0.7458187833118912,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.01842643434127747,
+              "raw_value": 1.417329515325061,
+              "direction": "negative"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.011139747529622546,
+              "raw_value": 5.98394495412844,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": -0.0065690042632391595,
+              "raw_value": 30.0990990990991,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_growth_high",
+              "description": "FLAG: Deuda creciendo >20% interanual",
+              "shap_value": 0.005226901691292479,
+              "raw_value": 0.0,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "KR — Score: 0.22 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.315  [contribucion SHAP: +0.559]\n  + Score del Agente de Momentum (tendencia técnica) = 0.250  [contribucion SHAP: +0.180]\n  + Pendiente curva de tipos (10Y - 2Y) = 1.832  [contribucion SHAP: +0.160]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.139]\n\nFactores EN CONTRA:\n  - VIX (volatilidad implícita de mercado) = 25.7  [contribucion SHAP: -0.360]\n  - Momentum del S&P 500 a 3 meses = -6.3%  [contribucion SHAP: -0.045]",
+          "top_drivers": [
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.558558223584046,
+              "raw_value": 0.3147027318566354,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": -0.36021884172485036,
+              "raw_value": 25.670000076293945,
+              "direction": "negative"
+            },
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.17961945924154507,
+              "raw_value": 0.25036482426912915,
+              "direction": "positive"
+            },
+            {
+              "feature": "yield_curve",
+              "description": "Pendiente curva de tipos (10Y - 2Y)",
+              "shap_value": 0.16029809165430042,
+              "raw_value": 1.831999897956848,
+              "direction": "positive"
+            },
+            {
+              "feature": "fund_x_val",
+              "description": "Fund X Val",
+              "shap_value": 0.1394976365912316,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "sp500_momentum_3m",
+              "description": "Momentum del S&P 500 a 3 meses",
+              "shap_value": -0.045327237192145355,
+              "raw_value": -0.0633099078736354,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "MOH": {
+      "score": 0.2218,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "MOH — Score: 0.22 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = 2.2%  [contribucion SHAP: +0.051]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.43x  [contribucion SHAP: +0.027]\n  + FLAG: Deuda creciendo >20% interanual = 0.000  [contribucion SHAP: +0.003]\n  + FLAG: Ratio corriente < 1 (riesgo liquidez) = 0.000  [contribucion SHAP: +0.002]\n\nFactores EN CONTRA:\n  - Cobertura de intereses (EBIT / intereses) = 6.37x  [contribucion SHAP: -0.006]\n  - Deuda neta / EBITDA = 13.93x  [contribucion SHAP: -0.005]",
+          "top_drivers": [
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.05065750898662546,
+              "raw_value": 0.021626704278326248,
+              "direction": "positive"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.027046112542228194,
+              "raw_value": 1.428125443451114,
+              "direction": "positive"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.006296063650224915,
+              "raw_value": 6.366666666666666,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": -0.004806426659072856,
+              "raw_value": 13.92948717948718,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_growth_high",
+              "description": "FLAG: Deuda creciendo >20% interanual",
+              "shap_value": 0.002792934312297304,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "liquidity_risk",
+              "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+              "shap_value": 0.0022521946445302667,
+              "raw_value": 0.0,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "MOH — Score: 0.22 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.368  [contribucion SHAP: +0.489]\n  + Score del Agente de Momentum (tendencia técnica) = 0.293  [contribucion SHAP: +0.179]\n  + Pendiente curva de tipos (10Y - 2Y) = 1.636  [contribucion SHAP: +0.160]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.139]\n\nFactores EN CONTRA:\n  - VIX (volatilidad implícita de mercado) = 28.3  [contribucion SHAP: -0.360]\n  - Momentum del S&P 500 a 3 meses = -6.0%  [contribucion SHAP: -0.045]",
+          "top_drivers": [
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.4886681658761084,
+              "raw_value": 0.3679830654174351,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": -0.36021884172485036,
+              "raw_value": 28.32999992370605,
+              "direction": "negative"
+            },
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.17880017883620822,
+              "raw_value": 0.2925083117559301,
+              "direction": "positive"
+            },
+            {
+              "feature": "yield_curve",
+              "description": "Pendiente curva de tipos (10Y - 2Y)",
+              "shap_value": 0.1603363286419492,
+              "raw_value": 1.6360000371932983,
+              "direction": "positive"
+            },
+            {
+              "feature": "fund_x_val",
+              "description": "Fund X Val",
+              "shap_value": 0.1394976365912316,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "sp500_momentum_3m",
+              "description": "Momentum del S&P 500 a 3 meses",
+              "shap_value": -0.045327237192145355,
+              "raw_value": -0.0600446672256239,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "PANW": {
+      "score": 0.2305,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "PANW — Score: 0.23 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = 16.5%  [contribucion SHAP: +0.056]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.66x  [contribucion SHAP: +0.038]\n  + FLAG: Ratio corriente < 1 (riesgo liquidez) = 0.000  [contribucion SHAP: +0.009]\n\nFactores EN CONTRA:\n  - Cobertura de intereses (EBIT / intereses) = -10.87x  [contribucion SHAP: -0.025]\n  - Ratio deuda / fondos propios = 31.188  [contribucion SHAP: -0.024]\n  - Revenue Decline = 0.000  [contribucion SHAP: -0.007]",
+          "top_drivers": [
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.05589330229958462,
+              "raw_value": 0.16457983326465264,
+              "direction": "positive"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.038487616756048226,
+              "raw_value": 0.657350399654353,
+              "direction": "positive"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.024618775449043586,
+              "raw_value": -10.867647058823529,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.024260380683727625,
+              "raw_value": 31.18760611205433,
+              "direction": "negative"
+            },
+            {
+              "feature": "liquidity_risk",
+              "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+              "shap_value": 0.009113035939205623,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "revenue_decline",
+              "description": "Revenue Decline",
+              "shap_value": -0.007164257849781245,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "PANW — Score: 0.23 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.406  [contribucion SHAP: +0.431]\n  + Score del Agente de Momentum (tendencia técnica) = 0.283  [contribucion SHAP: +0.179]\n  + Pendiente curva de tipos (10Y - 2Y) = 1.832  [contribucion SHAP: +0.160]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.139]\n\nFactores EN CONTRA:\n  - VIX (volatilidad implícita de mercado) = 25.7  [contribucion SHAP: -0.360]\n  - Momentum del S&P 500 a 3 meses = -6.3%  [contribucion SHAP: -0.045]",
+          "top_drivers": [
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.4305357830998085,
+              "raw_value": 0.4057950028347327,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": -0.36021884172485036,
+              "raw_value": 25.670000076293945,
+              "direction": "negative"
+            },
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.17880017883620822,
+              "raw_value": 0.28297491893237975,
+              "direction": "positive"
+            },
+            {
+              "feature": "yield_curve",
+              "description": "Pendiente curva de tipos (10Y - 2Y)",
+              "shap_value": 0.1603363286419492,
+              "raw_value": 1.831999897956848,
+              "direction": "positive"
+            },
+            {
+              "feature": "fund_x_val",
+              "description": "Fund X Val",
+              "shap_value": 0.1394976365912316,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "sp500_momentum_3m",
+              "description": "Momentum del S&P 500 a 3 meses",
+              "shap_value": -0.045327237192145355,
+              "raw_value": -0.0633099078736354,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "PAYX": {
+      "score": 0.2354,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "PAYX — Score: 0.24 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = 0.3%  [contribucion SHAP: +0.070]\n  + Cobertura de intereses (EBIT / intereses) = 0.00x  [contribucion SHAP: +0.022]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.27x  [contribucion SHAP: +0.020]\n  + Ratio deuda / fondos propios = 0.258  [contribucion SHAP: +0.011]",
+          "top_drivers": [
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.0698029855531219,
+              "raw_value": 0.0031098395322801675,
+              "direction": "positive"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": 0.021525456627942932,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.02041144458324782,
+              "raw_value": 1.2701124109998276,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": 0.01130018384702083,
+              "raw_value": 0.2584781075709981,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.007978330476384299,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "liquidity_risk",
+              "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+              "shap_value": 0.005103696993394321,
+              "raw_value": 0.0,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "PAYX — Score: 0.24 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.299  [contribucion SHAP: +0.303]\n  + Score del Agente de Momentum (tendencia técnica) = 0.306  [contribucion SHAP: +0.177]\n  + Pendiente curva de tipos (10Y - 2Y) = 1.654  [contribucion SHAP: +0.164]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.143]\n\nFactores EN CONTRA:\n  - VIX (volatilidad implícita de mercado) = 19.2  [contribucion SHAP: -0.360]\n  - Momentum del S&P 500 a 3 meses = 4.3%  [contribucion SHAP: -0.045]",
+          "top_drivers": [
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": -0.36021884172485036,
+              "raw_value": 19.190000534057617,
+              "direction": "negative"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.30330655259563943,
+              "raw_value": 0.29875390473829616,
+              "direction": "positive"
+            },
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.17705317160085987,
+              "raw_value": 0.3060259187714,
+              "direction": "positive"
+            },
+            {
+              "feature": "yield_curve",
+              "description": "Pendiente curva de tipos (10Y - 2Y)",
+              "shap_value": 0.1639841875958827,
+              "raw_value": 1.6539999544620514,
+              "direction": "positive"
+            },
+            {
+              "feature": "fund_x_val",
+              "description": "Fund X Val",
+              "shap_value": 0.1426929804521651,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "sp500_momentum_3m",
+              "description": "Momentum del S&P 500 a 3 meses",
+              "shap_value": -0.045327237192145355,
+              "raw_value": 0.0428235586521277,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "RL": {
+      "score": 0.2378,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "RL — Score: 0.24 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = 0.2%  [contribucion SHAP: +0.061]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.88x  [contribucion SHAP: +0.033]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.008]\n  + FLAG: Deuda creciendo >20% interanual = 0.000  [contribucion SHAP: +0.005]\n\nFactores EN CONTRA:\n  - Cobertura de intereses (EBIT / intereses) = 24.11x  [contribucion SHAP: -0.047]",
+          "top_drivers": [
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.06119888958487695,
+              "raw_value": 0.00214473926098413,
+              "direction": "positive"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.047130171525194,
+              "raw_value": 24.108333333333334,
+              "direction": "negative"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.03287369235048439,
+              "raw_value": 1.8798567673196644,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.008117003766027609,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_growth_high",
+              "description": "FLAG: Deuda creciendo >20% interanual",
+              "shap_value": 0.004551104702277199,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "liquidity_risk",
+              "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+              "shap_value": 0.00409903695476609,
+              "raw_value": 0.0,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "RL — Score: 0.24 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.342  [contribucion SHAP: +0.533]\n  + Pendiente curva de tipos (10Y - 2Y) = 1.636  [contribucion SHAP: +0.160]\n  + Score del Agente de Momentum (tendencia técnica) = 0.418  [contribucion SHAP: +0.158]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.139]\n\nFactores EN CONTRA:\n  - VIX (volatilidad implícita de mercado) = 28.3  [contribucion SHAP: -0.344]\n  - Score del Agente Fundamental (salud financiera) = 0.166  [contribucion SHAP: -0.049]",
+          "top_drivers": [
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.5334740457124619,
+              "raw_value": 0.34219951652503294,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": -0.34371830812325127,
+              "raw_value": 28.32999992370605,
+              "direction": "negative"
+            },
+            {
+              "feature": "yield_curve",
+              "description": "Pendiente curva de tipos (10Y - 2Y)",
+              "shap_value": 0.1603363286419492,
+              "raw_value": 1.6360000371932983,
+              "direction": "positive"
+            },
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.15825651307634836,
+              "raw_value": 0.418495202837944,
+              "direction": "positive"
+            },
+            {
+              "feature": "fund_x_val",
+              "description": "Fund X Val",
+              "shap_value": 0.1394976365912316,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "fundamental_score",
+              "description": "Score del Agente Fundamental (salud financiera)",
+              "shap_value": -0.04913362229644599,
+              "raw_value": 0.1663244366645813,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "ticker": "CCL",
+  "score": 0.6591,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.021463426740546188,
+      "raw_value": 550.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.0062212540200133415,
+      "raw_value": 1.4648648648648648,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.005001129545667311,
+      "raw_value": 2.9421757595557008,
+      "direction": "negative"
+    },
+    {
+      "feature": "low_coverage",
+      "description": "FLAG: Cobertura intereses < 1.5x",
+      "shap_value": -0.002009794855268038,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "CCL — Score: 0.66 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.26x  [contribucion SHAP: +0.020]\n  + Eps Revision = -0.750  [contribucion SHAP: +0.002]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 550.000  [contribucion SHAP: -0.021]\n  - Cobertura de intereses (EBIT / intereses) = 1.46x  [contribucion SHAP: -0.006]\n  - Ratio deuda / fondos propios = 2.942  [contribucion SHAP: -0.005]\n  - FLAG: Cobertura intereses < 1.5x = 0.000  [contribucion SHAP: -0.002]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.021463426740546188,
+      "raw_value": 550.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.01984125371282843,
+      "raw_value": 0.2571255830022456,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.0062212540200133415,
+      "raw_value": 1.4648648648648648,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.005001129545667311,
+      "raw_value": 2.9421757595557008,
+      "direction": "negative"
+    },
+    {
+      "feature": "low_coverage",
+      "description": "FLAG: Cobertura intereses < 1.5x",
+      "shap_value": -0.002009794855268038,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.0017267020744912915,
+      "raw_value": -0.75,
+      "direction": "positive"
+    }
+  ]
+}

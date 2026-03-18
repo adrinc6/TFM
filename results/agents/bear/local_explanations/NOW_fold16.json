@@ -1,0 +1,52 @@
+{
+  "ticker": "NOW",
+  "score": 0.8122,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [],
+  "text": "NOW — Score: 0.81 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Eps Revision = 0.125  [contribucion SHAP: +0.043]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.038]\n  + Ratio deuda / fondos propios = 0.184  [contribucion SHAP: +0.018]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.05x  [contribucion SHAP: +0.012]",
+  "top_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.043288497022578726,
+      "raw_value": 0.1254480286738351,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.03783904395227835,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": 0.017530240201864503,
+      "raw_value": 0.1835450844948809,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.011942968086831983,
+      "raw_value": 1.0482013365562348,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.01149266101080087,
+      "raw_value": 3.287128712871287,
+      "direction": "positive"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": 0.006000147173095926,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

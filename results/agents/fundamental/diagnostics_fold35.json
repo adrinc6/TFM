@@ -1,0 +1,41 @@
+{
+  "agent": "fundamental",
+  "timestamp": "2026-03-06T20:20:19.306722",
+  "fold": 35,
+  "class_balance": {
+    "n_samples": 4242,
+    "n_positive": 2122,
+    "n_negative": 2120,
+    "positive_ratio": 0.5002357378595003
+  },
+  "cv_metrics": {
+    "mean_auc": 0.5047526045484053,
+    "std_auc": 0.013544482261537106,
+    "mean_acc": 0.5025951730115341,
+    "mean_f1": 0.504305489774916
+  },
+  "n_features": 63,
+  "top_features": {
+    "consecutive_losses": 0.02466517500579357,
+    "sector_Consumer Discretionary": 0.02262094058096409,
+    "debt_to_ebitda": 0.021345851942896843,
+    "sector_Computer And Technology": 0.020560793578624725,
+    "sector_Medical": 0.02035827748477459,
+    "ev_to_ebitda_zsector": 0.020262645557522774,
+    "debt_to_ebitda_zsector": 0.02018684148788452,
+    "net_margin_zsector": 0.02007933519780636,
+    "roa_zsector": 0.01987081579864025,
+    "net_income_yoy_growth": 0.019575336948037148,
+    "operating_margin": 0.019462933763861656,
+    "roa": 0.019345758482813835,
+    "sector_Consumer Staples": 0.019330160692334175,
+    "roi_zsector": 0.01921963132917881,
+    "roe": 0.019182559102773666
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.5047526045484053,
+    "std_auc": 0.013544482261537106,
+    "mean_acc": 0.5025951730115341,
+    "mean_f1": 0.504305489774916
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "ticker": "CRH",
+  "score": 0.8263,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.025756219270797603,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.02516558216297812,
+      "raw_value": 366.67,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.020676859791820705,
+      "raw_value": 0.28859060402684555,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.006420256861438356,
+      "raw_value": 0.6109343361295921,
+      "direction": "negative"
+    }
+  ],
+  "text": "CRH — Score: 0.83 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Revenue Decline = 0.000  [contribucion SHAP: +0.007]\n  + Proporción de ventas de insiders (>0.7 = red flag) = 0.50x  [contribucion SHAP: +0.006]\n\nFactores EN CONTRA:\n  - Eps Revision = 0.000  [contribucion SHAP: -0.026]\n  - Eps Surprise Pct = 366.670  [contribucion SHAP: -0.025]\n  - Crecimiento de la deuda total interanual = 28.9%  [contribucion SHAP: -0.021]\n  - Ratio deuda / fondos propios = 0.611  [contribucion SHAP: -0.006]",
+  "top_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.025756219270797603,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.02516558216297812,
+      "raw_value": 366.67,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.020676859791820705,
+      "raw_value": 0.28859060402684555,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": 0.006724965746039345,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.006420256861438356,
+      "raw_value": 0.6109343361295921,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": 0.005718025668661834,
+      "raw_value": 0.5,
+      "direction": "positive"
+    }
+  ]
+}

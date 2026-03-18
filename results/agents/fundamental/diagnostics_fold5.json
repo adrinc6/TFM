@@ -1,0 +1,41 @@
+{
+  "agent": "fundamental",
+  "timestamp": "2026-03-06T18:18:27.712697",
+  "fold": 5,
+  "class_balance": {
+    "n_samples": 1475,
+    "n_positive": 737,
+    "n_negative": 738,
+    "positive_ratio": 0.49966101694915255
+  },
+  "cv_metrics": {
+    "mean_auc": 0.47821290678433537,
+    "std_auc": 0.019070246147046135,
+    "mean_acc": 0.48542372881355933,
+    "mean_f1": 0.47832220780496637
+  },
+  "n_features": 59,
+  "top_features": {
+    "sector_Business Services": 0.04734809696674347,
+    "sector_Consumer Discretionary": 0.03867761790752411,
+    "sector_Oils-Energy": 0.03166486322879791,
+    "sector_Retail-Wholesale": 0.029600000008940697,
+    "sector_Medical": 0.026179706677794456,
+    "sector_Computer And Technology": 0.022259743884205818,
+    "momentum_12m_zsector": 0.022004107013344765,
+    "ebitda_margin_zsector": 0.02169267274439335,
+    "operating_margin": 0.021514959633350372,
+    "ebitda_margin": 0.020927542820572853,
+    "eps_yoy_growth": 0.020887084305286407,
+    "ev_to_ebitda_zsector": 0.02074168436229229,
+    "roa": 0.02039329707622528,
+    "volatility_20d_zsector": 0.019810495898127556,
+    "net_income_yoy_growth_zsector": 0.01956745982170105
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.47821290678433537,
+    "std_auc": 0.019070246147046135,
+    "mean_acc": 0.48542372881355933,
+    "mean_f1": 0.47832220780496637
+  }
+}

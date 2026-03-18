@@ -1,0 +1,74 @@
+{
+  "ticker": "META",
+  "score": 0.6436,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.03329643933424454,
+      "raw_value": -71504.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.019015156613282062,
+      "raw_value": 1.2137030355321985,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.014073167529004914,
+      "raw_value": 21.77,
+      "direction": "negative"
+    }
+  ],
+  "text": "META — Score: 0.64 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 11170000000.000  [contribucion SHAP: +0.031]\n  + Eps Revision = -0.220  [contribucion SHAP: +0.012]\n  + Ratio deuda / fondos propios = 0.159  [contribucion SHAP: +0.012]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -71504.000  [contribucion SHAP: -0.033]\n  - Deuda neta / EBITDA = 1.21x  [contribucion SHAP: -0.019]\n  - Eps Surprise Pct = 21.770  [contribucion SHAP: -0.014]",
+  "top_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.03329643933424454,
+      "raw_value": -71504.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.031187631253913817,
+      "raw_value": 11170000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.019015156613282062,
+      "raw_value": 1.2137030355321985,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.014073167529004914,
+      "raw_value": 21.77,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.012190114335204914,
+      "raw_value": -0.2200886262924667,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": 0.01197890477251148,
+      "raw_value": 0.1594663671122195,
+      "direction": "positive"
+    }
+  ]
+}

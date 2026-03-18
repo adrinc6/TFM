@@ -1,0 +1,74 @@
+{
+  "ticker": "ABNB",
+  "score": 0.2347,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.10538424630051588,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.06375273908373136,
+      "raw_value": 0.5398834693819485,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Medical",
+      "description": "Sector Medical",
+      "shap_value": -0.039446208551540525,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "ABNB — Score: 0.23 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Fund X Val = 0.000  [contribucion SHAP: +0.118]\n  + Score del Agente de Momentum (tendencia técnica) = 0.354  [contribucion SHAP: +0.075]\n  + Sector Computer And Technology = 0.000  [contribucion SHAP: +0.047]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.105]\n  - Score del Agente de Valoración (infravaloración) = 0.540  [contribucion SHAP: -0.064]\n  - Sector Medical = 0.000  [contribucion SHAP: -0.039]",
+  "top_drivers": [
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": 0.11819278505950835,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.10538424630051588,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.07504486171102576,
+      "raw_value": 0.35437249555195366,
+      "direction": "positive"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.06375273908373136,
+      "raw_value": 0.5398834693819485,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": 0.04708853393528702,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Medical",
+      "description": "Sector Medical",
+      "shap_value": -0.039446208551540525,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

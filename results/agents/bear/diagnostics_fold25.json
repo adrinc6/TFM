@@ -1,0 +1,109 @@
+{
+  "agent": "bear",
+  "timestamp": "2026-03-06T19:34:19.953266",
+  "fold": 25,
+  "class_balance": {
+    "n_samples": 1511,
+    "n_positive": 756,
+    "n_negative": 755,
+    "positive_ratio": 0.500330906684315
+  },
+  "cv_metrics": {
+    "mean_auc": 0.5319523151108331,
+    "std_auc": 0.021799981017478574,
+    "mean_acc": 0.5175310908574302,
+    "mean_f1": 0.5157599841919034
+  },
+  "flag_statistics": {
+    "debt_growth_high": {
+      "activation_rate": 0.13037723362011913,
+      "description": "Deuda creciendo >20% YoY",
+      "threshold": 0.2,
+      "column": "total_debt_yoy_growth"
+    },
+    "debt_equity_high": {
+      "activation_rate": 0.08338848444738584,
+      "description": "Debt/Equity > 3",
+      "threshold": 3.0,
+      "column": "debt_equity"
+    },
+    "debt_ebitda_high": {
+      "activation_rate": 0.3500992720052945,
+      "description": "Debt/EBITDA > 6",
+      "threshold": 6.0,
+      "column": "debt_to_ebitda"
+    },
+    "fcf_negative": {
+      "activation_rate": 0.005294506949040371,
+      "description": "FCF negativo",
+      "threshold": 0.0,
+      "column": "fcf"
+    },
+    "liquidity_risk": {
+      "activation_rate": 0.27200529450694905,
+      "description": "Current Ratio < 1",
+      "threshold": 1.0,
+      "column": "current_ratio"
+    },
+    "consecutive_losses": {
+      "activation_rate": 0.01588352084712111,
+      "description": "\u22652 trimestres con p\u00e9rdidas",
+      "threshold": 2.0,
+      "column": "consecutive_losses"
+    },
+    "revenue_decline": {
+      "activation_rate": 0.2878888153540701,
+      "description": "Ca\u00edda de revenue YoY",
+      "threshold": 1.0,
+      "column": "revenue_decline"
+    },
+    "low_coverage": {
+      "activation_rate": 0.056915949702183985,
+      "description": "Interest Coverage < 1.5",
+      "threshold": 1.5,
+      "column": "interest_coverage"
+    },
+    "insider_selling": {
+      "activation_rate": 0.3759099933818663,
+      "description": "Insiders vendiendo >70%",
+      "threshold": 0.7,
+      "column": "insider_sell_ratio"
+    },
+    "eps_miss": {
+      "activation_rate": 0.08934480476505625,
+      "description": "EPS miss >5%",
+      "threshold": -5.0,
+      "column": "eps_surprise_pct"
+    }
+  },
+  "flag_definitions": [
+    "debt_growth_high",
+    "debt_equity_high",
+    "debt_ebitda_high",
+    "fcf_negative",
+    "liquidity_risk",
+    "consecutive_losses",
+    "revenue_decline",
+    "low_coverage",
+    "insider_selling",
+    "eps_miss"
+  ],
+  "top_features": {
+    "current_ratio": 0.12502404519226165,
+    "eps_surprise_pct": 0.1247960166745033,
+    "eps_revision": 0.11575085721071333,
+    "debt_equity": 0.10554156792108409,
+    "interest_coverage": 0.1047471257963455,
+    "total_debt_yoy_growth": 0.10379868715680861,
+    "debt_to_ebitda": 0.0912833806117011,
+    "insider_net_shares_90d": 0.08721595143703985,
+    "insider_sell_ratio": 0.04459894757940564,
+    "debt_equity_high": 0.015059841628296015
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.5319523151108331,
+    "std_auc": 0.021799981017478574,
+    "mean_acc": 0.5175310908574302,
+    "mean_f1": 0.5157599841919034
+  }
+}

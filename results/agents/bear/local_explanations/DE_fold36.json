@@ -1,0 +1,74 @@
+{
+  "ticker": "DE",
+  "score": 0.3531,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.024673011633067194,
+      "raw_value": 2.6363600379987333,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.011036210250417618,
+      "raw_value": 19.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.010241041033410019,
+      "raw_value": 1.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "DE — Score: 0.35 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 24.46x  [contribucion SHAP: +0.041]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.31x  [contribucion SHAP: +0.026]\n  + Fcf = 1844000000.000  [contribucion SHAP: +0.025]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 2.636  [contribucion SHAP: -0.025]\n  - Eps Surprise Pct = 19.000  [contribucion SHAP: -0.011]\n  - Revenue Decline = 1.000  [contribucion SHAP: -0.010]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.0412745398490834,
+      "raw_value": 24.460154241645245,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.026448990056944847,
+      "raw_value": 2.314065908153039,
+      "direction": "positive"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.024760053978563533,
+      "raw_value": 1844000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.024673011633067194,
+      "raw_value": 2.6363600379987333,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.011036210250417618,
+      "raw_value": 19.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.010241041033410019,
+      "raw_value": 1.0,
+      "direction": "negative"
+    }
+  ]
+}

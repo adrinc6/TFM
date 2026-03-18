@@ -1,0 +1,81 @@
+{
+  "ticker": "CTAS",
+  "score": 0.3713,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03394088110067577,
+      "raw_value": 7.39,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.013076871796053553,
+      "raw_value": 2.379313836697687,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.006134871486058697,
+      "raw_value": 0.0257879656160457,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.004854435346593227,
+      "raw_value": 0.5845204262646717,
+      "direction": "negative"
+    }
+  ],
+  "text": "CTAS — Score: 0.37 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Proporción de ventas de insiders (>0.7 = red flag) = 0.50x  [contribucion SHAP: +0.006]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.005]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 7.390  [contribucion SHAP: -0.034]\n  - Ratio de liquidez corriente (activo / pasivo cte.) = 2.38x  [contribucion SHAP: -0.013]\n  - Eps Revision = 0.026  [contribucion SHAP: -0.006]\n  - Ratio deuda / fondos propios = 0.585  [contribucion SHAP: -0.005]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03394088110067577,
+      "raw_value": 7.39,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.013076871796053553,
+      "raw_value": 2.379313836697687,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": 0.006486294747220897,
+      "raw_value": 0.5,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.006134871486058697,
+      "raw_value": 0.0257879656160457,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.00497022226375679,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.004854435346593227,
+      "raw_value": 0.5845204262646717,
+      "direction": "negative"
+    }
+  ]
+}

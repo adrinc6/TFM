@@ -1,0 +1,81 @@
+{
+  "ticker": "SPGI",
+  "score": 0.6551,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03938694448555724,
+      "raw_value": 8.37,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.030923984951463,
+      "raw_value": -6521.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.013117080617759964,
+      "raw_value": 0.3038818385411112,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.010388462737962916,
+      "raw_value": -0.005323326642813542,
+      "direction": "negative"
+    }
+  ],
+  "text": "SPGI — Score: 0.66 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.85x  [contribucion SHAP: +0.022]\n  + Deuda neta / EBITDA = 7.31x  [contribucion SHAP: +0.016]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 8.370  [contribucion SHAP: -0.039]\n  - Acciones compradas netas por insiders (90 días) = -6521.000  [contribucion SHAP: -0.031]\n  - Ratio deuda / fondos propios = 0.304  [contribucion SHAP: -0.013]\n  - Crecimiento de la deuda total interanual = -0.5%  [contribucion SHAP: -0.010]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03938694448555724,
+      "raw_value": 8.37,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.030923984951463,
+      "raw_value": -6521.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.022305055986065855,
+      "raw_value": 0.8540362953692116,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.01615712855776129,
+      "raw_value": 7.311096856959589,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.013117080617759964,
+      "raw_value": 0.3038818385411112,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.010388462737962916,
+      "raw_value": -0.005323326642813542,
+      "direction": "negative"
+    }
+  ]
+}

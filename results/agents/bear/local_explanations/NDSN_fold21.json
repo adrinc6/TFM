@@ -1,0 +1,81 @@
+{
+  "ticker": "NDSN",
+  "score": 0.2615,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.06320480874881351,
+      "raw_value": 3.26,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.02814243544830164,
+      "raw_value": 0.5236756318074735,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.020816290766923432,
+      "raw_value": 0.7831363396643352,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.012857660381632401,
+      "raw_value": 0.0043103448275862,
+      "direction": "negative"
+    }
+  ],
+  "text": "NDSN — Score: 0.26 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Acciones compradas netas por insiders (90 días) = 178.000  [contribucion SHAP: +0.019]\n  + Cobertura de intereses (EBIT / intereses) = 9.40x  [contribucion SHAP: +0.013]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 3.260  [contribucion SHAP: -0.063]\n  - Ratio deuda / fondos propios = 0.524  [contribucion SHAP: -0.028]\n  - Crecimiento de la deuda total interanual = 78.3%  [contribucion SHAP: -0.021]\n  - Eps Revision = 0.004  [contribucion SHAP: -0.013]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.06320480874881351,
+      "raw_value": 3.26,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.02814243544830164,
+      "raw_value": 0.5236756318074735,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.020816290766923432,
+      "raw_value": 0.7831363396643352,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.018860632214579873,
+      "raw_value": 178.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.012857660381632401,
+      "raw_value": 0.0043103448275862,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.01264093507737656,
+      "raw_value": 9.397952295229523,
+      "direction": "positive"
+    }
+  ]
+}

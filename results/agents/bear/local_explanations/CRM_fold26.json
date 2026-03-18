@@ -1,0 +1,67 @@
+{
+  "ticker": "CRM",
+  "score": 0.7463,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.014720652810036367,
+      "raw_value": 6.58,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.0071707477724044875,
+      "raw_value": 0.069672131147541,
+      "direction": "negative"
+    }
+  ],
+  "text": "CRM — Score: 0.75 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 3816000000.000  [contribucion SHAP: +0.052]\n  + Deuda neta / EBITDA = 3.01x  [contribucion SHAP: +0.051]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.06x  [contribucion SHAP: +0.011]\n  + Proporción de ventas de insiders (>0.7 = red flag) = 0.50x  [contribucion SHAP: +0.008]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 6.580  [contribucion SHAP: -0.015]\n  - Eps Revision = 0.070  [contribucion SHAP: -0.007]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.05231478590599027,
+      "raw_value": 3816000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.0511803178495235,
+      "raw_value": 3.009015025041736,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.014720652810036367,
+      "raw_value": 6.58,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.010985590848118862,
+      "raw_value": 1.0624374553252325,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": 0.007913102603468128,
+      "raw_value": 0.5,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.0071707477724044875,
+      "raw_value": 0.069672131147541,
+      "direction": "negative"
+    }
+  ]
+}

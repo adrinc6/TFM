@@ -1,0 +1,41 @@
+{
+  "agent": "fundamental",
+  "timestamp": "2026-03-06T18:47:21.826139",
+  "fold": 13,
+  "class_balance": {
+    "n_samples": 1496,
+    "n_positive": 746,
+    "n_negative": 750,
+    "positive_ratio": 0.49866310160427807
+  },
+  "cv_metrics": {
+    "mean_auc": 0.4813330947054437,
+    "std_auc": 0.03277913554575471,
+    "mean_acc": 0.46993534002229653,
+    "mean_f1": 0.460253131802166
+  },
+  "n_features": 59,
+  "top_features": {
+    "sector_Finance": 0.03672390058636665,
+    "debt_to_ebitda_zsector": 0.02745993807911873,
+    "ev_to_ebitda_zsector": 0.026565266773104668,
+    "net_margin": 0.025629019364714622,
+    "debt_equity_zsector": 0.025333937257528305,
+    "roi_zsector": 0.025288334116339684,
+    "operating_margin": 0.0248897522687912,
+    "eps": 0.024691196158528328,
+    "roic": 0.02440045028924942,
+    "roi": 0.02394505776464939,
+    "operating_income_yoy_growth": 0.023876363411545753,
+    "roe": 0.0238419808447361,
+    "momentum_12m_zsector": 0.02326270192861557,
+    "eps_yoy_growth_zsector": 0.023248054087162018,
+    "interest_coverage": 0.02324163168668747
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.4813330947054437,
+    "std_auc": 0.03277913554575471,
+    "mean_acc": 0.46993534002229653,
+    "mean_f1": 0.460253131802166
+  }
+}

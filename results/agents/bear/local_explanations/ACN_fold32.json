@@ -1,0 +1,74 @@
+{
+  "ticker": "ACN",
+  "score": 0.8259,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.03863716849074816,
+      "raw_value": 27.216450737514773,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.011483996279866127,
+      "raw_value": -0.1705882352941177,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.01078333023236351,
+      "raw_value": 0.1708733313038641,
+      "direction": "negative"
+    }
+  ],
+  "text": "ACN — Score: 0.83 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Fcf = 2682588000.000  [contribucion SHAP: +0.064]\n  + Deuda neta / EBITDA = 1.98x  [contribucion SHAP: +0.042]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.48x  [contribucion SHAP: +0.022]\n\nFactores EN CONTRA:\n  - Crecimiento de la deuda total interanual = 2721.6%  [contribucion SHAP: -0.039]\n  - Eps Revision = -0.171  [contribucion SHAP: -0.011]\n  - Ratio deuda / fondos propios = 0.171  [contribucion SHAP: -0.011]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.06394419282882895,
+      "raw_value": 2682588000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.04197653474904394,
+      "raw_value": 1.9793289389098376,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.03863716849074816,
+      "raw_value": 27.216450737514773,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.022324141516314993,
+      "raw_value": 1.4773571242393984,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.011483996279866127,
+      "raw_value": -0.1705882352941177,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.01078333023236351,
+      "raw_value": 0.1708733313038641,
+      "direction": "negative"
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "ticker": "KMX",
+  "score": 0.2865,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": -0.12436220706904237,
+      "raw_value": 0.31958677696626886,
+      "direction": "negative"
+    }
+  ],
+  "text": "KMX — Score: 0.29 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Mom Minus Bear = 0.000  [contribucion SHAP: +0.127]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.116]\n  + VIX (volatilidad implícita de mercado) = 19.3  [contribucion SHAP: +0.082]\n  + Score del Agente Fundamental (salud financiera) = 0.450  [contribucion SHAP: +0.062]\n\nFactores EN CONTRA:\n  - Score del Agente de Momentum (tendencia técnica) = 0.320  [contribucion SHAP: -0.124]",
+  "top_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": 0.1270986469305332,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": -0.12436220706904237,
+      "raw_value": 0.31958677696626886,
+      "direction": "negative"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": 0.11646532688614186,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.08218992219685503,
+      "raw_value": 19.31999969482422,
+      "direction": "positive"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": 0.062123056307256626,
+      "raw_value": 0.44976672530174255,
+      "direction": "positive"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": 0.05914769958790904,
+      "raw_value": 0.5041039983408228,
+      "direction": "positive"
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "ticker": "WEC",
+  "score": 0.2618,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.05647614050985867,
+      "raw_value": 8.67,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.02073060954005869,
+      "raw_value": 0.2051132868992802,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.009696248985180487,
+      "raw_value": 0.5148241360260266,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.007758825473775484,
+      "raw_value": 1.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "WEC — Score: 0.26 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 22.15x  [contribucion SHAP: +0.115]\n  + Eps Revision = -0.465  [contribucion SHAP: +0.027]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 8.670  [contribucion SHAP: -0.056]\n  - Ratio deuda / fondos propios = 0.205  [contribucion SHAP: -0.021]\n  - Crecimiento de la deuda total interanual = 51.5%  [contribucion SHAP: -0.010]\n  - Revenue Decline = 1.000  [contribucion SHAP: -0.008]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.1154438783210595,
+      "raw_value": 22.152603231597844,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.05647614050985867,
+      "raw_value": 8.67,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.026566416391441423,
+      "raw_value": -0.4654088050314465,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.02073060954005869,
+      "raw_value": 0.2051132868992802,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.009696248985180487,
+      "raw_value": 0.5148241360260266,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.007758825473775484,
+      "raw_value": 1.0,
+      "direction": "negative"
+    }
+  ]
+}

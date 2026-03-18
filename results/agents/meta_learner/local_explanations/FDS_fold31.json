@@ -1,0 +1,67 @@
+{
+  "ticker": "FDS",
+  "score": 0.7705,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.31993547380304754,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.045672623833503755,
+      "raw_value": 0.30891943273771233,
+      "direction": "negative"
+    }
+  ],
+  "text": "FDS — Score: 0.77 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.711  [contribucion SHAP: +0.606]\n  + VIX (volatilidad implícita de mercado) = 30.9  [contribucion SHAP: +0.154]\n  + Score del Agente de Valoración (infravaloración) = 0.510  [contribucion SHAP: +0.050]\n  + Score del Agente Fundamental (salud financiera) = 0.499  [contribucion SHAP: +0.047]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.320]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.309  [contribucion SHAP: -0.046]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.6056231911865205,
+      "raw_value": 0.7109050987907256,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.31993547380304754,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.15395809827160517,
+      "raw_value": 30.88999938964844,
+      "direction": "positive"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": 0.0500361645776709,
+      "raw_value": 0.5098253860368814,
+      "direction": "positive"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": 0.046868708423900056,
+      "raw_value": 0.4988455871740977,
+      "direction": "positive"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.045672623833503755,
+      "raw_value": 0.30891943273771233,
+      "direction": "negative"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "ticker": "PG",
+  "score": 0.289,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.04405707656921516,
+      "raw_value": 0.671247969225598,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.013621741443925422,
+      "raw_value": 0.95,
+      "direction": "negative"
+    }
+  ],
+  "text": "PG — Score: 0.29 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 5.43x  [contribucion SHAP: +0.022]\n  + Fcf = 4208000000.000  [contribucion SHAP: +0.016]\n  + Acciones compradas netas por insiders (90 días) = 226380.000  [contribucion SHAP: +0.010]\n  + Eps Revision = -0.177  [contribucion SHAP: +0.009]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.671  [contribucion SHAP: -0.044]\n  - Eps Surprise Pct = 0.950  [contribucion SHAP: -0.014]",
+  "top_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.04405707656921516,
+      "raw_value": 0.671247969225598,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.02183076010964804,
+      "raw_value": 5.432371165180595,
+      "direction": "positive"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.016098283903847235,
+      "raw_value": 4208000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.013621741443925422,
+      "raw_value": 0.95,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.009534778304283703,
+      "raw_value": 226380.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.009306130981805018,
+      "raw_value": -0.1774193548387097,
+      "direction": "positive"
+    }
+  ]
+}

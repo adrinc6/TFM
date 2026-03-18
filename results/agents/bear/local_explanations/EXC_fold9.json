@@ -1,0 +1,81 @@
+{
+  "ticker": "EXC",
+  "score": 0.1466,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.08125500319783105,
+      "raw_value": 1.14,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.02513620751317907,
+      "raw_value": 1.6995494238207265,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.015218322453345269,
+      "raw_value": 0.9503528225806452,
+      "direction": "negative"
+    },
+    {
+      "feature": "liquidity_risk",
+      "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+      "shap_value": -0.008345527169223061,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "EXC — Score: 0.15 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Cobertura de intereses (EBIT / intereses) = 1.65x  [contribucion SHAP: +0.012]\n  + Eps Revision = -0.379  [contribucion SHAP: +0.008]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 1.140  [contribucion SHAP: -0.081]\n  - Ratio deuda / fondos propios = 1.700  [contribucion SHAP: -0.025]\n  - Ratio de liquidez corriente (activo / pasivo cte.) = 0.95x  [contribucion SHAP: -0.015]\n  - FLAG: Ratio corriente < 1 (riesgo liquidez) = 0.000  [contribucion SHAP: -0.008]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.08125500319783105,
+      "raw_value": 1.14,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.02513620751317907,
+      "raw_value": 1.6995494238207265,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.015218322453345269,
+      "raw_value": 0.9503528225806452,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.012204147307633122,
+      "raw_value": 1.648711943793911,
+      "direction": "positive"
+    },
+    {
+      "feature": "liquidity_risk",
+      "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+      "shap_value": -0.008345527169223061,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.0083058435097165,
+      "raw_value": -0.3787878787878789,
+      "direction": "positive"
+    }
+  ]
+}

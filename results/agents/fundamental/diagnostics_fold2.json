@@ -1,0 +1,41 @@
+{
+  "agent": "fundamental",
+  "timestamp": "2026-03-06T18:09:36.736196",
+  "fold": 2,
+  "class_balance": {
+    "n_samples": 1466,
+    "n_positive": 733,
+    "n_negative": 733,
+    "positive_ratio": 0.5
+  },
+  "cv_metrics": {
+    "mean_auc": 0.6248579200574088,
+    "std_auc": 0.027552753681978796,
+    "mean_acc": 0.5982192194283857,
+    "mean_f1": 0.6046436760710715
+  },
+  "n_features": 59,
+  "top_features": {
+    "sector_Consumer Discretionary": 0.0434640571475029,
+    "sector_Computer And Technology": 0.043413739651441574,
+    "sector_Oils-Energy": 0.04092385619878769,
+    "sector_Medical": 0.03227869048714638,
+    "volatility_20d_zsector": 0.029987448826432228,
+    "momentum_12m_zsector": 0.023889508098363876,
+    "net_income_yoy_growth": 0.02334892563521862,
+    "operating_income_yoy_growth": 0.02298644185066223,
+    "eps_yoy_growth": 0.02256486751139164,
+    "interest_coverage": 0.022427286952733994,
+    "net_income_yoy_growth_zsector": 0.021825425326824188,
+    "debt_to_ebitda_zsector": 0.02177146077156067,
+    "ebitda_margin_zsector": 0.02173454500734806,
+    "revenue_yoy_growth": 0.021678771823644638,
+    "interest_coverage_zsector": 0.02127036824822426
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.6248579200574088,
+    "std_auc": 0.027552753681978796,
+    "mean_acc": 0.5982192194283857,
+    "mean_f1": 0.6046436760710715
+  }
+}

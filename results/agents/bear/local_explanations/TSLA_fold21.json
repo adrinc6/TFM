@@ -1,0 +1,74 @@
+{
+  "ticker": "TSLA",
+  "score": 0.28,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.020741472887459422,
+      "raw_value": 0.1151450277269821,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.015130927651104496,
+      "raw_value": 2.3226083226083225,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.013192055938043358,
+      "raw_value": -16.62,
+      "direction": "negative"
+    }
+  ],
+  "text": "TSLA — Score: 0.28 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Cobertura de intereses (EBIT / intereses) = 8.50x  [contribucion SHAP: +0.042]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.91x  [contribucion SHAP: +0.007]\n  + Revenue Decline = 0.000  [contribucion SHAP: +0.007]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.115  [contribucion SHAP: -0.021]\n  - Crecimiento de la deuda total interanual = 232.3%  [contribucion SHAP: -0.015]\n  - Eps Surprise Pct = -16.620  [contribucion SHAP: -0.013]",
+  "top_drivers": [
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.042441150743429294,
+      "raw_value": 8.5,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.020741472887459422,
+      "raw_value": 0.1151450277269821,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.015130927651104496,
+      "raw_value": 2.3226083226083225,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.013192055938043358,
+      "raw_value": -16.62,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.0067919765690578355,
+      "raw_value": 1.9105268852104296,
+      "direction": "positive"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": 0.006719541964083896,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "ticker": "FOX",
+  "score": 0.3608,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.02874690716890433,
+      "raw_value": 0.799110522331567,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.02062549216586483,
+      "raw_value": 3.4583333333333335,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.015633806849489878,
+      "raw_value": 1.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "FOX — Score: 0.36 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 3.46x  [contribucion SHAP: +0.020]\n  + Deuda neta / EBITDA = 55.56x  [contribucion SHAP: +0.017]\n  + Crecimiento de la deuda total interanual = 17.2%  [contribucion SHAP: +0.011]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.799  [contribucion SHAP: -0.029]\n  - Cobertura de intereses (EBIT / intereses) = 3.46x  [contribucion SHAP: -0.021]\n  - Revenue Decline = 1.000  [contribucion SHAP: -0.016]",
+  "top_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.02874690716890433,
+      "raw_value": 0.799110522331567,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.02062549216586483,
+      "raw_value": 3.4583333333333335,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.019693636082599882,
+      "raw_value": 3.45991045991046,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.016986815508144845,
+      "raw_value": 55.55921052631579,
+      "direction": "positive"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.015633806849489878,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.011240480673814507,
+      "raw_value": 0.17161487236404005,
+      "direction": "positive"
+    }
+  ]
+}

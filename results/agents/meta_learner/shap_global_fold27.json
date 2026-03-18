@@ -1,0 +1,82 @@
+{
+  "momentum_score": {
+    "shap_importance": 0.5326880242231125,
+    "description": "Score del Agente de Momentum (tendencia técnica)"
+  },
+  "mom_minus_bear": {
+    "shap_importance": 0.09569087610029384,
+    "description": "Mom Minus Bear"
+  },
+  "bear_score": {
+    "shap_importance": 0.08998449497638389,
+    "description": "Score del Agente Bear (riesgo, <0.5 es bueno)"
+  },
+  "valuation_score": {
+    "shap_importance": 0.07481726430714908,
+    "description": "Score del Agente de Valoración (infravaloración)"
+  },
+  "sector_Finance": {
+    "shap_importance": 0.057260675056562675,
+    "description": "Sector Finance"
+  },
+  "fundamental_score": {
+    "shap_importance": 0.05642159415206236,
+    "description": "Score del Agente Fundamental (salud financiera)"
+  },
+  "sector_Computer And Technology": {
+    "shap_importance": 0.04872099684851303,
+    "description": "Sector Computer And Technology"
+  },
+  "sector_Consumer Staples": {
+    "shap_importance": 0.046600189407613166,
+    "description": "Sector Consumer Staples"
+  },
+  "vix": {
+    "shap_importance": 0.023007196919301788,
+    "description": "VIX (volatilidad implícita de mercado)"
+  },
+  "sector_Medical": {
+    "shap_importance": 0.017956953723145784,
+    "description": "Sector Medical"
+  },
+  "yield_curve": {
+    "shap_importance": 0.0176101097279319,
+    "description": "Pendiente curva de tipos (10Y - 2Y)"
+  },
+  "sp500_momentum_3m": {
+    "shap_importance": 0.016579571198279682,
+    "description": "Momentum del S&P 500 a 3 meses"
+  },
+  "sp500_momentum_12m": {
+    "shap_importance": 0.01325529330520472,
+    "description": "Momentum del S&P 500 a 12 meses"
+  },
+  "sector_Consumer Discretionary": {
+    "shap_importance": 0.011945391687897482,
+    "description": "Sector Consumer Discretionary"
+  },
+  "sector_Aerospace": {
+    "shap_importance": 0.010162083299262277,
+    "description": "Sector Aerospace"
+  },
+  "sector_Basic Materials": {
+    "shap_importance": 0.008571306235468888,
+    "description": "Sector Basic Materials"
+  },
+  "fund_x_val": {
+    "shap_importance": 0.0063774557683325015,
+    "description": "Fund X Val"
+  },
+  "sector_Utilities": {
+    "shap_importance": 0.0038047001040768507,
+    "description": "Sector Utilities"
+  },
+  "sector_Retail-Wholesale": {
+    "shap_importance": 0.003735838319862832,
+    "description": "Sector Retail-Wholesale"
+  },
+  "sector_Transportation": {
+    "shap_importance": 0.003431752985673519,
+    "description": "Sector Transportation"
+  }
+}

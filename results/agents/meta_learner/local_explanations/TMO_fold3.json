@@ -1,0 +1,81 @@
+{
+  "ticker": "TMO",
+  "score": 0.2894,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.1480754768601371,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.04304384649431298,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.0408682937015729,
+      "raw_value": 0.480458752147549,
+      "direction": "negative"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.03164249414293814,
+      "raw_value": 0.30410250967748675,
+      "direction": "negative"
+    }
+  ],
+  "text": "TMO — Score: 0.29 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.319  [contribucion SHAP: +0.380]\n  + VIX (volatilidad implícita de mercado) = 14.8  [contribucion SHAP: +0.099]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.148]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.043]\n  - Score del Agente de Valoración (infravaloración) = 0.480  [contribucion SHAP: -0.041]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.304  [contribucion SHAP: -0.032]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.379635546763752,
+      "raw_value": 0.3187925027730157,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.1480754768601371,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.098650320610259,
+      "raw_value": 14.829999923706056,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.04304384649431298,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.0408682937015729,
+      "raw_value": 0.480458752147549,
+      "direction": "negative"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.03164249414293814,
+      "raw_value": 0.30410250967748675,
+      "direction": "negative"
+    }
+  ]
+}

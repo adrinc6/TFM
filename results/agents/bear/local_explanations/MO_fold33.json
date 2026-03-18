@@ -1,0 +1,60 @@
+{
+  "ticker": "MO",
+  "score": 0.3378,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.021825002685011648,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "MO — Score: 0.34 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.39x  [contribucion SHAP: +0.034]\n  + Fcf = 173000000.000  [contribucion SHAP: +0.016]\n  + Crecimiento de la deuda total interanual = -1.3%  [contribucion SHAP: +0.016]\n  + Eps Revision = -0.078  [contribucion SHAP: +0.014]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = 0.000  [contribucion SHAP: -0.022]",
+  "top_drivers": [
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.03414381559772356,
+      "raw_value": 0.3877430760164997,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.021825002685011648,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.01626447371832834,
+      "raw_value": 173000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.01571049454642588,
+      "raw_value": -0.012858397891542195,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.01419561175398397,
+      "raw_value": -0.0775193798449612,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_selling",
+      "description": "FLAG: Insiders vendiendo >70% de operaciones",
+      "shap_value": 0.00960162509624575,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

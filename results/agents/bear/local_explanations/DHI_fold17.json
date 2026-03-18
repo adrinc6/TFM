@@ -1,0 +1,60 @@
+{
+  "ticker": "DHI",
+  "score": 0.7892,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.0030403684244049937,
+      "raw_value": 0.2443942312441349,
+      "direction": "negative"
+    }
+  ],
+  "text": "DHI — Score: 0.79 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.017]\n  + Acciones compradas netas por insiders (90 días) = 17435.000  [contribucion SHAP: +0.006]\n  + Revenue Decline = 0.000  [contribucion SHAP: +0.006]\n  + Proporción de ventas de insiders (>0.7 = red flag) = 0.38x  [contribucion SHAP: +0.003]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.244  [contribucion SHAP: -0.003]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.016524152304100516,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.006383923785997174,
+      "raw_value": 17435.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": 0.005958488418200248,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": 0.0033669017721233187,
+      "raw_value": 0.3802656337989479,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.00304301939668232,
+      "raw_value": 1.484101843235859,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.0030403684244049937,
+      "raw_value": 0.2443942312441349,
+      "direction": "negative"
+    }
+  ]
+}

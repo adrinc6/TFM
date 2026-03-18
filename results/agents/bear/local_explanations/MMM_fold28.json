@@ -1,0 +1,60 @@
+{
+  "ticker": "MMM",
+  "score": 0.2885,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.03489659316390029,
+      "raw_value": 3.349768875192604,
+      "direction": "negative"
+    }
+  ],
+  "text": "MMM — Score: 0.29 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = -18.7%  [contribucion SHAP: +0.028]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.41x  [contribucion SHAP: +0.014]\n  + Eps Revision = -0.126  [contribucion SHAP: +0.009]\n  + FLAG: Insiders vendiendo >70% de operaciones = 0.000  [contribucion SHAP: +0.006]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 3.350  [contribucion SHAP: -0.035]",
+  "top_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.03489659316390029,
+      "raw_value": 3.349768875192604,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.027656699294688027,
+      "raw_value": -0.18652946679139382,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.014421201080654712,
+      "raw_value": 1.4111584932480454,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.009178419321601208,
+      "raw_value": -0.1263157894736841,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_selling",
+      "description": "FLAG: Insiders vendiendo >70% de operaciones",
+      "shap_value": 0.005755063050380126,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": 0.00532856124813865,
+      "raw_value": 0.5916925413594547,
+      "direction": "positive"
+    }
+  ]
+}

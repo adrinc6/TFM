@@ -1,0 +1,74 @@
+{
+  "ticker": "BX",
+  "score": 0.8339,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.06049323093814929,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.037770987296742574,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.03201389998287496,
+      "raw_value": 0.2531888429264547,
+      "direction": "negative"
+    }
+  ],
+  "text": "BX — Score: 0.83 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.800  [contribucion SHAP: +0.641]\n  + VIX (volatilidad implícita de mercado) = 12.4  [contribucion SHAP: +0.095]\n  + Pendiente curva de tipos (10Y - 2Y) = -0.884  [contribucion SHAP: +0.033]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.060]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.038]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.253  [contribucion SHAP: -0.032]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.6410534327844621,
+      "raw_value": 0.7995129677733344,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.09525115495541728,
+      "raw_value": 12.449999809265137,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.06049323093814929,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.037770987296742574,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": 0.03259390548879569,
+      "raw_value": -0.8839998245239258,
+      "direction": "positive"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.03201389998287496,
+      "raw_value": 0.2531888429264547,
+      "direction": "negative"
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "ticker": "CHD",
+  "score": 0.2501,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.04759756583458478,
+      "raw_value": 0.5055494404696386,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.02352493677939649,
+      "raw_value": -87772.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.00801516686004853,
+      "raw_value": 0.1323529411764705,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.007335083094913758,
+      "raw_value": -0.08370739817123862,
+      "direction": "negative"
+    }
+  ],
+  "text": "CHD — Score: 0.25 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.70x  [contribucion SHAP: +0.030]\n  + Cobertura de intereses (EBIT / intereses) = 17.34x  [contribucion SHAP: +0.007]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.506  [contribucion SHAP: -0.048]\n  - Acciones compradas netas por insiders (90 días) = -87772.000  [contribucion SHAP: -0.024]\n  - Eps Revision = 0.132  [contribucion SHAP: -0.008]\n  - Crecimiento de la deuda total interanual = -8.4%  [contribucion SHAP: -0.007]",
+  "top_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.04759756583458478,
+      "raw_value": 0.5055494404696386,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.03035791227752838,
+      "raw_value": 1.702712972110343,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.02352493677939649,
+      "raw_value": -87772.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.00801516686004853,
+      "raw_value": 0.1323529411764705,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.007335083094913758,
+      "raw_value": -0.08370739817123862,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.007297360510254289,
+      "raw_value": 17.344594594594593,
+      "direction": "positive"
+    }
+  ]
+}

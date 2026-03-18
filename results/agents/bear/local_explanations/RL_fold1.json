@@ -1,0 +1,60 @@
+{
+  "ticker": "RL",
+  "score": 0.2378,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.047130171525194,
+      "raw_value": 24.108333333333334,
+      "direction": "negative"
+    }
+  ],
+  "text": "RL — Score: 0.24 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = 0.2%  [contribucion SHAP: +0.061]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.88x  [contribucion SHAP: +0.033]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.008]\n  + FLAG: Deuda creciendo >20% interanual = 0.000  [contribucion SHAP: +0.005]\n\nFactores EN CONTRA:\n  - Cobertura de intereses (EBIT / intereses) = 24.11x  [contribucion SHAP: -0.047]",
+  "top_drivers": [
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.06119888958487695,
+      "raw_value": 0.00214473926098413,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.047130171525194,
+      "raw_value": 24.108333333333334,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.03287369235048439,
+      "raw_value": 1.8798567673196644,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.008117003766027609,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_growth_high",
+      "description": "FLAG: Deuda creciendo >20% interanual",
+      "shap_value": 0.004551104702277199,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "liquidity_risk",
+      "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+      "shap_value": 0.00409903695476609,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

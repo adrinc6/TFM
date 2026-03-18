@@ -1,0 +1,67 @@
+{
+  "ticker": "BA",
+  "score": 0.5569,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "consecutive_losses",
+      "description": "Trimestres consecutivos con pérdidas",
+      "shap_value": -0.031046684422482484,
+      "raw_value": 4.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.006224746886788431,
+      "raw_value": -12.399023936788288,
+      "direction": "negative"
+    }
+  ],
+  "text": "BA — Score: 0.56 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 238000000.000  [contribucion SHAP: +0.013]\n  + Acciones compradas netas por insiders (90 días) = 834.000  [contribucion SHAP: +0.013]\n  + Proporción de ventas de insiders (>0.7 = red flag) = 0.38x  [contribucion SHAP: +0.012]\n  + Eps Revision = -0.573  [contribucion SHAP: +0.007]\n\nFactores EN CONTRA:\n  - Trimestres consecutivos con pérdidas = 4.000  [contribucion SHAP: -0.031]\n  - Deuda neta / EBITDA = -12.40x  [contribucion SHAP: -0.006]",
+  "top_drivers": [
+    {
+      "feature": "consecutive_losses",
+      "description": "Trimestres consecutivos con pérdidas",
+      "shap_value": -0.031046684422482484,
+      "raw_value": 4.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.013103983215617596,
+      "raw_value": 238000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.013079823061102972,
+      "raw_value": 834.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": 0.011853402590129576,
+      "raw_value": 0.3830622546270331,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.0067736367920189534,
+      "raw_value": -0.5733333333333333,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.006224746886788431,
+      "raw_value": -12.399023936788288,
+      "direction": "negative"
+    }
+  ]
+}

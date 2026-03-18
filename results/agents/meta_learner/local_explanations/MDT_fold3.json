@@ -1,0 +1,74 @@
+{
+  "ticker": "MDT",
+  "score": 0.3485,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.15498882067852554,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.0468638363425492,
+      "raw_value": 0.48700611537541305,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.040770546726648794,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "MDT — Score: 0.35 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.375  [contribucion SHAP: +0.542]\n  + VIX (volatilidad implícita de mercado) = 14.8  [contribucion SHAP: +0.093]\n  + Sector Consumer Staples = 0.000  [contribucion SHAP: +0.029]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.155]\n  - Score del Agente de Valoración (infravaloración) = 0.487  [contribucion SHAP: -0.047]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.041]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.5415579741463468,
+      "raw_value": 0.3749007241898364,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.15498882067852554,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.09298804953202518,
+      "raw_value": 14.760000228881836,
+      "direction": "positive"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.0468638363425492,
+      "raw_value": 0.48700611537541305,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.040770546726648794,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Consumer Staples",
+      "description": "Sector Consumer Staples",
+      "shap_value": 0.028987163194270596,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

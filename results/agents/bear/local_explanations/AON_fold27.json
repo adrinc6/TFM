@@ -1,0 +1,67 @@
+{
+  "ticker": "AON",
+  "score": 0.6494,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.02862605931669797,
+      "raw_value": 4.06,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.022259736319872832,
+      "raw_value": 2.646345256609642,
+      "direction": "negative"
+    }
+  ],
+  "text": "AON — Score: 0.65 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Cobertura de intereses (EBIT / intereses) = 6.32x  [contribucion SHAP: +0.021]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.02x  [contribucion SHAP: +0.019]\n  + Acciones compradas netas por insiders (90 días) = 142254.000  [contribucion SHAP: +0.016]\n  + Deuda neta / EBITDA = 13.85x  [contribucion SHAP: +0.012]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 4.060  [contribucion SHAP: -0.029]\n  - Ratio deuda / fondos propios = 2.646  [contribucion SHAP: -0.022]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.02862605931669797,
+      "raw_value": 4.06,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.022259736319872832,
+      "raw_value": 2.646345256609642,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.02116613096694494,
+      "raw_value": 6.316831683168317,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.019117874449588484,
+      "raw_value": 1.0190041313328984,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.0161864485169841,
+      "raw_value": 142254.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.012043532842300414,
+      "raw_value": 13.845402766476813,
+      "direction": "positive"
+    }
+  ]
+}

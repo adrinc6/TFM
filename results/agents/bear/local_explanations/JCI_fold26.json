@@ -1,0 +1,74 @@
+{
+  "ticker": "JCI",
+  "score": 0.7497,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.042065600374016125,
+      "raw_value": 0.5833625218914186,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.032424563862368014,
+      "raw_value": -1752166.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.018733260113150955,
+      "raw_value": 8.7,
+      "direction": "negative"
+    }
+  ],
+  "text": "JCI — Score: 0.75 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 131000000.000  [contribucion SHAP: +0.050]\n  + Deuda neta / EBITDA = 13.88x  [contribucion SHAP: +0.037]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.02x  [contribucion SHAP: +0.020]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.583  [contribucion SHAP: -0.042]\n  - Acciones compradas netas por insiders (90 días) = -1752166.000  [contribucion SHAP: -0.032]\n  - Eps Surprise Pct = 8.700  [contribucion SHAP: -0.019]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.04978149789853741,
+      "raw_value": 131000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.042065600374016125,
+      "raw_value": 0.5833625218914186,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.0370947014051467,
+      "raw_value": 13.879166666666666,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.032424563862368014,
+      "raw_value": -1752166.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.02035452863911987,
+      "raw_value": 1.0185870251736897,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.018733260113150955,
+      "raw_value": 8.7,
+      "direction": "negative"
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "ticker": "TSN",
+  "score": 0.3535,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.0698977187596154,
+      "raw_value": 0.5264401138132818,
+      "direction": "negative"
+    }
+  ],
+  "text": "TSN — Score: 0.35 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Acciones compradas netas por insiders (90 días) = 6349.000  [contribucion SHAP: +0.036]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.11x  [contribucion SHAP: +0.031]\n  + Cobertura de intereses (EBIT / intereses) = 6.11x  [contribucion SHAP: +0.022]\n  + Eps Surprise Pct = 29.970  [contribucion SHAP: +0.013]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.526  [contribucion SHAP: -0.070]",
+  "top_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.0698977187596154,
+      "raw_value": 0.5264401138132818,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.035928394070193256,
+      "raw_value": 6349.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.03115134028651456,
+      "raw_value": 2.109205020920502,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.022079548631873707,
+      "raw_value": 6.105263157894737,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": 0.012750373507347253,
+      "raw_value": 29.97,
+      "direction": "positive"
+    },
+    {
+      "feature": "liquidity_risk",
+      "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+      "shap_value": 0.0063179468690578175,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

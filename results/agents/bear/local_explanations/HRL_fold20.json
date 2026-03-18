@@ -1,0 +1,81 @@
+{
+  "ticker": "HRL",
+  "score": 0.2833,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.032728885289033026,
+      "raw_value": 2.86,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.02124181835586403,
+      "raw_value": 0.3630533595269908,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.013916159917589445,
+      "raw_value": -50770.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.009449711001980391,
+      "raw_value": 1.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "HRL — Score: 0.28 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Cobertura de intereses (EBIT / intereses) = 20.84x  [contribucion SHAP: +0.034]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.29x  [contribucion SHAP: +0.025]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 2.860  [contribucion SHAP: -0.033]\n  - Ratio deuda / fondos propios = 0.363  [contribucion SHAP: -0.021]\n  - Acciones compradas netas por insiders (90 días) = -50770.000  [contribucion SHAP: -0.014]\n  - Revenue Decline = 1.000  [contribucion SHAP: -0.009]",
+  "top_drivers": [
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.03386348654393485,
+      "raw_value": 20.83963553530752,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.032728885289033026,
+      "raw_value": 2.86,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.025076812835681153,
+      "raw_value": 2.288571219152416,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.02124181835586403,
+      "raw_value": 0.3630533595269908,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.013916159917589445,
+      "raw_value": -50770.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.009449711001980391,
+      "raw_value": 1.0,
+      "direction": "negative"
+    }
+  ]
+}

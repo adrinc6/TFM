@@ -1,0 +1,74 @@
+{
+  "ticker": "MDT",
+  "score": 0.3088,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.10763677234707479,
+      "raw_value": 0.3034468696465825,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.02834182450636288,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Finance",
+      "description": "Sector Finance",
+      "shap_value": -0.021208649853332446,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "MDT — Score: 0.31 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.330  [contribucion SHAP: +0.252]\n  + VIX (volatilidad implícita de mercado) = 20.8  [contribucion SHAP: +0.145]\n  + Sector Consumer Staples = 0.000  [contribucion SHAP: +0.025]\n\nFactores EN CONTRA:\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.303  [contribucion SHAP: -0.108]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.028]\n  - Sector Finance = 0.000  [contribucion SHAP: -0.021]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.2521319616959307,
+      "raw_value": 0.3301565975570237,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.14479185203670514,
+      "raw_value": 20.81999969482422,
+      "direction": "positive"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.10763677234707479,
+      "raw_value": 0.3034468696465825,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.02834182450636288,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Consumer Staples",
+      "description": "Sector Consumer Staples",
+      "shap_value": 0.02529663307053139,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Finance",
+      "description": "Sector Finance",
+      "shap_value": -0.021208649853332446,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

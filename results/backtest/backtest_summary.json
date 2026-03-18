@@ -1,0 +1,53 @@
+{
+  "timestamp": "2026-03-06T20:50:06.997942",
+  "n_folds": 37,
+  "train_years_min": 1,
+  "test_quarters": 1,
+  "top_n_stocks": 10,
+  "mean_alpha": 0.07853357257452447,
+  "pct_folds_positive_alpha": 0.8108108108108109,
+  "by_train_years": {
+    "1": {
+      "n_folds": 15,
+      "mean_alpha": 0.08153645640801582,
+      "pct_positive_alpha": 0.7333333333333333,
+      "mean_strategy_sharpe": 1.658379579149425,
+      "mean_strategy_return": 0.10513532764070802
+    },
+    "2": {
+      "n_folds": 11,
+      "mean_alpha": 0.0784952007175847,
+      "pct_positive_alpha": 0.8181818181818182,
+      "mean_strategy_sharpe": 2.0196988917900893,
+      "mean_strategy_return": 0.13155231826552127
+    },
+    "3": {
+      "n_folds": 7,
+      "mean_alpha": 0.07020303120652192,
+      "pct_positive_alpha": 0.8571428571428571,
+      "mean_strategy_sharpe": 2.1017536314381786,
+      "mean_strategy_return": 0.12097236672349136
+    },
+    "4": {
+      "n_folds": 4,
+      "mean_alpha": 0.08195672819952066,
+      "pct_positive_alpha": 1.0,
+      "mean_strategy_sharpe": 2.0938953176539226,
+      "mean_strategy_return": 0.12270039281801098
+    }
+  },
+  "global_strategy_cumulative_return": 51.424141992261234,
+  "global_strategy_sharpe": 1.716103061846926,
+  "global_strategy_sortino": 2.395579974201663,
+  "global_strategy_max_drawdown": -0.24258095036304966,
+  "global_strategy_calmar": 2.2377399973086165,
+  "global_strategy_volatility": 0.2473782663378598,
+  "global_strategy_n_periods": 2301,
+  "global_benchmark_cumulative_return": 2.880616418810781,
+  "global_benchmark_sharpe": 0.7201246069197427,
+  "global_benchmark_sortino": 0.9641058753066052,
+  "global_benchmark_max_drawdown": -0.2827805485244121,
+  "global_benchmark_calmar": 0.5661593207453409,
+  "global_benchmark_volatility": 0.17094807740246942,
+  "global_benchmark_n_periods": 2301
+}

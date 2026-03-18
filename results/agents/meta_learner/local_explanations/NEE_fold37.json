@@ -1,0 +1,67 @@
+{
+  "ticker": "NEE",
+  "score": 0.7235,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "sp500_momentum_12m",
+      "description": "Momentum del S&P 500 a 12 meses",
+      "shap_value": -0.09703736661452461,
+      "raw_value": 0.1253544206334416,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.061834884558509155,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "NEE — Score: 0.72 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Mom Minus Bear = 0.000  [contribucion SHAP: +0.408]\n  + VIX (volatilidad implícita de mercado) = 19.8  [contribucion SHAP: +0.246]\n  + Score del Agente Fundamental (salud financiera) = 0.592  [contribucion SHAP: +0.118]\n  + Score del Agente de Momentum (tendencia técnica) = 0.507  [contribucion SHAP: +0.056]\n\nFactores EN CONTRA:\n  - Momentum del S&P 500 a 12 meses = 12.5%  [contribucion SHAP: -0.097]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.062]",
+  "top_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": 0.4083546154054803,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.24595661201836133,
+      "raw_value": 19.82999992370605,
+      "direction": "positive"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": 0.11772992975822734,
+      "raw_value": 0.5916164716084799,
+      "direction": "positive"
+    },
+    {
+      "feature": "sp500_momentum_12m",
+      "description": "Momentum del S&P 500 a 12 meses",
+      "shap_value": -0.09703736661452461,
+      "raw_value": 0.1253544206334416,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.061834884558509155,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.05607834623653326,
+      "raw_value": 0.5072806325792381,
+      "direction": "positive"
+    }
+  ]
+}

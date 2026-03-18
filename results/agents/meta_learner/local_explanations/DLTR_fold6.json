@@ -1,0 +1,74 @@
+{
+  "ticker": "DLTR",
+  "score": 0.6862,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "sector_Finance",
+      "description": "Sector Finance",
+      "shap_value": -0.027424557865916355,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.024547257086934088,
+      "raw_value": 0.5020823900751659,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Oils-Energy",
+      "description": "Sector Oils-Energy",
+      "shap_value": -0.021558244646315006,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "DLTR — Score: 0.69 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.638  [contribucion SHAP: +0.507]\n  + VIX (volatilidad implícita de mercado) = 25.5  [contribucion SHAP: +0.106]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.192  [contribucion SHAP: +0.085]\n\nFactores EN CONTRA:\n  - Sector Finance = 0.000  [contribucion SHAP: -0.027]\n  - Score del Agente de Valoración (infravaloración) = 0.502  [contribucion SHAP: -0.025]\n  - Sector Oils-Energy = 0.000  [contribucion SHAP: -0.022]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.5066919671578077,
+      "raw_value": 0.6381078051529299,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.10564991313771441,
+      "raw_value": 25.51000022888184,
+      "direction": "positive"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": 0.0850705202570187,
+      "raw_value": 0.19234940303559234,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Finance",
+      "description": "Sector Finance",
+      "shap_value": -0.027424557865916355,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.024547257086934088,
+      "raw_value": 0.5020823900751659,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Oils-Energy",
+      "description": "Sector Oils-Energy",
+      "shap_value": -0.021558244646315006,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

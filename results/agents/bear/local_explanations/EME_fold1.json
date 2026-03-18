@@ -1,0 +1,60 @@
+{
+  "ticker": "EME",
+  "score": 0.6426,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.005737600152829703,
+      "raw_value": 0.3244680851063832,
+      "direction": "negative"
+    }
+  ],
+  "text": "EME — Score: 0.64 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Acciones compradas netas por insiders (90 días) = 11334.000  [contribucion SHAP: +0.012]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.30x  [contribucion SHAP: +0.011]\n  + Eps Surprise Pct = 16.400  [contribucion SHAP: +0.010]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.006]\n\nFactores EN CONTRA:\n  - Eps Revision = 0.324  [contribucion SHAP: -0.006]",
+  "top_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.012042779367443504,
+      "raw_value": 11334.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.010839771048129243,
+      "raw_value": 1.2973920902061526,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": 0.010066221435591827,
+      "raw_value": 16.4,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.006203314700504733,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.005737600152829703,
+      "raw_value": 0.3244680851063832,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.0045158190499529375,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

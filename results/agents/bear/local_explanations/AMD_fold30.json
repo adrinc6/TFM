@@ -1,0 +1,81 @@
+{
+  "ticker": "AMD",
+  "score": 0.7456,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.05169026219065626,
+      "raw_value": -58000.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.019535003101781943,
+      "raw_value": 0.6871961102106969,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.01227620501582575,
+      "raw_value": 1.81,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.006958031712509917,
+      "raw_value": 0.0719407059311345,
+      "direction": "negative"
+    }
+  ],
+  "text": "AMD — Score: 0.75 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 727000000.000  [contribucion SHAP: +0.098]\n  + Deuda neta / EBITDA = 2.69x  [contribucion SHAP: +0.038]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -58000.000  [contribucion SHAP: -0.052]\n  - Crecimiento de la deuda total interanual = 68.7%  [contribucion SHAP: -0.020]\n  - Eps Surprise Pct = 1.810  [contribucion SHAP: -0.012]\n  - Ratio deuda / fondos propios = 0.072  [contribucion SHAP: -0.007]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.09821363073387676,
+      "raw_value": 727000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.05169026219065626,
+      "raw_value": -58000.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.037550934134253956,
+      "raw_value": 2.689922480620155,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.019535003101781943,
+      "raw_value": 0.6871961102106969,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.01227620501582575,
+      "raw_value": 1.81,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.006958031712509917,
+      "raw_value": 0.0719407059311345,
+      "direction": "negative"
+    }
+  ]
+}

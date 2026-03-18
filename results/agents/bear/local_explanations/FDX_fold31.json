@@ -1,0 +1,74 @@
+{
+  "ticker": "FDX",
+  "score": 0.7711,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.029050065193622004,
+      "raw_value": -14905.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.024863736211897955,
+      "raw_value": 0.7541186161449753,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.009433741285967795,
+      "raw_value": 0.1641025641025641,
+      "direction": "negative"
+    }
+  ],
+  "text": "FDX — Score: 0.77 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Fcf = 1015000000.000  [contribucion SHAP: +0.139]\n  + Deuda neta / EBITDA = 7.94x  [contribucion SHAP: +0.028]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.24x  [contribucion SHAP: +0.018]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -14905.000  [contribucion SHAP: -0.029]\n  - Ratio deuda / fondos propios = 0.754  [contribucion SHAP: -0.025]\n  - Eps Revision = 0.164  [contribucion SHAP: -0.009]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.13862749238054745,
+      "raw_value": 1015000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.029050065193622004,
+      "raw_value": -14905.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.028237953663809122,
+      "raw_value": 7.938904217579819,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.024863736211897955,
+      "raw_value": 0.7541186161449753,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.018265373809383992,
+      "raw_value": 1.2387737478411054,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.009433741285967795,
+      "raw_value": 0.1641025641025641,
+      "direction": "negative"
+    }
+  ]
+}

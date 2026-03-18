@@ -1,0 +1,74 @@
+{
+  "ticker": "REG",
+  "score": 0.6864,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": -0.3480909450952395,
+      "raw_value": 28.32999992370605,
+      "direction": "negative"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.10635357476095694,
+      "raw_value": 0.2146342375374833,
+      "direction": "negative"
+    },
+    {
+      "feature": "sp500_momentum_3m",
+      "description": "Momentum del S&P 500 a 3 meses",
+      "shap_value": -0.06357136014589294,
+      "raw_value": -0.0600446672256239,
+      "direction": "negative"
+    }
+  ],
+  "text": "REG — Score: 0.69 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.632  [contribucion SHAP: +0.879]\n  + Pendiente curva de tipos (10Y - 2Y) = 1.636  [contribucion SHAP: +0.163]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.147]\n\nFactores EN CONTRA:\n  - VIX (volatilidad implícita de mercado) = 28.3  [contribucion SHAP: -0.348]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.215  [contribucion SHAP: -0.106]\n  - Momentum del S&P 500 a 3 meses = -6.0%  [contribucion SHAP: -0.064]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.8788593191467701,
+      "raw_value": 0.632423940735816,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": -0.3480909450952395,
+      "raw_value": 28.32999992370605,
+      "direction": "negative"
+    },
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": 0.16342102094161157,
+      "raw_value": 1.6360000371932983,
+      "direction": "positive"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": 0.14721465341073095,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.10635357476095694,
+      "raw_value": 0.2146342375374833,
+      "direction": "negative"
+    },
+    {
+      "feature": "sp500_momentum_3m",
+      "description": "Momentum del S&P 500 a 3 meses",
+      "shap_value": -0.06357136014589294,
+      "raw_value": -0.0600446672256239,
+      "direction": "negative"
+    }
+  ]
+}

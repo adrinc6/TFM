@@ -1,0 +1,67 @@
+{
+  "ticker": "MU",
+  "score": 0.6843,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.022710085313817414,
+      "raw_value": 19.3,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.00837896061336875,
+      "raw_value": 0.1267605633802817,
+      "direction": "negative"
+    }
+  ],
+  "text": "MU — Score: 0.68 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 2.07x  [contribucion SHAP: +0.059]\n  + Acciones compradas netas por insiders (90 días) = 81640.000  [contribucion SHAP: +0.030]\n  + Fcf = 72000000.000  [contribucion SHAP: +0.013]\n  + Cobertura de intereses (EBIT / intereses) = 0.00x  [contribucion SHAP: +0.009]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 19.300  [contribucion SHAP: -0.023]\n  - Eps Revision = 0.127  [contribucion SHAP: -0.008]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.0590190429602112,
+      "raw_value": 2.070010270455324,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.03047246661912699,
+      "raw_value": 81640.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.022710085313817414,
+      "raw_value": 19.3,
+      "direction": "negative"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.012656385582710199,
+      "raw_value": 72000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.008844126002493336,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.00837896061336875,
+      "raw_value": 0.1267605633802817,
+      "direction": "negative"
+    }
+  ]
+}

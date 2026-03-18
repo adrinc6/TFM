@@ -1,0 +1,74 @@
+{
+  "ticker": "ORCL",
+  "score": 0.5631,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": -0.05556469200339326,
+      "raw_value": -2923000000.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.044684065225573937,
+      "raw_value": 4.41451666746149,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.044520592076690624,
+      "raw_value": -9147973.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "ORCL — Score: 0.56 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.75x  [contribucion SHAP: +0.027]\n  + Deuda neta / EBITDA = 13.44x  [contribucion SHAP: +0.018]\n  + FLAG: Insiders vendiendo >70% de operaciones = 0.000  [contribucion SHAP: +0.008]\n\nFactores EN CONTRA:\n  - Fcf = -2923000000.000  [contribucion SHAP: -0.056]\n  - Ratio deuda / fondos propios = 4.415  [contribucion SHAP: -0.045]\n  - Acciones compradas netas por insiders (90 días) = -9147973.000  [contribucion SHAP: -0.045]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": -0.05556469200339326,
+      "raw_value": -2923000000.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.044684065225573937,
+      "raw_value": 4.41451666746149,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.044520592076690624,
+      "raw_value": -9147973.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.027158659015884476,
+      "raw_value": 0.7529638819961401,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.01817610769088534,
+      "raw_value": 13.44097575141571,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_selling",
+      "description": "FLAG: Insiders vendiendo >70% de operaciones",
+      "shap_value": 0.007860778984364427,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

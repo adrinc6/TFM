@@ -1,0 +1,82 @@
+{
+  "momentum_score": {
+    "shap_importance": 0.45356021135230173,
+    "description": "Score del Agente de Momentum (tendencia técnica)"
+  },
+  "fund_x_val": {
+    "shap_importance": 0.11440486586481546,
+    "description": "Fund X Val"
+  },
+  "mom_minus_bear": {
+    "shap_importance": 0.09276696984256898,
+    "description": "Mom Minus Bear"
+  },
+  "sector_Computer And Technology": {
+    "shap_importance": 0.056827864163592895,
+    "description": "Sector Computer And Technology"
+  },
+  "vix": {
+    "shap_importance": 0.05408419278489804,
+    "description": "VIX (volatilidad implícita de mercado)"
+  },
+  "fundamental_score": {
+    "shap_importance": 0.04869967552332102,
+    "description": "Score del Agente Fundamental (salud financiera)"
+  },
+  "valuation_score": {
+    "shap_importance": 0.04453131106378334,
+    "description": "Score del Agente de Valoración (infravaloración)"
+  },
+  "sector_Consumer Staples": {
+    "shap_importance": 0.04146234454140167,
+    "description": "Sector Consumer Staples"
+  },
+  "sector_Medical": {
+    "shap_importance": 0.02795072076771525,
+    "description": "Sector Medical"
+  },
+  "bear_score": {
+    "shap_importance": 0.02179453964480788,
+    "description": "Score del Agente Bear (riesgo, <0.5 es bueno)"
+  },
+  "sector_Finance": {
+    "shap_importance": 0.020547024561168973,
+    "description": "Sector Finance"
+  },
+  "sp500_momentum_12m": {
+    "shap_importance": 0.014325020028010529,
+    "description": "Momentum del S&P 500 a 12 meses"
+  },
+  "yield_curve": {
+    "shap_importance": 0.013254341575628907,
+    "description": "Pendiente curva de tipos (10Y - 2Y)"
+  },
+  "sector_Oils-Energy": {
+    "shap_importance": 0.01266416688039762,
+    "description": "Sector Oils-Energy"
+  },
+  "sp500_momentum_3m": {
+    "shap_importance": 0.012009598207758519,
+    "description": "Momentum del S&P 500 a 3 meses"
+  },
+  "sector_Consumer Discretionary": {
+    "shap_importance": 0.007041714225224268,
+    "description": "Sector Consumer Discretionary"
+  },
+  "sector_Business Services": {
+    "shap_importance": 0.003898872891609329,
+    "description": "Sector Business Services"
+  },
+  "sector_Aerospace": {
+    "shap_importance": 0.0030590123830274425,
+    "description": "Sector Aerospace"
+  },
+  "sector_Transportation": {
+    "shap_importance": 0.002711800457568014,
+    "description": "Sector Transportation"
+  },
+  "sector_Construction": {
+    "shap_importance": 0.0026339091648172035,
+    "description": "Sector Construction"
+  }
+}

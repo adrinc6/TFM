@@ -1,0 +1,81 @@
+{
+  "ticker": "NFLX",
+  "score": 0.2231,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.14375350855411909,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.05558430747433423,
+      "raw_value": 0.2098765422900518,
+      "direction": "negative"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.05444695991443003,
+      "raw_value": 0.5068930744027517,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Medical",
+      "description": "Sector Medical",
+      "shap_value": -0.039446208551540525,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "NFLX — Score: 0.22 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.463  [contribucion SHAP: +0.797]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.119]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.144]\n  - Score del Agente Fundamental (salud financiera) = 0.210  [contribucion SHAP: -0.056]\n  - Score del Agente de Valoración (infravaloración) = 0.507  [contribucion SHAP: -0.054]\n  - Sector Medical = 0.000  [contribucion SHAP: -0.039]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.7973021600616709,
+      "raw_value": 0.46335287570611383,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.14375350855411909,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": 0.11897438300790443,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.05558430747433423,
+      "raw_value": 0.2098765422900518,
+      "direction": "negative"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.05444695991443003,
+      "raw_value": 0.5068930744027517,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Medical",
+      "description": "Sector Medical",
+      "shap_value": -0.039446208551540525,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

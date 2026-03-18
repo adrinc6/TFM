@@ -1,0 +1,60 @@
+{
+  "ticker": "MOS",
+  "score": 0.3382,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.03645349587521976,
+      "raw_value": 0.508645593525896,
+      "direction": "negative"
+    }
+  ],
+  "text": "MOS — Score: 0.34 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.435  [contribucion SHAP: +0.744]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.275  [contribucion SHAP: +0.445]\n  + Mom Minus Bear = 0.000  [contribucion SHAP: +0.215]\n  + Sector Consumer Discretionary = 0.000  [contribucion SHAP: +0.037]\n\nFactores EN CONTRA:\n  - Score del Agente de Valoración (infravaloración) = 0.509  [contribucion SHAP: -0.036]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.7440600585548884,
+      "raw_value": 0.4352097777228325,
+      "direction": "positive"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": 0.4448133108390336,
+      "raw_value": 0.27496555566273245,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": 0.2150121957459167,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Consumer Discretionary",
+      "description": "Sector Consumer Discretionary",
+      "shap_value": 0.03741498203265893,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.036964957631014234,
+      "raw_value": 18.90999984741211,
+      "direction": "positive"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.03645349587521976,
+      "raw_value": 0.508645593525896,
+      "direction": "negative"
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "ticker": "EXPD",
+  "score": 0.297,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.12256923456929408,
+      "raw_value": 0.331753958413701,
+      "direction": "negative"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.10182783831650141,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.06378959722622167,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "EXPD — Score: 0.30 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + VIX (volatilidad implícita de mercado) = 16.2  [contribucion SHAP: +0.430]\n  + Score del Agente de Momentum (tendencia técnica) = 0.398  [contribucion SHAP: +0.313]\n  + Pendiente curva de tipos (10Y - 2Y) = -1.243  [contribucion SHAP: +0.091]\n\nFactores EN CONTRA:\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.332  [contribucion SHAP: -0.123]\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.102]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.064]",
+  "top_drivers": [
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.4298141926497705,
+      "raw_value": 16.190000534057617,
+      "direction": "positive"
+    },
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.31334739220201613,
+      "raw_value": 0.3984851553704168,
+      "direction": "positive"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.12256923456929408,
+      "raw_value": 0.331753958413701,
+      "direction": "negative"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.10182783831650141,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": 0.09083724901932802,
+      "raw_value": -1.2430002689361572,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.06378959722622167,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

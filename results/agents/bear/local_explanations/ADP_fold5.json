@@ -1,0 +1,74 @@
+{
+  "ticker": "ADP",
+  "score": 0.2851,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.06424992515115902,
+      "raw_value": 1.25,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.01380612985158302,
+      "raw_value": 0.0006697699340276753,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.010133574537762194,
+      "raw_value": 0.0777777777777777,
+      "direction": "negative"
+    }
+  ],
+  "text": "ADP — Score: 0.29 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Cobertura de intereses (EBIT / intereses) = 19.03x  [contribucion SHAP: +0.028]\n  + Deuda neta / EBITDA = 3.07x  [contribucion SHAP: +0.024]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.99x  [contribucion SHAP: +0.007]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 1.250  [contribucion SHAP: -0.064]\n  - Crecimiento de la deuda total interanual = 0.1%  [contribucion SHAP: -0.014]\n  - Eps Revision = 0.078  [contribucion SHAP: -0.010]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.06424992515115902,
+      "raw_value": 1.25,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.028094024168281852,
+      "raw_value": 19.028070175438597,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.023640911684757397,
+      "raw_value": 3.0722804852971417,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.01380612985158302,
+      "raw_value": 0.0006697699340276753,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.010133574537762194,
+      "raw_value": 0.0777777777777777,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.007249424665556504,
+      "raw_value": 0.9856858141954172,
+      "direction": "positive"
+    }
+  ]
+}

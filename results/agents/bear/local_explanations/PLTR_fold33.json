@@ -1,0 +1,67 @@
+{
+  "ticker": "PLTR",
+  "score": 0.6724,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.06708812531084134,
+      "raw_value": -1544390.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": -0.014289462883809499,
+      "raw_value": 0.9805572807824384,
+      "direction": "negative"
+    }
+  ],
+  "text": "PLTR — Score: 0.67 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 531617000.000  [contribucion SHAP: +0.035]\n  + Eps Surprise Pct = 1.410  [contribucion SHAP: +0.033]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 6.32x  [contribucion SHAP: +0.030]\n  + Deuda neta / EBITDA = 0.86x  [contribucion SHAP: +0.009]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -1544390.000  [contribucion SHAP: -0.067]\n  - Proporción de ventas de insiders (>0.7 = red flag) = 0.98x  [contribucion SHAP: -0.014]",
+  "top_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.06708812531084134,
+      "raw_value": -1544390.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.03502345633396386,
+      "raw_value": 531617000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": 0.033198814836309265,
+      "raw_value": 1.41,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.030439709341774163,
+      "raw_value": 6.323549979809846,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": -0.014289462883809499,
+      "raw_value": 0.9805572807824384,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.008578289516199442,
+      "raw_value": 0.8621155930642711,
+      "direction": "positive"
+    }
+  ]
+}

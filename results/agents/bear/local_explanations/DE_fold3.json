@@ -1,0 +1,67 @@
+{
+  "ticker": "DE",
+  "score": 0.3591,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.029716512073842946,
+      "raw_value": 2.6363600379987333,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.012697458568754663,
+      "raw_value": 1.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "DE — Score: 0.36 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 24.46x  [contribucion SHAP: +0.049]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.31x  [contribucion SHAP: +0.033]\n  + Fcf = 1844000000.000  [contribucion SHAP: +0.022]\n  + Eps Revision = 0.794  [contribucion SHAP: +0.011]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 2.636  [contribucion SHAP: -0.030]\n  - Revenue Decline = 1.000  [contribucion SHAP: -0.013]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.04912444613429212,
+      "raw_value": 24.460154241645245,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.033484560267417605,
+      "raw_value": 2.314065908153039,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.029716512073842946,
+      "raw_value": 2.6363600379987333,
+      "direction": "negative"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.02190034268244963,
+      "raw_value": 1844000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.012697458568754663,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.011061616836955272,
+      "raw_value": 0.7942122186495177,
+      "direction": "positive"
+    }
+  ]
+}

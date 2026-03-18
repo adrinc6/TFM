@@ -1,0 +1,52 @@
+{
+  "ticker": "NDSN",
+  "score": 0.7571,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [],
+  "text": "NDSN — Score: 0.76 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.684  [contribucion SHAP: +0.867]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.241  [contribucion SHAP: +0.441]\n  + Mom Minus Bear = 0.000  [contribucion SHAP: +0.165]\n  + Sector Consumer Discretionary = 0.000  [contribucion SHAP: +0.037]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.8672046402918856,
+      "raw_value": 0.6838941960540543,
+      "direction": "positive"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": 0.4409489995619507,
+      "raw_value": 0.2408608672300509,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": 0.16472302889972612,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Consumer Discretionary",
+      "description": "Sector Consumer Discretionary",
+      "shap_value": 0.03741498203265893,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.036964957631014234,
+      "raw_value": 25.51000022888184,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Basic Materials",
+      "description": "Sector Basic Materials",
+      "shap_value": 0.028412603740306432,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

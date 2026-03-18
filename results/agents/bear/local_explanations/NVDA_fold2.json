@@ -1,0 +1,67 @@
+{
+  "ticker": "NVDA",
+  "score": 0.3241,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.04129658848624732,
+      "raw_value": -2561505.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.0041134460438815995,
+      "raw_value": 2.84,
+      "direction": "negative"
+    }
+  ],
+  "text": "NVDA — Score: 0.32 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 26187000000.000  [contribucion SHAP: +0.067]\n  + Deuda neta / EBITDA = 0.39x  [contribucion SHAP: +0.031]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 3.39x  [contribucion SHAP: +0.007]\n  + Revenue Decline = 0.000  [contribucion SHAP: +0.003]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -2561505.000  [contribucion SHAP: -0.041]\n  - Eps Surprise Pct = 2.840  [contribucion SHAP: -0.004]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.06698534068427184,
+      "raw_value": 26187000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.04129658848624732,
+      "raw_value": -2561505.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.031111379799840327,
+      "raw_value": 0.3939053440604072,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.006900314894459109,
+      "raw_value": 3.3884032853590536,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.0041134460438815995,
+      "raw_value": 2.84,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": 0.0032995681922835195,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "momentum_score": {
+    "shap_importance": 0.5349747909360497,
+    "description": "Score del Agente de Momentum (tendencia técnica)"
+  },
+  "mom_minus_bear": {
+    "shap_importance": 0.12880525014108243,
+    "description": "Mom Minus Bear"
+  },
+  "fund_x_val": {
+    "shap_importance": 0.12762698897744026,
+    "description": "Fund X Val"
+  },
+  "sector_Computer And Technology": {
+    "shap_importance": 0.10209496499581155,
+    "description": "Sector Computer And Technology"
+  },
+  "sp500_momentum_3m": {
+    "shap_importance": 0.06422872714938016,
+    "description": "Momentum del S&P 500 a 3 meses"
+  },
+  "vix": {
+    "shap_importance": 0.051095458986608236,
+    "description": "VIX (volatilidad implícita de mercado)"
+  },
+  "bear_score": {
+    "shap_importance": 0.05021161198173652,
+    "description": "Score del Agente Bear (riesgo, <0.5 es bueno)"
+  },
+  "yield_curve": {
+    "shap_importance": 0.04014407921496173,
+    "description": "Pendiente curva de tipos (10Y - 2Y)"
+  },
+  "sp500_momentum_12m": {
+    "shap_importance": 0.02866484829559401,
+    "description": "Momentum del S&P 500 a 12 meses"
+  },
+  "sector_Consumer Staples": {
+    "shap_importance": 0.025693193527124694,
+    "description": "Sector Consumer Staples"
+  },
+  "sector_Finance": {
+    "shap_importance": 0.01862051154529237,
+    "description": "Sector Finance"
+  },
+  "sector_Consumer Discretionary": {
+    "shap_importance": 0.014556422662616302,
+    "description": "Sector Consumer Discretionary"
+  },
+  "sector_Basic Materials": {
+    "shap_importance": 0.014376722424002189,
+    "description": "Sector Basic Materials"
+  },
+  "valuation_score": {
+    "shap_importance": 0.012249681853894044,
+    "description": "Score del Agente de Valoración (infravaloración)"
+  },
+  "fundamental_score": {
+    "shap_importance": 0.010899724416684731,
+    "description": "Score del Agente Fundamental (salud financiera)"
+  },
+  "sector_Construction": {
+    "shap_importance": 0.01072662451690222,
+    "description": "Sector Construction"
+  },
+  "sector_Retail-Wholesale": {
+    "shap_importance": 0.008933487286484269,
+    "description": "Sector Retail-Wholesale"
+  },
+  "sector_Medical": {
+    "shap_importance": 0.007813360410734877,
+    "description": "Sector Medical"
+  },
+  "sector_Industrial Products": {
+    "shap_importance": 0.007773915575276878,
+    "description": "Sector Industrial Products"
+  },
+  "sector_Aerospace": {
+    "shap_importance": 0.007672271179795817,
+    "description": "Sector Aerospace"
+  }
+}

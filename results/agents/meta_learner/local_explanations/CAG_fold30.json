@@ -1,0 +1,74 @@
+{
+  "ticker": "CAG",
+  "score": 0.2164,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.1660735375377645,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": -0.1506017201017455,
+      "raw_value": 30.88999938964844,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.04468809992620474,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "CAG — Score: 0.22 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.391  [contribucion SHAP: +0.378]\n  + Score del Agente Fundamental (salud financiera) = 0.492  [contribucion SHAP: +0.070]\n  + Sector Consumer Staples = 0.000  [contribucion SHAP: +0.042]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.166]\n  - VIX (volatilidad implícita de mercado) = 30.9  [contribucion SHAP: -0.151]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.045]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.3784339036775338,
+      "raw_value": 0.39067964593742227,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.1660735375377645,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": -0.1506017201017455,
+      "raw_value": 30.88999938964844,
+      "direction": "negative"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": 0.07014578122123426,
+      "raw_value": 0.4923138419787089,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.04468809992620474,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Consumer Staples",
+      "description": "Sector Consumer Staples",
+      "shap_value": 0.04174019731176389,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

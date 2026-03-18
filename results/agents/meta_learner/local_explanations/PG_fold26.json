@@ -1,0 +1,60 @@
+{
+  "ticker": "PG",
+  "score": 0.2602,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.09610509802703217,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "PG — Score: 0.26 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.414  [contribucion SHAP: +0.520]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.076]\n  + VIX (volatilidad implícita de mercado) = 14.8  [contribucion SHAP: +0.053]\n  + Score del Agente Fundamental (salud financiera) = 0.499  [contribucion SHAP: +0.049]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.096]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.519706427052842,
+      "raw_value": 0.4140771628244339,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.09610509802703217,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": 0.07635204570680855,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.052857014405375664,
+      "raw_value": 14.770000457763672,
+      "direction": "positive"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": 0.04895331314161603,
+      "raw_value": 0.4989336431026459,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Consumer Staples",
+      "description": "Sector Consumer Staples",
+      "shap_value": 0.040786270010706435,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

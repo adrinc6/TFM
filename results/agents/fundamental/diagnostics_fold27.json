@@ -1,0 +1,41 @@
+{
+  "agent": "fundamental",
+  "timestamp": "2026-03-06T19:41:31.842215",
+  "fold": 27,
+  "class_balance": {
+    "n_samples": 4474,
+    "n_positive": 2239,
+    "n_negative": 2235,
+    "positive_ratio": 0.5004470272686634
+  },
+  "cv_metrics": {
+    "mean_auc": 0.5037013562237651,
+    "std_auc": 0.012509289243005872,
+    "mean_acc": 0.5078247284816216,
+    "mean_f1": 0.5071678367885315
+  },
+  "n_features": 63,
+  "top_features": {
+    "sector_Business Services": 0.0285992082208395,
+    "sector_Finance": 0.028384769335389137,
+    "operating_margin": 0.024970270693302155,
+    "debt_to_ebitda_zsector": 0.023786528035998344,
+    "net_margin_zsector": 0.02263307198882103,
+    "roic": 0.022428682073950768,
+    "sector_Oils-Energy": 0.022332528606057167,
+    "debt_to_ebitda": 0.022267691791057587,
+    "current_ratio": 0.021996505558490753,
+    "sector_Construction": 0.021952256560325623,
+    "pb_ratio_zsector": 0.02189851738512516,
+    "quick_ratio_zsector": 0.021741768345236778,
+    "revenue_yoy_growth_zsector": 0.021682651713490486,
+    "current_ratio_zsector": 0.021536385640501976,
+    "ev_to_ebitda_zsector": 0.02138565108180046
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.5037013562237651,
+    "std_auc": 0.012509289243005872,
+    "mean_acc": 0.5078247284816216,
+    "mean_f1": 0.5071678367885315
+  }
+}

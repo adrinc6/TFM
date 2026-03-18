@@ -1,0 +1,81 @@
+{
+  "ticker": "URI",
+  "score": 0.7486,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.07206099514052292,
+      "raw_value": 0.1376262626262625,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.06798216277520977,
+      "raw_value": 9.67,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.0140320161952449,
+      "raw_value": 0.21545667447306793,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.010794109918609492,
+      "raw_value": 1.6100620447801457,
+      "direction": "negative"
+    }
+  ],
+  "text": "URI — Score: 0.75 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 14.23x  [contribucion SHAP: +0.035]\n  + Cobertura de intereses (EBIT / intereses) = 5.86x  [contribucion SHAP: +0.015]\n\nFactores EN CONTRA:\n  - Eps Revision = 0.138  [contribucion SHAP: -0.072]\n  - Eps Surprise Pct = 9.670  [contribucion SHAP: -0.068]\n  - Crecimiento de la deuda total interanual = 21.5%  [contribucion SHAP: -0.014]\n  - Ratio deuda / fondos propios = 1.610  [contribucion SHAP: -0.011]",
+  "top_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.07206099514052292,
+      "raw_value": 0.1376262626262625,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.06798216277520977,
+      "raw_value": 9.67,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.03528242777506891,
+      "raw_value": 14.227651966626937,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.01482041738017916,
+      "raw_value": 5.857142857142857,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.0140320161952449,
+      "raw_value": 0.21545667447306793,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.010794109918609492,
+      "raw_value": 1.6100620447801457,
+      "direction": "negative"
+    }
+  ]
+}

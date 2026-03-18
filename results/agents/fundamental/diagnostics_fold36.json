@@ -1,0 +1,41 @@
+{
+  "agent": "fundamental",
+  "timestamp": "2026-03-06T20:25:45.526453",
+  "fold": 36,
+  "class_balance": {
+    "n_samples": 5711,
+    "n_positive": 2855,
+    "n_negative": 2856,
+    "positive_ratio": 0.4999124496585537
+  },
+  "cv_metrics": {
+    "mean_auc": 0.5028406001021408,
+    "std_auc": 0.016338340186903753,
+    "mean_acc": 0.50113858359649,
+    "mean_f1": 0.5002662154966936
+  },
+  "n_features": 63,
+  "top_features": {
+    "sector_Oils-Energy": 0.0231675636023283,
+    "sector_Medical": 0.02240588888525963,
+    "roa_zsector": 0.021579701453447342,
+    "operating_margin_zsector": 0.021411987021565437,
+    "net_margin_zsector": 0.02119576372206211,
+    "operating_income_yoy_growth": 0.020563943311572075,
+    "pe_ratio_zsector": 0.02028573863208294,
+    "quick_ratio_zsector": 0.020221978425979614,
+    "current_ratio": 0.020179079845547676,
+    "eps_yoy_growth": 0.020168468356132507,
+    "roe_zsector": 0.02003655396401882,
+    "debt_equity_zsector": 0.020014706999063492,
+    "net_income_yoy_growth": 0.01987876556813717,
+    "current_ratio_zsector": 0.019781796261668205,
+    "interest_coverage": 0.019738221541047096
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.5028406001021408,
+    "std_auc": 0.016338340186903753,
+    "mean_acc": 0.50113858359649,
+    "mean_f1": 0.5002662154966936
+  }
+}

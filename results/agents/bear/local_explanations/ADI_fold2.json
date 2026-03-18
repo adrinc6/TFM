@@ -1,0 +1,67 @@
+{
+  "ticker": "ADI",
+  "score": 0.2789,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.012211938765701633,
+      "raw_value": 8.76,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.007322934554051066,
+      "raw_value": -0.10691002956807383,
+      "direction": "negative"
+    }
+  ],
+  "text": "ADI — Score: 0.28 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 729210000.000  [contribucion SHAP: +0.066]\n  + Acciones compradas netas por insiders (90 días) = 127560.000  [contribucion SHAP: +0.022]\n  + Deuda neta / EBITDA = 6.10x  [contribucion SHAP: +0.017]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.08x  [contribucion SHAP: +0.008]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 8.760  [contribucion SHAP: -0.012]\n  - Crecimiento de la deuda total interanual = -10.7%  [contribucion SHAP: -0.007]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.06592394880851032,
+      "raw_value": 729210000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.02190268411834067,
+      "raw_value": 127560.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.017105320015721025,
+      "raw_value": 6.097739041731905,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.012211938765701633,
+      "raw_value": 8.76,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.008172512244942125,
+      "raw_value": 2.0770273414300378,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.007322934554051066,
+      "raw_value": -0.10691002956807383,
+      "direction": "negative"
+    }
+  ]
+}

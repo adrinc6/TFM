@@ -1,0 +1,67 @@
+{
+  "ticker": "RL",
+  "score": 0.1874,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.01578818585946809,
+      "raw_value": 0.5043004078737364,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.010079277164166817,
+      "raw_value": 7.05,
+      "direction": "negative"
+    }
+  ],
+  "text": "RL — Score: 0.19 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = -30.4%  [contribucion SHAP: +0.057]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.01x  [contribucion SHAP: +0.041]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.008]\n  + Revenue Decline = 0.000  [contribucion SHAP: +0.003]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.504  [contribucion SHAP: -0.016]\n  - Eps Surprise Pct = 7.050  [contribucion SHAP: -0.010]",
+  "top_drivers": [
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.056619594896328895,
+      "raw_value": -0.3041110975162119,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.041040865140602865,
+      "raw_value": 2.012517547964436,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.01578818585946809,
+      "raw_value": 0.5043004078737364,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.010079277164166817,
+      "raw_value": 7.05,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.007861991900168197,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": 0.002525956523976711,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

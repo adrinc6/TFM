@@ -1,0 +1,88 @@
+{
+  "ticker": "TJX",
+  "score": 0.7508,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.07506498316025235,
+      "raw_value": 6.53,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.030736248536062744,
+      "raw_value": 31.64864864864865,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.014837399421442918,
+      "raw_value": 0.5232014948614139,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.011699478451251237,
+      "raw_value": 1.1956521739130437,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.005699633617444958,
+      "raw_value": -0.202247191011236,
+      "direction": "negative"
+    }
+  ],
+  "text": "TJX — Score: 0.75 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = 0.1%  [contribucion SHAP: +0.005]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 6.530  [contribucion SHAP: -0.075]\n  - Cobertura de intereses (EBIT / intereses) = 31.65x  [contribucion SHAP: -0.031]\n  - Ratio deuda / fondos propios = 0.523  [contribucion SHAP: -0.015]\n  - Ratio de liquidez corriente (activo / pasivo cte.) = 1.20x  [contribucion SHAP: -0.012]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.07506498316025235,
+      "raw_value": 6.53,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.030736248536062744,
+      "raw_value": 31.64864864864865,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.014837399421442918,
+      "raw_value": 0.5232014948614139,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.011699478451251237,
+      "raw_value": 1.1956521739130437,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.005699633617444958,
+      "raw_value": -0.202247191011236,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.005397421127602919,
+      "raw_value": 0.0011918951132301459,
+      "direction": "positive"
+    }
+  ]
+}

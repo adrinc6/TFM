@@ -1,0 +1,60 @@
+{
+  "ticker": "AVGO",
+  "score": 0.7222,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": -0.04669040301656712,
+      "raw_value": -1.2969999313354492,
+      "direction": "negative"
+    }
+  ],
+  "text": "AVGO — Score: 0.72 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.625  [contribucion SHAP: +0.741]\n  + Mom Minus Bear = 0.000  [contribucion SHAP: +0.143]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.100]\n  + VIX (volatilidad implícita de mercado) = 12.3  [contribucion SHAP: +0.082]\n\nFactores EN CONTRA:\n  - Pendiente curva de tipos (10Y - 2Y) = -1.297  [contribucion SHAP: -0.047]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.7408758270991406,
+      "raw_value": 0.6252452135983905,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": 0.1431581532996999,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": 0.09987835788103105,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.08243128305856576,
+      "raw_value": 12.279999732971191,
+      "direction": "positive"
+    },
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": -0.04669040301656712,
+      "raw_value": -1.2969999313354492,
+      "direction": "negative"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": 0.04131574757904693,
+      "raw_value": 0.5159414410591125,
+      "direction": "positive"
+    }
+  ]
+}

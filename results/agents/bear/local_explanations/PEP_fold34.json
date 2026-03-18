@@ -1,0 +1,67 @@
+{
+  "ticker": "PEP",
+  "score": 0.2836,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.04708383517295279,
+      "raw_value": 2.768683657524651,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.017055276876171165,
+      "raw_value": 0.1415115297463012,
+      "direction": "negative"
+    }
+  ],
+  "text": "PEP — Score: 0.28 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 1065000000.000  [contribucion SHAP: +0.027]\n  + Eps Revision = -0.232  [contribucion SHAP: +0.018]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.78x  [contribucion SHAP: +0.017]\n  + Deuda neta / EBITDA = 11.11x  [contribucion SHAP: +0.017]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 2.769  [contribucion SHAP: -0.047]\n  - Crecimiento de la deuda total interanual = 14.2%  [contribucion SHAP: -0.017]",
+  "top_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.04708383517295279,
+      "raw_value": 2.768683657524651,
+      "direction": "negative"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.02665783671564885,
+      "raw_value": 1065000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.018255116316726935,
+      "raw_value": -0.2319587628865979,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.017055276876171165,
+      "raw_value": 0.1415115297463012,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.016761619284417436,
+      "raw_value": 0.7750851741949665,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.016743145011866873,
+      "raw_value": 11.107652399481193,
+      "direction": "positive"
+    }
+  ]
+}

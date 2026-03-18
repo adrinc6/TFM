@@ -1,0 +1,82 @@
+{
+  "momentum_score": {
+    "shap_importance": 0.5383617225600901,
+    "description": "Score del Agente de Momentum (tendencia técnica)"
+  },
+  "mom_minus_bear": {
+    "shap_importance": 0.22010065578054616,
+    "description": "Mom Minus Bear"
+  },
+  "fund_x_val": {
+    "shap_importance": 0.16729336964527447,
+    "description": "Fund X Val"
+  },
+  "sector_Computer And Technology": {
+    "shap_importance": 0.07979170539166891,
+    "description": "Sector Computer And Technology"
+  },
+  "yield_curve": {
+    "shap_importance": 0.06772998565002095,
+    "description": "Pendiente curva de tipos (10Y - 2Y)"
+  },
+  "fundamental_score": {
+    "shap_importance": 0.05895688288984636,
+    "description": "Score del Agente Fundamental (salud financiera)"
+  },
+  "vix": {
+    "shap_importance": 0.045814453902420366,
+    "description": "VIX (volatilidad implícita de mercado)"
+  },
+  "sector_Consumer Staples": {
+    "shap_importance": 0.03140996271966884,
+    "description": "Sector Consumer Staples"
+  },
+  "valuation_score": {
+    "shap_importance": 0.031213173070184928,
+    "description": "Score del Agente de Valoración (infravaloración)"
+  },
+  "sp500_momentum_12m": {
+    "shap_importance": 0.020247247944192776,
+    "description": "Momentum del S&P 500 a 12 meses"
+  },
+  "sp500_momentum_3m": {
+    "shap_importance": 0.019808721653660648,
+    "description": "Momentum del S&P 500 a 3 meses"
+  },
+  "bear_score": {
+    "shap_importance": 0.01874431229080538,
+    "description": "Score del Agente Bear (riesgo, <0.5 es bueno)"
+  },
+  "sector_Consumer Discretionary": {
+    "shap_importance": 0.01822992812067731,
+    "description": "Sector Consumer Discretionary"
+  },
+  "sector_Basic Materials": {
+    "shap_importance": 0.010670635886369658,
+    "description": "Sector Basic Materials"
+  },
+  "sector_Aerospace": {
+    "shap_importance": 0.004635380002336081,
+    "description": "Sector Aerospace"
+  },
+  "sector_Utilities": {
+    "shap_importance": 0.004305702481073769,
+    "description": "Sector Utilities"
+  },
+  "sector_Construction": {
+    "shap_importance": 0.0036092034244625763,
+    "description": "Sector Construction"
+  },
+  "sector_Business Services": {
+    "shap_importance": 0.003115410942492443,
+    "description": "Sector Business Services"
+  },
+  "sector_Oils-Energy": {
+    "shap_importance": 0.003053089891486199,
+    "description": "Sector Oils-Energy"
+  },
+  "sector_Retail-Wholesale": {
+    "shap_importance": 0.0026641891077979294,
+    "description": "Sector Retail-Wholesale"
+  }
+}

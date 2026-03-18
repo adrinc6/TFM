@@ -1,0 +1,67 @@
+{
+  "ticker": "MO",
+  "score": 0.3313,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.0342082600938265,
+      "raw_value": 3.63,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.007009805332857905,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "MO — Score: 0.33 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 2682000000.000  [contribucion SHAP: +0.054]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.57x  [contribucion SHAP: +0.028]\n  + Ratio deuda / fondos propios = -7.532  [contribucion SHAP: +0.022]\n  + Deuda neta / EBITDA = 9.54x  [contribucion SHAP: +0.021]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 3.630  [contribucion SHAP: -0.034]\n  - Cobertura de intereses (EBIT / intereses) = 0.00x  [contribucion SHAP: -0.007]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.054468036033666234,
+      "raw_value": 2682000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.0342082600938265,
+      "raw_value": 3.63,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.02771894858661018,
+      "raw_value": 0.5706241201313937,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": 0.021521768604096686,
+      "raw_value": -7.53150289017341,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.021431023429672184,
+      "raw_value": 9.538433382137628,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.007009805332857905,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

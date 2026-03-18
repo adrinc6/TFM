@@ -1,0 +1,41 @@
+{
+  "agent": "fundamental",
+  "timestamp": "2026-03-06T20:15:59.839745",
+  "fold": 34,
+  "class_balance": {
+    "n_samples": 2756,
+    "n_positive": 1380,
+    "n_negative": 1376,
+    "positive_ratio": 0.5007256894049347
+  },
+  "cv_metrics": {
+    "mean_auc": 0.4914902426915659,
+    "std_auc": 0.02168235188893824,
+    "mean_acc": 0.49710013414345455,
+    "mean_f1": 0.500531528575908
+  },
+  "n_features": 63,
+  "top_features": {
+    "debt_to_ebitda": 0.02403952367603779,
+    "debt_to_ebitda_zsector": 0.022589409723877907,
+    "sector_Utilities": 0.02199416793882847,
+    "sector_Medical": 0.021985772997140884,
+    "interest_coverage": 0.021669771522283554,
+    "debt_equity_zsector": 0.02156219072639942,
+    "current_ratio": 0.02150292694568634,
+    "net_margin_zsector": 0.021372612565755844,
+    "quick_ratio": 0.02123178355395794,
+    "roa_zsector": 0.020959340035915375,
+    "ebitda_margin": 0.020922908559441566,
+    "operating_margin": 0.020727278664708138,
+    "operating_income_yoy_growth": 0.02069425955414772,
+    "pb_ratio_zsector": 0.020310094580054283,
+    "roi": 0.020272139459848404
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.4914902426915659,
+    "std_auc": 0.02168235188893824,
+    "mean_acc": 0.49710013414345455,
+    "mean_f1": 0.500531528575908
+  }
+}

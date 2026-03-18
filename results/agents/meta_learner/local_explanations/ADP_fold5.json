@@ -1,0 +1,60 @@
+{
+  "ticker": "ADP",
+  "score": 0.2851,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.03401137964298466,
+      "raw_value": 0.49707305431365967,
+      "direction": "negative"
+    }
+  ],
+  "text": "ADP — Score: 0.29 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.356  [contribucion SHAP: +0.457]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.263  [contribucion SHAP: +0.444]\n  + Mom Minus Bear = 0.000  [contribucion SHAP: +0.239]\n  + Sector Consumer Discretionary = 0.000  [contribucion SHAP: +0.037]\n\nFactores EN CONTRA:\n  - Score del Agente Fundamental (salud financiera) = 0.497  [contribucion SHAP: -0.034]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.45720969414634594,
+      "raw_value": 0.35596624373770247,
+      "direction": "positive"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": 0.4444499361608832,
+      "raw_value": 0.26310534785874745,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": 0.23904981111852147,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Consumer Discretionary",
+      "description": "Sector Consumer Discretionary",
+      "shap_value": 0.03741498203265893,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.036964957631014234,
+      "raw_value": 18.90999984741211,
+      "direction": "positive"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.03401137964298466,
+      "raw_value": 0.49707305431365967,
+      "direction": "negative"
+    }
+  ]
+}

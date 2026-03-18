@@ -1,0 +1,81 @@
+{
+  "ticker": "CMA",
+  "score": 0.7774,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.033365696858482556,
+      "raw_value": 14.97,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.029434366952917707,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.012714385866307272,
+      "raw_value": 1.1770247933884297,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.011838739636259404,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "CMA — Score: 0.78 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = -60.7%  [contribucion SHAP: +0.042]\n  + Acciones compradas netas por insiders (90 días) = 163130.000  [contribucion SHAP: +0.016]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 14.970  [contribucion SHAP: -0.033]\n  - Revenue Decline = 1.000  [contribucion SHAP: -0.029]\n  - Ratio deuda / fondos propios = 1.177  [contribucion SHAP: -0.013]\n  - Cobertura de intereses (EBIT / intereses) = 0.00x  [contribucion SHAP: -0.012]",
+  "top_drivers": [
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.04150125439276075,
+      "raw_value": -0.606574585635359,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.033365696858482556,
+      "raw_value": 14.97,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.029434366952917707,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.0159848709344017,
+      "raw_value": 163130.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.012714385866307272,
+      "raw_value": 1.1770247933884297,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.011838739636259404,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

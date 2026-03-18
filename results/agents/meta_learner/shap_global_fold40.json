@@ -1,0 +1,82 @@
+{
+  "momentum_score": {
+    "shap_importance": 0.40868245443417367,
+    "description": "Score del Agente de Momentum (tendencia técnica)"
+  },
+  "vix": {
+    "shap_importance": 0.10068443539964715,
+    "description": "VIX (volatilidad implícita de mercado)"
+  },
+  "bear_score": {
+    "shap_importance": 0.06675809425120295,
+    "description": "Score del Agente Bear (riesgo, <0.5 es bueno)"
+  },
+  "sector_Computer And Technology": {
+    "shap_importance": 0.0651672391150972,
+    "description": "Sector Computer And Technology"
+  },
+  "sector_Finance": {
+    "shap_importance": 0.0249410324286651,
+    "description": "Sector Finance"
+  },
+  "sp500_momentum_3m": {
+    "shap_importance": 0.020681253127350342,
+    "description": "Momentum del S&P 500 a 3 meses"
+  },
+  "mom_minus_bear": {
+    "shap_importance": 0.018828504819337732,
+    "description": "Mom Minus Bear"
+  },
+  "valuation_score": {
+    "shap_importance": 0.0170224710274508,
+    "description": "Score del Agente de Valoración (infravaloración)"
+  },
+  "sector_Consumer Staples": {
+    "shap_importance": 0.016576122190124776,
+    "description": "Sector Consumer Staples"
+  },
+  "sector_Medical": {
+    "shap_importance": 0.015756863755145192,
+    "description": "Sector Medical"
+  },
+  "sector_Aerospace": {
+    "shap_importance": 0.014963510198444241,
+    "description": "Sector Aerospace"
+  },
+  "yield_curve": {
+    "shap_importance": 0.013245445316121979,
+    "description": "Pendiente curva de tipos (10Y - 2Y)"
+  },
+  "sector_Consumer Discretionary": {
+    "shap_importance": 0.012072681703077856,
+    "description": "Sector Consumer Discretionary"
+  },
+  "fundamental_score": {
+    "shap_importance": 0.009863622964045617,
+    "description": "Score del Agente Fundamental (salud financiera)"
+  },
+  "sp500_momentum_12m": {
+    "shap_importance": 0.008669286818117,
+    "description": "Momentum del S&P 500 a 12 meses"
+  },
+  "sector_Transportation": {
+    "shap_importance": 0.007288826779477228,
+    "description": "Sector Transportation"
+  },
+  "fund_x_val": {
+    "shap_importance": 0.006603794939272867,
+    "description": "Fund X Val"
+  },
+  "sector_Auto-Tires-Trucks": {
+    "shap_importance": 0.00362667537927703,
+    "description": "Sector Auto-Tires-Trucks"
+  },
+  "sector_Basic Materials": {
+    "shap_importance": 0.0035658469428137725,
+    "description": "Sector Basic Materials"
+  },
+  "sector_Oils-Energy": {
+    "shap_importance": 0.0028525748511188235,
+    "description": "Sector Oils-Energy"
+  }
+}

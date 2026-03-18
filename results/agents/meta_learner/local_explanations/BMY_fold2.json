@@ -1,0 +1,67 @@
+{
+  "ticker": "BMY",
+  "score": 0.7915,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": -0.16717237781885297,
+      "raw_value": 1.991999924182892,
+      "direction": "negative"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.08981995276419406,
+      "raw_value": 0.5269263335077947,
+      "direction": "negative"
+    }
+  ],
+  "text": "BMY — Score: 0.79 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Mom Minus Bear = 0.000  [contribucion SHAP: +0.337]\n  + Score del Agente de Momentum (tendencia técnica) = 0.726  [contribucion SHAP: +0.292]\n  + Score del Agente Fundamental (salud financiera) = 0.523  [contribucion SHAP: +0.159]\n  + VIX (volatilidad implícita de mercado) = 28.9  [contribucion SHAP: +0.077]\n\nFactores EN CONTRA:\n  - Pendiente curva de tipos (10Y - 2Y) = 1.992  [contribucion SHAP: -0.167]\n  - Score del Agente de Valoración (infravaloración) = 0.527  [contribucion SHAP: -0.090]",
+  "top_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": 0.33733766871843124,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.29229876456347337,
+      "raw_value": 0.7260128932373267,
+      "direction": "positive"
+    },
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": -0.16717237781885297,
+      "raw_value": 1.991999924182892,
+      "direction": "negative"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": 0.1587887533856615,
+      "raw_value": 0.5233173072338104,
+      "direction": "positive"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.08981995276419406,
+      "raw_value": 0.5269263335077947,
+      "direction": "negative"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.0766899425300589,
+      "raw_value": 28.8700008392334,
+      "direction": "positive"
+    }
+  ]
+}

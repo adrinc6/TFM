@@ -1,0 +1,95 @@
+{
+  "ticker": "LRCX",
+  "score": 0.7849,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03102083362071517,
+      "raw_value": 6.66,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.02586263140983371,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.009923922548648788,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.008631384049173995,
+      "raw_value": 0.028169014084507,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.004610390866725615,
+      "raw_value": 0.6212151903846636,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.004163343400200136,
+      "raw_value": 2.373105790685239,
+      "direction": "negative"
+    }
+  ],
+  "text": "LRCX — Score: 0.78 (Outperform, confianza alta)\n\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 6.660  [contribucion SHAP: -0.031]\n  - Revenue Decline = 1.000  [contribucion SHAP: -0.026]\n  - Cobertura de intereses (EBIT / intereses) = 0.00x  [contribucion SHAP: -0.010]\n  - Eps Revision = 0.028  [contribucion SHAP: -0.009]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03102083362071517,
+      "raw_value": 6.66,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.02586263140983371,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.009923922548648788,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.008631384049173995,
+      "raw_value": 0.028169014084507,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.004610390866725615,
+      "raw_value": 0.6212151903846636,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.004163343400200136,
+      "raw_value": 2.373105790685239,
+      "direction": "negative"
+    }
+  ]
+}

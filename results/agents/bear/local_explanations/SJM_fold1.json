@@ -1,0 +1,67 @@
+{
+  "ticker": "SJM",
+  "score": 0.3221,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.04862912261058322,
+      "raw_value": 1.1360879069969452,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.027705555363827652,
+      "raw_value": -5147.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "SJM — Score: 0.32 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.60x  [contribucion SHAP: +0.029]\n  + Deuda neta / EBITDA = 18.91x  [contribucion SHAP: +0.016]\n  + Proporción de ventas de insiders (>0.7 = red flag) = 0.87x  [contribucion SHAP: +0.013]\n  + Crecimiento de la deuda total interanual = -8.1%  [contribucion SHAP: +0.011]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 1.136  [contribucion SHAP: -0.049]\n  - Acciones compradas netas por insiders (90 días) = -5147.000  [contribucion SHAP: -0.028]",
+  "top_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.04862912261058322,
+      "raw_value": 1.1360879069969452,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.028585378617471627,
+      "raw_value": 0.6005046513041892,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.027705555363827652,
+      "raw_value": -5147.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.016322239529349147,
+      "raw_value": 18.913714147987463,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": 0.01276904137352498,
+      "raw_value": 0.8731332463389879,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.011462903007728585,
+      "raw_value": -0.08101556370109264,
+      "direction": "positive"
+    }
+  ]
+}

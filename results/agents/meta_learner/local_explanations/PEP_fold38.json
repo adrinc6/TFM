@@ -1,0 +1,67 @@
+{
+  "ticker": "PEP",
+  "score": 0.3283,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.052940075823470226,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Finance",
+      "description": "Sector Finance",
+      "shap_value": -0.051645090923852215,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "PEP — Score: 0.33 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.409  [contribucion SHAP: +0.253]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.461  [contribucion SHAP: +0.122]\n  + VIX (volatilidad implícita de mercado) = 19.8  [contribucion SHAP: +0.105]\n  + Score del Agente Fundamental (salud financiera) = 0.517  [contribucion SHAP: +0.065]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.053]\n  - Sector Finance = 0.000  [contribucion SHAP: -0.052]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.2531032296648199,
+      "raw_value": 0.40919255502736096,
+      "direction": "positive"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": 0.12189121943334634,
+      "raw_value": 0.4609152081122785,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.10482546223127828,
+      "raw_value": 19.82999992370605,
+      "direction": "positive"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": 0.06511526763846157,
+      "raw_value": 0.5172995726267496,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.052940075823470226,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Finance",
+      "description": "Sector Finance",
+      "shap_value": -0.051645090923852215,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

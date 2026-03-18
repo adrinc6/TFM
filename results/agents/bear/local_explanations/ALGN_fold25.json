@@ -1,0 +1,67 @@
+{
+  "ticker": "ALGN",
+  "score": 0.3533,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.009965189422680152,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.007684551250883792,
+      "raw_value": -0.09,
+      "direction": "negative"
+    }
+  ],
+  "text": "ALGN — Score: 0.35 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.17x  [contribucion SHAP: +0.032]\n  + Cobertura de intereses (EBIT / intereses) = 20.78x  [contribucion SHAP: +0.031]\n  + Eps Revision = 0.056  [contribucion SHAP: +0.009]\n  + Proporción de ventas de insiders (>0.7 = red flag) = 0.50x  [contribucion SHAP: +0.007]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = 0.000  [contribucion SHAP: -0.010]\n  - Eps Surprise Pct = -0.090  [contribucion SHAP: -0.008]",
+  "top_drivers": [
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.03207696016567724,
+      "raw_value": 1.1676969659774008,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.03136216225767908,
+      "raw_value": 20.7805679417977,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.009965189422680152,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.008543372885183708,
+      "raw_value": 0.0562770562770562,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.007684551250883792,
+      "raw_value": -0.09,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": 0.006842545483958118,
+      "raw_value": 0.5,
+      "direction": "positive"
+    }
+  ]
+}

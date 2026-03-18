@@ -1,0 +1,74 @@
+{
+  "ticker": "FOX",
+  "score": 0.3609,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.03420646852116609,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.03161181540320924,
+      "raw_value": 0.34437728795932643,
+      "direction": "negative"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": -0.03128248613687734,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "FOX — Score: 0.36 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.465  [contribucion SHAP: +0.538]\n  + VIX (volatilidad implícita de mercado) = 12.4  [contribucion SHAP: +0.095]\n  + Pendiente curva de tipos (10Y - 2Y) = -0.884  [contribucion SHAP: +0.033]\n\nFactores EN CONTRA:\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.034]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.344  [contribucion SHAP: -0.032]\n  - Fund X Val = 0.000  [contribucion SHAP: -0.031]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.5377703626958381,
+      "raw_value": 0.46452917827726653,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.09462491249557056,
+      "raw_value": 12.449999809265137,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.03420646852116609,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": 0.03259390548879569,
+      "raw_value": -0.8839998245239258,
+      "direction": "positive"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.03161181540320924,
+      "raw_value": 0.34437728795932643,
+      "direction": "negative"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": -0.03128248613687734,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

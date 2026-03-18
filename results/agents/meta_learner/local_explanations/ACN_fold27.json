@@ -1,0 +1,74 @@
+{
+  "ticker": "ACN",
+  "score": 0.2598,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.12845212452714325,
+      "raw_value": 0.28743286566627335,
+      "direction": "negative"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.1159848506658849,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.05786983504751861,
+      "raw_value": 0.49918344616889954,
+      "direction": "negative"
+    }
+  ],
+  "text": "ACN — Score: 0.26 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.273  [contribucion SHAP: +0.212]\n  + Score del Agente de Valoración (infravaloración) = 0.500  [contribucion SHAP: +0.154]\n  + Sector Consumer Staples = 0.000  [contribucion SHAP: +0.042]\n\nFactores EN CONTRA:\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.287  [contribucion SHAP: -0.128]\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.116]\n  - Score del Agente Fundamental (salud financiera) = 0.499  [contribucion SHAP: -0.058]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.21222474592781326,
+      "raw_value": 0.27292281769849736,
+      "direction": "positive"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": 0.15432324820914464,
+      "raw_value": 0.49965242747281957,
+      "direction": "positive"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.12845212452714325,
+      "raw_value": 0.28743286566627335,
+      "direction": "negative"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.1159848506658849,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.05786983504751861,
+      "raw_value": 0.49918344616889954,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Consumer Staples",
+      "description": "Sector Consumer Staples",
+      "shap_value": 0.04185310662238617,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

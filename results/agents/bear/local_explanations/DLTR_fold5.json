@@ -1,0 +1,74 @@
+{
+  "ticker": "DLTR",
+  "score": 0.7254,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.07916045178497869,
+      "raw_value": 0.7118644067796611,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.06031431130528678,
+      "raw_value": 1.15,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.022277396140820974,
+      "raw_value": 0.0013462101258414627,
+      "direction": "negative"
+    }
+  ],
+  "text": "DLTR — Score: 0.73 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Cobertura de intereses (EBIT / intereses) = 16.09x  [contribucion SHAP: +0.043]\n  + Ratio deuda / fondos propios = 0.391  [contribucion SHAP: +0.007]\n  + Revenue Decline = 1.000  [contribucion SHAP: +0.006]\n\nFactores EN CONTRA:\n  - Eps Revision = 0.712  [contribucion SHAP: -0.079]\n  - Eps Surprise Pct = 1.150  [contribucion SHAP: -0.060]\n  - Crecimiento de la deuda total interanual = 0.1%  [contribucion SHAP: -0.022]",
+  "top_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.07916045178497869,
+      "raw_value": 0.7118644067796611,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.06031431130528678,
+      "raw_value": 1.15,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.042692782270552454,
+      "raw_value": 16.090301003344482,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.022277396140820974,
+      "raw_value": 0.0013462101258414627,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": 0.007488414288257215,
+      "raw_value": 0.3909729760612466,
+      "direction": "positive"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": 0.005840102152925242,
+      "raw_value": 1.0,
+      "direction": "positive"
+    }
+  ]
+}

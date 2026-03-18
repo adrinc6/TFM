@@ -1,0 +1,81 @@
+{
+  "ticker": "MLM",
+  "score": 0.8205,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.01897213734299431,
+      "raw_value": 0.5408163265306123,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.012706742859471518,
+      "raw_value": 15.96,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.002919078500638179,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.0025335554862677754,
+      "raw_value": 9.425,
+      "direction": "negative"
+    }
+  ],
+  "text": "MLM — Score: 0.82 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = -13.8%  [contribucion SHAP: +0.005]\n  + Eps Revision = -0.342  [contribucion SHAP: +0.003]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.541  [contribucion SHAP: -0.019]\n  - Eps Surprise Pct = 15.960  [contribucion SHAP: -0.013]\n  - Deuda neta / EBITDA = 0.00x  [contribucion SHAP: -0.003]\n  - Cobertura de intereses (EBIT / intereses) = 9.43x  [contribucion SHAP: -0.003]",
+  "top_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.01897213734299431,
+      "raw_value": 0.5408163265306123,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.012706742859471518,
+      "raw_value": 15.96,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.004679511451190057,
+      "raw_value": -0.13769841269841265,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.002919078500638179,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.0028760150030504726,
+      "raw_value": -0.3415841584158415,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.0025335554862677754,
+      "raw_value": 9.425,
+      "direction": "negative"
+    }
+  ]
+}

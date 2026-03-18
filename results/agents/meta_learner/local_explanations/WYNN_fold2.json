@@ -1,0 +1,74 @@
+{
+  "ticker": "WYNN",
+  "score": 0.0792,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": -0.16588863705775259,
+      "raw_value": 1.991999924182892,
+      "direction": "negative"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.09183741935179462,
+      "raw_value": 0.49948237652921784,
+      "direction": "negative"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": -0.03804506682765414,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "WYNN — Score: 0.08 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Mom Minus Bear = 0.000  [contribucion SHAP: +0.256]\n  + VIX (volatilidad implícita de mercado) = 28.9  [contribucion SHAP: +0.099]\n  + Score del Agente Fundamental (salud financiera) = 0.135  [contribucion SHAP: +0.058]\n\nFactores EN CONTRA:\n  - Pendiente curva de tipos (10Y - 2Y) = 1.992  [contribucion SHAP: -0.166]\n  - Score del Agente de Valoración (infravaloración) = 0.499  [contribucion SHAP: -0.092]\n  - Fund X Val = 0.000  [contribucion SHAP: -0.038]",
+  "top_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": 0.25591005887792145,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": -0.16588863705775259,
+      "raw_value": 1.991999924182892,
+      "direction": "negative"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.09852206698847092,
+      "raw_value": 28.8700008392334,
+      "direction": "positive"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.09183741935179462,
+      "raw_value": 0.49948237652921784,
+      "direction": "negative"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": 0.05846982923051455,
+      "raw_value": 0.13529411951700845,
+      "direction": "positive"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": -0.03804506682765414,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "ticker": "CTSH",
+  "score": 0.2407,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.02950671031926052,
+      "raw_value": 72.54545454545455,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.01685522043228455,
+      "raw_value": 1.05,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_ebitda_high",
+      "description": "Debt Ebitda High",
+      "shap_value": -0.0033027398579000768,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "CTSH — Score: 0.24 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 0.97x  [contribucion SHAP: +0.063]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.27x  [contribucion SHAP: +0.039]\n  + FLAG: Ratio corriente < 1 (riesgo liquidez) = 0.000  [contribucion SHAP: +0.012]\n\nFactores EN CONTRA:\n  - Cobertura de intereses (EBIT / intereses) = 72.55x  [contribucion SHAP: -0.030]\n  - Eps Surprise Pct = 1.050  [contribucion SHAP: -0.017]\n  - Debt Ebitda High = 0.000  [contribucion SHAP: -0.003]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.0628794458264382,
+      "raw_value": 0.9680365296803652,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.039007381312792445,
+      "raw_value": 2.270245113248526,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.02950671031926052,
+      "raw_value": 72.54545454545455,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.01685522043228455,
+      "raw_value": 1.05,
+      "direction": "negative"
+    },
+    {
+      "feature": "liquidity_risk",
+      "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+      "shap_value": 0.011704393323720075,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_ebitda_high",
+      "description": "Debt Ebitda High",
+      "shap_value": -0.0033027398579000768,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

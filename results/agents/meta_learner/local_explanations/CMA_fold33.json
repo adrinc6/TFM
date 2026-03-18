@@ -1,0 +1,74 @@
+{
+  "ticker": "CMA",
+  "score": 0.3449,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.31905501309556644,
+      "raw_value": 0.5164950688680013,
+      "direction": "negative"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.13685091025832308,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sp500_momentum_12m",
+      "description": "Momentum del S&P 500 a 12 meses",
+      "shap_value": -0.11204412336629653,
+      "raw_value": 0.2103420359640764,
+      "direction": "negative"
+    }
+  ],
+  "text": "CMA — Score: 0.34 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Valoración (infravaloración) = 0.488  [contribucion SHAP: +0.238]\n  + VIX (volatilidad implícita de mercado) = 14.8  [contribucion SHAP: +0.151]\n  + Sector Medical = 0.000  [contribucion SHAP: +0.067]\n\nFactores EN CONTRA:\n  - Score del Agente Fundamental (salud financiera) = 0.516  [contribucion SHAP: -0.319]\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.137]\n  - Momentum del S&P 500 a 12 meses = 21.0%  [contribucion SHAP: -0.112]",
+  "top_drivers": [
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.31905501309556644,
+      "raw_value": 0.5164950688680013,
+      "direction": "negative"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": 0.23764063407379932,
+      "raw_value": 0.4882680329322083,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.15089269192905805,
+      "raw_value": 14.829999923706056,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.13685091025832308,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sp500_momentum_12m",
+      "description": "Momentum del S&P 500 a 12 meses",
+      "shap_value": -0.11204412336629653,
+      "raw_value": 0.2103420359640764,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Medical",
+      "description": "Sector Medical",
+      "shap_value": 0.06746643740159691,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

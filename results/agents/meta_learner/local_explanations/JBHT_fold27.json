@@ -1,0 +1,74 @@
+{
+  "ticker": "JBHT",
+  "score": 0.264,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.11504703599168485,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.0582417733033528,
+      "raw_value": 0.49918344616889954,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Finance",
+      "description": "Sector Finance",
+      "shap_value": -0.03023672106881224,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "JBHT — Score: 0.26 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.338  [contribucion SHAP: +0.432]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.408  [contribucion SHAP: +0.083]\n  + Sector Consumer Staples = 0.000  [contribucion SHAP: +0.044]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.115]\n  - Score del Agente Fundamental (salud financiera) = 0.499  [contribucion SHAP: -0.058]\n  - Sector Finance = 0.000  [contribucion SHAP: -0.030]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.4317785264548464,
+      "raw_value": 0.33772867612701063,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.11504703599168485,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": 0.08328276165961641,
+      "raw_value": 0.4080994479157475,
+      "direction": "positive"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.0582417733033528,
+      "raw_value": 0.49918344616889954,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Consumer Staples",
+      "description": "Sector Consumer Staples",
+      "shap_value": 0.044172012834210364,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Finance",
+      "description": "Sector Finance",
+      "shap_value": -0.03023672106881224,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "ticker": "NFLX",
+  "score": 0.6091,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.05695696881509788,
+      "raw_value": -157071.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.00827557045205475,
+      "raw_value": 0.5792427261748695,
+      "direction": "negative"
+    }
+  ],
+  "text": "NFLX — Score: 0.61 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 1.88x  [contribucion SHAP: +0.056]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.34x  [contribucion SHAP: +0.031]\n  + Fcf = 2267369000.000  [contribucion SHAP: +0.025]\n  + Crecimiento de la deuda total interanual = 3.4%  [contribucion SHAP: +0.007]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -157071.000  [contribucion SHAP: -0.057]\n  - Ratio deuda / fondos propios = 0.579  [contribucion SHAP: -0.008]",
+  "top_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.05695696881509788,
+      "raw_value": -157071.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.05639987971255987,
+      "raw_value": 1.880267695931496,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.031018855416673725,
+      "raw_value": 1.3411604463487443,
+      "direction": "positive"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.024693428032154238,
+      "raw_value": 2267369000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.00827557045205475,
+      "raw_value": 0.5792427261748695,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.006691092906265304,
+      "raw_value": 0.03384397712027809,
+      "direction": "positive"
+    }
+  ]
+}

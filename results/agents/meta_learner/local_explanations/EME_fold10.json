@@ -1,0 +1,74 @@
+{
+  "ticker": "EME",
+  "score": 0.7613,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.07833296952304736,
+      "raw_value": 0.54847252368927,
+      "direction": "negative"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": -0.035496993163739735,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Oils-Energy",
+      "description": "Sector Oils-Energy",
+      "shap_value": -0.030557732730738568,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "EME — Score: 0.76 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Mom Minus Bear = 0.000  [contribucion SHAP: +0.273]\n  + Score del Agente de Momentum (tendencia técnica) = 0.626  [contribucion SHAP: +0.114]\n  + VIX (volatilidad implícita de mercado) = 14.8  [contribucion SHAP: +0.032]\n\nFactores EN CONTRA:\n  - Score del Agente Fundamental (salud financiera) = 0.548  [contribucion SHAP: -0.078]\n  - Fund X Val = 0.000  [contribucion SHAP: -0.035]\n  - Sector Oils-Energy = 0.000  [contribucion SHAP: -0.031]",
+  "top_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": 0.27318101605314765,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.11364421963534291,
+      "raw_value": 0.6257830695144745,
+      "direction": "positive"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.07833296952304736,
+      "raw_value": 0.54847252368927,
+      "direction": "negative"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": -0.035496993163739735,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.03197763370792503,
+      "raw_value": 14.81999969482422,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Oils-Energy",
+      "description": "Sector Oils-Energy",
+      "shap_value": -0.030557732730738568,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

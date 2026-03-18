@@ -1,0 +1,67 @@
+{
+  "ticker": "MOH",
+  "score": 0.2218,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.006296063650224915,
+      "raw_value": 6.366666666666666,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.004806426659072856,
+      "raw_value": 13.92948717948718,
+      "direction": "negative"
+    }
+  ],
+  "text": "MOH — Score: 0.22 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = 2.2%  [contribucion SHAP: +0.051]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.43x  [contribucion SHAP: +0.027]\n  + FLAG: Deuda creciendo >20% interanual = 0.000  [contribucion SHAP: +0.003]\n  + FLAG: Ratio corriente < 1 (riesgo liquidez) = 0.000  [contribucion SHAP: +0.002]\n\nFactores EN CONTRA:\n  - Cobertura de intereses (EBIT / intereses) = 6.37x  [contribucion SHAP: -0.006]\n  - Deuda neta / EBITDA = 13.93x  [contribucion SHAP: -0.005]",
+  "top_drivers": [
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.05065750898662546,
+      "raw_value": 0.021626704278326248,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.027046112542228194,
+      "raw_value": 1.428125443451114,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.006296063650224915,
+      "raw_value": 6.366666666666666,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.004806426659072856,
+      "raw_value": 13.92948717948718,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_growth_high",
+      "description": "FLAG: Deuda creciendo >20% interanual",
+      "shap_value": 0.002792934312297304,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "liquidity_risk",
+      "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+      "shap_value": 0.0022521946445302667,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

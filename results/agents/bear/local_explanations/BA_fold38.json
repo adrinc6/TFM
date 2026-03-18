@@ -1,0 +1,67 @@
+{
+  "ticker": "BA",
+  "score": 0.6709,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.014613316389246407,
+      "raw_value": 61.73,
+      "direction": "negative"
+    },
+    {
+      "feature": "consecutive_losses",
+      "description": "Trimestres consecutivos con pérdidas",
+      "shap_value": -0.011078263311811387,
+      "raw_value": 4.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "BA — Score: 0.67 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Proporción de ventas de insiders (>0.7 = red flag) = 0.38x  [contribucion SHAP: +0.024]\n  + Fcf = 238000000.000  [contribucion SHAP: +0.021]\n  + Eps Revision = -0.573  [contribucion SHAP: +0.014]\n  + Acciones compradas netas por insiders (90 días) = 834.000  [contribucion SHAP: +0.009]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 61.730  [contribucion SHAP: -0.015]\n  - Trimestres consecutivos con pérdidas = 4.000  [contribucion SHAP: -0.011]",
+  "top_drivers": [
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": 0.023542889024246966,
+      "raw_value": 0.3830622546270331,
+      "direction": "positive"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.020953527040250455,
+      "raw_value": 238000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.014613316389246407,
+      "raw_value": 61.73,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.013812197077454114,
+      "raw_value": -0.5733333333333333,
+      "direction": "positive"
+    },
+    {
+      "feature": "consecutive_losses",
+      "description": "Trimestres consecutivos con pérdidas",
+      "shap_value": -0.011078263311811387,
+      "raw_value": 4.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.008908170951360669,
+      "raw_value": 834.0,
+      "direction": "positive"
+    }
+  ]
+}

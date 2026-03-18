@@ -1,0 +1,74 @@
+{
+  "ticker": "SJM",
+  "score": 0.2324,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.02528736322549795,
+      "raw_value": 4.86,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.011479961822765528,
+      "raw_value": 0.2107843137254903,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.009752117430648612,
+      "raw_value": 0.6842276352288488,
+      "direction": "negative"
+    }
+  ],
+  "text": "SJM — Score: 0.23 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 27.77x  [contribucion SHAP: +0.081]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 3.20x  [contribucion SHAP: +0.040]\n  + Cobertura de intereses (EBIT / intereses) = 9.10x  [contribucion SHAP: +0.017]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 4.860  [contribucion SHAP: -0.025]\n  - Eps Revision = 0.211  [contribucion SHAP: -0.011]\n  - Crecimiento de la deuda total interanual = 68.4%  [contribucion SHAP: -0.010]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.08103383012259764,
+      "raw_value": 27.76598785280457,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.039606853682158966,
+      "raw_value": 3.196740078499782,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.02528736322549795,
+      "raw_value": 4.86,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.017233679905838833,
+      "raw_value": 9.102564102564102,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.011479961822765528,
+      "raw_value": 0.2107843137254903,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.009752117430648612,
+      "raw_value": 0.6842276352288488,
+      "direction": "negative"
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "ticker": "BA",
+  "score": 0.6578,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": -0.07300150660637823,
+      "raw_value": -200000000.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.05728909680856162,
+      "raw_value": -3770.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.009856930484317792,
+      "raw_value": -0.5733333333333333,
+      "direction": "negative"
+    }
+  ],
+  "text": "BA — Score: 0.66 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.23x  [contribucion SHAP: +0.043]\n  + Ratio deuda / fondos propios = -16.178  [contribucion SHAP: +0.016]\n  + Crecimiento de la deuda total interanual = 0.0%  [contribucion SHAP: +0.012]\n\nFactores EN CONTRA:\n  - Fcf = -200000000.000  [contribucion SHAP: -0.073]\n  - Acciones compradas netas por insiders (90 días) = -3770.000  [contribucion SHAP: -0.057]\n  - Eps Revision = -0.573  [contribucion SHAP: -0.010]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": -0.07300150660637823,
+      "raw_value": -200000000.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.05728909680856162,
+      "raw_value": -3770.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.04285285692905815,
+      "raw_value": 1.2314366971057111,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": 0.01629059419852951,
+      "raw_value": -16.178094660194176,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.012251860864096197,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.009856930484317792,
+      "raw_value": -0.5733333333333333,
+      "direction": "negative"
+    }
+  ]
+}

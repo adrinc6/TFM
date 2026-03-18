@@ -1,0 +1,60 @@
+{
+  "ticker": "GILD",
+  "score": 0.7404,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.09148693883768938,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "GILD — Score: 0.74 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.782  [contribucion SHAP: +0.565]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.073]\n  + VIX (volatilidad implícita de mercado) = 14.8  [contribucion SHAP: +0.055]\n  + Sector Consumer Staples = 0.000  [contribucion SHAP: +0.041]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.091]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.5654410156708269,
+      "raw_value": 0.7817940382067278,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.09148693883768938,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": 0.07304501115027462,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.05459486718690977,
+      "raw_value": 14.770000457763672,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Consumer Staples",
+      "description": "Sector Consumer Staples",
+      "shap_value": 0.040786270010706435,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": 0.03937465496033333,
+      "raw_value": 0.4989336431026459,
+      "direction": "positive"
+    }
+  ]
+}

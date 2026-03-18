@@ -1,0 +1,74 @@
+{
+  "ticker": "BA",
+  "score": 0.5586,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.13142464420727978,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": -0.1034001331625894,
+      "raw_value": 0.1810002326965332,
+      "direction": "negative"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.06989168411908574,
+      "raw_value": 0.4676917318319422,
+      "direction": "negative"
+    }
+  ],
+  "text": "BA — Score: 0.56 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.390  [contribucion SHAP: +0.252]\n  + VIX (volatilidad implícita de mercado) = 14.8  [contribucion SHAP: +0.161]\n  + Momentum del S&P 500 a 3 meses = 9.8%  [contribucion SHAP: +0.089]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.131]\n  - Pendiente curva de tipos (10Y - 2Y) = 0.181  [contribucion SHAP: -0.103]\n  - Score del Agente de Valoración (infravaloración) = 0.468  [contribucion SHAP: -0.070]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.25207428319401826,
+      "raw_value": 0.3902631911145969,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.16098841755339752,
+      "raw_value": 14.829999923706056,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.13142464420727978,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": -0.1034001331625894,
+      "raw_value": 0.1810002326965332,
+      "direction": "negative"
+    },
+    {
+      "feature": "sp500_momentum_3m",
+      "description": "Momentum del S&P 500 a 3 meses",
+      "shap_value": 0.08926233731831061,
+      "raw_value": 0.0977432556369719,
+      "direction": "positive"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.06989168411908574,
+      "raw_value": 0.4676917318319422,
+      "direction": "negative"
+    }
+  ]
+}

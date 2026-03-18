@@ -1,0 +1,74 @@
+{
+  "ticker": "CCL",
+  "score": 0.6794,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.08018981159420706,
+      "raw_value": 2.9421757595557008,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.021779720870547335,
+      "raw_value": 550.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.01262686633479157,
+      "raw_value": -241.2321428571429,
+      "direction": "negative"
+    }
+  ],
+  "text": "CCL — Score: 0.68 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.26x  [contribucion SHAP: +0.041]\n  + Fcf = 0.000  [contribucion SHAP: +0.012]\n  + Cobertura de intereses (EBIT / intereses) = 1.46x  [contribucion SHAP: +0.009]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 2.942  [contribucion SHAP: -0.080]\n  - Eps Surprise Pct = 550.000  [contribucion SHAP: -0.022]\n  - Deuda neta / EBITDA = -241.23x  [contribucion SHAP: -0.013]",
+  "top_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.08018981159420706,
+      "raw_value": 2.9421757595557008,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.0409162301647614,
+      "raw_value": 0.2571255830022456,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.021779720870547335,
+      "raw_value": 550.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.01262686633479157,
+      "raw_value": -241.2321428571429,
+      "direction": "negative"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.012158355300967465,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.00925338536914081,
+      "raw_value": 1.4648648648648648,
+      "direction": "positive"
+    }
+  ]
+}

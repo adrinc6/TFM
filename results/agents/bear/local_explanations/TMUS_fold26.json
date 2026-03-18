@@ -1,0 +1,67 @@
+{
+  "ticker": "TMUS",
+  "score": 0.7464,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.056715861127600325,
+      "raw_value": 1.2676341491067524,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.02616068425714446,
+      "raw_value": 12.24,
+      "direction": "negative"
+    }
+  ],
+  "text": "TMUS — Score: 0.75 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 2502000000.000  [contribucion SHAP: +0.052]\n  + Deuda neta / EBITDA = 10.12x  [contribucion SHAP: +0.040]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.91x  [contribucion SHAP: +0.011]\n  + Acciones compradas netas por insiders (90 días) = 381976.000  [contribucion SHAP: +0.010]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 1.268  [contribucion SHAP: -0.057]\n  - Eps Surprise Pct = 12.240  [contribucion SHAP: -0.026]",
+  "top_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.056715861127600325,
+      "raw_value": 1.2676341491067524,
+      "direction": "negative"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.05242352109607205,
+      "raw_value": 2502000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.040420426137602834,
+      "raw_value": 10.118293471234647,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.02616068425714446,
+      "raw_value": 12.24,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.010661939541904654,
+      "raw_value": 0.912263309209874,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.010463227362043824,
+      "raw_value": 381976.0,
+      "direction": "positive"
+    }
+  ]
+}

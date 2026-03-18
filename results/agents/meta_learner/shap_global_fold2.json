@@ -1,0 +1,82 @@
+{
+  "mom_minus_bear": {
+    "shap_importance": 0.549710334285879,
+    "description": "Mom Minus Bear"
+  },
+  "momentum_score": {
+    "shap_importance": 0.16008167378236363,
+    "description": "Score del Agente de Momentum (tendencia técnica)"
+  },
+  "vix": {
+    "shap_importance": 0.13089229943120548,
+    "description": "VIX (volatilidad implícita de mercado)"
+  },
+  "yield_curve": {
+    "shap_importance": 0.12361128247988028,
+    "description": "Pendiente curva de tipos (10Y - 2Y)"
+  },
+  "fundamental_score": {
+    "shap_importance": 0.1066909828515634,
+    "description": "Score del Agente Fundamental (salud financiera)"
+  },
+  "valuation_score": {
+    "shap_importance": 0.08014451724266944,
+    "description": "Score del Agente de Valoración (infravaloración)"
+  },
+  "sp500_momentum_12m": {
+    "shap_importance": 0.04486102216095171,
+    "description": "Momentum del S&P 500 a 12 meses"
+  },
+  "fund_x_val": {
+    "shap_importance": 0.03777268787364971,
+    "description": "Fund X Val"
+  },
+  "sector_Oils-Energy": {
+    "shap_importance": 0.024208692222250906,
+    "description": "Sector Oils-Energy"
+  },
+  "sector_Medical": {
+    "shap_importance": 0.024206202234095548,
+    "description": "Sector Medical"
+  },
+  "sector_Consumer Discretionary": {
+    "shap_importance": 0.020505355042635426,
+    "description": "Sector Consumer Discretionary"
+  },
+  "sp500_momentum_3m": {
+    "shap_importance": 0.01921139313331229,
+    "description": "Momentum del S&P 500 a 3 meses"
+  },
+  "bear_score": {
+    "shap_importance": 0.018478201391673162,
+    "description": "Score del Agente Bear (riesgo, <0.5 es bueno)"
+  },
+  "sector_Basic Materials": {
+    "shap_importance": 0.016516157705485302,
+    "description": "Sector Basic Materials"
+  },
+  "sector_Finance": {
+    "shap_importance": 0.011021510421810179,
+    "description": "Sector Finance"
+  },
+  "sector_Industrial Products": {
+    "shap_importance": 0.00996648717890587,
+    "description": "Sector Industrial Products"
+  },
+  "sector_Aerospace": {
+    "shap_importance": 0.009197408853323371,
+    "description": "Sector Aerospace"
+  },
+  "sector_Conglomerates": {
+    "shap_importance": 0.007616647591038442,
+    "description": "Sector Conglomerates"
+  },
+  "sector_Business Services": {
+    "shap_importance": 0.007013283751330095,
+    "description": "Sector Business Services"
+  },
+  "sector_Consumer Staples": {
+    "shap_importance": 0.0020914528566276162,
+    "description": "Sector Consumer Staples"
+  }
+}

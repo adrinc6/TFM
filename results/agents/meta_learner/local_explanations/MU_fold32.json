@@ -1,0 +1,74 @@
+{
+  "ticker": "MU",
+  "score": 0.8003,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.09158722678905327,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.034829935606503076,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.02936685485232893,
+      "raw_value": 0.3457723339312351,
+      "direction": "negative"
+    }
+  ],
+  "text": "MU — Score: 0.80 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.739  [contribucion SHAP: +0.530]\n  + VIX (volatilidad implícita de mercado) = 30.9  [contribucion SHAP: +0.140]\n  + Sector Consumer Staples = 0.000  [contribucion SHAP: +0.027]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.092]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.035]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.346  [contribucion SHAP: -0.029]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.5296880566210441,
+      "raw_value": 0.73919120540268,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.1399662686736925,
+      "raw_value": 30.88999938964844,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.09158722678905327,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.034829935606503076,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.02936685485232893,
+      "raw_value": 0.3457723339312351,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Consumer Staples",
+      "description": "Sector Consumer Staples",
+      "shap_value": 0.0270917804514077,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

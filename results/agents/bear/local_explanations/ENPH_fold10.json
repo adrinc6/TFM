@@ -1,0 +1,81 @@
+{
+  "ticker": "ENPH",
+  "score": 0.7879,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.06177967320384511,
+      "raw_value": 0.0330578512396695,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.04776545026651486,
+      "raw_value": 17.61,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.009268596502731047,
+      "raw_value": 0.11841799388127172,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_ebitda_high",
+      "description": "Debt Ebitda High",
+      "shap_value": -0.0063757467848672734,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "ENPH — Score: 0.79 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Cobertura de intereses (EBIT / intereses) = 11.92x  [contribucion SHAP: +0.016]\n  + Revenue Decline = 0.000  [contribucion SHAP: +0.006]\n\nFactores EN CONTRA:\n  - Eps Revision = 0.033  [contribucion SHAP: -0.062]\n  - Eps Surprise Pct = 17.610  [contribucion SHAP: -0.048]\n  - Crecimiento de la deuda total interanual = 11.8%  [contribucion SHAP: -0.009]\n  - Debt Ebitda High = 0.000  [contribucion SHAP: -0.006]",
+  "top_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.06177967320384511,
+      "raw_value": 0.0330578512396695,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.04776545026651486,
+      "raw_value": 17.61,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.016105243301220297,
+      "raw_value": 11.91703361990634,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.009268596502731047,
+      "raw_value": 0.11841799388127172,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_ebitda_high",
+      "description": "Debt Ebitda High",
+      "shap_value": -0.0063757467848672734,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": 0.005668316601232496,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

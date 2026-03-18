@@ -1,0 +1,67 @@
+{
+  "ticker": "PLTR",
+  "score": 0.6474,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.10521156001977248,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.050277224514599525,
+      "raw_value": 0.5188358823458353,
+      "direction": "negative"
+    }
+  ],
+  "text": "PLTR — Score: 0.65 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.642  [contribucion SHAP: +0.762]\n  + Score del Agente de Valoración (infravaloración) = 0.510  [contribucion SHAP: +0.163]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.426  [contribucion SHAP: +0.079]\n  + Sector Consumer Staples = 0.000  [contribucion SHAP: +0.043]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.105]\n  - Score del Agente Fundamental (salud financiera) = 0.519  [contribucion SHAP: -0.050]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.7620038793421581,
+      "raw_value": 0.6415219931410153,
+      "direction": "positive"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": 0.16299145800438217,
+      "raw_value": 0.5097663463696789,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.10521156001977248,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": 0.07875187744315093,
+      "raw_value": 0.4260329914565557,
+      "direction": "positive"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.050277224514599525,
+      "raw_value": 0.5188358823458353,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Consumer Staples",
+      "description": "Sector Consumer Staples",
+      "shap_value": 0.04288774035552804,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

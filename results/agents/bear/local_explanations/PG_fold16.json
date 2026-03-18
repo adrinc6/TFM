@@ -1,0 +1,52 @@
+{
+  "ticker": "PG",
+  "score": 0.4009,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [],
+  "text": "PG — Score: 0.40 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Cobertura de intereses (EBIT / intereses) = 34.57x  [contribucion SHAP: +0.020]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.69x  [contribucion SHAP: +0.020]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.015]\n  + Crecimiento de la deuda total interanual = -12.6%  [contribucion SHAP: +0.007]",
+  "top_drivers": [
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.019993239390234698,
+      "raw_value": 34.57364341085271,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.019582341990408446,
+      "raw_value": 0.6944126650381868,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.015347437980696621,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.007403566368794652,
+      "raw_value": -0.12595993550326579,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.00738919401018061,
+      "raw_value": -0.1705882352941177,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": 0.0049305455970624235,
+      "raw_value": 0.5,
+      "direction": "positive"
+    }
+  ]
+}

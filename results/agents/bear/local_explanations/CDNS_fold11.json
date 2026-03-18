@@ -1,0 +1,67 @@
+{
+  "ticker": "CDNS",
+  "score": 0.8308,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.022685170818914437,
+      "raw_value": 4.76,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_ebitda_high",
+      "description": "Debt Ebitda High",
+      "shap_value": -0.0053642728346665345,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "CDNS — Score: 0.83 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 2.16x  [contribucion SHAP: +0.142]\n  + Cobertura de intereses (EBIT / intereses) = 33.61x  [contribucion SHAP: +0.021]\n  + Crecimiento de la deuda total interanual = -18.7%  [contribucion SHAP: +0.013]\n  + Eps Revision = 0.017  [contribucion SHAP: +0.010]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 4.760  [contribucion SHAP: -0.023]\n  - Debt Ebitda High = 0.000  [contribucion SHAP: -0.005]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.14237135728211736,
+      "raw_value": 2.1635642732329363,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.022685170818914437,
+      "raw_value": 4.76,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.020839130852228865,
+      "raw_value": 33.61165691577437,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.012859972227457415,
+      "raw_value": -0.1867613271011871,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.009743869954497601,
+      "raw_value": 0.0169491525423728,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_ebitda_high",
+      "description": "Debt Ebitda High",
+      "shap_value": -0.0053642728346665345,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

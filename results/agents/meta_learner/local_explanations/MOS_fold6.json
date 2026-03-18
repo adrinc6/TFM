@@ -1,0 +1,74 @@
+{
+  "ticker": "MOS",
+  "score": 0.2452,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.03224551662250691,
+      "raw_value": 0.5202373565362799,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Oils-Energy",
+      "description": "Sector Oils-Energy",
+      "shap_value": -0.026026520886358415,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.025622731589564626,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "MOS — Score: 0.25 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.342  [contribucion SHAP: +0.301]\n  + VIX (volatilidad implícita de mercado) = 18.9  [contribucion SHAP: +0.106]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.266  [contribucion SHAP: +0.084]\n\nFactores EN CONTRA:\n  - Score del Agente de Valoración (infravaloración) = 0.520  [contribucion SHAP: -0.032]\n  - Sector Oils-Energy = 0.000  [contribucion SHAP: -0.026]\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.026]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.3011667940438938,
+      "raw_value": 0.34173323155947166,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.10564991313771441,
+      "raw_value": 18.90999984741211,
+      "direction": "positive"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": 0.08378566678179472,
+      "raw_value": 0.26554570741862554,
+      "direction": "positive"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.03224551662250691,
+      "raw_value": 0.5202373565362799,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Oils-Energy",
+      "description": "Sector Oils-Energy",
+      "shap_value": -0.026026520886358415,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.025622731589564626,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

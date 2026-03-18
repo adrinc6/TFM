@@ -1,0 +1,81 @@
+{
+  "ticker": "LIN",
+  "score": 0.1578,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.021855173591576463,
+      "raw_value": 9.18,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.012739057675799447,
+      "raw_value": 0.0756013745704466,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.007197671286548449,
+      "raw_value": 0.14104278074866317,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.006337695210199646,
+      "raw_value": 1.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "LIN — Score: 0.16 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 18.97x  [contribucion SHAP: +0.040]\n  + Cobertura de intereses (EBIT / intereses) = 52.38x  [contribucion SHAP: +0.016]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 9.180  [contribucion SHAP: -0.022]\n  - Eps Revision = 0.076  [contribucion SHAP: -0.013]\n  - Crecimiento de la deuda total interanual = 14.1%  [contribucion SHAP: -0.007]\n  - Revenue Decline = 1.000  [contribucion SHAP: -0.006]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.04029077846478083,
+      "raw_value": 18.966666666666665,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.021855173591576463,
+      "raw_value": 9.18,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.016059483854630047,
+      "raw_value": 52.37837837837838,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.012739057675799447,
+      "raw_value": 0.0756013745704466,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.007197671286548449,
+      "raw_value": 0.14104278074866317,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.006337695210199646,
+      "raw_value": 1.0,
+      "direction": "negative"
+    }
+  ]
+}

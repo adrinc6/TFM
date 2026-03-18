@@ -1,0 +1,74 @@
+{
+  "ticker": "FOX",
+  "score": 0.3345,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.01242845628055955,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.010353698675283667,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.009263609281169915,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "FOX — Score: 0.33 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 10.41x  [contribucion SHAP: +0.064]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 3.24x  [contribucion SHAP: +0.056]\n  + Cobertura de intereses (EBIT / intereses) = 14.35x  [contribucion SHAP: +0.019]\n\nFactores EN CONTRA:\n  - Eps Revision = 0.000  [contribucion SHAP: -0.012]\n  - Revenue Decline = 1.000  [contribucion SHAP: -0.010]\n  - Eps Surprise Pct = 0.000  [contribucion SHAP: -0.009]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.06414087637764834,
+      "raw_value": 10.413892908827783,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.05562325200431283,
+      "raw_value": 3.237708615245828,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.01873931382874768,
+      "raw_value": 14.345454545454546,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.01242845628055955,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.010353698675283667,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.009263609281169915,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

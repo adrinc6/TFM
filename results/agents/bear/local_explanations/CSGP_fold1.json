@@ -1,0 +1,67 @@
+{
+  "ticker": "CSGP",
+  "score": 0.6646,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.02653401441217024,
+      "raw_value": 24.40496076942546,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.0037432256689617187,
+      "raw_value": 5.6800262169916005,
+      "direction": "negative"
+    }
+  ],
+  "text": "CSGP — Score: 0.66 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = 0.1%  [contribucion SHAP: +0.052]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 11.79x  [contribucion SHAP: +0.019]\n  + Ratio deuda / fondos propios = 0.173  [contribucion SHAP: +0.015]\n  + FLAG: Deuda creciendo >20% interanual = 0.000  [contribucion SHAP: +0.005]\n\nFactores EN CONTRA:\n  - Cobertura de intereses (EBIT / intereses) = 24.40x  [contribucion SHAP: -0.027]\n  - Deuda neta / EBITDA = 5.68x  [contribucion SHAP: -0.004]",
+  "top_drivers": [
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.052254355905013476,
+      "raw_value": 0.0012455470931322932,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.02653401441217024,
+      "raw_value": 24.40496076942546,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.019084113457213815,
+      "raw_value": 11.790046325685216,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": 0.015328541737303705,
+      "raw_value": 0.1729693161652139,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_growth_high",
+      "description": "FLAG: Deuda creciendo >20% interanual",
+      "shap_value": 0.005101062047831669,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.0037432256689617187,
+      "raw_value": 5.6800262169916005,
+      "direction": "negative"
+    }
+  ]
+}

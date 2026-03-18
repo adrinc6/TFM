@@ -1,0 +1,41 @@
+{
+  "agent": "fundamental",
+  "timestamp": "2026-03-06T18:32:37.483037",
+  "fold": 9,
+  "class_balance": {
+    "n_samples": 1486,
+    "n_positive": 742,
+    "n_negative": 744,
+    "positive_ratio": 0.4993270524899058
+  },
+  "cv_metrics": {
+    "mean_auc": 0.512486411009,
+    "std_auc": 0.028467322698098353,
+    "mean_acc": 0.5107585926377872,
+    "mean_f1": 0.5078165598395339
+  },
+  "n_features": 59,
+  "top_features": {
+    "sector_Consumer Staples": 0.03593876585364342,
+    "sector_Finance": 0.029236331582069397,
+    "momentum_12m_zsector": 0.026219068095088005,
+    "gross_margin": 0.024669576436281204,
+    "sector_Oils-Energy": 0.024397993460297585,
+    "quick_ratio": 0.024087337777018547,
+    "net_income_yoy_growth": 0.023684903979301453,
+    "volatility_20d_zsector": 0.02357724867761135,
+    "debt_to_ebitda": 0.023481935262680054,
+    "operating_margin": 0.023443132638931274,
+    "quick_ratio_zsector": 0.02339284121990204,
+    "roa": 0.023184053599834442,
+    "interest_coverage": 0.02233821712434292,
+    "ev_to_ebitda_zsector": 0.022226648405194283,
+    "revenue_yoy_growth": 0.021748976781964302
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.512486411009,
+    "std_auc": 0.028467322698098353,
+    "mean_acc": 0.5107585926377872,
+    "mean_f1": 0.5078165598395339
+  }
+}

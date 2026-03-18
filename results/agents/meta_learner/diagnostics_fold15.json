@@ -1,0 +1,73 @@
+{
+  "agent": "meta_learner",
+  "timestamp": "2026-03-06T18:59:43.377081",
+  "fold": 15,
+  "class_balance": {
+    "n_samples": 4444,
+    "n_positive": 2222,
+    "n_negative": 2222,
+    "positive_ratio": 0.5
+  },
+  "cv_lr": {
+    "mean_auc": 0.7578900073775567,
+    "std_auc": 0.013362464175243663,
+    "mean_f1": 0.6890925624499024
+  },
+  "cv_gbm": {
+    "mean_auc": 0.7574954175250259,
+    "std_auc": 0.013923569439512673,
+    "mean_f1": 0.687337604417539
+  },
+  "lr_weight": 0.5001301945518435,
+  "gbm_weight": 0.49986980544815646,
+  "lr_coefficients": {
+    "fundamental_score": -0.004101084728978974,
+    "valuation_score": 0.013506554302492275,
+    "momentum_score": 0.5693733281707714,
+    "bear_score": 0.13631258592672146,
+    "vix": 0.26503667245207596,
+    "yield_curve": -0.1946479241161586,
+    "sp500_momentum_3m": 0.14561900967205835,
+    "sp500_momentum_12m": 0.17573295609875533,
+    "sector_Aerospace": 0.0472723893364248,
+    "sector_Auto-Tires-Trucks": -0.04131758625660844,
+    "sector_Basic Materials": -0.04251430033914208,
+    "sector_Business Services": 0.0684466582827407,
+    "sector_Computer And Technology": 0.03457773910917941,
+    "sector_Conglomerates": -0.1431002764079883,
+    "sector_Construction": 0.06551281696329711,
+    "sector_Consumer Discretionary": -0.11152689191404196,
+    "sector_Consumer Staples": -0.06886189368695805,
+    "sector_Finance": 0.04476869418980434,
+    "sector_Industrial Products": -0.027110752515077295,
+    "sector_Medical": 0.007154217783670865,
+    "sector_Oils-Energy": 0.057006023137106517,
+    "sector_Retail-Wholesale": 0.04099495783290138,
+    "sector_Transportation": -0.054594958210221936,
+    "sector_Unknown": 0.015473400062018685,
+    "sector_Utilities": -0.04791008700730045,
+    "fund_x_val": 0.0042532200734488245,
+    "mom_minus_bear": 0.5105157760385589
+  },
+  "gbm_importances": {
+    "momentum_score": 0.5562476095129616,
+    "mom_minus_bear": 0.11194706110139231,
+    "valuation_score": 0.053367173587631246,
+    "fund_x_val": 0.04005433335457007,
+    "bear_score": 0.03945199712784804,
+    "sp500_momentum_3m": 0.03646887073257905,
+    "sp500_momentum_12m": 0.022682428653736736,
+    "vix": 0.022159269963343872,
+    "fundamental_score": 0.021187509956744847,
+    "yield_curve": 0.019117700049911812
+  },
+  "bear_hard_threshold": 0.9,
+  "last_train_metrics": {
+    "mean_auc": 0.7578900073775567,
+    "std_auc": 0.013362464175243663,
+    "mean_f1": 0.6890925624499024,
+    "gbm_mean_auc": 0.7574954175250259,
+    "gbm_std_auc": 0.013923569439512673,
+    "gbm_mean_f1": 0.687337604417539
+  }
+}

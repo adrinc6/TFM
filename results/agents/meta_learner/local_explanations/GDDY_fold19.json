@@ -1,0 +1,81 @@
+{
+  "ticker": "GDDY",
+  "score": 0.7798,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.21847511094911085,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": -0.14149333433319652,
+      "raw_value": 16.190000534057617,
+      "direction": "negative"
+    },
+    {
+      "feature": "sp500_momentum_12m",
+      "description": "Momentum del S&P 500 a 12 meses",
+      "shap_value": -0.08782718680621383,
+      "raw_value": 0.2150445239107958,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.06924093790610601,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "GDDY — Score: 0.78 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.610  [contribucion SHAP: +0.591]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.478  [contribucion SHAP: +0.061]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.218]\n  - VIX (volatilidad implícita de mercado) = 16.2  [contribucion SHAP: -0.141]\n  - Momentum del S&P 500 a 12 meses = 21.5%  [contribucion SHAP: -0.088]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.069]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.591188929681634,
+      "raw_value": 0.6096087646671068,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.21847511094911085,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": -0.14149333433319652,
+      "raw_value": 16.190000534057617,
+      "direction": "negative"
+    },
+    {
+      "feature": "sp500_momentum_12m",
+      "description": "Momentum del S&P 500 a 12 meses",
+      "shap_value": -0.08782718680621383,
+      "raw_value": 0.2150445239107958,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.06924093790610601,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": 0.06084232467164511,
+      "raw_value": 0.47817728081708133,
+      "direction": "positive"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "ticker": "MU",
+  "score": 0.6276,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.016405907557602226,
+      "raw_value": 0.2232622542232068,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.013206163504048199,
+      "raw_value": 19.3,
+      "direction": "negative"
+    }
+  ],
+  "text": "MU — Score: 0.63 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 2.07x  [contribucion SHAP: +0.037]\n  + Acciones compradas netas por insiders (90 días) = 81640.000  [contribucion SHAP: +0.024]\n  + Fcf = 72000000.000  [contribucion SHAP: +0.016]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.52x  [contribucion SHAP: +0.015]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.223  [contribucion SHAP: -0.016]\n  - Eps Surprise Pct = 19.300  [contribucion SHAP: -0.013]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.03676915660228893,
+      "raw_value": 2.070010270455324,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.02439192749549179,
+      "raw_value": 81640.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.016405907557602226,
+      "raw_value": 0.2232622542232068,
+      "direction": "negative"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.01635821233744204,
+      "raw_value": 72000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.014569945421657883,
+      "raw_value": 2.517984983411909,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.013206163504048199,
+      "raw_value": 19.3,
+      "direction": "negative"
+    }
+  ]
+}

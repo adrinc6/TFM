@@ -1,0 +1,74 @@
+{
+  "ticker": "META",
+  "score": 0.6928,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.025236541628989625,
+      "raw_value": 9.17,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.008991233552620815,
+      "raw_value": 0.1173044659773033,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": -0.004553000653091001,
+      "raw_value": 0.5,
+      "direction": "negative"
+    }
+  ],
+  "text": "META — Score: 0.69 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.83x  [contribucion SHAP: +0.026]\n  + Acciones compradas netas por insiders (90 días) = 0.000  [contribucion SHAP: +0.008]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.007]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 9.170  [contribucion SHAP: -0.025]\n  - Ratio deuda / fondos propios = 0.117  [contribucion SHAP: -0.009]\n  - Proporción de ventas de insiders (>0.7 = red flag) = 0.50x  [contribucion SHAP: -0.005]",
+  "top_drivers": [
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.026482301798154452,
+      "raw_value": 2.830358465412532,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.025236541628989625,
+      "raw_value": 9.17,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.008991233552620815,
+      "raw_value": 0.1173044659773033,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.008239571774620322,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.00680963801433978,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": -0.004553000653091001,
+      "raw_value": 0.5,
+      "direction": "negative"
+    }
+  ]
+}

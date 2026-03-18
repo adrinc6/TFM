@@ -1,0 +1,34 @@
+{
+  "positive_drivers": {
+    "momentum_score": 0.5028492926749826,
+    "mom_minus_bear": 0.4213693069975343,
+    "vix": 0.4077658360125172,
+    "sp500_momentum_3m": 0.22312259884387967,
+    "sector_Construction": 0.20370523391002557,
+    "bear_score": 0.17049286827056456,
+    "sp500_momentum_12m": 0.13105385329727753,
+    "sector_Computer And Technology": 0.10889230045078939,
+    "sector_Aerospace": 0.07328543576486873,
+    "fund_x_val": 0.048877357738282126,
+    "fundamental_score": 0.04249013237873907,
+    "sector_Business Services": 0.028507226226273226,
+    "valuation_score": 0.016350070264216608,
+    "sector_Consumer Discretionary": 0.011321986968364402,
+    "sector_Medical": 0.009881449579112904,
+    "sector_Finance": 0.008471300383493785
+  },
+  "negative_drivers": {
+    "sector_Oils-Energy": -0.00023649767072750382,
+    "sector_Retail-Wholesale": -0.0034725492834213295,
+    "sector_Industrial Products": -0.006226594482893767,
+    "sector_Unknown": -0.007393931122340516,
+    "sector_Auto-Tires-Trucks": -0.01762296566988284,
+    "sector_Transportation": -0.05644597095254789,
+    "sector_Consumer Staples": -0.09561408351093645,
+    "sector_Basic Materials": -0.10681935194487611,
+    "yield_curve": -0.18690984324970822,
+    "sector_Utilities": -0.22660495906193218,
+    "sector_Conglomerates": -0.2639241808938575
+  },
+  "interpretation": "Coeficientes positivos \u2192 contribuyen a Outperform"
+}

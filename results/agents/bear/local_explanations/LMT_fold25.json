@@ -1,0 +1,67 @@
+{
+  "ticker": "LMT",
+  "score": 0.6227,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.06312974074411702,
+      "raw_value": 3.200694773409127,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.026827328570638145,
+      "raw_value": 0.16100578498195772,
+      "direction": "negative"
+    }
+  ],
+  "text": "LMT — Score: 0.62 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 441000000.000  [contribucion SHAP: +0.041]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.13x  [contribucion SHAP: +0.039]\n  + Deuda neta / EBITDA = 17.55x  [contribucion SHAP: +0.030]\n  + Cobertura de intereses (EBIT / intereses) = 2.64x  [contribucion SHAP: +0.019]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 3.201  [contribucion SHAP: -0.063]\n  - Crecimiento de la deuda total interanual = 16.1%  [contribucion SHAP: -0.027]",
+  "top_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.06312974074411702,
+      "raw_value": 3.200694773409127,
+      "direction": "negative"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.041195179044145304,
+      "raw_value": 441000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.03859961794298016,
+      "raw_value": 1.1250772399588054,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.030442596838631375,
+      "raw_value": 17.549783549783548,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.026827328570638145,
+      "raw_value": 0.16100578498195772,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.01943509476395579,
+      "raw_value": 2.6363636363636362,
+      "direction": "positive"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "ticker": "HWM",
+  "score": 0.6088,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.03344166066422659,
+      "raw_value": 0.2820027243282491,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Finance",
+      "description": "Sector Finance",
+      "shap_value": -0.023376609092373653,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "HWM — Score: 0.61 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.510  [contribucion SHAP: +0.551]\n  + VIX (volatilidad implícita de mercado) = 17.8  [contribucion SHAP: +0.146]\n  + Momentum del S&P 500 a 3 meses = -3.2%  [contribucion SHAP: +0.029]\n  + Sector Consumer Staples = 0.000  [contribucion SHAP: +0.026]\n\nFactores EN CONTRA:\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.282  [contribucion SHAP: -0.033]\n  - Sector Finance = 0.000  [contribucion SHAP: -0.023]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.5509889936841423,
+      "raw_value": 0.5101698267017647,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.1458988727994972,
+      "raw_value": 17.829999923706055,
+      "direction": "positive"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.03344166066422659,
+      "raw_value": 0.2820027243282491,
+      "direction": "negative"
+    },
+    {
+      "feature": "sp500_momentum_3m",
+      "description": "Momentum del S&P 500 a 3 meses",
+      "shap_value": 0.029140328894998433,
+      "raw_value": -0.0324018619791989,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Consumer Staples",
+      "description": "Sector Consumer Staples",
+      "shap_value": 0.026199359326647725,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Finance",
+      "description": "Sector Finance",
+      "shap_value": -0.023376609092373653,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

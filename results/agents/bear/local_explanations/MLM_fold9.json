@@ -1,0 +1,81 @@
+{
+  "ticker": "MLM",
+  "score": 0.7631,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.06253668616479591,
+      "raw_value": 3.959183673469388,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.0480812945021693,
+      "raw_value": 15.26,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.026924446181442074,
+      "raw_value": 2.2131863560732112,
+      "direction": "negative"
+    },
+    {
+      "feature": "liquidity_risk",
+      "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+      "shap_value": -0.00794083264864056,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "MLM — Score: 0.76 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Cobertura de intereses (EBIT / intereses) = 11.02x  [contribucion SHAP: +0.023]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.008]\n\nFactores EN CONTRA:\n  - Eps Revision = 3.959  [contribucion SHAP: -0.063]\n  - Eps Surprise Pct = 15.260  [contribucion SHAP: -0.048]\n  - Ratio de liquidez corriente (activo / pasivo cte.) = 2.21x  [contribucion SHAP: -0.027]\n  - FLAG: Ratio corriente < 1 (riesgo liquidez) = 0.000  [contribucion SHAP: -0.008]",
+  "top_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.06253668616479591,
+      "raw_value": 3.959183673469388,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.0480812945021693,
+      "raw_value": 15.26,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.026924446181442074,
+      "raw_value": 2.2131863560732112,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.02276975449185926,
+      "raw_value": 11.023809523809524,
+      "direction": "positive"
+    },
+    {
+      "feature": "liquidity_risk",
+      "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+      "shap_value": -0.00794083264864056,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.007694375018054556,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

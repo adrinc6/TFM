@@ -1,0 +1,2005 @@
+{
+  "fold": 31,
+  "tickers": {
+    "MU": {
+      "score": 0.8224,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "MU — Score: 0.82 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 3.13x  [contribucion SHAP: +0.020]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 3.13x  [contribucion SHAP: +0.019]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -58335.000  [contribucion SHAP: -0.037]\n  - Ratio deuda / fondos propios = 0.248  [contribucion SHAP: -0.024]\n  - Fcf = -113000000.000  [contribucion SHAP: -0.024]\n  - Eps Surprise Pct = 9.590  [contribucion SHAP: -0.018]",
+          "top_drivers": [
+            {
+              "feature": "insider_net_shares_90d",
+              "description": "Acciones compradas netas por insiders (90 días)",
+              "shap_value": -0.03687041422907436,
+              "raw_value": -58335.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.02421584534524152,
+              "raw_value": 0.2476713342791931,
+              "direction": "negative"
+            },
+            {
+              "feature": "fcf",
+              "description": "Fcf",
+              "shap_value": -0.024072566297662273,
+              "raw_value": -113000000.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.020439843524529978,
+              "raw_value": 3.1269470404984423,
+              "direction": "positive"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.0185832269545951,
+              "raw_value": 3.1343150945791547,
+              "direction": "positive"
+            },
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.017917840949517084,
+              "raw_value": 9.59,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "MU — Score: 0.82 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.782  [contribucion SHAP: +0.566]\n  + VIX (volatilidad implícita de mercado) = 30.9  [contribucion SHAP: +0.154]\n  + Momentum del S&P 500 a 3 meses = -7.4%  [contribucion SHAP: +0.052]\n  + Score del Agente Fundamental (salud financiera) = 0.507  [contribucion SHAP: +0.047]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.299]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.5659571378554821,
+              "raw_value": 0.7820671561611859,
+              "direction": "positive"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.2991635724890686,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.15395809827160517,
+              "raw_value": 30.88999938964844,
+              "direction": "positive"
+            },
+            {
+              "feature": "sp500_momentum_3m",
+              "description": "Momentum del S&P 500 a 3 meses",
+              "shap_value": 0.052419760467724355,
+              "raw_value": -0.0737206589473284,
+              "direction": "positive"
+            },
+            {
+              "feature": "fundamental_score",
+              "description": "Score del Agente Fundamental (salud financiera)",
+              "shap_value": 0.046868708423900056,
+              "raw_value": 0.5068518122037252,
+              "direction": "positive"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": 0.043571564798493244,
+              "raw_value": 0.5036845954694437,
+              "direction": "positive"
+            }
+          ]
+        }
+      }
+    },
+    "ORCL": {
+      "score": 0.8209,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "ORCL — Score: 0.82 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Fcf = 71000000.000  [contribucion SHAP: +0.139]\n  + Deuda neta / EBITDA = 16.05x  [contribucion SHAP: +0.023]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.02x  [contribucion SHAP: +0.023]\n  + FLAG: Insiders vendiendo >70% de operaciones = 0.000  [contribucion SHAP: +0.004]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 5.578  [contribucion SHAP: -0.045]\n  - Acciones compradas netas por insiders (90 días) = -3801582.000  [contribucion SHAP: -0.034]",
+          "top_drivers": [
+            {
+              "feature": "fcf",
+              "description": "Fcf",
+              "shap_value": 0.13876327389290893,
+              "raw_value": 71000000.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.04543246680805618,
+              "raw_value": 5.577660622211923,
+              "direction": "negative"
+            },
+            {
+              "feature": "insider_net_shares_90d",
+              "description": "Acciones compradas netas por insiders (90 días)",
+              "shap_value": -0.034160473491719356,
+              "raw_value": -3801582.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.023215630108684392,
+              "raw_value": 16.046,
+              "direction": "positive"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.023073877521525434,
+              "raw_value": 1.0166424737535025,
+              "direction": "positive"
+            },
+            {
+              "feature": "insider_selling",
+              "description": "FLAG: Insiders vendiendo >70% de operaciones",
+              "shap_value": 0.0037841685857622205,
+              "raw_value": 0.0,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "ORCL — Score: 0.82 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.788  [contribucion SHAP: +0.535]\n  + VIX (volatilidad implícita de mercado) = 30.9  [contribucion SHAP: +0.154]\n  + Momentum del S&P 500 a 3 meses = -7.4%  [contribucion SHAP: +0.052]\n  + Score del Agente de Valoración (infravaloración) = 0.500  [contribucion SHAP: +0.044]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.299]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.394  [contribucion SHAP: -0.041]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.5352443460121056,
+              "raw_value": 0.7884643145612911,
+              "direction": "positive"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.2991635724890686,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.15395809827160517,
+              "raw_value": 30.88999938964844,
+              "direction": "positive"
+            },
+            {
+              "feature": "sp500_momentum_3m",
+              "description": "Momentum del S&P 500 a 3 meses",
+              "shap_value": 0.052419760467724355,
+              "raw_value": -0.0737206589473284,
+              "direction": "positive"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": 0.043571564798493244,
+              "raw_value": 0.499860495866405,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": -0.040815184076116076,
+              "raw_value": 0.39447034031506656,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "RTX": {
+      "score": 0.8189,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "RTX — Score: 0.82 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Fcf = 688000000.000  [contribucion SHAP: +0.124]\n  + Deuda neta / EBITDA = 13.38x  [contribucion SHAP: +0.024]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.01x  [contribucion SHAP: +0.021]\n  + Acciones compradas netas por insiders (90 días) = 57667.000  [contribucion SHAP: +0.004]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.652  [contribucion SHAP: -0.039]\n  - Eps Surprise Pct = 8.500  [contribucion SHAP: -0.014]",
+          "top_drivers": [
+            {
+              "feature": "fcf",
+              "description": "Fcf",
+              "shap_value": 0.12395944382058896,
+              "raw_value": 688000000.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.03903463918889068,
+              "raw_value": 0.6519954533973226,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.024270031354168733,
+              "raw_value": 13.378684807256237,
+              "direction": "positive"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.02117487221179989,
+              "raw_value": 1.00554879902706,
+              "direction": "positive"
+            },
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.013556661502865193,
+              "raw_value": 8.5,
+              "direction": "negative"
+            },
+            {
+              "feature": "insider_net_shares_90d",
+              "description": "Acciones compradas netas por insiders (90 días)",
+              "shap_value": 0.003917014825525691,
+              "raw_value": 57667.0,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "RTX — Score: 0.82 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.721  [contribucion SHAP: +0.606]\n  + VIX (volatilidad implícita de mercado) = 17.8  [contribucion SHAP: +0.154]\n  + Score del Agente Fundamental (salud financiera) = 0.503  [contribucion SHAP: +0.047]\n  + Score del Agente de Valoración (infravaloración) = 0.528  [contribucion SHAP: +0.044]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.318]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.308  [contribucion SHAP: -0.041]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.6058629090104432,
+              "raw_value": 0.7209182282094942,
+              "direction": "positive"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.318217643900422,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.15395809827160517,
+              "raw_value": 17.829999923706055,
+              "direction": "positive"
+            },
+            {
+              "feature": "fundamental_score",
+              "description": "Score del Agente Fundamental (salud financiera)",
+              "shap_value": 0.046868708423900056,
+              "raw_value": 0.502738485733668,
+              "direction": "positive"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": 0.04423982319628804,
+              "raw_value": 0.5280342569869786,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": -0.0410182480154262,
+              "raw_value": 0.3076364382574278,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "ACN": {
+      "score": 0.8121,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "ACN — Score: 0.81 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Fcf = 2682588000.000  [contribucion SHAP: +0.134]\n  + Deuda neta / EBITDA = 1.98x  [contribucion SHAP: +0.023]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.48x  [contribucion SHAP: +0.015]\n\nFactores EN CONTRA:\n  - Crecimiento de la deuda total interanual = 2721.6%  [contribucion SHAP: -0.031]\n  - Ratio deuda / fondos propios = 0.171  [contribucion SHAP: -0.021]\n  - Eps Revision = -0.171  [contribucion SHAP: -0.005]",
+          "top_drivers": [
+            {
+              "feature": "fcf",
+              "description": "Fcf",
+              "shap_value": 0.13446465430498472,
+              "raw_value": 2682588000.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": -0.031095919187973612,
+              "raw_value": 27.216450737514773,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.02280590051683333,
+              "raw_value": 1.9793289389098376,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.021186024571220877,
+              "raw_value": 0.1708733313038641,
+              "direction": "negative"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.01507030640480119,
+              "raw_value": 1.4773571242393984,
+              "direction": "positive"
+            },
+            {
+              "feature": "eps_revision",
+              "description": "Eps Revision",
+              "shap_value": -0.005043985248789162,
+              "raw_value": -0.1705882352941177,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "ACN — Score: 0.81 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.804  [contribucion SHAP: +0.535]\n  + VIX (volatilidad implícita de mercado) = 30.9  [contribucion SHAP: +0.154]\n  + Momentum del S&P 500 a 3 meses = -7.4%  [contribucion SHAP: +0.052]\n  + Score del Agente de Valoración (infravaloración) = 0.505  [contribucion SHAP: +0.044]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.299]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.311  [contribucion SHAP: -0.046]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.5352443460121056,
+              "raw_value": 0.8040132045666608,
+              "direction": "positive"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.29890602565802005,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.15395809827160517,
+              "raw_value": 30.88999938964844,
+              "direction": "positive"
+            },
+            {
+              "feature": "sp500_momentum_3m",
+              "description": "Momentum del S&P 500 a 3 meses",
+              "shap_value": 0.052419760467724355,
+              "raw_value": -0.0737206589473284,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": -0.045672623833503755,
+              "raw_value": 0.3105101052251961,
+              "direction": "negative"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": 0.043571564798493244,
+              "raw_value": 0.5046063784852971,
+              "direction": "positive"
+            }
+          ]
+        }
+      }
+    },
+    "ADBE": {
+      "score": 0.8038,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "ADBE — Score: 0.80 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Fcf = 2456000000.000  [contribucion SHAP: +0.143]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.18x  [contribucion SHAP: +0.019]\n  + Deuda neta / EBITDA = 2.62x  [contribucion SHAP: +0.016]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -1525.000  [contribucion SHAP: -0.031]\n  - Eps Surprise Pct = 2.180  [contribucion SHAP: -0.024]\n  - Ratio deuda / fondos propios = 0.476  [contribucion SHAP: -0.019]",
+          "top_drivers": [
+            {
+              "feature": "fcf",
+              "description": "Fcf",
+              "shap_value": 0.14276741969688272,
+              "raw_value": 2456000000.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "insider_net_shares_90d",
+              "description": "Acciones compradas netas por insiders (90 días)",
+              "shap_value": -0.031011256207002236,
+              "raw_value": -1525.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.023719248756036072,
+              "raw_value": 2.18,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.01930362669815326,
+              "raw_value": 0.4756777395952654,
+              "direction": "negative"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.018865902558890788,
+              "raw_value": 1.1846556804539998,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.015843771379339316,
+              "raw_value": 2.6172268907563025,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "ADBE — Score: 0.80 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.797  [contribucion SHAP: +0.535]\n  + VIX (volatilidad implícita de mercado) = 30.9  [contribucion SHAP: +0.154]\n  + Momentum del S&P 500 a 3 meses = -7.4%  [contribucion SHAP: +0.052]\n  + Score del Agente de Valoración (infravaloración) = 0.512  [contribucion SHAP: +0.044]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.299]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.308  [contribucion SHAP: -0.046]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.5352443460121056,
+              "raw_value": 0.7966954181317648,
+              "direction": "positive"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.29890602565802005,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.15395809827160517,
+              "raw_value": 30.88999938964844,
+              "direction": "positive"
+            },
+            {
+              "feature": "sp500_momentum_3m",
+              "description": "Momentum del S&P 500 a 3 meses",
+              "shap_value": 0.052419760467724355,
+              "raw_value": -0.0737206589473284,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": -0.045672623833503755,
+              "raw_value": 0.3077750929593705,
+              "direction": "negative"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": 0.043571564798493244,
+              "raw_value": 0.5117136968095765,
+              "direction": "positive"
+            }
+          ]
+        }
+      }
+    },
+    "NKE": {
+      "score": 0.7888,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "NKE — Score: 0.79 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Eps Revision = -0.540  [contribucion SHAP: +0.022]\n  + Fcf = 0.000  [contribucion SHAP: +0.014]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.19x  [contribucion SHAP: +0.012]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.640  [contribucion SHAP: -0.037]\n  - Acciones compradas netas por insiders (90 días) = -179785.000  [contribucion SHAP: -0.026]\n  - Eps Surprise Pct = 85.380  [contribucion SHAP: -0.009]",
+          "top_drivers": [
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.036772041216354245,
+              "raw_value": 0.63968015992004,
+              "direction": "negative"
+            },
+            {
+              "feature": "insider_net_shares_90d",
+              "description": "Acciones compradas netas por insiders (90 días)",
+              "shap_value": -0.025587330884134136,
+              "raw_value": -179785.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "eps_revision",
+              "description": "Eps Revision",
+              "shap_value": 0.022327093233726152,
+              "raw_value": -0.5396825396825398,
+              "direction": "positive"
+            },
+            {
+              "feature": "fcf",
+              "description": "Fcf",
+              "shap_value": 0.01414089766971583,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.011580694570602587,
+              "raw_value": 2.1927292167869554,
+              "direction": "positive"
+            },
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.008595317918911499,
+              "raw_value": 85.38,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "NKE — Score: 0.79 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.792  [contribucion SHAP: +0.535]\n  + VIX (volatilidad implícita de mercado) = 30.9  [contribucion SHAP: +0.154]\n  + Momentum del S&P 500 a 3 meses = -7.4%  [contribucion SHAP: +0.052]\n  + Score del Agente de Valoración (infravaloración) = 0.506  [contribucion SHAP: +0.044]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.299]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.374  [contribucion SHAP: -0.041]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.5352443460121056,
+              "raw_value": 0.7923384102168645,
+              "direction": "positive"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.2991635724890686,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.15395809827160517,
+              "raw_value": 30.88999938964844,
+              "direction": "positive"
+            },
+            {
+              "feature": "sp500_momentum_3m",
+              "description": "Momentum del S&P 500 a 3 meses",
+              "shap_value": 0.052419760467724355,
+              "raw_value": -0.0737206589473284,
+              "direction": "positive"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": 0.043571564798493244,
+              "raw_value": 0.5058714480366372,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": -0.040815184076116076,
+              "raw_value": 0.37405472938097506,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "FDX": {
+      "score": 0.7711,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "FDX — Score: 0.77 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Fcf = 1015000000.000  [contribucion SHAP: +0.139]\n  + Deuda neta / EBITDA = 7.94x  [contribucion SHAP: +0.028]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.24x  [contribucion SHAP: +0.018]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -14905.000  [contribucion SHAP: -0.029]\n  - Ratio deuda / fondos propios = 0.754  [contribucion SHAP: -0.025]\n  - Eps Revision = 0.164  [contribucion SHAP: -0.009]",
+          "top_drivers": [
+            {
+              "feature": "fcf",
+              "description": "Fcf",
+              "shap_value": 0.13862749238054745,
+              "raw_value": 1015000000.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "insider_net_shares_90d",
+              "description": "Acciones compradas netas por insiders (90 días)",
+              "shap_value": -0.029050065193622004,
+              "raw_value": -14905.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.028237953663809122,
+              "raw_value": 7.938904217579819,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.024863736211897955,
+              "raw_value": 0.7541186161449753,
+              "direction": "negative"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.018265373809383992,
+              "raw_value": 1.2387737478411054,
+              "direction": "positive"
+            },
+            {
+              "feature": "eps_revision",
+              "description": "Eps Revision",
+              "shap_value": -0.009433741285967795,
+              "raw_value": 0.1641025641025641,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "FDX — Score: 0.77 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.796  [contribucion SHAP: +0.535]\n  + VIX (volatilidad implícita de mercado) = 30.9  [contribucion SHAP: +0.154]\n  + Momentum del S&P 500 a 3 meses = -7.4%  [contribucion SHAP: +0.052]\n  + Score del Agente de Valoración (infravaloración) = 0.498  [contribucion SHAP: +0.044]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.299]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.367  [contribucion SHAP: -0.041]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.5352443460121056,
+              "raw_value": 0.7956943749361143,
+              "direction": "positive"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.2991635724890686,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.15395809827160517,
+              "raw_value": 30.88999938964844,
+              "direction": "positive"
+            },
+            {
+              "feature": "sp500_momentum_3m",
+              "description": "Momentum del S&P 500 a 3 meses",
+              "shap_value": 0.052419760467724355,
+              "raw_value": -0.0737206589473284,
+              "direction": "positive"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": 0.043571564798493244,
+              "raw_value": 0.49767460779690315,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": -0.040815184076116076,
+              "raw_value": 0.36651229808273766,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "FDS": {
+      "score": 0.7705,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "FDS — Score: 0.77 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.34x  [contribucion SHAP: +0.021]\n  + Fcf = 0.000  [contribucion SHAP: +0.016]\n  + Proporción de ventas de insiders (>0.7 = red flag) = 0.77x  [contribucion SHAP: +0.005]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.716  [contribucion SHAP: -0.037]\n  - Acciones compradas netas por insiders (90 días) = -7743.000  [contribucion SHAP: -0.028]\n  - Eps Surprise Pct = 2.850  [contribucion SHAP: -0.012]",
+          "top_drivers": [
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.037290733271029615,
+              "raw_value": 0.7157128848660398,
+              "direction": "negative"
+            },
+            {
+              "feature": "insider_net_shares_90d",
+              "description": "Acciones compradas netas por insiders (90 días)",
+              "shap_value": -0.027958538086655747,
+              "raw_value": -7743.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.021451330227588154,
+              "raw_value": 1.3398713601102736,
+              "direction": "positive"
+            },
+            {
+              "feature": "fcf",
+              "description": "Fcf",
+              "shap_value": 0.016295985223422002,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.012064264267227407,
+              "raw_value": 2.85,
+              "direction": "negative"
+            },
+            {
+              "feature": "insider_sell_ratio",
+              "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+              "shap_value": 0.0046353823233861915,
+              "raw_value": 0.7682394512575348,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "FDS — Score: 0.77 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.711  [contribucion SHAP: +0.606]\n  + VIX (volatilidad implícita de mercado) = 30.9  [contribucion SHAP: +0.154]\n  + Score del Agente de Valoración (infravaloración) = 0.510  [contribucion SHAP: +0.050]\n  + Score del Agente Fundamental (salud financiera) = 0.499  [contribucion SHAP: +0.047]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.320]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.309  [contribucion SHAP: -0.046]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.6056231911865205,
+              "raw_value": 0.7109050987907256,
+              "direction": "positive"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.31993547380304754,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.15395809827160517,
+              "raw_value": 30.88999938964844,
+              "direction": "positive"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": 0.0500361645776709,
+              "raw_value": 0.5098253860368814,
+              "direction": "positive"
+            },
+            {
+              "feature": "fundamental_score",
+              "description": "Score del Agente Fundamental (salud financiera)",
+              "shap_value": 0.046868708423900056,
+              "raw_value": 0.4988455871740977,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": -0.045672623833503755,
+              "raw_value": 0.30891943273771233,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "CCL": {
+      "score": 0.7555,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "CCL — Score: 0.76 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.26x  [contribucion SHAP: +0.025]\n  + Deuda neta / EBITDA = -241.23x  [contribucion SHAP: +0.019]\n  + Eps Revision = -0.750  [contribucion SHAP: +0.017]\n  + Fcf = 0.000  [contribucion SHAP: +0.016]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 2.942  [contribucion SHAP: -0.032]",
+          "top_drivers": [
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.03188589026528613,
+              "raw_value": 2.9421757595557008,
+              "direction": "negative"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.024868414468570167,
+              "raw_value": 0.2571255830022456,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.019192876309257947,
+              "raw_value": -241.2321428571429,
+              "direction": "positive"
+            },
+            {
+              "feature": "eps_revision",
+              "description": "Eps Revision",
+              "shap_value": 0.01654272438728544,
+              "raw_value": -0.75,
+              "direction": "positive"
+            },
+            {
+              "feature": "fcf",
+              "description": "Fcf",
+              "shap_value": 0.015611668087699797,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "insider_net_shares_90d",
+              "description": "Acciones compradas netas por insiders (90 días)",
+              "shap_value": 0.008308299002405813,
+              "raw_value": 0.0,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "CCL — Score: 0.76 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.733  [contribucion SHAP: +0.585]\n  + VIX (volatilidad implícita de mercado) = 30.9  [contribucion SHAP: +0.154]\n  + Score del Agente de Valoración (infravaloración) = 0.501  [contribucion SHAP: +0.050]\n  + Score del Agente Fundamental (salud financiera) = 0.523  [contribucion SHAP: +0.047]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.299]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.037]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.5845937430414931,
+              "raw_value": 0.7330502675032919,
+              "direction": "positive"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.2991635724890686,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.15395809827160517,
+              "raw_value": 30.88999938964844,
+              "direction": "positive"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": 0.0500361645776709,
+              "raw_value": 0.5006477377757581,
+              "direction": "positive"
+            },
+            {
+              "feature": "fundamental_score",
+              "description": "Score del Agente Fundamental (salud financiera)",
+              "shap_value": 0.046868708423900056,
+              "raw_value": 0.5225727955500284,
+              "direction": "positive"
+            },
+            {
+              "feature": "sector_Computer And Technology",
+              "description": "Sector Computer And Technology",
+              "shap_value": -0.037328940257710504,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "COST": {
+      "score": 0.7479,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "COST — Score: 0.75 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 1611000000.000  [contribucion SHAP: +0.140]\n  + Deuda neta / EBITDA = 2.01x  [contribucion SHAP: +0.038]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.00x  [contribucion SHAP: +0.016]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -6450.000  [contribucion SHAP: -0.036]\n  - Ratio deuda / fondos propios = 0.225  [contribucion SHAP: -0.016]\n  - Eps Revision = 0.084  [contribucion SHAP: -0.006]",
+          "top_drivers": [
+            {
+              "feature": "fcf",
+              "description": "Fcf",
+              "shap_value": 0.1395551435750076,
+              "raw_value": 1611000000.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.038092798333450105,
+              "raw_value": 2.0066248256624823,
+              "direction": "positive"
+            },
+            {
+              "feature": "insider_net_shares_90d",
+              "description": "Acciones compradas netas por insiders (90 días)",
+              "shap_value": -0.036330849842228334,
+              "raw_value": -6450.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.01648339993902328,
+              "raw_value": 0.99724316873429,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.015857340110569565,
+              "raw_value": 0.2250068420846854,
+              "direction": "negative"
+            },
+            {
+              "feature": "eps_revision",
+              "description": "Eps Revision",
+              "shap_value": -0.005831850429550679,
+              "raw_value": 0.0844327176781003,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "COST — Score: 0.75 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.681  [contribucion SHAP: +0.386]\n  + VIX (volatilidad implícita de mercado) = 30.9  [contribucion SHAP: +0.154]\n  + Score del Agente de Valoración (infravaloración) = 0.501  [contribucion SHAP: +0.049]\n  + Sector Consumer Staples = 0.000  [contribucion SHAP: +0.030]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.280]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.040]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.38616116531797146,
+              "raw_value": 0.6808487257773229,
+              "direction": "positive"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.27985568173237646,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.15380786333361454,
+              "raw_value": 30.88999938964844,
+              "direction": "positive"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": 0.049091125174747154,
+              "raw_value": 0.500708480772125,
+              "direction": "positive"
+            },
+            {
+              "feature": "sector_Computer And Technology",
+              "description": "Sector Computer And Technology",
+              "shap_value": -0.04006285969089267,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "sector_Consumer Staples",
+              "description": "Sector Consumer Staples",
+              "shap_value": 0.029962853508647514,
+              "raw_value": 0.0,
+              "direction": "positive"
+            }
+          ]
+        }
+      }
+    },
+    "MDT": {
+      "score": 0.2934,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "MDT — Score: 0.29 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 2069000000.000  [contribucion SHAP: +0.122]\n  + Deuda neta / EBITDA = 10.79x  [contribucion SHAP: +0.018]\n  + Acciones compradas netas por insiders (90 días) = 21722.000  [contribucion SHAP: +0.017]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.85x  [contribucion SHAP: +0.006]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.590  [contribucion SHAP: -0.031]\n  - Eps Surprise Pct = 2.600  [contribucion SHAP: -0.023]",
+          "top_drivers": [
+            {
+              "feature": "fcf",
+              "description": "Fcf",
+              "shap_value": 0.12181056235116765,
+              "raw_value": 2069000000.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.03130002669939134,
+              "raw_value": 0.589729774535809,
+              "direction": "negative"
+            },
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.022984735313397637,
+              "raw_value": 2.6,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.017501331963039327,
+              "raw_value": 10.791808873720136,
+              "direction": "positive"
+            },
+            {
+              "feature": "insider_net_shares_90d",
+              "description": "Acciones compradas netas por insiders (90 días)",
+              "shap_value": 0.017100120313416952,
+              "raw_value": 21722.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.005861409943230636,
+              "raw_value": 1.849056603773585,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "MDT — Score: 0.29 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.332  [contribucion SHAP: +0.268]\n  + VIX (volatilidad implícita de mercado) = 20.8  [contribucion SHAP: +0.154]\n  + Score del Agente de Valoración (infravaloración) = 0.492  [contribucion SHAP: +0.050]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.120]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.045]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.320  [contribucion SHAP: -0.044]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.26767358977485967,
+              "raw_value": 0.33174490444614835,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.15351610988890765,
+              "raw_value": 20.81999969482422,
+              "direction": "positive"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.1198070803637514,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": 0.04992740920005937,
+              "raw_value": 0.49216492920994465,
+              "direction": "positive"
+            },
+            {
+              "feature": "sector_Computer And Technology",
+              "description": "Sector Computer And Technology",
+              "shap_value": -0.04462263769117025,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": -0.043650817214649494,
+              "raw_value": 0.3204482214519279,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "AMAT": {
+      "score": 0.3078,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "AMAT — Score: 0.31 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 1061000000.000  [contribucion SHAP: +0.114]\n  + Deuda neta / EBITDA = 2.76x  [contribucion SHAP: +0.021]\n  + Acciones compradas netas por insiders (90 días) = 49550.000  [contribucion SHAP: +0.012]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 3.320  [contribucion SHAP: -0.027]\n  - Ratio deuda / fondos propios = 0.330  [contribucion SHAP: -0.023]\n  - Crecimiento de la deuda total interanual = 12.6%  [contribucion SHAP: -0.006]",
+          "top_drivers": [
+            {
+              "feature": "fcf",
+              "description": "Fcf",
+              "shap_value": 0.11386328691833232,
+              "raw_value": 1061000000.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.027468402288307825,
+              "raw_value": 3.32,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.022630842434417014,
+              "raw_value": 0.3302041031591161,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.021231709146111416,
+              "raw_value": 2.7557218309859155,
+              "direction": "positive"
+            },
+            {
+              "feature": "insider_net_shares_90d",
+              "description": "Acciones compradas netas por insiders (90 días)",
+              "shap_value": 0.012462429994263589,
+              "raw_value": 49550.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": -0.006482043490380598,
+              "raw_value": 0.12567421790722766,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "AMAT — Score: 0.31 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.277  [contribucion SHAP: +0.238]\n  + VIX (volatilidad implícita de mercado) = 20.8  [contribucion SHAP: +0.155]\n  + Score del Agente de Valoración (infravaloración) = 0.504  [contribucion SHAP: +0.048]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.120]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.273  [contribucion SHAP: -0.046]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.045]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.23777227684130772,
+              "raw_value": 0.27681650217925274,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.15473751850968587,
+              "raw_value": 20.81999969482422,
+              "direction": "positive"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.11962991571392462,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": 0.04795955799980807,
+              "raw_value": 0.5041059854332176,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": -0.045815532937469386,
+              "raw_value": 0.27349199042375466,
+              "direction": "negative"
+            },
+            {
+              "feature": "sector_Computer And Technology",
+              "description": "Sector Computer And Technology",
+              "shap_value": -0.04462263769117025,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "KO": {
+      "score": 0.3085,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "KO — Score: 0.31 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 12.32x  [contribucion SHAP: +0.038]\n  + Acciones compradas netas por insiders (90 días) = 355968.000  [contribucion SHAP: +0.027]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.10x  [contribucion SHAP: +0.027]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 1.770  [contribucion SHAP: -0.047]\n  - Fcf = -5511000000.000  [contribucion SHAP: -0.019]\n  - Eps Surprise Pct = 2.280  [contribucion SHAP: -0.014]",
+          "top_drivers": [
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.046592520509521486,
+              "raw_value": 1.7695107011601932,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.03792296850589968,
+              "raw_value": 12.32396486825596,
+              "direction": "positive"
+            },
+            {
+              "feature": "insider_net_shares_90d",
+              "description": "Acciones compradas netas por insiders (90 días)",
+              "shap_value": 0.027038309330256173,
+              "raw_value": 355968.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.026977935025265624,
+              "raw_value": 1.099546370967742,
+              "direction": "positive"
+            },
+            {
+              "feature": "fcf",
+              "description": "Fcf",
+              "shap_value": -0.019360217795314986,
+              "raw_value": -5511000000.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.014177919653017134,
+              "raw_value": 2.28,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "KO — Score: 0.31 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.381  [contribucion SHAP: +0.319]\n  + VIX (volatilidad implícita de mercado) = 17.8  [contribucion SHAP: +0.153]\n  + Score del Agente de Valoración (infravaloración) = 0.489  [contribucion SHAP: +0.050]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.125]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.045]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.418  [contribucion SHAP: -0.039]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.31878179577398086,
+              "raw_value": 0.38117190291885894,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.15258645471283633,
+              "raw_value": 17.829999923706055,
+              "direction": "positive"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.12460324006792527,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": 0.049930153532708126,
+              "raw_value": 0.4891441725924823,
+              "direction": "positive"
+            },
+            {
+              "feature": "sector_Computer And Technology",
+              "description": "Sector Computer And Technology",
+              "shap_value": -0.04462263769117025,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": -0.03925042556794296,
+              "raw_value": 0.418377658261302,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "CI": {
+      "score": 0.3172,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "CI — Score: 0.32 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 1593000000.000  [contribucion SHAP: +0.130]\n  + Deuda neta / EBITDA = 11.34x  [contribucion SHAP: +0.013]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.00x  [contribucion SHAP: +0.007]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.753  [contribucion SHAP: -0.031]\n  - Eps Surprise Pct = 6.140  [contribucion SHAP: -0.022]\n  - Crecimiento de la deuda total interanual = -7.1%  [contribucion SHAP: -0.004]",
+          "top_drivers": [
+            {
+              "feature": "fcf",
+              "description": "Fcf",
+              "shap_value": 0.1304530493503376,
+              "raw_value": 1593000000.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.031228246908262324,
+              "raw_value": 0.753402286336418,
+              "direction": "negative"
+            },
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.021905414531577513,
+              "raw_value": 6.14,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.013187179061804982,
+              "raw_value": 11.344262295081966,
+              "direction": "positive"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.0073440070392922,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": -0.003689754839150267,
+              "raw_value": -0.07080078125,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "CI — Score: 0.32 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.380  [contribucion SHAP: +0.320]\n  + VIX (volatilidad implícita de mercado) = 17.8  [contribucion SHAP: +0.154]\n  + Score del Agente de Valoración (infravaloración) = 0.496  [contribucion SHAP: +0.047]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.124]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.045]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.325  [contribucion SHAP: -0.044]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.3200032043947591,
+              "raw_value": 0.3798101239451041,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.15380786333361454,
+              "raw_value": 17.829999923706055,
+              "direction": "positive"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.12434569323687668,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": 0.04748733629115167,
+              "raw_value": 0.4961806543238681,
+              "direction": "positive"
+            },
+            {
+              "feature": "sector_Computer And Technology",
+              "description": "Sector Computer And Technology",
+              "shap_value": -0.04462263769117025,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": -0.044107865325330634,
+              "raw_value": 0.32523332996266474,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "NVDA": {
+      "score": 0.318,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "NVDA — Score: 0.32 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 26187000000.000  [contribucion SHAP: +0.134]\n  + Deuda neta / EBITDA = 0.39x  [contribucion SHAP: +0.022]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -2561505.000  [contribucion SHAP: -0.039]\n  - Eps Surprise Pct = 2.840  [contribucion SHAP: -0.015]\n  - Ratio deuda / fondos propios = 0.105  [contribucion SHAP: -0.011]\n  - Eps Revision = 0.107  [contribucion SHAP: -0.011]",
+          "top_drivers": [
+            {
+              "feature": "fcf",
+              "description": "Fcf",
+              "shap_value": 0.13446603580251976,
+              "raw_value": 26187000000.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "insider_net_shares_90d",
+              "description": "Acciones compradas netas por insiders (90 días)",
+              "shap_value": -0.039033127453082836,
+              "raw_value": -2561505.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.02185902990327462,
+              "raw_value": 0.3939053440604072,
+              "direction": "positive"
+            },
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.014737500561321521,
+              "raw_value": 2.84,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.010958214660585979,
+              "raw_value": 0.1045287024557804,
+              "direction": "negative"
+            },
+            {
+              "feature": "eps_revision",
+              "description": "Eps Revision",
+              "shap_value": -0.010729666494474514,
+              "raw_value": 0.1071428571428572,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "NVDA — Score: 0.32 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.293  [contribucion SHAP: +0.238]\n  + VIX (volatilidad implícita de mercado) = 20.8  [contribucion SHAP: +0.155]\n  + Score del Agente de Valoración (infravaloración) = 0.514  [contribucion SHAP: +0.046]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.120]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.045]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.360  [contribucion SHAP: -0.039]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.23767040958827435,
+              "raw_value": 0.29327666004840197,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.15473751850968587,
+              "raw_value": 20.81999969482422,
+              "direction": "positive"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.12006462719479997,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": 0.046166657348285574,
+              "raw_value": 0.5144852480477571,
+              "direction": "positive"
+            },
+            {
+              "feature": "sector_Computer And Technology",
+              "description": "Sector Computer And Technology",
+              "shap_value": -0.04462263769117025,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": -0.03879337745726182,
+              "raw_value": 0.36034582748491983,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "ADI": {
+      "score": 0.3259,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "ADI — Score: 0.33 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 729210000.000  [contribucion SHAP: +0.113]\n  + Deuda neta / EBITDA = 6.10x  [contribucion SHAP: +0.023]\n  + Acciones compradas netas por insiders (90 días) = 127560.000  [contribucion SHAP: +0.015]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.206  [contribucion SHAP: -0.019]\n  - Eps Surprise Pct = 8.760  [contribucion SHAP: -0.015]\n  - Ratio de liquidez corriente (activo / pasivo cte.) = 2.08x  [contribucion SHAP: -0.006]",
+          "top_drivers": [
+            {
+              "feature": "fcf",
+              "description": "Fcf",
+              "shap_value": 0.11302887039735202,
+              "raw_value": 729210000.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.02250233705010346,
+              "raw_value": 6.097739041731905,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.019325209466910107,
+              "raw_value": 0.2055701098695196,
+              "direction": "negative"
+            },
+            {
+              "feature": "insider_net_shares_90d",
+              "description": "Acciones compradas netas por insiders (90 días)",
+              "shap_value": 0.015035930908106083,
+              "raw_value": 127560.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.014861169488664911,
+              "raw_value": 8.76,
+              "direction": "negative"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": -0.006293511033625576,
+              "raw_value": 2.0770273414300378,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "ADI — Score: 0.33 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.292  [contribucion SHAP: +0.238]\n  + VIX (volatilidad implícita de mercado) = 20.8  [contribucion SHAP: +0.155]\n  + Score del Agente de Valoración (infravaloración) = 0.514  [contribucion SHAP: +0.046]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.120]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.045]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.322  [contribucion SHAP: -0.044]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.23767040958827435,
+              "raw_value": 0.2918547908914304,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.15473751850968587,
+              "raw_value": 20.81999969482422,
+              "direction": "positive"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.1198070803637514,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": 0.046166657348285574,
+              "raw_value": 0.5138608574776292,
+              "direction": "positive"
+            },
+            {
+              "feature": "sector_Computer And Technology",
+              "description": "Sector Computer And Technology",
+              "shap_value": -0.04462263769117025,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": -0.043650817214649494,
+              "raw_value": 0.3220111405422863,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "DE": {
+      "score": 0.3333,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "DE — Score: 0.33 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 682000000.000  [contribucion SHAP: +0.127]\n  + Deuda neta / EBITDA = 19.28x  [contribucion SHAP: +0.016]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.21x  [contribucion SHAP: +0.007]\n  + FLAG: Insiders vendiendo >70% de operaciones = 0.000  [contribucion SHAP: +0.006]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 2.719  [contribucion SHAP: -0.035]\n  - Eps Surprise Pct = 19.000  [contribucion SHAP: -0.006]",
+          "top_drivers": [
+            {
+              "feature": "fcf",
+              "description": "Fcf",
+              "shap_value": 0.1271343156416353,
+              "raw_value": 682000000.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.03548659063118505,
+              "raw_value": 2.718926901304455,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.016320474583874846,
+              "raw_value": 19.27923211169285,
+              "direction": "positive"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.006775886175334837,
+              "raw_value": 2.2137012857427942,
+              "direction": "positive"
+            },
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.006028934678377448,
+              "raw_value": 19.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "insider_selling",
+              "description": "FLAG: Insiders vendiendo >70% de operaciones",
+              "shap_value": 0.005923331730504448,
+              "raw_value": 0.0,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "DE — Score: 0.33 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.375  [contribucion SHAP: +0.320]\n  + VIX (volatilidad implícita de mercado) = 20.8  [contribucion SHAP: +0.154]\n  + Score del Agente de Valoración (infravaloración) = 0.506  [contribucion SHAP: +0.047]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.125]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.045]\n  - Fund X Val = 0.000  [contribucion SHAP: -0.030]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.3200032043947591,
+              "raw_value": 0.3747378673696404,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.15380786333361454,
+              "raw_value": 20.81999969482422,
+              "direction": "positive"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.12460324006792527,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": 0.04748733629115167,
+              "raw_value": 0.5064703583957263,
+              "direction": "positive"
+            },
+            {
+              "feature": "sector_Computer And Technology",
+              "description": "Sector Computer And Technology",
+              "shap_value": -0.04462263769117025,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "fund_x_val",
+              "description": "Fund X Val",
+              "shap_value": -0.02969452576191995,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "PM": {
+      "score": 0.3413,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "PM — Score: 0.34 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.79x  [contribucion SHAP: +0.029]\n  + Deuda neta / EBITDA = 12.32x  [contribucion SHAP: +0.024]\n  + Ratio deuda / fondos propios = -5.554  [contribucion SHAP: +0.021]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -134302.000  [contribucion SHAP: -0.049]\n  - Fcf = -754000000.000  [contribucion SHAP: -0.017]\n  - Eps Revision = 0.073  [contribucion SHAP: -0.011]",
+          "top_drivers": [
+            {
+              "feature": "insider_net_shares_90d",
+              "description": "Acciones compradas netas por insiders (90 días)",
+              "shap_value": -0.048737867685306024,
+              "raw_value": -134302.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.029176330394454233,
+              "raw_value": 0.790258838608609,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.023626664323566172,
+              "raw_value": 12.320825049701789,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": 0.021232131992561784,
+              "raw_value": -5.554447680932109,
+              "direction": "positive"
+            },
+            {
+              "feature": "fcf",
+              "description": "Fcf",
+              "shap_value": -0.016853550815694403,
+              "raw_value": -754000000.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "eps_revision",
+              "description": "Eps Revision",
+              "shap_value": -0.011476423250079797,
+              "raw_value": 0.0733333333333334,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "PM — Score: 0.34 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.412  [contribucion SHAP: +0.322]\n  + VIX (volatilidad implícita de mercado) = 17.8  [contribucion SHAP: +0.154]\n  + Score del Agente de Valoración (infravaloración) = 0.494  [contribucion SHAP: +0.047]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.125]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.045]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.424  [contribucion SHAP: -0.039]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.3215399837956639,
+              "raw_value": 0.41225787276028775,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.15380786333361454,
+              "raw_value": 17.829999923706055,
+              "direction": "positive"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.12460324006792527,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": 0.04748733629115167,
+              "raw_value": 0.4940241686067526,
+              "direction": "positive"
+            },
+            {
+              "feature": "sector_Computer And Technology",
+              "description": "Sector Computer And Technology",
+              "shap_value": -0.04462263769117025,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": -0.03925042556794296,
+              "raw_value": 0.4237334085091182,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "MO": {
+      "score": 0.3594,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "MO — Score: 0.36 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 2682000000.000  [contribucion SHAP: +0.110]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.57x  [contribucion SHAP: +0.031]\n  + Deuda neta / EBITDA = 9.54x  [contribucion SHAP: +0.015]\n  + Ratio deuda / fondos propios = -7.532  [contribucion SHAP: +0.012]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 3.630  [contribucion SHAP: -0.023]",
+          "top_drivers": [
+            {
+              "feature": "fcf",
+              "description": "Fcf",
+              "shap_value": 0.11015513263910566,
+              "raw_value": 2682000000.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.030629992073470377,
+              "raw_value": 0.5706241201313937,
+              "direction": "positive"
+            },
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.0233655646192667,
+              "raw_value": 3.63,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.014972769303984433,
+              "raw_value": 9.538433382137628,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": 0.012292861067622205,
+              "raw_value": -7.53150289017341,
+              "direction": "positive"
+            },
+            {
+              "feature": "insider_net_shares_90d",
+              "description": "Acciones compradas netas por insiders (90 días)",
+              "shap_value": 0.008496196896846806,
+              "raw_value": 361087.0,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "MO — Score: 0.36 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.388  [contribucion SHAP: +0.320]\n  + VIX (volatilidad implícita de mercado) = 17.8  [contribucion SHAP: +0.154]\n  + Score del Agente de Valoración (infravaloración) = 0.506  [contribucion SHAP: +0.047]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.125]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.045]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.405  [contribucion SHAP: -0.039]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.3200032043947591,
+              "raw_value": 0.38832205451762575,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.15380786333361454,
+              "raw_value": 17.829999923706055,
+              "direction": "positive"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.12460324006792527,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": 0.04748733629115167,
+              "raw_value": 0.5058968754139856,
+              "direction": "positive"
+            },
+            {
+              "feature": "sector_Computer And Technology",
+              "description": "Sector Computer And Technology",
+              "shap_value": -0.04462263769117025,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": -0.03925042556794296,
+              "raw_value": 0.4053795390479038,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "BRK-B": {
+      "score": 0.3606,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "BRK-B — Score: 0.36 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 6622000000.000  [contribucion SHAP: +0.138]\n  + Deuda neta / EBITDA = 13.02x  [contribucion SHAP: +0.019]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.00x  [contribucion SHAP: +0.008]\n  + FLAG: Insiders vendiendo >70% de operaciones = 0.000  [contribucion SHAP: +0.005]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.192  [contribucion SHAP: -0.021]\n  - Eps Surprise Pct = -3.460  [contribucion SHAP: -0.006]",
+          "top_drivers": [
+            {
+              "feature": "fcf",
+              "description": "Fcf",
+              "shap_value": 0.13832893674957616,
+              "raw_value": 6622000000.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.021399818673018677,
+              "raw_value": 0.1917450079331,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.019162709834963154,
+              "raw_value": 13.022440537745606,
+              "direction": "positive"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.008205536150284309,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.006476499027429065,
+              "raw_value": -3.46,
+              "direction": "negative"
+            },
+            {
+              "feature": "insider_selling",
+              "description": "FLAG: Insiders vendiendo >70% de operaciones",
+              "shap_value": 0.0052328608673215,
+              "raw_value": 0.0,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "BRK-B — Score: 0.36 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.416  [contribucion SHAP: +0.320]\n  + VIX (volatilidad implícita de mercado) = 17.8  [contribucion SHAP: +0.153]\n  + Score del Agente de Valoración (infravaloración) = 0.487  [contribucion SHAP: +0.050]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.124]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.045]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.324  [contribucion SHAP: -0.044]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.32031857517488566,
+              "raw_value": 0.4157147932148348,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.15258645471283633,
+              "raw_value": 17.829999923706055,
+              "direction": "positive"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.12434569323687668,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": 0.049930153532708126,
+              "raw_value": 0.4869096392368368,
+              "direction": "positive"
+            },
+            {
+              "feature": "sector_Computer And Technology",
+              "description": "Sector Computer And Technology",
+              "shap_value": -0.04462263769117025,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": -0.044107865325330634,
+              "raw_value": 0.32441356484367123,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

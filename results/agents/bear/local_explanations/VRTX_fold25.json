@@ -1,0 +1,67 @@
+{
+  "ticker": "VRTX",
+  "score": 0.3556,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.03818582187884248,
+      "raw_value": -0.5027380677887942,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.01633224760156442,
+      "raw_value": -1.13,
+      "direction": "negative"
+    }
+  ],
+  "text": "VRTX — Score: 0.36 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 492000000.000  [contribucion SHAP: +0.046]\n  + Acciones compradas netas por insiders (90 días) = 240482.000  [contribucion SHAP: +0.033]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.69x  [contribucion SHAP: +0.018]\n  + Eps Revision = -0.027  [contribucion SHAP: +0.013]\n\nFactores EN CONTRA:\n  - Deuda neta / EBITDA = -0.50x  [contribucion SHAP: -0.038]\n  - Eps Surprise Pct = -1.130  [contribucion SHAP: -0.016]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.04598403686870395,
+      "raw_value": 492000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.03818582187884248,
+      "raw_value": -0.5027380677887942,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.032768981097283115,
+      "raw_value": 240482.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.017996702849827503,
+      "raw_value": 2.692139370476351,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.01633224760156442,
+      "raw_value": -1.13,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.012868960911537455,
+      "raw_value": -0.0265700483091786,
+      "direction": "positive"
+    }
+  ]
+}

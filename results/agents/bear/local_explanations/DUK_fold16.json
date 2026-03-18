@@ -1,0 +1,67 @@
+{
+  "ticker": "DUK",
+  "score": 0.4048,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.01339007167895727,
+      "raw_value": 4.46,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.009064311987028081,
+      "raw_value": 0.06879529461191058,
+      "direction": "negative"
+    }
+  ],
+  "text": "DUK — Score: 0.40 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 144.34x  [contribucion SHAP: +0.056]\n  + Eps Revision = -0.104  [contribucion SHAP: +0.023]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.78x  [contribucion SHAP: +0.022]\n  + Acciones compradas netas por insiders (90 días) = 17194.000  [contribucion SHAP: +0.011]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 4.460  [contribucion SHAP: -0.013]\n  - Crecimiento de la deuda total interanual = 6.9%  [contribucion SHAP: -0.009]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.05555212168397553,
+      "raw_value": 144.3404255319149,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.023199612336012147,
+      "raw_value": -0.1038961038961039,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.022216023762034416,
+      "raw_value": 0.777756336034993,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.01339007167895727,
+      "raw_value": 4.46,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.011083061386571579,
+      "raw_value": 17194.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.009064311987028081,
+      "raw_value": 0.06879529461191058,
+      "direction": "negative"
+    }
+  ]
+}

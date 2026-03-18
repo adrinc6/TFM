@@ -1,0 +1,67 @@
+{
+  "ticker": "MU",
+  "score": 0.7734,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.027371145572243915,
+      "raw_value": -58335.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": -0.020456538120754916,
+      "raw_value": -113000000.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "MU — Score: 0.77 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 3.13x  [contribucion SHAP: +0.022]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 3.13x  [contribucion SHAP: +0.016]\n  + Cobertura de intereses (EBIT / intereses) = 443.25x  [contribucion SHAP: +0.013]\n  + Crecimiento de la deuda total interanual = -12.2%  [contribucion SHAP: +0.006]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -58335.000  [contribucion SHAP: -0.027]\n  - Fcf = -113000000.000  [contribucion SHAP: -0.020]",
+  "top_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.027371145572243915,
+      "raw_value": -58335.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.02167734817452012,
+      "raw_value": 3.1269470404984423,
+      "direction": "positive"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": -0.020456538120754916,
+      "raw_value": -113000000.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.01557955989752793,
+      "raw_value": 3.1343150945791547,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.013269432959545501,
+      "raw_value": 443.25,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.0056980758782838505,
+      "raw_value": -0.12221250546567552,
+      "direction": "positive"
+    }
+  ]
+}

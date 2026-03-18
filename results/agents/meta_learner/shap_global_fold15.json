@@ -1,0 +1,82 @@
+{
+  "momentum_score": {
+    "shap_importance": 0.5017367010949241,
+    "description": "Score del Agente de Momentum (tendencia técnica)"
+  },
+  "yield_curve": {
+    "shap_importance": 0.1753037741447491,
+    "description": "Pendiente curva de tipos (10Y - 2Y)"
+  },
+  "mom_minus_bear": {
+    "shap_importance": 0.11562884734172457,
+    "description": "Mom Minus Bear"
+  },
+  "sp500_momentum_12m": {
+    "shap_importance": 0.051041927081857535,
+    "description": "Momentum del S&P 500 a 12 meses"
+  },
+  "sector_Consumer Staples": {
+    "shap_importance": 0.022808047090008946,
+    "description": "Sector Consumer Staples"
+  },
+  "sector_Consumer Discretionary": {
+    "shap_importance": 0.022413278648445695,
+    "description": "Sector Consumer Discretionary"
+  },
+  "bear_score": {
+    "shap_importance": 0.02026887341117357,
+    "description": "Score del Agente Bear (riesgo, <0.5 es bueno)"
+  },
+  "vix": {
+    "shap_importance": 0.016689653712118523,
+    "description": "VIX (volatilidad implícita de mercado)"
+  },
+  "sp500_momentum_3m": {
+    "shap_importance": 0.01593825614291307,
+    "description": "Momentum del S&P 500 a 3 meses"
+  },
+  "fund_x_val": {
+    "shap_importance": 0.014920195053396064,
+    "description": "Fund X Val"
+  },
+  "fundamental_score": {
+    "shap_importance": 0.01331230546152136,
+    "description": "Score del Agente Fundamental (salud financiera)"
+  },
+  "sector_Oils-Energy": {
+    "shap_importance": 0.010417687214714543,
+    "description": "Sector Oils-Energy"
+  },
+  "sector_Finance": {
+    "shap_importance": 0.009093577107890107,
+    "description": "Sector Finance"
+  },
+  "valuation_score": {
+    "shap_importance": 0.007837522829334996,
+    "description": "Score del Agente de Valoración (infravaloración)"
+  },
+  "sector_Conglomerates": {
+    "shap_importance": 0.005733740972249525,
+    "description": "Sector Conglomerates"
+  },
+  "sector_Aerospace": {
+    "shap_importance": 0.00528443582775444,
+    "description": "Sector Aerospace"
+  },
+  "sector_Business Services": {
+    "shap_importance": 0.004587861157930679,
+    "description": "Sector Business Services"
+  },
+  "sector_Basic Materials": {
+    "shap_importance": 0.004059627889103185,
+    "description": "Sector Basic Materials"
+  },
+  "sector_Utilities": {
+    "shap_importance": 0.003935700480085077,
+    "description": "Sector Utilities"
+  },
+  "sector_Computer And Technology": {
+    "shap_importance": 0.002399635457729914,
+    "description": "Sector Computer And Technology"
+  }
+}

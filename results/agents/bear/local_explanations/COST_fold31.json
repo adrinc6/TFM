@@ -1,0 +1,74 @@
+{
+  "ticker": "COST",
+  "score": 0.7479,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.036330849842228334,
+      "raw_value": -6450.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.015857340110569565,
+      "raw_value": 0.2250068420846854,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.005831850429550679,
+      "raw_value": 0.0844327176781003,
+      "direction": "negative"
+    }
+  ],
+  "text": "COST — Score: 0.75 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 1611000000.000  [contribucion SHAP: +0.140]\n  + Deuda neta / EBITDA = 2.01x  [contribucion SHAP: +0.038]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.00x  [contribucion SHAP: +0.016]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -6450.000  [contribucion SHAP: -0.036]\n  - Ratio deuda / fondos propios = 0.225  [contribucion SHAP: -0.016]\n  - Eps Revision = 0.084  [contribucion SHAP: -0.006]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.1395551435750076,
+      "raw_value": 1611000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.038092798333450105,
+      "raw_value": 2.0066248256624823,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.036330849842228334,
+      "raw_value": -6450.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.01648339993902328,
+      "raw_value": 0.99724316873429,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.015857340110569565,
+      "raw_value": 0.2250068420846854,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.005831850429550679,
+      "raw_value": 0.0844327176781003,
+      "direction": "negative"
+    }
+  ]
+}

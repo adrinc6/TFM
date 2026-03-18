@@ -1,0 +1,88 @@
+{
+  "ticker": "FDS",
+  "score": 0.7291,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.025850773312026037,
+      "raw_value": 2.85,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.024431859049203586,
+      "raw_value": -7743.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.009323275262801713,
+      "raw_value": 13.596129883456717,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.007874847707601818,
+      "raw_value": 0.7157128848660398,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.006310977221524475,
+      "raw_value": -0.0234741784037557,
+      "direction": "negative"
+    }
+  ],
+  "text": "FDS — Score: 0.73 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.34x  [contribucion SHAP: +0.016]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 2.850  [contribucion SHAP: -0.026]\n  - Acciones compradas netas por insiders (90 días) = -7743.000  [contribucion SHAP: -0.024]\n  - Cobertura de intereses (EBIT / intereses) = 13.60x  [contribucion SHAP: -0.009]\n  - Ratio deuda / fondos propios = 0.716  [contribucion SHAP: -0.008]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.025850773312026037,
+      "raw_value": 2.85,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.024431859049203586,
+      "raw_value": -7743.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.015588728877442847,
+      "raw_value": 1.3398713601102736,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.009323275262801713,
+      "raw_value": 13.596129883456717,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.007874847707601818,
+      "raw_value": 0.7157128848660398,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.006310977221524475,
+      "raw_value": -0.0234741784037557,
+      "direction": "negative"
+    }
+  ]
+}

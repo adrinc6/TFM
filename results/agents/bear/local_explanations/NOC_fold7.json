@@ -1,0 +1,95 @@
+{
+  "ticker": "NOC",
+  "score": 0.4602,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03941329200530981,
+      "raw_value": 8.04,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.026922636811080494,
+      "raw_value": 1.2219784412858914,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.018153487093885444,
+      "raw_value": 0.9097515856236786,
+      "direction": "negative"
+    },
+    {
+      "feature": "liquidity_risk",
+      "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+      "shap_value": -0.007559197649721495,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_ebitda_high",
+      "description": "Debt Ebitda High",
+      "shap_value": -0.004194400083270478,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.0035483156550679866,
+      "raw_value": 7.341085271317829,
+      "direction": "negative"
+    }
+  ],
+  "text": "NOC — Score: 0.46 (Underperform, confianza moderada)\n\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 8.040  [contribucion SHAP: -0.039]\n  - Ratio de liquidez corriente (activo / pasivo cte.) = 1.22x  [contribucion SHAP: -0.027]\n  - Ratio deuda / fondos propios = 0.910  [contribucion SHAP: -0.018]\n  - FLAG: Ratio corriente < 1 (riesgo liquidez) = 0.000  [contribucion SHAP: -0.008]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03941329200530981,
+      "raw_value": 8.04,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.026922636811080494,
+      "raw_value": 1.2219784412858914,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.018153487093885444,
+      "raw_value": 0.9097515856236786,
+      "direction": "negative"
+    },
+    {
+      "feature": "liquidity_risk",
+      "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+      "shap_value": -0.007559197649721495,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_ebitda_high",
+      "description": "Debt Ebitda High",
+      "shap_value": -0.004194400083270478,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.0035483156550679866,
+      "raw_value": 7.341085271317829,
+      "direction": "negative"
+    }
+  ]
+}

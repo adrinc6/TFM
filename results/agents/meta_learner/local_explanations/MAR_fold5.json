@@ -1,0 +1,60 @@
+{
+  "ticker": "MAR",
+  "score": 0.3008,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.036910142449018385,
+      "raw_value": 0.49770104443993296,
+      "direction": "negative"
+    }
+  ],
+  "text": "MAR — Score: 0.30 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.424  [contribucion SHAP: +0.798]\n  + Mom Minus Bear = 0.000  [contribucion SHAP: +0.221]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.380  [contribucion SHAP: +0.073]\n  + VIX (volatilidad implícita de mercado) = 18.9  [contribucion SHAP: +0.049]\n\nFactores EN CONTRA:\n  - Score del Agente de Valoración (infravaloración) = 0.498  [contribucion SHAP: -0.037]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.7975881055303546,
+      "raw_value": 0.42370090878431627,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": 0.22097874814853313,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": 0.07258770043088088,
+      "raw_value": 0.37956777653858914,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.04870242304019495,
+      "raw_value": 18.90999984741211,
+      "direction": "positive"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.036910142449018385,
+      "raw_value": 0.49770104443993296,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Consumer Discretionary",
+      "description": "Sector Consumer Discretionary",
+      "shap_value": 0.03460908519067003,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

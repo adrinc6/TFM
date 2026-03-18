@@ -1,0 +1,74 @@
+{
+  "ticker": "AVGO",
+  "score": 0.5896,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": -0.06284625108024612,
+      "raw_value": 0.5947990241454564,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Finance",
+      "description": "Sector Finance",
+      "shap_value": -0.050440209830536396,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": -0.04606920846601482,
+      "raw_value": 0.6440000534057617,
+      "direction": "negative"
+    }
+  ],
+  "text": "AVGO — Score: 0.59 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente Fundamental (salud financiera) = 0.685  [contribucion SHAP: +0.151]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.396  [contribucion SHAP: +0.125]\n  + VIX (volatilidad implícita de mercado) = 16.5  [contribucion SHAP: +0.105]\n\nFactores EN CONTRA:\n  - Score del Agente de Momentum (tendencia técnica) = 0.595  [contribucion SHAP: -0.063]\n  - Sector Finance = 0.000  [contribucion SHAP: -0.050]\n  - Pendiente curva de tipos (10Y - 2Y) = 0.644  [contribucion SHAP: -0.046]",
+  "top_drivers": [
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": 0.15060644316650218,
+      "raw_value": 0.6847362120946249,
+      "direction": "positive"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": 0.1252855379862763,
+      "raw_value": 0.39615911941579085,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.10482546223127828,
+      "raw_value": 16.5,
+      "direction": "positive"
+    },
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": -0.06284625108024612,
+      "raw_value": 0.5947990241454564,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Finance",
+      "description": "Sector Finance",
+      "shap_value": -0.050440209830536396,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": -0.04606920846601482,
+      "raw_value": 0.6440000534057617,
+      "direction": "negative"
+    }
+  ]
+}

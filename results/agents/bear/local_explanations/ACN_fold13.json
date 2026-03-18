@@ -1,0 +1,67 @@
+{
+  "ticker": "ACN",
+  "score": 0.6792,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.035720480938526734,
+      "raw_value": 4.01,
+      "direction": "negative"
+    },
+    {
+      "feature": "liquidity_risk",
+      "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+      "shap_value": -0.009369014844406555,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "ACN — Score: 0.68 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = 169.7%  [contribucion SHAP: +0.024]\n  + Ratio deuda / fondos propios = 0.005  [contribucion SHAP: +0.024]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.021]\n  + Eps Revision = 0.180  [contribucion SHAP: +0.011]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 4.010  [contribucion SHAP: -0.036]\n  - FLAG: Ratio corriente < 1 (riesgo liquidez) = 0.000  [contribucion SHAP: -0.009]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.035720480938526734,
+      "raw_value": 4.01,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.02434000018985715,
+      "raw_value": 1.6970230239037982,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": 0.024045418031756364,
+      "raw_value": 0.0053529438153011,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.02084477425954448,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.011221257273097442,
+      "raw_value": 0.1804511278195488,
+      "direction": "positive"
+    },
+    {
+      "feature": "liquidity_risk",
+      "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+      "shap_value": -0.009369014844406555,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

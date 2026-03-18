@@ -1,0 +1,81 @@
+{
+  "ticker": "TXN",
+  "score": 0.2657,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.052916372548384306,
+      "raw_value": -2500.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03272559637116037,
+      "raw_value": 19.91,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.024113245006283913,
+      "raw_value": 0.8447705539183256,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.013258986787792672,
+      "raw_value": -0.1083333333333332,
+      "direction": "negative"
+    }
+  ],
+  "text": "TXN — Score: 0.27 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 4.45x  [contribucion SHAP: +0.029]\n  + Deuda neta / EBITDA = 6.20x  [contribucion SHAP: +0.025]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -2500.000  [contribucion SHAP: -0.053]\n  - Eps Surprise Pct = 19.910  [contribucion SHAP: -0.033]\n  - Ratio deuda / fondos propios = 0.845  [contribucion SHAP: -0.024]\n  - Eps Revision = -0.108  [contribucion SHAP: -0.013]",
+  "top_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.052916372548384306,
+      "raw_value": -2500.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03272559637116037,
+      "raw_value": 19.91,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.029135657944211437,
+      "raw_value": 4.450288646568313,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.02490492890630525,
+      "raw_value": 6.201324503311258,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.024113245006283913,
+      "raw_value": 0.8447705539183256,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.013258986787792672,
+      "raw_value": -0.1083333333333332,
+      "direction": "negative"
+    }
+  ]
+}

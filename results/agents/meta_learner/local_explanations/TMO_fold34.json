@@ -1,0 +1,67 @@
+{
+  "ticker": "TMO",
+  "score": 0.3076,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.1306671394445762,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": -0.10638098163128976,
+      "raw_value": 0.1810002326965332,
+      "direction": "negative"
+    }
+  ],
+  "text": "TMO — Score: 0.31 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.338  [contribucion SHAP: +0.208]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.305  [contribucion SHAP: +0.097]\n  + Momentum del S&P 500 a 3 meses = 9.8%  [contribucion SHAP: +0.086]\n  + VIX (volatilidad implícita de mercado) = 14.8  [contribucion SHAP: +0.081]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.131]\n  - Pendiente curva de tipos (10Y - 2Y) = 0.181  [contribucion SHAP: -0.106]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.2076018380719155,
+      "raw_value": 0.33805058278858935,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.1306671394445762,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": -0.10638098163128976,
+      "raw_value": 0.1810002326965332,
+      "direction": "negative"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": 0.09701057615217062,
+      "raw_value": 0.30518743437914464,
+      "direction": "positive"
+    },
+    {
+      "feature": "sp500_momentum_3m",
+      "description": "Momentum del S&P 500 a 3 meses",
+      "shap_value": 0.08559520725552551,
+      "raw_value": 0.0977432556369719,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.08096455393044823,
+      "raw_value": 14.829999923706056,
+      "direction": "positive"
+    }
+  ]
+}

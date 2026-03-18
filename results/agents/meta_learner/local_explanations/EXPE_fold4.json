@@ -1,0 +1,67 @@
+{
+  "ticker": "EXPE",
+  "score": 0.2137,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.15725276988587544,
+      "raw_value": 0.5096081032105956,
+      "direction": "negative"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.10612671738824236,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "EXPE — Score: 0.21 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Fund X Val = 0.000  [contribucion SHAP: +0.122]\n  + Score del Agente de Momentum (tendencia técnica) = 0.347  [contribucion SHAP: +0.084]\n  + Score del Agente Fundamental (salud financiera) = 0.441  [contribucion SHAP: +0.052]\n  + Sector Computer And Technology = 0.000  [contribucion SHAP: +0.047]\n\nFactores EN CONTRA:\n  - Score del Agente de Valoración (infravaloración) = 0.510  [contribucion SHAP: -0.157]\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.106]",
+  "top_drivers": [
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.15725276988587544,
+      "raw_value": 0.5096081032105956,
+      "direction": "negative"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": 0.12150586837161713,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.10612671738824236,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.08382863178183553,
+      "raw_value": 0.34663977814891256,
+      "direction": "positive"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": 0.05229973061606089,
+      "raw_value": 0.4409858087698619,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": 0.04708853393528702,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

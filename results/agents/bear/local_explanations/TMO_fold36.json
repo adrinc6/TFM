@@ -1,0 +1,74 @@
+{
+  "ticker": "TMO",
+  "score": 0.3138,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.03732674787713904,
+      "raw_value": -6768.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.009985228794095864,
+      "raw_value": 0.6961977787439232,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.009116104117603777,
+      "raw_value": 0.93,
+      "direction": "negative"
+    }
+  ],
+  "text": "TMO — Score: 0.31 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 13.54x  [contribucion SHAP: +0.033]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.93x  [contribucion SHAP: +0.022]\n  + Fcf = 1105000000.000  [contribucion SHAP: +0.021]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -6768.000  [contribucion SHAP: -0.037]\n  - Ratio deuda / fondos propios = 0.696  [contribucion SHAP: -0.010]\n  - Eps Surprise Pct = 0.930  [contribucion SHAP: -0.009]",
+  "top_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.03732674787713904,
+      "raw_value": -6768.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.033395073754766656,
+      "raw_value": 13.539200614911609,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.02215248653371231,
+      "raw_value": 1.933008334643812,
+      "direction": "positive"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.021366569547115667,
+      "raw_value": 1105000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.009985228794095864,
+      "raw_value": 0.6961977787439232,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.009116104117603777,
+      "raw_value": 0.93,
+      "direction": "negative"
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "agent": "meta_learner",
+  "timestamp": "2026-03-06T20:34:25.903809",
+  "fold": 37,
+  "class_balance": {
+    "n_samples": 998,
+    "n_positive": 499,
+    "n_negative": 499,
+    "positive_ratio": 0.5
+  },
+  "cv_lr": {
+    "mean_auc": 0.5785561616161616,
+    "std_auc": 0.019466857999990563,
+    "mean_f1": 0.5506088076642222
+  },
+  "cv_gbm": {
+    "mean_auc": 0.5962555555555555,
+    "std_auc": 0.031676496880928655,
+    "mean_f1": 0.5694022549502559
+  },
+  "lr_weight": 0.49246713593306507,
+  "gbm_weight": 0.507532864066935,
+  "lr_coefficients": {
+    "fundamental_score": 0.24676226328450482,
+    "valuation_score": 0.22438571062495852,
+    "momentum_score": 0.1228034728357011,
+    "bear_score": 0.08123016463335753,
+    "vix": -0.16526164197439439,
+    "yield_curve": -0.17784234867498375,
+    "sp500_momentum_3m": 0.03309782410376756,
+    "sp500_momentum_12m": -0.3948292736120942,
+    "sector_Aerospace": 0.18257671441396378,
+    "sector_Auto-Tires-Trucks": 0.07887421314023502,
+    "sector_Basic Materials": -0.06674754774836517,
+    "sector_Business Services": -0.02443629025601338,
+    "sector_Computer And Technology": 0.13690260032112245,
+    "sector_Conglomerates": 0.004924087554292424,
+    "sector_Construction": -0.07349578878820733,
+    "sector_Consumer Discretionary": -0.023820463496952233,
+    "sector_Consumer Staples": -0.15607417711368657,
+    "sector_Finance": 0.010948758779634372,
+    "sector_Industrial Products": -0.04834370069847032,
+    "sector_Medical": -0.034203019315678415,
+    "sector_Oils-Energy": -0.044025353932468855,
+    "sector_Retail-Wholesale": 0.02945700586563311,
+    "sector_Transportation": -0.14416412601944315,
+    "sector_Unknown": -0.032323765866467846,
+    "sector_Utilities": 0.18475685490920532,
+    "fund_x_val": -0.3432067799145124,
+    "mom_minus_bear": 0.014823347991820177
+  },
+  "gbm_importances": {
+    "momentum_score": 0.14248553845939252,
+    "valuation_score": 0.13581367191830596,
+    "mom_minus_bear": 0.12971032454288484,
+    "bear_score": 0.11420226371620266,
+    "fund_x_val": 0.09510511785497906,
+    "fundamental_score": 0.09297522731333116,
+    "vix": 0.04648899577097844,
+    "sp500_momentum_12m": 0.04619050864538769,
+    "sector_Computer And Technology": 0.030233323921197187,
+    "sector_Aerospace": 0.02320460598511872
+  },
+  "bear_hard_threshold": 0.9,
+  "last_train_metrics": {
+    "mean_auc": 0.5785561616161616,
+    "std_auc": 0.019466857999990563,
+    "mean_f1": 0.5506088076642222,
+    "gbm_mean_auc": 0.5962555555555555,
+    "gbm_std_auc": 0.031676496880928655,
+    "gbm_mean_f1": 0.5694022549502559
+  }
+}

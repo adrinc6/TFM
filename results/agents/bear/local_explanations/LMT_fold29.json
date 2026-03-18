@@ -1,0 +1,74 @@
+{
+  "ticker": "LMT",
+  "score": 0.6676,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.09188582845593556,
+      "raw_value": 3.0381565165344906,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.020577912588330423,
+      "raw_value": 14.91,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.011020190015305891,
+      "raw_value": 7.33261105092091,
+      "direction": "negative"
+    }
+  ],
+  "text": "LMT — Score: 0.67 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 955000000.000  [contribucion SHAP: +0.092]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.08x  [contribucion SHAP: +0.037]\n  + Acciones compradas netas por insiders (90 días) = 57870.000  [contribucion SHAP: +0.009]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 3.038  [contribucion SHAP: -0.092]\n  - Eps Surprise Pct = 14.910  [contribucion SHAP: -0.021]\n  - Deuda neta / EBITDA = 7.33x  [contribucion SHAP: -0.011]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.09237213234893431,
+      "raw_value": 955000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.09188582845593556,
+      "raw_value": 3.0381565165344906,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.03662505327429764,
+      "raw_value": 1.0761787888799736,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.020577912588330423,
+      "raw_value": 14.91,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.011020190015305891,
+      "raw_value": 7.33261105092091,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.009279236036607049,
+      "raw_value": 57870.0,
+      "direction": "positive"
+    }
+  ]
+}

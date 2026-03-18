@@ -1,0 +1,60 @@
+{
+  "ticker": "ABT",
+  "score": 0.3127,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.08114548921302303,
+      "raw_value": -1760.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "ABT — Score: 0.31 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.82x  [contribucion SHAP: +0.025]\n  + Fcf = 1545000000.000  [contribucion SHAP: +0.022]\n  + Crecimiento de la deuda total interanual = -8.9%  [contribucion SHAP: +0.021]\n  + Eps Revision = -0.201  [contribucion SHAP: +0.020]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -1760.000  [contribucion SHAP: -0.081]",
+  "top_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.08114548921302303,
+      "raw_value": -1760.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.02451051118657804,
+      "raw_value": 1.8206711808914355,
+      "direction": "positive"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.022144626740675546,
+      "raw_value": 1545000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.02098449469214214,
+      "raw_value": -0.08926392842618946,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.020265925852055035,
+      "raw_value": -0.2014925373134328,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": 0.01743009640662696,
+      "raw_value": 1.74,
+      "direction": "positive"
+    }
+  ]
+}

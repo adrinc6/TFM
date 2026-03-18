@@ -1,0 +1,81 @@
+{
+  "ticker": "VRT",
+  "score": 0.7163,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.07266464101980266,
+      "raw_value": 0.7058823529411762,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.05483573325089893,
+      "raw_value": 59.42,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.025029568853971694,
+      "raw_value": 1.643541717343712,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_ebitda_high",
+      "description": "Debt Ebitda High",
+      "shap_value": -0.008401053392018694,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "VRT — Score: 0.72 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 16.66x  [contribucion SHAP: +0.078]\n  + Cobertura de intereses (EBIT / intereses) = 4.74x  [contribucion SHAP: +0.014]\n\nFactores EN CONTRA:\n  - Eps Revision = 0.706  [contribucion SHAP: -0.073]\n  - Eps Surprise Pct = 59.420  [contribucion SHAP: -0.055]\n  - Ratio de liquidez corriente (activo / pasivo cte.) = 1.64x  [contribucion SHAP: -0.025]\n  - Debt Ebitda High = 0.000  [contribucion SHAP: -0.008]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.07836826325520387,
+      "raw_value": 16.662146892655368,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.07266464101980266,
+      "raw_value": 0.7058823529411762,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.05483573325089893,
+      "raw_value": 59.42,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.025029568853971694,
+      "raw_value": 1.643541717343712,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.014158402385768903,
+      "raw_value": 4.742004264392324,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_ebitda_high",
+      "description": "Debt Ebitda High",
+      "shap_value": -0.008401053392018694,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

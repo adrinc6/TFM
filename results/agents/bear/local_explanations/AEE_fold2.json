@@ -1,0 +1,74 @@
+{
+  "ticker": "AEE",
+  "score": 0.7463,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.06621520903142888,
+      "raw_value": 3.1826923076923075,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.006259216967183621,
+      "raw_value": 1.4261701056869651,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.0028616921901545556,
+      "raw_value": 442.78125,
+      "direction": "negative"
+    }
+  ],
+  "text": "AEE — Score: 0.75 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = 14.0%  [contribucion SHAP: +0.010]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.65x  [contribucion SHAP: +0.007]\n  + FLAG: Ratio corriente < 1 (riesgo liquidez) = 0.000  [contribucion SHAP: +0.004]\n\nFactores EN CONTRA:\n  - Cobertura de intereses (EBIT / intereses) = 3.18x  [contribucion SHAP: -0.066]\n  - Ratio deuda / fondos propios = 1.426  [contribucion SHAP: -0.006]\n  - Deuda neta / EBITDA = 442.78x  [contribucion SHAP: -0.003]",
+  "top_drivers": [
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.06621520903142888,
+      "raw_value": 3.1826923076923075,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.00960551643831282,
+      "raw_value": 0.14045396007726985,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.00681611848059143,
+      "raw_value": 0.6457869634340223,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.006259216967183621,
+      "raw_value": 1.4261701056869651,
+      "direction": "negative"
+    },
+    {
+      "feature": "liquidity_risk",
+      "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+      "shap_value": 0.003794426714602647,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.0028616921901545556,
+      "raw_value": 442.78125,
+      "direction": "negative"
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "ticker": "BKR",
+  "score": 0.8701,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.04445490752052909,
+      "raw_value": 5.766666666666667,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.01205461542107578,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.002992189024847698,
+      "raw_value": -0.01683153698508788,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_ebitda_high",
+      "description": "Debt Ebitda High",
+      "shap_value": -0.002481016518597562,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "BKR — Score: 0.87 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Revenue Decline = 1.000  [contribucion SHAP: +0.005]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.51x  [contribucion SHAP: +0.004]\n\nFactores EN CONTRA:\n  - Cobertura de intereses (EBIT / intereses) = 5.77x  [contribucion SHAP: -0.044]\n  - Deuda neta / EBITDA = 0.00x  [contribucion SHAP: -0.012]\n  - Crecimiento de la deuda total interanual = -1.7%  [contribucion SHAP: -0.003]\n  - Debt Ebitda High = 0.000  [contribucion SHAP: -0.002]",
+  "top_drivers": [
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.04445490752052909,
+      "raw_value": 5.766666666666667,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.01205461542107578,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": 0.00511300704291953,
+      "raw_value": 1.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.0036853139715529826,
+      "raw_value": 1.51456,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.002992189024847698,
+      "raw_value": -0.01683153698508788,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_ebitda_high",
+      "description": "Debt Ebitda High",
+      "shap_value": -0.002481016518597562,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

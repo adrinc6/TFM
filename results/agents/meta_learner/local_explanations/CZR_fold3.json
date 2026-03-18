@@ -1,0 +1,67 @@
+{
+  "ticker": "CZR",
+  "score": 0.5363,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.16662283321428223,
+      "raw_value": 0.5059968473951129,
+      "direction": "negative"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.08644082769086572,
+      "raw_value": 0.458666851123174,
+      "direction": "negative"
+    }
+  ],
+  "text": "CZR — Score: 0.54 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.463  [contribucion SHAP: +0.435]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.170]\n  + Mom Minus Bear = 0.000  [contribucion SHAP: +0.095]\n  + VIX (volatilidad implícita de mercado) = 19.5  [contribucion SHAP: +0.069]\n\nFactores EN CONTRA:\n  - Score del Agente de Valoración (infravaloración) = 0.506  [contribucion SHAP: -0.167]\n  - Score del Agente Fundamental (salud financiera) = 0.459  [contribucion SHAP: -0.086]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.43487340821066967,
+      "raw_value": 0.4634166018693888,
+      "direction": "positive"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": 0.17047280474111412,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.16662283321428223,
+      "raw_value": 0.5059968473951129,
+      "direction": "negative"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": 0.0946532954725824,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.08644082769086572,
+      "raw_value": 0.458666851123174,
+      "direction": "negative"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.06868354660311508,
+      "raw_value": 19.530000686645508,
+      "direction": "positive"
+    }
+  ]
+}

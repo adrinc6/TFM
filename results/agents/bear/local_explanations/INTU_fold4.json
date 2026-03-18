@@ -1,0 +1,74 @@
+{
+  "ticker": "INTU",
+  "score": 0.2371,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.026775475284009073,
+      "raw_value": 2.4290623465881196,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.024533090180397423,
+      "raw_value": 1.5510204081632653,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.006704353553825825,
+      "raw_value": -81.22093023255815,
+      "direction": "negative"
+    }
+  ],
+  "text": "INTU — Score: 0.24 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.37x  [contribucion SHAP: +0.049]\n  + Ratio deuda / fondos propios = 0.435  [contribucion SHAP: +0.011]\n  + Revenue Decline = 0.000  [contribucion SHAP: +0.005]\n\nFactores EN CONTRA:\n  - Crecimiento de la deuda total interanual = 242.9%  [contribucion SHAP: -0.027]\n  - Cobertura de intereses (EBIT / intereses) = 1.55x  [contribucion SHAP: -0.025]\n  - Deuda neta / EBITDA = -81.22x  [contribucion SHAP: -0.007]",
+  "top_drivers": [
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.04948229107210573,
+      "raw_value": 1.369624060150376,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.026775475284009073,
+      "raw_value": 2.4290623465881196,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.024533090180397423,
+      "raw_value": 1.5510204081632653,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": 0.011324989032090893,
+      "raw_value": 0.4347420178004605,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.006704353553825825,
+      "raw_value": -81.22093023255815,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": 0.004811016043125939,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

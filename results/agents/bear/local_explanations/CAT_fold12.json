@@ -1,0 +1,67 @@
+{
+  "ticker": "CAT",
+  "score": 0.2728,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.04536014984730807,
+      "raw_value": 15.17,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.015271717566449102,
+      "raw_value": 0.9756180816306628,
+      "direction": "negative"
+    }
+  ],
+  "text": "CAT — Score: 0.27 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Cobertura de intereses (EBIT / intereses) = 9.12x  [contribucion SHAP: +0.007]\n  + Eps Revision = 0.046  [contribucion SHAP: +0.005]\n  + Crecimiento de la deuda total interanual = -1.1%  [contribucion SHAP: +0.004]\n  + Revenue Decline = 0.000  [contribucion SHAP: +0.003]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 15.170  [contribucion SHAP: -0.045]\n  - Ratio deuda / fondos propios = 0.976  [contribucion SHAP: -0.015]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.04536014984730807,
+      "raw_value": 15.17,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.015271717566449102,
+      "raw_value": 0.9756180816306628,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.007432017202816652,
+      "raw_value": 9.117359413202934,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.004585868431944756,
+      "raw_value": 0.0458515283842795,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.0036543867106772535,
+      "raw_value": -0.010974343763903271,
+      "direction": "positive"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": 0.0026527972383039297,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

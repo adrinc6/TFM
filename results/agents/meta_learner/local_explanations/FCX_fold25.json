@@ -1,0 +1,74 @@
+{
+  "ticker": "FCX",
+  "score": 0.3554,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": -0.15468397260238712,
+      "raw_value": 0.259000301361084,
+      "direction": "negative"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.13635113533581103,
+      "raw_value": 0.49793470674988044,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.060803133860409836,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "FCX — Score: 0.36 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.463  [contribucion SHAP: +0.375]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.317  [contribucion SHAP: +0.214]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.061]\n\nFactores EN CONTRA:\n  - Pendiente curva de tipos (10Y - 2Y) = 0.259  [contribucion SHAP: -0.155]\n  - Score del Agente de Valoración (infravaloración) = 0.498  [contribucion SHAP: -0.136]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.061]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.3750698724842688,
+      "raw_value": 0.4626022786095665,
+      "direction": "positive"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": 0.21383626690693025,
+      "raw_value": 0.31717824960304386,
+      "direction": "positive"
+    },
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": -0.15468397260238712,
+      "raw_value": 0.259000301361084,
+      "direction": "negative"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.13635113533581103,
+      "raw_value": 0.49793470674988044,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.060803133860409836,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": 0.060741152457654914,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

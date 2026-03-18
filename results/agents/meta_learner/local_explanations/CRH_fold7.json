@@ -1,0 +1,74 @@
+{
+  "ticker": "CRH",
+  "score": 0.455,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": -0.20770742160282102,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.13170352126623458,
+      "raw_value": 0.5083262224992117,
+      "direction": "negative"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.054267618408615874,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "CRH — Score: 0.45 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + VIX (volatilidad implícita de mercado) = 17.1  [contribucion SHAP: +0.178]\n  + Score del Agente de Momentum (tendencia técnica) = 0.399  [contribucion SHAP: +0.107]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.311  [contribucion SHAP: +0.078]\n\nFactores EN CONTRA:\n  - Fund X Val = 0.000  [contribucion SHAP: -0.208]\n  - Score del Agente Fundamental (salud financiera) = 0.508  [contribucion SHAP: -0.132]\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.054]",
+  "top_drivers": [
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": -0.20770742160282102,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.1782298422954437,
+      "raw_value": 17.1200008392334,
+      "direction": "positive"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.13170352126623458,
+      "raw_value": 0.5083262224992117,
+      "direction": "negative"
+    },
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.10667198551534897,
+      "raw_value": 0.3989660196989233,
+      "direction": "positive"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": 0.07793364314390856,
+      "raw_value": 0.3112371820122346,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.054267618408615874,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

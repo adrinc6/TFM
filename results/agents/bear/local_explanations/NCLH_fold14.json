@@ -1,0 +1,74 @@
+{
+  "ticker": "NCLH",
+  "score": 0.2324,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.025451398962212296,
+      "raw_value": 9.89,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.011589057761465247,
+      "raw_value": 1.5555555555555554,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.0029848603266687565,
+      "raw_value": 0.03211056320398664,
+      "direction": "negative"
+    }
+  ],
+  "text": "NCLH — Score: 0.23 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = -160.26x  [contribucion SHAP: +0.028]\n  + Ratio deuda / fondos propios = 46.737  [contribucion SHAP: +0.013]\n  + Revenue Decline = 0.000  [contribucion SHAP: +0.006]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 9.890  [contribucion SHAP: -0.025]\n  - Eps Revision = 1.556  [contribucion SHAP: -0.012]\n  - Crecimiento de la deuda total interanual = 3.2%  [contribucion SHAP: -0.003]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.028320184547850305,
+      "raw_value": -160.2613280136791,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.025451398962212296,
+      "raw_value": 9.89,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": 0.012955370589232799,
+      "raw_value": 46.73735983537617,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.011589057761465247,
+      "raw_value": 1.5555555555555554,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": 0.0064048886101068505,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.0029848603266687565,
+      "raw_value": 0.03211056320398664,
+      "direction": "negative"
+    }
+  ]
+}

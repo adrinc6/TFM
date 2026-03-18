@@ -1,0 +1,81 @@
+{
+  "ticker": "DHR",
+  "score": 0.4634,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.04298721904728326,
+      "raw_value": -1072728.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.01944243989825176,
+      "raw_value": 9.49099099099099,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.017738418855834673,
+      "raw_value": 14.43,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": -0.011826624369685304,
+      "raw_value": 0.9906941171304361,
+      "direction": "negative"
+    }
+  ],
+  "text": "DHR — Score: 0.46 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 1370000000.000  [contribucion SHAP: +0.025]\n  + Eps Revision = -0.241  [contribucion SHAP: +0.016]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -1072728.000  [contribucion SHAP: -0.043]\n  - Deuda neta / EBITDA = 9.49x  [contribucion SHAP: -0.019]\n  - Eps Surprise Pct = 14.430  [contribucion SHAP: -0.018]\n  - Proporción de ventas de insiders (>0.7 = red flag) = 0.99x  [contribucion SHAP: -0.012]",
+  "top_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.04298721904728326,
+      "raw_value": -1072728.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.025221334403596807,
+      "raw_value": 1370000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.01944243989825176,
+      "raw_value": 9.49099099099099,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.017738418855834673,
+      "raw_value": 14.43,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.016346469196025035,
+      "raw_value": -0.2407407407407408,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": -0.011826624369685304,
+      "raw_value": 0.9906941171304361,
+      "direction": "negative"
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "ticker": "WMT",
+  "score": 0.8122,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.05060213475023239,
+      "raw_value": 0.19176585456574302,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.018770210400097676,
+      "raw_value": 6.493975903614458,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_ebitda_high",
+      "description": "Debt Ebitda High",
+      "shap_value": -0.004182634393034525,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "WMT — Score: 0.81 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.86x  [contribucion SHAP: +0.055]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.006]\n  + Revenue Decline = 0.000  [contribucion SHAP: +0.004]\n\nFactores EN CONTRA:\n  - Crecimiento de la deuda total interanual = 19.2%  [contribucion SHAP: -0.051]\n  - Cobertura de intereses (EBIT / intereses) = 6.49x  [contribucion SHAP: -0.019]\n  - Debt Ebitda High = 0.000  [contribucion SHAP: -0.004]",
+  "top_drivers": [
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.05541975271596503,
+      "raw_value": 0.8646260650047334,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.05060213475023239,
+      "raw_value": 0.19176585456574302,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.018770210400097676,
+      "raw_value": 6.493975903614458,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.006402359330949539,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": 0.0041932722921100545,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_ebitda_high",
+      "description": "Debt Ebitda High",
+      "shap_value": -0.004182634393034525,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "agent": "meta_learner",
+  "timestamp": "2026-03-06T18:50:14.360970",
+  "fold": 13,
+  "class_balance": {
+    "n_samples": 1501,
+    "n_positive": 750,
+    "n_negative": 751,
+    "positive_ratio": 0.4996668887408394
+  },
+  "cv_lr": {
+    "mean_auc": 0.8109877262693157,
+    "std_auc": 0.016024149489608674,
+    "mean_f1": 0.7366659903490207
+  },
+  "cv_gbm": {
+    "mean_auc": 0.8033254451802796,
+    "std_auc": 0.014660232462163058,
+    "mean_f1": 0.7276866969135652
+  },
+  "lr_weight": 0.5023732325376976,
+  "gbm_weight": 0.49762676746230233,
+  "lr_coefficients": {
+    "fundamental_score": -0.023748596985109255,
+    "valuation_score": 0.1550831331261994,
+    "momentum_score": 0.6212691078205214,
+    "bear_score": 0.11420939824321928,
+    "vix": -0.14416335047960455,
+    "yield_curve": 0.06781101477129606,
+    "sp500_momentum_3m": -0.24088914329896982,
+    "sp500_momentum_12m": -0.10337614727765239,
+    "sector_Aerospace": -0.03138566772419576,
+    "sector_Auto-Tires-Trucks": -0.1010922497042085,
+    "sector_Basic Materials": -0.04891733324540068,
+    "sector_Business Services": 0.11315468371079163,
+    "sector_Computer And Technology": 0.30766767335607076,
+    "sector_Conglomerates": -0.29317604110882,
+    "sector_Construction": 0.173028541172999,
+    "sector_Consumer Discretionary": -0.035339700406734155,
+    "sector_Consumer Staples": -0.14605711849173558,
+    "sector_Finance": -0.04268146885366265,
+    "sector_Industrial Products": -0.0626505320711155,
+    "sector_Medical": -0.015947979155876032,
+    "sector_Oils-Energy": -0.14873684123432526,
+    "sector_Retail-Wholesale": 0.11152521122659238,
+    "sector_Transportation": -0.05202473328704592,
+    "sector_Unknown": -0.006064863268696725,
+    "sector_Utilities": -0.33062646930348044,
+    "fund_x_val": 0.03588412331435844,
+    "mom_minus_bear": 0.5628224235978798
+  },
+  "gbm_importances": {
+    "momentum_score": 0.40357044887807547,
+    "mom_minus_bear": 0.18512389054692394,
+    "bear_score": 0.06801934409300082,
+    "fund_x_val": 0.05633189991207036,
+    "valuation_score": 0.05301981246464423,
+    "sector_Computer And Technology": 0.04141477992546411,
+    "sp500_momentum_12m": 0.02720243765973439,
+    "fundamental_score": 0.026651697590125808,
+    "vix": 0.026014101591115425,
+    "sector_Consumer Staples": 0.02042174311747526
+  },
+  "bear_hard_threshold": 0.9,
+  "last_train_metrics": {
+    "mean_auc": 0.8109877262693157,
+    "std_auc": 0.016024149489608674,
+    "mean_f1": 0.7366659903490207,
+    "gbm_mean_auc": 0.8033254451802796,
+    "gbm_std_auc": 0.014660232462163058,
+    "gbm_mean_f1": 0.7276866969135652
+  }
+}

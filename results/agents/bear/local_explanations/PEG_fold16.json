@@ -1,0 +1,52 @@
+{
+  "ticker": "PEG",
+  "score": 0.4,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [],
+  "text": "PEG — Score: 0.40 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 55.87x  [contribucion SHAP: +0.091]\n  + Eps Revision = 1.519  [contribucion SHAP: +0.034]\n  + Eps Surprise Pct = -0.320  [contribucion SHAP: +0.031]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.79x  [contribucion SHAP: +0.027]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.09127170199946712,
+      "raw_value": 55.86923076923077,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.03447087719244224,
+      "raw_value": 1.5192307692307692,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": 0.03143902370678094,
+      "raw_value": -0.32,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.026748082001961163,
+      "raw_value": 0.7947290274684484,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.011742455087703704,
+      "raw_value": 35301.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.010059397956030709,
+      "raw_value": 3.341463414634146,
+      "direction": "positive"
+    }
+  ]
+}

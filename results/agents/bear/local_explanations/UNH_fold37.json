@@ -1,0 +1,60 @@
+{
+  "ticker": "UNH",
+  "score": 0.4773,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.008229475312604108,
+      "raw_value": -1.2,
+      "direction": "negative"
+    }
+  ],
+  "text": "UNH — Score: 0.48 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 5055000000.000  [contribucion SHAP: +0.032]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.82x  [contribucion SHAP: +0.019]\n  + Acciones compradas netas por insiders (90 días) = 13207.000  [contribucion SHAP: +0.015]\n  + Proporción de ventas de insiders (>0.7 = red flag) = 0.00x  [contribucion SHAP: +0.008]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = -1.200  [contribucion SHAP: -0.008]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.03245181288561044,
+      "raw_value": 5055000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.018624370080818013,
+      "raw_value": 0.8229056662569465,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.01517184195151924,
+      "raw_value": 13207.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.008229475312604108,
+      "raw_value": -1.2,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": 0.007678151812119172,
+      "raw_value": 0.002036045547092979,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_selling",
+      "description": "FLAG: Insiders vendiendo >70% de operaciones",
+      "shap_value": 0.007589168550114809,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

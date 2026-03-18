@@ -1,0 +1,88 @@
+{
+  "ticker": "BAX",
+  "score": 0.7379,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.048584508981841384,
+      "raw_value": -6.17,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.0331513417102531,
+      "raw_value": -2.456896551724138,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.01927911675283313,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.004398739584920811,
+      "raw_value": 1.688303477344573,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.0031285938568193154,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "BAX — Score: 0.74 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio deuda / fondos propios = 2.822  [contribucion SHAP: +0.011]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = -6.170  [contribucion SHAP: -0.049]\n  - Cobertura de intereses (EBIT / intereses) = -2.46x  [contribucion SHAP: -0.033]\n  - Revenue Decline = 1.000  [contribucion SHAP: -0.019]\n  - Ratio de liquidez corriente (activo / pasivo cte.) = 1.69x  [contribucion SHAP: -0.004]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.048584508981841384,
+      "raw_value": -6.17,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.0331513417102531,
+      "raw_value": -2.456896551724138,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.01927911675283313,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": 0.011383714672808326,
+      "raw_value": 2.8220525869380837,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.004398739584920811,
+      "raw_value": 1.688303477344573,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.0031285938568193154,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

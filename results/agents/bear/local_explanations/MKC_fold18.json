@@ -1,0 +1,67 @@
+{
+  "ticker": "MKC",
+  "score": 0.3607,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03757883803194469,
+      "raw_value": 8.98,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.005485007019801554,
+      "raw_value": -0.2658227848101266,
+      "direction": "negative"
+    }
+  ],
+  "text": "MKC — Score: 0.36 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Cobertura de intereses (EBIT / intereses) = 4.73x  [contribucion SHAP: +0.009]\n  + Revenue Decline = 0.000  [contribucion SHAP: +0.007]\n  + Proporción de ventas de insiders (>0.7 = red flag) = 0.50x  [contribucion SHAP: +0.006]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.005]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 8.980  [contribucion SHAP: -0.038]\n  - Eps Revision = -0.266  [contribucion SHAP: -0.005]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03757883803194469,
+      "raw_value": 8.98,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.008755762873852725,
+      "raw_value": 4.725646123260438,
+      "direction": "positive"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": 0.0069732322242411285,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": 0.005899571959886918,
+      "raw_value": 0.5,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.005485007019801554,
+      "raw_value": -0.2658227848101266,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.004568078341004214,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

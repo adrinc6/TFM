@@ -1,0 +1,67 @@
+{
+  "ticker": "PGR",
+  "score": 0.6453,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.03503762964321187,
+      "raw_value": -73857.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.027430464123340232,
+      "raw_value": 0.269352506740651,
+      "direction": "negative"
+    }
+  ],
+  "text": "PGR — Score: 0.65 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 2897100000.000  [contribucion SHAP: +0.043]\n  + Proporción de ventas de insiders (>0.7 = red flag) = 1.00x  [contribucion SHAP: +0.011]\n  + FLAG: Insiders vendiendo >70% de operaciones = 0.000  [contribucion SHAP: +0.007]\n  + Eps Surprise Pct = 13.910  [contribucion SHAP: +0.004]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -73857.000  [contribucion SHAP: -0.035]\n  - Ratio deuda / fondos propios = 0.269  [contribucion SHAP: -0.027]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.042901234212324474,
+      "raw_value": 2897100000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.03503762964321187,
+      "raw_value": -73857.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.027430464123340232,
+      "raw_value": 0.269352506740651,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": 0.011013223283284771,
+      "raw_value": 1.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_selling",
+      "description": "FLAG: Insiders vendiendo >70% de operaciones",
+      "shap_value": 0.0070145105167091,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": 0.004415851442076659,
+      "raw_value": 13.91,
+      "direction": "positive"
+    }
+  ]
+}

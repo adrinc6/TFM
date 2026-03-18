@@ -1,0 +1,74 @@
+{
+  "ticker": "CIEN",
+  "score": 0.3119,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.029351980030296886,
+      "raw_value": 0.5318346269316323,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.014113768476908048,
+      "raw_value": 3.768506056527591,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.010306189206539095,
+      "raw_value": 1.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "CIEN — Score: 0.31 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 18.88x  [contribucion SHAP: +0.041]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 4.38x  [contribucion SHAP: +0.024]\n  + Crecimiento de la deuda total interanual = -0.3%  [contribucion SHAP: +0.012]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.532  [contribucion SHAP: -0.029]\n  - Cobertura de intereses (EBIT / intereses) = 3.77x  [contribucion SHAP: -0.014]\n  - Revenue Decline = 1.000  [contribucion SHAP: -0.010]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.04057938219235716,
+      "raw_value": 18.881065721086124,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.029351980030296886,
+      "raw_value": 0.5318346269316323,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.023881976203961666,
+      "raw_value": 4.377326792961823,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.014113768476908048,
+      "raw_value": 3.768506056527591,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.012239109854669153,
+      "raw_value": -0.002954294050691808,
+      "direction": "positive"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.010306189206539095,
+      "raw_value": 1.0,
+      "direction": "negative"
+    }
+  ]
+}

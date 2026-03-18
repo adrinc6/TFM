@@ -1,0 +1,70 @@
+{
+  "interest_coverage": {
+    "shap_importance": 0.03877224026672805,
+    "description": "Cobertura de intereses (EBIT / intereses)"
+  },
+  "total_debt_yoy_growth": {
+    "shap_importance": 0.02232021168111859,
+    "description": "Crecimiento de la deuda total interanual"
+  },
+  "current_ratio": {
+    "shap_importance": 0.013462610883962502,
+    "description": "Ratio de liquidez corriente (activo / pasivo cte.)"
+  },
+  "debt_equity": {
+    "shap_importance": 0.011796406581205378,
+    "description": "Ratio deuda / fondos propios"
+  },
+  "debt_to_ebitda": {
+    "shap_importance": 0.00888224718418481,
+    "description": "Deuda neta / EBITDA"
+  },
+  "liquidity_risk": {
+    "shap_importance": 0.005913306312357231,
+    "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)"
+  },
+  "debt_ebitda_high": {
+    "shap_importance": 0.003026788209028777,
+    "description": "Debt Ebitda High"
+  },
+  "debt_growth_high": {
+    "shap_importance": 0.0021772758230872275,
+    "description": "FLAG: Deuda creciendo >20% interanual"
+  },
+  "debt_equity_high": {
+    "shap_importance": 0.0018510494253287432,
+    "description": "Debt Equity High"
+  },
+  "low_coverage": {
+    "shap_importance": 0.0018074734264210733,
+    "description": "FLAG: Cobertura intereses < 1.5x"
+  },
+  "revenue_decline": {
+    "shap_importance": 0.0008613574362347132,
+    "description": "Revenue Decline"
+  },
+  "consecutive_losses": {
+    "shap_importance": 0.0006115816502840878,
+    "description": "Trimestres consecutivos con pérdidas"
+  },
+  "insider_net_shares_90d": {
+    "shap_importance": 0.0,
+    "description": "Acciones compradas netas por insiders (90 días)"
+  },
+  "insider_sell_ratio": {
+    "shap_importance": 0.0,
+    "description": "Proporción de ventas de insiders (>0.7 = red flag)"
+  },
+  "fcf_negative": {
+    "shap_importance": 0.0,
+    "description": "FLAG: FCF negativo"
+  },
+  "insider_selling": {
+    "shap_importance": 0.0,
+    "description": "FLAG: Insiders vendiendo >70% de operaciones"
+  },
+  "eps_miss": {
+    "shap_importance": 0.0,
+    "description": "Eps Miss"
+  }
+}

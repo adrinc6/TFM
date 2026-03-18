@@ -1,0 +1,81 @@
+{
+  "ticker": "VMC",
+  "score": 0.8128,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.027261092217160252,
+      "raw_value": 0.2041884816753927,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.022781203536688045,
+      "raw_value": 0.5164959575913372,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.018190835949678266,
+      "raw_value": 3.1656218655967905,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.006257273636387491,
+      "raw_value": 8.462566844919786,
+      "direction": "negative"
+    }
+  ],
+  "text": "VMC — Score: 0.81 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = -2.5%  [contribucion SHAP: +0.013]\n  + Eps Surprise Pct = -0.220  [contribucion SHAP: +0.004]\n\nFactores EN CONTRA:\n  - Eps Revision = 0.204  [contribucion SHAP: -0.027]\n  - Ratio deuda / fondos propios = 0.516  [contribucion SHAP: -0.023]\n  - Ratio de liquidez corriente (activo / pasivo cte.) = 3.17x  [contribucion SHAP: -0.018]\n  - Cobertura de intereses (EBIT / intereses) = 8.46x  [contribucion SHAP: -0.006]",
+  "top_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.027261092217160252,
+      "raw_value": 0.2041884816753927,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.022781203536688045,
+      "raw_value": 0.5164959575913372,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.018190835949678266,
+      "raw_value": 3.1656218655967905,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.013006364174675315,
+      "raw_value": -0.02462459441104714,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.006257273636387491,
+      "raw_value": 8.462566844919786,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": 0.004030277240675256,
+      "raw_value": -0.22,
+      "direction": "positive"
+    }
+  ]
+}

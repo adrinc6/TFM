@@ -1,0 +1,74 @@
+{
+  "ticker": "DVA",
+  "score": 0.8605,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.30762619885037984,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.07290231012313798,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.058185188504686174,
+      "raw_value": 0.4776972830295563,
+      "direction": "negative"
+    }
+  ],
+  "text": "DVA — Score: 0.86 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.811  [contribucion SHAP: +0.786]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.048]\n  + VIX (volatilidad implícita de mercado) = 14.4  [contribucion SHAP: +0.036]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.308]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.073]\n  - Score del Agente Fundamental (salud financiera) = 0.478  [contribucion SHAP: -0.058]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.7858332766917273,
+      "raw_value": 0.8110254615938293,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.30762619885037984,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.07290231012313798,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.058185188504686174,
+      "raw_value": 0.4776972830295563,
+      "direction": "negative"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": 0.048164826696025016,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.03557674710018064,
+      "raw_value": 14.380000114440918,
+      "direction": "positive"
+    }
+  ]
+}

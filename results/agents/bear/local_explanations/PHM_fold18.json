@@ -1,0 +1,81 @@
+{
+  "ticker": "PHM",
+  "score": 0.8163,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.0256345415699959,
+      "raw_value": 25.25,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.013355853153750988,
+      "raw_value": 0.2314811261487575,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.005478204244907944,
+      "raw_value": -0.2670807453416149,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.004754675700090814,
+      "raw_value": 0.05287428510568515,
+      "direction": "negative"
+    }
+  ],
+  "text": "PHM — Score: 0.82 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Acciones compradas netas por insiders (90 días) = 7640.000  [contribucion SHAP: +0.011]\n  + Revenue Decline = 0.000  [contribucion SHAP: +0.005]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 25.250  [contribucion SHAP: -0.026]\n  - Ratio deuda / fondos propios = 0.231  [contribucion SHAP: -0.013]\n  - Eps Revision = -0.267  [contribucion SHAP: -0.005]\n  - Crecimiento de la deuda total interanual = 5.3%  [contribucion SHAP: -0.005]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.0256345415699959,
+      "raw_value": 25.25,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.013355853153750988,
+      "raw_value": 0.2314811261487575,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.011188258644729679,
+      "raw_value": 7640.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.005478204244907944,
+      "raw_value": -0.2670807453416149,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": 0.0050912596591566415,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.004754675700090814,
+      "raw_value": 0.05287428510568515,
+      "direction": "negative"
+    }
+  ]
+}

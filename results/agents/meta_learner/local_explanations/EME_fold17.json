@@ -1,0 +1,74 @@
+{
+  "ticker": "EME",
+  "score": 0.743,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.1334130829613949,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.07156353452287277,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.051066227620406246,
+      "raw_value": 0.294750369329622,
+      "direction": "negative"
+    }
+  ],
+  "text": "EME — Score: 0.74 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.669  [contribucion SHAP: +0.661]\n  + Momentum del S&P 500 a 3 meses = 6.1%  [contribucion SHAP: +0.074]\n  + VIX (volatilidad implícita de mercado) = 12.4  [contribucion SHAP: +0.060]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.133]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.072]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.295  [contribucion SHAP: -0.051]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.6614772497166854,
+      "raw_value": 0.6686569843852069,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.1334130829613949,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sp500_momentum_3m",
+      "description": "Momentum del S&P 500 a 3 meses",
+      "shap_value": 0.07365012241266368,
+      "raw_value": 0.0614983297969879,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.07156353452287277,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.05981990737465127,
+      "raw_value": 12.449999809265137,
+      "direction": "positive"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.051066227620406246,
+      "raw_value": 0.294750369329622,
+      "direction": "negative"
+    }
+  ]
+}

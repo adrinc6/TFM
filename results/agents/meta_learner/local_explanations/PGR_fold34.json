@@ -1,0 +1,67 @@
+{
+  "ticker": "PGR",
+  "score": 0.5203,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.13083140247492359,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": -0.10638098163128976,
+      "raw_value": 0.1810002326965332,
+      "direction": "negative"
+    }
+  ],
+  "text": "PGR — Score: 0.52 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + VIX (volatilidad implícita de mercado) = 14.8  [contribucion SHAP: +0.161]\n  + Score del Agente de Momentum (tendencia técnica) = 0.495  [contribucion SHAP: +0.145]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.308  [contribucion SHAP: +0.094]\n  + Momentum del S&P 500 a 3 meses = 9.8%  [contribucion SHAP: +0.089]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.131]\n  - Pendiente curva de tipos (10Y - 2Y) = 0.181  [contribucion SHAP: -0.106]",
+  "top_drivers": [
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.16098841755339752,
+      "raw_value": 14.829999923706056,
+      "direction": "positive"
+    },
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.14539671974981036,
+      "raw_value": 0.49548747942598004,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.13083140247492359,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": -0.10638098163128976,
+      "raw_value": 0.1810002326965332,
+      "direction": "negative"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": 0.09436032526232191,
+      "raw_value": 0.30812829820583554,
+      "direction": "positive"
+    },
+    {
+      "feature": "sp500_momentum_3m",
+      "description": "Momentum del S&P 500 a 3 meses",
+      "shap_value": 0.08913234017447151,
+      "raw_value": 0.0977432556369719,
+      "direction": "positive"
+    }
+  ]
+}

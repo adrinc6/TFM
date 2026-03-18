@@ -1,0 +1,81 @@
+{
+  "ticker": "HWM",
+  "score": 0.6014,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.07437048608925974,
+      "raw_value": 0.5036005179087321,
+      "direction": "negative"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.06557636119667061,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": -0.05627864651793144,
+      "raw_value": 0.1810002326965332,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.04731392087262731,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "HWM — Score: 0.60 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.485  [contribucion SHAP: +0.258]\n  + VIX (volatilidad implícita de mercado) = 14.8  [contribucion SHAP: +0.089]\n\nFactores EN CONTRA:\n  - Score del Agente Fundamental (salud financiera) = 0.504  [contribucion SHAP: -0.074]\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.066]\n  - Pendiente curva de tipos (10Y - 2Y) = 0.181  [contribucion SHAP: -0.056]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.047]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.2580895189667705,
+      "raw_value": 0.48478196171678806,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.0894857737824759,
+      "raw_value": 14.829999923706056,
+      "direction": "positive"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.07437048608925974,
+      "raw_value": 0.5036005179087321,
+      "direction": "negative"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.06557636119667061,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": -0.05627864651793144,
+      "raw_value": 0.1810002326965332,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.04731392087262731,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

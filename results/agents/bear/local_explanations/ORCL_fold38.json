@@ -1,0 +1,81 @@
+{
+  "ticker": "ORCL",
+  "score": 0.6312,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": -0.045548523146677934,
+      "raw_value": -362000000.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.04535383016318002,
+      "raw_value": 3.70205951512203,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.03554616900511631,
+      "raw_value": -120586.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.017187706359690982,
+      "raw_value": 0.1006711409395972,
+      "direction": "negative"
+    }
+  ],
+  "text": "ORCL — Score: 0.63 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 14.13x  [contribucion SHAP: +0.031]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.62x  [contribucion SHAP: +0.029]\n\nFactores EN CONTRA:\n  - Fcf = -362000000.000  [contribucion SHAP: -0.046]\n  - Ratio deuda / fondos propios = 3.702  [contribucion SHAP: -0.045]\n  - Acciones compradas netas por insiders (90 días) = -120586.000  [contribucion SHAP: -0.036]\n  - Eps Revision = 0.101  [contribucion SHAP: -0.017]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": -0.045548523146677934,
+      "raw_value": -362000000.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.04535383016318002,
+      "raw_value": 3.70205951512203,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.03554616900511631,
+      "raw_value": -120586.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.031301636027467786,
+      "raw_value": 14.128887513538604,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.02879888783970069,
+      "raw_value": 0.6177960575813813,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.017187706359690982,
+      "raw_value": 0.1006711409395972,
+      "direction": "negative"
+    }
+  ]
+}

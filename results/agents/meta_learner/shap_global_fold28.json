@@ -1,0 +1,82 @@
+{
+  "momentum_score": {
+    "shap_importance": 0.48354847153208697,
+    "description": "Score del Agente de Momentum (tendencia técnica)"
+  },
+  "vix": {
+    "shap_importance": 0.17632402257067334,
+    "description": "VIX (volatilidad implícita de mercado)"
+  },
+  "mom_minus_bear": {
+    "shap_importance": 0.0854736509010224,
+    "description": "Mom Minus Bear"
+  },
+  "fund_x_val": {
+    "shap_importance": 0.07210686704283902,
+    "description": "Fund X Val"
+  },
+  "yield_curve": {
+    "shap_importance": 0.062362539667009165,
+    "description": "Pendiente curva de tipos (10Y - 2Y)"
+  },
+  "sector_Consumer Staples": {
+    "shap_importance": 0.030498376924659464,
+    "description": "Sector Consumer Staples"
+  },
+  "sector_Finance": {
+    "shap_importance": 0.024201104344088144,
+    "description": "Sector Finance"
+  },
+  "sp500_momentum_12m": {
+    "shap_importance": 0.023480387482416702,
+    "description": "Momentum del S&P 500 a 12 meses"
+  },
+  "bear_score": {
+    "shap_importance": 0.017936486926674107,
+    "description": "Score del Agente Bear (riesgo, <0.5 es bueno)"
+  },
+  "sector_Medical": {
+    "shap_importance": 0.017711939778382844,
+    "description": "Sector Medical"
+  },
+  "sp500_momentum_3m": {
+    "shap_importance": 0.01465967007163731,
+    "description": "Momentum del S&P 500 a 3 meses"
+  },
+  "sector_Computer And Technology": {
+    "shap_importance": 0.012868274234170514,
+    "description": "Sector Computer And Technology"
+  },
+  "sector_Consumer Discretionary": {
+    "shap_importance": 0.011374269509737338,
+    "description": "Sector Consumer Discretionary"
+  },
+  "fundamental_score": {
+    "shap_importance": 0.010238532041025877,
+    "description": "Score del Agente Fundamental (salud financiera)"
+  },
+  "sector_Aerospace": {
+    "shap_importance": 0.009748304290224935,
+    "description": "Sector Aerospace"
+  },
+  "sector_Transportation": {
+    "shap_importance": 0.005686915734620312,
+    "description": "Sector Transportation"
+  },
+  "sector_Retail-Wholesale": {
+    "shap_importance": 0.00539697751142888,
+    "description": "Sector Retail-Wholesale"
+  },
+  "valuation_score": {
+    "shap_importance": 0.004520359064262064,
+    "description": "Score del Agente de Valoración (infravaloración)"
+  },
+  "sector_Oils-Energy": {
+    "shap_importance": 0.0030733772971054335,
+    "description": "Sector Oils-Energy"
+  },
+  "sector_Business Services": {
+    "shap_importance": 0.002657996746152504,
+    "description": "Sector Business Services"
+  }
+}

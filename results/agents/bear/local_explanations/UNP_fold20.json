@@ -1,0 +1,74 @@
+{
+  "ticker": "UNP",
+  "score": 0.2893,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.05292936120793503,
+      "raw_value": 1.9341379101218996,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.026673110697653293,
+      "raw_value": 1.02,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.01365707101521506,
+      "raw_value": -3338.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "UNP — Score: 0.29 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 17.68x  [contribucion SHAP: +0.068]\n  + Cobertura de intereses (EBIT / intereses) = 7.52x  [contribucion SHAP: +0.040]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.05x  [contribucion SHAP: +0.024]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 1.934  [contribucion SHAP: -0.053]\n  - Eps Surprise Pct = 1.020  [contribucion SHAP: -0.027]\n  - Acciones compradas netas por insiders (90 días) = -3338.000  [contribucion SHAP: -0.014]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.06795233192188173,
+      "raw_value": 17.67849223946785,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.05292936120793503,
+      "raw_value": 1.9341379101218996,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.0397232053107047,
+      "raw_value": 7.523510971786834,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.026673110697653293,
+      "raw_value": 1.02,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.024102488260357678,
+      "raw_value": 1.0492185677630044,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.01365707101521506,
+      "raw_value": -3338.0,
+      "direction": "negative"
+    }
+  ]
+}

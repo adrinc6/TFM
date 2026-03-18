@@ -1,0 +1,88 @@
+{
+  "ticker": "NVR",
+  "score": 0.7306,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.046622720235739566,
+      "raw_value": 0.1278102517985613,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.04593029264181607,
+      "raw_value": 16.16,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.018022660233995874,
+      "raw_value": 0.2200590234714247,
+      "direction": "negative"
+    },
+    {
+      "feature": "liquidity_risk",
+      "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+      "shap_value": -0.008286415629493624,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.007707360564048342,
+      "raw_value": 4.3609348781326265,
+      "direction": "negative"
+    }
+  ],
+  "text": "NVR — Score: 0.73 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Cobertura de intereses (EBIT / intereses) = 140.81x  [contribucion SHAP: +0.032]\n\nFactores EN CONTRA:\n  - Eps Revision = 0.128  [contribucion SHAP: -0.047]\n  - Eps Surprise Pct = 16.160  [contribucion SHAP: -0.046]\n  - Ratio deuda / fondos propios = 0.220  [contribucion SHAP: -0.018]\n  - FLAG: Ratio corriente < 1 (riesgo liquidez) = 0.000  [contribucion SHAP: -0.008]",
+  "top_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.046622720235739566,
+      "raw_value": 0.1278102517985613,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.04593029264181607,
+      "raw_value": 16.16,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.031923783043377216,
+      "raw_value": 140.8092193808883,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.018022660233995874,
+      "raw_value": 0.2200590234714247,
+      "direction": "negative"
+    },
+    {
+      "feature": "liquidity_risk",
+      "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+      "shap_value": -0.008286415629493624,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.007707360564048342,
+      "raw_value": 4.3609348781326265,
+      "direction": "negative"
+    }
+  ]
+}

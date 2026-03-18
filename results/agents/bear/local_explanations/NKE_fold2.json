@@ -1,0 +1,67 @@
+{
+  "ticker": "NKE",
+  "score": 0.7379,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.02883959657654842,
+      "raw_value": -179785.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.005051417043410941,
+      "raw_value": -0.5396825396825398,
+      "direction": "negative"
+    }
+  ],
+  "text": "NKE — Score: 0.74 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Cobertura de intereses (EBIT / intereses) = 43.78x  [contribucion SHAP: +0.013]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.19x  [contribucion SHAP: +0.010]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.007]\n  + Fcf = 0.000  [contribucion SHAP: +0.005]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -179785.000  [contribucion SHAP: -0.029]\n  - Eps Revision = -0.540  [contribucion SHAP: -0.005]",
+  "top_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.02883959657654842,
+      "raw_value": -179785.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.01261141097151885,
+      "raw_value": 43.77777777777778,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.00976679752069016,
+      "raw_value": 2.1927292167869554,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.007210876707721326,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.00528822674899821,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.005051417043410941,
+      "raw_value": -0.5396825396825398,
+      "direction": "negative"
+    }
+  ]
+}

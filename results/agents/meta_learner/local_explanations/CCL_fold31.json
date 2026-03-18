@@ -1,0 +1,67 @@
+{
+  "ticker": "CCL",
+  "score": 0.7555,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.2991635724890686,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.037328940257710504,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "CCL — Score: 0.76 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.733  [contribucion SHAP: +0.585]\n  + VIX (volatilidad implícita de mercado) = 30.9  [contribucion SHAP: +0.154]\n  + Score del Agente de Valoración (infravaloración) = 0.501  [contribucion SHAP: +0.050]\n  + Score del Agente Fundamental (salud financiera) = 0.523  [contribucion SHAP: +0.047]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.299]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.037]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.5845937430414931,
+      "raw_value": 0.7330502675032919,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.2991635724890686,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.15395809827160517,
+      "raw_value": 30.88999938964844,
+      "direction": "positive"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": 0.0500361645776709,
+      "raw_value": 0.5006477377757581,
+      "direction": "positive"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": 0.046868708423900056,
+      "raw_value": 0.5225727955500284,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.037328940257710504,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

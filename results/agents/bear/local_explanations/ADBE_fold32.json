@@ -1,0 +1,74 @@
+{
+  "ticker": "ADBE",
+  "score": 0.787,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.041224177135408394,
+      "raw_value": -1525.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.031733816541293695,
+      "raw_value": 0.713617606602476,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.02166023731309254,
+      "raw_value": 2.18,
+      "direction": "negative"
+    }
+  ],
+  "text": "ADBE — Score: 0.79 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Fcf = 2456000000.000  [contribucion SHAP: +0.064]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.18x  [contribucion SHAP: +0.021]\n  + Deuda neta / EBITDA = 2.62x  [contribucion SHAP: +0.021]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -1525.000  [contribucion SHAP: -0.041]\n  - Crecimiento de la deuda total interanual = 71.4%  [contribucion SHAP: -0.032]\n  - Eps Surprise Pct = 2.180  [contribucion SHAP: -0.022]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.06428231978605123,
+      "raw_value": 2456000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.041224177135408394,
+      "raw_value": -1525.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.031733816541293695,
+      "raw_value": 0.713617606602476,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.02166023731309254,
+      "raw_value": 2.18,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.021404771765959344,
+      "raw_value": 1.1846556804539998,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.021038326873590186,
+      "raw_value": 2.6172268907563025,
+      "direction": "positive"
+    }
+  ]
+}

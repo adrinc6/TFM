@@ -1,0 +1,60 @@
+{
+  "ticker": "ALGN",
+  "score": 0.2829,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": -0.1295821148712098,
+      "raw_value": 0.32851396633827296,
+      "direction": "negative"
+    }
+  ],
+  "text": "ALGN — Score: 0.28 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Mom Minus Bear = 0.000  [contribucion SHAP: +0.127]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.116]\n  + VIX (volatilidad implícita de mercado) = 14.2  [contribucion SHAP: +0.082]\n  + Score del Agente de Valoración (infravaloración) = 0.501  [contribucion SHAP: +0.060]\n\nFactores EN CONTRA:\n  - Score del Agente de Momentum (tendencia técnica) = 0.329  [contribucion SHAP: -0.130]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": -0.1295821148712098,
+      "raw_value": 0.32851396633827296,
+      "direction": "negative"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": 0.1270986469305332,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": 0.11646532688614186,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.08218992219685503,
+      "raw_value": 14.15999984741211,
+      "direction": "positive"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": 0.05957382808367113,
+      "raw_value": 0.5010450127876721,
+      "direction": "positive"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": 0.048065266009980144,
+      "raw_value": 0.5060877601305643,
+      "direction": "positive"
+    }
+  ]
+}

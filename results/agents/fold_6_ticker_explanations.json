@@ -1,0 +1,2005 @@
+{
+  "fold": 6,
+  "tickers": {
+    "BBWI": {
+      "score": 0.7235,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "BBWI — Score: 0.72 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio deuda / fondos propios = -2.205  [contribucion SHAP: +0.028]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.64x  [contribucion SHAP: +0.021]\n  + Crecimiento de la deuda total interanual = 0.2%  [contribucion SHAP: +0.008]\n  + Cobertura de intereses (EBIT / intereses) = 7.58x  [contribucion SHAP: +0.006]\n\nFactores EN CONTRA:\n  - Eps Revision = 7.100  [contribucion SHAP: -0.126]\n  - Eps Surprise Pct = 14.780  [contribucion SHAP: -0.012]",
+          "top_drivers": [
+            {
+              "feature": "eps_revision",
+              "description": "Eps Revision",
+              "shap_value": -0.12558883201765672,
+              "raw_value": 7.1,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": 0.028470703594978396,
+              "raw_value": -2.204988662131519,
+              "direction": "positive"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.021016527577781174,
+              "raw_value": 1.6432197244379985,
+              "direction": "positive"
+            },
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.01200792116182465,
+              "raw_value": 14.78,
+              "direction": "negative"
+            },
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.008156463851734635,
+              "raw_value": 0.0016481252575195615,
+              "direction": "positive"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": 0.00560252601145317,
+              "raw_value": 7.5813953488372094,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "BBWI — Score: 0.72 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.678  [contribucion SHAP: +0.673]\n  + VIX (volatilidad implícita de mercado) = 25.5  [contribucion SHAP: +0.106]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.217  [contribucion SHAP: +0.085]\n\nFactores EN CONTRA:\n  - Sector Finance = 0.000  [contribucion SHAP: -0.027]\n  - Score del Agente de Valoración (infravaloración) = 0.503  [contribucion SHAP: -0.025]\n  - Sector Oils-Energy = 0.000  [contribucion SHAP: -0.021]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.6732465630466238,
+              "raw_value": 0.6784090045420142,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.10564991313771441,
+              "raw_value": 25.51000022888184,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.0850705202570187,
+              "raw_value": 0.21713869189536145,
+              "direction": "positive"
+            },
+            {
+              "feature": "sector_Finance",
+              "description": "Sector Finance",
+              "shap_value": -0.027424557865916355,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": -0.024552833996680335,
+              "raw_value": 0.5034372133475004,
+              "direction": "negative"
+            },
+            {
+              "feature": "sector_Oils-Energy",
+              "description": "Sector Oils-Energy",
+              "shap_value": -0.02141039715731733,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "NTAP": {
+      "score": 0.7159,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "NTAP — Score: 0.72 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.34x  [contribucion SHAP: +0.029]\n  + Crecimiento de la deuda total interanual = -9.4%  [contribucion SHAP: +0.023]\n  + Eps Revision = -0.015  [contribucion SHAP: +0.008]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 2.167  [contribucion SHAP: -0.045]\n  - Eps Surprise Pct = 4.830  [contribucion SHAP: -0.031]\n  - Cobertura de intereses (EBIT / intereses) = 0.00x  [contribucion SHAP: -0.012]",
+          "top_drivers": [
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.04461867094196012,
+              "raw_value": 2.1669691470054446,
+              "direction": "negative"
+            },
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.031011320825892606,
+              "raw_value": 4.83,
+              "direction": "negative"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.02852944451056033,
+              "raw_value": 1.338048924255821,
+              "direction": "positive"
+            },
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.0229282392918511,
+              "raw_value": -0.09373814041745732,
+              "direction": "positive"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.011632798477253303,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "eps_revision",
+              "description": "Eps Revision",
+              "shap_value": 0.007515433375874766,
+              "raw_value": -0.0150375939849624,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "NTAP — Score: 0.72 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.682  [contribucion SHAP: +0.673]\n  + VIX (volatilidad implícita de mercado) = 25.5  [contribucion SHAP: +0.106]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.281  [contribucion SHAP: +0.085]\n\nFactores EN CONTRA:\n  - Sector Finance = 0.000  [contribucion SHAP: -0.027]\n  - Score del Agente de Valoración (infravaloración) = 0.488  [contribucion SHAP: -0.025]\n  - Sector Oils-Energy = 0.000  [contribucion SHAP: -0.021]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.6732465630466238,
+              "raw_value": 0.681834179242201,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.10564991313771441,
+              "raw_value": 25.51000022888184,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.0850705202570187,
+              "raw_value": 0.2811681192389384,
+              "direction": "positive"
+            },
+            {
+              "feature": "sector_Finance",
+              "description": "Sector Finance",
+              "shap_value": -0.027424557865916355,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": -0.024552833996680335,
+              "raw_value": 0.4877593469162153,
+              "direction": "negative"
+            },
+            {
+              "feature": "sector_Oils-Energy",
+              "description": "Sector Oils-Energy",
+              "shap_value": -0.02141039715731733,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "KMX": {
+      "score": 0.709,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "KMX — Score: 0.71 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = 1.2%  [contribucion SHAP: +0.007]\n\nFactores EN CONTRA:\n  - Eps Revision = -0.496  [contribucion SHAP: -0.055]\n  - Eps Surprise Pct = -65.610  [contribucion SHAP: -0.043]\n  - Deuda neta / EBITDA = -140.44x  [contribucion SHAP: -0.018]\n  - Ratio deuda / fondos propios = 3.322  [contribucion SHAP: -0.017]",
+          "top_drivers": [
+            {
+              "feature": "eps_revision",
+              "description": "Eps Revision",
+              "shap_value": -0.05528794391354289,
+              "raw_value": -0.4964028776978417,
+              "direction": "negative"
+            },
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.043031780985249464,
+              "raw_value": -65.61,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": -0.017644283699177234,
+              "raw_value": -140.4354395075235,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.017374483171047606,
+              "raw_value": 3.321602646561604,
+              "direction": "negative"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.014741553076263195,
+              "raw_value": -2.4018573797678275,
+              "direction": "negative"
+            },
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.00748932697252731,
+              "raw_value": 0.012365412324723435,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "KMX — Score: 0.71 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.640  [contribucion SHAP: +0.510]\n  + VIX (volatilidad implícita de mercado) = 18.4  [contribucion SHAP: +0.106]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.348  [contribucion SHAP: +0.085]\n\nFactores EN CONTRA:\n  - Sector Finance = 0.000  [contribucion SHAP: -0.027]\n  - Score del Agente de Valoración (infravaloración) = 0.507  [contribucion SHAP: -0.025]\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.022]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.5102758454514528,
+              "raw_value": 0.6404836225901988,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.10564991313771441,
+              "raw_value": 18.350000381469727,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.0850705202570187,
+              "raw_value": 0.34841781215875145,
+              "direction": "positive"
+            },
+            {
+              "feature": "sector_Finance",
+              "description": "Sector Finance",
+              "shap_value": -0.027424557865916355,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": -0.024547257086934088,
+              "raw_value": 0.5065989927599005,
+              "direction": "negative"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.022470792930800936,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "MDT": {
+      "score": 0.6923,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "MDT — Score: 0.69 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.76x  [contribucion SHAP: +0.019]\n  + Crecimiento de la deuda total interanual = 11.8%  [contribucion SHAP: +0.013]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.545  [contribucion SHAP: -0.031]\n  - Eps Surprise Pct = 2.650  [contribucion SHAP: -0.024]\n  - Cobertura de intereses (EBIT / intereses) = 8.56x  [contribucion SHAP: -0.010]\n  - Deuda neta / EBITDA = 28.18x  [contribucion SHAP: -0.008]",
+          "top_drivers": [
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.03131291944679681,
+              "raw_value": 0.5449261885388818,
+              "direction": "negative"
+            },
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.023960348402675056,
+              "raw_value": 2.65,
+              "direction": "negative"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.018512516601252596,
+              "raw_value": 1.7588239373136398,
+              "direction": "positive"
+            },
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.012934825884622728,
+              "raw_value": 0.11818723911747164,
+              "direction": "positive"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.00996535841660292,
+              "raw_value": 8.55688622754491,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": -0.008442096390052252,
+              "raw_value": 28.18436873747495,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "MDT — Score: 0.69 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.661  [contribucion SHAP: +0.673]\n  + VIX (volatilidad implícita de mercado) = 25.5  [contribucion SHAP: +0.106]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.270  [contribucion SHAP: +0.085]\n\nFactores EN CONTRA:\n  - Sector Finance = 0.000  [contribucion SHAP: -0.027]\n  - Score del Agente de Valoración (infravaloración) = 0.504  [contribucion SHAP: -0.025]\n  - Sector Oils-Energy = 0.000  [contribucion SHAP: -0.021]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.6732465630466238,
+              "raw_value": 0.6611688264097031,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.10564991313771441,
+              "raw_value": 25.51000022888184,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.0850705202570187,
+              "raw_value": 0.2696954285170149,
+              "direction": "positive"
+            },
+            {
+              "feature": "sector_Finance",
+              "description": "Sector Finance",
+              "shap_value": -0.027424557865916355,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": -0.024552833996680335,
+              "raw_value": 0.5044178505530573,
+              "direction": "negative"
+            },
+            {
+              "feature": "sector_Oils-Energy",
+              "description": "Sector Oils-Energy",
+              "shap_value": -0.02141039715731733,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "DLTR": {
+      "score": 0.6862,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "DLTR — Score: 0.69 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.52x  [contribucion SHAP: +0.018]\n  + Crecimiento de la deuda total interanual = 0.1%  [contribucion SHAP: +0.005]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 1.150  [contribucion SHAP: -0.043]\n  - Eps Revision = 0.712  [contribucion SHAP: -0.040]\n  - Ratio deuda / fondos propios = 0.391  [contribucion SHAP: -0.017]\n  - Cobertura de intereses (EBIT / intereses) = 16.09x  [contribucion SHAP: -0.009]",
+          "top_drivers": [
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.04295240434345894,
+              "raw_value": 1.15,
+              "direction": "negative"
+            },
+            {
+              "feature": "eps_revision",
+              "description": "Eps Revision",
+              "shap_value": -0.03984270416930863,
+              "raw_value": 0.7118644067796611,
+              "direction": "negative"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.017687010382038744,
+              "raw_value": 1.5231468332859983,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.01682733973488209,
+              "raw_value": 0.3909729760612466,
+              "direction": "negative"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.009122127537517195,
+              "raw_value": 16.090301003344482,
+              "direction": "negative"
+            },
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.0053222176265041825,
+              "raw_value": 0.0013462101258414627,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "DLTR — Score: 0.69 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.638  [contribucion SHAP: +0.507]\n  + VIX (volatilidad implícita de mercado) = 25.5  [contribucion SHAP: +0.106]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.192  [contribucion SHAP: +0.085]\n\nFactores EN CONTRA:\n  - Sector Finance = 0.000  [contribucion SHAP: -0.027]\n  - Score del Agente de Valoración (infravaloración) = 0.502  [contribucion SHAP: -0.025]\n  - Sector Oils-Energy = 0.000  [contribucion SHAP: -0.022]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.5066919671578077,
+              "raw_value": 0.6381078051529299,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.10564991313771441,
+              "raw_value": 25.51000022888184,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.0850705202570187,
+              "raw_value": 0.19234940303559234,
+              "direction": "positive"
+            },
+            {
+              "feature": "sector_Finance",
+              "description": "Sector Finance",
+              "shap_value": -0.027424557865916355,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": -0.024547257086934088,
+              "raw_value": 0.5020823900751659,
+              "direction": "negative"
+            },
+            {
+              "feature": "sector_Oils-Energy",
+              "description": "Sector Oils-Energy",
+              "shap_value": -0.021558244646315006,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "HRL": {
+      "score": 0.6746,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "HRL — Score: 0.67 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = -0.5%  [contribucion SHAP: +0.008]\n\nFactores EN CONTRA:\n  - Eps Revision = -0.100  [contribucion SHAP: -0.054]\n  - Eps Surprise Pct = -11.540  [contribucion SHAP: -0.044]\n  - Cobertura de intereses (EBIT / intereses) = 33.20x  [contribucion SHAP: -0.010]\n  - Ratio deuda / fondos propios = 0.433  [contribucion SHAP: -0.008]",
+          "top_drivers": [
+            {
+              "feature": "eps_revision",
+              "description": "Eps Revision",
+              "shap_value": -0.05442138214684461,
+              "raw_value": -0.0999999999999999,
+              "direction": "negative"
+            },
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.0439812836794046,
+              "raw_value": -11.54,
+              "direction": "negative"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.009954403439747964,
+              "raw_value": 33.1951278632893,
+              "direction": "negative"
+            },
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.007922744609540783,
+              "raw_value": -0.004970194205569101,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.007728958707554488,
+              "raw_value": 0.4333234063871695,
+              "direction": "negative"
+            },
+            {
+              "feature": "liquidity_risk",
+              "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+              "shap_value": -0.0011655804910277099,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "HRL — Score: 0.67 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.726  [contribucion SHAP: +0.673]\n  + VIX (volatilidad implícita de mercado) = 25.5  [contribucion SHAP: +0.106]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.297  [contribucion SHAP: +0.085]\n\nFactores EN CONTRA:\n  - Sector Finance = 0.000  [contribucion SHAP: -0.027]\n  - Score del Agente de Valoración (infravaloración) = 0.521  [contribucion SHAP: -0.025]\n  - Sector Oils-Energy = 0.000  [contribucion SHAP: -0.021]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.6732465630466238,
+              "raw_value": 0.7263978331764332,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.10564991313771441,
+              "raw_value": 25.51000022888184,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.0850705202570187,
+              "raw_value": 0.29683718600310355,
+              "direction": "positive"
+            },
+            {
+              "feature": "sector_Finance",
+              "description": "Sector Finance",
+              "shap_value": -0.027424557865916355,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": -0.024552833996680335,
+              "raw_value": 0.5209137208594429,
+              "direction": "negative"
+            },
+            {
+              "feature": "sector_Oils-Energy",
+              "description": "Sector Oils-Energy",
+              "shap_value": -0.02141039715731733,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "MU": {
+      "score": 0.6647,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "MU — Score: 0.66 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Eps Miss = 0.000  [contribucion SHAP: +0.002]\n\nFactores EN CONTRA:\n  - Eps Revision = -1.008  [contribucion SHAP: -0.063]\n  - Eps Surprise Pct = -194.550  [contribucion SHAP: -0.040]\n  - Ratio de liquidez corriente (activo / pasivo cte.) = 3.51x  [contribucion SHAP: -0.017]\n  - Ratio deuda / fondos propios = 0.208  [contribucion SHAP: -0.016]",
+          "top_drivers": [
+            {
+              "feature": "eps_revision",
+              "description": "Eps Revision",
+              "shap_value": -0.0633586035994811,
+              "raw_value": -1.0076923076923077,
+              "direction": "negative"
+            },
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.0402703196727165,
+              "raw_value": -194.55,
+              "direction": "negative"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": -0.017294345387160345,
+              "raw_value": 3.5127969348659005,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.016154514097822495,
+              "raw_value": 0.2081896726564718,
+              "direction": "negative"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.005220775390318189,
+              "raw_value": -5.648648648648648,
+              "direction": "negative"
+            },
+            {
+              "feature": "eps_miss",
+              "description": "Eps Miss",
+              "shap_value": 0.001885982156501312,
+              "raw_value": 0.0,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "MU — Score: 0.66 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.621  [contribucion SHAP: +0.498]\n  + VIX (volatilidad implícita de mercado) = 18.4  [contribucion SHAP: +0.106]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.324  [contribucion SHAP: +0.085]\n\nFactores EN CONTRA:\n  - Sector Finance = 0.000  [contribucion SHAP: -0.027]\n  - Score del Agente de Valoración (infravaloración) = 0.483  [contribucion SHAP: -0.025]\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.022]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.4976648415811745,
+              "raw_value": 0.621214284718988,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.10564991313771441,
+              "raw_value": 18.350000381469727,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.0850705202570187,
+              "raw_value": 0.3242564128940924,
+              "direction": "positive"
+            },
+            {
+              "feature": "sector_Finance",
+              "description": "Sector Finance",
+              "shap_value": -0.027424557865916355,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": -0.024547257086934088,
+              "raw_value": 0.4833445755562911,
+              "direction": "negative"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.0219190215239833,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "BBY": {
+      "score": 0.6602,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "BBY — Score: 0.66 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.98x  [contribucion SHAP: +0.018]\n  + Crecimiento de la deuda total interanual = -4.3%  [contribucion SHAP: +0.014]\n  + FLAG: Ratio corriente < 1 (riesgo liquidez) = 0.000  [contribucion SHAP: +0.003]\n\nFactores EN CONTRA:\n  - Eps Revision = 1.049  [contribucion SHAP: -0.076]\n  - Eps Surprise Pct = 23.950  [contribucion SHAP: -0.019]\n  - Ratio deuda / fondos propios = 0.421  [contribucion SHAP: -0.011]",
+          "top_drivers": [
+            {
+              "feature": "eps_revision",
+              "description": "Eps Revision",
+              "shap_value": -0.07556597541812449,
+              "raw_value": 1.0485436893203883,
+              "direction": "negative"
+            },
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.018875398502271143,
+              "raw_value": 23.95,
+              "direction": "negative"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.018311422541173628,
+              "raw_value": 0.9802873371199464,
+              "direction": "positive"
+            },
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.013921238897060553,
+              "raw_value": -0.04312449145646868,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.010530560076492626,
+              "raw_value": 0.4207513416815742,
+              "direction": "negative"
+            },
+            {
+              "feature": "liquidity_risk",
+              "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+              "shap_value": 0.002816657745047272,
+              "raw_value": 0.0,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "BBY — Score: 0.66 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.632  [contribucion SHAP: +0.507]\n  + VIX (volatilidad implícita de mercado) = 25.5  [contribucion SHAP: +0.106]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.276  [contribucion SHAP: +0.085]\n\nFactores EN CONTRA:\n  - Sector Finance = 0.000  [contribucion SHAP: -0.027]\n  - Score del Agente de Valoración (infravaloración) = 0.500  [contribucion SHAP: -0.025]\n  - Sector Oils-Energy = 0.000  [contribucion SHAP: -0.022]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.5066919671578077,
+              "raw_value": 0.6315829929922449,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.10564991313771441,
+              "raw_value": 25.51000022888184,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.0850705202570187,
+              "raw_value": 0.275886156104449,
+              "direction": "positive"
+            },
+            {
+              "feature": "sector_Finance",
+              "description": "Sector Finance",
+              "shap_value": -0.027424557865916355,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": -0.024547257086934088,
+              "raw_value": 0.49985416982809955,
+              "direction": "negative"
+            },
+            {
+              "feature": "sector_Oils-Energy",
+              "description": "Sector Oils-Energy",
+              "shap_value": -0.021558244646315006,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "NVDA": {
+      "score": 0.6408,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "NVDA — Score: 0.64 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = 0.1%  [contribucion SHAP: +0.010]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 8.750  [contribucion SHAP: -0.038]\n  - Cobertura de intereses (EBIT / intereses) = 27.30x  [contribucion SHAP: -0.014]\n  - Ratio deuda / fondos propios = 0.496  [contribucion SHAP: -0.012]\n  - Eps Revision = 0.174  [contribucion SHAP: -0.006]",
+          "top_drivers": [
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.03775473993052514,
+              "raw_value": 8.75,
+              "direction": "negative"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.01373051719393998,
+              "raw_value": 27.304347826086957,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.011853689808297528,
+              "raw_value": 0.4955884349124474,
+              "direction": "negative"
+            },
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.010481262414688155,
+              "raw_value": 0.0006395030147998693,
+              "direction": "positive"
+            },
+            {
+              "feature": "eps_revision",
+              "description": "Eps Revision",
+              "shap_value": -0.005716762019742059,
+              "raw_value": 0.1739130434782609,
+              "direction": "negative"
+            },
+            {
+              "feature": "revenue_decline",
+              "description": "Revenue Decline",
+              "shap_value": -0.0015902349356059133,
+              "raw_value": 1.0,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "NVDA — Score: 0.64 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.600  [contribucion SHAP: +0.638]\n  + VIX (volatilidad implícita de mercado) = 25.5  [contribucion SHAP: +0.106]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.279  [contribucion SHAP: +0.085]\n\nFactores EN CONTRA:\n  - Sector Finance = 0.000  [contribucion SHAP: -0.027]\n  - Score del Agente de Valoración (infravaloración) = 0.479  [contribucion SHAP: -0.025]\n  - Sector Oils-Energy = 0.000  [contribucion SHAP: -0.022]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.6375856779583271,
+              "raw_value": 0.5995047433311451,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.10564991313771441,
+              "raw_value": 25.51000022888184,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.0850705202570187,
+              "raw_value": 0.2793656905968725,
+              "direction": "positive"
+            },
+            {
+              "feature": "sector_Finance",
+              "description": "Sector Finance",
+              "shap_value": -0.027424557865916355,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": -0.024547257086934088,
+              "raw_value": 0.4791816355175183,
+              "direction": "negative"
+            },
+            {
+              "feature": "sector_Oils-Energy",
+              "description": "Sector Oils-Energy",
+              "shap_value": -0.022269213457109072,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "FDS": {
+      "score": 0.6376,
+      "label": "Outperform",
+      "agents": {
+        "bear": {
+          "text": "FDS — Score: 0.64 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = 223.6%  [contribucion SHAP: +0.011]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.16x  [contribucion SHAP: +0.010]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 10.580  [contribucion SHAP: -0.031]\n  - Ratio deuda / fondos propios = 1.261  [contribucion SHAP: -0.029]\n  - Cobertura de intereses (EBIT / intereses) = 12.01x  [contribucion SHAP: -0.016]\n  - Eps Revision = 0.128  [contribucion SHAP: -0.003]",
+          "top_drivers": [
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.031249940883286063,
+              "raw_value": 10.58,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.029294300724097604,
+              "raw_value": 1.261149642364842,
+              "direction": "negative"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.015677891451658457,
+              "raw_value": 12.013466368964554,
+              "direction": "negative"
+            },
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.010867872046323612,
+              "raw_value": 2.2355738104354486,
+              "direction": "positive"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.010128857654324553,
+              "raw_value": 2.1592751438072395,
+              "direction": "positive"
+            },
+            {
+              "feature": "eps_revision",
+              "description": "Eps Revision",
+              "shap_value": -0.0025759189093351675,
+              "raw_value": 0.1281249999999998,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "FDS — Score: 0.64 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.628  [contribucion SHAP: +0.498]\n  + VIX (volatilidad implícita de mercado) = 18.4  [contribucion SHAP: +0.106]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.269  [contribucion SHAP: +0.085]\n\nFactores EN CONTRA:\n  - Sector Finance = 0.000  [contribucion SHAP: -0.027]\n  - Score del Agente de Valoración (infravaloración) = 0.494  [contribucion SHAP: -0.025]\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.022]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.4976648415811745,
+              "raw_value": 0.6280101175036169,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.10564991313771441,
+              "raw_value": 18.350000381469727,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.0850705202570187,
+              "raw_value": 0.2686042725641098,
+              "direction": "positive"
+            },
+            {
+              "feature": "sector_Finance",
+              "description": "Sector Finance",
+              "shap_value": -0.027424557865916355,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": -0.024547257086934088,
+              "raw_value": 0.49402744361205864,
+              "direction": "negative"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.0219190215239833,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "MMM": {
+      "score": 0.2002,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "MMM — Score: 0.20 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = -8.2%  [contribucion SHAP: +0.015]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.54x  [contribucion SHAP: +0.007]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = -3.520  [contribucion SHAP: -0.046]\n  - Eps Revision = -0.092  [contribucion SHAP: -0.042]\n  - Ratio deuda / fondos propios = 1.079  [contribucion SHAP: -0.033]\n  - Deuda neta / EBITDA = 0.00x  [contribucion SHAP: -0.005]",
+          "top_drivers": [
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.04556608772534501,
+              "raw_value": -3.52,
+              "direction": "negative"
+            },
+            {
+              "feature": "eps_revision",
+              "description": "Eps Revision",
+              "shap_value": -0.0416620997714462,
+              "raw_value": -0.0923076923076924,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.03288485173568716,
+              "raw_value": 1.0791469194312795,
+              "direction": "negative"
+            },
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.01503525764691426,
+              "raw_value": -0.08201347693370964,
+              "direction": "positive"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.006530877929167423,
+              "raw_value": 1.5423711015436312,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": -0.005370648079215413,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "MMM — Score: 0.20 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.522  [contribucion SHAP: +0.782]\n  + VIX (volatilidad implícita de mercado) = 18.9  [contribucion SHAP: +0.106]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.266  [contribucion SHAP: +0.085]\n\nFactores EN CONTRA:\n  - Sector Finance = 0.000  [contribucion SHAP: -0.024]\n  - Score del Agente de Valoración (infravaloración) = 0.492  [contribucion SHAP: -0.023]\n  - Sector Oils-Energy = 0.000  [contribucion SHAP: -0.022]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.7824280634430487,
+              "raw_value": 0.5217903844896025,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.10564991313771441,
+              "raw_value": 18.90999984741211,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.0850705202570187,
+              "raw_value": 0.26567377080231086,
+              "direction": "positive"
+            },
+            {
+              "feature": "sector_Finance",
+              "description": "Sector Finance",
+              "shap_value": -0.02437955972323679,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": -0.023073325506411363,
+              "raw_value": 0.4922982659086465,
+              "direction": "negative"
+            },
+            {
+              "feature": "sector_Oils-Energy",
+              "description": "Sector Oils-Energy",
+              "shap_value": -0.022269213457109072,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "ODFL": {
+      "score": 0.2069,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "ODFL — Score: 0.21 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 0.27x  [contribucion SHAP: +0.033]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.76x  [contribucion SHAP: +0.010]\n\nFactores EN CONTRA:\n  - Eps Revision = -0.127  [contribucion SHAP: -0.058]\n  - Eps Surprise Pct = 9.140  [contribucion SHAP: -0.032]\n  - Ratio deuda / fondos propios = 0.027  [contribucion SHAP: -0.014]\n  - Cobertura de intereses (EBIT / intereses) = 166.83x  [contribucion SHAP: -0.014]",
+          "top_drivers": [
+            {
+              "feature": "eps_revision",
+              "description": "Eps Revision",
+              "shap_value": -0.05847725476246476,
+              "raw_value": -0.1270358306188924,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.032959818906970154,
+              "raw_value": 0.2676041633203765,
+              "direction": "positive"
+            },
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.03211001638078461,
+              "raw_value": 9.14,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.013718455212300116,
+              "raw_value": 0.027365253576799,
+              "direction": "negative"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.013547395643606436,
+              "raw_value": 166.8292774241857,
+              "direction": "negative"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.01035942449576049,
+              "raw_value": 1.7624619426832744,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "ODFL — Score: 0.21 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.321  [contribucion SHAP: +0.301]\n  + VIX (volatilidad implícita de mercado) = 18.9  [contribucion SHAP: +0.106]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.222  [contribucion SHAP: +0.084]\n\nFactores EN CONTRA:\n  - Score del Agente de Valoración (infravaloración) = 0.498  [contribucion SHAP: -0.032]\n  - Sector Oils-Energy = 0.000  [contribucion SHAP: -0.026]\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.026]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.3010380198651961,
+              "raw_value": 0.3212937561911942,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.10564991313771441,
+              "raw_value": 18.90999984741211,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.08378566678179472,
+              "raw_value": 0.22188440408675447,
+              "direction": "positive"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": -0.03224551662250691,
+              "raw_value": 0.4982872118085296,
+              "direction": "negative"
+            },
+            {
+              "feature": "sector_Oils-Energy",
+              "description": "Sector Oils-Energy",
+              "shap_value": -0.025962133797009568,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.025622731589564626,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "PH": {
+      "score": 0.2163,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "PH — Score: 0.22 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.28x  [contribucion SHAP: +0.018]\n  + Crecimiento de la deuda total interanual = 65.9%  [contribucion SHAP: +0.012]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 1.502  [contribucion SHAP: -0.034]\n  - Eps Surprise Pct = 6.720  [contribucion SHAP: -0.029]\n  - Cobertura de intereses (EBIT / intereses) = 4.24x  [contribucion SHAP: -0.014]\n  - Eps Revision = 0.070  [contribucion SHAP: -0.003]",
+          "top_drivers": [
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.03428896937226154,
+              "raw_value": 1.5019796504913612,
+              "direction": "negative"
+            },
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.029190875835018133,
+              "raw_value": 6.72,
+              "direction": "negative"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.017505696730157047,
+              "raw_value": 1.277307600392257,
+              "direction": "positive"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.014191936495999284,
+              "raw_value": 4.24031007751938,
+              "direction": "negative"
+            },
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.011553462810677307,
+              "raw_value": 0.6587668882505788,
+              "direction": "positive"
+            },
+            {
+              "feature": "eps_revision",
+              "description": "Eps Revision",
+              "shap_value": -0.0026024622132165445,
+              "raw_value": 0.0695443645083933,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "PH — Score: 0.22 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.295  [contribucion SHAP: +0.301]\n  + VIX (volatilidad implícita de mercado) = 18.9  [contribucion SHAP: +0.106]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.260  [contribucion SHAP: +0.084]\n\nFactores EN CONTRA:\n  - Score del Agente de Valoración (infravaloración) = 0.511  [contribucion SHAP: -0.032]\n  - Sector Oils-Energy = 0.000  [contribucion SHAP: -0.026]\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.026]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.3011585760455218,
+              "raw_value": 0.29461248674351326,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.10564991313771441,
+              "raw_value": 18.90999984741211,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.08379494033412746,
+              "raw_value": 0.2600353625663348,
+              "direction": "positive"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": -0.03237534635516531,
+              "raw_value": 0.5109877177055822,
+              "direction": "negative"
+            },
+            {
+              "feature": "sector_Oils-Energy",
+              "description": "Sector Oils-Energy",
+              "shap_value": -0.025962133797009568,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.025622731589564626,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "FICO": {
+      "score": 0.2385,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "FICO — Score: 0.24 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Ratio deuda / fondos propios = -2.395  [contribucion SHAP: +0.042]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.44x  [contribucion SHAP: +0.029]\n  + Crecimiento de la deuda total interanual = 17.6%  [contribucion SHAP: +0.015]\n  + Deuda neta / EBITDA = 13.91x  [contribucion SHAP: +0.009]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 1.920  [contribucion SHAP: -0.024]\n  - Cobertura de intereses (EBIT / intereses) = 6.07x  [contribucion SHAP: -0.010]",
+          "top_drivers": [
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": 0.042033282276659936,
+              "raw_value": -2.394561741439605,
+              "direction": "positive"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.029216208732788775,
+              "raw_value": 1.4371020992258894,
+              "direction": "positive"
+            },
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.024357089217496693,
+              "raw_value": 1.92,
+              "direction": "negative"
+            },
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.01540835645779185,
+              "raw_value": 0.17594771786061525,
+              "direction": "positive"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.009949393530113601,
+              "raw_value": 6.070087719298246,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.00877407577674318,
+              "raw_value": 13.905475554397167,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "FICO — Score: 0.24 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.326  [contribucion SHAP: +0.301]\n  + VIX (volatilidad implícita de mercado) = 18.9  [contribucion SHAP: +0.106]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.267  [contribucion SHAP: +0.084]\n\nFactores EN CONTRA:\n  - Score del Agente de Valoración (infravaloración) = 0.504  [contribucion SHAP: -0.032]\n  - Sector Oils-Energy = 0.000  [contribucion SHAP: -0.026]\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.026]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.3010380198651961,
+              "raw_value": 0.3264021541084193,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.10564991313771441,
+              "raw_value": 18.90999984741211,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.08378566678179472,
+              "raw_value": 0.26685574749486535,
+              "direction": "positive"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": -0.03224551662250691,
+              "raw_value": 0.5039617503944275,
+              "direction": "negative"
+            },
+            {
+              "feature": "sector_Oils-Energy",
+              "description": "Sector Oils-Energy",
+              "shap_value": -0.025962133797009568,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.025622731589564626,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "CHRW": {
+      "score": 0.2437,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "CHRW — Score: 0.24 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = 2.9%  [contribucion SHAP: +0.009]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.002]\n\nFactores EN CONTRA:\n  - Eps Revision = -0.364  [contribucion SHAP: -0.074]\n  - Eps Surprise Pct = -25.150  [contribucion SHAP: -0.042]\n  - Ratio deuda / fondos propios = 1.458  [contribucion SHAP: -0.030]\n  - Cobertura de intereses (EBIT / intereses) = 0.00x  [contribucion SHAP: -0.005]",
+          "top_drivers": [
+            {
+              "feature": "eps_revision",
+              "description": "Eps Revision",
+              "shap_value": -0.07366141394396934,
+              "raw_value": -0.3640552995391705,
+              "direction": "negative"
+            },
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.04208600564646676,
+              "raw_value": -25.15,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.03009689914204142,
+              "raw_value": 1.4583064262292176,
+              "direction": "negative"
+            },
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.008767122523395576,
+              "raw_value": 0.028694670051687465,
+              "direction": "positive"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.004863401727072543,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.0015238659548695453,
+              "raw_value": 0.0,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "CHRW — Score: 0.24 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.331  [contribucion SHAP: +0.301]\n  + VIX (volatilidad implícita de mercado) = 18.9  [contribucion SHAP: +0.106]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.275  [contribucion SHAP: +0.084]\n\nFactores EN CONTRA:\n  - Score del Agente de Valoración (infravaloración) = 0.508  [contribucion SHAP: -0.032]\n  - Sector Oils-Energy = 0.000  [contribucion SHAP: -0.026]\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.026]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.3010380198651961,
+              "raw_value": 0.3313654539972997,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.10564991313771441,
+              "raw_value": 18.90999984741211,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.08378566678179472,
+              "raw_value": 0.2749251208508748,
+              "direction": "positive"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": -0.03224551662250691,
+              "raw_value": 0.5076196975859103,
+              "direction": "negative"
+            },
+            {
+              "feature": "sector_Oils-Energy",
+              "description": "Sector Oils-Energy",
+              "shap_value": -0.025962133797009568,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.025622731589564626,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "MOS": {
+      "score": 0.2452,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "MOS — Score: 0.25 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = -15.4%  [contribucion SHAP: +0.017]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.18x  [contribucion SHAP: +0.005]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = -5.240  [contribucion SHAP: -0.057]\n  - Eps Revision = -0.158  [contribucion SHAP: -0.057]\n  - Ratio deuda / fondos propios = 0.297  [contribucion SHAP: -0.014]\n  - Deuda neta / EBITDA = 0.00x  [contribucion SHAP: -0.007]",
+          "top_drivers": [
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.05732030591300246,
+              "raw_value": -5.24,
+              "direction": "negative"
+            },
+            {
+              "feature": "eps_revision",
+              "description": "Eps Revision",
+              "shap_value": -0.0565731671747345,
+              "raw_value": -0.1584158415841584,
+              "direction": "negative"
+            },
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.017161723270557875,
+              "raw_value": -0.1540312032884903,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.014207543039400352,
+              "raw_value": 0.29703465581998,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": -0.007077851294873605,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.005391256134857901,
+              "raw_value": 1.1848277856084426,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "MOS — Score: 0.25 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.342  [contribucion SHAP: +0.301]\n  + VIX (volatilidad implícita de mercado) = 18.9  [contribucion SHAP: +0.106]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.266  [contribucion SHAP: +0.084]\n\nFactores EN CONTRA:\n  - Score del Agente de Valoración (infravaloración) = 0.520  [contribucion SHAP: -0.032]\n  - Sector Oils-Energy = 0.000  [contribucion SHAP: -0.026]\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.026]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.3011667940438938,
+              "raw_value": 0.34173323155947166,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.10564991313771441,
+              "raw_value": 18.90999984741211,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.08378566678179472,
+              "raw_value": 0.26554570741862554,
+              "direction": "positive"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": -0.03224551662250691,
+              "raw_value": 0.5202373565362799,
+              "direction": "negative"
+            },
+            {
+              "feature": "sector_Oils-Energy",
+              "description": "Sector Oils-Energy",
+              "shap_value": -0.026026520886358415,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.025622731589564626,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "ROK": {
+      "score": 0.249,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "ROK — Score: 0.25 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.03x  [contribucion SHAP: +0.008]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.005]\n\nFactores EN CONTRA:\n  - Eps Revision = -0.367  [contribucion SHAP: -0.062]\n  - Ratio deuda / fondos propios = 1.257  [contribucion SHAP: -0.027]\n  - Cobertura de intereses (EBIT / intereses) = 10.09x  [contribucion SHAP: -0.020]\n  - Eps Surprise Pct = 31.000  [contribucion SHAP: -0.012]",
+          "top_drivers": [
+            {
+              "feature": "eps_revision",
+              "description": "Eps Revision",
+              "shap_value": -0.06190492884355501,
+              "raw_value": -0.3670033670033671,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.02717463579294324,
+              "raw_value": 1.2571392863838031,
+              "direction": "negative"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.019684034291781595,
+              "raw_value": 10.090909090909092,
+              "direction": "negative"
+            },
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.012384709845904516,
+              "raw_value": 31.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.00751046885889572,
+              "raw_value": 1.0301064937144688,
+              "direction": "positive"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": 0.005241632953948299,
+              "raw_value": 0.0,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "ROK — Score: 0.25 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.314  [contribucion SHAP: +0.301]\n  + VIX (volatilidad implícita de mercado) = 18.9  [contribucion SHAP: +0.106]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.236  [contribucion SHAP: +0.084]\n\nFactores EN CONTRA:\n  - Score del Agente de Valoración (infravaloración) = 0.495  [contribucion SHAP: -0.032]\n  - Sector Oils-Energy = 0.000  [contribucion SHAP: -0.026]\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.026]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.3011585760455218,
+              "raw_value": 0.31369910464805445,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.10564991313771441,
+              "raw_value": 18.90999984741211,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.08379494033412746,
+              "raw_value": 0.23562744663298285,
+              "direction": "positive"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": -0.03237534635516531,
+              "raw_value": 0.4950682824914805,
+              "direction": "negative"
+            },
+            {
+              "feature": "sector_Oils-Energy",
+              "description": "Sector Oils-Energy",
+              "shap_value": -0.025962133797009568,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.025622731589564626,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "MAR": {
+      "score": 0.2515,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "MAR — Score: 0.25 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.45x  [contribucion SHAP: +0.022]\n  + Crecimiento de la deuda total interanual = -0.7%  [contribucion SHAP: +0.013]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 17.718  [contribucion SHAP: -0.043]\n  - Eps Surprise Pct = 7.040  [contribucion SHAP: -0.036]\n  - Cobertura de intereses (EBIT / intereses) = 9.32x  [contribucion SHAP: -0.018]\n  - Eps Revision = 0.089  [contribucion SHAP: -0.009]",
+          "top_drivers": [
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.042642141359191026,
+              "raw_value": 17.718309859154928,
+              "direction": "negative"
+            },
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": -0.03565379626139701,
+              "raw_value": 7.04,
+              "direction": "negative"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.022334047763316683,
+              "raw_value": 0.4514238997138575,
+              "direction": "positive"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.017946094600056618,
+              "raw_value": 9.317757009345794,
+              "direction": "negative"
+            },
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.013435271565067962,
+              "raw_value": -0.007299270072992692,
+              "direction": "positive"
+            },
+            {
+              "feature": "eps_revision",
+              "description": "Eps Revision",
+              "shap_value": -0.009014454228658045,
+              "raw_value": 0.0892857142857144,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "MAR — Score: 0.25 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.313  [contribucion SHAP: +0.301]\n  + VIX (volatilidad implícita de mercado) = 18.9  [contribucion SHAP: +0.106]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.361  [contribucion SHAP: +0.084]\n\nFactores EN CONTRA:\n  - Score del Agente de Valoración (infravaloración) = 0.479  [contribucion SHAP: -0.032]\n  - Sector Oils-Energy = 0.000  [contribucion SHAP: -0.026]\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.026]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.3011585760455218,
+              "raw_value": 0.3132742949532717,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.10564991313771441,
+              "raw_value": 18.90999984741211,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.08379494033412746,
+              "raw_value": 0.36133290939622875,
+              "direction": "positive"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": -0.03237534635516531,
+              "raw_value": 0.4791718123796324,
+              "direction": "negative"
+            },
+            {
+              "feature": "sector_Oils-Energy",
+              "description": "Sector Oils-Energy",
+              "shap_value": -0.025962133797009568,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.025622731589564626,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "DIS": {
+      "score": 0.2515,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "DIS — Score: 0.25 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = -10.6%  [contribucion SHAP: +0.027]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.99x  [contribucion SHAP: +0.023]\n\nFactores EN CONTRA:\n  - Eps Revision = 0.418  [contribucion SHAP: -0.023]\n  - Ratio deuda / fondos propios = 0.444  [contribucion SHAP: -0.018]\n  - Deuda neta / EBITDA = 70.42x  [contribucion SHAP: -0.016]\n  - Cobertura de intereses (EBIT / intereses) = 6.64x  [contribucion SHAP: -0.008]",
+          "top_drivers": [
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.026878857877881798,
+              "raw_value": -0.10631419493090966,
+              "direction": "positive"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.02322673020692106,
+              "raw_value": 0.9941632803841892,
+              "direction": "positive"
+            },
+            {
+              "feature": "eps_revision",
+              "description": "Eps Revision",
+              "shap_value": -0.023144134163946256,
+              "raw_value": 0.4181818181818182,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.018310952313318675,
+              "raw_value": 0.4443230037289443,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_to_ebitda",
+              "description": "Deuda neta / EBITDA",
+              "shap_value": -0.016461361868988347,
+              "raw_value": 70.41775836972343,
+              "direction": "negative"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.00843678231862071,
+              "raw_value": 6.6433333333333335,
+              "direction": "negative"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "DIS — Score: 0.25 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.408  [contribucion SHAP: +0.401]\n  + VIX (volatilidad implícita de mercado) = 18.9  [contribucion SHAP: +0.106]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.285  [contribucion SHAP: +0.085]\n\nFactores EN CONTRA:\n  - Score del Agente de Valoración (infravaloración) = 0.508  [contribucion SHAP: -0.032]\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.025]\n  - Sector Finance = 0.000  [contribucion SHAP: -0.024]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.40104403178125536,
+              "raw_value": 0.4079327105220926,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.10564991313771441,
+              "raw_value": 18.90999984741211,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.08491654168187174,
+              "raw_value": 0.2850942294685076,
+              "direction": "positive"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": -0.03188929213658278,
+              "raw_value": 0.5080743558166206,
+              "direction": "negative"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.024980431875544804,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "sector_Finance",
+              "description": "Sector Finance",
+              "shap_value": -0.02437955972323679,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    },
+    "EG": {
+      "score": 0.2534,
+      "label": "Underperform",
+      "agents": {
+        "bear": {
+          "text": "EG — Score: 0.25 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = 0.0%  [contribucion SHAP: +0.025]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.10x  [contribucion SHAP: +0.021]\n  + Eps Surprise Pct = 0.000  [contribucion SHAP: +0.002]\n\nFactores EN CONTRA:\n  - Cobertura de intereses (EBIT / intereses) = -210.89x  [contribucion SHAP: -0.019]\n  - Ratio deuda / fondos propios = 0.365  [contribucion SHAP: -0.015]\n  - Eps Revision = 0.000  [contribucion SHAP: -0.004]",
+          "top_drivers": [
+            {
+              "feature": "total_debt_yoy_growth",
+              "description": "Crecimiento de la deuda total interanual",
+              "shap_value": 0.025217061611191832,
+              "raw_value": 0.0,
+              "direction": "positive"
+            },
+            {
+              "feature": "current_ratio",
+              "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+              "shap_value": 0.02069039747555678,
+              "raw_value": 1.1049989241913505,
+              "direction": "positive"
+            },
+            {
+              "feature": "interest_coverage",
+              "description": "Cobertura de intereses (EBIT / intereses)",
+              "shap_value": -0.018779560058564976,
+              "raw_value": -210.88888888888889,
+              "direction": "negative"
+            },
+            {
+              "feature": "debt_equity",
+              "description": "Ratio deuda / fondos propios",
+              "shap_value": -0.015450434748513252,
+              "raw_value": 0.3653595545551475,
+              "direction": "negative"
+            },
+            {
+              "feature": "eps_revision",
+              "description": "Eps Revision",
+              "shap_value": -0.004133721761388998,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "eps_surprise_pct",
+              "description": "Eps Surprise Pct",
+              "shap_value": 0.002140485337455257,
+              "raw_value": 0.0,
+              "direction": "positive"
+            }
+          ]
+        },
+        "meta_learner": {
+          "text": "EG — Score: 0.25 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.315  [contribucion SHAP: +0.301]\n  + VIX (volatilidad implícita de mercado) = 18.9  [contribucion SHAP: +0.106]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.266  [contribucion SHAP: +0.084]\n\nFactores EN CONTRA:\n  - Score del Agente de Valoración (infravaloración) = 0.503  [contribucion SHAP: -0.032]\n  - Sector Oils-Energy = 0.000  [contribucion SHAP: -0.026]\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.026]",
+          "top_drivers": [
+            {
+              "feature": "momentum_score",
+              "description": "Score del Agente de Momentum (tendencia técnica)",
+              "shap_value": 0.3011585760455218,
+              "raw_value": 0.3145225960312025,
+              "direction": "positive"
+            },
+            {
+              "feature": "vix",
+              "description": "VIX (volatilidad implícita de mercado)",
+              "shap_value": 0.10564991313771441,
+              "raw_value": 18.90999984741211,
+              "direction": "positive"
+            },
+            {
+              "feature": "bear_score",
+              "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+              "shap_value": 0.08379494033412746,
+              "raw_value": 0.2658344894078654,
+              "direction": "positive"
+            },
+            {
+              "feature": "valuation_score",
+              "description": "Score del Agente de Valoración (infravaloración)",
+              "shap_value": -0.03237534635516531,
+              "raw_value": 0.5033243158695923,
+              "direction": "negative"
+            },
+            {
+              "feature": "sector_Oils-Energy",
+              "description": "Sector Oils-Energy",
+              "shap_value": -0.025962133797009568,
+              "raw_value": 0.0,
+              "direction": "negative"
+            },
+            {
+              "feature": "mom_minus_bear",
+              "description": "Mom Minus Bear",
+              "shap_value": -0.025622731589564626,
+              "raw_value": 0.0,
+              "direction": "negative"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "ticker": "KO",
+  "score": 0.282,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.05978065525569441,
+      "raw_value": 1.7695107011601932,
+      "direction": "negative"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": -0.014383184054334338,
+      "raw_value": -5511000000.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "KO — Score: 0.28 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 12.32x  [contribucion SHAP: +0.056]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.10x  [contribucion SHAP: +0.035]\n  + Acciones compradas netas por insiders (90 días) = 355968.000  [contribucion SHAP: +0.023]\n  + Proporción de ventas de insiders (>0.7 = red flag) = 0.35x  [contribucion SHAP: +0.011]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 1.770  [contribucion SHAP: -0.060]\n  - Fcf = -5511000000.000  [contribucion SHAP: -0.014]",
+  "top_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.05978065525569441,
+      "raw_value": 1.7695107011601932,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.05630488313783763,
+      "raw_value": 12.32396486825596,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.035424624298878375,
+      "raw_value": 1.099546370967742,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.023383664102408847,
+      "raw_value": 355968.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": -0.014383184054334338,
+      "raw_value": -5511000000.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": 0.01146588002294786,
+      "raw_value": 0.3476208740498992,
+      "direction": "positive"
+    }
+  ]
+}

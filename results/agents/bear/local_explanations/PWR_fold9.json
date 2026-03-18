@@ -1,0 +1,81 @@
+{
+  "ticker": "PWR",
+  "score": 0.7467,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.08006913457925484,
+      "raw_value": 0.4513274336283186,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.07244179361733374,
+      "raw_value": 0.9,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.021492709572165668,
+      "raw_value": 1.6798480418974144,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.009309837282552736,
+      "raw_value": 0.09216854057093382,
+      "direction": "negative"
+    }
+  ],
+  "text": "PWR — Score: 0.75 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 21.30x  [contribucion SHAP: +0.093]\n  + Cobertura de intereses (EBIT / intereses) = 5.77x  [contribucion SHAP: +0.018]\n\nFactores EN CONTRA:\n  - Eps Revision = 0.451  [contribucion SHAP: -0.080]\n  - Eps Surprise Pct = 0.900  [contribucion SHAP: -0.072]\n  - Ratio de liquidez corriente (activo / pasivo cte.) = 1.68x  [contribucion SHAP: -0.021]\n  - Crecimiento de la deuda total interanual = 9.2%  [contribucion SHAP: -0.009]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.09328112442808925,
+      "raw_value": 21.30184912796806,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.08006913457925484,
+      "raw_value": 0.4513274336283186,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.07244179361733374,
+      "raw_value": 0.9,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.021492709572165668,
+      "raw_value": 1.6798480418974144,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.01806089514732852,
+      "raw_value": 5.774437859694914,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.009309837282552736,
+      "raw_value": 0.09216854057093382,
+      "direction": "negative"
+    }
+  ]
+}

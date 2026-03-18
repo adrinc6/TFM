@@ -1,0 +1,81 @@
+{
+  "ticker": "MMM",
+  "score": 0.1791,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.036859476850811375,
+      "raw_value": 4.76,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.030380166469144668,
+      "raw_value": 3.293960558751027,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.004643031625773439,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.0039147101967719035,
+      "raw_value": -0.0128205128205127,
+      "direction": "negative"
+    }
+  ],
+  "text": "MMM — Score: 0.18 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = 0.6%  [contribucion SHAP: +0.012]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.07x  [contribucion SHAP: +0.009]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 4.760  [contribucion SHAP: -0.037]\n  - Ratio deuda / fondos propios = 3.294  [contribucion SHAP: -0.030]\n  - Deuda neta / EBITDA = 0.00x  [contribucion SHAP: -0.005]\n  - Eps Revision = -0.013  [contribucion SHAP: -0.004]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.036859476850811375,
+      "raw_value": 4.76,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.030380166469144668,
+      "raw_value": 3.293960558751027,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.011760218899366522,
+      "raw_value": 0.006022962544701693,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.009427707837733617,
+      "raw_value": 1.0707328234294309,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.004643031625773439,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.0039147101967719035,
+      "raw_value": -0.0128205128205127,
+      "direction": "negative"
+    }
+  ]
+}

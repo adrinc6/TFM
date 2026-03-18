@@ -1,0 +1,74 @@
+{
+  "ticker": "TSN",
+  "score": 0.3246,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.18841499656905109,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Finance",
+      "description": "Sector Finance",
+      "shap_value": -0.026611968007988103,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sp500_momentum_12m",
+      "description": "Momentum del S&P 500 a 12 meses",
+      "shap_value": -0.024200332694641835,
+      "raw_value": 0.2344882124491774,
+      "direction": "negative"
+    }
+  ],
+  "text": "TSN — Score: 0.32 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.407  [contribucion SHAP: +0.506]\n  + Sector Consumer Staples = 0.000  [contribucion SHAP: +0.032]\n  + Pendiente curva de tipos (10Y - 2Y) = 0.259  [contribucion SHAP: +0.024]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.188]\n  - Sector Finance = 0.000  [contribucion SHAP: -0.027]\n  - Momentum del S&P 500 a 12 meses = 23.4%  [contribucion SHAP: -0.024]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.5055153619437912,
+      "raw_value": 0.40745650679738904,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.18841499656905109,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Consumer Staples",
+      "description": "Sector Consumer Staples",
+      "shap_value": 0.03229027049373663,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Finance",
+      "description": "Sector Finance",
+      "shap_value": -0.026611968007988103,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sp500_momentum_12m",
+      "description": "Momentum del S&P 500 a 12 meses",
+      "shap_value": -0.024200332694641835,
+      "raw_value": 0.2344882124491774,
+      "direction": "negative"
+    },
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": 0.02413795110716907,
+      "raw_value": 0.259000301361084,
+      "direction": "positive"
+    }
+  ]
+}

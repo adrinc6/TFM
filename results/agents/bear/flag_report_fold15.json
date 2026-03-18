@@ -1,0 +1,62 @@
+{
+  "debt_growth_high": {
+    "activation_rate": 0.1554905490549055,
+    "description": "Deuda creciendo >20% YoY",
+    "threshold": 0.2,
+    "column": "total_debt_yoy_growth"
+  },
+  "debt_equity_high": {
+    "activation_rate": 0.08843384338433843,
+    "description": "Debt/Equity > 3",
+    "threshold": 3.0,
+    "column": "debt_equity"
+  },
+  "debt_ebitda_high": {
+    "activation_rate": 0.3094059405940594,
+    "description": "Debt/EBITDA > 6",
+    "threshold": 6.0,
+    "column": "debt_to_ebitda"
+  },
+  "fcf_negative": {
+    "activation_rate": 0.0,
+    "description": "FCF negativo",
+    "threshold": 0.0,
+    "column": "fcf"
+  },
+  "liquidity_risk": {
+    "activation_rate": 0.23964896489648965,
+    "description": "Current Ratio < 1",
+    "threshold": 1.0,
+    "column": "current_ratio"
+  },
+  "consecutive_losses": {
+    "activation_rate": 0.039603960396039604,
+    "description": "\u22652 trimestres con p\u00e9rdidas",
+    "threshold": 2.0,
+    "column": "consecutive_losses"
+  },
+  "revenue_decline": {
+    "activation_rate": 0.18271827182718273,
+    "description": "Ca\u00edda de revenue YoY",
+    "threshold": 1.0,
+    "column": "revenue_decline"
+  },
+  "low_coverage": {
+    "activation_rate": 0.07290729072907291,
+    "description": "Interest Coverage < 1.5",
+    "threshold": 1.5,
+    "column": "interest_coverage"
+  },
+  "insider_selling": {
+    "activation_rate": 0.0,
+    "description": "Insiders vendiendo >70%",
+    "threshold": 0.7,
+    "column": "insider_sell_ratio"
+  },
+  "eps_miss": {
+    "activation_rate": 0.059180918091809184,
+    "description": "EPS miss >5%",
+    "threshold": -5.0,
+    "column": "eps_surprise_pct"
+  }
+}

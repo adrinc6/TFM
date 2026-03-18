@@ -1,0 +1,74 @@
+{
+  "ticker": "ACN",
+  "score": 0.8121,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.031095919187973612,
+      "raw_value": 27.216450737514773,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.021186024571220877,
+      "raw_value": 0.1708733313038641,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.005043985248789162,
+      "raw_value": -0.1705882352941177,
+      "direction": "negative"
+    }
+  ],
+  "text": "ACN — Score: 0.81 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Fcf = 2682588000.000  [contribucion SHAP: +0.134]\n  + Deuda neta / EBITDA = 1.98x  [contribucion SHAP: +0.023]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.48x  [contribucion SHAP: +0.015]\n\nFactores EN CONTRA:\n  - Crecimiento de la deuda total interanual = 2721.6%  [contribucion SHAP: -0.031]\n  - Ratio deuda / fondos propios = 0.171  [contribucion SHAP: -0.021]\n  - Eps Revision = -0.171  [contribucion SHAP: -0.005]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.13446465430498472,
+      "raw_value": 2682588000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.031095919187973612,
+      "raw_value": 27.216450737514773,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.02280590051683333,
+      "raw_value": 1.9793289389098376,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.021186024571220877,
+      "raw_value": 0.1708733313038641,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.01507030640480119,
+      "raw_value": 1.4773571242393984,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.005043985248789162,
+      "raw_value": -0.1705882352941177,
+      "direction": "negative"
+    }
+  ]
+}

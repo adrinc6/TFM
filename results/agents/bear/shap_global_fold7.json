@@ -1,0 +1,78 @@
+{
+  "debt_to_ebitda": {
+    "shap_importance": 0.0438630795278272,
+    "description": "Deuda neta / EBITDA"
+  },
+  "current_ratio": {
+    "shap_importance": 0.023018088636471746,
+    "description": "Ratio de liquidez corriente (activo / pasivo cte.)"
+  },
+  "eps_surprise_pct": {
+    "shap_importance": 0.02013927876482744,
+    "description": "Eps Surprise Pct"
+  },
+  "interest_coverage": {
+    "shap_importance": 0.014521819428756823,
+    "description": "Cobertura de intereses (EBIT / intereses)"
+  },
+  "eps_revision": {
+    "shap_importance": 0.013150229510216603,
+    "description": "Eps Revision"
+  },
+  "debt_equity": {
+    "shap_importance": 0.010284865454332128,
+    "description": "Ratio deuda / fondos propios"
+  },
+  "total_debt_yoy_growth": {
+    "shap_importance": 0.006651368245047147,
+    "description": "Crecimiento de la deuda total interanual"
+  },
+  "debt_ebitda_high": {
+    "shap_importance": 0.005250556962402556,
+    "description": "Debt Ebitda High"
+  },
+  "liquidity_risk": {
+    "shap_importance": 0.003502464696873128,
+    "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)"
+  },
+  "debt_growth_high": {
+    "shap_importance": 0.0028421847369189007,
+    "description": "FLAG: Deuda creciendo >20% interanual"
+  },
+  "revenue_decline": {
+    "shap_importance": 0.0014062817808678436,
+    "description": "Revenue Decline"
+  },
+  "eps_miss": {
+    "shap_importance": 0.0009166980419565915,
+    "description": "Eps Miss"
+  },
+  "low_coverage": {
+    "shap_importance": 0.0007720849476669853,
+    "description": "FLAG: Cobertura intereses < 1.5x"
+  },
+  "consecutive_losses": {
+    "shap_importance": 0.0005282780573833347,
+    "description": "Trimestres consecutivos con pérdidas"
+  },
+  "debt_equity_high": {
+    "shap_importance": 0.0005039027277325836,
+    "description": "Debt Equity High"
+  },
+  "insider_net_shares_90d": {
+    "shap_importance": 0.0,
+    "description": "Acciones compradas netas por insiders (90 días)"
+  },
+  "insider_sell_ratio": {
+    "shap_importance": 0.0,
+    "description": "Proporción de ventas de insiders (>0.7 = red flag)"
+  },
+  "fcf_negative": {
+    "shap_importance": 0.0,
+    "description": "FLAG: FCF negativo"
+  },
+  "insider_selling": {
+    "shap_importance": 0.0,
+    "description": "FLAG: Insiders vendiendo >70% de operaciones"
+  }
+}

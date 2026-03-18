@@ -1,0 +1,74 @@
+{
+  "ticker": "JBHT",
+  "score": 0.3157,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.02390872490841977,
+      "raw_value": -5.05,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.022762033862511664,
+      "raw_value": 0.3680907110590222,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.017053239662260054,
+      "raw_value": 0.1418439716312058,
+      "direction": "negative"
+    }
+  ],
+  "text": "JBHT — Score: 0.32 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 962.67x  [contribucion SHAP: +0.033]\n  + Acciones compradas netas por insiders (90 días) = 45602.000  [contribucion SHAP: +0.023]\n  + Crecimiento de la deuda total interanual = -6.2%  [contribucion SHAP: +0.019]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = -5.050  [contribucion SHAP: -0.024]\n  - Ratio deuda / fondos propios = 0.368  [contribucion SHAP: -0.023]\n  - Eps Revision = 0.142  [contribucion SHAP: -0.017]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.03344667888482343,
+      "raw_value": 962.6723127035832,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.02390872490841977,
+      "raw_value": -5.05,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.023115619991663162,
+      "raw_value": 45602.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.022762033862511664,
+      "raw_value": 0.3680907110590222,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.019420272729961417,
+      "raw_value": -0.06241228170358126,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.017053239662260054,
+      "raw_value": 0.1418439716312058,
+      "direction": "negative"
+    }
+  ]
+}

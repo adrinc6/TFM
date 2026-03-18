@@ -1,0 +1,88 @@
+{
+  "ticker": "NKE",
+  "score": 0.1409,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.0648979043004003,
+      "raw_value": 44.16,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.025913086905342414,
+      "raw_value": 201.71428571428572,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.017366786841352285,
+      "raw_value": 0.649576766912119,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.011404453278831852,
+      "raw_value": 2.7267490573942186,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_ebitda_high",
+      "description": "Debt Ebitda High",
+      "shap_value": -0.0019470551502782077,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "NKE — Score: 0.14 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = 0.2%  [contribucion SHAP: +0.009]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 44.160  [contribucion SHAP: -0.065]\n  - Cobertura de intereses (EBIT / intereses) = 201.71x  [contribucion SHAP: -0.026]\n  - Ratio deuda / fondos propios = 0.650  [contribucion SHAP: -0.017]\n  - Ratio de liquidez corriente (activo / pasivo cte.) = 2.73x  [contribucion SHAP: -0.011]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.0648979043004003,
+      "raw_value": 44.16,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.025913086905342414,
+      "raw_value": 201.71428571428572,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.017366786841352285,
+      "raw_value": 0.649576766912119,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.011404453278831852,
+      "raw_value": 2.7267490573942186,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.008576004976482149,
+      "raw_value": 0.002229772775536265,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_ebitda_high",
+      "description": "Debt Ebitda High",
+      "shap_value": -0.0019470551502782077,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

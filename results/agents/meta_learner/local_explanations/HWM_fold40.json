@@ -1,0 +1,60 @@
+{
+  "ticker": "HWM",
+  "score": 0.5087,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.04000804407510102,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "HWM — Score: 0.51 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.364  [contribucion SHAP: +0.344]\n  + VIX (volatilidad implícita de mercado) = 19.8  [contribucion SHAP: +0.096]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.204  [contribucion SHAP: +0.028]\n  + Mom Minus Bear = 0.000  [contribucion SHAP: +0.023]\n\nFactores EN CONTRA:\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.040]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.34401406742968105,
+      "raw_value": 0.36402798583809926,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.09585366801535948,
+      "raw_value": 19.82999992370605,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.04000804407510102,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": 0.028303079856978504,
+      "raw_value": 0.20356354666716645,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": 0.02287594312916992,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "sp500_momentum_3m",
+      "description": "Momentum del S&P 500 a 3 meses",
+      "shap_value": 0.021318672688479232,
+      "raw_value": 0.0441856624907943,
+      "direction": "positive"
+    }
+  ]
+}

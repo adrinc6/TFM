@@ -1,0 +1,67 @@
+{
+  "ticker": "MU",
+  "score": 0.1777,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03683601873362169,
+      "raw_value": 2.09,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.011706065152882536,
+      "raw_value": -19524.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "MU — Score: 0.18 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Cobertura de intereses (EBIT / intereses) = 197.64x  [contribucion SHAP: +0.028]\n  + Deuda neta / EBITDA = 2.69x  [contribucion SHAP: +0.022]\n  + Fcf = 38000000.000  [contribucion SHAP: +0.009]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.72x  [contribucion SHAP: +0.008]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 2.090  [contribucion SHAP: -0.037]\n  - Acciones compradas netas por insiders (90 días) = -19524.000  [contribucion SHAP: -0.012]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03683601873362169,
+      "raw_value": 2.09,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.027558759393103757,
+      "raw_value": 197.63636363636363,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.02162342722376947,
+      "raw_value": 2.6893434823977165,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.011706065152882536,
+      "raw_value": -19524.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.00889146327710193,
+      "raw_value": 38000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.008417519639692946,
+      "raw_value": 2.716916250693289,
+      "direction": "positive"
+    }
+  ]
+}

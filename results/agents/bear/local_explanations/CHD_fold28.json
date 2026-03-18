@@ -1,0 +1,67 @@
+{
+  "ticker": "CHD",
+  "score": 0.331,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.020373347721869155,
+      "raw_value": 0.5055494404696386,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.015122713143235262,
+      "raw_value": 0.1323529411764705,
+      "direction": "negative"
+    }
+  ],
+  "text": "CHD — Score: 0.33 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = -8.4%  [contribucion SHAP: +0.020]\n  + Cobertura de intereses (EBIT / intereses) = 17.34x  [contribucion SHAP: +0.020]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.70x  [contribucion SHAP: +0.015]\n  + Proporción de ventas de insiders (>0.7 = red flag) = 0.87x  [contribucion SHAP: +0.010]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.506  [contribucion SHAP: -0.020]\n  - Eps Revision = 0.132  [contribucion SHAP: -0.015]",
+  "top_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.020373347721869155,
+      "raw_value": 0.5055494404696386,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.020157336920755182,
+      "raw_value": -0.08370739817123862,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.019697511448142198,
+      "raw_value": 17.344594594594593,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.015122713143235262,
+      "raw_value": 0.1323529411764705,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.014885914403917063,
+      "raw_value": 1.702712972110343,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": 0.009841031017434035,
+      "raw_value": 0.874863331966653,
+      "direction": "positive"
+    }
+  ]
+}

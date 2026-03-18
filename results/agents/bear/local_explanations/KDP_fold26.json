@@ -1,0 +1,74 @@
+{
+  "ticker": "KDP",
+  "score": 0.254,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.04741594395542719,
+      "raw_value": 0.6415872623025203,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.01038302649361052,
+      "raw_value": 0.17913729057690841,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.004593591612226628,
+      "raw_value": 0.1333333333333333,
+      "direction": "negative"
+    }
+  ],
+  "text": "KDP — Score: 0.25 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Acciones compradas netas por insiders (90 días) = 3619600.000  [contribucion SHAP: +0.020]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.49x  [contribucion SHAP: +0.007]\n  + Cobertura de intereses (EBIT / intereses) = 3.16x  [contribucion SHAP: +0.006]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.642  [contribucion SHAP: -0.047]\n  - Crecimiento de la deuda total interanual = 17.9%  [contribucion SHAP: -0.010]\n  - Eps Revision = 0.133  [contribucion SHAP: -0.005]",
+  "top_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.04741594395542719,
+      "raw_value": 0.6415872623025203,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.019916279705576096,
+      "raw_value": 3619600.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.01038302649361052,
+      "raw_value": 0.17913729057690841,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.007440757601199349,
+      "raw_value": 0.4942500309138123,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.0063517943272737385,
+      "raw_value": 3.161943319838057,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.004593591612226628,
+      "raw_value": 0.1333333333333333,
+      "direction": "negative"
+    }
+  ]
+}

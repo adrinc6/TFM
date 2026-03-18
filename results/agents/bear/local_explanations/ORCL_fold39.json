@@ -1,0 +1,88 @@
+{
+  "ticker": "ORCL",
+  "score": 0.6754,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": -0.0808691691211959,
+      "raw_value": -362000000.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.059859442580542266,
+      "raw_value": -120586.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.03703442496544582,
+      "raw_value": 3.70205951512203,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.018709912082131786,
+      "raw_value": 3.41,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.014137055516934333,
+      "raw_value": 0.1006711409395972,
+      "direction": "negative"
+    }
+  ],
+  "text": "ORCL — Score: 0.68 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 14.13x  [contribucion SHAP: +0.034]\n\nFactores EN CONTRA:\n  - Fcf = -362000000.000  [contribucion SHAP: -0.081]\n  - Acciones compradas netas por insiders (90 días) = -120586.000  [contribucion SHAP: -0.060]\n  - Ratio deuda / fondos propios = 3.702  [contribucion SHAP: -0.037]\n  - Eps Surprise Pct = 3.410  [contribucion SHAP: -0.019]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": -0.0808691691211959,
+      "raw_value": -362000000.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.059859442580542266,
+      "raw_value": -120586.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.03703442496544582,
+      "raw_value": 3.70205951512203,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.034211682946662776,
+      "raw_value": 14.128887513538604,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.018709912082131786,
+      "raw_value": 3.41,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.014137055516934333,
+      "raw_value": 0.1006711409395972,
+      "direction": "negative"
+    }
+  ]
+}

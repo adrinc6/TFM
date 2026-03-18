@@ -1,0 +1,74 @@
+{
+  "ticker": "RTX",
+  "score": 0.8319,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.1450652249065676,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.04594868273689812,
+      "raw_value": 0.49201717114249427,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Medical",
+      "description": "Sector Medical",
+      "shap_value": -0.04001824044945524,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "RTX — Score: 0.83 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.605  [contribucion SHAP: +0.748]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.122]\n  + Score del Agente Fundamental (salud financiera) = 0.535  [contribucion SHAP: +0.052]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.145]\n  - Score del Agente de Valoración (infravaloración) = 0.492  [contribucion SHAP: -0.046]\n  - Sector Medical = 0.000  [contribucion SHAP: -0.040]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.7481217008241885,
+      "raw_value": 0.6047740056439301,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.1450652249065676,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": 0.12204498253221495,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": 0.05195506590351378,
+      "raw_value": 0.5351019899050394,
+      "direction": "positive"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": -0.04594868273689812,
+      "raw_value": 0.49201717114249427,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Medical",
+      "description": "Sector Medical",
+      "shap_value": -0.04001824044945524,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

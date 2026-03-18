@@ -1,0 +1,52 @@
+{
+  "ticker": "DG",
+  "score": 0.6901,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [],
+  "text": "DG — Score: 0.69 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.581  [contribucion SHAP: +0.794]\n  + Mom Minus Bear = 0.000  [contribucion SHAP: +0.216]\n  + VIX (volatilidad implícita de mercado) = 25.5  [contribucion SHAP: +0.049]\n  + Sector Consumer Discretionary = 0.000  [contribucion SHAP: +0.034]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.7938770750962568,
+      "raw_value": 0.5806739903278288,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": 0.2157230093478219,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.04870242304019495,
+      "raw_value": 25.51000022888184,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Consumer Discretionary",
+      "description": "Sector Consumer Discretionary",
+      "shap_value": 0.03433753799063956,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Basic Materials",
+      "description": "Sector Basic Materials",
+      "shap_value": 0.028412603740306432,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": 0.027187274921902982,
+      "raw_value": -0.8980002403259277,
+      "direction": "positive"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "ticker": "CVX",
+  "score": 0.2998,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.009570622922252523,
+      "raw_value": 0.2001045783590704,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.00662905290299357,
+      "raw_value": 0.2710058661145618,
+      "direction": "negative"
+    }
+  ],
+  "text": "CVX — Score: 0.30 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 4864000000.000  [contribucion SHAP: +0.024]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.00x  [contribucion SHAP: +0.018]\n  + Deuda neta / EBITDA = 3.48x  [contribucion SHAP: +0.017]\n  + Eps Surprise Pct = -0.210  [contribucion SHAP: +0.012]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.200  [contribucion SHAP: -0.010]\n  - Crecimiento de la deuda total interanual = 27.1%  [contribucion SHAP: -0.007]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.023814879510522587,
+      "raw_value": 4864000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.01840768663853044,
+      "raw_value": 0.9960949837769548,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.016923460607700128,
+      "raw_value": 3.480628395936688,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": 0.011553238879516026,
+      "raw_value": -0.21,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.009570622922252523,
+      "raw_value": 0.2001045783590704,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.00662905290299357,
+      "raw_value": 0.2710058661145618,
+      "direction": "negative"
+    }
+  ]
+}

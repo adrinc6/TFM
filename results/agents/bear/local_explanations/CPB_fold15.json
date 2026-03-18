@@ -1,0 +1,81 @@
+{
+  "ticker": "CPB",
+  "score": 0.3049,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.029378816787597038,
+      "raw_value": 1.1737211113996364,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.027542820175801112,
+      "raw_value": 4.25,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.009799080164490314,
+      "raw_value": 6.934782608695652,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.008100120338353951,
+      "raw_value": 1.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "CPB — Score: 0.30 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = -1.1%  [contribucion SHAP: +0.009]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.01x  [contribucion SHAP: +0.007]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 1.174  [contribucion SHAP: -0.029]\n  - Eps Surprise Pct = 4.250  [contribucion SHAP: -0.028]\n  - Cobertura de intereses (EBIT / intereses) = 6.93x  [contribucion SHAP: -0.010]\n  - Revenue Decline = 1.000  [contribucion SHAP: -0.008]",
+  "top_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.029378816787597038,
+      "raw_value": 1.1737211113996364,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.027542820175801112,
+      "raw_value": 4.25,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.009799080164490314,
+      "raw_value": 6.934782608695652,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.008898615063873969,
+      "raw_value": -0.01094091903719907,
+      "direction": "positive"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.008100120338353951,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.007112388584440413,
+      "raw_value": 1.0068093385214008,
+      "direction": "positive"
+    }
+  ]
+}

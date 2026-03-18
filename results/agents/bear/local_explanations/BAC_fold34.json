@@ -1,0 +1,74 @@
+{
+  "ticker": "BAC",
+  "score": 0.5156,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": -0.07036111388110086,
+      "raw_value": -9132000000.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.03719281153944387,
+      "raw_value": 1.2059753203448609,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.036235576825080724,
+      "raw_value": -148391.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "BAC — Score: 0.52 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = -48.3%  [contribucion SHAP: +0.023]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.00x  [contribucion SHAP: +0.020]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.018]\n\nFactores EN CONTRA:\n  - Fcf = -9132000000.000  [contribucion SHAP: -0.070]\n  - Ratio deuda / fondos propios = 1.206  [contribucion SHAP: -0.037]\n  - Acciones compradas netas por insiders (90 días) = -148391.000  [contribucion SHAP: -0.036]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": -0.07036111388110086,
+      "raw_value": -9132000000.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.03719281153944387,
+      "raw_value": 1.2059753203448609,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.036235576825080724,
+      "raw_value": -148391.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.02283906655896577,
+      "raw_value": -0.4831125207257704,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.020135751802431507,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.017864348711693904,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

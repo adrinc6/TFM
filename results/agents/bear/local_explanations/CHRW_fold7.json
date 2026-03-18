@@ -1,0 +1,88 @@
+{
+  "ticker": "CHRW",
+  "score": 0.1614,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.018317738308210187,
+      "raw_value": 1.3559050751852484,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.01769409457166011,
+      "raw_value": 1.097283189070881,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.011606595398534038,
+      "raw_value": -0.1351606552169312,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.004541815241467833,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "liquidity_risk",
+      "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+      "shap_value": -0.002814566764242643,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "CHRW — Score: 0.16 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Eps Revision = -0.283  [contribucion SHAP: +0.020]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 1.356  [contribucion SHAP: -0.018]\n  - Ratio de liquidez corriente (activo / pasivo cte.) = 1.10x  [contribucion SHAP: -0.018]\n  - Crecimiento de la deuda total interanual = -13.5%  [contribucion SHAP: -0.012]\n  - Revenue Decline = 1.000  [contribucion SHAP: -0.005]",
+  "top_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.019631159793244646,
+      "raw_value": -0.2826086956521738,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.018317738308210187,
+      "raw_value": 1.3559050751852484,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.01769409457166011,
+      "raw_value": 1.097283189070881,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.011606595398534038,
+      "raw_value": -0.1351606552169312,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.004541815241467833,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "liquidity_risk",
+      "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+      "shap_value": -0.002814566764242643,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

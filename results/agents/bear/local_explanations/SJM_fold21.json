@@ -1,0 +1,74 @@
+{
+  "ticker": "SJM",
+  "score": 0.2842,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.0460165867207353,
+      "raw_value": 12.36,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.035395519763194494,
+      "raw_value": 0.9632916966003104,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.03311930262256363,
+      "raw_value": 1.0903919171117833,
+      "direction": "negative"
+    }
+  ],
+  "text": "SJM — Score: 0.28 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 28.18x  [contribucion SHAP: +0.044]\n  + Cobertura de intereses (EBIT / intereses) = 3.55x  [contribucion SHAP: +0.019]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.55x  [contribucion SHAP: +0.016]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 12.360  [contribucion SHAP: -0.046]\n  - Crecimiento de la deuda total interanual = 96.3%  [contribucion SHAP: -0.035]\n  - Ratio deuda / fondos propios = 1.090  [contribucion SHAP: -0.033]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.0460165867207353,
+      "raw_value": 12.36,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.04364221014997998,
+      "raw_value": 28.18296739853626,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.035395519763194494,
+      "raw_value": 0.9632916966003104,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.03311930262256363,
+      "raw_value": 1.0903919171117833,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.019455923395649485,
+      "raw_value": 3.551792828685259,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.016196873404179996,
+      "raw_value": 0.5528958554729012,
+      "direction": "positive"
+    }
+  ]
+}

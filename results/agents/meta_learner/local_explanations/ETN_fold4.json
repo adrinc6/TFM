@@ -1,0 +1,67 @@
+{
+  "ticker": "ETN",
+  "score": 0.2615,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.08473673678095493,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.022247150085754834,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "ETN — Score: 0.26 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.307  [contribucion SHAP: +0.288]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.106]\n  + Momentum del S&P 500 a 12 meses = 12.5%  [contribucion SHAP: +0.041]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.306  [contribucion SHAP: +0.040]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.085]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.022]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.28835467820707655,
+      "raw_value": 0.30684670469023057,
+      "direction": "positive"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": 0.10574562421180356,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.08473673678095493,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sp500_momentum_12m",
+      "description": "Momentum del S&P 500 a 12 meses",
+      "shap_value": 0.041191024726779574,
+      "raw_value": 0.1253544206334416,
+      "direction": "positive"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": 0.039979434033836844,
+      "raw_value": 0.30582834799619774,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.022247150085754834,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

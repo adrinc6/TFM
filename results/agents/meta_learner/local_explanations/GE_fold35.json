@@ -1,0 +1,67 @@
+{
+  "ticker": "GE",
+  "score": 0.6084,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.08812501305448134,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.04817816970536768,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "GE — Score: 0.61 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.449  [contribucion SHAP: +0.455]\n  + VIX (volatilidad implícita de mercado) = 14.8  [contribucion SHAP: +0.333]\n  + Score del Agente Fundamental (salud financiera) = 0.505  [contribucion SHAP: +0.154]\n  + Momentum del S&P 500 a 3 meses = 9.8%  [contribucion SHAP: +0.053]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.088]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.048]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.45540303493523043,
+      "raw_value": 0.44926297370460117,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.3328032591554178,
+      "raw_value": 14.829999923706056,
+      "direction": "positive"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": 0.15425256198861026,
+      "raw_value": 0.5045722424983978,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.08812501305448134,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sp500_momentum_3m",
+      "description": "Momentum del S&P 500 a 3 meses",
+      "shap_value": 0.05289433542264485,
+      "raw_value": 0.0977432556369719,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.04817816970536768,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

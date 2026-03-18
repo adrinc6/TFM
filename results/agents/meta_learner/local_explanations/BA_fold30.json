@@ -1,0 +1,74 @@
+{
+  "ticker": "BA",
+  "score": 0.7195,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.17089548953923317,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": -0.1469205558256162,
+      "raw_value": 17.829999923706055,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.04468809992620474,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "BA — Score: 0.72 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.649  [contribucion SHAP: +0.578]\n  + Score del Agente Fundamental (salud financiera) = 0.492  [contribucion SHAP: +0.062]\n  + Sector Medical = 0.000  [contribucion SHAP: +0.052]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.171]\n  - VIX (volatilidad implícita de mercado) = 17.8  [contribucion SHAP: -0.147]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.045]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.5784711613832009,
+      "raw_value": 0.6490578604291308,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.17089548953923317,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": -0.1469205558256162,
+      "raw_value": 17.829999923706055,
+      "direction": "negative"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": 0.06192588022636214,
+      "raw_value": 0.4923138419787089,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Medical",
+      "description": "Sector Medical",
+      "shap_value": 0.05177801616310031,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.04468809992620474,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

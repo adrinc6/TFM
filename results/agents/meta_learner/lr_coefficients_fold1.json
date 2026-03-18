@@ -1,0 +1,34 @@
+{
+  "positive_drivers": {
+    "momentum_score": 0.5740404284124919,
+    "mom_minus_bear": 0.4842832340484164,
+    "fundamental_score": 0.23076838178332276,
+    "sp500_momentum_12m": 0.2248704253678938,
+    "sector_Oils-Energy": 0.19782636794451683,
+    "sector_Finance": 0.11681554476272712,
+    "bear_score": 0.09886275773431887,
+    "sector_Basic Materials": 0.09524284296938024,
+    "sector_Unknown": 0.06427440660343385,
+    "sector_Retail-Wholesale": 0.05241743100147428,
+    "sector_Business Services": 0.044974242831316846,
+    "sector_Construction": 0.01765555248521922
+  },
+  "negative_drivers": {
+    "vix": -0.001894235247016487,
+    "sector_Utilities": -0.019133071186644295,
+    "sector_Transportation": -0.02394207076600855,
+    "sector_Consumer Staples": -0.027840275977116,
+    "sp500_momentum_3m": -0.032532741688391875,
+    "valuation_score": -0.036726774707796395,
+    "sector_Aerospace": -0.04053516193762254,
+    "sector_Auto-Tires-Trucks": -0.046717664116528335,
+    "sector_Computer And Technology": -0.050264669587881,
+    "sector_Conglomerates": -0.06621182369843744,
+    "sector_Medical": -0.0839780817213198,
+    "sector_Industrial Products": -0.08895991600127279,
+    "sector_Consumer Discretionary": -0.10085852085848168,
+    "yield_curve": -0.14657966591780658,
+    "fund_x_val": -0.15657905793594182
+  },
+  "interpretation": "Coeficientes positivos \u2192 contribuyen a Outperform"
+}

@@ -1,0 +1,74 @@
+{
+  "ticker": "MDT",
+  "score": 0.2439,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.04751724043992613,
+      "raw_value": 0.589729774535809,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.02046111997525578,
+      "raw_value": 2.6,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.007726980808076727,
+      "raw_value": 0.1372282608695652,
+      "direction": "negative"
+    }
+  ],
+  "text": "MDT — Score: 0.24 (Underperform, confianza alta)\n\nFactores a FAVOR:\n  + Fcf = 2069000000.000  [contribucion SHAP: +0.092]\n  + Deuda neta / EBITDA = 10.79x  [contribucion SHAP: +0.035]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.85x  [contribucion SHAP: +0.014]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.590  [contribucion SHAP: -0.048]\n  - Eps Surprise Pct = 2.600  [contribucion SHAP: -0.020]\n  - Crecimiento de la deuda total interanual = 13.7%  [contribucion SHAP: -0.008]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.09164231624801762,
+      "raw_value": 2069000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.04751724043992613,
+      "raw_value": 0.589729774535809,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.035374855693306305,
+      "raw_value": 10.791808873720136,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.02046111997525578,
+      "raw_value": 2.6,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.013650958859891711,
+      "raw_value": 1.849056603773585,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.007726980808076727,
+      "raw_value": 0.1372282608695652,
+      "direction": "negative"
+    }
+  ]
+}

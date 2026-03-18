@@ -1,0 +1,67 @@
+{
+  "ticker": "MMM",
+  "score": 0.5406,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.015486797985549665,
+      "raw_value": 1.1780544296467863,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.013964235067277612,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "MMM — Score: 0.54 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.47x  [contribucion SHAP: +0.030]\n  + Cobertura de intereses (EBIT / intereses) = 0.00x  [contribucion SHAP: +0.008]\n  + FLAG: Ratio corriente < 1 (riesgo liquidez) = 0.000  [contribucion SHAP: +0.007]\n  + Revenue Decline = 1.000  [contribucion SHAP: +0.004]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 1.178  [contribucion SHAP: -0.015]\n  - Deuda neta / EBITDA = 0.00x  [contribucion SHAP: -0.014]",
+  "top_drivers": [
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.030104307909360334,
+      "raw_value": 1.4666531932093776,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.015486797985549665,
+      "raw_value": 1.1780544296467863,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.013964235067277612,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.007797640219693977,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "liquidity_risk",
+      "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+      "shap_value": 0.006563889038680015,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": 0.003784776505374176,
+      "raw_value": 1.0,
+      "direction": "positive"
+    }
+  ]
+}

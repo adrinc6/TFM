@@ -1,0 +1,95 @@
+{
+  "ticker": "CRH",
+  "score": 0.455,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.0614445409121943,
+      "raw_value": 1.5776053215077606,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.011907999307191212,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.006574431304679645,
+      "raw_value": 0.4440932080924855,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.0059650371032438755,
+      "raw_value": 1.47,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_ebitda_high",
+      "description": "Debt Ebitda High",
+      "shap_value": -0.0044128692834355,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.0043482135181270466,
+      "raw_value": -0.07317073170731707,
+      "direction": "negative"
+    }
+  ],
+  "text": "CRH — Score: 0.45 (Underperform, confianza moderada)\n\n\nFactores EN CONTRA:\n  - Ratio de liquidez corriente (activo / pasivo cte.) = 1.58x  [contribucion SHAP: -0.061]\n  - Eps Revision = 0.000  [contribucion SHAP: -0.012]\n  - Ratio deuda / fondos propios = 0.444  [contribucion SHAP: -0.007]\n  - Eps Surprise Pct = 1.470  [contribucion SHAP: -0.006]",
+  "top_drivers": [
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.0614445409121943,
+      "raw_value": 1.5776053215077606,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.011907999307191212,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.006574431304679645,
+      "raw_value": 0.4440932080924855,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.0059650371032438755,
+      "raw_value": 1.47,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_ebitda_high",
+      "description": "Debt Ebitda High",
+      "shap_value": -0.0044128692834355,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.0043482135181270466,
+      "raw_value": -0.07317073170731707,
+      "direction": "negative"
+    }
+  ]
+}

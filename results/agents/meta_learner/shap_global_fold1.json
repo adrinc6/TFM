@@ -1,0 +1,82 @@
+{
+  "vix": {
+    "shap_importance": 0.3289213205341067,
+    "description": "VIX (volatilidad implícita de mercado)"
+  },
+  "bear_score": {
+    "shap_importance": 0.3237607778926588,
+    "description": "Score del Agente Bear (riesgo, <0.5 es bueno)"
+  },
+  "momentum_score": {
+    "shap_importance": 0.3142862468009686,
+    "description": "Score del Agente de Momentum (tendencia técnica)"
+  },
+  "yield_curve": {
+    "shap_importance": 0.13528273398431523,
+    "description": "Pendiente curva de tipos (10Y - 2Y)"
+  },
+  "fund_x_val": {
+    "shap_importance": 0.08373641348807136,
+    "description": "Fund X Val"
+  },
+  "mom_minus_bear": {
+    "shap_importance": 0.04899562773007654,
+    "description": "Mom Minus Bear"
+  },
+  "sp500_momentum_3m": {
+    "shap_importance": 0.04600196823009226,
+    "description": "Momentum del S&P 500 a 3 meses"
+  },
+  "valuation_score": {
+    "shap_importance": 0.043607920019978194,
+    "description": "Score del Agente de Valoración (infravaloración)"
+  },
+  "sp500_momentum_12m": {
+    "shap_importance": 0.0342686716791068,
+    "description": "Momentum del S&P 500 a 12 meses"
+  },
+  "sector_Computer And Technology": {
+    "shap_importance": 0.029705344890696653,
+    "description": "Sector Computer And Technology"
+  },
+  "sector_Medical": {
+    "shap_importance": 0.02681660870539595,
+    "description": "Sector Medical"
+  },
+  "fundamental_score": {
+    "shap_importance": 0.02360150513697419,
+    "description": "Score del Agente Fundamental (salud financiera)"
+  },
+  "sector_Oils-Energy": {
+    "shap_importance": 0.020192761154471554,
+    "description": "Sector Oils-Energy"
+  },
+  "sector_Consumer Discretionary": {
+    "shap_importance": 0.015341253071180663,
+    "description": "Sector Consumer Discretionary"
+  },
+  "sector_Finance": {
+    "shap_importance": 0.012709971373406272,
+    "description": "Sector Finance"
+  },
+  "sector_Basic Materials": {
+    "shap_importance": 0.005624572927198947,
+    "description": "Sector Basic Materials"
+  },
+  "sector_Aerospace": {
+    "shap_importance": 0.0023862192360496956,
+    "description": "Sector Aerospace"
+  },
+  "sector_Consumer Staples": {
+    "shap_importance": 0.002230301537683791,
+    "description": "Sector Consumer Staples"
+  },
+  "sector_Construction": {
+    "shap_importance": 0.001831189780907764,
+    "description": "Sector Construction"
+  },
+  "sector_Transportation": {
+    "shap_importance": 0.0013896053024921489,
+    "description": "Sector Transportation"
+  }
+}

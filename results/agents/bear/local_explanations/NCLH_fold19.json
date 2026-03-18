@@ -1,0 +1,67 @@
+{
+  "ticker": "NCLH",
+  "score": 0.3059,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.05100357912012475,
+      "raw_value": 19.38814195832546,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.004775637405338884,
+      "raw_value": 0.024256440911566868,
+      "direction": "negative"
+    }
+  ],
+  "text": "NCLH — Score: 0.31 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Eps Revision = 2.182  [contribucion SHAP: +0.068]\n  + Deuda neta / EBITDA = 112.78x  [contribucion SHAP: +0.053]\n  + Acciones compradas netas por insiders (90 días) = 13778.000  [contribucion SHAP: +0.046]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.24x  [contribucion SHAP: +0.015]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 19.388  [contribucion SHAP: -0.051]\n  - Crecimiento de la deuda total interanual = 2.4%  [contribucion SHAP: -0.005]",
+  "top_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.06774443776993141,
+      "raw_value": 2.1818181818181817,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.05268758093126855,
+      "raw_value": 112.78123636241564,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.05100357912012475,
+      "raw_value": 19.38814195832546,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.04603310527232793,
+      "raw_value": 13778.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.014885102161081914,
+      "raw_value": 0.2385230684259493,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.004775637405338884,
+      "raw_value": 0.024256440911566868,
+      "direction": "negative"
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "ticker": "NKE",
+  "score": 0.7203,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.026105206177588693,
+      "raw_value": -179785.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.011472325772916653,
+      "raw_value": 0.63968015992004,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.011017005930106957,
+      "raw_value": 85.38,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.008847655962620687,
+      "raw_value": 43.77777777777778,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_ebitda_high",
+      "description": "Debt Ebitda High",
+      "shap_value": -0.003392948359288511,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "NKE — Score: 0.72 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.19x  [contribucion SHAP: +0.015]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -179785.000  [contribucion SHAP: -0.026]\n  - Ratio deuda / fondos propios = 0.640  [contribucion SHAP: -0.011]\n  - Eps Surprise Pct = 85.380  [contribucion SHAP: -0.011]\n  - Cobertura de intereses (EBIT / intereses) = 43.78x  [contribucion SHAP: -0.009]",
+  "top_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.026105206177588693,
+      "raw_value": -179785.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.014765513566768806,
+      "raw_value": 2.1927292167869554,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.011472325772916653,
+      "raw_value": 0.63968015992004,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.011017005930106957,
+      "raw_value": 85.38,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.008847655962620687,
+      "raw_value": 43.77777777777778,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_ebitda_high",
+      "description": "Debt Ebitda High",
+      "shap_value": -0.003392948359288511,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

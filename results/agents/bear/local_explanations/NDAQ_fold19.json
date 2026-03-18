@@ -1,0 +1,74 @@
+{
+  "ticker": "NDAQ",
+  "score": 0.7329,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.07014708600349041,
+      "raw_value": 0.8981481481481481,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.015765055043550982,
+      "raw_value": -0.013592428513894528,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.010941782084662234,
+      "raw_value": -42784575.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "NDAQ — Score: 0.73 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 29.69x  [contribucion SHAP: +0.074]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.94x  [contribucion SHAP: +0.029]\n  + Cobertura de intereses (EBIT / intereses) = 5.03x  [contribucion SHAP: +0.016]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.898  [contribucion SHAP: -0.070]\n  - Crecimiento de la deuda total interanual = -1.4%  [contribucion SHAP: -0.016]\n  - Acciones compradas netas por insiders (90 días) = -42784575.000  [contribucion SHAP: -0.011]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.07427753966402852,
+      "raw_value": 29.687878787878788,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.07014708600349041,
+      "raw_value": 0.8981481481481481,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.028789027610176522,
+      "raw_value": 0.9381337440636632,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.015765055043550982,
+      "raw_value": -0.013592428513894528,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.015541617754913155,
+      "raw_value": 5.03125,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.010941782084662234,
+      "raw_value": -42784575.0,
+      "direction": "negative"
+    }
+  ]
+}

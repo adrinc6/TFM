@@ -1,0 +1,74 @@
+{
+  "ticker": "CVNA",
+  "score": 0.6439,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.021171435800349594,
+      "raw_value": 164.98,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.01114975516472352,
+      "raw_value": 4.096,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.006515868950312266,
+      "raw_value": -4.428571428571428,
+      "direction": "negative"
+    }
+  ],
+  "text": "CVNA — Score: 0.64 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Crecimiento de la deuda total interanual = -10.2%  [contribucion SHAP: +0.014]\n  + Acciones compradas netas por insiders (90 días) = 0.000  [contribucion SHAP: +0.008]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 3.64x  [contribucion SHAP: +0.007]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 164.980  [contribucion SHAP: -0.021]\n  - Ratio deuda / fondos propios = 4.096  [contribucion SHAP: -0.011]\n  - Eps Revision = -4.429  [contribucion SHAP: -0.007]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.021171435800349594,
+      "raw_value": 164.98,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.013694138776474397,
+      "raw_value": -0.10218396301610078,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.01114975516472352,
+      "raw_value": 4.096,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.008388025780707792,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.007404091365440514,
+      "raw_value": 3.6390134529147984,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.006515868950312266,
+      "raw_value": -4.428571428571428,
+      "direction": "negative"
+    }
+  ]
+}

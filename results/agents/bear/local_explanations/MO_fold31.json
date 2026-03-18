@@ -1,0 +1,60 @@
+{
+  "ticker": "MO",
+  "score": 0.3594,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.0233655646192667,
+      "raw_value": 3.63,
+      "direction": "negative"
+    }
+  ],
+  "text": "MO — Score: 0.36 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 2682000000.000  [contribucion SHAP: +0.110]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.57x  [contribucion SHAP: +0.031]\n  + Deuda neta / EBITDA = 9.54x  [contribucion SHAP: +0.015]\n  + Ratio deuda / fondos propios = -7.532  [contribucion SHAP: +0.012]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 3.630  [contribucion SHAP: -0.023]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.11015513263910566,
+      "raw_value": 2682000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.030629992073470377,
+      "raw_value": 0.5706241201313937,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.0233655646192667,
+      "raw_value": 3.63,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.014972769303984433,
+      "raw_value": 9.538433382137628,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": 0.012292861067622205,
+      "raw_value": -7.53150289017341,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.008496196896846806,
+      "raw_value": 361087.0,
+      "direction": "positive"
+    }
+  ]
+}

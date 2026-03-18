@@ -1,0 +1,60 @@
+{
+  "ticker": "DAY",
+  "score": 0.3261,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03417755093236036,
+      "raw_value": 5.51,
+      "direction": "negative"
+    }
+  ],
+  "text": "DAY — Score: 0.33 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 19500000.000  [contribucion SHAP: +0.067]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.02x  [contribucion SHAP: +0.027]\n  + Deuda neta / EBITDA = 14.31x  [contribucion SHAP: +0.019]\n  + Acciones compradas netas por insiders (90 días) = 415031.000  [contribucion SHAP: +0.014]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 5.510  [contribucion SHAP: -0.034]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.06657958240418539,
+      "raw_value": 19500000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03417755093236036,
+      "raw_value": 5.51,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.026651627042669098,
+      "raw_value": 1.021135808814082,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.019440156136287103,
+      "raw_value": 14.307420494699649,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.014293169718923266,
+      "raw_value": 415031.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.011455839126313717,
+      "raw_value": 0.2222222222222223,
+      "direction": "positive"
+    }
+  ]
+}

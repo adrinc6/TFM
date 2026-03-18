@@ -1,0 +1,60 @@
+{
+  "ticker": "WYNN",
+  "score": 0.2819,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": -0.12249413116464357,
+      "raw_value": 0.37631523340008277,
+      "direction": "negative"
+    }
+  ],
+  "text": "WYNN — Score: 0.28 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Mom Minus Bear = 0.000  [contribucion SHAP: +0.127]\n  + Fund X Val = 0.000  [contribucion SHAP: +0.116]\n  + VIX (volatilidad implícita de mercado) = 14.2  [contribucion SHAP: +0.082]\n  + Score del Agente Fundamental (salud financiera) = 0.424  [contribucion SHAP: +0.062]\n\nFactores EN CONTRA:\n  - Score del Agente de Momentum (tendencia técnica) = 0.376  [contribucion SHAP: -0.122]",
+  "top_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": 0.1270986469305332,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": -0.12249413116464357,
+      "raw_value": 0.37631523340008277,
+      "direction": "negative"
+    },
+    {
+      "feature": "fund_x_val",
+      "description": "Fund X Val",
+      "shap_value": 0.11646532688614186,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.08218992219685503,
+      "raw_value": 14.15999984741211,
+      "direction": "positive"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": 0.062123056307256626,
+      "raw_value": 0.4239174524943034,
+      "direction": "positive"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": 0.05914609091109263,
+      "raw_value": 0.5047972934091826,
+      "direction": "positive"
+    }
+  ]
+}

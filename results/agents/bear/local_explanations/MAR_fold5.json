@@ -1,0 +1,67 @@
+{
+  "ticker": "MAR",
+  "score": 0.3008,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.06959907080960687,
+      "raw_value": 7.04,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.011483461134216612,
+      "raw_value": 0.0892857142857144,
+      "direction": "negative"
+    }
+  ],
+  "text": "MAR — Score: 0.30 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Cobertura de intereses (EBIT / intereses) = 9.32x  [contribucion SHAP: +0.027]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.45x  [contribucion SHAP: +0.018]\n  + Deuda neta / EBITDA = 10.58x  [contribucion SHAP: +0.012]\n  + Ratio deuda / fondos propios = 17.718  [contribucion SHAP: +0.003]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 7.040  [contribucion SHAP: -0.070]\n  - Eps Revision = 0.089  [contribucion SHAP: -0.011]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.06959907080960687,
+      "raw_value": 7.04,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.027375085411006812,
+      "raw_value": 9.317757009345794,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.0178894073322192,
+      "raw_value": 0.4514238997138575,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.012270315647979216,
+      "raw_value": 10.58254468980021,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.011483461134216612,
+      "raw_value": 0.0892857142857144,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": 0.003458935676842734,
+      "raw_value": 17.718309859154928,
+      "direction": "positive"
+    }
+  ]
+}

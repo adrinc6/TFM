@@ -1,0 +1,81 @@
+{
+  "ticker": "TJX",
+  "score": 0.3491,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.1517388505705008,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": -0.1506017201017455,
+      "raw_value": 20.81999969482422,
+      "direction": "negative"
+    },
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": -0.049816972586082954,
+      "raw_value": 0.184000015258789,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.04468809992620474,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "TJX — Score: 0.35 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.361  [contribucion SHAP: +0.364]\n  + Score del Agente Fundamental (salud financiera) = 0.503  [contribucion SHAP: +0.069]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.152]\n  - VIX (volatilidad implícita de mercado) = 20.8  [contribucion SHAP: -0.151]\n  - Pendiente curva de tipos (10Y - 2Y) = 0.184  [contribucion SHAP: -0.050]\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.045]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.36395604929424386,
+      "raw_value": 0.36139900435577177,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.1517388505705008,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": -0.1506017201017455,
+      "raw_value": 20.81999969482422,
+      "direction": "negative"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": 0.06864812853184578,
+      "raw_value": 0.5034139851729075,
+      "direction": "positive"
+    },
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": -0.049816972586082954,
+      "raw_value": 0.184000015258789,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.04468809992620474,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

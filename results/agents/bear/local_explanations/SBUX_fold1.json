@@ -1,0 +1,74 @@
+{
+  "ticker": "SBUX",
+  "score": 0.7016,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.023815972626407684,
+      "raw_value": 9.800520381613183,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.0012874277419620732,
+      "raw_value": -1.7497130279398363,
+      "direction": "negative"
+    },
+    {
+      "feature": "consecutive_losses",
+      "description": "Trimestres consecutivos con pérdidas",
+      "shap_value": -0.0011131571484931343,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "SBUX — Score: 0.70 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.81x  [contribucion SHAP: +0.020]\n  + Deuda neta / EBITDA = 19.35x  [contribucion SHAP: +0.009]\n  + Crecimiento de la deuda total interanual = -7.1%  [contribucion SHAP: +0.007]\n\nFactores EN CONTRA:\n  - Cobertura de intereses (EBIT / intereses) = 9.80x  [contribucion SHAP: -0.024]\n  - Ratio deuda / fondos propios = -1.750  [contribucion SHAP: -0.001]\n  - Trimestres consecutivos con pérdidas = 0.000  [contribucion SHAP: -0.001]",
+  "top_drivers": [
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.023815972626407684,
+      "raw_value": 9.800520381613183,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.02015189275341401,
+      "raw_value": 0.8132517290259331,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.00860620806026209,
+      "raw_value": 19.352879581151832,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.006645662289974315,
+      "raw_value": -0.07102870678118378,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.0012874277419620732,
+      "raw_value": -1.7497130279398363,
+      "direction": "negative"
+    },
+    {
+      "feature": "consecutive_losses",
+      "description": "Trimestres consecutivos con pérdidas",
+      "shap_value": -0.0011131571484931343,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

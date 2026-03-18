@@ -1,0 +1,81 @@
+{
+  "ticker": "UBER",
+  "score": 0.8702,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03179700011611923,
+      "raw_value": 292.32,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.02895431459411847,
+      "raw_value": 0.4166666666666667,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.011960660996838558,
+      "raw_value": 0.1759027529495889,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.004621439938265631,
+      "raw_value": 1.3556166701925112,
+      "direction": "negative"
+    }
+  ],
+  "text": "UBER — Score: 0.87 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 36.63x  [contribucion SHAP: +0.061]\n  + Revenue Decline = 0.000  [contribucion SHAP: +0.005]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 292.320  [contribucion SHAP: -0.032]\n  - Eps Revision = 0.417  [contribucion SHAP: -0.029]\n  - Crecimiento de la deuda total interanual = 17.6%  [contribucion SHAP: -0.012]\n  - Ratio de liquidez corriente (activo / pasivo cte.) = 1.36x  [contribucion SHAP: -0.005]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.06077623461004837,
+      "raw_value": 36.625835189309576,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03179700011611923,
+      "raw_value": 292.32,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.02895431459411847,
+      "raw_value": 0.4166666666666667,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.011960660996838558,
+      "raw_value": 0.1759027529495889,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": 0.004960377342289784,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.004621439938265631,
+      "raw_value": 1.3556166701925112,
+      "direction": "negative"
+    }
+  ]
+}

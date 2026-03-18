@@ -1,0 +1,82 @@
+{
+  "insider_net_shares_90d": {
+    "shap_importance": 0.039165429222787644,
+    "description": "Acciones compradas netas por insiders (90 días)"
+  },
+  "current_ratio": {
+    "shap_importance": 0.02823553979941114,
+    "description": "Ratio de liquidez corriente (activo / pasivo cte.)"
+  },
+  "fcf": {
+    "shap_importance": 0.02809239862400461,
+    "description": "Fcf"
+  },
+  "interest_coverage": {
+    "shap_importance": 0.020336724576774587,
+    "description": "Cobertura de intereses (EBIT / intereses)"
+  },
+  "debt_equity": {
+    "shap_importance": 0.014185754634998361,
+    "description": "Ratio deuda / fondos propios"
+  },
+  "total_debt_yoy_growth": {
+    "shap_importance": 0.013008785578336781,
+    "description": "Crecimiento de la deuda total interanual"
+  },
+  "eps_surprise_pct": {
+    "shap_importance": 0.011111738974169288,
+    "description": "Eps Surprise Pct"
+  },
+  "eps_revision": {
+    "shap_importance": 0.008351270532944903,
+    "description": "Eps Revision"
+  },
+  "debt_to_ebitda": {
+    "shap_importance": 0.005866190680739497,
+    "description": "Deuda neta / EBITDA"
+  },
+  "insider_sell_ratio": {
+    "shap_importance": 0.005436230094040142,
+    "description": "Proporción de ventas de insiders (>0.7 = red flag)"
+  },
+  "insider_selling": {
+    "shap_importance": 0.004723642745273695,
+    "description": "FLAG: Insiders vendiendo >70% de operaciones"
+  },
+  "revenue_decline": {
+    "shap_importance": 0.0023536349661217293,
+    "description": "Revenue Decline"
+  },
+  "debt_ebitda_high": {
+    "shap_importance": 0.0015926705923854842,
+    "description": "Debt Ebitda High"
+  },
+  "liquidity_risk": {
+    "shap_importance": 0.0011685732140414662,
+    "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)"
+  },
+  "debt_equity_high": {
+    "shap_importance": 0.0008168424690164384,
+    "description": "Debt Equity High"
+  },
+  "fcf_negative": {
+    "shap_importance": 0.000697994738612053,
+    "description": "FLAG: FCF negativo"
+  },
+  "debt_growth_high": {
+    "shap_importance": 0.0004626583755245214,
+    "description": "FLAG: Deuda creciendo >20% interanual"
+  },
+  "low_coverage": {
+    "shap_importance": 0.0004536949427530086,
+    "description": "FLAG: Cobertura intereses < 1.5x"
+  },
+  "eps_miss": {
+    "shap_importance": 0.0003615517910724311,
+    "description": "Eps Miss"
+  },
+  "consecutive_losses": {
+    "shap_importance": 0.0002488265922457151,
+    "description": "Trimestres consecutivos con pérdidas"
+  }
+}

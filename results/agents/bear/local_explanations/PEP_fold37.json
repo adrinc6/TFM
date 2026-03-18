@@ -1,0 +1,67 @@
+{
+  "ticker": "PEP",
+  "score": 0.4234,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.028334479610855494,
+      "raw_value": -0.41,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.023773166187257805,
+      "raw_value": Infinity,
+      "direction": "negative"
+    }
+  ],
+  "text": "PEP — Score: 0.42 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 3480000000.000  [contribucion SHAP: +0.030]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.91x  [contribucion SHAP: +0.017]\n  + Acciones compradas netas por insiders (90 días) = 78536.000  [contribucion SHAP: +0.014]\n  + FLAG: Insiders vendiendo >70% de operaciones = 0.000  [contribucion SHAP: +0.009]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = -0.410  [contribucion SHAP: -0.028]\n  - Crecimiento de la deuda total interanual = inf%  [contribucion SHAP: -0.024]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.03024360439123464,
+      "raw_value": 3480000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.028334479610855494,
+      "raw_value": -0.41,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.023773166187257805,
+      "raw_value": Infinity,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.0169958363400309,
+      "raw_value": 0.9118384710625734,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.013653767924509506,
+      "raw_value": 78536.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_selling",
+      "description": "FLAG: Insiders vendiendo >70% de operaciones",
+      "shap_value": 0.008702813797201845,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

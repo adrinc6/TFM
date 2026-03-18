@@ -1,0 +1,67 @@
+{
+  "ticker": "AMD",
+  "score": 0.6182,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.035885262963739416,
+      "raw_value": 0.872093023255814,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.02799705672110228,
+      "raw_value": -298169.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "AMD — Score: 0.62 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 1901000000.000  [contribucion SHAP: +0.032]\n  + Deuda neta / EBITDA = 1.59x  [contribucion SHAP: +0.021]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.31x  [contribucion SHAP: +0.017]\n  + Proporción de ventas de insiders (>0.7 = red flag) = 1.00x  [contribucion SHAP: +0.013]\n\nFactores EN CONTRA:\n  - Crecimiento de la deuda total interanual = 87.2%  [contribucion SHAP: -0.036]\n  - Acciones compradas netas por insiders (90 días) = -298169.000  [contribucion SHAP: -0.028]",
+  "top_drivers": [
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.035885262963739416,
+      "raw_value": 0.872093023255814,
+      "direction": "negative"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.03208474926587365,
+      "raw_value": 1901000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.02799705672110228,
+      "raw_value": -298169.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.020611631731302146,
+      "raw_value": 1.5909090909090908,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.016686998840309167,
+      "raw_value": 2.3076923076923075,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": 0.012623344433955411,
+      "raw_value": 1.0,
+      "direction": "positive"
+    }
+  ]
+}

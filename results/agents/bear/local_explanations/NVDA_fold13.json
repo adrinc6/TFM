@@ -1,0 +1,74 @@
+{
+  "ticker": "NVDA",
+  "score": 0.6657,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03965464402773484,
+      "raw_value": 11.32,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.007116696210149921,
+      "raw_value": 0.2259062776304155,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.005595152218537217,
+      "raw_value": -0.11357618917191636,
+      "direction": "negative"
+    }
+  ],
+  "text": "NVDA — Score: 0.67 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 4.17x  [contribucion SHAP: +0.046]\n  + Eps Revision = 0.377  [contribucion SHAP: +0.031]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.020]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 11.320  [contribucion SHAP: -0.040]\n  - Ratio deuda / fondos propios = 0.226  [contribucion SHAP: -0.007]\n  - Crecimiento de la deuda total interanual = -11.4%  [contribucion SHAP: -0.006]",
+  "top_drivers": [
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.04624842416175116,
+      "raw_value": 4.171291505973097,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03965464402773484,
+      "raw_value": 11.32,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.031058893170083167,
+      "raw_value": 0.376854599406528,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.020035912023342036,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.007116696210149921,
+      "raw_value": 0.2259062776304155,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.005595152218537217,
+      "raw_value": -0.11357618917191636,
+      "direction": "negative"
+    }
+  ]
+}

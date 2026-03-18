@@ -1,0 +1,60 @@
+{
+  "ticker": "MU",
+  "score": 0.6843,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.040008081054108684,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "MU — Score: 0.68 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.565  [contribucion SHAP: +0.424]\n  + VIX (volatilidad implícita de mercado) = 20.6  [contribucion SHAP: +0.101]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.181  [contribucion SHAP: +0.028]\n  + Momentum del S&P 500 a 3 meses = 5.9%  [contribucion SHAP: +0.021]\n\nFactores EN CONTRA:\n  - Sector Computer And Technology = 0.000  [contribucion SHAP: -0.040]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.42430848013384515,
+      "raw_value": 0.5650987528911258,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.10111152842616368,
+      "raw_value": 20.63999938964844,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Computer And Technology",
+      "description": "Sector Computer And Technology",
+      "shap_value": -0.040008081054108684,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": 0.028226788211182907,
+      "raw_value": 0.18130741928689656,
+      "direction": "positive"
+    },
+    {
+      "feature": "sp500_momentum_3m",
+      "description": "Momentum del S&P 500 a 3 meses",
+      "shap_value": 0.02093313742404,
+      "raw_value": 0.0593423598818732,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Consumer Staples",
+      "description": "Sector Consumer Staples",
+      "shap_value": 0.01680473414201251,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

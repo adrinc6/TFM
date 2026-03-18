@@ -1,0 +1,67 @@
+{
+  "ticker": "CMA",
+  "score": 0.3058,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.033224125854702496,
+      "raw_value": 1.2663265306122449,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.0323799395255351,
+      "raw_value": 10.82,
+      "direction": "negative"
+    }
+  ],
+  "text": "CMA — Score: 0.31 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 449000000.000  [contribucion SHAP: +0.033]\n  + Acciones compradas netas por insiders (90 días) = 10140.000  [contribucion SHAP: +0.013]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.00x  [contribucion SHAP: +0.009]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.006]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 1.266  [contribucion SHAP: -0.033]\n  - Eps Surprise Pct = 10.820  [contribucion SHAP: -0.032]",
+  "top_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.033224125854702496,
+      "raw_value": 1.2663265306122449,
+      "direction": "negative"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.033199468708453826,
+      "raw_value": 449000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.0323799395255351,
+      "raw_value": 10.82,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.01345948705004141,
+      "raw_value": 10140.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.00860278531173518,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.0057978322760641144,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

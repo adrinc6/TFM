@@ -1,0 +1,67 @@
+{
+  "ticker": "MMM",
+  "score": 0.3698,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.010606950206587026,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.009708852185597206,
+      "raw_value": 0.34166666666666656,
+      "direction": "negative"
+    }
+  ],
+  "text": "MMM — Score: 0.37 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.020]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.64x  [contribucion SHAP: +0.018]\n  + Cobertura de intereses (EBIT / intereses) = 0.00x  [contribucion SHAP: +0.012]\n  + Acciones compradas netas por insiders (90 días) = 20021.000  [contribucion SHAP: +0.012]\n\nFactores EN CONTRA:\n  - Revenue Decline = 1.000  [contribucion SHAP: -0.011]\n  - Crecimiento de la deuda total interanual = 34.2%  [contribucion SHAP: -0.010]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.01985372285241562,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.017630603869777335,
+      "raw_value": 1.6428245667376102,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.011642560091795866,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.011631658672586028,
+      "raw_value": 20021.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.010606950206587026,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.009708852185597206,
+      "raw_value": 0.34166666666666656,
+      "direction": "negative"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "ticker": "META",
+  "score": 0.7087,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.017047191616021955,
+      "raw_value": 0.67536846685158,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.010333915591100612,
+      "raw_value": 21.77,
+      "direction": "negative"
+    }
+  ],
+  "text": "META — Score: 0.71 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 11085000000.000  [contribucion SHAP: +0.100]\n  + Deuda neta / EBITDA = 1.44x  [contribucion SHAP: +0.045]\n  + Acciones compradas netas por insiders (90 días) = 0.000  [contribucion SHAP: +0.011]\n  + Proporción de ventas de insiders (>0.7 = red flag) = 0.50x  [contribucion SHAP: +0.009]\n\nFactores EN CONTRA:\n  - Crecimiento de la deuda total interanual = 67.5%  [contribucion SHAP: -0.017]\n  - Eps Surprise Pct = 21.770  [contribucion SHAP: -0.010]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.09965553238194477,
+      "raw_value": 11085000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.045220166573259286,
+      "raw_value": 1.4357958517828011,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.017047191616021955,
+      "raw_value": 0.67536846685158,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.011453833118204054,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.010333915591100612,
+      "raw_value": 21.77,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": 0.009281431402369606,
+      "raw_value": 0.5,
+      "direction": "positive"
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "ticker": "CMG",
+  "score": 0.2552,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.05825452733772147,
+      "raw_value": 2.05,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.006023004438463864,
+      "raw_value": -0.04,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.0052496421640973205,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_ebitda_high",
+      "description": "Debt Ebitda High",
+      "shap_value": -0.003863437913731159,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "CMG — Score: 0.26 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.95x  [contribucion SHAP: +0.015]\n  + Cobertura de intereses (EBIT / intereses) = 0.00x  [contribucion SHAP: +0.004]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 2.050  [contribucion SHAP: -0.058]\n  - Eps Revision = -0.040  [contribucion SHAP: -0.006]\n  - Crecimiento de la deuda total interanual = 0.0%  [contribucion SHAP: -0.005]\n  - Debt Ebitda High = 0.000  [contribucion SHAP: -0.004]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.05825452733772147,
+      "raw_value": 2.05,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.015487501668590689,
+      "raw_value": 0.9464744072390756,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.006023004438463864,
+      "raw_value": -0.04,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.0052496421640973205,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.004235473843496329,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_ebitda_high",
+      "description": "Debt Ebitda High",
+      "shap_value": -0.003863437913731159,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ]
+}

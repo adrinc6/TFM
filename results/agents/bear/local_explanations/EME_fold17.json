@@ -1,0 +1,60 @@
+{
+  "ticker": "EME",
+  "score": 0.743,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.008347454632629233,
+      "raw_value": -1.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "EME — Score: 0.74 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Eps Revision = -0.200  [contribucion SHAP: +0.014]\n  + Cobertura de intereses (EBIT / intereses) = 34.47x  [contribucion SHAP: +0.012]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.009]\n  + Eps Surprise Pct = 47.090  [contribucion SHAP: +0.008]\n\nFactores EN CONTRA:\n  - Crecimiento de la deuda total interanual = -100.0%  [contribucion SHAP: -0.008]",
+  "top_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.013553025011225087,
+      "raw_value": -0.1999999999999999,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.012339616621986215,
+      "raw_value": 34.4719533218406,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.009061158432009418,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": 0.008484438371906768,
+      "raw_value": 47.09,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.008347454632629233,
+      "raw_value": -1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": 0.004771865136053929,
+      "raw_value": 0.989282769991756,
+      "direction": "positive"
+    }
+  ]
+}

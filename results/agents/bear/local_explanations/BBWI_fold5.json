@@ -1,0 +1,81 @@
+{
+  "ticker": "BBWI",
+  "score": 0.7035,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.11485583778155832,
+      "raw_value": 7.1,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.014750045339981496,
+      "raw_value": 14.78,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.007439159270049863,
+      "raw_value": 0.0016481252575195615,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_ebitda_high",
+      "description": "Debt Ebitda High",
+      "shap_value": -0.004428217978857072,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "BBWI — Score: 0.70 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Cobertura de intereses (EBIT / intereses) = 7.58x  [contribucion SHAP: +0.035]\n  + FLAG: Ratio corriente < 1 (riesgo liquidez) = 0.000  [contribucion SHAP: +0.003]\n\nFactores EN CONTRA:\n  - Eps Revision = 7.100  [contribucion SHAP: -0.115]\n  - Eps Surprise Pct = 14.780  [contribucion SHAP: -0.015]\n  - Crecimiento de la deuda total interanual = 0.2%  [contribucion SHAP: -0.007]\n  - Debt Ebitda High = 0.000  [contribucion SHAP: -0.004]",
+  "top_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.11485583778155832,
+      "raw_value": 7.1,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.03460444390051269,
+      "raw_value": 7.5813953488372094,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.014750045339981496,
+      "raw_value": 14.78,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.007439159270049863,
+      "raw_value": 0.0016481252575195615,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_ebitda_high",
+      "description": "Debt Ebitda High",
+      "shap_value": -0.004428217978857072,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "liquidity_risk",
+      "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+      "shap_value": 0.003231156983541937,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

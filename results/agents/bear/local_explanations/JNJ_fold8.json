@@ -1,0 +1,81 @@
+{
+  "ticker": "JNJ",
+  "score": 0.6159,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.05499945693745402,
+      "raw_value": 7.01,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.017105280159956496,
+      "raw_value": 417.57142857142856,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.01597852091185865,
+      "raw_value": 0.1210762331838564,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.006906975031755715,
+      "raw_value": 1.0665032382025077,
+      "direction": "negative"
+    }
+  ],
+  "text": "JNJ — Score: 0.62 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Revenue Decline = 1.000  [contribucion SHAP: +0.017]\n  + Crecimiento de la deuda total interanual = 59.6%  [contribucion SHAP: +0.008]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 7.010  [contribucion SHAP: -0.055]\n  - Cobertura de intereses (EBIT / intereses) = 417.57x  [contribucion SHAP: -0.017]\n  - Eps Revision = 0.121  [contribucion SHAP: -0.016]\n  - Ratio de liquidez corriente (activo / pasivo cte.) = 1.07x  [contribucion SHAP: -0.007]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.05499945693745402,
+      "raw_value": 7.01,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.017105280159956496,
+      "raw_value": 417.57142857142856,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": 0.016982221518978456,
+      "raw_value": 1.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.01597852091185865,
+      "raw_value": 0.1210762331838564,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.008207095871794698,
+      "raw_value": 0.5960842283094003,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.006906975031755715,
+      "raw_value": 1.0665032382025077,
+      "direction": "negative"
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "ticker": "INTC",
+  "score": 0.5578,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": -0.04891047688724116,
+      "raw_value": -1500000000.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03458974418968319,
+      "raw_value": 1878.69,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.015027547291097034,
+      "raw_value": 0.4799670925097635,
+      "direction": "negative"
+    },
+    {
+      "feature": "consecutive_losses",
+      "description": "Trimestres consecutivos con pérdidas",
+      "shap_value": -0.010147760904733365,
+      "raw_value": 6.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "INTC — Score: 0.56 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 29.39x  [contribucion SHAP: +0.036]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.24x  [contribucion SHAP: +0.018]\n\nFactores EN CONTRA:\n  - Fcf = -1500000000.000  [contribucion SHAP: -0.049]\n  - Eps Surprise Pct = 1878.690  [contribucion SHAP: -0.035]\n  - Ratio deuda / fondos propios = 0.480  [contribucion SHAP: -0.015]\n  - Trimestres consecutivos con pérdidas = 6.000  [contribucion SHAP: -0.010]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": -0.04891047688724116,
+      "raw_value": -1500000000.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.035822415459448746,
+      "raw_value": 29.390272148233933,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03458974418968319,
+      "raw_value": 1878.69,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.017701492428534558,
+      "raw_value": 1.2404907624549562,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.015027547291097034,
+      "raw_value": 0.4799670925097635,
+      "direction": "negative"
+    },
+    {
+      "feature": "consecutive_losses",
+      "description": "Trimestres consecutivos con pérdidas",
+      "shap_value": -0.010147760904733365,
+      "raw_value": 6.0,
+      "direction": "negative"
+    }
+  ]
+}

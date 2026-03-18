@@ -1,0 +1,67 @@
+{
+  "ticker": "PWR",
+  "score": 0.6758,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.04575803002772218,
+      "raw_value": 0.5352895287304169,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.012270539797449494,
+      "raw_value": -179000.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "PWR — Score: 0.68 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 15.97x  [contribucion SHAP: +0.077]\n  + Cobertura de intereses (EBIT / intereses) = 7.18x  [contribucion SHAP: +0.037]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.30x  [contribucion SHAP: +0.023]\n  + FLAG: Ratio corriente < 1 (riesgo liquidez) = 0.000  [contribucion SHAP: +0.007]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 0.535  [contribucion SHAP: -0.046]\n  - Acciones compradas netas por insiders (90 días) = -179000.000  [contribucion SHAP: -0.012]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.07661505351138431,
+      "raw_value": 15.972921871528518,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.04575803002772218,
+      "raw_value": 0.5352895287304169,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.03666057784421057,
+      "raw_value": 7.177497366152667,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.02332590939732255,
+      "raw_value": 1.2956286812266309,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.012270539797449494,
+      "raw_value": -179000.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "liquidity_risk",
+      "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+      "shap_value": 0.006883265084550849,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

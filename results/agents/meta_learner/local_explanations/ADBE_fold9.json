@@ -1,0 +1,67 @@
+{
+  "ticker": "ADBE",
+  "score": 0.7385,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.2613330154326927,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.04486024275017219,
+      "raw_value": 0.22017082918895955,
+      "direction": "negative"
+    }
+  ],
+  "text": "ADBE — Score: 0.74 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.640  [contribucion SHAP: +0.777]\n  + VIX (volatilidad implícita de mercado) = 13.3  [contribucion SHAP: +0.285]\n  + Score del Agente de Valoración (infravaloración) = 0.494  [contribucion SHAP: +0.090]\n  + Sector Consumer Staples = 0.000  [contribucion SHAP: +0.030]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.261]\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.220  [contribucion SHAP: -0.045]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.7774038337741545,
+      "raw_value": 0.6400651793169901,
+      "direction": "positive"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.2849411158045968,
+      "raw_value": 13.34000015258789,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.2613330154326927,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "valuation_score",
+      "description": "Score del Agente de Valoración (infravaloración)",
+      "shap_value": 0.08960181609903517,
+      "raw_value": 0.49410707333873877,
+      "direction": "positive"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.04486024275017219,
+      "raw_value": 0.22017082918895955,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Consumer Staples",
+      "description": "Sector Consumer Staples",
+      "shap_value": 0.02990347313112689,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

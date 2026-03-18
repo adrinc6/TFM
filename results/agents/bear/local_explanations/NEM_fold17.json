@@ -1,0 +1,67 @@
+{
+  "ticker": "NEM",
+  "score": 0.3773,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.011187369928554538,
+      "raw_value": 0.4761698440207973,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.005460763266136386,
+      "raw_value": 54.3,
+      "direction": "negative"
+    }
+  ],
+  "text": "NEM — Score: 0.38 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 33.62x  [contribucion SHAP: +0.074]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.15x  [contribucion SHAP: +0.015]\n  + Cobertura de intereses (EBIT / intereses) = 10.30x  [contribucion SHAP: +0.010]\n  + Eps Revision = -0.217  [contribucion SHAP: +0.007]\n\nFactores EN CONTRA:\n  - Crecimiento de la deuda total interanual = 47.6%  [contribucion SHAP: -0.011]\n  - Eps Surprise Pct = 54.300  [contribucion SHAP: -0.005]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.07417711408791022,
+      "raw_value": 33.62171052631579,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.015387758798918615,
+      "raw_value": 2.153593578985772,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.011187369928554538,
+      "raw_value": 0.4761698440207973,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.010340748072999777,
+      "raw_value": 10.301075268817204,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.006977461484881954,
+      "raw_value": -0.2173913043478261,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.005460763266136386,
+      "raw_value": 54.3,
+      "direction": "negative"
+    }
+  ]
+}

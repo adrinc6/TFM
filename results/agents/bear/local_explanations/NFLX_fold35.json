@@ -1,0 +1,74 @@
+{
+  "ticker": "NFLX",
+  "score": 0.5476,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.08060389648378397,
+      "raw_value": -157071.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.02654854319795466,
+      "raw_value": 0.5792427261748695,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.01704354909466536,
+      "raw_value": 15.76,
+      "direction": "negative"
+    }
+  ],
+  "text": "NFLX — Score: 0.55 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 1.88x  [contribucion SHAP: +0.047]\n  + Fcf = 2267369000.000  [contribucion SHAP: +0.032]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.34x  [contribucion SHAP: +0.016]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -157071.000  [contribucion SHAP: -0.081]\n  - Ratio deuda / fondos propios = 0.579  [contribucion SHAP: -0.027]\n  - Eps Surprise Pct = 15.760  [contribucion SHAP: -0.017]",
+  "top_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.08060389648378397,
+      "raw_value": -157071.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.046851543835572655,
+      "raw_value": 1.880267695931496,
+      "direction": "positive"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.03185836068158212,
+      "raw_value": 2267369000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.02654854319795466,
+      "raw_value": 0.5792427261748695,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.01704354909466536,
+      "raw_value": 15.76,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.016091744789143245,
+      "raw_value": 1.3411604463487443,
+      "direction": "positive"
+    }
+  ]
+}

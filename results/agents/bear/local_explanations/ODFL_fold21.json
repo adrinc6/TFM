@@ -1,0 +1,67 @@
+{
+  "ticker": "ODFL",
+  "score": 0.2894,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.06312766022946432,
+      "raw_value": 1.85,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.011879785446880575,
+      "raw_value": 0.0820895522388058,
+      "direction": "negative"
+    }
+  ],
+  "text": "ODFL — Score: 0.29 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 0.17x  [contribucion SHAP: +0.020]\n  + Cobertura de intereses (EBIT / intereses) = 73.65x  [contribucion SHAP: +0.018]\n  + Crecimiento de la deuda total interanual = -25.0%  [contribucion SHAP: +0.017]\n  + Acciones compradas netas por insiders (90 días) = -25550.000  [contribucion SHAP: +0.012]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 1.850  [contribucion SHAP: -0.063]\n  - Eps Revision = 0.082  [contribucion SHAP: -0.012]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.06312766022946432,
+      "raw_value": 1.85,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.020186153042305005,
+      "raw_value": 0.1739620945171908,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.017973982572996604,
+      "raw_value": 73.64802744425386,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.01749303302609405,
+      "raw_value": -0.24993122420907843,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.011990442591120684,
+      "raw_value": -25550.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.011879785446880575,
+      "raw_value": 0.0820895522388058,
+      "direction": "negative"
+    }
+  ]
+}

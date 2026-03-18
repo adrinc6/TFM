@@ -1,0 +1,88 @@
+{
+  "ticker": "GD",
+  "score": 0.474,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.038234654146024935,
+      "raw_value": 1.3942133815551536,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03262576231718046,
+      "raw_value": 1.89,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.015606157571102772,
+      "raw_value": 0.5502174254728349,
+      "direction": "negative"
+    },
+    {
+      "feature": "liquidity_risk",
+      "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+      "shap_value": -0.006275626166328724,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.006223617239742315,
+      "raw_value": -0.08646485734168408,
+      "direction": "negative"
+    }
+  ],
+  "text": "GD — Score: 0.47 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Eps Revision = -0.268  [contribucion SHAP: +0.009]\n\nFactores EN CONTRA:\n  - Ratio de liquidez corriente (activo / pasivo cte.) = 1.39x  [contribucion SHAP: -0.038]\n  - Eps Surprise Pct = 1.890  [contribucion SHAP: -0.033]\n  - Ratio deuda / fondos propios = 0.550  [contribucion SHAP: -0.016]\n  - FLAG: Ratio corriente < 1 (riesgo liquidez) = 0.000  [contribucion SHAP: -0.006]",
+  "top_drivers": [
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.038234654146024935,
+      "raw_value": 1.3942133815551536,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03262576231718046,
+      "raw_value": 1.89,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.015606157571102772,
+      "raw_value": 0.5502174254728349,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.009231973544276857,
+      "raw_value": -0.268361581920904,
+      "direction": "positive"
+    },
+    {
+      "feature": "liquidity_risk",
+      "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)",
+      "shap_value": -0.006275626166328724,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.006223617239742315,
+      "raw_value": -0.08646485734168408,
+      "direction": "negative"
+    }
+  ]
+}

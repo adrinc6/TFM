@@ -1,0 +1,60 @@
+{
+  "ticker": "CVNA",
+  "score": 0.6311,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.03125085008453883,
+      "raw_value": 4.096,
+      "direction": "negative"
+    }
+  ],
+  "text": "CVNA — Score: 0.63 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Eps Revision = -4.429  [contribucion SHAP: +0.020]\n  + Crecimiento de la deuda total interanual = -10.2%  [contribucion SHAP: +0.013]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 3.64x  [contribucion SHAP: +0.013]\n  + Acciones compradas netas por insiders (90 días) = 0.000  [contribucion SHAP: +0.009]\n\nFactores EN CONTRA:\n  - Ratio deuda / fondos propios = 4.096  [contribucion SHAP: -0.031]",
+  "top_drivers": [
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.03125085008453883,
+      "raw_value": 4.096,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.019789685860690354,
+      "raw_value": -4.428571428571428,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.013250288438871265,
+      "raw_value": -0.10218396301610078,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.012657815899973179,
+      "raw_value": 3.6390134529147984,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.008656342302809488,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": 0.00623975445992961,
+      "raw_value": 0.5,
+      "direction": "positive"
+    }
+  ]
+}

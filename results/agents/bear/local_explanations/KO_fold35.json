@@ -1,0 +1,74 @@
+{
+  "ticker": "KO",
+  "score": 0.3273,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.0747477330457395,
+      "raw_value": -303799.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.024763303698985953,
+      "raw_value": 1.6382612152938838,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.009902517789869282,
+      "raw_value": 2.28,
+      "direction": "negative"
+    }
+  ],
+  "text": "KO — Score: 0.33 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 10.75x  [contribucion SHAP: +0.037]\n  + Fcf = 3369000000.000  [contribucion SHAP: +0.033]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.21x  [contribucion SHAP: +0.018]\n\nFactores EN CONTRA:\n  - Acciones compradas netas por insiders (90 días) = -303799.000  [contribucion SHAP: -0.075]\n  - Ratio deuda / fondos propios = 1.638  [contribucion SHAP: -0.025]\n  - Eps Surprise Pct = 2.280  [contribucion SHAP: -0.010]",
+  "top_drivers": [
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": -0.0747477330457395,
+      "raw_value": -303799.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.03733380988961135,
+      "raw_value": 10.75380600260983,
+      "direction": "positive"
+    },
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.03325495956883683,
+      "raw_value": 3369000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.024763303698985953,
+      "raw_value": 1.6382612152938838,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.017843534971029147,
+      "raw_value": 1.2125865840320815,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.009902517789869282,
+      "raw_value": 2.28,
+      "direction": "negative"
+    }
+  ]
+}

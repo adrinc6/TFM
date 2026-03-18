@@ -1,0 +1,81 @@
+{
+  "ticker": "APP",
+  "score": 0.6536,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03949335140288682,
+      "raw_value": 18.12,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.02983207848989741,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.02861077596340165,
+      "raw_value": 4.317100619020269,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.015158222024565422,
+      "raw_value": 0.3157894736842106,
+      "direction": "negative"
+    }
+  ],
+  "text": "APP — Score: 0.65 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Cobertura de intereses (EBIT / intereses) = 5.17x  [contribucion SHAP: +0.034]\n  + Acciones compradas netas por insiders (90 días) = 0.000  [contribucion SHAP: +0.007]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 18.120  [contribucion SHAP: -0.039]\n  - Revenue Decline = 1.000  [contribucion SHAP: -0.030]\n  - Ratio deuda / fondos propios = 4.317  [contribucion SHAP: -0.029]\n  - Eps Revision = 0.316  [contribucion SHAP: -0.015]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03949335140288682,
+      "raw_value": 18.12,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.03363165475321779,
+      "raw_value": 5.165712596414846,
+      "direction": "positive"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.02983207848989741,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.02861077596340165,
+      "raw_value": 4.317100619020269,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.015158222024565422,
+      "raw_value": 0.3157894736842106,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.007274507072841042,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

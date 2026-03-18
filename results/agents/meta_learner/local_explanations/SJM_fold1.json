@@ -1,0 +1,67 @@
+{
+  "ticker": "SJM",
+  "score": 0.3221,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.19838264886718587,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "sector_Finance",
+      "description": "Sector Finance",
+      "shap_value": -0.026611968007988103,
+      "raw_value": 0.0,
+      "direction": "negative"
+    }
+  ],
+  "text": "SJM — Score: 0.32 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.405  [contribucion SHAP: +0.500]\n  + Score del Agente Bear (riesgo, <0.5 es bueno) = 0.518  [contribucion SHAP: +0.065]\n  + Sector Consumer Staples = 0.000  [contribucion SHAP: +0.032]\n  + Pendiente curva de tipos (10Y - 2Y) = 0.118  [contribucion SHAP: +0.024]\n\nFactores EN CONTRA:\n  - Mom Minus Bear = 0.000  [contribucion SHAP: -0.198]\n  - Sector Finance = 0.000  [contribucion SHAP: -0.027]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.5003746420285796,
+      "raw_value": 0.4052314320551715,
+      "direction": "positive"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": -0.19838264886718587,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": 0.06514400458768832,
+      "raw_value": 0.5182390161628287,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Consumer Staples",
+      "description": "Sector Consumer Staples",
+      "shap_value": 0.03229027049373663,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "sector_Finance",
+      "description": "Sector Finance",
+      "shap_value": -0.026611968007988103,
+      "raw_value": 0.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "yield_curve",
+      "description": "Pendiente curva de tipos (10Y - 2Y)",
+      "shap_value": 0.02413795110716907,
+      "raw_value": 0.1180000305175781,
+      "direction": "positive"
+    }
+  ]
+}

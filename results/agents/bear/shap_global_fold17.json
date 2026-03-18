@@ -1,0 +1,78 @@
+{
+  "debt_to_ebitda": {
+    "shap_importance": 0.07015071334385002,
+    "description": "Deuda neta / EBITDA"
+  },
+  "current_ratio": {
+    "shap_importance": 0.018315414059458596,
+    "description": "Ratio de liquidez corriente (activo / pasivo cte.)"
+  },
+  "interest_coverage": {
+    "shap_importance": 0.014152274086289487,
+    "description": "Cobertura de intereses (EBIT / intereses)"
+  },
+  "debt_equity": {
+    "shap_importance": 0.011270812638699374,
+    "description": "Ratio deuda / fondos propios"
+  },
+  "eps_revision": {
+    "shap_importance": 0.007396604432045595,
+    "description": "Eps Revision"
+  },
+  "eps_surprise_pct": {
+    "shap_importance": 0.006445212235861702,
+    "description": "Eps Surprise Pct"
+  },
+  "revenue_decline": {
+    "shap_importance": 0.005804169075841354,
+    "description": "Revenue Decline"
+  },
+  "total_debt_yoy_growth": {
+    "shap_importance": 0.0036792988348855822,
+    "description": "Crecimiento de la deuda total interanual"
+  },
+  "liquidity_risk": {
+    "shap_importance": 0.0027649846477941584,
+    "description": "FLAG: Ratio corriente < 1 (riesgo liquidez)"
+  },
+  "debt_ebitda_high": {
+    "shap_importance": 0.0021283555133520937,
+    "description": "Debt Ebitda High"
+  },
+  "insider_sell_ratio": {
+    "shap_importance": 0.0017862227859472655,
+    "description": "Proporción de ventas de insiders (>0.7 = red flag)"
+  },
+  "debt_growth_high": {
+    "shap_importance": 0.0013088916721303628,
+    "description": "FLAG: Deuda creciendo >20% interanual"
+  },
+  "consecutive_losses": {
+    "shap_importance": 0.000926935513475054,
+    "description": "Trimestres consecutivos con pérdidas"
+  },
+  "eps_miss": {
+    "shap_importance": 0.0005219261342075363,
+    "description": "Eps Miss"
+  },
+  "low_coverage": {
+    "shap_importance": 0.0005118294474635305,
+    "description": "FLAG: Cobertura intereses < 1.5x"
+  },
+  "debt_equity_high": {
+    "shap_importance": 0.0004010344809790819,
+    "description": "Debt Equity High"
+  },
+  "insider_net_shares_90d": {
+    "shap_importance": 0.00018641270450507285,
+    "description": "Acciones compradas netas por insiders (90 días)"
+  },
+  "insider_selling": {
+    "shap_importance": 2.2578031692482256e-05,
+    "description": "FLAG: Insiders vendiendo >70% de operaciones"
+  },
+  "fcf_negative": {
+    "shap_importance": 0.0,
+    "description": "FLAG: FCF negativo"
+  }
+}

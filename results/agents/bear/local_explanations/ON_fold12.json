@@ -1,0 +1,74 @@
+{
+  "ticker": "ON",
+  "score": 0.272,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.040405207000094964,
+      "raw_value": 3.63,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.01150369519323351,
+      "raw_value": 0.1074380165289257,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.00590169804561307,
+      "raw_value": 0.4602878464818763,
+      "direction": "negative"
+    }
+  ],
+  "text": "ON — Score: 0.27 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 5.05x  [contribucion SHAP: +0.028]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 2.44x  [contribucion SHAP: +0.024]\n  + Cobertura de intereses (EBIT / intereses) = 73.31x  [contribucion SHAP: +0.016]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 3.630  [contribucion SHAP: -0.040]\n  - Eps Revision = 0.107  [contribucion SHAP: -0.012]\n  - Ratio deuda / fondos propios = 0.460  [contribucion SHAP: -0.006]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.040405207000094964,
+      "raw_value": 3.63,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.028170115223951825,
+      "raw_value": 5.046756282875512,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.024149332548825092,
+      "raw_value": 2.4392336059002724,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.01585789130382756,
+      "raw_value": 73.30526315789474,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.01150369519323351,
+      "raw_value": 0.1074380165289257,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.00590169804561307,
+      "raw_value": 0.4602878464818763,
+      "direction": "negative"
+    }
+  ]
+}

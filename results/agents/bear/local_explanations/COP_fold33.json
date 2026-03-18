@@ -1,0 +1,52 @@
+{
+  "ticker": "COP",
+  "score": 0.3712,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [],
+  "text": "COP — Score: 0.37 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 199000000.000  [contribucion SHAP: +0.034]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.27x  [contribucion SHAP: +0.027]\n  + Eps Surprise Pct = 1.600  [contribucion SHAP: +0.022]\n  + Acciones compradas netas por insiders (90 días) = 5300.000  [contribucion SHAP: +0.015]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.03433620520313489,
+      "raw_value": 199000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.027484935470359427,
+      "raw_value": 1.2687966502821773,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": 0.02168332503478335,
+      "raw_value": 1.6,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.014561364512635781,
+      "raw_value": 5300.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": 0.014003834811152522,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.007311585537606621,
+      "raw_value": 4.3030358449158745,
+      "direction": "positive"
+    }
+  ]
+}

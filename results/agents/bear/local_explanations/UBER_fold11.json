@@ -1,0 +1,74 @@
+{
+  "ticker": "UBER",
+  "score": 0.828,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03843025064578942,
+      "raw_value": -17.86,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.018411016985838274,
+      "raw_value": 1.3038809144072303,
+      "direction": "negative"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.011996736511765343,
+      "raw_value": 2.3734939759036147,
+      "direction": "negative"
+    }
+  ],
+  "text": "UBER — Score: 0.83 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 71.90x  [contribucion SHAP: +0.085]\n  + Eps Revision = -13.000  [contribucion SHAP: +0.066]\n  + Ratio deuda / fondos propios = 1.292  [contribucion SHAP: +0.014]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = -17.860  [contribucion SHAP: -0.038]\n  - Ratio de liquidez corriente (activo / pasivo cte.) = 1.30x  [contribucion SHAP: -0.018]\n  - Cobertura de intereses (EBIT / intereses) = 2.37x  [contribucion SHAP: -0.012]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.085443368865009,
+      "raw_value": 71.8994708994709,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.06632124759544593,
+      "raw_value": -13.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.03843025064578942,
+      "raw_value": -17.86,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.018411016985838274,
+      "raw_value": 1.3038809144072303,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": 0.014383553754359318,
+      "raw_value": 1.291852837722217,
+      "direction": "positive"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": -0.011996736511765343,
+      "raw_value": 2.3734939759036147,
+      "direction": "negative"
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "ticker": "QCOM",
+  "score": 0.4349,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.019344424352431135,
+      "raw_value": 2.393099121706399,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.016467041578806973,
+      "raw_value": 0.811503705959996,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.013524535903473967,
+      "raw_value": -0.0811965811965811,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.006903190199126554,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.0031559804127791074,
+      "raw_value": 0.019451530612244916,
+      "direction": "negative"
+    }
+  ],
+  "text": "QCOM — Score: 0.43 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Eps Surprise Pct = 0.070  [contribucion SHAP: +0.032]\n\nFactores EN CONTRA:\n  - Ratio de liquidez corriente (activo / pasivo cte.) = 2.39x  [contribucion SHAP: -0.019]\n  - Ratio deuda / fondos propios = 0.812  [contribucion SHAP: -0.016]\n  - Eps Revision = -0.081  [contribucion SHAP: -0.014]\n  - Revenue Decline = 1.000  [contribucion SHAP: -0.007]",
+  "top_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": 0.03180691217133116,
+      "raw_value": 0.07,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.019344424352431135,
+      "raw_value": 2.393099121706399,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.016467041578806973,
+      "raw_value": 0.811503705959996,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.013524535903473967,
+      "raw_value": -0.0811965811965811,
+      "direction": "negative"
+    },
+    {
+      "feature": "revenue_decline",
+      "description": "Revenue Decline",
+      "shap_value": -0.006903190199126554,
+      "raw_value": 1.0,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.0031559804127791074,
+      "raw_value": 0.019451530612244916,
+      "direction": "negative"
+    }
+  ]
+}

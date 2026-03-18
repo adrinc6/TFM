@@ -1,0 +1,81 @@
+{
+  "ticker": "NDSN",
+  "score": 0.7571,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.08881618746405415,
+      "raw_value": -0.1545064377682403,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.060077847480705736,
+      "raw_value": 0.2585936532316,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.05540334905392529,
+      "raw_value": -1.07,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.022907478429466166,
+      "raw_value": 1.427585312934227,
+      "direction": "negative"
+    }
+  ],
+  "text": "NDSN — Score: 0.76 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Ratio deuda / fondos propios = 0.415  [contribucion SHAP: +0.010]\n  + Deuda neta / EBITDA = 0.00x  [contribucion SHAP: +0.005]\n\nFactores EN CONTRA:\n  - Eps Revision = -0.155  [contribucion SHAP: -0.089]\n  - Crecimiento de la deuda total interanual = 25.9%  [contribucion SHAP: -0.060]\n  - Eps Surprise Pct = -1.070  [contribucion SHAP: -0.055]\n  - Ratio de liquidez corriente (activo / pasivo cte.) = 1.43x  [contribucion SHAP: -0.023]",
+  "top_drivers": [
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.08881618746405415,
+      "raw_value": -0.1545064377682403,
+      "direction": "negative"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.060077847480705736,
+      "raw_value": 0.2585936532316,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.05540334905392529,
+      "raw_value": -1.07,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.022907478429466166,
+      "raw_value": 1.427585312934227,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": 0.010312058317379727,
+      "raw_value": 0.4153019289364998,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.004916239856102613,
+      "raw_value": 0.0,
+      "direction": "positive"
+    }
+  ]
+}

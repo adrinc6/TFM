@@ -1,0 +1,82 @@
+{
+  "momentum_score": {
+    "shap_importance": 0.245114652142706,
+    "description": "Score del Agente de Momentum (tendencia técnica)"
+  },
+  "mom_minus_bear": {
+    "shap_importance": 0.15344010921670403,
+    "description": "Mom Minus Bear"
+  },
+  "vix": {
+    "shap_importance": 0.15096013831183594,
+    "description": "VIX (volatilidad implícita de mercado)"
+  },
+  "yield_curve": {
+    "shap_importance": 0.12081551817087002,
+    "description": "Pendiente curva de tipos (10Y - 2Y)"
+  },
+  "bear_score": {
+    "shap_importance": 0.08442817527967632,
+    "description": "Score del Agente Bear (riesgo, <0.5 es bueno)"
+  },
+  "sector_Computer And Technology": {
+    "shap_importance": 0.08030925998745275,
+    "description": "Sector Computer And Technology"
+  },
+  "sp500_momentum_3m": {
+    "shap_importance": 0.07925782807216256,
+    "description": "Momentum del S&P 500 a 3 meses"
+  },
+  "valuation_score": {
+    "shap_importance": 0.06661283480650339,
+    "description": "Score del Agente de Valoración (infravaloración)"
+  },
+  "sector_Finance": {
+    "shap_importance": 0.05151171516053238,
+    "description": "Sector Finance"
+  },
+  "fund_x_val": {
+    "shap_importance": 0.050814114101822044,
+    "description": "Fund X Val"
+  },
+  "sector_Consumer Staples": {
+    "shap_importance": 0.04676450380794073,
+    "description": "Sector Consumer Staples"
+  },
+  "sp500_momentum_12m": {
+    "shap_importance": 0.04271441539418408,
+    "description": "Momentum del S&P 500 a 12 meses"
+  },
+  "sector_Medical": {
+    "shap_importance": 0.033876882559312954,
+    "description": "Sector Medical"
+  },
+  "sector_Aerospace": {
+    "shap_importance": 0.016839630470132722,
+    "description": "Sector Aerospace"
+  },
+  "sector_Transportation": {
+    "shap_importance": 0.008660176907029811,
+    "description": "Sector Transportation"
+  },
+  "fundamental_score": {
+    "shap_importance": 0.008618965950873428,
+    "description": "Score del Agente Fundamental (salud financiera)"
+  },
+  "sector_Oils-Energy": {
+    "shap_importance": 0.007260441859785052,
+    "description": "Sector Oils-Energy"
+  },
+  "sector_Retail-Wholesale": {
+    "shap_importance": 0.0028319038046181583,
+    "description": "Sector Retail-Wholesale"
+  },
+  "sector_Business Services": {
+    "shap_importance": 0.002222365414778213,
+    "description": "Sector Business Services"
+  },
+  "sector_Consumer Discretionary": {
+    "shap_importance": 0.0018023490874318866,
+    "description": "Sector Consumer Discretionary"
+  }
+}

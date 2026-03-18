@@ -1,0 +1,60 @@
+{
+  "ticker": "PG",
+  "score": 0.4321,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.006427506181552764,
+      "raw_value": 5.432371165180595,
+      "direction": "negative"
+    }
+  ],
+  "text": "PG — Score: 0.43 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 4208000000.000  [contribucion SHAP: +0.033]\n  + Acciones compradas netas por insiders (90 días) = 226380.000  [contribucion SHAP: +0.024]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 0.71x  [contribucion SHAP: +0.013]\n  + FLAG: Insiders vendiendo >70% de operaciones = 0.000  [contribucion SHAP: +0.008]\n\nFactores EN CONTRA:\n  - Deuda neta / EBITDA = 5.43x  [contribucion SHAP: -0.006]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.03340462530757311,
+      "raw_value": 4208000000.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.02370318389049329,
+      "raw_value": 226380.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.012986456480443205,
+      "raw_value": 0.7137254901960784,
+      "direction": "positive"
+    },
+    {
+      "feature": "insider_selling",
+      "description": "FLAG: Insiders vendiendo >70% de operaciones",
+      "shap_value": 0.0076269048376707,
+      "raw_value": 0.0,
+      "direction": "positive"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": 0.007054065120822562,
+      "raw_value": -0.1774193548387097,
+      "direction": "positive"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": -0.006427506181552764,
+      "raw_value": 5.432371165180595,
+      "direction": "negative"
+    }
+  ]
+}
