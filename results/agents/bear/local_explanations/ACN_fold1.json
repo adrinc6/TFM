@@ -1,0 +1,73 @@
+{
+  "ticker": "ACN",
+  "score": 0.7706,
+  "label": "Outperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.053226006930455136,
+      "raw_value": 27.216450737514773,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.01821480198863488,
+      "raw_value": 1.4773571242393984,
+      "direction": "negative"
+    }
+  ],
+  "text": "ACN — Score: 0.77 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Fcf = 2682588000.000  [contribucion SHAP: +0.105]\n  + Acciones compradas netas por insiders (90 días) = 0.000  [contribucion SHAP: +0.025]\n  + Eps Surprise Pct = 5.710  [contribucion SHAP: +0.012]\n  + Ratio deuda / fondos propios = 0.171  [contribucion SHAP: +0.006]\n\nFactores EN CONTRA:\n  - Crecimiento de la deuda total interanual = 2721.6%  [contribucion SHAP: -0.053]\n  - Ratio de liquidez corriente (activo / pasivo cte.) = 1.48x  [contribucion SHAP: -0.018]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.1052305704989678,
+      "raw_value": 2682588000.0,
+      "direction": "positive",
+      "value_formatted": "2682588000.000"
+    },
+    {
+      "feature": "total_debt_yoy_growth",
+      "description": "Crecimiento de la deuda total interanual",
+      "shap_value": -0.053226006930455136,
+      "raw_value": 27.216450737514773,
+      "direction": "negative",
+      "value_formatted": "2721.6%"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.02529146622526816,
+      "raw_value": 0.0,
+      "direction": "positive",
+      "value_formatted": "0.000"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.01821480198863488,
+      "raw_value": 1.4773571242393984,
+      "direction": "negative",
+      "value_formatted": "1.48x"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": 0.011612316176720953,
+      "raw_value": 5.71,
+      "direction": "positive",
+      "value_formatted": "5.710"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": 0.006481035868150267,
+      "raw_value": 0.1708733313038641,
+      "direction": "positive",
+      "value_formatted": "0.171"
+    }
+  ]
+}

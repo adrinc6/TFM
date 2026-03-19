@@ -1,7 +1,4 @@
-/data
 /data copy
-/data_finnhub
-/results/
 /.claude
 
 # Python cache
@@ -17,13 +14,6 @@ env/
 
 # Jupyter
 .ipynb_checkpoints/
-
-# Datos sensibles / pesados
-data/prices/
-data/consolidated/
-data/insider/
-data/analyst/
-data/macro/
 
 # IDE
 .vscode/

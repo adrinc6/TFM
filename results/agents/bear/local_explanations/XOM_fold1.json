@@ -1,0 +1,73 @@
+{
+  "ticker": "XOM",
+  "score": 0.3725,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.015383537331277756,
+      "raw_value": 6.89,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": -0.008441557703567559,
+      "raw_value": 0.13249211356466878,
+      "direction": "negative"
+    }
+  ],
+  "text": "XOM — Score: 0.37 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 7055000000.000  [contribucion SHAP: +0.106]\n  + Deuda neta / EBITDA = 2.42x  [contribucion SHAP: +0.024]\n  + Acciones compradas netas por insiders (90 días) = 23300.000  [contribucion SHAP: +0.018]\n  + Ratio de liquidez corriente (activo / pasivo cte.) = 1.24x  [contribucion SHAP: +0.011]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 6.890  [contribucion SHAP: -0.015]\n  - Proporción de ventas de insiders (>0.7 = red flag) = 0.13x  [contribucion SHAP: -0.008]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.10627267042278804,
+      "raw_value": 7055000000.0,
+      "direction": "positive",
+      "value_formatted": "7055000000.000"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.023793773540491607,
+      "raw_value": 2.4151659377411887,
+      "direction": "positive",
+      "value_formatted": "2.42x"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.01773964730813836,
+      "raw_value": 23300.0,
+      "direction": "positive",
+      "value_formatted": "23300.000"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.015383537331277756,
+      "raw_value": 6.89,
+      "direction": "negative",
+      "value_formatted": "6.890"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": 0.010743341575207852,
+      "raw_value": 1.235733925693156,
+      "direction": "positive",
+      "value_formatted": "1.24x"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": -0.008441557703567559,
+      "raw_value": 0.13249211356466878,
+      "direction": "negative",
+      "value_formatted": "0.13x"
+    }
+  ]
+}

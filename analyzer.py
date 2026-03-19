@@ -4,18 +4,18 @@
 """
 Punto de entrada principal del sistema. Coordina los pasos del pipeline:
 
-  1. Descarga de datos (fetcher_finnhub → data_ops)
-  2. Preparación / consolidación (FinnhubConsolidator → data_ops)
-  3. Construcción del dataset maestro (dataset_builder)
-  4. Walk-Forward Backtest histórico (evaluator)
-  5. Fold live out-of-sample (live_fold)
+    1. Descarga de datos (step_01_data)
+    2. Preparación / consolidación (step_01_data)
+    3. Construcción del dataset maestro (step_02_dataset)
+    4. Walk-Forward Backtest histórico (step_04_evaluation)
+    5. Fold live out-of-sample (step_05_live)
 
-Toda la lógica de negocio reside en module/pipeline/:
-  - data_ops.py      : ETL (descarga, consolidación, filtrado de tickers)
-  - dataset_builder.py: construcción de observaciones y normalización sectorial
-  - trainer.py       : entrenamiento de agentes + OOF anti-leakage
-  - evaluator.py     : walk-forward loop, SHAP, backtest, gráficos
-  - live_fold.py     : predicción out-of-sample + evaluación con precios reales
+Toda la lógica de negocio reside en module/steps/:
+    - step_01_data/pipeline.py        : ETL (descarga, consolidación, filtrado de tickers)
+    - step_02_dataset/dataset.py      : construcción de observaciones + features live
+    - step_03_training/training.py    : entrenamiento de agentes + OOF anti-leakage
+    - step_04_evaluation/evaluator.py : walk-forward loop, SHAP, backtest, gráficos
+    - step_05_live/live_fold.py       : predicción out-of-sample + evaluación con precios reales
 
 Los parámetros globales están en environment.py.
 """
@@ -37,22 +37,21 @@ from environment import (
     WALKFORWARD_TRAIN_YEARS, WALKFORWARD_TEST_QUARTERS, RISK_FREE_RATE,
     RANDOM_SEED, START_DATE, END_DATE,
     SKIP_BACKTEST, FORCE_DOWNLOAD, RETRY_MISSING_TICKERS,
+    TOP_N_STOCKS,
 )
 
-from module.data_router import DataRouter
-from module.feature_engineering import (
-    FundamentalFeatureBuilder,
-    TechnicalFeatureBuilder,
-    ValuationFeatureBuilder,
-    InsiderFeatureBuilder,
-    SentimentFeatureBuilder,
-)
+from module.common.data_router import DataRouter
+from module.steps.step_02_dataset.builders.fundamental import FundamentalFeatureBuilder
+from module.steps.step_02_dataset.builders.insider import InsiderFeatureBuilder
+from module.steps.step_02_dataset.builders.sentiment import SentimentFeatureBuilder
+from module.steps.step_02_dataset.builders.technical import TechnicalFeatureBuilder
+from module.steps.step_02_dataset.builders.valuation import ValuationFeatureBuilder
 
-from module.pipeline.data_ops import download_data, prepare_data, get_available_tickers, retry_missing_tickers
-from module.pipeline.dataset_builder import build_master_dataset
-from module.pipeline.evaluator import run_walkforward_pipeline
-from module.pipeline.live_fold import run_live_fold
-from module.visualizer import Visualizer
+from module.steps.step_01_data.pipeline import download_data, prepare_data, get_available_tickers, retry_missing_tickers
+from module.steps.step_02_dataset.dataset import build_master_dataset
+from module.steps.step_04_evaluation.evaluator import run_walkforward_pipeline
+from module.steps.step_04_evaluation.visualization import Visualizer
+from module.steps.step_05_live.live_fold import run_live_fold
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 Path(RESULTS_DIR).mkdir(parents=True, exist_ok=True)
@@ -163,6 +162,7 @@ def main():
             walkforward_train_years=WALKFORWARD_TRAIN_YEARS,
             walkforward_test_quarters=WALKFORWARD_TEST_QUARTERS,
             risk_free_rate=RISK_FREE_RATE,
+            top_n_stocks=TOP_N_STOCKS,
             random_seed=RANDOM_SEED,
         )
     else:
@@ -182,6 +182,7 @@ def main():
         sentiment_builder=sentiment_builder,
         results_dir=RESULTS_DIR,
         agents_results_dir=AGENTS_RESULTS_DIR,
+        top_n=TOP_N_STOCKS,
         min_history_quarters=MIN_HISTORY_QUARTERS,
         random_seed=RANDOM_SEED,
     )

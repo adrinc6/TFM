@@ -19,8 +19,8 @@ import numpy as np
 import pandas as pd
 from typing import Dict, List, Optional
 
-from module.agents.base_agent import BaseAgent
-from module.explainer import AgentExplainer, build_explainer_for_agent
+from module.agents.base import BaseAgent
+from module.steps.step_04_evaluation.explainability import AgentExplainer, build_explainer_for_agent
 from environment import (
     META_LR_C, META_GBM_N_ESTIMATORS, META_GBM_MAX_DEPTH,
     META_GBM_LEARNING_RATE, META_GBM_SUBSAMPLE, META_CV_FOLDS,

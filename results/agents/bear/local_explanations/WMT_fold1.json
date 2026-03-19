@@ -1,0 +1,80 @@
+{
+  "ticker": "WMT",
+  "score": 0.3813,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.01590641207067748,
+      "raw_value": 8.82,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.014412868830391282,
+      "raw_value": -0.1846153846153846,
+      "direction": "negative"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": -0.009101785391344422,
+      "raw_value": 0.5,
+      "direction": "negative"
+    }
+  ],
+  "text": "WMT — Score: 0.38 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 6438000000.000  [contribucion SHAP: +0.097]\n  + Deuda neta / EBITDA = 3.48x  [contribucion SHAP: +0.014]\n  + Acciones compradas netas por insiders (90 días) = 0.000  [contribucion SHAP: +0.011]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = 8.820  [contribucion SHAP: -0.016]\n  - Eps Revision = -0.185  [contribucion SHAP: -0.014]\n  - Proporción de ventas de insiders (>0.7 = red flag) = 0.50x  [contribucion SHAP: -0.009]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.09661683971942357,
+      "raw_value": 6438000000.0,
+      "direction": "positive",
+      "value_formatted": "6438000000.000"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.01590641207067748,
+      "raw_value": 8.82,
+      "direction": "negative",
+      "value_formatted": "8.820"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.014412868830391282,
+      "raw_value": -0.1846153846153846,
+      "direction": "negative",
+      "value_formatted": "-0.185"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.014301667282925985,
+      "raw_value": 3.4778776818303214,
+      "direction": "positive",
+      "value_formatted": "3.48x"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.011235819734669205,
+      "raw_value": 0.0,
+      "direction": "positive",
+      "value_formatted": "0.000"
+    },
+    {
+      "feature": "insider_sell_ratio",
+      "description": "Proporción de ventas de insiders (>0.7 = red flag)",
+      "shap_value": -0.009101785391344422,
+      "raw_value": 0.5,
+      "direction": "negative",
+      "value_formatted": "0.50x"
+    }
+  ]
+}

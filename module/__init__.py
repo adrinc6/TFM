@@ -1,1 +1,1 @@
-# module — paquete principal del sistema Multi-Agente ML Stock Picker
+"""Top-level package for the multi-agent stock picker system."""

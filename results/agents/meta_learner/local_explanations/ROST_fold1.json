@@ -1,0 +1,73 @@
+{
+  "ticker": "ROST",
+  "score": 0.3722,
+  "label": "Underperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.08393984905347766,
+      "raw_value": 0.30403457609513107,
+      "direction": "negative"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.0315869636586078,
+      "raw_value": 0.5059756457805633,
+      "direction": "negative"
+    }
+  ],
+  "text": "ROST — Score: 0.37 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.366  [contribucion SHAP: +0.185]\n  + Mom Minus Bear = 0.000  [contribucion SHAP: +0.057]\n  + VIX (volatilidad implícita de mercado) = 16.4  [contribucion SHAP: +0.037]\n  + Sector Transportation = 0.000  [contribucion SHAP: +0.028]\n\nFactores EN CONTRA:\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.304  [contribucion SHAP: -0.084]\n  - Score del Agente Fundamental (salud financiera) = 0.506  [contribucion SHAP: -0.032]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.1851250875172265,
+      "raw_value": 0.36604560254289725,
+      "direction": "positive",
+      "value_formatted": "0.366"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.08393984905347766,
+      "raw_value": 0.30403457609513107,
+      "direction": "negative",
+      "value_formatted": "0.304"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": 0.056705409608816953,
+      "raw_value": 0.0,
+      "direction": "positive",
+      "value_formatted": "0.000"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.03728601541781379,
+      "raw_value": 16.43000030517578,
+      "direction": "positive",
+      "value_formatted": "16.4"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.0315869636586078,
+      "raw_value": 0.5059756457805633,
+      "direction": "negative",
+      "value_formatted": "0.506"
+    },
+    {
+      "feature": "sector_Transportation",
+      "description": "Sector Transportation",
+      "shap_value": 0.0280768625820623,
+      "raw_value": 0.0,
+      "direction": "positive",
+      "value_formatted": "0.000"
+    }
+  ]
+}

@@ -2056,3 +2056,407 @@ weighted avg       0.70      0.69      0.69       120
 2026-03-19 14:23:47,677  INFO    _macro/us10y.json  skip
 2026-03-19 14:23:47,677  INFO    _macro/us2y.json  skip
 2026-03-19 14:23:47,677  INFO  Descargando 200 tickers...
+2026-03-19 14:30:35,687  INFO  ============================================================
+2026-03-19 14:30:35,687  INFO    INICIANDO PIPELINE ML MULTI-AGENTE STOCK PICKER
+2026-03-19 14:30:35,687  INFO  ============================================================
+2026-03-19 14:30:35,890  INFO  PASO 1 — DESCARGANDO DATOS (Finnhub + Yahoo Finance)
+2026-03-19 14:30:35,891  INFO    Tickers: 200 | 2015-01-01 → 2026-01-01
+2026-03-19 14:30:35,891  INFO    Destino: data_finnhub
+2026-03-19 14:30:35,892  INFO  ==================================================
+2026-03-19 14:30:35,893  INFO    Finnhub + Yahoo Finance Downloader
+2026-03-19 14:30:35,893  INFO    Tickers  : 200
+2026-03-19 14:30:35,893  INFO    Período  : 2015-01-01 → 2026-01-01
+2026-03-19 14:30:35,894  INFO    Destino  : C:\Users\PC\Desktop\Documents\TFM\data_finnhub
+2026-03-19 14:30:35,894  INFO  ==================================================
+2026-03-19 14:30:35,895  INFO  Descargando macro...
+2026-03-19 14:30:35,895  INFO    _macro/vix.json  skip
+2026-03-19 14:30:35,896  INFO    _macro/sp500.json  skip
+2026-03-19 14:30:35,896  INFO    _macro/us10y.json  skip
+2026-03-19 14:30:35,896  INFO    _macro/us2y.json  skip
+2026-03-19 14:30:35,897  INFO  Descargando 200 tickers...
+2026-03-19 14:30:35,899  DEBUG  [NVDA] ok=0 skip=13 nodata=0
+2026-03-19 14:30:35,900  DEBUG  [AAPL] ok=0 skip=13 nodata=0
+2026-03-19 14:30:35,901  DEBUG  [MSFT] ok=0 skip=13 nodata=0
+2026-03-19 14:30:35,902  DEBUG  [AMZN] ok=0 skip=13 nodata=0
+2026-03-19 14:30:35,902  DEBUG  [GOOGL] ok=0 skip=13 nodata=0
+2026-03-19 14:30:35,903  DEBUG  [GOOG] ok=0 skip=13 nodata=0
+2026-03-19 14:30:35,904  DEBUG  [META] ok=0 skip=13 nodata=0
+2026-03-19 14:30:35,909  DEBUG  Starting new HTTPS connection (1): finnhub.io:443
+2026-03-19 14:30:36,898  DEBUG  https://finnhub.io:443 "GET /api/v1/company-news?symbol=AVGO&from=2025-03-19&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 14:30:57,980  WARNING    Error en /stock/peers: HTTPSConnectionPool(host='finnhub.io', port=443): Read timed out. (read timeout=20)
+2026-03-19 14:30:57,980  DEBUG  Starting new HTTPS connection (2): finnhub.io:443
+2026-03-19 14:30:59,296  DEBUG  https://finnhub.io:443 "GET /api/v1/quote?symbol=AVGO HTTP/1.1" 200 None
+2026-03-19 14:30:59,306  DEBUG  [AVGO] ok=2 skip=10 nodata=1
+2026-03-19 14:30:59,309  DEBUG  [TSLA] ok=0 skip=13 nodata=0
+2026-03-19 14:30:59,316  DEBUG  Starting new HTTPS connection (1): query1.finance.yahoo.com:443
+2026-03-19 14:31:00,252  DEBUG  https://query1.finance.yahoo.com:443 "GET /v8/finance/chart/BRK.B?period1=1420066800&period2=1767222000&interval=1d&events=div%2Csplits&includeAdjustedClose=true HTTP/1.1" 404 108
+2026-03-19 14:31:00,253  WARNING  [BRK.B] Yahoo status 404
+2026-03-19 14:31:00,470  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/profile2?symbol=BRK.B HTTP/1.1" 200 None
+2026-03-19 14:31:01,728  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/metric?symbol=BRK.B&metric=all HTTP/1.1" 200 None
+2026-03-19 14:31:02,925  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=BRK.B&freq=annual HTTP/1.1" 200 37
+2026-03-19 14:31:04,112  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=BRK.B&freq=quarterly HTTP/1.1" 200 37
+2026-03-19 14:31:16,217  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/earnings?symbol=BRK.B&limit=20 HTTP/1.1" 200 None
+2026-03-19 14:31:24,348  DEBUG  https://finnhub.io:443 "GET /api/v1/calendar/earnings?from=2015-01-01&to=2026-01-01&symbol=BRK.B HTTP/1.1" 200 23
+2026-03-19 14:31:42,347  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/recommendation?symbol=BRK.B HTTP/1.1" 200 None
+2026-03-19 14:31:43,526  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-transactions?symbol=BRK.B&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 14:31:44,727  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-sentiment?symbol=BRK.B&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 28
+2026-03-19 14:31:46,109  DEBUG  https://finnhub.io:443 "GET /api/v1/company-news?symbol=BRK.B&from=2025-03-19&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 14:31:52,116  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/peers?symbol=BRK.B HTTP/1.1" 200 None
+2026-03-19 14:31:53,348  DEBUG  https://finnhub.io:443 "GET /api/v1/quote?symbol=BRK.B HTTP/1.1" 200 None
+2026-03-19 14:31:53,358  DEBUG  [BRK.B] ok=12 skip=0 nodata=1
+2026-03-19 14:31:53,583  DEBUG  https://query1.finance.yahoo.com:443 "GET /v8/finance/chart/WMT?period1=1420066800&period2=1767222000&interval=1d&events=div%2Csplits&includeAdjustedClose=true HTTP/1.1" 200 None
+2026-03-19 14:31:54,547  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/profile2?symbol=WMT HTTP/1.1" 200 None
+2026-03-19 14:31:55,739  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/metric?symbol=WMT&metric=all HTTP/1.1" 200 None
+2026-03-19 14:31:56,989  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=WMT&freq=annual HTTP/1.1" 200 None
+2026-03-19 14:31:58,315  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=WMT&freq=quarterly HTTP/1.1" 200 None
+2026-03-19 14:32:05,439  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/earnings?symbol=WMT&limit=20 HTTP/1.1" 200 None
+2026-03-19 14:32:25,501  INFO  ============================================================
+2026-03-19 14:32:25,502  INFO    INICIANDO PIPELINE ML MULTI-AGENTE STOCK PICKER
+2026-03-19 14:32:25,502  INFO  ============================================================
+2026-03-19 14:32:25,709  INFO  PASO 1 — DESCARGANDO DATOS (Finnhub + Yahoo Finance)
+2026-03-19 14:32:25,709  INFO    Tickers: 200 | 2015-01-01 → 2026-01-01
+2026-03-19 14:32:25,709  INFO    Destino: data_finnhub
+2026-03-19 14:32:25,719  INFO  ==================================================
+2026-03-19 14:32:25,719  INFO    Finnhub + Yahoo Finance Downloader
+2026-03-19 14:32:25,719  INFO    Tickers  : 200
+2026-03-19 14:32:25,719  INFO    Período  : 2015-01-01 → 2026-01-01
+2026-03-19 14:32:25,721  INFO    Destino  : C:\Users\PC\Desktop\Documents\TFM\data_finnhub
+2026-03-19 14:32:25,721  INFO  ==================================================
+2026-03-19 14:32:25,721  INFO  Descargando macro...
+2026-03-19 14:32:25,722  INFO    _macro/vix.json  skip
+2026-03-19 14:32:25,722  INFO    _macro/sp500.json  skip
+2026-03-19 14:32:25,722  INFO    _macro/us10y.json  skip
+2026-03-19 14:32:25,723  INFO    _macro/us2y.json  skip
+2026-03-19 14:32:25,723  INFO  Descargando 200 tickers...
+2026-03-19 14:32:25,725  DEBUG  [NVDA] ok=0 skip=13 nodata=0
+2026-03-19 14:32:25,728  DEBUG  [AAPL] ok=0 skip=13 nodata=0
+2026-03-19 14:32:25,729  DEBUG  [MSFT] ok=0 skip=13 nodata=0
+2026-03-19 14:32:25,729  DEBUG  [AMZN] ok=0 skip=13 nodata=0
+2026-03-19 14:32:25,730  DEBUG  [GOOGL] ok=0 skip=13 nodata=0
+2026-03-19 14:32:25,731  DEBUG  [GOOG] ok=0 skip=13 nodata=0
+2026-03-19 14:32:25,732  DEBUG  [META] ok=0 skip=13 nodata=0
+2026-03-19 14:32:25,734  DEBUG  Starting new HTTPS connection (1): finnhub.io:443
+2026-03-19 14:32:26,806  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/peers?symbol=AVGO HTTP/1.1" 200 None
+2026-03-19 14:32:26,812  DEBUG  [AVGO] ok=1 skip=12 nodata=0
+2026-03-19 14:32:26,813  DEBUG  [TSLA] ok=0 skip=13 nodata=0
+2026-03-19 14:32:26,817  DEBUG  Starting new HTTPS connection (1): query1.finance.yahoo.com:443
+2026-03-19 14:32:27,798  DEBUG  https://query1.finance.yahoo.com:443 "GET /v8/finance/chart/BRK.B?period1=1420066800&period2=1767222000&interval=1d&events=div%2Csplits&includeAdjustedClose=true HTTP/1.1" 404 108
+2026-03-19 14:32:27,799  WARNING  [BRK.B] Yahoo status 404
+2026-03-19 14:32:27,799  DEBUG  [BRK.B] ok=0 skip=12 nodata=1
+2026-03-19 14:32:27,980  DEBUG  https://finnhub.io:443 "GET /api/v1/calendar/earnings?from=2015-01-01&to=2026-01-01&symbol=WMT HTTP/1.1" 200 23
+2026-03-19 14:32:29,166  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/recommendation?symbol=WMT HTTP/1.1" 200 None
+2026-03-19 14:32:30,668  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-transactions?symbol=WMT&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 14:32:31,909  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-sentiment?symbol=WMT&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 14:32:33,208  DEBUG  https://finnhub.io:443 "GET /api/v1/company-news?symbol=WMT&from=2025-03-19&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 14:32:53,066  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/peers?symbol=WMT HTTP/1.1" 200 None
+2026-03-19 14:32:54,426  DEBUG  https://finnhub.io:443 "GET /api/v1/quote?symbol=WMT HTTP/1.1" 200 None
+2026-03-19 14:32:54,431  DEBUG  [WMT] ok=7 skip=6 nodata=0
+2026-03-19 14:32:54,603  DEBUG  https://query1.finance.yahoo.com:443 "GET /v8/finance/chart/LLY?period1=1420066800&period2=1767222000&interval=1d&events=div%2Csplits&includeAdjustedClose=true HTTP/1.1" 200 None
+2026-03-19 14:32:55,600  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/profile2?symbol=LLY HTTP/1.1" 200 None
+2026-03-19 14:32:56,816  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/metric?symbol=LLY&metric=all HTTP/1.1" 200 None
+2026-03-19 14:32:58,084  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=LLY&freq=annual HTTP/1.1" 200 None
+2026-03-19 14:32:59,329  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=LLY&freq=quarterly HTTP/1.1" 200 None
+2026-03-19 14:33:14,712  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/earnings?symbol=LLY&limit=20 HTTP/1.1" 200 None
+2026-03-19 16:46:39,572  INFO  ============================================================
+2026-03-19 16:46:39,572  INFO    INICIANDO PIPELINE ML MULTI-AGENTE STOCK PICKER
+2026-03-19 16:46:39,572  INFO  ============================================================
+2026-03-19 16:46:39,572  INFO  PASO 1 — DESCARGANDO DATOS (Finnhub + Yahoo Finance)
+2026-03-19 16:46:39,572  INFO    Tickers: 200 | 2015-01-01 → 2026-01-01
+2026-03-19 16:46:39,572  INFO    Destino: data_finnhub
+2026-03-19 16:46:39,572  INFO  ==================================================
+2026-03-19 16:46:39,572  INFO    Finnhub + Yahoo Finance Downloader
+2026-03-19 16:46:39,572  INFO    Tickers  : 200
+2026-03-19 16:46:39,572  INFO    Período  : 2015-01-01 → 2026-01-01
+2026-03-19 16:46:39,572  INFO    Destino  : C:\Users\PC\Desktop\Documents\TFM\data_finnhub
+2026-03-19 16:46:39,572  INFO  ==================================================
+2026-03-19 16:46:39,572  INFO  Descargando macro...
+2026-03-19 16:46:39,572  INFO    _macro/vix.json  skip
+2026-03-19 16:46:39,572  INFO    _macro/sp500.json  skip
+2026-03-19 16:46:39,572  INFO    _macro/us10y.json  skip
+2026-03-19 16:46:39,572  INFO    _macro/us2y.json  skip
+2026-03-19 16:46:39,572  INFO  Descargando 200 tickers...
+2026-03-19 16:46:39,586  DEBUG  [NVDA] ok=0 skip=13 nodata=0
+2026-03-19 16:46:39,587  DEBUG  [AAPL] ok=0 skip=13 nodata=0
+2026-03-19 16:46:39,588  DEBUG  [MSFT] ok=0 skip=13 nodata=0
+2026-03-19 16:46:39,589  DEBUG  [AMZN] ok=0 skip=13 nodata=0
+2026-03-19 16:46:39,590  DEBUG  [GOOGL] ok=0 skip=13 nodata=0
+2026-03-19 16:46:39,591  DEBUG  [GOOG] ok=0 skip=13 nodata=0
+2026-03-19 16:46:39,592  DEBUG  [META] ok=0 skip=13 nodata=0
+2026-03-19 16:46:39,593  DEBUG  [AVGO] ok=0 skip=13 nodata=0
+2026-03-19 16:46:39,593  DEBUG  [TSLA] ok=0 skip=13 nodata=0
+2026-03-19 16:46:39,600  DEBUG  Starting new HTTPS connection (1): query1.finance.yahoo.com:443
+2026-03-19 16:46:40,587  DEBUG  https://query1.finance.yahoo.com:443 "GET /v8/finance/chart/BRK.B?period1=1420066800&period2=1767222000&interval=1d&events=div%2Csplits&includeAdjustedClose=true HTTP/1.1" 404 108
+2026-03-19 16:46:40,587  WARNING  [BRK.B] Yahoo status 404
+2026-03-19 16:46:40,587  DEBUG  [BRK.B] ok=0 skip=12 nodata=1
+2026-03-19 16:46:40,587  DEBUG  [WMT] ok=0 skip=13 nodata=0
+2026-03-19 16:46:40,587  DEBUG  Starting new HTTPS connection (1): finnhub.io:443
+2026-03-19 16:46:43,136  DEBUG  https://finnhub.io:443 "GET /api/v1/calendar/earnings?from=2015-01-01&to=2026-01-01&symbol=LLY HTTP/1.1" 200 23
+2026-03-19 16:46:44,328  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/recommendation?symbol=LLY HTTP/1.1" 200 None
+2026-03-19 16:46:45,808  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-transactions?symbol=LLY&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:46:47,003  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-sentiment?symbol=LLY&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:46:48,208  DEBUG  https://finnhub.io:443 "GET /api/v1/company-news?symbol=LLY&from=2025-03-19&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:46:51,214  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/peers?symbol=LLY HTTP/1.1" 200 None
+2026-03-19 16:46:52,434  DEBUG  https://finnhub.io:443 "GET /api/v1/quote?symbol=LLY HTTP/1.1" 200 None
+2026-03-19 16:46:52,440  DEBUG  [LLY] ok=7 skip=6 nodata=0
+2026-03-19 16:46:52,441  DEBUG  [JPM] ok=0 skip=13 nodata=0
+2026-03-19 16:46:52,587  DEBUG  https://query1.finance.yahoo.com:443 "GET /v8/finance/chart/XOM?period1=1420066800&period2=1767222000&interval=1d&events=div%2Csplits&includeAdjustedClose=true HTTP/1.1" 200 None
+2026-03-19 16:46:53,625  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/profile2?symbol=XOM HTTP/1.1" 200 None
+2026-03-19 16:46:54,839  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/metric?symbol=XOM&metric=all HTTP/1.1" 200 None
+2026-03-19 16:46:56,094  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=XOM&freq=annual HTTP/1.1" 200 None
+2026-03-19 16:46:57,518  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=XOM&freq=quarterly HTTP/1.1" 200 None
+2026-03-19 16:46:59,591  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/earnings?symbol=XOM&limit=20 HTTP/1.1" 200 None
+2026-03-19 16:47:00,796  DEBUG  https://finnhub.io:443 "GET /api/v1/calendar/earnings?from=2015-01-01&to=2026-01-01&symbol=XOM HTTP/1.1" 200 23
+2026-03-19 16:47:02,022  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/recommendation?symbol=XOM HTTP/1.1" 200 None
+2026-03-19 16:47:03,331  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-transactions?symbol=XOM&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:47:04,543  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-sentiment?symbol=XOM&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:47:05,772  DEBUG  https://finnhub.io:443 "GET /api/v1/company-news?symbol=XOM&from=2025-03-19&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:47:08,090  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/peers?symbol=XOM HTTP/1.1" 200 26
+2026-03-19 16:47:09,374  DEBUG  https://finnhub.io:443 "GET /api/v1/quote?symbol=XOM HTTP/1.1" 200 None
+2026-03-19 16:47:09,381  DEBUG  [XOM] ok=13 skip=0 nodata=0
+2026-03-19 16:47:09,384  DEBUG  [V] ok=0 skip=13 nodata=0
+2026-03-19 16:47:09,540  DEBUG  https://query1.finance.yahoo.com:443 "GET /v8/finance/chart/JNJ?period1=1420066800&period2=1767222000&interval=1d&events=div%2Csplits&includeAdjustedClose=true HTTP/1.1" 200 None
+2026-03-19 16:47:10,565  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/profile2?symbol=JNJ HTTP/1.1" 200 None
+2026-03-19 16:47:11,767  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/metric?symbol=JNJ&metric=all HTTP/1.1" 200 None
+2026-03-19 16:47:13,224  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=JNJ&freq=annual HTTP/1.1" 200 None
+2026-03-19 16:47:14,658  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=JNJ&freq=quarterly HTTP/1.1" 200 None
+2026-03-19 16:47:17,273  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/earnings?symbol=JNJ&limit=20 HTTP/1.1" 200 None
+2026-03-19 16:47:18,523  DEBUG  https://finnhub.io:443 "GET /api/v1/calendar/earnings?from=2015-01-01&to=2026-01-01&symbol=JNJ HTTP/1.1" 200 23
+2026-03-19 16:47:19,707  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/recommendation?symbol=JNJ HTTP/1.1" 200 None
+2026-03-19 16:47:21,018  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-transactions?symbol=JNJ&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:47:22,546  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-sentiment?symbol=JNJ&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:47:23,768  DEBUG  https://finnhub.io:443 "GET /api/v1/company-news?symbol=JNJ&from=2025-03-19&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:47:32,152  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/peers?symbol=JNJ HTTP/1.1" 200 None
+2026-03-19 16:47:33,379  DEBUG  https://finnhub.io:443 "GET /api/v1/quote?symbol=JNJ HTTP/1.1" 200 None
+2026-03-19 16:47:33,383  DEBUG  [JNJ] ok=13 skip=0 nodata=0
+2026-03-19 16:47:33,493  DEBUG  https://query1.finance.yahoo.com:443 "GET /v8/finance/chart/MU?period1=1420066800&period2=1767222000&interval=1d&events=div%2Csplits&includeAdjustedClose=true HTTP/1.1" 200 None
+2026-03-19 16:47:37,479  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/profile2?symbol=MU HTTP/1.1" 200 None
+2026-03-19 16:47:38,652  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/metric?symbol=MU&metric=all HTTP/1.1" 200 None
+2026-03-19 16:47:39,975  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=MU&freq=annual HTTP/1.1" 200 None
+2026-03-19 16:47:41,215  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=MU&freq=quarterly HTTP/1.1" 200 None
+2026-03-19 16:47:43,295  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/earnings?symbol=MU&limit=20 HTTP/1.1" 200 None
+2026-03-19 16:47:44,724  DEBUG  https://finnhub.io:443 "GET /api/v1/calendar/earnings?from=2015-01-01&to=2026-01-01&symbol=MU HTTP/1.1" 200 23
+2026-03-19 16:47:45,912  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/recommendation?symbol=MU HTTP/1.1" 200 None
+2026-03-19 16:47:47,312  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-transactions?symbol=MU&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:47:48,869  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-sentiment?symbol=MU&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:47:50,094  DEBUG  https://finnhub.io:443 "GET /api/v1/company-news?symbol=MU&from=2025-03-19&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:47:52,441  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/peers?symbol=MU HTTP/1.1" 200 None
+2026-03-19 16:47:53,717  DEBUG  https://finnhub.io:443 "GET /api/v1/quote?symbol=MU HTTP/1.1" 200 None
+2026-03-19 16:47:53,722  DEBUG  [MU] ok=13 skip=0 nodata=0
+2026-03-19 16:47:53,830  DEBUG  https://query1.finance.yahoo.com:443 "GET /v8/finance/chart/COST?period1=1420066800&period2=1767222000&interval=1d&events=div%2Csplits&includeAdjustedClose=true HTTP/1.1" 200 None
+2026-03-19 16:47:56,299  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/profile2?symbol=COST HTTP/1.1" 200 None
+2026-03-19 16:47:57,496  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/metric?symbol=COST&metric=all HTTP/1.1" 200 None
+2026-03-19 16:47:58,894  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=COST&freq=annual HTTP/1.1" 200 None
+2026-03-19 16:48:00,256  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=COST&freq=quarterly HTTP/1.1" 200 None
+2026-03-19 16:48:05,922  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/earnings?symbol=COST&limit=20 HTTP/1.1" 200 None
+2026-03-19 16:48:07,133  DEBUG  https://finnhub.io:443 "GET /api/v1/calendar/earnings?from=2015-01-01&to=2026-01-01&symbol=COST HTTP/1.1" 200 23
+2026-03-19 16:48:09,294  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/recommendation?symbol=COST HTTP/1.1" 200 None
+2026-03-19 16:48:10,609  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-transactions?symbol=COST&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:48:11,816  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-sentiment?symbol=COST&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:48:13,028  DEBUG  https://finnhub.io:443 "GET /api/v1/company-news?symbol=COST&from=2025-03-19&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:48:14,972  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/peers?symbol=COST HTTP/1.1" 200 None
+2026-03-19 16:48:16,249  DEBUG  https://finnhub.io:443 "GET /api/v1/quote?symbol=COST HTTP/1.1" 200 None
+2026-03-19 16:48:16,252  DEBUG  [COST] ok=13 skip=0 nodata=0
+2026-03-19 16:48:16,368  DEBUG  https://query1.finance.yahoo.com:443 "GET /v8/finance/chart/MA?period1=1420066800&period2=1767222000&interval=1d&events=div%2Csplits&includeAdjustedClose=true HTTP/1.1" 200 None
+2026-03-19 16:48:17,429  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/profile2?symbol=MA HTTP/1.1" 200 None
+2026-03-19 16:48:18,619  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/metric?symbol=MA&metric=all HTTP/1.1" 200 None
+2026-03-19 16:48:19,844  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=MA&freq=annual HTTP/1.1" 200 None
+2026-03-19 16:48:21,275  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=MA&freq=quarterly HTTP/1.1" 200 None
+2026-03-19 16:48:22,630  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/earnings?symbol=MA&limit=20 HTTP/1.1" 200 None
+2026-03-19 16:48:23,799  DEBUG  https://finnhub.io:443 "GET /api/v1/calendar/earnings?from=2015-01-01&to=2026-01-01&symbol=MA HTTP/1.1" 200 23
+2026-03-19 16:48:24,971  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/recommendation?symbol=MA HTTP/1.1" 200 None
+2026-03-19 16:48:26,342  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-transactions?symbol=MA&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:48:27,903  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-sentiment?symbol=MA&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:48:29,132  DEBUG  https://finnhub.io:443 "GET /api/v1/company-news?symbol=MA&from=2025-03-19&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:48:31,504  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/peers?symbol=MA HTTP/1.1" 200 None
+2026-03-19 16:48:32,766  DEBUG  https://finnhub.io:443 "GET /api/v1/quote?symbol=MA HTTP/1.1" 200 None
+2026-03-19 16:48:32,768  DEBUG  [MA] ok=13 skip=0 nodata=0
+2026-03-19 16:48:32,876  DEBUG  https://query1.finance.yahoo.com:443 "GET /v8/finance/chart/ORCL?period1=1420066800&period2=1767222000&interval=1d&events=div%2Csplits&includeAdjustedClose=true HTTP/1.1" 200 None
+2026-03-19 16:48:33,958  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/profile2?symbol=ORCL HTTP/1.1" 200 None
+2026-03-19 16:48:35,156  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/metric?symbol=ORCL&metric=all HTTP/1.1" 200 None
+2026-03-19 16:48:36,406  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=ORCL&freq=annual HTTP/1.1" 200 None
+2026-03-19 16:48:37,661  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=ORCL&freq=quarterly HTTP/1.1" 200 None
+2026-03-19 16:48:40,291  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/earnings?symbol=ORCL&limit=20 HTTP/1.1" 200 None
+2026-03-19 16:48:41,481  DEBUG  https://finnhub.io:443 "GET /api/v1/calendar/earnings?from=2015-01-01&to=2026-01-01&symbol=ORCL HTTP/1.1" 200 23
+2026-03-19 16:48:42,660  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/recommendation?symbol=ORCL HTTP/1.1" 200 None
+2026-03-19 16:48:43,960  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-transactions?symbol=ORCL&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:48:45,199  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-sentiment?symbol=ORCL&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:48:46,437  DEBUG  https://finnhub.io:443 "GET /api/v1/company-news?symbol=ORCL&from=2025-03-19&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:48:59,487  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/peers?symbol=ORCL HTTP/1.1" 200 None
+2026-03-19 16:49:00,743  DEBUG  https://finnhub.io:443 "GET /api/v1/quote?symbol=ORCL HTTP/1.1" 200 None
+2026-03-19 16:49:00,750  DEBUG  [ORCL] ok=13 skip=0 nodata=0
+2026-03-19 16:49:00,831  DEBUG  https://query1.finance.yahoo.com:443 "GET /v8/finance/chart/NFLX?period1=1420066800&period2=1767222000&interval=1d&events=div%2Csplits&includeAdjustedClose=true HTTP/1.1" 200 None
+2026-03-19 16:49:01,907  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/profile2?symbol=NFLX HTTP/1.1" 200 None
+2026-03-19 16:49:03,089  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/metric?symbol=NFLX&metric=all HTTP/1.1" 200 None
+2026-03-19 16:49:04,391  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=NFLX&freq=annual HTTP/1.1" 200 None
+2026-03-19 16:49:05,591  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=NFLX&freq=quarterly HTTP/1.1" 200 None
+2026-03-19 16:49:08,028  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/earnings?symbol=NFLX&limit=20 HTTP/1.1" 200 None
+2026-03-19 16:49:09,348  DEBUG  https://finnhub.io:443 "GET /api/v1/calendar/earnings?from=2015-01-01&to=2026-01-01&symbol=NFLX HTTP/1.1" 200 23
+2026-03-19 16:49:13,148  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/recommendation?symbol=NFLX HTTP/1.1" 200 None
+2026-03-19 16:49:14,379  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-transactions?symbol=NFLX&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:49:15,645  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-sentiment?symbol=NFLX&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:49:16,866  DEBUG  https://finnhub.io:443 "GET /api/v1/company-news?symbol=NFLX&from=2025-03-19&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:49:37,917  WARNING    Error en /stock/peers: HTTPSConnectionPool(host='finnhub.io', port=443): Read timed out. (read timeout=20)
+2026-03-19 16:49:37,917  DEBUG  Starting new HTTPS connection (2): finnhub.io:443
+2026-03-19 16:49:38,978  DEBUG  https://finnhub.io:443 "GET /api/v1/quote?symbol=NFLX HTTP/1.1" 200 None
+2026-03-19 16:49:38,983  DEBUG  [NFLX] ok=12 skip=0 nodata=1
+2026-03-19 16:49:39,123  DEBUG  https://query1.finance.yahoo.com:443 "GET /v8/finance/chart/CVX?period1=1420066800&period2=1767222000&interval=1d&events=div%2Csplits&includeAdjustedClose=true HTTP/1.1" 200 None
+2026-03-19 16:49:40,138  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/profile2?symbol=CVX HTTP/1.1" 200 None
+2026-03-19 16:49:41,345  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/metric?symbol=CVX&metric=all HTTP/1.1" 200 None
+2026-03-19 16:49:59,673  INFO  ============================================================
+2026-03-19 16:49:59,673  INFO    INICIANDO PIPELINE ML MULTI-AGENTE STOCK PICKER
+2026-03-19 16:49:59,673  INFO  ============================================================
+2026-03-19 16:49:59,673  INFO  PASO 1 — DESCARGANDO DATOS (Finnhub + Yahoo Finance)
+2026-03-19 16:49:59,673  INFO    Tickers: 503 | 2015-01-01 → 2026-01-01
+2026-03-19 16:49:59,673  INFO    Destino: data_finnhub
+2026-03-19 16:49:59,673  INFO  ==================================================
+2026-03-19 16:49:59,673  INFO    Finnhub + Yahoo Finance Downloader
+2026-03-19 16:49:59,673  INFO    Tickers  : 503
+2026-03-19 16:49:59,673  INFO    Período  : 2015-01-01 → 2026-01-01
+2026-03-19 16:49:59,673  INFO    Destino  : C:\Users\PC\Desktop\Documents\TFM\data_finnhub
+2026-03-19 16:49:59,673  INFO  ==================================================
+2026-03-19 16:49:59,683  INFO  Descargando macro...
+2026-03-19 16:49:59,683  INFO    _macro/vix.json  skip
+2026-03-19 16:49:59,684  INFO    _macro/sp500.json  skip
+2026-03-19 16:49:59,684  INFO    _macro/us10y.json  skip
+2026-03-19 16:49:59,684  INFO    _macro/us2y.json  skip
+2026-03-19 16:49:59,685  INFO  Descargando 503 tickers...
+2026-03-19 16:49:59,689  DEBUG  [NVDA] ok=0 skip=13 nodata=0
+2026-03-19 16:49:59,689  DEBUG  [AAPL] ok=0 skip=13 nodata=0
+2026-03-19 16:49:59,690  DEBUG  [MSFT] ok=0 skip=13 nodata=0
+2026-03-19 16:49:59,690  DEBUG  [AMZN] ok=0 skip=13 nodata=0
+2026-03-19 16:49:59,691  DEBUG  [GOOGL] ok=0 skip=13 nodata=0
+2026-03-19 16:49:59,693  DEBUG  [GOOG] ok=0 skip=13 nodata=0
+2026-03-19 16:49:59,693  DEBUG  [META] ok=0 skip=13 nodata=0
+2026-03-19 16:49:59,693  DEBUG  [AVGO] ok=0 skip=13 nodata=0
+2026-03-19 16:49:59,695  DEBUG  [TSLA] ok=0 skip=13 nodata=0
+2026-03-19 16:49:59,700  DEBUG  Starting new HTTPS connection (1): query1.finance.yahoo.com:443
+2026-03-19 16:50:00,565  DEBUG  https://query1.finance.yahoo.com:443 "GET /v8/finance/chart/BRK.B?period1=1420066800&period2=1767222000&interval=1d&events=div%2Csplits&includeAdjustedClose=true HTTP/1.1" 404 108
+2026-03-19 16:50:00,573  WARNING  [BRK.B] Yahoo status 404
+2026-03-19 16:50:00,573  DEBUG  [BRK.B] ok=0 skip=12 nodata=1
+2026-03-19 16:50:00,573  DEBUG  [WMT] ok=0 skip=13 nodata=0
+2026-03-19 16:50:00,573  DEBUG  [LLY] ok=0 skip=13 nodata=0
+2026-03-19 16:50:00,573  DEBUG  [JPM] ok=0 skip=13 nodata=0
+2026-03-19 16:50:00,579  DEBUG  [XOM] ok=0 skip=13 nodata=0
+2026-03-19 16:50:00,579  DEBUG  [V] ok=0 skip=13 nodata=0
+2026-03-19 16:50:00,579  DEBUG  [JNJ] ok=0 skip=13 nodata=0
+2026-03-19 16:50:00,583  DEBUG  [MU] ok=0 skip=13 nodata=0
+2026-03-19 16:50:00,583  DEBUG  [COST] ok=0 skip=13 nodata=0
+2026-03-19 16:50:00,583  DEBUG  [MA] ok=0 skip=13 nodata=0
+2026-03-19 16:50:00,583  DEBUG  [ORCL] ok=0 skip=13 nodata=0
+2026-03-19 16:50:00,589  DEBUG  Starting new HTTPS connection (1): finnhub.io:443
+2026-03-19 16:50:05,110  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/peers?symbol=NFLX HTTP/1.1" 200 None
+2026-03-19 16:50:05,112  DEBUG  [NFLX] ok=1 skip=12 nodata=0
+2026-03-19 16:50:06,315  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=CVX&freq=annual HTTP/1.1" 200 None
+2026-03-19 16:50:07,565  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=CVX&freq=quarterly HTTP/1.1" 200 None
+2026-03-19 16:50:09,021  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/earnings?symbol=CVX&limit=20 HTTP/1.1" 200 None
+2026-03-19 16:50:10,205  DEBUG  https://finnhub.io:443 "GET /api/v1/calendar/earnings?from=2015-01-01&to=2026-01-01&symbol=CVX HTTP/1.1" 200 23
+2026-03-19 16:50:14,441  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/recommendation?symbol=CVX HTTP/1.1" 200 None
+2026-03-19 16:50:15,795  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-transactions?symbol=CVX&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:50:17,037  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-sentiment?symbol=CVX&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:50:18,268  DEBUG  https://finnhub.io:443 "GET /api/v1/company-news?symbol=CVX&from=2025-03-19&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:50:28,234  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/peers?symbol=CVX HTTP/1.1" 200 26
+2026-03-19 16:50:29,435  DEBUG  https://finnhub.io:443 "GET /api/v1/quote?symbol=CVX HTTP/1.1" 200 None
+2026-03-19 16:50:29,440  DEBUG  [CVX] ok=10 skip=3 nodata=0
+2026-03-19 16:50:29,545  DEBUG  https://query1.finance.yahoo.com:443 "GET /v8/finance/chart/ABBV?period1=1420066800&period2=1767222000&interval=1d&events=div%2Csplits&includeAdjustedClose=true HTTP/1.1" 200 None
+2026-03-19 16:50:30,594  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/profile2?symbol=ABBV HTTP/1.1" 200 None
+2026-03-19 16:50:31,759  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/metric?symbol=ABBV&metric=all HTTP/1.1" 200 None
+2026-03-19 16:50:33,042  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=ABBV&freq=annual HTTP/1.1" 200 None
+2026-03-19 16:50:34,289  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=ABBV&freq=quarterly HTTP/1.1" 200 None
+2026-03-19 16:50:36,458  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/earnings?symbol=ABBV&limit=20 HTTP/1.1" 200 None
+2026-03-19 16:50:38,701  DEBUG  https://finnhub.io:443 "GET /api/v1/calendar/earnings?from=2015-01-01&to=2026-01-01&symbol=ABBV HTTP/1.1" 200 23
+2026-03-19 16:50:39,978  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/recommendation?symbol=ABBV HTTP/1.1" 200 None
+2026-03-19 16:50:41,288  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-transactions?symbol=ABBV&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:50:42,520  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-sentiment?symbol=ABBV&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:50:43,738  DEBUG  https://finnhub.io:443 "GET /api/v1/company-news?symbol=ABBV&from=2025-03-19&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:51:04,831  WARNING    Error en /stock/peers: HTTPSConnectionPool(host='finnhub.io', port=443): Read timed out. (read timeout=20)
+2026-03-19 16:51:04,834  DEBUG  Starting new HTTPS connection (2): finnhub.io:443
+2026-03-19 16:51:06,050  DEBUG  https://finnhub.io:443 "GET /api/v1/quote?symbol=ABBV HTTP/1.1" 200 None
+2026-03-19 16:51:06,054  DEBUG  [ABBV] ok=12 skip=0 nodata=1
+2026-03-19 16:51:06,120  DEBUG  https://query1.finance.yahoo.com:443 "GET /v8/finance/chart/PLTR?period1=1420066800&period2=1767222000&interval=1d&events=div%2Csplits&includeAdjustedClose=true HTTP/1.1" 200 None
+2026-03-19 16:51:07,214  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/profile2?symbol=PLTR HTTP/1.1" 200 None
+2026-03-19 16:51:08,399  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/metric?symbol=PLTR&metric=all HTTP/1.1" 200 None
+2026-03-19 16:51:09,597  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=PLTR&freq=annual HTTP/1.1" 200 None
+2026-03-19 16:51:10,839  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=PLTR&freq=quarterly HTTP/1.1" 200 None
+2026-03-19 16:51:12,625  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/earnings?symbol=PLTR&limit=20 HTTP/1.1" 200 None
+2026-03-19 16:51:14,870  DEBUG  https://finnhub.io:443 "GET /api/v1/calendar/earnings?from=2015-01-01&to=2026-01-01&symbol=PLTR HTTP/1.1" 200 23
+2026-03-19 16:51:16,148  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/recommendation?symbol=PLTR HTTP/1.1" 200 None
+2026-03-19 16:51:17,919  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-transactions?symbol=PLTR&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:51:19,412  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-sentiment?symbol=PLTR&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:51:20,642  DEBUG  https://finnhub.io:443 "GET /api/v1/company-news?symbol=PLTR&from=2025-03-19&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:51:22,053  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/peers?symbol=PLTR HTTP/1.1" 200 None
+2026-03-19 16:51:23,217  DEBUG  https://finnhub.io:443 "GET /api/v1/quote?symbol=PLTR HTTP/1.1" 200 None
+2026-03-19 16:51:23,223  DEBUG  [PLTR] ok=13 skip=0 nodata=0
+2026-03-19 16:51:23,458  DEBUG  https://query1.finance.yahoo.com:443 "GET /v8/finance/chart/PG?period1=1420066800&period2=1767222000&interval=1d&events=div%2Csplits&includeAdjustedClose=true HTTP/1.1" 200 None
+2026-03-19 16:51:24,397  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/profile2?symbol=PG HTTP/1.1" 200 None
+2026-03-19 16:51:25,574  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/metric?symbol=PG&metric=all HTTP/1.1" 200 None
+2026-03-19 16:51:26,803  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=PG&freq=annual HTTP/1.1" 200 None
+2026-03-19 16:51:28,295  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=PG&freq=quarterly HTTP/1.1" 200 None
+2026-03-19 16:51:29,975  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/earnings?symbol=PG&limit=20 HTTP/1.1" 200 None
+2026-03-19 16:51:32,141  DEBUG  https://finnhub.io:443 "GET /api/v1/calendar/earnings?from=2015-01-01&to=2026-01-01&symbol=PG HTTP/1.1" 200 23
+2026-03-19 16:51:34,141  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/recommendation?symbol=PG HTTP/1.1" 200 None
+2026-03-19 16:51:35,535  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-transactions?symbol=PG&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:51:36,809  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-sentiment?symbol=PG&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:51:38,009  DEBUG  https://finnhub.io:443 "GET /api/v1/company-news?symbol=PG&from=2025-03-19&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:51:39,291  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/peers?symbol=PG HTTP/1.1" 200 None
+2026-03-19 16:51:40,491  DEBUG  https://finnhub.io:443 "GET /api/v1/quote?symbol=PG HTTP/1.1" 200 None
+2026-03-19 16:51:40,502  DEBUG  [PG] ok=13 skip=0 nodata=0
+2026-03-19 16:51:40,642  DEBUG  https://query1.finance.yahoo.com:443 "GET /v8/finance/chart/BAC?period1=1420066800&period2=1767222000&interval=1d&events=div%2Csplits&includeAdjustedClose=true HTTP/1.1" 200 None
+2026-03-19 16:51:41,665  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/profile2?symbol=BAC HTTP/1.1" 200 None
+2026-03-19 16:51:42,868  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/metric?symbol=BAC&metric=all HTTP/1.1" 200 None
+2026-03-19 16:51:44,121  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=BAC&freq=annual HTTP/1.1" 200 None
+2026-03-19 16:51:45,448  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=BAC&freq=quarterly HTTP/1.1" 200 None
+2026-03-19 16:51:47,045  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/earnings?symbol=BAC&limit=20 HTTP/1.1" 200 None
+2026-03-19 16:51:49,114  DEBUG  https://finnhub.io:443 "GET /api/v1/calendar/earnings?from=2015-01-01&to=2026-01-01&symbol=BAC HTTP/1.1" 200 23
+2026-03-19 16:51:50,294  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/recommendation?symbol=BAC HTTP/1.1" 200 None
+2026-03-19 16:51:51,554  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-transactions?symbol=BAC&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:51:52,960  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-sentiment?symbol=BAC&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:51:54,226  DEBUG  https://finnhub.io:443 "GET /api/v1/company-news?symbol=BAC&from=2025-03-19&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:51:55,433  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/peers?symbol=BAC HTTP/1.1" 200 None
+2026-03-19 16:51:56,674  DEBUG  https://finnhub.io:443 "GET /api/v1/quote?symbol=BAC HTTP/1.1" 200 None
+2026-03-19 16:51:56,682  DEBUG  [BAC] ok=13 skip=0 nodata=0
+2026-03-19 16:51:56,821  DEBUG  https://query1.finance.yahoo.com:443 "GET /v8/finance/chart/HD?period1=1420066800&period2=1767222000&interval=1d&events=div%2Csplits&includeAdjustedClose=true HTTP/1.1" 200 None
+2026-03-19 16:51:57,867  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/profile2?symbol=HD HTTP/1.1" 200 None
+2026-03-19 16:51:59,061  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/metric?symbol=HD&metric=all HTTP/1.1" 200 None
+2026-03-19 16:52:00,483  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=HD&freq=annual HTTP/1.1" 200 None
+2026-03-19 16:52:01,771  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=HD&freq=quarterly HTTP/1.1" 200 None
+2026-03-19 16:52:04,544  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/earnings?symbol=HD&limit=20 HTTP/1.1" 200 None
+2026-03-19 16:52:07,785  DEBUG  https://finnhub.io:443 "GET /api/v1/calendar/earnings?from=2015-01-01&to=2026-01-01&symbol=HD HTTP/1.1" 200 23
+2026-03-19 16:52:08,970  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/recommendation?symbol=HD HTTP/1.1" 200 None
+2026-03-19 16:52:10,384  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-transactions?symbol=HD&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:52:11,699  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-sentiment?symbol=HD&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:52:12,986  DEBUG  https://finnhub.io:443 "GET /api/v1/company-news?symbol=HD&from=2025-03-19&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:52:14,323  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/peers?symbol=HD HTTP/1.1" 200 40
+2026-03-19 16:52:15,564  DEBUG  https://finnhub.io:443 "GET /api/v1/quote?symbol=HD HTTP/1.1" 200 None
+2026-03-19 16:52:15,570  DEBUG  [HD] ok=13 skip=0 nodata=0
+2026-03-19 16:52:15,780  DEBUG  https://query1.finance.yahoo.com:443 "GET /v8/finance/chart/KO?period1=1420066800&period2=1767222000&interval=1d&events=div%2Csplits&includeAdjustedClose=true HTTP/1.1" 200 None
+2026-03-19 16:52:16,764  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/profile2?symbol=KO HTTP/1.1" 200 None
+2026-03-19 16:52:17,976  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/metric?symbol=KO&metric=all HTTP/1.1" 200 None
+2026-03-19 16:52:19,175  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=KO&freq=annual HTTP/1.1" 200 None
+2026-03-19 16:52:20,451  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/financials-reported?symbol=KO&freq=quarterly HTTP/1.1" 200 None
+2026-03-19 16:52:23,068  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/earnings?symbol=KO&limit=20 HTTP/1.1" 200 None
+2026-03-19 16:52:25,435  DEBUG  https://finnhub.io:443 "GET /api/v1/calendar/earnings?from=2015-01-01&to=2026-01-01&symbol=KO HTTP/1.1" 200 23
+2026-03-19 16:52:26,661  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/recommendation?symbol=KO HTTP/1.1" 200 None
+2026-03-19 16:52:28,030  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-transactions?symbol=KO&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:52:29,377  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/insider-sentiment?symbol=KO&from=2015-01-01&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:52:30,565  DEBUG  https://finnhub.io:443 "GET /api/v1/company-news?symbol=KO&from=2025-03-19&to=2026-01-01 HTTP/1.1" 200 None
+2026-03-19 16:52:35,076  DEBUG  https://finnhub.io:443 "GET /api/v1/stock/peers?symbol=KO HTTP/1.1" 200 None
+2026-03-19 16:52:54,104  INFO  ============================================================
+2026-03-19 16:52:54,104  INFO    INICIANDO PIPELINE ML MULTI-AGENTE STOCK PICKER
+2026-03-19 16:52:54,104  INFO  ============================================================
+2026-03-19 16:52:54,104  INFO  PASO 1 — DESCARGANDO DATOS (Finnhub + Yahoo Finance)
+2026-03-19 16:52:54,104  INFO    Tickers: 503 | 2015-01-01 → 2026-01-01
+2026-03-19 16:52:54,104  INFO    Destino: data_finnhub
+2026-03-19 16:52:54,104  INFO  ==================================================
+2026-03-19 16:52:54,104  INFO    Finnhub + Yahoo Finance Downloader
+2026-03-19 16:52:54,104  INFO    Tickers  : 503
+2026-03-19 16:52:54,104  INFO    Período  : 2015-01-01 → 2026-01-01
+2026-03-19 16:52:54,114  INFO    Destino  : C:\Users\PC\Desktop\Documents\TFM\data_finnhub
+2026-03-19 16:52:54,115  INFO  ==================================================
+2026-03-19 16:52:54,116  INFO  Descargando macro...
+2026-03-19 16:52:54,116  INFO    _macro/vix.json  skip
+2026-03-19 16:52:54,117  INFO    _macro/sp500.json  skip
+2026-03-19 16:52:54,117  INFO    _macro/us10y.json  skip
+2026-03-19 16:52:54,119  INFO    _macro/us2y.json  skip
+2026-03-19 16:52:54,119  INFO  Descargando 503 tickers...
+2026-03-19 16:52:55,096  WARNING  [BRK.B] Yahoo status 404
+2026-03-19 17:00:52,716  WARNING    Error en /stock/insider-transactions: HTTPSConnectionPool(host='finnhub.io', port=443): Read timed out. (read timeout=20)

@@ -1,0 +1,80 @@
+{
+  "ticker": "ADI",
+  "score": 0.3515,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.028284294744931025,
+      "raw_value": 1.9296814940174944,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.010025210111091176,
+      "raw_value": 2.03,
+      "direction": "negative"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.006416306910454177,
+      "raw_value": 0.086092715231788,
+      "direction": "negative"
+    }
+  ],
+  "text": "ADI — Score: 0.35 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Fcf = 977831000.000  [contribucion SHAP: +0.103]\n  + Acciones compradas netas por insiders (90 días) = -20000.000  [contribucion SHAP: +0.008]\n  + Deuda neta / EBITDA = 7.07x  [contribucion SHAP: +0.006]\n\nFactores EN CONTRA:\n  - Ratio de liquidez corriente (activo / pasivo cte.) = 1.93x  [contribucion SHAP: -0.028]\n  - Eps Surprise Pct = 2.030  [contribucion SHAP: -0.010]\n  - Eps Revision = 0.086  [contribucion SHAP: -0.006]",
+  "top_drivers": [
+    {
+      "feature": "fcf",
+      "description": "Fcf",
+      "shap_value": 0.10312851474545037,
+      "raw_value": 977831000.0,
+      "direction": "positive",
+      "value_formatted": "977831000.000"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.028284294744931025,
+      "raw_value": 1.9296814940174944,
+      "direction": "negative",
+      "value_formatted": "1.93x"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.010025210111091176,
+      "raw_value": 2.03,
+      "direction": "negative",
+      "value_formatted": "2.030"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.007856174548902993,
+      "raw_value": -20000.0,
+      "direction": "positive",
+      "value_formatted": "-20000.000"
+    },
+    {
+      "feature": "eps_revision",
+      "description": "Eps Revision",
+      "shap_value": -0.006416306910454177,
+      "raw_value": 0.086092715231788,
+      "direction": "negative",
+      "value_formatted": "0.086"
+    },
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.0062055366157686975,
+      "raw_value": 7.066485618736593,
+      "direction": "positive",
+      "value_formatted": "7.07x"
+    }
+  ]
+}

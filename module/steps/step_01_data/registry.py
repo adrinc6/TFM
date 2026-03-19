@@ -1,0 +1,48 @@
+"""Download registry for Finnhub/Yahoo fetches."""
+
+from __future__ import annotations
+
+import json
+from datetime import datetime
+from pathlib import Path
+
+
+class Registry:
+    """
+    Tracks which endpoints were already downloaded per ticker or group.
+    Persisted under <base_dir>/_registry.json.
+    """
+
+    def __init__(self, base_dir: Path):
+        self.path = base_dir / "_registry.json"
+        self._data: dict = {}
+        self._load()
+
+    def _load(self) -> None:
+        if self.path.exists():
+            try:
+                with open(self.path, "r", encoding="utf-8") as f:
+                    self._data = json.load(f)
+            except Exception:
+                self._data = {}
+
+    def save(self) -> None:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        with open(self.path, "w", encoding="utf-8") as f:
+            json.dump(self._data, f, indent=2, ensure_ascii=False)
+
+    def is_done(self, group: str, endpoint: str) -> bool:
+        return endpoint in self._data.get(group, {})
+
+    def mark_done(self, group: str, endpoint: str) -> None:
+        if group not in self._data:
+            self._data[group] = {}
+        self._data[group][endpoint] = datetime.utcnow().isoformat()
+        self.save()
+
+    def clear(self, group: str | None = None) -> None:
+        if group:
+            self._data.pop(group, None)
+        else:
+            self._data = {}
+        self.save()

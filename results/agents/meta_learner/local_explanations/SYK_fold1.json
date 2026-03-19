@@ -1,0 +1,87 @@
+{
+  "ticker": "SYK",
+  "score": 0.7045,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.08502217007960487,
+      "raw_value": 0.41380273517660643,
+      "direction": "negative"
+    },
+    {
+      "feature": "sp500_momentum_12m",
+      "description": "Momentum del S&P 500 a 12 meses",
+      "shap_value": -0.07106796007372154,
+      "raw_value": 0.0692313116830101,
+      "direction": "negative"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.04653545829055489,
+      "raw_value": 0.5188035130500793,
+      "direction": "negative"
+    },
+    {
+      "feature": "sp500_momentum_3m",
+      "description": "Momentum del S&P 500 a 3 meses",
+      "shap_value": -0.022532708151729978,
+      "raw_value": -0.0705148506459855,
+      "direction": "negative"
+    }
+  ],
+  "text": "SYK — Score: 0.70 (Outperform, confianza moderada)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.668  [contribucion SHAP: +0.417]\n  + Sector Transportation = 0.000  [contribucion SHAP: +0.025]\n\nFactores EN CONTRA:\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.414  [contribucion SHAP: -0.085]\n  - Momentum del S&P 500 a 12 meses = 6.9%  [contribucion SHAP: -0.071]\n  - Score del Agente Fundamental (salud financiera) = 0.519  [contribucion SHAP: -0.047]\n  - Momentum del S&P 500 a 3 meses = -7.1%  [contribucion SHAP: -0.023]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.41710973482302666,
+      "raw_value": 0.6679363540781906,
+      "direction": "positive",
+      "value_formatted": "0.668"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.08502217007960487,
+      "raw_value": 0.41380273517660643,
+      "direction": "negative",
+      "value_formatted": "0.414"
+    },
+    {
+      "feature": "sp500_momentum_12m",
+      "description": "Momentum del S&P 500 a 12 meses",
+      "shap_value": -0.07106796007372154,
+      "raw_value": 0.0692313116830101,
+      "direction": "negative",
+      "value_formatted": "6.9%"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.04653545829055489,
+      "raw_value": 0.5188035130500793,
+      "direction": "negative",
+      "value_formatted": "0.519"
+    },
+    {
+      "feature": "sector_Transportation",
+      "description": "Sector Transportation",
+      "shap_value": 0.02473929712015251,
+      "raw_value": 0.0,
+      "direction": "positive",
+      "value_formatted": "0.000"
+    },
+    {
+      "feature": "sp500_momentum_3m",
+      "description": "Momentum del S&P 500 a 3 meses",
+      "shap_value": -0.022532708151729978,
+      "raw_value": -0.0705148506459855,
+      "direction": "negative",
+      "value_formatted": "-7.1%"
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "ticker": "CIEN",
+  "score": 0.2638,
+  "label": "Underperform",
+  "agent": "bear",
+  "risk_drivers": [
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.045225430340078254,
+      "raw_value": -17.76,
+      "direction": "negative"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.02833881650612866,
+      "raw_value": 0.5522573198982308,
+      "direction": "negative"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.011530412821844608,
+      "raw_value": 3.700720279972274,
+      "direction": "negative"
+    }
+  ],
+  "text": "CIEN — Score: 0.26 (Underperform, confianza moderada)\n\nFactores a FAVOR:\n  + Deuda neta / EBITDA = 20.39x  [contribucion SHAP: +0.063]\n  + Acciones compradas netas por insiders (90 días) = 217158.000  [contribucion SHAP: +0.023]\n  + Cobertura de intereses (EBIT / intereses) = 3.59x  [contribucion SHAP: +0.017]\n\nFactores EN CONTRA:\n  - Eps Surprise Pct = -17.760  [contribucion SHAP: -0.045]\n  - Ratio deuda / fondos propios = 0.552  [contribucion SHAP: -0.028]\n  - Ratio de liquidez corriente (activo / pasivo cte.) = 3.70x  [contribucion SHAP: -0.012]",
+  "top_drivers": [
+    {
+      "feature": "debt_to_ebitda",
+      "description": "Deuda neta / EBITDA",
+      "shap_value": 0.0633752116762509,
+      "raw_value": 20.38888742036954,
+      "direction": "positive",
+      "value_formatted": "20.39x"
+    },
+    {
+      "feature": "eps_surprise_pct",
+      "description": "Eps Surprise Pct",
+      "shap_value": -0.045225430340078254,
+      "raw_value": -17.76,
+      "direction": "negative",
+      "value_formatted": "-17.760"
+    },
+    {
+      "feature": "debt_equity",
+      "description": "Ratio deuda / fondos propios",
+      "shap_value": -0.02833881650612866,
+      "raw_value": 0.5522573198982308,
+      "direction": "negative",
+      "value_formatted": "0.552"
+    },
+    {
+      "feature": "insider_net_shares_90d",
+      "description": "Acciones compradas netas por insiders (90 días)",
+      "shap_value": 0.02281660022296697,
+      "raw_value": 217158.0,
+      "direction": "positive",
+      "value_formatted": "217158.000"
+    },
+    {
+      "feature": "interest_coverage",
+      "description": "Cobertura de intereses (EBIT / intereses)",
+      "shap_value": 0.017264866623296068,
+      "raw_value": 3.5870058469325423,
+      "direction": "positive",
+      "value_formatted": "3.59x"
+    },
+    {
+      "feature": "current_ratio",
+      "description": "Ratio de liquidez corriente (activo / pasivo cte.)",
+      "shap_value": -0.011530412821844608,
+      "raw_value": 3.700720279972274,
+      "direction": "negative",
+      "value_formatted": "3.70x"
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "ticker": "TMO",
+  "score": 0.7828,
+  "label": "Outperform",
+  "agent": "meta_learner",
+  "risk_drivers": [
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.08989444893573505,
+      "raw_value": 0.30384737658912786,
+      "direction": "negative"
+    },
+    {
+      "feature": "sp500_momentum_12m",
+      "description": "Momentum del S&P 500 a 12 meses",
+      "shap_value": -0.06564732835161778,
+      "raw_value": 0.0692313116830101,
+      "direction": "negative"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.061588818825534825,
+      "raw_value": 0.48242758512496947,
+      "direction": "negative"
+    }
+  ],
+  "text": "TMO — Score: 0.78 (Outperform, confianza alta)\n\nFactores a FAVOR:\n  + Score del Agente de Momentum (tendencia técnica) = 0.810  [contribucion SHAP: +0.587]\n  + Mom Minus Bear = 0.000  [contribucion SHAP: +0.037]\n  + VIX (volatilidad implícita de mercado) = 22.3  [contribucion SHAP: +0.036]\n\nFactores EN CONTRA:\n  - Score del Agente Bear (riesgo, <0.5 es bueno) = 0.304  [contribucion SHAP: -0.090]\n  - Momentum del S&P 500 a 12 meses = 6.9%  [contribucion SHAP: -0.066]\n  - Score del Agente Fundamental (salud financiera) = 0.482  [contribucion SHAP: -0.062]",
+  "top_drivers": [
+    {
+      "feature": "momentum_score",
+      "description": "Score del Agente de Momentum (tendencia técnica)",
+      "shap_value": 0.587172696139332,
+      "raw_value": 0.8104130479817273,
+      "direction": "positive",
+      "value_formatted": "0.810"
+    },
+    {
+      "feature": "bear_score",
+      "description": "Score del Agente Bear (riesgo, <0.5 es bueno)",
+      "shap_value": -0.08989444893573505,
+      "raw_value": 0.30384737658912786,
+      "direction": "negative",
+      "value_formatted": "0.304"
+    },
+    {
+      "feature": "sp500_momentum_12m",
+      "description": "Momentum del S&P 500 a 12 meses",
+      "shap_value": -0.06564732835161778,
+      "raw_value": 0.0692313116830101,
+      "direction": "negative",
+      "value_formatted": "6.9%"
+    },
+    {
+      "feature": "fundamental_score",
+      "description": "Score del Agente Fundamental (salud financiera)",
+      "shap_value": -0.061588818825534825,
+      "raw_value": 0.48242758512496947,
+      "direction": "negative",
+      "value_formatted": "0.482"
+    },
+    {
+      "feature": "mom_minus_bear",
+      "description": "Mom Minus Bear",
+      "shap_value": 0.03739659764745917,
+      "raw_value": 0.0,
+      "direction": "positive",
+      "value_formatted": "0.000"
+    },
+    {
+      "feature": "vix",
+      "description": "VIX (volatilidad implícita de mercado)",
+      "shap_value": 0.03633971163233203,
+      "raw_value": 22.280000686645508,
+      "direction": "positive",
+      "value_formatted": "22.3"
+    }
+  ]
+}
