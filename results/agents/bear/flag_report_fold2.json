@@ -1,62 +1,82 @@
 {
   "debt_growth_high": {
-    "activation_rate": 0.17121418826739426,
+    "activation_rate": 0.14695340501792115,
     "description": "Deuda creciendo >20% YoY",
     "threshold": 0.2,
-    "column": "total_debt_yoy_growth"
+    "column": "total_debt_yoy_growth",
+    "weight": 1.0,
+    "sub_score": "financial"
   },
   "debt_equity_high": {
-    "activation_rate": 0.09208731241473397,
+    "activation_rate": 0.0736758263639984,
     "description": "Debt/Equity > 3",
     "threshold": 3.0,
-    "column": "debt_equity"
+    "column": "debt_equity",
+    "weight": 1.5,
+    "sub_score": "financial"
   },
   "debt_ebitda_high": {
-    "activation_rate": 0.30081855388813095,
+    "activation_rate": 0.3130227001194743,
     "description": "Debt/EBITDA > 6",
     "threshold": 6.0,
-    "column": "debt_to_ebitda"
+    "column": "debt_to_ebitda",
+    "weight": 1.5,
+    "sub_score": "financial"
   },
   "fcf_negative": {
-    "activation_rate": 0.0,
+    "activation_rate": 0.015133412982875348,
     "description": "FCF negativo",
     "threshold": 0.0,
-    "column": "fcf"
-  },
-  "liquidity_risk": {
-    "activation_rate": 0.2203274215552524,
-    "description": "Current Ratio < 1",
-    "threshold": 1.0,
-    "column": "current_ratio"
+    "column": "fcf",
+    "weight": 2.0,
+    "sub_score": "financial"
   },
   "consecutive_losses": {
-    "activation_rate": 0.03956343792633015,
+    "activation_rate": 0.027877339705296694,
     "description": "\u22652 trimestres con p\u00e9rdidas",
     "threshold": 2.0,
-    "column": "consecutive_losses"
+    "column": "consecutive_losses",
+    "weight": 2.0,
+    "sub_score": "financial"
   },
   "revenue_decline": {
-    "activation_rate": 0.11732605729877217,
+    "activation_rate": 0.2031063321385902,
     "description": "Ca\u00edda de revenue YoY",
     "threshold": 1.0,
-    "column": "revenue_decline"
+    "column": "revenue_decline",
+    "weight": 1.0,
+    "sub_score": "financial"
   },
   "low_coverage": {
-    "activation_rate": 0.07094133697135062,
+    "activation_rate": 0.054559936280366386,
     "description": "Interest Coverage < 1.5",
     "threshold": 1.5,
-    "column": "interest_coverage"
+    "column": "interest_coverage",
+    "weight": 1.5,
+    "sub_score": "financial"
+  },
+  "liquidity_risk": {
+    "activation_rate": 0.23616089207487057,
+    "description": "Current Ratio < 1",
+    "threshold": 1.0,
+    "column": "current_ratio",
+    "weight": 1.5,
+    "sub_score": "market"
   },
   "insider_selling": {
-    "activation_rate": 0.0,
+    "activation_rate": 0.13938669852648347,
     "description": "Insiders vendiendo >70%",
     "threshold": 0.7,
-    "column": "insider_sell_ratio"
+    "column": "insider_sell_ratio",
+    "weight": 1.0,
+    "sub_score": "market"
   },
   "eps_miss": {
-    "activation_rate": 0.0,
+    "activation_rate": 0.055356431700517725,
     "description": "EPS miss >5%",
     "threshold": -5.0,
-    "column": "eps_surprise_pct"
+    "column": "eps_surprise_pct",
+    "weight": 1.0,
+    "sub_score": "market"
   }
 }

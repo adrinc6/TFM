@@ -126,19 +126,39 @@ class WalkForwardBacktester:
 
     # ── Generación de folds ───────────────────────────────────────────────────
 
-    def generate_folds(self, start_date: str, end_date: str) -> List[tuple]:
+    def generate_folds(
+        self,
+        start_date: str,
+        end_date: str,
+        forward_return_days: int = 63,
+    ) -> List[tuple]:
         """
         Para cada longitud de train en años enteros (train_years, train_years+1, ...),
         genera todos los folds rolling trimestrales posibles dentro del rango de datos.
 
         Devuelve lista de tuplas (train_start, train_end, test_end, train_years_int).
           - train_end  == test_start
-          - test_end   == test_start + test_quarters * 3 meses
+          - test_end   == test_start + test_quarters * 3 meses (~63 días de trading)
           - train_end - train_start == exactamente N años enteros
           - train_start >= start_date, test_end <= end_date
 
         Orden final: (test_end, train_years_int, train_start) — cronológico.
+
+        Args:
+            start_date: Inicio del rango de datos ('YYYY-MM-DD').
+            end_date: Fin del rango de datos ('YYYY-MM-DD').
+            forward_return_days: Días del label (para verificar coherencia con test_quarters).
+                Un trimestre ≈ 63 días de trading. Si difieren significativamente, advierte.
         """
+        # Verificación coherencia label-horizonte vs período de test
+        test_calendar_days = self.test_quarters * 3 * 30  # aprox calendario
+        test_trading_days  = int(test_calendar_days * 252 / 365)
+        if abs(forward_return_days - test_trading_days) > 15:
+            log.warning(
+                f"[Backtester] El horizonte del label ({forward_return_days} días de trading) "
+                f"difiere del período de test ({test_trading_days} días estimados para "
+                f"{self.test_quarters} quarter(s)). Revisa FORWARD_RETURN_DAYS en environment.py."
+            )
         start  = pd.Timestamp(start_date)
         end    = pd.Timestamp(end_date)
         q_step = pd.DateOffset(months=3 * self.test_quarters)

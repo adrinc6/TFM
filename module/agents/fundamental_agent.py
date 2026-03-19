@@ -19,8 +19,13 @@ import numpy as np
 import pandas as pd
 from typing import Dict, List, Optional
 
-from module.agents.base_agent import BaseAgent
+from module.agents.base_agent import BaseAgent, FeatureSelector
 from module.explainer import build_explainer_for_agent, AgentExplainer
+from environment import (
+    FUNDAMENTAL_N_ESTIMATORS, FUNDAMENTAL_MAX_DEPTH, FUNDAMENTAL_LEARNING_RATE,
+    FUNDAMENTAL_SUBSAMPLE, FUNDAMENTAL_COLSAMPLE, FUNDAMENTAL_MIN_CHILD_WEIGHT,
+    FUNDAMENTAL_CV_FOLDS, FEATURE_CORR_THRESHOLD, FEATURE_TOP_N,
+)
 
 log = logging.getLogger(__name__)
 
@@ -34,13 +39,24 @@ except ImportError:
     _DEPS_OK = False
     log.error("[FundamentalAgent] Instala: pip install xgboost scikit-learn")
 
+# Features base que consume este agente.
+# Fuente: FinancialDataConsolidator → FundamentalFeatureBuilder.
+# Columnas que falten se rellenan con 0 en _align (sin romper la predicción).
 FEATURE_COLS = [
-    "roe","roa","roi","roic","net_margin","gross_margin","fcf_margin",
-    "ebitda_margin","operating_margin","current_ratio","quick_ratio",
-    "debt_equity","debt_to_ebitda","interest_coverage",
-    "revenue_yoy_growth","net_income_yoy_growth","eps_yoy_growth",
-    "fcf_yoy_growth","operating_income_yoy_growth","total_debt_yoy_growth",
-    "accruals_ratio","capex_to_revenue","consecutive_losses","eps",
+    # Rentabilidad
+    "roe", "roa", "roi", "roic",
+    "net_margin", "gross_margin", "fcf_margin", "ebitda_margin", "operating_margin",
+    # Liquidez / Solvencia
+    "current_ratio", "quick_ratio",
+    "debt_equity", "debt_to_ebitda", "interest_coverage",
+    # Crecimiento YoY (calculado en FundamentalFeatureBuilder._yoy_growth)
+    "revenue_yoy_growth", "net_income_yoy_growth", "eps_yoy_growth",
+    "fcf_yoy_growth", "operating_income_yoy_growth", "total_debt_yoy_growth",
+    # Calidad contable / eficiencia
+    "accruals_ratio", "capex_to_revenue", "consecutive_losses",
+    # EPS (base para cálculo de P/E en ValuationAgent)
+    "eps",
+    # Nota: las columnas _zsector y sector_* las añade _prepare dinámicamente.
 ]
 
 
@@ -55,10 +71,13 @@ class FundamentalAgent(BaseAgent):
     """
 
     def __init__(self, results_dir: str, random_seed: int = 42,
-                 n_estimators: int = 400, max_depth: int = 5,
-                 learning_rate: float = 0.05, subsample: float = 0.8,
-                 colsample_bytree: float = 0.7, min_child_weight: int = 5,
-                 n_cv_folds: int = 5):
+                 n_estimators: int = FUNDAMENTAL_N_ESTIMATORS,
+                 max_depth: int = FUNDAMENTAL_MAX_DEPTH,
+                 learning_rate: float = FUNDAMENTAL_LEARNING_RATE,
+                 subsample: float = FUNDAMENTAL_SUBSAMPLE,
+                 colsample_bytree: float = FUNDAMENTAL_COLSAMPLE,
+                 min_child_weight: int = FUNDAMENTAL_MIN_CHILD_WEIGHT,
+                 n_cv_folds: int = FUNDAMENTAL_CV_FOLDS):
         super().__init__("fundamental", results_dir, random_seed)
         if not _DEPS_OK:
             raise ImportError("xgboost y scikit-learn requeridos.")
@@ -72,6 +91,7 @@ class FundamentalAgent(BaseAgent):
         self._model:          Optional[CalibratedClassifierCV] = None
         self._feature_cols:   List[str] = []
         self._sector_dummies: List[str] = []
+        self._selector:       Optional[FeatureSelector] = None
         self._explainer:      Optional[AgentExplainer] = None
 
     # ── Fit ───────────────────────────────────────────────────────────────────
@@ -87,6 +107,12 @@ class FundamentalAgent(BaseAgent):
         X_prep, y_cl = self.clean_features(X_prep, y.reset_index(drop=True))
         X_prep       = X_prep.reset_index(drop=True)
         y_cl         = y_cl.reset_index(drop=True)
+
+        # Selección de features: solo con datos de train (sin leakage)
+        self._selector = FeatureSelector(corr_threshold=FEATURE_CORR_THRESHOLD, top_n=FEATURE_TOP_N,
+                                         min_features=8, random_seed=self.random_seed)
+        X_prep = self._selector.fit_transform(X_prep, y_cl, agent_name="fundamental")
+
         self._feature_cols = list(X_prep.columns)
         bal          = self.class_balance(y_cl)
         spw          = bal["n_negative"] / bal["n_positive"] if bal["n_positive"] > 0 else 1.0
@@ -98,7 +124,7 @@ class FundamentalAgent(BaseAgent):
             scale_pos_weight=spw, eval_metric="auc",
             random_state=self.random_seed, n_jobs=-1, tree_method="hist",
         )
-        self._model = CalibratedClassifierCV(base, method="isotonic", cv=3)
+        self._model = CalibratedClassifierCV(base, method="isotonic", cv=self.n_cv_folds)
 
         cv = self._cv(X_prep, y_cl, spw)
         log.info(f"[FundamentalAgent] CV AUC={cv['mean_auc']:.4f} ± {cv['std_auc']:.4f}")
@@ -117,6 +143,7 @@ class FundamentalAgent(BaseAgent):
             "class_balance": bal, "cv_metrics": cv,
             "n_features": len(self._feature_cols),
             "top_features": imp.nlargest(15).to_dict(),
+            "feature_selection": self._selector.report(),
         }
         self.record_train_metrics(cv, fold)
         self.save_diagnostics(fold)
@@ -128,6 +155,8 @@ class FundamentalAgent(BaseAgent):
         if not self.is_trained:
             raise RuntimeError("[FundamentalAgent] No entrenado.")
         X_prep = self.clean_features_predict(self._prepare(X, sector_col, fit_mode=False))
+        if self._selector is not None:
+            X_prep = self._selector.transform(X_prep)
         X_al = self._align(X_prep)
         proba = self._model.predict_proba(X_al)[:, 1]
         return pd.Series(proba, index=X.index, name="fundamental_score")

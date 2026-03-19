@@ -21,8 +21,12 @@ import numpy as np
 import pandas as pd
 from typing import Dict, List, Optional
 
-from module.agents.base_agent import BaseAgent
+from module.agents.base_agent import BaseAgent, FeatureSelector
 from module.explainer import build_explainer_for_agent, AgentExplainer
+from environment import (
+    MOMENTUM_N_ESTIMATORS, MOMENTUM_MAX_DEPTH, MOMENTUM_MIN_SAMPLES_LEAF,
+    MOMENTUM_CV_FOLDS, FEATURE_CORR_THRESHOLD, FEATURE_TOP_N,
+)
 
 log = logging.getLogger(__name__)
 
@@ -37,16 +41,31 @@ try:
 except ImportError:
     _DEPS_OK = False
 
+# Features base que consume este agente.
+# Fuente: TechnicalFeatureBuilder (OHLCV diario) + DataRouter.load_macro().
+# Columnas que falten (ej. atr_14 con pocos días) se rellenan con 0 en _align.
 FEATURE_COLS = [
-    "rsi_14","rsi_28",
-    "macd","macd_signal","macd_hist",
-    "sma_20","sma_50","sma_200",
+    # Osciladores
+    "rsi_14", "rsi_28",
+    # Tendencia MACD
+    "macd", "macd_signal", "macd_hist",
+    # SMAs como distancia % al precio actual (positivo = precio > SMA)
+    "sma_20", "sma_50", "sma_200",
+    # Posición dentro de Bollinger Bands 20d [0=lower, 1=upper]
     "bb_pct",
-    "price_vs_52w_high","price_vs_52w_low",
-    "momentum_1m","momentum_3m","momentum_6m","momentum_12m",
-    "volatility_20d","volatility_60d","atr_14",
+    # Posición relativa 52 semanas
+    "price_vs_52w_high", "price_vs_52w_low",
+    # Momentum puro (retorno sin ajuste)
+    "momentum_1m", "momentum_3m", "momentum_6m", "momentum_12m",
+    # Volatilidad realizada anualizada
+    "volatility_20d", "volatility_60d", "atr_14",
+    # Volumen relativo
     "vol_ratio_20_50",
-    "vix","yield_curve","sp500_momentum_3m","sp500_momentum_12m",
+    # Macro context (DataRouter → macro_consolidated.csv)
+    "vix", "yield_curve", "sp500_momentum_3m", "sp500_momentum_12m",
+    # Nota: rsi_overbought, rsi_oversold, above_sma200, macd_bullish,
+    # cross_sma_20_50, momentum_quality, vol_expansion, high_vix_regime,
+    # inverted_yield_curve se derivan en _prepare.
 ]
 
 
@@ -59,8 +78,10 @@ class MomentumAgent(BaseAgent):
     """
 
     def __init__(self, results_dir: str, random_seed: int = 42,
-                 n_estimators: int = 300, max_depth: int = 8,
-                 min_samples_leaf: int = 10, n_cv_folds: int = 5):
+                 n_estimators: int = MOMENTUM_N_ESTIMATORS,
+                 max_depth: int = MOMENTUM_MAX_DEPTH,
+                 min_samples_leaf: int = MOMENTUM_MIN_SAMPLES_LEAF,
+                 n_cv_folds: int = MOMENTUM_CV_FOLDS):
         super().__init__("momentum", results_dir, random_seed)
         if not _DEPS_OK:
             raise ImportError("scikit-learn requerido.")
@@ -70,6 +91,7 @@ class MomentumAgent(BaseAgent):
         self.n_cv_folds       = n_cv_folds
         self._model:        Optional[Pipeline] = None
         self._feature_cols: List[str]          = []
+        self._selector:     Optional[FeatureSelector] = None
         self._explainer:    Optional[AgentExplainer] = None
 
     # ── Fit ───────────────────────────────────────────────────────────────────
@@ -84,6 +106,12 @@ class MomentumAgent(BaseAgent):
         X_prep, y_cl = self.clean_features(X_prep, y.reset_index(drop=True))
         X_prep       = X_prep.reset_index(drop=True)
         y_cl         = y_cl.reset_index(drop=True)
+
+        # Selección de features: solo con datos de train (sin leakage)
+        self._selector = FeatureSelector(corr_threshold=FEATURE_CORR_THRESHOLD, top_n=FEATURE_TOP_N,
+                                         min_features=8, random_seed=self.random_seed)
+        X_prep = self._selector.fit_transform(X_prep, y_cl, agent_name="momentum")
+
         self._feature_cols = list(X_prep.columns)
         bal          = self.class_balance(y_cl)
 
@@ -94,7 +122,7 @@ class MomentumAgent(BaseAgent):
         )
         self._model = Pipeline([
             ("scaler", StandardScaler()),
-            ("clf",    CalibratedClassifierCV(rf, method="sigmoid", cv=3)),
+            ("clf",    CalibratedClassifierCV(rf, method="sigmoid", cv=self.n_cv_folds)),
         ])
 
         cv = self._cv(X_prep, y_cl)
@@ -112,6 +140,7 @@ class MomentumAgent(BaseAgent):
             "class_balance": bal, "cv_metrics": cv,
             "regime_summary": regime_summary,
             "top_features": imp.nlargest(10).to_dict(),
+            "feature_selection": self._selector.report(),
         }
         self.record_train_metrics(cv, fold)
         self.save_diagnostics(fold)
@@ -123,6 +152,8 @@ class MomentumAgent(BaseAgent):
         if not self.is_trained:
             raise RuntimeError("[MomentumAgent] No entrenado.")
         X_prep = self.clean_features_predict(self._prepare(X, fit_mode=False))
+        if self._selector is not None:
+            X_prep = self._selector.transform(X_prep)
         X_al = self._align(X_prep)
         return pd.Series(self._model.predict_proba(X_al)[:, 1],
                          index=X.index, name="momentum_score")

@@ -16,8 +16,12 @@ import numpy as np
 import pandas as pd
 from typing import Dict, List, Optional
 
-from module.agents.base_agent import BaseAgent
+from module.agents.base_agent import BaseAgent, FeatureSelector
 from module.explainer import build_explainer_for_agent, AgentExplainer
+from environment import (
+    VALUATION_N_ESTIMATORS, VALUATION_MAX_DEPTH, VALUATION_LEARNING_RATE,
+    VALUATION_SUBSAMPLE, VALUATION_CV_FOLDS, FEATURE_CORR_THRESHOLD, FEATURE_TOP_N,
+)
 
 log = logging.getLogger(__name__)
 
@@ -32,12 +36,22 @@ try:
 except ImportError:
     _DEPS_OK = False
 
+# Features base que consume este agente.
+# Fuente: ValuationFeatureBuilder (cruce precio × fundamentales).
+# Las columnas _sector_pct se calculan internamente en _prepare.
 FEATURE_COLS = [
-    "pe_ratio","pb_ratio","ps_ratio","ev_to_ebitda","fcf_yield","earnings_yield",
-    "pe_vs_5y_median","pb_vs_5y_median","ev_ebitda_vs_5y_median",
-    "eps_surprise_pct","eps_revision","eps_est","eps_reported",
+    # Múltiplos actuales (calculados en ValuationFeatureBuilder)
+    "pe_ratio", "pb_ratio", "ps_ratio", "ev_to_ebitda", "fcf_yield", "earnings_yield",
+    # Comparativa vs historial propio (mean-reversion)
+    "pe_vs_5y_median", "pb_vs_5y_median", "ev_ebitda_vs_5y_median",
+    # Señales de analistas (ValuationFeatureBuilder._analyst_features)
+    "eps_surprise_pct", "eps_revision", "eps_est", "eps_reported",
+    # Nota: pe_sector_pct, pb_sector_pct, evebitda_sector_pct, fcfyield_sector_pct
+    # se añaden dinámicamente en _prepare usando estadísticas sectoriales de train.
 ]
-MULTIPLES_FOR_SECTOR = ["pe_ratio","pb_ratio","ev_to_ebitda","fcf_yield"]
+
+# Múltiplos para los que se calcula el percentil sectorial (normalización interna)
+MULTIPLES_FOR_SECTOR = ["pe_ratio", "pb_ratio", "ev_to_ebitda", "fcf_yield"]
 
 
 class ValuationAgent(BaseAgent):
@@ -49,19 +63,24 @@ class ValuationAgent(BaseAgent):
     """
 
     def __init__(self, results_dir: str, random_seed: int = 42,
-                 n_estimators: int = 200, max_depth: int = 4,
-                 learning_rate: float = 0.05, n_cv_folds: int = 5):
+                 n_estimators: int = VALUATION_N_ESTIMATORS,
+                 max_depth: int = VALUATION_MAX_DEPTH,
+                 learning_rate: float = VALUATION_LEARNING_RATE,
+                 subsample: float = VALUATION_SUBSAMPLE,
+                 n_cv_folds: int = VALUATION_CV_FOLDS):
         super().__init__("valuation", results_dir, random_seed)
         if not _DEPS_OK:
             raise ImportError("scikit-learn requerido.")
         self.n_estimators  = n_estimators
         self.max_depth     = max_depth
         self.learning_rate = learning_rate
+        self.subsample     = subsample
         self.n_cv_folds    = n_cv_folds
         self._model:              Optional[Pipeline] = None
         self._feature_cols:       List[str]          = []
         self._sector_stats:       Dict               = {}
-        self._explainer:          Optional[AgentExplainer] = None   # sector→multiple→{mean,std}
+        self._selector:           Optional[FeatureSelector] = None
+        self._explainer:          Optional[AgentExplainer] = None
 
     # ── Fit ───────────────────────────────────────────────────────────────────
 
@@ -75,17 +94,23 @@ class ValuationAgent(BaseAgent):
         X_prep, y_cl = self.clean_features(X_prep, y.reset_index(drop=True))
         X_prep       = X_prep.reset_index(drop=True)
         y_cl         = y_cl.reset_index(drop=True)
+
+        # Selección de features: solo con datos de train (sin leakage)
+        self._selector = FeatureSelector(corr_threshold=FEATURE_CORR_THRESHOLD, top_n=FEATURE_TOP_N,
+                                         min_features=6, random_seed=self.random_seed)
+        X_prep = self._selector.fit_transform(X_prep, y_cl, agent_name="valuation")
+
         self._feature_cols = list(X_prep.columns)
         bal          = self.class_balance(y_cl)
 
         gbc = GradientBoostingClassifier(
             n_estimators=self.n_estimators, max_depth=self.max_depth,
-            learning_rate=self.learning_rate, subsample=0.8,
+            learning_rate=self.learning_rate, subsample=self.subsample,
             random_state=self.random_seed,
         )
         self._model = Pipeline([
             ("scaler", StandardScaler()),
-            ("clf",    CalibratedClassifierCV(gbc, method="sigmoid", cv=3)),
+            ("clf",    CalibratedClassifierCV(gbc, method="sigmoid", cv=self.n_cv_folds)),
         ])
 
         cv = self._cv(X_prep, y_cl)
@@ -103,6 +128,7 @@ class ValuationAgent(BaseAgent):
             "class_balance": bal, "cv_metrics": cv,
             "sector_multiples_distribution": sector_summary,
             "top_features": imp.nlargest(10).to_dict(),
+            "feature_selection": self._selector.report(),
         }
         self.record_train_metrics(cv, fold)
         self.save_diagnostics(fold)
@@ -114,6 +140,8 @@ class ValuationAgent(BaseAgent):
         if not self.is_trained:
             raise RuntimeError("[ValuationAgent] No entrenado.")
         X_prep = self.clean_features_predict(self._prepare(X, sector_col, fit_mode=False))
+        if self._selector is not None:
+            X_prep = self._selector.transform(X_prep)
         X_al = self._align(X_prep)
         return pd.Series(self._model.predict_proba(X_al)[:, 1],
                          index=X.index, name="valuation_score")
@@ -177,7 +205,7 @@ class ValuationAgent(BaseAgent):
                 ("scaler", StandardScaler()),
                 ("clf", GradientBoostingClassifier(
                     n_estimators=self.n_estimators, max_depth=self.max_depth,
-                    learning_rate=self.learning_rate, subsample=0.8,
+                    learning_rate=self.learning_rate, subsample=self.subsample,
                     random_state=self.random_seed)),
             ])
             pipe.fit(X.iloc[tr], y.iloc[tr])

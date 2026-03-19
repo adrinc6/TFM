@@ -213,25 +213,36 @@ class AgentExplainer:
         return pd.Series(mean_abs, index=self.feature_cols).sort_values(ascending=False)
 
     def save_global_explanation(self, fold: Optional[int] = None):
-        """Guarda importancia global SHAP en disco."""
+        """
+        Guarda importancia global SHAP en disco:
+          - CSV con todas las features ordenadas por importancia
+          - JSON con las top 20 features y descripciones legibles
+          - PNG con el gráfico de barras de importancia SHAP
+        """
         imp = self.global_importance()
         if imp is None:
             return
         suffix = f"_fold{fold}" if fold is not None else ""
-        path   = self.results_dir / f"shap_global{suffix}.csv"
+
+        # CSV completo
+        path = self.results_dir / f"shap_global{suffix}.csv"
         imp.to_csv(path, header=["shap_importance"])
 
-        # También en JSON con descripciones legibles
+        # JSON top 20 con descripciones
         report = {
             feat: {
                 "shap_importance": float(val),
                 "description":     _describe(feat),
+                "rank":            i + 1,
             }
-            for feat, val in imp.head(20).items()
+            for i, (feat, val) in enumerate(imp.head(20).items())
         }
         json_path = self.results_dir / f"shap_global{suffix}.json"
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(report, f, indent=2, ensure_ascii=False)
+
+        # Gráfico de barras de las top 15 features por importancia SHAP
+        self._save_shap_bar_plot(imp.head(15), suffix)
 
         log.info(f"[{self.agent_name}] Importancia SHAP global -> {path.name}")
 
@@ -398,21 +409,62 @@ class AgentExplainer:
 
         return "\n".join(lines)
 
+    def _save_shap_bar_plot(self, imp: pd.Series, suffix: str = ""):
+        """
+        Guarda un gráfico de barras horizontales con las top features por |SHAP|.
+        El fichero se nombra shap_bar<suffix>.png.
+        """
+        try:
+            import matplotlib
+            matplotlib.use("Agg")
+            import matplotlib.pyplot as plt
+
+            fig, ax = plt.subplots(figsize=(8, max(4, len(imp) * 0.4)))
+            colors = ["#2196F3" if v >= 0 else "#F44336" for v in imp.values]
+            labels = [_describe(f) for f in imp.index]
+            ax.barh(range(len(imp)), imp.values[::-1], color=colors[::-1], alpha=0.85)
+            ax.set_yticks(range(len(imp)))
+            ax.set_yticklabels(labels[::-1], fontsize=9)
+            ax.set_xlabel("Importancia SHAP media |Δscore|")
+            ax.set_title(f"[{self.agent_name}] Top features por importancia SHAP{suffix}")
+            ax.axvline(0, color="black", lw=0.7)
+            ax.grid(axis="x", alpha=0.3)
+            fig.tight_layout()
+            plot_path = self.results_dir / f"shap_bar{suffix}.png"
+            fig.savefig(plot_path, dpi=120, bbox_inches="tight")
+            plt.close(fig)
+        except Exception as e:
+            log.debug(f"[{self.agent_name}] No se pudo generar shap_bar: {e}")
+
     def _save_local_explanation(self, result: Dict, fold: Optional[int]):
-        """Guarda la explicación local de un ticker."""
+        """
+        Guarda la explicación local de un ticker en JSON con valores formateados.
+        Incluye raw_value y value_formatted para cada driver.
+        """
         suffix  = f"_fold{fold}" if fold is not None else ""
         ticker  = result.get("ticker", "unknown")
         path    = self.results_dir / "local_explanations"
         path.mkdir(exist_ok=True)
         out_path = path / f"{ticker}{suffix}.json"
+
+        # Enriquecer top_drivers con valor formateado y serializar numpy scalars
+        top_drivers_clean = []
+        for d in result.get("top_drivers", []):
+            entry = {}
+            for k, v in d.items():
+                if isinstance(v, (np.floating, np.integer)):
+                    entry[k] = float(v)
+                else:
+                    entry[k] = v
+            # Añadir valor formateado si no está ya
+            if "raw_value" in entry and "value_formatted" not in entry:
+                entry["value_formatted"] = _format_value(entry["feature"], entry["raw_value"])
+            top_drivers_clean.append(entry)
+
+        clean = {k: v for k, v in result.items() if k != "top_drivers"}
+        clean["top_drivers"] = top_drivers_clean
+
         with open(out_path, "w", encoding="utf-8") as f:
-            # Serializar sin los arrays de numpy
-            clean = {k: v for k, v in result.items() if k != "top_drivers"}
-            clean["top_drivers"] = [
-                {kk: (float(vv) if isinstance(vv, (np.floating, np.integer)) else vv)
-                 for kk, vv in d.items()}
-                for d in result.get("top_drivers", [])
-            ]
             json.dump(clean, f, indent=2, ensure_ascii=False, default=str)
 
 

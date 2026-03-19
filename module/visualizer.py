@@ -23,10 +23,9 @@ STYLE = {
 class Visualizer:
     """Genera y guarda todas las gráficas comparativas del backtest."""
 
-    def __init__(self, plots_dir: str = "results/plots", no_plot: bool = False):
+    def __init__(self, plots_dir: str = "results/plots"):
         self.plots_dir = Path(plots_dir)
         self.plots_dir.mkdir(parents=True, exist_ok=True)
-        self.no_plot   = no_plot
 
     # ── Gráfica principal ─────────────────────────────────────────────────────
 
@@ -65,8 +64,6 @@ class Visualizer:
 
         path = self.plots_dir / f"full_report{suffix}.png"
         fig.savefig(path, dpi=150, bbox_inches="tight")
-        if not self.no_plot:
-            plt.show()
         plt.close(fig)
         log.info(f"[Visualizer] Reporte completo → {path}")
 
@@ -94,9 +91,11 @@ class Visualizer:
             w  = (1 + r).cumprod()
             pk = w.cummax()
             return (w - pk) / pk * 100
-        ax.fill_between(_dd(strat).index, _dd(strat).values, 0,
+        dd_strat = _dd(strat)
+        dd_bench = _dd(bench)
+        ax.fill_between(dd_strat.index, dd_strat.values, 0,
                         alpha=0.4, color=STYLE["strategy"]["color"], label="Estrategia")
-        ax.plot(_dd(bench).index, _dd(bench).values,
+        ax.plot(dd_bench.index, dd_bench.values,
                 color=STYLE["benchmark"]["color"], lw=1.2, ls="--", label="S&P 500")
         ax.set_title("Drawdown (%)", fontweight="bold")
         ax.set_ylabel("Drawdown (%)")

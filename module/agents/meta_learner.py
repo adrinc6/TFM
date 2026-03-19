@@ -1,13 +1,13 @@
 # =============================================================================
 # module/agents/meta_learner.py — Meta-Learner (Stacking)
 # =============================================================================
-# Combina las salidas de los 4 agentes en una predicción final.
+# Combina las salidas de los 5 agentes en una predicción final.
 #
 # DATOS QUE CONSUME:
 #   Scores de agentes:  fundamental_score, valuation_score,
-#                       momentum_score, bear_score
+#                       momentum_score, bear_score, sentiment_score
 #   Macro context:      vix, yield_curve, sp500_momentum_3m, sp500_momentum_12m
-#   Sector (companies): sector_* (one-hot para que el meta-learner
+#   Sector (profiles):  sector_* (one-hot para que el meta-learner
 #                       aprenda pesos distintos por sector)
 #
 # SALIDA:
@@ -21,6 +21,11 @@ from typing import Dict, List, Optional
 
 from module.agents.base_agent import BaseAgent
 from module.explainer import AgentExplainer, build_explainer_for_agent
+from environment import (
+    META_LR_C, META_GBM_N_ESTIMATORS, META_GBM_MAX_DEPTH,
+    META_GBM_LEARNING_RATE, META_GBM_SUBSAMPLE, META_CV_FOLDS,
+    BEAR_HARD_THRESHOLD,
+)
 
 log = logging.getLogger(__name__)
 
@@ -42,7 +47,8 @@ AGENT_SCORE_COLS = [
     "fundamental_score",
     "valuation_score",
     "momentum_score",
-    "bear_score",       # Se usará como (1 - bear_score) en la capa de reglas
+    "bear_score",        # Se usará como (1 - bear_score) en la capa de reglas
+    "sentiment_score",   # Nuevo: consenso analistas + insiders + beat rate
 ]
 
 MACRO_COLS = ["vix", "yield_curve", "sp500_momentum_3m", "sp500_momentum_12m"]
@@ -60,13 +66,13 @@ class MetaLearner(BaseAgent):
     red flags y aplica un penalizador directo (hard rule).
     """
 
-    BEAR_HARD_THRESHOLD = 0.90   # Solo interviene en casos extremos (el modelo ya aprende bear_score)
-    BEAR_SOFT_PENALTY   = 0.0    # Desactivado: evita doble penalizacion (bear_score ya es feature del modelo)
+    BEAR_HARD_THRESHOLD = BEAR_HARD_THRESHOLD   # Solo interviene en casos extremos
+    BEAR_SOFT_PENALTY   = 0.0                   # Desactivado: evita doble penalización
 
     def __init__(self, results_dir: str, random_seed: int = 42,
                  use_sector_features: bool = True,
                  use_macro_features: bool = True,
-                 n_cv_folds: int = 5):
+                 n_cv_folds: int = META_CV_FOLDS):
         super().__init__("meta_learner", results_dir, random_seed)
         if not _DEPS_OK:
             raise ImportError("scikit-learn requerido.")
@@ -105,7 +111,7 @@ class MetaLearner(BaseAgent):
         self._lr_model = Pipeline([
             ("scaler", StandardScaler()),
             ("clf",    LogisticRegression(
-                C=0.5, class_weight="balanced", max_iter=1000,
+                C=META_LR_C, class_weight="balanced", max_iter=1000,
                 random_state=self.random_seed, solver="lbfgs",
             )),
         ])
@@ -115,9 +121,12 @@ class MetaLearner(BaseAgent):
             ("scaler", StandardScaler()),
             ("clf",    CalibratedClassifierCV(
                 GradientBoostingClassifier(
-                    n_estimators=150, max_depth=3, learning_rate=0.05,
-                    subsample=0.8, random_state=self.random_seed,
-                ), method="sigmoid", cv=3,
+                    n_estimators=META_GBM_N_ESTIMATORS,
+                    max_depth=META_GBM_MAX_DEPTH,
+                    learning_rate=META_GBM_LEARNING_RATE,
+                    subsample=META_GBM_SUBSAMPLE,
+                    random_state=self.random_seed,
+                ), method="sigmoid", cv=self.n_cv_folds,
             )),
         ])
 
@@ -257,6 +266,12 @@ class MetaLearner(BaseAgent):
         if "momentum_score" in df.columns and "bear_score" in df.columns:
             df["mom_minus_bear"] = df["momentum_score"] - df["bear_score"]
             selected.append("mom_minus_bear")
+        if "sentiment_score" in df.columns and "fundamental_score" in df.columns:
+            df["fund_x_sentiment"] = df["fundamental_score"] * df["sentiment_score"]
+            selected.append("fund_x_sentiment")
+        if "sentiment_score" in df.columns and "momentum_score" in df.columns:
+            df["mom_x_sentiment"] = df["momentum_score"] * df["sentiment_score"]
+            selected.append("mom_x_sentiment")
 
         selected = list(dict.fromkeys(selected))
         result   = df[[c for c in selected if c in df.columns]].copy()
@@ -276,12 +291,15 @@ class MetaLearner(BaseAgent):
         gbm_aucs, gbm_f1s = [], []
         for tr, val in skf.split(X, y):
             lr  = Pipeline([("s", StandardScaler()),
-                            ("c", LogisticRegression(C=0.5, class_weight="balanced",
+                            ("c", LogisticRegression(C=META_LR_C, class_weight="balanced",
                                                      max_iter=1000, random_state=self.random_seed))])
             gbm = Pipeline([("s", StandardScaler()),
                             ("c", GradientBoostingClassifier(
-                                n_estimators=150, max_depth=3, learning_rate=0.05,
-                                subsample=0.8, random_state=self.random_seed))])
+                                n_estimators=META_GBM_N_ESTIMATORS,
+                                max_depth=META_GBM_MAX_DEPTH,
+                                learning_rate=META_GBM_LEARNING_RATE,
+                                subsample=META_GBM_SUBSAMPLE,
+                                random_state=self.random_seed))])
             lr.fit(X.iloc[tr], y.iloc[tr])
             gbm.fit(X.iloc[tr], y.iloc[tr])
             for model, aucs, f1s in [(lr, lr_aucs, lr_f1s), (gbm, gbm_aucs, gbm_f1s)]:

@@ -1,2 +1,33 @@
+/data
 /data copy
-/__pycache__
+/data_finnhub
+/results
+/.claude
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Entornos virtuales
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Datos sensibles / pesados
+data/prices/
+data/consolidated/
+data/insider/
+data/analyst/
+data/macro/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
