@@ -1,13 +1,14 @@
 /data
 /data copy
 /data_finnhub
-/results
+/results/
 /.claude
 
 # Python cache
 __pycache__/
 *.py[cod]
 *.pyo
+*.pyc
 
 # Entornos virtuales
 .venv/

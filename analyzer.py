@@ -30,6 +30,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 from environment import (
+    TICKERS,
     FINNHUB_DATA_DIR, FINNHUB_API_KEY,
     RESULTS_DIR, AGENTS_RESULTS_DIR, BACKTEST_RESULTS_DIR, PLOTS_DIR,
     FORWARD_RETURN_DAYS, MIN_HISTORY_QUARTERS,
@@ -46,7 +47,7 @@ from module.feature_engineering import (
     InsiderFeatureBuilder,
     SentimentFeatureBuilder,
 )
-from module.finnhub_processor import build_companies_df
+
 from module.pipeline.data_ops import download_data, prepare_data, get_available_tickers, retry_missing_tickers
 from module.pipeline.dataset_builder import build_master_dataset
 from module.pipeline.evaluator import run_walkforward_pipeline
@@ -77,16 +78,7 @@ def main():
     log.info("=" * 60)
 
     # ── 1. Descargar datos
-    companies_df = build_companies_df(FINNHUB_DATA_DIR)
-    tickers = list(companies_df.index) if not companies_df.empty else []
-
-    if not tickers:
-        log.warning("No hay tickers en companies_df — usando lista hardcoded mínima.")
-        # Fallback: carga de profiles existentes en data_finnhub/
-        data_path = Path(FINNHUB_DATA_DIR)
-        tickers = [d.name for d in data_path.iterdir()
-                   if d.is_dir() and not d.name.startswith("_")]
-
+    tickers = list(dict.fromkeys(TICKERS))  # deduplica preservando orden
     download_data(
         tickers=tickers,
         start_date=START_DATE,
