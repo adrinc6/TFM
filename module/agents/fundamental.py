@@ -24,7 +24,7 @@ from module.steps.step_04_evaluation.explainability import build_explainer_for_a
 from environment import (
     FUNDAMENTAL_N_ESTIMATORS, FUNDAMENTAL_MAX_DEPTH, FUNDAMENTAL_LEARNING_RATE,
     FUNDAMENTAL_SUBSAMPLE, FUNDAMENTAL_COLSAMPLE, FUNDAMENTAL_MIN_CHILD_WEIGHT,
-    FUNDAMENTAL_CV_FOLDS, FEATURE_CORR_THRESHOLD, FEATURE_TOP_N,
+    FEATURE_CORR_THRESHOLD, FEATURE_TOP_N,
 )
 
 log = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ try:
     import xgboost as xgb
     from sklearn.calibration import CalibratedClassifierCV
     from sklearn.metrics import roc_auc_score, accuracy_score, f1_score
-    from sklearn.model_selection import StratifiedKFold
+    from sklearn.model_selection import TimeSeriesSplit
     _DEPS_OK = True
 except ImportError:
     _DEPS_OK = False
@@ -76,8 +76,7 @@ class FundamentalAgent(BaseAgent):
                  learning_rate: float = FUNDAMENTAL_LEARNING_RATE,
                  subsample: float = FUNDAMENTAL_SUBSAMPLE,
                  colsample_bytree: float = FUNDAMENTAL_COLSAMPLE,
-                 min_child_weight: int = FUNDAMENTAL_MIN_CHILD_WEIGHT,
-                 n_cv_folds: int = FUNDAMENTAL_CV_FOLDS):
+                 min_child_weight: int = FUNDAMENTAL_MIN_CHILD_WEIGHT):
         super().__init__("fundamental", results_dir, random_seed)
         if not _DEPS_OK:
             raise ImportError("xgboost y scikit-learn requeridos.")
@@ -87,7 +86,6 @@ class FundamentalAgent(BaseAgent):
         self.subsample        = subsample
         self.colsample_bytree = colsample_bytree
         self.min_child_weight = min_child_weight
-        self.n_cv_folds       = n_cv_folds
         self._model:          Optional[CalibratedClassifierCV] = None
         self._feature_cols:   List[str] = []
         self._sector_dummies: List[str] = []
@@ -124,7 +122,7 @@ class FundamentalAgent(BaseAgent):
             scale_pos_weight=spw, eval_metric="auc",
             random_state=self.random_seed, n_jobs=-1, tree_method="hist",
         )
-        self._model = CalibratedClassifierCV(base, method="isotonic", cv=self.n_cv_folds)
+        self._model = CalibratedClassifierCV(base, method="isotonic", cv=5)
 
         cv = self._cv(X_prep, y_cl, spw)
         log.info(f"[FundamentalAgent] CV AUC={cv['mean_auc']:.4f} ± {cv['std_auc']:.4f}")
@@ -180,9 +178,13 @@ class FundamentalAgent(BaseAgent):
         return self._align_to_feature_cols(X, fill_value=0.0)
 
     def _cv(self, X: pd.DataFrame, y: pd.Series, spw: float) -> Dict:
-        skf  = StratifiedKFold(n_splits=self.n_cv_folds, shuffle=True, random_state=self.random_seed)
+        date_order = X.index.get_level_values("date") if "date" in X.index.names else X.index
+        sort_idx = date_order.argsort()
+        X = X.iloc[sort_idx]
+        y = y.reindex(X.index)
+        tss = TimeSeriesSplit(n_splits=5)
         aucs, accs, f1s = [], [], []
-        for tr, val in skf.split(X, y):
+        for tr, val in tss.split(X):
             clf = xgb.XGBClassifier(
                 n_estimators=self.n_estimators, max_depth=self.max_depth,
                 learning_rate=self.learning_rate, subsample=self.subsample,

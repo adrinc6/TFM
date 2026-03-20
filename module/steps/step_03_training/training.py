@@ -48,7 +48,9 @@ def _predict_base_scores(
     out = X.copy()
     for ag_name, agent in agents.items():
         sector_col = agents_config[ag_name].get("sector_col")
-        if sector_col:
+        if not getattr(agent, "is_trained", False):
+            scores = pd.Series(0.5, index=out.index)
+        elif sector_col:
             scores = agent.predict_score(out, sector_col)
         else:
             scores = agent.predict_score(out)

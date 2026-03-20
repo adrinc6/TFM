@@ -11,6 +11,7 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 
+from environment import PORTFOLIO_MIN_SCORE, SCORE_WEIGHTED_PORTFOLIO
 from module.steps.step_04_evaluation.metrics import compute_all_metrics
 
 log = logging.getLogger(__name__)
@@ -27,6 +28,7 @@ class WalkForwardBacktester:
 		results_dir: str = "results/backtest",
 		top_n_stocks: int = 10,
 		long_only: bool = True,
+		score_weighted: bool = SCORE_WEIGHTED_PORTFOLIO,
 	):
 		self.train_years = train_years
 		self.test_quarters = test_quarters
@@ -35,60 +37,47 @@ class WalkForwardBacktester:
 		self.results_dir.mkdir(parents=True, exist_ok=True)
 		self.top_n_stocks = top_n_stocks
 		self.long_only = long_only
+		self.score_weighted = score_weighted
 		self.fold_results: List[Dict] = []
 		self.all_strategy_returns = pd.Series(dtype=float)
 		self.all_benchmark_returns = pd.Series(dtype=float)
 
+	@staticmethod
+	def _snap_to_quarter_end(ts: pd.Timestamp) -> pd.Timestamp:
+		"""Ajusta ts al último día del trimestre al que pertenece."""
+		return ts + pd.offsets.QuarterEnd(0)
+
 	def generate_folds(
 		self,
-		start_date: str,
+		test_start_date: str,
 		end_date: str,
-		forward_return_days: int = 63,
 	) -> List[tuple]:
-		test_calendar_days = self.test_quarters * 3 * 30
-		test_trading_days = int(test_calendar_days * 252 / 365)
-		if abs(forward_return_days - test_trading_days) > 15:
-			log.warning(
-				f"[Backtester] El horizonte del label ({forward_return_days} dias de trading) "
-				f"difiere del periodo de test ({test_trading_days} dias estimados para "
-				f"{self.test_quarters} quarter(s)). Revisa FORWARD_RETURN_DAYS en environment.py."
-			)
-		start = pd.Timestamp(start_date)
-		end = pd.Timestamp(end_date)
-		q_step = pd.DateOffset(months=3 * self.test_quarters)
+		# El modelo opera con snapshots trimestrales: cada fold cubre exactamente
+		# un quarter de test, alineado a los boundaries reales del calendario.
+		# train_end y test_end siempre caen en el último día de un quarter real.
+		start = self._snap_to_quarter_end(pd.Timestamp(test_start_date))
+		end   = self._snap_to_quarter_end(pd.Timestamp(end_date))
 
 		folds: List[tuple] = []
 		seen: set = set()
 
-		n_years = self.train_years
+		y_offset = pd.DateOffset(years=self.train_years)
+		train_end = start
 		while True:
-			y_offset = pd.DateOffset(years=n_years)
-			train_end = start + y_offset
-			found_any = False
-			while True:
-				test_end = train_end + q_step
-				train_start = train_end - y_offset
-				if test_end > end:
-					break
-				if train_start >= start:
-					key = (train_start.date(), train_end.date(), test_end.date())
-					if key not in seen:
-						seen.add(key)
-						folds.append((train_start, train_end, test_end, n_years))
-						found_any = True
-				train_end += q_step
-			if not found_any:
+			# test_end = fin del quarter siguiente al de train_end
+			test_end = train_end + pd.offsets.QuarterEnd(self.test_quarters)
+			if test_end > end:
 				break
-			n_years += 1
+			train_start = train_end - y_offset
+			key = (train_start.date(), train_end.date(), test_end.date())
+			if key not in seen:
+				seen.add(key)
+				folds.append((train_start, train_end, test_end, self.train_years))
+			train_end += pd.offsets.QuarterEnd(self.test_quarters)
 
-		folds.sort(key=lambda x: (x[2], x[3], x[0]))
-
-		from collections import Counter
-
-		counts = Counter(f[3] for f in folds)
 		log.info(
 			f"[Backtester] {len(folds)} folds generados | test={self.test_quarters}Q | "
-			+ " | ".join(f"{n}Y-> {c}folds" for n, c in sorted(counts.items()))
+			f"train={self.train_years}Y | start={start.date()} | end={end.date()}"
 		)
 		for i, (ts, te, tse, ny) in enumerate(folds):
 			log.debug(
@@ -108,15 +97,22 @@ class WalkForwardBacktester:
 		train_start=None,
 		train_years_int: int = 0,
 	) -> Dict:
-		top = (
-			predictions_df.sort_values("score", ascending=False)
-			.head(self.top_n_stocks)["ticker"].tolist()
-		)
+		ordered = predictions_df.sort_values("score", ascending=False)
+		qualified = ordered[ordered["score"] >= PORTFOLIO_MIN_SCORE]
+		top_source = qualified if not qualified.empty else ordered.head(1)
+		top_df = top_source.head(self.top_n_stocks)[["ticker", "score"]].copy()
+		top = top_df["ticker"].tolist()
 		if not top:
 			log.warning(f"[Backtester] Fold {fold_id}: sin seleccion de stocks")
 			return {}
+		if len(top) < self.top_n_stocks:
+			log.info(
+				f"[Backtester] Fold {fold_id}: seleccionados {len(top)} stocks "
+				f"(tope={self.top_n_stocks}, umbral={PORTFOLIO_MIN_SCORE:.2f})"
+			)
 
 		daily_returns = []
+		tickers_with_prices = []
 		ticker_returns = {}
 		bench_period = benchmark.loc[test_start:test_end].dropna()
 
@@ -130,12 +126,38 @@ class WalkForwardBacktester:
 				continue
 			ret = period.pct_change().dropna()
 			daily_returns.append(ret)
+			tickers_with_prices.append(ticker)
 			ticker_returns[ticker] = round(float((1 + ret).prod() - 1), 6)
 
 		if not daily_returns:
 			return {}
 
-		strat_returns = pd.concat(daily_returns, axis=1).mean(axis=1).dropna()
+		# Pesos: scores reales escalados al rango [w_min, w_max] o equiponderado.
+		# Regla: el ticker con mayor score pesa (1 + N/10) veces más que el menor.
+		# Los intermedios se posicionan según sus scores reales dentro de ese rango.
+		N = len(tickers_with_prices)
+		if self.score_weighted and N > 1:
+			scores_arr = (
+				top_df.set_index("ticker")
+				.loc[tickers_with_prices]["score"]
+				.values.astype(float)
+			)
+			ratio = 1.0 + N / 10.0  # N=10 → 2.0x, N=5 → 1.5x
+			s_min, s_max = scores_arr.min(), scores_arr.max()
+			if s_max > s_min:
+				# Escalar scores al rango [1, ratio]
+				raw = 1.0 + (ratio - 1.0) * (scores_arr - s_min) / (s_max - s_min)
+			else:
+				raw = np.ones(N)
+			weights = raw / raw.sum()
+		else:
+			weights = np.ones(N) / N
+
+		ticker_weights = {t: round(float(w), 6) for t, w in zip(tickers_with_prices, weights)}
+
+		returns_matrix = pd.concat(daily_returns, axis=1)
+		returns_matrix.columns = tickers_with_prices
+		strat_returns = (returns_matrix * weights).sum(axis=1).dropna()
 		common_idx = strat_returns.index.intersection(bench_period.index)
 		strat_aligned = strat_returns.loc[common_idx]
 		bench_aligned = bench_period.loc[common_idx]
@@ -147,8 +169,24 @@ class WalkForwardBacktester:
 
 		ticker_returns_sorted = dict(sorted(ticker_returns.items(), key=lambda x: x[1], reverse=True))
 
+		# Log de pesos
+		weighting_mode = "softmax(score)" if self.score_weighted else "equiponderado"
+		log.info(f"[Backtester] Fold {fold_id} — pesos cartera ({weighting_mode}):")
+		for t in tickers_with_prices:
+			log.info(f"  {t:<8} peso={ticker_weights[t]:.3f}  score={top_df.set_index('ticker').loc[t,'score']:.3f}  ret={ticker_returns[t]:+.2%}")
+
+		# Etiqueta del quarter de test (el quarter que se predijo)
+		test_q_ts = pd.Timestamp(test_start)
+		year_quarter = f"{test_q_ts.year}Q{test_q_ts.quarter}"
+
+		# Series diarias de precio normalizado (base 1) para el plot de fold
+		ticker_price_series: Dict[str, pd.Series] = {}
+		for ticker, ret_series in zip(tickers_with_prices, daily_returns):
+			ticker_price_series[ticker] = (1 + ret_series).cumprod()
+
 		fold_result = {
 			"fold": fold_id,
+			"year_quarter": year_quarter,
 			"train_years": train_years_int,
 			"train_start": str(train_start.date()) if train_start is not None else None,
 			"test_start": str(test_start.date()),
@@ -160,6 +198,11 @@ class WalkForwardBacktester:
 			"alpha": alpha,
 			"excess_sharpe": excess_sharpe,
 			"ticker_returns": ticker_returns_sorted,
+			"ticker_weights": ticker_weights,
+			"weighting_mode": weighting_mode,
+			"_ticker_price_series": ticker_price_series,
+			"_strat_price_series": (1 + strat_aligned).cumprod(),
+			"_bench_price_series": (1 + bench_aligned).cumprod(),
 		}
 
 		self.all_strategy_returns = pd.concat([self.all_strategy_returns, strat_aligned])

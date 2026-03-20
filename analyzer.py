@@ -24,6 +24,7 @@ import logging
 import warnings
 import io as _io
 from pathlib import Path
+import datetime
 
 warnings.filterwarnings("ignore")
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -33,10 +34,10 @@ from environment import (
     TICKERS,
     FINNHUB_DATA_DIR, FINNHUB_API_KEY,
     RESULTS_DIR, AGENTS_RESULTS_DIR, BACKTEST_RESULTS_DIR, PLOTS_DIR,
-    FORWARD_RETURN_DAYS, MIN_HISTORY_QUARTERS,
-    WALKFORWARD_TRAIN_YEARS, WALKFORWARD_TEST_QUARTERS, RISK_FREE_RATE,
-    RANDOM_SEED, START_DATE, END_DATE,
-    SKIP_BACKTEST, FORCE_DOWNLOAD, RETRY_MISSING_TICKERS,
+    MIN_HISTORY_QUARTERS,
+    WALKFORWARD_TRAIN_LOOKBACK_YEARS, WALKFORWARD_TEST_QUARTERS, RISK_FREE_RATE,
+    RANDOM_SEED, DOWNLOAD_START_DATE, TEST_START_YEAR, TEST_START_QUARTER, END_YEAR, END_QUARTER,
+    SKIP_BACKTEST, FORCE_DOWNLOAD, RETRY_MISSING_TICKERS, RUN_LIVE_FOLD,
     TOP_N_STOCKS,
 )
 
@@ -50,8 +51,14 @@ from module.steps.step_02_dataset.builders.valuation import ValuationFeatureBuil
 from module.steps.step_01_data.pipeline import download_data, prepare_data, get_available_tickers, retry_missing_tickers
 from module.steps.step_02_dataset.dataset import build_master_dataset
 from module.steps.step_04_evaluation.evaluator import run_walkforward_pipeline
-from module.steps.step_04_evaluation.visualization import Visualizer
 from module.steps.step_05_live.live_fold import run_live_fold
+
+
+def _quarter_end_date(year: int, quarter: int):
+    import pandas as pd
+
+    month = quarter * 3
+    return pd.Timestamp(year=year, month=month, day=1) + pd.offsets.MonthEnd(0)
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 Path(RESULTS_DIR).mkdir(parents=True, exist_ok=True)
@@ -64,6 +71,7 @@ logging.basicConfig(
         logging.FileHandler(f"{RESULTS_DIR}/pipeline.log", encoding="utf-8"),
     ],
 )
+logging.getLogger('matplotlib.font_manager').setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
 
 
@@ -76,12 +84,19 @@ def main():
     log.info("  INICIANDO PIPELINE ML MULTI-AGENTE STOCK PICKER")
     log.info("=" * 60)
 
+    # test_start_date = fin del quarter ANTERIOR al primero que se quiere predecir.
+    # Ejemplo: TEST_START_QUARTER=3 2025 → predecir 2025Q3 → train_end = 30 Jun 2025
+    import pandas as pd
+    test_start_date = _quarter_end_date(TEST_START_YEAR, TEST_START_QUARTER) - pd.offsets.QuarterEnd(1)
+    end_date = _quarter_end_date(END_YEAR, END_QUARTER)
+    end_date_str = end_date.strftime("%Y-%m-%d")
+
     # ── 1. Descargar datos
     tickers = list(dict.fromkeys(TICKERS))  # deduplica preservando orden
     download_data(
         tickers=tickers,
-        start_date=START_DATE,
-        end_date=END_DATE,
+        start_date=DOWNLOAD_START_DATE,
+        end_date=end_date_str,
         data_dir=FINNHUB_DATA_DIR,
         force_download=FORCE_DOWNLOAD,
         api_key=FINNHUB_API_KEY,
@@ -99,8 +114,8 @@ def main():
     if RETRY_MISSING_TICKERS and missing_detail:
         recovered = retry_missing_tickers(
             missing_detail=missing_detail,
-            start_date=START_DATE,
-            end_date=END_DATE,
+            start_date=DOWNLOAD_START_DATE,
+            end_date=end_date_str,
             data_dir=FINNHUB_DATA_DIR,
             api_key=FINNHUB_API_KEY,
         )
@@ -123,43 +138,40 @@ def main():
         insider_builder=insider_builder,
         sentiment_builder=sentiment_builder,
         min_history_quarters=MIN_HISTORY_QUARTERS,
-        forward_return_days=FORWARD_RETURN_DAYS,
     )
     df.to_csv(f"{RESULTS_DIR}/master_dataset.csv")
     log.info(f"Dataset maestro: {len(df)} observaciones — {len(tickers_ok)} tickers")
 
-    # ── 6. Diagnóstico sectorial
-    visualizer = Visualizer(plots_dir=PLOTS_DIR)
-    visualizer.plot_sector_performance(df.reset_index())
-
     summary = {}
     if not SKIP_BACKTEST:
-        # ── 7. Precios y benchmark para el backtester
+        # ── 6. Precios y benchmark para el backtester
         prices_dict = {}
         for ticker in tickers_ok:
             p = router.load_prices(ticker)
             if p is not None:
                 prices_dict[ticker] = p
 
-        benchmark = router.load_sp500_prices()
-        if benchmark is None:
+        spy_prices = router.load_sp500_prices()
+        if spy_prices is None:
             import pandas as pd
             log.warning("Sin S&P 500 — usando retorno cero como benchmark")
-            benchmark = pd.Series(0.0, index=pd.date_range(START_DATE, END_DATE))
-        benchmark_returns = benchmark.pct_change().dropna()
+            benchmark_returns = pd.Series(0.0, index=pd.date_range(test_start_date, end_date))
+        else:
+            benchmark_returns = spy_prices.pct_change().dropna()
 
-        # ── 8. Walk-Forward Pipeline
+        # ── 7. Walk-Forward Pipeline
         summary = run_walkforward_pipeline(
             df=df,
             sector_map=sector_map,
             prices_dict=prices_dict,
             benchmark=benchmark_returns,
+            spy_prices=spy_prices,
             agents_results_dir=AGENTS_RESULTS_DIR,
             backtest_results_dir=BACKTEST_RESULTS_DIR,
             plots_dir=PLOTS_DIR,
-            start_date=START_DATE,
-            end_date=END_DATE,
-            walkforward_train_years=WALKFORWARD_TRAIN_YEARS,
+            start_date=test_start_date.strftime("%Y-%m-%d"),
+            end_date=end_date_str,
+            walkforward_train_years=WALKFORWARD_TRAIN_LOOKBACK_YEARS,
             walkforward_test_quarters=WALKFORWARD_TEST_QUARTERS,
             risk_free_rate=RISK_FREE_RATE,
             top_n_stocks=TOP_N_STOCKS,
@@ -168,24 +180,27 @@ def main():
     else:
         log.info("SKIP_BACKTEST=True — saltando walk-forward backtest histórico")
 
-    # ── 9. Fold live out-of-sample
-    run_live_fold(
-        df=df,
-        sector_map=sector_map,
-        tickers_ok=tickers_ok,
-        as_of_date=END_DATE,
-        router=router,
-        fundamental_builder=fundamental_builder,
-        technical_builder=technical_builder,
-        valuation_builder=valuation_builder,
-        insider_builder=insider_builder,
-        sentiment_builder=sentiment_builder,
-        results_dir=RESULTS_DIR,
-        agents_results_dir=AGENTS_RESULTS_DIR,
-        top_n=TOP_N_STOCKS,
-        min_history_quarters=MIN_HISTORY_QUARTERS,
-        random_seed=RANDOM_SEED,
-    )
+    # ── 8. Fold live out-of-sample
+    if RUN_LIVE_FOLD:
+        run_live_fold(
+            df=df,
+            sector_map=sector_map,
+            tickers_ok=tickers_ok,
+            as_of_date=end_date_str,
+            router=router,
+            fundamental_builder=fundamental_builder,
+            technical_builder=technical_builder,
+            valuation_builder=valuation_builder,
+            insider_builder=insider_builder,
+            sentiment_builder=sentiment_builder,
+            results_dir=RESULTS_DIR,
+            agents_results_dir=AGENTS_RESULTS_DIR,
+            top_n=TOP_N_STOCKS,
+            min_history_quarters=MIN_HISTORY_QUARTERS,
+            random_seed=RANDOM_SEED,
+        )
+    else:
+        log.info("RUN_LIVE_FOLD=False — saltando fold live out-of-sample")
 
     # ── Resultado final
     log.info("\n" + "=" * 60)

@@ -121,16 +121,6 @@ class FinnhubClient:
 		"""Precio actual, cambio dia, maximo/minimo diario, cierre anterior."""
 		return self._get("/quote", {"symbol": symbol})
 
-	def sp500_symbols(self):
-		"""Componentes del S&P 500 scrapeados de Wikipedia."""
-		try:
-			import pandas as pd
-
-			tables = pd.read_html("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
-			return tables[0]["Symbol"].str.replace(".", "-", regex=False).tolist()
-		except Exception as e:
-			log.error(f"No se pudo obtener el S&P 500: {e}")
-			return []
 
 
 class YahooClient:

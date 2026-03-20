@@ -4,6 +4,10 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -63,9 +67,18 @@ def fetch_and_save(
     registry: Registry,
     force: bool,
     wrap: str | None = None,
+    registry_lock: threading.Lock | None = None,
+    rate_limiter: "RateLimiter" | None = None,
 ) -> str:
-    if not force and registry.is_done(group, endpoint):
+    if registry_lock:
+        with registry_lock:
+            if not force and registry.is_done(group, endpoint):
+                return "skip"
+    elif not force and registry.is_done(group, endpoint):
         return "skip"
+
+    if rate_limiter is not None:
+        rate_limiter.wait()
 
     data = fn()
     if not data:
@@ -78,7 +91,11 @@ def fetch_and_save(
 
     payload.update(_meta(group))
     save_json(payload, out_path)
-    registry.mark_done(group, endpoint)
+    if registry_lock:
+        with registry_lock:
+            registry.mark_done(group, endpoint)
+    else:
+        registry.mark_done(group, endpoint)
     return f"ok{_count(payload)}"
 
 
@@ -94,9 +111,14 @@ def download_prices(
     registry: Registry,
     force: bool,
     yahoo: YahooClient,
+    registry_lock: threading.Lock | None = None,
 ) -> str:
     endpoint = "prices"
-    if not force and registry.is_done(ticker, endpoint):
+    if registry_lock:
+        with registry_lock:
+            if not force and registry.is_done(ticker, endpoint):
+                return "skip"
+    elif not force and registry.is_done(ticker, endpoint):
         return "skip"
 
     data = yahoo.ohlcv(ticker, start, end)
@@ -105,7 +127,11 @@ def download_prices(
 
     payload = {**_meta(ticker), "start": start, "end": end, "source": "yahoo_v8", **data}
     save_json(payload, ticker_dir / "prices.json")
-    registry.mark_done(ticker, endpoint)
+    if registry_lock:
+        with registry_lock:
+            registry.mark_done(ticker, endpoint)
+    else:
+        registry.mark_done(ticker, endpoint)
     return f"ok ({len(data['data'])} dias)"
 
 
@@ -156,13 +182,24 @@ def download_ticker(
     start: str,
     end: str,
     force: bool,
+    registry_lock: threading.Lock | None = None,
+    rate_limiter: "RateLimiter" | None = None,
 ) -> dict:
     ticker_dir = base_dir / ticker
     ticker_dir.mkdir(parents=True, exist_ok=True)
 
     r: dict = {}
 
-    r["prices"] = download_prices(ticker, ticker_dir, start, end, registry, force, yahoo)
+    r["prices"] = download_prices(
+        ticker,
+        ticker_dir,
+        start,
+        end,
+        registry,
+        force,
+        yahoo,
+        registry_lock=registry_lock,
+    )
 
     r["profile"] = fetch_and_save(
         ticker,
@@ -171,6 +208,8 @@ def download_ticker(
         ticker_dir / "profile.json",
         registry,
         force,
+        registry_lock=registry_lock,
+        rate_limiter=rate_limiter,
     )
 
     r["basic_financials"] = fetch_and_save(
@@ -180,6 +219,8 @@ def download_ticker(
         ticker_dir / "basic_financials.json",
         registry,
         force,
+        registry_lock=registry_lock,
+        rate_limiter=rate_limiter,
     )
 
     r["financials_reported_annual"] = fetch_and_save(
@@ -189,6 +230,8 @@ def download_ticker(
         ticker_dir / "financials_reported_annual.json",
         registry,
         force,
+        registry_lock=registry_lock,
+        rate_limiter=rate_limiter,
     )
 
     r["financials_reported_quarterly"] = fetch_and_save(
@@ -198,6 +241,8 @@ def download_ticker(
         ticker_dir / "financials_reported_quarterly.json",
         registry,
         force,
+        registry_lock=registry_lock,
+        rate_limiter=rate_limiter,
     )
 
     r["eps_surprises"] = fetch_and_save(
@@ -208,6 +253,8 @@ def download_ticker(
         registry,
         force,
         wrap="data",
+        registry_lock=registry_lock,
+        rate_limiter=rate_limiter,
     )
 
     r["earnings_calendar"] = fetch_and_save(
@@ -217,6 +264,8 @@ def download_ticker(
         ticker_dir / "earnings_calendar.json",
         registry,
         force,
+        registry_lock=registry_lock,
+        rate_limiter=rate_limiter,
     )
 
     r["recommendation_trends"] = fetch_and_save(
@@ -227,6 +276,8 @@ def download_ticker(
         registry,
         force,
         wrap="data",
+        registry_lock=registry_lock,
+        rate_limiter=rate_limiter,
     )
 
     r["insider_transactions"] = fetch_and_save(
@@ -236,6 +287,8 @@ def download_ticker(
         ticker_dir / "insider_transactions.json",
         registry,
         force,
+        registry_lock=registry_lock,
+        rate_limiter=rate_limiter,
     )
 
     r["insider_sentiment"] = fetch_and_save(
@@ -245,6 +298,8 @@ def download_ticker(
         ticker_dir / "insider_sentiment.json",
         registry,
         force,
+        registry_lock=registry_lock,
+        rate_limiter=rate_limiter,
     )
 
     news_start = (datetime.today() - timedelta(days=365)).strftime("%Y-%m-%d")
@@ -256,6 +311,8 @@ def download_ticker(
         registry,
         force,
         wrap="data",
+        registry_lock=registry_lock,
+        rate_limiter=rate_limiter,
     )
 
     r["peers"] = fetch_and_save(
@@ -266,6 +323,8 @@ def download_ticker(
         registry,
         force,
         wrap="peers",
+        registry_lock=registry_lock,
+        rate_limiter=rate_limiter,
     )
 
     r["quote"] = fetch_and_save(
@@ -275,6 +334,8 @@ def download_ticker(
         ticker_dir / "quote.json",
         registry,
         force,
+        registry_lock=registry_lock,
+        rate_limiter=rate_limiter,
     )
 
     return r
@@ -291,6 +352,8 @@ def run_download(
     end: str | None = None,
     base_dir: str = "data_finnhub",
     force: bool = False,
+    max_workers: int | None = None,
+    min_interval: float | None = None,
 ) -> None:
     end = end or datetime.today().strftime("%Y-%m-%d")
     base_dir = Path(base_dir)
@@ -317,35 +380,75 @@ def run_download(
     log.info(f"Descargando {len(tickers)} tickers...")
     summary = {"ok": 0, "partial": 0, "fail": 0}
 
-    iterable = tqdm(tickers, desc="Tickers", unit="ticker") if TQDM_AVAILABLE else tickers
+    registry_lock = threading.Lock()
+    max_workers = max_workers or int(os.getenv("DOWNLOAD_MAX_WORKERS", "4"))
+    max_workers = max(1, min(max_workers, 16))
 
-    for ticker in iterable:
-        try:
-            results = download_ticker(
-                ticker=ticker,
-                client=client,
-                yahoo=yahoo,
-                base_dir=base_dir,
-                registry=registry,
-                start=start,
-                end=end,
-                force=force,
-            )
-            ok = sum(1 for v in results.values() if v.startswith("ok"))
-            skip = sum(1 for v in results.values() if v == "skip")
-            total = len(results)
+    min_interval = min_interval or float(os.getenv("FINNHUB_MIN_INTERVAL", "1.05"))
+    rate_limiter = RateLimiter(min_interval=min_interval)
 
-            if ok + skip == total:
-                summary["ok"] += 1
-            elif ok + skip > 0:
-                summary["partial"] += 1
-            else:
+    def _worker(ticker: str):
+        local_client = FinnhubClient(api_key)
+        local_client.MIN_INTERVAL = 0.0
+        local_yahoo = YahooClient()
+        return ticker, download_ticker(
+            ticker=ticker,
+            client=local_client,
+            yahoo=local_yahoo,
+            base_dir=base_dir,
+            registry=registry,
+            start=start,
+            end=end,
+            force=force,
+            registry_lock=registry_lock,
+            rate_limiter=rate_limiter,
+        )
+
+    if max_workers == 1:
+        iterable = tqdm(tickers, desc="Tickers", unit="ticker") if TQDM_AVAILABLE else tickers
+        for ticker in iterable:
+            try:
+                _ticker, results = _worker(ticker)
+                ok = sum(1 for v in results.values() if v.startswith("ok"))
+                skip = sum(1 for v in results.values() if v == "skip")
+                total = len(results)
+
+                if ok + skip == total:
+                    summary["ok"] += 1
+                elif ok + skip > 0:
+                    summary["partial"] += 1
+                else:
+                    summary["fail"] += 1
+
+                log.debug(f"[{ticker}] ok={ok} skip={skip} nodata={total - ok - skip}")
+            except Exception as e:
+                log.warning(f"[{ticker}] Error inesperado: {e}")
                 summary["fail"] += 1
+    else:
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_worker, ticker): ticker for ticker in tickers}
+            iterable = as_completed(futures)
+            if TQDM_AVAILABLE:
+                iterable = tqdm(iterable, total=len(futures), desc="Tickers", unit="ticker")
+            for fut in iterable:
+                ticker = futures[fut]
+                try:
+                    _ticker, results = fut.result()
+                    ok = sum(1 for v in results.values() if v.startswith("ok"))
+                    skip = sum(1 for v in results.values() if v == "skip")
+                    total = len(results)
 
-            log.debug(f"[{ticker}] ok={ok} skip={skip} nodata={total - ok - skip}")
-        except Exception as e:
-            log.warning(f"[{ticker}] Error inesperado: {e}")
-            summary["fail"] += 1
+                    if ok + skip == total:
+                        summary["ok"] += 1
+                    elif ok + skip > 0:
+                        summary["partial"] += 1
+                    else:
+                        summary["fail"] += 1
+
+                    log.debug(f"[{ticker}] ok={ok} skip={skip} nodata={total - ok - skip}")
+                except Exception as e:
+                    log.warning(f"[{ticker}] Error inesperado: {e}")
+                    summary["fail"] += 1
 
     log.info("=" * 50)
     log.info("  DESCARGA COMPLETADA")
@@ -355,19 +458,18 @@ def run_download(
     log.info("=" * 50)
 
 
-def fetch_all_finnhub(
-    tickers: list,
-    start: str,
-    end: str,
-    base_dir: str,
-    api_key: str,
-    force: bool = False,
-) -> None:
-    run_download(
-        api_key=api_key,
-        tickers=tickers,
-        start=start,
-        end=end,
-        base_dir=base_dir,
-        force=force,
-    )
+
+
+class RateLimiter:
+    def __init__(self, min_interval: float) -> None:
+        self.min_interval = min_interval
+        self._lock = threading.Lock()
+        self._last_call = 0.0
+
+    def wait(self) -> None:
+        with self._lock:
+            now = time.time()
+            wait = self.min_interval - (now - self._last_call)
+            if wait > 0:
+                time.sleep(wait)
+            self._last_call = time.time()

@@ -309,48 +309,11 @@ class AgentExplainer:
             result["risk_drivers"] = top_neg
             result["text"]         = self._generate_text(ticker, score, top_pos, top_neg)
 
-            # Guardar explicación individual
-            self._save_local_explanation(result, fold)
-
         except Exception as e:
             log.debug(f"[{self.agent_name}] SHAP local error para {ticker}: {e}")
             result["text"] = self._rule_based_text(X_row, score, ticker)
 
         return result
-
-    def explain_batch(
-        self,
-        X:      pd.DataFrame,
-        scores: pd.Series,
-        tickers: List[str],
-        top_n:  int = 5,
-        fold:   Optional[int] = None,
-    ) -> pd.DataFrame:
-        """
-        Explica todas las predicciones de un fold.
-        Devuelve DataFrame con una fila por ticker y las top_n contribuciones.
-        """
-        rows = []
-        for ticker, (idx, row) in zip(tickers, X.iterrows()):
-            score = float(scores.loc[idx]) if idx in scores.index else 0.5
-            exp   = self.explain_prediction(row, ticker, score, top_n=top_n, fold=fold)
-            flat  = {
-                "ticker": ticker,
-                "score":  exp["score"],
-                "label":  exp["label"],
-            }
-            for i, d in enumerate(exp.get("top_drivers", [])[:top_n], 1):
-                flat[f"driver_{i}_feature"] = d["feature"]
-                flat[f"driver_{i}_shap"]    = round(d["shap_value"], 4)
-                flat[f"driver_{i}_value"]   = round(d["raw_value"], 4)
-            rows.append(flat)
-
-        df = pd.DataFrame(rows)
-        suffix = f"_fold{fold}" if fold is not None else ""
-        path   = self.results_dir / f"batch_explanations{suffix}.csv"
-        df.to_csv(path, index=False)
-        log.info(f"[{self.agent_name}] Batch explanations ({len(df)} tickers) -> {path.name}")
-        return df
 
     # ── Texto en lenguaje natural ─────────────────────────────────────────────
 
@@ -436,36 +399,6 @@ class AgentExplainer:
         except Exception as e:
             log.debug(f"[{self.agent_name}] No se pudo generar shap_bar: {e}")
 
-    def _save_local_explanation(self, result: Dict, fold: Optional[int]):
-        """
-        Guarda la explicación local de un ticker en JSON con valores formateados.
-        Incluye raw_value y value_formatted para cada driver.
-        """
-        suffix  = f"_fold{fold}" if fold is not None else ""
-        ticker  = result.get("ticker", "unknown")
-        path    = self.results_dir / "local_explanations"
-        path.mkdir(exist_ok=True)
-        out_path = path / f"{ticker}{suffix}.json"
-
-        # Enriquecer top_drivers con valor formateado y serializar numpy scalars
-        top_drivers_clean = []
-        for d in result.get("top_drivers", []):
-            entry = {}
-            for k, v in d.items():
-                if isinstance(v, (np.floating, np.integer)):
-                    entry[k] = float(v)
-                else:
-                    entry[k] = v
-            # Añadir valor formateado si no está ya
-            if "raw_value" in entry and "value_formatted" not in entry:
-                entry["value_formatted"] = _format_value(entry["feature"], entry["raw_value"])
-            top_drivers_clean.append(entry)
-
-        clean = {k: v for k, v in result.items() if k != "top_drivers"}
-        clean["top_drivers"] = top_drivers_clean
-
-        with open(out_path, "w", encoding="utf-8") as f:
-            json.dump(clean, f, indent=2, ensure_ascii=False, default=str)
 
 
 # ── Helper de formato de valores ─────────────────────────────────────────────

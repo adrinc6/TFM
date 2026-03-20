@@ -20,7 +20,7 @@ from module.agents.base import BaseAgent, FeatureSelector
 from module.steps.step_04_evaluation.explainability import build_explainer_for_agent, AgentExplainer
 from environment import (
     VALUATION_N_ESTIMATORS, VALUATION_MAX_DEPTH, VALUATION_LEARNING_RATE,
-    VALUATION_SUBSAMPLE, VALUATION_CV_FOLDS, FEATURE_CORR_THRESHOLD, FEATURE_TOP_N,
+    VALUATION_SUBSAMPLE, FEATURE_CORR_THRESHOLD, FEATURE_TOP_N,
 )
 
 log = logging.getLogger(__name__)
@@ -31,7 +31,7 @@ try:
     from sklearn.preprocessing import StandardScaler
     from sklearn.calibration import CalibratedClassifierCV
     from sklearn.metrics import roc_auc_score, accuracy_score, f1_score
-    from sklearn.model_selection import StratifiedKFold
+    from sklearn.model_selection import TimeSeriesSplit
     _DEPS_OK = True
 except ImportError:
     _DEPS_OK = False
@@ -66,8 +66,7 @@ class ValuationAgent(BaseAgent):
                  n_estimators: int = VALUATION_N_ESTIMATORS,
                  max_depth: int = VALUATION_MAX_DEPTH,
                  learning_rate: float = VALUATION_LEARNING_RATE,
-                 subsample: float = VALUATION_SUBSAMPLE,
-                 n_cv_folds: int = VALUATION_CV_FOLDS):
+                 subsample: float = VALUATION_SUBSAMPLE):
         super().__init__("valuation", results_dir, random_seed)
         if not _DEPS_OK:
             raise ImportError("scikit-learn requerido.")
@@ -75,7 +74,6 @@ class ValuationAgent(BaseAgent):
         self.max_depth     = max_depth
         self.learning_rate = learning_rate
         self.subsample     = subsample
-        self.n_cv_folds    = n_cv_folds
         self._model:              Optional[Pipeline] = None
         self._feature_cols:       List[str]          = []
         self._sector_stats:       Dict               = {}
@@ -110,7 +108,7 @@ class ValuationAgent(BaseAgent):
         )
         self._model = Pipeline([
             ("scaler", StandardScaler()),
-            ("clf",    CalibratedClassifierCV(gbc, method="sigmoid", cv=self.n_cv_folds)),
+            ("clf",    CalibratedClassifierCV(gbc, method="sigmoid", cv=5)),
         ])
 
         cv = self._cv(X_prep, y_cl)
@@ -195,9 +193,13 @@ class ValuationAgent(BaseAgent):
         return self._align_to_feature_cols(X, fill_value=np.nan)
 
     def _cv(self, X: pd.DataFrame, y: pd.Series) -> Dict:
-        skf  = StratifiedKFold(n_splits=self.n_cv_folds, shuffle=True, random_state=self.random_seed)
+        date_order = X.index.get_level_values("date") if "date" in X.index.names else X.index
+        sort_idx = date_order.argsort()
+        X = X.iloc[sort_idx]
+        y = y.reindex(X.index)
+        tss = TimeSeriesSplit(n_splits=5)
         aucs, accs, f1s = [], [], []
-        for tr, val in skf.split(X, y):
+        for tr, val in tss.split(X):
             pipe = Pipeline([
                 ("scaler", StandardScaler()),
                 ("clf", GradientBoostingClassifier(

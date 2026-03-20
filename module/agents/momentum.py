@@ -25,7 +25,7 @@ from module.agents.base import BaseAgent, FeatureSelector
 from module.steps.step_04_evaluation.explainability import build_explainer_for_agent, AgentExplainer
 from environment import (
     MOMENTUM_N_ESTIMATORS, MOMENTUM_MAX_DEPTH, MOMENTUM_MIN_SAMPLES_LEAF,
-    MOMENTUM_CV_FOLDS, FEATURE_CORR_THRESHOLD, FEATURE_TOP_N,
+    FEATURE_CORR_THRESHOLD, FEATURE_TOP_N,
 )
 
 log = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ try:
     from sklearn.preprocessing import StandardScaler
     from sklearn.calibration import CalibratedClassifierCV
     from sklearn.metrics import roc_auc_score, accuracy_score, f1_score
-    from sklearn.model_selection import TimeSeriesSplit, StratifiedKFold
+    from sklearn.model_selection import TimeSeriesSplit
     _DEPS_OK = True
 except ImportError:
     _DEPS_OK = False
@@ -80,15 +80,13 @@ class MomentumAgent(BaseAgent):
     def __init__(self, results_dir: str, random_seed: int = 42,
                  n_estimators: int = MOMENTUM_N_ESTIMATORS,
                  max_depth: int = MOMENTUM_MAX_DEPTH,
-                 min_samples_leaf: int = MOMENTUM_MIN_SAMPLES_LEAF,
-                 n_cv_folds: int = MOMENTUM_CV_FOLDS):
+                 min_samples_leaf: int = MOMENTUM_MIN_SAMPLES_LEAF):
         super().__init__("momentum", results_dir, random_seed)
         if not _DEPS_OK:
             raise ImportError("scikit-learn requerido.")
         self.n_estimators     = n_estimators
         self.max_depth        = max_depth
         self.min_samples_leaf = min_samples_leaf
-        self.n_cv_folds       = n_cv_folds
         self._model:        Optional[Pipeline] = None
         self._feature_cols: List[str]          = []
         self._selector:     Optional[FeatureSelector] = None
@@ -122,7 +120,7 @@ class MomentumAgent(BaseAgent):
         )
         self._model = Pipeline([
             ("scaler", StandardScaler()),
-            ("clf",    CalibratedClassifierCV(rf, method="sigmoid", cv=self.n_cv_folds)),
+            ("clf",    CalibratedClassifierCV(rf, method="sigmoid", cv=5)),
         ])
 
         cv = self._cv(X_prep, y_cl)
@@ -201,13 +199,13 @@ class MomentumAgent(BaseAgent):
         return self._align_to_feature_cols(X, fill_value=0.0)
 
     def _cv(self, X: pd.DataFrame, y: pd.Series) -> Dict:
-        # StratifiedKFold en lugar de TimeSeriesSplit: los datos llegan con
-        # multiples tickers interleaved, asi que el orden posicional no
-        # corresponde a una serie temporal unica. El walk-forward externo
-        # ya garantiza la separacion temporal train/test.
-        skf  = StratifiedKFold(n_splits=self.n_cv_folds, shuffle=True, random_state=self.random_seed)
+        date_order = X.index.get_level_values("date") if "date" in X.index.names else X.index
+        sort_idx = date_order.argsort()
+        X = X.iloc[sort_idx]
+        y = y.reindex(X.index)
+        tss = TimeSeriesSplit(n_splits=5)
         aucs, accs, f1s = [], [], []
-        for tr, val in skf.split(X, y):
+        for tr, val in tss.split(X):
             rf = RandomForestClassifier(
                 n_estimators=self.n_estimators, max_depth=self.max_depth,
                 min_samples_leaf=self.min_samples_leaf, class_weight="balanced",

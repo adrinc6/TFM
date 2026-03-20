@@ -15,9 +15,19 @@ def generate_oof_scores(
     n_splits: int = 3,
     random_seed: int = 42,
 ) -> Dict[str, pd.Series]:
-    from sklearn.model_selection import KFold
+    # TimeSeriesSplit respeta el orden temporal: el fold k siempre entrena
+    # con quarters anteriores al de validación. Así los scores OOF del meta-learner
+    # no sufren look-ahead entre trimestres.
+    # IMPORTANTE: el índice es (ticker, date). Sin ordenar por date primero,
+    # TimeSeriesSplit partiría AAPL contra AAPL en lugar de quarters contra quarters.
+    from sklearn.model_selection import TimeSeriesSplit
 
-    kf = KFold(n_splits=n_splits, shuffle=True, random_state=random_seed)
+    date_order = X.index.get_level_values("date")
+    sort_idx = date_order.argsort()
+    X = X.iloc[sort_idx]
+    y = y.reindex(X.index)
+
+    kf = TimeSeriesSplit(n_splits=n_splits)
     oof: Dict[str, pd.Series] = {}
 
     for ag_name, cfg in agents_config.items():
@@ -32,12 +42,21 @@ def generate_oof_scores(
             agent = cfg["cls"](**cfg["kwargs"])
             y_fit = (1 - y_tr) if cfg.get("invert_y") else y_tr
 
-            if cfg.get("sector_col"):
-                agent.fit(X_tr, y_fit, fold=0, sector_col=cfg["sector_col"])
-                preds = agent.predict_score(X_val, cfg["sector_col"])
-            else:
-                agent.fit(X_tr, y_fit, fold=0)
-                preds = agent.predict_score(X_val)
+            try:
+                if cfg.get("sector_col"):
+                    agent.fit(X_tr, y_fit, fold=0, sector_col=cfg["sector_col"])
+                    if getattr(agent, "is_trained", False):
+                        preds = agent.predict_score(X_val, cfg["sector_col"])
+                    else:
+                        preds = pd.Series(0.5, index=X_val.index, name=score_col)
+                else:
+                    agent.fit(X_tr, y_fit, fold=0)
+                    if getattr(agent, "is_trained", False):
+                        preds = agent.predict_score(X_val)
+                    else:
+                        preds = pd.Series(0.5, index=X_val.index, name=score_col)
+            except Exception:
+                preds = pd.Series(0.5, index=X_val.index, name=score_col)
 
             oof_vals.iloc[fold_val] = preds.values
 

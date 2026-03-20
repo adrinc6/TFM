@@ -17,13 +17,50 @@ class FundamentalFeatureBuilder:
     """
 
     def build(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Enriquece el DataFrame de fundamentales trimestrales con ratios y señales.
+        NO incluye trend_features aquí porque expanding() sobre todo el df
+        causaría look-ahead: una fila de 2021 vería tendencias calculadas con
+        datos de 2023. Las trend features se calculan en snapshot_trends(),
+        llamado desde dataset.py con solo los datos hasta as_of.
+        """
         df = df.copy()
         df = self._yoy_growth(df)
         df = self._quality_metrics(df)
         df = self._coverage_ratios(df)
         df = self._risk_flags(df)
-        df = self._trend_features(df)
         return df
+
+    def snapshot_trends(self, fund_hist_asof: pd.DataFrame) -> Dict:
+        """
+        Calcula features de tendencia usando SOLO los datos hasta as_of.
+        Llamar con fund_hist_asof = fund_enriched[fund_enriched.index <= as_of].
+        Devuelve un dict de features listos para añadir al record.
+        """
+        out: Dict = {}
+        for col, feat in [
+            ("bf_roe",         "roe_trend_3y"),
+            ("bf_gross_margin","gross_margin_trend_3y"),
+            ("bf_net_margin",  "net_margin_trend_3y"),
+            ("roe",            "roe_trend_2y"),
+            ("net_margin",     "net_margin_trend_2y"),
+        ]:
+            if col in fund_hist_asof.columns:
+                vals = fund_hist_asof[col].dropna().tail(8)
+                out[feat] = self._slope(vals)
+        return out
+
+    @staticmethod
+    def _slope(series: pd.Series, n: int = 8) -> float:
+        vals = series.tail(n)
+        if len(vals) < 3:
+            return np.nan
+        x = np.arange(len(vals), dtype=float)
+        y = vals.values.astype(float)
+        if y.std() == 0:
+            return 0.0
+        coeffs = np.polyfit(x, y / (abs(y.mean()) + 1e-10), 1)
+        return float(coeffs[0])
 
     def _yoy_growth(self, df: pd.DataFrame) -> pd.DataFrame:
         pairs = {
@@ -78,26 +115,3 @@ class FundamentalFeatureBuilder:
             df["revenue_decline"] = (df["revenue_yoy_growth"] < 0).astype(int)
         return df
 
-    def _trend_features(self, df: pd.DataFrame) -> pd.DataFrame:
-        def _slope(series: pd.Series, n: int = 8) -> float:
-            vals = series.dropna().tail(n)
-            if len(vals) < 3:
-                return np.nan
-            x = np.arange(len(vals), dtype=float)
-            y = vals.values.astype(float)
-            if y.std() == 0:
-                return 0.0
-            coeffs = np.polyfit(x, y / (abs(y.mean()) + 1e-10), 1)
-            return float(coeffs[0])
-
-        for col, feat in [
-            ("bf_roe", "roe_trend_3y"),
-            ("bf_gross_margin", "gross_margin_trend_3y"),
-            ("bf_net_margin", "net_margin_trend_3y"),
-            ("roe", "roe_trend_2y"),
-            ("net_margin", "net_margin_trend_2y"),
-        ]:
-            if col in df.columns:
-                df[feat] = df[col].expanding(3).apply(lambda s: _slope(s, n=8), raw=False)
-
-        return df

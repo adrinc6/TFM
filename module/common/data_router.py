@@ -72,19 +72,6 @@ class DataRouter:
             return {}
         return c["sector"].fillna("Unknown").to_dict()
 
-    def enrich_with_sector(self, df: pd.DataFrame, ticker_col: str = "ticker") -> pd.DataFrame:
-        """Añade columnas 'sector' e 'industry' a un DataFrame con columna ticker."""
-        c = self.load_companies()
-        if c.empty or ticker_col not in df.columns:
-            df["sector"]   = "Unknown"
-            df["industry"] = "Unknown"
-            return df
-        mapping = c[["sector", "industry"]].rename_axis("ticker")
-        df = df.join(mapping, on=ticker_col, how="left")
-        df["sector"]   = df["sector"].fillna("Unknown")
-        df["industry"] = df["industry"].fillna("Unknown")
-        return df
-
     # ── Loaders de precios ─────────────────────────────────────────────────────
 
     def load_prices(self, ticker: str) -> Optional[pd.DataFrame]:
@@ -110,6 +97,7 @@ class DataRouter:
         df = pd.DataFrame(records)
         df["date"] = pd.to_datetime(df["date"])
         df = df.set_index("date").sort_index()
+        df = df[~df.index.duplicated(keep="last")]
 
         # Estandarizar nombres de columnas al formato que esperan los builders
         rename = {
@@ -138,7 +126,8 @@ class DataRouter:
             return None
         df = pd.read_csv(path, index_col=0, parse_dates=True)
         df.index = pd.to_datetime(df.index)
-        return df.sort_index()
+        df = df.sort_index()
+        return df[~df.index.duplicated(keep="last")]
 
     # ── Loaders de datos de analistas ─────────────────────────────────────────
 
@@ -149,7 +138,8 @@ class DataRouter:
         """
         from module.steps.step_01_data.parsers import EPSSurprisesParser
         path = self.data_dir / ticker / "eps_surprises.json"
-        return EPSSurprisesParser().parse(path) or None
+        df = EPSSurprisesParser().parse(path)
+        return df if df is not None and not df.empty else None
 
     def load_recommendation_trends(self, ticker: str) -> Optional[pd.DataFrame]:
         """
@@ -211,6 +201,7 @@ class DataRouter:
                     s = pd.DataFrame(records)
                     s["date"] = pd.to_datetime(s["date"])
                     s = s.set_index("date")["close"].sort_index()
+                    s = s[~s.index.duplicated(keep="last")]
                     s.name = name
                     series_map[name] = s
             except Exception as e:
@@ -249,7 +240,8 @@ class DataRouter:
                 return None
             s = pd.DataFrame(records)
             s["date"] = pd.to_datetime(s["date"])
-            return s.set_index("date")["close"].sort_index()
+            s = s.set_index("date")["close"].sort_index()
+            return s[~s.index.duplicated(keep="last")]
         except Exception as e:
             log.warning(f"[DataRouter] Error cargando sp500: {e}")
             return None
@@ -276,18 +268,6 @@ class DataRouter:
         start = as_of - pd.DateOffset(days=lookback_days)
         return insider[(insider["date"] >= start) & (insider["date"] <= as_of)]
 
-    def get_sentiment_window(
-        self, df: pd.DataFrame, as_of: pd.Timestamp, lookback_months: int = 6
-    ) -> Optional[pd.Series]:
-        """
-        Último snapshot de datos de sentiment (MSPR, recomendaciones) antes de as_of.
-        Usado por InsiderSentimentParser y RecommendationParser.
-        """
-        if df is None or df.empty:
-            return None
-        av = df[df.index <= as_of]
-        return av.iloc[-1] if not av.empty else None
-
     def get_sentiment_series(
         self, df: pd.DataFrame, as_of: pd.Timestamp, lookback_months: int = 6
     ) -> pd.DataFrame:
@@ -304,20 +284,43 @@ class DataRouter:
         av = macro[macro.index <= as_of]
         return av.iloc[-1] if not av.empty else None
 
-    def compute_forward_return(
-        self, prices: pd.DataFrame, as_of: pd.Timestamp, forward_days: int = 63
+
+    @staticmethod
+    def quarter_end(ts: pd.Timestamp) -> pd.Timestamp:
+        """Devuelve el último día del trimestre al que pertenece ts."""
+        return ts + pd.offsets.QuarterEnd(0)
+
+    @staticmethod
+    def next_quarter_end(ts: pd.Timestamp) -> pd.Timestamp:
+        """Devuelve el último día del trimestre siguiente al de ts."""
+        return DataRouter.quarter_end(ts) + pd.offsets.QuarterEnd(1)
+
+    def compute_quarterly_forward_return(
+        self, prices: pd.DataFrame, as_of: pd.Timestamp
     ) -> Optional[float]:
         """
-        Retorno forward desde as_of hasta +forward_days días de trading.
-        Solo para construir el label — nunca como feature de los agentes.
+        Retorno desde el cierre del trimestre actual (as_of) hasta el cierre
+        del trimestre siguiente. Éste es el label natural del modelo trimestral:
+        "con la foto de este quarter, cuánto subió o bajó en el siguiente".
+
+        - p0: último precio de trading disponible en o antes del fin del quarter actual
+        - p1: último precio de trading disponible en o antes del fin del quarter siguiente
+        Solo para construir el label — nunca como feature.
         """
-        cc     = "Close" if "Close" in prices.columns else prices.columns[0]
-        past   = prices[prices.index <= as_of]
-        future = prices[prices.index >  as_of]
-        if past.empty or future.empty:
+        cc = "Close" if "Close" in prices.columns else prices.columns[0]
+
+        q_end_current = self.quarter_end(as_of)
+        q_end_next    = self.next_quarter_end(as_of)
+
+        past_window   = prices[prices.index <= q_end_current]
+        future_window = prices[(prices.index > q_end_current) & (prices.index <= q_end_next)]
+
+        if past_window.empty or future_window.empty:
             return None
-        p0 = float(past[cc].iloc[-1])
-        p1 = float(future[cc].iloc[min(forward_days - 1, len(future) - 1)])
+
+        p0 = float(past_window[cc].iloc[-1])
+        p1 = float(future_window[cc].iloc[-1])
+
         if p0 <= 0 or pd.isna(p0) or pd.isna(p1):
             return None
         return (p1 - p0) / p0

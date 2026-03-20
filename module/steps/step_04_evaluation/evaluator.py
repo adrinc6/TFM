@@ -6,17 +6,29 @@ import datetime
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import pandas as pd
 
-from environment import FORWARD_RETURN_DAYS, SECTOR_ZSCORE_MIN_PEERS
+from environment import PORTFOLIO_MIN_SCORE, RUN_ABLATION_STUDY, SECTOR_ZSCORE_MIN_PEERS
 from module.steps.step_02_dataset.builders.sector import SectorNormalizer
 from module.steps.step_02_dataset.normalization import apply_sector_normalization
 from module.steps.step_03_training.training import train_fold
 from module.steps.step_04_evaluation.ablation import run_ablation_study, summarize_ablation
 from module.steps.step_04_evaluation.backtester import WalkForwardBacktester
+from module.steps.step_04_evaluation.fold_report import (
+    build_fold_scores_df,
+    export_fold_scores,
+    export_all_folds_scores,
+)
+
 from module.steps.step_04_evaluation.reports import generate_text_report
+from module.steps.step_04_evaluation.selection_reports import (
+    build_explanation_candidate_tickers,
+    build_selection_audit_df,
+    export_selection_audit,
+    export_ticker_explanations,
+)
 from module.steps.step_04_evaluation.visualization import Visualizer
 
 log = logging.getLogger(__name__)
@@ -28,6 +40,8 @@ def explain_top_tickers(
     scores: pd.Series,
     fold_id: int,
     agents_results_dir: str,
+    selected_tickers: List[str] | None = None,
+    audit_df: pd.DataFrame | None = None,
     top_n: int = 10,
 ) -> None:
     if scores.empty:
@@ -35,51 +49,36 @@ def explain_top_tickers(
 
     tickers_col = df_test.index.get_level_values("ticker")
     ticker_scores = pd.Series(scores.values, index=tickers_col).groupby(level=0).last()
+    if selected_tickers is None:
+        selected_tickers = ticker_scores.nlargest(top_n).index.tolist()
 
-    top_bulls = ticker_scores.nlargest(top_n).index.tolist()
-    top_bears = ticker_scores.nsmallest(top_n).index.tolist()
-    selected = list(dict.fromkeys(top_bulls + top_bears))
-
-    results_path = Path(agents_results_dir) / f"fold_{fold_id}_ticker_explanations.json"
-    all_explanations = {"fold": fold_id, "tickers": {}}
-
-    for ticker in selected:
-        mask = tickers_col == ticker
-        if not mask.any():
-            continue
-        row = df_test.loc[mask].iloc[-1]
-        score = float(ticker_scores.get(ticker, 0.5))
-
-        ticker_exp = {
-            "score": round(score, 4),
-            "label": "Outperform" if score >= 0.5 else "Underperform",
-            "agents": {},
-        }
-
-        for ag_name, ag in agents.items():
-            if ag._explainer is None:
-                continue
-            try:
-                exp = ag._explainer.explain_prediction(row, ticker, score, top_n=6, fold=fold_id)
-                ticker_exp["agents"][ag_name] = {
-                    "text": exp.get("text", ""),
-                    "top_drivers": exp.get("top_drivers", [])[:6],
-                }
-            except Exception as ex:
-                log.debug(f"Explain {ag_name}/{ticker}: {ex}")
-
-        all_explanations["tickers"][ticker] = ticker_exp
-        log.info(
-            f"  [{'Outperform' if score >= 0.5 else 'Underperform':11s}] "
-            f"{ticker:<6} score={score:.3f}"
+    audit = audit_df
+    if audit is None or audit.empty:
+        selected_for_audit = selected_tickers if selected_tickers else ticker_scores.nlargest(top_n).index.tolist()
+        audit = build_selection_audit_df(
+            df_scored=pd.DataFrame({"ticker": ticker_scores.index, "final_score": ticker_scores.values}),
+            selected_tickers=selected_for_audit,
+            score_col="final_score",
+            threshold=PORTFOLIO_MIN_SCORE,
         )
 
-    with open(results_path, "w", encoding="utf-8") as f:
-        json.dump(all_explanations, f, indent=2, ensure_ascii=False, default=str)
+    candidate_tickers = build_explanation_candidate_tickers(
+        audit_df=audit,
+        threshold=PORTFOLIO_MIN_SCORE,
+        top_extra=max(top_n * 2, 10),
+        near_margin=0.05,
+        max_candidates=60,
+    )
 
-    log.info(
-        f"[Explainer] Fold {fold_id}: explicaciones de {len(selected)} tickers "
-        f"-> {results_path.name}"
+    export_ticker_explanations(
+        agents=agents,
+        df_test=df_test,
+        scores=scores,
+        fold_id=fold_id,
+        agents_results_dir=agents_results_dir,
+        candidate_tickers=candidate_tickers,
+        audit_df=audit,
+        explanation_top_n=6,
     )
 
 
@@ -100,20 +99,72 @@ def _prepare_fold_frames(
     return df_train, df_test
 
 
+def _spy_quarterly_returns(spy_prices: pd.Series) -> Dict[str, float]:
+    """
+    Precalcula el retorno trimestral del SPY para cada quarter presente en spy_prices.
+
+    Para cada quarter Q, calcula: (precio_último_día_Q / precio_último_día_Q-1) - 1
+    usando únicamente precios de cierre al final de cada quarter.
+
+    Devuelve un dict {periodo_quarter_str: retorno_float}, p. ej.:
+        {"2024Q1": 0.107, "2024Q2": -0.032, ...}
+    """
+    spy = spy_prices.sort_index().dropna()
+    quarterly = spy.resample("QE").last()   # último precio de cada quarter
+    spy_returns: Dict[str, float] = {}
+    for i in range(1, len(quarterly)):
+        p0 = quarterly.iloc[i - 1]
+        p1 = quarterly.iloc[i]
+        period = quarterly.index[i].to_period("Q")
+        if p0 > 0:
+            spy_returns[str(period)] = float(p1 / p0 - 1)
+    return spy_returns
+
+
+def _excess_return_label(df: pd.DataFrame, spy_prices: Optional[pd.Series] = None) -> pd.Series:
+    """
+    Label de outperformance: 1 si el ticker superó al SPY en ese mismo quarter.
+
+    Si spy_prices no está disponible (None o vacío), cae a comparar contra la
+    media del universo como comportamiento de seguridad.
+
+    El retorno del SPY se calcula como retorno precio-a-precio entre el último día
+    del quarter anterior y el último día del quarter de la observación, usando la
+    misma ventana temporal que el forward_return del ticker.
+    """
+    dates = df.index.get_level_values("date")
+
+    if spy_prices is not None and not spy_prices.empty:
+        spy_ret_by_q = _spy_quarterly_returns(spy_prices)
+        quarters = dates.to_period("Q").astype(str)
+        spy_threshold = pd.Series(quarters, index=df.index).map(spy_ret_by_q)
+        n_matched = spy_threshold.notna().sum()
+        if n_matched > 0:
+            log.debug(f"[Label] SPY threshold disponible para {n_matched}/{len(df)} observaciones")
+            return (df["forward_return"] > spy_threshold).astype(int)
+        log.warning("[Label] SPY sin cobertura para este período — usando media del universo como fallback")
+
+    # Fallback: media del universo por quarter
+    quarter_mean = df.groupby(dates.to_period("Q"))["forward_return"].transform("mean")
+    return (df["forward_return"] > quarter_mean).astype(int)
+
+
 def _prepare_fold_labels(
     df_train: pd.DataFrame,
     df_test: pd.DataFrame,
     df_train_norm: pd.DataFrame,
     df_test_norm: pd.DataFrame,
+    spy_prices: Optional[pd.Series] = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
-    median_ret = df_train["forward_return"].median()
-    forward_train = df_train["forward_return"].reindex(df_train_norm.index)
-    forward_test = df_test["forward_return"].reindex(df_test_norm.index)
-    y_train = (forward_train > median_ret).astype(int).dropna()
-    y_test = (forward_test > median_ret).astype(int).dropna()
+    # Label: outperformance relativa al SPY en cada quarter.
+    # y=1 si el forward_return del ticker supera el retorno del SPY en ese mismo período.
+    forward_train = _excess_return_label(df_train, spy_prices).reindex(df_train_norm.index)
+    forward_test  = _excess_return_label(df_test,  spy_prices).reindex(df_test_norm.index)
+    y_train = forward_train.dropna().astype(int)
+    y_test  = forward_test.dropna().astype(int)
 
     df_train_norm = df_train_norm.loc[y_train.index]
-    df_test_norm = df_test_norm.loc[y_test.index]
+    df_test_norm  = df_test_norm.loc[y_test.index]
     return df_train_norm, df_test_norm, y_train, y_test
 
 
@@ -132,6 +183,7 @@ def run_walkforward_pipeline(
     risk_free_rate: float,
     top_n_stocks: int = 10,
     random_seed: int = 42,
+    spy_prices: Optional[pd.Series] = None,
 ) -> Dict:
     backtester = WalkForwardBacktester(
         train_years=walkforward_train_years,
@@ -143,7 +195,7 @@ def run_walkforward_pipeline(
     visualizer = Visualizer(plots_dir=plots_dir)
     normalizer = SectorNormalizer(min_peers=SECTOR_ZSCORE_MIN_PEERS)
 
-    folds = backtester.generate_folds(start_date, end_date, forward_return_days=FORWARD_RETURN_DAYS)
+    folds = backtester.generate_folds(start_date, end_date)
     agent_diag_history: Dict[str, List] = {
         "fundamental": [], "valuation": [], "momentum": [], "bear": [], "sentiment": [], "meta_learner": []
     }
@@ -152,9 +204,13 @@ def run_walkforward_pipeline(
     dates = df.index.get_level_values("date")
 
     for fold_id, (train_start, train_end, test_end, _train_years) in enumerate(folds, 1):
+        # Identificar el quarter de test: es el quarter siguiente al de train_end
+        test_quarter_ts = train_end + pd.offsets.QuarterEnd(1)
+        test_quarter_label = f"{test_quarter_ts.year}Q{test_quarter_ts.quarter}"
         log.info(f"\n{'='*60}")
         log.info(
-            f"  FOLD {fold_id} | Train: {train_start.date()} -> {train_end.date()} "
+            f"  FOLD {fold_id} [{test_quarter_label}] | "
+            f"Train: {train_start.date()} -> {train_end.date()} "
             f"| Test: {train_end.date()} -> {test_end.date()}"
         )
         log.info(f"{'='*60}")
@@ -181,6 +237,7 @@ def run_walkforward_pipeline(
             df_test=df_test,
             df_train_norm=df_train_norm,
             df_test_norm=df_test_norm,
+            spy_prices=spy_prices,
         )
 
         try:
@@ -217,6 +274,37 @@ def run_walkforward_pipeline(
             fold_result.update(eval_metrics)
             backtester.fold_results.append(fold_result)
 
+            visualizer.plot_fold_performance(fold_result, fold_id=fold_id)
+
+            audit_df = build_selection_audit_df(
+                df_scored=df_test_scored.reset_index()[
+                    ["ticker", "final_score", "label"]
+                    + [c for c in ["fundamental_score", "valuation_score", "momentum_score", "bear_score", "sentiment_score"]
+                       if c in df_test_scored.columns]
+                ],
+                selected_tickers=fold_result.get("selected_tickers", []),
+                score_col="final_score",
+                threshold=PORTFOLIO_MIN_SCORE,
+            )
+            export_selection_audit(audit_df, agents_results_dir, fold_id=fold_id, prefix="fold")
+
+            # CSV de scores con explicaciones legibles por agente
+            ticker_returns = fold_result.get("ticker_returns", {})
+            bench_ret = fold_result.get("benchmark_cumulative_return")
+
+            fold_scores_df = build_fold_scores_df(
+                df_test_scored=df_test_scored,
+                y_test=y_test,
+                fold_id=fold_id,
+                year_quarter=test_quarter_label,
+                agents=agents,
+                audit_df=audit_df,
+                actual_returns=ticker_returns if ticker_returns else None,
+                benchmark_return=bench_ret,
+                ticker_weights=fold_result.get("ticker_weights"),
+            )
+            export_fold_scores(fold_scores_df, agents_results_dir, fold_id=fold_id)
+
             for ag_name, ag in agents.items():
                 agent_diag_history[ag_name].append(ag._diagnostics.copy())
 
@@ -240,19 +328,22 @@ def run_walkforward_pipeline(
                 scores=df_test_scored["final_score"],
                 fold_id=fold_id,
                 agents_results_dir=agents_results_dir,
+                selected_tickers=fold_result.get("selected_tickers", []),
+                audit_df=audit_df,
             )
 
-            abl = run_ablation_study(
-                df_test_scored=df_test_scored,
-                y_test=y_test,
-                df_train_norm=df_train_with_oof,
-                y_train=y_train,
-                agents_results_dir=agents_results_dir,
-                fold_id=fold_id,
-                random_seed=random_seed,
-            )
-            if abl:
-                ablation_results.append(abl)
+            if RUN_ABLATION_STUDY:
+                abl = run_ablation_study(
+                    df_test_scored=df_test_scored,
+                    y_test=y_test,
+                    df_train_norm=df_train_with_oof,
+                    y_train=y_train,
+                    agents_results_dir=agents_results_dir,
+                    fold_id=fold_id,
+                    random_seed=random_seed,
+                )
+                if abl:
+                    ablation_results.append(abl)
 
         except Exception as e:
             log.error(f"Fold {fold_id} fallo: {e}", exc_info=True)
@@ -260,6 +351,10 @@ def run_walkforward_pipeline(
 
     summary = backtester.summarize()
     backtester.save_folds_summary(plots_dir=plots_dir)
+
+    # CSV consolidado de todos los folds: una fila por ticker-quarter con
+    # scores, interpretaciones y explicaciones de cada agente.
+    export_all_folds_scores(agents_results_dir)
 
     diag_path = Path(agents_results_dir) / "all_folds_diagnostics.json"
     with open(diag_path, "w") as f:
@@ -273,7 +368,7 @@ def run_walkforward_pipeline(
         agent_diagnostics=last_agent_diag,
     )
 
-    if ablation_results:
+    if RUN_ABLATION_STUDY and ablation_results:
         summarize_ablation(ablation_results, agents_results_dir=agents_results_dir)
 
     generate_text_report(

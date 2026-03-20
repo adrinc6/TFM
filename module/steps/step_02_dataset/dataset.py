@@ -37,23 +37,33 @@ def _build_feature_record(
     fund_enriched: pd.DataFrame,
     macro: Optional[pd.DataFrame],
     router: DataRouter,
+    fundamental_builder: FundamentalFeatureBuilder,
     technical_builder: TechnicalFeatureBuilder,
     valuation_builder: ValuationFeatureBuilder,
     insider_builder: InsiderFeatureBuilder,
     sentiment_builder: SentimentFeatureBuilder,
     include_label: bool,
-    forward_return_days: int,
 ) -> Optional[Dict]:
     prices = sources["prices"]
     eps_df = sources["eps_df"]
     rec_df = sources["rec_df"]
     ins_df = sources["ins_df"]
     mspr_df = sources["mspr_df"]
-    info = sources["info"] or {}
+    info_source = sources.get("info")
+    info = info_source if info_source is not None else {}
 
     fund_snap = router.get_fundamental_snapshot(fund_enriched, as_of)
     if fund_snap is None:
         return None
+
+    # Trend features calculadas aquí, con solo los datos hasta as_of,
+    # para evitar el look-ahead que causaba expanding() sobre el df completo.
+    fund_hist_asof = fund_enriched[fund_enriched.index <= as_of]
+    trend_feats = fundamental_builder.snapshot_trends(fund_hist_asof)
+    # Añadir al snapshot (sin sobreescribir columnas ya existentes del consolidado)
+    for k, v in trend_feats.items():
+        if k not in fund_snap.index:
+            fund_snap[k] = v
 
     price_window = router.get_price_window(prices, as_of, lookback_days=400)
     if len(price_window) < 20:
@@ -65,8 +75,6 @@ def _build_feature_record(
         fund_snapshot=fund_snap,
         hist_fund=fund_enriched[fund_enriched.index <= as_of],
         as_of=as_of,
-        analyst_df=eps_df,
-        recommendation_df=rec_df,
     )
 
     insider_window = (
@@ -95,15 +103,22 @@ def _build_feature_record(
         if macro is not None else None
     )
 
+    # Identificador trimestral: "2024Q1", "2024Q2", etc.
+    year_quarter = f"{as_of.year}Q{as_of.quarter}"
+
     record = {
         "ticker": ticker,
         "date": as_of,
+        "year_quarter": year_quarter,
         "sector": info.get("sector", "Unknown"),
         "industry": info.get("industry", "Unknown"),
     }
 
     if include_label:
-        fwd_return = router.compute_forward_return(prices, as_of, forward_return_days)
+        # Label trimestral: retorno desde el cierre de este quarter hasta el del siguiente.
+        # Ésta es la pregunta natural del modelo: "con la foto de este quarter,
+        # ¿cuánto subió o bajó la acción en el trimestre siguiente?"
+        fwd_return = router.compute_quarterly_forward_return(prices, as_of)
         if fwd_return is None:
             return None
         record["forward_return"] = fwd_return
@@ -127,7 +142,6 @@ def build_master_dataset(
     insider_builder: InsiderFeatureBuilder,
     sentiment_builder: SentimentFeatureBuilder,
     min_history_quarters: int = 4,
-    forward_return_days: int = 63,
 ) -> pd.DataFrame:
     log.info("Construyendo dataset maestro (Finnhub)...")
     macro = router.load_macro()
@@ -159,12 +173,12 @@ def build_master_dataset(
                     fund_enriched=fund_enriched,
                     macro=macro,
                     router=router,
+                    fundamental_builder=fundamental_builder,
                     technical_builder=technical_builder,
                     valuation_builder=valuation_builder,
                     insider_builder=insider_builder,
                     sentiment_builder=sentiment_builder,
                     include_label=True,
-                    forward_return_days=forward_return_days,
                 )
                 if record is not None:
                     records.append(record)
@@ -185,10 +199,13 @@ def build_master_dataset(
     if not records:
         raise RuntimeError("Dataset maestro vacio. Revisa los datos en data_finnhub/")
 
-    df = pd.DataFrame(records).set_index(["ticker", "date"]).sort_index()
+    df = pd.DataFrame(records)
+    # year_quarter se conserva como columna (no como nivel de índice) para análisis posterior
+    df = df.set_index(["ticker", "date"]).sort_index()
     log.info(
         f"Dataset maestro: {len(df)} observaciones — "
         f"{df.index.get_level_values('ticker').nunique()} tickers — "
+        f"{df['year_quarter'].nunique()} quarters — "
         f"{len(df.columns)} features"
     )
     return df
@@ -229,12 +246,12 @@ def build_live_features(
                 fund_enriched=fund_enriched,
                 macro=macro,
                 router=router,
+                fundamental_builder=fundamental_builder,
                 technical_builder=technical_builder,
                 valuation_builder=valuation_builder,
                 insider_builder=insider_builder,
                 sentiment_builder=sentiment_builder,
                 include_label=False,
-                forward_return_days=63,
             )
             if record is not None:
                 records.append(record)

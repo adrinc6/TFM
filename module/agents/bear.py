@@ -36,7 +36,7 @@ from typing import Dict, List, Optional
 from module.agents.base import BaseAgent, FeatureSelector
 from module.steps.step_04_evaluation.explainability import build_explainer_for_agent, AgentExplainer
 from environment import (
-    BEAR_N_ESTIMATORS, BEAR_MAX_DEPTH, BEAR_CV_FOLDS,
+    BEAR_N_ESTIMATORS, BEAR_MAX_DEPTH,
     BEAR_RULE_WEIGHT, BEAR_ML_WEIGHT, FEATURE_CORR_THRESHOLD, FEATURE_TOP_N,
 )
 
@@ -48,7 +48,7 @@ try:
     from sklearn.preprocessing import StandardScaler
     from sklearn.calibration import CalibratedClassifierCV
     from sklearn.metrics import roc_auc_score, accuracy_score, f1_score
-    from sklearn.model_selection import StratifiedKFold
+    from sklearn.model_selection import TimeSeriesSplit
     _DEPS_OK = True
 except ImportError:
     _DEPS_OK = False
@@ -117,14 +117,12 @@ class BearAgent(BaseAgent):
 
     def __init__(self, results_dir: str, random_seed: int = 42,
                  n_estimators: int = BEAR_N_ESTIMATORS,
-                 max_depth: int = BEAR_MAX_DEPTH,
-                 n_cv_folds: int = BEAR_CV_FOLDS):
+                 max_depth: int = BEAR_MAX_DEPTH):
         super().__init__("bear", results_dir, random_seed)
         if not _DEPS_OK:
             raise ImportError("scikit-learn requerido.")
         self.n_estimators = n_estimators
         self.max_depth    = max_depth
-        self.n_cv_folds   = n_cv_folds
         self._model:        Optional[Pipeline] = None
         self._feature_cols: List[str]          = []
         self._selector:     Optional[FeatureSelector] = None
@@ -163,7 +161,7 @@ class BearAgent(BaseAgent):
         )
         self._model = Pipeline([
             ("scaler", StandardScaler()),
-            ("clf",    CalibratedClassifierCV(rf, method="sigmoid", cv=self.n_cv_folds)),
+            ("clf",    CalibratedClassifierCV(rf, method="sigmoid", cv=5)),
         ])
 
         cv = self._cv(X_prep, y_cl)
@@ -221,12 +219,6 @@ class BearAgent(BaseAgent):
                     self.ML_WEIGHT   * ml_score)
         return combined.rename("bear_score")
 
-    def flag_report(self, X: pd.DataFrame) -> pd.DataFrame:
-        """Devuelve DataFrame con qué flags dispara cada observación."""
-        df_flags = self._add_flag_cols(X)
-        flag_cols = [f[0] for f in FLAG_DEFINITIONS if f[0] in df_flags.columns]
-        return df_flags[flag_cols]
-
     # ── Helpers ───────────────────────────────────────────────────────────────
 
     @staticmethod
@@ -240,11 +232,6 @@ class BearAgent(BaseAgent):
             else:
                 df[name] = 0.0
         return df
-
-    @staticmethod
-    def _rule_score(X: pd.DataFrame) -> pd.Series:
-        """Score de reglas sobre X raw (calcula flags internamente)."""
-        return BearAgent._rule_score_from_flags(BearAgent._add_flag_cols(X))
 
     @staticmethod
     def _rule_score_from_flags(df_flags: pd.DataFrame) -> pd.Series:
@@ -280,9 +267,13 @@ class BearAgent(BaseAgent):
         return self._align_to_feature_cols(X, fill_value=0.0)
 
     def _cv(self, X: pd.DataFrame, y: pd.Series) -> Dict:
-        skf  = StratifiedKFold(n_splits=self.n_cv_folds, shuffle=True, random_state=self.random_seed)
+        date_order = X.index.get_level_values("date") if "date" in X.index.names else X.index
+        sort_idx = date_order.argsort()
+        X = X.iloc[sort_idx]
+        y = y.reindex(X.index)
+        tss = TimeSeriesSplit(n_splits=5)
         aucs, accs, f1s = [], [], []
-        for tr, val in skf.split(X, y):
+        for tr, val in tss.split(X):
             rf   = RandomForestClassifier(
                 n_estimators=self.n_estimators, max_depth=self.max_depth,
                 class_weight="balanced", random_state=self.random_seed, n_jobs=-1)

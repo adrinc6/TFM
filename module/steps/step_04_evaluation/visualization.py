@@ -142,6 +142,15 @@ class Visualizer:
 		ax.grid(alpha=0.3, axis="y")
 
 	def _return_distribution(self, ax, strat: pd.Series, bench: pd.Series):
+		if strat.empty or bench.empty:
+			ax.axis("off")
+			return
+		if not isinstance(strat.index, (pd.DatetimeIndex, pd.PeriodIndex, pd.TimedeltaIndex)):
+			ax.axis("off")
+			return
+		if not isinstance(bench.index, (pd.DatetimeIndex, pd.PeriodIndex, pd.TimedeltaIndex)):
+			ax.axis("off")
+			return
 		monthly_s = strat.resample("ME").apply(lambda x: (1 + x).prod() - 1) * 100
 		monthly_b = bench.resample("ME").apply(lambda x: (1 + x).prod() - 1) * 100
 		ax.hist(monthly_s, bins=30, alpha=0.6, color=STYLE["strategy"]["color"],
@@ -215,6 +224,66 @@ class Visualizer:
 		plt.close(fig)
 		log.info(f"[Visualizer] Feature importances -> {path.name}")
 
+	def plot_fold_performance(self, fold_result: Dict, fold_id: int):
+		"""
+		Plot diario del quarter de test: cada ticker seleccionado (líneas finas),
+		cartera media (línea gruesa azul) y benchmark (línea gruesa naranja).
+		"""
+		ticker_series: Dict[str, pd.Series] = fold_result.get("_ticker_price_series", {})
+		strat_series: Optional[pd.Series] = fold_result.get("_strat_price_series")
+		bench_series: Optional[pd.Series] = fold_result.get("_bench_price_series")
+
+		if not ticker_series or strat_series is None or bench_series is None:
+			return
+
+		year_quarter = fold_result.get("year_quarter", f"Fold {fold_id}")
+		ticker_weights: Dict[str, float] = fold_result.get("ticker_weights", {})
+		weighting_mode: str = fold_result.get("weighting_mode", "equiponderado")
+
+		fig, ax = plt.subplots(figsize=(12, 6))
+
+		# Tickers individuales — líneas finas y semitransparentes
+		for ticker, series in ticker_series.items():
+			total_ret = float(series.iloc[-1] - 1) if len(series) > 0 else 0.0
+			w = ticker_weights.get(ticker)
+			w_str = f"  w={w:.1%}" if w is not None else ""
+			ax.plot(
+				series.index, series.values,
+				lw=0.9, alpha=0.35, color="#90CAF9",
+				label=f"{ticker} ({total_ret:+.1%}{w_str})",
+			)
+
+		# Benchmark — línea gruesa naranja discontinua
+		bench_ret = float(bench_series.iloc[-1] - 1) if len(bench_series) > 0 else 0.0
+		ax.plot(
+			bench_series.index, bench_series.values,
+			color=STYLE["benchmark"]["color"], lw=2.5, ls="--", zorder=4,
+			label=f"S&P 500 ({bench_ret:+.1%})",
+		)
+
+		# Cartera media — línea gruesa azul
+		strat_ret = float(strat_series.iloc[-1] - 1) if len(strat_series) > 0 else 0.0
+		ax.plot(
+			strat_series.index, strat_series.values,
+			color=STYLE["strategy"]["color"], lw=2.5, zorder=5,
+			label=f"Cartera ML ({strat_ret:+.1%})",
+		)
+
+		ax.axhline(1.0, color="gray", lw=0.7, ls=":")
+		ax.set_title(
+			f"Rendimiento diario — {year_quarter} (Fold {fold_id})  [{weighting_mode}]",
+			fontweight="bold",
+		)
+		ax.set_ylabel("Valor (base 1 = inicio del quarter)")
+		ax.legend(fontsize=7, ncol=3, loc="upper left")
+		ax.grid(alpha=0.3)
+		fig.tight_layout()
+
+		path = self.plots_dir / f"fold_{fold_id:03d}_{year_quarter}_performance.png"
+		fig.savefig(path, dpi=130, bbox_inches="tight")
+		plt.close(fig)
+		log.info(f"[Visualizer] Rendimiento fold {fold_id} -> {path.name}")
+
 	def plot_score_distribution(self, scores_df: pd.DataFrame, fold: Optional[int] = None):
 		agent_cols = [c for c in ["fundamental_score", "valuation_score",
 								   "momentum_score", "bear_score", "final_score"]
@@ -237,25 +306,3 @@ class Visualizer:
 		fig.savefig(path, dpi=120, bbox_inches="tight")
 		plt.close(fig)
 		log.info(f"[Visualizer] Distribucion scores -> {path.name}")
-
-	def plot_sector_performance(self, results_df: pd.DataFrame):
-		if "sector" not in results_df.columns:
-			return
-		if "forward_return" not in results_df.columns:
-			return
-		sec_perf = (results_df.groupby("sector")["forward_return"]
-							   .agg(["mean", "std", "count"])
-							   .sort_values("mean", ascending=False))
-		fig, ax = plt.subplots(figsize=(12, 5))
-		colors = ["#4CAF50" if v >= 0 else "#F44336" for v in sec_perf["mean"]]
-		ax.bar(sec_perf.index, sec_perf["mean"] * 100, color=colors, alpha=0.8)
-		ax.axhline(0, color="black", lw=0.8)
-		ax.set_title("Retorno Medio por Sector (stocks seleccionados)", fontweight="bold")
-		ax.set_xlabel("Sector")
-		ax.set_ylabel("Retorno medio (%)")
-		plt.xticks(rotation=45, ha="right")
-		ax.grid(alpha=0.3, axis="y")
-		path = self.plots_dir / "sector_performance.png"
-		fig.savefig(path, dpi=120, bbox_inches="tight")
-		plt.close(fig)
-		log.info(f"[Visualizer] Rendimiento sectorial -> {path.name}")

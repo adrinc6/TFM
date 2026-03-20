@@ -18,9 +18,10 @@ import pandas as pd
 from typing import Dict, List, Optional
 
 from module.agents.base import BaseAgent, FeatureSelector
+from module.steps.step_04_evaluation.explainability import AgentExplainer, build_explainer_for_agent
 from environment import (
     SENTIMENT_N_ESTIMATORS, SENTIMENT_MAX_DEPTH, SENTIMENT_MIN_SAMPLES_LEAF,
-    SENTIMENT_CV_FOLDS, FEATURE_CORR_THRESHOLD, FEATURE_TOP_N,
+    FEATURE_CORR_THRESHOLD, FEATURE_TOP_N,
 )
 
 log = logging.getLogger(__name__)
@@ -31,7 +32,7 @@ try:
     from sklearn.preprocessing import StandardScaler
     from sklearn.calibration import CalibratedClassifierCV
     from sklearn.metrics import roc_auc_score, accuracy_score, f1_score
-    from sklearn.model_selection import StratifiedKFold
+    from sklearn.model_selection import TimeSeriesSplit
     _DEPS_OK = True
 except ImportError:
     _DEPS_OK = False
@@ -78,7 +79,6 @@ class SentimentAgent(BaseAgent):
         n_estimators: int = SENTIMENT_N_ESTIMATORS,
         max_depth: int = SENTIMENT_MAX_DEPTH,
         min_samples_leaf: int = SENTIMENT_MIN_SAMPLES_LEAF,
-        n_cv_folds: int = SENTIMENT_CV_FOLDS,
     ):
         super().__init__("sentiment", results_dir, random_seed)
         if not _DEPS_OK:
@@ -86,10 +86,47 @@ class SentimentAgent(BaseAgent):
         self.n_estimators     = n_estimators
         self.max_depth        = max_depth
         self.min_samples_leaf = min_samples_leaf
-        self.n_cv_folds       = n_cv_folds
         self._model:        Optional[Pipeline]         = None
         self._feature_cols: List[str]                  = []
         self._selector:     Optional[FeatureSelector]  = None
+        self._explainer:    Optional[AgentExplainer]   = None
+
+    def _export_aapl_debug_input(
+        self,
+        X: pd.DataFrame,
+        y: pd.Series,
+        fold: Optional[int] = None,
+        stage: str = "raw",
+    ) -> None:
+        ticker_series = None
+        if isinstance(X.index, pd.MultiIndex) and "ticker" in X.index.names:
+            ticker_series = pd.Series(X.index.get_level_values("ticker"), index=X.index)
+        elif "ticker" in X.columns:
+            ticker_series = pd.Series(X["ticker"].values, index=X.index)
+
+        if ticker_series is None:
+            return
+
+        mask = ticker_series.astype(str).str.upper().eq("AAPL")
+        if not mask.any():
+            return
+
+        debug_df = X.loc[mask].copy()
+        if y is not None:
+            if debug_df.index.isin(y.index).all():
+                debug_df["target"] = y.loc[debug_df.index].values
+            else:
+                debug_df["target"] = y.iloc[mask.to_numpy()].values
+        if isinstance(debug_df.index, pd.MultiIndex):
+            debug_df = debug_df.reset_index()
+        else:
+            debug_df = debug_df.reset_index(drop=False)
+
+        suffix = f"_fold{fold}" if fold is not None else ""
+        stage_suffix = "" if stage == "raw" else f"_{stage}"
+        out_path = self.results_dir / f"aapl_sentiment_input{stage_suffix}{suffix}.csv"
+        debug_df.to_csv(out_path, index=False)
+        log.info(f"[SentimentAgent] Debug AAPL {stage} input -> {out_path.name} ({len(debug_df)} rows)")
 
     # ── Fit ───────────────────────────────────────────────────────────────────
 
@@ -101,13 +138,21 @@ class SentimentAgent(BaseAgent):
         X = X.iloc[:min_len].copy()
         y = y.iloc[:min_len].copy()
 
+        self._export_aapl_debug_input(X, y, fold=fold, stage="raw")
+
         X_prep       = self._prepare(X)
         X_prep, y_cl = self.clean_features(X_prep, y.reset_index(drop=True))
+
+        self._export_aapl_debug_input(X_prep, y_cl, fold=fold, stage="cleaned")
+
         X_prep       = X_prep.reset_index(drop=True)
         y_cl         = y_cl.reset_index(drop=True)
 
         if len(X_prep) < 20:
-            log.warning("[SentimentAgent] Insuficientes muestras para entrenar.")
+            log.warning(
+                f"[SentimentAgent] Insuficientes muestras para entrenar: "
+                f"{len(X_prep)} < 20 tras la limpieza."
+            )
             return self
 
         # Selección de features
@@ -118,6 +163,7 @@ class SentimentAgent(BaseAgent):
             random_seed=self.random_seed,
         )
         X_prep = self._selector.fit_transform(X_prep, y_cl, agent_name="sentiment")
+        self._export_aapl_debug_input(X_prep, y_cl, fold=fold, stage="selected")
         self._feature_cols = list(X_prep.columns)
 
         bal = self.class_balance(y_cl)
@@ -132,7 +178,7 @@ class SentimentAgent(BaseAgent):
         )
         self._model = Pipeline([
             ("scaler", StandardScaler()),
-            ("clf",    CalibratedClassifierCV(rf, method="sigmoid", cv=self.n_cv_folds)),
+            ("clf",    CalibratedClassifierCV(rf, method="sigmoid", cv=5)),
         ])
 
         cv = self._cv(X_prep, y_cl)
@@ -148,6 +194,17 @@ class SentimentAgent(BaseAgent):
             imp = pd.Series(1.0 / len(self._feature_cols),
                             index=self._feature_cols)
         self.save_feature_importances(imp, fold)
+
+        rf_fitted = self._model.named_steps["clf"].calibrated_classifiers_[0].estimator
+        self._explainer = build_explainer_for_agent(
+            agent_name="sentiment",
+            model=rf_fitted,
+            feature_cols=self._feature_cols,
+            X_train=X_prep,
+            results_dir=self.results_dir.parent.as_posix(),
+            fold=fold,
+            model_type="tree",
+        )
 
         self._diagnostics = {
             "class_balance":     bal,
@@ -219,11 +276,13 @@ class SentimentAgent(BaseAgent):
         return self._align_to_feature_cols(X, fill_value=0.0)
 
     def _cv(self, X: pd.DataFrame, y: pd.Series) -> Dict:
-        skf = StratifiedKFold(
-            n_splits=self.n_cv_folds, shuffle=True, random_state=self.random_seed
-        )
+        date_order = X.index.get_level_values("date") if "date" in X.index.names else X.index
+        sort_idx = date_order.argsort()
+        X = X.iloc[sort_idx]
+        y = y.reindex(X.index)
+        tss = TimeSeriesSplit(n_splits=5)
         aucs, accs, f1s = [], [], []
-        for tr, val in skf.split(X, y):
+        for tr, val in tss.split(X):
             rf = RandomForestClassifier(
                 n_estimators=self.n_estimators,
                 max_depth=self.max_depth,

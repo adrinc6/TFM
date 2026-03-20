@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Dict, Optional
+from typing import Dict
 
 import numpy as np
 import pandas as pd
@@ -20,16 +20,17 @@ class ValuationFeatureBuilder:
         fund_snapshot: pd.Series,
         hist_fund: pd.DataFrame,
         as_of: pd.Timestamp,
-        analyst_df: Optional[pd.DataFrame] = None,
-        recommendation_df: Optional[pd.DataFrame] = None,
     ) -> pd.Series:
         f: Dict = {}
 
-        recent = prices_df[prices_df.index <= as_of]
-        if recent.empty:
+        # Filtrar precios estrictamente hasta as_of para evitar look-ahead.
+        # Este slice se reutiliza en _vs_history para que las medianas históricas
+        # se calculen únicamente con precios conocidos en ese momento.
+        prices_asof = prices_df[prices_df.index <= as_of]
+        if prices_asof.empty:
             return pd.Series(dtype=float)
-        cc = "Close" if "Close" in recent.columns else recent.columns[0]
-        price = float(recent[cc].iloc[-1])
+        cc = "Close" if "Close" in prices_asof.columns else prices_asof.columns[0]
+        price = float(prices_asof[cc].iloc[-1])
 
         shares = fund_snapshot.get("shares_diluted", np.nan)
 
@@ -78,13 +79,12 @@ class ValuationFeatureBuilder:
             if pd.notna(val):
                 f[feat_col] = float(val)
 
-        f.update(self._vs_history(f, hist_fund, prices_df, shares))
+        # Pasar prices_asof (ya filtrado) para que _vs_history no use precios futuros
+        f.update(self._vs_history(f, hist_fund, prices_asof, shares))
 
-        if analyst_df is not None and not analyst_df.empty:
-            f.update(self._eps_surprise_features(analyst_df, as_of))
-
-        if recommendation_df is not None and not recommendation_df.empty:
-            f.update(self._recommendation_features(recommendation_df, as_of))
+        # EPS surprise y recommendation features se calculan en SentimentFeatureBuilder.
+        # No se añaden aquí para evitar duplicar columnas en el dataset master,
+        # lo que desperdiciaría capacidad del FeatureSelector y confundiría la atribución.
 
         return pd.Series(f)
 
@@ -140,52 +140,3 @@ class ValuationFeatureBuilder:
             log.debug(f"[ValuationFeat] comparativa historica: {e}")
         return out
 
-    @staticmethod
-    def _eps_surprise_features(analyst_df: pd.DataFrame, as_of: pd.Timestamp) -> Dict:
-        available = analyst_df[analyst_df.index <= as_of]
-        if available.empty:
-            return {}
-        f: Dict = {}
-
-        last = available.iloc[-1]
-        for col in ["eps_surprise_pct", "eps_actual", "eps_estimate"]:
-            if col in last.index and pd.notna(last[col]):
-                f[col] = float(last[col])
-
-        last4 = available.tail(4)
-        if "eps_beat" in last4.columns:
-            f["beat_rate_4q"] = float(last4["eps_beat"].mean())
-        if "eps_surprise_pct" in last4.columns:
-            f["eps_surprise_avg_4q"] = float(last4["eps_surprise_pct"].mean())
-
-        if "eps_estimate" in available.columns and len(available) >= 2:
-            e_last = available["eps_estimate"].dropna()
-            if len(e_last) >= 2:
-                f["eps_revision"] = float(e_last.iloc[-1] / e_last.iloc[-2] - 1) if e_last.iloc[-2] != 0 else np.nan
-
-        return f
-
-    @staticmethod
-    def _recommendation_features(rec_df: pd.DataFrame, as_of: pd.Timestamp) -> Dict:
-        available = rec_df[rec_df.index <= as_of]
-        if available.empty:
-            return {}
-        f: Dict = {}
-
-        last = available.iloc[-1]
-        for col in [
-            "analyst_buy_ratio",
-            "analyst_bearish_score",
-            "analyst_consensus",
-            "analyst_dispersion",
-            "analyst_strong_buy_pct",
-        ]:
-            if col in last.index and pd.notna(last[col]):
-                f[col] = float(last[col])
-
-        if "analyst_consensus" in available.columns and len(available) >= 2:
-            c_now = available["analyst_consensus"].dropna()
-            if len(c_now) >= 2:
-                f["analyst_consensus_change"] = float(c_now.iloc[-1] - c_now.iloc[-2])
-
-        return f

@@ -54,12 +54,6 @@ def sortino_ratio(returns: pd.Series, risk_free: float = 0.04,
     return float(excess.mean() / downside * np.sqrt(periods_per_year))
 
 
-def hit_rate(predictions: pd.Series, labels: pd.Series) -> float:
-    mask = predictions == 1
-    if mask.sum() == 0:
-        return 0.0
-    return float(labels[mask].mean())
-
 
 def compute_all_metrics(
     returns: pd.Series, risk_free: float = 0.04, label: str = "strategy"

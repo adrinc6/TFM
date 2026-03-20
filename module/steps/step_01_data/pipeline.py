@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 
 from module.steps.step_01_data.consolidation import FinnhubConsolidator
-from module.steps.step_01_data.downloaders import fetch_all_finnhub
+from module.steps.step_01_data.downloaders import run_download
 
 log = logging.getLogger(__name__)
 
@@ -24,12 +24,12 @@ def download_data(
     log.info(f"  Tickers: {len(tickers)} | {start_date} -> {end_date}")
     log.info(f"  Destino: {data_dir}")
 
-    fetch_all_finnhub(
+    run_download(
+        api_key=api_key,
         tickers=tickers,
         start=start_date,
         end=end_date,
         base_dir=data_dir,
-        api_key=api_key,
         force=force_download,
     )
 
@@ -88,12 +88,12 @@ def retry_missing_tickers(
     tickers_missing = list(missing_detail.keys())
     log.info(f"REINTENTANDO {len(tickers_missing)} tickers con datos incompletos...")
 
-    fetch_all_finnhub(
+    run_download(
+        api_key=api_key,
         tickers=tickers_missing,
         start=start_date,
         end=end_date,
         base_dir=data_dir,
-        api_key=api_key,
         force=True,
     )
 

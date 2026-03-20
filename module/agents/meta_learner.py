@@ -23,7 +23,7 @@ from module.agents.base import BaseAgent
 from module.steps.step_04_evaluation.explainability import AgentExplainer, build_explainer_for_agent
 from environment import (
     META_LR_C, META_GBM_N_ESTIMATORS, META_GBM_MAX_DEPTH,
-    META_GBM_LEARNING_RATE, META_GBM_SUBSAMPLE, META_CV_FOLDS,
+    META_GBM_LEARNING_RATE, META_GBM_SUBSAMPLE,
     BEAR_HARD_THRESHOLD,
 )
 
@@ -38,7 +38,7 @@ try:
     from sklearn.metrics import (roc_auc_score, accuracy_score,
                                   f1_score, precision_score, recall_score,
                                   confusion_matrix, classification_report)
-    from sklearn.model_selection import StratifiedKFold
+    from sklearn.model_selection import TimeSeriesSplit
     _DEPS_OK = True
 except ImportError:
     _DEPS_OK = False
@@ -71,14 +71,12 @@ class MetaLearner(BaseAgent):
 
     def __init__(self, results_dir: str, random_seed: int = 42,
                  use_sector_features: bool = True,
-                 use_macro_features: bool = True,
-                 n_cv_folds: int = META_CV_FOLDS):
+                 use_macro_features: bool = True):
         super().__init__("meta_learner", results_dir, random_seed)
         if not _DEPS_OK:
             raise ImportError("scikit-learn requerido.")
         self.use_sector_features = use_sector_features
         self.use_macro_features  = use_macro_features
-        self.n_cv_folds          = n_cv_folds
         self._lr_model:     Optional[Pipeline] = None
         self._gbm_model:    Optional[Pipeline] = None
         self._feature_cols: List[str]          = []
@@ -126,7 +124,7 @@ class MetaLearner(BaseAgent):
                     learning_rate=META_GBM_LEARNING_RATE,
                     subsample=META_GBM_SUBSAMPLE,
                     random_state=self.random_seed,
-                ), method="sigmoid", cv=self.n_cv_folds,
+                ), method="sigmoid", cv=5,
             )),
         ])
 
@@ -286,10 +284,14 @@ class MetaLearner(BaseAgent):
         return X[self._feature_cols]
 
     def _cv_both(self, X: pd.DataFrame, y: pd.Series):
-        skf = StratifiedKFold(n_splits=self.n_cv_folds, shuffle=True, random_state=self.random_seed)
+        date_order = X.index.get_level_values("date") if "date" in X.index.names else X.index
+        sort_idx = date_order.argsort()
+        X = X.iloc[sort_idx]
+        y = y.reindex(X.index)
+        tss = TimeSeriesSplit(n_splits=5)
         lr_aucs, lr_f1s = [], []
         gbm_aucs, gbm_f1s = [], []
-        for tr, val in skf.split(X, y):
+        for tr, val in tss.split(X):
             lr  = Pipeline([("s", StandardScaler()),
                             ("c", LogisticRegression(C=META_LR_C, class_weight="balanced",
                                                      max_iter=1000, random_state=self.random_seed))])

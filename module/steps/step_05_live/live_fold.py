@@ -5,16 +5,23 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
 
-from environment import SECTOR_ZSCORE_MIN_PEERS
+from environment import PORTFOLIO_MIN_SCORE, SECTOR_ZSCORE_MIN_PEERS
 from module.steps.step_02_dataset.builders.sector import SectorNormalizer
 from module.steps.step_02_dataset.dataset import build_live_features
 from module.steps.step_02_dataset.normalization import apply_sector_normalization
 from module.steps.step_03_training.training import train_full_history
+
+from module.steps.step_04_evaluation.selection_reports import (
+    build_explanation_candidate_tickers,
+    build_selection_audit_df,
+    export_selection_audit,
+    export_ticker_explanations,
+)
 from module.steps.step_05_live.live_prices import download_live_prices
 from module.steps.step_05_live.returns import qtd_return
 
@@ -79,9 +86,10 @@ def run_live_fold(
     df_train_norm = apply_sector_normalization(df_train, sector_map, normalizer, fit=True)
     df_train_norm = df_train_norm[~df_train_norm.index.duplicated(keep="last")]
 
-    median_ret = df_train["forward_return"].median()
-    forward_train = df_train["forward_return"].reindex(df_train_norm.index)
-    y_train = (forward_train > median_ret).astype(int).dropna()
+    # Label consistente con el walk-forward: outperformance relativa por quarter.
+    from module.steps.step_04_evaluation.evaluator import _excess_return_label
+    forward_train = _excess_return_label(df_train).reindex(df_train_norm.index)
+    y_train = forward_train.dropna().astype(int)
     df_train_norm = df_train_norm.loc[y_train.index]
 
     agents, _ = train_full_history(
@@ -106,7 +114,11 @@ def run_live_fold(
     df_live_norm["valuation_score"] = valuation.predict_score(df_live_norm, "sector").values
     df_live_norm["momentum_score"] = momentum.predict_score(df_live_norm).values
     df_live_norm["bear_score"] = bear.predict_score(df_live_norm).values
-    df_live_norm["sentiment_score"] = sentiment.predict_score(df_live_norm).values
+    if getattr(sentiment, "is_trained", False):
+        df_live_norm["sentiment_score"] = sentiment.predict_score(df_live_norm).values
+    else:
+        log.warning("[SentimentAgent] No entrenado en live fold; usando score neutro 0.5.")
+        df_live_norm["sentiment_score"] = 0.5
     df_live_norm["final_score"] = meta.predict_score(df_live_norm, "sector").values
 
     ticker_scores = (
@@ -114,22 +126,20 @@ def run_live_fold(
         .reset_index(level="date", drop=True)
         .sort_values(ascending=False)
     )
-    top_bulls = list(ticker_scores.head(top_n).index)
+
+    qualified = ticker_scores[ticker_scores >= PORTFOLIO_MIN_SCORE]
+    top_bulls_source = qualified if not qualified.empty else ticker_scores.head(1)
+    top_bulls = list(top_bulls_source.head(top_n).index)
     top_bears = list(ticker_scores.tail(top_n).index)
 
     log.info(f"\n{'='*60}")
-    log.info(f"  TOP {top_n} predichos OUTPERFORM")
+    log.info(f"  TOP {top_n} predichos OUTPERFORM (umbral >= {PORTFOLIO_MIN_SCORE:.2f})")
     log.info(f"{'='*60}")
     for tk in top_bulls:
         log.info(f"  {tk:<8} score={ticker_scores[tk]:.3f}  [{sector_map.get(tk,'?')}]")
 
-    log.info(f"\n  BOTTOM {top_n} predichos UNDERPERFORM")
-    log.info(f"{'='*60}")
-    for tk in top_bears:
-        log.info(f"  {tk:<8} score={ticker_scores[tk]:.3f}  [{sector_map.get(tk,'?')}]")
-
-    # 4. Descargar precios actuales (solo top/bottom + SPY)
-    tickers_to_fetch = list(dict.fromkeys(top_bulls + top_bears + ["SPY"]))
+    # 4. Descargar precios actuales (solo top picks + SPY como benchmark)
+    tickers_to_fetch = list(dict.fromkeys(top_bulls + ["SPY"]))
     log.info(
         f"\nDescargando precios actuales ({as_of.date()} -> {today.date()}) "
         f"en memoria para {len(tickers_to_fetch)} tickers (sin guardar)..."
@@ -143,10 +153,6 @@ def run_live_fold(
     # 5. Calcular retornos reales y alpha
     bull_returns = {
         t: r for t in top_bulls
-        if (r := qtd_return(live_prices.get(t, pd.Series()))) is not None
-    }
-    bear_returns = {
-        t: r for t in top_bears
         if (r := qtd_return(live_prices.get(t, pd.Series()))) is not None
     }
     benchmark_return = qtd_return(live_prices.get("SPY", pd.Series()))
@@ -185,7 +191,7 @@ def run_live_fold(
         if not mask.any():
             continue
         row = df_live_norm.loc[mask].iloc[0]
-        actual_ret = bull_returns.get(tk) or bear_returns.get(tk)
+        actual_ret = bull_returns.get(tk)
         all_preds.append({
             "ticker": tk,
             "sector": sector_map.get(tk, "?"),
@@ -201,8 +207,48 @@ def run_live_fold(
 
     quarter_label = f"Q{(as_of.month - 1) // 3 + 1} {as_of.year}"
     pred_df = pd.DataFrame(all_preds).sort_values("final_score", ascending=False)
-    csv_path = Path(results_dir) / f"predictions_{quarter_label.replace(' ', '_')}.csv"
-    json_path = Path(results_dir) / f"predictions_{quarter_label.replace(' ', '_')}.json"
+    csv_path = Path(results_dir) / "predictions_LIVE.csv"
+    json_path = Path(results_dir) / "predictions_LIVE.json"
+
+    live_tag = "LIVE"
+    audit_source = df_live_norm.reset_index()[[
+        "ticker",
+        "final_score",
+        "fundamental_score",
+        "valuation_score",
+        "momentum_score",
+        "bear_score",
+        "sentiment_score",
+    ]].copy()
+    audit_source["label"] = audit_source["final_score"].map(
+        lambda v: "Outperform" if float(v) >= 0.5 else "Underperform"
+    )
+    live_audit = build_selection_audit_df(
+        df_scored=audit_source,
+        selected_tickers=top_bulls,
+        score_col="final_score",
+        threshold=PORTFOLIO_MIN_SCORE,
+    )
+    export_selection_audit(live_audit, results_dir, fold_id=live_tag, prefix="live")
+
+    live_candidates = build_explanation_candidate_tickers(
+        audit_df=live_audit,
+        threshold=PORTFOLIO_MIN_SCORE,
+        top_extra=max(top_n * 2, 10),
+        near_margin=0.05,
+        max_candidates=60,
+    )
+    export_ticker_explanations(
+        agents=agents,
+        df_test=df_live_norm,
+        scores=df_live_norm["final_score"],
+        fold_id=live_tag,
+        agents_results_dir=agents_results_dir,
+        candidate_tickers=live_candidates,
+        audit_df=live_audit,
+        explanation_top_n=6,
+        prefix="live",
+    )
 
     pred_df.to_csv(csv_path, index=False)
     with open(json_path, "w", encoding="utf-8") as f:
