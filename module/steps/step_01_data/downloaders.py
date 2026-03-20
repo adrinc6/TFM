@@ -72,9 +72,9 @@ def fetch_and_save(
 ) -> str:
     if registry_lock:
         with registry_lock:
-            if not force and registry.is_done(group, endpoint):
+            if not force and registry.is_done(group, endpoint) and out_path.exists():
                 return "skip"
-    elif not force and registry.is_done(group, endpoint):
+    elif not force and registry.is_done(group, endpoint) and out_path.exists():
         return "skip"
 
     if rate_limiter is not None:
@@ -114,11 +114,12 @@ def download_prices(
     registry_lock: threading.Lock | None = None,
 ) -> str:
     endpoint = "prices"
+    prices_path = ticker_dir / "prices.json"
     if registry_lock:
         with registry_lock:
-            if not force and registry.is_done(ticker, endpoint):
+            if not force and registry.is_done(ticker, endpoint) and prices_path.exists():
                 return "skip"
-    elif not force and registry.is_done(ticker, endpoint):
+    elif not force and registry.is_done(ticker, endpoint) and prices_path.exists():
         return "skip"
 
     data = yahoo.ohlcv(ticker, start, end)

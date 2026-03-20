@@ -38,7 +38,7 @@ from environment import (
     WALKFORWARD_TRAIN_LOOKBACK_YEARS, WALKFORWARD_TEST_QUARTERS, RISK_FREE_RATE,
     RANDOM_SEED, DOWNLOAD_START_DATE, TEST_START_YEAR, TEST_START_QUARTER, END_YEAR, END_QUARTER,
     SKIP_BACKTEST, FORCE_DOWNLOAD, RETRY_MISSING_TICKERS, RUN_LIVE_FOLD,
-    TOP_N_STOCKS,
+    TOP_N_STOCKS, DAYS_BEFORE_QUARTER_START,
 )
 
 from module.common.data_router import DataRouter
@@ -176,6 +176,7 @@ def main():
             risk_free_rate=RISK_FREE_RATE,
             top_n_stocks=TOP_N_STOCKS,
             random_seed=RANDOM_SEED,
+            days_before_quarter_start=DAYS_BEFORE_QUARTER_START,
         )
     else:
         log.info("SKIP_BACKTEST=True — saltando walk-forward backtest histórico")

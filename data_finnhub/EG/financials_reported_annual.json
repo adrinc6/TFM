@@ -1,0 +1,1964 @@
+{
+  "cik": "1095073",
+  "data": [
+    {
+      "accessNumber": "0001095073-26-000006",
+      "symbol": "EG",
+      "cik": "1095073",
+      "year": 2025,
+      "quarter": 0,
+      "form": "10-K",
+      "startDate": "2025-01-01 00:00:00",
+      "endDate": "2025-12-31 00:00:00",
+      "filedDate": "2026-02-26 00:00:00",
+      "acceptedDate": "2026-02-26 16:22:05",
+      "report": {
+        "bs": [
+          {
+            "concept": "us-gaap_DebtSecuritiesAvailableForSaleExcludingAccruedInterest",
+            "unit": "usd",
+            "label": "Fixed maturities - available for sale, at fair value (amortized cost: 2025, $34,620; 2024, $29,934, credit allowances: 2025, $(68); 2024, $(36))",
+            "value": 34573000000.0
+          },
+          {
+            "concept": "us-gaap_DebtSecuritiesHeldToMaturityExcludingAccruedInterestAfterAllowanceForCreditLoss",
+            "unit": "usd",
+            "label": "Fixed maturities - held to maturity, at amortized cost (fair value: 2025, $576; 2024, $759, net of credit allowances: 2025, $(6); 2024, $(8))",
+            "value": 567000000
+          },
+          {
+            "concept": "us-gaap_EquitySecuritiesFvNi",
+            "unit": "usd",
+            "label": "Equity securities, at fair value",
+            "value": 180000000.0
+          },
+          {
+            "concept": "us-gaap_EquityMethodInvestments",
+            "unit": "usd",
+            "label": "Other invested assets",
+            "value": 5796000000
+          },
+          {
+            "concept": "us-gaap_OtherShortTermInvestments",
+            "unit": "usd",
+            "label": "Short-term investments",
+            "value": 2994000000
+          },
+          {
+            "concept": "us-gaap_Cash",
+            "unit": "usd",
+            "label": "Cash",
+            "value": 1318000000
+          },
+          {
+            "concept": "us-gaap_InvestmentsAndCash",
+            "unit": "usd",
+            "label": "Total investments and cash",
+            "value": 45429000000
+          },
+          {
+            "concept": "us-gaap_AccruedInvestmentIncomeReceivable",
+            "unit": "usd",
+            "label": "Accrued investment income",
+            "value": 436000000
+          },
+          {
+            "concept": "us-gaap_PremiumsReceivableAtCarryingValue",
+            "unit": "usd",
+            "label": "Premiums receivable (net of credit allowances: 2025, $(94); 2024, $(54))",
+            "value": 5727000000
+          },
+          {
+            "concept": "us-gaap_ReinsuranceRecoverablesOnPaidLosses",
+            "unit": "usd",
+            "label": "Reinsurance paid loss recoverables (net of credit allowances: 2025, $(57); 2024, $(41))",
+            "value": 142000000
+          },
+          {
+            "concept": "us-gaap_ReinsuranceRecoverableForUnpaidClaimsAndClaimsAdjustments",
+            "unit": "usd",
+            "label": "Reinsurance unpaid loss recoverables",
+            "value": 4968000000
+          },
+          {
+            "concept": "us-gaap_FundsHeldUnderReinsuranceAgreementsAsset",
+            "unit": "usd",
+            "label": "Funds held by reinsureds",
+            "value": 1326000000.0
+          },
+          {
+            "concept": "us-gaap_DeferredPolicyAcquisitionCosts",
+            "unit": "usd",
+            "label": "Deferred acquisition costs",
+            "value": 1546000000
+          },
+          {
+            "concept": "us-gaap_PrepaidReinsurancePremiums",
+            "unit": "usd",
+            "label": "Prepaid reinsurance premiums",
+            "value": 653000000
+          },
+          {
+            "concept": "us-gaap_DeferredIncomeTaxAssetsNet",
+            "unit": "usd",
+            "label": "Income tax asset, net",
+            "value": 915000000.0
+          },
+          {
+            "concept": "us-gaap_OtherAssets",
+            "unit": "usd",
+            "label": "Other assets (net of credit allowances: 2025, $(17); 2024, $(9))",
+            "value": 1372000000
+          },
+          {
+            "concept": "us-gaap_Assets",
+            "unit": "usd",
+            "label": "TOTAL ASSETS",
+            "value": 62514000000
+          },
+          {
+            "concept": "us-gaap_LiabilityForClaimsAndClaimsAdjustmentExpense",
+            "unit": "usd",
+            "label": "Reserve for losses and loss adjustment expenses",
+            "value": 34312000000.0
+          },
+          {
+            "concept": "us-gaap_UnearnedPremiums",
+            "unit": "usd",
+            "label": "Unearned premium reserve",
+            "value": 7275000000
+          },
+          {
+            "concept": "us-gaap_FundsHeldUnderReinsuranceAgreementsLiability",
+            "unit": "usd",
+            "label": "Funds held under reinsurance treaties",
+            "value": 5000000000.0
+          },
+          {
+            "concept": "us-gaap_ReinsurancePayable",
+            "unit": "usd",
+            "label": "Amounts due to reinsurers",
+            "value": 642000000
+          },
+          {
+            "concept": "eg_LossInCourseOfPayment",
+            "unit": "usd",
+            "label": "Losses in course of payment",
+            "value": 151000000
+          },
+          {
+            "concept": "us-gaap_SeniorNotes",
+            "unit": "usd",
+            "label": "Senior notes",
+            "value": 2352000000
+          },
+          {
+            "concept": "us-gaap_SubordinatedDebt",
+            "unit": "usd",
+            "label": "Long-term notes",
+            "value": 218000000
+          },
+          {
+            "concept": "us-gaap_AdvancesFromFederalHomeLoanBanks",
+            "unit": "usd",
+            "label": "Borrowings from FHLB",
+            "value": 1019000000
+          },
+          {
+            "concept": "us-gaap_InterestPayableCurrentAndNoncurrent",
+            "unit": "usd",
+            "label": "Accrued interest on debt and borrowings",
+            "value": 21000000
+          },
+          {
+            "concept": "us-gaap_OtherPayablesToBrokerDealersAndClearingOrganizations",
+            "unit": "usd",
+            "label": "Unsettled securities payable",
+            "value": 0
+          },
+          {
+            "concept": "us-gaap_OtherLiabilities",
+            "unit": "usd",
+            "label": "Other liabilities",
+            "value": 797000000
+          },
+          {
+            "concept": "us-gaap_Liabilities",
+            "unit": "usd",
+            "label": "TOTAL LIABILITIES",
+            "value": 47054000000
+          },
+          {
+            "concept": "us-gaap_PreferredStockValue",
+            "unit": "usd",
+            "label": "Preferred shares, par value: $0.01; 50.0 shares authorized; no shares issued and outstanding",
+            "value": 0
+          },
+          {
+            "concept": "us-gaap_CommonStockValue",
+            "unit": "usd",
+            "label": "Common shares, par value: $0.01; 200.0 shares authorized; 74.4 (2025) and 74.3 (2024) outstanding before treasury shares",
+            "value": 1000000
+          },
+          {
+            "concept": "us-gaap_AdditionalPaidInCapital",
+            "unit": "usd",
+            "label": "Additional paid-in capital",
+            "value": 3852000000
+          },
+          {
+            "concept": "us-gaap_AccumulatedOtherComprehensiveIncomeLossNetOfTax",
+            "unit": "usd",
+            "label": "Accumulated other comprehensive income (loss), net of deferred income tax expense (benefit) of $(23) at 2025 and $(177) at 2024",
+            "value": -52000000
+          },
+          {
+            "concept": "us-gaap_TreasuryStockCommonValue",
+            "unit": "usd",
+            "label": "Treasury shares, at cost: 33.7 shares (2025) and 31.3 shares (2024)",
+            "value": 4906000000
+          },
+          {
+            "concept": "us-gaap_RetainedEarningsAccumulatedDeficit",
+            "unit": "usd",
+            "label": "Retained earnings",
+            "value": 16565000000
+          },
+          {
+            "concept": "us-gaap_StockholdersEquity",
+            "unit": "usd",
+            "label": "Total shareholders' equity",
+            "value": 15461000000.0
+          },
+          {
+            "concept": "us-gaap_LiabilitiesAndStockholdersEquity",
+            "unit": "usd",
+            "label": "TOTAL LIABILITIES AND SHAREHOLDERS' EQUITY",
+            "value": 62514000000
+          }
+        ],
+        "ic": [
+          {
+            "concept": "us-gaap_PremiumsEarnedNet",
+            "unit": "usd",
+            "label": "Premiums earned",
+            "value": 15560000000.0
+          },
+          {
+            "concept": "us-gaap_NetInvestmentIncome",
+            "unit": "usd",
+            "label": "Net investment income",
+            "value": 2124000000.0
+          },
+          {
+            "concept": "us-gaap_GainLossOnInvestments",
+            "unit": "usd",
+            "label": "Total net gains (losses) on investments",
+            "value": -143000000.0
+          },
+          {
+            "concept": "us-gaap_OtherOperatingIncomeExpenseNet",
+            "unit": "usd",
+            "label": "Other income (expense)",
+            "value": -45000000.0
+          },
+          {
+            "concept": "us-gaap_Revenues",
+            "unit": "usd",
+            "label": "Total revenues",
+            "value": 17496000000
+          },
+          {
+            "concept": "us-gaap_PolicyholderBenefitsAndClaimsIncurredNet",
+            "unit": "usd",
+            "label": "Incurred losses and loss adjustment expenses",
+            "value": 10859000000.0
+          },
+          {
+            "concept": "us-gaap_SellingAndMarketingExpense",
+            "unit": "usd",
+            "label": "Commission, brokerage, taxes and fees",
+            "value": 3461000000.0
+          },
+          {
+            "concept": "us-gaap_OtherUnderwritingExpense",
+            "unit": "usd",
+            "label": "Other underwriting expenses",
+            "value": 1029000000.0
+          },
+          {
+            "concept": "eg_CorporateExpenses",
+            "unit": "usd",
+            "label": "Corporate expenses",
+            "value": 109000000.0
+          },
+          {
+            "concept": "eg_InterestFeeAndBondIssueCostAmortizationExpense",
+            "unit": "usd",
+            "label": "Interest, fees and bond issue cost amortization expense",
+            "value": 151000000.0
+          },
+          {
+            "concept": "us-gaap_BenefitsLossesAndExpenses",
+            "unit": "usd",
+            "label": "Total claims and expenses",
+            "value": 15609000000
+          },
+          {
+            "concept": "us-gaap_IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+            "unit": "usd",
+            "label": "INCOME (LOSS) BEFORE TAXES",
+            "value": 1887000000.0
+          },
+          {
+            "concept": "us-gaap_IncomeTaxExpenseBenefit",
+            "unit": "usd",
+            "label": "Income tax expense (benefit)",
+            "value": 296000000.0
+          },
+          {
+            "concept": "us-gaap_NetIncomeLoss",
+            "unit": "usd",
+            "label": "NET INCOME (LOSS)",
+            "value": 1591000000.0
+          },
+          {
+            "concept": "us-gaap_OtherComprehensiveIncomeUnrealizedHoldingGainLossOnSecuritiesArisingDuringPeriodNetOfTax",
+            "unit": "usd",
+            "label": "Unrealized appreciation (depreciation) (\"URA(D)\") on securities arising during the period",
+            "value": 740000000
+          },
+          {
+            "concept": "us-gaap_OtherComprehensiveIncomeLossReclassificationAdjustmentFromAOCIForSaleOfSecuritiesNetOfTax",
+            "unit": "usd",
+            "label": "Reclassification adjustment for realized losses (gains) included in net income (loss)",
+            "value": -114000000
+          },
+          {
+            "concept": "us-gaap_OtherComprehensiveIncomeAvailableforsaleSecuritiesAdjustmentNetOfTaxPortionAttributableToParent",
+            "unit": "usd",
+            "label": "Total URA(D) on securities arising during the period",
+            "value": 854000000
+          },
+          {
+            "concept": "us-gaap_OtherComprehensiveIncomeForeignCurrencyTransactionAndTranslationAdjustmentNetOfTaxPortionAttributableToParent",
+            "unit": "usd",
+            "label": "Foreign currency translation and other adjustments",
+            "value": 242000000
+          },
+          {
+            "concept": "us-gaap_OtherComprehensiveIncomeLossPensionAndOtherPostretirementBenefitPlansAdjustmentBeforeReclassificationAdjustmentsNetOfTax",
+            "unit": "usd",
+            "label": "Benefit plan actuarial net gain (loss) for the period",
+            "value": 9000000
+          },
+          {
+            "concept": "us-gaap_OtherComprehensiveIncomeLossReclassificationAdjustmentFromAOCIPensionAndOtherPostretirementBenefitPlansForNetGainLossNetOfTax",
+            "unit": "usd",
+            "label": "Reclassification adjustment for amortization of net (gain) loss included in net income (loss)",
+            "value": 1000000
+          },
+          {
+            "concept": "us-gaap_OtherComprehensiveIncomeDefinedBenefitPlansAdjustmentNetOfTaxPortionAttributableToParent",
+            "unit": "usd",
+            "label": "Total benefit plan net gain (loss) for the period",
+            "value": 10000000
+          },
+          {
+            "concept": "us-gaap_OtherComprehensiveIncomeLossNetOfTaxPortionAttributableToParent",
+            "unit": "usd",
+            "label": "Total other comprehensive income (loss), net of tax",
+            "value": 1086000000.0
+          },
+          {
+            "concept": "us-gaap_ComprehensiveIncomeNetOfTax",
+            "unit": "usd",
+            "label": "COMPREHENSIVE INCOME (LOSS)",
+            "value": 2678000000
+          },
+          {
+            "concept": "us-gaap_EarningsPerShareBasic",
+            "unit": "usd/share",
+            "label": "Basic (in dollars per share)",
+            "value": 37.8
+          },
+          {
+            "concept": "us-gaap_EarningsPerShareDiluted",
+            "unit": "usd/share",
+            "label": "Diluted (in dollars per share)",
+            "value": 37.8
+          }
+        ],
+        "cf": [
+          {
+            "concept": "us-gaap_GainLossOnInvestments",
+            "unit": "usd",
+            "label": "Total net gains (losses) on investments",
+            "value": -143000000.0
+          },
+          {
+            "concept": "us-gaap_NetIncomeLoss",
+            "unit": "usd",
+            "label": "NET INCOME (LOSS)",
+            "value": 1591000000.0
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInPremiumsReceivable",
+            "unit": "usd",
+            "label": "Decrease (increase) in premiums receivable",
+            "value": 116000000
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInFundsHeldUnderReinsuranceAgreements",
+            "unit": "usd",
+            "label": "Decrease (increase) in funds held by reinsureds, net",
+            "value": -138000000
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInReinsuranceRecoverable",
+            "unit": "usd",
+            "label": "Decrease (increase) in reinsurance recoverables",
+            "value": 1453000000
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInIncomeTaxesReceivable",
+            "unit": "usd",
+            "label": "Decrease (increase) in income taxes",
+            "value": -150000000
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInPrepaidReinsurancePremiums",
+            "unit": "usd",
+            "label": "Decrease (increase) in prepaid reinsurance premiums",
+            "value": -360000000
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInLiabilityForClaimsAndClaimsAdjustmentExpenseReserve",
+            "unit": "usd",
+            "label": "Increase (decrease) in reserve for losses and loss adjustment expenses",
+            "value": 3602000000
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInUnearnedPremiums",
+            "unit": "usd",
+            "label": "Increase (decrease) in unearned premiums",
+            "value": -278000000
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInReinsurancePayables",
+            "unit": "usd",
+            "label": "Increase (decrease) in amounts due to reinsurers",
+            "value": -235000000
+          },
+          {
+            "concept": "eg_IncreaseDecreaseInLossesInCourseOfPayment",
+            "unit": "usd",
+            "label": "Increase (decrease) in losses in course of payment",
+            "value": -98000000
+          },
+          {
+            "concept": "eg_ChangeInEquityAdjustmentsInLimitedPartnerships",
+            "unit": "usd",
+            "label": "Change in equity adjustments in limited partnerships",
+            "value": 364000000
+          },
+          {
+            "concept": "us-gaap_ReimbursementFromLimitedPartnershipInvestment",
+            "unit": "usd",
+            "label": "Distribution of limited partnership income",
+            "value": 195000000
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInOtherOperatingCapitalNet",
+            "unit": "usd",
+            "label": "Change in other assets and liabilities, net",
+            "value": 463000000
+          },
+          {
+            "concept": "us-gaap_ShareBasedCompensation",
+            "unit": "usd",
+            "label": "Non-cash compensation expense",
+            "value": 61000000
+          },
+          {
+            "concept": "us-gaap_AmortizationOfDebtDiscountPremium",
+            "unit": "usd",
+            "label": "Amortization of bond premium (accrual of bond discount)",
+            "value": -166000000
+          },
+          {
+            "concept": "us-gaap_NetCashProvidedByUsedInOperatingActivities",
+            "unit": "usd",
+            "label": "Net cash provided by (used in) operating activities",
+            "value": 3068000000
+          },
+          {
+            "concept": "us-gaap_ProceedsFromMaturitiesPrepaymentsAndCallsOfAvailableForSaleSecurities",
+            "unit": "usd",
+            "label": "Proceeds from fixed maturities matured/called/repaid - available for sale",
+            "value": 4497000000
+          },
+          {
+            "concept": "us-gaap_ProceedsFromSaleOfAvailableForSaleSecuritiesDebt",
+            "unit": "usd",
+            "label": "Proceeds from fixed maturities sold - available for sale",
+            "value": 1571000000.0
+          },
+          {
+            "concept": "us-gaap_ProceedsFromMaturitiesPrepaymentsAndCallsOfHeldToMaturitySecurities",
+            "unit": "usd",
+            "label": "Proceeds from fixed maturities matured/called/repaid - held to maturity",
+            "value": 199000000
+          },
+          {
+            "concept": "us-gaap_ProceedsFromSaleOfHeldToMaturitySecurities",
+            "unit": "usd",
+            "label": "Proceeds from fixed maturities sold - held to maturity",
+            "value": 10000000.0
+          },
+          {
+            "concept": "us-gaap_ProceedsFromSaleOfEquitySecuritiesFvNi",
+            "unit": "usd",
+            "label": "Proceeds from equity securities sold",
+            "value": 56000000.0
+          },
+          {
+            "concept": "us-gaap_ProceedsFromEquityMethodInvestmentDividendsOrDistributionsReturnOfCapital",
+            "unit": "usd",
+            "label": "Distributions from other invested assets",
+            "value": 334000000
+          },
+          {
+            "concept": "us-gaap_PaymentsToAcquireAvailableForSaleSecuritiesDebt",
+            "unit": "usd",
+            "label": "Cost of fixed maturities acquired - available for sale",
+            "value": 10364000000
+          },
+          {
+            "concept": "us-gaap_PaymentsToAcquireHeldToMaturitySecurities",
+            "unit": "usd",
+            "label": "Cost of fixed maturities acquired - held to maturity",
+            "value": 7000000
+          },
+          {
+            "concept": "us-gaap_PaymentsToAcquireEquitySecuritiesFvNi",
+            "unit": "usd",
+            "label": "Cost of equity securities acquired",
+            "value": 9000000
+          },
+          {
+            "concept": "us-gaap_PaymentsToAcquireInterestInSubsidiariesAndAffiliates",
+            "unit": "usd",
+            "label": "Cost of other invested assets acquired",
+            "value": 507000000
+          },
+          {
+            "concept": "us-gaap_PaymentsForProceedsFromShortTermInvestments",
+            "unit": "usd",
+            "label": "Net change in short-term investments",
+            "value": -1875000000
+          },
+          {
+            "concept": "eg_NetChangeInUnsettledSecuritiesTransactions",
+            "unit": "usd",
+            "label": "Net change in unsettled securities transactions",
+            "value": 83000000
+          },
+          {
+            "concept": "us-gaap_ProceedsFromSalesOfAssetsInvestingActivities",
+            "unit": "usd",
+            "label": "Proceeds from sale of renewal rights",
+            "value": 331000000
+          },
+          {
+            "concept": "us-gaap_NetCashProvidedByUsedInInvestingActivities",
+            "unit": "usd",
+            "label": "Net cash provided by (used in) investing activities",
+            "value": -2096000000
+          },
+          {
+            "concept": "eg_PaymentsForProceedsFromSharesIssuedRedeemedForShareBasedCompensationNetOfExpense",
+            "unit": "usd",
+            "label": "Common shares issued (redeemed) during the period for share-based compensation, net of expense",
+            "value": 21000000
+          },
+          {
+            "concept": "us-gaap_ProceedsFromIssuanceOfCommonStock",
+            "unit": "usd",
+            "label": "Proceeds from public offering of common shares",
+            "value": 0
+          },
+          {
+            "concept": "us-gaap_PaymentsForRepurchaseOfCommonStock",
+            "unit": "usd",
+            "label": "Purchase of treasury shares",
+            "value": 797000000
+          },
+          {
+            "concept": "us-gaap_PaymentsOfDividendsCommonStock",
+            "unit": "usd",
+            "label": "Dividends paid to shareholders",
+            "value": 335000000
+          },
+          {
+            "concept": "eg_ProceedsFromPaymentsForFHLBankAdvance",
+            "unit": "usd",
+            "label": "Net FHLB borrowings (repayments)",
+            "value": 0
+          },
+          {
+            "concept": "us-gaap_PaymentsRelatedToTaxWithholdingForShareBasedCompensation",
+            "unit": "usd",
+            "label": "Cost of shares withheld on settlements of share-based compensation awards",
+            "value": 22000000
+          },
+          {
+            "concept": "us-gaap_NetCashProvidedByUsedInFinancingActivities",
+            "unit": "usd",
+            "label": "Net cash provided by (used in) financing activities",
+            "value": -1175000000
+          },
+          {
+            "concept": "us-gaap_EffectOfExchangeRateOnCashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents",
+            "unit": "usd",
+            "label": "EFFECT OF EXCHANGE RATE CHANGES ON CASH",
+            "value": -28000000
+          },
+          {
+            "concept": "us-gaap_CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseIncludingExchangeRateEffect",
+            "unit": "usd",
+            "label": "Net increase (decrease) in cash",
+            "value": -231000000
+          },
+          {
+            "concept": "us-gaap_IncomeTaxesPaidNet",
+            "unit": "usd",
+            "label": "Income taxes paid (recovered)",
+            "value": 150000000.0
+          },
+          {
+            "concept": "us-gaap_InterestPaidNet",
+            "unit": "usd",
+            "label": "Interest paid",
+            "value": 150000000
+          },
+          {
+            "concept": "eg_NoncashOrPartNoncashDistributionMadeToLimitedPartner",
+            "unit": "usd",
+            "label": "Non-cash limited partnership distribution",
+            "value": 8000000
+          }
+        ]
+      }
+    },
+    {
+      "accessNumber": "0001095073-25-000015",
+      "symbol": "EG",
+      "cik": "1095073",
+      "year": 2024,
+      "quarter": 0,
+      "form": "10-K",
+      "startDate": "2024-01-01 00:00:00",
+      "endDate": "2024-12-31 00:00:00",
+      "filedDate": "2025-02-27 00:00:00",
+      "acceptedDate": "2025-02-27 16:53:29",
+      "report": {
+        "bs": [
+          {
+            "concept": "us-gaap_DebtSecuritiesAvailableForSaleExcludingAccruedInterest",
+            "unit": "usd",
+            "label": "Fixed maturities - available for sale, at fair value (amortized cost: 2024, $29,934; 2023, $28,568, credit allowances: 2024, $(36); 2023, $(48))",
+            "value": 28908000000.0
+          },
+          {
+            "concept": "us-gaap_DebtSecuritiesHeldToMaturityExcludingAccruedInterestAfterAllowanceForCreditLoss",
+            "unit": "usd",
+            "label": "Fixed maturities - held to maturity, at amortized cost (fair value: 2024, $759; 2023, $854, net of credit allowances: 2024, $(8); 2023, $(8))",
+            "value": 757000000
+          },
+          {
+            "concept": "us-gaap_EquitySecuritiesFvNi",
+            "unit": "usd",
+            "label": "Equity securities, at fair value",
+            "value": 217000000.0
+          },
+          {
+            "concept": "us-gaap_EquityMethodInvestments",
+            "unit": "usd",
+            "label": "Other invested assets",
+            "value": 5392000000
+          },
+          {
+            "concept": "us-gaap_OtherShortTermInvestments",
+            "unit": "usd",
+            "label": "Short-term investments",
+            "value": 4707000000
+          },
+          {
+            "concept": "us-gaap_Cash",
+            "unit": "usd",
+            "label": "Cash",
+            "value": 1549000000
+          },
+          {
+            "concept": "us-gaap_InvestmentsAndCash",
+            "unit": "usd",
+            "label": "Total investments and cash",
+            "value": 41531000000
+          },
+          {
+            "concept": "us-gaap_AccruedInvestmentIncomeReceivable",
+            "unit": "usd",
+            "label": "Accrued investment income",
+            "value": 368000000
+          },
+          {
+            "concept": "us-gaap_PremiumsReceivableAtCarryingValue",
+            "unit": "usd",
+            "label": "Premiums receivable (net of credit allowances: 2024, $(54); 2023, $(41))",
+            "value": 5378000000
+          },
+          {
+            "concept": "us-gaap_ReinsuranceRecoverablesOnPaidLosses",
+            "unit": "usd",
+            "label": "Reinsurance paid loss recoverables (net of credit allowances: 2024, $(41); 2023, $(26))",
+            "value": 207000000
+          },
+          {
+            "concept": "us-gaap_ReinsuranceRecoverableForUnpaidClaimsAndClaimsAdjustments",
+            "unit": "usd",
+            "label": "Reinsurance unpaid loss recoverables",
+            "value": 2915000000
+          },
+          {
+            "concept": "us-gaap_FundsHeldUnderReinsuranceAgreementsAsset",
+            "unit": "usd",
+            "label": "Funds held by reinsureds",
+            "value": 1218000000.0
+          },
+          {
+            "concept": "us-gaap_DeferredPolicyAcquisitionCosts",
+            "unit": "usd",
+            "label": "Deferred acquisition costs",
+            "value": 1461000000
+          },
+          {
+            "concept": "us-gaap_PrepaidReinsurancePremiums",
+            "unit": "usd",
+            "label": "Prepaid reinsurance premiums",
+            "value": 869000000
+          },
+          {
+            "concept": "us-gaap_DeferredIncomeTaxAssetsNet",
+            "unit": "usd",
+            "label": "Income tax asset, net",
+            "value": 1223000000
+          },
+          {
+            "concept": "us-gaap_OtherAssets",
+            "unit": "usd",
+            "label": "Other assets (net of credit allowances: 2024, $(9); 2023, $(9))",
+            "value": 1171000000
+          },
+          {
+            "concept": "us-gaap_Assets",
+            "unit": "usd",
+            "label": "TOTAL ASSETS",
+            "value": 56341000000
+          },
+          {
+            "concept": "us-gaap_LiabilityForClaimsAndClaimsAdjustmentExpense",
+            "unit": "usd",
+            "label": "Reserve for losses and loss adjustment expenses",
+            "value": 29889000000.0
+          },
+          {
+            "concept": "us-gaap_UnearnedPremiums",
+            "unit": "usd",
+            "label": "Unearned premium reserve",
+            "value": 7324000000
+          },
+          {
+            "concept": "us-gaap_FundsHeldUnderReinsuranceAgreementsLiability",
+            "unit": "usd",
+            "label": "Funds held under reinsurance treaties",
+            "value": 27000000
+          },
+          {
+            "concept": "us-gaap_ReinsurancePayable",
+            "unit": "usd",
+            "label": "Amounts due to reinsurers",
+            "value": 701000000
+          },
+          {
+            "concept": "eg_LossInCourseOfPayment",
+            "unit": "usd",
+            "label": "Losses in course of payment",
+            "value": 241000000
+          },
+          {
+            "concept": "us-gaap_SeniorNotes",
+            "unit": "usd",
+            "label": "Senior notes",
+            "value": 2350000000
+          },
+          {
+            "concept": "us-gaap_SubordinatedDebt",
+            "unit": "usd",
+            "label": "Long-term notes",
+            "value": 218000000
+          },
+          {
+            "concept": "us-gaap_AdvancesFromFederalHomeLoanBanks",
+            "unit": "usd",
+            "label": "Borrowings from FHLB",
+            "value": 1019000000
+          },
+          {
+            "concept": "us-gaap_InterestPayableCurrentAndNoncurrent",
+            "unit": "usd",
+            "label": "Accrued interest on debt and borrowings",
+            "value": 22000000
+          },
+          {
+            "concept": "us-gaap_OtherPayablesToBrokerDealersAndClearingOrganizations",
+            "unit": "usd",
+            "label": "Unsettled securities payable",
+            "value": 84000000
+          },
+          {
+            "concept": "us-gaap_OtherLiabilities",
+            "unit": "usd",
+            "label": "Other liabilities",
+            "value": 590000000
+          },
+          {
+            "concept": "us-gaap_Liabilities",
+            "unit": "usd",
+            "label": "TOTAL LIABILITIES",
+            "value": 42466000000
+          },
+          {
+            "concept": "us-gaap_PreferredStockValue",
+            "unit": "usd",
+            "label": "Preferred shares, par value: $0.01; 50.0 shares authorized; no shares issued and outstanding",
+            "value": 0
+          },
+          {
+            "concept": "us-gaap_CommonStockValue",
+            "unit": "usd",
+            "label": "Common shares, par value: $0.01; 200.0 shares authorized; 74.3 (2024) and 74.2 (2023) outstanding before treasury shares",
+            "value": 1000000
+          },
+          {
+            "concept": "us-gaap_AdditionalPaidInCapital",
+            "unit": "usd",
+            "label": "Additional paid-in capital",
+            "value": 3812000000
+          },
+          {
+            "concept": "us-gaap_AccumulatedOtherComprehensiveIncomeLossNetOfTax",
+            "unit": "usd",
+            "label": "Accumulated other comprehensive income (loss), net of deferred income tax expense (benefit) of $(177) at 2024 and $(99) at 2023",
+            "value": -1138000000
+          },
+          {
+            "concept": "us-gaap_TreasuryStockCommonValue",
+            "unit": "usd",
+            "label": "Treasury shares, at cost: 31.3 shares (2024) and 30.8 shares (2023)",
+            "value": 4108000000
+          },
+          {
+            "concept": "us-gaap_RetainedEarningsAccumulatedDeficit",
+            "unit": "usd",
+            "label": "Retained earnings",
+            "value": 15309000000
+          },
+          {
+            "concept": "us-gaap_StockholdersEquity",
+            "unit": "usd",
+            "label": "Total shareholders' equity",
+            "value": 13875000000.0
+          },
+          {
+            "concept": "us-gaap_LiabilitiesAndStockholdersEquity",
+            "unit": "usd",
+            "label": "TOTAL LIABILITIES AND SHAREHOLDERS' EQUITY",
+            "value": 56341000000
+          }
+        ],
+        "ic": [
+          {
+            "concept": "us-gaap_PremiumsEarnedNet",
+            "unit": "usd",
+            "label": "Premiums earned",
+            "value": 15187000000.0
+          },
+          {
+            "concept": "us-gaap_NetInvestmentIncome",
+            "unit": "usd",
+            "label": "Net investment income",
+            "value": 1954000000.0
+          },
+          {
+            "concept": "us-gaap_GainLossOnInvestments",
+            "unit": "usd",
+            "label": "Total net gains (losses) on investments",
+            "value": 19000000.0
+          },
+          {
+            "concept": "us-gaap_OtherOperatingIncomeExpenseNet",
+            "unit": "usd",
+            "label": "Other income (expense)",
+            "value": 121000000.0
+          },
+          {
+            "concept": "us-gaap_Revenues",
+            "unit": "usd",
+            "label": "Total revenues",
+            "value": 17281000000
+          },
+          {
+            "concept": "us-gaap_PolicyholderBenefitsAndClaimsIncurredNet",
+            "unit": "usd",
+            "label": "Incurred losses and loss adjustment expenses",
+            "value": 11305000000.0
+          },
+          {
+            "concept": "us-gaap_SellingAndMarketingExpense",
+            "unit": "usd",
+            "label": "Commission, brokerage, taxes and fees",
+            "value": 3300000000.0
+          },
+          {
+            "concept": "us-gaap_OtherUnderwritingExpense",
+            "unit": "usd",
+            "label": "Other underwriting expenses",
+            "value": 938000000.0
+          },
+          {
+            "concept": "eg_CorporateExpenses",
+            "unit": "usd",
+            "label": "Corporate expenses",
+            "value": 95000000.0
+          },
+          {
+            "concept": "eg_InterestFeeAndBondIssueCostAmortizationExpense",
+            "unit": "usd",
+            "label": "Interest, fees and bond issue cost amortization expense",
+            "value": 149000000.0
+          },
+          {
+            "concept": "us-gaap_BenefitsLossesAndExpenses",
+            "unit": "usd",
+            "label": "Total claims and expenses",
+            "value": 15787000000
+          },
+          {
+            "concept": "us-gaap_IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+            "unit": "usd",
+            "label": "INCOME (LOSS) BEFORE TAXES",
+            "value": 1493000000.0
+          },
+          {
+            "concept": "us-gaap_IncomeTaxExpenseBenefit",
+            "unit": "usd",
+            "label": "Income tax expense (benefit)",
+            "value": 120000000.0
+          },
+          {
+            "concept": "us-gaap_NetIncomeLoss",
+            "unit": "usd",
+            "label": "NET INCOME (LOSS)",
+            "value": 1373000000.0
+          },
+          {
+            "concept": "us-gaap_OtherComprehensiveIncomeUnrealizedHoldingGainLossOnSecuritiesArisingDuringPeriodNetOfTax",
+            "unit": "usd",
+            "label": "Unrealized appreciation (depreciation) (\"URA(D)\") on securities arising during the period",
+            "value": -97000000
+          },
+          {
+            "concept": "us-gaap_OtherComprehensiveIncomeLossReclassificationAdjustmentFromAOCIForSaleOfSecuritiesNetOfTax",
+            "unit": "usd",
+            "label": "Reclassification adjustment for realized losses (gains) included in net income (loss)",
+            "value": 12000000
+          },
+          {
+            "concept": "us-gaap_OtherComprehensiveIncomeAvailableforsaleSecuritiesAdjustmentNetOfTaxPortionAttributableToParent",
+            "unit": "usd",
+            "label": "Total URA(D) on securities arising during the period",
+            "value": -109000000
+          },
+          {
+            "concept": "us-gaap_OtherComprehensiveIncomeForeignCurrencyTransactionAndTranslationAdjustmentNetOfTaxPortionAttributableToParent",
+            "unit": "usd",
+            "label": "Foreign currency translation and other adjustments",
+            "value": -128000000
+          },
+          {
+            "concept": "us-gaap_OtherComprehensiveIncomeLossPensionAndOtherPostretirementBenefitPlansAdjustmentBeforeReclassificationAdjustmentsNetOfTax",
+            "unit": "usd",
+            "label": "Benefit plan actuarial net gain (loss) for the period",
+            "value": -34000000
+          },
+          {
+            "concept": "us-gaap_OtherComprehensiveIncomeLossReclassificationAdjustmentFromAOCIPensionAndOtherPostretirementBenefitPlansForNetGainLossNetOfTax",
+            "unit": "usd",
+            "label": "Reclassification adjustment for amortization of net (gain) loss included in net income (loss)",
+            "value": 1000000
+          },
+          {
+            "concept": "us-gaap_OtherComprehensiveIncomeDefinedBenefitPlansAdjustmentNetOfTaxPortionAttributableToParent",
+            "unit": "usd",
+            "label": "Total benefit plan net gain (loss) for the period",
+            "value": -33000000
+          },
+          {
+            "concept": "us-gaap_OtherComprehensiveIncomeLossNetOfTaxPortionAttributableToParent",
+            "unit": "usd",
+            "label": "Total other comprehensive income (loss), net of tax",
+            "value": -204000000.0
+          },
+          {
+            "concept": "us-gaap_ComprehensiveIncomeNetOfTax",
+            "unit": "usd",
+            "label": "COMPREHENSIVE INCOME (LOSS)",
+            "value": 1169000000
+          },
+          {
+            "concept": "us-gaap_EarningsPerShareBasic",
+            "unit": "usd/share",
+            "label": "Basic (in dollars per share)",
+            "value": 31.78
+          },
+          {
+            "concept": "us-gaap_EarningsPerShareDiluted",
+            "unit": "usd/share",
+            "label": "Diluted (in dollars per share)",
+            "value": 31.78
+          }
+        ],
+        "cf": [
+          {
+            "concept": "us-gaap_GainLossOnInvestments",
+            "unit": "usd",
+            "label": "Total net gains (losses) on investments",
+            "value": 19000000.0
+          },
+          {
+            "concept": "us-gaap_NetIncomeLoss",
+            "unit": "usd",
+            "label": "NET INCOME (LOSS)",
+            "value": 1373000000.0
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInPremiumsReceivable",
+            "unit": "usd",
+            "label": "Decrease (increase) in premiums receivable",
+            "value": 715000000
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInFundsHeldUnderReinsuranceAgreements",
+            "unit": "usd",
+            "label": "Decrease (increase) in funds held by reinsureds, net",
+            "value": 81000000
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInReinsuranceRecoverable",
+            "unit": "usd",
+            "label": "Decrease (increase) in reinsurance recoverables",
+            "value": 1091000000
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInIncomeTaxesReceivable",
+            "unit": "usd",
+            "label": "Decrease (increase) in income taxes",
+            "value": 277000000
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInPrepaidReinsurancePremiums",
+            "unit": "usd",
+            "label": "Decrease (increase) in prepaid reinsurance premiums",
+            "value": 232000000
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInLiabilityForClaimsAndClaimsAdjustmentExpenseReserve",
+            "unit": "usd",
+            "label": "Increase (decrease) in reserve for losses and loss adjustment expenses",
+            "value": 5612000000
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInUnearnedPremiums",
+            "unit": "usd",
+            "label": "Increase (decrease) in unearned premiums",
+            "value": 809000000
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInReinsurancePayables",
+            "unit": "usd",
+            "label": "Increase (decrease) in amounts due to reinsurers",
+            "value": 135000000
+          },
+          {
+            "concept": "eg_IncreaseDecreaseInLossesInCourseOfPayment",
+            "unit": "usd",
+            "label": "Increase (decrease) in losses in course of payment",
+            "value": 75000000
+          },
+          {
+            "concept": "eg_ChangeInEquityAdjustmentsInLimitedPartnerships",
+            "unit": "usd",
+            "label": "Change in equity adjustments in limited partnerships",
+            "value": 261000000
+          },
+          {
+            "concept": "us-gaap_ReimbursementFromLimitedPartnershipInvestment",
+            "unit": "usd",
+            "label": "Distribution of limited partnership income",
+            "value": 163000000
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInOtherOperatingCapitalNet",
+            "unit": "usd",
+            "label": "Change in other assets and liabilities, net",
+            "value": 431000000
+          },
+          {
+            "concept": "us-gaap_ShareBasedCompensation",
+            "unit": "usd",
+            "label": "Non-cash compensation expense",
+            "value": 63000000
+          },
+          {
+            "concept": "us-gaap_AmortizationOfDebtDiscountPremium",
+            "unit": "usd",
+            "label": "Amortization of bond premium (accrual of bond discount)",
+            "value": -167000000
+          },
+          {
+            "concept": "us-gaap_NetCashProvidedByUsedInOperatingActivities",
+            "unit": "usd",
+            "label": "Net cash provided by (used in) operating activities",
+            "value": 4957000000
+          },
+          {
+            "concept": "us-gaap_ProceedsFromMaturitiesPrepaymentsAndCallsOfAvailableForSaleSecurities",
+            "unit": "usd",
+            "label": "Proceeds from fixed maturities matured/called/repaid - available for sale",
+            "value": 3783000000
+          },
+          {
+            "concept": "us-gaap_ProceedsFromSaleOfAvailableForSaleSecuritiesDebt",
+            "unit": "usd",
+            "label": "Proceeds from fixed maturities sold - available for sale",
+            "value": 6257000000.0
+          },
+          {
+            "concept": "us-gaap_ProceedsFromMaturitiesPrepaymentsAndCallsOfHeldToMaturitySecurities",
+            "unit": "usd",
+            "label": "Proceeds from fixed maturities matured/called/repaid - held to maturity",
+            "value": 157000000
+          },
+          {
+            "concept": "us-gaap_ProceedsFromSaleOfEquitySecuritiesFvNi",
+            "unit": "usd",
+            "label": "Proceeds from equity securities sold",
+            "value": 37000000.0
+          },
+          {
+            "concept": "us-gaap_ProceedsFromEquityMethodInvestmentDividendsOrDistributionsReturnOfCapital",
+            "unit": "usd",
+            "label": "Distributions from other invested assets",
+            "value": 409000000
+          },
+          {
+            "concept": "us-gaap_PaymentsToAcquireAvailableForSaleSecuritiesDebt",
+            "unit": "usd",
+            "label": "Cost of fixed maturities acquired - available for sale",
+            "value": 11563000000
+          },
+          {
+            "concept": "us-gaap_PaymentsToAcquireHeldToMaturitySecurities",
+            "unit": "usd",
+            "label": "Cost of fixed maturities acquired - held to maturity",
+            "value": 49000000
+          },
+          {
+            "concept": "us-gaap_PaymentsToAcquireEquitySecuritiesFvNi",
+            "unit": "usd",
+            "label": "Cost of equity securities acquired",
+            "value": 50000000
+          },
+          {
+            "concept": "us-gaap_PaymentsToAcquireInterestInSubsidiariesAndAffiliates",
+            "unit": "usd",
+            "label": "Cost of other invested assets acquired",
+            "value": 936000000
+          },
+          {
+            "concept": "us-gaap_PaymentsForProceedsFromShortTermInvestments",
+            "unit": "usd",
+            "label": "Net change in short-term investments",
+            "value": 2494000000
+          },
+          {
+            "concept": "eg_NetChangeInUnsettledSecuritiesTransactions",
+            "unit": "usd",
+            "label": "Net change in unsettled securities transactions",
+            "value": 27000000
+          },
+          {
+            "concept": "us-gaap_NetCashProvidedByUsedInInvestingActivities",
+            "unit": "usd",
+            "label": "Net cash provided by (used in) investing activities",
+            "value": -4478000000
+          },
+          {
+            "concept": "eg_PaymentsForProceedsFromSharesIssuedRedeemedForShareBasedCompensationNetOfExpense",
+            "unit": "usd",
+            "label": "Common shares issued (redeemed) during the period for share-based compensation, net of expense",
+            "value": 24000000
+          },
+          {
+            "concept": "us-gaap_ProceedsFromIssuanceOfCommonStock",
+            "unit": "usd",
+            "label": "Proceeds from public offering of common shares",
+            "value": 0
+          },
+          {
+            "concept": "us-gaap_PaymentsForRepurchaseOfCommonStock",
+            "unit": "usd",
+            "label": "Purchase of treasury shares",
+            "value": 200000000
+          },
+          {
+            "concept": "us-gaap_PaymentsOfDividendsCommonStock",
+            "unit": "usd",
+            "label": "Dividends paid to shareholders",
+            "value": 334000000
+          },
+          {
+            "concept": "us-gaap_ProceedsFromIssuanceOfSeniorLongTermDebt",
+            "unit": "usd",
+            "label": "Proceeds from issuance of senior notes",
+            "value": 0
+          },
+          {
+            "concept": "us-gaap_RepaymentsOfDebt",
+            "unit": "usd",
+            "label": "Cost of debt repurchase",
+            "value": 0
+          },
+          {
+            "concept": "eg_ProceedsFromPaymentsForFHLBankAdvance",
+            "unit": "usd",
+            "label": "Net FHLB borrowings (repayments)",
+            "value": 200000000
+          },
+          {
+            "concept": "us-gaap_PaymentsRelatedToTaxWithholdingForShareBasedCompensation",
+            "unit": "usd",
+            "label": "Cost of shares withheld on settlements of share-based compensation awards",
+            "value": 25000000
+          },
+          {
+            "concept": "us-gaap_NetCashProvidedByUsedInFinancingActivities",
+            "unit": "usd",
+            "label": "Net cash provided by (used in) financing activities",
+            "value": -383000000
+          },
+          {
+            "concept": "us-gaap_EffectOfExchangeRateOnCashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents",
+            "unit": "usd",
+            "label": "EFFECT OF EXCHANGE RATE CHANGES ON CASH",
+            "value": 16000000
+          },
+          {
+            "concept": "us-gaap_CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseIncludingExchangeRateEffect",
+            "unit": "usd",
+            "label": "Net increase (decrease) in cash",
+            "value": 112000000
+          },
+          {
+            "concept": "us-gaap_IncomeTaxesPaidNet",
+            "unit": "usd",
+            "label": "Income taxes paid (recovered)",
+            "value": 397000000
+          },
+          {
+            "concept": "us-gaap_InterestPaidNet",
+            "unit": "usd",
+            "label": "Interest paid",
+            "value": 147000000
+          },
+          {
+            "concept": "eg_ReclassificationOfInvestmentsFixedMaturityAvailableForSaleAtFairValueToFixedMaturityHeldToMaturityAtAmortizedCostNetOfCreditAllowances",
+            "unit": "usd",
+            "label": "Reclassification of specific investments from fixed maturity securities, available for sale at fair value to fixed maturity securities, held to maturity at amortized cost net of credit allowances",
+            "value": 0
+          },
+          {
+            "concept": "eg_NoncashOrPartNoncashDistributionMadeToLimitedPartner",
+            "unit": "usd",
+            "label": "Non-cash limited partnership distribution",
+            "value": 23000000
+          }
+        ]
+      }
+    },
+    {
+      "accessNumber": "0001095073-24-000009",
+      "symbol": "EG",
+      "cik": "1095073",
+      "year": 2023,
+      "quarter": 0,
+      "form": "10-K",
+      "startDate": "2023-01-01 00:00:00",
+      "endDate": "2023-12-31 00:00:00",
+      "filedDate": "2024-02-28 00:00:00",
+      "acceptedDate": "2024-02-28 16:20:37",
+      "report": {
+        "bs": [
+          {
+            "concept": "us-gaap_DebtSecuritiesAvailableForSaleExcludingAccruedInterest",
+            "unit": "usd",
+            "label": "Fixed maturities - available for sale, at fair value (amortized cost: 2023, $28,568; 2022, $24,191, credit allowances: 2023, $(48); 2022, $(54))",
+            "value": 27740000000.0
+          },
+          {
+            "concept": "us-gaap_DebtSecuritiesHeldToMaturityExcludingAccruedInterestAfterAllowanceForCreditLoss",
+            "unit": "usd",
+            "label": "Fixed maturities - held to maturity, at amortized cost (fair value: 2023, $854; 2022, $821, net of credit allowances: 2023, $(8); 2022, $(9))",
+            "value": 855000000
+          },
+          {
+            "concept": "us-gaap_EquitySecuritiesFvNi",
+            "unit": "usd",
+            "label": "Equity securities, at fair value",
+            "value": 188000000.0
+          },
+          {
+            "concept": "us-gaap_EquityMethodInvestments",
+            "unit": "usd",
+            "label": "Other invested assets",
+            "value": 4794000000
+          },
+          {
+            "concept": "us-gaap_OtherShortTermInvestments",
+            "unit": "usd",
+            "label": "Short-term investments",
+            "value": 2127000000
+          },
+          {
+            "concept": "us-gaap_Cash",
+            "unit": "usd",
+            "label": "Cash",
+            "value": 1437000000
+          },
+          {
+            "concept": "us-gaap_InvestmentsAndCash",
+            "unit": "usd",
+            "label": "Total investments and cash",
+            "value": 37142000000
+          },
+          {
+            "concept": "us-gaap_AccruedInvestmentIncomeReceivable",
+            "unit": "usd",
+            "label": "Accrued investment income",
+            "value": 324000000
+          },
+          {
+            "concept": "us-gaap_PremiumsReceivableAtCarryingValue",
+            "unit": "usd",
+            "label": "Premiums receivable (net of credit allowances: 2023, $(41); 2022, $(29))",
+            "value": 4768000000
+          },
+          {
+            "concept": "us-gaap_ReinsuranceRecoverablesOnPaidLosses",
+            "unit": "usd",
+            "label": "Reinsurance paid loss recoverables (net of credit allowances: 2023, $(26); 2022, $(23))",
+            "value": 164000000
+          },
+          {
+            "concept": "us-gaap_ReinsuranceRecoverableForUnpaidClaimsAndClaimsAdjustments",
+            "unit": "usd",
+            "label": "Reinsurance unpaid loss recoverables",
+            "value": 2098000000.0
+          },
+          {
+            "concept": "us-gaap_FundsHeldUnderReinsuranceAgreementsAsset",
+            "unit": "usd",
+            "label": "Funds held by reinsureds",
+            "value": 1135000000.0
+          },
+          {
+            "concept": "us-gaap_DeferredPolicyAcquisitionCosts",
+            "unit": "usd",
+            "label": "Deferred acquisition costs",
+            "value": 1247000000
+          },
+          {
+            "concept": "us-gaap_PrepaidReinsurancePremiums",
+            "unit": "usd",
+            "label": "Prepaid reinsurance premiums",
+            "value": 713000000
+          },
+          {
+            "concept": "us-gaap_DeferredIncomeTaxAssetsNet",
+            "unit": "usd",
+            "label": "Income tax asset, net",
+            "value": 868000000
+          },
+          {
+            "concept": "us-gaap_OtherAssets",
+            "unit": "usd",
+            "label": "Other assets (net of credit allowances: 2023, $(9); 2022, $(5))",
+            "value": 941000000
+          },
+          {
+            "concept": "us-gaap_Assets",
+            "unit": "usd",
+            "label": "TOTAL ASSETS",
+            "value": 49399000000
+          },
+          {
+            "concept": "us-gaap_LiabilityForClaimsAndClaimsAdjustmentExpense",
+            "unit": "usd",
+            "label": "Reserve for losses and loss adjustment expenses",
+            "value": 24604000000.0
+          },
+          {
+            "concept": "us-gaap_UnearnedPremiums",
+            "unit": "usd",
+            "label": "Unearned premium reserve",
+            "value": 6622000000
+          },
+          {
+            "concept": "us-gaap_FundsHeldUnderReinsuranceAgreementsLiability",
+            "unit": "usd",
+            "label": "Funds held under reinsurance treaties",
+            "value": 24000000
+          },
+          {
+            "concept": "us-gaap_ReinsurancePayable",
+            "unit": "usd",
+            "label": "Amounts due to reinsurers",
+            "value": 650000000
+          },
+          {
+            "concept": "eg_LossInCourseOfPayment",
+            "unit": "usd",
+            "label": "Losses in course of payment",
+            "value": 171000000
+          },
+          {
+            "concept": "us-gaap_SeniorNotes",
+            "unit": "usd",
+            "label": "Senior notes",
+            "value": 2349000000
+          },
+          {
+            "concept": "us-gaap_SubordinatedDebt",
+            "unit": "usd",
+            "label": "Long-term notes",
+            "value": 218000000
+          },
+          {
+            "concept": "us-gaap_AdvancesFromFederalHomeLoanBanks",
+            "unit": "usd",
+            "label": "Borrowings from FHLB",
+            "value": 819000000.0
+          },
+          {
+            "concept": "us-gaap_InterestPayableCurrentAndNoncurrent",
+            "unit": "usd",
+            "label": "Accrued interest on debt and borrowings",
+            "value": 22000000
+          },
+          {
+            "concept": "us-gaap_OtherPayablesToBrokerDealersAndClearingOrganizations",
+            "unit": "usd",
+            "label": "Unsettled securities payable",
+            "value": 137000000
+          },
+          {
+            "concept": "us-gaap_OtherLiabilities",
+            "unit": "usd",
+            "label": "Other liabilities",
+            "value": 582000000
+          },
+          {
+            "concept": "us-gaap_Liabilities",
+            "unit": "usd",
+            "label": "TOTAL LIABILITIES",
+            "value": 36197000000
+          },
+          {
+            "concept": "us-gaap_PreferredStockValue",
+            "unit": "usd",
+            "label": "Preferred shares, par value: $0.01; 50.0 shares authorized; no shares issued and outstanding",
+            "value": 0
+          },
+          {
+            "concept": "us-gaap_CommonStockValue",
+            "unit": "usd",
+            "label": "Common shares, par value: $0.01; 200.0 shares authorized; (2023) 74.2 and (2022) 69.9 outstanding before treasury shares",
+            "value": 1000000
+          },
+          {
+            "concept": "us-gaap_AdditionalPaidInCapital",
+            "unit": "usd",
+            "label": "Additional paid-in capital",
+            "value": 3773000000
+          },
+          {
+            "concept": "us-gaap_AccumulatedOtherComprehensiveIncomeLossNetOfTax",
+            "unit": "usd",
+            "label": "Accumulated other comprehensive income (loss), net of deferred income tax expense (benefit) of $(99) at 2023 and $(250) at 2022",
+            "value": -934000000
+          },
+          {
+            "concept": "us-gaap_TreasuryStockCommonValue",
+            "unit": "usd",
+            "label": "Treasury shares, at cost: 30.8 shares (2023) and 30.8 shares (2022)",
+            "value": 3908000000
+          },
+          {
+            "concept": "us-gaap_RetainedEarningsAccumulatedDeficit",
+            "unit": "usd",
+            "label": "Retained earnings",
+            "value": 14270000000
+          },
+          {
+            "concept": "us-gaap_StockholdersEquity",
+            "unit": "usd",
+            "label": "Total shareholders' equity",
+            "value": 13202000000.0
+          },
+          {
+            "concept": "us-gaap_LiabilitiesAndStockholdersEquity",
+            "unit": "usd",
+            "label": "TOTAL LIABILITIES AND SHAREHOLDERS' EQUITY",
+            "value": 49399000000
+          }
+        ],
+        "ic": [
+          {
+            "concept": "us-gaap_PremiumsEarnedNet",
+            "unit": "usd",
+            "label": "Premiums earned",
+            "value": 13443000000.0
+          },
+          {
+            "concept": "us-gaap_NetInvestmentIncome",
+            "unit": "usd",
+            "label": "Net investment income",
+            "value": 1434000000.0
+          },
+          {
+            "concept": "us-gaap_GainLossOnInvestments",
+            "unit": "usd",
+            "label": "Total net gains (losses) on investments",
+            "value": -276000000.0
+          },
+          {
+            "concept": "us-gaap_OtherOperatingIncomeExpenseNet",
+            "unit": "usd",
+            "label": "Other income (expense)",
+            "value": -14000000.0
+          },
+          {
+            "concept": "us-gaap_Revenues",
+            "unit": "usd",
+            "label": "Total revenues",
+            "value": 14587000000
+          },
+          {
+            "concept": "us-gaap_PolicyholderBenefitsAndClaimsIncurredNet",
+            "unit": "usd",
+            "label": "Incurred losses and loss adjustment expenses",
+            "value": 8427000000.0
+          },
+          {
+            "concept": "us-gaap_SellingAndMarketingExpense",
+            "unit": "usd",
+            "label": "Commission, brokerage, taxes and fees",
+            "value": 2952000000.0
+          },
+          {
+            "concept": "us-gaap_OtherUnderwritingExpense",
+            "unit": "usd",
+            "label": "Other underwriting expenses",
+            "value": 846000000.0
+          },
+          {
+            "concept": "eg_CorporateExpenses",
+            "unit": "usd",
+            "label": "Corporate expenses",
+            "value": 73000000.0
+          },
+          {
+            "concept": "eg_InterestFeeAndBondIssueCostAmortizationExpense",
+            "unit": "usd",
+            "label": "Interest, fees and bond issue cost amortization expense",
+            "value": 134000000.0
+          },
+          {
+            "concept": "us-gaap_BenefitsLossesAndExpenses",
+            "unit": "usd",
+            "label": "Total claims and expenses",
+            "value": 12432000000
+          },
+          {
+            "concept": "us-gaap_IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+            "unit": "usd",
+            "label": "INCOME (LOSS) BEFORE TAXES",
+            "value": 2154000000.0
+          },
+          {
+            "concept": "us-gaap_IncomeTaxExpenseBenefit",
+            "unit": "usd",
+            "label": "Income tax expense (benefit)",
+            "value": -363000000.0
+          },
+          {
+            "concept": "us-gaap_NetIncomeLoss",
+            "unit": "usd",
+            "label": "NET INCOME (LOSS)",
+            "value": 2517000000.0
+          },
+          {
+            "concept": "us-gaap_OtherComprehensiveIncomeUnrealizedHoldingGainLossOnSecuritiesArisingDuringPeriodNetOfTax",
+            "unit": "usd",
+            "label": "Unrealized appreciation (depreciation) (\"URA(D)\") on securities arising during the period",
+            "value": 743000000
+          },
+          {
+            "concept": "us-gaap_OtherComprehensiveIncomeLossReclassificationAdjustmentFromAOCIForSaleOfSecuritiesNetOfTax",
+            "unit": "usd",
+            "label": "Reclassification adjustment for realized losses (gains) included in net income (loss)",
+            "value": -244000000
+          },
+          {
+            "concept": "us-gaap_OtherComprehensiveIncomeAvailableforsaleSecuritiesAdjustmentNetOfTaxPortionAttributableToParent",
+            "unit": "usd",
+            "label": "Total URA(D) on securities arising during the period",
+            "value": 986000000.0
+          },
+          {
+            "concept": "us-gaap_OtherComprehensiveIncomeForeignCurrencyTransactionAndTranslationAdjustmentNetOfTaxPortionAttributableToParent",
+            "unit": "usd",
+            "label": "Foreign currency translation and other adjustments",
+            "value": 59000000
+          },
+          {
+            "concept": "us-gaap_OtherComprehensiveIncomeLossPensionAndOtherPostretirementBenefitPlansAdjustmentBeforeReclassificationAdjustmentsNetOfTax",
+            "unit": "usd",
+            "label": "Benefit plan actuarial net gain (loss) for the period",
+            "value": -15000000
+          },
+          {
+            "concept": "us-gaap_OtherComprehensiveIncomeLossReclassificationAdjustmentFromAOCIPensionAndOtherPostretirementBenefitPlansForNetGainLossNetOfTax",
+            "unit": "usd",
+            "label": "Reclassification adjustment for amortization of net (gain) loss included in net income (loss)",
+            "value": -2000000
+          },
+          {
+            "concept": "us-gaap_OtherComprehensiveIncomeDefinedBenefitPlansAdjustmentNetOfTaxPortionAttributableToParent",
+            "unit": "usd",
+            "label": "Total benefit plan net gain (loss) for the period",
+            "value": -17000000
+          },
+          {
+            "concept": "us-gaap_OtherComprehensiveIncomeLossNetOfTaxPortionAttributableToParent",
+            "unit": "usd",
+            "label": "Total other comprehensive income (loss), net of tax",
+            "value": 1063000000.0
+          },
+          {
+            "concept": "us-gaap_ComprehensiveIncomeNetOfTax",
+            "unit": "usd",
+            "label": "COMPREHENSIVE INCOME (LOSS)",
+            "value": 3580000000
+          },
+          {
+            "concept": "us-gaap_EarningsPerShareBasic",
+            "unit": "usd/share",
+            "label": "Basic (in dollars per share)",
+            "value": 60.19
+          },
+          {
+            "concept": "us-gaap_EarningsPerShareDiluted",
+            "unit": "usd/share",
+            "label": "Diluted (in dollars per share)",
+            "value": 60.19
+          }
+        ],
+        "cf": [
+          {
+            "concept": "us-gaap_GainLossOnInvestments",
+            "unit": "usd",
+            "label": "Total net gains (losses) on investments",
+            "value": -276000000.0
+          },
+          {
+            "concept": "us-gaap_NetIncomeLoss",
+            "unit": "usd",
+            "label": "NET INCOME (LOSS)",
+            "value": 2517000000.0
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInPremiumsReceivable",
+            "unit": "usd",
+            "label": "Decrease (increase) in premiums receivable",
+            "value": 1064000000
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInFundsHeldUnderReinsuranceAgreements",
+            "unit": "usd",
+            "label": "Decrease (increase) in funds held by reinsureds, net",
+            "value": 66000000
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInReinsuranceRecoverable",
+            "unit": "usd",
+            "label": "Decrease (increase) in reinsurance recoverables",
+            "value": -143000000
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInIncomeTaxesReceivable",
+            "unit": "usd",
+            "label": "Decrease (increase) in income taxes",
+            "value": 559000000
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInPrepaidReinsurancePremiums",
+            "unit": "usd",
+            "label": "Decrease (increase) in prepaid reinsurance premiums",
+            "value": 46000000
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInLiabilityForClaimsAndClaimsAdjustmentExpenseReserve",
+            "unit": "usd",
+            "label": "Increase (decrease) in reserve for losses and loss adjustment expenses",
+            "value": 2256000000
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInUnearnedPremiums",
+            "unit": "usd",
+            "label": "Increase (decrease) in unearned premiums",
+            "value": 1387000000
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInReinsurancePayables",
+            "unit": "usd",
+            "label": "Increase (decrease) in amounts due to reinsurers",
+            "value": 18000000
+          },
+          {
+            "concept": "eg_IncreaseDecreaseInLossesInCourseOfPayment",
+            "unit": "usd",
+            "label": "Increase (decrease) in losses in course of payment",
+            "value": 93000000
+          },
+          {
+            "concept": "eg_ChangeInEquityAdjustmentsInLimitedPartnerships",
+            "unit": "usd",
+            "label": "Change in equity adjustments in limited partnerships",
+            "value": 168000000
+          },
+          {
+            "concept": "us-gaap_ReimbursementFromLimitedPartnershipInvestment",
+            "unit": "usd",
+            "label": "Distribution of limited partnership income",
+            "value": 120000000
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInOtherOperatingCapitalNet",
+            "unit": "usd",
+            "label": "Change in other assets and liabilities, net",
+            "value": 339000000
+          },
+          {
+            "concept": "us-gaap_ShareBasedCompensation",
+            "unit": "usd",
+            "label": "Non-cash compensation expense",
+            "value": 49000000
+          },
+          {
+            "concept": "us-gaap_AmortizationOfDebtDiscountPremium",
+            "unit": "usd",
+            "label": "Amortization of bond premium (accrual of bond discount)",
+            "value": -64000000
+          },
+          {
+            "concept": "us-gaap_NetCashProvidedByUsedInOperatingActivities",
+            "unit": "usd",
+            "label": "Net cash provided by (used in) operating activities",
+            "value": 4553000000
+          },
+          {
+            "concept": "us-gaap_ProceedsFromMaturitiesPrepaymentsAndCallsOfAvailableForSaleSecurities",
+            "unit": "usd",
+            "label": "Proceeds from fixed maturities matured/called/repaid - available for sale",
+            "value": 2310000000
+          },
+          {
+            "concept": "us-gaap_ProceedsFromSaleOfAvailableForSaleSecuritiesDebt",
+            "unit": "usd",
+            "label": "Proceeds from fixed maturities sold - available for sale",
+            "value": 3849000000.0
+          },
+          {
+            "concept": "us-gaap_ProceedsFromMaturitiesPrepaymentsAndCallsOfHeldToMaturitySecurities",
+            "unit": "usd",
+            "label": "Proceeds from fixed maturities matured/called/repaid - held to maturity",
+            "value": 105000000
+          },
+          {
+            "concept": "us-gaap_ProceedsFromSaleOfEquitySecuritiesFvNi",
+            "unit": "usd",
+            "label": "Proceeds from equity securities sold",
+            "value": 126000000.0
+          },
+          {
+            "concept": "us-gaap_ProceedsFromEquityMethodInvestmentDividendsOrDistributionsReturnOfCapital",
+            "unit": "usd",
+            "label": "Distributions from other invested assets",
+            "value": 245000000
+          },
+          {
+            "concept": "us-gaap_PaymentsToAcquireAvailableForSaleSecuritiesDebt",
+            "unit": "usd",
+            "label": "Cost of fixed maturities acquired - available for sale",
+            "value": 10653000000
+          },
+          {
+            "concept": "us-gaap_PaymentsToAcquireHeldToMaturitySecurities",
+            "unit": "usd",
+            "label": "Cost of fixed maturities acquired - held to maturity",
+            "value": 112000000
+          },
+          {
+            "concept": "us-gaap_PaymentsToAcquireEquitySecuritiesFvNi",
+            "unit": "usd",
+            "label": "Cost of equity securities acquired",
+            "value": 17000000
+          },
+          {
+            "concept": "us-gaap_PaymentsToAcquireInterestInSubsidiariesAndAffiliates",
+            "unit": "usd",
+            "label": "Cost of other invested assets acquired",
+            "value": 902000000
+          },
+          {
+            "concept": "us-gaap_PaymentsForProceedsFromShortTermInvestments",
+            "unit": "usd",
+            "label": "Net change in short-term investments",
+            "value": 1034000000
+          },
+          {
+            "concept": "eg_NetChangeInUnsettledSecuritiesTransactions",
+            "unit": "usd",
+            "label": "Net change in unsettled securities transactions",
+            "value": -181000000
+          },
+          {
+            "concept": "us-gaap_NetCashProvidedByUsedInInvestingActivities",
+            "unit": "usd",
+            "label": "Net cash provided by (used in) investing activities",
+            "value": -5902000000
+          },
+          {
+            "concept": "eg_PaymentsForProceedsFromSharesIssuedRedeemedForShareBasedCompensationNetOfExpense",
+            "unit": "usd",
+            "label": "Common shares issued (redeemed) during the period for share-based compensation, net of expense",
+            "value": 23000000
+          },
+          {
+            "concept": "us-gaap_ProceedsFromIssuanceOfCommonStock",
+            "unit": "usd",
+            "label": "Proceeds from public offering of common shares",
+            "value": 1445000000
+          },
+          {
+            "concept": "us-gaap_PaymentsForRepurchaseOfCommonStock",
+            "unit": "usd",
+            "label": "Purchase of treasury shares",
+            "value": 0
+          },
+          {
+            "concept": "us-gaap_PaymentsOfDividendsCommonStock",
+            "unit": "usd",
+            "label": "Dividends paid to shareholders",
+            "value": 288000000
+          },
+          {
+            "concept": "us-gaap_ProceedsFromIssuanceOfSeniorLongTermDebt",
+            "unit": "usd",
+            "label": "Proceeds from issuance of senior notes",
+            "value": 0
+          },
+          {
+            "concept": "us-gaap_RepaymentsOfDebt",
+            "unit": "usd",
+            "label": "Cost of debt repurchase",
+            "value": 0
+          },
+          {
+            "concept": "eg_ProceedsFromPaymentsForFHLBankAdvance",
+            "unit": "usd",
+            "label": "Net FHLB borrowings (repayments)",
+            "value": 300000000
+          },
+          {
+            "concept": "us-gaap_PaymentsRelatedToTaxWithholdingForShareBasedCompensation",
+            "unit": "usd",
+            "label": "Cost of shares withheld on settlements of share-based compensation awards",
+            "value": 24000000
+          },
+          {
+            "concept": "us-gaap_NetCashProvidedByUsedInFinancingActivities",
+            "unit": "usd",
+            "label": "Net cash provided by (used in) financing activities",
+            "value": 1409000000
+          },
+          {
+            "concept": "us-gaap_EffectOfExchangeRateOnCashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents",
+            "unit": "usd",
+            "label": "EFFECT OF EXCHANGE RATE CHANGES ON CASH",
+            "value": -23000000
+          },
+          {
+            "concept": "us-gaap_CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseIncludingExchangeRateEffect",
+            "unit": "usd",
+            "label": "Net increase (decrease) in cash",
+            "value": 38000000
+          },
+          {
+            "concept": "us-gaap_IncomeTaxesPaidNet",
+            "unit": "usd",
+            "label": "Income taxes paid (recovered)",
+            "value": 196000000
+          },
+          {
+            "concept": "us-gaap_InterestPaidNet",
+            "unit": "usd",
+            "label": "Interest paid",
+            "value": 130000000
+          },
+          {
+            "concept": "eg_ReclassificationOfInvestmentsFixedMaturityAvailableForSaleAtFairValueToFixedMaturityHeldToMaturityAtAmortizedCostNetOfCreditAllowances",
+            "unit": "usd",
+            "label": "Reclassification of specific investments from fixed maturity securities, available for sale at fair value to fixed maturity securities, held to maturity at amortized cost net of credit allowances",
+            "value": 0
+          }
+        ]
+      }
+    }
+  ],
+  "symbol": "EG",
+  "_ticker": "EG",
+  "_downloaded_at": "2026-03-20T10:19:38.834309"
+}

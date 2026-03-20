@@ -184,6 +184,7 @@ def run_walkforward_pipeline(
     top_n_stocks: int = 10,
     random_seed: int = 42,
     spy_prices: Optional[pd.Series] = None,
+    days_before_quarter_start: int = 0,
 ) -> Dict:
     backtester = WalkForwardBacktester(
         train_years=walkforward_train_years,
@@ -261,13 +262,16 @@ def run_walkforward_pipeline(
             preds_df["date"] = preds_df.index.get_level_values("date")
             preds_df = preds_df.reset_index(drop=True)
 
+            offset = pd.Timedelta(days=days_before_quarter_start)
+            entry_date = train_end - offset
+            exit_date  = test_end  - offset
             fold_result = backtester.simulate_portfolio(
                 predictions_df=preds_df.rename(columns={"final_score": "score"}),
                 prices_dict=prices_dict,
                 benchmark=benchmark,
                 fold_id=fold_id,
-                test_start=train_end,
-                test_end=test_end,
+                test_start=entry_date,
+                test_end=exit_date,
                 train_start=train_start,
                 train_years_int=_train_years,
             )
