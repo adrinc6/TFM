@@ -34,7 +34,6 @@ try:
     from sklearn.ensemble import GradientBoostingClassifier
     from sklearn.pipeline import Pipeline
     from sklearn.preprocessing import StandardScaler
-    from sklearn.calibration import CalibratedClassifierCV
     from sklearn.metrics import (roc_auc_score, accuracy_score,
                                   f1_score, precision_score, recall_score,
                                   confusion_matrix, classification_report)
@@ -47,11 +46,12 @@ AGENT_SCORE_COLS = [
     "fundamental_score",
     "valuation_score",
     "momentum_score",
-    "bear_score",        # Se usará como (1 - bear_score) en la capa de reglas
-    "sentiment_score",   # Nuevo: consenso analistas + insiders + beat rate
+    "bear_score",        # Se usará como (1 - bear_score) en _prepare
+    "sentiment_score",   # Consenso analistas + insiders + beat rate
+    "sector_score",      # Top-down: probabilidad de que el sector supere al S&P
 ]
 
-MACRO_COLS = ["vix", "yield_curve", "sp500_momentum_3m", "sp500_momentum_12m"]
+MACRO_COLS: list = []  # Macro eliminada: es igual para todos los tickers y enmascara señales de stock picking
 
 
 class MetaLearner(BaseAgent):
@@ -93,7 +93,7 @@ class MetaLearner(BaseAgent):
         X: DataFrame con columnas de scores de agentes + macro + sector
         y: 1=Outperform, 0=Underperform
         """
-        log.info(f"[MetaLearner] Entrenando — {len(X)} muestras")
+        log.info(f"[MetaLearner] Entrenando stacking (LR + GBM) sobre scores OOF — {len(X)} obs")
         min_len = min(len(X), len(y))
         X = X.iloc[:min_len].copy()
         y = y.iloc[:min_len].copy()
@@ -103,7 +103,7 @@ class MetaLearner(BaseAgent):
         y_cl         = y_cl.reset_index(drop=True)
         self._feature_cols = list(X_prep.columns)
         bal          = self.class_balance(y_cl)
-        log.info(f"[MetaLearner] {bal['n_positive']} Outperform / {bal['n_negative']} Underperform")
+        log.info(f"[MetaLearner] Balance: {bal['n_positive']} Outperform / {bal['n_negative']} Underperform ({bal['n_positive']/(bal['n_positive']+bal['n_negative']):.1%} positivos)")
 
         # ── Logistic Regression (interpretable)
         self._lr_model = Pipeline([
@@ -117,14 +117,12 @@ class MetaLearner(BaseAgent):
         # ── GBM (captura interacciones)
         self._gbm_model = Pipeline([
             ("scaler", StandardScaler()),
-            ("clf",    CalibratedClassifierCV(
-                GradientBoostingClassifier(
-                    n_estimators=META_GBM_N_ESTIMATORS,
-                    max_depth=META_GBM_MAX_DEPTH,
-                    learning_rate=META_GBM_LEARNING_RATE,
-                    subsample=META_GBM_SUBSAMPLE,
-                    random_state=self.random_seed,
-                ), method="sigmoid", cv=5,
+            ("clf",    GradientBoostingClassifier(
+                n_estimators=META_GBM_N_ESTIMATORS,
+                max_depth=META_GBM_MAX_DEPTH,
+                learning_rate=META_GBM_LEARNING_RATE,
+                subsample=META_GBM_SUBSAMPLE,
+                random_state=self.random_seed,
             )),
         ])
 
@@ -135,8 +133,7 @@ class MetaLearner(BaseAgent):
         total   = auc_lr + auc_gbm
         self._lr_weight  = auc_lr  / total if total > 0 else 0.5
         self._gbm_weight = auc_gbm / total if total > 0 else 0.5
-        log.info(f"[MetaLearner] LR AUC={auc_lr:.4f}, GBM AUC={auc_gbm:.4f} "
-                 f"→ pesos {self._lr_weight:.2f}/{self._gbm_weight:.2f}")
+        log.info(f"[MetaLearner] CV — LR AUC={auc_lr:.4f}, GBM AUC={auc_gbm:.4f}  → ensemble pesos LR={self._lr_weight:.2f} / GBM={self._gbm_weight:.2f}")
 
         # Entrenamiento final
         self._lr_model.fit(X_prep, y_cl)
@@ -148,7 +145,7 @@ class MetaLearner(BaseAgent):
             self._lr_model.named_steps["clf"].coef_[0],
             index=self._feature_cols,
         )
-        gbm_fitted = self._gbm_model.named_steps["clf"].calibrated_classifiers_[0].estimator
+        gbm_fitted = self._gbm_model.named_steps["clf"]
         gbm_imp = pd.Series(gbm_fitted.feature_importances_, index=self._feature_cols)
         self.save_feature_importances(gbm_imp, fold)
 
@@ -167,7 +164,7 @@ class MetaLearner(BaseAgent):
         self._save_lr_report(lr_coef, fold)
 
         # Explicabilidad SHAP (sobre el GBM, más informativo que LR)
-        gbm_model = self._gbm_model.named_steps["clf"].calibrated_classifiers_[0].estimator
+        gbm_model = self._gbm_model.named_steps["clf"]
         self._explainer = build_explainer_for_agent(
             self.name, gbm_model, self._feature_cols,
             X_prep, self.results_dir.parent.as_posix(), fold, model_type="tree"
@@ -219,8 +216,11 @@ class MetaLearner(BaseAgent):
 
         cm = confusion_matrix(y_al, preds)
         report = classification_report(y_al, preds, target_names=["Underperform","Outperform"])
-        log.info(f"[MetaLearner] fold={fold} | AUC={metrics.get('roc_auc',0):.4f} "
-                 f"Acc={metrics['accuracy']:.4f} F1={metrics['f1']:.4f}")
+        log.info(
+            f"[MetaLearner] Evaluación fold {fold} — "
+            f"AUC={metrics.get('roc_auc',0):.4f}  Acc={metrics['accuracy']:.4f}  "
+            f"Prec={metrics['precision']:.4f}  Recall={metrics['recall']:.4f}  F1={metrics['f1']:.4f}"
+        )
         log.info(f"\n{report}")
 
         # Guardar reporte
@@ -237,7 +237,10 @@ class MetaLearner(BaseAgent):
     # ── Helpers ───────────────────────────────────────────────────────────────
 
     def _prepare(self, X: pd.DataFrame, sector_col: str, fit_mode: bool) -> pd.DataFrame:
-        df       = X.copy()
+        df = X.copy()
+        # bear_score invertido: alto bear = alto riesgo = queremos bajo input para el MetaLearner
+        if "bear_score" in df.columns:
+            df["bear_score"] = 1.0 - df["bear_score"]
         selected = [c for c in AGENT_SCORE_COLS if c in df.columns]
 
         # Macro features
@@ -257,19 +260,38 @@ class MetaLearner(BaseAgent):
             df = pd.concat([df, dummies], axis=1)
             selected += self._sector_cols
 
+        # Ranking percentil del final_score dentro del sector (posición relativa)
+        # Captura si el ticker está en el cuartil alto de su sector, no del universo completo
+        if sector_col in df.columns:
+            for score_col in ["fundamental_score", "valuation_score", "momentum_score", "sentiment_score"]:
+                if score_col in df.columns:
+                    rank_col = f"{score_col}_sector_rank"
+                    df[rank_col] = df.groupby(df[sector_col])[score_col].rank(pct=True)
+                    selected.append(rank_col)
+
         # Features de interacción entre agentes
         if "fundamental_score" in df.columns and "valuation_score" in df.columns:
             df["fund_x_val"] = df["fundamental_score"] * df["valuation_score"]
             selected.append("fund_x_val")
+        # mom_x_safety: alto cuando momentum es alto Y riesgo es bajo.
+        # bear_score ya está invertido (= safety score) así que el producto es correcto.
         if "momentum_score" in df.columns and "bear_score" in df.columns:
-            df["mom_minus_bear"] = df["momentum_score"] - df["bear_score"]
-            selected.append("mom_minus_bear")
+            df["mom_x_safety"] = df["momentum_score"] * df["bear_score"]
+            selected.append("mom_x_safety")
         if "sentiment_score" in df.columns and "fundamental_score" in df.columns:
             df["fund_x_sentiment"] = df["fundamental_score"] * df["sentiment_score"]
             selected.append("fund_x_sentiment")
         if "sentiment_score" in df.columns and "momentum_score" in df.columns:
             df["mom_x_sentiment"] = df["momentum_score"] * df["sentiment_score"]
             selected.append("mom_x_sentiment")
+
+        # Interacción sector × stock: ticker fuerte en sector fuerte = señal potente
+        if "sector_score" in df.columns and "fundamental_score" in df.columns:
+            df["sector_x_fundamental"] = df["sector_score"] * df["fundamental_score"]
+            selected.append("sector_x_fundamental")
+        if "sector_score" in df.columns and "momentum_score" in df.columns:
+            df["sector_x_momentum"] = df["sector_score"] * df["momentum_score"]
+            selected.append("sector_x_momentum")
 
         selected = list(dict.fromkeys(selected))
         result   = df[[c for c in selected if c in df.columns]].copy()

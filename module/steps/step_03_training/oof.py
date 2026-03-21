@@ -30,16 +30,20 @@ def generate_oof_scores(
     kf = TimeSeriesSplit(n_splits=n_splits)
     oof: Dict[str, pd.Series] = {}
 
+    import logging as _logging
+    _log = _logging.getLogger(__name__)
+
     for ag_name, cfg in agents_config.items():
         score_col = f"{ag_name}_score"
         oof_vals = pd.Series(np.nan, index=X.index, name=score_col)
+        _log.info(f"  [OOF] {ag_name}: generando scores anti-leakage ({n_splits} splits temporales)")
 
         for fold_tr, fold_val in kf.split(X):
             X_tr = X.iloc[fold_tr]
             X_val = X.iloc[fold_val]
             y_tr = y.iloc[fold_tr]
 
-            agent = cfg["cls"](**cfg["kwargs"])
+            agent = cfg["cls"](**cfg["kwargs"], save_artifacts=False)
             y_fit = (1 - y_tr) if cfg.get("invert_y") else y_tr
 
             try:

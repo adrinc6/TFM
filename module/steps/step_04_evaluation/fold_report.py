@@ -93,7 +93,8 @@ def _agent_text_label(agent: str, score: float) -> str:
 AGENT_KEY_FEATURES: Dict[str, List[str]] = {
     "fundamental": [
         "roe", "net_margin", "revenue_yoy_growth", "debt_to_ebitda",
-        "interest_coverage", "fcf_margin", "consecutive_losses",
+        "interest_coverage", "fcf_margin", "piotroski_fscore",
+        "earnings_quality", "consecutive_losses",
     ],
     "valuation": [
         "pe_ratio", "pb_ratio", "ev_to_ebitda", "fcf_yield",
@@ -227,7 +228,7 @@ def build_fold_scores_df(
     """
     score_cols = [
         "fundamental_score", "valuation_score", "momentum_score",
-        "bear_score", "sentiment_score", "final_score",
+        "bear_score", "sentiment_score", "sector_score", "final_score",
     ]
 
     tickers_index = df_test_scored.index.get_level_values("ticker")
@@ -240,7 +241,7 @@ def build_fold_scores_df(
     # Mapa de auditoría
     audit_map: Dict[str, Dict] = {}
     if audit_df is not None and not audit_df.empty and "ticker" in audit_df.columns:
-        audit_map = audit_df.set_index("ticker").to_dict(orient="index")
+        audit_map = audit_df.drop_duplicates(subset="ticker").set_index("ticker").to_dict(orient="index")
 
     records: List[Dict] = []
 
@@ -258,6 +259,7 @@ def build_fold_scores_df(
 
             # --- Predicción ---
             "final_score":      round(final_score, 4),
+            "final_score_raw":  round(float(row.get("final_score_raw", final_score)), 4),
             "prediccion":       "Outperform" if final_score >= 0.5 else "Underperform",
             "confianza":        "Alta" if abs(final_score - 0.5) > 0.25 else "Moderada",
 
@@ -266,6 +268,8 @@ def build_fold_scores_df(
             "rank":             audit.get("rank", None),
             "selection_reason": audit.get("selection_reason", "unknown"),
             "portfolio_weight": round(ticker_weights[ticker], 4) if ticker_weights and ticker in ticker_weights else None,
+            "sector_peer_count": int(row.get("sector_peer_count", 0)) if pd.notna(row.get("sector_peer_count", None)) else None,
+            "sector_confidence": round(float(row.get("sector_confidence", 1.0)), 4),
         }
 
         # --- Scores por agente + texto interpretativo ---
@@ -279,7 +283,10 @@ def build_fold_scores_df(
         for ag_name, agent in agents.items():
             if ag_name == "meta_learner":
                 continue
-            ag_score = float(row.get(f"{ag_name}_score", 0.5))
+            if ag_name == "sector_rotation":
+                ag_score = float(row.get("sector_score", 0.5))
+            else:
+                ag_score = float(row.get(f"{ag_name}_score", 0.5))
 
             # Intentar obtener SHAP drivers del explainer del agente
             shap_drivers = None
@@ -348,7 +355,7 @@ def export_fold_scores(
     out_dir.mkdir(parents=True, exist_ok=True)
     path = out_dir / f"fold_{fold_id}_scores.csv"
     df.to_csv(path, index=False, encoding="utf-8")
-    log.info(f"[FoldReport] Fold {fold_id}: {len(df)} tickers → {path.name}")
+    log.info(f"[FoldReport] Fold {fold_id}: scores de {len(df)} tickers guardados → {path.name}")
     return path
 
 
@@ -379,8 +386,9 @@ def export_all_folds_scores(
     path = out_dir / "all_folds_scores.csv"
     combined.to_csv(path, index=False, encoding="utf-8")
     log.info(
-        f"[FoldReport] CSV consolidado: {len(combined)} filas, "
-        f"{combined['year_quarter'].nunique()} quarters, "
+        f"[FoldReport] CSV consolidado de todos los folds: "
+        f"{len(combined)} filas | "
+        f"{combined['year_quarter'].nunique()} quarters | "
         f"{combined['ticker'].nunique()} tickers únicos → {path.name}"
     )
     return path

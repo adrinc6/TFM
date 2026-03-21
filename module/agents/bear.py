@@ -37,7 +37,7 @@ from module.agents.base import BaseAgent, FeatureSelector
 from module.steps.step_04_evaluation.explainability import build_explainer_for_agent, AgentExplainer
 from environment import (
     BEAR_N_ESTIMATORS, BEAR_MAX_DEPTH,
-    BEAR_RULE_WEIGHT, BEAR_ML_WEIGHT, FEATURE_CORR_THRESHOLD, FEATURE_TOP_N,
+    BEAR_RULE_WEIGHT, BEAR_ML_WEIGHT, FEATURE_CORR_THRESHOLD, BEAR_FEATURE_TOP_N,
 )
 
 log = logging.getLogger(__name__)
@@ -46,7 +46,6 @@ try:
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.pipeline import Pipeline
     from sklearn.preprocessing import StandardScaler
-    from sklearn.calibration import CalibratedClassifierCV
     from sklearn.metrics import roc_auc_score, accuracy_score, f1_score
     from sklearn.model_selection import TimeSeriesSplit
     _DEPS_OK = True
@@ -117,8 +116,9 @@ class BearAgent(BaseAgent):
 
     def __init__(self, results_dir: str, random_seed: int = 42,
                  n_estimators: int = BEAR_N_ESTIMATORS,
-                 max_depth: int = BEAR_MAX_DEPTH):
-        super().__init__("bear", results_dir, random_seed)
+                 max_depth: int = BEAR_MAX_DEPTH,
+                 save_artifacts: bool = True):
+        super().__init__("bear", results_dir, random_seed, save_artifacts)
         if not _DEPS_OK:
             raise ImportError("scikit-learn requerido.")
         self.n_estimators = n_estimators
@@ -136,7 +136,7 @@ class BearAgent(BaseAgent):
         y aquí es el label INVERTIDO: 1 = Underperform (evento de riesgo).
         El pipeline principal se encarga de invertir y antes de llamar a fit.
         """
-        log.info(f"[BearAgent] Entrenando — {len(X)} muestras")
+        log.info(f"[BearAgent] Entrenando RandomForest (detección de riesgo) — {len(X)} obs")
         min_len = min(len(X), len(y))
         X = X.iloc[:min_len].copy()
         y = y.iloc[:min_len].copy()
@@ -148,7 +148,7 @@ class BearAgent(BaseAgent):
 
         # Selección de features: solo con datos de train (sin leakage)
         # BearAgent usa todas sus features (pocas), top_n >= nº flags+base
-        self._selector = FeatureSelector(corr_threshold=FEATURE_CORR_THRESHOLD, top_n=FEATURE_TOP_N,
+        self._selector = FeatureSelector(corr_threshold=FEATURE_CORR_THRESHOLD, top_n=BEAR_FEATURE_TOP_N,
                                          min_features=5, random_seed=self.random_seed)
         X_prep = self._selector.fit_transform(X_prep, y_cl, agent_name="bear")
 
@@ -161,16 +161,15 @@ class BearAgent(BaseAgent):
         )
         self._model = Pipeline([
             ("scaler", StandardScaler()),
-            ("clf",    CalibratedClassifierCV(rf, method="sigmoid", cv=5)),
+            ("clf",    rf),
         ])
 
         cv = self._cv(X_prep, y_cl)
-        log.info(f"[BearAgent] CV AUC={cv['mean_auc']:.4f} ± {cv['std_auc']:.4f}")
+        log.info(f"[BearAgent] CV AUC={cv['mean_auc']:.4f} ± {cv['std_auc']:.4f}  ({len(self._feature_cols)} features seleccionadas)")
         self._model.fit(X_prep, y_cl)
         self.is_trained = True
 
-        rf_fitted = self._model.named_steps["clf"].calibrated_classifiers_[0].estimator
-        imp = pd.Series(rf_fitted.feature_importances_, index=self._feature_cols)
+        imp = pd.Series(self._model.named_steps["clf"].feature_importances_, index=self._feature_cols)
         self.save_feature_importances(imp, fold)
 
         flag_stats = self._flag_statistics(X)
@@ -190,7 +189,7 @@ class BearAgent(BaseAgent):
         self.save_diagnostics(fold)
         self._save_flag_report(flag_stats, fold)
 
-        rf_model = self._model.named_steps["clf"].calibrated_classifiers_[0].estimator
+        rf_model = self._model.named_steps["clf"]
         self._explainer = build_explainer_for_agent(
             self.name, rf_model, self._feature_cols,
             X_prep, self.results_dir.parent.as_posix(), fold, model_type="tree"

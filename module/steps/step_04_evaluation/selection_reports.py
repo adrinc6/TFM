@@ -281,12 +281,20 @@ def export_ticker_explanations(
         for ag_name, ag in agents.items():
             explainer = getattr(ag, "_explainer", None)
             agent_score = common_score
-            agent_score_col = f"{ag_name}_score"
+            # sector_rotation stores its score in "sector_score", not "sector_rotation_score"
+            if ag_name == "sector_rotation":
+                agent_score_col = "sector_score"
+            else:
+                agent_score_col = f"{ag_name}_score"
             if agent_score_col in df_test.columns:
                 try:
                     agent_score = float(row[agent_score_col])
                 except Exception:
                     agent_score = common_score
+            if ag_name == "sector_rotation" and (pd.isna(agent_score) or agent_score_col not in df_test.columns):
+                audit_sector_score = audit_row.get("sector_score")
+                if audit_sector_score is not None and not pd.isna(audit_sector_score):
+                    agent_score = float(audit_sector_score)
             agent_label = _score_label(agent_score)
 
             flat_row = {

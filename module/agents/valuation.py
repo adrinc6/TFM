@@ -20,7 +20,7 @@ from module.agents.base import BaseAgent, FeatureSelector
 from module.steps.step_04_evaluation.explainability import build_explainer_for_agent, AgentExplainer
 from environment import (
     VALUATION_N_ESTIMATORS, VALUATION_MAX_DEPTH, VALUATION_LEARNING_RATE,
-    VALUATION_SUBSAMPLE, FEATURE_CORR_THRESHOLD, FEATURE_TOP_N,
+    VALUATION_SUBSAMPLE, FEATURE_CORR_THRESHOLD, VALUATION_FEATURE_TOP_N,
 )
 
 log = logging.getLogger(__name__)
@@ -29,7 +29,6 @@ try:
     from sklearn.ensemble import GradientBoostingClassifier
     from sklearn.pipeline import Pipeline
     from sklearn.preprocessing import StandardScaler
-    from sklearn.calibration import CalibratedClassifierCV
     from sklearn.metrics import roc_auc_score, accuracy_score, f1_score
     from sklearn.model_selection import TimeSeriesSplit
     _DEPS_OK = True
@@ -66,8 +65,9 @@ class ValuationAgent(BaseAgent):
                  n_estimators: int = VALUATION_N_ESTIMATORS,
                  max_depth: int = VALUATION_MAX_DEPTH,
                  learning_rate: float = VALUATION_LEARNING_RATE,
-                 subsample: float = VALUATION_SUBSAMPLE):
-        super().__init__("valuation", results_dir, random_seed)
+                 subsample: float = VALUATION_SUBSAMPLE,
+                 save_artifacts: bool = True):
+        super().__init__("valuation", results_dir, random_seed, save_artifacts)
         if not _DEPS_OK:
             raise ImportError("scikit-learn requerido.")
         self.n_estimators  = n_estimators
@@ -84,7 +84,7 @@ class ValuationAgent(BaseAgent):
 
     def fit(self, X: pd.DataFrame, y: pd.Series,
             fold: Optional[int] = None, sector_col: str = "sector") -> "ValuationAgent":
-        log.info(f"[ValuationAgent] Entrenando — {len(X)} muestras")
+        log.info(f"[ValuationAgent] Entrenando GBM — {len(X)} obs, {len(X.columns)} features")
         min_len = min(len(X), len(y))
         X = X.iloc[:min_len].copy()
         y = y.iloc[:min_len].copy()
@@ -94,8 +94,8 @@ class ValuationAgent(BaseAgent):
         y_cl         = y_cl.reset_index(drop=True)
 
         # Selección de features: solo con datos de train (sin leakage)
-        self._selector = FeatureSelector(corr_threshold=FEATURE_CORR_THRESHOLD, top_n=FEATURE_TOP_N,
-                                         min_features=6, random_seed=self.random_seed)
+        self._selector = FeatureSelector(corr_threshold=FEATURE_CORR_THRESHOLD, top_n=VALUATION_FEATURE_TOP_N,
+                                         min_features=3, random_seed=self.random_seed)
         X_prep = self._selector.fit_transform(X_prep, y_cl, agent_name="valuation")
 
         self._feature_cols = list(X_prep.columns)
@@ -108,16 +108,15 @@ class ValuationAgent(BaseAgent):
         )
         self._model = Pipeline([
             ("scaler", StandardScaler()),
-            ("clf",    CalibratedClassifierCV(gbc, method="sigmoid", cv=5)),
+            ("clf",    gbc),
         ])
 
         cv = self._cv(X_prep, y_cl)
-        log.info(f"[ValuationAgent] CV AUC={cv['mean_auc']:.4f} ± {cv['std_auc']:.4f}")
+        log.info(f"[ValuationAgent] CV AUC={cv['mean_auc']:.4f} ± {cv['std_auc']:.4f}  ({len(self._feature_cols)} features seleccionadas)")
         self._model.fit(X_prep, y_cl)
         self.is_trained = True
 
-        gbc_fitted = self._model.named_steps["clf"].calibrated_classifiers_[0].estimator
-        imp = pd.Series(gbc_fitted.feature_importances_, index=self._feature_cols)
+        imp = pd.Series(self._model.named_steps["clf"].feature_importances_, index=self._feature_cols)
         self.save_feature_importances(imp, fold)
 
         # Guardar distribución de múltiplos por sector para análisis
@@ -130,6 +129,11 @@ class ValuationAgent(BaseAgent):
         }
         self.record_train_metrics(cv, fold)
         self.save_diagnostics(fold)
+        xgb_model = self._model.named_steps["clf"]
+        self._explainer = build_explainer_for_agent(
+            self.name, xgb_model, self._feature_cols,
+            X_prep, self.results_dir.parent.as_posix(), fold, model_type="tree"
+        )
         return self
 
     # ── Predict ───────────────────────────────────────────────────────────────

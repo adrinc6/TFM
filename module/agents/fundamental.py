@@ -24,14 +24,13 @@ from module.steps.step_04_evaluation.explainability import build_explainer_for_a
 from environment import (
     FUNDAMENTAL_N_ESTIMATORS, FUNDAMENTAL_MAX_DEPTH, FUNDAMENTAL_LEARNING_RATE,
     FUNDAMENTAL_SUBSAMPLE, FUNDAMENTAL_COLSAMPLE, FUNDAMENTAL_MIN_CHILD_WEIGHT,
-    FEATURE_CORR_THRESHOLD, FEATURE_TOP_N,
+    FEATURE_CORR_THRESHOLD, FUNDAMENTAL_FEATURE_TOP_N,
 )
 
 log = logging.getLogger(__name__)
 
 try:
     import xgboost as xgb
-    from sklearn.calibration import CalibratedClassifierCV
     from sklearn.metrics import roc_auc_score, accuracy_score, f1_score
     from sklearn.model_selection import TimeSeriesSplit
     _DEPS_OK = True
@@ -52,11 +51,25 @@ FEATURE_COLS = [
     # Crecimiento YoY (calculado en FundamentalFeatureBuilder._yoy_growth)
     "revenue_yoy_growth", "net_income_yoy_growth", "eps_yoy_growth",
     "fcf_yoy_growth", "operating_income_yoy_growth", "total_debt_yoy_growth",
+    # Cambios YoY de ratios (tendencia de calidad)
+    "roa_change_yoy", "gross_margin_change_yoy", "current_ratio_change_yoy",
     # Calidad contable / eficiencia
     "accruals_ratio", "capex_to_revenue", "consecutive_losses",
+    # earnings_quality = FCF / Net Income: alto → beneficios respaldados por caja real.
+    # Bajo o negativo → beneficios contables inflados (accruals). Señal de calidad.
+    "earnings_quality",
+    # Piotroski F-score: composite de 8 señales binarias de calidad financiera.
+    # Validado académicamente como predictor de rendimiento a largo plazo.
+    # Rango [0,1]: 1 = empresa financieramente sana en todas las dimensiones.
+    "piotroski_fscore",
     # EPS (base para cálculo de P/E en ValuationAgent)
     "eps",
-    # Nota: las columnas _zsector y sector_* las añade _prepare dinámicamente.
+    # Tendencias de mejora/deterioro de calidad a 2-3 años (slope normalizado).
+    # Capturan si la empresa está mejorando estructuralmente, no solo el nivel actual.
+    "roe_trend_2y", "roe_trend_3y",
+    "net_margin_trend_2y", "net_margin_trend_3y",
+    "gross_margin_trend_3y",
+    # Nota: las columnas _zsector las añade _prepare dinámicamente.
 ]
 
 
@@ -76,8 +89,9 @@ class FundamentalAgent(BaseAgent):
                  learning_rate: float = FUNDAMENTAL_LEARNING_RATE,
                  subsample: float = FUNDAMENTAL_SUBSAMPLE,
                  colsample_bytree: float = FUNDAMENTAL_COLSAMPLE,
-                 min_child_weight: int = FUNDAMENTAL_MIN_CHILD_WEIGHT):
-        super().__init__("fundamental", results_dir, random_seed)
+                 min_child_weight: int = FUNDAMENTAL_MIN_CHILD_WEIGHT,
+                 save_artifacts: bool = True):
+        super().__init__("fundamental", results_dir, random_seed, save_artifacts)
         if not _DEPS_OK:
             raise ImportError("xgboost y scikit-learn requeridos.")
         self.n_estimators     = n_estimators
@@ -86,17 +100,16 @@ class FundamentalAgent(BaseAgent):
         self.subsample        = subsample
         self.colsample_bytree = colsample_bytree
         self.min_child_weight = min_child_weight
-        self._model:          Optional[CalibratedClassifierCV] = None
-        self._feature_cols:   List[str] = []
-        self._sector_dummies: List[str] = []
-        self._selector:       Optional[FeatureSelector] = None
-        self._explainer:      Optional[AgentExplainer] = None
+        self._model = None
+        self._feature_cols: List[str] = []
+        self._selector:     Optional[FeatureSelector] = None
+        self._explainer:    Optional[AgentExplainer] = None
 
     # ── Fit ───────────────────────────────────────────────────────────────────
 
     def fit(self, X: pd.DataFrame, y: pd.Series,
             fold: Optional[int] = None, sector_col: str = "sector") -> "FundamentalAgent":
-        log.info(f"[FundamentalAgent] Entrenando — {len(X)} muestras")
+        log.info(f"[FundamentalAgent] Entrenando XGBoost — {len(X)} obs, {len(X.columns)} features")
         # Alinear X e y por posición antes de cualquier procesado
         min_len = min(len(X), len(y))
         X = X.iloc[:min_len].copy()
@@ -107,8 +120,8 @@ class FundamentalAgent(BaseAgent):
         y_cl         = y_cl.reset_index(drop=True)
 
         # Selección de features: solo con datos de train (sin leakage)
-        self._selector = FeatureSelector(corr_threshold=FEATURE_CORR_THRESHOLD, top_n=FEATURE_TOP_N,
-                                         min_features=8, random_seed=self.random_seed)
+        self._selector = FeatureSelector(corr_threshold=FEATURE_CORR_THRESHOLD, top_n=FUNDAMENTAL_FEATURE_TOP_N,
+                                         min_features=3, random_seed=self.random_seed)
         X_prep = self._selector.fit_transform(X_prep, y_cl, agent_name="fundamental")
 
         self._feature_cols = list(X_prep.columns)
@@ -122,19 +135,16 @@ class FundamentalAgent(BaseAgent):
             scale_pos_weight=spw, eval_metric="auc",
             random_state=self.random_seed, n_jobs=-1, tree_method="hist",
         )
-        self._model = CalibratedClassifierCV(base, method="isotonic", cv=5)
+        self._model = base
 
         cv = self._cv(X_prep, y_cl, spw)
-        log.info(f"[FundamentalAgent] CV AUC={cv['mean_auc']:.4f} ± {cv['std_auc']:.4f}")
+        log.info(f"[FundamentalAgent] CV AUC={cv['mean_auc']:.4f} ± {cv['std_auc']:.4f}  ({len(self._feature_cols)} features seleccionadas)")
 
         self._model.fit(X_prep, y_cl)
         self.is_trained = True
 
-        # Feature importances del estimador XGB subyacente
-        imp = pd.Series(
-            self._model.calibrated_classifiers_[0].estimator.feature_importances_,
-            index=self._feature_cols,
-        )
+        # Feature importances del estimador XGB
+        imp = pd.Series(self._model.feature_importances_, index=self._feature_cols)
         self.save_feature_importances(imp, fold)
 
         self._diagnostics = {
@@ -145,6 +155,10 @@ class FundamentalAgent(BaseAgent):
         }
         self.record_train_metrics(cv, fold)
         self.save_diagnostics(fold)
+        self._explainer = build_explainer_for_agent(
+            self.name, self._model, self._feature_cols,
+            X_prep, self.results_dir.parent.as_posix(), fold, model_type="tree"
+        )
         return self
 
     # ── Predict ───────────────────────────────────────────────────────────────
@@ -162,14 +176,12 @@ class FundamentalAgent(BaseAgent):
     # ── Helpers ───────────────────────────────────────────────────────────────
 
     def _prepare(self, X: pd.DataFrame, sector_col: str, fit_mode: bool) -> pd.DataFrame:
-        result = self._prepare_with_sector_dummies(
-            X=X,
-            feature_cols=FEATURE_COLS,
-            sector_col=sector_col,
-            fit_mode=fit_mode,
-            include_zsector=True,
-            dummies_attr="_sector_dummies",
-        )
+        # Solo columnas base + _zsector (calculadas por SectorNormalizer).
+        # Los dummies one-hot de sector se eliminaron: aprenden el nivel medio del
+        # sector, no la posición relativa del ticker — eso ya lo cubren los _zsector.
+        selected = [c for c in FEATURE_COLS if c in X.columns]
+        zsector_cols = [c for c in X.columns if c.endswith("_zsector")]
+        result = X[list(dict.fromkeys(selected + zsector_cols))].copy()
         if fit_mode:
             self._feature_cols = list(result.columns)
         return result

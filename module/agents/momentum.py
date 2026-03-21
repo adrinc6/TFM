@@ -25,7 +25,7 @@ from module.agents.base import BaseAgent, FeatureSelector
 from module.steps.step_04_evaluation.explainability import build_explainer_for_agent, AgentExplainer
 from environment import (
     MOMENTUM_N_ESTIMATORS, MOMENTUM_MAX_DEPTH, MOMENTUM_MIN_SAMPLES_LEAF,
-    FEATURE_CORR_THRESHOLD, FEATURE_TOP_N,
+    FEATURE_CORR_THRESHOLD, MOMENTUM_FEATURE_TOP_N,
 )
 
 log = logging.getLogger(__name__)
@@ -34,7 +34,6 @@ try:
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.pipeline import Pipeline
     from sklearn.preprocessing import StandardScaler
-    from sklearn.calibration import CalibratedClassifierCV
     from sklearn.metrics import roc_auc_score, accuracy_score, f1_score
     from sklearn.model_selection import TimeSeriesSplit
     _DEPS_OK = True
@@ -42,7 +41,7 @@ except ImportError:
     _DEPS_OK = False
 
 # Features base que consume este agente.
-# Fuente: TechnicalFeatureBuilder (OHLCV diario) + DataRouter.load_macro().
+# Fuente: TechnicalFeatureBuilder (OHLCV diario) + SentimentFeatureBuilder (EPS).
 # Columnas que falten (ej. atr_14 con pocos días) se rellenan con 0 en _align.
 FEATURE_COLS = [
     # Osciladores
@@ -61,17 +60,20 @@ FEATURE_COLS = [
     "volatility_20d", "volatility_60d", "atr_14",
     # Volumen relativo
     "vol_ratio_20_50",
-    # Macro context (DataRouter → macro_consolidated.csv)
-    "vix", "yield_curve", "sp500_momentum_3m", "sp500_momentum_12m",
+    # Earnings momentum: la señal de momentum más potente en la literatura académica.
+    # beat_rate_4q: % de trimestres en que el EPS superó la estimación (últimos 4Q).
+    # eps_surprise_avg_4q: sorpresa media de EPS en los últimos 4 trimestres.
+    # eps_revision: cambio reciente en las estimaciones de EPS de analistas.
+    # Estas features son momentum de beneficios, no sentimiento — aquí es su lugar.
+    "beat_rate_4q", "eps_surprise_avg_4q", "eps_revision",
     # Nota: rsi_overbought, rsi_oversold, above_sma200, macd_bullish,
-    # cross_sma_20_50, momentum_quality, vol_expansion, high_vix_regime,
-    # inverted_yield_curve se derivan en _prepare.
+    # cross_sma_20_50, momentum_quality, vol_expansion se derivan en _prepare.
 ]
 
 
 class MomentumAgent(BaseAgent):
     """
-    Random Forest calibrado sobre indicadores técnicos + macro.
+    Random Forest calibrado sobre indicadores técnicos y earnings momentum.
 
     Usa TimeSeriesSplit para la CV interna (respeta el orden temporal
     de los datos de precio, evitando leakage en la validación).
@@ -80,8 +82,9 @@ class MomentumAgent(BaseAgent):
     def __init__(self, results_dir: str, random_seed: int = 42,
                  n_estimators: int = MOMENTUM_N_ESTIMATORS,
                  max_depth: int = MOMENTUM_MAX_DEPTH,
-                 min_samples_leaf: int = MOMENTUM_MIN_SAMPLES_LEAF):
-        super().__init__("momentum", results_dir, random_seed)
+                 min_samples_leaf: int = MOMENTUM_MIN_SAMPLES_LEAF,
+                 save_artifacts: bool = True):
+        super().__init__("momentum", results_dir, random_seed, save_artifacts)
         if not _DEPS_OK:
             raise ImportError("scikit-learn requerido.")
         self.n_estimators     = n_estimators
@@ -96,7 +99,7 @@ class MomentumAgent(BaseAgent):
 
     def fit(self, X: pd.DataFrame, y: pd.Series,
             fold: Optional[int] = None) -> "MomentumAgent":
-        log.info(f"[MomentumAgent] Entrenando — {len(X)} muestras")
+        log.info(f"[MomentumAgent] Entrenando RandomForest — {len(X)} obs, {len(X.columns)} features")
         min_len = min(len(X), len(y))
         X = X.iloc[:min_len].copy()
         y = y.iloc[:min_len].copy()
@@ -106,8 +109,8 @@ class MomentumAgent(BaseAgent):
         y_cl         = y_cl.reset_index(drop=True)
 
         # Selección de features: solo con datos de train (sin leakage)
-        self._selector = FeatureSelector(corr_threshold=FEATURE_CORR_THRESHOLD, top_n=FEATURE_TOP_N,
-                                         min_features=8, random_seed=self.random_seed)
+        self._selector = FeatureSelector(corr_threshold=FEATURE_CORR_THRESHOLD, top_n=MOMENTUM_FEATURE_TOP_N,
+                                         min_features=3, random_seed=self.random_seed)
         X_prep = self._selector.fit_transform(X_prep, y_cl, agent_name="momentum")
 
         self._feature_cols = list(X_prep.columns)
@@ -120,16 +123,15 @@ class MomentumAgent(BaseAgent):
         )
         self._model = Pipeline([
             ("scaler", StandardScaler()),
-            ("clf",    CalibratedClassifierCV(rf, method="sigmoid", cv=5)),
+            ("clf",    rf),
         ])
 
         cv = self._cv(X_prep, y_cl)
-        log.info(f"[MomentumAgent] CV AUC={cv['mean_auc']:.4f} ± {cv['std_auc']:.4f}")
+        log.info(f"[MomentumAgent] CV AUC={cv['mean_auc']:.4f} ± {cv['std_auc']:.4f}  ({len(self._feature_cols)} features seleccionadas)")
         self._model.fit(X_prep, y_cl)
         self.is_trained = True
 
-        rf_fitted = self._model.named_steps["clf"].calibrated_classifiers_[0].estimator
-        imp = pd.Series(rf_fitted.feature_importances_, index=self._feature_cols)
+        imp = pd.Series(self._model.named_steps["clf"].feature_importances_, index=self._feature_cols)
         self.save_feature_importances(imp, fold)
 
         # Guardar distribución de régimen macro
@@ -142,6 +144,11 @@ class MomentumAgent(BaseAgent):
         }
         self.record_train_metrics(cv, fold)
         self.save_diagnostics(fold)
+        rf_model = self._model.named_steps["clf"]
+        self._explainer = build_explainer_for_agent(
+            self.name, rf_model, self._feature_cols,
+            X_prep, self.results_dir.parent.as_posix(), fold, model_type="tree"
+        )
         return self
 
     # ── Predict ───────────────────────────────────────────────────────────────
@@ -182,12 +189,19 @@ class MomentumAgent(BaseAgent):
         if "vol_ratio_20_50" in df.columns:
             df["vol_expansion"] = (df["vol_ratio_20_50"] > 1.5).astype(float)
             selected.append("vol_expansion")
-        if "vix" in df.columns:
-            df["high_vix_regime"] = (df["vix"] > 25).astype(float)
-            selected.append("high_vix_regime")
-        if "yield_curve" in df.columns:
-            df["inverted_yield_curve"] = (df["yield_curve"] < 0).astype(float)
-            selected.append("inverted_yield_curve")
+
+        # Earnings momentum derivados
+        if "beat_rate_4q" in df.columns:
+            # Empresa que supera consistentemente las estimaciones → señal alcista
+            df["consistent_beater"] = (df["beat_rate_4q"] >= 0.75).astype(float)
+            selected.append("consistent_beater")
+        if "eps_surprise_avg_4q" in df.columns and "eps_revision" in df.columns:
+            # Combinación: sorpresa positiva + revisión al alza = señal doble
+            df["earnings_momentum"] = (
+                (df["eps_surprise_avg_4q"].fillna(0) > 0).astype(float) +
+                (df["eps_revision"].fillna(0) > 0).astype(float)
+            )
+            selected.append("earnings_momentum")
 
         selected = self._unique_existing_columns(df, selected)
         result = df[selected].copy()
@@ -228,14 +242,14 @@ class MomentumAgent(BaseAgent):
     @staticmethod
     def _regime_summary(X: pd.DataFrame) -> Dict:
         out = {}
-        if "high_vix_regime" in X.columns:
-            out["pct_high_vix"]         = float(X["high_vix_regime"].mean())
-        if "inverted_yield_curve" in X.columns:
-            out["pct_inverted_curve"]   = float(X["inverted_yield_curve"].mean())
         if "above_sma200" in X.columns:
-            out["pct_above_sma200"]     = float(X["above_sma200"].mean())
+            out["pct_above_sma200"]   = float(X["above_sma200"].mean())
         if "rsi_overbought" in X.columns:
-            out["pct_rsi_overbought"]   = float(X["rsi_overbought"].mean())
+            out["pct_rsi_overbought"] = float(X["rsi_overbought"].mean())
         if "rsi_oversold" in X.columns:
-            out["pct_rsi_oversold"]     = float(X["rsi_oversold"].mean())
+            out["pct_rsi_oversold"]   = float(X["rsi_oversold"].mean())
+        if "macd_bullish" in X.columns:
+            out["pct_macd_bullish"]   = float(X["macd_bullish"].mean())
+        if "consistent_beater" in X.columns:
+            out["pct_consistent_beater"] = float(X["consistent_beater"].mean())
         return out

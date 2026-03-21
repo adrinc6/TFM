@@ -25,10 +25,7 @@ except ImportError:
 
 
 MACRO_SERIES = {
-    "vix": "^VIX",
-    "sp500": "^GSPC",
-    "us10y": "^TNX",
-    "us2y": "^IRX",
+    "sp500": "^GSPC",  # Único dato macro utilizado: benchmark para forward_return y backtester
 }
 
 
@@ -183,6 +180,7 @@ def download_ticker(
     start: str,
     end: str,
     force: bool,
+    prices_only: bool = False,
     registry_lock: threading.Lock | None = None,
     rate_limiter: "RateLimiter" | None = None,
 ) -> dict:
@@ -201,6 +199,9 @@ def download_ticker(
         yahoo,
         registry_lock=registry_lock,
     )
+
+    if prices_only:
+        return r
 
     r["profile"] = fetch_and_save(
         ticker,
@@ -353,6 +354,7 @@ def run_download(
     end: str | None = None,
     base_dir: str = "data_finnhub",
     force: bool = False,
+    prices_only: bool = False,
     max_workers: int | None = None,
     min_interval: float | None = None,
 ) -> None:
@@ -401,6 +403,7 @@ def run_download(
             start=start,
             end=end,
             force=force,
+            prices_only=prices_only,
             registry_lock=registry_lock,
             rate_limiter=rate_limiter,
         )

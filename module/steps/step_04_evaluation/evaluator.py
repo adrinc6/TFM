@@ -121,32 +121,52 @@ def _spy_quarterly_returns(spy_prices: pd.Series) -> Dict[str, float]:
     return spy_returns
 
 
-def _excess_return_label(df: pd.DataFrame, spy_prices: Optional[pd.Series] = None) -> pd.Series:
+def _excess_return_label(
+    df: pd.DataFrame,
+    spy_prices: Optional[pd.Series] = None,
+    sector_map: Optional[Dict[str, str]] = None,
+) -> pd.Series:
     """
-    Label de outperformance: 1 si el ticker superó al SPY en ese mismo quarter.
+    Label de outperformance sectorial: 1 si el ticker superó la mediana de su
+    sector durante el período FORWARD (el quarter siguiente al snapshot).
 
-    Si spy_prices no está disponible (None o vacío), cae a comparar contra la
-    media del universo como comportamiento de seguridad.
+    La agrupación usa el quarter FORWARD — el período cuyo retorno se mide —
+    no el quarter del snapshot. Esto es correcto porque:
+      - El snapshot de Q2 (tomado ~30 días antes del inicio de Q3) tiene
+        forward_return = retorno durante Q3.
+      - La mediana sectorial debe comparar retornos del MISMO período (Q3),
+        no del período del snapshot (Q2).
 
-    El retorno del SPY se calcula como retorno precio-a-precio entre el último día
-    del quarter anterior y el último día del quarter de la observación, usando la
-    misma ventana temporal que el forward_return del ticker.
+    Con DAYS_BEFORE_QUARTER_START=30: as_of ~ Dec 1 → snapshot en Q4,
+    pero forward_return mide Q1. El forward quarter = next_quarter_end(as_of).
+
+    Fallback: si sector_map no está disponible o un ticker no tiene sector,
+    compara contra la mediana del universo completo en ese forward quarter.
     """
     dates = df.index.get_level_values("date")
+    tickers = df.index.get_level_values("ticker")
+    # Forward quarter: el quarter cuyo retorno medimos (no el del snapshot)
+    forward_quarters = (dates + pd.offsets.QuarterEnd(1)).to_period("Q")
 
-    if spy_prices is not None and not spy_prices.empty:
-        spy_ret_by_q = _spy_quarterly_returns(spy_prices)
-        quarters = dates.to_period("Q").astype(str)
-        spy_threshold = pd.Series(quarters, index=df.index).map(spy_ret_by_q)
-        n_matched = spy_threshold.notna().sum()
-        if n_matched > 0:
-            log.debug(f"[Label] SPY threshold disponible para {n_matched}/{len(df)} observaciones")
-            return (df["forward_return"] > spy_threshold).astype(int)
-        log.warning("[Label] SPY sin cobertura para este período — usando media del universo como fallback")
+    if sector_map is not None and len(sector_map) > 0:
+        # Añadir sector al DataFrame temporal para calcular mediana sectorial
+        sector_series = pd.Series(tickers, index=df.index).map(sector_map).fillna("Unknown")
+        temp = pd.DataFrame({
+            "forward_return": df["forward_return"].values,
+            "sector": sector_series.values,
+            "forward_quarter": forward_quarters.astype(str),
+        }, index=df.index)
 
-    # Fallback: media del universo por quarter
-    quarter_mean = df.groupby(dates.to_period("Q"))["forward_return"].transform("mean")
-    return (df["forward_return"] > quarter_mean).astype(int)
+        # Mediana del sector × forward_quarter como benchmark
+        sector_quarter_median = temp.groupby(["sector", "forward_quarter"])["forward_return"].transform("median")
+        n_with_sector = (sector_series != "Unknown").sum()
+        log.debug(f"[Label] Usando mediana sectorial (forward quarter) como benchmark — {n_with_sector}/{len(df)} tickers con sector conocido")
+        return (df["forward_return"] > sector_quarter_median).astype(int)
+
+    # Fallback: mediana del universo completo por forward quarter
+    log.debug("[Label] sector_map no disponible — usando mediana del universo (forward quarter) como benchmark")
+    quarter_median = df.groupby(forward_quarters)["forward_return"].transform("median")
+    return (df["forward_return"] > quarter_median).astype(int)
 
 
 def _prepare_fold_labels(
@@ -155,11 +175,12 @@ def _prepare_fold_labels(
     df_train_norm: pd.DataFrame,
     df_test_norm: pd.DataFrame,
     spy_prices: Optional[pd.Series] = None,
+    sector_map: Optional[Dict[str, str]] = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
-    # Label: outperformance relativa al SPY en cada quarter.
-    # y=1 si el forward_return del ticker supera el retorno del SPY en ese mismo período.
-    forward_train = _excess_return_label(df_train, spy_prices).reindex(df_train_norm.index)
-    forward_test  = _excess_return_label(df_test,  spy_prices).reindex(df_test_norm.index)
+    # Label: outperformance relativa a la mediana del sector en cada quarter.
+    # y=1 si el forward_return del ticker supera la mediana de su sector en ese período.
+    forward_train = _excess_return_label(df_train, spy_prices, sector_map).reindex(df_train_norm.index)
+    forward_test  = _excess_return_label(df_test,  spy_prices, sector_map).reindex(df_test_norm.index)
     y_train = forward_train.dropna().astype(int)
     y_test  = forward_test.dropna().astype(int)
 
@@ -198,23 +219,45 @@ def run_walkforward_pipeline(
 
     folds = backtester.generate_folds(start_date, end_date)
     agent_diag_history: Dict[str, List] = {
-        "fundamental": [], "valuation": [], "momentum": [], "bear": [], "sentiment": [], "meta_learner": []
+        "fundamental": [], "valuation": [], "momentum": [], "bear": [],
+        "sentiment": [], "sector_rotation": [], "meta_learner": [],
     }
     ablation_results: List[Dict] = []
 
     dates = df.index.get_level_values("date")
+
+    def _has_price_coverage(entry_date: pd.Timestamp, exit_date: pd.Timestamp) -> bool:
+        bench_window = benchmark.loc[entry_date:exit_date].dropna()
+        if len(bench_window) < 2:
+            return False
+        for prices in prices_dict.values():
+            if prices is None or prices.empty:
+                continue
+            cc = "Close" if "Close" in prices.columns else prices.columns[3]
+            period = prices.loc[entry_date:exit_date, cc]
+            if len(period) >= 2:
+                return True
+        return False
 
     for fold_id, (train_start, train_end, test_end, _train_years) in enumerate(folds, 1):
         # Identificar el quarter de test: es el quarter siguiente al de train_end
         test_quarter_ts = train_end + pd.offsets.QuarterEnd(1)
         test_quarter_label = f"{test_quarter_ts.year}Q{test_quarter_ts.quarter}"
         log.info(f"\n{'='*60}")
-        log.info(
-            f"  FOLD {fold_id} [{test_quarter_label}] | "
-            f"Train: {train_start.date()} -> {train_end.date()} "
-            f"| Test: {train_end.date()} -> {test_end.date()}"
-        )
+        log.info(f"  FOLD {fold_id}  —  Predicción para {test_quarter_label}")
+        log.info(f"  Train : {train_start.date()} → {train_end.date()}  ({_train_years} años)")
+        log.info(f"  Test  : {train_end.date()} → {test_end.date()}  (1 quarter)")
         log.info(f"{'='*60}")
+
+        offset = pd.Timedelta(days=days_before_quarter_start)
+        entry_date = train_end - offset
+        exit_date = test_end - offset
+        if not _has_price_coverage(entry_date, exit_date):
+            log.warning(
+                f"[Fold {fold_id}] Sin precios suficientes despues de {entry_date.date()} "
+                "— fold omitido (sin entrenamiento)"
+            )
+            continue
 
         df_train, df_test = _prepare_fold_frames(
             df=df,
@@ -225,7 +268,7 @@ def run_walkforward_pipeline(
         )
 
         if len(df_train) < 100:
-            log.warning(f"Fold {fold_id}: Train insuficiente ({len(df_train)} obs). Skip.")
+            log.warning(f"[Fold {fold_id}] Train insuficiente ({len(df_train)} observaciones, mínimo 100) — fold omitido.")
             continue
 
         df_train_norm = apply_sector_normalization(df_train, sector_map, normalizer, fit=True)
@@ -239,7 +282,11 @@ def run_walkforward_pipeline(
             df_train_norm=df_train_norm,
             df_test_norm=df_test_norm,
             spy_prices=spy_prices,
+            sector_map=sector_map,
         )
+        if df_test_norm.empty or y_test.empty:
+            log.warning(f"[Fold {fold_id}] Test vacio tras preparar labels — fold omitido.")
+            continue
 
         try:
             agents, df_test_scored, df_train_with_oof = train_fold(
@@ -250,6 +297,8 @@ def run_walkforward_pipeline(
                 fold_id=fold_id,
                 agents_results_dir=agents_results_dir,
                 random_seed=random_seed,
+                sector_map=sector_map,
+                spy_prices=spy_prices,
             )
 
             meta = agents["meta_learner"]
@@ -262,9 +311,6 @@ def run_walkforward_pipeline(
             preds_df["date"] = preds_df.index.get_level_values("date")
             preds_df = preds_df.reset_index(drop=True)
 
-            offset = pd.Timedelta(days=days_before_quarter_start)
-            entry_date = train_end - offset
-            exit_date  = test_end  - offset
             fold_result = backtester.simulate_portfolio(
                 predictions_df=preds_df.rename(columns={"final_score": "score"}),
                 prices_dict=prices_dict,
@@ -275,6 +321,9 @@ def run_walkforward_pipeline(
                 train_start=train_start,
                 train_years_int=_train_years,
             )
+            if not fold_result:
+                log.warning(f"[Fold {fold_id}] Sin retornos suficientes — fold omitido tras simulacion")
+                continue
             fold_result.update(eval_metrics)
             backtester.fold_results.append(fold_result)
 
@@ -283,7 +332,8 @@ def run_walkforward_pipeline(
             audit_df = build_selection_audit_df(
                 df_scored=df_test_scored.reset_index()[
                     ["ticker", "final_score", "label"]
-                    + [c for c in ["fundamental_score", "valuation_score", "momentum_score", "bear_score", "sentiment_score"]
+                    + [c for c in ["fundamental_score", "valuation_score", "momentum_score",
+                                   "bear_score", "sentiment_score", "sector_score"]
                        if c in df_test_scored.columns]
                 ],
                 selected_tickers=fold_result.get("selected_tickers", []),
@@ -312,7 +362,7 @@ def run_walkforward_pipeline(
             for ag_name, ag in agents.items():
                 agent_diag_history[ag_name].append(ag._diagnostics.copy())
 
-            for ag_name in ["fundamental", "valuation", "momentum", "bear"]:
+            for ag_name in ["fundamental", "valuation", "momentum", "bear", "sector_rotation"]:
                 ag = agents[ag_name]
                 if hasattr(ag, "_feature_cols") and ag.is_trained:
                     try:

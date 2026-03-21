@@ -14,7 +14,11 @@ from environment import PORTFOLIO_MIN_SCORE, SECTOR_ZSCORE_MIN_PEERS
 from module.steps.step_02_dataset.builders.sector import SectorNormalizer
 from module.steps.step_02_dataset.dataset import build_live_features
 from module.steps.step_02_dataset.normalization import apply_sector_normalization
-from module.steps.step_03_training.training import train_full_history
+from module.steps.step_03_training.training import (
+    _apply_dispersion_shrink,
+    _apply_sector_adjustments,
+    train_full_history,
+)
 
 from module.steps.step_04_evaluation.selection_reports import (
     build_explanation_candidate_tickers,
@@ -59,8 +63,9 @@ def run_live_fold(
     today_str = (today + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
 
     log.info("\n" + "=" * 60)
-    log.info("  FOLD LIVE - out-of-sample")
-    log.info(f"  Train hasta: {as_of.date()}  |  Eval: {as_of.date()} -> {today.date()}")
+    log.info("  FOLD LIVE — predicción out-of-sample con precios reales")
+    log.info(f"  Entrenado hasta : {as_of.date()}")
+    log.info(f"  Evaluación real : {as_of.date()} → {today.date()}")
     log.info("=" * 60)
 
     # 1. Construir features live
@@ -80,7 +85,7 @@ def run_live_fold(
         return
 
     # 2. Entrenar sobre historico completo
-    log.info("Entrenando agentes finales sobre historico completo...")
+    log.info("Entrenando agentes sobre el histórico completo (sin OOF — entreno final para producción)...")
     normalizer = SectorNormalizer(min_peers=SECTOR_ZSCORE_MIN_PEERS)
     df_train = df[~df.index.duplicated(keep="last")].copy()
     df_train_norm = apply_sector_normalization(df_train, sector_map, normalizer, fit=True)
@@ -88,15 +93,16 @@ def run_live_fold(
 
     # Label consistente con el walk-forward: outperformance relativa por quarter.
     from module.steps.step_04_evaluation.evaluator import _excess_return_label
-    forward_train = _excess_return_label(df_train).reindex(df_train_norm.index)
+    forward_train = _excess_return_label(df_train, sector_map=sector_map).reindex(df_train_norm.index)
     y_train = forward_train.dropna().astype(int)
     df_train_norm = df_train_norm.loc[y_train.index]
 
-    agents, _ = train_full_history(
+    agents, _, dispersion_scales = train_full_history(
         df_norm=df_train_norm,
         y=y_train,
         agents_results_dir=agents_results_dir,
         random_seed=random_seed,
+        sector_map=sector_map,
     )
 
     # 3. Predecir en live
@@ -108,6 +114,7 @@ def run_live_fold(
     momentum = agents["momentum"]
     bear = agents["bear"]
     sentiment = agents["sentiment"]
+    sector_rotation = agents["sector_rotation"]
     meta = agents["meta_learner"]
 
     df_live_norm["fundamental_score"] = fundamental.predict_score(df_live_norm, "sector").values
@@ -119,7 +126,17 @@ def run_live_fold(
     else:
         log.warning("[SentimentAgent] No entrenado en live fold; usando score neutro 0.5.")
         df_live_norm["sentiment_score"] = 0.5
+    if getattr(sector_rotation, "is_trained", False):
+        sector_scores_live = sector_rotation.predict_sector_scores(df_live_norm, sector_map)
+        df_live_norm["sector_score"] = sector_rotation.map_to_tickers(
+            df_live_norm, sector_map, sector_scores_live
+        ).values
+    else:
+        log.warning("[SectorRotationAgent] No entrenado en live fold; usando score neutro 0.5.")
+        df_live_norm["sector_score"] = 0.5
+    df_live_norm = _apply_dispersion_shrink(df_live_norm, dispersion_scales)
     df_live_norm["final_score"] = meta.predict_score(df_live_norm, "sector").values
+    df_live_norm = _apply_sector_adjustments(df_live_norm)
 
     ticker_scores = (
         df_live_norm["final_score"]
@@ -127,22 +144,28 @@ def run_live_fold(
         .sort_values(ascending=False)
     )
 
+    min_stocks = max(1, top_n // 2)
     qualified = ticker_scores[ticker_scores >= PORTFOLIO_MIN_SCORE]
-    top_bulls_source = qualified if not qualified.empty else ticker_scores.head(1)
-    top_bulls = list(top_bulls_source.head(top_n).index)
+    if not qualified.empty:
+        n_take = max(min(len(qualified), top_n), min_stocks)
+        top_bulls = list(ticker_scores.head(n_take).index)
+        log.info(f"{len(qualified)} tickers superaron umbral {PORTFOLIO_MIN_SCORE:.2f} → seleccionando top {n_take} (mín={min_stocks})")
+    else:
+        top_bulls = list(ticker_scores.head(top_n).index)
+        log.warning(f"Ningún ticker superó el umbral {PORTFOLIO_MIN_SCORE:.2f} — usando top-{top_n} por ranking")
     top_bears = list(ticker_scores.tail(top_n).index)
 
     log.info(f"\n{'='*60}")
-    log.info(f"  TOP {top_n} predichos OUTPERFORM (umbral >= {PORTFOLIO_MIN_SCORE:.2f})")
+    log.info(f"  TOP {top_n} OUTPERFORM  (score >= {PORTFOLIO_MIN_SCORE:.2f})")
     log.info(f"{'='*60}")
     for tk in top_bulls:
-        log.info(f"  {tk:<8} score={ticker_scores[tk]:.3f}  [{sector_map.get(tk,'?')}]")
+        log.info(f"    {tk:<8}  score={ticker_scores[tk]:.3f}  [{sector_map.get(tk,'?')}]")
 
     # 4. Descargar precios actuales (solo top picks + SPY como benchmark)
     tickers_to_fetch = list(dict.fromkeys(top_bulls + ["SPY"]))
     log.info(
-        f"\nDescargando precios actuales ({as_of.date()} -> {today.date()}) "
-        f"en memoria para {len(tickers_to_fetch)} tickers (sin guardar)..."
+        f"\nDescargando precios reales ({as_of.date()} → {today.date()}) "
+        f"para {len(tickers_to_fetch)} tickers (en memoria, sin persistir)..."
     )
     live_prices = download_live_prices(
         tickers=tickers_to_fetch,
@@ -164,14 +187,14 @@ def run_live_fold(
     )
 
     log.info(f"\n{'='*60}")
-    log.info(f"  RESULTADO REAL ({as_of.date()} -> {today.date()})")
+    log.info(f"  RESULTADO REAL  ({as_of.date()} → {today.date()})")
     log.info(f"{'='*60}")
     if benchmark_return is not None:
-        log.info(f"  Benchmark (SPY):         {benchmark_return:+.2%}")
+        log.info(f"  Benchmark SPY          : {benchmark_return:+.2%}")
     if portfolio_return is not None:
         log.info(f"  Portfolio top-{top_n} (long): {portfolio_return:+.2%}")
     if alpha is not None:
-        log.info(f"  Alpha:                   {alpha:+.2%}")
+        log.info(f"  Alpha vs benchmark     : {alpha:+.2%}")
 
     log.info(f"\n  Retornos individuales top-{top_n}:")
     for tk in top_bulls:
@@ -179,8 +202,8 @@ def run_live_fold(
         bm = benchmark_return if benchmark_return else 0.0
         alp = (ret - bm) if ret is not None else None
         log.info(
-            f"    {tk:<8} {(ret or 0):+.2%}  "
-            f"(alpha {(alp or 0):+.2%})  [{sector_map.get(tk,'?')}]"
+            f"    {tk:<8}  ret={( ret or 0):+.2%}  "
+            f"alpha={( alp or 0):+.2%}  [{sector_map.get(tk,'?')}]"
         )
 
     # 6. Guardar resultados
@@ -201,6 +224,7 @@ def run_live_fold(
             "momentum_score": round(float(row["momentum_score"]), 4),
             "bear_score": round(float(row["bear_score"]), 4),
             "sentiment_score": round(float(row.get("sentiment_score", 0.5)), 4),
+            "sector_score": round(float(row.get("sector_score", 0.5)), 4),
             "label": "Outperform" if row["final_score"] >= 0.5 else "Underperform",
             "actual_return": round(actual_ret, 4) if actual_ret is not None else None,
         })
@@ -211,15 +235,11 @@ def run_live_fold(
     json_path = Path(results_dir) / "predictions_LIVE.json"
 
     live_tag = "LIVE"
-    audit_source = df_live_norm.reset_index()[[
-        "ticker",
-        "final_score",
-        "fundamental_score",
-        "valuation_score",
-        "momentum_score",
-        "bear_score",
-        "sentiment_score",
-    ]].copy()
+    score_cols = ["ticker", "final_score", "fundamental_score", "valuation_score",
+                  "momentum_score", "bear_score", "sentiment_score", "sector_score"]
+    audit_source = df_live_norm.reset_index()[
+        [c for c in score_cols if c in df_live_norm.reset_index().columns]
+    ].copy()
     audit_source["label"] = audit_source["final_score"].map(
         lambda v: "Outperform" if float(v) >= 0.5 else "Underperform"
     )
@@ -268,6 +288,6 @@ def run_live_fold(
             f, indent=2, ensure_ascii=False,
         )
 
-    log.info("\nResultados guardados en:")
-    log.info(f"  {csv_path}")
-    log.info(f"  {json_path}")
+    log.info(f"\nResultados live guardados:")
+    log.info(f"  CSV  → {csv_path}")
+    log.info(f"  JSON → {json_path}")

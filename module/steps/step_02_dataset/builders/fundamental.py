@@ -70,10 +70,14 @@ class FundamentalFeatureBuilder:
             "fcf_yoy_growth": "fcf",
             "eps_yoy_growth": "eps",
             "total_debt_yoy_growth": "total_debt",
+            # Cambios YoY de ratios (usados en Piotroski y como features directos)
+            "roa_change_yoy": "roa",
+            "gross_margin_change_yoy": "gross_margin",
+            "current_ratio_change_yoy": "current_ratio",
         }
         for feat, col in pairs.items():
             if col in df.columns:
-                df[feat] = df[col].pct_change(periods=4)
+                df[feat] = df[col].diff(periods=4)
         return df
 
     def _quality_metrics(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -96,6 +100,46 @@ class FundamentalFeatureBuilder:
         if "operating_margin" not in df.columns:
             if "operating_income" in df.columns and "revenue" in df.columns:
                 df["operating_margin"] = df["operating_income"] / df["revenue"].replace(0, np.nan)
+
+        # ── Piotroski F-score (Piotroski 2000) ───────────────────────────────
+        # 8 señales binarias normalizadas a [0,1]. Score alto = empresa sana.
+        # Fuente: "Value Investing: The Use of Historical Financial Statement
+        # Information to Separate Winners from Losers" (Piotroski, JAR 2000).
+        piotroski = pd.Series(0.0, index=df.index)
+        n_signals = 0
+
+        # Rentabilidad
+        if "roa" in df.columns:
+            piotroski += (df["roa"] > 0).astype(float)           # F1: ROA positivo
+            n_signals += 1
+            piotroski += (df["roa"].diff(4) > 0).astype(float)   # F3: ROA mejorando YoY
+            n_signals += 1
+        if "operating_cash_flow" in df.columns:
+            piotroski += (df["operating_cash_flow"] > 0).astype(float)  # F2: CFO positivo
+            n_signals += 1
+        # F4: calidad de beneficios (CFO > Net Income → accruals bajos)
+        if "accruals_ratio" in df.columns:
+            piotroski += (df["accruals_ratio"] < 0).astype(float)
+            n_signals += 1
+
+        # Apalancamiento / liquidez
+        if "total_debt_yoy_growth" in df.columns:
+            piotroski += (df["total_debt_yoy_growth"] < 0.05).astype(float)  # F5: deuda no crece
+            n_signals += 1
+        if "current_ratio" in df.columns:
+            piotroski += (df["current_ratio"].diff(4) > 0).astype(float)     # F6: liquidez mejora
+            n_signals += 1
+
+        # Eficiencia operativa
+        if "gross_margin" in df.columns:
+            piotroski += (df["gross_margin"].diff(4) > 0).astype(float)  # F7: margen bruto mejora
+            n_signals += 1
+        if "revenue_yoy_growth" in df.columns:
+            piotroski += (df["revenue_yoy_growth"] > 0).astype(float)    # F8: ingresos crecen
+            n_signals += 1
+
+        if n_signals > 0:
+            df["piotroski_fscore"] = piotroski / n_signals
 
         return df
 

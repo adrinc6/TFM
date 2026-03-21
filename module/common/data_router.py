@@ -23,7 +23,6 @@ class DataRouter:
 
     def __init__(self, data_dir: str):
         self.data_dir           = Path(data_dir)
-        self._macro_cache:      Optional[pd.DataFrame] = None
         self._companies_cache:  Optional[pd.DataFrame] = None
 
     # ── Companies / Sector ────────────────────────────────────────────────────
@@ -171,61 +170,6 @@ class DataRouter:
         df = InsiderSentimentParser().parse(path)
         return df if not df.empty else None
 
-    # ── Loader macro ───────────────────────────────────────────────────────────
-
-    def load_macro(self) -> Optional[pd.DataFrame]:
-        """
-        Carga datos macro desde data_finnhub/_macro/*.json.
-        Series: vix, sp500, us10y, us2y + derivados calculados.
-        Cacheado en memoria.
-        """
-        if self._macro_cache is not None:
-            return self._macro_cache
-
-        macro_dir = self.data_dir / "_macro"
-        if not macro_dir.exists():
-            log.warning("[DataRouter] _macro/ no encontrado.")
-            return None
-
-        series_map = {"vix": None, "sp500": None, "us10y": None, "us2y": None}
-
-        for name in series_map:
-            path = macro_dir / f"{name}.json"
-            if not path.exists():
-                continue
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                records = data.get("data", [])
-                if records:
-                    s = pd.DataFrame(records)
-                    s["date"] = pd.to_datetime(s["date"])
-                    s = s.set_index("date")["close"].sort_index()
-                    s = s[~s.index.duplicated(keep="last")]
-                    s.name = name
-                    series_map[name] = s
-            except Exception as e:
-                log.warning(f"[DataRouter] Error cargando macro {name}: {e}")
-
-        available = {k: v for k, v in series_map.items() if v is not None}
-        if not available:
-            log.warning("[DataRouter] Sin datos macro disponibles.")
-            return None
-
-        macro = pd.concat(list(available.values()), axis=1)
-
-        # Derivados
-        if "us10y" in macro.columns and "us2y" in macro.columns:
-            macro["yield_curve"] = macro["us10y"] - macro["us2y"]
-
-        if "sp500" in macro.columns:
-            macro["sp500_momentum_3m"]  = macro["sp500"].pct_change(63)
-            macro["sp500_momentum_12m"] = macro["sp500"].pct_change(252)
-
-        self._macro_cache = macro.sort_index()
-        log.info(f"[DataRouter] Macro cargado: {len(macro)} filas, columnas: {list(macro.columns)}")
-        return self._macro_cache
-
     def load_sp500_prices(self) -> Optional[pd.Series]:
         """Serie de precios del S&P 500 como benchmark."""
         macro_dir = self.data_dir / "_macro"
@@ -277,14 +221,6 @@ class DataRouter:
         start = as_of - pd.DateOffset(months=lookback_months)
         return df[(df.index >= start) & (df.index <= as_of)]
 
-    def get_macro_snapshot(
-        self, macro: pd.DataFrame, as_of: pd.Timestamp
-    ) -> Optional[pd.Series]:
-        """Último snapshot macro disponible antes de as_of."""
-        av = macro[macro.index <= as_of]
-        return av.iloc[-1] if not av.empty else None
-
-
     @staticmethod
     def quarter_end(ts: pd.Timestamp) -> pd.Timestamp:
         """Devuelve el último día del trimestre al que pertenece ts."""
@@ -296,15 +232,21 @@ class DataRouter:
         return DataRouter.quarter_end(ts) + pd.offsets.QuarterEnd(1)
 
     def compute_quarterly_forward_return(
-        self, prices: pd.DataFrame, as_of: pd.Timestamp
+        self, prices: pd.DataFrame, as_of: pd.Timestamp,
+        days_before: int = 0,
     ) -> Optional[float]:
         """
-        Retorno desde el cierre del trimestre actual (as_of) hasta el cierre
-        del trimestre siguiente. Éste es el label natural del modelo trimestral:
-        "con la foto de este quarter, cuánto subió o bajó en el siguiente".
+        Retorno del holding period real: desde `days_before` días antes del
+        inicio del quarter siguiente hasta `days_before` días antes del inicio
+        del quarter posterior.
 
-        - p0: último precio de trading disponible en o antes del fin del quarter actual
-        - p1: último precio de trading disponible en o antes del fin del quarter siguiente
+        Ejemplo con days_before=30 y as_of=Mar 31 (fin de Q1):
+          - Entrada : Mar 31 + 1 día - 30 días ≈ Mar 2  (30 días antes del inicio de Q2)
+          - Salida  : Jun 30 + 1 día - 30 días ≈ Jun 1  (30 días antes del inicio de Q3)
+
+        Con days_before=0 equivale al comportamiento anterior:
+          p0 = último precio ≤ fin Q1, p1 = último precio ≤ fin Q2.
+
         Solo para construir el label — nunca como feature.
         """
         cc = "Close" if "Close" in prices.columns else prices.columns[0]
@@ -312,14 +254,29 @@ class DataRouter:
         q_end_current = self.quarter_end(as_of)
         q_end_next    = self.next_quarter_end(as_of)
 
-        past_window   = prices[prices.index <= q_end_current]
-        future_window = prices[(prices.index > q_end_current) & (prices.index <= q_end_next)]
+        if days_before > 0:
+            # entry = primer día de Q siguiente - days_before
+            entry_date = q_end_current + pd.Timedelta(days=1) - pd.Timedelta(days=days_before)
+            # exit  = primer día de Q+2 - days_before
+            exit_date  = q_end_next    + pd.Timedelta(days=1) - pd.Timedelta(days=days_before)
 
-        if past_window.empty or future_window.empty:
-            return None
+            entry_window = prices[prices.index <= entry_date]
+            exit_window  = prices[prices.index <= exit_date]
 
-        p0 = float(past_window[cc].iloc[-1])
-        p1 = float(future_window[cc].iloc[-1])
+            if entry_window.empty or exit_window.empty:
+                return None
+
+            p0 = float(entry_window[cc].iloc[-1])
+            p1 = float(exit_window[cc].iloc[-1])
+        else:
+            past_window   = prices[prices.index <= q_end_current]
+            future_window = prices[(prices.index > q_end_current) & (prices.index <= q_end_next)]
+
+            if past_window.empty or future_window.empty:
+                return None
+
+            p0 = float(past_window[cc].iloc[-1])
+            p1 = float(future_window[cc].iloc[-1])
 
         if p0 <= 0 or pd.isna(p0) or pd.isna(p1):
             return None

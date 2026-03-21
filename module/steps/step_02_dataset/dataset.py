@@ -35,7 +35,6 @@ def _build_feature_record(
     as_of: pd.Timestamp,
     sources: Dict[str, Optional[pd.DataFrame]],
     fund_enriched: pd.DataFrame,
-    macro: Optional[pd.DataFrame],
     router: DataRouter,
     fundamental_builder: FundamentalFeatureBuilder,
     technical_builder: TechnicalFeatureBuilder,
@@ -43,6 +42,7 @@ def _build_feature_record(
     insider_builder: InsiderFeatureBuilder,
     sentiment_builder: SentimentFeatureBuilder,
     include_label: bool,
+    days_before: int = 0,
 ) -> Optional[Dict]:
     prices = sources["prices"]
     eps_df = sources["eps_df"]
@@ -52,37 +52,60 @@ def _build_feature_record(
     info_source = sources.get("info")
     info = info_source if info_source is not None else {}
 
-    fund_snap = router.get_fundamental_snapshot(fund_enriched, as_of)
+    # ── Feature date: el día en que realmente operamos ───────────────────────
+    # Con days_before > 0, TODOS los features (técnicos Y fundamentales) se
+    # calculan como si fuéramos en entry_date (el día real de compra).
+    #
+    # Ejemplo con days_before=30, as_of=Mar 31 (fin de Q1):
+    #   feature_date = Apr 1 - 30 = Mar 2
+    #   - Fundamentales: último snapshot disponible ≤ Mar 2 = Q4 (Dic 31) ✓
+    #   - Features técnicas: precios hasta Mar 2                          ✓
+    #   - Label: retorno Mar 2 → Jun 1                                    ✓
+    #
+    # Esto replica exactamente la realidad: el 2 de Marzo tienes los datos
+    # de Q4 (publicados en Enero-Febrero) y los precios hasta ese día.
+    # Los fundamentales de Q1 (Mar 31) NO están disponibles aún.
+    #
+    # Con days_before=0: feature_date = as_of, sin cambio de comportamiento.
+    if days_before > 0:
+        q_end = DataRouter.quarter_end(as_of)
+        feature_date = q_end + pd.Timedelta(days=1) - pd.Timedelta(days=days_before)
+        # Salvaguarda: feature_date nunca puede superar as_of
+        feature_date = min(feature_date, as_of)
+    else:
+        feature_date = as_of
+
+    # Snapshot fundamental: último trimestre disponible ANTES de feature_date.
+    # Con days_before=30: feature_date=Mar 2 → retorna Q4 (Dic 31). Realista.
+    fund_snap = router.get_fundamental_snapshot(fund_enriched, feature_date)
     if fund_snap is None:
         return None
 
-    # Trend features calculadas aquí, con solo los datos hasta as_of,
-    # para evitar el look-ahead que causaba expanding() sobre el df completo.
-    fund_hist_asof = fund_enriched[fund_enriched.index <= as_of]
-    trend_feats = fundamental_builder.snapshot_trends(fund_hist_asof)
-    # Añadir al snapshot (sin sobreescribir columnas ya existentes del consolidado)
+    # Trend features con datos hasta feature_date (sin look-ahead en fundamentales).
+    fund_hist_feature = fund_enriched[fund_enriched.index <= feature_date]
+    trend_feats = fundamental_builder.snapshot_trends(fund_hist_feature)
     for k, v in trend_feats.items():
         if k not in fund_snap.index:
             fund_snap[k] = v
 
-    price_window = router.get_price_window(prices, as_of, lookback_days=400)
+    price_window = router.get_price_window(prices, feature_date, lookback_days=400)
     if len(price_window) < 20:
         return None
 
-    tech_feats = technical_builder.build(price_window, as_of)
+    tech_feats = technical_builder.build(price_window, feature_date)
     val_feats = valuation_builder.build(
         prices_df=prices,
         fund_snapshot=fund_snap,
-        hist_fund=fund_enriched[fund_enriched.index <= as_of],
-        as_of=as_of,
+        hist_fund=fund_enriched[fund_enriched.index <= feature_date],
+        as_of=feature_date,
     )
 
     insider_window = (
-        router.get_insider_window(ins_df, as_of, lookback_days=90)
+        router.get_insider_window(ins_df, feature_date, lookback_days=90)
         if ins_df is not None else None
     )
     mspr_window = (
-        router.get_sentiment_series(mspr_df, as_of, lookback_months=6)
+        router.get_sentiment_series(mspr_df, feature_date, lookback_months=6)
         if mspr_df is not None else None
     )
     insider_feats = insider_builder.build(
@@ -95,12 +118,7 @@ def _build_feature_record(
         mspr_df=mspr_df,
         insider_df=insider_window,
         eps_df=eps_df,
-        as_of=as_of,
-    )
-
-    macro_snap = (
-        router.get_macro_snapshot(macro, as_of)
-        if macro is not None else None
+        as_of=feature_date,
     )
 
     # Identificador trimestral: "2024Q1", "2024Q2", etc.
@@ -115,10 +133,10 @@ def _build_feature_record(
     }
 
     if include_label:
-        # Label trimestral: retorno desde el cierre de este quarter hasta el del siguiente.
-        # Ésta es la pregunta natural del modelo: "con la foto de este quarter,
-        # ¿cuánto subió o bajó la acción en el trimestre siguiente?"
-        fwd_return = router.compute_quarterly_forward_return(prices, as_of)
+        # Label trimestral: retorno del holding period real.
+        # Con days_before=30: mide desde ~30 días antes del inicio del Q siguiente
+        # hasta ~30 días antes del inicio del Q+2 — alineado con el backtester.
+        fwd_return = router.compute_quarterly_forward_return(prices, as_of, days_before=days_before)
         if fwd_return is None:
             return None
         record["forward_return"] = fwd_return
@@ -128,8 +146,6 @@ def _build_feature_record(
     record.update(val_feats.to_dict())
     record.update(insider_feats.to_dict())
     record.update(sentiment_feats.to_dict())
-    if macro_snap is not None:
-        record.update(macro_snap.to_dict())
     return record
 
 
@@ -142,9 +158,9 @@ def build_master_dataset(
     insider_builder: InsiderFeatureBuilder,
     sentiment_builder: SentimentFeatureBuilder,
     min_history_quarters: int = 4,
+    days_before: int = 0,
 ) -> pd.DataFrame:
-    log.info("Construyendo dataset maestro (Finnhub)...")
-    macro = router.load_macro()
+    log.info(f"Construyendo dataset maestro para {len(tickers)} tickers...")
     records = []
 
     for i, ticker in enumerate(tickers, 1):
@@ -171,7 +187,6 @@ def build_master_dataset(
                     as_of=as_of,
                     sources=sources,
                     fund_enriched=fund_enriched,
-                    macro=macro,
                     router=router,
                     fundamental_builder=fundamental_builder,
                     technical_builder=technical_builder,
@@ -179,6 +194,7 @@ def build_master_dataset(
                     insider_builder=insider_builder,
                     sentiment_builder=sentiment_builder,
                     include_label=True,
+                    days_before=days_before,
                 )
                 if record is not None:
                     records.append(record)
@@ -194,7 +210,7 @@ def build_master_dataset(
             continue
 
         if i % 50 == 0:
-            log.info(f"  Procesados {i}/{len(tickers)} tickers — {len(records)} observaciones")
+            log.info(f"  [{i}/{len(tickers)}] tickers procesados — {len(records)} observaciones acumuladas")
 
     if not records:
         raise RuntimeError("Dataset maestro vacio. Revisa los datos en data_finnhub/")
@@ -203,9 +219,9 @@ def build_master_dataset(
     # year_quarter se conserva como columna (no como nivel de índice) para análisis posterior
     df = df.set_index(["ticker", "date"]).sort_index()
     log.info(
-        f"Dataset maestro: {len(df)} observaciones — "
-        f"{df.index.get_level_values('ticker').nunique()} tickers — "
-        f"{df['year_quarter'].nunique()} quarters — "
+        f"Dataset maestro listo: {len(df)} observaciones | "
+        f"{df.index.get_level_values('ticker').nunique()} tickers | "
+        f"{df['year_quarter'].nunique()} quarters | "
         f"{len(df.columns)} features"
     )
     return df
@@ -223,7 +239,6 @@ def build_live_features(
     min_history_quarters: int = 4,
 ) -> pd.DataFrame:
     log.info(f"Construyendo features live (as_of={as_of.date()})...")
-    macro = router.load_macro()
     records = []
 
     for ticker in tickers:
@@ -244,7 +259,6 @@ def build_live_features(
                 as_of=as_of,
                 sources=sources,
                 fund_enriched=fund_enriched,
-                macro=macro,
                 router=router,
                 fundamental_builder=fundamental_builder,
                 technical_builder=technical_builder,

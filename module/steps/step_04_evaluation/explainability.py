@@ -52,10 +52,22 @@ FEATURE_DESCRIPTIONS = {
     "eps_yoy_growth":           "Crecimiento de BPA (EPS) interanual",
     "fcf_yoy_growth":           "Crecimiento de FCF interanual",
     "total_debt_yoy_growth":    "Crecimiento de la deuda total interanual",
-    # Calidad
-    "accruals_ratio":           "Ratio de devengos (calidad contable, menor=mejor)",
-    "capex_to_revenue":         "Intensidad de capital (CapEx / ventas)",
-    "consecutive_losses":       "Trimestres consecutivos con pérdidas",
+    # Calidad / Crecimiento adicional
+    "accruals_ratio":               "Ratio de devengos (calidad contable, menor=mejor)",
+    "capex_to_revenue":             "Intensidad de capital (CapEx / ventas)",
+    "consecutive_losses":           "Trimestres consecutivos con pérdidas",
+    "earnings_quality":             "Calidad de beneficios: FCF / Net Income (>1 = caja real)",
+    "piotroski_fscore":             "Piotroski F-score (0-1): 8 señales de salud financiera",
+    "operating_income_yoy_growth":  "Crecimiento de beneficio operativo interanual",
+    "roa_change_yoy":               "Mejora interanual del ROA",
+    "gross_margin_change_yoy":      "Mejora interanual del margen bruto",
+    "current_ratio_change_yoy":     "Mejora interanual del ratio de liquidez",
+    # Tendencias (slope normalizado de últimas 8 obs)
+    "roe_trend_2y":                 "Tendencia del ROE a 2 años (positivo = mejorando)",
+    "roe_trend_3y":                 "Tendencia del ROE a 3 años",
+    "net_margin_trend_2y":          "Tendencia del margen neto a 2 años",
+    "net_margin_trend_3y":          "Tendencia del margen neto a 3 años",
+    "gross_margin_trend_3y":        "Tendencia del margen bruto a 3 años",
     # Valoración
     "pe_ratio":                 "Precio / BPA (PER)",
     "pb_ratio":                 "Precio / Valor en libros (P/B)",
@@ -83,14 +95,32 @@ FEATURE_DESCRIPTIONS = {
     "volatility_20d":           "Volatilidad realizada 20 días (anualizada)",
     "volatility_60d":           "Volatilidad realizada 60 días (anualizada)",
     "vol_ratio_20_50":          "Ratio de volumen 20d / 50d (>1 = expansión)",
-    # Insiders
-    "insider_net_shares_90d":   "Acciones compradas netas por insiders (90 días)",
-    "insider_sell_ratio":       "Proporción de ventas de insiders (>0.7 = red flag)",
-    # Macro
-    "vix":                      "VIX (volatilidad implícita de mercado)",
-    "yield_curve":              "Pendiente curva de tipos (10Y - 2Y)",
-    "sp500_momentum_3m":        "Momentum del S&P 500 a 3 meses",
-    "sp500_momentum_12m":       "Momentum del S&P 500 a 12 meses",
+    # Insiders / Sentimiento
+    "insider_net_shares_90d":       "Acciones compradas netas por insiders (90 días)",
+    "insider_sell_ratio":           "Proporción de ventas de insiders (>0.7 = red flag)",
+    "insider_net_zscore":           "Z-score de compras netas de insiders vs sector",
+    "analyst_buy_ratio":            "Proporción de recomendaciones de compra de analistas",
+    "analyst_bearish_score":        "Score bajista de analistas (recomendaciones negativas)",
+    "analyst_consensus":            "Consenso de analistas (1=Compra fuerte, 5=Venta fuerte)",
+    "analyst_dispersion":           "Dispersión entre analistas (alta = incertidumbre)",
+    "analyst_strong_buy_pct":       "% de analistas con recomendación Compra Fuerte",
+    "analyst_consensus_change":     "Cambio reciente en el consenso de analistas",
+    "analyst_net_bullish":          "Balance neto alcista de analistas",
+    "mspr_3m":                      "MSPR (sentimiento institucional) a 3 meses",
+    "mspr_trend":                   "Tendencia del MSPR (mejorando/empeorando)",
+    "mspr_positive":                "Señales positivas de MSPR",
+    "mspr_negative":                "Señales negativas de MSPR",
+    "eps_surprise_pct":             "Sorpresa de EPS respecto a estimación (%)",
+    "eps_revision":                 "Revisión reciente de estimación de EPS por analistas",
+    "eps_est":                      "EPS estimado por analistas",
+    "eps_reported":                 "EPS reportado",
+    "beat_rate_4q":                 "% de trimestres en que el EPS superó la estimación (4Q)",
+    "eps_surprise_avg_4q":          "Sorpresa media de EPS en los últimos 4 trimestres",
+    "revenue_decline":              "FLAG: Ingresos en caída interanual",
+    # Técnicos adicionales
+    "atr_14":                       "Average True Range 14 días (volatilidad de precio)",
+    "price_vs_52w_low":             "Distancia al mínimo de 52 semanas",
+    "macd_signal":                  "Señal MACD (EMA de MACD)",
     # Flags bear
     "debt_growth_high":         "FLAG: Deuda creciendo >20% interanual",
     "fcf_negative":             "FLAG: FCF negativo",
@@ -102,6 +132,9 @@ FEATURE_DESCRIPTIONS = {
     "valuation_score":          "Score del Agente de Valoración (infravaloración)",
     "momentum_score":           "Score del Agente de Momentum (tendencia técnica)",
     "bear_score":               "Score del Agente Bear (riesgo, <0.5 es bueno)",
+    "sentiment_score":          "Score del Agente de Sentimiento (analistas e insiders)",
+    "sector_rotation_score":    "Score del Agente de Rotación Sectorial (sector favorable)",
+    "mom_x_safety":             "Momentum × (1-Bear): momentum con filtro de riesgo",
 }
 
 
@@ -414,7 +447,8 @@ def _format_value(feature: str, value: float) -> str:
         "earnings_yield","momentum_1m","momentum_3m","momentum_6m","momentum_12m",
         "price_vs_52w_high","price_vs_52w_low","sma_20","sma_50","sma_200",
         "volatility_20d","volatility_60d","pe_vs_5y_median","pb_vs_5y_median",
-        "sp500_momentum_3m","sp500_momentum_12m",
+        "roa_change_yoy","gross_margin_change_yoy","current_ratio_change_yoy",
+        "fcf_margin","ebitda_margin","operating_margin",
     }
     if feature in pct_features:
         return f"{value:.1%}"

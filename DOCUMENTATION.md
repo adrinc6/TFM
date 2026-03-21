@@ -12,30 +12,31 @@
 8. [Entrenamiento y validación](#8-entrenamiento-y-validación)
 9. [Meta-learner y stacking](#9-meta-learner-y-stacking)
 10. [Backtest walk-forward](#10-backtest-walk-forward)
-11. [Fold live out-of-sample](#11-fold-live-out-of-sample)
-12. [Outputs y artefactos](#12-outputs-y-artefactos)
-13. [Explicabilidad y ablation](#13-explicabilidad-y-ablation)
-14. [Configuración global](#14-configuración-global)
-15. [Comportamientos y decisiones de diseño relevantes](#15-comportamientos-y-decisiones-de-diseño-relevantes)
-16. [Problemas habituales y cómo interpretarlos](#16-problemas-habituales-y-cómo-interpretarlos)
-17. [Lectura rápida por archivo](#17-lectura-rápida-por-archivo)
+11. [Outputs y artefactos](#11-outputs-y-artefactos)
+12. [Explicabilidad y ablation](#12-explicabilidad-y-ablation)
+13. [Configuración global](#13-configuración-global)
+14. [Comportamientos y decisiones de diseño relevantes](#14-comportamientos-y-decisiones-de-diseño-relevantes)
+15. [Problemas habituales y cómo interpretarlos](#15-problemas-habituales-y-cómo-interpretarlos)
+16. [Lectura rápida por archivo](#16-lectura-rápida-por-archivo)
+17. [Outputs por fold: archivos y columnas](#17-outputs-por-fold-archivos-y-columnas)
 
 ---
 
 ## 1. Visión general
 
-Este repositorio implementa un pipeline de stock picking multi-agente sobre el universo S&P 500. La idea es combinar varios modelos especializados —cada uno con una "lente" distinta sobre la empresa— para producir una predicción de tipo `Outperform / Underperform` por ticker, evaluarla históricamente con walk-forward, y ejecutar un fold live fuera de muestra con datos reales de mercado.
+Este repositorio implementa un pipeline de stock picking multi-agente sobre el universo S&P 500. La idea es combinar varios modelos especializados —cada uno con una "lente" distinta sobre la empresa— para producir una predicción de tipo `Outperform / Underperform` por ticker y evaluarla históricamente con walk-forward.
 
 ### Tres capas bien separadas
 
 - **Capa de datos**: descarga desde Finnhub + precios, parseo, consolidación en CSV por ticker, y construcción del dataset maestro con features y labels.
-- **Capa de modelado**: cinco agentes especializados por dominio (fundamental, valoración, momentum, riesgo, sentimiento) más un meta-learner que combina sus scores.
-- **Capa de evaluación**: backtest walk-forward, explicabilidad SHAP, auditoría de selección, CSV de scores por fold, gráficos, y fold live.
+- **Capa de modelado**: seis agentes especializados por dominio (fundamental, valoración, momentum, riesgo, sentimiento, rotación sectorial) más un meta-learner que combina sus scores.
+- **Capa de evaluación**: backtest walk-forward, explicabilidad SHAP, auditoría de selección, CSV de scores por fold y gráficos.
 
 ### Principios de diseño
 
 - **Sin look-ahead**: los snapshots de features se construyen con datos estrictamente anteriores a la fecha de observación. Los labels usan precios futuros, pero nunca cruzan el corte temporal del train.
-- **Horizonte de predicción**: 63 días de trading (~1 quarter). La pregunta que responde el modelo es "¿este ticker outperformará al S&P 500 (`^GSPC`) en el próximo trimestre?".
+- **Horizonte de predicción**: ~1 quarter. La pregunta que responde el modelo es "¿este ticker outperformará a la **mediana de su sector** en el próximo trimestre?".
+- **Análisis top-down + bottom-up**: el `SectorRotationAgent` predice qué sectores van a superar al S&P 500 (top-down). Los agentes base evalúan la empresa dentro de su sector (bottom-up). El MetaLearner combina ambas señales.
 - **Scores de agentes como features del meta-learner**: los agentes base no predicen directamente la cartera; su salida (probabilidad 0-1) alimenta el nivel 2 (stacking).
 - **Robustez ante datos faltantes**: si un agente no puede entrenar (p. ej. por falta de muestras en el SentimentAgent), el pipeline no se rompe y usa score neutro 0.5 como fallback.
 
@@ -58,19 +59,20 @@ main()
   ├── get_available_tickers()      # Filtra tickers sin datos suficientes
   ├── [retry_missing_tickers()]    # Opcional: reintenta tickers incompletos
   ├── build_master_dataset()       # Step 2: construye DataFrame (ticker, date) con features + label
-  ├── [run_walkforward_pipeline()] # Step 4: backtest histórico fold a fold
-  └── [run_live_fold()]            # Step 5: predicción real sobre el universo actual
+   └── [run_walkforward_pipeline()] # Step 4: backtest histórico fold a fold
 ```
 
 ### Flags de control principales en `environment.py`
 
 | Flag | Efecto |
 |---|---|
-| `SKIP_BACKTEST` | Salta el walk-forward histórico, solo ejecuta el fold live |
-| `RUN_LIVE_FOLD` | Activa o desactiva el fold live al final del pipeline |
+| `SKIP_BACKTEST` | Salta el walk-forward histórico |
+| `UPDATE_PRICES_ONLY` | Solo actualiza precios y macro; no consolida ni entrena |
 | `FORCE_DOWNLOAD` | Re-descarga todos los JSONs aunque ya existan en disco |
 | `RETRY_MISSING_TICKERS` | Reintenta descargar tickers con datos incompletos |
 | `RUN_ABLATION_STUDY` | Activa el estudio de ablación (lento, desactivado por defecto) |
+| `UPDATE_PRICES_ONLY` | Solo actualiza precios y macro; no consolida ni entrena |
+| `DAYS_BEFORE_QUARTER_START` | Días de adelanto respecto al inicio del quarter de test para comprar la cartera |
 
 ### Cálculo de fechas de test
 
@@ -103,7 +105,7 @@ TFM/
 │   │   └── us2y.json                  # Bono 2 años
 │   ├── {TICKER}/
 │   │   ├── profile.json               # Sector, industria, país
-│   │   ├── quote.json                 # Último precio (para live)
+│   │   ├── quote.json                 # Último precio (referencia)
 │   │   ├── basic_financials.json      # Ratios financieros y series básicas
 │   │   ├── financials_reported_quarterly.json  # 10-Q trimestrales
 │   │   ├── financials_reported_annual.json     # 10-K anuales
@@ -153,6 +155,7 @@ TFM/
     │   ├── momentum.py                # MomentumAgent (Random Forest)
     │   ├── bear.py                    # BearAgent (RF híbrido + reglas)
     │   ├── sentiment.py               # SentimentAgent (Random Forest)
+    │   ├── sector_rotation.py         # SectorRotationAgent (GBM, nivel sector)
     │   └── meta_learner.py            # MetaLearner (LR + GBM stacking)
     └── steps/
         ├── step_01_data/
@@ -168,10 +171,10 @@ TFM/
         │   │   ├── insider.py         # InsiderFeatureBuilder
         │   │   ├── sentiment.py       # SentimentFeatureBuilder
         │   │   └── sector.py          # SectorNormalizer (z-score sectorial)
-        │   ├── dataset.py             # build_master_dataset(), build_live_features()
+        │   ├── dataset.py             # build_master_dataset()
         │   └── normalization.py       # apply_sector_normalization()
         ├── step_03_training/
-        │   ├── agent_config.py        # build_agents_config(): instancia y configura agentes
+        │   ├── agent_config.py        # build_agents_config(), build_sector_rotation_agent()
         │   ├── oof.py                 # generate_oof_scores(): OOF anti-leakage
         │   └── training.py            # train_fold(), train_full_history()
         ├── step_04_evaluation/
@@ -184,11 +187,6 @@ TFM/
         │   ├── selection_reports.py   # Auditoría de selección y explicaciones por ticker
         │   ├── reports.py             # generate_text_report(): resumen narrativo
         │   └── ablation.py            # run_ablation_study(), summarize_ablation()
-        └── step_05_live/
-            ├── live_fold.py           # run_live_fold(): predicción real
-            ├── live_prices.py         # download_live_prices(): descarga vía yfinance
-            └── returns.py             # qtd_return(): retorno acumulado desde as_of
-
 ```
 
 ---
@@ -211,7 +209,7 @@ TFM/
 
 Los datos macro (VIX, S&P 500, bono 10Y, bono 2Y) se descargan a `_macro/`.
 
-Si `FORCE_DOWNLOAD=False`, los JSONs existentes se reutilizan. El rate limit de Finnhub se respeta con `FINNHUB_MIN_INTERVAL=1` segundo entre requests por ticker.
+Si `FORCE_DOWNLOAD=False`, los JSONs existentes se reutilizan **siempre que el archivo también exista en disco** — si el registro está marcado como descargado pero el archivo no existe, se vuelve a descargar. El rate limit de Finnhub se respeta con `FINNHUB_MIN_INTERVAL=1` segundo entre requests por ticker.
 
 ### 4.2 Consolidación (`consolidation.py`)
 
@@ -237,7 +235,6 @@ for ticker in tickers:
             **valuation_builder.build(prices, snapshot, hist, as_of),
             **insider_builder.build(transactions_up_to(as_of)),
             **sentiment_builder.build(eps_surprises, recommendations, as_of),
-            **macro_features(as_of),
         }
         label = forward_return_63d(prices, as_of)   # label futuro
         records.append((ticker, as_of, features, label))
@@ -249,11 +246,26 @@ El resultado es un DataFrame indexado por `(ticker, date)` guardado en `results/
 
 ### 4.4 Label `forward_return` y binarización
 
-- `forward_return = (precio_{t+63d} - precio_t) / precio_t`
-- El label binario `y = 1` si el `forward_return` del ticker **supera el retorno del S&P 500 (`^GSPC`)** en ese mismo período, `y = 0` en caso contrario.
-- El retorno del S&P 500 se calcula precio-a-precio entre el último día del quarter anterior y el último día del quarter de la observación, usando `data_finnhub/_macro/sp500.json`.
-- Fallback: si el S&P 500 no tiene datos para un período concreto, se compara contra la media del universo de tickers en ese quarter.
-- Horizonte: `FORWARD_RETURN_DAYS = 63` días de trading (~1 quarter).
+El `forward_return` mide el retorno del **holding period real**, alineado con `DAYS_BEFORE_QUARTER_START`:
+
+```
+as_of = Mar 31 (fin de Q1), DAYS_BEFORE_QUARTER_START = 30
+  → entry = Apr 1 − 30 días ≈ Mar 2   (precio de compra real)
+  → exit  = Jul 1 − 30 días ≈ Jun 1   (precio de venta real)
+  forward_return = (precio_Jun1 − precio_Mar2) / precio_Mar2
+```
+
+Con `DAYS_BEFORE_QUARTER_START=0` equivale al comportamiento clásico: retorno entre cierres de quarter.
+
+El label binario:
+- `y = 1` si el `forward_return` del ticker **supera la mediana de su sector en el quarter forward** (el quarter que se está midiendo, no el del snapshot).
+- `y = 0` en caso contrario.
+
+La agrupación sectorial usa el **quarter forward** para que la comparativa sea siempre entre tickers con el mismo período de medición. Con offset de 30 días, el snapshot de Q1 (Mar 31) tiene forward_return en Q2; la mediana se calcula entre todos los tickers con forward_return en Q2.
+
+Este enfoque separa el stock picking de la rotación de sectores: el modelo aprende "esta empresa es la mejor dentro de su sector en ese período", no "este sector tuvo un buen trimestre". La señal de rotación sectorial la captura el `SectorRotationAgent`.
+
+Fallback: si `sector_map` no está disponible, compara contra la mediana del universo completo en ese forward quarter.
 
 ### 4.5 Normalización sectorial (`normalization.py`, `builders/sector.py`)
 
@@ -289,19 +301,9 @@ Cada fold:
 6. Calcula métricas del fold.
 7. Exporta artefactos (scores CSV, auditoría, SHAP, gráficos).
 
-### 4.7 Fold live (`live_fold.py`)
+Si no hay precios suficientes despues de la fecha de entrada del fold, ese fold se omite sin entrenar. Si hay precios parciales, la simulacion se calcula solo hasta el ultimo dia disponible.
 
-Tras el backtest, si `RUN_LIVE_FOLD=True`:
-
-1. Construye features live a `as_of_date` (= fin de `END_QUARTER`) con `build_live_features()`.
-2. Entrena agentes sobre **todo** el histórico disponible con `train_full_history()`.
-3. Genera scores para todo el universo.
-4. Selecciona top/bottom tickers.
-5. Descarga precios live vía yfinance (en memoria, sin guardar en disco).
-6. Calcula retornos reales y alpha vs SPY.
-7. Exporta CSV, JSON, auditoría y explicaciones con la nomenclatura `LIVE` en lugar de un quarter concreto.
-
----
+Si `DAYS_BEFORE_QUARTER_START > 0`, tanto la fecha de entrada como la de salida se adelantan ese número de días (manteniendo el período de tenencia de ~1 quarter).
 
 ## 5. Fuentes de datos y almacenamiento local
 
@@ -317,15 +319,15 @@ Tras el backtest, si `RUN_LIVE_FOLD=True`:
 | `recommendation_trends` | Strong buy / buy / hold / sell por mes | Consenso analistas |
 | `insider_transactions` | Compras y ventas de directivos (shares, price, date) | insider_net_shares_90d |
 | `insider_sentiment` | MSPR (Monthly Share Purchase Ratio) mensual | mspr_3m, mspr_trend |
-| `peers` | Lista de tickers comparables | Sector context (futuro) |
-| `quote` | Último precio de cierre | Precio live aproximado |
+| `peers` | Lista de tickers comparables | Sector context |
+| `quote` | Último precio de cierre | Precio aproximado |
 
 ### 5.2 Precios de mercado
 
 Los precios OHLCV se obtienen de Finnhub y se almacenan localmente. Se usan para:
 - Construir features técnicas (RSI, MACD, momentum, SMA, Bollinger).
 - Calcular el label `forward_return`.
-- Simular retornos de cartera en backtest y fold live.
+- Simular retornos de cartera en backtest.
 
 ### 5.3 Macro
 
@@ -333,10 +335,12 @@ Los precios OHLCV se obtienen de Finnhub y se almacenan localmente. Se usan para
 
 | Archivo | Variable | Uso |
 |---|---|---|
-| `sp500.json` | Precio del S&P 500 | Benchmark de retorno, `sp500_momentum_3m`, `sp500_momentum_12m` |
-| `vix.json` | VIX | Feature macro de volatilidad implícita |
-| `us10y.json` | Rendimiento bono 10Y | Feature macro |
-| `us2y.json` | Rendimiento bono 2Y | `yield_curve = us10y - us2y` |
+| `sp500.json` | Precio del S&P 500 | Benchmark de retorno para el SectorRotationAgent y backtester |
+| `vix.json` | VIX | Disponible como dato de contexto |
+| `us10y.json` | Rendimiento bono 10Y | Disponible como dato de contexto |
+| `us2y.json` | Rendimiento bono 2Y | `yield_curve = us10y - us2y` (disponible como dato de contexto) |
+
+> **Nota**: las features macro (VIX, yield_curve, sp500_momentum) se eliminaron de los agentes base y del MetaLearner porque son iguales para todos los tickers de un mismo quarter, lo que hacía que el modelo aprendiera timing de mercado en lugar de stock picking.
 
 ### 5.4 Consolidated CSV
 
@@ -352,10 +356,16 @@ Los precios OHLCV se obtienen de Finnhub y se almacenan localmente. Se usan para
 
 Genera features a partir del snapshot trimestral de fundamentales:
 
-- **Crecimiento YoY**: `revenue_yoy_growth`, `net_income_yoy_growth`, `operating_income_yoy_growth`, `fcf_yoy_growth`, `eps_yoy_growth`, `total_debt_yoy_growth` (comparando trimestre actual vs mismo trimestre del año anterior, `pct_change(periods=4)`).
-- **Calidad**: `accruals_ratio` (diferencia entre net_income y CFO como % de activos), `interest_coverage`.
+- **Crecimiento YoY** (`diff(4)`, diferencia absoluta vs mismo trimestre del año anterior): `revenue_yoy_growth`, `net_income_yoy_growth`, `operating_income_yoy_growth`, `fcf_yoy_growth`, `eps_yoy_growth`, `total_debt_yoy_growth`.
+- **Cambios YoY de ratios** (tendencia de calidad): `roa_change_yoy`, `gross_margin_change_yoy`, `current_ratio_change_yoy`.
+- **Calidad**: `accruals_ratio` (diferencia entre net_income y CFO como % de activos, mide si los beneficios son "reales"), `earnings_quality` (FCF/net_income), `interest_coverage`.
 - **Ratios de cobertura**: deuda/EBITDA, current_ratio, deuda/fondos propios.
-- **Flags de riesgo**: trimestres consecutivos con pérdidas, crecimiento de deuda anormal.
+- **Flags de riesgo**: `consecutive_losses` (trimestres consecutivos con pérdidas), `revenue_decline`.
+- **Piotroski F-score** (Piotroski 2000): composite de 8 señales binarias normalizadas a [0,1]. Mide calidad financiera global en tres dimensiones:
+  - *Rentabilidad*: ROA>0, CFO>0, ΔROA>0, calidad de accruals (CFO > Net Income).
+  - *Apalancamiento/liquidez*: deuda no crece (< +5% YoY), current ratio mejora.
+  - *Eficiencia operativa*: margen bruto mejora, ingresos crecen.
+  - Score 1.0 = empresa sana en todas las dimensiones. Uno de los indicadores con mayor respaldo académico para separar winners de losers.
 - **Tendencias de slope**: `roe_trend_3y`, `gross_margin_trend_3y`, `net_margin_trend_3y`, `roe_trend_2y`, `net_margin_trend_2y`. Se calculan como la pendiente normalizada de una regresión lineal sobre los últimos 8 trimestres (solo con datos hasta `as_of`).
 
 ### 6.2 `TechnicalFeatureBuilder`
@@ -364,13 +374,15 @@ Genera features a partir del snapshot trimestral de fundamentales:
 
 Genera features técnicas a partir de la serie de precios hasta `as_of`:
 
-- **Momentum**: retorno a 3, 6, 12 meses.
-- **RSI** de 14 días.
-- **MACD** y señal.
-- **Medias móviles**: SMA 50, SMA 200, posición del precio relativa a ellas.
-- **Bollinger Bands**: anchura y posición del precio.
-- **Volatilidad realizada**: 21 días.
-- **Contexto macro**: VIX, yield_curve, sp500_momentum_3m, sp500_momentum_12m (como features del ticker).
+- **Momentum**: retorno a 1, 3, 6, 12 meses.
+- **RSI** de 14 y 28 días.
+- **MACD**, señal e histograma.
+- **Medias móviles**: SMA 20, SMA 50, SMA 200, posición del precio relativa a ellas.
+- **Bollinger Bands**: posición del precio.
+- **Posición 52 semanas**: distancia al máximo y mínimo anual.
+- **Volatilidad realizada**: 20 y 60 días.
+- **ATR 14 días**.
+- **Volumen relativo**: ratio volumen 20d vs 50d.
 
 ### 6.3 `ValuationFeatureBuilder`
 
@@ -392,6 +404,8 @@ Procesa las transacciones de insiders hasta `as_of`:
 
 - `insider_net_shares_90d`: acciones compradas netas en los últimos 90 días (compras - ventas).
 - `insider_sell_ratio`: proporción de ventas sobre total de transacciones (>0.7 es red flag).
+- `mspr_3m`: MSPR medio de los últimos 3 meses.
+- `mspr_trend`: tendencia reciente del MSPR.
 
 ### 6.5 `SentimentFeatureBuilder`
 
@@ -399,19 +413,17 @@ Procesa las transacciones de insiders hasta `as_of`:
 
 Agrega señales de sentimiento externo:
 
-- **EPS surprises**: `eps_surprise_pct` (último), `beat_rate_4q` (proporción de trimestres en que el EPS real superó la estimación en los últimos 4 quarters).
-- **Consenso de analistas**: `analyst_strong_buy_pct`, `analyst_buy_pct`, tendencia de recomendación.
-- **MSPR**: `mspr_3m` (valor reciente), `mspr_trend` (pendiente en los últimos meses), `mspr_negative` (flag si negativo).
+- **EPS surprises**: `eps_surprise_pct` (último), `beat_rate_4q` (proporción de trimestres en que el EPS real superó la estimación en los últimos 4 quarters), `eps_surprise_avg_4q`.
+- **Consenso de analistas**: `analyst_buy_ratio`, `analyst_bearish_score`, `analyst_consensus`, `analyst_dispersion`, `analyst_strong_buy_pct`, `analyst_consensus_change`.
+- **MSPR**: `mspr_3m`, `mspr_trend`.
+- **Insiders**: `insider_net_shares_90d`, `insider_sell_ratio`.
+
+> **Nota sobre distribución de señales EPS**: `beat_rate_4q`, `eps_surprise_avg_4q` y `eps_revision` son señales de **earnings momentum**, no de sentimiento. Por eso también aparecen como features del `MomentumAgent`.
 
 ### 6.6 Normalización sectorial (`SectorNormalizer`)
 
 `apply_sector_normalization()` aplica z-score por sector sobre todas las features numéricas. Los sectores con menos de `SECTOR_ZSCORE_MIN_PEERS=3` empresas no se normalizan (se mantiene el valor original) para evitar estadísticas inestables.
 
-### 6.7 `build_live_features()`
-
-Construye una única fila por ticker a fecha `as_of`, sin label. Es lo que alimenta el fold live. Internamente usa los mismos builders que el dataset histórico, pero no calcula `forward_return`.
-
----
 
 ## 7. Agentes del sistema
 
@@ -424,41 +436,43 @@ Clase base que todos los agentes heredan. Provee:
 - `fit()` / `predict_score()` con firma estándar.
 - `clean_features()`: elimina filas con demasiados NaN, imputa con mediana, elimina features con correlación > `FEATURE_CORR_THRESHOLD=0.85`.
 - `clean_features_predict()`: versión para inference (usa estadísticos fijados en train).
-- `save_feature_importances()`, `save_diagnostics()`, `record_train_metrics()`: guardan artefactos en `results/agents/{agent_name}/`.
+- `save_feature_importances()`, `save_diagnostics()`, `record_train_metrics()`: guardan artefactos en `results/agents/{agent_name}/`. Con `save_artifacts=False` (agentes OOF temporales) todas las escrituras a disco se omiten.
 - `class_balance()`: calcula proporción Outperform/Underperform para logging.
-- Selector de features: retiene hasta `FEATURE_TOP_N=10` features más relevantes según importancia del modelo.
+- `FeatureSelector`: retiene hasta el `TOP_N` configurado por agente según importancia del modelo.
 
 ### 7.2 `FundamentalAgent` (XGBoost)
 
 **Archivo**: [module/agents/fundamental.py](module/agents/fundamental.py)
 
-Predice la salud financiera de la empresa. Sus features principales son ratios de rentabilidad (ROE, margen neto, margen operativo), crecimiento (revenue YoY, EPS YoY, FCF YoY), calidad contable (accruals ratio) y tendencias de largo plazo (slope de ROE y márgenes). Usa XGBoost calibrado con Platt scaling.
+Predice la salud financiera de la empresa. Sus features principales son ratios de rentabilidad (ROE, margen neto, margen operativo), crecimiento (revenue YoY, EPS YoY, FCF YoY), calidad contable (accruals ratio), cambios YoY de ratios clave, el **Piotroski F-score** como indicador composite de calidad financiera global, y tendencias de largo plazo (slope de ROE y márgenes). Las features se comparan contra el sector usando z-scores (`_zsector`); no usa sector dummies one-hot, que aprenden el nivel medio del sector en lugar de la posición relativa del ticker.
 
 Hiperparámetros:
 - `n_estimators=400`, `max_depth=5`, `learning_rate=0.05`, `subsample=0.8`, `colsample=0.7`, `min_child_weight=5`.
+- `FUNDAMENTAL_FEATURE_TOP_N=12` features seleccionadas.
 
 ### 7.3 `ValuationAgent` (Gradient Boosting)
 
 **Archivo**: [module/agents/valuation.py](module/agents/valuation.py)
 
-Predice si la empresa está bien valorada en relación a su historia y al mercado. Features: P/E, P/B, EV/EBITDA, FCF yield y sus comparativas vs mediana histórica propia. Un score alto indica que la valoración es atractiva (barata respecto a su historia); un score bajo indica cara o sobrevalorada.
+Predice si la empresa está bien valorada en relación a su historia y al sector. Features: P/E, P/B, EV/EBITDA, FCF yield y sus comparativas vs mediana histórica propia. El agente calcula internamente el percentil sectorial de cada múltiplo (con estadísticas fijadas en train, sin leakage).
 
 Hiperparámetros:
 - `n_estimators=200`, `max_depth=4`, `learning_rate=0.05`, `subsample=0.8`.
+- `VALUATION_FEATURE_TOP_N=8` features seleccionadas.
 
 ### 7.4 `MomentumAgent` (Random Forest)
 
 **Archivo**: [module/agents/momentum.py](module/agents/momentum.py)
 
-Captura la dirección técnica de la acción y el contexto macro:
+Captura señales de momentum de precio **y de beneficios**. Las features macro se eliminaron para que el agente aprenda stock picking y no timing de mercado.
 
-- RSI, MACD, posición relativa a SMA 50/200.
-- Momentum a 3, 6, 12 meses.
-- Volatilidad realizada.
-- VIX, yield_curve, momentum del S&P 500.
+- **Momentum técnico**: RSI 14/28, MACD, posición relativa a SMA 20/50/200, Bollinger, precio vs 52w-high/low, retorno 1m/3m/6m/12m, volatilidad, ATR, volumen.
+- **Earnings momentum** (señales más potentes académicamente): `beat_rate_4q`, `eps_surprise_avg_4q`, `eps_revision`. Derivados: `consistent_beater` (beat_rate ≥ 75%), `earnings_momentum` (sorpresa positiva + revisión al alza).
 
 Hiperparámetros:
-- `n_estimators=300`, `max_depth=8`, `min_samples_leaf=10`.
+- `n_estimators=300`, `max_depth=8`, `min_samples_leaf=5`.
+- `min_samples_leaf=5` (vs 10 anterior): hojas más pequeñas → probabilidades más extremas y mejor dispersión de scores. Con 300 árboles el riesgo de overfitting es bajo.
+- `MOMENTUM_FEATURE_TOP_N=12` features seleccionadas.
 
 ### 7.5 `BearAgent` (Random Forest híbrido + reglas)
 
@@ -470,18 +484,20 @@ Detecta riesgo de deterioro financiero. Es un híbrido: combina un modelo Random
 - Deuda/EBITDA > 6x.
 - Current ratio < 1.
 - FCF negativo.
-- Deuda creciendo >50% YoY.
+- Deuda creciendo >20% YoY.
 - Trimestres consecutivos con pérdidas.
 - Insider selling masivo (>70% de transacciones son ventas).
+- EPS miss >5%.
 
 **Score final**: `bear_score = BEAR_RULE_WEIGHT * rule_score + BEAR_ML_WEIGHT * ml_score` (por defecto 50/50).
 
-Un `bear_score` alto es **malo** — significa que hay señales de riesgo. El meta-learner lo interpreta como factor negativo (`1 - bear_score`).
+Un `bear_score` alto es **malo** — significa que hay señales de riesgo. El meta-learner lo recibe **invertido** (`1 - bear_score`) para que semánticamente contribuya igual que los demás scores.
 
 Hiperparámetros:
 - `n_estimators=200`, `max_depth=6`.
 - `BEAR_RULE_WEIGHT=0.5`, `BEAR_ML_WEIGHT=0.5`.
 - `BEAR_HARD_THRESHOLD=0.90`: umbral a partir del cual el meta-learner fuerza score 0.05 (ver sección 9).
+- `BEAR_FEATURE_TOP_N=8` features seleccionadas.
 
 El BearAgent genera adicionalmente un `flag_report_fold{N}.json` con el detalle de qué flags se activaron por ticker.
 
@@ -489,14 +505,36 @@ El BearAgent genera adicionalmente un `flag_report_fold{N}.json` con el detalle 
 
 **Archivo**: [module/agents/sentiment.py](module/agents/sentiment.py)
 
-Captura señales de sentimiento externo: consenso de analistas, MSPR de insiders, sorpresas de EPS y beat rate. A diferencia de los demás agentes, el sentimiento tiene disponibilidad irregular: muchos tickers tienen datos históricos escasos de recomendaciones o MSPR.
+Captura señales de sentimiento externo: consenso de analistas, MSPR de insiders, sorpresas de EPS y beat rate. Construye derivados como `analyst_net_bullish`, `insider_net_zscore`, `mspr_positive/negative`, `consistent_beater`.
 
-**Comportamiento crítico**: si tras limpiar NaN e imputar quedan menos de 20 filas válidas, el agente **no entrena** y se marca como `is_trained=False`. En predicción, el pipeline usa `sentiment_score=0.5` (neutro) como fallback. Esto ocurre especialmente en tickers con baja cobertura de analistas.
+**Comportamiento crítico**: si tras limpiar NaN e imputar quedan menos de 20 filas válidas, el agente **no entrena** y se marca como `is_trained=False`. En predicción, el pipeline usa `sentiment_score=0.5` (neutro) como fallback.
 
 Hiperparámetros:
-- `n_estimators=200`, `max_depth=6`, `min_samples_leaf=8`.
+- `n_estimators=200`, `max_depth=6`, `min_samples_leaf=5`.
+- `SENTIMENT_FEATURE_TOP_N=8` features seleccionadas.
 
-### 7.7 `MetaLearner` (LR + GBM stacking)
+### 7.7 `SectorRotationAgent` (Gradient Boosting)
+
+**Archivo**: [module/agents/sector_rotation.py](module/agents/sector_rotation.py)
+
+Agente **top-down** que opera a nivel **sector**, no ticker. Predice si un sector va a superar al S&P 500 el próximo quarter.
+
+**Proceso**:
+1. Agrega las features de todos los tickers de cada sector (mediana robusta) por quarter.
+2. Construye el label sectorial: 1 si el retorno mediano del sector superó al SPY en ese quarter.
+3. Entrena un GBM sobre esas observaciones `(sector × quarter)`.
+4. En predicción, agrega las features del universo actual por sector y devuelve `{sector: score}`.
+5. El score sectorial se mapea a los tickers de ese sector como `sector_score`.
+
+**Features sectoriales** (medianas de los tickers del sector):
+- Fundamentales: ROE, márgenes, crecimiento revenue/EPS, deuda.
+- Valoración: P/E, P/B, EV/EBITDA, FCF yield, comparativas vs historial.
+- Momentum: retornos 1m/3m/6m/12m, RSI, volatilidad.
+- Sentimiento: analyst_buy_ratio, beat_rate_4q, eps_surprise_pct, mspr_3m.
+
+> El `sector_score` alto indica que ese sector tiene momentum y fundamentos favorables para superar al índice. Un ticker excelente en un sector fuerte recibe la combinación más potente.
+
+### 7.8 `MetaLearner` (LR + GBM stacking)
 
 Ver sección 9 para el detalle completo.
 
@@ -513,10 +551,12 @@ Ejecutado en cada fold del walk-forward:
 1. **Instancia** los agentes base desde `build_agents_config()`.
 2. **Entrena** los agentes base sobre `df_train_norm` (ya normalizado).
    - El `BearAgent` recibe `y` invertido (`invert_y=True`): su target es detectar Underperform (riesgo).
-3. **Genera OOF scores** con `generate_oof_scores()`.
-4. **Predice scores** de los agentes base sobre el test.
-5. **Entrena el meta-learner** sobre los OOF scores del train.
-6. **Predice el score final** del meta-learner sobre el test.
+3. **Entrena el `SectorRotationAgent`** sobre el mismo `df_train_norm` (agrega a nivel sector internamente).
+4. **Genera OOF scores** con `generate_oof_scores()`.
+5. **Añade `sector_score`** al DataFrame OOF del train.
+6. **Entrena el meta-learner** sobre los OOF scores del train (con `sector_score` incluido).
+7. **Predice scores** de los agentes base + `sector_score` sobre el test.
+8. **Predice el score final** del meta-learner sobre el test.
 
 Devuelve: `(agents_dict, df_test_scored, df_train_with_oof)`.
 
@@ -524,7 +564,7 @@ Devuelve: `(agents_dict, df_test_scored, df_train_with_oof)`.
 
 `generate_oof_scores()` usa KFold temporal (`TimeSeriesSplit`) con `OOF_N_SPLITS=3` para generar scores fuera de muestra sobre el train. Para cada split:
 
-- Entrena una copia del agente en el sub-train.
+- Entrena una copia del agente con `save_artifacts=False` (no escribe nada a disco).
 - Predice en el sub-validation.
 - Acumula predicciones.
 
@@ -532,19 +572,25 @@ Los OOF scores resultantes alimentan el meta-learner sin que este vea las predic
 
 ### 8.3 `train_full_history()`
 
-Versión del entrenamiento sin split de test: usa todo el DataFrame histórico. Se llama en el fold live para entrenar los agentes finales antes de predecir sobre el universo actual.
+Versión del entrenamiento sin split de test: usa todo el DataFrame histórico. También entrena el `SectorRotationAgent`.
 
 ### 8.4 Selección de features por agente
 
-`BaseAgent.clean_features()` aplica tres filtros:
+`FeatureSelector` (en `base.py`) aplica dos pasos de filtrado — **sin escalar** las features seleccionadas:
 
-1. **Limpieza de NaN**: elimina filas con >50% de NaN; imputa las restantes con la mediana de columna.
-2. **Eliminación de correlaciones altas**: si dos features tienen correlación de Pearson > `FEATURE_CORR_THRESHOLD=0.85`, elimina la de menor varianza.
-3. **Selección top-N**: retiene hasta `FEATURE_TOP_N=10` features según importancia del modelo (para agentes basados en árboles) o coeficiente absoluto (para LR).
+1. **Eliminación de redundancia por correlación**: si dos features tienen correlación de Pearson > `FEATURE_CORR_THRESHOLD=0.85`, se elimina la que tenga **menor correlación punto-biserial con el target `y`** (la menos informativa). Si el resultado tiene menos de `min_features`, se revierte el filtro.
+2. **Selección top-N por importancia RF**: entrena un RandomForest rápido (100 árboles, `max_depth=5`) sobre las features que superaron el paso 1 y conserva hasta `TOP_N` features con mayor importancia Gini.
 
-### 8.5 Calibración de probabilidades
+**Nota**: no se aplican pesos (ni escalado) a las features seleccionadas. Los modelos de árbol (XGBoost, RF, GBM) son invariantes al escalado monotónico de features, y para la LR del MetaLearner el `StandardScaler` normalizaría los pesos de todas formas. La selección es suficiente.
 
-Todos los clasificadores producen probabilidades calibradas, no scores crudos de árbol. La calibración se hace con `CalibratedClassifierCV(method="sigmoid")` en el meta-learner (GBM) y `CalibratedClassifierCV` en los agentes base. Esto es importante para que los scores sean comparables entre agentes y sirvan como features de stacking.
+| Agente | `FEATURE_TOP_N` |
+|---|---|
+| FundamentalAgent | 12 |
+| MomentumAgent | 12 |
+| ValuationAgent | 8 |
+| BearAgent | 8 |
+| SentimentAgent | 8 |
+| SectorRotationAgent | 10 |
 
 ---
 
@@ -558,16 +604,20 @@ El meta-learner recibe como features:
 
 | Grupo | Columnas |
 |---|---|
-| Scores de agentes | `fundamental_score`, `valuation_score`, `momentum_score`, `bear_score`, `sentiment_score` |
-| Macro | `vix`, `yield_curve`, `sp500_momentum_3m`, `sp500_momentum_12m` |
+| Scores de agentes | `fundamental_score`, `valuation_score`, `momentum_score`, `1 - bear_score`, `sentiment_score`, `sector_score` |
+| Rankings sectoriales | `fundamental_score_sector_rank`, `valuation_score_sector_rank`, `momentum_score_sector_rank`, `sentiment_score_sector_rank` (percentil dentro del sector) |
 | Sector (one-hot) | `sector_Technology`, `sector_Healthcare`, ... |
-| Interacciones | `fund_x_val`, `mom_minus_bear`, `fund_x_sentiment`, `mom_x_sentiment` |
+| Interacciones | `fund_x_val`, `mom_x_safety`, `fund_x_sentiment`, `mom_x_sentiment`, `sector_x_fundamental`, `sector_x_momentum` |
 
-Las interacciones se calculan internamente en `_prepare()`:
+Las interacciones se calculan internamente en `_prepare()` **después de invertir** `bear_score`:
 - `fund_x_val = fundamental_score × valuation_score`
-- `mom_minus_bear = momentum_score - bear_score`
+- `mom_x_safety = momentum_score × bear_score_safety` (ambos ya en dirección positiva: alto = bueno)
 - `fund_x_sentiment = fundamental_score × sentiment_score`
 - `mom_x_sentiment = momentum_score × sentiment_score`
+- `sector_x_fundamental = sector_score × fundamental_score` ← ticker fuerte en sector fuerte
+- `sector_x_momentum = sector_score × momentum_score`
+
+El `bear_score` se invierte al inicio de `_prepare()` (`1 - bear_score`) → se convierte en "safety score" (alto = empresa segura). La interacción `mom_x_safety` es alta solo cuando el momentum es alto **y** el riesgo es bajo, que es la señal más potente de compra.
 
 ### 9.2 Dos modelos en paralelo
 
@@ -576,9 +626,9 @@ Las interacciones se calculan internamente en `_prepare()`:
 - Produce coeficientes directamente interpretables guardados en `lr_coefficients_fold{N}.json`.
 
 **Gradient Boosting** (captura no-linealidades):
-- `Pipeline([StandardScaler(), CalibratedClassifierCV(GradientBoostingClassifier(...))])`.
+- `Pipeline([StandardScaler(), GradientBoostingClassifier(...)])`.
 - Con `n_estimators=150`, `max_depth=3`, `learning_rate=0.05`, `subsample=0.8`.
-- Calibrado con sigmoid CV=5.
+- Sin calibración externa: las probabilidades nativas del GBM se usan directamente para maximizar la dispersión de scores.
 
 ### 9.3 Pesos dinámicos LR vs GBM
 
@@ -601,7 +651,7 @@ Si `bear_score >= BEAR_HARD_THRESHOLD=0.90`, el score final se fuerza a `0.05` (
 `final_score ∈ [0, 1]`, donde:
 - `>= 0.5` → predicción Outperform
 - `< 0.5` → predicción Underperform
-- `>= PORTFOLIO_MIN_SCORE (0.5)` → candidato a la cartera long
+- `>= PORTFOLIO_MIN_SCORE (0.55)` → candidato a la cartera long
 
 ---
 
@@ -626,13 +676,11 @@ Fold 1:  train [2017Q2 → 2025Q2]  test [2025Q3]
 Para cada fold:
 
 1. Ordena tickers por `final_score` descendente.
-2. Filtra por `PORTFOLIO_MIN_SCORE=0.5` (solo candidatos con score ≥ 0.5).
-3. Toma como máximo `TOP_N_STOCKS=10`.
-4. Si `SCORE_WEIGHTED_PORTFOLIO=True`, asigna pesos linealmente proporcionales al ranking: el primer ticker pesa el doble que el último (distribución lineal normalizada a suma 1).
+2. Filtra por `PORTFOLIO_MIN_SCORE=0.55` (solo candidatos con score ≥ 0.55).
+3. Toma como máximo `TOP_N_STOCKS=10`, pero **siempre al menos `TOP_N_STOCKS // 2`** (mínimo 5 con la config por defecto). Si hay candidatos cualificados pero son menos del mínimo, se completa con los siguientes por ranking.
+4. Si `SCORE_WEIGHTED_PORTFOLIO=True`, asigna pesos linealmente proporcionales al ranking: el primer ticker pesa el doble que el último.
 5. Si `SCORE_WEIGHTED_PORTFOLIO=False`, equiponderado.
 6. Simula retorno diario de la cartera usando precios reales del período de test.
-
-**Importante**: `TOP_N_STOCKS` es un **techo**, no una obligación. Si solo 3 tickers superan el umbral, la cartera tendrá 3 tickers.
 
 ### 10.3 Métricas calculadas por fold
 
@@ -644,7 +692,6 @@ Para cada fold:
 - Sortino ratio.
 - Maximum drawdown.
 - Calmar ratio.
-- Hit rate (% de tickers seleccionados que superaron al benchmark).
 
 ### 10.4 Outputs del backtest por fold
 
@@ -662,67 +709,17 @@ Para cada fold:
 - Curva de riqueza acumulada (estrategia vs benchmark, todos los folds encadenados).
 - Drawdown acumulado.
 - Alpha por fold (barplot).
-- Distribución de retornos mensuales.
 - Sharpe por fold.
 
 ---
 
-## 11. Fold live out-of-sample
+## 11. Outputs y artefactos
 
-**Archivo**: [module/steps/step_05_live/live_fold.py](module/steps/step_05_live/live_fold.py)
-
-### 11.1 Propósito
-
-Ejecuta el modelo como si fuera producción real: entrena con todo el histórico disponible y puntúa el universo actual a fecha `as_of_date`. Produce la selección de cartera para el trimestre en curso.
-
-### 11.2 Proceso detallado
-
-```
-1. as_of = END_QUARTER (p. ej. 31 marzo 2026)
-
-2. build_live_features(tickers_ok, as_of)
-   → Una fila por ticker con features a fecha as_of, sin label
-
-3. train_full_history(df_historico)
-   → Entrena todos los agentes sobre el histórico completo (sin split)
-
-4. Predice scores por agente + meta-learner para cada ticker
-
-5. Selección:
-   - Filtra tickers con final_score >= PORTFOLIO_MIN_SCORE
-   - Toma los top_n mejores (top_bulls) y los peores (top_bears)
-
-6. download_live_prices(top_bulls + ["SPY"], start=as_of, end=hoy)
-   → Precios en memoria desde as_of hasta hoy (para calcular retorno si ya pasó tiempo)
-
-7. Calcula retornos reales (si el período ya ocurrió)
-   → bull_returns: retorno acumulado de cada top_bull desde as_of
-   → benchmark_return: retorno de SPY en el mismo período
-   → alpha = portfolio_return - benchmark_return
-
-8. Exporta:
-   → results/agents/LIVE_scores.csv  (una fila por ticker, todos los scores y explicaciones)
-   → results/agents/LIVE_selection_audit.csv / .json
-   → results/agents/LIVE_ticker_explanations.csv / .json
-```
-
-### 11.3 Nomenclatura LIVE
-
-Todos los artefactos del fold live usan el sufijo o prefijo `LIVE` en lugar de un quarter concreto (p. ej. `2025Q3`). Esto permite distinguirlos de los folds históricos y hace que sean autoexplicativos.
-
-### 11.4 Selección de cartera live
-
-El mismo mecanismo que en el backtest: `PORTFOLIO_MIN_SCORE` como umbral mínimo, `TOP_N_STOCKS` como techo, ponderación por score si `SCORE_WEIGHTED_PORTFOLIO=True`.
-
----
-
-## 12. Outputs y artefactos
-
-### 12.1 `results/master_dataset.csv`
+### 11.1 `results/master_dataset.csv`
 
 Dataset completo: una fila por `(ticker, date)`, todas las features y el label. Útil para inspección, debugging y análisis ad-hoc fuera del pipeline.
 
-### 12.2 `results/agents/fold_{N}_scores.csv`
+### 11.2 `results/agents/fold_{N}_scores.csv`
 
 El archivo más rico de outputs. Una fila por ticker por fold, con:
 
@@ -732,29 +729,32 @@ El archivo más rico de outputs. Una fila por ticker por fold, con:
 | `fold` | Número de fold |
 | `ticker`, `sector`, `industry` | Identificación |
 | `final_score` | Score del meta-learner [0-1] |
+| `final_score_raw` | Score antes del prior sectorial y penalizacion por peers |
 | `prediccion` | `Outperform` / `Underperform` |
 | `confianza` | Alta (>0.7 o <0.3), Moderada, Baja |
 | `selected` | `True` si entró en la cartera |
 | `rank` | Posición por score descendente |
 | `selection_reason` | `selected_above_threshold`, `below_threshold`, etc. |
 | `portfolio_weight` | Peso en la cartera (si fue seleccionado) |
-| `{agent}_score` | Score de cada agente base |
+| `{agent}_score` | Score de cada agente base (incluido `sector_score`) |
 | `{agent}_interpretacion` | Texto en lenguaje natural ("Salud financiera sólida") |
 | `{agent}_explicacion` | Factores a favor y en contra con valores reales de las features |
+| `sector_peer_count` | Numero de tickers unicos en el sector durante el fold |
+| `sector_confidence` | Factor [0,1] aplicado al score final segun peers |
 | `retorno_real` | Retorno real del ticker en el período de test |
 | `alpha_real` | `retorno_real - benchmark_return` |
 | `beat_benchmark` | `True` si el ticker superó al benchmark |
 | `label_real` | `1` si fue Outperform real, `0` si no |
 
-### 12.3 `results/agents/fold_{N}_selection_audit.csv / .json`
+### 11.3 `results/agents/fold_{N}_selection_audit.csv / .json`
 
 Auditoría de por qué cada ticker fue seleccionado, cerca del umbral, o descartado. Incluye el score, el umbral, la razón y flags adicionales de la selección.
 
-### 12.4 `results/agents/fold_{N}_ticker_explanations.csv / .json`
+### 11.4 `results/agents/fold_{N}_ticker_explanations.csv / .json`
 
 Explicaciones SHAP detalladas por ticker: qué features contribuyeron más a su score, con valor absoluto de la feature y valor SHAP. Se exportan para los tickers seleccionados, los cercanos al umbral y los de mayor interés.
 
-### 12.5 `results/agents/{agent}/`
+### 11.5 `results/agents/{agent}/`
 
 Por cada agente base:
 - `feature_importances_fold{N}.csv`: importancias normalizadas.
@@ -764,7 +764,7 @@ Por cada agente base:
 - `shap_bar_fold{N}.png`: gráfico de barras SHAP.
 - `flag_report_fold{N}.json`: (solo BearAgent) detalle de flags activadas por ticker.
 
-### 12.6 `results/agents/meta_learner/`
+### 11.6 `results/agents/meta_learner/`
 
 - `evaluation_fold{N}.json`: accuracy, precision, recall, F1, AUC, confusion matrix.
 - `predictions_fold{N}.csv`: score y predicción por ticker.
@@ -772,15 +772,15 @@ Por cada agente base:
 - `shap_global_fold{N}.csv / .json`: importancias SHAP sobre el GBM del meta-learner.
 - `shap_bar_fold{N}.png`: gráfico SHAP.
 
-### 12.7 `results/pipeline.log`
+### 11.7 `results/pipeline.log`
 
 Log UTF-8 completo de la ejecución. Contiene información de cada agente, fold, selección de cartera, métricas y warnings.
 
 ---
 
-## 13. Explicabilidad y ablation
+## 12. Explicabilidad y ablation
 
-### 13.1 `AgentExplainer` (SHAP)
+### 12.1 `AgentExplainer` (SHAP)
 
 **Archivo**: [module/steps/step_04_evaluation/explainability.py](module/steps/step_04_evaluation/explainability.py)
 
@@ -794,16 +794,16 @@ Produce:
 
 `FEATURE_DESCRIPTIONS` es un diccionario con descripciones en lenguaje natural de cada feature, usado en los CSV de explicaciones para que sean legibles por un humano no técnico.
 
-### 13.2 `fold_report.py` — Explicaciones legibles por agente
+### 12.2 `fold_report.py` — Explicaciones legibles por agente
 
 Cada agente tiene umbrales de texto configurados en `AGENT_LABELS`:
 - Score > 0.65 → etiqueta "alta" (p. ej. "Salud financiera sólida").
 - Score 0.35-0.65 → etiqueta "media" (p. ej. "Salud financiera aceptable").
 - Score < 0.35 → etiqueta "baja" (p. ej. "Debilidades financieras detectadas").
 
-La columna `{agent}_explicacion` en el CSV listan los factores SHAP a favor y en contra del score, con los valores reales de las métricas formateados en lenguaje natural (usando `FEATURE_DESCRIPTIONS`).
+La columna `{agent}_explicacion` en el CSV lista los factores SHAP a favor y en contra del score, con los valores reales de las métricas formateados en lenguaje natural.
 
-### 13.3 `selection_reports.py`
+### 12.3 `selection_reports.py`
 
 `build_selection_audit_df()` clasifica cada ticker según su posición respecto al umbral:
 - `selected_above_threshold`: seleccionado (score ≥ umbral).
@@ -812,7 +812,7 @@ La columna `{agent}_explicacion` en el CSV listan los factores SHAP a favor y en
 
 `build_explanation_candidate_tickers()` selecciona qué tickers reciben explicaciones SHAP detalladas: los seleccionados + los más cercanos al umbral + los de mayor interés analítico (hasta 60 tickers).
 
-### 13.4 Ablation study
+### 12.4 Ablation study
 
 **Archivo**: [module/steps/step_04_evaluation/ablation.py](module/steps/step_04_evaluation/ablation.py)
 
@@ -826,51 +826,65 @@ Exporta `ablation_fold{N}.json` con el AUC de cada configuración. Permite ident
 
 ---
 
-## 14. Configuración global
+## 13. Configuración global
 
 **Archivo**: [environment.py](environment.py) — fuente única de verdad para todos los parámetros.
 
-### 14.1 Flags de ejecución
+### 13.1 Flags de ejecución
 
 | Variable | Tipo | Default | Efecto |
 |---|---|---|---|
 | `SKIP_BACKTEST` | bool | `False` | Salta el walk-forward histórico |
 | `FORCE_DOWNLOAD` | bool | `False` | Re-descarga aunque los JSONs existan |
 | `RETRY_MISSING_TICKERS` | bool | `False` | Reintenta tickers incompletos |
+| `UPDATE_PRICES_ONLY` | bool | `False` | Solo actualiza precios y macro; no consolida ni entrena |
 | `RUN_ABLATION_STUDY` | bool | `False` | Activa el estudio de ablación |
-| `RUN_LIVE_FOLD` | bool | `True` | Ejecuta el fold live |
 | `DOWNLOAD_MAX_WORKERS` | int | `8` | Workers de descarga paralela |
 | `FINNHUB_MIN_INTERVAL` | float | `1` | Segundos mínimos entre requests |
 
-### 14.2 Período de análisis
+### 13.2 Período de análisis
 
 | Variable | Descripción |
 |---|---|
 | `DOWNLOAD_START_DATE` | Fecha inicial de descarga de datos (`"2015-01-01"`) |
 | `TEST_START_YEAR` | Año del primer quarter a predecir |
 | `TEST_START_QUARTER` | Trimestre (1-4) del primer quarter a predecir |
-| `END_YEAR` | Año fin del histórico / referencia fold live |
+| `END_YEAR` | Año fin del histórico |
 | `END_QUARTER` | Trimestre fin |
+| `DAYS_BEFORE_QUARTER_START` | Días de adelanto respecto al inicio del quarter siguiente para compra y venta. Afecta también al `forward_return` del dataset para alinear el label con el holding period real. |
 
-El `as_of_date` del fold live es `quarter_end(END_YEAR, END_QUARTER)`.
+El `end_date` del backtest es `quarter_end(END_YEAR, END_QUARTER)`.
 
-### 14.3 Parámetros del pipeline ML
+### 13.3 Parámetros del pipeline ML
 
 | Variable | Valor | Descripción |
 |---|---|---|
 | `MIN_HISTORY_QUARTERS` | `4` | Mínimo de trimestres por ticker para incluirlo en train |
 | `SECTOR_ZSCORE_MIN_PEERS` | `3` | Mínimo de empresas del mismo sector para normalizar |
 | `OOF_N_SPLITS` | `3` | Folds KFold internos para OOF del meta-learner |
-| `PORTFOLIO_MIN_SCORE` | `0.5` | Umbral mínimo de score para la cartera long |
+| `PORTFOLIO_MIN_SCORE` | `0.55` | Umbral mínimo de score para la cartera long |
 | `TOP_N_STOCKS` | `10` | Máximo de posiciones en la cartera long |
-| `FEATURE_TOP_N` | `10` | Máximo de features retenidas por agente |
 | `FEATURE_CORR_THRESHOLD` | `0.85` | Umbral de correlación para eliminar features redundantes |
 | `SCORE_WEIGHTED_PORTFOLIO` | `True` | Pondera por score (True) o equipondera (False) |
-| `FORWARD_RETURN_DAYS` | `63` | Días de trading para el label forward return |
 | `WALKFORWARD_TRAIN_LOOKBACK_YEARS` | `8` | Ventana de train del walk-forward en años |
 | `RISK_FREE_RATE` | `0.04` | Tasa libre de riesgo para Sharpe/Sortino |
+| `SECTOR_CONFIDENCE_PEERS` | `10` | Peers necesarios para confianza sectorial plena |
+| `SECTOR_SCORE_PRIOR_BASE` | `0.5` | Base del prior sectorial aplicado al score final |
+| `SECTOR_SCORE_PRIOR_WEIGHT` | `0.5` | Peso del `sector_score` en el prior sectorial |
+| `SCORE_DISPERSION_MIN_STD` | `0.03` | Dispersión mínima antes de contraer scores hacia 0.5 |
 
-### 14.4 Hiperparámetros de agentes
+### 13.4 FEATURE_TOP_N por agente
+
+| Variable | Valor | Agente |
+|---|---|---|
+| `FUNDAMENTAL_FEATURE_TOP_N` | `12` | FundamentalAgent |
+| `MOMENTUM_FEATURE_TOP_N` | `12` | MomentumAgent |
+| `VALUATION_FEATURE_TOP_N` | `8` | ValuationAgent |
+| `BEAR_FEATURE_TOP_N` | `8` | BearAgent |
+| `SENTIMENT_FEATURE_TOP_N` | `8` | SentimentAgent |
+| `FEATURE_TOP_N` | `8` | Default (otros agentes) |
+
+### 13.5 Hiperparámetros de agentes
 
 **FundamentalAgent (XGBoost)**:
 `n_estimators=400`, `max_depth=5`, `learning_rate=0.05`, `subsample=0.8`, `colsample=0.7`, `min_child_weight=5`
@@ -879,58 +893,122 @@ El `as_of_date` del fold live es `quarter_end(END_YEAR, END_QUARTER)`.
 `n_estimators=200`, `max_depth=4`, `learning_rate=0.05`, `subsample=0.8`
 
 **MomentumAgent (Random Forest)**:
-`n_estimators=300`, `max_depth=8`, `min_samples_leaf=10`
+`n_estimators=300`, `max_depth=8`, `min_samples_leaf=5`
 
 **BearAgent (Random Forest)**:
 `n_estimators=200`, `max_depth=6`, `BEAR_RULE_WEIGHT=0.5`, `BEAR_ML_WEIGHT=0.5`, `BEAR_HARD_THRESHOLD=0.90`
 
 **SentimentAgent (Random Forest)**:
-`n_estimators=200`, `max_depth=6`, `min_samples_leaf=8`
+`n_estimators=200`, `max_depth=6`, `min_samples_leaf=5`
+
+**SectorRotationAgent (GBM)**:
+`n_estimators=200`, `max_depth=3`, `learning_rate=0.05`, `subsample=0.8`
 
 **MetaLearner (LR + GBM)**:
 LR: `C=0.5` | GBM: `n_estimators=150`, `max_depth=3`, `learning_rate=0.05`, `subsample=0.8`
 
 ---
 
-## 15. Comportamientos y decisiones de diseño relevantes
+## 14. Comportamientos y decisiones de diseño relevantes
 
-### 15.1 `TOP_N_STOCKS` es un techo, no una cuota
+### 14.1 Label sectorial, no vs SPY
 
-Si solo 3 tickers superan `PORTFOLIO_MIN_SCORE`, la cartera tendrá 3 tickers. El sistema no fuerza seleccionar hasta `TOP_N_STOCKS` si no hay candidatos suficientes con score válido.
+El label de entrenamiento compara cada ticker contra la **mediana de su sector** en ese quarter, no contra el SPY. Esto aisla el problema de stock picking del de rotación sectorial. La señal de "¿qué sectores van a superar al índice?" la captura el `SectorRotationAgent` como una capa top-down independiente.
 
-### 15.2 BearAgent con `invert_y`
+### 14.2 Sin calibración de probabilidades en los agentes base
 
-El BearAgent recibe el target invertido (`1 - y`): es entrenado para predecir Underperform (riesgo), no Outperform. Su score se interpreta al revés: un `bear_score=0.8` indica alto riesgo. El meta-learner lo usa directamente (un bear alto penaliza el score final).
+Los agentes base (XGBoost, GBM, RF) producen probabilidades nativas sin `CalibratedClassifierCV`. La calibración isotónica/Platt comprime las probabilidades hacia el prior de clase (~0.5 en problemas balanceados), reduciendo artificialmente la dispersión de scores. Para que los scores del MetaLearner sean informativos, se necesita la máxima separación posible.
 
-### 15.3 Cartera ponderada por score
+### 14.3 Macro eliminada del pipeline de agentes
 
-Con `SCORE_WEIGHTED_PORTFOLIO=True`, el peso del ticker #1 es el doble que el del último. La distribución es lineal y normalizada a suma 1. Esto da más exposición a las predicciones de mayor confianza.
+Las features macro (VIX, yield_curve, sp500_momentum) son **idénticas para todos los tickers** en un mismo quarter. Incluirlas en los agentes base o en el MetaLearner hace que el modelo aprenda timing de mercado en lugar de stock picking, y domina las importancias SHAP (~49% el VIX). Se eliminaron de todos los agentes.
 
-### 15.4 Derivación de Q4 en la consolidación
+### 14.4 Bear score invertido en el MetaLearner
 
-El consolidador derive Q4 = Anual - (Q1+Q2+Q3) cuando el trimestre no está reportado explícitamente. Esto es crítico para empresas que solo reportan el 10-K sin desglose trimestral completo.
+El `bear_score` se invierte antes de entrar al MetaLearner: `1 - bear_score`. Así todos los inputs del MetaLearner siguen la misma semántica: score alto = señal positiva.
 
-### 15.5 Soft penalty del Bear desactivado
+### 14.5 `TOP_N_STOCKS` es un techo, no una cuota (pero hay un piso)
 
-`BEAR_SOFT_PENALTY=0.0` está desactivado para evitar doble penalización: el Bear ya contribuye como feature al meta-learner, que aprende su peso. Forzar una penalización adicional proporcional solapaba ambos mecanismos.
+La cartera tiene como máximo `TOP_N_STOCKS=10` acciones. Si solo pocos tickers superan el umbral, se garantiza un mínimo de `TOP_N_STOCKS // 2 = 5` seleccionando los siguientes por ranking.
 
-### 15.6 SHAP sobre el GBM del meta-learner, no sobre el LR
+### 14.6 Rankings sectoriales en el MetaLearner
 
-La explicabilidad SHAP se calcula sobre el GBM (que captura no-linealidades y tiene mayor AUC típicamente). Los coeficientes del LR se guardan por separado en `lr_coefficients_fold{N}.json` como fuente de interpretabilidad directa.
+El MetaLearner calcula el percentil de cada agente-score dentro del sector (`fundamental_score_sector_rank`, etc.). Esto captura la posición relativa del ticker respecto a sus peers, que es más informativa que el score absoluto.
 
-### 15.7 Nomenclatura de artefactos
+### 14.7 Penalización por sectores pequeños
 
-Los folds históricos usan sufijos `_fold{N}` y el campo `year_quarter` indica el quarter predicho (ej. `2025Q3`). El fold live usa el tag `LIVE` en todos sus artefactos.
+Para sectores con pocos peers en el fold, se calcula `sector_confidence` y se reduce el `final_score`.
+El factor es:
 
-### 15.8 Precios live solo en memoria
+$$\text{sector\_confidence} = \min\left(1, \sqrt{n\_peers / k}\right)$$
 
-`download_live_prices()` descarga precios vía yfinance exclusivamente para calcular retornos reales del período live. No se persisten en disco, solo en RAM durante la ejecución.
+con $k = \text{SECTOR\_CONFIDENCE\_PEERS}$. Esto evita señales inestables cuando el sector tiene poca muestra.
+
+### 14.8 Prior sectorial en el score final
+
+Se aplica un prior suave usando `sector_score`:
+
+$$\text{final\_score} \leftarrow \text{final\_score} \times (b + w \cdot \text{sector\_score})$$
+
+con $b = \text{SECTOR\_SCORE\_PRIOR\_BASE}$ y $w = \text{SECTOR\_SCORE\_PRIOR\_WEIGHT}$. Asi, un sector debil reduce el score, pero no lo anula.
+
+### 14.9 Contraccion de scores con baja dispersion
+
+Si un agente produce scores muy concentrados, se contraen hacia 0.5 con:
+
+$$s' = 0.5 + (s - 0.5) \cdot \min\left(1, \frac{\sigma}{\sigma_{min}}\right)$$
+
+donde $\sigma_{min} = \text{SCORE\_DISPERSION\_MIN\_STD}$. Esto evita que un agente plano meta ruido en el meta-learner.
+
+### 14.10 OOF agents no escriben a disco
+
+Los agentes temporales creados durante la generación de OOF scores se instancian con `save_artifacts=False`. Esto evita que los archivos `diagnostics_fold0`, `feature_importances_fold0`, etc., contaminen los directorios de resultados con artefactos de entrenamiento interno.
+
+### 14.11 Sector dummies eliminados del FundamentalAgent
+
+Los dummies one-hot de sector aprenden el **nivel medio** de cada sector (Technology tiene mayor ROE que Utilities). Esto ya está capturado mejor por los z-scores sectoriales (`_zsector`), que miden la posición relativa del ticker dentro de su sector. Los dummies añadían ruido sin información adicional.
+
+### 14.12 Earnings momentum en el MomentumAgent
+
+`beat_rate_4q`, `eps_surprise_avg_4q` y `eps_revision` son señales de momentum de beneficios, no de sentimiento de analistas. Por eso se añadieron al MomentumAgent: las sorpresas de EPS tienen uno de los efectos de momentum más documentados en la literatura académica (PEAD, post-earnings announcement drift).
+
+### 14.13 `forward_return` alineado con el holding period real
+
+El dataset usa `DAYS_BEFORE_QUARTER_START` para calcular el `forward_return` con los precios de entrada y salida reales, no los cierres de quarter:
+
+```
+entry_date = q_end_current + 1 día − DAYS_BEFORE_QUARTER_START
+exit_date  = q_end_next    + 1 día − DAYS_BEFORE_QUARTER_START
+forward_return = precio(exit_date) / precio(entry_date) − 1
+```
+
+Esto garantiza que el label que aprende el modelo mida exactamente el retorno que se obtendría en producción, eliminando el desajuste que existiría si el modelo entrenara con cierres de quarter pero comprara/vendiera con el offset aplicado.
+
+### 14.14 Label agrupa por quarter forward, no por quarter del snapshot
+
+La mediana sectorial para el label se calcula agrupando por el **quarter forward** (el período cuyo retorno se mide), no el quarter del snapshot. Con `DAYS_BEFORE_QUARTER_START=30`:
+- Snapshot: `date = Mar 31` → `date.to_period("Q") = Q1`
+- Forward period: `Apr 1 − 30d → Jul 1 − 30d` → cae en Q2
+- La mediana se calcula agrupando por Q2, comparando retornos del mismo holding period.
+
+Esto previene que tickers con snapshots en diferentes quarters calendario pero con el mismo forward period queden en grupos distintos.
+
+### 14.15 Piotroski F-score como composite de calidad financiera
+
+El Piotroski F-score (Piotroski, *Journal of Accounting Research*, 2000) resume 8 señales binarias en un único valor [0,1]. Su ventaja sobre usar las señales individuales es que actúa como "voto de calidad" robusto: un ticker puede tener ROA alto pero liquidez deteriorada; el composite captura el balance global. El `FeatureSelector` puede seleccionarlo como una de las top-12 features del `FundamentalAgent` incluso cuando las señales individuales están disponibles, porque aporta información de nivel superior.
+
+### 14.16 `FeatureSelector` sin ponderación de features
+
+La versión anterior de `FeatureSelector` multiplicaba las features seleccionadas por su importancia RF normalizada antes de pasarlas al modelo. Esto fue eliminado porque:
+- Los modelos de árbol (XGBoost, RF, GBM) son **invariantes al escalado monotónico** de features: multiplicar por una constante positiva no cambia ningún split.
+- Para la Logistic Regression del MetaLearner, el `StandardScaler` que precede al modelo normaliza todas las features, deshaciendo los pesos.
+- El resultado era complejidad extra sin beneficio funcional, y una fuente potencial de bugs sutiles en reproducibilidad.
 
 ---
 
-## 16. Problemas habituales y cómo interpretarlos
+## 15. Problemas habituales y cómo interpretarlos
 
-### 16.1 `SentimentAgent` informa insuficientes muestras
+### 15.1 `SentimentAgent` informa insuficientes muestras
 
 No significa que el dataset sea pequeño. Significa que, después de limpiar NaN e imputar, quedan menos de 20 filas válidas. Causas habituales:
 - Features de analistas no disponibles para muchas fechas históricas.
@@ -939,29 +1017,33 @@ No significa que el dataset sea pequeño. Significa que, después de limpiar NaN
 
 Consecuencia: el agente no entrena y el pipeline usa `sentiment_score=0.5`. El fold continúa.
 
-### 16.2 Fold con pocas selecciones
+### 15.2 `SectorRotationAgent` con pocas observaciones sectoriales
 
-Normal si pocos tickers superan `PORTFOLIO_MIN_SCORE=0.5`. No es un error. Puede ocurrir si el mercado tiene momentum bajista y los scores del meta-learner son globalmente bajos.
+Si hay menos de 10 observaciones `(sector × quarter)` disponibles, el agente no entrena y usa `sector_score=0.5`. Esto puede ocurrir al principio del histórico cuando hay pocos quarters. Con el universo S&P 500 completo y datos desde 2015 no debería ocurrir.
 
-### 16.3 Mismatch de features en predicción
+### 15.3 Fold con pocas selecciones
 
-Los agentes alinean el DataFrame de predicción con las features vistas en train. Las columnas faltantes se rellenan con 0.0 (valor neutro). Un exceso de mismatches indica que el live dataset tiene features que no estaban en el train — revisar builders.
+Normal si pocos tickers superan `PORTFOLIO_MIN_SCORE=0.55`. El sistema garantiza al menos `TOP_N_STOCKS // 2` selecciones completando con los mejores por ranking. Si sistemáticamente ningún ticker supera el umbral, considerar bajar `PORTFOLIO_MIN_SCORE` a 0.52 o revisar la dispersión de scores en `score_dist_fold{N}.png`.
 
-### 16.4 BearAgent genera scores extremos
+### 15.4 Mismatch de features en predicción
+
+Los agentes alinean el DataFrame de prediccion con las features vistas en train. Las columnas faltantes se rellenan con 0.0. Un exceso de mismatches indica que el dataset de prediccion tiene features que no estaban en el train — revisar builders.
+
+### 15.5 BearAgent genera scores extremos
 
 Si muchos tickers reciben `bear_score > 0.90`, el meta-learner forzará `final_score=0.05` para todos. Revisar los `flag_report_fold{N}.json` para entender qué reglas se están disparando.
 
-### 16.5 OOF scores ruidosos con pocos datos
+### 15.6 OOF scores ruidosos con pocos datos
 
 Con `OOF_N_SPLITS=3` y un train pequeño, los OOF pueden ser inestables. Aumentar a 5 mejora la estabilidad pero alarga el entrenamiento.
 
-### 16.6 Un ticker tiene precios pero no features
+### 15.7 Un ticker tiene precios pero no features
 
 Puede ocurrir si el consolidated CSV existe pero tiene menos de `MIN_HISTORY_QUARTERS=4` trimestres válidos. El ticker se filtra en `get_available_tickers()` y no entra en el dataset.
 
 ---
 
-## 17. Lectura rápida por archivo
+## 16. Lectura rápida por archivo
 
 | Archivo | Responsabilidad |
 |---|---|
@@ -971,13 +1053,13 @@ Puede ocurrir si el consolidated CSV existe pero tiene menos de `MIN_HISTORY_QUA
 | [module/steps/step_01_data/pipeline.py](module/steps/step_01_data/pipeline.py) | ETL: descarga, consolidación, filtrado de tickers. |
 | [module/steps/step_01_data/clients.py](module/steps/step_01_data/clients.py) | Cliente Finnhub con rate limiting. |
 | [module/steps/step_01_data/consolidation.py](module/steps/step_01_data/consolidation.py) | Parseo y unificación JSONs → CSV por ticker. |
-| [module/steps/step_02_dataset/dataset.py](module/steps/step_02_dataset/dataset.py) | `build_master_dataset()` y `build_live_features()`. |
+| [module/steps/step_02_dataset/dataset.py](module/steps/step_02_dataset/dataset.py) | `build_master_dataset()`. |
 | [module/steps/step_02_dataset/builders/fundamental.py](module/steps/step_02_dataset/builders/fundamental.py) | Features de ratios fundamentales y tendencias. |
-| [module/steps/step_02_dataset/builders/technical.py](module/steps/step_02_dataset/builders/technical.py) | Features técnicas y momentum. |
+| [module/steps/step_02_dataset/builders/technical.py](module/steps/step_02_dataset/builders/technical.py) | Features técnicas y momentum de precio. |
 | [module/steps/step_02_dataset/builders/valuation.py](module/steps/step_02_dataset/builders/valuation.py) | Múltiplos actuales e históricos. |
-| [module/steps/step_02_dataset/builders/insider.py](module/steps/step_02_dataset/builders/insider.py) | Transacciones de insiders. |
+| [module/steps/step_02_dataset/builders/insider.py](module/steps/step_02_dataset/builders/insider.py) | Transacciones de insiders y MSPR. |
 | [module/steps/step_02_dataset/builders/sentiment.py](module/steps/step_02_dataset/builders/sentiment.py) | EPS surprises, consenso analistas, MSPR. |
-| [module/steps/step_02_dataset/builders/sector.py](module/steps/step_02_dataset/builders/sector.py) | Z-score sectorial. |
+| [module/steps/step_02_dataset/builders/sector.py](module/steps/step_02_dataset/builders/sector.py) | Z-score sectorial (`SectorNormalizer`). |
 | [module/steps/step_03_training/training.py](module/steps/step_03_training/training.py) | `train_fold()` y `train_full_history()`. |
 | [module/steps/step_03_training/oof.py](module/steps/step_03_training/oof.py) | OOF anti-leakage para el meta-learner. |
 | [module/steps/step_03_training/agent_config.py](module/steps/step_03_training/agent_config.py) | Configuración e instanciación de agentes. |
@@ -989,13 +1071,126 @@ Puede ocurrir si el consolidated CSV existe pero tiene menos de `MIN_HISTORY_QUA
 | [module/steps/step_04_evaluation/fold_report.py](module/steps/step_04_evaluation/fold_report.py) | CSV de scores con explicaciones legibles por fold. |
 | [module/steps/step_04_evaluation/selection_reports.py](module/steps/step_04_evaluation/selection_reports.py) | Auditoría de selección y explicaciones por ticker. |
 | [module/steps/step_04_evaluation/ablation.py](module/steps/step_04_evaluation/ablation.py) | Estudio de ablación por agente. |
-| [module/steps/step_05_live/live_fold.py](module/steps/step_05_live/live_fold.py) | Fold live: predicción real + retornos + exportación. |
-| [module/steps/step_05_live/live_prices.py](module/steps/step_05_live/live_prices.py) | Descarga de precios live vía yfinance. |
-| [module/steps/step_05_live/returns.py](module/steps/step_05_live/returns.py) | `qtd_return()`: retorno acumulado desde as_of hasta hoy. |
 | [module/agents/base.py](module/agents/base.py) | `BaseAgent`: lógica común de entrenamiento, limpieza y exportación. |
-| [module/agents/fundamental.py](module/agents/fundamental.py) | `FundamentalAgent` (XGBoost). |
-| [module/agents/valuation.py](module/agents/valuation.py) | `ValuationAgent` (GBM). |
-| [module/agents/momentum.py](module/agents/momentum.py) | `MomentumAgent` (Random Forest). |
+| [module/agents/fundamental.py](module/agents/fundamental.py) | `FundamentalAgent` (XGBoost, ratios + z-scores sectoriales). |
+| [module/agents/valuation.py](module/agents/valuation.py) | `ValuationAgent` (GBM, múltiplos vs historial y sector). |
+| [module/agents/momentum.py](module/agents/momentum.py) | `MomentumAgent` (RF, técnico + earnings momentum). |
 | [module/agents/bear.py](module/agents/bear.py) | `BearAgent` (RF + reglas, detecta riesgo). |
 | [module/agents/sentiment.py](module/agents/sentiment.py) | `SentimentAgent` (RF, con fallback si datos insuficientes). |
+| [module/agents/sector_rotation.py](module/agents/sector_rotation.py) | `SectorRotationAgent` (GBM, top-down, nivel sector vs S&P500). |
 | [module/agents/meta_learner.py](module/agents/meta_learner.py) | `MetaLearner` (LR + GBM stacking, pesos dinámicos, hard rule). |
+
+---
+
+## 17. Outputs por fold: archivos y columnas
+
+Este capítulo describe los archivos que se generan por cada fold del backtest y las columnas más importantes de cada uno. El objetivo es que puedas auditar el porqué de una selección y cómo se compone cada score.
+
+### 17.1 `results/agents/fold_{N}_scores.csv`
+
+Archivo principal de resultados por ticker (una fila por ticker en el fold). Incluye scores por agente, explicación legible y resultados reales (si existen).
+
+**Identificación**
+- `year_quarter`: quarter evaluado (ej. `2025Q3`).
+- `fold`: id del fold.
+- `ticker`: símbolo.
+- `sector`: sector GICS.
+- `industry`: sub-industria GICS.
+
+**Predicción y selección**
+- `final_score`: score final del meta-learner (0-1).
+- `prediccion`: `Outperform` si `final_score >= 0.5`.
+- `confianza`: `Alta` si `abs(final_score - 0.5) > 0.25`.
+- `selected`: si el ticker entró en la cartera.
+- `rank`: ranking dentro del universo por `final_score`.
+- `selection_reason`: motivo de selección (`selected_above_threshold`, `qualified_but_not_selected`, `below_threshold`, `selected_by_fallback`).
+- `portfolio_weight`: peso asignado en cartera (si aplica).
+
+**Scores por agente**
+- `fundamental_score`, `valuation_score`, `momentum_score`, `bear_score`, `sentiment_score`: score [0,1] por agente.
+- `sector_score`: score sectorial del `SectorRotationAgent` (mismo valor para todos los tickers del mismo sector).
+
+**Interpretación textual por agente**
+- `fundamental_interpretacion`, `valuation_interpretacion`, `momentum_interpretacion`, `bear_interpretacion`, `sentiment_interpretacion`:
+   frase corta basada en umbrales internos (alto/medio/bajo) para el score del agente.
+
+**Explicaciones legibles por agente**
+- `fundamental_explicacion`, `valuation_explicacion`, `momentum_explicacion`, `bear_explicacion`, `sentiment_explicacion`:
+   explicación en lenguaje natural. Usa SHAP si hay explainer, y si no, usa reglas de fallback.
+- `sector_rotation_explicacion`:
+   explicación top-down del sector; no evalúa la empresa individual sino el sector completo. Todos los tickers del mismo sector comparten esta explicación.
+
+**Resultados reales (si ya ocurrió el periodo de test)**
+- `retorno_real`: retorno observado del ticker durante el periodo del fold.
+- `alpha_real`: `retorno_real - retorno_benchmark` (si se dispone de benchmark).
+- `beat_benchmark`: `True` si el retorno real supera el benchmark.
+- `label_real`: label binario real (1 si el ticker supera la mediana de su sector en el forward quarter).
+
+**Campos adicionales de robustez**
+- `final_score_raw`: score antes del prior sectorial y penalizacion por peers.
+- `sector_peer_count`: numero de tickers unicos en el sector durante el fold.
+- `sector_confidence`: factor [0,1] derivado de `sector_peer_count`.
+
+### 17.2 `results/agents/fold_{N}_selection_audit.csv`
+
+Auditoría detallada de selección de cartera (una fila por ticker).
+
+- `ticker`: símbolo.
+- `final_score`: score final del meta-learner.
+- `label`: `Outperform` o `Underperform` según el score.
+- `selected`: si entró en cartera.
+- `rank`: posición por score.
+- `selection_reason`: motivo de selección.
+- `sector_score`: score de rotación sectorial para el sector del ticker.
+- `fundamental_score`, `valuation_score`, `momentum_score`, `bear_score`, `sentiment_score`: scores por agente (cuando estén disponibles).
+
+### 17.3 `results/agents/fold_{N}_ticker_explanations.csv`
+
+Una fila por `ticker × agente` con explicación compacta y drivers.
+
+- `fold`, `ticker`, `rank`, `selected`, `selection_reason`: contexto de selección.
+- `agent`: nombre del agente (incluye `sector_rotation` y `meta_learner`).
+- `agent_score`: score del agente (para `sector_rotation` es el `sector_score`).
+- `agent_label`: `Outperform` / `Underperform` según el score del agente.
+- `has_explainer`: `True` si hay SHAP disponible para ese agente.
+- `explanation_text`: texto explicativo (SHAP o reglas).
+- `favor_factors`: lista de factores a favor (texto plano).
+- `contra_factors`: lista de factores en contra (texto plano).
+- `top_drivers_json`: JSON con drivers y valores (útil para UI o análisis estructurado).
+
+### 17.4 `results/agents/{agent}/feature_importances_fold{N}.csv`
+
+Importancia de variables del modelo del agente (cuando aplica, p. ej. GBM/RF).
+
+- `(columna sin nombre)`: nombre de la feature.
+- `importance`: importancia relativa en el modelo.
+
+**Notas específicas**
+- En `agents/sector_rotation/feature_importances_fold{N}.csv`, las features son agregados sectoriales (medianas por sector). La feature `_sector_return` es usada en entrenamiento interno, no como predictor.
+- En `agents/fundamental/shap_global_fold{N}.csv` y otros agentes, las columnas con sufijo `_zsector` son z-scores relativos al sector (posición del ticker dentro de su sector).
+
+### 17.5 `results/agents/{agent}/shap_global_fold{N}.csv`
+
+Importancia global de SHAP por feature para el agente.
+
+- `feature`: nombre de la variable.
+- `importance`: impacto medio absoluto de SHAP.
+
+### 17.6 `results/agents/meta_learner/predictions_fold{N}.csv`
+
+Predicciones del meta-learner en el fold.
+
+- `ticker`: símbolo.
+- `score`: score final.
+- `label`: label real (si está disponible en el set de test).
+
+### 17.7 `results/backtest/fold_{NNN}_{X}Y_metrics.json`
+
+Métricas del fold: CAGR, Sharpe, Sortino, max drawdown, alpha, etc.
+
+### 17.8 `results/plots/*_fold{N}.png`
+
+Gráficos de soporte:
+- `score_dist_fold{N}.png`: distribución de scores en el fold.
+- `feat_imp_{agent}_fold{N}.png`: importancias de features por agente.
+- `fold_{NNN}_{QUARTER}_performance.png`: rendimiento de cartera vs benchmark.

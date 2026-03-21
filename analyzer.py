@@ -8,14 +8,12 @@ Punto de entrada principal del sistema. Coordina los pasos del pipeline:
     2. Preparación / consolidación (step_01_data)
     3. Construcción del dataset maestro (step_02_dataset)
     4. Walk-Forward Backtest histórico (step_04_evaluation)
-    5. Fold live out-of-sample (step_05_live)
 
 Toda la lógica de negocio reside en module/steps/:
     - step_01_data/pipeline.py        : ETL (descarga, consolidación, filtrado de tickers)
     - step_02_dataset/dataset.py      : construcción de observaciones + features live
     - step_03_training/training.py    : entrenamiento de agentes + OOF anti-leakage
     - step_04_evaluation/evaluator.py : walk-forward loop, SHAP, backtest, gráficos
-    - step_05_live/live_fold.py       : predicción out-of-sample + evaluación con precios reales
 
 Los parámetros globales están en environment.py.
 """
@@ -37,7 +35,7 @@ from environment import (
     MIN_HISTORY_QUARTERS,
     WALKFORWARD_TRAIN_LOOKBACK_YEARS, WALKFORWARD_TEST_QUARTERS, RISK_FREE_RATE,
     RANDOM_SEED, DOWNLOAD_START_DATE, TEST_START_YEAR, TEST_START_QUARTER, END_YEAR, END_QUARTER,
-    SKIP_BACKTEST, FORCE_DOWNLOAD, RETRY_MISSING_TICKERS, RUN_LIVE_FOLD,
+    SKIP_BACKTEST, FORCE_DOWNLOAD, RETRY_MISSING_TICKERS, UPDATE_PRICES_ONLY,
     TOP_N_STOCKS, DAYS_BEFORE_QUARTER_START,
 )
 
@@ -51,7 +49,6 @@ from module.steps.step_02_dataset.builders.valuation import ValuationFeatureBuil
 from module.steps.step_01_data.pipeline import download_data, prepare_data, get_available_tickers, retry_missing_tickers
 from module.steps.step_02_dataset.dataset import build_master_dataset
 from module.steps.step_04_evaluation.evaluator import run_walkforward_pipeline
-from module.steps.step_05_live.live_fold import run_live_fold
 
 
 def _quarter_end_date(year: int, quarter: int):
@@ -100,7 +97,12 @@ def main():
         data_dir=FINNHUB_DATA_DIR,
         force_download=FORCE_DOWNLOAD,
         api_key=FINNHUB_API_KEY,
+        prices_only=UPDATE_PRICES_ONLY,
     )
+
+    if UPDATE_PRICES_ONLY:
+        log.info("UPDATE_PRICES_ONLY=True — actualizando solo precios y macro, sin consolidacion ni backtest")
+        return
 
     # ── 2. Consolidar datos
     prepare_data(tickers, data_dir=FINNHUB_DATA_DIR)
@@ -138,6 +140,7 @@ def main():
         insider_builder=insider_builder,
         sentiment_builder=sentiment_builder,
         min_history_quarters=MIN_HISTORY_QUARTERS,
+        days_before=DAYS_BEFORE_QUARTER_START,
     )
     df.to_csv(f"{RESULTS_DIR}/master_dataset.csv")
     log.info(f"Dataset maestro: {len(df)} observaciones — {len(tickers_ok)} tickers")
@@ -180,28 +183,6 @@ def main():
         )
     else:
         log.info("SKIP_BACKTEST=True — saltando walk-forward backtest histórico")
-
-    # ── 8. Fold live out-of-sample
-    if RUN_LIVE_FOLD:
-        run_live_fold(
-            df=df,
-            sector_map=sector_map,
-            tickers_ok=tickers_ok,
-            as_of_date=end_date_str,
-            router=router,
-            fundamental_builder=fundamental_builder,
-            technical_builder=technical_builder,
-            valuation_builder=valuation_builder,
-            insider_builder=insider_builder,
-            sentiment_builder=sentiment_builder,
-            results_dir=RESULTS_DIR,
-            agents_results_dir=AGENTS_RESULTS_DIR,
-            top_n=TOP_N_STOCKS,
-            min_history_quarters=MIN_HISTORY_QUARTERS,
-            random_seed=RANDOM_SEED,
-        )
-    else:
-        log.info("RUN_LIVE_FOLD=False — saltando fold live out-of-sample")
 
     # ── Resultado final
     log.info("\n" + "=" * 60)

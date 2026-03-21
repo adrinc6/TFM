@@ -30,6 +30,9 @@ SKIP_BACKTEST = False
 # Si True, re-descarga todos los datos aunque ya existan en disco
 FORCE_DOWNLOAD = False
 
+# Si True, solo actualiza precios y macro (sin consolidacion ni entrenamiento)
+UPDATE_PRICES_ONLY = False
+
 # Si True, reintenta descargar datos para los tickers eliminados por falta de datos
 RETRY_MISSING_TICKERS = False
 
@@ -80,16 +83,18 @@ TEST_START_QUARTER = 3
 
 # Fin del histórico / referencia para el fold live, expresado como año y trimestre.
 END_YEAR = 2026
-END_QUARTER = 1
+END_QUARTER = 2
 
-# Si True, ejecuta el fold live al final del pipeline.
-RUN_LIVE_FOLD = True
 
-# Días antes del inicio del quarter de test en los que se ejecuta la compra.
-# 0 = comprar justo al inicio del quarter (comportamiento original).
-# Ejemplo: 30 → comprar un mes antes de que empiece Q3, usando el snapshot de Q2.
-# El período de tenencia sigue terminando al final del quarter de test.
-DAYS_BEFORE_QUARTER_START = 0
+# Días antes del inicio del quarter siguiente en los que se ejecuta la compra y la venta.
+# 0 = comprar/vender justo en los cierres de quarter (comportamiento base).
+# Ejemplo: 30 → con snapshot de Q2 (cierre Jun 30):
+#   - Compra ≈ Jul 1 - 30 días = ~Jun 1  (antes de que empiece Q3 en mercado)
+#   - Venta  ≈ Oct 1 - 30 días = ~Sep 1  (antes de que empiece Q4)
+#   - Holding period real: ~Jun 1 → ~Sep 1 (un trimestre desplazado)
+# El forward_return del dataset también usa este offset para que el label
+# coincida exactamente con el holding period real.
+DAYS_BEFORE_QUARTER_START = 30
 
 # =============================================================================
 # 6. Parámetros del pipeline ML
@@ -104,8 +109,26 @@ SECTOR_ZSCORE_MIN_PEERS = 3
 # Número de folds KFold internos para generar OOF scores del meta-learner
 OOF_N_SPLITS = 3
 
-# Umbral mínimo de score para incluir un stock en la cartera long / shortlist
-PORTFOLIO_MIN_SCORE = 0.5
+# Umbral mínimo de score para incluir un stock en la cartera long / shortlist.
+# 0.55 filtra solo los tickers con señal positiva clara; con score-weighted
+# portfolio + min_stocks floor, garantiza cartera aunque haya pocos cualificados.
+PORTFOLIO_MIN_SCORE = 0.55
+
+# -----------------------------------------------------------------------------
+# Ajustes de robustez de scoring (sector + dispersión)
+# -----------------------------------------------------------------------------
+
+# Penaliza sectores con pocos peers: sector_confidence = min(1, sqrt(n_peers / k)).
+SECTOR_CONFIDENCE_PEERS = 10
+
+# Prior suave del sector sobre el score final:
+# final_score *= (SECTOR_SCORE_PRIOR_BASE + SECTOR_SCORE_PRIOR_WEIGHT * sector_score)
+SECTOR_SCORE_PRIOR_BASE = 0.5
+SECTOR_SCORE_PRIOR_WEIGHT = 0.5
+
+# Si un score de agente tiene baja dispersión, se contrae hacia 0.5.
+# scale = min(1, std / SCORE_DISPERSION_MIN_STD)
+SCORE_DISPERSION_MIN_STD = 0.03
 
 # =============================================================================
 # 7. Walk-forward backtesting
@@ -150,7 +173,9 @@ VALUATION_SUBSAMPLE     = 0.8
 # ── MomentumAgent (Random Forest) ────────────────────────────────────────────
 MOMENTUM_N_ESTIMATORS    = 300
 MOMENTUM_MAX_DEPTH       = 8
-MOMENTUM_MIN_SAMPLES_LEAF = 10
+# min_samples_leaf=5: hojas más pequeñas → probabilidades más extremas (mejor dispersión)
+# Con 300 árboles el riesgo de overfitting es bajo incluso con hojas pequeñas.
+MOMENTUM_MIN_SAMPLES_LEAF = 5
 
 # ── BearAgent (Random Forest híbrido) ────────────────────────────────────────
 BEAR_N_ESTIMATORS = 200
@@ -164,11 +189,20 @@ BEAR_HARD_THRESHOLD = 0.90
 # ── SentimentAgent (Random Forest) ───────────────────────────────────────────
 SENTIMENT_N_ESTIMATORS    = 200
 SENTIMENT_MAX_DEPTH       = 6
-SENTIMENT_MIN_SAMPLES_LEAF = 8
-# ── FeatureSelector (compartido por todos los agentes) ───────────────────────
+SENTIMENT_MIN_SAMPLES_LEAF = 5
+# ── FeatureSelector ──────────────────────────────────────────────────────────
 FEATURE_CORR_THRESHOLD = 0.85
-# Máximo de features conservadas por agente; si quedan menos, no pasa nada
-FEATURE_TOP_N = 10
+# Top-N features por agente. Los agentes con más señales legítimas usan más.
+# FundamentalAgent: ~30 ratios candidatos → 12 para no perder señal.
+# MomentumAgent: técnicos + earnings momentum → 12.
+# ValuationAgent, BearAgent, SentimentAgent: universos más acotados → 8.
+# MetaLearner: solo scores de agentes + interacciones → sin límite estricto (20).
+FEATURE_TOP_N             = 8   # default si el agente no especifica uno propio
+FUNDAMENTAL_FEATURE_TOP_N = 12
+MOMENTUM_FEATURE_TOP_N    = 12
+VALUATION_FEATURE_TOP_N   = 8
+BEAR_FEATURE_TOP_N        = 8
+SENTIMENT_FEATURE_TOP_N   = 8
 
 # ── MetaLearner (LR + GBM stacking) ──────────────────────────────────────────
 META_LR_C             = 0.5

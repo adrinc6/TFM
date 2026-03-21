@@ -24,12 +24,14 @@ class BaseAgent(ABC):
       - Guarda diagnósticos completos en results/agents/<nombre>/
     """
 
-    def __init__(self, name: str, results_dir: str, random_seed: int = 42):
-        self.name        = name
-        self.results_dir = Path(results_dir) / name
+    def __init__(self, name: str, results_dir: str, random_seed: int = 42,
+                 save_artifacts: bool = True):
+        self.name          = name
+        self.results_dir   = Path(results_dir) / name
         self.results_dir.mkdir(parents=True, exist_ok=True)
-        self.random_seed = random_seed
-        self.is_trained  = False
+        self.random_seed   = random_seed
+        self.is_trained    = False
+        self.save_artifacts = save_artifacts
         self._diagnostics:   Dict[str, Any]  = {}
         self._train_history: List[Dict]       = []
 
@@ -48,6 +50,8 @@ class BaseAgent(ABC):
     # ── Guardado de diagnósticos ──────────────────────────────────────────────
 
     def save_diagnostics(self, fold: Optional[int] = None, extra: Optional[Dict] = None):
+        if not self.save_artifacts:
+            return
         data = {
             "agent":     self.name,
             "timestamp": datetime.now().isoformat(),
@@ -62,6 +66,8 @@ class BaseAgent(ABC):
         log.info(f"[{self.name}] Diagnósticos → {path.name}")
 
     def save_feature_importances(self, importances: pd.Series, fold: Optional[int] = None):
+        if not self.save_artifacts:
+            return
         suffix = f"_fold{fold}" if fold is not None else ""
         path   = self.results_dir / f"feature_importances{suffix}.csv"
         importances.sort_values(ascending=False).to_csv(path, header=["importance"])
@@ -69,15 +75,19 @@ class BaseAgent(ABC):
                  + " | ".join(f"{k}={v:.3f}" for k, v in importances.nlargest(5).items()))
 
     def save_predictions(self, preds_df: pd.DataFrame, fold: Optional[int] = None):
+        if not self.save_artifacts:
+            return
         suffix = f"_fold{fold}" if fold is not None else ""
         path   = self.results_dir / f"predictions{suffix}.csv"
         preds_df.to_csv(path)
         log.info(f"[{self.name}] Predicciones ({len(preds_df)} obs) → {path.name}")
 
     def record_train_metrics(self, metrics: Dict[str, float], fold: Optional[int] = None):
+        self._diagnostics["last_train_metrics"] = metrics
+        if not self.save_artifacts:
+            return
         entry = {"fold": fold, "ts": datetime.now().isoformat(), **metrics}
         self._train_history.append(entry)
-        self._diagnostics["last_train_metrics"] = metrics
         path = self.results_dir / "train_history.json"
         with open(path, "w") as f:
             json.dump(self._train_history, f, indent=2, default=str)
@@ -237,14 +247,16 @@ class FeatureSelector:
     Paso 2 — Selección top-N por importancia del modelo:
         Entrena un RandomForest rápido y conserva hasta `top_n` features con
         mayor importancia Gini. Si el filtrado deja menos columnas, no se
-        fuerza el número objetivo. A partir de sus importancias se calculan
-        pesos normalizados [0,1] que se usan para ponderar las columnas antes
-        del entrenamiento final (multiplicando cada feature por su peso).
+        fuerza el número objetivo.
+
+    Nota: NO se aplican pesos a las features seleccionadas. Los modelos de árbol
+    (XGBoost, RF, GBM) son invariantes al escalado monotónico, y para la LR
+    el StandardScaler normaliza antes de ajustar. La selección es suficiente.
 
     Uso:
         selector = FeatureSelector()
-        X_train_sel, weights = selector.fit_transform(X_train, y_train)
-        X_test_sel = selector.transform(X_test)      # aplica pesos automáticamente
+        X_train_sel = selector.fit_transform(X_train, y_train)
+        X_test_sel  = selector.transform(X_test)
     """
 
     def __init__(self, corr_threshold: float = 0.95, top_n: int = 10,
@@ -253,18 +265,16 @@ class FeatureSelector:
         self.top_n           = top_n
         self.min_features    = min_features
         self.random_seed     = random_seed
-        self._selected_cols: List[str]         = []
-        self._dropped_corr:  List[str]         = []
-        self._dropped_imp:   List[str]         = []
-        self._feature_weights: Dict[str, float] = {}   # feature → peso normalizado
+        self._selected_cols: List[str] = []
+        self._dropped_corr:  List[str] = []
+        self._dropped_imp:   List[str] = []
 
     # ── fit_transform ──────────────────────────────────────────────────────────
 
     def fit_transform(self, X: pd.DataFrame, y: pd.Series,
                       agent_name: str = "") -> pd.DataFrame:
         """
-        Ajusta el selector y devuelve X con las features seleccionadas y
-        ponderadas. Los pesos se almacenan en self._feature_weights.
+        Ajusta el selector y devuelve X con las top-N features seleccionadas.
 
         Args:
             X: DataFrame de features (ya limpio).
@@ -272,7 +282,7 @@ class FeatureSelector:
             agent_name: Nombre del agente para los logs (opcional).
 
         Returns:
-            X transformado: top-N features escaladas por su peso normalizado.
+            X filtrado: solo las top-N features seleccionadas (sin escalar).
         """
         cols    = list(X.columns)
         prefix  = f"[FeatureSelector/{agent_name}]" if agent_name else "[FeatureSelector]"
@@ -375,27 +385,18 @@ class FeatureSelector:
             self._dropped_imp   = [c for c in remaining if c not in kept]
             self._selected_cols = kept
 
-            # Pesos normalizados (suma = 1) para las top-N seleccionadas
-            imp_top = imp_all[kept]
-            imp_sum = imp_top.sum()
-            weights = imp_top / imp_sum if imp_sum > 0 else pd.Series(1.0 / len(imp_top), index=kept)
-            self._feature_weights = weights.to_dict()
-
         except Exception:
-            self._selected_cols   = remaining[:max(self.min_features, self.top_n)]
-            self._dropped_imp     = [c for c in remaining if c not in self._selected_cols]
-            n = len(self._selected_cols)
-            self._feature_weights = {c: 1.0 / n for c in self._selected_cols}
+            self._selected_cols = remaining[:max(self.min_features, self.top_n)]
+            self._dropped_imp   = [c for c in remaining if c not in self._selected_cols]
 
         # ── Logs detallados ────────────────────────────────────────────────────
         log.info(f"{prefix} Paso 2 — hasta top-{self.top_n} features por importancia RF:")
-        log.info(f"{prefix}   {'Feature':<35} {'Importancia':>12} {'Peso norm.':>10} {'pb_y':>8}")
-        log.info(f"{prefix}   {'-'*35} {'-'*12} {'-'*10} {'-'*8}")
+        log.info(f"{prefix}   {'Feature':<35} {'Importancia':>12} {'pb_y':>8}")
+        log.info(f"{prefix}   {'-'*35} {'-'*12} {'-'*8}")
         for rank, feat in enumerate(self._selected_cols, 1):
-            imp_val = self._feature_weights[feat]
-            imp_abs = float(imp_all[feat]) if feat in imp_all.index else imp_val
+            imp_abs = float(imp_all[feat]) if feat in imp_all.index else 0.0
             pb_val  = pb_corr.get(feat, 0.0)
-            log.info(f"{prefix}   {rank:2}. {feat:<33} {imp_abs:>12.4f} {imp_val:>10.4f} {pb_val:>8.3f}")
+            log.info(f"{prefix}   {rank:2}. {feat:<33} {imp_abs:>12.4f} {pb_val:>8.3f}")
 
         if self._dropped_imp:
             log.info(f"{prefix}   Descartadas por importancia baja ({len(self._dropped_imp)}): "
@@ -408,34 +409,18 @@ class FeatureSelector:
             f"{len(self._selected_cols)} seleccionadas (máximo top-{self.top_n})"
         )
 
-        # Aplicar pesos: escalar cada feature por su peso normalizado
-        return self._apply_weights(X[self._selected_cols])
+        return X[self._selected_cols].copy()
 
     # ── transform ─────────────────────────────────────────────────────────────
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        present = [c for c in self._selected_cols if c in X.columns]
-        missing = [c for c in self._selected_cols if c not in X.columns]
-        result  = X[present].copy()
-        for c in missing:
-            result[c] = 0.0
-        return self._apply_weights(result[self._selected_cols])
-
-    # ── helpers ────────────────────────────────────────────────────────────────
-
-    def _apply_weights(self, X: pd.DataFrame) -> pd.DataFrame:
-        """Multiplica cada columna por su peso normalizado."""
-        X = X.copy()
-        for col, w in self._feature_weights.items():
-            if col in X.columns:
-                X[col] = X[col] * w
-        return X
+        result = X.reindex(columns=self._selected_cols, fill_value=0.0)
+        return result.copy()
 
     def report(self) -> Dict:
         return {
-            "n_selected":      len(self._selected_cols),
-            "selected":        self._selected_cols,
-            "feature_weights": self._feature_weights,
-            "dropped_corr":    self._dropped_corr,
-            "dropped_imp":     self._dropped_imp,
+            "n_selected":   len(self._selected_cols),
+            "selected":     self._selected_cols,
+            "dropped_corr": self._dropped_corr,
+            "dropped_imp":  self._dropped_imp,
         }

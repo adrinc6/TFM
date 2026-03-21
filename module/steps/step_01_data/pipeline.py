@@ -19,10 +19,13 @@ def download_data(
     data_dir: str,
     force_download: bool = False,
     api_key: str = "",
+    prices_only: bool = False,
 ) -> List[str]:
-    log.info("PASO 1 — DESCARGANDO DATOS (Finnhub + Yahoo Finance)")
-    log.info(f"  Tickers: {len(tickers)} | {start_date} -> {end_date}")
-    log.info(f"  Destino: {data_dir}")
+    log.info("=" * 60)
+    log.info("  PASO 1 — DESCARGA DE DATOS")
+    log.info(f"  Tickers : {len(tickers)} | Periodo: {start_date} → {end_date}")
+    log.info(f"  Destino : {data_dir}")
+    log.info("=" * 60)
 
     run_download(
         api_key=api_key,
@@ -31,17 +34,21 @@ def download_data(
         end=end_date,
         base_dir=data_dir,
         force=force_download,
+        prices_only=prices_only,
     )
 
-    log.info("  Descarga completada.")
+    log.info("  Descarga completada. Continuando con consolidación...")
     return tickers
 
 
 def prepare_data(tickers: List[str], data_dir: str) -> None:
-    log.info("PASO 2 — CONSOLIDANDO DATOS (FinnhubConsolidator)")
+    log.info("=" * 60)
+    log.info("  PASO 2 — CONSOLIDACIÓN DE DATOS")
+    log.info(f"  Normalizando y mergeando ficheros Finnhub para {len(tickers)} tickers...")
+    log.info("=" * 60)
     consolidator = FinnhubConsolidator(finnhub_data_dir=data_dir)
     consolidator.process_all_tickers(tickers)
-    log.info("Consolidacion completada.")
+    log.info("  Consolidación completada.")
 
 
 def get_available_tickers(
@@ -68,10 +75,10 @@ def get_available_tickers(
     available = sorted(available)
 
     if missing_detail:
-        log.info(f"Tickers sin datos completos: {len(missing_detail)}")
+        log.info(f"  Tickers sin datos completos: {len(missing_detail)} (sin precios o consolidado)")
         for ticker, missing in sorted(missing_detail.items()):
-            log.debug(f"  {ticker}: falta {missing}")
-    log.info(f"Tickers con datos completos: {len(available)} / {len(tickers)}")
+            log.debug(f"    {ticker}: falta {missing}")
+    log.info(f"  Tickers listos para el pipeline: {len(available)} / {len(tickers)}")
     return available, missing_detail
 
 
@@ -86,7 +93,7 @@ def retry_missing_tickers(
         return []
 
     tickers_missing = list(missing_detail.keys())
-    log.info(f"REINTENTANDO {len(tickers_missing)} tickers con datos incompletos...")
+    log.info(f"  Reintentando descarga para {len(tickers_missing)} tickers incompletos...")
 
     run_download(
         api_key=api_key,
@@ -112,8 +119,8 @@ def retry_missing_tickers(
     ]
     still_missing = set(tickers_missing) - set(recovered)
 
-    log.info(f"  Recuperados: {recovered}")
+    log.info(f"  Recuperados tras reintento: {len(recovered)} tickers  {recovered}")
     if still_missing:
-        log.info(f"  Siguen sin datos: {still_missing}")
+        log.warning(f"  Siguen sin datos tras reintento ({len(still_missing)}): {sorted(still_missing)}")
 
     return recovered

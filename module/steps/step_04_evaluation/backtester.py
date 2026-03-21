@@ -97,31 +97,49 @@ class WalkForwardBacktester:
 		train_start=None,
 		train_years_int: int = 0,
 	) -> Dict:
+		min_stocks = max(1, self.top_n_stocks // 2)
 		ordered = predictions_df.sort_values("score", ascending=False)
 		qualified = ordered[ordered["score"] >= PORTFOLIO_MIN_SCORE]
-		top_source = qualified if not qualified.empty else ordered.head(1)
-		top_df = top_source.head(self.top_n_stocks)[["ticker", "score"]].copy()
+		if not qualified.empty:
+			# Tomar hasta top_n pero garantizar al menos min_stocks
+			n_take = max(min(len(qualified), self.top_n_stocks), min_stocks)
+			top_df = ordered.head(n_take)[["ticker", "score"]].copy()
+			log.info(
+				f"[Backtester] Fold {fold_id}: {len(qualified)} tickers superaron umbral {PORTFOLIO_MIN_SCORE:.2f} "
+				f"→ seleccionando top {n_take} (mín={min_stocks})"
+			)
+		else:
+			top_df = ordered.head(self.top_n_stocks)[["ticker", "score"]].copy()
+			log.warning(
+				f"[Backtester] Fold {fold_id}: ningún ticker superó el umbral {PORTFOLIO_MIN_SCORE:.2f} "
+				f"→ seleccionando top-{self.top_n_stocks} por ranking (scores: "
+				f"{ordered['score'].iloc[0]:.3f} .. {ordered['score'].iloc[self.top_n_stocks-1]:.3f})"
+			)
 		top = top_df["ticker"].tolist()
 		if not top:
-			log.warning(f"[Backtester] Fold {fold_id}: sin seleccion de stocks")
+			log.warning(f"[Backtester] Fold {fold_id}: sin tickers disponibles — fold omitido.")
 			return {}
-		if len(top) < self.top_n_stocks:
-			log.info(
-				f"[Backtester] Fold {fold_id}: seleccionados {len(top)} stocks "
-				f"(tope={self.top_n_stocks}, umbral={PORTFOLIO_MIN_SCORE:.2f})"
-			)
 
 		daily_returns = []
 		tickers_with_prices = []
 		ticker_returns = {}
 		bench_period = benchmark.loc[test_start:test_end].dropna()
+		if len(bench_period) < 2:
+			log.warning(f"[Backtester] Fold {fold_id}: benchmark sin datos suficientes — fold omitido.")
+			return {}
+		actual_end = bench_period.index.max()
+		if actual_end < test_end:
+			log.info(
+				f"[Backtester] Fold {fold_id}: precios parciales "
+				f"{test_start.date()} -> {actual_end.date()} (teorico hasta {test_end.date()})"
+			)
 
 		for ticker in top:
 			if ticker not in prices_dict:
 				continue
 			prices = prices_dict[ticker]
 			cc = "Close" if "Close" in prices.columns else prices.columns[3]
-			period = prices.loc[test_start:test_end, cc]
+			period = prices.loc[test_start:actual_end, cc]
 			if len(period) < 2:
 				continue
 			ret = period.pct_change().dropna()
@@ -171,9 +189,9 @@ class WalkForwardBacktester:
 
 		# Log de pesos
 		weighting_mode = "softmax(score)" if self.score_weighted else "equiponderado"
-		log.info(f"[Backtester] Fold {fold_id} — pesos cartera ({weighting_mode}):")
+		log.info(f"[Backtester] Fold {fold_id} — cartera final ({weighting_mode}, {len(tickers_with_prices)} stocks):")
 		for t in tickers_with_prices:
-			log.info(f"  {t:<8} peso={ticker_weights[t]:.3f}  score={top_df.set_index('ticker').loc[t,'score']:.3f}  ret={ticker_returns[t]:+.2%}")
+			log.info(f"    {t:<8}  peso={ticker_weights[t]:.3f}  score={top_df.set_index('ticker').loc[t,'score']:.3f}  ret={ticker_returns[t]:+.2%}")
 
 		# Etiqueta del quarter de test (el quarter que se predijo)
 		test_q_ts = pd.Timestamp(test_start)
@@ -184,13 +202,16 @@ class WalkForwardBacktester:
 		for ticker, ret_series in zip(tickers_with_prices, daily_returns):
 			ticker_price_series[ticker] = (1 + ret_series).cumprod()
 
+		price_days = int(len(bench_period.loc[test_start:actual_end]))
 		fold_result = {
 			"fold": fold_id,
 			"year_quarter": year_quarter,
 			"train_years": train_years_int,
 			"train_start": str(train_start.date()) if train_start is not None else None,
 			"test_start": str(test_start.date()),
-			"test_end": str(test_end.date()),
+			"test_end": str(actual_end.date()),
+			"test_end_target": str(test_end.date()),
+			"price_days": price_days,
 			"selected_tickers": top,
 			"n_stocks": len(top),
 			**strat_metrics,
@@ -213,11 +234,10 @@ class WalkForwardBacktester:
 			json.dump(fold_result, f, indent=2, default=str)
 
 		log.info(
-			f"[Backtester] Fold {fold_id:03d} [{train_years_int}Y train] "
-			f"test {test_start.date()}->{test_end.date()} | "
-			f"Strat={strat_metrics['strategy_cumulative_return']:.2%} "
-			f"Bench={bench_metrics['benchmark_cumulative_return']:.2%} "
-			f"a={alpha:.2%} Sharpe={strat_metrics['strategy_sharpe']:.2f}"
+			f"[Backtester] Fold {fold_id} — {len(top)} stocks | "
+			f"Cartera={strat_metrics['strategy_cumulative_return']:+.2%}  "
+			f"Benchmark={bench_metrics['benchmark_cumulative_return']:+.2%}  "
+			f"Alpha={alpha:+.2%}  Sharpe={strat_metrics['strategy_sharpe']:.2f}"
 		)
 		return fold_result
 
@@ -268,20 +288,20 @@ class WalkForwardBacktester:
 		}).to_csv(self.results_dir / "returns_series.csv")
 
 		log.info("=" * 65)
-		log.info(f"  Folds totales:     {len(self.fold_results)}")
+		log.info("  RESUMEN WALK-FORWARD BACKTEST")
+		log.info(f"  Folds completados : {len(self.fold_results)}")
 		for ny, stats in sorted(by_train_years.items()):
 			log.info(
-				f"  [{ny}Y train] n={stats['n_folds']:3d} | "
+				f"  [{ny}Y train]  n={stats['n_folds']:2d} folds | "
 				f"ret={stats['mean_strategy_return']:+.2%} | "
-				f"a={stats['mean_alpha']:+.2%} | "
-				f"a_pos={stats['pct_positive_alpha']:.0%} | "
+				f"alpha={stats['mean_alpha']:+.2%} | "
+				f"alpha>0={stats['pct_positive_alpha']:.0%} | "
 				f"Sharpe={stats['mean_strategy_sharpe']:.3f}"
 			)
-		log.info(f"  Alpha medio total: {mean_alpha:+.2%}")
-		log.info(f"  Folds a positivo:  {pct_alpha_pos:.0%}")
-		log.info(f"  Sharpe Estrategia: {global_strat.get('global_strategy_sharpe', 0):.3f}")
-		log.info(f"  Sharpe Benchmark:  {global_bench.get('global_benchmark_sharpe', 0):.3f}")
-		log.info(f"  Max DD Estrategia: {global_strat.get('global_strategy_max_drawdown', 0):.2%}")
+		log.info(f"  Alpha medio       : {mean_alpha:+.2%}  ({pct_alpha_pos:.0%} de folds positivos)")
+		log.info(f"  Sharpe Estrategia : {global_strat.get('global_strategy_sharpe', 0):.3f}")
+		log.info(f"  Sharpe Benchmark  : {global_bench.get('global_benchmark_sharpe', 0):.3f}")
+		log.info(f"  Max Drawdown      : {global_strat.get('global_strategy_max_drawdown', 0):.2%}")
 		log.info("=" * 65)
 		return summary
 
