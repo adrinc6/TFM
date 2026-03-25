@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+import json
+from pathlib import Path
 from typing import Dict, List, Optional
 
 import numpy as np
@@ -16,6 +18,98 @@ from module.steps.step_02_dataset.builders.insider import InsiderFeatureBuilder
 from module.steps.step_02_dataset.builders.sentiment import SentimentFeatureBuilder
 
 log = logging.getLogger(__name__)
+
+
+def _build_filing_date_map_for_ticker(data_dir: str, ticker: str) -> Dict[pd.Timestamp, pd.Timestamp]:
+    """Build mapping report_end_date -> filed_date for a ticker from raw Finnhub files."""
+    per_ticker: Dict[pd.Timestamp, pd.Timestamp] = {}
+    for file_name in ["financials_reported_quarterly.json", "financials_reported_annual.json"]:
+        file_path = Path(data_dir) / str(ticker) / file_name
+        if not file_path.exists():
+            continue
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                payload = json.load(f)
+        except Exception:
+            continue
+        for item in payload.get("data", []):
+            end_date = item.get("endDate")
+            filed_date = item.get("filedDate") or item.get("acceptedDate")
+            if not end_date or not filed_date:
+                continue
+            try:
+                end_ts = pd.Timestamp(end_date).normalize()
+                filed_ts = pd.Timestamp(filed_date).normalize()
+            except Exception:
+                continue
+            old = per_ticker.get(end_ts)
+            if old is None or filed_ts > old:
+                per_ticker[end_ts] = filed_ts
+    return per_ticker
+
+
+def _fund_snapshot_as_of_filing(
+    fund_enriched: pd.DataFrame,
+    filing_date_map: Dict[pd.Timestamp, pd.Timestamp],
+    snapshot_date: pd.Timestamp,
+) -> Optional[pd.Series]:
+    """
+    Select latest fundamental report that is already published at snapshot_date.
+    If no filing metadata is available, fallback to latest report_end_date <= snapshot_date.
+    """
+    if fund_enriched is None or fund_enriched.empty:
+        return None
+
+    idx = pd.to_datetime(fund_enriched.index).normalize()
+    report_dates = pd.Index(idx)
+
+    def _filed_date_exact(report_dt: pd.Timestamp) -> pd.Timestamp:
+        dt = pd.Timestamp(report_dt).normalize()
+        filed = filing_date_map.get(dt)
+        if filed is None:
+            return pd.NaT
+        return pd.Timestamp(filed).normalize()
+
+    if filing_date_map:
+        filed_series = pd.to_datetime(report_dates.map(_filed_date_exact), errors="coerce")
+        links = pd.DataFrame(
+            {
+                "report_end_date": pd.to_datetime(report_dates).normalize(),
+                "report_filed_date": filed_series,
+            }
+        )
+        links = links.dropna(subset=["report_filed_date"])
+        links = links[links["report_filed_date"] <= snapshot_date]
+
+        if not links.empty:
+            # Regla principal: usar el ultimo reporte publicado (filedDate mas reciente).
+            # Si hay empate por filedDate, tomar el endDate mas reciente.
+            links = links.sort_values(["report_filed_date", "report_end_date"]).reset_index(drop=True)
+            chosen = links.iloc[-1]
+            chosen_report = pd.Timestamp(chosen["report_end_date"]).normalize()
+            chosen_filed = pd.Timestamp(chosen["report_filed_date"]).normalize()
+
+            selected = fund_enriched.loc[fund_enriched.index.normalize() == chosen_report]
+            if not selected.empty:
+                out = selected.iloc[-1].copy()
+                out["report_end_date_used"] = chosen_report
+                out["report_filed_date_used"] = chosen_filed
+                out["is_fundamental_carry_forward"] = bool(chosen_filed.to_period("Q") != snapshot_date.to_period("Q"))
+                return out
+
+    av = fund_enriched[fund_enriched.index <= snapshot_date]
+    if av.empty:
+        return None
+    out = av.iloc[-1].copy()
+    chosen_report = pd.Timestamp(av.index[-1]).normalize()
+    out["report_end_date_used"] = chosen_report
+    out["report_filed_date_used"] = _filed_date_exact(chosen_report) if filing_date_map else pd.NaT
+    chosen_filed = pd.Timestamp(out["report_filed_date_used"]).normalize() if pd.notna(out["report_filed_date_used"]) else pd.NaT
+    if pd.notna(chosen_filed):
+        out["is_fundamental_carry_forward"] = bool(chosen_filed.to_period("Q") != snapshot_date.to_period("Q"))
+    else:
+        out["is_fundamental_carry_forward"] = bool(chosen_report.to_period("Q") != snapshot_date.to_period("Q"))
+    return out
 
 
 def _load_ticker_sources(router: DataRouter, ticker: str) -> Dict[str, Optional[pd.DataFrame]]:
@@ -41,8 +135,11 @@ def _build_feature_record(
     valuation_builder: ValuationFeatureBuilder,
     insider_builder: InsiderFeatureBuilder,
     sentiment_builder: SentimentFeatureBuilder,
+    filing_date_map: Dict[pd.Timestamp, pd.Timestamp],
     include_label: bool,
-    days_before: int = 0,
+    snapshot_lag_days: int = 45,
+    holding_period_months: int = 3,
+    technical_lookback_days: int = 300,
 ) -> Optional[Dict]:
     prices = sources["prices"]
     eps_df = sources["eps_df"]
@@ -52,32 +149,18 @@ def _build_feature_record(
     info_source = sources.get("info")
     info = info_source if info_source is not None else {}
 
-    # ── Feature date: el día en que realmente operamos ───────────────────────
-    # Con days_before > 0, TODOS los features (técnicos Y fundamentales) se
-    # calculan como si fuéramos en entry_date (el día real de compra).
-    #
-    # Ejemplo con days_before=30, as_of=Mar 31 (fin de Q1):
-    #   feature_date = Apr 1 - 30 = Mar 2
-    #   - Fundamentales: último snapshot disponible ≤ Mar 2 = Q4 (Dic 31) ✓
-    #   - Features técnicas: precios hasta Mar 2                          ✓
-    #   - Label: retorno Mar 2 → Jun 1                                    ✓
-    #
-    # Esto replica exactamente la realidad: el 2 de Marzo tienes los datos
-    # de Q4 (publicados en Enero-Febrero) y los precios hasta ese día.
-    # Los fundamentales de Q1 (Mar 31) NO están disponibles aún.
-    #
-    # Con days_before=0: feature_date = as_of, sin cambio de comportamiento.
-    if days_before > 0:
-        q_end = DataRouter.quarter_end(as_of)
-        feature_date = q_end + pd.Timedelta(days=1) - pd.Timedelta(days=days_before)
-        # Salvaguarda: feature_date nunca puede superar as_of
-        feature_date = min(feature_date, as_of)
-    else:
-        feature_date = as_of
+    # Snapshot date: primer dia del quarter + snapshot_lag_days.
+    # Esto asegura un punto temporal consistente por quarter.
+    q_start = as_of.to_period("Q").start_time.normalize()
+    feature_date = q_start + pd.Timedelta(days=max(int(snapshot_lag_days), 0))
 
-    # Snapshot fundamental: último trimestre disponible ANTES de feature_date.
-    # Con days_before=30: feature_date=Mar 2 → retorna Q4 (Dic 31). Realista.
-    fund_snap = router.get_fundamental_snapshot(fund_enriched, feature_date)
+    # Snapshot fundamental por fecha de publicacion real (filedDate).
+    # Si no hay reporte del quarter actual, usa el ultimo previamente publicado.
+    fund_snap = _fund_snapshot_as_of_filing(
+        fund_enriched=fund_enriched,
+        filing_date_map=filing_date_map,
+        snapshot_date=feature_date,
+    )
     if fund_snap is None:
         return None
 
@@ -88,7 +171,7 @@ def _build_feature_record(
         if k not in fund_snap.index:
             fund_snap[k] = v
 
-    price_window = router.get_price_window(prices, feature_date, lookback_days=400)
+    price_window = router.get_price_window(prices, feature_date, lookback_days=technical_lookback_days)
     if len(price_window) < 20:
         return None
 
@@ -128,18 +211,19 @@ def _build_feature_record(
         "ticker": ticker,
         "date": as_of,
         "year_quarter": year_quarter,
+        "snapshot_date": feature_date,
         "sector": info.get("sector", "Unknown"),
         "industry": info.get("industry", "Unknown"),
     }
 
     if include_label:
-        # Label trimestral: retorno del holding period real.
-        # Con days_before=30: mide desde ~30 días antes del inicio del Q siguiente
-        # hasta ~30 días antes del inicio del Q+2 — alineado con el backtester.
-        fwd_return = router.compute_quarterly_forward_return(prices, as_of, days_before=days_before)
-        if fwd_return is None:
-            return None
-        record["forward_return"] = fwd_return
+        # Label del snapshot: retorno desde snapshot_date hasta snapshot_date + holding.
+        fwd_return = router.compute_forward_return_from_snapshot(
+            prices=prices,
+            snapshot_date=feature_date,
+            holding_period_months=holding_period_months,
+        )
+        record["forward_return"] = np.nan if fwd_return is None else fwd_return
 
     record.update(fund_snap.to_dict())
     record.update(tech_feats.to_dict())
@@ -158,7 +242,9 @@ def build_master_dataset(
     insider_builder: InsiderFeatureBuilder,
     sentiment_builder: SentimentFeatureBuilder,
     min_history_quarters: int = 4,
-    days_before: int = 0,
+    snapshot_lag_days: int = 45,
+    holding_period_months: int = 3,
+    technical_lookback_days: int = 300,
 ) -> pd.DataFrame:
     log.info(f"Construyendo dataset maestro para {len(tickers)} tickers...")
     records = []
@@ -177,7 +263,12 @@ def build_master_dataset(
                 continue
 
             fund_enriched = fundamental_builder.build(consolidated)
-            eval_dates = consolidated.index.tolist()
+            filing_date_map = _build_filing_date_map_for_ticker(str(router.data_dir), ticker)
+
+            # Panel trimestral continuo por ticker: una fila por quarter.
+            min_q = pd.Timestamp(consolidated.index.min()).to_period("Q")
+            max_q = pd.Timestamp(consolidated.index.max()).to_period("Q") + 1
+            eval_dates = [p.end_time.normalize() for p in pd.period_range(min_q, max_q, freq="Q")]
 
             for as_of in eval_dates:
                 as_of = pd.Timestamp(as_of)
@@ -193,8 +284,11 @@ def build_master_dataset(
                     valuation_builder=valuation_builder,
                     insider_builder=insider_builder,
                     sentiment_builder=sentiment_builder,
+                    filing_date_map=filing_date_map,
                     include_label=True,
-                    days_before=days_before,
+                    snapshot_lag_days=snapshot_lag_days,
+                    holding_period_months=holding_period_months,
+                    technical_lookback_days=technical_lookback_days,
                 )
                 if record is not None:
                     records.append(record)
@@ -265,6 +359,7 @@ def build_live_features(
                 valuation_builder=valuation_builder,
                 insider_builder=insider_builder,
                 sentiment_builder=sentiment_builder,
+                filing_date_map=_build_filing_date_map_for_ticker(str(router.data_dir), ticker),
                 include_label=False,
             )
             if record is not None:

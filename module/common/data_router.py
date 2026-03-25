@@ -233,51 +233,89 @@ class DataRouter:
 
     def compute_quarterly_forward_return(
         self, prices: pd.DataFrame, as_of: pd.Timestamp,
-        days_before: int = 0,
+                lag_days: int = 45,
+                holding_period_months: int = 3,
+                days_before: Optional[int] = None,
     ) -> Optional[float]:
         """
-        Retorno del holding period real: desde `days_before` días antes del
-        inicio del quarter siguiente hasta `days_before` días antes del inicio
-        del quarter posterior.
+                Retorno del holding period real del snapshot trimestral:
+                    - Entrada: fin de quarter + lag_days
+                    - Salida : entrada + holding_period_months
 
-        Ejemplo con days_before=30 y as_of=Mar 31 (fin de Q1):
-          - Entrada : Mar 31 + 1 día - 30 días ≈ Mar 2  (30 días antes del inicio de Q2)
-          - Salida  : Jun 30 + 1 día - 30 días ≈ Jun 1  (30 días antes del inicio de Q3)
+                Ejemplo con lag_days=45, holding_period_months=3 y as_of=Mar 31 (Q1):
+                    - Entrada : ~May 15 (mitad de Q2)
+                    - Salida  : ~Aug 15 (mitad de Q3)
 
-        Con days_before=0 equivale al comportamiento anterior:
-          p0 = último precio ≤ fin Q1, p1 = último precio ≤ fin Q2.
+                Compatibilidad: si se pasa days_before, se conserva el comportamiento
+                anterior (entrada/salida antes del inicio de quarter).
 
         Solo para construir el label — nunca como feature.
         """
         cc = "Close" if "Close" in prices.columns else prices.columns[0]
 
         q_end_current = self.quarter_end(as_of)
-        q_end_next    = self.next_quarter_end(as_of)
+        q_end_next = self.next_quarter_end(as_of)
 
-        if days_before > 0:
-            # entry = primer día de Q siguiente - days_before
-            entry_date = q_end_current + pd.Timedelta(days=1) - pd.Timedelta(days=days_before)
-            # exit  = primer día de Q+2 - days_before
-            exit_date  = q_end_next    + pd.Timedelta(days=1) - pd.Timedelta(days=days_before)
+        if days_before is not None:
+            if days_before > 0:
+                # entry = primer día de Q siguiente - days_before
+                entry_date = q_end_current + pd.Timedelta(days=1) - pd.Timedelta(days=days_before)
+                # exit  = primer día de Q+2 - days_before
+                exit_date  = q_end_next    + pd.Timedelta(days=1) - pd.Timedelta(days=days_before)
 
+                entry_window = prices[prices.index <= entry_date]
+                exit_window  = prices[prices.index <= exit_date]
+
+                if entry_window.empty or exit_window.empty:
+                    return None
+
+                p0 = float(entry_window[cc].iloc[-1])
+                p1 = float(exit_window[cc].iloc[-1])
+            else:
+                past_window   = prices[prices.index <= q_end_current]
+                future_window = prices[(prices.index > q_end_current) & (prices.index <= q_end_next)]
+
+                if past_window.empty or future_window.empty:
+                    return None
+
+                p0 = float(past_window[cc].iloc[-1])
+                p1 = float(future_window[cc].iloc[-1])
+        else:
+            lag_days = max(int(lag_days), 0)
+            holding_period_months = max(int(holding_period_months), 1)
+            entry_date = q_end_current + pd.Timedelta(days=lag_days)
+            exit_date = entry_date + pd.DateOffset(months=holding_period_months)
             entry_window = prices[prices.index <= entry_date]
-            exit_window  = prices[prices.index <= exit_date]
-
+            exit_window = prices[prices.index <= exit_date]
             if entry_window.empty or exit_window.empty:
                 return None
-
             p0 = float(entry_window[cc].iloc[-1])
             p1 = float(exit_window[cc].iloc[-1])
-        else:
-            past_window   = prices[prices.index <= q_end_current]
-            future_window = prices[(prices.index > q_end_current) & (prices.index <= q_end_next)]
 
-            if past_window.empty or future_window.empty:
-                return None
+        if p0 <= 0 or pd.isna(p0) or pd.isna(p1):
+            return None
+        return (p1 - p0) / p0
 
-            p0 = float(past_window[cc].iloc[-1])
-            p1 = float(future_window[cc].iloc[-1])
+    def compute_forward_return_from_snapshot(
+        self,
+        prices: pd.DataFrame,
+        snapshot_date: pd.Timestamp,
+        holding_period_months: int = 3,
+    ) -> Optional[float]:
+        """Forward return from a concrete snapshot_date to snapshot_date + holding window."""
+        if prices is None or prices.empty:
+            return None
+        cc = "Close" if "Close" in prices.columns else prices.columns[0]
+        holding_period_months = max(int(holding_period_months), 1)
 
+        entry_window = prices[prices.index <= snapshot_date]
+        exit_date = snapshot_date + pd.DateOffset(months=holding_period_months)
+        exit_window = prices[prices.index <= exit_date]
+        if entry_window.empty or exit_window.empty:
+            return None
+
+        p0 = float(entry_window[cc].iloc[-1])
+        p1 = float(exit_window[cc].iloc[-1])
         if p0 <= 0 or pd.isna(p0) or pd.isna(p1):
             return None
         return (p1 - p0) / p0

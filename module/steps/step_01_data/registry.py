@@ -40,9 +40,17 @@ class Registry:
         self._data[group][endpoint] = datetime.utcnow().isoformat()
         self.save()
 
-    def clear(self, group: str | None = None) -> None:
+    def clear(self, group: str | None = None, delete_file: bool = False) -> None:
         if group:
             self._data.pop(group, None)
         else:
             self._data = {}
+        if delete_file and not group:
+            try:
+                if self.path.exists():
+                    self.path.unlink()
+            except Exception:
+                # Fallback seguro: si no se puede borrar, al menos deja registro vacio.
+                self.save()
+            return
         self.save()

@@ -25,9 +25,23 @@ from environment import (
     META_LR_C, META_GBM_N_ESTIMATORS, META_GBM_MAX_DEPTH,
     META_GBM_LEARNING_RATE, META_GBM_SUBSAMPLE,
     BEAR_HARD_THRESHOLD,
+    META_ENABLE_CONSENSUS_FEATURES, META_BULLISH_SCORE_THRESHOLD,
+    META_ENABLE_SCORE_RECALIBRATION, META_SCORE_RECALIBRATION_TEMPERATURE,
+    META_BASE_SCORE_BLEND_WEIGHT,
 )
 
 log = logging.getLogger(__name__)
+
+
+def _score_stats_msg(name: str, s: pd.Series) -> str:
+    v = pd.to_numeric(s, errors="coerce").replace([np.inf, -np.inf], np.nan).dropna()
+    if v.empty:
+        return f"[{name}] sin datos"
+    return (
+        f"[{name}] n={len(v)} min={v.min():.4f} q25={v.quantile(0.25):.4f} mean={v.mean():.4f} "
+        f"q50={v.quantile(0.50):.4f} q75={v.quantile(0.75):.4f} max={v.max():.4f} "
+        f"| >=0.50={(v >= 0.50).mean():.1%} >=0.55={(v >= 0.55).mean():.1%} >=0.60={(v >= 0.60).mean():.1%}"
+    )
 
 try:
     from sklearn.linear_model import LogisticRegression
@@ -46,7 +60,7 @@ AGENT_SCORE_COLS = [
     "fundamental_score",
     "valuation_score",
     "momentum_score",
-    "bear_score",        # Se usará como (1 - bear_score) en _prepare
+    "bear_score",        # Safety score (alto = menor riesgo)
     "sentiment_score",   # Consenso analistas + insiders + beat rate
     "sector_score",      # Top-down: probabilidad de que el sector supere al S&P
 ]
@@ -68,6 +82,9 @@ class MetaLearner(BaseAgent):
 
     BEAR_HARD_THRESHOLD = BEAR_HARD_THRESHOLD   # Solo interviene en casos extremos
     BEAR_SOFT_PENALTY   = 0.0                   # Desactivado: evita doble penalización
+    # Guardrail de calibración: evita que un scale muy estrecho aplaste scores fuera de train.
+    RECAL_MIN_SCALE = 0.08
+    RECAL_BLEND_WITH_RAW = 0.40
 
     def __init__(self, results_dir: str, random_seed: int = 42,
                  use_sector_features: bool = True,
@@ -84,6 +101,13 @@ class MetaLearner(BaseAgent):
         self._lr_weight:    float              = 0.5
         self._gbm_weight:   float              = 0.5
         self._explainer:    Optional[AgentExplainer] = None
+        self._use_consensus_features = bool(META_ENABLE_CONSENSUS_FEATURES)
+        self._bullish_score_threshold = float(META_BULLISH_SCORE_THRESHOLD)
+        self._enable_score_recalibration = bool(META_ENABLE_SCORE_RECALIBRATION)
+        self._score_recal_temperature = max(float(META_SCORE_RECALIBRATION_TEMPERATURE), 1e-3)
+        self._base_score_blend_weight = float(np.clip(META_BASE_SCORE_BLEND_WEIGHT, 0.0, 1.0))
+        self._score_center: float = 0.5
+        self._score_scale: float = 0.1
 
     # ── Fit ───────────────────────────────────────────────────────────────────
 
@@ -140,6 +164,24 @@ class MetaLearner(BaseAgent):
         self._gbm_model.fit(X_prep, y_cl)
         self.is_trained = True
 
+        # Calibración robusta de score usando distribución in-sample de train.
+        train_raw = self._raw_ensemble_score(X_prep)
+        q1 = float(train_raw.quantile(0.25))
+        q3 = float(train_raw.quantile(0.75))
+        iqr = max(q3 - q1, 1e-3)
+        self._score_center = float(train_raw.median())
+        # Escala robusta: IQR/1.349 ≈ sigma si la distribución fuese normal.
+        self._score_scale = max(iqr / 1.349, 1e-3)
+        log.info(
+            "[MetaLearner] Calibración train: center=%.4f scale=%.6f (q25=%.4f q75=%.4f iqr=%.6f)",
+            self._score_center,
+            self._score_scale,
+            q1,
+            q3,
+            iqr,
+        )
+        log.info(_score_stats_msg("MetaLearner/train_raw_ensemble", train_raw))
+
         # Coeficientes LR → interpretabilidad directa
         lr_coef = pd.Series(
             self._lr_model.named_steps["clf"].coef_[0],
@@ -155,6 +197,12 @@ class MetaLearner(BaseAgent):
             "cv_gbm":           cv_gbm,
             "lr_weight":        self._lr_weight,
             "gbm_weight":       self._gbm_weight,
+            "consensus_features_enabled": self._use_consensus_features,
+            "bullish_score_threshold": self._bullish_score_threshold,
+            "score_recalibration_enabled": self._enable_score_recalibration,
+            "score_recalibration_temperature": self._score_recal_temperature,
+            "score_center_train": self._score_center,
+            "score_scale_train": self._score_scale,
             "lr_coefficients":  lr_coef.to_dict(),
             "gbm_importances":  gbm_imp.nlargest(10).to_dict(),
             "bear_hard_threshold": self.BEAR_HARD_THRESHOLD,
@@ -179,22 +227,102 @@ class MetaLearner(BaseAgent):
         X_prep = self.clean_features_predict(self._prepare(X, sector_col, fit_mode=False))
         X_al   = self._align(X_prep)
 
-        lr_p  = self._lr_model.predict_proba(X_al)[:, 1]
-        gbm_p = self._gbm_model.predict_proba(X_al)[:, 1]
-        score = pd.Series(
-            self._lr_weight * lr_p + self._gbm_weight * gbm_p,
-            index=X.index, name="final_score",
-        )
+        score = self._raw_ensemble_score(X_al)
+        score.index = X.index
+        log.info(_score_stats_msg("MetaPredict/raw_ensemble", score))
+        score = self._blend_with_base_consensus(score, X)
+        if self._enable_score_recalibration:
+            score = self._recalibrate_scores(score)
+            log.info(_score_stats_msg("MetaPredict/recalibrated", score))
+        score.name = "final_score"
 
-        # Hard rule: Bear muy alto → fuerza Underperform
-        if "bear_score" in X.columns:
-            bear = X["bear_score"].reindex(X_prep.index).fillna(0.5)
-            score = score.where(bear < self.BEAR_HARD_THRESHOLD, 0.05)
-            # Soft penalty proporcional al bear_score
-            penalty = (bear * self.BEAR_SOFT_PENALTY).clip(0, 0.4)
+        # Hard rule de riesgo: riesgo alto -> fuerza Underperform.
+        # Preferir bear_risk_score explícito; fallback a (1 - bear_score safety).
+        if "bear_risk_score" in X.columns:
+            bear_risk = X["bear_risk_score"].reindex(X_prep.index).fillna(0.5)
+        elif "bear_score" in X.columns:
+            bear_risk = (1.0 - X["bear_score"].reindex(X_prep.index).fillna(0.5)).clip(0.0, 1.0)
+        else:
+            bear_risk = pd.Series(0.5, index=score.index)
+
+        if len(bear_risk) > 0:
+            n_hard = int((bear_risk >= self.BEAR_HARD_THRESHOLD).sum())
+            log.info(
+                "[MetaPredict] Hard-risk gate threshold=%.2f -> afectados=%d/%d (%.1f%%)",
+                self.BEAR_HARD_THRESHOLD,
+                n_hard,
+                len(bear_risk),
+                (n_hard / len(bear_risk) * 100.0) if len(bear_risk) else 0.0,
+            )
+            score = score.where(bear_risk < self.BEAR_HARD_THRESHOLD, 0.05)
+            # Soft penalty proporcional al riesgo bear.
+            penalty = (bear_risk * self.BEAR_SOFT_PENALTY).clip(0, 0.4)
             score   = (score - penalty).clip(0.0, 1.0)
+            log.info(
+                "[MetaPredict] Soft-penalty mean=%.6f max=%.6f",
+                float(penalty.mean()),
+                float(penalty.max()),
+            )
+            log.info(_score_stats_msg("MetaPredict/final_after_risk", score))
 
         return score
+
+    def _raw_ensemble_score(self, X_al: pd.DataFrame) -> pd.Series:
+        lr_p = self._lr_model.predict_proba(X_al)[:, 1]
+        gbm_p = self._gbm_model.predict_proba(X_al)[:, 1]
+        return pd.Series(self._lr_weight * lr_p + self._gbm_weight * gbm_p, index=X_al.index)
+
+    def _blend_with_base_consensus(self, meta_score: pd.Series, X: pd.DataFrame) -> pd.Series:
+        base_cols = [
+            "fundamental_score",
+            "valuation_score",
+            "momentum_score",
+            "bear_score",
+            "sentiment_score",
+        ]
+        available = [c for c in base_cols if c in X.columns]
+        if not available or self._base_score_blend_weight <= 0.0:
+            return meta_score
+
+        base_mean = (
+            X[available]
+            .astype(float)
+            .replace([np.inf, -np.inf], np.nan)
+            .mean(axis=1, skipna=True)
+            .reindex(meta_score.index)
+            .fillna(0.5)
+            .clip(0.0, 1.0)
+        )
+        w = self._base_score_blend_weight
+        blended = ((1.0 - w) * meta_score + w * base_mean).clip(0.0, 1.0)
+        log.info(
+            "[MetaPredict] base-consensus blend weight=%.2f (meta=%.2f, base=%.2f)",
+            w,
+            1.0 - w,
+            w,
+        )
+        log.info(_score_stats_msg("MetaPredict/base_consensus", base_mean))
+        log.info(_score_stats_msg("MetaPredict/blended_pre_recal", blended))
+        return blended
+
+    def _recalibrate_scores(self, score: pd.Series) -> pd.Series:
+        # Re-centra y re-escala respecto a train para mantener umbral 0.5 interpretable.
+        # Se aplica un mínimo de escala y mezcla con score bruto para evitar colapso extremo.
+        eff_scale = max(self._score_scale, self.RECAL_MIN_SCALE)
+        z = (score - self._score_center) / (eff_scale * self._score_recal_temperature)
+        recal_sigmoid = 1.0 / (1.0 + np.exp(-z.clip(-10, 10)))
+        recal = (1.0 - self.RECAL_BLEND_WITH_RAW) * score + self.RECAL_BLEND_WITH_RAW * recal_sigmoid
+        out = pd.Series(recal.clip(0.01, 0.99), index=score.index)
+        log.info(
+            "[MetaLearner] Recal params: enabled=%s temp=%.3f center=%.4f scale=%.6f eff_scale=%.6f blend=%.2f",
+            str(self._enable_score_recalibration),
+            self._score_recal_temperature,
+            self._score_center,
+            self._score_scale,
+            eff_scale,
+            self.RECAL_BLEND_WITH_RAW,
+        )
+        return out
 
     def evaluate(self, X: pd.DataFrame, y: pd.Series,
                  sector_col: str = "sector", fold: Optional[int] = None) -> Dict:
@@ -224,7 +352,7 @@ class MetaLearner(BaseAgent):
         log.info(f"\n{report}")
 
         # Guardar reporte
-        suffix = f"_fold{fold}" if fold is not None else ""
+        suffix = f"_{fold}" if fold is not None else ""
         path   = self.results_dir / f"evaluation{suffix}.json"
         with open(path, "w") as f:
             json.dump({**metrics, "confusion_matrix": cm.tolist(),
@@ -238,9 +366,6 @@ class MetaLearner(BaseAgent):
 
     def _prepare(self, X: pd.DataFrame, sector_col: str, fit_mode: bool) -> pd.DataFrame:
         df = X.copy()
-        # bear_score invertido: alto bear = alto riesgo = queremos bajo input para el MetaLearner
-        if "bear_score" in df.columns:
-            df["bear_score"] = 1.0 - df["bear_score"]
         selected = [c for c in AGENT_SCORE_COLS if c in df.columns]
 
         # Macro features
@@ -273,8 +398,7 @@ class MetaLearner(BaseAgent):
         if "fundamental_score" in df.columns and "valuation_score" in df.columns:
             df["fund_x_val"] = df["fundamental_score"] * df["valuation_score"]
             selected.append("fund_x_val")
-        # mom_x_safety: alto cuando momentum es alto Y riesgo es bajo.
-        # bear_score ya está invertido (= safety score) así que el producto es correcto.
+        # mom_x_safety: alto cuando momentum es alto y riesgo bajo.
         if "momentum_score" in df.columns and "bear_score" in df.columns:
             df["mom_x_safety"] = df["momentum_score"] * df["bear_score"]
             selected.append("mom_x_safety")
@@ -292,6 +416,42 @@ class MetaLearner(BaseAgent):
         if "sector_score" in df.columns and "momentum_score" in df.columns:
             df["sector_x_momentum"] = df["sector_score"] * df["momentum_score"]
             selected.append("sector_x_momentum")
+
+        # Señales de consenso/confianza entre agentes (orientadas a inversión).
+        if self._use_consensus_features:
+            available_agent_scores = [c for c in AGENT_SCORE_COLS if c in df.columns]
+            if available_agent_scores:
+                score_mat = df[available_agent_scores].astype(float)
+                score_mat = score_mat.replace([np.inf, -np.inf], np.nan)
+
+                df["agent_score_mean"] = score_mat.mean(axis=1, skipna=True).fillna(0.5)
+                df["agent_score_std"] = score_mat.std(axis=1, skipna=True).fillna(0.0)
+                df["agent_score_max"] = score_mat.max(axis=1, skipna=True).fillna(0.5)
+                df["agent_score_min"] = score_mat.min(axis=1, skipna=True).fillna(0.5)
+                df["agent_score_range"] = (df["agent_score_max"] - df["agent_score_min"]).fillna(0.0)
+
+                bullish_mask = score_mat.ge(self._bullish_score_threshold)
+                df["bullish_agent_score_count"] = bullish_mask.sum(axis=1).astype(float)
+
+                # Intensidad de consenso direccional: 0 neutro, 1 consenso fuerte.
+                df["consensus_score_strength"] = (df["agent_score_mean"].fillna(0.5) - 0.5).abs() * 2.0
+
+                # Media ponderada por convicción (distancia al 0.5).
+                conviction_w = (score_mat - 0.5).abs()
+                weighted_num = (score_mat * conviction_w).sum(axis=1, skipna=True)
+                weighted_den = conviction_w.sum(axis=1, skipna=True).replace(0.0, np.nan)
+                df["confidence_weighted_score_mean"] = (weighted_num / weighted_den).fillna(0.5)
+
+                selected += [
+                    "agent_score_mean",
+                    "agent_score_std",
+                    "agent_score_max",
+                    "agent_score_min",
+                    "agent_score_range",
+                    "bullish_agent_score_count",
+                    "consensus_score_strength",
+                    "confidence_weighted_score_mean",
+                ]
 
         selected = list(dict.fromkeys(selected))
         result   = df[[c for c in selected if c in df.columns]].copy()
@@ -337,8 +497,8 @@ class MetaLearner(BaseAgent):
                     "mean_f1":  float(np.mean(f1s))}
         return _agg(lr_aucs, lr_f1s), _agg(gbm_aucs, gbm_f1s)
 
-    def _save_lr_report(self, coef: pd.Series, fold: Optional[int]):
-        suffix = f"_fold{fold}" if fold is not None else ""
+    def _save_lr_report(self, coef: pd.Series, fold: Optional[int | str]):
+        suffix = f"_{fold}" if fold is not None else ""
         path   = self.results_dir / f"lr_coefficients{suffix}.json"
         sorted_coef = coef.sort_values(ascending=False)
         report = {

@@ -77,24 +77,40 @@ TICKERS = [
 # Fecha desde la que se descargan los datos brutos.
 DOWNLOAD_START_DATE = "2015-01-01"
 
-# Inicio del período de testeo/backtest walk-forward, expresado como año y trimestre.
-TEST_START_YEAR = 2025
-TEST_START_QUARTER = 3
+# Inicio del período de análisis/backtest walk-forward (quarters de snapshot a analizar).
+ANALYSIS_START_YEAR = 2023
+ANALYSIS_START_QUARTER = 3
 
-# Fin del histórico / referencia para el fold live, expresado como año y trimestre.
-END_YEAR = 2026
-END_QUARTER = 2
+# Fin del período de análisis/backtest walk-forward.
+ANALYSIS_END_YEAR = 2026
+ANALYSIS_END_QUARTER = 2
 
+# Frecuencia del análisis walk-forward:
+# - "quarterly": ejecuta un fold por quarter (comportamiento histórico).
+# - "annual": ejecuta un fold por año (misma lógica de features, menor frecuencia).
+ANALYSIS_FREQUENCY = "annual"
 
-# Días antes del inicio del quarter siguiente en los que se ejecuta la compra y la venta.
-# 0 = comprar/vender justo en los cierres de quarter (comportamiento base).
-# Ejemplo: 30 → con snapshot de Q2 (cierre Jun 30):
-#   - Compra ≈ Jul 1 - 30 días = ~Jun 1  (antes de que empiece Q3 en mercado)
-#   - Venta  ≈ Oct 1 - 30 días = ~Sep 1  (antes de que empiece Q4)
-#   - Holding period real: ~Jun 1 → ~Sep 1 (un trimestre desplazado)
-# El forward_return del dataset también usa este offset para que el label
-# coincida exactamente con el holding period real.
-DAYS_BEFORE_QUARTER_START = 30
+# Fecha ancla opcional para modo anual (formato "YYYY-MM-DD").
+# Si es None en modo anual, se usa automáticamente:
+#   1 de enero de ANALYSIS_START_YEAR + SNAPSHOT_LAG_DAYS.
+ANALYSIS_ANNUAL_START_DATE = None
+
+# Retraso (en días) desde el cierre del quarter hasta el momento real de análisis/entrada.
+# Ejemplo: snapshot Q1 (Mar 31) + 45 días => entrada aproximada a mitad de Q2.
+SNAPSHOT_LAG_DAYS = 60
+
+# Si True, cuando un ticker no tenga un reporte del quarter analizado,
+# se extrapolan los features usando el promedio de los últimos N quarters disponibles.
+# Esto permite mantener el ticker en el universo de test con un snapshot estimado.
+ENABLE_FALLBACK_EXTRAPOLATION = True
+
+# Número de quarters previos a usar para extrapolación de features cuando falte el reporte exacto.
+# Requiere que existan al menos este número de reports históricos.
+FALLBACK_LOOK_BACK_QUARTERS = 4
+
+# Duración del holding de la cartera desde la fecha de entrada.
+# 3 meses = aproximación natural a "un trimestre" desplazado.
+HOLDING_PERIOD_MONTHS = 3
 
 # =============================================================================
 # 6. Parámetros del pipeline ML
@@ -129,6 +145,14 @@ SECTOR_SCORE_PRIOR_WEIGHT = 0.5
 # Si un score de agente tiene baja dispersión, se contrae hacia 0.5.
 # scale = min(1, std / SCORE_DISPERSION_MIN_STD)
 SCORE_DISPERSION_MIN_STD = 0.03
+# Suelo de escala para evitar colapsos a 0.5 cuando std en train es casi 0.
+# Solo aplica cuando hay shrink (scale<1) y preserva algo de señal en test.
+SCORE_DISPERSION_MIN_SCALE = 0.35
+
+# Ventana de precios usada para features técnicas (RSI, momentum, volatilidad, etc.).
+# Se reduce frente al valor histórico de 400 para mantener suficiente contexto
+# sin exigir tanto histórico innecesario.
+TECHNICAL_LOOKBACK_DAYS = 300
 
 # =============================================================================
 # 7. Walk-forward backtesting
@@ -139,6 +163,11 @@ WALKFORWARD_TRAIN_LOOKBACK_YEARS = 8
 
 # Trimestres de test por fold (siempre 1)
 WALKFORWARD_TEST_QUARTERS = 1
+
+# Mínimo de empresas en el universo de test de un fold.
+# Se calcula dinámicamenbte como un porcentaje del universo total de tickers.
+# Ejemplo: si hay 500 tickers totales, será 250 (50%).
+MIN_TEST_TICKERS_PERCENT = 50  # porcentaje del universo total
 
 # Tasa libre de riesgo anualizada para Sharpe / Sortino
 RISK_FREE_RATE = 0.04
@@ -192,6 +221,12 @@ SENTIMENT_MAX_DEPTH       = 6
 SENTIMENT_MIN_SAMPLES_LEAF = 5
 # ── FeatureSelector ──────────────────────────────────────────────────────────
 FEATURE_CORR_THRESHOLD = 0.85
+# Peso del score combinado de selección de features:
+# combined = w * relevancia_con_y + (1-w) * importancia_modelo
+FEATURE_SELECTOR_RELEVANCE_WEIGHT = 0.65
+# Modelo auxiliar interno del selector (RandomForest rápido)
+FEATURE_SELECTOR_RF_N_ESTIMATORS = 120
+FEATURE_SELECTOR_RF_MAX_DEPTH = 5
 # Top-N features por agente. Los agentes con más señales legítimas usan más.
 # FundamentalAgent: ~30 ratios candidatos → 12 para no perder señal.
 # MomentumAgent: técnicos + earnings momentum → 12.
@@ -210,6 +245,18 @@ META_GBM_N_ESTIMATORS = 150
 META_GBM_MAX_DEPTH    = 3
 META_GBM_LEARNING_RATE = 0.05
 META_GBM_SUBSAMPLE    = 0.8
+# Si True, añade señales de consenso/confianza entre agentes como features extra.
+META_ENABLE_CONSENSUS_FEATURES = True
+# Umbral para contar agentes claramente alcistas en el snapshot.
+META_BULLISH_SCORE_THRESHOLD = 0.55
+# Recalibración robusta de score del meta-learner para evitar colapso en <0.5
+# cuando la probabilidad cruda sale comprimida o sesgada por drift temporal.
+META_ENABLE_SCORE_RECALIBRATION = False
+# Temperatura >1 suaviza; <1 hace más agresiva la separación.
+META_SCORE_RECALIBRATION_TEMPERATURE = 1.0
+# Mezcla del score meta con el consenso medio de agentes base para evitar
+# que el meta colapse por drift y pierda toda la señal cross-sectional.
+META_BASE_SCORE_BLEND_WEIGHT = 0.55
 
 # =============================================================================
 # 9. Reproducibilidad

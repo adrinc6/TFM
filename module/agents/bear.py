@@ -308,8 +308,8 @@ class BearAgent(BaseAgent):
                 }
         return stats
 
-    def _save_flag_report(self, flag_stats: Dict, fold: Optional[int]):
-        suffix = f"_fold{fold}" if fold is not None else ""
+    def _save_flag_report(self, flag_stats: Dict, fold: Optional[int | str]):
+        suffix = f"_{fold}" if fold is not None else ""
         path   = self.results_dir / f"flag_report{suffix}.json"
         with open(path, "w") as f:
             json.dump(flag_stats, f, indent=2)

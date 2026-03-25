@@ -362,13 +362,12 @@ def run_download(
     base_dir = Path(base_dir)
     base_dir.mkdir(parents=True, exist_ok=True)
 
-    client = FinnhubClient(api_key)
     yahoo = YahooClient()
     registry = Registry(base_dir)
 
     if force:
         log.warning("FORCE_DOWNLOAD=True — re-descargando todo")
-        registry.clear()
+        registry.clear(delete_file=True)
 
     log.info("=" * 50)
     log.info("  Finnhub + Yahoo Finance Downloader")

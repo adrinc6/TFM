@@ -124,7 +124,7 @@ class Visualizer:
 		if not fold_results:
 			ax.axis("off")
 			return
-		labels = [f"Fold {r.get('fold','?')}\n{r.get('test_start','')[:4]}" for r in fold_results]
+		labels = [f"{r.get('year_quarter', r.get('fold','?'))}\n{r.get('test_start','')[:4]}" for r in fold_results]
 		s_ret = [r.get("strategy_annualized_return", 0) * 100 for r in fold_results]
 		b_ret = [r.get("benchmark_annualized_return", 0) * 100 for r in fold_results]
 		x = np.arange(len(labels))
@@ -168,7 +168,7 @@ class Visualizer:
 		if not fold_results:
 			ax.axis("off")
 			return
-		labels = [f"Fold {r.get('fold','?')}" for r in fold_results]
+		labels = [str(r.get('year_quarter', r.get('fold','?'))) for r in fold_results]
 		s_sharp = [r.get("strategy_sharpe", 0) for r in fold_results]
 		b_sharp = [r.get("benchmark_sharpe", 0) for r in fold_results]
 		x = np.arange(len(labels))
@@ -210,21 +210,21 @@ class Visualizer:
 		ax.grid(alpha=0.3, axis="y")
 
 	def plot_feature_importances(self, importances: pd.Series,
-								 agent_name: str, fold: Optional[int] = None, top_n: int = 20):
+								 agent_name: str, fold: Optional[int | str] = None, top_n: int = 20):
 		top = importances.nlargest(top_n)
 		fig, ax = plt.subplots(figsize=(10, 6))
 		top.sort_values().plot.barh(ax=ax, color="#2196F3", alpha=0.8)
-		suffix = f" (Fold {fold})" if fold is not None else ""
+		suffix = f" ({fold})" if fold is not None else ""
 		ax.set_title(f"Feature Importances — {agent_name.capitalize()}{suffix}",
 					 fontweight="bold")
 		ax.set_xlabel("Importancia")
 		ax.grid(alpha=0.3, axis="x")
-		path = self.plots_dir / f"feat_imp_{agent_name}{'_fold' + str(fold) if fold else ''}.png"
+		path = self.plots_dir / f"feat_imp_{agent_name}{'_' + str(fold) if fold else ''}.png"
 		fig.savefig(path, dpi=120, bbox_inches="tight")
 		plt.close(fig)
 		log.info(f"[Visualizer] Feature importances -> {path.name}")
 
-	def plot_fold_performance(self, fold_result: Dict, fold_id: int):
+	def plot_fold_performance(self, fold_result: Dict, fold_id: int | str):
 		"""
 		Plot diario del quarter de test: cada ticker seleccionado (líneas finas),
 		cartera media (línea gruesa azul) y benchmark (línea gruesa naranja).
@@ -236,7 +236,7 @@ class Visualizer:
 		if not ticker_series or strat_series is None or bench_series is None:
 			return
 
-		year_quarter = fold_result.get("year_quarter", f"Fold {fold_id}")
+		year_quarter = fold_result.get("year_quarter", str(fold_id))
 		ticker_weights: Dict[str, float] = fold_result.get("ticker_weights", {})
 		weighting_mode: str = fold_result.get("weighting_mode", "equiponderado")
 
@@ -271,7 +271,7 @@ class Visualizer:
 
 		ax.axhline(1.0, color="gray", lw=0.7, ls=":")
 		ax.set_title(
-			f"Rendimiento diario — {year_quarter} (Fold {fold_id})  [{weighting_mode}]",
+			f"Rendimiento diario — {year_quarter}  [{weighting_mode}]",
 			fontweight="bold",
 		)
 		ax.set_ylabel("Valor (base 1 = inicio del quarter)")
@@ -279,12 +279,12 @@ class Visualizer:
 		ax.grid(alpha=0.3)
 		fig.tight_layout()
 
-		path = self.plots_dir / f"fold_{fold_id:03d}_{year_quarter}_performance.png"
+		path = self.plots_dir / f"{year_quarter}_performance.png"
 		fig.savefig(path, dpi=130, bbox_inches="tight")
 		plt.close(fig)
-		log.info(f"[Visualizer] Rendimiento fold {fold_id} -> {path.name}")
+		log.info(f"[Visualizer] Rendimiento {year_quarter} -> {path.name}")
 
-	def plot_score_distribution(self, scores_df: pd.DataFrame, fold: Optional[int] = None):
+	def plot_score_distribution(self, scores_df: pd.DataFrame, fold: Optional[int | str] = None):
 		agent_cols = [c for c in ["fundamental_score", "valuation_score",
 								   "momentum_score", "bear_score", "final_score"]
 					  if c in scores_df.columns]
@@ -301,7 +301,7 @@ class Visualizer:
 			ax.set_title(col.replace("_", " ").title(), fontsize=9)
 			ax.legend(fontsize=7)
 			ax.grid(alpha=0.3)
-		suffix = f"_fold{fold}" if fold is not None else ""
+		suffix = f"_{fold}" if fold is not None else ""
 		path = self.plots_dir / f"score_dist{suffix}.png"
 		fig.savefig(path, dpi=120, bbox_inches="tight")
 		plt.close(fig)

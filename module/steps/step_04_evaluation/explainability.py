@@ -15,7 +15,7 @@ import logging
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 log = logging.getLogger(__name__)
 
@@ -131,7 +131,8 @@ FEATURE_DESCRIPTIONS = {
     "fundamental_score":        "Score del Agente Fundamental (salud financiera)",
     "valuation_score":          "Score del Agente de Valoración (infravaloración)",
     "momentum_score":           "Score del Agente de Momentum (tendencia técnica)",
-    "bear_score":               "Score del Agente Bear (riesgo, <0.5 es bueno)",
+    "bear_score":               "Score del Agente Bear alineado (safety, >0.5 es mejor)",
+    "bear_risk_score":          "Score de riesgo puro del Agente Bear (alto = peor)",
     "sentiment_score":          "Score del Agente de Sentimiento (analistas e insiders)",
     "sector_rotation_score":    "Score del Agente de Rotación Sectorial (sector favorable)",
     "mom_x_safety":             "Momentum × (1-Bear): momentum con filtro de riesgo",
@@ -255,7 +256,7 @@ class AgentExplainer:
         imp = self.global_importance()
         if imp is None:
             return
-        suffix = f"_fold{fold}" if fold is not None else ""
+        suffix = f"_{fold}" if fold is not None else ""
 
         # CSV completo
         path = self.results_dir / f"shap_global{suffix}.csv"

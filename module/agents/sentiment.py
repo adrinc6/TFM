@@ -122,7 +122,7 @@ class SentimentAgent(BaseAgent):
         else:
             debug_df = debug_df.reset_index(drop=False)
 
-        suffix = f"_fold{fold}" if fold is not None else ""
+        suffix = f"_{fold}" if fold is not None else ""
         stage_suffix = "" if stage == "raw" else f"_{stage}"
         out_path = self.results_dir / f"aapl_sentiment_input{stage_suffix}{suffix}.csv"
         debug_df.to_csv(out_path, index=False)

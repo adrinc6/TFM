@@ -49,14 +49,14 @@ class WalkForwardBacktester:
 
 	def generate_folds(
 		self,
-		test_start_date: str,
-		end_date: str,
+		analysis_start_date: str,
+		analysis_end_date: str,
 	) -> List[tuple]:
-		# El modelo opera con snapshots trimestrales: cada fold cubre exactamente
-		# un quarter de test, alineado a los boundaries reales del calendario.
-		# train_end y test_end siempre caen en el último día de un quarter real.
-		start = self._snap_to_quarter_end(pd.Timestamp(test_start_date))
-		end   = self._snap_to_quarter_end(pd.Timestamp(end_date))
+		# start/end representan el rango de QUARTERS ANALIZADOS (snapshot quarter).
+		# El test de cada fold usa el snapshot en train_end, y su evaluación real se
+		# hace fuera de esta función con lag/holding configurables.
+		start = self._snap_to_quarter_end(pd.Timestamp(analysis_start_date))
+		end   = self._snap_to_quarter_end(pd.Timestamp(analysis_end_date))
 
 		folds: List[tuple] = []
 		seen: set = set()
@@ -64,9 +64,8 @@ class WalkForwardBacktester:
 		y_offset = pd.DateOffset(years=self.train_years)
 		train_end = start
 		while True:
-			# test_end = fin del quarter siguiente al de train_end
 			test_end = train_end + pd.offsets.QuarterEnd(self.test_quarters)
-			if test_end > end:
+			if train_end > end:
 				break
 			train_start = train_end - y_offset
 			key = (train_start.date(), train_end.date(), test_end.date())
@@ -77,7 +76,7 @@ class WalkForwardBacktester:
 
 		log.info(
 			f"[Backtester] {len(folds)} folds generados | test={self.test_quarters}Q | "
-			f"train={self.train_years}Y | start={start.date()} | end={end.date()}"
+			f"train={self.train_years}Y | analysis_start={start.date()} | analysis_end={end.date()}"
 		)
 		for i, (ts, te, tse, ny) in enumerate(folds):
 			log.debug(
@@ -96,28 +95,31 @@ class WalkForwardBacktester:
 		test_end,
 		train_start=None,
 		train_years_int: int = 0,
+		analysis_quarter: str | None = None,
 	) -> Dict:
+		period_id = analysis_quarter if analysis_quarter else str(fold_id)
 		min_stocks = max(1, self.top_n_stocks // 2)
 		ordered = predictions_df.sort_values("score", ascending=False)
 		qualified = ordered[ordered["score"] >= PORTFOLIO_MIN_SCORE]
-		if not qualified.empty:
+		if len(qualified) >= min_stocks:
 			# Tomar hasta top_n pero garantizar al menos min_stocks
 			n_take = max(min(len(qualified), self.top_n_stocks), min_stocks)
 			top_df = ordered.head(n_take)[["ticker", "score"]].copy()
 			log.info(
-				f"[Backtester] Fold {fold_id}: {len(qualified)} tickers superaron umbral {PORTFOLIO_MIN_SCORE:.2f} "
+				f"[Backtester] {period_id}: {len(qualified)} tickers superaron umbral {PORTFOLIO_MIN_SCORE:.2f} "
 				f"→ seleccionando top {n_take} (mín={min_stocks})"
 			)
 		else:
+			# Régimen comprimido: mantener selección relativa por ranking.
 			top_df = ordered.head(self.top_n_stocks)[["ticker", "score"]].copy()
 			log.warning(
-				f"[Backtester] Fold {fold_id}: ningún ticker superó el umbral {PORTFOLIO_MIN_SCORE:.2f} "
+				f"[Backtester] {period_id}: solo {len(qualified)} tickers superaron umbral {PORTFOLIO_MIN_SCORE:.2f} "
 				f"→ seleccionando top-{self.top_n_stocks} por ranking (scores: "
 				f"{ordered['score'].iloc[0]:.3f} .. {ordered['score'].iloc[self.top_n_stocks-1]:.3f})"
 			)
 		top = top_df["ticker"].tolist()
 		if not top:
-			log.warning(f"[Backtester] Fold {fold_id}: sin tickers disponibles — fold omitido.")
+			log.warning(f"[Backtester] {period_id}: sin tickers disponibles — análisis omitido.")
 			return {}
 
 		daily_returns = []
@@ -125,12 +127,12 @@ class WalkForwardBacktester:
 		ticker_returns = {}
 		bench_period = benchmark.loc[test_start:test_end].dropna()
 		if len(bench_period) < 2:
-			log.warning(f"[Backtester] Fold {fold_id}: benchmark sin datos suficientes — fold omitido.")
+			log.warning(f"[Backtester] {period_id}: benchmark sin datos suficientes — análisis omitido.")
 			return {}
 		actual_end = bench_period.index.max()
 		if actual_end < test_end:
 			log.info(
-				f"[Backtester] Fold {fold_id}: precios parciales "
+				f"[Backtester] {period_id}: precios parciales "
 				f"{test_start.date()} -> {actual_end.date()} (teorico hasta {test_end.date()})"
 			)
 
@@ -189,13 +191,16 @@ class WalkForwardBacktester:
 
 		# Log de pesos
 		weighting_mode = "softmax(score)" if self.score_weighted else "equiponderado"
-		log.info(f"[Backtester] Fold {fold_id} — cartera final ({weighting_mode}, {len(tickers_with_prices)} stocks):")
+		log.info(f"[Backtester] {period_id} — cartera final ({weighting_mode}, {len(tickers_with_prices)} stocks):")
 		for t in tickers_with_prices:
 			log.info(f"    {t:<8}  peso={ticker_weights[t]:.3f}  score={top_df.set_index('ticker').loc[t,'score']:.3f}  ret={ticker_returns[t]:+.2%}")
 
-		# Etiqueta del quarter de test (el quarter que se predijo)
-		test_q_ts = pd.Timestamp(test_start)
-		year_quarter = f"{test_q_ts.year}Q{test_q_ts.quarter}"
+		# Etiqueta del quarter analizado (quarter del snapshot usado para decidir cartera)
+		if analysis_quarter:
+			year_quarter = analysis_quarter
+		else:
+			test_q_ts = pd.Timestamp(test_start)
+			year_quarter = f"{test_q_ts.year}Q{test_q_ts.quarter}"
 
 		# Series diarias de precio normalizado (base 1) para el plot de fold
 		ticker_price_series: Dict[str, pd.Series] = {}
@@ -229,12 +234,12 @@ class WalkForwardBacktester:
 		self.all_strategy_returns = pd.concat([self.all_strategy_returns, strat_aligned])
 		self.all_benchmark_returns = pd.concat([self.all_benchmark_returns, bench_aligned])
 
-		path = self.results_dir / f"fold_{fold_id:03d}_{train_years_int}Y_metrics.json"
+		path = self.results_dir / f"metrics_{period_id}_{train_years_int}Y.json"
 		with open(path, "w") as f:
 			json.dump(fold_result, f, indent=2, default=str)
 
 		log.info(
-			f"[Backtester] Fold {fold_id} — {len(top)} stocks | "
+			f"[Backtester] {period_id} — {len(top)} stocks | "
 			f"Cartera={strat_metrics['strategy_cumulative_return']:+.2%}  "
 			f"Benchmark={bench_metrics['benchmark_cumulative_return']:+.2%}  "
 			f"Alpha={alpha:+.2%}  Sharpe={strat_metrics['strategy_sharpe']:.2f}"

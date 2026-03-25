@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import numpy as np
 import pandas as pd
@@ -120,7 +120,10 @@ def run_live_fold(
     df_live_norm["fundamental_score"] = fundamental.predict_score(df_live_norm, "sector").values
     df_live_norm["valuation_score"] = valuation.predict_score(df_live_norm, "sector").values
     df_live_norm["momentum_score"] = momentum.predict_score(df_live_norm).values
-    df_live_norm["bear_score"] = bear.predict_score(df_live_norm).values
+    bear_risk = bear.predict_score(df_live_norm).astype(float).clip(0.0, 1.0)
+    df_live_norm["bear_risk_score"] = bear_risk.values
+    # Score alineado para interpretación y meta: alto = más invertible (menos riesgo).
+    df_live_norm["bear_score"] = (1.0 - bear_risk).values
     if getattr(sentiment, "is_trained", False):
         df_live_norm["sentiment_score"] = sentiment.predict_score(df_live_norm).values
     else:
@@ -146,13 +149,13 @@ def run_live_fold(
 
     min_stocks = max(1, top_n // 2)
     qualified = ticker_scores[ticker_scores >= PORTFOLIO_MIN_SCORE]
-    if not qualified.empty:
+    if len(qualified) >= min_stocks:
         n_take = max(min(len(qualified), top_n), min_stocks)
         top_bulls = list(ticker_scores.head(n_take).index)
         log.info(f"{len(qualified)} tickers superaron umbral {PORTFOLIO_MIN_SCORE:.2f} → seleccionando top {n_take} (mín={min_stocks})")
     else:
         top_bulls = list(ticker_scores.head(top_n).index)
-        log.warning(f"Ningún ticker superó el umbral {PORTFOLIO_MIN_SCORE:.2f} — usando top-{top_n} por ranking")
+        log.warning(f"Solo {len(qualified)} tickers superaron umbral {PORTFOLIO_MIN_SCORE:.2f} — usando top-{top_n} por ranking")
     top_bears = list(ticker_scores.tail(top_n).index)
 
     log.info(f"\n{'='*60}")

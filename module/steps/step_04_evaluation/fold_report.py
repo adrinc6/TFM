@@ -54,9 +54,9 @@ AGENT_LABELS = {
         "low":    "Tendencia técnica negativa",
     },
     "bear": {
-        "high":   "Riesgo elevado detectado",   # bear alto = malo
+        "high":   "Riesgo bajo (perfil defensivo)",
         "medium": "Riesgo moderado",
-        "low":    "Sin señales de riesgo relevantes",
+        "low":    "Riesgo elevado detectado",
     },
     "sentiment": {
         "high":   "Sentimiento externo positivo",
@@ -69,6 +69,31 @@ AGENT_LABELS = {
         "low":    "Alta probabilidad de Underperform",
     },
 }
+
+
+def _is_ratio_or_normalized_feature(feature: str) -> bool:
+    f = str(feature).lower().strip()
+    if not f:
+        return False
+    allowed_tokens = [
+        "ratio", "margin", "yield", "growth", "trend", "momentum", "volatility",
+        "rsi", "macd", "beta", "zscore", "zsector", "pct", "coverage",
+        "score", "prior", "dispersion", "consensus", "confidence", "quality",
+        "fscore", "accrual", "atr", "bb_", "vs_5y", "vs_52w", "debt_to_", "_to_",
+        "revision", "surprise", "beater", "overbought", "oversold", "bullish",
+        "above_sma", "cross_sma", "expansion", "decline", "losses", "risk",
+    ]
+    if any(tok in f for tok in allowed_tokens):
+        return True
+    blocked_prefixes = [
+        "revenue", "net_income", "operating_income", "gross_profit", "fcf", "ebitda",
+        "total_assets", "total_liabilities", "total_equity", "total_debt", "cash",
+        "shares", "eps_est", "eps_reported", "market_cap", "capex", "income_tax",
+        "depreciation", "operating_cash_flow",
+    ]
+    if any(f.startswith(p) for p in blocked_prefixes):
+        return False
+    return False
 
 
 def _agent_text_label(agent: str, score: float) -> str:
@@ -226,11 +251,6 @@ def build_fold_scores_df(
         actual_returns:  {ticker: retorno_real} si ya ocurrió el período de test.
         benchmark_return: Retorno del S&P500 en el período de test.
     """
-    score_cols = [
-        "fundamental_score", "valuation_score", "momentum_score",
-        "bear_score", "sentiment_score", "sector_score", "final_score",
-    ]
-
     tickers_index = df_test_scored.index.get_level_values("ticker")
     # Una fila por ticker: la última observación disponible en el fold
     ticker_rows: Dict[str, pd.Series] = {}
@@ -348,14 +368,136 @@ def build_fold_scores_df(
 def export_fold_scores(
     df: pd.DataFrame,
     agents_results_dir: str,
-    fold_id: int,
+    fold_id: int | str,
 ) -> Path:
     """Guarda el CSV del fold y devuelve la ruta."""
     out_dir = Path(agents_results_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    path = out_dir / f"fold_{fold_id}_scores.csv"
+    path = out_dir / f"quarter_{fold_id}_scores.csv"
     df.to_csv(path, index=False, encoding="utf-8")
     log.info(f"[FoldReport] Fold {fold_id}: scores de {len(df)} tickers guardados → {path.name}")
+    return path
+
+
+def export_quarter_snapshot_audit(
+    df_test_scored: pd.DataFrame,
+    year_quarter: str,
+    agents_results_dir: str,
+) -> Path:
+    """
+    Exporta un snapshot completo por ticker para el quarter:
+    - una fila por ticker
+    - todas las features disponibles
+    - metadatos de snapshot/reporting (carry-forward, fechas usadas)
+    - scores de agentes y score final
+    """
+    out_dir = Path(agents_results_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    path = out_dir / f"quarter_{year_quarter}_ticker_snapshot_audit.csv"
+
+    if df_test_scored.empty:
+        pd.DataFrame().to_csv(path, index=False, encoding="utf-8")
+        return path
+
+    tickers = df_test_scored.index.get_level_values("ticker")
+    rows: List[pd.Series] = []
+    for ticker in tickers.unique():
+        mask = tickers == ticker
+        rows.append(df_test_scored.loc[mask].iloc[-1])
+
+    out_df = pd.DataFrame(rows).reset_index(drop=True)
+    if "ticker" in out_df.columns:
+        out_df["ticker"] = out_df["ticker"].astype(str)
+    else:
+        out_df.insert(0, "ticker", list(tickers.unique()))
+
+    if "year_quarter" in out_df.columns:
+        out_df["year_quarter"] = year_quarter
+    else:
+        out_df.insert(0, "year_quarter", year_quarter)
+    out_df.to_csv(path, index=False, encoding="utf-8")
+    log.info(f"[FoldReport] Snapshot audit {year_quarter}: {len(out_df)} tickers → {path.name}")
+    return path
+
+
+def export_quarter_agent_feature_audit(
+    df_test_scored: pd.DataFrame,
+    agents: Dict,
+    year_quarter: str,
+    agents_results_dir: str,
+) -> Path:
+    """
+    Exporta trazabilidad granular agente-feature:
+    una fila por (ticker, agente, feature usada por ese agente).
+    """
+    out_dir = Path(agents_results_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    path = out_dir / f"quarter_{year_quarter}_ticker_agent_feature_audit.csv"
+
+    if df_test_scored.empty:
+        pd.DataFrame().to_csv(path, index=False, encoding="utf-8")
+        return path
+
+    tickers = df_test_scored.index.get_level_values("ticker")
+    rows: List[Dict] = []
+
+    agent_order = ["fundamental", "valuation", "momentum", "bear", "sentiment", "sector_rotation", "meta_learner"]
+    for ticker in tickers.unique():
+        mask = tickers == ticker
+        row = df_test_scored.loc[mask].iloc[-1]
+        final_score = float(row.get("final_score", np.nan)) if pd.notna(row.get("final_score", np.nan)) else np.nan
+
+        for agent_name in agent_order:
+            if agent_name not in agents:
+                continue
+            if agent_name == "sector_rotation":
+                score_col = "sector_score"
+            elif agent_name == "meta_learner":
+                score_col = "final_score"
+            else:
+                score_col = f"{agent_name}_score"
+
+            agent_score = row.get(score_col, np.nan)
+            try:
+                agent_score = float(agent_score)
+            except Exception:
+                agent_score = np.nan
+
+            agent_obj = agents.get(agent_name)
+            feat_cols = getattr(agent_obj, "_feature_cols", None)
+            if not feat_cols:
+                feat_cols = []
+
+            if not feat_cols:
+                rows.append({
+                    "year_quarter": year_quarter,
+                    "ticker": ticker,
+                    "agent": agent_name,
+                    "agent_score": agent_score,
+                    "final_score": final_score,
+                    "feature": "__no_feature_list__",
+                    "feature_value": np.nan,
+                    "feature_present": False,
+                })
+                continue
+
+            for feat in feat_cols:
+                if not _is_ratio_or_normalized_feature(feat):
+                    continue
+                val = row.get(feat, np.nan)
+                rows.append({
+                    "year_quarter": year_quarter,
+                    "ticker": ticker,
+                    "agent": agent_name,
+                    "agent_score": agent_score,
+                    "final_score": final_score,
+                    "feature": feat,
+                    "feature_value": val,
+                    "feature_present": bool(pd.notna(val)),
+                })
+
+    pd.DataFrame(rows).to_csv(path, index=False, encoding="utf-8")
+    log.info(f"[FoldReport] Agent-feature audit {year_quarter}: {len(rows)} filas → {path.name}")
     return path
 
 
@@ -367,9 +509,9 @@ def export_all_folds_scores(
     Llamar al final del pipeline, después de todos los folds.
     """
     out_dir = Path(agents_results_dir)
-    fold_files = sorted(out_dir.glob("fold_*_scores.csv"))
+    fold_files = sorted(out_dir.glob("quarter_*_scores.csv"))
     if not fold_files:
-        log.warning("[FoldReport] No se encontraron fold_*_scores.csv para consolidar.")
+        log.warning("[FoldReport] No se encontraron quarter_*_scores.csv para consolidar.")
         return None
 
     dfs = []

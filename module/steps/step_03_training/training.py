@@ -9,6 +9,8 @@ import numpy as np
 import pandas as pd
 
 from environment import (
+    BEAR_HARD_THRESHOLD,
+    SCORE_DISPERSION_MIN_SCALE,
     OOF_N_SPLITS,
     SCORE_DISPERSION_MIN_STD,
     SECTOR_CONFIDENCE_PEERS,
@@ -22,14 +24,71 @@ from module.steps.step_03_training.oof import generate_oof_scores
 log = logging.getLogger(__name__)
 
 
+def _series_stats(s: pd.Series) -> Dict[str, float]:
+    v = pd.to_numeric(s, errors="coerce").replace([np.inf, -np.inf], np.nan).dropna()
+    if v.empty:
+        return {
+            "n": 0,
+            "min": float("nan"),
+            "q10": float("nan"),
+            "q25": float("nan"),
+            "mean": float("nan"),
+            "q50": float("nan"),
+            "q75": float("nan"),
+            "q90": float("nan"),
+            "max": float("nan"),
+            "ge_050_ratio": float("nan"),
+            "ge_055_ratio": float("nan"),
+            "ge_060_ratio": float("nan"),
+        }
+    return {
+        "n": int(v.shape[0]),
+        "min": float(v.min()),
+        "q10": float(v.quantile(0.10)),
+        "q25": float(v.quantile(0.25)),
+        "mean": float(v.mean()),
+        "q50": float(v.quantile(0.50)),
+        "q75": float(v.quantile(0.75)),
+        "q90": float(v.quantile(0.90)),
+        "max": float(v.max()),
+        "ge_050_ratio": float((v >= 0.50).mean()),
+        "ge_055_ratio": float((v >= 0.55).mean()),
+        "ge_060_ratio": float((v >= 0.60).mean()),
+    }
+
+
+def _log_score_stats(tag: str, s: pd.Series) -> None:
+    st = _series_stats(s)
+    if st["n"] == 0:
+        log.info(f"[{tag}] Sin datos para resumen de score")
+        return
+    log.info(
+        f"[{tag}] n={st['n']} | min={st['min']:.4f} q10={st['q10']:.4f} q25={st['q25']:.4f} "
+        f"mean={st['mean']:.4f} q50={st['q50']:.4f} q75={st['q75']:.4f} q90={st['q90']:.4f} max={st['max']:.4f}"
+    )
+    log.info(
+        f"[{tag}] cobertura umbral: >=0.50={st['ge_050_ratio']:.1%} | >=0.55={st['ge_055_ratio']:.1%} | >=0.60={st['ge_060_ratio']:.1%}"
+    )
+
+
 def _compute_dispersion_scales(df: pd.DataFrame, score_cols: list[str]) -> Dict[str, float]:
     scales: Dict[str, float] = {}
+    log.info(f"[Dispersion] SCORE_DISPERSION_MIN_STD={SCORE_DISPERSION_MIN_STD:.4f}")
+    log.info(f"[Dispersion] SCORE_DISPERSION_MIN_SCALE={SCORE_DISPERSION_MIN_SCALE:.4f}")
     for col in score_cols:
         if col not in df.columns:
             continue
         std = float(df[col].std()) if SCORE_DISPERSION_MIN_STD > 0 else 0.0
         scale = 1.0 if std >= SCORE_DISPERSION_MIN_STD else (std / SCORE_DISPERSION_MIN_STD)
-        scales[col] = max(0.0, min(1.0, scale))
+        bounded = max(0.0, min(1.0, scale))
+        # Guardrail: evita que un score útil quede totalmente neutro en inferencia.
+        if bounded < 1.0:
+            bounded = max(bounded, float(SCORE_DISPERSION_MIN_SCALE))
+        scales[col] = bounded
+        log.info(
+            f"[Dispersion] {col}: std={std:.6f} -> scale={scales[col]:.4f} "
+            f"({'sin shrink' if scales[col] >= 1.0 else 'shrink activo'})"
+        )
     return scales
 
 
@@ -37,7 +96,10 @@ def _apply_dispersion_shrink(df: pd.DataFrame, scales: Dict[str, float]) -> pd.D
     for col, scale in scales.items():
         if col not in df.columns or scale >= 1.0:
             continue
+        before = df[col].copy()
         df[col] = 0.5 + (df[col] - 0.5) * scale
+        _log_score_stats(f"Dispersion/{col}/before", before)
+        _log_score_stats(f"Dispersion/{col}/after", df[col])
     return df
 
 
@@ -61,7 +123,27 @@ def _apply_sector_adjustments(df: pd.DataFrame) -> pd.DataFrame:
         sector_score = 0.5
     sector_prior = SECTOR_SCORE_PRIOR_BASE + SECTOR_SCORE_PRIOR_WEIGHT * sector_score
     df["final_score_raw"] = df["final_score"]
-    df["final_score"] = (df["final_score"] * sector_prior * df["sector_confidence"]).clip(0.0, 1.0)
+    adjustment = (sector_prior * df["sector_confidence"]).clip(0.0, 1.0)
+    df["final_score"] = (0.5 + (df["final_score"] - 0.5) * adjustment).clip(0.0, 1.0)
+
+    log.info(
+        f"[SectorAdjust] params: SECTOR_CONFIDENCE_PEERS={SECTOR_CONFIDENCE_PEERS}, "
+        f"SECTOR_SCORE_PRIOR_BASE={SECTOR_SCORE_PRIOR_BASE:.3f}, "
+        f"SECTOR_SCORE_PRIOR_WEIGHT={SECTOR_SCORE_PRIOR_WEIGHT:.3f}"
+    )
+    _log_score_stats("SectorAdjust/final_score_raw", df["final_score_raw"])
+    _log_score_stats("SectorAdjust/sector_score", sector_score)
+    _log_score_stats("SectorAdjust/sector_confidence", df["sector_confidence"])
+    _log_score_stats("SectorAdjust/adjustment", adjustment)
+    _log_score_stats("SectorAdjust/final_score_adjusted", df["final_score"])
+
+    if "bear_risk_score" in df.columns:
+        bear_risk = pd.to_numeric(df["bear_risk_score"], errors="coerce").fillna(0.5)
+        log.info(
+            f"[RiskDiag] bear_risk>=hard_threshold({BEAR_HARD_THRESHOLD:.2f}): "
+            f"{int((bear_risk >= BEAR_HARD_THRESHOLD).sum())}/{len(bear_risk)} ({(bear_risk >= BEAR_HARD_THRESHOLD).mean():.1%})"
+        )
+
     return df
 
 
@@ -103,7 +185,24 @@ def _predict_base_scores(
             scores = agent.predict_score(out, sector_col)
         else:
             scores = agent.predict_score(out)
-        out[f"{ag_name}_score"] = scores.values
+        # Alinear dirección de scores para inversión: alto = mejor para invertir.
+        # BearAgent devuelve riesgo [0,1], por eso guardamos ambas vistas:
+        #   - bear_risk_score: riesgo (alto = peor)
+        #   - bear_score: safety (alto = mejor)
+        if ag_name == "bear":
+            risk = scores.astype(float).clip(0.0, 1.0)
+            out["bear_risk_score"] = risk.values
+            out["bear_score"] = (1.0 - risk).values
+            _log_score_stats(f"AgentScore/{ag_name}/risk", out["bear_risk_score"])
+            _log_score_stats(f"AgentScore/{ag_name}/safety", out["bear_score"])
+        else:
+            out[f"{ag_name}_score"] = scores.values
+            _log_score_stats(f"AgentScore/{ag_name}", out[f"{ag_name}_score"])
+
+    score_cols = [c for c in ["fundamental_score", "valuation_score", "momentum_score", "bear_score", "sentiment_score"] if c in out.columns]
+    if score_cols:
+        ensemble_mean = out[score_cols].mean(axis=1)
+        _log_score_stats("AgentScore/ensemble_mean_pre_meta", ensemble_mean)
     return out
 
 
@@ -145,6 +244,14 @@ def train_fold(
     for col_name, scores_series in oof_scores.items():
         df_train_with_oof[col_name] = scores_series
 
+    # OOF del BearAgent llega como riesgo; convertir a safety para alinear dirección.
+    if "bear_score" in df_train_with_oof.columns:
+        bear_risk = df_train_with_oof["bear_score"].astype(float).clip(0.0, 1.0)
+        df_train_with_oof["bear_risk_score"] = bear_risk
+        df_train_with_oof["bear_score"] = 1.0 - bear_risk
+        _log_score_stats("OOF/bear_risk", df_train_with_oof["bear_risk_score"])
+        _log_score_stats("OOF/bear_safety", df_train_with_oof["bear_score"])
+
     # Añadir sector_score al train OOF usando el agente ya entrenado
     if sector_agent.is_trained and sector_map is not None:
         sector_scores_train = sector_agent.predict_sector_scores(df_train_with_oof, sector_map)
@@ -155,6 +262,7 @@ def train_fold(
     score_cols = [f"{ag_name}_score" for ag_name in agents_config.keys()]
     if "sector_score" in df_train_with_oof.columns:
         score_cols.append("sector_score")
+        _log_score_stats("OOF/sector_score", df_train_with_oof["sector_score"])
     dispersion_scales = _compute_dispersion_scales(df_train_with_oof, score_cols)
     df_train_with_oof = _apply_dispersion_shrink(df_train_with_oof, dispersion_scales)
 
@@ -175,6 +283,7 @@ def train_fold(
 
     df_test = _apply_dispersion_shrink(df_test, dispersion_scales)
     df_test["final_score"] = meta.predict_score(df_test, "sector").values
+    _log_score_stats("Meta/final_score_pre_sector_adjust", df_test["final_score"])
     df_test = _apply_sector_adjustments(df_test)
     df_test["label"] = y_test.values
     log.info(f"[Fold {fold_id}] 3/3 — Predicciones listas. Scores en rango [{df_test['final_score'].min():.3f}, {df_test['final_score'].max():.3f}]")

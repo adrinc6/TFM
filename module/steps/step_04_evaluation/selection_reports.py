@@ -126,6 +126,10 @@ def build_selection_audit_df(
     if score_col not in df.columns:
         raise KeyError(f"Score column '{score_col}' not found in scored dataframe")
 
+    if "ticker" in df.columns and df.duplicated(subset="ticker").any():
+        # Keep the latest occurrence per ticker to avoid ambiguous audit rows.
+        df = df.drop_duplicates(subset="ticker", keep="last")
+
     selected_list = _normalise_ticker_list(selected_tickers)
     selected_set = set(selected_list)
     df = df.copy()
@@ -256,7 +260,10 @@ def export_ticker_explanations(
     selected = _normalise_ticker_list(candidate_tickers)
     audit_lookup = {}
     if audit_df is not None and not audit_df.empty:
-        audit_lookup = audit_df.set_index("ticker").to_dict(orient="index")
+        audit_unique = audit_df
+        if audit_unique.duplicated(subset="ticker").any():
+            audit_unique = audit_unique.drop_duplicates(subset="ticker", keep="last")
+        audit_lookup = audit_unique.set_index("ticker").to_dict(orient="index")
 
     all_explanations = {"fold": fold_id, "tickers": {}}
     flat_rows: List[Dict] = []

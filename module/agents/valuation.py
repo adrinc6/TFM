@@ -95,7 +95,8 @@ class ValuationAgent(BaseAgent):
 
         # Selección de features: solo con datos de train (sin leakage)
         self._selector = FeatureSelector(corr_threshold=FEATURE_CORR_THRESHOLD, top_n=VALUATION_FEATURE_TOP_N,
-                                         min_features=3, random_seed=self.random_seed)
+                                         min_features=3, random_seed=self.random_seed,
+                                         zsector_pair_policy="force_zsector")
         X_prep = self._selector.fit_transform(X_prep, y_cl, agent_name="valuation")
 
         self._feature_cols = list(X_prep.columns)

@@ -22,7 +22,6 @@ import logging
 import warnings
 import io as _io
 from pathlib import Path
-import datetime
 
 warnings.filterwarnings("ignore")
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -34,9 +33,11 @@ from environment import (
     RESULTS_DIR, AGENTS_RESULTS_DIR, BACKTEST_RESULTS_DIR, PLOTS_DIR,
     MIN_HISTORY_QUARTERS,
     WALKFORWARD_TRAIN_LOOKBACK_YEARS, WALKFORWARD_TEST_QUARTERS, RISK_FREE_RATE,
-    RANDOM_SEED, DOWNLOAD_START_DATE, TEST_START_YEAR, TEST_START_QUARTER, END_YEAR, END_QUARTER,
+    RANDOM_SEED, DOWNLOAD_START_DATE,
+    ANALYSIS_START_YEAR, ANALYSIS_START_QUARTER, ANALYSIS_END_YEAR, ANALYSIS_END_QUARTER,
+    ANALYSIS_FREQUENCY, ANALYSIS_ANNUAL_START_DATE,
     SKIP_BACKTEST, FORCE_DOWNLOAD, RETRY_MISSING_TICKERS, UPDATE_PRICES_ONLY,
-    TOP_N_STOCKS, DAYS_BEFORE_QUARTER_START,
+    TOP_N_STOCKS, SNAPSHOT_LAG_DAYS, HOLDING_PERIOD_MONTHS, TECHNICAL_LOOKBACK_DAYS,
 )
 
 from module.common.data_router import DataRouter
@@ -81,12 +82,39 @@ def main():
     log.info("  INICIANDO PIPELINE ML MULTI-AGENTE STOCK PICKER")
     log.info("=" * 60)
 
-    # test_start_date = fin del quarter ANTERIOR al primero que se quiere predecir.
-    # Ejemplo: TEST_START_QUARTER=3 2025 → predecir 2025Q3 → train_end = 30 Jun 2025
+    # Rango de análisis. En modo trimestral se usa ANALYSIS_START_QUARTER.
+    # En modo anual se ignora ese quarter y se arranca desde el quarter de la fecha ancla anual.
     import pandas as pd
-    test_start_date = _quarter_end_date(TEST_START_YEAR, TEST_START_QUARTER) - pd.offsets.QuarterEnd(1)
-    end_date = _quarter_end_date(END_YEAR, END_QUARTER)
-    end_date_str = end_date.strftime("%Y-%m-%d")
+    end_date = _quarter_end_date(ANALYSIS_END_YEAR, ANALYSIS_END_QUARTER)
+    analysis_frequency = str(ANALYSIS_FREQUENCY).strip().lower()
+    if analysis_frequency not in {"quarterly", "annual"}:
+        raise ValueError("ANALYSIS_FREQUENCY debe ser 'quarterly' o 'annual'")
+
+    test_start_date = _quarter_end_date(ANALYSIS_START_YEAR, ANALYSIS_START_QUARTER)
+    annual_anchor_date = None
+    if analysis_frequency == "annual":
+        if ANALYSIS_ANNUAL_START_DATE:
+            annual_anchor_date = pd.Timestamp(ANALYSIS_ANNUAL_START_DATE).normalize()
+        else:
+            annual_anchor_date = (
+                pd.Timestamp(year=int(ANALYSIS_START_YEAR), month=1, day=1)
+                + pd.Timedelta(days=max(int(SNAPSHOT_LAG_DAYS), 0))
+            ).normalize()
+
+        # En anual, el backtester debe generar folds desde el quarter de la anchor,
+        # no desde ANALYSIS_START_QUARTER.
+        test_start_date = annual_anchor_date.to_period("Q").end_time.normalize()
+
+        log.info(
+            "Modo anual activado: anchor=%s | start_quarter=%sQ%s | holding=%s meses",
+            annual_anchor_date.date(),
+            test_start_date.year,
+            test_start_date.quarter,
+            12,
+        )
+
+    download_end_date = pd.Timestamp.today().normalize()
+    end_date_str = download_end_date.strftime("%Y-%m-%d")
 
     # ── 1. Descargar datos
     tickers = list(dict.fromkeys(TICKERS))  # deduplica preservando orden
@@ -131,6 +159,10 @@ def main():
     sentiment_builder   = SentimentFeatureBuilder()
 
     # ── 5. Construir dataset maestro
+    if SNAPSHOT_LAG_DAYS is None:
+        raise ValueError("SNAPSHOT_LAG_DAYS debe estar definido en environment.py")
+    dataset_snapshot_lag_days = int(SNAPSHOT_LAG_DAYS)
+
     df = build_master_dataset(
         tickers=tickers_ok,
         router=router,
@@ -140,13 +172,17 @@ def main():
         insider_builder=insider_builder,
         sentiment_builder=sentiment_builder,
         min_history_quarters=MIN_HISTORY_QUARTERS,
-        days_before=DAYS_BEFORE_QUARTER_START,
+        snapshot_lag_days=dataset_snapshot_lag_days,
+        holding_period_months=HOLDING_PERIOD_MONTHS,
+        technical_lookback_days=TECHNICAL_LOOKBACK_DAYS,
     )
     df.to_csv(f"{RESULTS_DIR}/master_dataset.csv")
     log.info(f"Dataset maestro: {len(df)} observaciones — {len(tickers_ok)} tickers")
 
     summary = {}
     if not SKIP_BACKTEST:
+        effective_test_quarters = 4 if analysis_frequency == "annual" else WALKFORWARD_TEST_QUARTERS
+
         # ── 6. Precios y benchmark para el backtester
         prices_dict = {}
         for ticker in tickers_ok:
@@ -173,13 +209,17 @@ def main():
             backtest_results_dir=BACKTEST_RESULTS_DIR,
             plots_dir=PLOTS_DIR,
             start_date=test_start_date.strftime("%Y-%m-%d"),
-            end_date=end_date_str,
+            end_date=end_date.strftime("%Y-%m-%d"),
             walkforward_train_years=WALKFORWARD_TRAIN_LOOKBACK_YEARS,
-            walkforward_test_quarters=WALKFORWARD_TEST_QUARTERS,
+            walkforward_test_quarters=effective_test_quarters,
             risk_free_rate=RISK_FREE_RATE,
             top_n_stocks=TOP_N_STOCKS,
             random_seed=RANDOM_SEED,
-            days_before_quarter_start=DAYS_BEFORE_QUARTER_START,
+            snapshot_lag_days=dataset_snapshot_lag_days,
+            holding_period_months=12 if analysis_frequency == "annual" else HOLDING_PERIOD_MONTHS,
+            finnhub_data_dir=FINNHUB_DATA_DIR,
+            analysis_frequency=analysis_frequency,
+            annual_anchor_date=annual_anchor_date,
         )
     else:
         log.info("SKIP_BACKTEST=True — saltando walk-forward backtest histórico")

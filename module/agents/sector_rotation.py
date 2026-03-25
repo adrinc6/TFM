@@ -5,7 +5,7 @@
 #
 # LÓGICA:
 #   Opera a nivel SECTOR, no ticker. Para cada (sector, quarter):
-#     - Agrega las features de todos los tickers del sector (mediana robusta)
+#     - Agrega las features de todos los tickers del sector (media)
 #     - Añade features de momentum de precio sectorial y flujos de analistas
 #     - Predice si el retorno medio del sector supera al SPY
 #
@@ -13,7 +13,7 @@
 #     - Un ticker brillante en un sector fuerte recibe boosting.
 #     - Un ticker brillante en un sector débil recibe penalización.
 #
-# FEATURES QUE CONSUME (medianas sectoriales de):
+# FEATURES QUE CONSUME (medias sectoriales de):
 #   Fundamentales:  roe, roa, net_margin, revenue_yoy_growth, fcf_margin,
 #                   debt_to_ebitda, interest_coverage
 #   Valoración:     pe_ratio, pb_ratio, ev_to_ebitda, fcf_yield
@@ -42,7 +42,7 @@ try:
 except ImportError:
     _DEPS_OK = False
 
-# Features de ticker que se agregan a nivel sector (mediana)
+# Features de ticker que se agregan a nivel sector (media)
 TICKER_FEATURES_TO_AGGREGATE = [
     # Calidad empresarial del sector
     "roe", "roa", "net_margin", "gross_margin", "fcf_margin", "ebitda_margin",
@@ -258,7 +258,7 @@ class SectorRotationAgent(BaseAgent):
     ) -> pd.DataFrame:
         """
         Construye un DataFrame (sector, quarter) con:
-          - Features agregadas (mediana de los tickers del sector en ese quarter)
+          - Features agregadas (media de los tickers del sector en ese quarter)
           - Label: 1 si el retorno medio del sector superó al SPY
         """
         tickers = df.index.get_level_values("ticker")
@@ -279,12 +279,12 @@ class SectorRotationAgent(BaseAgent):
             if sector == "Unknown" or len(grp) < 3:
                 continue
 
-            feat = {col: float(grp[col].median()) for col in available_feat_cols if grp[col].notna().any()}
+            feat = {col: float(grp[col].mean()) for col in available_feat_cols if grp[col].notna().any()}
 
             # Label sectorial: ¿el retorno medio del sector supera al SPY?
             if "forward_return" not in grp.columns:
                 continue
-            sector_return = float(grp["forward_return"].median())
+            sector_return = float(grp["forward_return"].mean())
 
             if spy_prices is not None and not spy_prices.empty:
                 spy_ret_by_q = _spy_quarterly_returns_dict(spy_prices)
@@ -311,7 +311,7 @@ class SectorRotationAgent(BaseAgent):
         df: pd.DataFrame,
         sector_map: Dict[str, str],
     ) -> pd.DataFrame:
-        """Agrega las features de ticker a nivel sector (mediana) para predicción."""
+        """Agrega las features de ticker a nivel sector (media) para predicción."""
         tickers = df.index.get_level_values("ticker")
         sector_series = pd.Series(tickers, index=df.index).map(sector_map).fillna("Unknown")
 
@@ -319,7 +319,7 @@ class SectorRotationAgent(BaseAgent):
         temp["_sector"] = sector_series.values
         available_feat_cols = [c for c in TICKER_FEATURES_TO_AGGREGATE if c in temp.columns]
 
-        agg = temp.groupby("_sector")[available_feat_cols].median()
+        agg = temp.groupby("_sector")[available_feat_cols].mean()
         agg = agg[agg.index != "Unknown"]
         return agg
 
