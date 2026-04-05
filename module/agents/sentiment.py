@@ -5,7 +5,7 @@
 #   Analistas:   analyst_buy_ratio, analyst_bearish_score, analyst_consensus,
 #                analyst_dispersion, analyst_strong_buy_pct,
 #                analyst_consensus_change
-#   Insiders:    mspr_3m, mspr_trend, insider_net_shares_90d, insider_sell_ratio
+#   Insiders:    mspr_3m, mspr_trend, insider_net_ratio_90d, insider_sell_ratio
 #   EPS:         beat_rate_4q, eps_surprise_avg_4q, eps_surprise_pct
 #
 # Lógica: captura el "wisdom of the crowd" institucional + señales de insiders
@@ -49,7 +49,7 @@ FEATURE_COLS = [
     "mspr_3m",
     "mspr_trend",
     # Transacciones insider (insider_transactions.json)
-    "insider_net_shares_90d",
+    "insider_net_ratio_90d",
     "insider_sell_ratio",
     # EPS surprises (eps_surprises.json)
     "beat_rate_4q",
@@ -242,9 +242,16 @@ class SentimentAgent(BaseAgent):
             df["analyst_net_bullish"] = df["analyst_buy_ratio"] - df["analyst_bearish_score"]
             selected.append("analyst_net_bullish")
 
-        # Feature derivado: insider neto normalizado
-        if "insider_net_shares_90d" in df.columns:
-            net = df["insider_net_shares_90d"]
+        # Feature derivado: z-score del balance neto insider (ratio)
+        net_col = None
+        if "insider_net_ratio_90d" in df.columns:
+            net_col = "insider_net_ratio_90d"
+        elif "insider_net_shares_90d" in df.columns:
+            # Compatibilidad hacia atras con datasets historicos.
+            net_col = "insider_net_shares_90d"
+
+        if net_col is not None:
+            net = df[net_col]
             std = net.std()
             if std > 0:
                 df["insider_net_zscore"] = (net - net.mean()) / std

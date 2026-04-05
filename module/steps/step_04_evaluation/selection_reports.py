@@ -35,7 +35,7 @@ def _rule_based_drivers(row: pd.Series, score: float) -> List[Dict]:
         ("eps_surprise_pct", "> 0", lambda v: v > 0, "Sorpresa de EPS positiva"),
         ("beat_rate_4q", ">= 0.75", lambda v: v >= 0.75, "Beat rate consistente"),
         ("mspr_3m", "> 0", lambda v: v > 0, "MSPR positivo"),
-        ("insider_net_shares_90d", "> 0", lambda v: v > 0, "Compra neta de insiders"),
+        ("insider_net_ratio_90d", "> 0", lambda v: v > 0, "Balance neto insider positivo"),
     ]
 
     drivers: List[Dict] = []

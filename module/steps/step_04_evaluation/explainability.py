@@ -96,7 +96,7 @@ FEATURE_DESCRIPTIONS = {
     "volatility_60d":           "Volatilidad realizada 60 días (anualizada)",
     "vol_ratio_20_50":          "Ratio de volumen 20d / 50d (>1 = expansión)",
     # Insiders / Sentimiento
-    "insider_net_shares_90d":       "Acciones compradas netas por insiders (90 días)",
+    "insider_net_ratio_90d":        "Balance neto insider normalizado (90 dias)",
     "insider_sell_ratio":           "Proporción de ventas de insiders (>0.7 = red flag)",
     "insider_net_zscore":           "Z-score de compras netas de insiders vs sector",
     "analyst_buy_ratio":            "Proporción de recomendaciones de compra de analistas",

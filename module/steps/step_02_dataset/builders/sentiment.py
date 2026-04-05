@@ -51,7 +51,7 @@ class SentimentFeatureBuilder:
             buys = float(insider_df.loc[insider_df["is_buy"] == 1, "shares"].sum())
             sells = float(insider_df.loc[insider_df["is_sell"] == 1, "shares"].sum())
             total = buys + sells
-            f["insider_net_shares_90d"] = buys - sells
+            f["insider_net_ratio_90d"] = (buys - sells) / total if total > 0 else 0.0
             f["insider_sell_ratio"] = sells / total if total > 0 else 0.5
 
         if eps_df is not None and not eps_df.empty:

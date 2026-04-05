@@ -135,7 +135,7 @@ AGENT_KEY_FEATURES: Dict[str, List[str]] = {
     ],
     "sentiment": [
         "analyst_buy_ratio", "analyst_consensus", "eps_surprise_pct",
-        "beat_rate_4q", "mspr_3m", "insider_net_shares_90d",
+        "beat_rate_4q", "mspr_3m", "insider_net_ratio_90d",
     ],
 }
 

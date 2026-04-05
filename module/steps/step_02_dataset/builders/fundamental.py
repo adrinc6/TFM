@@ -63,21 +63,44 @@ class FundamentalFeatureBuilder:
         return float(coeffs[0])
 
     def _yoy_growth(self, df: pd.DataFrame) -> pd.DataFrame:
-        pairs = {
+        # Variables monetarias/beneficios: crecimiento YoY relativo (ratio),
+        # no diferencia absoluta, para comparar empresas de distinto tamano.
+        ratio_growth_pairs = {
             "revenue_yoy_growth": "revenue",
             "net_income_yoy_growth": "net_income",
             "operating_income_yoy_growth": "operating_income",
             "fcf_yoy_growth": "fcf",
             "eps_yoy_growth": "eps",
             "total_debt_yoy_growth": "total_debt",
-            # Cambios YoY de ratios (usados en Piotroski y como features directos)
+        }
+
+        # Ratios ya normalizados: aqui si usamos cambio absoluto YoY del ratio.
+        ratio_delta_pairs = {
             "roa_change_yoy": "roa",
             "gross_margin_change_yoy": "gross_margin",
             "current_ratio_change_yoy": "current_ratio",
         }
-        for feat, col in pairs.items():
+
+        for feat, col in ratio_growth_pairs.items():
+            if col not in df.columns:
+                continue
+            cur = pd.to_numeric(df[col], errors="coerce")
+            prev = pd.to_numeric(df[col], errors="coerce").shift(4)
+
+            # Evita explosiones cuando el valor del ano anterior es ~0.
+            denom = prev.abs()
+            tiny = denom.quantile(0.10)
+            if pd.isna(tiny) or tiny <= 0:
+                tiny = 1e-6
+            denom = denom.where(denom >= tiny, np.nan)
+
+            yoy = (cur - prev) / denom
+            # Cap robusto para evitar outliers extremos por efectos de base.
+            df[feat] = yoy.clip(lower=-5.0, upper=5.0)
+
+        for feat, col in ratio_delta_pairs.items():
             if col in df.columns:
-                df[feat] = df[col].diff(periods=4)
+                df[feat] = pd.to_numeric(df[col], errors="coerce").diff(periods=4)
         return df
 
     def _quality_metrics(self, df: pd.DataFrame) -> pd.DataFrame:

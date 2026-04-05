@@ -8,6 +8,7 @@ from typing import Dict, List, Tuple
 
 from module.steps.step_01_data.consolidation import FinnhubConsolidator
 from module.steps.step_01_data.downloaders import run_download
+from module.steps.step_01_data.registry import Registry
 
 log = logging.getLogger(__name__)
 
@@ -95,13 +96,19 @@ def retry_missing_tickers(
     tickers_missing = list(missing_detail.keys())
     log.info(f"  Reintentando descarga para {len(tickers_missing)} tickers incompletos...")
 
+    # Evita borrar el registry global: limpia solo las entradas de tickers a reintentar.
+    # Asi se preserva el estado del resto del universo y no se dispara re-descarga masiva.
+    registry = Registry(Path(data_dir))
+    for ticker in tickers_missing:
+        registry.clear(group=ticker)
+
     run_download(
         api_key=api_key,
         tickers=tickers_missing,
         start=start_date,
         end=end_date,
         base_dir=data_dir,
-        force=True,
+        force=False,
     )
 
     need_consolidated = [t for t, m in missing_detail.items() if "consolidated" in m]

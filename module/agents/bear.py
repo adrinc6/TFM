@@ -24,7 +24,7 @@
 #   Fundamentales:  total_debt_yoy_growth, debt_equity, debt_to_ebitda,
 #                   fcf, current_ratio, consecutive_losses,
 #                   revenue_decline, interest_coverage
-#   Insiders:       insider_net_shares_90d, insider_sell_ratio
+#   Insiders:       insider_net_ratio_90d, insider_sell_ratio
 #   Analistas:      eps_surprise_pct, eps_revision
 # =============================================================================
 import json
@@ -91,7 +91,7 @@ FEATURE_COLS = [
     "revenue_decline",         # 1 si revenue cayó YoY
     "interest_coverage",       # EBIT / gastos de interés
     # Insiders (InsiderFeatureBuilder, ventana 90 días)
-    "insider_net_shares_90d",  # Compras netas (negativo = venta neta)
+    "insider_net_ratio_90d",   # Balance neto insider normalizado [-1,1]
     "insider_sell_ratio",      # Proporción de ventas sobre total [0,1]
     # Analistas (ValuationFeatureBuilder._analyst_features)
     "eps_surprise_pct",        # Sorpresa EPS último trimestre

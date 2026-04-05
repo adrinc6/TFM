@@ -17,7 +17,7 @@ class InsiderFeatureBuilder:
         mspr_df: Optional[pd.DataFrame] = None,
     ) -> pd.Series:
         f: Dict = {
-            "insider_net_shares_90d": 0.0,
+            "insider_net_ratio_90d": 0.0,
             "insider_sell_ratio": 0.5,
             "mspr_3m": np.nan,
             "mspr_trend": np.nan,
@@ -27,7 +27,7 @@ class InsiderFeatureBuilder:
             buys = float(insider_df.loc[insider_df["is_buy"] == 1, "shares"].sum())
             sells = float(insider_df.loc[insider_df["is_sell"] == 1, "shares"].sum())
             total = buys + sells
-            f["insider_net_shares_90d"] = buys - sells
+            f["insider_net_ratio_90d"] = (buys - sells) / total if total > 0 else 0.0
             f["insider_sell_ratio"] = sells / total if total > 0 else 0.5
 
         if mspr_df is not None and not mspr_df.empty and "mspr" in mspr_df.columns:
