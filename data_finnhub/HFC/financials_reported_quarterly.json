@@ -1,0 +1,4738 @@
+{
+  "cik": "48039",
+  "data": [
+    {
+      "accessNumber": "0000048039-21-000032",
+      "symbol": "HFC",
+      "cik": "48039",
+      "year": 2021,
+      "quarter": 1,
+      "form": "10-Q",
+      "startDate": "2021-01-01 00:00:00",
+      "endDate": "2021-03-31 00:00:00",
+      "filedDate": "2021-05-05 00:00:00",
+      "acceptedDate": "2021-05-05 16:06:53",
+      "report": {
+        "bs": [
+          {
+            "label": "Cash and cash equivalents (HEP:$19,753 and $21,990, respectively)",
+            "concept": "CashAndCashEquivalentsAtCarryingValue",
+            "unit": "usd",
+            "value": 1193428000
+          },
+          {
+            "label": "Accounts receivable: Product and transportation (HEP: $17,451 and $14,543, respectively)",
+            "concept": "hfc:AccountsReceivableProductAndTransportation",
+            "unit": "usd",
+            "value": 687154000
+          },
+          {
+            "label": "Crude oil resales",
+            "concept": "hfc:AccountsReceivableCrudeOilResales",
+            "unit": "usd",
+            "value": 91613000
+          },
+          {
+            "label": "Accounts receivable, total",
+            "concept": "AccountsReceivableNetCurrent",
+            "unit": "usd",
+            "value": 778767000
+          },
+          {
+            "label": "Inventories: Crude oil and refined products",
+            "concept": "InventoryCrudeOilProductsAndMerchandise",
+            "unit": "usd",
+            "value": 1436602000
+          },
+          {
+            "label": "Materials, supplies and other (HEP: $976 and $895, respectively)",
+            "concept": "OtherInventorySupplies",
+            "unit": "usd",
+            "value": 180246000
+          },
+          {
+            "label": "Total inventory",
+            "concept": "InventoryNet",
+            "unit": "usd",
+            "value": 1616848000
+          },
+          {
+            "label": "Income taxes receivable",
+            "concept": "IncomeTaxesReceivable",
+            "unit": "usd",
+            "value": 65274000
+          },
+          {
+            "label": "Prepayments and other (HEP: $4,718 and $8,591, respectively)",
+            "concept": "OtherAssetsCurrent",
+            "unit": "usd",
+            "value": 45959000
+          },
+          {
+            "label": "Current assets:",
+            "concept": "AssetsCurrent",
+            "unit": "usd",
+            "value": 3700276000
+          },
+          {
+            "label": "Properties, plants and equipment, at cost (HEP: $2,141,710 and $2,119,295, respectively)",
+            "concept": "PropertyPlantAndEquipmentAndFinanceLeaseRightOfUseAssetBeforeAccumulatedDepreciationAndAmortization",
+            "unit": "usd",
+            "value": 7441262000
+          },
+          {
+            "label": "Less accumulated depreciation (HEP: $(660,692) and $(644,149), respectively)",
+            "concept": "PropertyPlantAndEquipmentAndFinanceLeaseRightOfUseAssetAccumulatedDepreciationAndAmortization",
+            "unit": "usd",
+            "value": 2799243000
+          },
+          {
+            "label": "Properties, plants and equipment, net",
+            "concept": "PropertyPlantAndEquipmentAndFinanceLeaseRightOfUseAssetAfterAccumulatedDepreciationAndAmortization",
+            "unit": "usd",
+            "value": 4642019000
+          },
+          {
+            "label": "Operating lease right-of-use assets (HEP: $71,766 and $72,480, respectively)",
+            "concept": "OperatingLeaseRightOfUseAsset",
+            "unit": "usd",
+            "value": 340514000
+          },
+          {
+            "label": "Other assets: Turnaround costs",
+            "concept": "OtherDeferredCostsNet",
+            "unit": "usd",
+            "value": 308726000
+          },
+          {
+            "label": "Goodwill (HEP: $312,873 and $312,873, respectively)",
+            "concept": "Goodwill",
+            "unit": "usd",
+            "value": 2293422000
+          },
+          {
+            "label": "Intangibles and other (HEP: $218,893 and $224,430, respectively)",
+            "concept": "hfc:IntangiblesAndOther",
+            "unit": "usd",
+            "value": 649860000
+          },
+          {
+            "label": "Other assets, total",
+            "concept": "OtherAssetsNoncurrent",
+            "unit": "usd",
+            "value": 3252008000
+          },
+          {
+            "label": "ASSETS",
+            "concept": "Assets",
+            "unit": "usd",
+            "value": 11934817000
+          },
+          {
+            "label": "Accounts payable (HEP: $30,320 and $28,565, respectively)",
+            "concept": "AccountsPayableCurrent",
+            "unit": "usd",
+            "value": 1266690000
+          },
+          {
+            "label": "Income taxes payable",
+            "concept": "AccruedIncomeTaxesCurrent",
+            "unit": "usd",
+            "value": 12424000
+          },
+          {
+            "label": "Operating lease liabilities (HEP: $3,867 and $3,827, respectively)",
+            "concept": "OperatingLeaseLiabilityCurrent",
+            "unit": "usd",
+            "value": 95898000
+          },
+          {
+            "label": "Accrued liabilities (HEP: $13,660 and $29,518, respectively)",
+            "concept": "AccruedLiabilitiesCurrent",
+            "unit": "usd",
+            "value": 382296000
+          },
+          {
+            "label": "Total current liabilities",
+            "concept": "LiabilitiesCurrent",
+            "unit": "usd",
+            "value": 1757308000
+          },
+          {
+            "label": "Long-term debt (HEP: $1,388,335 and $1,405,603, respectively)",
+            "concept": "LongTermDebtNoncurrent",
+            "unit": "usd",
+            "value": 3126091000
+          },
+          {
+            "label": "Noncurrent operating lease liabilities (HEP: $68,273 and $68,454, respectively)",
+            "concept": "OperatingLeaseLiabilityNoncurrent",
+            "unit": "usd",
+            "value": 275382000
+          },
+          {
+            "label": "Deferred income taxes (HEP: $451 and $449, respectively)",
+            "concept": "DeferredIncomeTaxLiabilitiesNet",
+            "unit": "usd",
+            "value": 671241000
+          },
+          {
+            "label": "Other long-term liabilities (HEP: $48,504 and $55,105, respectively)",
+            "concept": "OtherLiabilitiesNoncurrent",
+            "unit": "usd",
+            "value": 266749000
+          },
+          {
+            "label": "Preferred stock, $1.00 par value u2013 5,000,000 shares authorized; none issued",
+            "concept": "PreferredStockValue",
+            "unit": "usd",
+            "value": "N/A"
+          },
+          {
+            "label": "Common stock $.01 par value u2013 320,000,000 shares authorized; 256,046,051 shares issued as of March 31, 2021 and Decemberu00a031, 2020",
+            "concept": "CommonStockValue",
+            "unit": "usd",
+            "value": 2560000
+          },
+          {
+            "label": "Additional capital",
+            "concept": "AdditionalPaidInCapitalCommonStock",
+            "unit": "usd",
+            "value": 4216816000
+          },
+          {
+            "label": "Retained earnings",
+            "concept": "RetainedEarningsAccumulatedDeficit",
+            "unit": "usd",
+            "value": 4003733000
+          },
+          {
+            "label": "Accumulated other comprehensive income",
+            "concept": "AccumulatedOtherComprehensiveIncomeLossNetOfTax",
+            "unit": "usd",
+            "value": 4658000
+          },
+          {
+            "label": "Purchase of treasury stock",
+            "concept": "TreasuryStockValue",
+            "unit": "usd",
+            "value": 2968580000
+          },
+          {
+            "label": "Equity:",
+            "concept": "StockholdersEquity",
+            "unit": "usd",
+            "value": 5259187000
+          },
+          {
+            "label": "Distributions to noncontrolling interest holders",
+            "concept": "MinorityInterest",
+            "unit": "usd",
+            "value": 578859000
+          },
+          {
+            "label": "Equity:",
+            "concept": "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest",
+            "unit": "usd",
+            "value": 5838046000
+          },
+          {
+            "label": "LIABILITIES AND EQUITY",
+            "concept": "LiabilitiesAndStockholdersEquity",
+            "unit": "usd",
+            "value": 11934817000
+          }
+        ],
+        "cf": [
+          {
+            "label": "Net income (loss)",
+            "concept": "ProfitLoss",
+            "unit": "usd",
+            "value": 182850000
+          },
+          {
+            "label": "Depreciation and amortization",
+            "concept": "DepreciationDepletionAndAmortization",
+            "unit": "usd",
+            "value": 124079000
+          },
+          {
+            "label": "Lower of cost or market inventory valuation adjustment",
+            "concept": "InventoryWriteDown",
+            "unit": "usd",
+            "value": -200037000
+          },
+          {
+            "label": "Earnings of equity method investments, inclusive of distributions",
+            "concept": "IncomeLossFromEquityMethodInvestmentsNetOfDividendsOrDistributions",
+            "unit": "usd",
+            "value": 617000
+          },
+          {
+            "label": "Loss on early extinguishment of debt",
+            "concept": "GainsLossesOnExtinguishmentOfDebt",
+            "unit": "usd",
+            "value": "N/A"
+          },
+          {
+            "label": "Gain on sale of assets",
+            "concept": "GainLossOnSaleOfPropertyPlantEquipment",
+            "unit": "usd",
+            "value": 425000
+          },
+          {
+            "label": "Deferred",
+            "concept": "DeferredIncomeTaxExpenseBenefit",
+            "unit": "usd",
+            "value": -39472000
+          },
+          {
+            "label": "Units granted (in shares)",
+            "concept": "ShareBasedCompensation",
+            "unit": "usd",
+            "value": 9770000
+          },
+          {
+            "label": "Change in fair value u2013 derivative instruments",
+            "concept": "UnrealizedGainLossOnDerivatives",
+            "unit": "usd",
+            "value": -3783000
+          },
+          {
+            "label": "Accounts receivable",
+            "concept": "IncreaseDecreaseInAccountsReceivable",
+            "unit": "usd",
+            "value": 145891000
+          },
+          {
+            "label": "Inventories",
+            "concept": "IncreaseDecreaseInInventories",
+            "unit": "usd",
+            "value": 241238000
+          },
+          {
+            "label": "Income taxes receivable",
+            "concept": "IncreaseDecreaseInIncomeTaxesReceivable",
+            "unit": "usd",
+            "value": -25844000
+          },
+          {
+            "label": "Prepayments and other",
+            "concept": "IncreaseDecreaseInPrepaidDeferredExpenseAndOtherAssets",
+            "unit": "usd",
+            "value": -3830000
+          },
+          {
+            "label": "Accounts payable",
+            "concept": "IncreaseDecreaseInAccountsPayable",
+            "unit": "usd",
+            "value": 266163000
+          },
+          {
+            "label": "Income taxes payable",
+            "concept": "IncreaseDecreaseInAccruedIncomeTaxesPayable",
+            "unit": "usd",
+            "value": 10335000
+          },
+          {
+            "label": "Accrued liabilities",
+            "concept": "IncreaseDecreaseInAccruedLiabilities",
+            "unit": "usd",
+            "value": 95041000
+          },
+          {
+            "label": "Turnaround expenditures",
+            "concept": "hfc:IncreaseDecreaseInTurnaroundExpenditures",
+            "unit": "usd",
+            "value": -24817000
+          },
+          {
+            "label": "Other, net",
+            "concept": "OtherNoncashIncomeExpense",
+            "unit": "usd",
+            "value": 6872000
+          },
+          {
+            "label": "Net cash provided by operating activities",
+            "concept": "NetCashProvidedByUsedInOperatingActivities",
+            "unit": "usd",
+            "value": 62326000
+          },
+          {
+            "label": "Additions to properties, plants and equipment",
+            "concept": "PaymentsToAcquirePropertyPlantAndEquipment",
+            "unit": "usd",
+            "value": 116743000
+          },
+          {
+            "label": "Distributions in excess of equity earnings",
+            "concept": "ProceedsFromEquityMethodInvestmentDividendsOrDistributionsReturnOfCapital",
+            "unit": "usd",
+            "value": 2897000
+          },
+          {
+            "label": "Cash flows from investing activities:",
+            "concept": "NetCashProvidedByUsedInInvestingActivities",
+            "unit": "usd",
+            "value": -147064000
+          },
+          {
+            "label": "Borrowings under credit agreements",
+            "concept": "ProceedsFromLongTermLinesOfCredit",
+            "unit": "usd",
+            "value": 73000000
+          },
+          {
+            "label": "Repayments under credit agreements",
+            "concept": "RepaymentsOfLongTermLinesOfCredit",
+            "unit": "usd",
+            "value": 90500000
+          },
+          {
+            "label": "Purchase of treasury stock",
+            "concept": "PaymentsForRepurchaseOfCommonStock",
+            "unit": "usd",
+            "value": 12000
+          },
+          {
+            "label": "Dividends",
+            "concept": "PaymentsOfDividendsCommonStock",
+            "unit": "usd",
+            "value": 57663000
+          },
+          {
+            "label": "Distributions to noncontrolling interests",
+            "concept": "PaymentsToMinorityShareholders",
+            "unit": "usd",
+            "value": 19977000
+          },
+          {
+            "label": "Contributions from noncontrolling interests",
+            "concept": "ProceedsFromContributionsFromAffiliates",
+            "unit": "usd",
+            "value": 6332000
+          },
+          {
+            "label": "Payments on finance leases",
+            "concept": "FinanceLeasePrincipalPayments",
+            "unit": "usd",
+            "value": 673000
+          },
+          {
+            "label": "Deferred financing costs",
+            "concept": "PaymentsOfFinancingCosts",
+            "unit": "usd",
+            "value": "N/A"
+          },
+          {
+            "label": "Other, net",
+            "concept": "ProceedsFromPaymentsForOtherFinancingActivities",
+            "unit": "usd",
+            "value": -68000
+          },
+          {
+            "label": "Cash flows from financing activities:",
+            "concept": "NetCashProvidedByUsedInFinancingActivities",
+            "unit": "usd",
+            "value": -89561000
+          },
+          {
+            "label": "Effect of exchange rate on cash flow",
+            "concept": "EffectOfExchangeRateOnCashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents",
+            "unit": "usd",
+            "value": -591000
+          },
+          {
+            "label": "Increase (decrease) for the period",
+            "concept": "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseIncludingExchangeRateEffect",
+            "unit": "usd",
+            "value": -174890000
+          },
+          {
+            "label": "Interest",
+            "concept": "InterestPaidNet",
+            "unit": "usd",
+            "value": 18532000
+          },
+          {
+            "label": "Income taxes, net",
+            "concept": "IncomeTaxesPaidNet",
+            "unit": "usd",
+            "value": -24649000
+          },
+          {
+            "label": "Decrease in accrued and unpaid capital expenditures",
+            "concept": "hfc:IncreaseDecreaseInAccruedCapitalExpendituresIncurredButNotYetPaid",
+            "unit": "usd",
+            "value": -2816000
+          }
+        ],
+        "ic": [
+          {
+            "label": "Sales and other revenues",
+            "concept": "RevenueFromContractWithCustomerExcludingAssessedTax",
+            "unit": "usd",
+            "value": 3504293000
+          },
+          {
+            "label": "Cost of products sold (exclusive of lower of cost or market inventory valuation adjustment)",
+            "concept": "hfc:CostOfProductsSoldExcludingInventoryAdjustments",
+            "unit": "usd",
+            "value": 2960305000
+          },
+          {
+            "label": "Lower of cost or market inventory valuation adjustment",
+            "concept": "InventoryWriteDown",
+            "unit": "usd",
+            "value": -200037000
+          },
+          {
+            "label": "Total costs of products sold (exclusive of depreciation and amortization)",
+            "concept": "CostOfGoodsAndServiceExcludingDepreciationDepletionAndAmortization",
+            "unit": "usd",
+            "value": 2760268000
+          },
+          {
+            "label": "Operating expenses (exclusive of depreciation and amortization)",
+            "concept": "OperatingCostsAndExpenses",
+            "unit": "usd",
+            "value": 399909000
+          },
+          {
+            "label": "Selling, general and administrative expenses (exclusive of depreciation and amortization)",
+            "concept": "GeneralAndAdministrativeExpense",
+            "unit": "usd",
+            "value": 81975000
+          },
+          {
+            "label": "Depreciation and amortization",
+            "concept": "DepreciationDepletionAndAmortization",
+            "unit": "usd",
+            "value": 124079000
+          },
+          {
+            "label": "Total operating costs and expenses",
+            "concept": "CostsAndExpenses",
+            "unit": "usd",
+            "value": 3366231000
+          },
+          {
+            "label": "Income (loss) from operations",
+            "concept": "OperatingIncomeLoss",
+            "unit": "usd",
+            "value": 138062000
+          },
+          {
+            "label": "Earnings of equity method investments",
+            "concept": "IncomeLossFromEquityMethodInvestments",
+            "unit": "usd",
+            "value": 1763000
+          },
+          {
+            "label": "Interest income",
+            "concept": "InvestmentIncomeInterest",
+            "unit": "usd",
+            "value": 1031000
+          },
+          {
+            "label": "Interest expense",
+            "concept": "InterestExpense",
+            "unit": "usd",
+            "value": 38386000
+          },
+          {
+            "label": "Gain on tariff settlement",
+            "concept": "hfc:GainLossRelatedToLitigationSettlementOther",
+            "unit": "usd",
+            "value": 51500000
+          },
+          {
+            "label": "Loss on early extinguishment of debt",
+            "concept": "GainsLossesOnExtinguishmentOfDebt",
+            "unit": "usd",
+            "value": "N/A"
+          },
+          {
+            "label": "Loss on foreign currency transactions",
+            "concept": "ForeignCurrencyTransactionGainLossRealized",
+            "unit": "usd",
+            "value": -1317000
+          },
+          {
+            "label": "Other, net",
+            "concept": "OtherNonoperatingIncomeExpense",
+            "unit": "usd",
+            "value": 1890000
+          },
+          {
+            "label": "Other income (expense):",
+            "concept": "NonoperatingIncomeExpense",
+            "unit": "usd",
+            "value": 16481000
+          },
+          {
+            "label": "Income (loss) before income taxes",
+            "concept": "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+            "unit": "usd",
+            "value": 154543000
+          },
+          {
+            "label": "Current",
+            "concept": "CurrentIncomeTaxExpenseBenefit",
+            "unit": "usd",
+            "value": 11165000
+          },
+          {
+            "label": "Deferred",
+            "concept": "DeferredIncomeTaxExpenseBenefit",
+            "unit": "usd",
+            "value": -39472000
+          },
+          {
+            "label": "Income tax expense (benefit):",
+            "concept": "IncomeTaxExpenseBenefit",
+            "unit": "usd",
+            "value": -28307000
+          },
+          {
+            "label": "Net income (loss)",
+            "concept": "ProfitLoss",
+            "unit": "usd",
+            "value": 182850000
+          },
+          {
+            "label": "Less net income attributable to noncontrolling interest",
+            "concept": "NetIncomeLossAttributableToNoncontrollingInterest",
+            "unit": "usd",
+            "value": "N/A"
+          },
+          {
+            "label": "Net income (loss) attributable to common shares",
+            "concept": "NetIncomeLoss",
+            "unit": "usd",
+            "value": 148217000
+          },
+          {
+            "label": "Basic (in USD per share)",
+            "concept": "EarningsPerShareBasic",
+            "unit": "usd/shares",
+            "value": 0.9
+          },
+          {
+            "label": "Diluted (in USD per share)",
+            "concept": "EarningsPerShareDiluted",
+            "unit": "usd/shares",
+            "value": 0.9
+          },
+          {
+            "label": "Basic (in shares)",
+            "concept": "WeightedAverageNumberOfSharesOutstandingBasic",
+            "unit": "shares",
+            "value": 162479000
+          },
+          {
+            "label": "Diluted (in shares)",
+            "concept": "WeightedAverageNumberOfDilutedSharesOutstanding",
+            "unit": "shares",
+            "value": 162479000
+          },
+          {
+            "label": "Foreign currency translation adjustment",
+            "concept": "OtherComprehensiveIncomeForeignCurrencyTransactionAndTranslationGainLossBeforeReclassificationAndTax",
+            "unit": "usd",
+            "value": -5863000
+          },
+          {
+            "label": "Change in fair value of cash flow hedging instruments",
+            "concept": "hfc:OtherComprehensiveIncomeLossChangeInFairValueOfCashFlowHedge",
+            "unit": "usd",
+            "value": -18517000
+          },
+          {
+            "label": "Reclassification adjustments to net income (loss) on settlement of cash flow hedging instruments",
+            "concept": "OtherComprehensiveIncomeLossCashFlowHedgeGainLossReclassificationBeforeTax",
+            "unit": "usd",
+            "value": 13875000
+          },
+          {
+            "label": "Net unrealized loss on hedging instruments",
+            "concept": "OtherComprehensiveIncomeUnrealizedGainLossOnDerivativesArisingDuringPeriodBeforeTax",
+            "unit": "usd",
+            "value": -4642000
+          },
+          {
+            "label": "Net change in pension and other post-retirement benefit obligations",
+            "concept": "OtherComprehensiveIncomeLossPensionAndOtherPostretirementBenefitPlansAdjustmentBeforeTax",
+            "unit": "usd",
+            "value": 930000
+          },
+          {
+            "label": "Other comprehensive loss before income taxes",
+            "concept": "OtherComprehensiveIncomeLossBeforeTax",
+            "unit": "usd",
+            "value": -11435000
+          },
+          {
+            "label": "Income tax benefit",
+            "concept": "OtherComprehensiveIncomeLossTax",
+            "unit": "usd",
+            "value": -2631000
+          },
+          {
+            "label": "Other comprehensive loss",
+            "concept": "OtherComprehensiveIncomeLossNetOfTax",
+            "unit": "usd",
+            "value": -8804000
+          },
+          {
+            "label": "Total comprehensive income (loss)",
+            "concept": "ComprehensiveIncomeNetOfTaxIncludingPortionAttributableToNoncontrollingInterest",
+            "unit": "usd",
+            "value": 174046000
+          },
+          {
+            "label": "Less noncontrolling interest in comprehensive income",
+            "concept": "ComprehensiveIncomeNetOfTaxAttributableToNoncontrollingInterest",
+            "unit": "usd",
+            "value": 34633000
+          },
+          {
+            "label": "Comprehensive income (loss) attributable to HollyFrontier stockholders",
+            "concept": "ComprehensiveIncomeNetOfTax",
+            "unit": "usd",
+            "value": 139413000
+          }
+        ]
+      }
+    },
+    {
+      "accessNumber": "0000048039-19-000026",
+      "symbol": "HFC",
+      "cik": "48039",
+      "year": 2019,
+      "quarter": 1,
+      "form": "10-Q",
+      "startDate": "2019-01-01 00:00:00",
+      "endDate": "2019-03-31 00:00:00",
+      "filedDate": "2019-05-02 00:00:00",
+      "acceptedDate": "2019-05-02 17:05:16",
+      "report": {
+        "bs": [
+          {
+            "unit": "usd",
+            "label": "Beginning of period",
+            "value": 496139000,
+            "concept": "CashAndCashEquivalentsAtCarryingValue"
+          },
+          {
+            "unit": "usd",
+            "label": "Accounts receivable: Product and transportation (HEP: $14,585 and $12,332, respectively)",
+            "value": 848881000,
+            "concept": "hfc:AccountsReceivableProductAndTransportation"
+          },
+          {
+            "unit": "usd",
+            "label": "Crude oil resales",
+            "value": 192573000,
+            "concept": "hfc:AccountsReceivableCrudeOilResales"
+          },
+          {
+            "unit": "usd",
+            "label": "Accounts receivable, total",
+            "value": 1041454000,
+            "concept": "AccountsReceivableNetCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Inventories: Crude oil and refined products",
+            "value": 1494999000,
+            "concept": "InventoryCrudeOilProductsAndMerchandise"
+          },
+          {
+            "unit": "usd",
+            "label": "Materials, supplies and other (HEP: $786 and $858, respectively)",
+            "value": 172930000,
+            "concept": "OtherInventorySupplies"
+          },
+          {
+            "unit": "usd",
+            "label": "Inventory, Net [Abstract]",
+            "value": 1667929000,
+            "concept": "InventoryNet"
+          },
+          {
+            "unit": "usd",
+            "label": "Income taxes receivable",
+            "value": 38288000,
+            "concept": "IncomeTaxesReceivable"
+          },
+          {
+            "unit": "usd",
+            "label": "Prepayments and other (HEP: $3,280 and $3,452, respectively)",
+            "value": 77528000,
+            "concept": "OtherAssetsCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Current assets:",
+            "value": 3321338000,
+            "concept": "AssetsCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Properties, plants and equipment, at cost (HEP: $2,066,625 and $2,058,388, respectively)",
+            "value": 6998671000,
+            "concept": "PropertyPlantAndEquipmentGross"
+          },
+          {
+            "unit": "usd",
+            "label": "Less accumulated depreciation (HEP: $(514,066) and $(489,217), respectively)",
+            "value": 2182541000,
+            "concept": "AccumulatedDepreciationDepletionAndAmortizationPropertyPlantAndEquipment"
+          },
+          {
+            "unit": "usd",
+            "label": "Operating lease right-of-use assets",
+            "value": 428197000,
+            "concept": "OperatingLeaseRightOfUseAsset"
+          },
+          {
+            "unit": "usd",
+            "label": "Properties, plants and equipment, net",
+            "value": 4816130000,
+            "concept": "PropertyPlantAndEquipmentNet"
+          },
+          {
+            "unit": "usd",
+            "label": "Other assets: Turnaround costs",
+            "value": 388552000,
+            "concept": "OtherDeferredCostsNet"
+          },
+          {
+            "unit": "usd",
+            "label": "Goodwill",
+            "value": 2528100000,
+            "concept": "Goodwill"
+          },
+          {
+            "unit": "usd",
+            "label": "Intangibles and other (HEP: $173,113 and $176,291, respectively)",
+            "value": 641126000,
+            "concept": "hfc:IntangiblesAndOther"
+          },
+          {
+            "unit": "usd",
+            "label": "Other assets, total",
+            "value": 3557765000,
+            "concept": "OtherAssetsNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Financial Assets Fair Value Disclosure",
+            "value": 12123430000,
+            "concept": "Assets"
+          },
+          {
+            "unit": "usd",
+            "label": "Accounts payable (HEP $9,763 and $16,723, respectively)",
+            "value": 1158759000,
+            "concept": "AccountsPayableCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Income taxes payable",
+            "value": 73592000,
+            "concept": "TaxesPayableCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Operating lease liabilities (HEP $5,020)",
+            "value": 87669000,
+            "concept": "OperatingLeaseLiabilityCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Accrued Liabilities (HEP: $22,555 and $27,240, respectively)",
+            "value": 349265000,
+            "concept": "AccruedLiabilitiesCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Current liabilities:",
+            "value": 1669285000,
+            "concept": "LiabilitiesCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Total long-term debt",
+            "value": 2430934000,
+            "concept": "LongTermDebtNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Noncurrent operating lease liability (HEP: $72,269)",
+            "value": 342171000,
+            "concept": "OperatingLeaseLiabilityNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Deferred income taxes (HEP: $488 and $488, respectively)",
+            "value": 844566000,
+            "concept": "DeferredIncomeTaxLiabilitiesNet"
+          },
+          {
+            "unit": "usd",
+            "label": "Other long-term liabilities (HEP: $61,005 and $63,534, respectively)",
+            "value": 241900000,
+            "concept": "OtherLiabilitiesNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Preferred stock, $1.00 par value - 5,000,000 shares authorized; none issued",
+            "value": 0,
+            "concept": "PreferredStockValue"
+          },
+          {
+            "unit": "usd",
+            "label": "Common stock $.01 par value - 320,000,000 shares authorized; 256,036,760 and 256,036,788 shares issued as of March 31, 2019 and December 31, 2018, respectively",
+            "value": 2560000,
+            "concept": "CommonStockValue"
+          },
+          {
+            "unit": "usd",
+            "label": "Additional capital",
+            "value": 4204841000,
+            "concept": "AdditionalPaidInCapitalCommonStock"
+          },
+          {
+            "unit": "usd",
+            "label": "Retained earnings",
+            "value": 4393108000,
+            "concept": "RetainedEarningsAccumulatedDeficit"
+          },
+          {
+            "unit": "usd",
+            "label": "Accumulated other comprehensive income",
+            "value": 27398000,
+            "concept": "AccumulatedOtherComprehensiveIncomeLossNetOfTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Treasury Stock, Value, Acquired, Cost Method",
+            "value": 2563867000,
+            "concept": "TreasuryStockValue"
+          },
+          {
+            "unit": "usd",
+            "label": "Stockholders' Equity Note [Abstract]",
+            "value": 6064040000,
+            "concept": "StockholdersEquity"
+          },
+          {
+            "unit": "usd",
+            "label": "Noncontrolling interest",
+            "value": 530534000,
+            "concept": "MinorityInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Stockholders' Equity, Including Portion Attributable to Noncontrolling Interest",
+            "value": 6594574000,
+            "concept": "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "LIABILITIES AND EQUITY",
+            "value": 12123430000,
+            "concept": "LiabilitiesAndStockholdersEquity"
+          }
+        ],
+        "cf": [
+          {
+            "unit": "usd",
+            "label": "Net income",
+            "value": 276486000,
+            "concept": "ProfitLoss"
+          },
+          {
+            "unit": "usd",
+            "label": "Depreciation and amortization",
+            "value": 121421000,
+            "concept": "DepreciationDepletionAndAmortization"
+          },
+          {
+            "unit": "usd",
+            "label": "Lower of cost or market inventory valuation adjustment",
+            "value": -232346000,
+            "concept": "hfc:Lowerofcostormarketinventoryvaluationadjustment"
+          },
+          {
+            "unit": "usd",
+            "label": "Earnings of equity method investments, inclusive of distributions",
+            "value": -111000,
+            "concept": "IncomeLossFromEquityMethodInvestmentsNetOfDividendsOrDistributions"
+          },
+          {
+            "unit": "usd",
+            "label": "(Gain) loss on sale of assets",
+            "value": 9000,
+            "concept": "GainLossOnSaleOfPropertyPlantEquipment"
+          },
+          {
+            "unit": "usd",
+            "label": "Deferred income taxes",
+            "value": 32221000,
+            "concept": "DeferredIncomeTaxExpenseBenefit"
+          },
+          {
+            "unit": "usd",
+            "label": "Share-based Compensation [Abstract]",
+            "value": 9374000,
+            "concept": "ShareBasedCompensation"
+          },
+          {
+            "unit": "usd",
+            "label": "Change in fair value - derivative instruments",
+            "value": -20909000,
+            "concept": "UnrealizedGainLossOnDerivatives"
+          },
+          {
+            "unit": "usd",
+            "label": "Accounts receivable",
+            "value": 315106000,
+            "concept": "IncreaseDecreaseInAccountsReceivable"
+          },
+          {
+            "unit": "usd",
+            "label": "Inventories",
+            "value": 3967000,
+            "concept": "IncreaseDecreaseInInventories"
+          },
+          {
+            "unit": "usd",
+            "label": "Income taxes receivable",
+            "value": 1292000,
+            "concept": "IncreaseDecreaseInIncomeTaxesReceivable"
+          },
+          {
+            "unit": "usd",
+            "label": "Prepayments and other",
+            "value": -6543000,
+            "concept": "IncreaseDecreaseInPrepaidDeferredExpenseAndOtherAssets"
+          },
+          {
+            "unit": "usd",
+            "label": "Accounts payable",
+            "value": -270802000,
+            "concept": "IncreaseDecreaseInAccountsPayable"
+          },
+          {
+            "unit": "usd",
+            "label": "Income taxes payable",
+            "value": 55555000,
+            "concept": "IncreaseDecreaseInAccruedIncomeTaxesPayable"
+          },
+          {
+            "unit": "usd",
+            "label": "Accrued liabilities",
+            "value": 43480000,
+            "concept": "IncreaseDecreaseInAccruedLiabilities"
+          },
+          {
+            "unit": "usd",
+            "label": "Turnaround expenditures",
+            "value": 78597000,
+            "concept": "IncreaseDecreaseInDeferredCharges"
+          },
+          {
+            "unit": "usd",
+            "label": "Other, net",
+            "value": 3519000,
+            "concept": "OtherNoncashIncomeExpense"
+          },
+          {
+            "unit": "usd",
+            "label": "Cash flows from operating activities:",
+            "value": 216816000,
+            "concept": "NetCashProvidedByUsedInOperatingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Additions to properties, plants and equipment",
+            "value": 53017000,
+            "concept": "PaymentsToAcquirePropertyPlantAndEquipment"
+          },
+          {
+            "unit": "usd",
+            "label": "Purchase of business, net of cash acquired",
+            "value": 663385000,
+            "concept": "PaymentsToAcquireBusinessesNetOfCashAcquired"
+          },
+          {
+            "unit": "usd",
+            "label": "Other, net",
+            "value": 395000,
+            "concept": "PaymentsForProceedsFromOtherInvestingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Cash flows from investing activities:",
+            "value": -726725000,
+            "concept": "NetCashProvidedByUsedInInvestingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Borrowings under credit agreement",
+            "value": 104000000,
+            "concept": "ProceedsFromLongTermLinesOfCredit"
+          },
+          {
+            "unit": "usd",
+            "label": "Repayments under credit agreement",
+            "value": 85000000,
+            "concept": "RepaymentsOfLongTermLinesOfCredit"
+          },
+          {
+            "unit": "usd",
+            "label": "Proceeds from issuance of common units - HEP",
+            "value": 0,
+            "concept": "ProceedsFromIssuanceOfCommonLimitedPartnersUnits"
+          },
+          {
+            "unit": "usd",
+            "label": "Purchase of treasury stock",
+            "value": 77825000,
+            "concept": "PaymentsForRepurchaseOfCommonStock"
+          },
+          {
+            "unit": "usd",
+            "label": "Dividends",
+            "value": 56849000,
+            "concept": "PaymentsOfDividendsCommonStock"
+          },
+          {
+            "unit": "usd",
+            "label": "Distributions to noncontrolling interest",
+            "value": 33673000,
+            "concept": "PaymentsOfDividendsMinorityInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Shares withheld for tax withholding obligations",
+            "value": 408000,
+            "concept": "FinanceLeasePrincipalPayments"
+          },
+          {
+            "unit": "usd",
+            "label": "Proceeds from (Payments for) Other Financing Activities",
+            "value": -373000,
+            "concept": "ProceedsFromPaymentsForOtherFinancingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Cash flows from financing activities:",
+            "value": -150128000,
+            "concept": "NetCashProvidedByUsedInFinancingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Effect of exchange rate on cash flow",
+            "value": 1424000,
+            "concept": "EffectOfExchangeRateOnCash"
+          },
+          {
+            "unit": "usd",
+            "label": "Cash and cash equivalents:",
+            "value": -658613000,
+            "concept": "CashAndCashEquivalentsPeriodIncreaseDecrease"
+          },
+          {
+            "unit": "usd",
+            "label": "Interest",
+            "value": 26743000,
+            "concept": "InterestPaidNet"
+          },
+          {
+            "unit": "usd",
+            "label": "Income taxes, net",
+            "value": 2686000,
+            "concept": "IncomeTaxesPaidNet"
+          }
+        ],
+        "ic": [
+          {
+            "unit": "usd",
+            "label": "Net income",
+            "value": 276486000,
+            "concept": "ProfitLoss"
+          },
+          {
+            "unit": "usd",
+            "label": "Net change in foreign currency translation adjustment, before Tax",
+            "value": 4363000,
+            "concept": "OtherComprehensiveIncomeLossForeignCurrencyTransactionAndTranslationAdjustmentBeforeTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Change in fair value of cash flow hedging instruments",
+            "value": 15590000,
+            "concept": "hfc:OtherComprehensiveIncomeLossChangeInFairValueOfCashFlowHedge"
+          },
+          {
+            "unit": "usd",
+            "label": "Reclassification adjustments to net income on settlement of cash flow hedging instruments",
+            "value": -1642000,
+            "concept": "hfc:ReclassificationAdjustmentsToNetIncomeOnSettlementOfCashFlowHedgingInstruments"
+          },
+          {
+            "unit": "usd",
+            "label": "Net unrealized gain (loss) on hedging instruments",
+            "value": 13948000,
+            "concept": "OtherComprehensiveIncomeUnrealizedGainLossOnDerivativesArisingDuringPeriodBeforeTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Other Comprehensive Income Loss Post-retirement Healthcare Plan Gain (Loss)",
+            "value": -72000,
+            "concept": "hfc:OtherComprehensiveIncomeLossPostretirementHealthcarePlanGainLoss"
+          },
+          {
+            "unit": "usd",
+            "label": "Loss on post-retirement healthcare plan",
+            "value": 2000,
+            "concept": "OtherComprehensiveIncomeLossReclassificationAdjustmentFromAOCIPensionAndOtherPostretirementBenefitPlansForNetGainLossBeforeTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Other Comprehensive Income (Loss), Defined Benefit Plan, Gain (Loss) Arising During Period, before Tax",
+            "value": -74000,
+            "concept": "OtherComprehensiveIncomeLossPensionAndOtherPostretirementBenefitPlansNetUnamortizedGainLossArisingDuringPeriodBeforeTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Other comprehensive income (loss) attributable to HollyFrontier stockholders",
+            "value": 18237000,
+            "concept": "OtherComprehensiveIncomeLossBeforeTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Other comprehensive income (loss) attributable to HollyFrontier stockholders, tax expense",
+            "value": 4462000,
+            "concept": "OtherComprehensiveIncomeLossTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Other comprehensive income (loss), net of tax",
+            "value": 13775000,
+            "concept": "OtherComprehensiveIncomeLossNetOfTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Total comprehensive income",
+            "value": 290261000,
+            "concept": "ComprehensiveIncomeNetOfTaxIncludingPortionAttributableToNoncontrollingInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Less noncontrolling interest in comprehensive income",
+            "value": 23431000,
+            "concept": "ComprehensiveIncomeNetOfTaxAttributableToNoncontrollingInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Comprehensive income attributable to HollyFrontier stockholders",
+            "value": 266830000,
+            "concept": "OtherComprehensiveIncomeLossNetOfTaxPortionAttributableToParent"
+          },
+          {
+            "unit": "usd",
+            "label": "Cost of products sold",
+            "value": 3199205000,
+            "concept": "CostOfGoodsAndServicesSold"
+          },
+          {
+            "unit": "usd",
+            "label": "Lower of cost or market inventory valuation adjustment",
+            "value": -232346000,
+            "concept": "hfc:Lowerofcostormarketinventoryvaluationadjustment"
+          },
+          {
+            "unit": "usd",
+            "label": "Costs of products sold, net",
+            "value": 2966859000,
+            "concept": "hfc:RefiningandMarketingCostsnet"
+          },
+          {
+            "unit": "usd",
+            "label": "Operating expenses",
+            "value": 331592000,
+            "concept": "OperatingCostsAndExpenses"
+          },
+          {
+            "unit": "usd",
+            "label": "Selling, general and administrative expenses",
+            "value": 88034000,
+            "concept": "SellingGeneralAndAdministrativeExpense"
+          },
+          {
+            "unit": "usd",
+            "label": "Depreciation and amortization",
+            "value": 121421000,
+            "concept": "DepreciationDepletionAndAmortization"
+          },
+          {
+            "unit": "usd",
+            "label": "Operating costs and expenses:",
+            "value": 3507906000,
+            "concept": "CostsAndExpenses"
+          },
+          {
+            "unit": "usd",
+            "label": "Sales and other revenues",
+            "value": 3897247000,
+            "concept": "RevenueFromContractWithCustomerExcludingAssessedTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Income from operations",
+            "value": 389341000,
+            "concept": "OperatingIncomeLoss"
+          },
+          {
+            "unit": "usd",
+            "label": "Income before income taxes",
+            "value": 363991000,
+            "concept": "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Earnings of equity method investments, inclusive of distributions",
+            "value": 2100000,
+            "concept": "IncomeLossFromEquityMethodInvestments"
+          },
+          {
+            "unit": "usd",
+            "label": "Interest income",
+            "value": 6375000,
+            "concept": "InvestmentIncomeInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Interest Expense [Member]",
+            "value": 36647000,
+            "concept": "InterestExpense"
+          },
+          {
+            "unit": "usd",
+            "label": "Gain (loss) on foreign currency transactions",
+            "value": 2265000,
+            "concept": "ForeignCurrencyTransactionGainLossRealized"
+          },
+          {
+            "unit": "usd",
+            "label": "Other Nonoperating Income (Expense) [Member]",
+            "value": 557000,
+            "concept": "OtherNonoperatingIncomeExpense"
+          },
+          {
+            "unit": "usd",
+            "label": "Other income (expense):",
+            "value": -25350000,
+            "concept": "NonoperatingIncomeExpense"
+          },
+          {
+            "unit": "usd",
+            "label": "Current",
+            "value": 55284000,
+            "concept": "CurrentIncomeTaxExpenseBenefit"
+          },
+          {
+            "unit": "usd",
+            "label": "Deferred income taxes",
+            "value": 32221000,
+            "concept": "DeferredIncomeTaxExpenseBenefit"
+          },
+          {
+            "unit": "usd",
+            "label": "Income tax expense (benefit):",
+            "value": 87505000,
+            "concept": "IncomeTaxExpenseBenefit"
+          },
+          {
+            "unit": "usd",
+            "label": "Less net income attributable to noncontrolling interest",
+            "value": 23431000,
+            "concept": "NetIncomeLossAttributableToNoncontrollingInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Net income attributable to HollyFrontier stockholders",
+            "value": 253055000,
+            "concept": "NetIncomeLoss"
+          },
+          {
+            "unit": "usd/shares",
+            "label": "Basic earnings (loss) per share",
+            "value": 1.48,
+            "concept": "EarningsPerShareBasic"
+          },
+          {
+            "unit": "usd/shares",
+            "label": "Diluted earnings (loss) per share",
+            "value": 1.47,
+            "concept": "EarningsPerShareDiluted"
+          },
+          {
+            "unit": "shares",
+            "label": "Average number of shares of common stock outstanding",
+            "value": 170851000,
+            "concept": "WeightedAverageNumberOfSharesOutstandingBasic"
+          },
+          {
+            "unit": "shares",
+            "label": "Average number of shares of common stock outstanding assuming dilution",
+            "value": 172239000,
+            "concept": "WeightedAverageNumberOfDilutedSharesOutstanding"
+          }
+        ]
+      }
+    },
+    {
+      "accessNumber": "0000048039-13-000024",
+      "symbol": "HFC",
+      "cik": "48039",
+      "year": 2013,
+      "quarter": 1,
+      "form": "10-Q",
+      "startDate": "2013-01-01 00:00:00",
+      "endDate": "2013-03-31 00:00:00",
+      "filedDate": "2013-05-08 00:00:00",
+      "acceptedDate": "2013-05-08 13:57:00",
+      "report": {
+        "bs": [
+          {
+            "unit": "usd",
+            "label": "Cash and cash equivalents (HEP: $18,193 and $5,237, respectively)",
+            "value": 1872442000,
+            "concept": "CashAndCashEquivalentsAtCarryingValue"
+          },
+          {
+            "unit": "usd",
+            "label": "Marketable securities",
+            "value": 665694000,
+            "concept": "AvailableForSaleSecuritiesCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Accounts receivable: Product and transportation (HEP: $37,129 and $38,097, respectively)",
+            "value": 599669000,
+            "concept": "hfc:AccountsReceivableProductAndTransportation"
+          },
+          {
+            "unit": "usd",
+            "label": "Crude oil resales",
+            "value": 56855000,
+            "concept": "hfc:AccountsReceivableCrudeOilResales"
+          },
+          {
+            "unit": "usd",
+            "label": "Accounts receivable, total",
+            "value": 656524000,
+            "concept": "AccountsReceivableNetCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Inventories: Crude oil and refined products",
+            "value": 1398769000,
+            "concept": "hfc:InventoryCrudeOilAndRefinedProducts"
+          },
+          {
+            "unit": "usd",
+            "label": "Materials and supplies (HEP: $1,491 and $1,259, respectively)",
+            "value": 72031000,
+            "concept": "OtherInventorySupplies"
+          },
+          {
+            "unit": "usd",
+            "label": "Inventory, Net [Abstract]",
+            "value": 1470800000,
+            "concept": "InventoryNet"
+          },
+          {
+            "unit": "usd",
+            "label": "Income taxes receivable",
+            "value": 37904000,
+            "concept": "IncomeTaxesReceivable"
+          },
+          {
+            "unit": "usd",
+            "label": "Prepayments and other (HEP: $1,984 and $2,360, respectively)",
+            "value": 59946000,
+            "concept": "OtherAssetsCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Current assets:",
+            "value": 4763310000,
+            "concept": "AssetsCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Properties, plants and equipment, at cost (HEP: $1,158,287 and $1,155,710, respectively)",
+            "value": 4008803000,
+            "concept": "PropertyPlantAndEquipmentGross"
+          },
+          {
+            "unit": "usd",
+            "label": "Less accumulated depreciation (HEP: $(152,710) and $(141,154), respectively)",
+            "value": 794605000,
+            "concept": "AccumulatedDepreciationDepletionAndAmortizationPropertyPlantAndEquipment"
+          },
+          {
+            "unit": "usd",
+            "label": "Property, plant and equipment, net",
+            "value": 3214198000,
+            "concept": "PropertyPlantAndEquipmentNet"
+          },
+          {
+            "unit": "usd",
+            "label": "Marketable securities (long-term)",
+            "value": 5000000,
+            "concept": "AvailableForSaleSecuritiesNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Other assets: Turnaround costs",
+            "value": 197356000,
+            "concept": "hfc:OtherAssetsTurnaroundCosts"
+          },
+          {
+            "unit": "usd",
+            "label": "Goodwill (HEP: $288,991 and $288,991, respectively)",
+            "value": 2338302000,
+            "concept": "Goodwill"
+          },
+          {
+            "unit": "usd",
+            "label": "Intangibles and other (HEP: $75,007 and $76,300, respectively)",
+            "value": 178006000,
+            "concept": "hfc:IntangiblesAndOther"
+          },
+          {
+            "unit": "usd",
+            "label": "Other assets, total",
+            "value": 2713664000,
+            "concept": "OtherAssetsNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "ASSETS",
+            "value": 10696172000,
+            "concept": "Assets"
+          },
+          {
+            "unit": "usd",
+            "label": "Accounts payable (HEP: $12,346 and $12,030, respectively)",
+            "value": 1339419000,
+            "concept": "AccountsPayableCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Income taxes payable",
+            "value": 151403000,
+            "concept": "TaxesPayableCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Accrued liabilities (HEP: $14,135 and $23,705, respectively)",
+            "value": 127005000,
+            "concept": "AccruedLiabilitiesCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Deferred income tax liabilities",
+            "value": 149127000,
+            "concept": "DeferredTaxLiabilitiesCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Current liabilities:",
+            "value": 1766954000,
+            "concept": "LiabilitiesCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Long-term debt (HEP: $811,913 and $864,673, respectively)",
+            "value": 1283245000,
+            "concept": "LongTermDebtNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Deferred income taxes (HEP: $4,951 and $4,951, respectively)",
+            "value": 554102000,
+            "concept": "DeferredTaxLiabilitiesNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Other long-term liabilities (HEP: $30,192 and $28,683, respectively)",
+            "value": 162824000,
+            "concept": "OtherLiabilitiesNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Preferred stock, $1.00 par value - 5,000,000 shares authorized; none issued",
+            "value": 0,
+            "concept": "PreferredStockValue"
+          },
+          {
+            "unit": "usd",
+            "label": "Common stock $.01 par value - 320,000,000 shares authorized; 255,962,866 shares issued as of March 31, 2013 and December 31, 2012",
+            "value": 2560000,
+            "concept": "CommonStockValue"
+          },
+          {
+            "unit": "usd",
+            "label": "Additional capital",
+            "value": 3973788000,
+            "concept": "AdditionalPaidInCapitalCommonStock"
+          },
+          {
+            "unit": "usd",
+            "label": "Retained earnings",
+            "value": 3225050000,
+            "concept": "RetainedEarningsAccumulatedDeficit"
+          },
+          {
+            "unit": "usd",
+            "label": "Accumulated other comprehensive income (loss)",
+            "value": 3334000,
+            "concept": "AccumulatedOtherComprehensiveIncomeLossNetOfTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Common stock held in treasury, at cost - 52,635,439 and 52,411,370 shares as of March 31, 2013 and December 31, 2012, respectively",
+            "value": 918939000,
+            "concept": "TreasuryStockValue"
+          },
+          {
+            "unit": "usd",
+            "label": "Stockholders' Equity Note [Abstract]",
+            "value": 6285793000,
+            "concept": "StockholdersEquity"
+          },
+          {
+            "unit": "usd",
+            "label": "Noncontrolling interest",
+            "value": 643254000,
+            "concept": "MinorityInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Equity:",
+            "value": 6929047000,
+            "concept": "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "LIABILITIES AND EQUITY",
+            "value": 10696172000,
+            "concept": "LiabilitiesAndStockholdersEquity"
+          }
+        ],
+        "cf": [
+          {
+            "unit": "usd",
+            "label": "Net income",
+            "value": 343371000,
+            "concept": "ProfitLoss"
+          },
+          {
+            "unit": "usd",
+            "label": "Depreciation and amortization",
+            "value": 71762000,
+            "concept": "DepreciationDepletionAndAmortization"
+          },
+          {
+            "unit": "usd",
+            "label": "Earnings of equity method investments, net of distributions",
+            "value": -628000,
+            "concept": "IncomeLossFromEquityMethodInvestmentsNetOfDividendsOrDistributions"
+          },
+          {
+            "unit": "usd",
+            "label": "Deferred income taxes",
+            "value": -20533000,
+            "concept": "DeferredIncomeTaxExpenseBenefit"
+          },
+          {
+            "unit": "usd",
+            "label": "Share-based Compensation [Abstract]",
+            "value": 8580000,
+            "concept": "ShareBasedCompensation"
+          },
+          {
+            "unit": "usd",
+            "label": "Change in fair value - derivative instruments",
+            "value": 53745000,
+            "concept": "UnrealizedGainLossOnDerivatives"
+          },
+          {
+            "unit": "usd",
+            "label": "Accounts receivable",
+            "value": 22294000,
+            "concept": "IncreaseDecreaseInAccountsReceivable"
+          },
+          {
+            "unit": "usd",
+            "label": "Inventories",
+            "value": 151168000,
+            "concept": "IncreaseDecreaseInInventories"
+          },
+          {
+            "unit": "usd",
+            "label": "Income taxes receivable",
+            "value": -37053000,
+            "concept": "IncreaseDecreaseInIncomeTaxesReceivable"
+          },
+          {
+            "unit": "usd",
+            "label": "Prepayments and other",
+            "value": -3866000,
+            "concept": "IncreaseDecreaseInPrepaidDeferredExpenseAndOtherAssets"
+          },
+          {
+            "unit": "usd",
+            "label": "Accounts payable",
+            "value": -40964000,
+            "concept": "IncreaseDecreaseInAccountsPayable"
+          },
+          {
+            "unit": "usd",
+            "label": "Income taxes payable",
+            "value": 151403000,
+            "concept": "IncreaseDecreaseInAccruedIncomeTaxesPayable"
+          },
+          {
+            "unit": "usd",
+            "label": "Accrued liabilities",
+            "value": -9846000,
+            "concept": "IncreaseDecreaseInAccruedLiabilities"
+          },
+          {
+            "unit": "usd",
+            "label": "Turnaround expenditures",
+            "value": 69835000,
+            "concept": "IncreaseDecreaseInDeferredCharges"
+          },
+          {
+            "unit": "usd",
+            "label": "Other, net",
+            "value": -285000,
+            "concept": "OtherNoncashIncomeExpense"
+          },
+          {
+            "unit": "usd",
+            "label": "Cash flows from operating activities:",
+            "value": 248563000,
+            "concept": "NetCashProvidedByUsedInOperatingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Additions to properties, plants and equipment",
+            "value": 66951000,
+            "concept": "PaymentsToAcquirePropertyPlantAndEquipment"
+          },
+          {
+            "unit": "usd",
+            "label": "Proceeds from Sale of Property, Plant, and Equipment",
+            "value": -2290000,
+            "concept": "ProceedsFromSaleOfPropertyPlantAndEquipment"
+          },
+          {
+            "unit": "usd",
+            "label": "Investment in Sabine Biofuels",
+            "value": 0,
+            "concept": "PaymentsForProceedsFromInvestments"
+          },
+          {
+            "unit": "usd",
+            "label": "Purchases of marketable securities",
+            "value": 178251000,
+            "concept": "PaymentsToAcquireAvailableForSaleSecurities"
+          },
+          {
+            "unit": "usd",
+            "label": "Proceeds from sale and maturity of marketable debt securities",
+            "value": 143280000,
+            "concept": "ProceedsFromSaleAndMaturityOfAvailableForSaleSecurities"
+          },
+          {
+            "unit": "usd",
+            "label": "Cash flows from investing activities:",
+            "value": -104645000,
+            "concept": "NetCashProvidedByUsedInInvestingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Proceeds from Sale of HEP Common Units",
+            "value": 73444000,
+            "concept": "ProceedsFromIssuanceOfCommonLimitedPartnersUnits"
+          },
+          {
+            "unit": "usd",
+            "label": "Proceeds from Common Unit Offering HEP",
+            "value": 73444000,
+            "concept": "ProceedsFromIssuanceOfCommonStock"
+          },
+          {
+            "unit": "usd",
+            "label": "Purchase of treasury stock",
+            "value": 6610000,
+            "concept": "PaymentsForRepurchaseOfCommonStock"
+          },
+          {
+            "unit": "usd",
+            "label": "Contribution from joint venture partner",
+            "value": 0,
+            "concept": "ProceedsFromPaymentsToMinorityShareholders"
+          },
+          {
+            "unit": "usd",
+            "label": "Dividends",
+            "value": 102163000,
+            "concept": "PaymentsOfDividendsCommonStock"
+          },
+          {
+            "unit": "usd",
+            "label": "Excess tax benefit from equity based compensation",
+            "value": 744000,
+            "concept": "ExcessTaxBenefitFromShareBasedCompensationFinancingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Deferred financing costs",
+            "value": 0,
+            "concept": "PaymentsOfFinancingCosts"
+          },
+          {
+            "unit": "usd",
+            "label": "Other",
+            "value": 2973000,
+            "concept": "ProceedsFromPaymentsForOtherFinancingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Cash flows from financing activities:",
+            "value": -29175000,
+            "concept": "NetCashProvidedByUsedInFinancingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Cash and cash equivalents:",
+            "value": 114743000,
+            "concept": "CashAndCashEquivalentsPeriodIncreaseDecrease"
+          },
+          {
+            "unit": "usd",
+            "label": "Interest",
+            "value": 20825000,
+            "concept": "InterestPaid"
+          },
+          {
+            "unit": "usd",
+            "label": "Income taxes",
+            "value": 17380000,
+            "concept": "IncomeTaxesPaid"
+          }
+        ],
+        "ic": [
+          {
+            "unit": "usd",
+            "label": "Net income",
+            "value": 343371000,
+            "concept": "ProfitLoss"
+          },
+          {
+            "unit": "usd",
+            "label": "Unrealized gain on available-for-sale securities",
+            "value": 19000,
+            "concept": "OtherComprehensiveIncomeUnrealizedHoldingGainLossOnSecuritiesArisingDuringPeriodBeforeTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Reclassification adjustments to net income on sale or maturity of marketable securities",
+            "value": -3000,
+            "concept": "hfc:ReclassificationAdjustmentsToNetIncomeOnSaleOrMaturityOfMarketableSecurities"
+          },
+          {
+            "unit": "usd",
+            "label": "Net unrealized gain (loss) on available-for-sale securities",
+            "value": 16000,
+            "concept": "hfc:OtherComprehensiveIncomeNetUnrealizedHoldingGainLossOnSecuritiesArisingDuringPeriod"
+          },
+          {
+            "unit": "usd",
+            "label": "Change in Fair Value of Cash Flow Hedge",
+            "value": -10346000,
+            "concept": "hfc:OtherComprehensiveIncomeLossChangeInFairValueOfCashFlowHedge"
+          },
+          {
+            "unit": "usd",
+            "label": "Reclassification adjustments to net income on settlement of cash flow hedging instruments",
+            "value": 27704000,
+            "concept": "hfc:ReclassificationAdjustmentsToNetIncomeOnSettlementOfCashFlowHedgingInstruments"
+          },
+          {
+            "unit": "usd",
+            "label": "Amortization of unrealized loss attributable to discontinued cash flow hedges",
+            "value": 939000,
+            "concept": "hfc:OtherComprehensiveIncomeAmortizationOfUnrealizedGainLossAttributableToDiscontinuedCashFlowHedges"
+          },
+          {
+            "unit": "usd",
+            "label": "Ner unrealized gain (loss) before income taxes",
+            "value": 18297000,
+            "concept": "OtherComprehensiveIncomeUnrealizedGainLossOnDerivativesArisingDuringPeriodBeforeTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Actuarial loss on post-retirement healthcare plan reclassified to net income upon partial plan settlement",
+            "value": 1726000,
+            "concept": "OtherComprehensiveIncomeReclassificationOfDefinedBenefitPlansNetGainLossRecognizedInNetPeriodicBenefitCostBeforeTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Securities available for sale",
+            "value": 20039000,
+            "concept": "OtherComprehensiveIncomeLossBeforeTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Income tax expense (benefit)",
+            "value": 7488000,
+            "concept": "OtherComprehensiveIncomeLossTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Other comprehensive income (loss)",
+            "value": 12551000,
+            "concept": "OtherComprehensiveIncomeLossNetOfTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Total comprehensive income",
+            "value": 355922000,
+            "concept": "ComprehensiveIncomeNetOfTaxIncludingPortionAttributableToNoncontrollingInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Less noncontrolling interest in comprehensive income",
+            "value": 10494000,
+            "concept": "ComprehensiveIncomeNetOfTaxAttributableToNoncontrollingInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Comprehensive income attributable to HollyFrontier stockholders",
+            "value": 345428000,
+            "concept": "OtherComprehensiveIncomeLossNetOfTaxPortionAttributableToParent"
+          },
+          {
+            "unit": "usd",
+            "label": "Sales and other revenues",
+            "value": 4707789000,
+            "concept": "RefiningAndMarketingRevenue"
+          },
+          {
+            "unit": "usd",
+            "label": "Cost of products sold (exclusive of depreciation and amortization)",
+            "value": 3792535000,
+            "concept": "RefiningAndMarketingCosts"
+          },
+          {
+            "unit": "usd",
+            "label": "Operating expenses (exclusive of depreciation and amortization)",
+            "value": 265099000,
+            "concept": "OperatingCostsAndExpenses"
+          },
+          {
+            "unit": "usd",
+            "label": "General and administrative expenses (exclusive of depreciation and amortization)",
+            "value": 29198000,
+            "concept": "GeneralAndAdministrativeExpense"
+          },
+          {
+            "unit": "usd",
+            "label": "Depreciation and amortization",
+            "value": 71762000,
+            "concept": "DepreciationDepletionAndAmortization"
+          },
+          {
+            "unit": "usd",
+            "label": "Operating costs and expenses:",
+            "value": 4158594000,
+            "concept": "CostsAndExpenses"
+          },
+          {
+            "unit": "usd",
+            "label": "Income (loss) from operations",
+            "value": 549195000,
+            "concept": "OperatingIncomeLoss"
+          },
+          {
+            "unit": "usd",
+            "label": "Earnings of equity method investments, net of distributions",
+            "value": 59000,
+            "concept": "IncomeLossFromEquityMethodInvestments"
+          },
+          {
+            "unit": "usd",
+            "label": "Interest income",
+            "value": 1531000,
+            "concept": "InvestmentIncomeInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Interest Expense",
+            "value": 21320000,
+            "concept": "InterestExpense"
+          },
+          {
+            "unit": "usd",
+            "label": "Other income (expense):",
+            "value": -19730000,
+            "concept": "NonoperatingIncomeExpense"
+          },
+          {
+            "unit": "usd",
+            "label": "Income before income taxes",
+            "value": 529465000,
+            "concept": "hfc:IncomeBeforeIncomeTaxes"
+          },
+          {
+            "unit": "usd",
+            "label": "Current",
+            "value": 206627000,
+            "concept": "CurrentIncomeTaxExpenseBenefit"
+          },
+          {
+            "unit": "usd",
+            "label": "Deferred income taxes",
+            "value": -20533000,
+            "concept": "DeferredIncomeTaxExpenseBenefit"
+          },
+          {
+            "unit": "usd",
+            "label": "Income tax provision:",
+            "value": 186094000,
+            "concept": "IncomeTaxExpenseBenefit"
+          },
+          {
+            "unit": "usd",
+            "label": "Less net income attributable to noncontrolling interest",
+            "value": 9702000,
+            "concept": "NetIncomeLossAttributableToNoncontrollingInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Less net income attributable to noncontrolling interest",
+            "value": 333669000,
+            "concept": "NetIncomeLoss"
+          },
+          {
+            "unit": "usd/shares",
+            "label": "Basic",
+            "value": 1.64,
+            "concept": "EarningsPerShareBasic"
+          },
+          {
+            "unit": "usd/shares",
+            "label": "Diluted",
+            "value": 1.63,
+            "concept": "EarningsPerShareDiluted"
+          },
+          {
+            "unit": "usd/shares",
+            "label": "Cash dividends declared per common share",
+            "value": 0.8,
+            "concept": "CommonStockDividendsPerShareDeclared"
+          },
+          {
+            "unit": "shares",
+            "label": "Basic",
+            "value": 203515000,
+            "concept": "WeightedAverageNumberOfSharesOutstandingBasic"
+          },
+          {
+            "unit": "shares",
+            "label": "Diluted",
+            "value": 204217000,
+            "concept": "WeightedAverageNumberOfDilutedSharesOutstanding"
+          }
+        ]
+      }
+    },
+    {
+      "accessNumber": "0000048039-12-000062",
+      "symbol": "HFC",
+      "cik": "48039",
+      "year": 2012,
+      "quarter": 3,
+      "form": "10-Q",
+      "startDate": "2012-01-01 00:00:00",
+      "endDate": "2012-09-30 00:00:00",
+      "filedDate": "2012-11-08 00:00:00",
+      "acceptedDate": "2012-11-07 18:49:45",
+      "report": {
+        "bs": [
+          {
+            "unit": "usd",
+            "label": "Cash and cash equivalents (HEP: $1,993 and $6,369, respectively)",
+            "value": 2057408000,
+            "concept": "CashAndCashEquivalentsAtCarryingValue"
+          },
+          {
+            "unit": "usd",
+            "label": "Marketable securities",
+            "value": 280409000,
+            "concept": "AvailableForSaleSecuritiesCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Accounts receivable: Product and transportation (HEP: $42,832 and $37,290, respectively)",
+            "value": 734662000,
+            "concept": "hfc:AccountsReceivableProductAndTransportation"
+          },
+          {
+            "unit": "usd",
+            "label": "Crude oil resales",
+            "value": 2212000,
+            "concept": "hfc:AccountsReceivableCrudeOilResales"
+          },
+          {
+            "unit": "usd",
+            "label": "Accounts receivable, total",
+            "value": 736874000,
+            "concept": "AccountsReceivableNetCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Inventories: Crude oil and refined products",
+            "value": 1406147000,
+            "concept": "hfc:InventoryCrudeOilAndRefinedProducts"
+          },
+          {
+            "unit": "usd",
+            "label": "Materials and supplies (HEP: $1,233 and $1,483, respectively)",
+            "value": 79303000,
+            "concept": "OtherInventorySupplies"
+          },
+          {
+            "unit": "usd",
+            "label": "Inventories, total",
+            "value": 1485450000,
+            "concept": "InventoryNet"
+          },
+          {
+            "unit": "usd",
+            "label": "Income taxes receivable",
+            "value": 40548000,
+            "concept": "IncomeTaxesReceivable"
+          },
+          {
+            "unit": "usd",
+            "label": "Prepayments and other (HEP: $3,080 and $2,246, respectively)",
+            "value": 31232000,
+            "concept": "OtherAssetsCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Current assets:",
+            "value": 4631921000,
+            "concept": "AssetsCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Properties, plants and equipment, at cost (HEP: $1,122,334 and $1,099,579, respectively)",
+            "value": 3823731000,
+            "concept": "PropertyPlantAndEquipmentGross"
+          },
+          {
+            "unit": "usd",
+            "label": "Less accumulated depreciation (HEP: $(127,408) and $(93,200), respectively)",
+            "value": 703799000,
+            "concept": "AccumulatedDepreciationDepletionAndAmortizationPropertyPlantAndEquipment"
+          },
+          {
+            "unit": "usd",
+            "label": "Property, plant and equipment, net",
+            "value": 3119932000,
+            "concept": "PropertyPlantAndEquipmentNet"
+          },
+          {
+            "unit": "usd",
+            "label": "Marketable securities (long-term)",
+            "value": 5519000,
+            "concept": "AvailableForSaleSecuritiesNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Other assets: Turnaround costs",
+            "value": 83585000,
+            "concept": "hfc:OtherAssetsTurnaroundCosts"
+          },
+          {
+            "unit": "usd",
+            "label": "Goodwill (HEP: $288,991 and $288,991, respectively)",
+            "value": 2338302000,
+            "concept": "Goodwill"
+          },
+          {
+            "unit": "usd",
+            "label": "Intangibles and other (HEP: $76,096 and $75,902, respectively)",
+            "value": 166677000,
+            "concept": "hfc:IntangiblesAndOther"
+          },
+          {
+            "unit": "usd",
+            "label": "Other assets, total",
+            "value": 2588564000,
+            "concept": "OtherAssetsNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "ASSETS",
+            "value": 10345936000,
+            "concept": "Assets"
+          },
+          {
+            "unit": "usd",
+            "label": "Accounts payable (HEP: $11,303 and $21,709, respectively)",
+            "value": 1530714000,
+            "concept": "AccountsPayableCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Income taxes payable",
+            "value": 150899000,
+            "concept": "TaxesPayableCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Accrued liabilities (HEP: $19,315 and $16,006, respectively)",
+            "value": 219980000,
+            "concept": "AccruedLiabilitiesCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Deferred income tax liabilities",
+            "value": 175567000,
+            "concept": "DeferredTaxLiabilitiesCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Current liabilities:",
+            "value": 2077160000,
+            "concept": "LiabilitiesCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Long-term debt (HEP: $874,434 and $598,761, respectively)",
+            "value": 1346227000,
+            "concept": "LongTermDebtNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Deferred income taxes",
+            "value": 399205000,
+            "concept": "DeferredTaxLiabilitiesNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Other long-term liabilities (HEP: $7,574 and $4,000, respectively)",
+            "value": 163848000,
+            "concept": "OtherLiabilitiesNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Preferred stock, $1.00 par value - 5,000,000 shares authorized; none issued",
+            "value": 0,
+            "concept": "PreferredStockValue"
+          },
+          {
+            "unit": "usd",
+            "label": "Common stock $.01 par value - 320,000,000 shares authorized; 255,962,866 shares issued as of June 30, 2012 and December 31, 2011",
+            "value": 2560000,
+            "concept": "CommonStockValue"
+          },
+          {
+            "unit": "usd",
+            "label": "Additional capital",
+            "value": 3904379000,
+            "concept": "AdditionalPaidInCapitalCommonStock"
+          },
+          {
+            "unit": "usd",
+            "label": "Retained earnings",
+            "value": 2806117000,
+            "concept": "RetainedEarningsAccumulatedDeficit"
+          },
+          {
+            "unit": "usd",
+            "label": "Accumulated other comprehensive income (loss)",
+            "value": -62521000,
+            "concept": "AccumulatedOtherComprehensiveIncomeLossNetOfTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Common stock held in treasury, at cost - 52,417,146 and 46,630,220 shares as of September 30, 2012 and December 31, 2011, respectively",
+            "value": 886259000,
+            "concept": "TreasuryStockValue"
+          },
+          {
+            "unit": "usd",
+            "label": "Equity:",
+            "value": 5764276000,
+            "concept": "StockholdersEquity"
+          },
+          {
+            "unit": "usd",
+            "label": "Noncontrolling interest",
+            "value": 595220000,
+            "concept": "MinorityInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Equity:",
+            "value": 6359496000,
+            "concept": "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "LIABILITIES AND EQUITY",
+            "value": 10345936000,
+            "concept": "LiabilitiesAndStockholdersEquity"
+          }
+        ],
+        "cf": [
+          {
+            "unit": "usd",
+            "label": "Net income",
+            "value": 1360040000,
+            "concept": "ProfitLoss"
+          },
+          {
+            "unit": "usd",
+            "label": "Depreciation and amortization",
+            "value": 178162000,
+            "concept": "DepreciationDepletionAndAmortization"
+          },
+          {
+            "unit": "usd",
+            "label": "Earnings of equity method investments, net of distributions",
+            "value": -169000,
+            "concept": "IncomeLossFromEquityMethodInvestmentsNetOfDividendsOrDistributions"
+          },
+          {
+            "unit": "usd",
+            "label": "Gain on sale of marketable equity securities",
+            "value": 326000,
+            "concept": "AvailableForSaleSecuritiesGrossRealizedGainLossNet"
+          },
+          {
+            "unit": "usd",
+            "label": "Deferred income taxes",
+            "value": 22728000,
+            "concept": "DeferredIncomeTaxExpenseBenefit"
+          },
+          {
+            "unit": "usd",
+            "label": "Share-based Compensation [Abstract]",
+            "value": 25399000,
+            "concept": "ShareBasedCompensation"
+          },
+          {
+            "unit": "usd",
+            "label": "Change in fair value - derivative instruments",
+            "value": 10977000,
+            "concept": "UnrealizedGainLossOnDerivatives"
+          },
+          {
+            "unit": "usd",
+            "label": "Accounts receivable",
+            "value": 29474000,
+            "concept": "IncreaseDecreaseInAccountsReceivable"
+          },
+          {
+            "unit": "usd",
+            "label": "Inventories",
+            "value": 370831000,
+            "concept": "IncreaseDecreaseInInventories"
+          },
+          {
+            "unit": "usd",
+            "label": "Income taxes receivable",
+            "value": -53465000,
+            "concept": "IncreaseDecreaseInIncomeTaxesReceivable"
+          },
+          {
+            "unit": "usd",
+            "label": "Prepayments and other",
+            "value": -16690000,
+            "concept": "IncreaseDecreaseInPrepaidDeferredExpenseAndOtherAssets"
+          },
+          {
+            "unit": "usd",
+            "label": "Accounts payable",
+            "value": -96263000,
+            "concept": "IncreaseDecreaseInAccountsPayable"
+          },
+          {
+            "unit": "usd",
+            "label": "Income taxes payable",
+            "value": 110533000,
+            "concept": "IncreaseDecreaseInAccruedIncomeTaxesPayable"
+          },
+          {
+            "unit": "usd",
+            "label": "Accrued liabilities",
+            "value": -6166000,
+            "concept": "IncreaseDecreaseInAccruedLiabilities"
+          },
+          {
+            "unit": "usd",
+            "label": "Turnaround expenditures",
+            "value": 74612000,
+            "concept": "IncreaseDecreaseInDeferredCharges"
+          },
+          {
+            "unit": "usd",
+            "label": "Other, net",
+            "value": 6749000,
+            "concept": "OtherNoncashIncomeExpense"
+          },
+          {
+            "unit": "usd",
+            "label": "Cash flows from operating activities:",
+            "value": 1171788000,
+            "concept": "NetCashProvidedByUsedInOperatingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Additions to properties, plants and equipment",
+            "value": 178235000,
+            "concept": "PaymentsToAcquirePropertyPlantAndEquipment"
+          },
+          {
+            "unit": "usd",
+            "label": "Increase in cash due to merger with Frontier",
+            "value": 0,
+            "concept": "CashAcquiredFromAcquisition"
+          },
+          {
+            "unit": "usd",
+            "label": "Investment in Sabine Biofuels",
+            "value": 2000000,
+            "concept": "PaymentsForProceedsFromInvestments"
+          },
+          {
+            "unit": "usd",
+            "label": "Purchases of marketable securities",
+            "value": 236315000,
+            "concept": "PaymentsToAcquireAvailableForSaleSecurities"
+          },
+          {
+            "unit": "usd",
+            "label": "Sales and maturities of marketable securities",
+            "value": 212216000,
+            "concept": "ProceedsFromSaleAndMaturityOfAvailableForSaleSecurities"
+          },
+          {
+            "unit": "usd",
+            "label": "Cash flows from investing activities:",
+            "value": -233636000,
+            "concept": "NetCashProvidedByUsedInInvestingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Principal tender on senior notes",
+            "value": -205000000,
+            "concept": "hfc:PrincipalTenderOnSeniorNotes"
+          },
+          {
+            "unit": "usd",
+            "label": "Purchase of treasury stock",
+            "value": 190307000,
+            "concept": "PaymentsForRepurchaseOfCommonStock"
+          },
+          {
+            "unit": "usd",
+            "label": "Structured stock repurchase arrangement",
+            "value": 8620000,
+            "concept": "hfc:SharePurchasedUnderStructedShareRepurchaseAgreement"
+          },
+          {
+            "unit": "usd",
+            "label": "Contribution from joint venture partner",
+            "value": 6000000,
+            "concept": "ProceedsFromPaymentsToMinorityShareholders"
+          },
+          {
+            "unit": "usd",
+            "label": "Dividends",
+            "value": 382610000,
+            "concept": "PaymentsOfDividendsCommonStock"
+          },
+          {
+            "unit": "usd",
+            "label": "Excess tax benefit from equity based compensation",
+            "value": 16021000,
+            "concept": "ExcessTaxBenefitFromShareBasedCompensationFinancingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Deferred financing costs",
+            "value": 3289000,
+            "concept": "PaymentsOfFinancingCosts"
+          },
+          {
+            "unit": "usd",
+            "label": "Other",
+            "value": -1165000,
+            "concept": "ProceedsFromPaymentsForOtherFinancingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Cash flows from financing activities:",
+            "value": -459648000,
+            "concept": "NetCashProvidedByUsedInFinancingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Cash and cash equivalents:",
+            "value": 478504000,
+            "concept": "CashAndCashEquivalentsPeriodIncreaseDecrease"
+          },
+          {
+            "unit": "usd",
+            "label": "Interest",
+            "value": 77184000,
+            "concept": "InterestPaid"
+          },
+          {
+            "unit": "usd",
+            "label": "Income taxes",
+            "value": 622314000,
+            "concept": "IncomeTaxesPaid"
+          }
+        ],
+        "ic": [
+          {
+            "unit": "usd",
+            "label": "Net income",
+            "value": 1360040000,
+            "concept": "ProfitLoss"
+          },
+          {
+            "unit": "usd",
+            "label": "Unrealized loss on available-for-sale securities Before-Tax",
+            "value": -203000,
+            "concept": "hfc:OtherComprehensiveIncomeNetUnrealizedHoldingGainLossOnSecuritiesArisingDuringPeriod"
+          },
+          {
+            "unit": "usd",
+            "label": "Unrealized gain (loss), net of reclassifications from contract settlements on hedging instruments",
+            "value": -236147000,
+            "concept": "OtherComprehensiveIncomeUnrealizedGainLossOnDerivativesArisingDuringPeriodBeforeTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Pension Curtailment Adjustment",
+            "value": 7102000,
+            "concept": "hfc:OtherComprehensiveIncomeLossPensionCurtailmentAdjustment"
+          },
+          {
+            "unit": "usd",
+            "label": "Other Comprehensive Income (Loss), Pension and Other Postretirement Benefit Plans, Adjustment, before Tax",
+            "value": 0,
+            "concept": "OtherComprehensiveIncomeDefinedBenefitPlansAdjustmentBeforeTaxPeriodIncreaseDecrease"
+          },
+          {
+            "unit": "usd",
+            "label": "Other comprehensive income (loss), Before-Tax",
+            "value": -229248000,
+            "concept": "OtherComprehensiveIncomeLossBeforeTaxPeriodIncreaseDecrease"
+          },
+          {
+            "unit": "usd",
+            "label": "Other comprehensive income, Tax Expense (Benefit)",
+            "value": -89383000,
+            "concept": "OtherComprehensiveIncomeLossTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Other comprehensive income, After-Tax",
+            "value": -139865000,
+            "concept": "OtherComprehensiveIncomeLossNetOfTaxPeriodIncreaseDecrease"
+          },
+          {
+            "unit": "usd",
+            "label": "Total comprehensive income",
+            "value": 1220175000,
+            "concept": "ComprehensiveIncomeNetOfTaxIncludingPortionAttributableToNoncontrollingInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Less noncontrolling interest in comprehensive income",
+            "value": 25001000,
+            "concept": "ComprehensiveIncomeNetOfTaxAttributableToNoncontrollingInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Comprehensive Income (Loss), Net of Tax, Attributable to Parent",
+            "value": 1195174000,
+            "concept": "ComprehensiveIncomeNetOfTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Sales and other revenues",
+            "value": 14943217000,
+            "concept": "RefiningAndMarketingRevenue"
+          },
+          {
+            "unit": "usd",
+            "label": "Cost of products sold",
+            "value": 11767417000,
+            "concept": "RefiningAndMarketingCosts"
+          },
+          {
+            "unit": "usd",
+            "label": "Operating expenses",
+            "value": 698212000,
+            "concept": "OperatingCostsAndExpenses"
+          },
+          {
+            "unit": "usd",
+            "label": "General and administrative",
+            "value": 88421000,
+            "concept": "GeneralAndAdministrativeExpense"
+          },
+          {
+            "unit": "usd",
+            "label": "Depreciation and amortization",
+            "value": 178162000,
+            "concept": "DepreciationDepletionAndAmortization"
+          },
+          {
+            "unit": "usd",
+            "label": "Total operating costs and expenses",
+            "value": 12732212000,
+            "concept": "CostsAndExpenses"
+          },
+          {
+            "unit": "usd",
+            "label": "Income (loss) from operations",
+            "value": 2211005000,
+            "concept": "OperatingIncomeLoss"
+          },
+          {
+            "unit": "usd",
+            "label": "Earnings of equity method investments, net of distributions",
+            "value": 2455000,
+            "concept": "IncomeLossFromEquityMethodInvestments"
+          },
+          {
+            "unit": "usd",
+            "label": "Interest income",
+            "value": 3360000,
+            "concept": "InvestmentIncomeInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Interest expense",
+            "value": 81360000,
+            "concept": "InterestExpense"
+          },
+          {
+            "unit": "usd",
+            "label": "Gain on sale of marketable equity securities",
+            "value": 326000,
+            "concept": "AvailableForSaleSecuritiesGrossRealizedGainLossNet"
+          },
+          {
+            "unit": "usd",
+            "label": "Merger transaction costs",
+            "value": 0,
+            "concept": "PaymentsForMergerRelatedCosts"
+          },
+          {
+            "unit": "usd",
+            "label": "Nonoperating Income (Expense)",
+            "value": -75219000,
+            "concept": "NonoperatingIncomeExpense"
+          },
+          {
+            "unit": "usd",
+            "label": "Income before income taxes",
+            "value": 2135786000,
+            "concept": "hfc:IncomeBeforeIncomeTaxes"
+          },
+          {
+            "unit": "usd",
+            "label": "Current",
+            "value": 753018000,
+            "concept": "CurrentIncomeTaxExpenseBenefit"
+          },
+          {
+            "unit": "usd",
+            "label": "Deferred income taxes",
+            "value": 22728000,
+            "concept": "DeferredIncomeTaxExpenseBenefit"
+          },
+          {
+            "unit": "usd",
+            "label": "Income tax provision",
+            "value": 775746000,
+            "concept": "IncomeTaxExpenseBenefit"
+          },
+          {
+            "unit": "usd",
+            "label": "Less net income attributable to noncontrolling interest",
+            "value": 24472000,
+            "concept": "NetIncomeLossAttributableToNoncontrollingInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Less net income attributable to noncontrolling interest",
+            "value": 1335568000,
+            "concept": "NetIncomeLoss"
+          },
+          {
+            "unit": "usd/shares",
+            "label": "Basic earnings per share",
+            "value": 6.46,
+            "concept": "EarningsPerShareBasic"
+          },
+          {
+            "unit": "usd/shares",
+            "label": "Diluted earnings per share",
+            "value": 6.44,
+            "concept": "EarningsPerShareDiluted"
+          },
+          {
+            "unit": "usd/shares",
+            "label": "Cash dividends declared per common share",
+            "value": 2.4,
+            "concept": "CommonStockDividendsPerShareDeclared"
+          },
+          {
+            "unit": "shares",
+            "label": "Average number of shares of common stock outstanding",
+            "value": 206657000,
+            "concept": "WeightedAverageNumberOfSharesOutstandingBasic"
+          },
+          {
+            "unit": "shares",
+            "label": "Average number of shares of common stock outstanding assuming dilution",
+            "value": 207546000,
+            "concept": "WeightedAverageNumberOfDilutedSharesOutstanding"
+          }
+        ]
+      }
+    },
+    {
+      "accessNumber": "0000048039-12-000044",
+      "symbol": "HFC",
+      "cik": "48039",
+      "year": 2012,
+      "quarter": 2,
+      "form": "10-Q",
+      "startDate": "2012-01-01 00:00:00",
+      "endDate": "2012-06-30 00:00:00",
+      "filedDate": "2012-08-09 00:00:00",
+      "acceptedDate": "2012-08-08 18:49:27",
+      "report": {
+        "bs": [
+          {
+            "unit": "usd",
+            "label": "Beginning of period",
+            "value": 1372198000,
+            "concept": "CashAndCashEquivalentsAtCarryingValue"
+          },
+          {
+            "unit": "usd",
+            "label": "Marketable securities",
+            "value": 266483000,
+            "concept": "AvailableForSaleSecuritiesCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Accounts receivable: Product and transportation (HEP: $30,169 and $34,071, respectively)",
+            "value": 578024000,
+            "concept": "hfc:AccountsReceivableProductAndTransportation"
+          },
+          {
+            "unit": "usd",
+            "label": "Crude oil resales",
+            "value": 25702000,
+            "concept": "hfc:AccountsReceivableCrudeOilResales"
+          },
+          {
+            "unit": "usd",
+            "label": "Accounts receivable, total",
+            "value": 603726000,
+            "concept": "AccountsReceivableNetCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Inventories: Crude oil and refined products",
+            "value": 1253807000,
+            "concept": "hfc:InventoryCrudeOilAndRefinedProducts"
+          },
+          {
+            "unit": "usd",
+            "label": "Materials and supplies (HEP: $1,326 and $1,483, respectively)",
+            "value": 56012000,
+            "concept": "OtherInventorySupplies"
+          },
+          {
+            "unit": "usd",
+            "label": "Inventory, Net [Abstract]",
+            "value": 1309819000,
+            "concept": "InventoryNet"
+          },
+          {
+            "unit": "usd",
+            "label": "Income taxes receivable",
+            "value": 93648000,
+            "concept": "IncomeTaxesReceivable"
+          },
+          {
+            "unit": "usd",
+            "label": "Prepayments and other (HEP: $2,084 and $1,161, respectively)",
+            "value": 59818000,
+            "concept": "OtherAssetsCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Current assets:",
+            "value": 3705692000,
+            "concept": "AssetsCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Properties, plants and equipment, at cost (HEP: $689,381 and $679,852, respectively)",
+            "value": 3751384000,
+            "concept": "PropertyPlantAndEquipmentGross"
+          },
+          {
+            "unit": "usd",
+            "label": "Less accumulated depreciation (HEP: $(104,679) and $(89,609), respectively)",
+            "value": 663078000,
+            "concept": "AccumulatedDepreciationDepletionAndAmortizationPropertyPlantAndEquipment"
+          },
+          {
+            "unit": "usd",
+            "label": "Property, plant and equipment, net",
+            "value": 3088306000,
+            "concept": "PropertyPlantAndEquipmentNet"
+          },
+          {
+            "unit": "usd",
+            "label": "Marketable securities (long-term)",
+            "value": 9765000,
+            "concept": "AvailableForSaleSecuritiesNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Other assets: Turnaround costs",
+            "value": 72460000,
+            "concept": "hfc:OtherAssetsTurnaroundCosts"
+          },
+          {
+            "unit": "usd",
+            "label": "Goodwill [Line Items]",
+            "value": 2338302000,
+            "concept": "Goodwill"
+          },
+          {
+            "unit": "usd",
+            "label": "Intangibles and other (HEP: $77,182 and $75,902, respectively)",
+            "value": 168007000,
+            "concept": "hfc:IntangiblesAndOther"
+          },
+          {
+            "unit": "usd",
+            "label": "Other assets, total",
+            "value": 2578769000,
+            "concept": "OtherAssetsNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Assets, Fair Value Disclosure",
+            "value": 9382532000,
+            "concept": "Assets"
+          },
+          {
+            "unit": "usd",
+            "label": "Accounts payable (HEP: $9,695 and $11,406, respectively)",
+            "value": 1096216000,
+            "concept": "AccountsPayableCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Income taxes payable",
+            "value": 162265000,
+            "concept": "TaxesPayableCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Accrued liabilities (HEP: $17,749 and $16,285, respectively)",
+            "value": 133818000,
+            "concept": "AccruedLiabilitiesCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Deferred income tax liabilities",
+            "value": 169386000,
+            "concept": "DeferredTaxLiabilitiesCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Current liabilities:",
+            "value": 1561685000,
+            "concept": "LiabilitiesCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Total long-term debt",
+            "value": 1295163000,
+            "concept": "LongTermDebtNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Deferred income taxes",
+            "value": 416028000,
+            "concept": "DeferredTaxLiabilitiesNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Other long-term liabilities (HEP: $6,195 and $4,000, respectively)",
+            "value": 162031000,
+            "concept": "OtherLiabilitiesNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Preferred stock, $1.00 par value - 5,000,000 shares authorized; none issued",
+            "value": 0,
+            "concept": "PreferredStockValue"
+          },
+          {
+            "unit": "usd",
+            "label": "Common stock $.01 par value - 320,000,000 shares authorized; 255,962,866 shares issued as of June 30, 2012 and December 31, 2011",
+            "value": 2560000,
+            "concept": "CommonStockValue"
+          },
+          {
+            "unit": "usd",
+            "label": "Additional capital",
+            "value": 3765963000,
+            "concept": "AdditionalPaidInCapitalCommonStock"
+          },
+          {
+            "unit": "usd",
+            "label": "Retained earnings",
+            "value": 2440448000,
+            "concept": "RetainedEarningsAccumulatedDeficit"
+          },
+          {
+            "unit": "usd",
+            "label": "Accumulated other comprehensive income (loss)",
+            "value": 5575000,
+            "concept": "AccumulatedOtherComprehensiveIncomeLossNetOfTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Common stock held in treasury, at cost - 52,346,837 and 46,630,220 shares as of June 30, 2012 and December 31, 2011, respectively",
+            "value": 885085000,
+            "concept": "TreasuryStockValue"
+          },
+          {
+            "unit": "usd",
+            "label": "Stockholders' Equity Note [Abstract]",
+            "value": 5329461000,
+            "concept": "StockholdersEquity"
+          },
+          {
+            "unit": "usd",
+            "label": "Noncontrolling interest",
+            "value": 618164000,
+            "concept": "MinorityInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Equity:",
+            "value": 5947625000,
+            "concept": "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "LIABILITIES AND EQUITY",
+            "value": 9382532000,
+            "concept": "LiabilitiesAndStockholdersEquity"
+          }
+        ],
+        "cf": [
+          {
+            "unit": "usd",
+            "label": "Net income",
+            "value": 749390000,
+            "concept": "ProfitLoss"
+          },
+          {
+            "unit": "usd",
+            "label": "Depreciation and amortization",
+            "value": 113050000,
+            "concept": "DepreciationDepletionAndAmortization"
+          },
+          {
+            "unit": "usd",
+            "label": "Earnings of equity method investments, net of distributions",
+            "value": 104000,
+            "concept": "IncomeLossFromEquityMethodInvestmentsNetOfDividendsOrDistributions"
+          },
+          {
+            "unit": "usd",
+            "label": "Gain on sale of marketable equity securities",
+            "value": 326000,
+            "concept": "AvailableForSaleSecuritiesGrossRealizedGainLossNet"
+          },
+          {
+            "unit": "usd",
+            "label": "Deferred income taxes",
+            "value": -2683000,
+            "concept": "DeferredIncomeTaxExpenseBenefit"
+          },
+          {
+            "unit": "usd",
+            "label": "Share-based Compensation Arrangement by Share-based Payment Award [Line Items]",
+            "value": 17491000,
+            "concept": "ShareBasedCompensation"
+          },
+          {
+            "unit": "usd",
+            "label": "Change in fair value - derivative instruments",
+            "value": -10289000,
+            "concept": "UnrealizedGainLossOnDerivatives"
+          },
+          {
+            "unit": "usd",
+            "label": "Accounts receivable",
+            "value": -103674000,
+            "concept": "IncreaseDecreaseInAccountsReceivable"
+          },
+          {
+            "unit": "usd",
+            "label": "Inventories",
+            "value": 195200000,
+            "concept": "IncreaseDecreaseInInventories"
+          },
+          {
+            "unit": "usd",
+            "label": "Income taxes receivable",
+            "value": -365000,
+            "concept": "IncreaseDecreaseInIncomeTaxesReceivable"
+          },
+          {
+            "unit": "usd",
+            "label": "Prepayments and other",
+            "value": -17928000,
+            "concept": "IncreaseDecreaseInPrepaidDeferredExpenseAndOtherAssets"
+          },
+          {
+            "unit": "usd",
+            "label": "Accounts payable",
+            "value": -418937000,
+            "concept": "IncreaseDecreaseInAccountsPayable"
+          },
+          {
+            "unit": "usd",
+            "label": "Income taxes payable",
+            "value": 121899000,
+            "concept": "IncreaseDecreaseInAccruedIncomeTaxesPayable"
+          },
+          {
+            "unit": "usd",
+            "label": "Accrued liabilities",
+            "value": -34870000,
+            "concept": "IncreaseDecreaseInAccruedLiabilities"
+          },
+          {
+            "unit": "usd",
+            "label": "Turnaround expenditures",
+            "value": 46995000,
+            "concept": "IncreaseDecreaseInDeferredCharges"
+          },
+          {
+            "unit": "usd",
+            "label": "Other, net",
+            "value": 5468000,
+            "concept": "OtherNoncashIncomeExpense"
+          },
+          {
+            "unit": "usd",
+            "label": "Cash flows from operating activities",
+            "value": 429503000,
+            "concept": "NetCashProvidedByUsedInOperatingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Additions to properties, plants and equipment",
+            "value": 116012000,
+            "concept": "PaymentsToAcquirePropertyPlantAndEquipment"
+          },
+          {
+            "unit": "usd",
+            "label": "Investment in Sabine Biofuels",
+            "value": 2000000,
+            "concept": "PaymentsForProceedsFromInvestments"
+          },
+          {
+            "unit": "usd",
+            "label": "Purchases of marketable debt securities",
+            "value": 166429000,
+            "concept": "PaymentsToAcquireAvailableForSaleSecurities"
+          },
+          {
+            "unit": "usd",
+            "label": "Proceeds from sale and maturity of marketable debt securities",
+            "value": 151996000,
+            "concept": "ProceedsFromSaleAndMaturityOfAvailableForSaleSecurities"
+          },
+          {
+            "unit": "usd",
+            "label": "Net cash used for investing activities",
+            "value": -144453000,
+            "concept": "NetCashProvidedByUsedInInvestingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Principal tender on senior notes",
+            "value": -5000000,
+            "concept": "hfc:PrincipalTenderOnSeniorNotes"
+          },
+          {
+            "unit": "usd",
+            "label": "Purchase of treasury stock",
+            "value": -189771000,
+            "concept": "PaymentsForRepurchaseOfCommonStock"
+          },
+          {
+            "unit": "usd",
+            "label": "Net prepayment related to structured share repurchase arrangement",
+            "value": -100000000,
+            "concept": "hfc:SharePurchasedUnderStructedShareRepurchaseAgreement"
+          },
+          {
+            "unit": "usd",
+            "label": "Contribution from joint venture partner",
+            "value": 6000000,
+            "concept": "ProceedsFromPaymentsToMinorityShareholders"
+          },
+          {
+            "unit": "usd",
+            "label": "Dividends",
+            "value": 249958000,
+            "concept": "PaymentsOfDividendsCommonStock"
+          },
+          {
+            "unit": "usd",
+            "label": "Excess tax benefit from equity based compensation",
+            "value": 4762000,
+            "concept": "ExcessTaxBenefitFromShareBasedCompensationFinancingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Deferred financing costs",
+            "value": 3229000,
+            "concept": "PaymentsOfFinancingCosts"
+          },
+          {
+            "unit": "usd",
+            "label": "Other",
+            "value": -833000,
+            "concept": "ProceedsFromPaymentsForOtherFinancingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Net cash provided by (used for) financing activities",
+            "value": -491756000,
+            "concept": "NetCashProvidedByUsedInFinancingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Increase (decrease) for the period",
+            "value": -206706000,
+            "concept": "CashAndCashEquivalentsPeriodIncreaseDecrease"
+          },
+          {
+            "unit": "usd",
+            "label": "Interest",
+            "value": 48928000,
+            "concept": "InterestPaid"
+          },
+          {
+            "unit": "usd",
+            "label": "Income taxes",
+            "value": 301854000,
+            "concept": "IncomeTaxesPaid"
+          }
+        ],
+        "ic": [
+          {
+            "unit": "usd",
+            "label": "Net income",
+            "value": 749390000,
+            "concept": "ProfitLoss"
+          },
+          {
+            "unit": "usd",
+            "label": "Unrealized loss on available-for-sale securities Before-Tax",
+            "value": -216000,
+            "concept": "hfc:OtherComprehensiveIncomeNetUnrealizedHoldingGainLossOnSecuritiesArisingDuringPeriod"
+          },
+          {
+            "unit": "usd",
+            "label": "Net unrealized gain (loss), net of reclassifications from contract settlements on hedging instruments",
+            "value": -124814000,
+            "concept": "OtherComprehensiveIncomeUnrealizedGainLossOnDerivativesArisingDuringPeriodBeforeTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Pension curtailment adjustment",
+            "value": 7102000,
+            "concept": "OtherComprehensiveIncomeDefinedBenefitPlansAdjustmentBeforeTaxPeriodIncreaseDecrease"
+          },
+          {
+            "unit": "usd",
+            "label": "Other comprehensive income (loss), Before-Tax",
+            "value": -117928000,
+            "concept": "OtherComprehensiveIncomeLossBeforeTaxPeriodIncreaseDecrease"
+          },
+          {
+            "unit": "usd",
+            "label": "Other comprehensive income, Tax Expense (Benefit)",
+            "value": -46030000,
+            "concept": "OtherComprehensiveIncomeLossTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Other comprehensive income (loss)",
+            "value": -71898000,
+            "concept": "OtherComprehensiveIncomeLossNetOfTaxPeriodIncreaseDecrease"
+          },
+          {
+            "unit": "usd",
+            "label": "Total comprehensive income",
+            "value": 677492000,
+            "concept": "ComprehensiveIncomeNetOfTaxIncludingPortionAttributableToNoncontrollingInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Less noncontrolling interest in comprehensive income",
+            "value": 14595000,
+            "concept": "ComprehensiveIncomeNetOfTaxAttributableToNoncontrollingInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Total comprehensive income",
+            "value": 662897000,
+            "concept": "ComprehensiveIncomeNetOfTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Sales and other revenues",
+            "value": 9738419000,
+            "concept": "RefiningAndMarketingRevenue"
+          },
+          {
+            "unit": "usd",
+            "label": "Cost of products sold",
+            "value": 7868681000,
+            "concept": "RefiningAndMarketingCosts"
+          },
+          {
+            "unit": "usd",
+            "label": "Operating expenses",
+            "value": 464353000,
+            "concept": "OperatingCostsAndExpenses"
+          },
+          {
+            "unit": "usd",
+            "label": "General and administrative",
+            "value": 59634000,
+            "concept": "GeneralAndAdministrativeExpense"
+          },
+          {
+            "unit": "usd",
+            "label": "Depreciation and amortization",
+            "value": 113050000,
+            "concept": "DepreciationDepletionAndAmortization"
+          },
+          {
+            "unit": "usd",
+            "label": "Total operating costs and expenses",
+            "value": 8505718000,
+            "concept": "CostsAndExpenses"
+          },
+          {
+            "unit": "usd",
+            "label": "Income (loss) from operations",
+            "value": 1232701000,
+            "concept": "OperatingIncomeLoss"
+          },
+          {
+            "unit": "usd",
+            "label": "Earnings of equity method investments, net of distributions",
+            "value": 1603000,
+            "concept": "IncomeLossFromEquityMethodInvestments"
+          },
+          {
+            "unit": "usd",
+            "label": "Interest income",
+            "value": 1141000,
+            "concept": "InvestmentIncomeInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Interest expense",
+            "value": 60257000,
+            "concept": "InterestExpense"
+          },
+          {
+            "unit": "usd",
+            "label": "Gain on sale of marketable equity securities",
+            "value": 326000,
+            "concept": "AvailableForSaleSecuritiesGrossRealizedGainLossNet"
+          },
+          {
+            "unit": "usd",
+            "label": "Merger transaction costs",
+            "value": 0,
+            "concept": "PaymentsForMergerRelatedCosts"
+          },
+          {
+            "unit": "usd",
+            "label": "Nonoperating Income (Expense)",
+            "value": -57187000,
+            "concept": "NonoperatingIncomeExpense"
+          },
+          {
+            "unit": "usd",
+            "label": "Income before income taxes",
+            "value": 1175514000,
+            "concept": "hfc:IncomeBeforeIncomeTaxes"
+          },
+          {
+            "unit": "usd",
+            "label": "Current",
+            "value": 428807000,
+            "concept": "CurrentIncomeTaxExpenseBenefit"
+          },
+          {
+            "unit": "usd",
+            "label": "Deferred income taxes",
+            "value": -2683000,
+            "concept": "DeferredIncomeTaxExpenseBenefit"
+          },
+          {
+            "unit": "usd",
+            "label": "Income tax provision",
+            "value": 426124000,
+            "concept": "IncomeTaxExpenseBenefit"
+          },
+          {
+            "unit": "usd",
+            "label": "Less net income attributable to noncontrolling interest",
+            "value": 14195000,
+            "concept": "NetIncomeLossAttributableToNoncontrollingInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Less net income attributable to noncontrolling interest",
+            "value": 735195000,
+            "concept": "NetIncomeLoss"
+          },
+          {
+            "unit": "usd/shares",
+            "label": "Basic",
+            "value": 3.55,
+            "concept": "EarningsPerShareBasic"
+          },
+          {
+            "unit": "usd/shares",
+            "label": "Diluted",
+            "value": 3.54,
+            "concept": "EarningsPerShareDiluted"
+          },
+          {
+            "unit": "usd/shares",
+            "label": "Cash dividends declared per common share",
+            "value": 1.25,
+            "concept": "CommonStockDividendsPerShareDeclared"
+          },
+          {
+            "unit": "shares",
+            "label": "Basic",
+            "value": 207129000,
+            "concept": "WeightedAverageNumberOfSharesOutstandingBasic"
+          },
+          {
+            "unit": "shares",
+            "label": "Diluted",
+            "value": 207938000,
+            "concept": "WeightedAverageNumberOfDilutedSharesOutstanding"
+          }
+        ]
+      }
+    },
+    {
+      "accessNumber": "0000048039-12-000012",
+      "symbol": "HFC",
+      "cik": "48039",
+      "year": 2012,
+      "quarter": 1,
+      "form": "10-Q",
+      "startDate": "2012-01-01 00:00:00",
+      "endDate": "2012-03-31 00:00:00",
+      "filedDate": "2012-05-08 00:00:00",
+      "acceptedDate": "2012-05-07 18:05:56",
+      "report": {
+        "bs": [
+          {
+            "unit": "usd",
+            "label": "Beginning of period",
+            "value": 1659550000,
+            "concept": "CashAndCashEquivalentsAtCarryingValue"
+          },
+          {
+            "unit": "usd",
+            "label": "Marketable securities",
+            "value": 241929000,
+            "concept": "AvailableForSaleSecuritiesCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Accounts receivable: Product and transportation (HEP: $34,784 and $34,071, respectively)",
+            "value": 676839000,
+            "concept": "hfc:AccountsReceivableProductAndTransportation"
+          },
+          {
+            "unit": "usd",
+            "label": "Accounts receivable crude oil resales",
+            "value": 56308000,
+            "concept": "hfc:AccountsReceivableCrudeOilResales"
+          },
+          {
+            "unit": "usd",
+            "label": "Accounts receivable, total",
+            "value": 733147000,
+            "concept": "AccountsReceivableNetCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Inventories: Crude oil and refined products",
+            "value": 1288591000,
+            "concept": "hfc:InventoryCrudeOilAndRefinedProducts"
+          },
+          {
+            "unit": "usd",
+            "label": "Materials and supplies (HEP: $1,483 and $1,483, respectively)",
+            "value": 56564000,
+            "concept": "OtherInventorySupplies"
+          },
+          {
+            "unit": "usd",
+            "label": "Inventory, Net [Abstract]",
+            "value": 1345155000,
+            "concept": "InventoryNet"
+          },
+          {
+            "unit": "usd",
+            "label": "Income taxes receivable",
+            "value": 93648000,
+            "concept": "IncomeTaxesReceivable"
+          },
+          {
+            "unit": "usd",
+            "label": "Prepayments and other (HEP: $920 and $1,161, respectively)",
+            "value": 54172000,
+            "concept": "OtherAssetsCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Total current assets",
+            "value": 4127601000,
+            "concept": "AssetsCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Properties, plants and equipment, at cost (HEP: $686,131 and $679,852, respectively)",
+            "value": 3693550000,
+            "concept": "PropertyPlantAndEquipmentGross"
+          },
+          {
+            "unit": "usd",
+            "label": "Less accumulated depreciation (HEP: $(98,900) and $(89,609), respectively)",
+            "value": 622337000,
+            "concept": "AccumulatedDepreciationDepletionAndAmortizationPropertyPlantAndEquipment"
+          },
+          {
+            "unit": "usd",
+            "label": "Property, plant and equipment, net",
+            "value": 3071213000,
+            "concept": "PropertyPlantAndEquipmentNet"
+          },
+          {
+            "unit": "usd",
+            "label": "Marketable securities (long-term)",
+            "value": 26057000,
+            "concept": "AvailableForSaleSecuritiesNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Other assets: Turnaround costs",
+            "value": 64175000,
+            "concept": "hfc:OtherAssetsTurnaroundCosts"
+          },
+          {
+            "unit": "usd",
+            "label": "Goodwill",
+            "value": 2334530000,
+            "concept": "Goodwill"
+          },
+          {
+            "unit": "usd",
+            "label": "Intangibles and other (HEP: $75,597 and $75,902, respectively)",
+            "value": 162174000,
+            "concept": "hfc:IntangiblesAndOther"
+          },
+          {
+            "unit": "usd",
+            "label": "Other assets, total",
+            "value": 2560879000,
+            "concept": "OtherAssetsNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Total assets",
+            "value": 9785750000,
+            "concept": "Assets"
+          },
+          {
+            "unit": "usd",
+            "label": "Accounts payable",
+            "value": 1641107000,
+            "concept": "AccountsPayableCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Income taxes payable",
+            "value": 152212000,
+            "concept": "TaxesPayableCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Accrued liabilities (HEP: $8,942 and $16,285, respectively)",
+            "value": 126380000,
+            "concept": "AccruedLiabilitiesCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Deferred income tax liabilities",
+            "value": 172401000,
+            "concept": "DeferredTaxLiabilitiesCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Less current portion of HEP long-term debt",
+            "value": 26281000,
+            "concept": "LongTermDebtCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Total current liabilities",
+            "value": 2118381000,
+            "concept": "LiabilitiesCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Total long-term debt",
+            "value": 1285761000,
+            "concept": "LongTermDebtNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Deferred income taxes",
+            "value": 400993000,
+            "concept": "DeferredTaxLiabilitiesNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Other long-term liabilities (HEP: $4,636 and $4,000, respectively)",
+            "value": 191036000,
+            "concept": "OtherLiabilitiesNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Preferred stock, $1.00 par value - 5,000,000 shares authorized; none issued",
+            "value": 0,
+            "concept": "PreferredStockValue"
+          },
+          {
+            "unit": "usd",
+            "label": "Common stock $.01 par value - 320,000,000 shares authorized; 255,962,866 shares issued as of March 31, 2012 and December 31, 2011",
+            "value": 2560000,
+            "concept": "CommonStockValue"
+          },
+          {
+            "unit": "usd",
+            "label": "Additional capital",
+            "value": 3857601000,
+            "concept": "AdditionalPaidInCapitalCommonStock"
+          },
+          {
+            "unit": "usd",
+            "label": "Retained earnings",
+            "value": 2080848000,
+            "concept": "RetainedEarningsAccumulatedDeficit"
+          },
+          {
+            "unit": "usd",
+            "label": "Accumulated other comprehensive loss",
+            "value": -17421000,
+            "concept": "AccumulatedOtherComprehensiveIncomeLossNetOfTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Common stock held in treasury, at cost - 48,140,292 and 46,630,220 shares as of March 31, 2012 and December 31, 2011, respectively",
+            "value": 759275000,
+            "concept": "TreasuryStockValue"
+          },
+          {
+            "unit": "usd",
+            "label": "Stockholders' Equity Note [Abstract]",
+            "value": 5164313000,
+            "concept": "StockholdersEquity"
+          },
+          {
+            "unit": "usd",
+            "label": "Noncontrolling interest",
+            "value": 625266000,
+            "concept": "MinorityInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Equity:",
+            "value": 5789579000,
+            "concept": "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Total liabilities and equity",
+            "value": 9785750000,
+            "concept": "LiabilitiesAndStockholdersEquity"
+          }
+        ],
+        "cf": [
+          {
+            "unit": "usd",
+            "label": "Net income",
+            "value": 247020000,
+            "concept": "ProfitLoss"
+          },
+          {
+            "unit": "usd",
+            "label": "Depreciation and amortization",
+            "value": 56102000,
+            "concept": "DepreciationDepletionAndAmortization"
+          },
+          {
+            "unit": "usd",
+            "label": "Earnings of equity method investments, net of distributions",
+            "value": -34000,
+            "concept": "IncomeLossFromEquityMethodInvestmentsNetOfDividendsOrDistributions"
+          },
+          {
+            "unit": "usd",
+            "label": "Deferred",
+            "value": -2464000,
+            "concept": "DeferredIncomeTaxExpenseBenefit"
+          },
+          {
+            "unit": "usd",
+            "label": "Share-based Compensation [Abstract]",
+            "value": 9485000,
+            "concept": "ShareBasedCompensation"
+          },
+          {
+            "unit": "usd",
+            "label": "Change in fair value - derivative instruments",
+            "value": -12122000,
+            "concept": "UnrealizedGainLossOnDerivatives"
+          },
+          {
+            "unit": "usd",
+            "label": "Increase (decrease) in accounts receivable",
+            "value": 25247000,
+            "concept": "IncreaseDecreaseInAccountsReceivable"
+          },
+          {
+            "unit": "usd",
+            "label": "Inventories",
+            "value": 230536000,
+            "concept": "IncreaseDecreaseInInventories"
+          },
+          {
+            "unit": "usd",
+            "label": "Income taxes receivable",
+            "value": -365000,
+            "concept": "IncreaseDecreaseInIncomeTaxesReceivable"
+          },
+          {
+            "unit": "usd",
+            "label": "Prepayments and other",
+            "value": 1831000,
+            "concept": "IncreaseDecreaseInPrepaidDeferredExpenseAndOtherAssets"
+          },
+          {
+            "unit": "usd",
+            "label": "Increase (decrease) in accounts payable",
+            "value": 124235000,
+            "concept": "IncreaseDecreaseInAccountsPayable"
+          },
+          {
+            "unit": "usd",
+            "label": "Income taxes payable",
+            "value": 111846000,
+            "concept": "IncreaseDecreaseInAccruedIncomeTaxesPayable"
+          },
+          {
+            "unit": "usd",
+            "label": "Accrued liabilities",
+            "value": -46358000,
+            "concept": "IncreaseDecreaseInAccruedLiabilities"
+          },
+          {
+            "unit": "usd",
+            "label": "Turnaround expenditures",
+            "value": 21762000,
+            "concept": "IncreaseDecreaseInDeferredCharges"
+          },
+          {
+            "unit": "usd",
+            "label": "Other, net",
+            "value": -20894000,
+            "concept": "OtherNoncashIncomeExpense"
+          },
+          {
+            "unit": "usd",
+            "label": "Cash flows from operating activities",
+            "value": 253905000,
+            "concept": "NetCashProvidedByUsedInOperatingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Additions to properties, plants and equipment",
+            "value": 55060000,
+            "concept": "PaymentsToAcquirePropertyPlantAndEquipment"
+          },
+          {
+            "unit": "usd",
+            "label": "Investment in Sabine Biofuels",
+            "value": 1200000,
+            "concept": "PaymentsForProceedsFromInvestments"
+          },
+          {
+            "unit": "usd",
+            "label": "Purchases of marketable securities",
+            "value": 106573000,
+            "concept": "PaymentsToAcquireAvailableForSaleSecurities"
+          },
+          {
+            "unit": "usd",
+            "label": "Sales and maturities of marketable securities",
+            "value": 100480000,
+            "concept": "ProceedsFromSaleAndMaturityOfAvailableForSaleSecurities"
+          },
+          {
+            "unit": "usd",
+            "label": "Net cash used for investing activities",
+            "value": -68680000,
+            "concept": "NetCashProvidedByUsedInInvestingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Net proceeds from issuance of senior notes - HEP",
+            "value": 294750000,
+            "concept": "ProceedsFromIssuanceOfSeniorLongTermDebt"
+          },
+          {
+            "unit": "usd",
+            "label": "Purchase of treasury stock",
+            "value": 62532000,
+            "concept": "PaymentsForRepurchaseOfCommonStock"
+          },
+          {
+            "unit": "usd",
+            "label": "Contribution from joint venture partner",
+            "value": 5500000,
+            "concept": "ProceedsFromPaymentsToMinorityShareholders"
+          },
+          {
+            "unit": "usd",
+            "label": "Dividends",
+            "value": 126019000,
+            "concept": "PaymentsOfDividendsCommonStock"
+          },
+          {
+            "unit": "usd",
+            "label": "Distributions to noncontrolling interest",
+            "value": 14391000,
+            "concept": "hfc:PaymentsOfDistributionToNoncontrollingInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Excess tax benefit from equity based compensation",
+            "value": 3792000,
+            "concept": "ExcessTaxBenefitFromShareBasedCompensationFinancingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Purchase of units for restricted grants - HEP",
+            "value": -2037000,
+            "concept": "PaymentsForRepurchaseOfOtherEquity"
+          },
+          {
+            "unit": "usd",
+            "label": "Deferred financing costs",
+            "value": 1123000,
+            "concept": "PaymentsOfFinancingCosts"
+          },
+          {
+            "unit": "usd",
+            "label": "Other",
+            "value": -512000,
+            "concept": "ProceedsFromPaymentsForOtherFinancingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Net cash provided by (used for) financing activities",
+            "value": -104579000,
+            "concept": "NetCashProvidedByUsedInFinancingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Increase (decrease) for the period",
+            "value": 80646000,
+            "concept": "CashAndCashEquivalentsPeriodIncreaseDecrease"
+          },
+          {
+            "unit": "usd",
+            "label": "Interest",
+            "value": 24422000,
+            "concept": "InterestPaid"
+          },
+          {
+            "unit": "usd",
+            "label": "Income taxes",
+            "value": 27006000,
+            "concept": "IncomeTaxesPaid"
+          }
+        ],
+        "ic": [
+          {
+            "unit": "usd",
+            "label": "Net income",
+            "value": 247020000,
+            "concept": "ProfitLoss"
+          },
+          {
+            "unit": "usd",
+            "label": "Unrealized gain on available-for-sale securities",
+            "value": 305000,
+            "concept": "OtherComprehensiveIncomeUnrealizedHoldingGainLossOnSecuritiesArisingDuringPeriodBeforeTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Reclassification adjustment to net income on sale or maturity of marketable securities",
+            "value": 117000,
+            "concept": "OtherComprehensiveIncomeReclassificationAdjustmentForSaleOfSecuritiesIncludedInNetIncomeBeforeTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Unrealized gain on available-for-sale securities Before-Tax",
+            "value": 188000,
+            "concept": "hfc:OtherComprehensiveIncomeNetUnrealizedHoldingGainLossOnSecuritiesArisingDuringPeriod"
+          },
+          {
+            "unit": "usd",
+            "label": "Change in fair value of cash flow hedging instruments",
+            "value": -140473000,
+            "concept": "OtherComprehensiveIncomeUnrealizedGainLossOnDerivativesArisingDuringPeriodBeforeTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Reclassification adjustment to net income on settlement of cash flow hedging instruments",
+            "value": -16416000,
+            "concept": "OtherComprehensiveIncomeReclassificationAdjustmentOnDerivativesIncludedInNetIncomeBeforeTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Amortization of unrealized loss attributable to discontinued cash flow hedge",
+            "value": 1274000,
+            "concept": "hfc:OtherComprehensiveIncomeAmortizationOfUnrealizedGainLossAttributableToDiscontinuedCashFlowHedges"
+          },
+          {
+            "unit": "usd",
+            "label": "Unrealized gain (loss) on hedging activities, Before-Tax",
+            "value": -155615000,
+            "concept": "OtherComprehensiveIncomeDerivativesQualifyingAsHedgesBeforeTaxPeriodIncreaseDecrease"
+          },
+          {
+            "unit": "usd",
+            "label": "Other comprehensive income (loss), Before-Tax",
+            "value": -155427000,
+            "concept": "OtherComprehensiveIncomeLossBeforeTaxPeriodIncreaseDecrease"
+          },
+          {
+            "unit": "usd",
+            "label": "Other comprehensive income, Tax Expense (Benefit)",
+            "value": -60670000,
+            "concept": "OtherComprehensiveIncomeLossTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Other comprehensive income, After-Tax",
+            "value": -94757000,
+            "concept": "OtherComprehensiveIncomeLossNetOfTaxPeriodIncreaseDecrease"
+          },
+          {
+            "unit": "usd",
+            "label": "Total comprehensive income",
+            "value": 152263000,
+            "concept": "ComprehensiveIncomeNetOfTaxIncludingPortionAttributableToNoncontrollingInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Less noncontrolling interest in comprehensive income",
+            "value": 5861000,
+            "concept": "ComprehensiveIncomeNetOfTaxAttributableToNoncontrollingInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Total comprehensive income",
+            "value": 146402000,
+            "concept": "ComprehensiveIncomeNetOfTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Sales and other revenues",
+            "value": 4931738000,
+            "concept": "RefiningAndMarketingRevenue"
+          },
+          {
+            "unit": "usd",
+            "label": "Cost of products sold (exclusive of depreciation and amortization)",
+            "value": 4186917000,
+            "concept": "RefiningAndMarketingCosts"
+          },
+          {
+            "unit": "usd",
+            "label": "Operating expenses (exclusive of depreciation and amortization)",
+            "value": 241627000,
+            "concept": "OperatingCostsAndExpenses"
+          },
+          {
+            "unit": "usd",
+            "label": "General and administrative expenses (exclusive of depreciation and amortization)",
+            "value": 27528000,
+            "concept": "GeneralAndAdministrativeExpense"
+          },
+          {
+            "unit": "usd",
+            "label": "Depreciation and amortization",
+            "value": 56102000,
+            "concept": "DepreciationDepletionAndAmortization"
+          },
+          {
+            "unit": "usd",
+            "label": "Operating costs and expenses:",
+            "value": 4512174000,
+            "concept": "CostsAndExpenses"
+          },
+          {
+            "unit": "usd",
+            "label": "Income from operations",
+            "value": 419564000,
+            "concept": "OperatingIncomeLoss"
+          },
+          {
+            "unit": "usd",
+            "label": "Earnings of equity method investments",
+            "value": 717000,
+            "concept": "IncomeLossFromEquityMethodInvestments"
+          },
+          {
+            "unit": "usd",
+            "label": "Interest income",
+            "value": 460000,
+            "concept": "InvestmentIncomeInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Interest expense",
+            "value": 33315000,
+            "concept": "InterestExpense"
+          },
+          {
+            "unit": "usd",
+            "label": "Merger transaction costs",
+            "value": 0,
+            "concept": "PaymentsForMergerRelatedCosts"
+          },
+          {
+            "unit": "usd",
+            "label": "Other income (expense):",
+            "value": -32138000,
+            "concept": "NonoperatingIncomeExpense"
+          },
+          {
+            "unit": "usd",
+            "label": "Income before income taxes",
+            "value": 387426000,
+            "concept": "hfc:IncomeBeforeIncomeTaxes"
+          },
+          {
+            "unit": "usd",
+            "label": "Current",
+            "value": 142870000,
+            "concept": "CurrentIncomeTaxExpenseBenefit"
+          },
+          {
+            "unit": "usd",
+            "label": "Deferred",
+            "value": -2464000,
+            "concept": "DeferredIncomeTaxExpenseBenefit"
+          },
+          {
+            "unit": "usd",
+            "label": "Income tax provision:",
+            "value": 140406000,
+            "concept": "IncomeTaxExpenseBenefit"
+          },
+          {
+            "unit": "usd",
+            "label": "Less net income attributable to noncontrolling interest",
+            "value": 5324000,
+            "concept": "NetIncomeLossAttributableToNoncontrollingInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Less net income attributable to noncontrolling interest",
+            "value": 241696000,
+            "concept": "NetIncomeLoss"
+          },
+          {
+            "unit": "usd/shares",
+            "label": "Basic",
+            "value": 1.16,
+            "concept": "EarningsPerShareBasic"
+          },
+          {
+            "unit": "usd/shares",
+            "label": "Diluted",
+            "value": 1.16,
+            "concept": "EarningsPerShareDiluted"
+          },
+          {
+            "unit": "usd/shares",
+            "label": "Cash dividends declared per common share",
+            "value": 0.6,
+            "concept": "CommonStockDividendsPerShareDeclared"
+          },
+          {
+            "unit": "shares",
+            "label": "Basic",
+            "value": 208531000,
+            "concept": "WeightedAverageNumberOfSharesOutstandingBasic"
+          },
+          {
+            "unit": "shares",
+            "label": "Diluted",
+            "value": 209138000,
+            "concept": "WeightedAverageNumberOfDilutedSharesOutstanding"
+          }
+        ]
+      }
+    },
+    {
+      "accessNumber": "0001193125-11-301996",
+      "symbol": "HFC",
+      "cik": "48039",
+      "year": 2011,
+      "quarter": 3,
+      "form": "10-Q",
+      "startDate": "2011-01-01 00:00:00",
+      "endDate": "2011-09-30 00:00:00",
+      "filedDate": "2011-11-08 00:00:00",
+      "acceptedDate": "2011-11-08 15:31:54",
+      "report": {
+        "bs": [
+          {
+            "unit": "usd",
+            "label": "Cash and cash equivalents (HEP: $1,802 and $403, respectively)",
+            "value": 1582859000,
+            "concept": "CashAndCashEquivalentsAtCarryingValue"
+          },
+          {
+            "unit": "usd",
+            "label": "Available-for-sale Securities, Current",
+            "value": 133445000,
+            "concept": "AvailableForSaleSecuritiesCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Accounts receivable Product and transportation.",
+            "value": 584792000,
+            "concept": "hoc:AccountsReceivableProductAndTransportation"
+          },
+          {
+            "unit": "usd",
+            "label": "Accounts receivable Crude oil resales.",
+            "value": 756891000,
+            "concept": "hoc:AccountsReceivableCrudeOilResales"
+          },
+          {
+            "unit": "usd",
+            "label": "Accounts Receivable, Net, Current",
+            "value": 1341683000,
+            "concept": "AccountsReceivableNetCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Inventories: Crude oil and refined products.",
+            "value": 1168129000,
+            "concept": "hoc:InventoryCrudeOilAndRefinedProducts"
+          },
+          {
+            "unit": "usd",
+            "label": "Other Inventory, Supplies",
+            "value": 97390000,
+            "concept": "OtherInventorySupplies"
+          },
+          {
+            "unit": "usd",
+            "label": "Inventories [Abstract]",
+            "value": 1265519000,
+            "concept": "InventoryNet"
+          },
+          {
+            "unit": "usd",
+            "label": "Other Assets, Current",
+            "value": 55582000,
+            "concept": "OtherAssetsCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Assets, Current [Abstract]",
+            "value": 4379088000,
+            "concept": "AssetsCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Property, Plant and Equipment, Gross",
+            "value": 3533309000,
+            "concept": "PropertyPlantAndEquipmentGross"
+          },
+          {
+            "unit": "usd",
+            "label": "Accumulated Depreciation, Depletion and Amortization, Property, Plant, and Equipment",
+            "value": 536781000,
+            "concept": "AccumulatedDepreciationDepletionAndAmortizationPropertyPlantAndEquipment"
+          },
+          {
+            "unit": "usd",
+            "label": "Property, Plant and Equipment, Net",
+            "value": 2996528000,
+            "concept": "PropertyPlantAndEquipmentNet"
+          },
+          {
+            "unit": "usd",
+            "label": "Available-for-sale Securities, Noncurrent",
+            "value": 43049000,
+            "concept": "AvailableForSaleSecuritiesNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Other assets Turnaround costs.",
+            "value": 62043000,
+            "concept": "hoc:OtherAssetsTurnaroundCosts"
+          },
+          {
+            "unit": "usd",
+            "label": "Goodwill",
+            "value": 2317756000,
+            "concept": "Goodwill"
+          },
+          {
+            "unit": "usd",
+            "label": "Intangibles and other.",
+            "value": 117999000,
+            "concept": "hoc:IntangiblesAndOther"
+          },
+          {
+            "unit": "usd",
+            "label": "Other Assets, Noncurrent [Abstract]",
+            "value": 2497798000,
+            "concept": "OtherAssetsNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Assets [Abstract]",
+            "value": 9916463000,
+            "concept": "Assets"
+          },
+          {
+            "unit": "usd",
+            "label": "Accounts Payable, Current",
+            "value": 2102915000,
+            "concept": "AccountsPayableCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Taxes Payable, Current",
+            "value": 140086000,
+            "concept": "TaxesPayableCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Accrued Liabilities, Current",
+            "value": 137839000,
+            "concept": "AccruedLiabilitiesCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Liabilities, Current [Abstract]",
+            "value": 2380840000,
+            "concept": "LiabilitiesCurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Senior notes, Carrying Amount",
+            "value": 1224987000,
+            "concept": "LongTermDebtNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Deferred Tax Liabilities, Noncurrent",
+            "value": 511083000,
+            "concept": "DeferredTaxLiabilitiesNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Other long-term liabilities",
+            "value": 138763000,
+            "concept": "OtherLiabilitiesNoncurrent"
+          },
+          {
+            "unit": "usd",
+            "label": "Common Stock, Value, Issued",
+            "value": 2560000,
+            "concept": "CommonStockValue"
+          },
+          {
+            "unit": "usd",
+            "label": "Additional Paid in Capital, Common Stock",
+            "value": 3895618000,
+            "concept": "AdditionalPaidInCapitalCommonStock"
+          },
+          {
+            "unit": "usd",
+            "label": "Retained Earnings (Accumulated Deficit)",
+            "value": 1866873000,
+            "concept": "RetainedEarningsAccumulatedDeficit"
+          },
+          {
+            "unit": "usd",
+            "label": "Accumulated Other Comprehensive Income (Loss), Net of Tax",
+            "value": -12700000,
+            "concept": "AccumulatedOtherComprehensiveIncomeLossNetOfTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Treasury Stock, Value",
+            "value": 697421000,
+            "concept": "TreasuryStockValue"
+          },
+          {
+            "unit": "usd",
+            "label": "Stockholders' Equity, Including Portion Attributable to Noncontrolling Interest [Abstract]",
+            "value": 5054930000,
+            "concept": "StockholdersEquity"
+          },
+          {
+            "unit": "usd",
+            "label": "Stockholders' Equity Attributable to Noncontrolling Interest",
+            "value": 605860000,
+            "concept": "MinorityInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Stockholders' Equity, Including Portion Attributable to Noncontrolling Interest [Abstract]",
+            "value": 5660790000,
+            "concept": "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Liabilities and Stockholders' Equity [Abstract]",
+            "value": 9916463000,
+            "concept": "LiabilitiesAndStockholdersEquity"
+          }
+        ],
+        "cf": [
+          {
+            "unit": "usd",
+            "label": "Net Income (Loss), Including Portion Attributable to Noncontrolling Interest",
+            "value": 823855000,
+            "concept": "ProfitLoss"
+          },
+          {
+            "unit": "usd",
+            "label": "Depreciation, Depletion and Amortization",
+            "value": 106380000,
+            "concept": "DepreciationDepletionAndAmortization"
+          },
+          {
+            "unit": "usd",
+            "label": "Income (Loss) from Equity Method Investments, Net of Dividends or Distributions",
+            "value": -198000,
+            "concept": "IncomeLossFromEquityMethodInvestmentsNetOfDividendsOrDistributions"
+          },
+          {
+            "unit": "usd",
+            "label": "Deferred Income Tax Expense (Benefit)",
+            "value": 4520000,
+            "concept": "DeferredIncomeTaxExpenseBenefit"
+          },
+          {
+            "unit": "usd",
+            "label": "Share-based Compensation",
+            "value": 15535000,
+            "concept": "ShareBasedCompensation"
+          },
+          {
+            "unit": "usd",
+            "label": "Unrealized Gain (Loss) on Derivatives",
+            "value": 5920000,
+            "concept": "UnrealizedGainLossOnDerivatives"
+          },
+          {
+            "unit": "usd",
+            "label": "Increase (Decrease) in Accounts Receivable",
+            "value": -389289000,
+            "concept": "IncreaseDecreaseInAccountsReceivable"
+          },
+          {
+            "unit": "usd",
+            "label": "Increase (Decrease) in Inventories",
+            "value": 195575000,
+            "concept": "IncreaseDecreaseInInventories"
+          },
+          {
+            "unit": "usd",
+            "label": "Increase (Decrease) in Income Taxes Receivable",
+            "value": -51034000,
+            "concept": "IncreaseDecreaseInIncomeTaxesReceivable"
+          },
+          {
+            "unit": "usd",
+            "label": "Increase (Decrease) in Prepaid, Deferred Expense and Other Assets",
+            "value": -7778000,
+            "concept": "IncreaseDecreaseInPrepaidDeferredExpenseAndOtherAssets"
+          },
+          {
+            "unit": "usd",
+            "label": "Increase (Decrease) in Accounts Payable",
+            "value": -297080000,
+            "concept": "IncreaseDecreaseInAccountsPayable"
+          },
+          {
+            "unit": "usd",
+            "label": "Increase (Decrease) in Accrued Income Taxes Payable",
+            "value": 182468000,
+            "concept": "IncreaseDecreaseInAccruedIncomeTaxesPayable"
+          },
+          {
+            "unit": "usd",
+            "label": "Increase (Decrease) in Accrued Liabilities",
+            "value": 28999000,
+            "concept": "IncreaseDecreaseInAccruedLiabilities"
+          },
+          {
+            "unit": "usd",
+            "label": "Increase (Decrease) in Deferred Charges",
+            "value": 27985000,
+            "concept": "IncreaseDecreaseInDeferredCharges"
+          },
+          {
+            "unit": "usd",
+            "label": "Adjustments, Noncash Items, to Reconcile Net Income (Loss) to Cash Provided by (Used in) Operating Activities, Other",
+            "value": 5707000,
+            "concept": "AdjustmentsNoncashItemsToReconcileNetIncomeLossToCashProvidedByUsedInOperatingActivitiesOther"
+          },
+          {
+            "unit": "usd",
+            "label": "Net Cash Provided by (Used in) Operating Activities [Abstract]",
+            "value": 1089203000,
+            "concept": "NetCashProvidedByUsedInOperatingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Payments to Acquire Property, Plant, and Equipment",
+            "value": 242730000,
+            "concept": "PaymentsToAcquirePropertyPlantAndEquipment"
+          },
+          {
+            "unit": "usd",
+            "label": "Cash Acquired from Acquisition",
+            "value": 872158000,
+            "concept": "CashAcquiredFromAcquisition"
+          },
+          {
+            "unit": "usd",
+            "label": "Payments for (Proceeds from) Investments",
+            "value": 9125000,
+            "concept": "PaymentsForProceedsFromInvestments"
+          },
+          {
+            "unit": "usd",
+            "label": "Payments to Acquire Available-for-sale Securities",
+            "value": 370042000,
+            "concept": "PaymentsToAcquireAvailableForSaleSecurities"
+          },
+          {
+            "unit": "usd",
+            "label": "Proceeds from Sale and Maturity of Available-for-sale Securities",
+            "value": 194386000,
+            "concept": "ProceedsFromSaleAndMaturityOfAvailableForSaleSecurities"
+          },
+          {
+            "unit": "usd",
+            "label": "Net Cash Provided by (Used in) Investing Activities [Abstract]",
+            "value": 413154000,
+            "concept": "NetCashProvidedByUsedInInvestingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Principal tender on eight point five percent senior notes",
+            "value": -15000,
+            "concept": "hoc:PrincipalTenderOnEightPointFivePercentSeniorNotes"
+          },
+          {
+            "unit": "usd",
+            "label": "Repayments under financing obligation - Holly Corporation",
+            "value": 857000,
+            "concept": "RepaymentsOfOtherLongTermDebt"
+          },
+          {
+            "unit": "usd",
+            "label": "Payments for Repurchase of Common Stock",
+            "value": 38955000,
+            "concept": "PaymentsForRepurchaseOfCommonStock"
+          },
+          {
+            "unit": "usd",
+            "label": "Proceeds from Noncontrolling Interests",
+            "value": 27500000,
+            "concept": "ProceedsFromMinorityShareholders"
+          },
+          {
+            "unit": "usd",
+            "label": "Payments of Dividends, Common Stock",
+            "value": 129377000,
+            "concept": "PaymentsOfDividendsCommonStock"
+          },
+          {
+            "unit": "usd",
+            "label": "Payments Of Distribution To Noncontrolling Interest.",
+            "value": 37929000,
+            "concept": "hoc:PaymentsOfDistributionToNoncontrollingInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Excess Tax Benefit from Share-based Compensation, Financing Activities",
+            "value": 1399000,
+            "concept": "ExcessTaxBenefitFromShareBasedCompensationFinancingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Payments for Repurchase of Other Equity",
+            "value": 1641000,
+            "concept": "PaymentsForRepurchaseOfOtherEquity"
+          },
+          {
+            "unit": "usd",
+            "label": "Payments of Financing Costs",
+            "value": 11724000,
+            "concept": "PaymentsOfFinancingCosts"
+          },
+          {
+            "unit": "usd",
+            "label": "Net Cash Provided by (Used in) Financing Activities [Abstract]",
+            "value": -148599000,
+            "concept": "NetCashProvidedByUsedInFinancingActivities"
+          },
+          {
+            "unit": "usd",
+            "label": "Cash and Cash Equivalents, Period Increase (Decrease) [Abstract]",
+            "value": 1353758000,
+            "concept": "CashAndCashEquivalentsPeriodIncreaseDecrease"
+          },
+          {
+            "unit": "usd",
+            "label": "Interest Paid",
+            "value": 50570000,
+            "concept": "InterestPaid"
+          },
+          {
+            "unit": "usd",
+            "label": "Income Taxes Paid",
+            "value": 225499000,
+            "concept": "IncomeTaxesPaid"
+          }
+        ],
+        "ic": [
+          {
+            "unit": "usd",
+            "label": "Refining and Marketing Revenue",
+            "value": 10467116000,
+            "concept": "RefiningAndMarketingRevenue"
+          },
+          {
+            "unit": "usd",
+            "label": "Refining and Marketing Costs",
+            "value": 8421639000,
+            "concept": "RefiningAndMarketingCosts"
+          },
+          {
+            "unit": "usd",
+            "label": "Operating Costs and Expenses",
+            "value": 501971000,
+            "concept": "OperatingCostsAndExpenses"
+          },
+          {
+            "unit": "usd",
+            "label": "General and Administrative Expense",
+            "value": 78641000,
+            "concept": "GeneralAndAdministrativeExpense"
+          },
+          {
+            "unit": "usd",
+            "label": "Depreciation, Depletion and Amortization",
+            "value": 106380000,
+            "concept": "DepreciationDepletionAndAmortization"
+          },
+          {
+            "unit": "usd",
+            "label": "Costs and Expenses [Abstract]",
+            "value": 9108631000,
+            "concept": "CostsAndExpenses"
+          },
+          {
+            "unit": "usd",
+            "label": "Operating Income (Loss)",
+            "value": 1358485000,
+            "concept": "OperatingIncomeLoss"
+          },
+          {
+            "unit": "usd",
+            "label": "Earnings of equity method investments",
+            "value": 1739000,
+            "concept": "IncomeLossFromEquityMethodInvestments"
+          },
+          {
+            "unit": "usd",
+            "label": "Investment Income, Interest",
+            "value": 946000,
+            "concept": "InvestmentIncomeInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Interest Expense",
+            "value": 56471000,
+            "concept": "InterestExpense"
+          },
+          {
+            "unit": "usd",
+            "label": "Payments for Merger Related Costs",
+            "value": -15114000,
+            "concept": "PaymentsForMergerRelatedCosts"
+          },
+          {
+            "unit": "usd",
+            "label": "Nonoperating Income (Expense) [Abstract]",
+            "value": -68900000,
+            "concept": "NonoperatingIncomeExpense"
+          },
+          {
+            "unit": "usd",
+            "label": "Income before income taxes.",
+            "value": 1289585000,
+            "concept": "hoc:IncomeBeforeIncomeTaxes"
+          },
+          {
+            "unit": "usd",
+            "label": "Current Income Tax Expense (Benefit)",
+            "value": 461210000,
+            "concept": "CurrentIncomeTaxExpenseBenefit"
+          },
+          {
+            "unit": "usd",
+            "label": "Deferred Income Tax Expense (Benefit)",
+            "value": 4520000,
+            "concept": "DeferredIncomeTaxExpenseBenefit"
+          },
+          {
+            "unit": "usd",
+            "label": "Income Taxes [Abstract]",
+            "value": 465730000,
+            "concept": "IncomeTaxExpenseBenefit"
+          },
+          {
+            "unit": "usd",
+            "label": "Net Income (Loss), Including Portion Attributable to Noncontrolling Interest",
+            "value": 823855000,
+            "concept": "ProfitLoss"
+          },
+          {
+            "unit": "usd",
+            "label": "Net Income (Loss) Attributable to Noncontrolling Interest",
+            "value": 23838000,
+            "concept": "NetIncomeLossAttributableToNoncontrollingInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Net Income (Loss) Attributable to Noncontrolling Interest",
+            "value": 800017000,
+            "concept": "NetIncomeLoss"
+          },
+          {
+            "unit": "usd/shares",
+            "label": "Earnings Per Share, Basic",
+            "value": 5.66,
+            "concept": "EarningsPerShareBasic"
+          },
+          {
+            "unit": "usd/shares",
+            "label": "Earnings Per Share, Diluted",
+            "value": 5.63,
+            "concept": "EarningsPerShareDiluted"
+          },
+          {
+            "unit": "usd/shares",
+            "label": "Common Stock, Dividends, Per Share, Declared",
+            "value": 1.24,
+            "concept": "CommonStockDividendsPerShareDeclared"
+          },
+          {
+            "unit": "shares",
+            "label": "Weighted Average Number of Shares Outstanding, Basic",
+            "value": 141353000,
+            "concept": "WeightedAverageNumberOfSharesOutstandingBasic"
+          },
+          {
+            "unit": "shares",
+            "label": "Weighted Average Number of Shares Outstanding, Diluted",
+            "value": 142092000,
+            "concept": "WeightedAverageNumberOfDilutedSharesOutstanding"
+          },
+          {
+            "unit": "usd",
+            "label": "Other Comprehensive Income, Unrealized Holding Gain (Loss) on Securities Arising During Period, before Tax",
+            "value": -1032000,
+            "concept": "OtherComprehensiveIncomeUnrealizedHoldingGainLossOnSecuritiesArisingDuringPeriodBeforeTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Other Comprehensive Income, Reclassification Adjustment for Sale of Securities Included in Net Income, before Tax",
+            "value": -60000,
+            "concept": "OtherComprehensiveIncomeReclassificationAdjustmentForSaleOfSecuritiesIncludedInNetIncomeBeforeTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Other Comprehensive Income Net Unrealized Holding Gain Loss On Securities Arising During Period",
+            "value": -972000,
+            "concept": "hoc:OtherComprehensiveIncomeNetUnrealizedHoldingGainLossOnSecuritiesArisingDuringPeriod"
+          },
+          {
+            "unit": "usd",
+            "label": "Other Comprehensive Income, Unrealized Gain (Loss) on Derivatives Arising During Period, before Tax",
+            "value": 24864000,
+            "concept": "OtherComprehensiveIncomeUnrealizedGainLossOnDerivativesArisingDuringPeriodBeforeTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Other Comprehensive Income, Derivatives Qualifying as Hedges, before Tax [Abstract]",
+            "value": 24864000,
+            "concept": "OtherComprehensiveIncomeDerivativesQualifyingAsHedgesBeforeTaxPeriodIncreaseDecrease"
+          },
+          {
+            "unit": "usd",
+            "label": "Other Comprehensive Income (Loss), Retirement Medical Obligation Adjustment, before Tax",
+            "value": 9000,
+            "concept": "hoc:OtherComprehensiveIncomeLossRetirementMedicalObligationAdjustmentBeforeTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Other Comprehensive Income (Loss), before Tax [Abstract]",
+            "value": 23901000,
+            "concept": "OtherComprehensiveIncomeLossBeforeTaxPeriodIncreaseDecrease"
+          },
+          {
+            "unit": "usd",
+            "label": "Other Comprehensive Income (Loss), Tax",
+            "value": 8618000,
+            "concept": "OtherComprehensiveIncomeLossTax"
+          },
+          {
+            "unit": "usd",
+            "label": "Other Comprehensive Income (Loss), Net of Tax",
+            "value": 15283000,
+            "concept": "OtherComprehensiveIncomeLossNetOfTaxPeriodIncreaseDecrease"
+          },
+          {
+            "unit": "usd",
+            "label": "Comprehensive Income, Net of Tax, Including Portion Attributable to Noncontrolling Interest",
+            "value": 839138000,
+            "concept": "ComprehensiveIncomeNetOfTaxIncludingPortionAttributableToNoncontrollingInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Comprehensive Income, Net of Tax, Attributable to Noncontrolling Interest",
+            "value": 25575000,
+            "concept": "ComprehensiveIncomeNetOfTaxAttributableToNoncontrollingInterest"
+          },
+          {
+            "unit": "usd",
+            "label": "Comprehensive Income, Net of Tax, Including Portion Attributable to Noncontrolling Interest",
+            "value": 813563000,
+            "concept": "ComprehensiveIncomeNetOfTax"
+          }
+        ]
+      }
+    }
+  ],
+  "symbol": "HFC",
+  "_ticker": "HFC",
+  "_downloaded_at": "2026-04-06T14:52:50.568256"
+}

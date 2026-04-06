@@ -144,6 +144,7 @@ class YahooClient:
 		self.session = requests.Session()
 		self.session.headers.update(self.HEADERS)
 		self._last_call = 0.0
+		self.last_status_code: int | None = None
 
 	def _dt(self, date_str: str) -> int:
 		return int(datetime.strptime(date_str, "%Y-%m-%d").timestamp())
@@ -166,6 +167,7 @@ class YahooClient:
 		try:
 			resp = self.session.get(url, params=params, timeout=20)
 			self._last_call = time.time()
+			self.last_status_code = int(resp.status_code)
 
 			if resp.status_code == 429:
 				log.warning(f"[{ticker}] Yahoo rate limit — esperando 30 s...")

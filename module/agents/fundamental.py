@@ -25,7 +25,7 @@ from module.steps.step_04_evaluation.explainability import build_explainer_for_a
 from environment import (
     FUNDAMENTAL_N_ESTIMATORS, FUNDAMENTAL_MAX_DEPTH, FUNDAMENTAL_LEARNING_RATE,
     FUNDAMENTAL_SUBSAMPLE, FUNDAMENTAL_COLSAMPLE, FUNDAMENTAL_MIN_CHILD_WEIGHT,
-    FEATURE_CORR_THRESHOLD, FUNDAMENTAL_FEATURE_TOP_N,
+    FEATURE_CORR_THRESHOLD, FEATURE_TOP_N,
     FUNDAMENTAL_FEATURE_COLUMNS, FUNDAMENTAL_FEATURE_EXCLUDE,
 )
 
@@ -87,7 +87,7 @@ class FundamentalAgent(BaseAgent):
         y_cl         = y_cl.reset_index(drop=True)
 
         # Selección de features: solo con datos de train (sin leakage)
-        self._selector = FeatureSelector(corr_threshold=FEATURE_CORR_THRESHOLD, top_n=FUNDAMENTAL_FEATURE_TOP_N,
+        self._selector = FeatureSelector(corr_threshold=FEATURE_CORR_THRESHOLD, top_n=FEATURE_TOP_N,
                                          min_features=3, random_seed=self.random_seed,
                                          zsector_pair_policy="force_zsector")
         X_prep = self._selector.fit_transform(X_prep, y_cl, agent_name="fundamental")

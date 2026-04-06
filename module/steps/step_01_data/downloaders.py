@@ -114,13 +114,39 @@ def download_prices(
     prices_path = ticker_dir / "prices.json"
     if registry_lock:
         with registry_lock:
+            if not force and registry.is_terminal_failure(ticker, endpoint):
+                return "skip_terminal"
             if not force and registry.is_done(ticker, endpoint) and prices_path.exists():
                 return "skip"
-    elif not force and registry.is_done(ticker, endpoint) and prices_path.exists():
-        return "skip"
+    else:
+        if not force and registry.is_terminal_failure(ticker, endpoint):
+            return "skip_terminal"
+        if not force and registry.is_done(ticker, endpoint) and prices_path.exists():
+            return "skip"
 
     data = yahoo.ohlcv(ticker, start, end)
     if not data or not data.get("data"):
+        status_code = getattr(yahoo, "last_status_code", None)
+        # 404 suele indicar ticker inexistente/delistado en Yahoo para ese símbolo.
+        # Lo marcamos como fallo terminal para no reintentar en cada ejecución.
+        if status_code == 404:
+            if registry_lock:
+                with registry_lock:
+                    registry.mark_failed(
+                        ticker,
+                        endpoint,
+                        terminal=True,
+                        reason="yahoo_not_found",
+                        status_code=404,
+                    )
+            else:
+                registry.mark_failed(
+                    ticker,
+                    endpoint,
+                    terminal=True,
+                    reason="yahoo_not_found",
+                    status_code=404,
+                )
         return "nodata"
 
     payload = {**_meta(ticker), "start": start, "end": end, "source": "yahoo_v8", **data}

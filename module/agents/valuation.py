@@ -21,7 +21,7 @@ from module.common.feature_controls import resolve_feature_columns
 from module.steps.step_04_evaluation.explainability import build_explainer_for_agent, AgentExplainer
 from environment import (
     VALUATION_N_ESTIMATORS, VALUATION_MAX_DEPTH, VALUATION_LEARNING_RATE,
-    VALUATION_SUBSAMPLE, FEATURE_CORR_THRESHOLD, VALUATION_FEATURE_TOP_N,
+    VALUATION_SUBSAMPLE, FEATURE_CORR_THRESHOLD, FEATURE_TOP_N,
     VALUATION_FEATURE_COLUMNS, VALUATION_FEATURE_EXCLUDE,
 )
 
@@ -77,7 +77,7 @@ class ValuationAgent(BaseAgent):
         y_cl         = y_cl.reset_index(drop=True)
 
         # Selección de features: solo con datos de train (sin leakage)
-        self._selector = FeatureSelector(corr_threshold=FEATURE_CORR_THRESHOLD, top_n=VALUATION_FEATURE_TOP_N,
+        self._selector = FeatureSelector(corr_threshold=FEATURE_CORR_THRESHOLD, top_n=FEATURE_TOP_N,
                                          min_features=3, random_seed=self.random_seed,
                                          zsector_pair_policy="force_zsector")
         X_prep = self._selector.fit_transform(X_prep, y_cl, agent_name="valuation")

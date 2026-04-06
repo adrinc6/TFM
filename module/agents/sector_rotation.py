@@ -28,7 +28,7 @@ import pandas as pd
 from typing import Dict, List, Optional
 
 from module.agents.base import BaseAgent, FeatureSelector
-from environment import FEATURE_CORR_THRESHOLD
+from environment import FEATURE_CORR_THRESHOLD, FEATURE_TOP_N
 from module.common.feature_controls import resolve_feature_columns
 from environment import SECTOR_ROTATION_FEATURE_COLUMNS, SECTOR_ROTATION_FEATURE_EXCLUDE
 
@@ -49,8 +49,6 @@ _N_ESTIMATORS = 200
 _MAX_DEPTH = 3
 _LEARNING_RATE = 0.05
 _SUBSAMPLE = 0.8
-_FEATURE_TOP_N = 10
-
 
 class SectorRotationAgent(BaseAgent):
     """
@@ -122,7 +120,7 @@ class SectorRotationAgent(BaseAgent):
 
         self._selector = FeatureSelector(
             corr_threshold=FEATURE_CORR_THRESHOLD,
-            top_n=_FEATURE_TOP_N,
+            top_n=FEATURE_TOP_N,
             min_features=3,
             random_seed=self.random_seed,
         )

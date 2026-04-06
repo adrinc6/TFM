@@ -22,7 +22,7 @@ from module.common.feature_controls import resolve_feature_columns
 from module.steps.step_04_evaluation.explainability import AgentExplainer, build_explainer_for_agent
 from environment import (
     SENTIMENT_N_ESTIMATORS, SENTIMENT_MAX_DEPTH, SENTIMENT_MIN_SAMPLES_LEAF,
-    FEATURE_CORR_THRESHOLD, SENTIMENT_FEATURE_TOP_N,
+    FEATURE_CORR_THRESHOLD, FEATURE_TOP_N,
     SENTIMENT_FEATURE_COLUMNS, SENTIMENT_FEATURE_EXCLUDE,
 )
 
@@ -138,7 +138,7 @@ class SentimentAgent(BaseAgent):
         # Selección de features
         self._selector = FeatureSelector(
             corr_threshold=FEATURE_CORR_THRESHOLD,
-            top_n=SENTIMENT_FEATURE_TOP_N,
+            top_n=FEATURE_TOP_N,
             min_features=5,
             random_seed=self.random_seed,
         )

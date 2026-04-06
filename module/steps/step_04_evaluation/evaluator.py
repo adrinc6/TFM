@@ -18,6 +18,7 @@ from environment import (
     PORTFOLIO_MIN_SCORE,
     RUN_ABLATION_STUDY,
     SECTOR_ZSCORE_MIN_PEERS,
+    WALKFORWARD_TRAIN_MIN_YEARS,
     MIN_TEST_TICKERS_PERCENT,
     ENABLE_FALLBACK_EXTRAPOLATION,
     FALLBACK_LOOK_BACK_QUARTERS,
@@ -228,6 +229,40 @@ def _prepare_fold_frames_by_filed_quarter(
 
     test_filed_dates = pd.Series(filed_dates[test_mask].values, index=df_test.index)
     return df_train, df_test, test_filed_dates
+
+
+def _filter_fold_tickers_by_history_span(
+    df_train: pd.DataFrame,
+    df_test: pd.DataFrame,
+    required_years: int,
+) -> tuple[pd.DataFrame, pd.DataFrame, list[str]]:
+    """Keep only test tickers with at least required_years of train-history span."""
+    if df_train.empty or df_test.empty:
+        return df_train.iloc[0:0], df_test.iloc[0:0], []
+
+    train_tickers = pd.Index(df_train.index.get_level_values("ticker")).astype(str)
+    test_tickers = pd.Index(df_test.index.get_level_values("ticker")).astype(str)
+
+    if "year_quarter" in df_train.columns:
+        train_quarters = pd.PeriodIndex(df_train["year_quarter"], freq="Q")
+    else:
+        train_quarters = pd.PeriodIndex(df_train.index.get_level_values("date"), freq="Q")
+
+    temp = pd.DataFrame({"ticker": train_tickers.values, "q": train_quarters})
+    span = temp.groupby("ticker")["q"].agg(["min", "max"])
+    span_quarters = span["max"].astype(int) - span["min"].astype(int) + 1
+    required_quarters = max(1, int(required_years) * 4)
+    eligible_train = set(span_quarters[span_quarters >= required_quarters].index.astype(str))
+
+    eligible_test = [
+        tk for tk in pd.Index(test_tickers).unique().tolist()
+        if tk in eligible_train
+    ]
+    eligible_set = set(eligible_test)
+
+    train_mask = pd.Index(df_train.index.get_level_values("ticker")).astype(str).isin(eligible_set)
+    test_mask = pd.Index(df_test.index.get_level_values("ticker")).astype(str).isin(eligible_set)
+    return df_train.loc[train_mask].copy(), df_test.loc[test_mask].copy(), sorted(eligible_test)
 
 
 def _extrapolate_missing_snapshots(
@@ -789,6 +824,21 @@ def run_walkforward_pipeline(
     total_strategy_fees_usd = 0.0
 
     total_universe_tickers = int(df.index.get_level_values("ticker").nunique())
+    min_test_tickers_required = int(np.ceil(total_universe_tickers * MIN_TEST_TICKERS_PERCENT / 100.0))
+    max_train_years = int(walkforward_train_years)
+    min_train_years = int(WALKFORWARD_TRAIN_MIN_YEARS)
+    if max_train_years < min_train_years:
+        max_train_years, min_train_years = min_train_years, max_train_years
+
+    log.info(
+        "[WalkForward] Ventana train dinámica activada: max=%sY -> min=%sY | mínimo test=%s tickers (%s%% de %s)",
+        max_train_years,
+        min_train_years,
+        min_test_tickers_required,
+        MIN_TEST_TICKERS_PERCENT,
+        total_universe_tickers,
+    )
+
     filing_date_map = _build_filing_date_map(
         finnhub_data_dir=finnhub_data_dir,
         tickers=df.index.get_level_values("ticker").unique().tolist(),
@@ -816,7 +866,7 @@ def run_walkforward_pipeline(
                 return True
         return False
 
-    for fold_id, (train_start, train_end, test_end, _train_years) in enumerate(folds, 1):
+    for fold_id, (_fold_train_start, train_end, _test_end, _fold_train_years) in enumerate(folds, 1):
         analysis_quarter = train_end.to_period("Q")
 
         q_start = analysis_quarter.start_time.normalize()
@@ -840,6 +890,72 @@ def run_walkforward_pipeline(
 
         run_id = analysis_quarter_label
 
+        selected_train_years: Optional[int] = None
+        selected_train_start: Optional[pd.Timestamp] = None
+        selected_df_train: Optional[pd.DataFrame] = None
+        selected_df_test: Optional[pd.DataFrame] = None
+        selected_test_filed_dates: Optional[pd.Series] = None
+
+        for candidate_years in range(max_train_years, min_train_years - 1, -1):
+            candidate_train_start = train_end - pd.DateOffset(years=int(candidate_years))
+            candidate_train_start_quarter = candidate_train_start.to_period("Q")
+
+            cand_train, cand_test, cand_test_filed_dates = _prepare_fold_frames_by_filed_quarter(
+                df=df,
+                filing_date_map=filing_date_map,
+                train_start_quarter=candidate_train_start_quarter,
+                analysis_quarter=analysis_quarter,
+                fallback_lag_days=45,
+            )
+
+            if ENABLE_FALLBACK_EXTRAPOLATION:
+                cand_test = _extrapolate_missing_snapshots(
+                    df=df,
+                    df_test=cand_test,
+                    analysis_quarter=analysis_quarter,
+                    filing_date_map=filing_date_map,
+                    lookback_quarters=FALLBACK_LOOK_BACK_QUARTERS,
+                    snapshot_lag_days=resolved_snapshot_lag_days,
+                )
+
+            cand_train, cand_test, eligible_tickers = _filter_fold_tickers_by_history_span(
+                df_train=cand_train,
+                df_test=cand_test,
+                required_years=int(candidate_years),
+            )
+
+            test_tickers_count = int(cand_test.index.get_level_values("ticker").nunique()) if not cand_test.empty else 0
+            test_tickers_pct = (100.0 * test_tickers_count / total_universe_tickers) if total_universe_tickers > 0 else 0.0
+            log.info(
+                f"[{run_id}] Intento train={candidate_years}Y -> test elegible {test_tickers_count}/{total_universe_tickers} "
+                f"({test_tickers_pct:.1f}%) | min requerido={min_test_tickers_required}"
+            )
+
+            if test_tickers_count >= min_test_tickers_required:
+                selected_train_years = int(candidate_years)
+                selected_train_start = pd.Timestamp(candidate_train_start)
+                selected_df_train = cand_train
+                selected_df_test = cand_test
+                selected_test_filed_dates = cand_test_filed_dates
+                log.info(
+                    f"[{run_id}] Ventana seleccionada: {selected_train_years}Y "
+                    f"({selected_train_start.date()} -> {train_end.date()}) | tickers elegibles={len(eligible_tickers)}"
+                )
+                break
+
+        if selected_df_train is None or selected_df_test is None or selected_train_years is None or selected_train_start is None:
+            log.warning(
+                f"[{run_id}] No se alcanzó cobertura mínima de test ({MIN_TEST_TICKERS_PERCENT}%) "
+                f"ni reduciendo train hasta {min_train_years}Y — fold omitido."
+            )
+            continue
+
+        train_start = selected_train_start
+        _train_years = selected_train_years
+        df_train = selected_df_train
+        df_test = selected_df_test
+        test_filed_dates = selected_test_filed_dates
+
         log.info(f"\n{'='*60}")
         log.info(f"  ANALISIS {run_id}")
         log.info(f"  Train : {train_start.date()} → {train_end.date()}  ({_train_years} años)")
@@ -850,40 +966,6 @@ def run_walkforward_pipeline(
             f"(Q{analysis_quarter.quarter} start + {lag_days}d)"
         )
         log.info(f"{'='*60}")
-
-        train_start_quarter = train_start.to_period("Q")
-        df_train, df_test, test_filed_dates = _prepare_fold_frames_by_filed_quarter(
-            df=df,
-            filing_date_map=filing_date_map,
-            train_start_quarter=train_start_quarter,
-            analysis_quarter=analysis_quarter,
-            fallback_lag_days=45,
-        )
-        
-        # Aplicar extrapolación de features si está habilitada
-        if ENABLE_FALLBACK_EXTRAPOLATION:
-            df_test = _extrapolate_missing_snapshots(
-                df=df,
-                df_test=df_test,
-                analysis_quarter=analysis_quarter,
-                filing_date_map=filing_date_map,
-                lookback_quarters=FALLBACK_LOOK_BACK_QUARTERS,
-                snapshot_lag_days=resolved_snapshot_lag_days,
-            )
-        test_tickers_count = int(df_test.index.get_level_values("ticker").nunique()) if not df_test.empty else 0
-        test_tickers_pct = (100.0 * test_tickers_count / total_universe_tickers) if total_universe_tickers > 0 else 0.0
-        log.info(
-            f"[{run_id}] Universo test: {test_tickers_count}/{total_universe_tickers} tickers "
-            f"({test_tickers_pct:.1f}%)"
-        )
-        # Calcular dinámicamente el mínimo requerido basado en porcentaje del universo total
-        min_test_tickers_required = int(total_universe_tickers * MIN_TEST_TICKERS_PERCENT / 100.0)
-        if test_tickers_count < min_test_tickers_required:
-            log.warning(
-                f"[{run_id}] Test insuficiente: {test_tickers_count} < {min_test_tickers_required} "
-                f"(mínimo {MIN_TEST_TICKERS_PERCENT}% de {total_universe_tickers}) — fold omitido."
-            )
-            continue
 
         # Calcular entry_date: desde el primer día del quarter + lag configurado
         

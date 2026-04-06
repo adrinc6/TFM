@@ -84,10 +84,25 @@ PLOTS_DIR            = os.path.join(RESULTS_DIR, "plots")
 # =============================================================================
 # 4. Universo de tickers
 # =============================================================================
-# Lista de tickers a analizar. Edita aquí para cambiar el universo.
+# Lista manual de fallback (legacy).
+# Nota: por defecto el pipeline usa universo dinámico desde sp500_historic.csv.
+# Esta lista solo se usa si desactivas USE_DYNAMIC_SP500_UNIVERSE.
 TICKERS = [
     "NVDA","AAPL","MSFT","AMZN","GOOGL","GOOG","META","AVGO","TSLA","BRK-B","WMT","LLY","JPM","XOM","V","JNJ","MU","COST","MA","ORCL","NFLX","CVX","ABBV","PLTR","PG","BAC","HD","KO","AMD","CAT","GE","CSCO","MRK","LRCX","AMAT","RTX","PM","UNH","MS","GS","IBM","WFC","GEV","TMUS","LIN","MCD","INTC","PEP","VZ","AXP","KLAC","T","NEE","C","AMGN","ABT","CRM","DIS","GILD","TXN","TMO","ANET","TJX","ISRG","SCHW","BA","UBER","APH","DE","PFE","COP","BLK","ADI","LMT","APP","HON","WELL","UNP","QCOM","BKNG","ETN","PANW","DHR","SYK","LOW","CB","SPGI","INTU","PLD","ACN","BMY","NOW","PGR","PH","VRTX","CEG","MCK","MDT","COF","HCA","CME","CRWD","GLW","MO","NEM","SO","SBUX","BSX","SNDK","CMCSA","NOC","DUK","WDC","ADBE","DELL","HWM","EQIX","GD","WM","TT","CVS","STX","WMB","ICE","BX","MAR","PWR","ADP","AMT","MRSH","JCI","UPS","FDX","SNPS","PNC","USB","KKR","CDNS","REGN","BK","NKE","ABNB","MCO","SHW","MSI","FCX","MMM","ITW","CTAS","CMI","ECL","EOG","ORLY","CSX","MNST","RCL","EMR","KMI","MDLZ","VLO","DASH","AEP","CL","CI","MPC","PSX","TDG","RSG","LHX","SLB","HLT","AON","WBD","ROST","HOOD","CRH","GM","ELV","TRV","APO","NSC","COR","APD","FTNT","SRE","SPG","DLR","PCAR","O","OXY","TEL","BKR","VST","AFL","AZO","TFC","D","OKE","CIEN","FANG","AJG","CTVA","COIN","ALL","MPWR","ADSK","TGT","FAST","EXC","TRGP","EA","CAH","XEL","FIX","ZTS","GWW","PSA","AME","KEYS","NXPI","NDAQ","CARR","EW","ETR","F","DDOG","TER","URI","IDXX","BDX","KR","MET","GRMN","YUM","HSY","PEG","CMG","CVNA","DAL","EBAY","ED","AXON","PYPL","MSCI","VTR","WAB","EQT","PCG","AMP","DHI","ROK","AIG","CBRE","FITB","SYY","ODFL","TTWO","WEC","LYV","CCI","TPL","NUE","KDP","HIG","ROP","LVS","MCHP","WDAY","XYZ","MLM","ADM","VMC","NRG","STT","CCL","KVUE","RMD","KMB","EME","ACGL","PAYX","PRU","IR","GEHC","CPRT","A","IRM","EL","ATO","OTIS","AEE","HAL","HBAN","FISV","IBKR","CBOE","DTE","DVN","UAL","VICI","TDY","WAT","FE","MTB","XYL","EXPE","CTSH","EXR","PPL","DOV","HPE","FICO","CNP","TPR","RJF","EIX","VRSK","DG","ES","IQV","WTW","JBL","DOW","AWK","BIIB","CHTR","STZ","KHC","DXCM","ROL","CTRA","EXE","FIS","HUBB","WRB","NTRS","CINF","LYB","STLD","TSCO","CFG","ARES","MTD","BG","Q","LEN","CMS","ON","OMC","AVB","DRI","ULTA","PPG","BRO","CHD","SYF","EQR","PHM","NI","VLTO","EFX","WSM","VRSN","LH","RF","L","DGX","TSN","DLTR","STE","FSLR","LDOS","RL","KEY","MRNA","BR","HUM","CHRW","CF","GIS","SW","NTAP","GPN","LUV","CPAY","LULU","EXPD","TROW","ALB","EVRG","IP","SBAC","PFG","SNA","PKG","INCY","LNT","JBHT","AMCR","SMCI","CSGP","DD","NVR","IFF","PTC","CNC","ZBH","WST","WY","FTV","HOLX","HPQ","LII","HII","PODD","BALL","FFIV","ESS","TXT","VTRS","AKAM","TKO","TRMB","KIM","J","INVH","CDW","MAA","APTV","NDSN","MKC","TYL","DECK","PNR","IEX","GPC","REG","COO","BBY","CLX","HST","APA","ALGN","HAS","EG","DPZ","AVY","ERIE","HRL","GEN","BEN","ALLE","MAS","DOC","PNW","JKHY","GNRC","SOLV","FOX","UHS","UDR","FOXA","IT","TTD","GDDY","SWK","SJM","GL","WYNN","AIZ","BF-B","IVZ","CPT","ZBRA","PSKY","AES","DVA","BLDR","RVTY","MGM","FRT","MOS","NCLH","AOS","NWSA","BAX","HSIC","ARE","BXP","SWKS","TECH","TAP","CRL","FDS","MOH","POOL","CAG","EPAM","MTCH","PAYC","CPB","LW","NWS"
-    ][:400]
+    ]
+
+# Universo dinámico S&P 500 (recomendado)
+# Si True, el pipeline ignora la lista manual TICKERS y construye el universo
+# desde data_finnhub/sp500_historic.csv en función del periodo analizado.
+USE_DYNAMIC_SP500_UNIVERSE = True
+
+# CSV de miembros históricos del S&P 500 (columnas: ticker,start_date,end_date)
+SP500_HISTORIC_CSV_PATH = os.path.join(FINNHUB_DATA_DIR, "sp500_historic.csv")
+
+# Número objetivo de tickers por año tras ranking por market cap histórico.
+# - Si pones 200/300/400: aplica Top-N anual por market cap y usa la unión.
+# - Si pones False o 0: usa todo el universo activo del rango sin recorte.
+SP500_DYNAMIC_TOP_N = False
 
 # =============================================================================
 # 5. Período de análisis
@@ -97,7 +112,7 @@ TICKERS = [
 DOWNLOAD_START_DATE = "2000-01-01"
 
 # Inicio del período de análisis/backtest walk-forward (quarters de snapshot a analizar).
-ANALYSIS_START_YEAR = 2023
+ANALYSIS_START_YEAR = 2015
 ANALYSIS_START_QUARTER = 3
 
 # Fin del período de análisis/backtest walk-forward.
@@ -186,8 +201,13 @@ TECHNICAL_LOOKBACK_DAYS = 300
 # 7. Walk-forward backtesting
 # =============================================================================
 
-# Ventana de entrenamiento del walk-forward, en años.
-WALKFORWARD_TRAIN_LOOKBACK_YEARS = 8
+# Ventana máxima de entrenamiento del walk-forward, en años.
+# El pipeline intentará este máximo y, si no cumple cobertura mínima de test,
+# reducirá progresivamente hasta WALKFORWARD_TRAIN_MIN_YEARS.
+WALKFORWARD_TRAIN_LOOKBACK_YEARS = 10
+
+# Límite inferior de ventana de entrenamiento dinámica del walk-forward.
+WALKFORWARD_TRAIN_MIN_YEARS = 5
 
 # Trimestres de test por fold (siempre 1)
 WALKFORWARD_TEST_QUARTERS = 1
@@ -195,7 +215,7 @@ WALKFORWARD_TEST_QUARTERS = 1
 # Mínimo de empresas en el universo de test de un fold.
 # Se calcula dinámicamenbte como un porcentaje del universo total de tickers.
 # Ejemplo: si hay 500 tickers totales, será 250 (50%).
-MIN_TEST_TICKERS_PERCENT = 50  # porcentaje del universo total
+MIN_TEST_TICKERS_PERCENT = 80  # porcentaje del universo total
 
 # Tasa libre de riesgo anualizada para Sharpe / Sortino
 RISK_FREE_RATE = 0.04
@@ -379,17 +399,13 @@ FEATURE_SELECTOR_RF_MAX_DEPTH = 5
 FEATURE_IMPORTANCE_CUTOFF_FRACTION = 0.50
 FEATURE_IMPORTANCE_MIN_KEEP = 4
 FEATURE_IMPORTANCE_MAX_KEEP = 10
-# Top-N features por agente. Los agentes con más señales legítimas usan más.
-# FundamentalAgent: ~30 ratios candidatos → 12 para no perder señal.
-# MomentumAgent: técnicos + earnings momentum → 12.
-# ValuationAgent, BearAgent, SentimentAgent: universos más acotados → 8.
-# MetaLearner: solo scores de agentes + interacciones → sin límite estricto (20).
-FEATURE_TOP_N             = 8   # default si el agente no especifica uno propio
-FUNDAMENTAL_FEATURE_TOP_N = 12
-MOMENTUM_FEATURE_TOP_N    = 12
-VALUATION_FEATURE_TOP_N   = 8
-BEAR_FEATURE_TOP_N        = 8
-SENTIMENT_FEATURE_TOP_N   = 8
+# Top-N global para el pre-filtrado del FeatureSelector (todos los agentes).
+# La selección FINAL en todos los agentes se controla uniformemente por:
+#   - FEATURE_IMPORTANCE_CUTOFF_FRACTION = 0.50
+#   - FEATURE_IMPORTANCE_MIN_KEEP = 4
+#   - FEATURE_IMPORTANCE_MAX_KEEP = 10
+# Estos límites garantizan que todos los agentes usen entre 4 y 10 features finales.
+FEATURE_TOP_N = 14
 
 # ── MetaLearner (LR + GBM stacking) ──────────────────────────────────────────
 META_LR_C             = 0.5

@@ -32,12 +32,54 @@ class Registry:
             json.dump(self._data, f, indent=2, ensure_ascii=False)
 
     def is_done(self, group: str, endpoint: str) -> bool:
-        return endpoint in self._data.get(group, {})
+        entry = self._data.get(group, {}).get(endpoint)
+        if entry is None:
+            return False
+        # Legacy format: plain timestamp string means successful completion.
+        if isinstance(entry, str):
+            return True
+        if isinstance(entry, dict):
+            return bool(entry.get("status") == "ok")
+        return False
+
+    def get_endpoint_entry(self, group: str, endpoint: str):
+        return self._data.get(group, {}).get(endpoint)
+
+    def is_terminal_failure(self, group: str, endpoint: str) -> bool:
+        entry = self.get_endpoint_entry(group, endpoint)
+        if not isinstance(entry, dict):
+            return False
+        return bool(entry.get("status") == "failed" and entry.get("terminal", False))
 
     def mark_done(self, group: str, endpoint: str) -> None:
         if group not in self._data:
             self._data[group] = {}
-        self._data[group][endpoint] = datetime.utcnow().isoformat()
+        self._data[group][endpoint] = {
+            "status": "ok",
+            "updated_at": datetime.utcnow().isoformat(),
+        }
+        self.save()
+
+    def mark_failed(
+        self,
+        group: str,
+        endpoint: str,
+        *,
+        terminal: bool,
+        reason: str,
+        status_code: int | None = None,
+    ) -> None:
+        if group not in self._data:
+            self._data[group] = {}
+        payload = {
+            "status": "failed",
+            "terminal": bool(terminal),
+            "reason": str(reason),
+            "updated_at": datetime.utcnow().isoformat(),
+        }
+        if status_code is not None:
+            payload["status_code"] = int(status_code)
+        self._data[group][endpoint] = payload
         self.save()
 
     def clear(self, group: str | None = None, delete_file: bool = False) -> None:

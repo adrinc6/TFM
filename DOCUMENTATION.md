@@ -378,7 +378,14 @@ La idea es evitar que una señal antigua siga influyendo como si fuera actual.
 
 `forward_return` se calcula desde `snapshot_date` hasta `snapshot_date + HOLDING_PERIOD_MONTHS`.
 
-Luego, en training/evaluation, ese retorno se transforma en label relativo (outperformance sectorial por snapshot).
+Luego, en training/evaluation, ese retorno se transforma en label relativo.
+
+En el estado actual, para agentes base (todos menos `sector_rotation`) el modo por defecto es:
+
+- `BASE_AGENTS_LABEL_MODE = "vs_sector"`
+- `y = 1` si `forward_return` del ticker supera la mediana de su sector en ese snapshot quarter.
+
+Ademas, si en un sector/snapshot no hay peers suficientes (`BASE_LABEL_SECTOR_MIN_PEERS`), se aplica fallback a mediana del universo en ese snapshot.
 
 #### Por que no usar directamente el retorno bruto como label
 
@@ -488,6 +495,11 @@ Configuracion declarativa en `agent_config.py`:
 - `sentiment`
 - `sector_rotation` (entrenado por ruta separada)
 
+Objetivo de aprendizaje:
+
+- Agentes base (`fundamental`, `valuation`, `momentum`, `bear`, `sentiment`): predicen si la compania outperforma a su sector en el snapshot.
+- `sector_rotation`: predice si el sector outperforma al benchmark (SPY) en el quarter.
+
 #### Que hace cada agente a nivel logico
 
 - Fundamental: intenta detectar calidad y crecimiento sostenible.
@@ -495,7 +507,7 @@ Configuracion declarativa en `agent_config.py`:
 - Momentum: intenta capturar persistencia de precio.
 - Bear: intenta medir riesgo o comportamiento defensivo.
 - Sentiment: intenta capturar revision de analistas e informacion blanda.
-- Sector rotation: intenta identificar que sectores estan relativamente mejor posicionados.
+- Sector rotation: intenta identificar que sectores superaran al benchmark (SPY).
 
 La razon de separarlos es que no todas las senales se comportan igual. El ensamblado les permite aportar evidencia complementaria.
 

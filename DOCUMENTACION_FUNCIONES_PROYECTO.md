@@ -496,7 +496,7 @@
 
 ## module/steps/step_02_dataset/builders/valuation.py
 
-**Para qué sirve:** Construir features de valoración: múltiplos vs. histórico y sector.
+**Para qué sirve:** Construir features de valoración: múltiplos y señales EPS en escala absoluta e histórica.
 
 **Resultado:** ~12 variables que detectan si un precio está caro o barato.
 
@@ -621,16 +621,16 @@
 
 ## module/agents/valuation.py
 
-**Para qué sirve:** Módulo de análisis 3/5: detecta INFRAVALORACIÓN (múltiplos bajos vs. histórico y sector).
+**Para qué sirve:** Módulo de análisis 3/5: detecta INFRAVALORACIÓN (múltiplos/yields y relación vs. histórico propio).
 
-**Entrada:** P/E, P/B, P/S, EV/EBITDA vs. 5Y y percentil sectorial.
+**Entrada:** P/E, P/B, P/S, EV/EBITDA, FCF/earnings yield, señales EPS y ratios vs. mediana 5Y.
 **Salida:** Score [0,1] de "infravaloración".
 
 ### Clase `ValuationAgent`:
 
 **`fit(X, y, fold, sector_col)`**
 - Para qué: Entrenar.
-- Normalización: Calcula de media/desv de cada múltiplo POR SECTOR durante train → para usar en predicción.
+- Nota: ya no genera comparativas internas por percentil sectorial en valoración.
 
 ---
 
@@ -678,7 +678,7 @@
 
 ## module/agents/sector_rotation.py
 
-**Para qué sirve:** Módulo TOP-DOWN (complementario): predice si UN SECTOR entero va a outperformear en próximo trimestre.
+**Para qué sirve:** Módulo TOP-DOWN (complementario): predice si UN SECTOR entero va a outperformear al benchmark (SPY) en el próximo trimestre.
 
 **Uso:** Refuerza picks de tickers si su sector es alcista; las debilita si sector es bajista.
 
@@ -686,7 +686,7 @@
 
 **`fit()`**
 - Para qué: Entrenar.
-- Proceso: 1. Agrega features por sector-trimestre (media de ROE, P/E, momentum, etc.) / 2. Etiqueta: ¿sector superó S&P500? / 3. Entrena modelo sectorial.
+- Proceso: 1. Agrega features por sector-trimestre (media de ROE, P/E, momentum, etc.) / 2. Etiqueta: ¿sector superó SPY? / 3. Entrena modelo sectorial.
 
 **`predict_sector_scores()`**
 - Para qué: Predecir score de outperformance para cada sector.
@@ -726,20 +726,21 @@
 
 ## module/steps/step_03_training/training.py
 
-**Para qué sirve:** Orquesta entrenamiento de CADA PERÍODO (fold): entrena 5 módulos + meta-learner, genera scores.
+**Para qué sirve:** Orquesta entrenamiento de CADA PERÍODO (fold): entrena 5 agentes base + sector rotation + meta-learner, genera scores.
 
-**Flujo por fold:** Datos históricos → Entrena 5 módulos → Entrena meta → Predice test → Genera scores.
+**Flujo por fold:** Datos históricos → Entrena 5 agentes base + sector rotation → Entrena meta → Predice test → Genera scores.
 
 ### Funciones principales:
 
 **`train_fold(df_train_norm, df_test_norm, y_train, y_test, fold_id, agents_results_dir, ...)`**
 - Para qué: Entrenar 1 período walk-forward completo.
 - Pasos:
-  1. Entrena 5 módulos sobre datos históricos
-  2. Genera scores anti-leakage de los 5 módulos (sin permitir que el módulo vea sus propios datos test)
-  3. Usa esos scores como entrada para entrenar meta-learner
-  4. Predice en período test
-  5. Guardó reportes JSON de cada módulo
+  1. Entrena 5 agentes base sobre datos históricos
+  2. Entrena sector rotation con dataset agregado por sector
+  3. Genera scores anti-leakage de los agentes base (sin permitir que el módulo vea sus propios datos test)
+  4. Usa esos scores + sector_score como entrada para entrenar meta-learner
+  5. Predice en período test
+  6. Guarda reportes JSON de cada módulo
 
 **`train_full_history(df_norm, y, agents_results_dir, ...)`**
 - Para qué: Entrenar sobre TODO el histórico (sin split train-test, para modelo FINAL de predicción live).
@@ -820,7 +821,7 @@
 
 **`run_walkforward_pipeline(df, sector_map, prices_dict, benchmark, spy_prices, ...)`**
 - Para qué: Loop completo: por cada fold (trimestre) → entrena, predice, simula, reporta.
-- Proceso: 1. Genera folds / 2. For cada fold: prepara datos / 3. Entrena 5 módulos + meta / 4. Simula cartera / 5. Genera reportes / 6. Stack resultados.
+- Proceso: 1. Genera folds / 2. For cada fold: prepara datos / 3. Entrena 5 agentes base + sector rotation + meta / 4. Simula cartera / 5. Genera reportes / 6. Stack resultados.
 
 ---
 

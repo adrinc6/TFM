@@ -12,6 +12,9 @@ Fuente de verdad usada para esta guia:
 - `*_FEATURE_EXCLUDE`: en el estado actual estan vacias en todos los agentes.
 - Una columna puede existir en el dataset y aun asi no entrar al modelo final si el selector de features la descarta en ese fold.
 - Algunas columnas derivadas se crean solo si existen sus columnas base.
+- Objetivo de entrenamiento actual:
+  - Agentes base (todos menos `SectorRotationAgent`): compania vs mediana sectorial por snapshot quarter.
+  - `SectorRotationAgent`: sector vs benchmark (SPY).
 - Columnas `_zsector`:
   - Se generan en la normalizacion sectorial del pipeline.
   - Se usan principalmente en `FundamentalAgent` cuando estan disponibles.

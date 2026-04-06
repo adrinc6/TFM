@@ -2,6 +2,15 @@
   "data": [
     {
       "buy": 2,
+      "hold": 15,
+      "period": "2026-04-01",
+      "sell": 7,
+      "strongBuy": 0,
+      "strongSell": 1,
+      "symbol": "CAG"
+    },
+    {
+      "buy": 2,
       "hold": 16,
       "period": "2026-03-01",
       "sell": 6,
@@ -26,17 +35,8 @@
       "strongBuy": 0,
       "strongSell": 1,
       "symbol": "CAG"
-    },
-    {
-      "buy": 2,
-      "hold": 17,
-      "period": "2025-12-01",
-      "sell": 6,
-      "strongBuy": 0,
-      "strongSell": 1,
-      "symbol": "CAG"
     }
   ],
   "_ticker": "CAG",
-  "_downloaded_at": "2026-03-20T10:31:10.789757"
+  "_downloaded_at": "2026-04-06T13:12:17.765952"
 }

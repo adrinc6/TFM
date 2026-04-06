@@ -38,7 +38,7 @@ from module.common.feature_controls import resolve_feature_columns
 from module.steps.step_04_evaluation.explainability import build_explainer_for_agent, AgentExplainer
 from environment import (
     BEAR_N_ESTIMATORS, BEAR_MAX_DEPTH,
-    BEAR_RULE_WEIGHT, BEAR_ML_WEIGHT, FEATURE_CORR_THRESHOLD, BEAR_FEATURE_TOP_N,
+    BEAR_RULE_WEIGHT, BEAR_ML_WEIGHT, FEATURE_CORR_THRESHOLD, FEATURE_TOP_N,
     BEAR_FEATURE_COLUMNS, BEAR_FEATURE_EXCLUDE,
 )
 
@@ -130,7 +130,7 @@ class BearAgent(BaseAgent):
 
         # Selección de features: solo con datos de train (sin leakage)
         # BearAgent usa todas sus features (pocas), top_n >= nº flags+base
-        self._selector = FeatureSelector(corr_threshold=FEATURE_CORR_THRESHOLD, top_n=BEAR_FEATURE_TOP_N,
+        self._selector = FeatureSelector(corr_threshold=FEATURE_CORR_THRESHOLD, top_n=FEATURE_TOP_N,
                                          min_features=5, random_seed=self.random_seed)
         X_prep = self._selector.fit_transform(X_prep, y_cl, agent_name="bear")
 

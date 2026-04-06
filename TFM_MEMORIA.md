@@ -58,7 +58,11 @@ Este enfoque hace que el panel sea apto para entrenamiento y, al mismo tiempo, d
 
 ## 7. Etiquetado y aprendizaje
 
-El sistema no aprende una etiqueta absoluta del estilo "sube o baja" sin contexto. Primero calcula `forward_return` y luego deriva una etiqueta relativa de outperformance sectorial por snapshot. En la practica, el objetivo es clasificar si un ticker supera la mediana de su sector en ese periodo.
+El sistema no aprende una etiqueta absoluta del estilo "sube o baja" sin contexto. Primero calcula `forward_return` y luego deriva una etiqueta relativa.
+
+En el estado actual, los agentes base (fundamental, valuation, momentum, bear, sentiment) entrenan con objetivo de outperformance sectorial por snapshot: clasificar si un ticker supera la mediana de su sector en ese periodo.
+
+Si no hay peers sectoriales suficientes en un snapshot, el etiquetado aplica fallback a mediana del universo para evitar ruido por muestras muy pequeñas.
 
 Esto reduce el sesgo de mercado general y obliga a que el modelo capture senales cross-sectional, que es mas coherente con una estrategia de stock picking.
 
@@ -74,6 +78,8 @@ Los agentes base se especializan en diferentes vistas del mercado:
 - Sector rotation.
 
 Cada agente produce un score interpretable. Sobre esos scores trabaja un meta-learner que integra la informacion y genera un `final_score`.
+
+`Sector rotation` se entrena en una ruta top-down separada: su objetivo es decidir si cada sector va a outperformar al benchmark SPY. El meta combina esa evidencia sectorial con la evidencia company-vs-sector de los agentes base para estimar company-vs-benchmark.
 
 Ademas, el pipeline genera scores OOF para que el meta-learner no vea ejemplos contaminados por entrenamiento y validacion en el mismo fold.
 

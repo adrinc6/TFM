@@ -34,6 +34,8 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 from environment import (
     TICKERS,
+    USE_DYNAMIC_SP500_UNIVERSE, SP500_HISTORIC_CSV_PATH,
+    SP500_DYNAMIC_TOP_N,
     FINNHUB_DATA_DIR, FINNHUB_API_KEY,
     RESULTS_DIR, AGENTS_RESULTS_DIR, BACKTEST_RESULTS_DIR, PLOTS_DIR,
     MIN_HISTORY_QUARTERS,
@@ -76,6 +78,166 @@ def _quarter_end_date(year: int, quarter: int):
 
     month = quarter * 3
     return pd.Timestamp(year=year, month=month, day=1) + pd.offsets.MonthEnd(0)
+
+
+def _normalize_ticker_symbol(ticker: str) -> str:
+    return str(ticker).strip().upper().replace(".", "-")
+
+
+def _load_sp500_membership(csv_path: str):
+    import pandas as pd
+
+    p = Path(csv_path)
+    if not p.exists():
+        raise FileNotFoundError(f"No existe el CSV de histórico S&P 500: {csv_path}")
+
+    df = pd.read_csv(p)
+    required = {"ticker", "start_date", "end_date"}
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError(f"CSV S&P 500 inválido. Faltan columnas: {sorted(missing)}")
+
+    out = df.copy()
+    out["ticker"] = out["ticker"].astype(str).map(_normalize_ticker_symbol)
+    out["start_date"] = pd.to_datetime(out["start_date"], errors="coerce").dt.normalize()
+    out["end_date"] = pd.to_datetime(out["end_date"], errors="coerce").dt.normalize()
+    out = out.dropna(subset=["ticker", "start_date"]).reset_index(drop=True)
+    return out
+
+
+def _membership_active_tickers(df_membership, start_date, end_date) -> list[str]:
+    mask = (df_membership["start_date"] <= end_date) & (
+        df_membership["end_date"].isna() | (df_membership["end_date"] >= start_date)
+    )
+    tickers = df_membership.loc[mask, "ticker"].dropna().astype(str).tolist()
+    return sorted(set(tickers))
+
+
+def _load_market_cap_panel(data_dir: str, tickers: list[str]) -> dict[str, object]:
+    import pandas as pd
+
+    panel: dict[str, object] = {}
+    cons_dir = Path(data_dir) / "consolidated"
+
+    for tk in tickers:
+        fp = cons_dir / f"{tk}.csv"
+        if not fp.exists():
+            continue
+
+        try:
+            df = pd.read_csv(fp)
+        except Exception:
+            continue
+
+        if "report_date" not in df.columns:
+            continue
+
+        mcap_col = None
+        for c in ("market_cap", "bf_market_cap"):
+            if c in df.columns:
+                mcap_col = c
+                break
+        if mcap_col is None:
+            continue
+
+        d = pd.to_datetime(df["report_date"], errors="coerce").dt.normalize()
+        m = pd.to_numeric(df[mcap_col], errors="coerce")
+        md = pd.DataFrame({"date": d, "market_cap": m}).dropna()
+        if md.empty:
+            continue
+
+        panel[tk] = md.sort_values("date").reset_index(drop=True)
+
+    return panel
+
+
+def _market_cap_asof(panel: dict[str, object], ticker: str, as_of_date):
+    md = panel.get(ticker)
+    if md is None or md.empty:
+        return None
+
+    hist = md.loc[md["date"] <= as_of_date]
+    if hist.empty:
+        return None
+
+    return float(hist.iloc[-1]["market_cap"])
+
+
+def _resolve_dynamic_universe(
+    *,
+    csv_path: str,
+    data_dir: str,
+    start_date,
+    end_date,
+    top_n,
+) -> tuple[list[str], list[str], list[dict]]:
+    import pandas as pd
+
+    members = _load_sp500_membership(csv_path)
+    candidates = _membership_active_tickers(members, start_date, end_date)
+    if not candidates:
+        return [], [], []
+
+    top_n_enabled = False
+    top_n_value = 0
+    if isinstance(top_n, bool):
+        top_n_enabled = False if top_n is False else True
+        top_n_value = 0 if top_n is False else 1
+    else:
+        try:
+            top_n_value = int(top_n)
+            top_n_enabled = top_n_value > 0
+        except Exception:
+            top_n_enabled = False
+            top_n_value = 0
+
+    if not top_n_enabled:
+        return candidates, candidates, []
+
+    panel = _load_market_cap_panel(data_dir, candidates)
+    yearly_details: list[dict] = []
+    selected: set[str] = set()
+
+    for year in range(int(start_date.year), int(end_date.year) + 1):
+        y_start = pd.Timestamp(year=year, month=1, day=1)
+        y_end = pd.Timestamp(year=year, month=12, day=31)
+        if y_end < start_date or y_start > end_date:
+            continue
+
+        year_start = max(y_start, start_date)
+        year_end = min(y_end, end_date)
+        active_year = _membership_active_tickers(members, year_start, year_end)
+
+        ranked = []
+        missing_mcap = 0
+        for tk in active_year:
+            mcap = _market_cap_asof(panel, tk, year_end)
+            if mcap is None or mcap <= 0:
+                missing_mcap += 1
+                continue
+            ranked.append((tk, mcap))
+
+        ranked.sort(key=lambda x: x[1], reverse=True)
+        picked = [tk for tk, _ in ranked[: max(top_n_value, 1)]]
+        if not picked:
+            picked = active_year[: max(top_n_value, 1)]
+
+        selected.update(picked)
+        yearly_details.append(
+            {
+                "year": int(year),
+                "active_members": int(len(active_year)),
+                "ranked_with_mcap": int(len(ranked)),
+                "missing_mcap": int(missing_mcap),
+                "picked": int(len(picked)),
+            }
+        )
+
+    selected_list = sorted(selected)
+    if not selected_list:
+        selected_list = candidates[: max(top_n_value, 1)]
+
+    return candidates, selected_list, yearly_details
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 Path(RESULTS_DIR).mkdir(parents=True, exist_ok=True)
@@ -284,12 +446,91 @@ def main():
     download_end_date = pd.Timestamp.today().normalize()
     end_date_str = download_end_date.strftime("%Y-%m-%d")
 
+    analysis_window_start = test_start_date.normalize()
+    analysis_window_end = end_date.normalize()
+
+    # ── 1. Resolver universo solicitado y descargar datos
+    if USE_DYNAMIC_SP500_UNIVERSE:
+        try:
+            candidates, _, _ = _resolve_dynamic_universe(
+                csv_path=SP500_HISTORIC_CSV_PATH,
+                data_dir=FINNHUB_DATA_DIR,
+                start_date=analysis_window_start,
+                end_date=analysis_window_end,
+                top_n=SP500_DYNAMIC_TOP_N,
+            )
+        except Exception as ex:
+            log.warning("No se pudo resolver universo dinámico S&P 500 (%s). Se usa TICKERS manual.", ex)
+            candidates = []
+
+        tickers_to_download = candidates if candidates else list(dict.fromkeys(TICKERS))
+        log.info(
+            "Universo dinámico: %s candidatos activos en [%s, %s]",
+            len(tickers_to_download),
+            analysis_window_start.date(),
+            analysis_window_end.date(),
+        )
+    else:
+        tickers_to_download = list(dict.fromkeys(TICKERS))
+        log.info("Universo manual: %s tickers", len(tickers_to_download))
+
+    download_data(
+        tickers=tickers_to_download,
+        start_date=DOWNLOAD_START_DATE,
+        end_date=end_date_str,
+        data_dir=FINNHUB_DATA_DIR,
+        force_download=FORCE_DOWNLOAD,
+        api_key=FINNHUB_API_KEY,
+        prices_only=UPDATE_PRICES_ONLY,
+    )
+
+    if UPDATE_PRICES_ONLY:
+        log.info("UPDATE_PRICES_ONLY=True — actualizando solo precios y macro, sin consolidacion ni backtest")
+        if EXPORT_RUN_ARTIFACTS:
+            _export_run_config(
+                results_dir=RESULTS_DIR,
+                tickers_requested=tickers_to_download,
+                tickers_ok=[],
+                start_date=str(test_start_date.date()),
+                end_date=str(end_date.date()),
+                analysis_frequency=analysis_frequency,
+                annual_anchor_date=annual_anchor_date,
+            )
+        return
+
+    # ── 2. Consolidar datos
+    prepare_data(tickers_to_download, data_dir=FINNHUB_DATA_DIR)
+
+    # ── 2b. Selección final del universo para dataset/backtest
+    if USE_DYNAMIC_SP500_UNIVERSE:
+        candidates, tickers, yearly_details = _resolve_dynamic_universe(
+            csv_path=SP500_HISTORIC_CSV_PATH,
+            data_dir=FINNHUB_DATA_DIR,
+            start_date=analysis_window_start,
+            end_date=analysis_window_end,
+            top_n=SP500_DYNAMIC_TOP_N,
+        )
+        if not tickers:
+            tickers = list(dict.fromkeys(tickers_to_download))
+        log.info(
+            "Universo dinámico final: %s tickers seleccionados (candidatos=%s, top_n=%s)",
+            len(tickers), len(candidates), SP500_DYNAMIC_TOP_N,
+        )
+        for row in yearly_details:
+            log.info(
+                "  Año %s | activos=%s | con_mcap=%s | sin_mcap=%s | seleccionados=%s",
+                row["year"], row["active_members"], row["ranked_with_mcap"],
+                row["missing_mcap"], row["picked"],
+            )
+    else:
+        tickers = list(dict.fromkeys(tickers_to_download))
+
     cache = None
     cache_enabled = bool(ENABLE_CACHE) and not bool(FORCE_DOWNLOAD) and not bool(UPDATE_PRICES_ONLY)
     if cache_enabled:
         cache_context = {
             "cache_schema_version": CACHE_SCHEMA_VERSION,
-            "tickers": list(dict.fromkeys(TICKERS)),
+            "tickers": list(dict.fromkeys(tickers)),
             "download_start_date": DOWNLOAD_START_DATE,
             "analysis_start_year": ANALYSIS_START_YEAR,
             "analysis_start_quarter": ANALYSIS_START_QUARTER,
@@ -327,35 +568,6 @@ def main():
         log.info("Cache activa: key=%s dir=%s", cache.key, cache.run_dir)
     else:
         log.info("Cache desactivada para esta ejecución")
-
-    # ── 1. Descargar datos
-    tickers = list(dict.fromkeys(TICKERS))  # deduplica preservando orden
-    download_data(
-        tickers=tickers,
-        start_date=DOWNLOAD_START_DATE,
-        end_date=end_date_str,
-        data_dir=FINNHUB_DATA_DIR,
-        force_download=FORCE_DOWNLOAD,
-        api_key=FINNHUB_API_KEY,
-        prices_only=UPDATE_PRICES_ONLY,
-    )
-
-    if UPDATE_PRICES_ONLY:
-        log.info("UPDATE_PRICES_ONLY=True — actualizando solo precios y macro, sin consolidacion ni backtest")
-        if EXPORT_RUN_ARTIFACTS:
-            _export_run_config(
-                results_dir=RESULTS_DIR,
-                tickers_requested=tickers,
-                tickers_ok=[],
-                start_date=str(test_start_date.date()),
-                end_date=str(end_date.date()),
-                analysis_frequency=analysis_frequency,
-                annual_anchor_date=annual_anchor_date,
-            )
-        return
-
-    # ── 2. Consolidar datos
-    prepare_data(tickers, data_dir=FINNHUB_DATA_DIR)
 
     # ── 3. DataRouter y filtrado de tickers disponibles
     router = DataRouter(data_dir=FINNHUB_DATA_DIR)

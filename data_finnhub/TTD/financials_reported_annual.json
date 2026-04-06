@@ -2,6 +2,470 @@
   "cik": "1671933",
   "data": [
     {
+      "accessNumber": "0001671933-26-000014",
+      "symbol": "TTD",
+      "cik": "1671933",
+      "year": 2025,
+      "quarter": 0,
+      "form": "10-K",
+      "startDate": "2025-01-01 00:00:00",
+      "endDate": "2025-12-31 00:00:00",
+      "filedDate": "2026-02-27 00:00:00",
+      "acceptedDate": "2026-02-27 16:13:39",
+      "report": {
+        "bs": [
+          {
+            "concept": "us-gaap_CashAndCashEquivalentsAtCarryingValue",
+            "unit": "usd",
+            "label": "Cash and cash equivalents",
+            "value": 658175000.0
+          },
+          {
+            "concept": "us-gaap_ShortTermInvestments",
+            "unit": "usd",
+            "label": "Short-term investments, net",
+            "value": 644882000.0
+          },
+          {
+            "concept": "us-gaap_AccountsReceivableNetCurrent",
+            "unit": "usd",
+            "label": "Accounts receivable, net of allowance for credit losses of $12,199 and $11,244 as of December 31, 2025 and 2024, respectively",
+            "value": 3770194000
+          },
+          {
+            "concept": "us-gaap_PrepaidExpenseAndOtherAssetsCurrent",
+            "unit": "usd",
+            "label": "Prepaid expenses and other current assets",
+            "value": 187753000
+          },
+          {
+            "concept": "us-gaap_AssetsCurrent",
+            "unit": "usd",
+            "label": "TOTAL CURRENT ASSETS",
+            "value": 5261004000
+          },
+          {
+            "concept": "us-gaap_PropertyPlantAndEquipmentNet",
+            "unit": "usd",
+            "label": "Property and equipment, net",
+            "value": 396819000.0
+          },
+          {
+            "concept": "us-gaap_OperatingLeaseRightOfUseAsset",
+            "unit": "usd",
+            "label": "Operating lease assets",
+            "value": 342042000
+          },
+          {
+            "concept": "us-gaap_DeferredIncomeTaxAssetsNet",
+            "unit": "usd",
+            "label": "Deferred income taxes",
+            "value": 55700000
+          },
+          {
+            "concept": "us-gaap_OtherAssetsNoncurrent",
+            "unit": "usd",
+            "label": "Other assets, non-current",
+            "value": 97655000
+          },
+          {
+            "concept": "us-gaap_Assets",
+            "unit": "usd",
+            "label": "TOTAL ASSETS",
+            "value": 6153220000
+          },
+          {
+            "concept": "us-gaap_AccountsPayableCurrent",
+            "unit": "usd",
+            "label": "Accounts payable",
+            "value": 3007651000
+          },
+          {
+            "concept": "us-gaap_AccruedLiabilitiesCurrent",
+            "unit": "usd",
+            "label": "Accrued expenses and other current liabilities",
+            "value": 181991000
+          },
+          {
+            "concept": "us-gaap_OperatingLeaseLiabilityCurrent",
+            "unit": "usd",
+            "label": "Operating lease liabilities",
+            "value": 76355000.0
+          },
+          {
+            "concept": "us-gaap_LiabilitiesCurrent",
+            "unit": "usd",
+            "label": "TOTAL CURRENT LIABILITIES",
+            "value": 3265997000
+          },
+          {
+            "concept": "us-gaap_OperatingLeaseLiabilityNoncurrent",
+            "unit": "usd",
+            "label": "Operating lease liabilities, non-current",
+            "value": 359975000.0
+          },
+          {
+            "concept": "us-gaap_OtherLiabilitiesNoncurrent",
+            "unit": "usd",
+            "label": "Other liabilities, non-current",
+            "value": 42857000
+          },
+          {
+            "concept": "us-gaap_Liabilities",
+            "unit": "usd",
+            "label": "TOTAL LIABILITIES",
+            "value": 3668829000
+          },
+          {
+            "concept": "us-gaap_CommitmentsAndContingencies",
+            "unit": "usd",
+            "label": "Commitments and contingencies (Note 13)",
+            "value": 0
+          },
+          {
+            "concept": "us-gaap_PreferredStockValue",
+            "unit": "usd",
+            "label": "Preferred stock, par value $0.000001; 100,000 shares authorized, zero shares issued and outstanding as of December 31, 2025 and 2024",
+            "value": 0
+          },
+          {
+            "concept": "us-gaap_CommonStockValue",
+            "unit": "usd",
+            "label": "Common stock, par value $0.000001 Class A, 1,000,000 shares authorized; 432,814 and 452,182 shares issued and outstanding as of December 31, 2025 and 2024, respectively Class B, 95,000 shares authorized; 43,109 and 43,919 shares issued and outstanding as of December 31, 2025 and 2024, respectively",
+            "value": 0
+          },
+          {
+            "concept": "us-gaap_AdditionalPaidInCapitalCommonStock",
+            "unit": "usd",
+            "label": "Additional paid-in capital",
+            "value": 3075303000
+          },
+          {
+            "concept": "us-gaap_RetainedEarningsAccumulatedDeficit",
+            "unit": "usd",
+            "label": "Retained earnings (accumulated deficit)",
+            "value": -590912000
+          },
+          {
+            "concept": "us-gaap_StockholdersEquity",
+            "unit": "usd",
+            "label": "TOTAL STOCKHOLDERS’ EQUITY",
+            "value": 2484391000.0
+          },
+          {
+            "concept": "us-gaap_LiabilitiesAndStockholdersEquity",
+            "unit": "usd",
+            "label": "TOTAL LIABILITIES AND STOCKHOLDERS’ EQUITY",
+            "value": 6153220000
+          }
+        ],
+        "ic": [
+          {
+            "concept": "us-gaap_RevenueFromContractWithCustomerExcludingAssessedTax",
+            "unit": "usd",
+            "label": "Revenue",
+            "value": 2896284000.0
+          },
+          {
+            "concept": "us-gaap_CostOfGoodsAndServicesSold",
+            "unit": "usd",
+            "label": "Platform operations",
+            "value": 619067000
+          },
+          {
+            "concept": "us-gaap_SellingAndMarketingExpense",
+            "unit": "usd",
+            "label": "Sales and marketing",
+            "value": 644300000
+          },
+          {
+            "concept": "us-gaap_ResearchAndDevelopmentExpense",
+            "unit": "usd",
+            "label": "Technology and development",
+            "value": 525141000
+          },
+          {
+            "concept": "us-gaap_GeneralAndAdministrativeExpense",
+            "unit": "usd",
+            "label": "General and administrative",
+            "value": 518455000
+          },
+          {
+            "concept": "us-gaap_CostsAndExpenses",
+            "unit": "usd",
+            "label": "Total operating expenses",
+            "value": 2306963000
+          },
+          {
+            "concept": "us-gaap_OperatingIncomeLoss",
+            "unit": "usd",
+            "label": "Income from operations",
+            "value": 589321000
+          },
+          {
+            "concept": "us-gaap_InterestIncomeExpenseNet",
+            "unit": "usd",
+            "label": "Interest income, net",
+            "value": 68717000
+          },
+          {
+            "concept": "us-gaap_ForeignCurrencyTransactionGainLossBeforeTax",
+            "unit": "usd",
+            "label": "Foreign currency exchange loss (gain), net",
+            "value": 717000
+          },
+          {
+            "concept": "us-gaap_NonoperatingIncomeExpense",
+            "unit": "usd",
+            "label": "Total other income, net",
+            "value": 69434000
+          },
+          {
+            "concept": "us-gaap_IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+            "unit": "usd",
+            "label": "Income before income taxes",
+            "value": 658755000.0
+          },
+          {
+            "concept": "us-gaap_IncomeTaxExpenseBenefit",
+            "unit": "usd",
+            "label": "Provision for income taxes",
+            "value": 215451000.0
+          },
+          {
+            "concept": "us-gaap_NetIncomeLoss",
+            "unit": "usd",
+            "label": "Net income",
+            "value": 443304000.0
+          },
+          {
+            "concept": "us-gaap_EarningsPerShareBasic",
+            "unit": "usd/share",
+            "label": "Basic (in dollars per share)",
+            "value": 0.91
+          },
+          {
+            "concept": "us-gaap_EarningsPerShareDiluted",
+            "unit": "usd/share",
+            "label": "Diluted (in dollars per share)",
+            "value": 0.9
+          },
+          {
+            "concept": "us-gaap_WeightedAverageNumberOfSharesOutstandingBasic",
+            "unit": "shares",
+            "label": "Basic (in shares)",
+            "value": 488278000.0
+          },
+          {
+            "concept": "us-gaap_WeightedAverageNumberOfDilutedSharesOutstanding",
+            "unit": "shares",
+            "label": "Diluted (in shares)",
+            "value": 493551000.0
+          }
+        ],
+        "cf": [
+          {
+            "concept": "us-gaap_ProfitLoss",
+            "unit": "usd",
+            "label": "Net income",
+            "value": 443304000
+          },
+          {
+            "concept": "us-gaap_DepreciationDepletionAndAmortization",
+            "unit": "usd",
+            "label": "Depreciation and amortization expense",
+            "value": 115784000
+          },
+          {
+            "concept": "us-gaap_ShareBasedCompensation",
+            "unit": "usd",
+            "label": "Stock-based compensation expense",
+            "value": 490627000
+          },
+          {
+            "concept": "us-gaap_DeferredIncomeTaxesAndTaxCredits",
+            "unit": "usd",
+            "label": "Deferred income taxes",
+            "value": 167690000
+          },
+          {
+            "concept": "ttd_NoncashLeaseExpense",
+            "unit": "usd",
+            "label": "Noncash lease expense",
+            "value": 69682000
+          },
+          {
+            "concept": "us-gaap_OtherNoncashIncomeExpense",
+            "unit": "usd",
+            "label": "Other",
+            "value": 19237000
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInAccountsReceivable",
+            "unit": "usd",
+            "label": "Accounts receivable",
+            "value": 432718000
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInPrepaidDeferredExpenseAndOtherAssets",
+            "unit": "usd",
+            "label": "Prepaid expenses and other current and non-current assets",
+            "value": 76586000
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInAccountsPayable",
+            "unit": "usd",
+            "label": "Accounts payable",
+            "value": 291073000
+          },
+          {
+            "concept": "us-gaap_IncreaseDecreaseInAccruedLiabilitiesAndOtherOperatingLiabilities",
+            "unit": "usd",
+            "label": "Accrued expenses and other current and non-current liabilities",
+            "value": 6926000
+          },
+          {
+            "concept": "ttd_IncreaseDecreaseInOperatingLeaseLiabilities",
+            "unit": "usd",
+            "label": "Operating lease liabilities",
+            "value": -63824000
+          },
+          {
+            "concept": "us-gaap_NetCashProvidedByUsedInOperatingActivities",
+            "unit": "usd",
+            "label": "Net cash provided by operating activities",
+            "value": 992721000
+          },
+          {
+            "concept": "us-gaap_PaymentsToAcquireInvestments",
+            "unit": "usd",
+            "label": "Purchases of investments",
+            "value": 954273000
+          },
+          {
+            "concept": "us-gaap_ProceedsFromSaleMaturityAndCollectionsOfInvestments",
+            "unit": "usd",
+            "label": "Maturities of investments",
+            "value": 875754000
+          },
+          {
+            "concept": "us-gaap_PaymentsToAcquirePropertyPlantAndEquipment",
+            "unit": "usd",
+            "label": "Purchases of property and equipment",
+            "value": 197011000
+          },
+          {
+            "concept": "us-gaap_PaymentsToDevelopSoftware",
+            "unit": "usd",
+            "label": "Capitalized software development costs",
+            "value": 12752000
+          },
+          {
+            "concept": "us-gaap_PaymentsToAcquireBusinessesNetOfCashAcquired",
+            "unit": "usd",
+            "label": "Business acquisition",
+            "value": 4350000
+          },
+          {
+            "concept": "us-gaap_NetCashProvidedByUsedInInvestingActivities",
+            "unit": "usd",
+            "label": "Net cash used in investing activities",
+            "value": -292632000
+          },
+          {
+            "concept": "us-gaap_PaymentsForRepurchaseOfCommonStock",
+            "unit": "usd",
+            "label": "Repurchases of Class A common stock",
+            "value": 1380422000
+          },
+          {
+            "concept": "us-gaap_ProceedsFromStockOptionsExercised",
+            "unit": "usd",
+            "label": "Proceeds from exercise of stock options",
+            "value": 23818000
+          },
+          {
+            "concept": "us-gaap_ProceedsFromStockPlans",
+            "unit": "usd",
+            "label": "Proceeds from employee stock purchase plan",
+            "value": 42881000
+          },
+          {
+            "concept": "us-gaap_PaymentsRelatedToTaxWithholdingForShareBasedCompensation",
+            "unit": "usd",
+            "label": "Taxes paid relating to net settlement of restricted stock",
+            "value": 97654000
+          },
+          {
+            "concept": "us-gaap_NetCashProvidedByUsedInFinancingActivities",
+            "unit": "usd",
+            "label": "Net cash used in financing activities",
+            "value": -1411377000
+          },
+          {
+            "concept": "us-gaap_CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsPeriodIncreaseDecreaseIncludingExchangeRateEffect",
+            "unit": "usd",
+            "label": "Increase (decrease) in cash and cash equivalents",
+            "value": -711288000
+          },
+          {
+            "concept": "us-gaap_IncomeTaxesPaidNet",
+            "unit": "usd",
+            "label": "Cash paid for income taxes, net of refunds",
+            "value": 150114000.0
+          },
+          {
+            "concept": "us-gaap_InterestPaidNet",
+            "unit": "usd",
+            "label": "Cash paid for interest",
+            "value": 993000
+          },
+          {
+            "concept": "us-gaap_OperatingLeasePayments",
+            "unit": "usd",
+            "label": "Cash paid for operating lease liabilities",
+            "value": 79362000
+          },
+          {
+            "concept": "us-gaap_RightOfUseAssetObtainedInExchangeForOperatingLeaseLiability",
+            "unit": "usd",
+            "label": "Operating lease assets obtained in exchange for operating lease liabilities",
+            "value": 150272000
+          },
+          {
+            "concept": "us-gaap_CapitalExpendituresIncurredButNotYetPaid",
+            "unit": "usd",
+            "label": "Capitalized assets financed by accounts payable",
+            "value": 104495000
+          },
+          {
+            "concept": "us-gaap_NoncashOrPartNoncashAcquisitionOtherAssetsAcquired1",
+            "unit": "usd",
+            "label": "Assets acquired in a business combination, included in other assets, non-current, in exchange for Class A common stock",
+            "value": 10299000
+          },
+          {
+            "concept": "ttd_TenantImprovementsPaidByLessorValue",
+            "unit": "usd",
+            "label": "Tenant improvements paid by lessor",
+            "value": 10608000
+          },
+          {
+            "concept": "us-gaap_EmployeeServiceShareBasedCompensationAllocationOfRecognizedPeriodCostsCapitalizedAmount",
+            "unit": "usd",
+            "label": "Stock-based compensation included in capitalized software development costs",
+            "value": 7756000
+          },
+          {
+            "concept": "ttd_RepurchaseOfClassACommonStockAccruedNotYetPaid",
+            "unit": "usd",
+            "label": "Repurchases of Class A common stock in accrued expenses and other current liabilities",
+            "value": 9943000
+          }
+        ]
+      }
+    },
+    {
       "accessNumber": "0001671933-25-000029",
       "symbol": "TTD",
       "cik": "1671933",
@@ -4204,5 +4668,5 @@
   ],
   "symbol": "TTD",
   "_ticker": "TTD",
-  "_downloaded_at": "2026-03-20T10:24:09.483703"
+  "_downloaded_at": "2026-04-06T14:05:26.403602"
 }
