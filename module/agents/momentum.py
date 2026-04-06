@@ -42,37 +42,6 @@ try:
 except ImportError:
     _DEPS_OK = False
 
-# Features base que consume este agente.
-# Fuente: TechnicalFeatureBuilder (OHLCV diario) + SentimentFeatureBuilder (EPS).
-# Columnas que falten (ej. atr_14 con pocos días) se rellenan con 0 en _align.
-FEATURE_COLS = [
-    # Osciladores
-    "rsi_14", "rsi_28",
-    # Tendencia MACD
-    "macd", "macd_signal", "macd_hist",
-    # SMAs como distancia % al precio actual (positivo = precio > SMA)
-    "sma_20", "sma_50", "sma_200",
-    # Posición dentro de Bollinger Bands 20d [0=lower, 1=upper]
-    "bb_pct",
-    # Posición relativa 52 semanas
-    "price_vs_52w_high", "price_vs_52w_low",
-    # Momentum puro (retorno sin ajuste)
-    "momentum_1m", "momentum_3m", "momentum_6m", "momentum_12m",
-    # Volatilidad realizada anualizada
-    "volatility_20d", "volatility_60d", "atr_14",
-    # Volumen relativo
-    "vol_ratio_20_50",
-    # Earnings momentum: la señal de momentum más potente en la literatura académica.
-    # beat_rate_4q: % de trimestres en que el EPS superó la estimación (últimos 4Q).
-    # eps_surprise_avg_4q: sorpresa media de EPS en los últimos 4 trimestres.
-    # eps_revision: cambio reciente en las estimaciones de EPS de analistas.
-    # Estas features son momentum de beneficios, no sentimiento — aquí es su lugar.
-    "beat_rate_4q", "eps_surprise_avg_4q", "eps_revision",
-    # Nota: rsi_overbought, rsi_oversold, above_sma200, macd_bullish,
-    # cross_sma_20_50, momentum_quality, vol_expansion se derivan en _prepare.
-]
-
-
 class MomentumAgent(BaseAgent):
     """
     Random Forest calibrado sobre indicadores técnicos y earnings momentum.
@@ -170,7 +139,7 @@ class MomentumAgent(BaseAgent):
     def _prepare(self, X: pd.DataFrame, fit_mode: bool) -> pd.DataFrame:
         df = X.copy()
         selected = resolve_feature_columns(
-            default_cols=FEATURE_COLS,
+            default_cols=[],
             available_cols=list(df.columns),
             include_cols=MOMENTUM_FEATURE_COLUMNS,
             exclude_cols=MOMENTUM_FEATURE_EXCLUDE,

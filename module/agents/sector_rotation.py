@@ -44,23 +44,6 @@ try:
 except ImportError:
     _DEPS_OK = False
 
-# Features de ticker que se agregan a nivel sector (media)
-TICKER_FEATURES_TO_AGGREGATE = [
-    # Calidad empresarial del sector
-    "roe", "roa", "net_margin", "gross_margin", "fcf_margin", "ebitda_margin",
-    "revenue_yoy_growth", "net_income_yoy_growth", "eps_yoy_growth",
-    "debt_to_ebitda", "debt_equity", "interest_coverage", "current_ratio",
-    # Valoración agregada del sector
-    "pe_ratio", "pb_ratio", "ev_to_ebitda", "fcf_yield",
-    "pe_vs_5y_median", "pb_vs_5y_median",
-    # Momentum técnico del sector
-    "momentum_1m", "momentum_3m", "momentum_6m", "momentum_12m",
-    "volatility_20d", "rsi_14",
-    # Sentimiento institucional del sector
-    "analyst_buy_ratio", "analyst_consensus", "beat_rate_4q",
-    "eps_surprise_pct", "eps_surprise_avg_4q", "mspr_3m",
-]
-
 # Hiperparámetros propios (no dependen de los de los otros agentes)
 _N_ESTIMATORS = 200
 _MAX_DEPTH = 3
@@ -275,7 +258,7 @@ class SectorRotationAgent(BaseAgent):
 
         # Features a agregar
         available_feat_cols = resolve_feature_columns(
-            default_cols=TICKER_FEATURES_TO_AGGREGATE,
+            default_cols=[],
             available_cols=list(temp.columns),
             include_cols=SECTOR_ROTATION_FEATURE_COLUMNS,
             exclude_cols=SECTOR_ROTATION_FEATURE_EXCLUDE,
@@ -327,7 +310,7 @@ class SectorRotationAgent(BaseAgent):
         temp = df.copy()
         temp["_sector"] = sector_series.values
         available_feat_cols = resolve_feature_columns(
-            default_cols=TICKER_FEATURES_TO_AGGREGATE,
+            default_cols=[],
             available_cols=list(temp.columns),
             include_cols=SECTOR_ROTATION_FEATURE_COLUMNS,
             exclude_cols=SECTOR_ROTATION_FEATURE_EXCLUDE,

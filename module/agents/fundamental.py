@@ -40,41 +40,6 @@ except ImportError:
     _DEPS_OK = False
     log.error("[FundamentalAgent] Instala: pip install xgboost scikit-learn")
 
-# Features base que consume este agente.
-# Fuente: FinancialDataConsolidator → FundamentalFeatureBuilder.
-# Columnas que falten se rellenan con 0 en _align (sin romper la predicción).
-FEATURE_COLS = [
-    # Rentabilidad
-    "roe", "roa", "roi", "roic",
-    "net_margin", "gross_margin", "fcf_margin", "ebitda_margin", "operating_margin",
-    # Liquidez / Solvencia
-    "current_ratio", "quick_ratio",
-    "debt_equity", "debt_to_ebitda", "interest_coverage",
-    # Crecimiento YoY (calculado en FundamentalFeatureBuilder._yoy_growth)
-    "revenue_yoy_growth", "net_income_yoy_growth", "eps_yoy_growth",
-    "fcf_yoy_growth", "operating_income_yoy_growth", "total_debt_yoy_growth",
-    # Cambios YoY de ratios (tendencia de calidad)
-    "roa_change_yoy", "gross_margin_change_yoy", "current_ratio_change_yoy",
-    # Calidad contable / eficiencia
-    "accruals_ratio", "capex_to_revenue", "consecutive_losses",
-    # earnings_quality = FCF / Net Income: alto → beneficios respaldados por caja real.
-    # Bajo o negativo → beneficios contables inflados (accruals). Señal de calidad.
-    "earnings_quality",
-    # Piotroski F-score: composite de 8 señales binarias de calidad financiera.
-    # Validado académicamente como predictor de rendimiento a largo plazo.
-    # Rango [0,1]: 1 = empresa financieramente sana en todas las dimensiones.
-    "piotroski_fscore",
-    # EPS (base para cálculo de P/E en ValuationAgent)
-    "eps",
-    # Tendencias de mejora/deterioro de calidad a 2-3 años (slope normalizado).
-    # Capturan si la empresa está mejorando estructuralmente, no solo el nivel actual.
-    "roe_trend_2y", "roe_trend_3y",
-    "net_margin_trend_2y", "net_margin_trend_3y",
-    "gross_margin_trend_3y",
-    # Nota: las columnas _zsector las añade _prepare dinámicamente.
-]
-
-
 class FundamentalAgent(BaseAgent):
     """
     XGBoost calibrado (Isotonic) que aprende qué combinación de ratios
@@ -183,7 +148,7 @@ class FundamentalAgent(BaseAgent):
         # Los dummies one-hot de sector se eliminaron: aprenden el nivel medio del
         # sector, no la posición relativa del ticker — eso ya lo cubren los _zsector.
         selected = resolve_feature_columns(
-            default_cols=FEATURE_COLS,
+            default_cols=[],
             available_cols=list(X.columns),
             include_cols=FUNDAMENTAL_FEATURE_COLUMNS,
             exclude_cols=FUNDAMENTAL_FEATURE_EXCLUDE,

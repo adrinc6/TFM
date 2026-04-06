@@ -29,22 +29,23 @@ def resolve_feature_columns(
     """Resolve final feature columns using include/exclude controls.
 
     Rules:
-    - include_cols es la lista autoritativa cuando se proporciona (aunque esté vacía).
-    - default_cols solo se usa por compatibilidad si include_cols es None.
+    - include_cols es obligatoria y autoritativa (aunque esté vacía).
+    - default_cols queda deprecada y no se usa para seleccionar entrenamiento.
     - exclude_cols es informativa (no altera selección de entrenamiento).
     - Only columns available in the input frame survive.
     """
     available = set(str(c) for c in available_cols)
-    include = _unique(include_cols) if include_cols is not None else None
+    if include_cols is None:
+        raise ValueError(
+            f"[{owner}] include_cols no puede ser None: define *_FEATURE_COLUMNS en environment.py"
+        )
+    include = _unique(include_cols)
     exclude = set(_unique(exclude_cols or []))
 
-    if include is not None:
-        base = include
-        missing = [c for c in base if c not in available]
-        if missing:
-            logger.info("[%s] Ignorando columnas include no disponibles: %s", owner, ", ".join(missing))
-    else:
-        base = _unique(default_cols)
+    base = include
+    missing = [c for c in base if c not in available]
+    if missing:
+        logger.info("[%s] Ignorando columnas include no disponibles: %s", owner, ", ".join(missing))
 
     final = [c for c in base if c in available]
 

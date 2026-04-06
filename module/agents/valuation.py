@@ -37,24 +37,6 @@ try:
 except ImportError:
     _DEPS_OK = False
 
-# Features base que consume este agente.
-# Fuente: ValuationFeatureBuilder (cruce precio × fundamentales).
-# Las columnas _sector_pct se calculan internamente en _prepare.
-FEATURE_COLS = [
-    # Múltiplos actuales (calculados en ValuationFeatureBuilder)
-    "pe_ratio", "pb_ratio", "ps_ratio", "ev_to_ebitda", "fcf_yield", "earnings_yield",
-    # Comparativa vs historial propio (mean-reversion)
-    "pe_vs_5y_median", "pb_vs_5y_median", "ev_ebitda_vs_5y_median",
-    # Señales de analistas (ValuationFeatureBuilder._analyst_features)
-    "eps_surprise_pct", "eps_revision", "eps_est", "eps_reported",
-    # Nota: pe_sector_pct, pb_sector_pct, evebitda_sector_pct, fcfyield_sector_pct
-    # se añaden dinámicamente en _prepare usando estadísticas sectoriales de train.
-]
-
-# Múltiplos para los que se calcula el percentil sectorial (normalización interna)
-MULTIPLES_FOR_SECTOR = ["pe_ratio", "pb_ratio", "ev_to_ebitda", "fcf_yield"]
-
-
 class ValuationAgent(BaseAgent):
     """
     Gradient Boosting calibrado que detecta infravaloración combinando:
@@ -78,7 +60,6 @@ class ValuationAgent(BaseAgent):
         self.subsample     = subsample
         self._model:              Optional[Pipeline] = None
         self._feature_cols:       List[str]          = []
-        self._sector_stats:       Dict               = {}
         self._selector:           Optional[FeatureSelector] = None
         self._explainer:          Optional[AgentExplainer] = None
 
@@ -156,47 +137,13 @@ class ValuationAgent(BaseAgent):
     def _prepare(self, X: pd.DataFrame, sector_col: str, fit_mode: bool) -> pd.DataFrame:
         df       = X.copy()
         selected = resolve_feature_columns(
-            default_cols=FEATURE_COLS,
+            default_cols=[],
             available_cols=list(df.columns),
             include_cols=VALUATION_FEATURE_COLUMNS,
             exclude_cols=VALUATION_FEATURE_EXCLUDE,
             logger=log,
             owner="ValuationAgent",
         )
-
-        if sector_col in df.columns:
-            if fit_mode:
-                # Calcular estadísticas sectoriales SOLO en train
-                self._sector_stats = {}
-                for mult in MULTIPLES_FOR_SECTOR:
-                    if mult not in df.columns:
-                        continue
-                    self._sector_stats[mult] = {}
-                    for sec, grp in df.groupby(sector_col):
-                        vals = grp[mult].dropna()
-                        if len(vals) >= 3:
-                            self._sector_stats[mult][sec] = {
-                                "mean": float(vals.mean()),
-                                "std":  float(vals.std()) or 1e-6,
-                            }
-            # Añadir percentil sectorial (disponible en fit y transform)
-            for mult in MULTIPLES_FOR_SECTOR:
-                if mult not in df.columns:
-                    continue
-                pct_col = f"{mult.split('_')[0]}_sector_pct"
-                stats   = self._sector_stats.get(mult, {})
-
-                def _pct(row, _mult=mult, _stats=stats, _sc=sector_col):
-                    s = _stats.get(row[_sc])
-                    v = row.get(_mult, np.nan)
-                    if s is None or pd.isna(v):
-                        return np.nan
-                    z = (v - s["mean"]) / s["std"]
-                    return float(1 / (1 + np.exp(-z)))  # sigmoide → [0,1]
-
-                df[pct_col] = df.apply(_pct, axis=1)
-                if pct_col not in VALUATION_FEATURE_EXCLUDE:
-                    selected.append(pct_col)
 
         selected = list(dict.fromkeys(selected))
         result   = df[[c for c in selected if c in df.columns]].copy()
@@ -239,7 +186,7 @@ class ValuationAgent(BaseAgent):
         if sector_col not in X.columns:
             return {}
         out = {}
-        for mult in MULTIPLES_FOR_SECTOR:
+        for mult in VALUATION_FEATURE_COLUMNS:
             if mult not in X.columns:
                 continue
             out[mult] = (X.groupby(sector_col)[mult]

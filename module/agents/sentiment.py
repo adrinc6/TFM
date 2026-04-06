@@ -38,28 +38,6 @@ try:
 except ImportError:
     _DEPS_OK = False
 
-
-FEATURE_COLS = [
-    # Señales de analistas (recommendation_trends.json)
-    "analyst_buy_ratio",
-    "analyst_bearish_score",
-    "analyst_consensus",
-    "analyst_dispersion",
-    "analyst_strong_buy_pct",
-    "analyst_consensus_change",
-    # Insider sentiment MSPR (insider_sentiment.json)
-    "mspr_3m",
-    "mspr_trend",
-    # Transacciones insider (insider_transactions.json)
-    "insider_net_ratio_90d",
-    "insider_sell_ratio",
-    # EPS surprises (eps_surprises.json)
-    "beat_rate_4q",
-    "eps_surprise_avg_4q",
-    "eps_surprise_pct",
-]
-
-
 class SentimentAgent(BaseAgent):
     """
     Random Forest calibrado sobre señales de sentimiento institucional.
@@ -238,7 +216,7 @@ class SentimentAgent(BaseAgent):
         """Selecciona las columnas del agente y añade features derivados."""
         df = X.copy()
         selected = resolve_feature_columns(
-            default_cols=FEATURE_COLS,
+            default_cols=[],
             available_cols=list(df.columns),
             include_cols=SENTIMENT_FEATURE_COLUMNS,
             exclude_cols=SENTIMENT_FEATURE_EXCLUDE,

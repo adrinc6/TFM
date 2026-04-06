@@ -13,6 +13,8 @@ import numpy as np
 import pandas as pd
 
 from environment import (
+    BASE_AGENTS_LABEL_MODE,
+    BASE_LABEL_SECTOR_MIN_PEERS,
     PORTFOLIO_MIN_SCORE,
     RUN_ABLATION_STUDY,
     SECTOR_ZSCORE_MIN_PEERS,
@@ -384,25 +386,42 @@ def _excess_return_label(
     forward_return = df["forward_return"]
     valid_mask = forward_return.notna()
 
-    if sector_map is not None and len(sector_map) > 0:
-        # Añadir sector al DataFrame temporal para calcular mediana sectorial
-        sector_series = pd.Series(tickers, index=df.index).map(sector_map).fillna("Unknown")
-        temp = pd.DataFrame({
-            "forward_return": forward_return.values,
-            "sector": sector_series.values,
-            "snapshot_quarter": snapshot_quarters.astype(str),
-        }, index=df.index)
+    quarter_median = df.groupby(snapshot_quarters)["forward_return"].transform("median")
 
-        # Mediana del sector × snapshot_quarter como benchmark
-        sector_quarter_median = temp.groupby(["sector", "snapshot_quarter"])["forward_return"].transform("median")
-        n_with_sector = (sector_series != "Unknown").sum()
-        log.debug(f"[Label] Usando mediana sectorial por snapshot quarter — {n_with_sector}/{len(df)} tickers con sector conocido")
-        labels = (forward_return > sector_quarter_median).astype(float)
+    want_vs_sector = str(BASE_AGENTS_LABEL_MODE).lower().strip() == "vs_sector"
+    if want_vs_sector and sector_map is not None and len(sector_map) > 0:
+        sector_series = pd.Series(tickers, index=df.index).map(sector_map).fillna("Unknown")
+        temp = pd.DataFrame(
+            {
+                "forward_return": forward_return.values,
+                "sector": sector_series.values,
+                "snapshot_quarter": snapshot_quarters.astype(str),
+            },
+            index=df.index,
+        )
+
+        grp = ["sector", "snapshot_quarter"]
+        sector_quarter_median = temp.groupby(grp)["forward_return"].transform("median")
+        sector_quarter_count = temp.groupby(grp)["forward_return"].transform("count")
+
+        enough_peers = (temp["sector"] != "Unknown") & (sector_quarter_count >= int(BASE_LABEL_SECTOR_MIN_PEERS))
+        benchmark = pd.Series(np.where(enough_peers, sector_quarter_median, quarter_median), index=df.index)
+
+        n_with_sector = int((temp["sector"] != "Unknown").sum())
+        n_sector_label = int(enough_peers.sum())
+        n_fallback = int(len(df) - n_sector_label)
+        log.debug(
+            "[Label] mode=vs_sector | sector conocidos=%d/%d | con peers suficientes=%d | fallback_universo=%d",
+            n_with_sector,
+            len(df),
+            n_sector_label,
+            n_fallback,
+        )
+        labels = (forward_return > benchmark).astype(float)
         return labels.where(valid_mask)
 
-    # Fallback: mediana del universo completo por snapshot quarter
-    log.debug("[Label] sector_map no disponible — usando mediana del universo por snapshot quarter")
-    quarter_median = df.groupby(snapshot_quarters)["forward_return"].transform("median")
+    # Fallback explícito: mediana del universo por snapshot quarter.
+    log.debug("[Label] mode=vs_universe (o sin sector_map) — usando mediana del universo por snapshot quarter")
     labels = (forward_return > quarter_median).astype(float)
     return labels.where(valid_mask)
 
@@ -496,8 +515,9 @@ def _prepare_fold_labels(
     spy_prices: Optional[pd.Series] = None,
     sector_map: Optional[Dict[str, str]] = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
-    # Label: outperformance relativa a la mediana del sector en cada quarter.
-    # y=1 si el forward_return del ticker supera la mediana de su sector en ese período.
+    # Label configurable para agentes base:
+    # - vs_sector (default): y=1 si supera mediana sectorial por snapshot quarter.
+    # - vs_universe: y=1 si supera mediana del universo por snapshot quarter.
     forward_train = _excess_return_label(df_train, spy_prices, sector_map).reindex(df_train_norm.index)
     forward_test  = _excess_return_label(df_test,  spy_prices, sector_map).reindex(df_test_norm.index)
     y_train = forward_train.dropna().astype(int)

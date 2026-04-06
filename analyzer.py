@@ -323,7 +323,7 @@ def main():
                 "meta_exclude": META_FEATURE_EXCLUDE,
             },
         }
-        cache = CacheManager(CACHE_DIR, cache_context, namespace=datetime.now().strftime("%Y%m%d"))
+        cache = CacheManager(CACHE_DIR, cache_context)
         log.info("Cache activa: key=%s dir=%s", cache.key, cache.run_dir)
     else:
         log.info("Cache desactivada para esta ejecución")

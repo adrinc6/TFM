@@ -81,26 +81,6 @@ _FINANCIAL_FLAGS = {
 _FINANCIAL_WEIGHT = 0.60
 _MARKET_WEIGHT    = 0.40
 
-# Features base que consume este agente.
-FEATURE_COLS = [
-    # Fundamentales de riesgo (FundamentalFeatureBuilder)
-    "total_debt_yoy_growth",   # Crecimiento de deuda YoY
-    "debt_equity",             # Deuda / Equity
-    "debt_to_ebitda",          # Deuda / EBITDA
-    "fcf_margin",              # Margen de FCF (negativo = riesgo)
-    "current_ratio",           # Liquidez a corto plazo
-    "consecutive_losses",      # Trimestres consecutivos con pérdidas
-    "revenue_decline",         # 1 si revenue cayó YoY
-    "interest_coverage",       # EBIT / gastos de interés
-    # Insiders (InsiderFeatureBuilder, ventana 90 días)
-    "insider_net_ratio_90d",   # Balance neto insider normalizado [-1,1]
-    "insider_sell_ratio",      # Proporción de ventas sobre total [0,1]
-    # Analistas (ValuationFeatureBuilder._analyst_features)
-    "eps_surprise_pct",        # Sorpresa EPS último trimestre
-    "eps_revision",            # Revisión de estimación EPS
-]
-
-
 class BearAgent(BaseAgent):
     """
     Agente de riesgo estructurado en dos capas:
@@ -261,7 +241,7 @@ class BearAgent(BaseAgent):
     def _prepare(self, X: pd.DataFrame, fit_mode: bool = False) -> pd.DataFrame:
         """Selecciona columnas base + flags presentes en X."""
         base = resolve_feature_columns(
-            default_cols=FEATURE_COLS,
+            default_cols=[],
             available_cols=list(X.columns),
             include_cols=BEAR_FEATURE_COLUMNS,
             exclude_cols=BEAR_FEATURE_EXCLUDE,

@@ -16,6 +16,9 @@ from environment import (
     FEATURE_SELECTOR_RELEVANCE_WEIGHT,
     FEATURE_SELECTOR_RF_N_ESTIMATORS,
     FEATURE_SELECTOR_RF_MAX_DEPTH,
+    FEATURE_IMPORTANCE_CUTOFF_FRACTION,
+    FEATURE_IMPORTANCE_MIN_KEEP,
+    FEATURE_IMPORTANCE_MAX_KEEP,
 )
 
 log = logging.getLogger(__name__)
@@ -284,9 +287,12 @@ class FeatureSelector:
         RandomForest auxiliar. Así se evita depender solo de importancias
         relativas del modelo cuando hay colinealidad.
 
-    Nota: NO se aplican pesos a las features seleccionadas. Los modelos de árbol
-    (XGBoost, RF, GBM) son invariantes al escalado monotónico, y para la LR
-    el StandardScaler normaliza antes de ajustar. La selección es suficiente.
+        Paso 3 — Regla de corte e intensidad (pedida por negocio):
+            - Se toma la importancia máxima (top_importance).
+            - Se conservan features con importancia >= top_importance * cutoff_fraction.
+            - Se acota el número final entre [min_keep, max_keep].
+            - Se calculan pesos por feature normalizados a 100 y se aplican como
+                reescalado (multiplicador = peso/100) en train y transform.
 
     Uso:
         selector = FeatureSelector()
@@ -307,9 +313,13 @@ class FeatureSelector:
         self.relevance_weight = float(max(0.0, min(1.0, relevance_weight)))
         self.rf_n_estimators = max(int(rf_n_estimators), 20)
         self.rf_max_depth = max(int(rf_max_depth), 2)
+        self.cutoff_fraction = float(max(0.0, min(1.0, FEATURE_IMPORTANCE_CUTOFF_FRACTION)))
+        self.min_keep = max(int(FEATURE_IMPORTANCE_MIN_KEEP), 1)
+        self.max_keep = max(int(FEATURE_IMPORTANCE_MAX_KEEP), self.min_keep)
         policy = str(zsector_pair_policy).strip().lower()
         self.zsector_pair_policy = policy if policy in {"auto", "force_zsector"} else "auto"
         self._selected_cols: List[str] = []
+        self._selected_weights_pct: Dict[str, float] = {}
         self._dropped_pair:  List[str] = []
         self._dropped_corr:  List[str] = []
         self._dropped_imp:   List[str] = []
@@ -492,14 +502,44 @@ class FeatureSelector:
             + (1.0 - self.relevance_weight) * imp_norm.reindex(remaining).fillna(0.0)
         ).sort_values(ascending=False)
 
-        keep_n = max(self.min_features, min(self.top_n, len(combined)))
-        self._selected_cols = list(combined.head(keep_n).index)
+        # ── Paso 3: corte por fracción de importancia top + acotado [min,max] ─
+        imp_rank = imp_all.reindex(remaining).fillna(0.0).sort_values(ascending=False)
+        top_importance = float(imp_rank.iloc[0]) if len(imp_rank) else 0.0
+        cutoff_value = top_importance * self.cutoff_fraction
+
+        if len(imp_rank):
+            selected_by_cut = imp_rank[imp_rank >= cutoff_value].index.tolist()
+        else:
+            selected_by_cut = []
+
+        if len(selected_by_cut) < self.min_keep:
+            selected_by_cut = imp_rank.head(self.min_keep).index.tolist()
+
+        if len(selected_by_cut) > self.max_keep:
+            selected_by_cut = imp_rank.head(self.max_keep).index.tolist()
+
+        self._selected_cols = list(selected_by_cut)
         self._dropped_imp = [c for c in remaining if c not in self._selected_cols]
+
+        # Pesos normalizados a 100 sobre importancia RF de las seleccionadas.
+        imp_selected = imp_rank.reindex(self._selected_cols).fillna(0.0)
+        imp_sum = float(imp_selected.sum())
+        if imp_sum > 0:
+            weights_pct = (imp_selected / imp_sum * 100.0)
+        else:
+            eq = 100.0 / max(len(self._selected_cols), 1)
+            weights_pct = pd.Series(eq, index=self._selected_cols)
+        self._selected_weights_pct = {c: float(weights_pct[c]) for c in self._selected_cols}
 
         # ── Logs detallados ────────────────────────────────────────────────────
         log.info(
-            f"{prefix} Paso 2 — hasta top-{self.top_n} por score combinado "
-            f"(w_relevance={self.relevance_weight:.2f}, w_importance={1.0 - self.relevance_weight:.2f}):"
+            f"{prefix} Paso 2 — score combinado "
+            f"(w_relevance={self.relevance_weight:.2f}, w_importance={1.0 - self.relevance_weight:.2f})"
+        )
+        log.info(
+            f"{prefix} Paso 3 — corte por importancia: top={top_importance:.4f}, "
+            f"cutoff={self.cutoff_fraction:.2f} (valor={cutoff_value:.4f}), "
+            f"min_keep={self.min_keep}, max_keep={self.max_keep}"
         )
         log.info(f"{prefix}   {'Feature':<35} {'Combined':>10} {'Imp_RF':>10} {'pb_y':>8}")
         log.info(f"{prefix}   {'-'*35} {'-'*10} {'-'*10} {'-'*8}")
@@ -507,7 +547,11 @@ class FeatureSelector:
             imp_abs = float(imp_all[feat]) if feat in imp_all.index else 0.0
             pb_val  = pb_corr.get(feat, 0.0)
             cmb_val = float(combined.get(feat, 0.0))
-            log.info(f"{prefix}   {rank:2}. {feat:<33} {cmb_val:>10.4f} {imp_abs:>10.4f} {pb_val:>8.3f}")
+            w_pct = self._selected_weights_pct.get(feat, 0.0)
+            log.info(
+                f"{prefix}   {rank:2}. {feat:<33} {cmb_val:>10.4f} {imp_abs:>10.4f} {pb_val:>8.3f}"
+                f"  weight={w_pct:>6.2f}%"
+            )
 
         if self._dropped_imp:
             log.info(f"{prefix}   Descartadas por score combinado bajo ({len(self._dropped_imp)}): "
@@ -518,15 +562,19 @@ class FeatureSelector:
             f"pair_drop={len(self._dropped_pair)} → "
             f"corr_drop={len(self._dropped_corr)} → "
             f"imp_drop={len(self._dropped_imp)} → "
-            f"{len(self._selected_cols)} seleccionadas (máximo top-{self.top_n})"
+            f"{len(self._selected_cols)} seleccionadas (regla cutoff + [{self.min_keep},{self.max_keep}])"
         )
 
-        return X[self._selected_cols].copy()
+        return self.transform(X)
 
     # ── transform ─────────────────────────────────────────────────────────────
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        result = X.reindex(columns=self._selected_cols, fill_value=0.0)
+        result = X.reindex(columns=self._selected_cols, fill_value=0.0).copy()
+        # Reescala por pesos normalizados: suma de pesos = 100.
+        for col, weight_pct in self._selected_weights_pct.items():
+            if col in result.columns:
+                result[col] = pd.to_numeric(result[col], errors="coerce").fillna(0.0) * (weight_pct / 100.0)
         return result.copy()
 
     def report(self) -> Dict:
@@ -539,8 +587,12 @@ class FeatureSelector:
             "rf_n_estimators": self.rf_n_estimators,
             "rf_max_depth": self.rf_max_depth,
             "zsector_pair_policy": self.zsector_pair_policy,
+            "cutoff_fraction": self.cutoff_fraction,
+            "min_keep": self.min_keep,
+            "max_keep": self.max_keep,
             "n_selected":   len(self._selected_cols),
             "selected":     self._selected_cols,
+            "selected_weights_pct": self._selected_weights_pct,
             "dropped_pair": self._dropped_pair,
             "dropped_corr": self._dropped_corr,
             "dropped_imp":  self._dropped_imp,

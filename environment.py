@@ -141,6 +141,15 @@ MIN_HISTORY_QUARTERS = 4
 # Mínimo de empresas del mismo sector para calcular Z-score sectorial
 SECTOR_ZSCORE_MIN_PEERS = 3
 
+# Objetivo de entrenamiento para agentes base (todos menos SectorRotation):
+# - "vs_sector": y=1 si la compañía supera la mediana de su sector en el snapshot.
+# - "vs_universe": y=1 si supera la mediana del universo en el snapshot.
+BASE_AGENTS_LABEL_MODE = "vs_sector"
+
+# Mínimo de peers por sector x snapshot para usar benchmark sectorial en labels.
+# Si no se alcanza, se usa fallback a mediana del universo en ese snapshot.
+BASE_LABEL_SECTOR_MIN_PEERS = 3
+
 # Número de folds KFold internos para generar OOF scores del meta-learner
 OOF_N_SPLITS = 3
 
@@ -339,14 +348,18 @@ SENTIMENT_FEATURE_EXCLUDE = []
 # SectorRotationAgent
 SECTOR_ROTATION_FEATURE_COLUMNS = [
   "roe", "roa", "net_margin", "gross_margin", "fcf_margin", "ebitda_margin",
+  "operating_margin",
   "revenue_yoy_growth", "net_income_yoy_growth", "eps_yoy_growth",
   "debt_to_ebitda", "debt_equity", "interest_coverage", "current_ratio",
+  "quick_ratio",
   "pe_ratio", "pb_ratio", "ev_to_ebitda", "fcf_yield",
+  "earnings_yield",
   "pe_vs_5y_median", "pb_vs_5y_median",
   "momentum_1m", "momentum_3m", "momentum_6m", "momentum_12m",
-  "volatility_20d", "rsi_14",
-  "analyst_buy_ratio", "analyst_consensus",
-  "beat_rate_4q", "eps_surprise_pct", "eps_surprise_avg_4q", "mspr_3m",
+  "volatility_20d", "volatility_60d", "rsi_14",
+  "analyst_buy_ratio", "analyst_consensus", "analyst_dispersion", "analyst_bearish_score",
+  "insider_net_ratio_90d", "insider_sell_ratio",
+  "beat_rate_4q", "eps_surprise_pct", "eps_surprise_avg_4q", "eps_revision", "mspr_3m",
 ]
 SECTOR_ROTATION_FEATURE_EXCLUDE = []
 # ── FeatureSelector ──────────────────────────────────────────────────────────
@@ -360,6 +373,12 @@ EXPORT_FEATURE_USAGE_REPORT = True
 # Modelo auxiliar interno del selector (RandomForest rápido)
 FEATURE_SELECTOR_RF_N_ESTIMATORS = 120
 FEATURE_SELECTOR_RF_MAX_DEPTH = 5
+# Regla de selección final por importancia del selector:
+# - conservar features con importancia >= (top_importance * FEATURE_IMPORTANCE_CUTOFF_FRACTION)
+# - y luego acotar entre [FEATURE_IMPORTANCE_MIN_KEEP, FEATURE_IMPORTANCE_MAX_KEEP].
+FEATURE_IMPORTANCE_CUTOFF_FRACTION = 0.50
+FEATURE_IMPORTANCE_MIN_KEEP = 4
+FEATURE_IMPORTANCE_MAX_KEEP = 10
 # Top-N features por agente. Los agentes con más señales legítimas usan más.
 # FundamentalAgent: ~30 ratios candidatos → 12 para no perder señal.
 # MomentumAgent: técnicos + earnings momentum → 12.
@@ -387,6 +406,15 @@ META_FEATURE_COLUMNS = [
   "sector_score",
 ]
 META_FEATURE_EXCLUDE = []
+# Columnas de scores base sobre las que el meta calcula consenso/interacciones.
+META_AGENT_SCORE_COLUMNS = [
+  "fundamental_score",
+  "valuation_score",
+  "momentum_score",
+  "bear_score",
+  "sentiment_score",
+  "sector_score",
+]
 # Si True, añade señales de consenso/confianza entre agentes como features extra.
 META_ENABLE_CONSENSUS_FEATURES = True
 # Umbral para contar agentes claramente alcistas en el snapshot.

@@ -1,6 +1,16 @@
 {
   "data": [
     {
+      "actual": 5.25,
+      "estimate": 4.1768,
+      "period": "2026-03-31",
+      "quarter": 3,
+      "surprise": 1.0732,
+      "surprisePercent": 25.6943,
+      "symbol": "FDX",
+      "year": 2026
+    },
+    {
       "actual": 4.82,
       "estimate": 4.1462,
       "period": "2025-12-31",
@@ -29,18 +39,8 @@
       "surprisePercent": 3.3807,
       "symbol": "FDX",
       "year": 2025
-    },
-    {
-      "actual": 4.51,
-      "estimate": 4.5797,
-      "period": "2025-03-31",
-      "quarter": 3,
-      "surprise": -0.0697,
-      "surprisePercent": -1.5219,
-      "symbol": "FDX",
-      "year": 2025
     }
   ],
   "_ticker": "FDX",
-  "_downloaded_at": "2026-03-19T19:47:50.988232"
+  "_downloaded_at": "2026-04-06T10:19:23.732939"
 }

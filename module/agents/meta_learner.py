@@ -30,6 +30,7 @@ from environment import (
     META_ENABLE_SCORE_RECALIBRATION, META_SCORE_RECALIBRATION_TEMPERATURE,
     META_BASE_SCORE_BLEND_WEIGHT,
     META_FEATURE_COLUMNS, META_FEATURE_EXCLUDE,
+    META_AGENT_SCORE_COLUMNS,
 )
 
 log = logging.getLogger(__name__)
@@ -57,15 +58,6 @@ try:
     _DEPS_OK = True
 except ImportError:
     _DEPS_OK = False
-
-AGENT_SCORE_COLS = [
-    "fundamental_score",
-    "valuation_score",
-    "momentum_score",
-    "bear_score",        # Safety score (alto = menor riesgo)
-    "sentiment_score",   # Consenso analistas + insiders + beat rate
-    "sector_score",      # Top-down: probabilidad de que el sector supere al S&P
-]
 
 MACRO_COLS: list = []  # Macro eliminada: es igual para todos los tickers y enmascara señales de stock picking
 
@@ -369,7 +361,7 @@ class MetaLearner(BaseAgent):
     def _prepare(self, X: pd.DataFrame, sector_col: str, fit_mode: bool) -> pd.DataFrame:
         df = X.copy()
         selected = resolve_feature_columns(
-            default_cols=AGENT_SCORE_COLS,
+            default_cols=[],
             available_cols=list(df.columns),
             include_cols=META_FEATURE_COLUMNS,
             exclude_cols=META_FEATURE_EXCLUDE,
@@ -428,7 +420,7 @@ class MetaLearner(BaseAgent):
 
         # Señales de consenso/confianza entre agentes (orientadas a inversión).
         if self._use_consensus_features:
-            available_agent_scores = [c for c in AGENT_SCORE_COLS if c in df.columns]
+            available_agent_scores = [c for c in META_AGENT_SCORE_COLUMNS if c in df.columns]
             if available_agent_scores:
                 score_mat = df[available_agent_scores].astype(float)
                 score_mat = score_mat.replace([np.inf, -np.inf], np.nan)

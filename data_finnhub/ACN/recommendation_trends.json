@@ -2,6 +2,15 @@
   "data": [
     {
       "buy": 15,
+      "hold": 11,
+      "period": "2026-04-01",
+      "sell": 0,
+      "strongBuy": 8,
+      "strongSell": 0,
+      "symbol": "ACN"
+    },
+    {
+      "buy": 15,
       "hold": 10,
       "period": "2026-03-01",
       "sell": 1,
@@ -26,17 +35,8 @@
       "strongBuy": 8,
       "strongSell": 0,
       "symbol": "ACN"
-    },
-    {
-      "buy": 11,
-      "hold": 12,
-      "period": "2025-12-01",
-      "sell": 1,
-      "strongBuy": 8,
-      "strongSell": 0,
-      "symbol": "ACN"
     }
   ],
   "_ticker": "ACN",
-  "_downloaded_at": "2026-03-19T18:41:22.316679"
+  "_downloaded_at": "2026-04-06T10:10:21.529662"
 }
