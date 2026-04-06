@@ -34,10 +34,12 @@ import pandas as pd
 from typing import Dict, List, Optional
 
 from module.agents.base import BaseAgent, FeatureSelector
+from module.common.feature_controls import resolve_feature_columns
 from module.steps.step_04_evaluation.explainability import build_explainer_for_agent, AgentExplainer
 from environment import (
     BEAR_N_ESTIMATORS, BEAR_MAX_DEPTH,
     BEAR_RULE_WEIGHT, BEAR_ML_WEIGHT, FEATURE_CORR_THRESHOLD, BEAR_FEATURE_TOP_N,
+    BEAR_FEATURE_COLUMNS, BEAR_FEATURE_EXCLUDE,
 )
 
 log = logging.getLogger(__name__)
@@ -59,7 +61,7 @@ FLAG_DEFINITIONS = [
     ("debt_growth_high",   "total_debt_yoy_growth", ">",  0.20, "Deuda creciendo >20% YoY",    1.0),
     ("debt_equity_high",   "debt_equity",           ">",  3.00, "Debt/Equity > 3",              1.5),
     ("debt_ebitda_high",   "debt_to_ebitda",        ">",  6.00, "Debt/EBITDA > 6",              1.5),
-    ("fcf_negative",       "fcf",                   "<",  0.00, "FCF negativo",                 2.0),
+    ("fcf_negative",       "fcf_margin",            "<",  0.00, "FCF margin negativo",          2.0),
     ("consecutive_losses", "consecutive_losses",    ">=", 2.00, "≥2 trimestres con pérdidas",   2.0),
     ("revenue_decline",    "revenue_decline",       "==", 1.00, "Caída de revenue YoY",         1.0),
     ("low_coverage",       "interest_coverage",     "<",  1.50, "Interest Coverage < 1.5",      1.5),
@@ -85,7 +87,7 @@ FEATURE_COLS = [
     "total_debt_yoy_growth",   # Crecimiento de deuda YoY
     "debt_equity",             # Deuda / Equity
     "debt_to_ebitda",          # Deuda / EBITDA
-    "fcf",                     # Free Cash Flow (negativo = riesgo)
+    "fcf_margin",              # Margen de FCF (negativo = riesgo)
     "current_ratio",           # Liquidez a corto plazo
     "consecutive_losses",      # Trimestres consecutivos con pérdidas
     "revenue_decline",         # 1 si revenue cayó YoY
@@ -258,7 +260,14 @@ class BearAgent(BaseAgent):
 
     def _prepare(self, X: pd.DataFrame, fit_mode: bool = False) -> pd.DataFrame:
         """Selecciona columnas base + flags presentes en X."""
-        base     = [c for c in FEATURE_COLS if c in X.columns]
+        base = resolve_feature_columns(
+            default_cols=FEATURE_COLS,
+            available_cols=list(X.columns),
+            include_cols=BEAR_FEATURE_COLUMNS,
+            exclude_cols=BEAR_FEATURE_EXCLUDE,
+            logger=log,
+            owner="BearAgent",
+        )
         flag_col = [f[0] for f in FLAG_DEFINITIONS if f[0] in X.columns]
         return self._prepare_base_features(X, base + flag_col)
 

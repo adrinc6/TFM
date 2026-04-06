@@ -29,6 +29,8 @@ from typing import Dict, List, Optional
 
 from module.agents.base import BaseAgent, FeatureSelector
 from environment import FEATURE_CORR_THRESHOLD
+from module.common.feature_controls import resolve_feature_columns
+from environment import SECTOR_ROTATION_FEATURE_COLUMNS, SECTOR_ROTATION_FEATURE_EXCLUDE
 
 log = logging.getLogger(__name__)
 
@@ -272,7 +274,14 @@ class SectorRotationAgent(BaseAgent):
         temp["_quarter"] = quarter_series.values
 
         # Features a agregar
-        available_feat_cols = [c for c in TICKER_FEATURES_TO_AGGREGATE if c in temp.columns]
+        available_feat_cols = resolve_feature_columns(
+            default_cols=TICKER_FEATURES_TO_AGGREGATE,
+            available_cols=list(temp.columns),
+            include_cols=SECTOR_ROTATION_FEATURE_COLUMNS,
+            exclude_cols=SECTOR_ROTATION_FEATURE_EXCLUDE,
+            logger=log,
+            owner="SectorRotationAgent",
+        )
 
         records = []
         for (sector, quarter), grp in temp.groupby(["_sector", "_quarter"]):
@@ -317,7 +326,14 @@ class SectorRotationAgent(BaseAgent):
 
         temp = df.copy()
         temp["_sector"] = sector_series.values
-        available_feat_cols = [c for c in TICKER_FEATURES_TO_AGGREGATE if c in temp.columns]
+        available_feat_cols = resolve_feature_columns(
+            default_cols=TICKER_FEATURES_TO_AGGREGATE,
+            available_cols=list(temp.columns),
+            include_cols=SECTOR_ROTATION_FEATURE_COLUMNS,
+            exclude_cols=SECTOR_ROTATION_FEATURE_EXCLUDE,
+            logger=log,
+            owner="SectorRotationAgent",
+        )
 
         agg = temp.groupby("_sector")[available_feat_cols].mean()
         agg = agg[agg.index != "Unknown"]

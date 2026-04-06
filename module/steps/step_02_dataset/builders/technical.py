@@ -14,8 +14,15 @@ log = logging.getLogger(__name__)
 class TechnicalFeatureBuilder:
     """Calcula indicadores tecnicos sobre ventana OHLCV diaria."""
 
-    def build(self, prices_df: pd.DataFrame, as_of: pd.Timestamp) -> pd.Series:
-        df = prices_df[prices_df.index <= as_of].copy()
+    def build(
+        self,
+        prices_df: pd.DataFrame,
+        as_of: pd.Timestamp,
+        lookback_days: int = 300,
+    ) -> pd.Series:
+        end_ts = pd.Timestamp(as_of)
+        start_ts = end_ts - pd.Timedelta(days=max(int(lookback_days), 1))
+        df = prices_df.loc[(prices_df.index >= start_ts) & (prices_df.index <= end_ts)].copy()
         if len(df) < 20:
             return pd.Series(dtype=float)
 

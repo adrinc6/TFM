@@ -16,8 +16,87 @@ from module.steps.step_02_dataset.builders.technical import TechnicalFeatureBuil
 from module.steps.step_02_dataset.builders.valuation import ValuationFeatureBuilder
 from module.steps.step_02_dataset.builders.insider import InsiderFeatureBuilder
 from module.steps.step_02_dataset.builders.sentiment import SentimentFeatureBuilder
+from environment import (
+    FUNDAMENTAL_FEATURE_COLUMNS,
+    FUNDAMENTAL_FEATURE_EXCLUDE,
+    VALUATION_FEATURE_COLUMNS,
+    VALUATION_FEATURE_EXCLUDE,
+    MOMENTUM_FEATURE_COLUMNS,
+    MOMENTUM_FEATURE_EXCLUDE,
+    BEAR_FEATURE_COLUMNS,
+    BEAR_FEATURE_EXCLUDE,
+    SENTIMENT_FEATURE_COLUMNS,
+    SENTIMENT_FEATURE_EXCLUDE,
+    SECTOR_ROTATION_FEATURE_COLUMNS,
+    SECTOR_ROTATION_FEATURE_EXCLUDE,
+)
 
 log = logging.getLogger(__name__)
+
+
+_MASTER_METADATA_COLS = {
+    "year_quarter",
+    "snapshot_date",
+    "sector",
+    "industry",
+    "forward_return",
+    "report_end_date_used",
+    "report_filed_date_used",
+    "is_fundamental_carry_forward",
+}
+
+
+def _required_master_feature_columns() -> list[str]:
+    cols = []
+    for group in [
+        FUNDAMENTAL_FEATURE_COLUMNS,
+        FUNDAMENTAL_FEATURE_EXCLUDE,
+        VALUATION_FEATURE_COLUMNS,
+        VALUATION_FEATURE_EXCLUDE,
+        MOMENTUM_FEATURE_COLUMNS,
+        MOMENTUM_FEATURE_EXCLUDE,
+        BEAR_FEATURE_COLUMNS,
+        BEAR_FEATURE_EXCLUDE,
+        SENTIMENT_FEATURE_COLUMNS,
+        SENTIMENT_FEATURE_EXCLUDE,
+        SECTOR_ROTATION_FEATURE_COLUMNS,
+        SECTOR_ROTATION_FEATURE_EXCLUDE,
+    ]:
+        for c in group:
+            if c not in cols:
+                cols.append(c)
+    return cols
+
+
+def _enforce_master_feature_schema(df: pd.DataFrame) -> pd.DataFrame:
+    """Keep metadata + explicit configured features; add missing ones as NaN."""
+    if df is None or df.empty:
+        return df
+
+    required = _required_master_feature_columns()
+    missing_now = [c for c in required if c not in df.columns]
+    for col in required:
+        if col not in df.columns:
+            df[col] = np.nan
+
+    keep_cols = [c for c in _MASTER_METADATA_COLS if c in df.columns] + required
+    keep_cols = list(dict.fromkeys(keep_cols))
+
+    extra_cols = [c for c in df.columns if c not in keep_cols]
+    if extra_cols:
+        preview = ", ".join(extra_cols[:12])
+        more = " ..." if len(extra_cols) > 12 else ""
+        log.info(
+            "[Dataset] Columnas fuera del esquema explicito descartadas: %s%s (total=%d)",
+            preview,
+            more,
+            len(extra_cols),
+        )
+
+    if missing_now:
+        log.info("[Dataset] Columnas requeridas faltantes rellenadas como NaN: %d", len(missing_now))
+
+    return df[keep_cols].copy()
 
 
 def _build_filing_date_map_for_ticker(data_dir: str, ticker: str) -> Dict[pd.Timestamp, pd.Timestamp]:
@@ -175,7 +254,11 @@ def _build_feature_record(
     if len(price_window) < 20:
         return None
 
-    tech_feats = technical_builder.build(price_window, feature_date)
+    tech_feats = technical_builder.build(
+        price_window,
+        feature_date,
+        lookback_days=technical_lookback_days,
+    )
     val_feats = valuation_builder.build(
         prices_df=prices,
         fund_snapshot=fund_snap,
@@ -194,6 +277,7 @@ def _build_feature_record(
     insider_feats = insider_builder.build(
         insider_df=insider_window,
         mspr_df=mspr_window,
+        as_of=feature_date,
     )
 
     sentiment_feats = sentiment_builder.build(
@@ -312,6 +396,7 @@ def build_master_dataset(
     df = pd.DataFrame(records)
     # year_quarter se conserva como columna (no como nivel de índice) para análisis posterior
     df = df.set_index(["ticker", "date"]).sort_index()
+    df = _enforce_master_feature_schema(df)
     log.info(
         f"Dataset maestro listo: {len(df)} observaciones | "
         f"{df.index.get_level_values('ticker').nunique()} tickers | "
@@ -375,5 +460,6 @@ def build_live_features(
         return pd.DataFrame()
 
     df = pd.DataFrame(records).set_index(["ticker", "date"]).sort_index()
+    df = _enforce_master_feature_schema(df)
     log.info(f"Features live: {len(df)} tickers")
     return df

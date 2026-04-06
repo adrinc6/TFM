@@ -20,11 +20,13 @@ import pandas as pd
 from typing import Dict, List, Optional
 
 from module.agents.base import BaseAgent, FeatureSelector
+from module.common.feature_controls import resolve_feature_columns
 from module.steps.step_04_evaluation.explainability import build_explainer_for_agent, AgentExplainer
 from environment import (
     FUNDAMENTAL_N_ESTIMATORS, FUNDAMENTAL_MAX_DEPTH, FUNDAMENTAL_LEARNING_RATE,
     FUNDAMENTAL_SUBSAMPLE, FUNDAMENTAL_COLSAMPLE, FUNDAMENTAL_MIN_CHILD_WEIGHT,
     FEATURE_CORR_THRESHOLD, FUNDAMENTAL_FEATURE_TOP_N,
+    FUNDAMENTAL_FEATURE_COLUMNS, FUNDAMENTAL_FEATURE_EXCLUDE,
 )
 
 log = logging.getLogger(__name__)
@@ -180,7 +182,14 @@ class FundamentalAgent(BaseAgent):
         # Solo columnas base + _zsector (calculadas por SectorNormalizer).
         # Los dummies one-hot de sector se eliminaron: aprenden el nivel medio del
         # sector, no la posición relativa del ticker — eso ya lo cubren los _zsector.
-        selected = [c for c in FEATURE_COLS if c in X.columns]
+        selected = resolve_feature_columns(
+            default_cols=FEATURE_COLS,
+            available_cols=list(X.columns),
+            include_cols=FUNDAMENTAL_FEATURE_COLUMNS,
+            exclude_cols=FUNDAMENTAL_FEATURE_EXCLUDE,
+            logger=log,
+            owner="FundamentalAgent",
+        )
         zsector_cols = [c for c in X.columns if c.endswith("_zsector")]
         result = X[list(dict.fromkeys(selected + zsector_cols))].copy()
         if fit_mode:

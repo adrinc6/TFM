@@ -18,10 +18,12 @@ import pandas as pd
 from typing import Dict, List, Optional
 
 from module.agents.base import BaseAgent, FeatureSelector
+from module.common.feature_controls import resolve_feature_columns
 from module.steps.step_04_evaluation.explainability import AgentExplainer, build_explainer_for_agent
 from environment import (
     SENTIMENT_N_ESTIMATORS, SENTIMENT_MAX_DEPTH, SENTIMENT_MIN_SAMPLES_LEAF,
     FEATURE_CORR_THRESHOLD, SENTIMENT_FEATURE_TOP_N,
+    SENTIMENT_FEATURE_COLUMNS, SENTIMENT_FEATURE_EXCLUDE,
 )
 
 log = logging.getLogger(__name__)
@@ -235,7 +237,14 @@ class SentimentAgent(BaseAgent):
     def _prepare(self, X: pd.DataFrame) -> pd.DataFrame:
         """Selecciona las columnas del agente y añade features derivados."""
         df = X.copy()
-        selected = [c for c in FEATURE_COLS if c in df.columns]
+        selected = resolve_feature_columns(
+            default_cols=FEATURE_COLS,
+            available_cols=list(df.columns),
+            include_cols=SENTIMENT_FEATURE_COLUMNS,
+            exclude_cols=SENTIMENT_FEATURE_EXCLUDE,
+            logger=log,
+            owner="SentimentAgent",
+        )
 
         # Feature derivado: señal alcista neta (buy_ratio - bearish_score)
         if "analyst_buy_ratio" in df.columns and "analyst_bearish_score" in df.columns:

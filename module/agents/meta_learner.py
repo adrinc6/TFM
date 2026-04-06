@@ -20,6 +20,7 @@ import pandas as pd
 from typing import Dict, List, Optional
 
 from module.agents.base import BaseAgent
+from module.common.feature_controls import resolve_feature_columns
 from module.steps.step_04_evaluation.explainability import AgentExplainer, build_explainer_for_agent
 from environment import (
     META_LR_C, META_GBM_N_ESTIMATORS, META_GBM_MAX_DEPTH,
@@ -28,6 +29,7 @@ from environment import (
     META_ENABLE_CONSENSUS_FEATURES, META_BULLISH_SCORE_THRESHOLD,
     META_ENABLE_SCORE_RECALIBRATION, META_SCORE_RECALIBRATION_TEMPERATURE,
     META_BASE_SCORE_BLEND_WEIGHT,
+    META_FEATURE_COLUMNS, META_FEATURE_EXCLUDE,
 )
 
 log = logging.getLogger(__name__)
@@ -366,7 +368,14 @@ class MetaLearner(BaseAgent):
 
     def _prepare(self, X: pd.DataFrame, sector_col: str, fit_mode: bool) -> pd.DataFrame:
         df = X.copy()
-        selected = [c for c in AGENT_SCORE_COLS if c in df.columns]
+        selected = resolve_feature_columns(
+            default_cols=AGENT_SCORE_COLS,
+            available_cols=list(df.columns),
+            include_cols=META_FEATURE_COLUMNS,
+            exclude_cols=META_FEATURE_EXCLUDE,
+            logger=log,
+            owner="MetaLearner",
+        )
 
         # Macro features
         if self.use_macro_features:

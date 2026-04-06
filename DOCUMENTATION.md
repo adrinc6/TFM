@@ -1,397 +1,1036 @@
-# Documentación completa y detallada del proyecto TFM
+# DOCUMENTACION TECNICA EXHAUSTIVA
 
-Propósito: describir de forma exhaustiva el flujo, la lógica temporal, los módulos clave y el contenido exacto de los outputs generados por el pipeline. Esta versión está pensada para auditoría técnica, reproducibilidad y para que cualquier ingeniero entienda y reproduzca el pipeline sin ambigüedades.
+## 1) Objetivo del proyecto
 
-Contenido de este documento:
-- Resumen ejecutivo
-- Variables y configuración clave (archivo `environment.py`)
-- Flujo técnico paso a paso (descarga → consolidación → dataset → modelado → evaluación → backtest → outputs)
-- Lógica temporal detallada (cómo se forman folds, qué significa "analizar Qx", modos de lag)
-- Inventario exhaustivo de outputs: por archivo/patrón, campo por campo, tipos y ejemplo de fila
-- Donde mirar en el código para cada output (mapeo archivo → módulo)
-- Glosario técnico
+Este repositorio implementa un sistema de stock picking long-only basado en un ensamblado multi-agente de ML para universo US equities (principalmente large/mid caps). El objetivo academico (TFM) es demostrar un pipeline:
 
---
-
-**Resumen ejecutivo**
-
-El pipeline toma datos crudos (Finnhub y precios), los transforma en snapshots trimestrales (features + metadatos), entrena agentes por fold temporal y un meta-learner, y ejecuta un backtest walk-forward. Cada fold de test está definido por el `filedDate` de los reportes (i.e., "analizar 2026Q1" significa usar reportes con `filedDate` dentro de 2026Q1). 
-
-**Cálculo de entrada (entry_date)**: El día de entrada de cada fold se calcula determinísticamente como `primer_día_del_quarter + MAX_SNAPSHOT_LAG_DAYS` (p. ej., 1 enero + 60 días = ~2 marzo para Q1). Esto garantiza una ventana de precios uniforme y evita discontinuidades causadas por filing dates variables. El sistema loguea claramente la fecha mínima requerida de precios para cada fold.
-
-**Dónde empezar**: `analyzer.py` (punto de entrada), `environment.py` (configuración), `module/steps/step_01_data/*` (descarga y consolidación), `module/steps/step_02_dataset/*` (dataset), `module/steps/step_03_training/*`, `module/steps/step_04_evaluation/*`.
-
---
-
-**Variables y configuración clave (archivo `environment.py`)**
-
-- `SNAPSHOT_LAG_DAYS: Optional[int]` — **Parámetro heredado, ya no se utiliza en el cálculo actual de entry_date**. Mantiene compatibilidad backward pero no afecta la lógica temporal.
-- `AUTO_SNAPSHOT_LAG_MARGIN_DAYS: int` — Parámetro heredado. Se utiliza ahora solo en `_recompute_forward_returns` para ajustes de post-filing. En el cálculo de entry_date de fold, ya no efectivo.
-- `MAX_SNAPSHOT_LAG_DAYS: int` — **Parámetro activo y crítico**. Define el número máximo de días que se suma al primer día del quarter para calcular `entry_date`. Defecto: 60 días. Determinante directo de la ventana de precios disponible.
-- `HOLDING_PERIOD_MONTHS: int` — duración teórica de la posición desde la entrada.
-- `MIN_TEST_TICKERS_PERCENT: int` — porcentaje mínimo del universo total de tickers requerido en el test de un fold. Si el quarter analizado tiene menos de este porcentaje, el fold se descarta. Ejemplo: si hay 500 tickers totales, 50% = 250 mínimo requerido.
-- `ENABLE_FALLBACK_EXTRAPOLATION: bool` — si `True`, cuando una empresa no tenga reporte del quarter exacto analizado, se estiman sus features promediando los últimos `FALLBACK_LOOK_BACK_QUARTERS` snapshots históricos.
-- `FALLBACK_LOOK_BACK_QUARTERS: int` — número de quarters previos a usar para extrapolación de features cuando falte el reporte exacto.
-- `FORCE_DOWNLOAD: bool` — si `True`, borra `data_finnhub/_registry.json` para forzar re-descarga; NO borra los archivos JSON crudos.
-
-Notas operativas:
-- La descarga siempre se ejecuta hasta la fecha "hoy" para asegurar cobertura de precios en folds recientes.
-- El cálculo de entry_date es determinista: `quarter_start + MAX_SNAPSHOT_LAG_DAYS`, sin dependencias de filing dates específicas por ticker.
-
-Mejoras recientes orientadas a Outperform (selección de features y stacking):
-- `FEATURE_SELECTOR_RELEVANCE_WEIGHT: float` — peso de relevancia directa con `y` en el selector (default 0.65).
-- `FEATURE_SELECTOR_RF_N_ESTIMATORS: int` — árboles del RF auxiliar usado para importancia en el selector.
-- `FEATURE_SELECTOR_RF_MAX_DEPTH: int` — profundidad del RF auxiliar del selector.
-- `META_ENABLE_CONSENSUS_FEATURES: bool` — activa features de consenso/confianza entre agentes en el meta learner.
-- `META_BULLISH_SCORE_THRESHOLD: float` — umbral para contar agentes claramente alcistas en `bullish_agent_score_count`.
-
-Resumen funcional:
-- El selector de cada agente ahora rankea por score combinado:
-	`combined = w * norm(|pb_y|) + (1 - w) * norm(importance_rf)`
-	para priorizar señales alineadas con Outperform sin depender solo de importancias relativas bajo colinealidad.
-- El meta learner añade señales de consenso entre agentes (media, dispersión, rango,
-	recuento de agentes alcistas, fuerza de consenso y media ponderada por convicción).
-
---
-
-**Lógica temporal (explicación técnica y ejemplos)**
-
-1) ¿Qué significa "analizar 2026Q1"?
-- Significa: seleccionar para el test de ese fold todos los snapshots cuyos reportes tengan `filedDate` (o `acceptedDate` cuando `filedDate` falte) dentro del rango 2026-01-01 a 2026-03-31.
-
-2) Determinación de la `entry_date` del fold:
-- El sistema calcula siempre: `entry_date = quarter_start + MAX_SNAPSHOT_LAG_DAYS`
-- Esto significa: para un quarter analizado (ej. 2026Q1 = ene-mar), se comienza a contar desde el primer día del quarter (2026-01-01), y se suma `MAX_SNAPSHOT_LAG_DAYS` (60 días por defecto).
-- **Nota**: `SNAPSHOT_LAG_DAYS` es ahora un parámetro heredado y no afecta el cálculo actual. El lag es determinista y consistente entre todos los folds.
-- Este enfoque garantiza una ventana de precios suficientemente amplia sin depender del calendario específico de filing de cada empresa.
-- En los logs verá: `[Fold X] Snapshot lag empieza en: 1 de enero de 2026 (primer día del Q1) + 60 días máximo = fecha mínima de precios requerida: 2 de marzo de 2026`
-
-**Nota sobre lags uniformes**: Todas las empresas del mismo quarter comparten la misma `entry_date`, determinada por el primer día del quarter + MAX_SNAPSHOT_LAG_DAYS. Esto simplifica la lógica temporal y evita que folds recientes con filing dates irregulares generen ventanas de backtest vacías.
-
-Ejemplo rápido:
-- Quarter a analizar: 2026Q1 (enero-marzo)
-- Primer día del quarter: 2026-01-01
-- MAX_SNAPSHOT_LAG_DAYS: 60
-- Fecha mínima requerida de precios: 2026-01-01 + 60 = 2026-03-01 (aprox.)
-- Todos los tickers analizados en Fold 2026Q1 usarán esta `entry_date`
-- exit_date_theoretical = entry_date + HOLDING_PERIOD_MONTHS
-
-3) **Extrapolación de features para snapshots faltantes** (si `ENABLE_FALLBACK_EXTRAPOLATION=True`):
-- Para tickers **sin reporte exacto** del quarter analizado pero con al menos `FALLBACK_LOOK_BACK_QUARTERS` (defecto 4) reports históricos anteriores:
-- Se promedian los features numéricos de esos últimos quarters.
-- Se crea un snapshot "estimado" para el quarter del análisis, usando ese promedio.
-- Esto aumenta el universo de test sin esperar nuevos reportes.
-- **Beneficio**: incluye empresas con retraso en reportes o ciclos de filing irregulares.
-- **Nota técnica**: las features se estiman por promedio histórico, pero el `forward_return` se calcula normalmente con precios reales en la ventana entry→exit.
-
---
-
-Sección siguiente: INVENTARIO DETALLADO DE OUTPUTS (campo a campo). Este bloque describe el nombre exacto de archivos/patrones, su lugar en el repositorio, el módulo que los genera, los campos que contienen, el tipo esperado y un ejemplo sintético de una fila.
-
-**IMPORTANTE**: si encuentra un output adicional en su ejecución, indíquemelo y lo añado aquí con sus campos reales (puedo extraer ejemplos de su `results/` si lo desea).
-
---
-
-**Inventario de outputs — formato por entrada:**
-
-- Nombre/Patrón: ruta relativa (generador)
-- Campos: `campo: tipo — descripción` + ejemplo de fila (valores ficticios coherentes)
-
-1) Pipeline log maestro
-- `results/pipeline.log` (generado por `analyzer.py` y logger central)
-- Contenido (texto libre línea a línea). Ejemplo de líneas relevantes:
-	- [INFO] Download start: 2026-03-21 07:00
-	- [INFO] Folds generated: 2018Q1..2026Q1 (N folds)
-	- [WARN] Fold 2020Q2 omitted: MIN_TEST_TICKERS_PER_FOLD
-
-2) Master dataset
-- `results/master_dataset.csv` (generado por `module/steps/step_02_dataset/dataset.py`)
-- Campos (ejemplo mínimo común):
-	- `ticker: string — símbolo` — "AAPL"
-	- `snapshot_end_date: date — fecha de corte del informe` — "2025-12-31"
-	- `filed_date: date — fecha de presentación del reporte` — "2026-02-15"
-	- `feature_XYZ: float — ejemplo, net_income_margin` — 0.12
-	- `sector: string — sector del ticker` — "Technology"
-	- `price_entry: float — precio en fecha de entrada` — 145.32
-	- `price_exit: float — precio en fecha de salida (si existe)` — 158.21
-	- `forward_return: float — (price_exit/price_entry - 1)` — 0.088
-	- `fold: string — id del fold de test asignado` — "2026Q1"
-
-3) Registro de descargas
-- `data_finnhub/_registry.json` (generado/actualizado por `module/steps/step_01_data/registry.py`)
-- Estructura:
-	- keys: ticker
-	- value: dict de endpoints con `last_downloaded` timestamp y `etag`/`checksum` opcionales.
-- Ejemplo:
-	{
-		"AAPL": {
-			"prices": {"last_downloaded": "2026-03-21T07:15:00Z"},
-			"financials_reported_quarterly": {"last_downloaded": "2026-03-21T07:20:00Z"}
-		}
-	}
-
-4) JSON crudos por ticker
-- `data_finnhub/<TICKER>/<endpoint>.json` (descargados por `module/steps/step_01_data/downloaders.py`)
-- Contenido: payload del endpoint Finnhub/OAuth con metadatos. Campos clave que usa el pipeline:
-	- `endDate` (fecha del periodo contable)
-	- `filedDate` o `acceptedDate` (fecha de presentación)
-	- `reportedCurrency`, `symbol`, `values` (donde vienen las medidas)
-
-Ejemplo (simplificado) `financials_reported_quarterly.json`:
-	{
-		"symbol": "AAPL",
-		"report": [
-			{"endDate": "2025-12-31", "filedDate": "2026-02-15", "grossProfit": 120000000},
-			...
-		]
-	}
-
-5) CSV consolidado por ticker
-- `data_finnhub/consolidated/<TICKER>_consolidated.csv` (generado por `consolidation.py`)
-- Campos típicos:
-	- `endDate: date` — periodo del snapshot (e.g., 2025-12-31)
-	- `filedDate: date` — fecha de filing
-	- `totalRevenue: float`
-	- `netIncome: float`
-	- `eps: float`
-	- `derived_ratios.*` (ROA, ROE, margin, etc.)
-
-6) Scores por fold (detallado)
-- `results/agents/fold_{FOLD_ID}/fold_{FOLD_ID}_scores.csv` (generado por `evaluator.py` y agentes)
-- Campos:
-	- `ticker: string` — "AAPL"
-	- `snapshot_end_date: date` — "2025-12-31"
-	- `filed_date: date` — "2026-02-15"
-	- `agent_X_score: float` — score del agente X (puede ser z-score o probabilidad)
-	- `meta_score: float` — score final combinado (0..1)
-	- `rank: int` — ranking descendente por `meta_score`
-	- `selected: bool` — si entra en cartera top-N o por threshold
-	- `price_entry: float` — precio usado para calcular forward
-	- `price_exit: float | null` — precio de salida real (si hay)
-	- `forward_return: float | null` — etiqueta/retorno calculada
-
-Ejemplo fila:
-	AAPL,2025-12-31,2026-02-15,0.12,0.78,1,True,145.32,158.21,0.088
-
-7) Selection audit por fold
-- `results/agents/fold_{FOLD_ID}/fold_{FOLD_ID}_selection_audit.csv` y `.json`
-- Contenido: por ticker, motivos de inclusión/exclusión, checks fallidos, flags de calidad.
-- Campos resumen:
-	- `ticker, reason_included, reason_excluded, passed_checks` (lista)
-
-8) Explicaciones por ticker (SHAP / razones)
-- `results/agents/fold_{FOLD_ID}/fold_{FOLD_ID}_ticker_explanations.csv` y `.json`
-- Campos principales:
-	- `ticker, feature, shap_value, contribution_pct` — distribución de contribución de features.
-
-9) Diagnostics agentes
-- `results/agents/<agent>/diagnostics_fold_{FOLD_ID}.json`
-- Contiene: parámetros de entrenamiento, curva OOF, overfitting metrics, feature importance agregada.
-
-10) Backtest por fold (resultado detallado)
-- `results/backtest/fold_{FOLD_ID}_metrics.json` (generado por `backtester.py`)
-- Campos:
-	- `fold_id: string`
-	- `entry_date: date`, `exit_date_theoretical: date`, `exit_date_real: date` (último precio usado)
-	- `n_positions: int` — número medio de posiciones (o top-N)
-	- `strategy_cumulative_return: float`
-	- `benchmark_cumulative_return: float`
-	- `alpha: float`, `sharpe: float`, `max_drawdown: float`, `volatility: float`
-
-Ejemplo (JSON):
-	{
-		"fold_id": "2026Q1",
-		"entry_date": "2026-03-27",
-		"exit_date_theoretical": "2026-06-27",
-		"exit_date_real": "2026-06-25",
-		"strategy_cumulative_return": 0.12,
-		"benchmark_cumulative_return": 0.05,
-		"alpha": 0.07,
-		"sharpe": 1.2
-	}
-
-11) Backtest summary global
-- `results/backtest/backtest_summary.json` / `results/backtest/folds_results.csv`
-- Campos agregados:
-	- `fold_id, strategy_return, benchmark_return, alpha, sharpe, n_positions, pct_test_universe_used`
-
-12) Plots y figuras
-- Carpeta: `results/plots/` (generados por `visualization.py`)
-- Patrones: `score_dist_{fold}.png`, `feat_imp_{agent}_{fold}.png`, `fold_{fold}_performance.png`
-
-13) Live predictions
-- `results/predictions_LIVE.csv` y `.json` (si se ejecuta modo live)
-- Campos:
-	- `timestamp, ticker, meta_score, rank, suggested_size, notes`
-
---
-
-**Mapeo rápido: qué módulo produce cada artifacto**
-
-- Descarga JSON por ticker: `module/steps/step_01_data/downloaders.py`
-- Registry: `module/steps/step_01_data/registry.py`
-- Consolidated CSV: `module/steps/step_01_data/consolidation.py`
-- Master dataset CSV: `module/steps/step_02_dataset/dataset.py`
-- Training / OOF / Agents: `module/steps/step_03_training/*` y `module/agents/*`
-- Scores / selection audit / explanations: `module/steps/step_04_evaluation/evaluator.py` + `selection_reports.py` + `explainability.py`
-- Backtest / metrics: `module/steps/step_04_evaluation/backtester.py` + `metrics.py`
-- Visuals: `module/steps/step_04_evaluation/visualization.py`
-
---
-
-**Checklist rápido para auditar un output**
-
-1. Identificar archivo en `results/`.
-2. Localizar módulo generador usando el mapeo anterior.
-3. Abrir el log `results/pipeline.log` para ver la iteración/fold que generó ese archivo (timestamp y fold id).
-4. Revisar `fold_{FOLD_ID}_selection_audit.csv` para ver por ticker cómo se construyó la selección.
-5. Revisar `fold_{FOLD_ID}_ticker_explanations.*` para entender drivers de score.
-
---
-
-**Glosario operativo (resumen)**
-
-- Snapshot: observación por ticker asociada a un `endDate` contable y `filedDate`.
-- Filed quarter: quarter en que cae el `filedDate`.
-- Fold: unidad de walk-forward; test = snapshots con `filedDate` en el quarter.
-- Entry date: fecha de inicio de exposición calculada según modo lag.
-- Exit date theoretical / real: fecha objetivo de salida y la última fecha con precio disponible.
-
---
-
-Si quieres que haga lo siguiente ahora, dime cuál prefieres (elige una):
-1) Extraer ejemplos reales de archivos en `results/` y añadirlos aquí (necesitaré permiso para leer `results/`).
-2) Añadir una sección "strict filing mode" que implemente la política de excluir snapshots sin `filedDate` y documentar efectos (lo implemento en el código si confirmas).
-3) Generar un README reducido con los pasos mínimos para ejecutar el pipeline y reproducir un fold.
-
-Fin del documento ampliado.
-
---
-
-**Sección técnica: detalle por módulo, funciones clave y outputs (campo por campo)**
-
-Nota: abajo se listan funciones, inputs, outputs y ejemplos sintéticos por módulo. Sirve para rastrear la generación de cada archivo y entender exactamente qué contiene.
-
-1) `analyzer.py` — Orquestador
-- Responsabilidad: parsea argumentos/config, prepara directorios, lanza las etapas en orden: descarga → consolidación → dataset → training → evaluación → backtest → export.
-- Flags CLI/Entradas relevantes:
-	- `--force-download` (bool) — fuerza limpieza del registry.
-	- `--start-quarter`, `--end-quarter` — rango de folds a ejecutar.
-	- `--snapshot-lag-days` — override local para lag fijo (None = auto).
-- Flujo interno (funciones clave):
-	- `main()` — valida config y llama `run_walkforward_pipeline(...)`.
-	- `run_walkforward_pipeline(...)` — coordina las llamadas a `download_step`, `consolidate_step`, `build_dataset`, `train_step`, `evaluate_step`, `backtest_step`.
-- Outputs que referencia/crea: inicializa `results/pipeline.log` y pasa control a los módulos que generan el resto.
-
-2) `environment.py` — Config global
-- Contiene variables con tipos y explicación. Ejemplos:
-	- `SNAPSHOT_LAG_DAYS: Optional[int]` — int|None
-	- `AUTO_SNAPSHOT_LAG_MARGIN_DAYS: int` — margen días para modo auto
-	- `HOLDING_PERIOD_MONTHS: int` — meses de holding
-	- `MIN_TEST_TICKERS_PER_FOLD: int` — umbral mínimo
-	- `DATA_DIR: str` — `data_finnhub/`
-	- `RESULTS_DIR: str` — `results/`
-
-3) `module/steps/step_01_data/downloaders.py` — Descarga
-- Endpoints descargados por ticker (nombres de archivos y ubicación):
-	- `<DATA_DIR>/<TICKER>/prices.json` — precios (OHLCV) usados por backtester
-	- `<DATA_DIR>/<TICKER>/financials_reported_quarterly.json` — reporte trimestral (contiene endDate, filedDate/acceptedDate)
-	- `<DATA_DIR>/_macro/sp500.json` — benchmark
-- Comportamiento importante:
-	- Si `FORCE_DOWNLOAD`, llama `registry.clear(delete_file=True)` para eliminar `_registry.json`.
-	- Los JSON descargados se escriben con esquema original del proveedor.
-
-4) `module/steps/step_01_data/registry.py` — Registry
-- Archivo: `data_finnhub/_registry.json`
-- Estructura JSON: `{ticker: {endpoint: {last_downloaded: str, etag?: str}}}`
-- Funciones:
-	- `registry.set(ticker, endpoint, meta)` — actualiza timestamp
-	- `registry.clear(delete_file=False)` — limpia entradas; si `delete_file=True` borra el fichero físicamente
-
-5) `module/steps/step_01_data/consolidation.py` — Consolidación
-- Objetivo: convertir payloads crudos en tablas tabulares por ticker con filas por `endDate` (snapshots).
-- Funciones clave:
-	- `parse_financials_quarterly(raw_json)` → lista/dict con `endDate`, `filedDate`, métricas contables.
-	- `standardize_accounting_fields(df)` → renombra columnas a estandar.
-	- `derive_derived_ratios(df)` → calcula ROE, ROA, margins, y otros features contables.
-- Salida: `data_finnhub/consolidated/<TICKER>_consolidated.csv` con columnas (ejemplo):
-	- `ticker, endDate, filedDate, totalRevenue, netIncome, eps, roa, roe, grossMargin, currentRatio`
-
-6) `module/steps/step_02_dataset/dataset.py` — Construcción del dataset maestro
-- Resumen: une consolidated CSVs con signals técnicos/insider/sentiment y genera `results/master_dataset.csv`.
-- Funciones clave:
-	- `build_master_dataset(consolidated_dir, prices_dir)` — itera tickers, construye filas.
-	- `align_feature_date(snapshot_row, lag_mode)` — calcula `feature_date` y `price_entry_date` según lag.
-	- `compute_forward_return(prices, entry_date, exit_date)` — devuelve return y coverage flag.
-- Campos de `master_dataset.csv` (lista ampliada):
-	- `ticker: str`
-	- `snapshot_end_date: date` (endDate)
-	- `filed_date: date`
-	- `feature_*` — todos los features numéricos (netIncome, eps, roa, momentum_30, vol_90, insider_buy_pct, etc.)
-	- `sector: str`
-	- `price_entry_date: date`, `price_entry: float`
-	- `price_exit_date: date | null`, `price_exit: float | null`
-	- `forward_return: float | null`
-	- `fold: str` (ej. 2026Q1)
-	- `label_available: bool` — indica si forward_return fue calculado con cobertura suficiente
-
-7) Builders de features (detalle por archivo)
-- `builders/fundamental.py`: crea features contables (margen, crecimiento YoY, leverage ratios). Ejemplo salida: `net_income_margin`, `rev_yoy`.
-- `builders/technical.py`: indicadores de precios (momentum_30, rsi_14, vol_90).
-- `builders/valuation.py`: ratios PER, P/B, EV/EBITDA (normalizados por sector).
-- `builders/insider.py`: agregados de transacciones insiders (`insider_buy_volume_90d`).
-- `builders/sentiment.py`: `eps_surprise`, `analyst_reco_change_count`.
-
-8) `module/steps/step_03_training/training.py` — Entrenamiento de agentes
-- Output por agente (por fold):
-	- `results/agents/<agent>/train_history_fold_{FOLD}.json` — parámetros + curva de loss
-	- `results/agents/<agent>/feature_importances_fold_{FOLD}.csv` — columnas `feature, importance`
-	- OOF preds: `results/agents/<agent>/oof_predictions_{FOLD}.csv` (si aplica)
-- Funciones: `train_agent(agent_config, train_df)` retorna modelo y diagnóstico.
-
-9) `module/steps/step_04_evaluation/evaluator.py` — Fold generation y scoring
-- Funciones críticas:
-	- `_build_filing_date_map(data_finnhub_dir)` — itera `financials_reported_quarterly.json` y construye map `ticker -> {endDate: filedDate}`.
-	- `_prepare_folds_by_filed_quarter(master_dataset)` — agrupa snapshots por `filedDate` quarter y genera train/test splits por fold.
-	- `_resolve_entry_date_for_fold(test_filed_dates, SNAPSHOT_LAG_DAYS, AUTO_SNAPSHOT_LAG_MARGIN_DAYS)` — si `SNAPSHOT_LAG_DAYS is None` hace `entry = max(filedDate) + margin`.
-	- `_recompute_forward_returns_for_fold(...)` — recalcula etiquetas usando los precios entre `entry` y `exit`.
-- Outputs:
-	- `results/agents/fold_{FOLD}/fold_{FOLD}_scores.csv`
-	- `results/agents/fold_{FOLD}/fold_{FOLD}_selection_audit.csv|.json`
-	- `results/agents/fold_{FOLD}/fold_{FOLD}_ticker_explanations.*`
-
-10) `module/steps/step_04_evaluation/backtester.py` — Simulación
-- Funciones:
-	- `simulate_portfolio(signals_df, prices_df, entry_date, exit_date)` — aplica reglas de sizing y turnover
-	- `compute_metrics(returns_series, benchmark_series)` — devuelve sharpe, alpha, mdd
-- Métricas definidas y fórmulas (resumen):
-	- `cumulative_return = (1 + r1)*(1 + r2)*... - 1`
-	- `excess_return = strategy_return - benchmark_return`
-	- `sharpe = mean(returns)/std(returns) * sqrt(annualization)` (nota: usar period correct)
-	- `max_drawdown = max_peak - subsequent_trough` (porcentaje)
-
-11) `module/steps/step_04_evaluation/explainability.py` — SHAP y explicaciones
-- Salidas:
-	- `shap_global_fold_{FOLD}.csv` — `feature, mean_abs_shap, direction`
-	- `shap_per_ticker_fold_{FOLD}.csv` — `ticker, feature, shap_value`
-
-12) Visualización y reports
-- `visualization.py` genera PNGs en `results/plots/` con títulos estandarizados que incluyen `fold_id` y fecha de ejecución.
-
-13) Estructura `results/` y ejemplos concretos de filas
-- `results/master_dataset.csv` (fila ejemplo):
-	AAPL,2025-12-31,2026-02-15,0.12,Technology,145.32,158.21,0.088,2026Q1,True
-- `results/agents/fold_2026Q1/fold_2026Q1_scores.csv` (fila ejemplo):
-	AAPL,2025-12-31,2026-02-15,0.12,0.05,0.02,0.78,1,True,145.32,158.21,0.088
-	(columns: ticker, snapshot_end_date, filed_date, agent1_score, agent2_score, agent3_score, meta_score, rank, selected, price_entry, price_exit, forward_return)
-- `results/backtest/fold_2026Q1_metrics.json` (ejemplo ya mostrado arriba).
-
---
-
-Si quieres que lo haga ahora, puedo:
-- A) Añadir ejemplos reales leyendo `results/` y rellenar los ejemplos con datos reales (solo lectura). — esto haría el documento 100% exacto.
-- B) Mantener el documento con ejemplos sintéticos y seguir ampliando más módulos concretos si me indicas prioridades.
-
-Dime si quieres la opción A (extraer ejemplos reales), que actualizaré el documento con filas reales tomadas de `results/`.
-
-Fin de la sección técnica añadida.
+- Reproducible.
+- Defendible metodologicamente.
+- Estricto contra leakage temporal.
+- Trazable en cada decision (datos, features, scores, seleccion, performance).
+- Comparable frente a benchmark y baselines bajo reglas operativas homogeneas.
+
+El sistema no se limita a reportar accuracy de clasificacion. Tambien mide impacto economico con una simulacion monetaria en USD por folds walk-forward.
+
+---
+
+## 2) Mapa de arquitectura
+
+Pipeline principal:
+
+1. `step_01_data`: descarga y consolidacion de datos brutos.
+2. `step_02_dataset`: construccion del panel maestro trimestral (PIT-aware).
+3. `step_03_training`: entrenamiento agentes base + meta-learner.
+4. `step_04_evaluation`: walk-forward, seleccion de cartera, backtesting y reportes.
+5. `step_05_live`: fold live out-of-sample (opcional).
+
+Archivo orquestador:
+
+- `analyzer.py`.
+
+Configuracion global:
+
+- `environment.py`.
+
+### 2.1. Idea de flujo
+
+El pipeline no se ejecuta como una unica caja negra. En realidad hace una cadena de decisiones donde cada paso depende del anterior:
+
+1. Primero se descargan y normalizan los datos brutos.
+2. Despues se transforma la informacion en snapshots por quarter.
+3. Luego se entrena un conjunto de agentes especializados.
+4. A continuacion se decide una cartera por fold y se simula economicamente.
+5. Finalmente se consolidan metricas, benchmark, baselines, auditorias y plots.
+
+Esta secuencia importa porque cada etapa define el contexto temporal de la siguiente. Si se modificara un paso intermedio, el resto del pipeline puede cambiar de forma importante. Por eso esta documentacion insiste tanto en el orden real de ejecucion.
+
+---
+
+## 3) Objetivos de diseno y principios
+
+El codigo fue estructurado con estos principios:
+
+- Point-in-time first: cada feature debe ser construible con informacion disponible en la fecha de decision del fold.
+- Separacion de responsabilidades: descarga, feature engineering, training, evaluacion y reporting estan desacoplados.
+- Evaluacion fuera de muestra: cada fold entrena en historia previa y decide en quarter/frecuencia objetivo.
+- Comparabilidad justa: estrategia, benchmark y baselines se simulan con mismo motor USD (fees/slippage/calendario).
+- Auditoria exportable: artefactos por fold y consolidados para soporte de defensa academica.
+
+### 3.1. Que significa esto en la practica
+
+Estos principios no son solo declarativos. Se traducen en decisiones concretas:
+
+- Si un dato no estaba publicado en la fecha de decision, no debe usarse.
+- Si dos estrategias se comparan, ambas deben sufrir la misma logica de entrada, salida y costes.
+- Si un resultado parece bueno, debe poder reconstruirse desde los artefactos.
+- Si un fold no tiene datos suficientes, se omite en lugar de forzarlo artificialmente.
+
+### 3.2. Implicaciones operativas
+
+Estos principios delimitan el funcionamiento del sistema. En la practica significan que:
+
+- no se usa informacion posterior a la fecha de decision,
+- la comparacion entre estrategias se hace con el mismo protocolo,
+- los resultados deben poder reconstruirse con los artefactos exportados,
+- y los folds insuficientes se omiten para no falsear la evaluacion.
+
+---
+
+## 4) Configuracion central (`environment.py`)
+
+`environment.py` es la fuente unica de verdad para parametros operativos, financieros y de modelado.
+
+Lo importante de este archivo es que no solo guarda constantes: define el comportamiento del experimento completo. Cambiar un valor aqui puede alterar el universo, el horizonte temporal, la frecuencia de folds, el coste de ejecucion o la comparacion contra baselines.
+
+Bloques relevantes:
+
+- Flags de ejecucion:
+  - `SKIP_BACKTEST`
+  - `UPDATE_PRICES_ONLY`
+  - `FORCE_DOWNLOAD`
+  - `RETRY_MISSING_TICKERS`
+- Ventana temporal de analisis:
+  - `ANALYSIS_START_YEAR`, `ANALYSIS_START_QUARTER`
+  - `ANALYSIS_END_YEAR`, `ANALYSIS_END_QUARTER`
+  - `ANALYSIS_FREQUENCY` (`quarterly` o `annual`)
+  - `ANALYSIS_ANNUAL_START_DATE`
+- Punto temporal de decision:
+  - `SNAPSHOT_LAG_DAYS`
+  - `HOLDING_PERIOD_MONTHS`
+- Robustez de cobertura:
+  - `ENABLE_FALLBACK_EXTRAPOLATION`
+  - `FALLBACK_LOOK_BACK_QUARTERS`
+  - `MIN_TEST_TICKERS_PERCENT`
+- Backtest monetario:
+  - `INITIAL_CAPITAL_USD`
+  - `TRANSACTION_FEE_USD`
+  - `SLIPPAGE_PCT`
+  - `USE_DOLLAR_BACKTEST`
+  - `ALLOW_FRACTIONAL_SHARES`
+- Comparativas:
+  - `RUN_BASELINES`
+  - `N_RANDOM_BASELINE_SIMS`
+  - `BASELINE_MOMENTUM_LOOKBACK_DAYS`
+- Trazabilidad:
+  - `EXPORT_RUN_ARTIFACTS`
+
+Nota operativa actual: en el estado mas reciente del repo, `ANALYSIS_FREQUENCY` esta en modo anual.
+
+### 4.1. Como leer estos parametros
+
+Conviene pensar en cinco capas:
+
+1. Flags de ejecucion: deciden que partes del pipeline se activan.
+2. Tiempo: deciden que rango y que frecuencia se analizan.
+3. Calidad de datos: deciden cuantos datos son necesarios para aceptar un fold.
+4. Economia: deciden como se simula la cartera.
+5. Reproducibilidad: deciden como documentar el run.
+
+### 4.2. Que cambia si modificas los parametros mas sensibles
+
+- `SNAPSHOT_LAG_DAYS`: cambia la fecha efectiva de decision; si lo subes, eres mas conservador y usas mas retraso temporal.
+- `HOLDING_PERIOD_MONTHS`: cambia el horizonte del label y del retorno economico.
+- `TOP_N_STOCKS`: cambia el tamano de cartera y por tanto la diversificacion.
+- `INITIAL_CAPITAL_USD`: cambia la escala monetaria, no la logica de seleccion.
+- `TRANSACTION_FEE_USD` y `SLIPPAGE_PCT`: cambian la penalizacion por operar.
+
+### 4.3. Por que este archivo importa tanto
+
+`environment.py` concentra la definicion operativa del experimento. Eso significa que el comportamiento del sistema puede cambiar de forma relevante si cambian sus parametros, pero la logica general del pipeline permanece estable.
+
+---
+
+## 5) Flujo end-to-end (`analyzer.py`)
+
+`analyzer.py` coordina el run de extremo a extremo:
+
+### 5.0. Vista general del paso
+
+- Entrada: configuracion global, universo de tickers, fechas de analisis y flags de ejecucion.
+- Proceso: secuencia de descarga, consolidacion, construccion del dataset, exportacion de trazabilidad y evaluacion.
+- Salida: artefactos del run, logs, dataset maestro y, si `SKIP_BACKTEST=False`, resultados de backtest y comparativas.
+
+1. Inicializa logging y semillas globales (`random`, `numpy`).
+2. Resuelve rango de analisis segun frecuencia trimestral o anual.
+3. Descarga/actualiza datos (`download_data`).
+4. Consolida y limpia (`prepare_data`).
+5. Determina tickers utilizables (`get_available_tickers`).
+6. Construye dataset maestro (`build_master_dataset`).
+7. Exporta trazabilidad:
+   - `results/run_config.json`
+   - `results/data_quality_report.csv`
+8. Ejecuta evaluacion walk-forward (`run_walkforward_pipeline`) salvo `SKIP_BACKTEST=True`.
+
+Si `UPDATE_PRICES_ONLY=True`, el flujo termina antes de dataset/training/backtest y conserva compatibilidad con modo mantenimiento de datos.
+
+### 5.1. Que hace exactamente al empezar
+
+El arranque del orquestador es importante porque fija dos cosas antes de tocar los datos:
+
+- el contexto temporal del experimento,
+- y la semilla global de reproducibilidad.
+
+Esto significa que, aunque el pipeline tenga componentes estocasticos, el resultado deberia ser replicable si se ejecuta bajo la misma configuracion.
+
+### 5.2. Paso 1: descarga
+
+En esta fase se recuperan datos brutos desde Finnhub y fuentes auxiliares. La idea es tener el repositorio localmente materializado antes de cualquier transformacion.
+
+Que conviene entender aqui:
+
+- no todo ticker descarga igual de bien,
+- la descarga puede ser parcial,
+- y el pipeline no debe asumir que todas las fuentes existen para todos los activos.
+
+### 5.3. Paso 2: consolidacion
+
+La consolidacion convierte archivos sueltos en estructuras uniformes por ticker. Es el puente entre datos externos y features modelables.
+
+En esta etapa suele hacerse el trabajo sucio:
+
+- homogeneizar nombres,
+- alinear fechas,
+- unir tablas de distintas fuentes,
+- y filtrar objetos inutilizables.
+
+### 5.4. Paso 3: filtrado de tickers
+
+`get_available_tickers` separa universo solicitado de universo realmente utilizable. Esto es critico porque evita entrenar o evaluar con tickers cuya informacion esta incompleta.
+
+Si un ticker queda fuera, no significa que sea irrelevante; significa que no cumple las condiciones de integridad del pipeline.
+
+### 5.5. Paso 4: dataset maestro
+
+Esta es una de las fases mas importantes porque convierte datos historicos en observaciones entrenables. Cada fila ya no representa un archivo o una tabla, sino una decision temporal concreta.
+
+### 5.6. Paso 5: evaluacion
+
+Finalmente se calcula si la estrategia aporta valor. El punto importante es que la evaluacion no solo mide clasificacion, sino tambien curva monetaria, benchmark, baselines y auditoria.
+
+### 5.7. Que controla este archivo
+
+`analyzer.py` es el lugar correcto para:
+
+- activar o desactivar bloques del pipeline,
+- definir el rango temporal,
+- fijar la politica de semillas,
+- o coordinar exportaciones globales.
+
+No es el lugar donde viven las reglas de negocio de features, entrenamiento o simulacion; esos detalles estan repartidos en los modulos especializados.
+
+---
+
+## 6) Capa de datos y fuentes
+
+Las fuentes se almacenan en `data_finnhub/` por ticker y macro.
+
+`DataRouter` abstrae el acceso para evitar acoplamiento a estructura fisica de archivos.
+
+### 6.0. Vista general del paso
+
+- Entrada: carpetas locales con datos descargados y consolidados por ticker.
+- Proceso: el router interpreta cada fuente segun su formato y devuelve tablas ya preparadas para el resto del pipeline.
+- Salida: precios, fundamentales, sentimiento, insider, valoracion y benchmark accesibles con una interfaz comun.
+
+Se usan, entre otras, estas familias de datos:
+
+- Precios OHLCV.
+- Fundamentales consolidados.
+- Insider transactions.
+- Insider sentiment (MSPR).
+- Recommendation trends.
+- EPS surprises.
+- SPY para benchmark de mercado.
+
+### 6.1. Por que existe `DataRouter`
+
+`DataRouter` evita que el resto del sistema tenga que saber donde vive cada archivo. En vez de acceder directamente a rutas y formatos, el pipeline pide datos a traves de una interfaz comun.
+
+Eso aporta dos ventajas:
+
+- reduce acoplamiento,
+- y facilita auditar que cada fuente tenga su propia logica de carga.
+
+### 6.2. Logica temporal de las fuentes
+
+No todas las fuentes tienen la misma naturaleza temporal:
+
+- los precios son series diarias,
+- los fundamentales son eventos discretos publicados en fechas concretas,
+- el sentimiento y el insider pueden acumularse en ventanas,
+- el benchmark sirve como referencia de mercado para comparacion y simulacion.
+
+Por eso el pipeline no puede tratarlas igual. Cada una necesita su propia regla de corte y su propia ventana de uso.
+
+### 6.3. Que aporta esta separacion
+
+Esta separacion permite tratar cada fuente segun su naturaleza temporal. Los precios se consumen como series continuas; los fundamentales se consumen como eventos publicados; el sentimiento y el insider como ventanas temporales; y el benchmark como referencia de mercado.
+
+---
+
+## 7) Construccion del dataset maestro (`step_02_dataset`)
+
+### 7.0. Vista general del paso
+
+- Entrada: datos crudos por ticker, historial de precios, consolidado fundamental y fuentes auxiliares.
+- Proceso: se generan snapshots por quarter, se recorta cada fuente a la fecha de corte y se ensamblan features y labels.
+- Salida: `master_dataset.csv` con una fila por `(ticker, date)` y todas las variables ya listas para training.
+
+### 7.1 Unidad de observacion
+
+La unidad base es `(ticker, date)` con `date` asociado al cierre de cada quarter de snapshot.
+
+Columnas clave de control temporal:
+
+- `year_quarter`: quarter del snapshot (ej. `2025Q2`).
+- `snapshot_date`: primer dia del quarter + `SNAPSHOT_LAG_DAYS`.
+- `report_end_date_used` y `report_filed_date_used`: trazan que reporte fundamental se uso realmente.
+- `is_fundamental_carry_forward`: marca si se arrastro ultimo reporte publicado por falta de nuevo filing.
+
+### 7.1.1. Que significa realmente un snapshot
+
+Un snapshot es una fotografia del ticker en una fecha de decision. No es simplemente una fila historica. Es una construccion sintetica que intenta representar qué sabia el sistema en ese momento.
+
+Por eso cada snapshot mezcla fuentes distintas pero alineadas a la misma fecha efectiva:
+
+- precio disponible hasta ese momento,
+- fundamentales ya publicados,
+- senales de sentimiento disponibles,
+- historial tecnico acumulado hasta la ventana definida.
+
+### 7.1.2. Por que el quarter importa
+
+El quarter es la unidad natural de decision porque:
+
+- los fundamentales suelen publicarse con periodicidad trimestral,
+- el estudio busca comparabilidad por periodos estables,
+- y el target se define sobre un horizonte de holding compatible con esa granularidad.
+
+### 7.1.3. Que salida produce esta etapa
+
+El resultado no es una tabla final de predicciones, sino un panel estructurado que despues puede dividirse en train/test por fold.
+
+### 7.2 Regla PIT para fundamentales
+
+La seleccion del snapshot fundamental no usa "ultimo quarter por calendario" de forma ciega.
+
+Regla:
+
+- Se elige el reporte con `filedDate <= snapshot_date` mas reciente.
+- Si no hay metadata de filing utilizable, fallback a `report_end_date <= snapshot_date`.
+
+Esto evita look-ahead de fundamentales no publicados aun.
+
+#### Logica operativa paso a paso
+
+1. Se localizan todos los reportes disponibles del ticker.
+2. Se calcula para cada reporte la fecha real de publicacion.
+3. Se descartan los reportes posteriores a la fecha de snapshot.
+4. Se selecciona el reporte mas reciente entre los ya publicados.
+5. Si faltan metadatos, se usa la alternativa mas conservadora posible.
+
+Esto es importante porque, sin esta regla, el modelo podria aprender de un balance o resultado que en realidad aun no era publicamente conocido.
+
+### 7.3 Features por familia
+
+- Fundamentales: ratios y tendencias historicas hasta `snapshot_date`.
+- Tecnicos: calculados sobre ventana de precios `lookback_days` con corte as-of.
+- Valoracion: multiples y derivados con estado as-of.
+- Insider/sentiment: ventanas recortadas por tiempo (90d, 6m, etc.) con filtros as-of.
+
+#### Fundamental
+
+Aqui el objetivo es capturar estructura economica y contable:
+
+- rentabilidad,
+- crecimiento,
+- calidad del balance,
+- margenes,
+- y tendencias de medio plazo.
+
+Tambien se incorporan transformaciones historicas para saber no solo el nivel actual de una variable, sino su trayectoria.
+
+#### Technical
+
+Las tecnicas intentan describir el comportamiento reciente del precio:
+
+- momentum,
+- volatilidad,
+- medias moviles,
+- distancia a medias,
+- y otras medidas de tendencia o reversión.
+
+La ventana de 300 dias evita exigir historia excesiva pero mantiene contexto suficiente para senales de mercado.
+
+#### Valuation
+
+La capa de valoracion intenta capturar si un activo esta barato o caro frente a sus metricas de negocio.
+
+Se combina el estado de mercado con las variables fundamentales para que el score no dependa solo del precio, sino tambien de la situacion financiera.
+
+#### Insider y sentiment
+
+Estas fuentes son mas ruidosas y mas sensibles al tiempo. Por eso se recortan con ventanas temporales especificas.
+
+La idea es evitar que una señal antigua siga influyendo como si fuera actual.
+
+### 7.4 Label del dataset maestro
+
+`forward_return` se calcula desde `snapshot_date` hasta `snapshot_date + HOLDING_PERIOD_MONTHS`.
+
+Luego, en training/evaluation, ese retorno se transforma en label relativo (outperformance sectorial por snapshot).
+
+#### Por que no usar directamente el retorno bruto como label
+
+Usar retorno bruto sin contexto sectorial puede introducir ruido por regimen de mercado. Una compañia puede subir menos que el mercado y aun asi ser mejor que su sector, o al reves.
+
+La version relativa obliga al modelo a aprender seleccion cross-sectional, que es mas coherente con una cartera long-only de acciones individuales.
+
+#### Que permite y que no permite esta definicion
+
+Esta definicion permite entrenar un clasificador relativo al contexto sectorial. No permite, por si sola, afirmar que un activo sea bueno en terminos absolutos; solo indica si supera o no la referencia del sector en ese snapshot.
+
+---
+
+## 8) Anti-leakage: diseno y auditoria
+
+### 8.0. Vista general del paso
+
+- Entrada: datasets y fuentes que ya han pasado por la construccion del snapshot.
+- Proceso: se aplican filtros as-of y auditorias de futuras filas para comprobar que no hay informacion posterior a la fecha de decision.
+- Salida: un control explicito de leakage por fold y por fuente, exportado a `results/leakage_audit.csv`.
+
+### 8.1 Utilidades comunes
+
+`module/common/asof.py` centraliza:
+
+- `filter_asof`
+- `detect_future_rows`
+- `assert_no_future_data`
+
+Estas funciones son la primera barrera del sistema contra errores temporales. La idea es muy simple: antes de entrenar o auditar, recortar cualquier fila que quede por delante de la fecha de corte.
+
+### 8.2 En split de folds
+
+El fold usa train con quarters estrictamente anteriores al quarter analizado y test en el quarter analizado.
+
+En terminos de condicion temporal:
+
+- Train: `quarter < analysis_quarter`
+- Test: `quarter == analysis_quarter`
+
+#### Por que esto es crucial
+
+Si train y test no estan temporalmente separados, el backtest deja de ser una evaluacion real y se convierte en una mezcla de historia pasada y futura. Ese es el error mas comun y mas peligroso en este tipo de proyectos.
+
+#### Lectura intuitiva
+
+El sistema aprende mirando atras y decide mirando un quarter concreto. Nunca deberia aprender con observaciones que ya pertenecen al quarter que esta intentando predecir.
+
+### 8.3 En score de meta-learner
+
+Las features OOF de agentes base se generan con `TimeSeriesSplit`, preservando orden temporal y evitando mezcla futura en scores de entrenamiento del meta.
+
+#### Que resuelve el OOF
+
+El meta-learner no debe entrenarse sobre predicciones que ya fueron generadas por un modelo que vio ese mismo dato durante el entrenamiento. El OOF evita precisamente eso.
+
+#### Como pensarlo mentalmente
+
+1. Se divide la historia en bloques temporales.
+2. Para cada bloque, se entrena con pasado y se predice futuro inmediato.
+3. Las predicciones se guardan solo cuando el dato no estuvo en el entrenamiento de ese submodelo.
+4. El meta aprende sobre esas predicciones OOF.
+
+### 8.4 Leakage audit exportable
+
+Por fold se auditan fuentes (sentiment, insider, technical, fundamental, valuation input).
+
+Se exporta:
+
+- `results/leakage_audit.csv`
+
+Campos principales:
+
+- `fold_id`
+- `ticker`
+- `feature_group`
+- `n_rows_future_detected`
+- `max_future_date_detected`
+- `context`
+
+Interpretacion:
+
+- `n_rows_future_detected > 0` indica incidencia de leakage potencial en la fuente auditada.
+
+#### Como usar este reporte para interpretar el sistema
+
+Si detectas incidencias, significa que la fuente auditada entrego filas que exceden la fecha de corte o que la estructura temporal de esa fuente no encaja con la regla as-of esperada. El reporte sirve para localizar exactamente donde ocurre eso.
+
+---
+
+## 9) Entrenamiento (`step_03_training`)
+
+### 9.0. Vista general del paso
+
+- Entrada: `df_train_norm`, `y_train`, `df_test_norm`, `y_test` y configuracion de agentes.
+- Proceso: cada agente base aprende su vista del problema, se generan scores OOF, el meta-learner los combina y se obtiene un score final.
+- Salida: scores por ticker, diagnosticos de agentes y, en evaluacion, una cartera candidata para el fold.
+
+### 9.1 Agentes base
+
+Configuracion declarativa en `agent_config.py`:
+
+- `fundamental`
+- `valuation`
+- `momentum`
+- `bear` (con inversion de label para riesgo)
+- `sentiment`
+- `sector_rotation` (entrenado por ruta separada)
+
+#### Que hace cada agente a nivel logico
+
+- Fundamental: intenta detectar calidad y crecimiento sostenible.
+- Valuation: intenta detectar activos infravalorados o caros.
+- Momentum: intenta capturar persistencia de precio.
+- Bear: intenta medir riesgo o comportamiento defensivo.
+- Sentiment: intenta capturar revision de analistas e informacion blanda.
+- Sector rotation: intenta identificar que sectores estan relativamente mejor posicionados.
+
+La razon de separarlos es que no todas las senales se comportan igual. El ensamblado les permite aportar evidencia complementaria.
+
+### 9.2 Meta-learner
+
+El meta consume scores de agentes base, incorpora ajustes de robustez y produce `final_score`.
+
+Ajustes destacados:
+
+- Shrink por baja dispersion de scores.
+- Ajustes sectoriales y priors de confianza.
+- Umbrales de seleccion para cartera.
+
+#### Logica del meta en lenguaje simple
+
+El meta-learner no sustituye a los agentes base: los combina.
+
+Si varios agentes apuntan en la misma direccion, el meta puede reforzar esa señal. Si una familia es poco fiable o tiene poca dispersion, su influencia se reduce.
+
+Eso hace que el score final no sea simplemente un promedio ingenuo, sino una agregacion con reglas de robustez.
+
+#### Por que esto es mejor que un solo modelo grande
+
+Un unico modelo puede aprender muchas correlaciones espurias. En cambio, el esquema multi-agente permite:
+
+- especializacion,
+- interpretabilidad,
+- y mejor analisis de errores por familia de features.
+
+#### Que limita este esquema
+
+El esquema depende de que los scores base sean razonablemente informativos. Si todos los agentes entregan senales pobres o muy correlacionadas entre si, el meta-learner no puede crear informacion nueva de la nada.
+
+### 9.3 Label de entrenamiento
+
+No se optimiza sobre retorno absoluto puro del ticker.
+
+Se utiliza label binaria relativa:
+
+- `1` si `forward_return` del ticker supera mediana de su sector en ese snapshot quarter.
+- `0` en caso contrario.
+
+Esto reduce sesgo de regimen de mercado y enfatiza seleccion cross-sectional.
+
+#### Consecuencia practica
+
+El modelo no intenta ganar al mercado en valor absoluto, sino distinguir mejor que sus pares dentro del mismo entorno. Eso es muy util en stock picking porque el exito suele depender de seleccionar los mejores nombres relativos, no de predecir la direccion global del indice.
+
+---
+
+## 10) Walk-forward evaluation (`step_04_evaluation/evaluator.py`)
+
+### 10.0. Vista general del paso
+
+- Entrada: dataset maestro, mapa sectorial, series de precios, benchmark y configuracion temporal.
+- Proceso: se generan folds, se construyen train/test por fold, se entrenan modelos, se puntuan tickers, se selecciona cartera y se simula el resultado.
+- Salida: metricas por fold, curvas de equity, auditoria de selection/leakage y resumen consolidado de estrategia, benchmark y baselines.
+
+### 10.1 Generacion de folds
+
+El backtester genera ventanas train/test segun configuracion.
+
+En modo anual:
+
+- Se ejecuta un analisis por anio (ancla temporal anual).
+- Manteniendo estructura trimestral interna para features y labels.
+
+#### Paso a paso real del fold
+
+1. Se elige una ventana de entrenamiento historica.
+2. Se define el snapshot quarter objetivo.
+3. Se construyen train y test respetando corte temporal.
+4. Se recalculan labels con la informacion disponible de ese momento.
+5. Se entrena el sistema completo sobre train.
+6. Se puntua test.
+7. Se selecciona cartera.
+8. Se simula el rendimiento en USD.
+9. Se guarda auditoria y resumen.
+
+#### Por que el modo anual sigue usando logica trimestral
+
+Porque las features y los reports siguen naciendo en snapshots trimestrales, pero el analisis puede agruparse por anio para simplificar lectura o centrar la memoria en una ventana mas amplia.
+
+### 10.2 Reglas de elegibilidad de fold
+
+Un fold se omite si falla alguno de estos criterios:
+
+- Universo test por debajo de `MIN_TEST_TICKERS_PERCENT`.
+- Benchmark sin suficientes precios en ventana de evaluacion.
+- Sin cobertura de precios util para cartera.
+- Train insuficiente o test vacio tras preparar labels.
+
+#### Interpretacion de cada filtro
+
+- Universo test insuficiente: el fold no representa bien el mercado, asi que no conviene evaluarlo.
+- Benchmark sin precios: no existe una referencia justa.
+- Sin cobertura de precios: no puede simularse una cartera real.
+- Train insuficiente: el modelo no tiene historia suficiente para aprender con minima estabilidad.
+
+Estos filtros no son caprichosos; protegen la calidad de la comparacion.
+
+### 10.3 Seleccion de cartera
+
+Se rankea por `final_score`.
+
+Regla operativa:
+
+- Filtrar tickers con `score >= PORTFOLIO_MIN_SCORE`.
+- Si no hay suficientes, fallback a top-N por ranking.
+
+Pesos:
+
+- Equal-weight o score-weighted segun configuracion.
+
+#### Lectura de la seleccion
+
+La seleccion no es una simple lista de top-N. En realidad es una decision con dos capas:
+
+1. umbral de calidad del score,
+2. y, si hace falta, relleno por ranking para no dejar la cartera vacia o demasiado pequeña.
+
+Esto evita que un fold comprimido termine sin operacion o con una cartera irrealmente minima.
+
+---
+
+## 11) Motor de backtest USD (`portfolio_simulator.py`)
+
+### 11.0. Vista general del paso
+
+- Entrada: tickers seleccionados, pesos, precios historicos y capital inicial.
+- Proceso: se compran posiciones con fee y slippage, se valoran durante el horizonte de holding y se liquida la cartera al final.
+- Salida: trades ejecutados, curva de equity diaria y resumen monetario del fold.
+
+El modo monetario agrega realismo operativo:
+
+- Capital inicial explicitamente modelado.
+- Compras/ventas con fee fijo por ticker y por operacion.
+- Slippage porcentual configurable.
+- Soporte de acciones fraccionales.
+- Curva de equity diaria (`cash + mark_to_market`).
+- Encadenamiento de capital entre folds (`ending -> starting`).
+
+### 11.1. Logica economica de la simulacion
+
+La simulacion intenta representar una cartera operativa realista, aunque simplificada. La secuencia tipica es:
+
+1. Se parte de un capital inicial.
+2. Se eligen tickers y pesos.
+3. Se calcula el coste de compra por ticker.
+4. Se descuentan fees y slippage.
+5. Se mantiene la cartera durante el periodo de holding.
+6. Se valoran posiciones con precios diarios.
+7. Se liquida al final del fold.
+8. El capital final se usa como capital de entrada del siguiente fold.
+
+#### Por que esto importa frente a un backtest por retornos
+
+Un backtest por retornos puede dar una intuicion buena, pero no refleja bien el efecto de fees acumulados, cambios de capital o composicion real de cartera. La version USD obliga a pensar en dinero y no solo en porcentajes.
+
+### 11.1 Resolucion de fechas y precios
+
+Para entry/exit se aplica regla robusta:
+
+- Si no hay precio en fecha solicitada, usar primer precio disponible `>= fecha_solicitada`.
+
+Esto queda trazado en `trades.csv` con campos `entry_date_requested`/`entry_date_used` y `exit_date_requested`/`exit_date_used`.
+
+#### Que resuelve esta regla
+
+Los mercados no siempre tienen precio exactamente en la fecha teorica deseada. Esta regla evita que el pipeline falle o que invente un precio. En vez de eso, mueve la ejecucion al siguiente dato util disponible y lo deja documentado.
+
+#### Que limita esta regla
+
+La regla asume que desplazar la ejecucion al siguiente precio disponible es una aproximacion aceptable. No modela microestructura intradia ni diferencia entre precio de apertura y cierre.
+
+### 11.2 Formato detallado de trades: trades_detailed.csv
+
+Para facilitar la lectura de cada trade individual, se genera `trades_detailed.csv` que agrupa cada compra/venta por ticker en una sola fila, mostrando claramente los USD invertidos y recibidos.
+
+#### Entrada (Input)
+
+- Archivo bruto `trades.csv` con columnas: action (BUY/SELL), ticker, exec_price, shares, notional_usd, fee_usd.
+
+#### Proceso
+
+1. Se lee `trades.csv` del fold.
+2. Se separan BUYs y SELLs por ticker.
+3. Para cada ticker se emparejan compra → venta en orden cronologico.
+4. Se calcula USD total gastado en compra = notional_usd + fee_usd.
+5. Se calcula USD total recibido en venta = notional_usd - fee_usd.
+6. Se calcula PnL = USD recibido - USD gastado.
+7. Se calcula PnL % = (PnL / USD gastado) * 100.
+
+#### Salida (Output)
+
+Cada fila en `trades_detailed.csv` representa un par compra/venta para un ticker en un fold. Columnas principales:
+
+- `ticker`: símbolo del activo.
+- `buy_date`, `buy_price`, `buy_shares`: fecha, precio y cantidad de compra.
+- `buy_notional_usd`: valor sin fees (shares * price).
+- `buy_fees_usd`: comisión de transacción.
+- `buy_total_cost_usd`: notional + fees (cantidad total de USD gastado).
+- `sell_date`, `sell_price`, `sell_shares`: fecha, precio y cantidad de venta.
+- `sell_notional_usd`: valor sin fees.
+- `sell_fees_usd`: comisión de transacción.
+- `sell_total_received_usd`: notional - fees (cantidad total de USD obtenido).
+- `pnl_usd`: ganancia en USD = sell_total_received - buy_total_cost.
+- `pnl_pct`: ganancia porcentual = (pnl_usd / buy_total_cost) * 100.
+- `hold_days`: días de holding desde compra a venta.
+
+#### Ejemplo interpretacion
+
+Si un trade muestra:
+- buy_total_cost_usd = 100.0 (gasté 100 USD)
+- sell_total_received_usd = 110.5 (recibí 110.5 USD)
+- pnl_usd = 10.5
+- pnl_pct = 10.5
+
+Se entiende claramente: "Puse 100 USD, recuperé 110.5 USD, gané 10.5 USD (10.5%)".
+
+### 11.3 Metricas economicas derivadas
+
+Desde curvas de equity se obtienen:
+
+- Retorno total
+- Max drawdown
+- Sharpe sobre retornos diarios
+- Fees acumuladas
+
+#### Como interpretarlas
+
+- Retorno total: que gano o perdio la cartera.
+- Max drawdown: cuanto sufrio en la peor racha.
+- Sharpe: rendimiento ajustado por volatilidad.
+- Fees: cuanto costo operar.
+
+No conviene mirar una sola de estas metricas aislada. Un sistema puede tener buen retorno y mal drawdown, o buen Sharpe y fees demasiado altos.
+
+---
+
+## 12) Benchmark y baselines
+
+### 12.0. Vista general del paso
+
+- Entrada: la misma ventana temporal y el mismo universo de tickers elegibles para la estrategia principal.
+- Proceso: se aplican reglas equivalentes de compra, salida, fees y slippage a SPY y a las estrategias baseline.
+- Salida: comparativas homogéneas frente a benchmark y baselines, junto con sus curvas de equity y summaries.
+
+### 12.1 Benchmark principal
+
+Se usa SPY buy-and-hold en USD con mismo motor de simulacion.
+
+Si la fecha final solicitada excede el ultimo dato disponible de SPY, se trunca salida a ultimo dia con datos y se marca disponibilidad real.
+
+Artefactos:
+
+- `results/backtest/benchmark_equity_curve.csv`
+- `results/backtest/benchmark_summary.json`
+
+#### Por que SPY es el benchmark natural aqui
+
+SPY representa una referencia amplia del mercado US. Para un TFM de stock picking long-only, es una comparacion razonable porque responde a la pregunta central: si selecciono acciones activamente, ¿hago algo mejor que un exposure pasivo al mercado?
+
+### 12.2 Baselines implementados
+
+- `ew_universe`: equal-weight sobre universo elegible por fold.
+- `momentum_12m`: top-N por retorno 12m previo al entry.
+- `random_topn_mean`: media de N simulaciones aleatorias reproducibles.
+- `value_combined`: ranking combinado fijo por P/E y EV/EBITDA.
+
+Todos los baselines usan la misma mecanica de entrada/salida/fees/slippage.
+
+#### Para que sirve cada baseline en la memoria
+
+- Equal-weight universe: mide si la seleccion agrega valor frente a una distribucion simple.
+- Momentum 12m: representa una heuristica clasica de mercado.
+- Random top-N: define una referencia de azar reproducible.
+- Value combined: mide si una regla simple de valor ya explica gran parte del resultado.
+
+#### Lo que deberias mirar al comparar
+
+No solo el retorno. Tambien:
+
+- estabilidad entre folds,
+- drawdown,
+- costes de operacion,
+- disponibilidad real,
+- y sensibilidad al universo elegible.
+
+### 12.3 Transparencia de seleccion baseline
+
+Se exportan archivos de detalle de seleccion:
+
+- `results/backtest/baselines/ew_universe_selection_by_fold.csv`
+- `results/backtest/baselines/momentum_12m_selection_by_fold.csv`
+- `results/backtest/baselines/random_topn_selection_by_sim.csv`
+- `results/backtest/baselines/value_combined_selection_by_fold.csv`
+
+#### Por que esto es valioso
+
+Los baselines suelen quedarse en una cifra agregada. Aqui, en cambio, puedes explicar exactamente que activos selecciono cada baseline y por que. Eso te permite defender o criticar su comportamiento con detalle.
+
+---
+
+## 13) Catalogo de artefactos de salida
+
+### 13.1 Raiz `results/`
+
+- `pipeline.log`: log integral del run.
+- `master_dataset.csv`: panel maestro construido.
+- `run_config.json`: snapshot completo de configuracion/versiones/flags.
+- `data_quality_report.csv`: cobertura y missing por ticker/familia de features.
+- `leakage_audit.csv`: auditoria PIT por fold/ticker/fuente.
+- `baselines_summary.csv`: comparativa consolidada estrategia/benchmark/baselines.
+- `final_portfolio_value.json`: resumen final monetario.
+- `final_summary.json` y `final_summary.csv`: resumen ejecutivo final.
+
+### 13.2 Carpeta `results/backtest/`
+
+- `missing_prices_report.csv`
+- `strategy_equity_curve.csv`
+- `benchmark_equity_curve.csv` (si disponible)
+- `benchmark_summary.json`
+- `fold_comparison_summary.csv` (comparativa por fold entre estrategia, benchmark y baselines)
+- `annual_return_comparison.csv` (retorno anual por serie para comparativa global)
+- `fold_{k}/` con:
+  - `trades.csv`
+  - `trades_detailed.csv` (formato legible: compra/venta lado-a-lado con USD gastado y recibido)
+  - `equity_curve.csv`
+  - `selection.csv`
+  - `portfolio_summary.json`
+  - `metrics.json`
+
+### 13.3 Carpeta `results/backtest/baselines/`
+
+- Curvas equity baseline.
+- Summaries JSON baseline.
+- Reporte de disponibilidad value baseline.
+- Selecciones por fold/simulacion.
+- `random_topn_fold_summary.csv` (media y bandas p05/p95 por fold para random top-N).
+
+### 13.4 Carpeta `results/plots/`
+
+Plots obligatorios generados:
+
+- `equity_curve_usd.png`
+- `equity_curve_usd_with_baselines.png`
+- `drawdown_usd.png`
+- `capital_by_fold.png`
+- `pnl_pct_by_fold.png`
+- `fold_pnl_comparison_with_baselines.png`
+- `annual_return_comparison_with_baselines.png`
+
+#### Como usar los plots
+
+- `equity_curve_usd.png`: ver tendencia y comparacion con benchmark.
+- `equity_curve_usd_with_baselines.png`: comparar la estrategia principal con alternativas.
+- `drawdown_usd.png`: entender riesgo acumulado.
+- `capital_by_fold.png`: detectar fold especialmente fuerte o debil.
+- `pnl_pct_by_fold.png`: ver dispersion entre folds.
+- `fold_pnl_comparison_with_baselines.png`: comparar por fold la estrategia principal contra benchmark y cada baseline en el mismo eje.
+- `annual_return_comparison_with_baselines.png`: comparar por ano calendario la estrategia completa frente a benchmark y baselines en todo el periodo analizado.
+
+---
+
+## 14) Reproducibilidad y trazabilidad
+
+La reproducibilidad se sostiene por:
+
+- `RANDOM_SEED` global aplicado al inicio.
+- Seeds derivadas para simulaciones random baseline.
+- Export de versiones de librerias y hash de commit en `run_config.json`.
+- Export detallado de decisiones y operaciones por fold.
+
+### 14.1. Que significa reproducibilidad aqui
+
+No significa solo que el script "corra otra vez". Significa que puedes reconstruir:
+
+- que datos se usaron,
+- que configuracion estaba activa,
+- que version de codigo se ejecuto,
+- y como llegaron los resultados finales.
+
+### 14.2. Por que esto importa en el analisis del sistema
+
+La trazabilidad permite comparar resultados entre ejecuciones distintas bajo el mismo contexto de datos y configuracion. Eso es importante para saber si una diferencia en resultados procede de los datos, de la configuracion o del propio codigo.
+
+Recomendacion de defensa TFM:
+
+- Congelar entorno con `requirements.txt`.
+- Adjuntar `run_config.json` y hash de commit del run mostrado.
+- Presentar siempre resultados junto con `leakage_audit.csv` y `data_quality_report.csv`.
+
+### 14.3. Que conviene guardar cuando repitas experimentos
+
+Ademas de los archivos ya generados, conviene conservar:
+
+- la fecha de ejecucion,
+- la version de dependencias,
+- el hash de commit,
+- y cualquier cambio manual aplicado antes del run.
+
+---
+
+## 15) Lectura metodologica de resultados
+
+Al interpretar resultados, separar 3 planos:
+
+1. Plano de modelado (clasificacion):
+   - metrica de acierto de label relativa sectorial.
+2. Plano economico (USD):
+   - valor final, retorno, drawdown, sharpe, fees.
+3. Plano de robustez comparativa:
+   - mejora sobre benchmark y sobre baselines alternativos.
+
+### 15.1. Como hacer una lectura sana de resultados
+
+La forma correcta de evaluar el proyecto es responder estas preguntas en orden:
+
+1. ¿Los datos son validos y completos?
+2. ¿Hay evidencia de leakage?
+3. ¿La estrategia supera al benchmark?
+4. ¿La estrategia supera a baselines razonables?
+5. ¿Lo hace con riesgo y costes aceptables?
+
+Si alguna de esas respuestas es negativa, el resultado no debe venderse como concluyente.
+
+### 15.2. Error tipico al interpretar una estrategia
+
+Un error frecuente es quedarse solo con el retorno final. Eso no basta. Un sistema puede tener:
+
+- buen retorno pero drawdown excesivo,
+- buen Sharpe pero fees altos,
+- o buena clasificacion pero mala traduccion economica.
+
+Por eso este proyecto separa claramente metricas de modelo y metricas de cartera.
+
+Una estrategia defendible no es solo la que maximiza retorno, sino la que mantiene consistencia bajo:
+
+- costos operativos,
+- cobertura de datos real,
+- control temporal estricto,
+- comparacion contra alternativas no triviales.
+
+---
+
+## 16) Supuestos y limitaciones actuales
+
+Supuestos operativos:
+
+- Long-only.
+- Rebalance por fold (no intrafold dinamico).
+- Fee fijo por transaccion por ticker.
+- Slippage constante (no dependiente de liquidez).
+- Sin impuestos ni borrowing costs.
+
+Limitaciones conocidas:
+
+- No hay modelado explicito de market impact por volumen.
+- No hay ejecucion intradia ni colas de ordenes.
+- Universe puede tener sesgo de supervivencia si no se versiona composicion historica.
+- El benchmark depende de cobertura de SPY en el rango del fold.
+
+### 16.1. Por que declarar limitaciones mejora la defensa
+
+No debilita el trabajo. Al contrario, muestra que sabes exactamente donde el modelo es fuerte y donde no lo es. En una defensa academica eso vale mucho mas que prometer realismo total.
+
+### 16.2. Que no hace este sistema
+
+El sistema no ejecuta ordenes reales, no modela coste de mercado variable por liquidez, no hace intradia, no calcula impuestos y no incorpora borrowing costs. Tampoco pretende predecir de forma directa el precio de cada accion en un horizonte continuo; su objetivo es seleccionar carteras por snapshot y evaluar su comportamiento posterior.
+
+---
+
+## 17) Guia rapida de ejecucion
+
+Ejecutar pipeline completo:
+
+```bash
+python analyzer.py
+```
+
+Modo solo actualizacion de precios/macro:
+
+- Configurar `UPDATE_PRICES_ONLY=True` en `environment.py`.
+- Ejecutar `python analyzer.py`.
+
+Modo sin backtest historico:
+
+- Configurar `SKIP_BACKTEST=True`.
+- Ejecutar `python analyzer.py`.
+
+---
+
+## 18) Alcance y limites del sistema
+
+### 18.1. Que puede hacer
+
+El sistema puede:
+
+- descargar y consolidar datos financieros y de mercado,
+- construir un panel maestro PIT por ticker y quarter,
+- entrenar agentes especializados y un meta-learner,
+- generar una cartera long-only por fold,
+- simular esa cartera en USD con fees y slippage,
+- comparar la estrategia contra SPY y baselines,
+- y exportar resultados, auditorias y plots para documentar el experimento.
+
+### 18.2. Que no puede hacer
+
+El sistema no puede:
+
+- garantizar que todos los tickers tengan datos completos,
+- reconstruir informacion que no exista en las fuentes,
+- modelar ejecucion intradia real,
+- sustituir una estrategia de trading live completamente automatizada,
+- ni demostrar causalidad economica; solo compara desempeno relativo bajo el protocolo definido.
+
+### 18.3. Donde es fuerte
+
+Es fuerte cuando se quiere estudiar seleccion cross-sectional con disciplina temporal, comparacion justa y trazabilidad. Tambien es fuerte para defender por que una cartera se formo de una manera concreta en un quarter concreto.
+
+### 18.4. Donde es mas debil
+
+Es mas debil en realismo de microestructura, en sensibilidad a cambios de liquidez, y en escenarios donde la disponibilidad historica de datos no sea homogénea. En esos casos, el resultado sigue siendo util como experimento academico, pero no como prueba de ejecutabilidad directa en mercado.
+
+---
+
+## 19) Conclusiones tecnicas
+
+El estado actual del proyecto ya incorpora los bloques que normalmente faltan en prototipos academicos:
+
+- control PIT y auditoria,
+- simulacion monetaria realista por folds,
+- benchmark y baselines homogeneos,
+- trazabilidad reproducible,
+- artefactos suficientes para defensa tecnica.
+
+La calidad final para memoria/tribunal dependera de ejecutar runs limpios sobre un entorno congelado, documentar supuestos de forma explicita y acompanar cada claim de performance con sus auditorias y comparativas. Ese es el criterio correcto para convertir el proyecto en una memoria defendible y no solo en un experimento interesante.

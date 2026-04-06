@@ -22,10 +22,12 @@ import pandas as pd
 from typing import Dict, List, Optional
 
 from module.agents.base import BaseAgent, FeatureSelector
+from module.common.feature_controls import resolve_feature_columns
 from module.steps.step_04_evaluation.explainability import build_explainer_for_agent, AgentExplainer
 from environment import (
     MOMENTUM_N_ESTIMATORS, MOMENTUM_MAX_DEPTH, MOMENTUM_MIN_SAMPLES_LEAF,
     FEATURE_CORR_THRESHOLD, MOMENTUM_FEATURE_TOP_N,
+    MOMENTUM_FEATURE_COLUMNS, MOMENTUM_FEATURE_EXCLUDE,
 )
 
 log = logging.getLogger(__name__)
@@ -167,7 +169,14 @@ class MomentumAgent(BaseAgent):
 
     def _prepare(self, X: pd.DataFrame, fit_mode: bool) -> pd.DataFrame:
         df = X.copy()
-        selected = [c for c in FEATURE_COLS if c in df.columns]
+        selected = resolve_feature_columns(
+            default_cols=FEATURE_COLS,
+            available_cols=list(df.columns),
+            include_cols=MOMENTUM_FEATURE_COLUMNS,
+            exclude_cols=MOMENTUM_FEATURE_EXCLUDE,
+            logger=log,
+            owner="MomentumAgent",
+        )
 
         # Features derivados (señales binarias y compuestas)
         if "rsi_14" in df.columns:

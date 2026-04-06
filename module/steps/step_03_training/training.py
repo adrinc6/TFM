@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+import json
+from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
@@ -16,12 +18,104 @@ from environment import (
     SECTOR_CONFIDENCE_PEERS,
     SECTOR_SCORE_PRIOR_BASE,
     SECTOR_SCORE_PRIOR_WEIGHT,
+    EXPORT_FEATURE_USAGE_REPORT,
+    FUNDAMENTAL_FEATURE_COLUMNS, FUNDAMENTAL_FEATURE_EXCLUDE,
+    VALUATION_FEATURE_COLUMNS, VALUATION_FEATURE_EXCLUDE,
+    MOMENTUM_FEATURE_COLUMNS, MOMENTUM_FEATURE_EXCLUDE,
+    BEAR_FEATURE_COLUMNS, BEAR_FEATURE_EXCLUDE,
+    SENTIMENT_FEATURE_COLUMNS, SENTIMENT_FEATURE_EXCLUDE,
+    SECTOR_ROTATION_FEATURE_COLUMNS, SECTOR_ROTATION_FEATURE_EXCLUDE,
+    META_FEATURE_COLUMNS, META_FEATURE_EXCLUDE,
 )
 from module.agents.meta_learner import MetaLearner
 from module.steps.step_03_training.agent_config import build_agents_config, build_sector_rotation_agent
 from module.steps.step_03_training.oof import generate_oof_scores
 
 log = logging.getLogger(__name__)
+
+
+def _requested_feature_map() -> Dict[str, Dict[str, list[str]]]:
+    return {
+        "fundamental": {"include": list(FUNDAMENTAL_FEATURE_COLUMNS), "exclude": list(FUNDAMENTAL_FEATURE_EXCLUDE)},
+        "valuation": {"include": list(VALUATION_FEATURE_COLUMNS), "exclude": list(VALUATION_FEATURE_EXCLUDE)},
+        "momentum": {"include": list(MOMENTUM_FEATURE_COLUMNS), "exclude": list(MOMENTUM_FEATURE_EXCLUDE)},
+        "bear": {"include": list(BEAR_FEATURE_COLUMNS), "exclude": list(BEAR_FEATURE_EXCLUDE)},
+        "sentiment": {"include": list(SENTIMENT_FEATURE_COLUMNS), "exclude": list(SENTIMENT_FEATURE_EXCLUDE)},
+        "sector_rotation": {"include": list(SECTOR_ROTATION_FEATURE_COLUMNS), "exclude": list(SECTOR_ROTATION_FEATURE_EXCLUDE)},
+        "meta_learner": {"include": list(META_FEATURE_COLUMNS), "exclude": list(META_FEATURE_EXCLUDE)},
+    }
+
+
+def _export_feature_usage_report(
+    *,
+    agents: Dict[str, Any],
+    df_train: pd.DataFrame,
+    fold_id: int | str,
+    agents_results_dir: str,
+) -> None:
+    if not EXPORT_FEATURE_USAGE_REPORT:
+        return
+
+    requested = _requested_feature_map()
+    records: list[Dict[str, Any]] = []
+
+    for agent_name, cfg in requested.items():
+        include = list(cfg.get("include", []))
+        exclude = list(cfg.get("exclude", []))
+        include_set = set(include)
+        available = [c for c in include if c in df_train.columns]
+        missing = [c for c in include if c not in df_train.columns]
+
+        # Columnas presentes pero no calculables en este fold (todo NaN)
+        not_calculated_or_no_data: list[str] = []
+        low_data_coverage: list[str] = []
+        for col in available:
+            s = pd.to_numeric(df_train[col], errors="coerce")
+            non_null = int(s.notna().sum())
+            if non_null == 0:
+                not_calculated_or_no_data.append(col)
+            elif non_null < max(5, int(0.05 * len(s))):
+                low_data_coverage.append(col)
+
+        agent_obj = agents.get(agent_name)
+        used = list(getattr(agent_obj, "_feature_cols", []) or []) if agent_obj is not None else []
+        used_not_requested = [c for c in used if c not in include_set]
+
+        skipped_due_to_data = [c for c in include if c not in used and c in set(not_calculated_or_no_data + low_data_coverage)]
+
+        records.append(
+            {
+                "fold": str(fold_id),
+                "agent": agent_name,
+                "requested_n": len(include),
+                "available_n": len(available),
+                "used_n": len(used),
+                "missing_n": len(missing),
+                "not_calculated_or_no_data_n": len(not_calculated_or_no_data),
+                "low_data_coverage_n": len(low_data_coverage),
+                "skipped_due_to_data_n": len(skipped_due_to_data),
+                "used_not_requested_n": len(used_not_requested),
+                "requested": "|".join(include),
+                "exclude": "|".join(exclude),
+                "available": "|".join(available),
+                "missing": "|".join(missing),
+                "not_calculated_or_no_data": "|".join(not_calculated_or_no_data),
+                "low_data_coverage": "|".join(low_data_coverage),
+                "skipped_due_to_data": "|".join(skipped_due_to_data),
+                "used": "|".join(used),
+                "used_not_requested": "|".join(used_not_requested),
+            }
+        )
+
+    out_dir = Path(agents_results_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    csv_path = out_dir / f"quarter_{fold_id}_feature_usage_report.csv"
+    json_path = out_dir / f"quarter_{fold_id}_feature_usage_report.json"
+
+    pd.DataFrame(records).to_csv(csv_path, index=False, encoding="utf-8")
+    json_path.write_text(json.dumps(records, ensure_ascii=False, indent=2), encoding="utf-8")
+    log.info("[FeatureUsage] Reporte fold %s -> %s", fold_id, csv_path.name)
 
 
 def _series_stats(s: pd.Series) -> Dict[str, float]:
@@ -289,6 +383,12 @@ def train_fold(
     log.info(f"[Fold {fold_id}] 3/3 — Predicciones listas. Scores en rango [{df_test['final_score'].min():.3f}, {df_test['final_score'].max():.3f}]")
 
     agents_dict = {**base_agents, "sector_rotation": sector_agent, "meta_learner": meta}
+    _export_feature_usage_report(
+        agents=agents_dict,
+        df_train=df_train_norm,
+        fold_id=fold_id,
+        agents_results_dir=agents_results_dir,
+    )
     return agents_dict, df_test, df_train_with_oof
 
 

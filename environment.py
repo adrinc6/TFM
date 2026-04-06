@@ -34,10 +34,29 @@ FORCE_DOWNLOAD = False
 UPDATE_PRICES_ONLY = False
 
 # Si True, reintenta descargar datos para los tickers eliminados por falta de datos
-RETRY_MISSING_TICKERS = True
+RETRY_MISSING_TICKERS = False
 
 # Si True, ejecuta el estudio de ablation para medir la contribución de agentes
 RUN_ABLATION_STUDY = False
+
+# Si True, habilita caché de artefactos intermedios para reutilizar cálculo
+ENABLE_CACHE = True
+
+# Carpeta raíz de caché
+CACHE_DIR = "cache"
+
+# Versión de esquema de caché. Súbela cuando cambie la estructura de artefactos
+# o la política de columnas del dataset.
+CACHE_SCHEMA_VERSION = 2
+
+# Reutiliza dataset maestro si coincide contexto (tickers + parámetros)
+CACHE_USE_MASTER_DATASET = True
+
+# Reutiliza artefactos derivados de DataRouter (tickers disponibles y datos de mercado preparados)
+CACHE_USE_ROUTER_DERIVED = True
+
+# Reutiliza resumen final walk-forward y salta recomputar backtest completo
+CACHE_USE_WALKFORWARD_SUMMARY = False
 
 # Descarga paralela
 DOWNLOAD_MAX_WORKERS = 8
@@ -75,7 +94,7 @@ TICKERS = [
 # =============================================================================
 
 # Fecha desde la que se descargan los datos brutos.
-DOWNLOAD_START_DATE = "2015-01-01"
+DOWNLOAD_START_DATE = "2000-01-01"
 
 # Inicio del período de análisis/backtest walk-forward (quarters de snapshot a analizar).
 ANALYSIS_START_YEAR = 2023
@@ -175,6 +194,33 @@ RISK_FREE_RATE = 0.04
 # Máximo de stocks seleccionados en la cartera long por fold
 TOP_N_STOCKS = 10
 
+# Capital inicial para simulación en USD (modo backtest monetario)
+INITIAL_CAPITAL_USD = 1000.0
+
+# Coste fijo por transacción (cada BUY y cada SELL por ticker)
+TRANSACTION_FEE_USD = 1.0
+
+# Slippage porcentual aplicado al precio de ejecución (0.01 = 1%)
+SLIPPAGE_PCT = 0.0
+
+# Si True, además de métricas de retorno, ejecuta backtest monetario en USD.
+USE_DOLLAR_BACKTEST = True
+
+# Siempre permitir acciones fraccionarias (sin redondeo a enteros)
+ALLOW_FRACTIONAL_SHARES = True
+
+# Ejecutar benchmark y baselines adicionales para comparativa robusta
+RUN_BASELINES = True
+
+# Número de simulaciones para baseline random-topN
+N_RANDOM_BASELINE_SIMS = 100
+
+# Ventana de momentum para baseline de 12 meses
+BASELINE_MOMENTUM_LOOKBACK_DAYS = 252
+
+# Exporta artefactos adicionales del run (config, calidad, resúmenes)
+EXPORT_RUN_ARTIFACTS = True
+
 # Si True, pondera la cartera: el ticker #1 pesa (1 + N/10) veces más que el #N.
 # Distribución lineal entre ambos extremos, normalizada a suma 1.
 # Ejemplo: N=10 → el primero pesa el doble que el último.
@@ -193,11 +239,38 @@ FUNDAMENTAL_LEARNING_RATE   = 0.05
 FUNDAMENTAL_SUBSAMPLE       = 0.8
 FUNDAMENTAL_COLSAMPLE       = 0.7
 FUNDAMENTAL_MIN_CHILD_WEIGHT = 5
+
+# Control de columnas por agente:
+# - *_FEATURE_COLUMNS es la lista AUTORITATIVA que usan los agentes.
+# - *_FEATURE_EXCLUDE es informativa/documental: esas columnas tambien se
+#   garantizan en dataset maestro, pero el entrenamiento usa solo *_FEATURE_COLUMNS.
+FUNDAMENTAL_FEATURE_COLUMNS = [
+  "roe", "roa", "roi", "roic",
+  "net_margin", "gross_margin", "fcf_margin", "ebitda_margin", "operating_margin",
+  "current_ratio", "quick_ratio",
+  "debt_equity", "debt_to_ebitda", "interest_coverage",
+  "revenue_yoy_growth", "net_income_yoy_growth", "eps_yoy_growth",
+  "fcf_yoy_growth", "operating_income_yoy_growth", "total_debt_yoy_growth",
+  "roa_change_yoy", "gross_margin_change_yoy", "current_ratio_change_yoy",
+  "accruals_ratio", "capex_to_revenue", "consecutive_losses",
+  "earnings_quality", "piotroski_fscore",
+  "eps",
+  "roe_trend_2y", "roe_trend_3y",
+  "net_margin_trend_2y", "net_margin_trend_3y",
+  "gross_margin_trend_3y",
+]
+FUNDAMENTAL_FEATURE_EXCLUDE = []
 # ── ValuationAgent (GBM) ─────────────────────────────────────────────────────
 VALUATION_N_ESTIMATORS  = 200
 VALUATION_MAX_DEPTH     = 4
 VALUATION_LEARNING_RATE = 0.05
 VALUATION_SUBSAMPLE     = 0.8
+VALUATION_FEATURE_COLUMNS = [
+  "pe_ratio", "pb_ratio", "ps_ratio", "ev_to_ebitda", "fcf_yield", "earnings_yield",
+  "pe_vs_5y_median", "pb_vs_5y_median", "ev_ebitda_vs_5y_median",
+  "eps_surprise_pct", "eps_revision", "eps_est", "eps_reported",
+]
+VALUATION_FEATURE_EXCLUDE = []
 
 # ── MomentumAgent (Random Forest) ────────────────────────────────────────────
 MOMENTUM_N_ESTIMATORS    = 300
@@ -205,6 +278,18 @@ MOMENTUM_MAX_DEPTH       = 8
 # min_samples_leaf=5: hojas más pequeñas → probabilidades más extremas (mejor dispersión)
 # Con 300 árboles el riesgo de overfitting es bajo incluso con hojas pequeñas.
 MOMENTUM_MIN_SAMPLES_LEAF = 5
+MOMENTUM_FEATURE_COLUMNS = [
+  "rsi_14", "rsi_28",
+  "macd", "macd_signal", "macd_hist",
+  "sma_20", "sma_50", "sma_200",
+  "bb_pct",
+  "price_vs_52w_high", "price_vs_52w_low",
+  "momentum_1m", "momentum_3m", "momentum_6m", "momentum_12m",
+  "volatility_20d", "volatility_60d", "atr_14",
+  "vol_ratio_20_50",
+  "beat_rate_4q", "eps_surprise_avg_4q", "eps_revision",
+]
+MOMENTUM_FEATURE_EXCLUDE = []
 
 # ── BearAgent (Random Forest híbrido) ────────────────────────────────────────
 BEAR_N_ESTIMATORS = 200
@@ -214,16 +299,64 @@ BEAR_RULE_WEIGHT  = 0.5
 BEAR_ML_WEIGHT    = 0.5
 # Score de riesgo por encima del cual el meta-learner fuerza Underperform
 BEAR_HARD_THRESHOLD = 0.90
+BEAR_FEATURE_COLUMNS = [
+  "total_debt_yoy_growth",
+  "debt_equity",
+  "debt_to_ebitda",
+  "fcf_margin",
+  "current_ratio",
+  "consecutive_losses",
+  "revenue_decline",
+  "interest_coverage",
+  "insider_net_ratio_90d",
+  "insider_sell_ratio",
+  "eps_surprise_pct",
+  "eps_revision",
+]
+BEAR_FEATURE_EXCLUDE = []
 
 # ── SentimentAgent (Random Forest) ───────────────────────────────────────────
 SENTIMENT_N_ESTIMATORS    = 200
 SENTIMENT_MAX_DEPTH       = 6
 SENTIMENT_MIN_SAMPLES_LEAF = 5
+SENTIMENT_FEATURE_COLUMNS = [
+  "analyst_buy_ratio",
+  "analyst_bearish_score",
+  "analyst_consensus",
+  "analyst_dispersion",
+  "analyst_strong_buy_pct",
+  "analyst_consensus_change",
+  "mspr_3m",
+  "mspr_trend",
+  "insider_net_ratio_90d",
+  "insider_sell_ratio",
+  "beat_rate_4q",
+  "eps_surprise_avg_4q",
+  "eps_surprise_pct",
+]
+SENTIMENT_FEATURE_EXCLUDE = []
+
+# SectorRotationAgent
+SECTOR_ROTATION_FEATURE_COLUMNS = [
+  "roe", "roa", "net_margin", "gross_margin", "fcf_margin", "ebitda_margin",
+  "revenue_yoy_growth", "net_income_yoy_growth", "eps_yoy_growth",
+  "debt_to_ebitda", "debt_equity", "interest_coverage", "current_ratio",
+  "pe_ratio", "pb_ratio", "ev_to_ebitda", "fcf_yield",
+  "pe_vs_5y_median", "pb_vs_5y_median",
+  "momentum_1m", "momentum_3m", "momentum_6m", "momentum_12m",
+  "volatility_20d", "rsi_14",
+  "analyst_buy_ratio", "analyst_consensus",
+  "beat_rate_4q", "eps_surprise_pct", "eps_surprise_avg_4q", "mspr_3m",
+]
+SECTOR_ROTATION_FEATURE_EXCLUDE = []
 # ── FeatureSelector ──────────────────────────────────────────────────────────
 FEATURE_CORR_THRESHOLD = 0.85
 # Peso del score combinado de selección de features:
 # combined = w * relevancia_con_y + (1-w) * importancia_modelo
 FEATURE_SELECTOR_RELEVANCE_WEIGHT = 0.65
+
+# Si True, exporta por fold un reporte con columnas pedidas vs realmente usadas.
+EXPORT_FEATURE_USAGE_REPORT = True
 # Modelo auxiliar interno del selector (RandomForest rápido)
 FEATURE_SELECTOR_RF_N_ESTIMATORS = 120
 FEATURE_SELECTOR_RF_MAX_DEPTH = 5
@@ -245,6 +378,15 @@ META_GBM_N_ESTIMATORS = 150
 META_GBM_MAX_DEPTH    = 3
 META_GBM_LEARNING_RATE = 0.05
 META_GBM_SUBSAMPLE    = 0.8
+META_FEATURE_COLUMNS = [
+  "fundamental_score",
+  "valuation_score",
+  "momentum_score",
+  "bear_score",
+  "sentiment_score",
+  "sector_score",
+]
+META_FEATURE_EXCLUDE = []
 # Si True, añade señales de consenso/confianza entre agentes como features extra.
 META_ENABLE_CONSENSUS_FEATURES = True
 # Umbral para contar agentes claramente alcistas en el snapshot.
