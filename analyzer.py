@@ -482,6 +482,7 @@ def main():
         force_download=FORCE_DOWNLOAD,
         api_key=FINNHUB_API_KEY,
         prices_only=UPDATE_PRICES_ONLY,
+        allow_retry_failed=RETRY_MISSING_TICKERS,
     )
 
     if UPDATE_PRICES_ONLY:

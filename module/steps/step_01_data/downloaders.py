@@ -29,6 +29,67 @@ MACRO_SERIES = {
 }
 
 
+_TICKER_ENDPOINT_FILES = {
+    "prices": "prices.json",
+    "profile": "profile.json",
+    "basic_financials": "basic_financials.json",
+    "financials_reported_annual": "financials_reported_annual.json",
+    "financials_reported_quarterly": "financials_reported_quarterly.json",
+    "eps_surprises": "eps_surprises.json",
+    "earnings_calendar": "earnings_calendar.json",
+    "recommendation_trends": "recommendation_trends.json",
+    "insider_transactions": "insider_transactions.json",
+    "insider_sentiment": "insider_sentiment.json",
+    "company_news": "company_news.json",
+    "peers": "peers.json",
+    "quote": "quote.json",
+}
+
+
+def _required_endpoints(prices_only: bool) -> list[str]:
+    if prices_only:
+        return ["prices"]
+    return list(_TICKER_ENDPOINT_FILES.keys())
+
+
+def _ticker_is_fully_done(base_dir: Path, ticker: str, registry: Registry, prices_only: bool) -> bool:
+    ticker_dir = base_dir / ticker
+    for endpoint in _required_endpoints(prices_only):
+        file_name = _TICKER_ENDPOINT_FILES[endpoint]
+        if not registry.is_done(ticker, endpoint):
+            return False
+        if not (ticker_dir / file_name).exists():
+            return False
+    return True
+
+
+def _ticker_is_partial(base_dir: Path, ticker: str, registry: Registry, prices_only: bool) -> bool:
+    ticker_dir = base_dir / ticker
+    required = _required_endpoints(prices_only)
+
+    done_count = 0
+    missing_count = 0
+    failed_count = 0
+
+    for endpoint in required:
+        file_name = _TICKER_ENDPOINT_FILES[endpoint]
+        file_exists = (ticker_dir / file_name).exists()
+        done = registry.is_done(ticker, endpoint)
+        entry = registry.get_endpoint_entry(ticker, endpoint)
+        failed = isinstance(entry, dict) and entry.get("status") == "failed"
+
+        if done and file_exists:
+            done_count += 1
+        else:
+            missing_count += 1
+
+        if failed:
+            failed_count += 1
+
+    # Parcial = tiene algo ya descargado o algún fallo persistido, pero no está completo.
+    return (done_count > 0 or failed_count > 0) and missing_count > 0
+
+
 def save_json(data: dict, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
@@ -66,19 +127,42 @@ def fetch_and_save(
     wrap: str | None = None,
     registry_lock: threading.Lock | None = None,
     rate_limiter: "RateLimiter" | None = None,
+    allow_retry_failed: bool = False,
 ) -> str:
     if registry_lock:
         with registry_lock:
+            cooldown = None if not allow_retry_failed else 0
+            if not force and registry.should_skip_retry(group, endpoint, cooldown_hours=cooldown):
+                return "skip_retry_cooldown"
             if not force and registry.is_done(group, endpoint) and out_path.exists():
                 return "skip"
-    elif not force and registry.is_done(group, endpoint) and out_path.exists():
-        return "skip"
+    else:
+        cooldown = None if not allow_retry_failed else 0
+        if not force and registry.should_skip_retry(group, endpoint, cooldown_hours=cooldown):
+            return "skip_retry_cooldown"
+        if not force and registry.is_done(group, endpoint) and out_path.exists():
+            return "skip"
 
     if rate_limiter is not None:
         rate_limiter.wait()
 
     data = fn()
     if not data:
+        if registry_lock:
+            with registry_lock:
+                registry.mark_failed(
+                    group,
+                    endpoint,
+                    terminal=False,
+                    reason="nodata_or_empty",
+                )
+        else:
+            registry.mark_failed(
+                group,
+                endpoint,
+                terminal=False,
+                reason="nodata_or_empty",
+            )
         return "nodata"
 
     if isinstance(data, list):
@@ -109,6 +193,7 @@ def download_prices(
     force: bool,
     yahoo: YahooClient,
     registry_lock: threading.Lock | None = None,
+    allow_retry_failed: bool = False,
 ) -> str:
     endpoint = "prices"
     prices_path = ticker_dir / "prices.json"
@@ -116,11 +201,17 @@ def download_prices(
         with registry_lock:
             if not force and registry.is_terminal_failure(ticker, endpoint):
                 return "skip_terminal"
+            cooldown = None if not allow_retry_failed else 0
+            if not force and registry.should_skip_retry(ticker, endpoint, cooldown_hours=cooldown):
+                return "skip_retry_cooldown"
             if not force and registry.is_done(ticker, endpoint) and prices_path.exists():
                 return "skip"
     else:
         if not force and registry.is_terminal_failure(ticker, endpoint):
             return "skip_terminal"
+        cooldown = None if not allow_retry_failed else 0
+        if not force and registry.should_skip_retry(ticker, endpoint, cooldown_hours=cooldown):
+            return "skip_retry_cooldown"
         if not force and registry.is_done(ticker, endpoint) and prices_path.exists():
             return "skip"
 
@@ -146,6 +237,24 @@ def download_prices(
                     terminal=True,
                     reason="yahoo_not_found",
                     status_code=404,
+                )
+        else:
+            if registry_lock:
+                with registry_lock:
+                    registry.mark_failed(
+                        ticker,
+                        endpoint,
+                        terminal=False,
+                        reason="yahoo_nodata_or_empty",
+                        status_code=status_code,
+                    )
+            else:
+                registry.mark_failed(
+                    ticker,
+                    endpoint,
+                    terminal=False,
+                    reason="yahoo_nodata_or_empty",
+                    status_code=status_code,
                 )
         return "nodata"
 
@@ -209,6 +318,7 @@ def download_ticker(
     prices_only: bool = False,
     registry_lock: threading.Lock | None = None,
     rate_limiter: "RateLimiter" | None = None,
+    allow_retry_failed: bool = False,
 ) -> dict:
     ticker_dir = base_dir / ticker
     ticker_dir.mkdir(parents=True, exist_ok=True)
@@ -224,7 +334,15 @@ def download_ticker(
         force,
         yahoo,
         registry_lock=registry_lock,
+        allow_retry_failed=allow_retry_failed,
     )
+
+    # Si Yahoo marcó prices como fallo terminal (p. ej. 404 por ticker inexistente/delistado),
+    # no tiene sentido seguir llamando al resto de endpoints para este ticker.
+    if r["prices"] == "skip_terminal":
+        return r
+    if r["prices"] == "nodata" and registry.is_terminal_failure(ticker, "prices"):
+        return r
 
     if prices_only:
         return r
@@ -238,6 +356,7 @@ def download_ticker(
         force,
         registry_lock=registry_lock,
         rate_limiter=rate_limiter,
+        allow_retry_failed=allow_retry_failed,
     )
 
     r["basic_financials"] = fetch_and_save(
@@ -249,6 +368,7 @@ def download_ticker(
         force,
         registry_lock=registry_lock,
         rate_limiter=rate_limiter,
+        allow_retry_failed=allow_retry_failed,
     )
 
     r["financials_reported_annual"] = fetch_and_save(
@@ -260,6 +380,7 @@ def download_ticker(
         force,
         registry_lock=registry_lock,
         rate_limiter=rate_limiter,
+        allow_retry_failed=allow_retry_failed,
     )
 
     r["financials_reported_quarterly"] = fetch_and_save(
@@ -271,6 +392,7 @@ def download_ticker(
         force,
         registry_lock=registry_lock,
         rate_limiter=rate_limiter,
+        allow_retry_failed=allow_retry_failed,
     )
 
     r["eps_surprises"] = fetch_and_save(
@@ -283,6 +405,7 @@ def download_ticker(
         wrap="data",
         registry_lock=registry_lock,
         rate_limiter=rate_limiter,
+        allow_retry_failed=allow_retry_failed,
     )
 
     r["earnings_calendar"] = fetch_and_save(
@@ -294,6 +417,7 @@ def download_ticker(
         force,
         registry_lock=registry_lock,
         rate_limiter=rate_limiter,
+        allow_retry_failed=allow_retry_failed,
     )
 
     r["recommendation_trends"] = fetch_and_save(
@@ -306,6 +430,7 @@ def download_ticker(
         wrap="data",
         registry_lock=registry_lock,
         rate_limiter=rate_limiter,
+        allow_retry_failed=allow_retry_failed,
     )
 
     r["insider_transactions"] = fetch_and_save(
@@ -317,6 +442,7 @@ def download_ticker(
         force,
         registry_lock=registry_lock,
         rate_limiter=rate_limiter,
+        allow_retry_failed=allow_retry_failed,
     )
 
     r["insider_sentiment"] = fetch_and_save(
@@ -328,6 +454,7 @@ def download_ticker(
         force,
         registry_lock=registry_lock,
         rate_limiter=rate_limiter,
+        allow_retry_failed=allow_retry_failed,
     )
 
     news_start = (datetime.today() - timedelta(days=365)).strftime("%Y-%m-%d")
@@ -341,6 +468,7 @@ def download_ticker(
         wrap="data",
         registry_lock=registry_lock,
         rate_limiter=rate_limiter,
+        allow_retry_failed=allow_retry_failed,
     )
 
     r["peers"] = fetch_and_save(
@@ -353,6 +481,7 @@ def download_ticker(
         wrap="peers",
         registry_lock=registry_lock,
         rate_limiter=rate_limiter,
+        allow_retry_failed=allow_retry_failed,
     )
 
     r["quote"] = fetch_and_save(
@@ -364,6 +493,7 @@ def download_ticker(
         force,
         registry_lock=registry_lock,
         rate_limiter=rate_limiter,
+        allow_retry_failed=allow_retry_failed,
     )
 
     return r
@@ -383,6 +513,7 @@ def run_download(
     prices_only: bool = False,
     max_workers: int | None = None,
     min_interval: float | None = None,
+    allow_retry_failed: bool = False,
 ) -> None:
     end = end or datetime.today().strftime("%Y-%m-%d")
     base_dir = Path(base_dir)
@@ -404,6 +535,33 @@ def run_download(
 
     log.info("Descargando macro...")
     download_macro(base_dir, registry, start, end, force, yahoo)
+
+    tickers_requested = list(tickers)
+    skipped_terminal = 0
+    skipped_complete = 0
+    skipped_partial = 0
+    tickers_to_process: list[str] = []
+
+    for ticker in tickers_requested:
+        if not force and registry.is_terminal_failure(ticker, "prices"):
+            skipped_terminal += 1
+            continue
+        if not force and not allow_retry_failed and _ticker_is_partial(base_dir, ticker, registry, prices_only):
+            skipped_partial += 1
+            continue
+        if not force and _ticker_is_fully_done(base_dir, ticker, registry, prices_only):
+            skipped_complete += 1
+            continue
+        tickers_to_process.append(ticker)
+
+    if skipped_terminal:
+        log.info("  Skip terminal prices (404/delisted): %s", skipped_terminal)
+    if skipped_complete:
+        log.info("  Skip tickers completos en registry: %s", skipped_complete)
+    if skipped_partial:
+        log.info("  Skip tickers incompletos/parciales: %s", skipped_partial)
+
+    tickers = tickers_to_process
 
     log.info(f"Descargando {len(tickers)} tickers...")
     summary = {"ok": 0, "partial": 0, "fail": 0}
@@ -431,6 +589,7 @@ def run_download(
             prices_only=prices_only,
             registry_lock=registry_lock,
             rate_limiter=rate_limiter,
+            allow_retry_failed=allow_retry_failed,
         )
 
     if max_workers == 1:
@@ -439,7 +598,7 @@ def run_download(
             try:
                 _ticker, results = _worker(ticker)
                 ok = sum(1 for v in results.values() if v.startswith("ok"))
-                skip = sum(1 for v in results.values() if v == "skip")
+                skip = sum(1 for v in results.values() if isinstance(v, str) and v.startswith("skip"))
                 total = len(results)
 
                 if ok + skip == total:
@@ -464,7 +623,7 @@ def run_download(
                 try:
                     _ticker, results = fut.result()
                     ok = sum(1 for v in results.values() if v.startswith("ok"))
-                    skip = sum(1 for v in results.values() if v == "skip")
+                    skip = sum(1 for v in results.values() if isinstance(v, str) and v.startswith("skip"))
                     total = len(results)
 
                     if ok + skip == total:

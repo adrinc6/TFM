@@ -23,6 +23,7 @@ class FinnhubClient:
 		self._last_call = 0.0
 		self.session = requests.Session()
 		self.session.headers.update({"X-Finnhub-Token": api_key})
+		self.last_status_code: int | None = None
 
 	def _get(self, endpoint: str, params: dict | None = None):
 		params = params or {}
@@ -35,6 +36,7 @@ class FinnhubClient:
 		try:
 			resp = self.session.get(url, params=params, timeout=20)
 			self._last_call = time.time()
+			self.last_status_code = int(resp.status_code)
 
 			if resp.status_code == 429:
 				log.warning("Rate limit — esperando 65 s...")

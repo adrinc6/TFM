@@ -21,6 +21,7 @@ def download_data(
     force_download: bool = False,
     api_key: str = "",
     prices_only: bool = False,
+    allow_retry_failed: bool = False,
 ) -> List[str]:
     log.info("=" * 60)
     log.info("  PASO 1 — DESCARGA DE DATOS")
@@ -36,6 +37,7 @@ def download_data(
         base_dir=data_dir,
         force=force_download,
         prices_only=prices_only,
+        allow_retry_failed=allow_retry_failed,
     )
 
     log.info("  Descarga completada. Continuando con consolidación...")
@@ -109,6 +111,7 @@ def retry_missing_tickers(
         end=end_date,
         base_dir=data_dir,
         force=False,
+        allow_retry_failed=True,
     )
 
     need_consolidated = [t for t, m in missing_detail.items() if "consolidated" in m]

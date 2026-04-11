@@ -30,6 +30,8 @@ from environment import (
     RUN_BASELINES,
     N_RANDOM_BASELINE_SIMS,
     BASELINE_MOMENTUM_LOOKBACK_DAYS,
+    USE_DYNAMIC_SP500_UNIVERSE,
+    SP500_HISTORIC_CSV_PATH,
 )
 from module.common.asof import assert_no_future_data, filter_asof
 from module.common.data_router import DataRouter
@@ -62,6 +64,13 @@ from module.steps.step_04_evaluation.selection_reports import (
 from module.steps.step_04_evaluation.visualization import Visualizer
 
 log = logging.getLogger(__name__)
+
+
+def _sample_tickers(tickers: set[str] | list[str], limit: int = 12) -> str:
+    vals = sorted({str(t).upper() for t in tickers if str(t).strip()})
+    if not vals:
+        return "-"
+    return ", ".join(vals[: max(int(limit), 1)])
 
 
 def explain_top_tickers(
@@ -263,6 +272,53 @@ def _filter_fold_tickers_by_history_span(
     train_mask = pd.Index(df_train.index.get_level_values("ticker")).astype(str).isin(eligible_set)
     test_mask = pd.Index(df_test.index.get_level_values("ticker")).astype(str).isin(eligible_set)
     return df_train.loc[train_mask].copy(), df_test.loc[test_mask].copy(), sorted(eligible_test)
+
+
+def _load_sp500_membership(csv_path: Path) -> pd.DataFrame:
+    if not csv_path.exists():
+        return pd.DataFrame(columns=["ticker", "start_date", "end_date"])
+
+    try:
+        dfm = pd.read_csv(csv_path)
+    except Exception:
+        return pd.DataFrame(columns=["ticker", "start_date", "end_date"])
+
+    required = {"ticker", "start_date", "end_date"}
+    if not required.issubset(set(dfm.columns)):
+        return pd.DataFrame(columns=["ticker", "start_date", "end_date"])
+
+    out = dfm[["ticker", "start_date", "end_date"]].copy()
+    out["ticker"] = out["ticker"].astype(str).str.upper().str.strip().str.replace(".", "-", regex=False)
+    out["start_date"] = pd.to_datetime(out["start_date"], errors="coerce").dt.normalize()
+    out["end_date"] = pd.to_datetime(out["end_date"], errors="coerce").dt.normalize()
+    out = out.dropna(subset=["ticker", "start_date"]).reset_index(drop=True)
+    return out
+
+
+def _active_sp500_tickers_on_date(membership_df: pd.DataFrame, as_of_date: pd.Timestamp) -> set[str]:
+    if membership_df.empty:
+        return set()
+    d = pd.Timestamp(as_of_date).normalize()
+    mask = (membership_df["start_date"] <= d) & (
+        membership_df["end_date"].isna() | (membership_df["end_date"] >= d)
+    )
+    vals = membership_df.loc[mask, "ticker"].dropna().astype(str).tolist()
+    return set(vals)
+
+
+def _filter_test_by_sp500_membership(
+    df_test: pd.DataFrame,
+    active_tickers: set[str],
+) -> tuple[pd.DataFrame, int]:
+    if df_test.empty:
+        return df_test, 0
+    before = int(df_test.index.get_level_values("ticker").nunique())
+    if not active_tickers:
+        return df_test, before
+
+    mask = pd.Index(df_test.index.get_level_values("ticker")).astype(str).isin(active_tickers)
+    out = df_test.loc[mask].copy()
+    return out, before
 
 
 def _extrapolate_missing_snapshots(
@@ -797,6 +853,8 @@ def run_walkforward_pipeline(
     analysis_frequency: str = "quarterly",
     annual_anchor_date: Optional[pd.Timestamp] = None,
 ) -> Dict:
+    Path(agents_results_dir).mkdir(parents=True, exist_ok=True)
+
     backtester = WalkForwardBacktester(
         train_years=walkforward_train_years,
         test_quarters=walkforward_test_quarters,
@@ -823,20 +881,18 @@ def run_walkforward_pipeline(
     chained_cash_usd = float(INITIAL_CAPITAL_USD)
     total_strategy_fees_usd = 0.0
 
-    total_universe_tickers = int(df.index.get_level_values("ticker").nunique())
-    min_test_tickers_required = int(np.ceil(total_universe_tickers * MIN_TEST_TICKERS_PERCENT / 100.0))
+    all_master_tickers = sorted(set(pd.Index(df.index.get_level_values("ticker")).astype(str).tolist()))
+    total_universe_tickers = int(len(all_master_tickers))
     max_train_years = int(walkforward_train_years)
     min_train_years = int(WALKFORWARD_TRAIN_MIN_YEARS)
     if max_train_years < min_train_years:
         max_train_years, min_train_years = min_train_years, max_train_years
 
     log.info(
-        "[WalkForward] Ventana train dinámica activada: max=%sY -> min=%sY | mínimo test=%s tickers (%s%% de %s)",
+        "[WalkForward] Ventana train dinámica activada: max=%sY -> min=%sY | mínimo test=%s%%",
         max_train_years,
         min_train_years,
-        min_test_tickers_required,
         MIN_TEST_TICKERS_PERCENT,
-        total_universe_tickers,
     )
 
     filing_date_map = _build_filing_date_map(
@@ -852,6 +908,19 @@ def run_walkforward_pipeline(
         annual_anchor_date = pd.Timestamp(start_date).normalize() + pd.Timedelta(days=max(int(resolved_snapshot_lag_days), 0))
     if annual_anchor_date is not None:
         annual_anchor_date = pd.Timestamp(annual_anchor_date).normalize()
+
+    membership_path = Path(SP500_HISTORIC_CSV_PATH)
+    if not membership_path.is_absolute():
+        membership_path = Path.cwd() / membership_path
+    sp500_membership_df = _load_sp500_membership(membership_path) if USE_DYNAMIC_SP500_UNIVERSE else pd.DataFrame()
+    if USE_DYNAMIC_SP500_UNIVERSE:
+        if sp500_membership_df.empty:
+            log.warning("[WalkForward] Universo dinámico activo pero sin membresía SP500 utilizable (%s)", membership_path)
+        else:
+            log.info("[WalkForward] Membresía SP500 dinámica cargada: %s filas (%s)", len(sp500_membership_df), membership_path)
+
+    prev_membership_tickers: Optional[set[str]] = None
+    prev_membership_entry_date: Optional[pd.Timestamp] = None
 
 
     def _has_price_coverage(entry_date: pd.Timestamp, actual_end: pd.Timestamp) -> bool:
@@ -895,6 +964,37 @@ def run_walkforward_pipeline(
         selected_df_train: Optional[pd.DataFrame] = None
         selected_df_test: Optional[pd.DataFrame] = None
         selected_test_filed_dates: Optional[pd.Series] = None
+        selected_eligibility_rows: Optional[list[dict]] = None
+        selected_eligibility_train_years: Optional[int] = None
+        last_eligibility_rows: list[dict] = []
+        last_eligibility_train_years: Optional[int] = None
+
+        active_tickers_on_entry = _active_sp500_tickers_on_date(sp500_membership_df, entry_date)
+        fold_universe_tickers = len(active_tickers_on_entry) if (USE_DYNAMIC_SP500_UNIVERSE and active_tickers_on_entry) else total_universe_tickers
+        min_test_tickers_required = int(np.ceil(fold_universe_tickers * MIN_TEST_TICKERS_PERCENT / 100.0))
+        if USE_DYNAMIC_SP500_UNIVERSE and active_tickers_on_entry:
+            log.info(
+                f"[{run_id}] SP500 dinámico @entry {entry_date.date()}: {len(active_tickers_on_entry)} miembros activos"
+            )
+            if prev_membership_tickers is not None and prev_membership_entry_date is not None:
+                entered = sorted(active_tickers_on_entry - prev_membership_tickers)
+                exited = sorted(prev_membership_tickers - active_tickers_on_entry)
+                sample_n = 12
+                entered_sample = ", ".join(entered[:sample_n]) if entered else "-"
+                exited_sample = ", ".join(exited[:sample_n]) if exited else "-"
+                log.info(
+                    "[%s] Cambios vs fold previo (%s -> %s): +%s entran, -%s salen",
+                    run_id,
+                    prev_membership_entry_date.date(),
+                    entry_date.date(),
+                    len(entered),
+                    len(exited),
+                )
+                log.info("[%s]   Entran (muestra): %s", run_id, entered_sample)
+                log.info("[%s]   Salen  (muestra): %s", run_id, exited_sample)
+
+            prev_membership_tickers = set(active_tickers_on_entry)
+            prev_membership_entry_date = pd.Timestamp(entry_date)
 
         for candidate_years in range(max_train_years, min_train_years - 1, -1):
             candidate_train_start = train_end - pd.DateOffset(years=int(candidate_years))
@@ -918,16 +1018,130 @@ def run_walkforward_pipeline(
                     snapshot_lag_days=resolved_snapshot_lag_days,
                 )
 
+            test_tickers_pre_sp500 = (
+                set(pd.Index(cand_test.index.get_level_values("ticker")).astype(str).tolist())
+                if not cand_test.empty
+                else set()
+            )
+
+            cand_test, test_before_sp500 = _filter_test_by_sp500_membership(
+                df_test=cand_test,
+                active_tickers=active_tickers_on_entry,
+            )
+            if USE_DYNAMIC_SP500_UNIVERSE:
+                test_after_sp500 = int(cand_test.index.get_level_values("ticker").nunique()) if not cand_test.empty else 0
+                test_tickers_post_sp500 = (
+                    set(pd.Index(cand_test.index.get_level_values("ticker")).astype(str).tolist())
+                    if not cand_test.empty
+                    else set()
+                )
+                dropped_not_member = test_tickers_pre_sp500 - test_tickers_post_sp500
+                active_without_snapshot = set(active_tickers_on_entry) - test_tickers_pre_sp500
+                log.info(
+                    f"[{run_id}] Cobertura test pre-filtro: {test_before_sp500} tickers con snapshot/relleno"
+                )
+                log.info(
+                    f"[{run_id}] Filtro SP500 @entry: {test_before_sp500} -> {test_after_sp500} tickers "
+                    f"(excluidos por no ser miembro activo: {len(dropped_not_member)})"
+                )
+                if dropped_not_member:
+                    log.info(
+                        f"[{run_id}]   No miembro SP500 @entry (muestra): {_sample_tickers(dropped_not_member)}"
+                    )
+                if active_without_snapshot:
+                    log.info(
+                        f"[{run_id}]   Miembros SP500 sin snapshot usable en quarter (muestra): "
+                        f"{_sample_tickers(active_without_snapshot)}"
+                    )
+            else:
+                test_tickers_post_sp500 = test_tickers_pre_sp500
+                dropped_not_member = set()
+                active_without_snapshot = set()
+
+            test_tickers_before_history = (
+                set(pd.Index(cand_test.index.get_level_values("ticker")).astype(str).tolist())
+                if not cand_test.empty
+                else set()
+            )
+
             cand_train, cand_test, eligible_tickers = _filter_fold_tickers_by_history_span(
                 df_train=cand_train,
                 df_test=cand_test,
                 required_years=int(candidate_years),
             )
+            eligible_set = set(str(tk) for tk in eligible_tickers)
+            dropped_insufficient_history = test_tickers_before_history - eligible_set
+
+            if USE_DYNAMIC_SP500_UNIVERSE and active_tickers_on_entry:
+                fold_base_universe = set(active_tickers_on_entry)
+            else:
+                fold_base_universe = set(all_master_tickers)
+
+            # Universo trazado para auditoría completa del fold: arranque + candidatos observados en test.
+            fold_trace_universe = set(fold_base_universe) | set(test_tickers_pre_sp500) | set(all_master_tickers)
+
+            if USE_DYNAMIC_SP500_UNIVERSE:
+                outside_base_universe = fold_trace_universe - set(fold_base_universe)
+                log.info(
+                    f"[{run_id}] Universo base fold (SP500 @entry): {len(fold_base_universe)} tickers"
+                )
+                if outside_base_universe:
+                    log.info(
+                        f"[{run_id}]   Fuera del universo base @entry (muestra): {_sample_tickers(outside_base_universe)}"
+                    )
+            else:
+                log.info(
+                    f"[{run_id}] Universo base fold (master dataset): {len(fold_base_universe)} tickers"
+                )
+
+            current_eligibility_rows: list[dict] = []
+            for tk in sorted(fold_trace_universe):
+                in_fold_base_universe = tk in fold_base_universe
+                has_snapshot = tk in test_tickers_pre_sp500
+                passed_sp500 = tk in test_tickers_post_sp500
+                passed_history = tk in eligible_set
+                is_eligible = tk in eligible_set
+
+                if is_eligible:
+                    reason = "eligible"
+                elif tk in dropped_not_member:
+                    reason = "not_member_sp500_on_entry"
+                elif not in_fold_base_universe:
+                    reason = "out_of_fold_base_universe"
+                elif not has_snapshot:
+                    reason = "no_snapshot_in_analysis_quarter"
+                elif tk in dropped_insufficient_history:
+                    reason = "insufficient_train_history"
+                else:
+                    reason = "other_filter"
+
+                current_eligibility_rows.append(
+                    {
+                        "run_id": run_id,
+                        "entry_date": str(entry_date.date()),
+                        "candidate_train_years": int(candidate_years),
+                        "ticker": tk,
+                        "eligible": bool(is_eligible),
+                        "reason": reason,
+                        "in_fold_base_universe": bool(in_fold_base_universe),
+                        "has_snapshot_in_analysis_quarter": bool(has_snapshot),
+                        "passes_sp500_entry_filter": bool(passed_sp500),
+                        "passes_history_filter": bool(passed_history),
+                    }
+                )
+
+            last_eligibility_rows = current_eligibility_rows
+            last_eligibility_train_years = int(candidate_years)
 
             test_tickers_count = int(cand_test.index.get_level_values("ticker").nunique()) if not cand_test.empty else 0
-            test_tickers_pct = (100.0 * test_tickers_count / total_universe_tickers) if total_universe_tickers > 0 else 0.0
+            test_tickers_pct = (100.0 * test_tickers_count / fold_universe_tickers) if fold_universe_tickers > 0 else 0.0
+            if dropped_insufficient_history:
+                log.info(
+                    f"[{run_id}]   Excluidos por historial insuficiente (<{candidate_years}Y train): "
+                    f"{len(dropped_insufficient_history)} | muestra: {_sample_tickers(dropped_insufficient_history)}"
+                )
             log.info(
-                f"[{run_id}] Intento train={candidate_years}Y -> test elegible {test_tickers_count}/{total_universe_tickers} "
+                f"[{run_id}] Intento train={candidate_years}Y -> test elegible {test_tickers_count}/{fold_universe_tickers} "
                 f"({test_tickers_pct:.1f}%) | min requerido={min_test_tickers_required}"
             )
 
@@ -937,11 +1151,53 @@ def run_walkforward_pipeline(
                 selected_df_train = cand_train
                 selected_df_test = cand_test
                 selected_test_filed_dates = cand_test_filed_dates
+                selected_eligibility_rows = current_eligibility_rows
+                selected_eligibility_train_years = int(candidate_years)
                 log.info(
                     f"[{run_id}] Ventana seleccionada: {selected_train_years}Y "
                     f"({selected_train_start.date()} -> {train_end.date()}) | tickers elegibles={len(eligible_tickers)}"
                 )
                 break
+
+        rows_to_export = selected_eligibility_rows if selected_eligibility_rows is not None else last_eligibility_rows
+        years_to_export = (
+            selected_eligibility_train_years if selected_eligibility_train_years is not None else last_eligibility_train_years
+        )
+        if rows_to_export:
+            eligibility_path = Path(agents_results_dir) / f"quarter_{run_id}_ticker_eligibility_audit.csv"
+            eligibility_path.parent.mkdir(parents=True, exist_ok=True)
+            eligibility_df = pd.DataFrame(rows_to_export)
+            eligibility_df.to_csv(eligibility_path, index=False)
+
+            summary_path = Path(agents_results_dir) / f"quarter_{run_id}_eligibility_reason_summary.csv"
+            summary_df = (
+                eligibility_df.groupby(
+                    [
+                        "candidate_train_years",
+                        "reason",
+                        "in_fold_base_universe",
+                        "has_snapshot_in_analysis_quarter",
+                        "passes_sp500_entry_filter",
+                        "passes_history_filter",
+                        "eligible",
+                    ],
+                    dropna=False,
+                )
+                .size()
+                .reset_index(name="count")
+                .sort_values(["candidate_train_years", "count", "reason"], ascending=[True, False, True])
+            )
+            summary_df.to_csv(summary_path, index=False)
+            if years_to_export is not None:
+                log.info(
+                    "[%s] Eligibility audit (%sY) -> %s",
+                    run_id,
+                    years_to_export,
+                    eligibility_path.name,
+                )
+            else:
+                log.info("[%s] Eligibility audit -> %s", run_id, eligibility_path.name)
+            log.info("[%s] Eligibility reason summary -> %s", run_id, summary_path.name)
 
         if selected_df_train is None or selected_df_test is None or selected_train_years is None or selected_train_start is None:
             log.warning(
