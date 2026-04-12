@@ -59,7 +59,7 @@ try:
 except ImportError:
     _DEPS_OK = False
 
-MACRO_COLS: list = []  # Macro eliminada: es igual para todos los tickers y enmascara señales de stock picking
+MACRO_COLS: list = []  # Reservado: se eliminó la macro porque enmascara señales de stock picking
 
 
 class MetaLearner(BaseAgent):

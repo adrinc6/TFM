@@ -493,7 +493,7 @@ class FeatureSelector:
             rf.fit(X[remaining], y)
             imp_all = pd.Series(rf.feature_importances_, index=remaining).sort_values(ascending=False)
         except Exception:
-            pass
+            log.warning("[FeatureSelector] RF importance fallback falló", exc_info=True)
 
         pb_norm = _minmax_norm(pb_abs_all)
         imp_norm = _minmax_norm(imp_all.reindex(remaining).fillna(0.0))

@@ -39,6 +39,9 @@ RETRY_MISSING_TICKERS = False
 # Si True, ejecuta el estudio de ablation para medir la contribución de agentes
 RUN_ABLATION_STUDY = False
 
+# Si True, exporta CSVs de debug por ticker (e.g. AAPL) en agentes para auditoría
+DEBUG_EXPORT_AGENT_INPUTS = False
+
 # Si True, habilita caché de artefactos intermedios para reutilizar cálculo
 ENABLE_CACHE = True
 
@@ -68,7 +71,7 @@ FINNHUB_MIN_INTERVAL = 1
 # 2. API Keys
 # =============================================================================
 
-FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "d6ttu99r01qhkb45jm5gd6ttu99r01qhkb45jm60")
+FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
 
 # =============================================================================
 # 3. Rutas de datos y resultados
@@ -213,7 +216,7 @@ WALKFORWARD_TRAIN_MIN_YEARS = 5
 WALKFORWARD_TEST_QUARTERS = 1
 
 # Mínimo de empresas en el universo de test de un fold.
-# Se calcula dinámicamenbte como un porcentaje del universo total de tickers.
+# Se calcula dinámicamente como un porcentaje del universo total de tickers.
 # Ejemplo: si hay 500 tickers totales, será 250 (50%).
 MIN_TEST_TICKERS_PERCENT = 80  # porcentaje del universo total
 

@@ -652,7 +652,7 @@ def main():
             log.info("Cache save: master_dataset")
 
     df.to_csv(f"{RESULTS_DIR}/master_dataset.csv")
-    log.info(f"Dataset maestro: {len(df)} observaciones — {len(tickers_ok)} tickers")
+    log.info("Dataset maestro: %d observaciones — %d tickers", len(df), len(tickers_ok))
 
     if EXPORT_RUN_ARTIFACTS:
         _export_run_config(

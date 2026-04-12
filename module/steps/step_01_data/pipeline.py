@@ -29,6 +29,12 @@ def download_data(
     log.info(f"  Destino : {data_dir}")
     log.info("=" * 60)
 
+    if not api_key:
+        raise ValueError(
+            "FINNHUB_API_KEY no configurada. "
+            "Establece la variable de entorno FINNHUB_API_KEY antes de ejecutar el pipeline."
+        )
+
     run_download(
         api_key=api_key,
         tickers=tickers,

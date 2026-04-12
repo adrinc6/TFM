@@ -53,6 +53,7 @@ def _rule_based_drivers(row: pd.Series, score: float) -> List[Dict]:
                     "direction": "positive" if score >= 0.5 else "negative",
                 })
         except Exception:
+            log.debug("Rule-based driver check falló para %s", feat, exc_info=True)
             continue
 
     if not drivers:

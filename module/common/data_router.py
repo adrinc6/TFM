@@ -21,9 +21,23 @@ class DataRouter:
     Fuente de datos: Finnhub + Yahoo Finance HTTP directo (data_finnhub/).
     """
 
+    # Patrón válido para tickers: letras, dígitos, guión y punto (e.g. BRK-B, BF.B)
+    _VALID_TICKER_RE = __import__("re").compile(r"^[A-Za-z0-9.\-]{1,10}$")
+
     def __init__(self, data_dir: str):
-        self.data_dir           = Path(data_dir)
+        self.data_dir           = Path(data_dir).resolve()
         self._companies_cache:  Optional[pd.DataFrame] = None
+
+    def _validate_ticker(self, ticker: str) -> str:
+        """Valida y normaliza un ticker para prevenir path-traversal."""
+        t = str(ticker).strip()
+        if not self._VALID_TICKER_RE.match(t):
+            raise ValueError(f"Ticker inválido o potencialmente peligroso: {ticker!r}")
+        # Verificar que la ruta resultante no escape del data_dir
+        resolved = (self.data_dir / t).resolve()
+        if not str(resolved).startswith(str(self.data_dir)):
+            raise ValueError(f"Ticker produce ruta fuera del data_dir: {ticker!r}")
+        return t
 
     # ── Companies / Sector ────────────────────────────────────────────────────
 
@@ -78,6 +92,7 @@ class DataRouter:
         OHLCV diario desde data_finnhub/{ticker}/prices.json.
         Columnas: Open, High, Low, Close, AdjClose, Volume.
         """
+        ticker = self._validate_ticker(ticker)
         path = self.data_dir / ticker / "prices.json"
         if not path.exists():
             return None
@@ -120,6 +135,7 @@ class DataRouter:
         Fundamentales consolidados desde data_finnhub/consolidated/{ticker}.csv.
         Generado por FinnhubConsolidator.
         """
+        ticker = self._validate_ticker(ticker)
         path = self.data_dir / "consolidated" / f"{ticker}.csv"
         if not path.exists():
             return None
@@ -136,6 +152,7 @@ class DataRouter:
         Columnas: eps_actual, eps_estimate, eps_surprise_pct, eps_beat
         """
         from module.steps.step_01_data.parsers import EPSSurprisesParser
+        ticker = self._validate_ticker(ticker)
         path = self.data_dir / ticker / "eps_surprises.json"
         df = EPSSurprisesParser().parse(path)
         return df if df is not None and not df.empty else None
@@ -146,6 +163,7 @@ class DataRouter:
         Columnas: analyst_buy_ratio, analyst_bearish_score, analyst_consensus, etc.
         """
         from module.steps.step_01_data.parsers import RecommendationParser
+        ticker = self._validate_ticker(ticker)
         path = self.data_dir / ticker / "recommendation_trends.json"
         df = RecommendationParser().parse(path)
         return df if not df.empty else None
@@ -156,6 +174,7 @@ class DataRouter:
         Columnas: date, name, transaction_code, shares, is_buy, is_sell
         """
         from module.steps.step_01_data.parsers import InsiderTransactionsParser
+        ticker = self._validate_ticker(ticker)
         path = self.data_dir / ticker / "insider_transactions.json"
         df = InsiderTransactionsParser().parse(path)
         return df if not df.empty else None
@@ -166,6 +185,7 @@ class DataRouter:
         Columnas: mspr, insider_net_buy
         """
         from module.steps.step_01_data.parsers import InsiderSentimentParser
+        ticker = self._validate_ticker(ticker)
         path = self.data_dir / ticker / "insider_sentiment.json"
         df = InsiderSentimentParser().parse(path)
         return df if not df.empty else None

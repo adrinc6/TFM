@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Dict
 
 import numpy as np
 import pandas as pd
+
+log = logging.getLogger(__name__)
 
 
 def generate_oof_scores(
@@ -30,15 +33,12 @@ def generate_oof_scores(
     kf = TimeSeriesSplit(n_splits=n_splits)
     oof: Dict[str, pd.Series] = {}
 
-    import logging as _logging
-    _log = _logging.getLogger(__name__)
-
     for ag_name, cfg in agents_config.items():
         score_col = f"{ag_name}_score"
         oof_vals = pd.Series(np.nan, index=X.index, name=score_col)
-        _log.info(f"  [OOF] {ag_name}: generando scores anti-leakage ({n_splits} splits temporales)")
+        log.info("  [OOF] %s: generando scores anti-leakage (%d splits temporales)", ag_name, n_splits)
 
-        for fold_tr, fold_val in kf.split(X):
+        for split_i, (fold_tr, fold_val) in enumerate(kf.split(X)):
             X_tr = X.iloc[fold_tr]
             X_val = X.iloc[fold_val]
             y_tr = y.iloc[fold_tr]
@@ -60,6 +60,7 @@ def generate_oof_scores(
                     else:
                         preds = pd.Series(0.5, index=X_val.index, name=score_col)
             except Exception:
+                log.warning("[OOF] %s fold %d falló — usando score 0.5", ag_name, split_i, exc_info=True)
                 preds = pd.Series(0.5, index=X_val.index, name=score_col)
 
             oof_vals.iloc[fold_val] = preds.values

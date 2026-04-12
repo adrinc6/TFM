@@ -24,6 +24,7 @@ from environment import (
     SENTIMENT_N_ESTIMATORS, SENTIMENT_MAX_DEPTH, SENTIMENT_MIN_SAMPLES_LEAF,
     FEATURE_CORR_THRESHOLD, FEATURE_TOP_N,
     SENTIMENT_FEATURE_COLUMNS, SENTIMENT_FEATURE_EXCLUDE,
+    DEBUG_EXPORT_AGENT_INPUTS,
 )
 
 log = logging.getLogger(__name__)
@@ -78,6 +79,8 @@ class SentimentAgent(BaseAgent):
         fold: Optional[int] = None,
         stage: str = "raw",
     ) -> None:
+        if not DEBUG_EXPORT_AGENT_INPUTS:
+            return
         ticker_series = None
         if isinstance(X.index, pd.MultiIndex) and "ticker" in X.index.names:
             ticker_series = pd.Series(X.index.get_level_values("ticker"), index=X.index)

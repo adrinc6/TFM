@@ -316,7 +316,7 @@ def build_fold_scores_df(
                     exp = explainer.explain_prediction(row, ticker, ag_score, top_n=5)
                     shap_drivers = exp.get("top_drivers", [])
                 except Exception:
-                    pass
+                    log.debug("SHAP explain falló para %s/%s", ag_name, ticker, exc_info=True)
 
             rec[f"{ag_name}_explicacion"] = _build_agent_explanation(
                 row=row,

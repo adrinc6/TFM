@@ -165,6 +165,7 @@ def _build_filing_date_map(
                 with open(path, "r", encoding="utf-8") as f:
                     payload = json.load(f)
             except Exception:
+                log.debug("No se pudo leer %s", path, exc_info=True)
                 continue
             for item in payload.get("data", []):
                 end_date = item.get("endDate")
@@ -935,7 +936,13 @@ def run_walkforward_pipeline(
                 return True
         return False
 
-    for fold_id, (_fold_train_start, train_end, _test_end, _fold_train_years) in enumerate(folds, 1):
+    try:
+        from tqdm import tqdm
+        fold_iter = tqdm(list(enumerate(folds, 1)), desc="Walk-forward folds", unit="fold")
+    except ImportError:
+        fold_iter = list(enumerate(folds, 1))
+
+    for fold_id, (_fold_train_start, train_end, _test_end, _fold_train_years) in fold_iter:
         analysis_quarter = train_end.to_period("Q")
 
         q_start = analysis_quarter.start_time.normalize()

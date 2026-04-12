@@ -333,7 +333,13 @@ def build_master_dataset(
     log.info(f"Construyendo dataset maestro para {len(tickers)} tickers...")
     records = []
 
-    for i, ticker in enumerate(tickers, 1):
+    try:
+        from tqdm import tqdm
+        ticker_iter = tqdm(tickers, desc="Dataset maestro", unit="ticker")
+    except ImportError:
+        ticker_iter = tickers
+
+    for i, ticker in enumerate(ticker_iter, 1):
         try:
             sources = _load_ticker_sources(router, ticker)
             prices = sources["prices"]
