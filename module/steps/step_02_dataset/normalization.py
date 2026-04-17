@@ -16,7 +16,25 @@ def apply_sector_normalization(
     normalizer: SectorNormalizer,
     fit: bool = True,
 ) -> pd.DataFrame:
+    """Applies sector-based z-score normalisation to a multi-index DataFrame.
+
+    For each ``*_zsector`` column defined by the SectorNormalizer, computes
+    ``(value - sector_mean) / sector_std`` using sector-level statistics.
+    When ``fit=True``, the statistics are estimated from the data.
+    When ``fit=False``, the previously fitted statistics are reused.
+
+    Args:
+        df (pd.DataFrame): Multi-indexed (ticker, date) feature DataFrame.
+        sector_map (Dict[str, str]): Mapping ``{ticker: sector}``.
+        normalizer (SectorNormalizer): Fitted or unfitted normaliser instance.
+        fit (bool): If True, fits the normaliser from df; if False, applies
+            previously fitted statistics (for inference / test folds).
+
+    Returns:
+        pd.DataFrame: Copy of df with additional ``{col}_zsector`` columns.
+    """
     if fit:
+        # Build a flat feature dict to fit the normaliser
         features_dict: Dict[str, pd.Series] = {}
         for i, ((ticker, _date), row) in enumerate(df.iterrows()):
             features_dict[f"{ticker}_{i}"] = row

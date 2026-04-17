@@ -1,18 +1,17 @@
-﻿# =============================================================================
-# module/agents/meta_learner.py — Meta-Learner (Stacking)
-# =============================================================================
-# Combina las salidas de los 5 agentes en una predicción final.
-#
-# DATOS QUE CONSUME:
-#   Scores de agentes:  fundamental_score, valuation_score,
-#                       momentum_score, bear_score, sentiment_score
-#   Macro context:      vix, yield_curve, sp500_momentum_3m, sp500_momentum_12m
-#   Sector (profiles):  sector_* (one-hot para que el meta-learner
-#                       aprenda pesos distintos por sector)
-#
-# SALIDA:
-#   Probabilidad [0,1] de Outperform + etiqueta binaria
-# =============================================================================
+﻿"""Meta-learner (stacking) for the multi-agent stock picker.
+
+Combines the outputs of the five base agents into a final Outperform prediction.
+
+Inputs:
+  Agent scores:  fundamental_score, valuation_score,
+                 momentum_score, bear_score, sentiment_score
+  Macro context: vix, yield_curve, sp500_momentum_3m, sp500_momentum_12m
+  Sector (profiles): sector_* one-hot dummies (so the meta-learner learns
+                     different agent weights per sector)
+
+Output:
+  Probability [0, 1] of Outperform + binary label
+"""
 import json
 import logging
 import numpy as np

@@ -1,17 +1,16 @@
-﻿# =============================================================================
-# module/agents/sentiment_agent.py — Agente de Sentiment (Random Forest)
-# =============================================================================
-# DATOS QUE CONSUME (calculados por SentimentFeatureBuilder):
-#   Analistas:   analyst_buy_ratio, analyst_bearish_score, analyst_consensus,
-#                analyst_dispersion, analyst_strong_buy_pct,
-#                analyst_consensus_change
-#   Insiders:    mspr_3m, mspr_trend, insider_net_ratio_90d, insider_sell_ratio
-#   EPS:         beat_rate_4q, eps_surprise_avg_4q, eps_surprise_pct
-#
-# Lógica: captura el "wisdom of the crowd" institucional + señales de insiders
-# como factor predictivo de comportamiento relativo a 1 trimestre vista.
-# Complementa al ValuationAgent (que usa EPS surprises como feature secundaria).
-# =============================================================================
+"""Sentiment agent (Random Forest) for the multi-agent stock picker.
+
+Consumes features computed by SentimentFeatureBuilder:
+  Analysts:  analyst_buy_ratio, analyst_bearish_score, analyst_consensus,
+             analyst_dispersion, analyst_strong_buy_pct,
+             analyst_consensus_change
+  Insiders:  mspr_3m, mspr_trend, insider_net_ratio_90d, insider_sell_ratio
+  EPS:       beat_rate_4q, eps_surprise_avg_4q, eps_surprise_pct
+
+Captures the "wisdom of the crowd" from institutional analysts plus insider
+signals as a predictive factor for relative performance over 1 quarter.
+Complements the ValuationAgent (which uses EPS surprises as a secondary feature).
+"""
 import logging
 import numpy as np
 import pandas as pd
@@ -40,16 +39,15 @@ except ImportError:
     _DEPS_OK = False
 
 class SentimentAgent(BaseAgent):
-    """
-    Random Forest calibrado sobre señales de sentimiento institucional.
+    """Random Forest trained on institutional sentiment signals.
 
-    Captura:
-      - Consenso y tendencia de analistas (recommendation_trends)
-      - MSPR mensual de insiders (insider_sentiment) — señal predictiva 30-90d
-      - Net buying de insiders (insider_transactions)
-      - Beat rate y sorpresas de EPS (eps_surprises)
+    Captures:
+      - Analyst consensus and trend (recommendation_trends)
+      - Monthly insider MSPR (insider_sentiment) — predictive signal over 30-90d
+      - Net insider buying (insider_transactions)
+      - EPS beat rate and surprises (eps_surprises)
 
-    Score [0,1]: 1 = sentimiento muy positivo → señal alcista
+    Score [0, 1]: 1 = very positive sentiment → bullish signal
     """
 
     def __init__(
@@ -61,9 +59,22 @@ class SentimentAgent(BaseAgent):
         min_samples_leaf: int = SENTIMENT_MIN_SAMPLES_LEAF,
         save_artifacts: bool = True,
     ):
+        """Initialises the SentimentAgent.
+
+        Args:
+            results_dir (str): Directory where training artefacts are saved.
+            random_seed (int): Random seed for reproducibility.
+            n_estimators (int): Number of trees in the Random Forest.
+            max_depth (int): Maximum tree depth.
+            min_samples_leaf (int): Minimum samples per leaf node.
+            save_artifacts (bool): Whether to save diagnostics and models.
+
+        Raises:
+            ImportError: If scikit-learn is not installed.
+        """
         super().__init__("sentiment", results_dir, random_seed, save_artifacts)
         if not _DEPS_OK:
-            raise ImportError("scikit-learn requerido.")
+            raise ImportError("scikit-learn is required.")
         self.n_estimators     = n_estimators
         self.max_depth        = max_depth
         self.min_samples_leaf = min_samples_leaf
@@ -79,6 +90,14 @@ class SentimentAgent(BaseAgent):
         fold: Optional[int] = None,
         stage: str = "raw",
     ) -> None:
+        """Exports AAPL rows to CSV for debugging when DEBUG_EXPORT_AGENT_INPUTS is enabled.
+
+        Args:
+            X (pd.DataFrame): Feature matrix to inspect.
+            y (pd.Series): Target series aligned with X.
+            fold (Optional[int]): Fold index for file naming.
+            stage (str): Processing stage label (e.g., 'raw', 'cleaned').
+        """
         if not DEBUG_EXPORT_AGENT_INPUTS:
             return
         ticker_series = None
@@ -115,7 +134,17 @@ class SentimentAgent(BaseAgent):
 
     def fit(self, X: pd.DataFrame, y: pd.Series,
             fold: Optional[int] = None) -> "SentimentAgent":
-        log.info(f"[SentimentAgent] Entrenando RandomForest (analistas + insiders + EPS) — {len(X)} obs")
+        """Trains the Random Forest on analyst and insider sentiment features.
+
+        Args:
+            X (pd.DataFrame): Feature matrix for the training fold.
+            y (pd.Series): Binary target labels (1 = Outperform).
+            fold (Optional[int]): Walk-forward fold index for artefact naming.
+
+        Returns:
+            SentimentAgent: The fitted agent instance (self).
+        """
+        log.info(f"[SentimentAgent] Training RandomForest (analysts + insiders + EPS) — {len(X)} obs")
 
         min_len = min(len(X), len(y))
         X = X.iloc[:min_len].copy()
@@ -133,8 +162,8 @@ class SentimentAgent(BaseAgent):
 
         if len(X_prep) < 20:
             log.warning(
-                f"[SentimentAgent] Insuficientes muestras para entrenar: "
-                f"{len(X_prep)} < 20 tras la limpieza."
+                f"[SentimentAgent] Insufficient samples to train: "
+                f"{len(X_prep)} < 20 after cleaning."
             )
             return self
 
@@ -165,7 +194,7 @@ class SentimentAgent(BaseAgent):
         ])
 
         cv = self._cv(X_prep, y_cl)
-        log.info(f"[SentimentAgent] CV AUC={cv['mean_auc']:.4f} ± {cv['std_auc']:.4f}  ({len(self._feature_cols)} features seleccionadas)")
+        log.info(f"[SentimentAgent] CV AUC={cv['mean_auc']:.4f} ± {cv['std_auc']:.4f}  ({len(self._feature_cols)} selected features)")
         self._model.fit(X_prep, y_cl)
         self.is_trained = True
 
@@ -201,6 +230,17 @@ class SentimentAgent(BaseAgent):
     # ── Predict ───────────────────────────────────────────────────────────────
 
     def predict_score(self, X: pd.DataFrame) -> pd.Series:
+        """Returns sentiment scores in [0, 1].
+
+        Args:
+            X (pd.DataFrame): Feature matrix.
+
+        Returns:
+            pd.Series: Probability of Outperform indexed like X.
+
+        Raises:
+            RuntimeError: If the agent has not been trained yet.
+        """
         if not self.is_trained:
             raise RuntimeError("[SentimentAgent] Not trained.")
         X_prep = self.clean_features_predict(self._prepare(X))
@@ -216,7 +256,14 @@ class SentimentAgent(BaseAgent):
     # ── Helpers ───────────────────────────────────────────────────────────────
 
     def _prepare(self, X: pd.DataFrame) -> pd.DataFrame:
-        """Selecciona las columnas del agente y añade features derivados."""
+        """Selects feature columns and derives composite sentiment signals.
+
+        Args:
+            X (pd.DataFrame): Raw feature matrix.
+
+        Returns:
+            pd.DataFrame: Prepared feature matrix with derived signals added.
+        """
         df = X.copy()
         selected = resolve_feature_columns(
             default_cols=[],
@@ -227,17 +274,17 @@ class SentimentAgent(BaseAgent):
             owner="SentimentAgent",
         )
 
-        # Feature derivado: señal alcista neta (buy_ratio - bearish_score)
+        # Derived feature: net bullish signal (buy_ratio - bearish_score)
         if "analyst_buy_ratio" in df.columns and "analyst_bearish_score" in df.columns:
             df["analyst_net_bullish"] = df["analyst_buy_ratio"] - df["analyst_bearish_score"]
             selected.append("analyst_net_bullish")
 
-        # Feature derivado: z-score del balance neto insider (ratio)
+        # Derived feature: z-score of net insider balance (ratio form)
         net_col = None
         if "insider_net_ratio_90d" in df.columns:
             net_col = "insider_net_ratio_90d"
         elif "insider_net_shares_90d" in df.columns:
-            # Compatibilidad hacia atras con datasets historicos.
+            # Backward compatibility with historical datasets.
             net_col = "insider_net_shares_90d"
 
         if net_col is not None:
@@ -249,13 +296,13 @@ class SentimentAgent(BaseAgent):
                 df["insider_net_zscore"] = 0.0
             selected.append("insider_net_zscore")
 
-        # Feature derivado: bandera de MSPR positivo (insiders comprando activamente)
+        # Derived feature: positive MSPR flag (insiders actively buying)
         if "mspr_3m" in df.columns:
             df["mspr_positive"] = (df["mspr_3m"] > 20).astype(float)
             df["mspr_negative"] = (df["mspr_3m"] < -20).astype(float)
             selected += ["mspr_positive", "mspr_negative"]
 
-        # Feature derivado: beat streak (beat_rate > 75% = empresa que supera consistentemente)
+        # Derived feature: beat streak (beat_rate > 75% = consistent outperformer)
         if "beat_rate_4q" in df.columns:
             df["consistent_beater"] = (df["beat_rate_4q"] >= 0.75).astype(float)
             selected.append("consistent_beater")
@@ -264,9 +311,26 @@ class SentimentAgent(BaseAgent):
         return df[selected].copy()
 
     def _align(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Aligns X to the training feature schema.
+
+        Args:
+            X (pd.DataFrame): Feature matrix to align.
+
+        Returns:
+            pd.DataFrame: Aligned feature matrix.
+        """
         return self._align_to_feature_cols(X, fill_value=0.0)
 
     def _cv(self, X: pd.DataFrame, y: pd.Series) -> Dict:
+        """Runs time-series cross-validation and returns aggregated metrics.
+
+        Args:
+            X (pd.DataFrame): Cleaned, selected feature matrix.
+            y (pd.Series): Binary target series.
+
+        Returns:
+            Dict: Dictionary with mean_auc, std_auc, mean_acc, and mean_f1.
+        """
         date_order = X.index.get_level_values("date") if "date" in X.index.names else X.index
         sort_idx = date_order.argsort()
         X = X.iloc[sort_idx]

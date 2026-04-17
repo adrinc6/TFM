@@ -1,19 +1,18 @@
-﻿# =============================================================================
-# module/agents/fundamental_agent.py — Agente Fundamental (XGBoost)
-# =============================================================================
-# Evalúa la salud financiera de una empresa.
-#
-# DATOS QUE CONSUME (del consolidated + feature_engineering):
-#   Rentabilidad:  roe, roa, roi, roic, net_margin, gross_margin,
-#                  fcf_margin, ebitda_margin, operating_margin
-#   Liquidez:      current_ratio, quick_ratio
-#   Solvencia:     debt_equity, debt_to_ebitda, interest_coverage
-#   Crecimiento:   revenue_yoy_growth, net_income_yoy_growth, eps_yoy_growth,
-#                  fcf_yoy_growth, operating_income_yoy_growth
-#   Calidad:       accruals_ratio, capex_to_revenue, consecutive_losses
-#   Sector Z:      *_zsector  (columnas añadidas por SectorNormalizer)
-#   Sector dummy:  sector_*   (one-hot del sector de companies.csv)
-# =============================================================================
+﻿"""Fundamental agent (XGBoost) for the multi-agent stock picker.
+
+Evaluates a company's financial health.
+
+Consumes (from consolidated + feature_engineering):
+  Profitability: roe, roa, roi, roic, net_margin, gross_margin,
+                 fcf_margin, ebitda_margin, operating_margin
+  Liquidity:     current_ratio, quick_ratio
+  Solvency:      debt_equity, debt_to_ebitda, interest_coverage
+  Growth:        revenue_yoy_growth, net_income_yoy_growth, eps_yoy_growth,
+                 fcf_yoy_growth, operating_income_yoy_growth
+  Quality:       accruals_ratio, capex_to_revenue, consecutive_losses
+  Sector Z:      *_zsector  (columns added by SectorNormalizer)
+  Sector dummy:  sector_*   (one-hot from companies.csv)
+"""
 import logging
 import numpy as np
 import pandas as pd
@@ -38,16 +37,15 @@ try:
     _DEPS_OK = True
 except ImportError:
     _DEPS_OK = False
-    log.error("[FundamentalAgent] Instala: pip install xgboost scikit-learn")
+    log.error("[FundamentalAgent] Install: pip install xgboost scikit-learn")
 
 class FundamentalAgent(BaseAgent):
-    """
-    XGBoost calibrado (Isotonic) que aprende qué combinación de ratios
-    financieros predice mejor el Outperform a 1 año.
+    """XGBoost model that learns which combination of financial ratios best
+    predicts 1-year Outperformance.
 
-    El sector de companies.csv entra de dos formas:
-      1. Como dummies one-hot (sector_Technology, sector_Healthcare, ...)
-      2. Como ratios normalizados sectorialmente (_zsector)
+    The sector from companies.csv is fed in two complementary ways:
+      1. One-hot dummies (sector_Technology, sector_Healthcare, …)
+      2. Sector-normalised ratios (*_zsector)
     """
 
     def __init__(self, results_dir: str, random_seed: int = 42,
@@ -58,9 +56,25 @@ class FundamentalAgent(BaseAgent):
                  colsample_bytree: float = FUNDAMENTAL_COLSAMPLE,
                  min_child_weight: int = FUNDAMENTAL_MIN_CHILD_WEIGHT,
                  save_artifacts: bool = True):
+        """Initialises the FundamentalAgent.
+
+        Args:
+            results_dir (str): Directory where training artefacts are saved.
+            random_seed (int): Random seed for reproducibility.
+            n_estimators (int): Number of boosting rounds.
+            max_depth (int): Maximum tree depth.
+            learning_rate (float): Step-shrinkage (eta) parameter.
+            subsample (float): Row sub-sampling ratio per tree.
+            colsample_bytree (float): Feature sub-sampling ratio per tree.
+            min_child_weight (int): Minimum sum of instance weight per leaf.
+            save_artifacts (bool): Whether to save diagnostics and models.
+
+        Raises:
+            ImportError: If xgboost or scikit-learn is not installed.
+        """
         super().__init__("fundamental", results_dir, random_seed, save_artifacts)
         if not _DEPS_OK:
-            raise ImportError("xgboost y scikit-learn requeridos.")
+            raise ImportError("xgboost and scikit-learn are required.")
         self.n_estimators     = n_estimators
         self.max_depth        = max_depth
         self.learning_rate    = learning_rate
@@ -76,8 +90,19 @@ class FundamentalAgent(BaseAgent):
 
     def fit(self, X: pd.DataFrame, y: pd.Series,
             fold: Optional[int] = None, sector_col: str = "sector") -> "FundamentalAgent":
-        log.info(f"[FundamentalAgent] Entrenando XGBoost — {len(X)} obs, {len(X.columns)} features")
-        # Alinear X e y por posición antes de cualquier procesado
+        """Trains XGBoost on financial ratio features.
+
+        Args:
+            X (pd.DataFrame): Feature matrix for the training fold.
+            y (pd.Series): Binary target labels (1 = Outperform).
+            fold (Optional[int]): Walk-forward fold index for artefact naming.
+            sector_col (str): Column name for sector labels (used for dummies).
+
+        Returns:
+            FundamentalAgent: The fitted agent instance (self).
+        """
+        log.info(f"[FundamentalAgent] Training XGBoost — {len(X)} obs, {len(X.columns)} features")
+        # Align X and y by position before any processing
         min_len = min(len(X), len(y))
         X = X.iloc[:min_len].copy()
         y = y.iloc[:min_len].copy()
@@ -86,7 +111,7 @@ class FundamentalAgent(BaseAgent):
         X_prep       = X_prep.reset_index(drop=True)
         y_cl         = y_cl.reset_index(drop=True)
 
-        # Selección de features: solo con datos de train (sin leakage)
+        # Feature selection: only on training data (no leakage)
         self._selector = FeatureSelector(corr_threshold=FEATURE_CORR_THRESHOLD, top_n=FEATURE_TOP_N,
                                          min_features=3, random_seed=self.random_seed,
                                          zsector_pair_policy="force_zsector")
@@ -106,12 +131,12 @@ class FundamentalAgent(BaseAgent):
         self._model = base
 
         cv = self._cv(X_prep, y_cl, spw)
-        log.info(f"[FundamentalAgent] CV AUC={cv['mean_auc']:.4f} ± {cv['std_auc']:.4f}  ({len(self._feature_cols)} features seleccionadas)")
+        log.info(f"[FundamentalAgent] CV AUC={cv['mean_auc']:.4f} ± {cv['std_auc']:.4f}  ({len(self._feature_cols)} selected features)")
 
         self._model.fit(X_prep, y_cl)
         self.is_trained = True
 
-        # Feature importances del estimador XGB
+        # Feature importances from the XGBoost estimator
         imp = pd.Series(self._model.feature_importances_, index=self._feature_cols)
         self.save_feature_importances(imp, fold)
 
@@ -132,6 +157,18 @@ class FundamentalAgent(BaseAgent):
     # ── Predict ───────────────────────────────────────────────────────────────
 
     def predict_score(self, X: pd.DataFrame, sector_col: str = "sector") -> pd.Series:
+        """Returns fundamental quality scores in [0, 1].
+
+        Args:
+            X (pd.DataFrame): Feature matrix.
+            sector_col (str): Column name for sector labels.
+
+        Returns:
+            pd.Series: Probability of Outperform indexed like X.
+
+        Raises:
+            RuntimeError: If the agent has not been trained yet.
+        """
         if not self.is_trained:
             raise RuntimeError("[FundamentalAgent] Not trained.")
         X_prep = self.clean_features_predict(self._prepare(X, sector_col, fit_mode=False))
@@ -144,9 +181,21 @@ class FundamentalAgent(BaseAgent):
     # ── Helpers ───────────────────────────────────────────────────────────────
 
     def _prepare(self, X: pd.DataFrame, sector_col: str, fit_mode: bool) -> pd.DataFrame:
-        # Solo columnas base + _zsector (calculadas por SectorNormalizer).
-        # Los dummies one-hot de sector se eliminaron: aprenden el nivel medio del
-        # sector, no la posición relativa del ticker — eso ya lo cubren los _zsector.
+        """Selects base features and sector-normalised columns.
+
+        Only base columns and _zsector variants are included; sector one-hot
+        dummies are excluded because they capture sector-level means rather
+        than the relative position of the ticker, which is already encoded by
+        the _zsector columns.
+
+        Args:
+            X (pd.DataFrame): Raw feature matrix.
+            sector_col (str): Column name for the sector label (unused here).
+            fit_mode (bool): If True, stores the column list for alignment.
+
+        Returns:
+            pd.DataFrame: Prepared feature matrix.
+        """
         selected = resolve_feature_columns(
             default_cols=[],
             available_cols=list(X.columns),
@@ -162,9 +211,27 @@ class FundamentalAgent(BaseAgent):
         return result
 
     def _align(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Aligns X to the training feature schema.
+
+        Args:
+            X (pd.DataFrame): Feature matrix to align.
+
+        Returns:
+            pd.DataFrame: Aligned feature matrix.
+        """
         return self._align_to_feature_cols(X, fill_value=0.0)
 
     def _cv(self, X: pd.DataFrame, y: pd.Series, spw: float) -> Dict:
+        """Runs time-series cross-validation for the XGBoost model.
+
+        Args:
+            X (pd.DataFrame): Cleaned, selected feature matrix.
+            y (pd.Series): Binary target series.
+            spw (float): ``scale_pos_weight`` for class imbalance correction.
+
+        Returns:
+            Dict: Dictionary with mean_auc, std_auc, mean_acc, and mean_f1.
+        """
         date_order = X.index.get_level_values("date") if "date" in X.index.names else X.index
         sort_idx = date_order.argsort()
         X = X.iloc[sort_idx]

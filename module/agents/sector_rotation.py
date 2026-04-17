@@ -1,27 +1,26 @@
-# =============================================================================
-# module/agents/sector_rotation.py — Agente de Rotación Sectorial
-# =============================================================================
-# Predicción top-down: ¿va a superar este sector al S&P 500 el próximo quarter?
-#
-# LÓGICA:
-#   Opera a nivel SECTOR, no ticker. Para cada (sector, quarter):
-#     - Agrega las features de todos los tickers del sector (media)
-#     - Añade features de momentum de precio sectorial y flujos de analistas
-#     - Predice si el retorno medio del sector supera al SPY
-#
-#   Su output (sector_score) entra en el MetaLearner como contexto top-down:
-#     - Un ticker brillante en un sector fuerte recibe boosting.
-#     - Un ticker brillante en un sector débil recibe penalización.
-#
-# FEATURES QUE CONSUME (medias sectoriales de):
-#   Fundamentales:  roe, roa, net_margin, revenue_yoy_growth, fcf_margin,
-#                   debt_to_ebitda, interest_coverage
-#   Valoración:     pe_ratio, pb_ratio, ev_to_ebitda, fcf_yield
-#   Momentum:       momentum_1m, momentum_3m, momentum_6m, momentum_12m,
-#                   volatility_20d, rsi_14
-#   Sentimiento:    analyst_buy_ratio, analyst_consensus, beat_rate_4q,
-#                   eps_surprise_pct, mspr_3m
-# =============================================================================
+"""Sector rotation agent (top-down predictor) for the multi-agent stock picker.
+
+Predicts whether a sector will outperform the S&P 500 next quarter.
+
+Logic:
+  Operates at SECTOR level, not ticker level. For each (sector, quarter):
+    - Aggregates features from all tickers in the sector (median).
+    - Adds sectoral price momentum and analyst flow features.
+    - Predicts whether the mean sector return will beat SPY.
+
+  Output (sector_score) enters the MetaLearner as top-down context:
+    - A strong ticker in a strong sector receives a boosting signal.
+    - A strong ticker in a weak sector receives a penalty.
+
+Features consumed (sector-level medians of):
+  Fundamentals: roe, roa, net_margin, revenue_yoy_growth, fcf_margin,
+                debt_to_ebitda, interest_coverage
+  Valuation:    pe_ratio, pb_ratio, ev_to_ebitda, fcf_yield
+  Momentum:     momentum_1m, momentum_3m, momentum_6m, momentum_12m,
+                volatility_20d, rsi_14
+  Sentiment:    analyst_buy_ratio, analyst_consensus, beat_rate_4q,
+                eps_surprise_pct, mspr_3m
+"""
 import logging
 import numpy as np
 import pandas as pd
