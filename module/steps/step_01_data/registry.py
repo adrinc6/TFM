@@ -60,7 +60,7 @@ class Registry:
         if bool(entry.get("terminal", False)):
             return True
 
-        # Modo bloqueo indefinido: solo se libera con retry explícito.
+        # Indefinite lock mode: only released with an explicit retry.
         if cooldown_hours is None:
             return True
 

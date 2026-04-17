@@ -264,21 +264,21 @@ class TestDataRouterTickerValidation:
 
     def test_path_traversal_rejected(self, tmp_path):
         router = self._make_router(tmp_path)
-        with pytest.raises(ValueError, match="inválido"):
+        with pytest.raises(ValueError, match="[Ii]nvalid"):
             router._validate_ticker("../../etc/passwd")
 
     def test_empty_ticker_rejected(self, tmp_path):
         router = self._make_router(tmp_path)
-        with pytest.raises(ValueError, match="inválido"):
+        with pytest.raises(ValueError, match="[Ii]nvalid"):
             router._validate_ticker("")
 
     def test_long_ticker_rejected(self, tmp_path):
         router = self._make_router(tmp_path)
-        with pytest.raises(ValueError, match="inválido"):
+        with pytest.raises(ValueError, match="[Ii]nvalid"):
             router._validate_ticker("A" * 20)
 
     def test_special_chars_rejected(self, tmp_path):
         router = self._make_router(tmp_path)
         for bad in ["AAPL;rm -rf", "AAPL/../..", "ticker/../../"]:
-            with pytest.raises(ValueError, match="inválido"):
+            with pytest.raises(ValueError, match="[Ii]nvalid"):
                 router._validate_ticker(bad)

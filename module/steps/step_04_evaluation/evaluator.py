@@ -331,18 +331,18 @@ def _extrapolate_missing_snapshots(
     snapshot_lag_days: int = 0,
 ) -> pd.DataFrame:
     """
-    Extraola features para tickers que no tienen reporte en analysis_quarter.
+    Extrapolates features for tickers that have no report in analysis_quarter.
     
-    Si un ticker tiene al menos `lookback_quarters` snapshots históricos,
-    se promedian los últimos snapshots anteriores a analysis_quarter
-    y se crea una fila "estimada" para agregar al test universe.
+    If a ticker has at least `lookback_quarters` historical snapshots,
+    the last snapshots prior to analysis_quarter are averaged
+    and an "estimated" row is created to add to the test universe.
     
-    Retorna df_test actualizado con snapshots extrapolados.
+    Returns df_test updated with extrapolated snapshots.
     """
     if df.empty:
         return df_test
     
-    # Tickers que ya están en el test para analysis_quarter
+    # Tickers already in the test for analysis_quarter
     test_tickers = set(df_test.index.get_level_values("ticker").unique())
     
     # Todos los tickers disponibles
@@ -358,7 +358,7 @@ def _extrapolate_missing_snapshots(
     analysis_snapshot_date = analysis_quarter_start + pd.Timedelta(days=max(int(snapshot_lag_days), 0))
 
     for ticker in missing_tickers:
-        # Obtener todos los snapshots históricos de este ticker
+        # Obtain all historical snapshots for this ticker
         ticker_data = df.loc[df.index.get_level_values("ticker") == ticker].copy()
 
         # Evitar leakage: solo quarters previos al quarter analizado.
@@ -373,13 +373,13 @@ def _extrapolate_missing_snapshots(
         # Ordenar por date
         ticker_data = ticker_data.sort_index()
         
-        # Tomar los últimos `lookback_quarters` snapshots
+        # Take the last `lookback_quarters` snapshots
         recent_snapshots = ticker_data.tail(lookback_quarters)
         
         if len(recent_snapshots) < lookback_quarters:
             continue
         
-        # Detectar columnas numéricas para promediar
+        # Detect numeric columns to average
         numeric_cols = recent_snapshots.select_dtypes(include=["float64", "float32", "int64", "int32"]).columns
         
         # Crear snapshot promediado
@@ -387,13 +387,13 @@ def _extrapolate_missing_snapshots(
         for col in numeric_cols:
             aggregated[col] = recent_snapshots[col].mean()
         
-        # Copiar columnas no numéricas del snapshot más reciente
+        # Copy non-numeric columns from the most recent snapshot
         last_row = recent_snapshots.iloc[-1]
         for col in recent_snapshots.columns:
             if col not in numeric_cols:
                 aggregated[col] = last_row[col]
         
-        # Crear índice multi para agregar al df_test (ticker, date)
+        # Create multi-index to add to df_test (ticker, date)
         new_index = (ticker, analysis_quarter_end)
 
         # Forzar metadatos del quarter objetivo para no arrastrar valores del quarter previo.
@@ -401,7 +401,7 @@ def _extrapolate_missing_snapshots(
         aggregated["snapshot_date"] = analysis_snapshot_date
         aggregated["is_fundamental_carry_forward"] = True
 
-        # Mantener trazabilidad del reporte realmente usado (el más reciente histórico).
+        # Keep traceability of the report actually used (the most recent historical one).
         if "report_end_date_used" not in aggregated or pd.isna(aggregated.get("report_end_date_used")):
             aggregated["report_end_date_used"] = last_row.get("report_end_date_used", last_row.name[1] if isinstance(last_row.name, tuple) else pd.NaT)
         if "report_filed_date_used" not in aggregated:
@@ -432,23 +432,23 @@ def _extrapolate_missing_snapshots(
     df_test_extended = pd.concat([df_test, df_extrapolated], axis=0)
     df_test_extended = df_test_extended[~df_test_extended.index.duplicated(keep="first")]
     
-    log.info(f"[Fallback Extrapolation] Agregados {len(extrapolated_rows)} snapshots estimados (últimos {lookback_quarters} Q)")
+    log.info(f"[Fallback Extrapolation] Added {len(extrapolated_rows)} estimated snapshots (last {lookback_quarters} Q)")
     
     return df_test_extended
 
 
 def _spy_quarterly_returns(spy_prices: pd.Series) -> Dict[str, float]:
     """
-    Precalcula el retorno trimestral del SPY para cada quarter presente en spy_prices.
+    Pre-computes the quarterly SPY return for each quarter present in spy_prices.
 
-    Para cada quarter Q, calcula: (precio_último_día_Q / precio_último_día_Q-1) - 1
-    usando únicamente precios de cierre al final de cada quarter.
+    For each quarter Q, computes: (last_price_day_Q / last_price_day_Q-1) - 1
+    using only closing prices at the end of each quarter.
 
-    Devuelve un dict {periodo_quarter_str: retorno_float}, p. ej.:
+    Returns a dict {quarter_period_str: return_float}, e.g.:
         {"2024Q1": 0.107, "2024Q2": -0.032, ...}
     """
     spy = spy_prices.sort_index().dropna()
-    quarterly = spy.resample("QE").last()   # último precio de cada quarter
+    quarterly = spy.resample("QE").last()   # last price of each quarter
     spy_returns: Dict[str, float] = {}
     for i in range(1, len(quarterly)):
         p0 = quarterly.iloc[i - 1]
@@ -465,12 +465,12 @@ def _excess_return_label(
     sector_map: Optional[Dict[str, str]] = None,
 ) -> pd.Series:
     """
-        Label de outperformance sectorial por snapshot: 1 si el ticker superó la
-        mediana de su sector usando el forward_return definido para ese snapshot.
+        Sector outperformance label by snapshot: 1 if the ticker beat the
+        sector median using the forward_return defined for that snapshot.
 
-        El agrupado se hace por quarter del snapshot (no por quarter calendario
-        de salida), porque todos los tickers del mismo snapshot comparten la misma
-        regla de entrada/salida (lag + holding) y deben compararse entre sí.
+        Grouping is done by snapshot quarter (not by the calendar output quarter),
+        because all tickers from the same snapshot share the same
+        entry/exit rule (lag + holding) and must be compared against each other.
     """
     dates = df.index.get_level_values("date")
     tickers = df.index.get_level_values("ticker")
@@ -512,8 +512,8 @@ def _excess_return_label(
         labels = (forward_return > benchmark).astype(float)
         return labels.where(valid_mask)
 
-    # Fallback explícito: mediana del universo por snapshot quarter.
-    log.debug("[Label] mode=vs_universe (o sin sector_map) — usando mediana del universo por snapshot quarter")
+    # Explicit fallback: universe median per snapshot quarter.
+    log.debug("[Label] mode=vs_universe (or no sector_map) — using universe median per snapshot quarter")
     labels = (forward_return > quarter_median).astype(float)
     return labels.where(valid_mask)
 
@@ -890,7 +890,7 @@ def run_walkforward_pipeline(
         max_train_years, min_train_years = min_train_years, max_train_years
 
     log.info(
-        "[WalkForward] Ventana train dinámica activada: max=%sY -> min=%sY | mínimo test=%s%%",
+        "[WalkForward] Dynamic train window enabled: max=%sY -> min=%sY | minimum test=%s%%",
         max_train_years,
         min_train_years,
         MIN_TEST_TICKERS_PERCENT,
@@ -903,7 +903,7 @@ def run_walkforward_pipeline(
     resolved_snapshot_lag_days = int(snapshot_lag_days) if snapshot_lag_days is not None else 0
     analysis_frequency = str(analysis_frequency).strip().lower()
     if analysis_frequency not in {"quarterly", "annual"}:
-        raise ValueError("analysis_frequency debe ser 'quarterly' o 'annual'")
+        raise ValueError("analysis_frequency must be 'quarterly' or 'annual'")
 
     if analysis_frequency == "annual" and annual_anchor_date is None:
         annual_anchor_date = pd.Timestamp(start_date).normalize() + pd.Timedelta(days=max(int(resolved_snapshot_lag_days), 0))
@@ -916,9 +916,9 @@ def run_walkforward_pipeline(
     sp500_membership_df = _load_sp500_membership(membership_path) if USE_DYNAMIC_SP500_UNIVERSE else pd.DataFrame()
     if USE_DYNAMIC_SP500_UNIVERSE:
         if sp500_membership_df.empty:
-            log.warning("[WalkForward] Universo dinámico activo pero sin membresía SP500 utilizable (%s)", membership_path)
+            log.warning("[WalkForward] Dynamic universe active but no usable SP500 membership (%s)", membership_path)
         else:
-            log.info("[WalkForward] Membresía SP500 dinámica cargada: %s filas (%s)", len(sp500_membership_df), membership_path)
+            log.info("[WalkForward] Dynamic SP500 membership loaded: %s rows (%s)", len(sp500_membership_df), membership_path)
 
     prev_membership_tickers: Optional[set[str]] = None
     prev_membership_entry_date: Optional[pd.Timestamp] = None
@@ -958,10 +958,10 @@ def run_walkforward_pipeline(
                     annual_anchor_date.date(),
                 )
                 continue
-            # Formato para análisis anual: "2026YQ2" = año 2026, yearly, reporte Q2
+            # Annual format: "2026YQ2" = year 2026, yearly, Q2 report
             analysis_quarter_label = f"{train_end.year}YQ{train_end.quarter}"
         else:
-            # Formato trimestral: "2026Q2"
+            # Quarterly format: "2026Q2"
             analysis_quarter_label = f"{train_end.year}Q{train_end.quarter}"
 
         run_id = analysis_quarter_label
@@ -981,7 +981,7 @@ def run_walkforward_pipeline(
         min_test_tickers_required = int(np.ceil(fold_universe_tickers * MIN_TEST_TICKERS_PERCENT / 100.0))
         if USE_DYNAMIC_SP500_UNIVERSE and active_tickers_on_entry:
             log.info(
-                f"[{run_id}] SP500 dinámico @entry {entry_date.date()}: {len(active_tickers_on_entry)} miembros activos"
+                f"[{run_id}] SP500 dynamic @entry {entry_date.date()}: {len(active_tickers_on_entry)} active members"
             )
             if prev_membership_tickers is not None and prev_membership_entry_date is not None:
                 entered = sorted(active_tickers_on_entry - prev_membership_tickers)
@@ -1084,7 +1084,7 @@ def run_walkforward_pipeline(
             else:
                 fold_base_universe = set(all_master_tickers)
 
-            # Universo trazado para auditoría completa del fold: arranque + candidatos observados en test.
+            # Traced universe for full fold audit: baseline + candidates observed in test.
             fold_trace_universe = set(fold_base_universe) | set(test_tickers_pre_sp500) | set(all_master_tickers)
 
             if USE_DYNAMIC_SP500_UNIVERSE:
@@ -1208,8 +1208,8 @@ def run_walkforward_pipeline(
 
         if selected_df_train is None or selected_df_test is None or selected_train_years is None or selected_train_start is None:
             log.warning(
-                f"[{run_id}] No se alcanzó cobertura mínima de test ({MIN_TEST_TICKERS_PERCENT}%) "
-                f"ni reduciendo train hasta {min_train_years}Y — fold omitido."
+                f"[{run_id}] Minimum test coverage ({MIN_TEST_TICKERS_PERCENT}%) not reached "
+                f"even after reducing train to {min_train_years}Y — fold skipped."
             )
             continue
 
@@ -1220,9 +1220,9 @@ def run_walkforward_pipeline(
         test_filed_dates = selected_test_filed_dates
 
         log.info(f"\n{'='*60}")
-        log.info(f"  ANALISIS {run_id}")
-        log.info(f"  Train : {train_start.date()} → {train_end.date()}  ({_train_years} años)")
-        frequency_mode = "anual (Y)" if analysis_frequency == "annual" else "trimestral (Q)"
+        log.info(f"  ANALYSIS {run_id}")
+        log.info(f"  Train : {train_start.date()} → {train_end.date()}  ({_train_years} years)")
+        frequency_mode = "annual (Y)" if analysis_frequency == "annual" else "quarterly (Q)"
         log.info(f"  Mode  : {frequency_mode}")
         log.info(
             f"  Test  : snapshot simulado en {entry_date.date()} "
@@ -1230,11 +1230,11 @@ def run_walkforward_pipeline(
         )
         log.info(f"{'='*60}")
 
-        # Calcular entry_date: desde el primer día del quarter + lag configurado
+        # Calculate entry_date: from the first day of the quarter + configured lag
         
         log.info(
-            f"[{run_id}] Snapshot lag empieza en: {q_start.date()} (primer día del Q{analysis_quarter.quarter}) "
-            f"+ {lag_days} días máximo = fecha mínima de precios requerida: {entry_date.date()}"
+            f"[{run_id}] Snapshot lag starts at: {q_start.date()} (first day of Q{analysis_quarter.quarter}) "
+            f"+ {lag_days} days maximum = minimum required price date: {entry_date.date()}"
         )
 
         exit_date = entry_date + pd.DateOffset(months=max(int(holding_period_months), 1))
@@ -1276,7 +1276,7 @@ def run_walkforward_pipeline(
         )
 
         if len(df_train) < 100:
-            log.warning(f"[{run_id}] Train insuficiente ({len(df_train)} observaciones, mínimo 100) — fold omitido.")
+            log.warning(f"[{run_id}] Insufficient train ({len(df_train)} observations, minimum 100) — fold skipped.")
             continue
 
         df_train_norm = apply_sector_normalization(df_train, sector_map, normalizer, fit=True)
@@ -1312,7 +1312,7 @@ def run_walkforward_pipeline(
                     f"— {len(y_test)} observaciones"
                 )
         if df_test_norm.empty or y_test.empty:
-            log.warning(f"[{run_id}] Test vacio tras preparar labels — fold omitido.")
+            log.warning(f"[{run_id}] Empty test after preparing labels — fold skipped.")
             continue
 
         try:
@@ -1355,7 +1355,7 @@ def run_walkforward_pipeline(
             fold_result.update(eval_metrics)
             backtester.fold_results.append(fold_result)
 
-            # Auditoría PIT leakage sobre fuentes as-of usadas por el fold.
+            # PIT leakage audit on as-of sources used by the fold.
             fold_test_tickers = df_test_scored.index.get_level_values("ticker").unique().tolist()
             fold_leak_rows = _audit_fold_leakage(
                 router=data_router,
@@ -1366,9 +1366,9 @@ def run_walkforward_pipeline(
             leakage_rows.extend(fold_leak_rows)
             n_leak_fold = int(sum(1 for r in fold_leak_rows if int(r.get("n_rows_future_detected", 0)) > 0))
             if n_leak_fold > 0:
-                log.warning("[%s] Leakage audit detectó %s incidencias en fuentes filtradas.", run_id, n_leak_fold)
+                log.warning("[%s] Leakage audit detected %s incidents in filtered sources.", run_id, n_leak_fold)
 
-            # Modo monetario USD (sin reemplazar métricas históricas actuales).
+            # USD monetary mode (without replacing current historical metrics).
             if USE_DOLLAR_BACKTEST:
                 selected_tickers = list(fold_result.get("selected_tickers", []))
                 ticker_weights = dict(fold_result.get("ticker_weights", {}))
@@ -1527,7 +1527,7 @@ def run_walkforward_pipeline(
                     ablation_results.append(abl)
 
         except Exception as e:
-            log.error(f"Análisis {run_id} falló: {e}", exc_info=True)
+            log.error(f"Analysis {run_id} failed: {e}", exc_info=True)
             continue
 
     summary = backtester.summarize()
@@ -1565,7 +1565,7 @@ def run_walkforward_pipeline(
     baselines_dir = backtest_root / "baselines"
     baselines_dir.mkdir(parents=True, exist_ok=True)
 
-    # Reportes obligatorios de auditoría/leakage y precios faltantes.
+    # Mandatory audit/leakage and missing-prices reports.
     leakage_df = pd.DataFrame(leakage_rows)
     if leakage_df.empty:
         leakage_df = pd.DataFrame(columns=[

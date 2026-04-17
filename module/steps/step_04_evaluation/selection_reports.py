@@ -53,7 +53,7 @@ def _rule_based_drivers(row: pd.Series, score: float) -> List[Dict]:
                     "direction": "positive" if score >= 0.5 else "negative",
                 })
         except Exception:
-            log.debug("Rule-based driver check falló para %s", feat, exc_info=True)
+            log.debug("Rule-based driver check failed for %s", feat, exc_info=True)
             continue
 
     if not drivers:
@@ -354,7 +354,7 @@ def export_ticker_explanations(
                 log.debug(f"Explain {ag_name}/{ticker}: {ex}")
                 fallback_text, fallback_drivers = _fallback_explanation(ag_name, row, ticker, agent_score)
                 favor_text, contra_text = _split_driver_groups(fallback_drivers[:explanation_top_n])
-                flat_row["explanation_text"] = _flatten_text(f"Error generando explicación: {ex}. {fallback_text}")
+                flat_row["explanation_text"] = _flatten_text(f"Error generating explanation: {ex}. {fallback_text}")
                 flat_row["favor_factors"] = favor_text
                 flat_row["contra_factors"] = contra_text
                 flat_row["top_drivers_json"] = json.dumps(fallback_drivers[:explanation_top_n], ensure_ascii=False, default=str)

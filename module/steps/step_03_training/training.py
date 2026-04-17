@@ -175,7 +175,7 @@ def _compute_dispersion_scales(df: pd.DataFrame, score_cols: list[str]) -> Dict[
         std = float(df[col].std()) if SCORE_DISPERSION_MIN_STD > 0 else 0.0
         scale = 1.0 if std >= SCORE_DISPERSION_MIN_STD else (std / SCORE_DISPERSION_MIN_STD)
         bounded = max(0.0, min(1.0, scale))
-        # Guardrail: evita que un score útil quede totalmente neutro en inferencia.
+        # Guardrail: prevents a useful score from becoming completely neutral during inference.
         if bounded < 1.0:
             bounded = max(bounded, float(SCORE_DISPERSION_MIN_SCALE))
         scales[col] = bounded
@@ -279,7 +279,7 @@ def _predict_base_scores(
             scores = agent.predict_score(out, sector_col)
         else:
             scores = agent.predict_score(out)
-        # Alinear dirección de scores para inversión: alto = mejor para invertir.
+        # Align score direction for investment: high = better to invest.
         # BearAgent devuelve riesgo [0,1], por eso guardamos ambas vistas:
         #   - bear_risk_score: riesgo (alto = peor)
         #   - bear_score: safety (alto = mejor)
@@ -338,7 +338,7 @@ def train_fold(
     for col_name, scores_series in oof_scores.items():
         df_train_with_oof[col_name] = scores_series
 
-    # OOF del BearAgent llega como riesgo; convertir a safety para alinear dirección.
+    # BearAgent OOF arrives as risk; convert to safety to align direction.
     if "bear_score" in df_train_with_oof.columns:
         bear_risk = df_train_with_oof["bear_score"].astype(float).clip(0.0, 1.0)
         df_train_with_oof["bear_risk_score"] = bear_risk
@@ -346,7 +346,7 @@ def train_fold(
         _log_score_stats("OOF/bear_risk", df_train_with_oof["bear_risk_score"])
         _log_score_stats("OOF/bear_safety", df_train_with_oof["bear_score"])
 
-    # Añadir sector_score al train OOF usando el agente ya entrenado
+    # Add sector_score to train OOF using the already-trained agent
     if sector_agent.is_trained and sector_map is not None:
         sector_scores_train = sector_agent.predict_sector_scores(df_train_with_oof, sector_map)
         df_train_with_oof["sector_score"] = sector_agent.map_to_tickers(
@@ -366,7 +366,7 @@ def train_fold(
     log.info(f"[Fold {fold_id}] 3/3 — Generando predicciones sobre el quarter de test ({len(df_test_norm)} tickers)...")
     df_test = _predict_base_scores(base_agents, agents_config, df_test_norm)
 
-    # Añadir sector_score al test
+    # Add sector_score to test
     if sector_agent.is_trained and sector_map is not None:
         sector_scores_test = sector_agent.predict_sector_scores(df_test, sector_map)
         df_test["sector_score"] = sector_agent.map_to_tickers(

@@ -44,7 +44,7 @@ class WalkForwardBacktester:
 
 	@staticmethod
 	def _snap_to_quarter_end(ts: pd.Timestamp) -> pd.Timestamp:
-		"""Ajusta ts al último día del trimestre al que pertenece."""
+		"""Snap ts to the last day of the quarter it belongs to."""
 		return ts + pd.offsets.QuarterEnd(0)
 
 	def generate_folds(
@@ -52,9 +52,9 @@ class WalkForwardBacktester:
 		analysis_start_date: str,
 		analysis_end_date: str,
 	) -> List[tuple]:
-		# start/end representan el rango de QUARTERS ANALIZADOS (snapshot quarter).
-		# El test de cada fold usa el snapshot en train_end, y su evaluación real se
-		# hace fuera de esta función con lag/holding configurables.
+		# start/end represent the range of ANALYSED QUARTERS (snapshot quarter).
+		# The test of each fold uses the snapshot at train_end, and its actual evaluation
+		# is done outside this function with configurable lag/holding.
 		start = self._snap_to_quarter_end(pd.Timestamp(analysis_start_date))
 		end   = self._snap_to_quarter_end(pd.Timestamp(analysis_end_date))
 
@@ -107,10 +107,10 @@ class WalkForwardBacktester:
 			top_df = ordered.head(n_take)[["ticker", "score"]].copy()
 			log.info(
 				f"[Backtester] {period_id}: {len(qualified)} tickers superaron umbral {PORTFOLIO_MIN_SCORE:.2f} "
-				f"→ seleccionando top {n_take} (mín={min_stocks})"
+				f"→ selecting top {n_take} (min={min_stocks})"
 			)
 		else:
-			# Régimen comprimido: mantener selección relativa por ranking.
+			# Compressed regime: keep relative selection by ranking.
 			top_df = ordered.head(self.top_n_stocks)[["ticker", "score"]].copy()
 			log.warning(
 				f"[Backtester] {period_id}: solo {len(qualified)} tickers superaron umbral {PORTFOLIO_MIN_SCORE:.2f} "
@@ -119,7 +119,7 @@ class WalkForwardBacktester:
 			)
 		top = top_df["ticker"].tolist()
 		if not top:
-			log.warning(f"[Backtester] {period_id}: sin tickers disponibles — análisis omitido.")
+			log.warning(f"[Backtester] {period_id}: no tickers available — analysis skipped.")
 			return {}
 
 		daily_returns = []
@@ -127,7 +127,7 @@ class WalkForwardBacktester:
 		ticker_returns = {}
 		bench_period = benchmark.loc[test_start:test_end].dropna()
 		if len(bench_period) < 2:
-			log.warning(f"[Backtester] {period_id}: benchmark sin datos suficientes — análisis omitido.")
+			log.warning(f"[Backtester] {period_id}: insufficient benchmark data — analysis skipped.")
 			return {}
 		actual_end = bench_period.index.max()
 		if actual_end < test_end:
@@ -152,9 +152,9 @@ class WalkForwardBacktester:
 		if not daily_returns:
 			return {}
 
-		# Pesos: scores reales escalados al rango [w_min, w_max] o equiponderado.
-		# Regla: el ticker con mayor score pesa (1 + N/10) veces más que el menor.
-		# Los intermedios se posicionan según sus scores reales dentro de ese rango.
+		# Weights: real scores scaled to [w_min, w_max] or equal-weight.
+		# Rule: the ticker with the highest score weighs (1 + N/10) times more than the lowest.
+		# Intermediate tickers are positioned according to their real scores within that range.
 		N = len(tickers_with_prices)
 		if self.score_weighted and N > 1:
 			scores_arr = (

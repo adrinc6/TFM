@@ -49,7 +49,7 @@ def run_ablation_study(
     X_test = X_test.loc[y_te.index].fillna(0.5)
 
     if len(y_tr) < 20 or len(y_te) < 5:
-        log.warning(f"[Ablation] Fold {fold_id}: datos insuficientes para ablation.")
+        log.warning(f"[Ablation] Fold {fold_id}: insufficient data for ablation.")
         return {}
 
     def _auc(X_tr, y_tr, X_te, y_te):
@@ -159,8 +159,8 @@ def summarize_ablation(
     if rows:
         df = pd.DataFrame(rows).sort_values("mean_contribution", ascending=False)
         df.to_csv(out_dir / "ablation_summary.csv", index=False, float_format="%.4f")
-        log.info("[Ablation] Resumen de ablation:")
-        log.info(f"  Baseline AUC medio: {summary['mean_baseline_auc']:.4f}")
+        log.info("[Ablation] Ablation summary:")
+        log.info(f"  Mean baseline AUC: {summary['mean_baseline_auc']:.4f}")
         for _, row in df.iterrows():
             log.info(
                 f"  {row['agent']:<15}  dAuC medio={row['mean_contribution']:+.4f} "

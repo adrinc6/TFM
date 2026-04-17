@@ -98,7 +98,7 @@ class ValuationAgent(BaseAgent):
         X_prep       = X_prep.reset_index(drop=True)
         y_cl         = y_cl.reset_index(drop=True)
 
-        # Selección de features: solo con datos de train (sin leakage)
+        # Feature selection: training data only (no leakage)
         self._selector = FeatureSelector(corr_threshold=FEATURE_CORR_THRESHOLD, top_n=FEATURE_TOP_N,
                                          min_features=3, random_seed=self.random_seed,
                                          zsector_pair_policy="force_zsector")

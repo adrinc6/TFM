@@ -74,8 +74,8 @@ class Visualizer:
 		ax.plot(w_strat.index, w_strat.values, **STYLE["strategy"])
 		ax.plot(w_bench.index, w_bench.values, **STYLE["benchmark"])
 		ax.axhline(1, color="gray", lw=0.8, ls=":")
-		ax.set_title("Curva de Riqueza Acumulada", fontweight="bold")
-		ax.set_ylabel("Valor de la cartera (base 1)")
+		ax.set_title("Cumulative Wealth Curve", fontweight="bold")
+		ax.set_ylabel("Portfolio value (base 1)")
 		ax.legend()
 		ax.grid(alpha=0.3)
 		final_s = float(w_strat.iloc[-1] - 1) if not w_strat.empty else 0
@@ -226,8 +226,8 @@ class Visualizer:
 
 	def plot_fold_performance(self, fold_result: Dict, fold_id: int | str):
 		"""
-		Plot diario del quarter de test: cada ticker seleccionado (líneas finas),
-		cartera media (línea gruesa azul) y benchmark (línea gruesa naranja).
+		Daily plot for the test quarter: each selected ticker (thin lines),
+		mean portfolio (thick blue line) and benchmark (thick orange line).
 		"""
 		ticker_series: Dict[str, pd.Series] = fold_result.get("_ticker_price_series", {})
 		strat_series: Optional[pd.Series] = fold_result.get("_strat_price_series")
@@ -242,7 +242,7 @@ class Visualizer:
 
 		fig, ax = plt.subplots(figsize=(12, 6))
 
-		# Tickers individuales — líneas finas y semitransparentes
+		# Individual tickers — thin semi-transparent lines
 		for ticker, series in ticker_series.items():
 			total_ret = float(series.iloc[-1] - 1) if len(series) > 0 else 0.0
 			w = ticker_weights.get(ticker)
@@ -253,7 +253,7 @@ class Visualizer:
 				label=f"{ticker} ({total_ret:+.1%}{w_str})",
 			)
 
-		# Benchmark — línea gruesa naranja discontinua
+		# Benchmark — thick dashed orange line
 		bench_ret = float(bench_series.iloc[-1] - 1) if len(bench_series) > 0 else 0.0
 		ax.plot(
 			bench_series.index, bench_series.values,
@@ -261,7 +261,7 @@ class Visualizer:
 			label=f"S&P 500 ({bench_ret:+.1%})",
 		)
 
-		# Cartera media — línea gruesa azul
+		# Mean portfolio — thick blue line
 		strat_ret = float(strat_series.iloc[-1] - 1) if len(strat_series) > 0 else 0.0
 		ax.plot(
 			strat_series.index, strat_series.values,

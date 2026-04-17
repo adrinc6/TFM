@@ -43,7 +43,7 @@ try:
 except ImportError:
     _DEPS_OK = False
 
-# Hiperparámetros propios (no dependen de los de los otros agentes)
+# Own hyperparameters (independent of those used by other agents)
 _N_ESTIMATORS = 200
 _MAX_DEPTH = 3
 _LEARNING_RATE = 0.05
@@ -51,20 +51,20 @@ _SUBSAMPLE = 0.8
 
 class SectorRotationAgent(BaseAgent):
     """
-    Agente top-down que predice si un sector va a superar al S&P 500.
+    Top-down agent that predicts whether a sector will outperform the S&P 500.
 
-    Proceso:
-      1. fit(): recibe el DataFrame de tickers con multi-index (ticker, date).
-                Agrega a nivel (sector, quarter) usando medianas robustas.
-                Construye el label sectorial: 1 si el retorno medio del sector
-                superó al SPY en ese quarter.
-                Entrena GBM sobre esas observaciones sectoriales.
+    Process:
+      1. fit(): receives the ticker DataFrame with multi-index (ticker, date).
+                Aggregates to (sector, quarter) level using robust medians.
+                Builds the sector label: 1 if the mean sector return
+                beat SPY in that quarter.
+                Trains a GBM on those sector-level observations.
 
-      2. predict_sector_scores(): dado un DataFrame de tickers, agrega a nivel
-                sector y devuelve un dict {sector: score [0,1]}.
+      2. predict_sector_scores(): given a ticker DataFrame, aggregates to
+                sector level and returns a dict {sector: score [0,1]}.
 
-      3. map_to_tickers(): expande el dict de sectores a una Series indexada
-                por los mismos tickers del DataFrame de entrada.
+      3. map_to_tickers(): expands the sector dict to a Series indexed
+                by the same tickers as the input DataFrame.
     """
 
     def __init__(
@@ -80,7 +80,7 @@ class SectorRotationAgent(BaseAgent):
         self._feature_cols: List[str] = []
         self._selector: Optional[FeatureSelector] = None
         self._sector_return_history: Dict[str, float] = {}  # para logging
-        self._sector_map: Dict[str, str] = {}  # guardado en fit() para predict_score()
+        self._sector_map: Dict[str, str] = {}  # saved in fit() for predict_score()
 
     # ── Fit ───────────────────────────────────────────────────────────────────
 
@@ -92,11 +92,11 @@ class SectorRotationAgent(BaseAgent):
         fold: Optional[int] = None,
     ) -> "SectorRotationAgent":
         """
-        df: DataFrame con multi-index (ticker, date) y columna forward_return.
+        df: DataFrame with multi-index (ticker, date) and a forward_return column.
         sector_map: {ticker: sector}.
-        spy_prices: precios diarios del SPY para calcular retorno trimestral.
+        spy_prices: daily SPY prices for computing the quarterly return.
         """
-        log.info(f"[SectorRotationAgent] Construyendo dataset sectorial — {len(df)} obs de tickers")
+        log.info(f"[SectorRotationAgent] Building sector dataset — {len(df)} ticker obs")
 
         sector_df = self._build_sector_dataset(df, sector_map, spy_prices)
         if sector_df.empty or len(sector_df) < 10:
@@ -128,8 +128,8 @@ class SectorRotationAgent(BaseAgent):
 
         bal = self.class_balance(y)
         log.info(
-            f"[SectorRotationAgent] {len(sector_df)} obs sectoriales | "
-            f"{bal['n_positive']} sectores outperform / {bal['n_negative']} underperform | "
+            f"[SectorRotationAgent] {len(sector_df)} sector obs | "
+            f"{bal['n_positive']} outperform / {bal['n_negative']} underperform sectors | "
             f"{len(self._feature_cols)} features"
         )
 
@@ -165,15 +165,15 @@ class SectorRotationAgent(BaseAgent):
         }
         self.record_train_metrics(cv, fold)
         self.save_diagnostics(fold)
-        self._sector_map = dict(sector_map)  # guardar para predict_score()
+        self._sector_map = dict(sector_map)  # save for predict_score()
         return self
 
     # ── Predict ───────────────────────────────────────────────────────────────
 
     def predict_score(self, X: pd.DataFrame) -> pd.Series:
         """
-        Implementa la interfaz abstracta de BaseAgent.
-        Usa el sector_map guardado en fit() para devolver scores por ticker.
+        Implements the abstract BaseAgent interface.
+        Uses the sector_map saved in fit() to return per-ticker scores.
         """
         sector_scores = self.predict_sector_scores(X, self._sector_map)
         return self.map_to_tickers(X, self._sector_map, sector_scores).rename("sector_rotation_score")
@@ -184,11 +184,11 @@ class SectorRotationAgent(BaseAgent):
         sector_map: Dict[str, str],
     ) -> Dict[str, float]:
         """
-        Devuelve un dict {sector: score [0,1]} donde score es la probabilidad
-        de que ese sector supere al S&P 500 el próximo quarter.
+        Return a dict {sector: score [0,1]} where score is the probability
+        that the sector will beat the S&P 500 next quarter.
         """
         if not self.is_trained:
-            log.warning("[SectorRotationAgent] No entrenado — devolviendo score neutro 0.5 para todos los sectores.")
+            log.warning("[SectorRotationAgent] Not trained — returning neutral score 0.5 for all sectors.")
             sectors = set(sector_map.values())
             return {s: 0.5 for s in sectors}
 
@@ -206,7 +206,7 @@ class SectorRotationAgent(BaseAgent):
         proba = self._model.predict_proba(X)[:, 1]
         scores = dict(zip(sector_features.index, proba))
 
-        log.info("[SectorRotationAgent] Scores sectoriales:")
+        log.info("[SectorRotationAgent] Sector scores:")
         for sector, score in sorted(scores.items(), key=lambda x: -x[1]):
             log.info(f"    {sector:<30}  score={score:.3f}")
 
@@ -239,9 +239,9 @@ class SectorRotationAgent(BaseAgent):
         spy_prices: Optional[pd.Series],
     ) -> pd.DataFrame:
         """
-        Construye un DataFrame (sector, quarter) con:
-          - Features agregadas (media de los tickers del sector en ese quarter)
-          - Label: 1 si el retorno medio del sector superó al SPY
+        Build a (sector, quarter) DataFrame with:
+          - Aggregated features (mean of tickers in the sector for that quarter)
+          - Label: 1 if the mean sector return beat SPY
         """
         tickers = df.index.get_level_values("ticker")
         dates = df.index.get_level_values("date")
@@ -270,7 +270,7 @@ class SectorRotationAgent(BaseAgent):
 
             feat = {col: float(grp[col].mean()) for col in available_feat_cols if grp[col].notna().any()}
 
-            # Label sectorial: ¿el retorno medio del sector supera al SPY?
+            # Sector label: did the mean sector return beat SPY?
             if "forward_return" not in grp.columns:
                 continue
             sector_return = float(grp["forward_return"].mean())
@@ -292,7 +292,7 @@ class SectorRotationAgent(BaseAgent):
             return pd.DataFrame()
 
         result = pd.DataFrame(records)
-        log.debug(f"[SectorRotationAgent] Dataset: {len(result)} observaciones (sector × quarter)")
+        log.debug(f"[SectorRotationAgent] Dataset: {len(result)} observations (sector × quarter)")
         return result
 
     def _aggregate_ticker_features(
@@ -300,7 +300,7 @@ class SectorRotationAgent(BaseAgent):
         df: pd.DataFrame,
         sector_map: Dict[str, str],
     ) -> pd.DataFrame:
-        """Agrega las features de ticker a nivel sector (media) para predicción."""
+        """Aggregate ticker features to sector level (mean) for prediction."""
         tickers = df.index.get_level_values("ticker")
         sector_series = pd.Series(tickers, index=df.index).map(sector_map).fillna("Unknown")
 
@@ -350,7 +350,7 @@ class SectorRotationAgent(BaseAgent):
 
 
 def _spy_quarterly_returns_dict(spy_prices: pd.Series) -> Dict[str, float]:
-    """Retornos trimestrales del SPY como dict {quarter_str: retorno}."""
+    """Quarterly SPY returns as a dict {quarter_str: return}."""
     spy = spy_prices.sort_index().dropna()
     quarterly = spy.resample("QE").last()
     result: Dict[str, float] = {}

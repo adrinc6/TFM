@@ -167,7 +167,7 @@ class SentimentAgent(BaseAgent):
             )
             return self
 
-        # Selección de features
+        # Feature selection
         self._selector = FeatureSelector(
             corr_threshold=FEATURE_CORR_THRESHOLD,
             top_n=FEATURE_TOP_N,
