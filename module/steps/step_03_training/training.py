@@ -1,4 +1,4 @@
-"""Training workflows for base agents and the meta learner."""
+﻿"""Training workflows for base agents and the meta learner."""
 
 from __future__ import annotations
 
@@ -154,7 +154,7 @@ def _series_stats(s: pd.Series) -> Dict[str, float]:
 def _log_score_stats(tag: str, s: pd.Series) -> None:
     st = _series_stats(s)
     if st["n"] == 0:
-        log.info(f"[{tag}] Sin datos para resumen de score")
+        log.info(f"[{tag}] No data para resumen de score")
         return
     log.info(
         f"[{tag}] n={st['n']} | min={st['min']:.4f} q10={st['q10']:.4f} q25={st['q25']:.4f} "

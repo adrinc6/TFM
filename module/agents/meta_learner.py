@@ -1,4 +1,4 @@
-# =============================================================================
+﻿# =============================================================================
 # module/agents/meta_learner.py — Meta-Learner (Stacking)
 # =============================================================================
 # Combina las salidas de los 5 agentes en una predicción final.
@@ -217,7 +217,7 @@ class MetaLearner(BaseAgent):
 
     def predict_score(self, X: pd.DataFrame, sector_col: str = "sector") -> pd.Series:
         if not self.is_trained:
-            raise RuntimeError("[MetaLearner] No entrenado.")
+            raise RuntimeError("[MetaLearner] Not trained.")
         X_prep = self.clean_features_predict(self._prepare(X, sector_col, fit_mode=False))
         X_al   = self._align(X_prep)
 

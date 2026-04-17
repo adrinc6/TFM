@@ -1,4 +1,4 @@
-"""
+﻿"""
 fold_report.py — Generación del CSV consolidado de resultados por fold.
 
 Produce dos archivos por cada fold completado, y al final un consolidado global:
@@ -9,7 +9,7 @@ Produce dos archivos por cada fold completado, y al final un consolidado global:
      - Selección: selected, rank, selection_reason
      - Scores de cada agente (0-1) con interpretación en texto
      - Score final y predicción
-     - Resultado real (si disponible): actual_return, beat_benchmark
+     - Realized result (if available): actual_return, beat_benchmark
      - Explicación de cada agente: qué factores jugaron a favor y en contra,
        con los valores reales de las métricas en lenguaje natural
 
@@ -186,7 +186,7 @@ def _build_agent_explanation(
                 f" (+{d['shap_value']:.3f})"
                 for d in positives
             )
-            parts.append(f"A favor: {favor}")
+            parts.append(f"In favor: {favor}")
 
         if negatives:
             contra = "; ".join(
@@ -195,7 +195,7 @@ def _build_agent_explanation(
                 f" ({d['shap_value']:.3f})"
                 for d in negatives
             )
-            parts.append(f"En contra: {contra}")
+            parts.append(f"Against: {contra}")
 
         return " | ".join(parts)
 
@@ -292,7 +292,7 @@ def build_fold_scores_df(
             "sector_confidence": round(float(row.get("sector_confidence", 1.0)), 4),
         }
 
-        # --- Scores por agente + texto interpretativo ---
+        # --- Scores by agent + texto interpretativo ---
         for ag_name in ["fundamental", "valuation", "momentum", "bear", "sentiment"]:
             score_col = f"{ag_name}_score"
             ag_score = float(row.get(score_col, 0.5))

@@ -1,4 +1,4 @@
-"""Consolidation utilities for Finnhub datasets."""
+﻿"""Consolidation utilities for Finnhub datasets."""
 
 from __future__ import annotations
 
@@ -57,7 +57,7 @@ class FinnhubConsolidator:
 		)
 
 		if df_q.empty and df_a.empty:
-			log.warning(f"[{ticker}] Sin datos SEC — skip")
+			log.warning(f"[{ticker}] No data SEC — skip")
 			return pd.DataFrame()
 
 		if not df_q.empty and not df_a.empty:

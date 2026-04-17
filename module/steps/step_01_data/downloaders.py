@@ -1,4 +1,4 @@
-"""Download helpers for Finnhub and Yahoo data."""
+﻿"""Download helpers for Finnhub and Yahoo data."""
 
 from __future__ import annotations
 
@@ -642,7 +642,7 @@ def run_download(
     log.info("  DESCARGA COMPLETADA")
     log.info(f"  Completos  : {summary['ok']}")
     log.info(f"  Parciales  : {summary['partial']}")
-    log.info(f"  Sin datos  : {summary['fail']}")
+    log.info(f"  No data  : {summary['fail']}")
     log.info("=" * 50)
 
 

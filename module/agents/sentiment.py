@@ -1,4 +1,4 @@
-# =============================================================================
+﻿# =============================================================================
 # module/agents/sentiment_agent.py — Agente de Sentiment (Random Forest)
 # =============================================================================
 # DATOS QUE CONSUME (calculados por SentimentFeatureBuilder):
@@ -202,7 +202,7 @@ class SentimentAgent(BaseAgent):
 
     def predict_score(self, X: pd.DataFrame) -> pd.Series:
         if not self.is_trained:
-            raise RuntimeError("[SentimentAgent] No entrenado.")
+            raise RuntimeError("[SentimentAgent] Not trained.")
         X_prep = self.clean_features_predict(self._prepare(X))
         if self._selector is not None:
             X_prep = self._selector.transform(X_prep)

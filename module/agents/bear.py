@@ -1,4 +1,4 @@
-# =============================================================================
+﻿# =============================================================================
 # module/agents/bear_agent.py — Agente Bear (Filtro de Riesgo)
 # =============================================================================
 # Detecta riesgo elevado mediante un score estructurado en dos sub-scores:
@@ -186,7 +186,7 @@ class BearAgent(BaseAgent):
         para que contribuya como señal bajista.
         """
         if not self.is_trained:
-            raise RuntimeError("[BearAgent] No entrenado.")
+            raise RuntimeError("[BearAgent] Not trained.")
 
         X_flags    = self._add_flag_cols(X)
         rule_score = self._rule_score_from_flags(X_flags)

@@ -1,4 +1,4 @@
-"""Dataset construction for training and live inference."""
+﻿"""Dataset construction for training and live inference."""
 
 from __future__ import annotations
 
@@ -330,12 +330,12 @@ def build_master_dataset(
     holding_period_months: int = 3,
     technical_lookback_days: int = 300,
 ) -> pd.DataFrame:
-    log.info(f"Construyendo dataset maestro para {len(tickers)} tickers...")
+    log.info(f"Building master dataset para {len(tickers)} tickers...")
     records = []
 
     try:
         from tqdm import tqdm
-        ticker_iter = tqdm(tickers, desc="Dataset maestro", unit="ticker")
+        ticker_iter = tqdm(tickers, desc="Master dataset", unit="ticker")
     except ImportError:
         ticker_iter = tickers
 
@@ -384,7 +384,7 @@ def build_master_dataset(
                     records.append(record)
 
         except (ValueError, TypeError, KeyError) as e:
-            log.warning(f"[{ticker}] Error de datos al construir features: {type(e).__name__}: {e}")
+            log.warning(f"[{ticker}] Data error al construir features: {type(e).__name__}: {e}")
             continue
         except Exception as e:
             log.error(
@@ -397,14 +397,14 @@ def build_master_dataset(
             log.info(f"  [{i}/{len(tickers)}] tickers procesados — {len(records)} observaciones acumuladas")
 
     if not records:
-        raise RuntimeError("Dataset maestro vacio. Revisa los datos en data_finnhub/")
+        raise RuntimeError("Master dataset vacio. Revisa los datos en data_finnhub/")
 
     df = pd.DataFrame(records)
     # year_quarter se conserva como columna (no como nivel de índice) para análisis posterior
     df = df.set_index(["ticker", "date"]).sort_index()
     df = _enforce_master_feature_schema(df)
     log.info(
-        f"Dataset maestro listo: {len(df)} observaciones | "
+        f"Master dataset listo: {len(df)} observaciones | "
         f"{df.index.get_level_values('ticker').nunique()} tickers | "
         f"{df['year_quarter'].nunique()} quarters | "
         f"{len(df.columns)} features"
@@ -457,7 +457,7 @@ def build_live_features(
                 records.append(record)
 
         except (ValueError, TypeError, KeyError) as e:
-            log.debug(f"[{ticker}] Error de datos en features live: {type(e).__name__}: {e}")
+            log.debug(f"[{ticker}] Data error en features live: {type(e).__name__}: {e}")
         except Exception as e:
             log.error(f"[{ticker}] Error inesperado en features live: {type(e).__name__}: {e}", exc_info=True)
 

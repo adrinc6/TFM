@@ -1,70 +1,70 @@
-# =============================================================================
-# environment.py — Parámetros globales del proyecto
+﻿# =============================================================================
+# environment.py — Global project parameters
 # =============================================================================
 """
-Fuente única de verdad para toda la configuración del pipeline.
+Single source of truth for all pipeline configuration.
 
-Organización:
-  1. Flags de ejecución
+Organization:
+  1. Execution flags
   2. API keys
-  3. Rutas de datos y resultados
-  4. Universo de tickers
-  5. Período de análisis
-  6. Parámetros del pipeline ML
+  3. Data and results paths
+  4. Ticker universe
+  5. Analysis period
+  6. ML pipeline parameters
   7. Walk-forward backtesting
-  8. Hiperparámetros de los agentes
-  9. Reproducibilidad
+  8. Agent hyperparameters
+  9. Reproducibility
 
-Nota: el backend matplotlib Agg está configurado en los módulos de visualización,
-por lo que todos los gráficos se guardan siempre en disco (modo headless).
+Note: the matplotlib Agg backend is configured in visualization modules,
+so all plots are always saved to disk (headless mode).
 """
 import os
 
 # =============================================================================
-# 1. Flags de ejecución
+# 1. Execution flags
 # =============================================================================
 
-# Si True, salta el backtest walk-forward y solo ejecuta el fold live
+# If True, skips walk-forward backtest and runs only the live fold
 SKIP_BACKTEST = False
 
-# Si True, re-descarga todos los datos aunque ya existan en disco
+# If True, re-downloads all data even if it already exists on disk
 FORCE_DOWNLOAD = False
 
-# Si True, solo actualiza precios y macro (sin consolidacion ni entrenamiento)
+# If True, updates only prices and macro data (without consolidation or training)
 UPDATE_PRICES_ONLY = False
 
-# Si True, reintenta descargar datos para los tickers eliminados por falta de datos
+# If True, retries downloading data for tickers removed due to missing data
 RETRY_MISSING_TICKERS = False
 
-# Si True, ejecuta el estudio de ablation para medir la contribución de agentes
+# If True, runs the ablation study to measure agent contribution
 RUN_ABLATION_STUDY = False
 
-# Si True, exporta CSVs de debug por ticker (e.g. AAPL) en agentes para auditoría
+# If True, exports per-ticker debug CSVs (e.g., AAPL) for agent auditing
 DEBUG_EXPORT_AGENT_INPUTS = False
 
-# Si True, habilita caché de artefactos intermedios para reutilizar cálculo
+# If True, enables intermediate artifact caching to reuse computation
 ENABLE_CACHE = True
 
-# Carpeta raíz de caché
+# Cache root folder
 CACHE_DIR = "cache"
 
-# Versión de esquema de caché. Súbela cuando cambie la estructura de artefactos
-# o la política de columnas del dataset.
+# Cache schema version. Bump it when artifact structure changes
+# or when dataset column policy changes.
 CACHE_SCHEMA_VERSION = 2
 
-# Reutiliza dataset maestro si coincide contexto (tickers + parámetros)
+# Reuse master dataset when context matches (tickers + parameters)
 CACHE_USE_MASTER_DATASET = True
 
-# Reutiliza artefactos derivados de DataRouter (tickers disponibles y datos de mercado preparados)
+# Reuse DataRouter-derived artifacts (available tickers and prepared market data)
 CACHE_USE_ROUTER_DERIVED = True
 
-# Reutiliza resumen final walk-forward y salta recomputar backtest completo
+# Reuse final walk-forward summary and skip full backtest recomputation
 CACHE_USE_WALKFORWARD_SUMMARY = False
 
-# Descarga paralela
+# Parallel download
 DOWNLOAD_MAX_WORKERS = 8
 
-# Finnhub rate limit (segundos entre requests globales)
+# Finnhub rate limit (seconds between global requests)
 FINNHUB_MIN_INTERVAL = 1
 
 # =============================================================================
@@ -74,7 +74,7 @@ FINNHUB_MIN_INTERVAL = 1
 FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
 
 # =============================================================================
-# 3. Rutas de datos y resultados
+# 3. Data and results paths
 # =============================================================================
 
 FINNHUB_DATA_DIR         = "data_finnhub"
@@ -85,183 +85,183 @@ BACKTEST_RESULTS_DIR = os.path.join(RESULTS_DIR, "backtest")
 PLOTS_DIR            = os.path.join(RESULTS_DIR, "plots")
 
 # =============================================================================
-# 4. Universo de tickers
+# 4. Ticker universe
 # =============================================================================
-# Lista manual de fallback (legacy).
-# Nota: por defecto el pipeline usa universo dinámico desde sp500_historic.csv.
-# Esta lista solo se usa si desactivas USE_DYNAMIC_SP500_UNIVERSE.
+# Manual fallback list (legacy).
+# Note: by default the pipeline uses a dynamic universe from sp500_historic.csv.
+# This list is used only if USE_DYNAMIC_SP500_UNIVERSE is disabled.
 TICKERS = [
     "NVDA","AAPL","MSFT","AMZN","GOOGL","GOOG","META","AVGO","TSLA","BRK-B","WMT","LLY","JPM","XOM","V","JNJ","MU","COST","MA","ORCL","NFLX","CVX","ABBV","PLTR","PG","BAC","HD","KO","AMD","CAT","GE","CSCO","MRK","LRCX","AMAT","RTX","PM","UNH","MS","GS","IBM","WFC","GEV","TMUS","LIN","MCD","INTC","PEP","VZ","AXP","KLAC","T","NEE","C","AMGN","ABT","CRM","DIS","GILD","TXN","TMO","ANET","TJX","ISRG","SCHW","BA","UBER","APH","DE","PFE","COP","BLK","ADI","LMT","APP","HON","WELL","UNP","QCOM","BKNG","ETN","PANW","DHR","SYK","LOW","CB","SPGI","INTU","PLD","ACN","BMY","NOW","PGR","PH","VRTX","CEG","MCK","MDT","COF","HCA","CME","CRWD","GLW","MO","NEM","SO","SBUX","BSX","SNDK","CMCSA","NOC","DUK","WDC","ADBE","DELL","HWM","EQIX","GD","WM","TT","CVS","STX","WMB","ICE","BX","MAR","PWR","ADP","AMT","MRSH","JCI","UPS","FDX","SNPS","PNC","USB","KKR","CDNS","REGN","BK","NKE","ABNB","MCO","SHW","MSI","FCX","MMM","ITW","CTAS","CMI","ECL","EOG","ORLY","CSX","MNST","RCL","EMR","KMI","MDLZ","VLO","DASH","AEP","CL","CI","MPC","PSX","TDG","RSG","LHX","SLB","HLT","AON","WBD","ROST","HOOD","CRH","GM","ELV","TRV","APO","NSC","COR","APD","FTNT","SRE","SPG","DLR","PCAR","O","OXY","TEL","BKR","VST","AFL","AZO","TFC","D","OKE","CIEN","FANG","AJG","CTVA","COIN","ALL","MPWR","ADSK","TGT","FAST","EXC","TRGP","EA","CAH","XEL","FIX","ZTS","GWW","PSA","AME","KEYS","NXPI","NDAQ","CARR","EW","ETR","F","DDOG","TER","URI","IDXX","BDX","KR","MET","GRMN","YUM","HSY","PEG","CMG","CVNA","DAL","EBAY","ED","AXON","PYPL","MSCI","VTR","WAB","EQT","PCG","AMP","DHI","ROK","AIG","CBRE","FITB","SYY","ODFL","TTWO","WEC","LYV","CCI","TPL","NUE","KDP","HIG","ROP","LVS","MCHP","WDAY","XYZ","MLM","ADM","VMC","NRG","STT","CCL","KVUE","RMD","KMB","EME","ACGL","PAYX","PRU","IR","GEHC","CPRT","A","IRM","EL","ATO","OTIS","AEE","HAL","HBAN","FISV","IBKR","CBOE","DTE","DVN","UAL","VICI","TDY","WAT","FE","MTB","XYL","EXPE","CTSH","EXR","PPL","DOV","HPE","FICO","CNP","TPR","RJF","EIX","VRSK","DG","ES","IQV","WTW","JBL","DOW","AWK","BIIB","CHTR","STZ","KHC","DXCM","ROL","CTRA","EXE","FIS","HUBB","WRB","NTRS","CINF","LYB","STLD","TSCO","CFG","ARES","MTD","BG","Q","LEN","CMS","ON","OMC","AVB","DRI","ULTA","PPG","BRO","CHD","SYF","EQR","PHM","NI","VLTO","EFX","WSM","VRSN","LH","RF","L","DGX","TSN","DLTR","STE","FSLR","LDOS","RL","KEY","MRNA","BR","HUM","CHRW","CF","GIS","SW","NTAP","GPN","LUV","CPAY","LULU","EXPD","TROW","ALB","EVRG","IP","SBAC","PFG","SNA","PKG","INCY","LNT","JBHT","AMCR","SMCI","CSGP","DD","NVR","IFF","PTC","CNC","ZBH","WST","WY","FTV","HOLX","HPQ","LII","HII","PODD","BALL","FFIV","ESS","TXT","VTRS","AKAM","TKO","TRMB","KIM","J","INVH","CDW","MAA","APTV","NDSN","MKC","TYL","DECK","PNR","IEX","GPC","REG","COO","BBY","CLX","HST","APA","ALGN","HAS","EG","DPZ","AVY","ERIE","HRL","GEN","BEN","ALLE","MAS","DOC","PNW","JKHY","GNRC","SOLV","FOX","UHS","UDR","FOXA","IT","TTD","GDDY","SWK","SJM","GL","WYNN","AIZ","BF-B","IVZ","CPT","ZBRA","PSKY","AES","DVA","BLDR","RVTY","MGM","FRT","MOS","NCLH","AOS","NWSA","BAX","HSIC","ARE","BXP","SWKS","TECH","TAP","CRL","FDS","MOH","POOL","CAG","EPAM","MTCH","PAYC","CPB","LW","NWS"
     ]
 
-# Universo dinámico S&P 500 (recomendado)
-# Si True, el pipeline ignora la lista manual TICKERS y construye el universo
-# desde data_finnhub/sp500_historic.csv en función del periodo analizado.
+# Dynamic S&P 500 universe (recommended)
+# If True, the pipeline ignores manual TICKERS and builds the universe
+# from data_finnhub/sp500_historic.csv based on the analyzed period.
 USE_DYNAMIC_SP500_UNIVERSE = True
 
-# CSV de miembros históricos del S&P 500 (columnas: ticker,start_date,end_date)
+# CSV of historical S&P 500 members (columns: ticker,start_date,end_date)
 SP500_HISTORIC_CSV_PATH = os.path.join(FINNHUB_DATA_DIR, "sp500_historic.csv")
 
-# Número objetivo de tickers por año tras ranking por market cap histórico.
-# - Si pones 200/300/400: aplica Top-N anual por market cap y usa la unión.
-# - Si pones False o 0: usa todo el universo activo del rango sin recorte.
+# Target number of tickers per year after historical market cap ranking.
+# - If set to 200/300/400: applies annual Top-N by market cap and uses the union.
+# - If set to False or 0: uses the full active universe in range without trimming.
 SP500_DYNAMIC_TOP_N = False
 
 # =============================================================================
-# 5. Período de análisis
+# 5. Analysis period
 # =============================================================================
 
-# Fecha desde la que se descargan los datos brutos.
+# Date from which raw data is downloaded.
 DOWNLOAD_START_DATE = "2000-01-01"
 
-# Inicio del período de análisis/backtest walk-forward (quarters de snapshot a analizar).
+# Start of the analysis / walk-forward backtest period (snapshot quarters to evaluate).
 ANALYSIS_START_YEAR = 2015
 ANALYSIS_START_QUARTER = 3
 
-# Fin del período de análisis/backtest walk-forward.
+# End of the analysis / walk-forward backtest period.
 ANALYSIS_END_YEAR = 2026
 ANALYSIS_END_QUARTER = 2
 
-# Frecuencia del análisis walk-forward:
-# - "quarterly": ejecuta un fold por quarter (comportamiento histórico).
-# - "annual": ejecuta un fold por año (misma lógica de features, menor frecuencia).
+# Walk-forward analysis frequency:
+# - "quarterly": runs one fold per quarter (historical behavior).
+# - "annual": runs one fold per year (same feature logic, lower frequency).
 ANALYSIS_FREQUENCY = "annual"
 
-# Fecha ancla opcional para modo anual (formato "YYYY-MM-DD").
-# Si es None en modo anual, se usa automáticamente:
-#   1 de enero de ANALYSIS_START_YEAR + SNAPSHOT_LAG_DAYS.
+# Optional anchor date for annual mode ("YYYY-MM-DD" format).
+# If None in annual mode, it is automatically set to:
+#   January 1st of ANALYSIS_START_YEAR + SNAPSHOT_LAG_DAYS.
 ANALYSIS_ANNUAL_START_DATE = None
 
-# Retraso (en días) desde el cierre del quarter hasta el momento real de análisis/entrada.
-# Ejemplo: snapshot Q1 (Mar 31) + 45 días => entrada aproximada a mitad de Q2.
+# Lag (in days) from quarter close to real analysis/entry time.
+# Example: Q1 snapshot (Mar 31) + 45 days => approximate entry mid-Q2.
 SNAPSHOT_LAG_DAYS = 60
 
-# Si True, cuando un ticker no tenga un reporte del quarter analizado,
-# se extrapolan los features usando el promedio de los últimos N quarters disponibles.
-# Esto permite mantener el ticker en el universo de test con un snapshot estimado.
+# If True, when a ticker has no report for the analyzed quarter,
+# features are extrapolated using the average of the last N available quarters.
+# This keeps the ticker in the test universe with an estimated snapshot.
 ENABLE_FALLBACK_EXTRAPOLATION = True
 
-# Número de quarters previos a usar para extrapolación de features cuando falte el reporte exacto.
-# Requiere que existan al menos este número de reports históricos.
+# Number of prior quarters used for feature extrapolation when the exact report is missing.
+# Requires at least this number of historical reports.
 FALLBACK_LOOK_BACK_QUARTERS = 4
 
-# Duración del holding de la cartera desde la fecha de entrada.
-# 3 meses = aproximación natural a "un trimestre" desplazado.
+# Portfolio holding duration from entry date.
+# 3 months = natural approximation to a shifted quarter holding period.
 HOLDING_PERIOD_MONTHS = 3
 
 # =============================================================================
-# 6. Parámetros del pipeline ML
+# 6. ML pipeline parameters
 # =============================================================================
 
-# Mínimo de trimestres históricos por ticker para incluirlo en train
+# Minimum historical quarters per ticker to include it in training
 MIN_HISTORY_QUARTERS = 4
 
-# Mínimo de empresas del mismo sector para calcular Z-score sectorial
+# Minimum same-sector companies to compute sector Z-score
 SECTOR_ZSCORE_MIN_PEERS = 3
 
-# Objetivo de entrenamiento para agentes base (todos menos SectorRotation):
-# - "vs_sector": y=1 si la compañía supera la mediana de su sector en el snapshot.
-# - "vs_universe": y=1 si supera la mediana del universo en el snapshot.
+# Training target for base agents (all except SectorRotation):
+# - "vs_sector": y=1 if the company beats its sector median in the snapshot.
+# - "vs_universe": y=1 if it beats the universe median in the snapshot.
 BASE_AGENTS_LABEL_MODE = "vs_sector"
 
-# Mínimo de peers por sector x snapshot para usar benchmark sectorial en labels.
-# Si no se alcanza, se usa fallback a mediana del universo en ese snapshot.
+# Minimum peers per sector x snapshot to use a sector benchmark for labels.
+# If not met, falls back to universe median in that snapshot.
 BASE_LABEL_SECTOR_MIN_PEERS = 3
 
-# Número de folds KFold internos para generar OOF scores del meta-learner
+# Number of internal KFold splits to generate OOF scores for the meta-learner
 OOF_N_SPLITS = 3
 
-# Umbral mínimo de score para incluir un stock en la cartera long / shortlist.
-# 0.55 filtra solo los tickers con señal positiva clara; con score-weighted
-# portfolio + min_stocks floor, garantiza cartera aunque haya pocos cualificados.
+# Minimum score threshold to include a stock in the long portfolio / shortlist.
+# 0.55 keeps only tickers with clear positive signal; with a score-weighted
+# portfolio + min_stocks floor, it still guarantees a portfolio with few qualifiers.
 PORTFOLIO_MIN_SCORE = 0.55
 
 # -----------------------------------------------------------------------------
-# Ajustes de robustez de scoring (sector + dispersión)
+# Scoring robustness settings (sector + dispersion)
 # -----------------------------------------------------------------------------
 
-# Penaliza sectores con pocos peers: sector_confidence = min(1, sqrt(n_peers / k)).
+# Penalizes sectors with few peers: sector_confidence = min(1, sqrt(n_peers / k)).
 SECTOR_CONFIDENCE_PEERS = 10
 
-# Prior suave del sector sobre el score final:
+# Soft sector prior over final score:
 # final_score *= (SECTOR_SCORE_PRIOR_BASE + SECTOR_SCORE_PRIOR_WEIGHT * sector_score)
 SECTOR_SCORE_PRIOR_BASE = 0.5
 SECTOR_SCORE_PRIOR_WEIGHT = 0.5
 
-# Si un score de agente tiene baja dispersión, se contrae hacia 0.5.
+# If an agent score has low dispersion, it is shrunk toward 0.5.
 # scale = min(1, std / SCORE_DISPERSION_MIN_STD)
 SCORE_DISPERSION_MIN_STD = 0.03
-# Suelo de escala para evitar colapsos a 0.5 cuando std en train es casi 0.
-# Solo aplica cuando hay shrink (scale<1) y preserva algo de señal en test.
+# Scale floor to avoid collapse to 0.5 when train std is close to 0.
+# Applies only when shrink is active (scale<1), preserving some test signal.
 SCORE_DISPERSION_MIN_SCALE = 0.35
 
-# Ventana de precios usada para features técnicas (RSI, momentum, volatilidad, etc.).
-# Se reduce frente al valor histórico de 400 para mantener suficiente contexto
-# sin exigir tanto histórico innecesario.
+# Price window used for technical features (RSI, momentum, volatility, etc.).
+# Reduced from the historical value of 400 to preserve enough context
+# without requiring unnecessary extra history.
 TECHNICAL_LOOKBACK_DAYS = 300
 
 # =============================================================================
 # 7. Walk-forward backtesting
 # =============================================================================
 
-# Ventana máxima de entrenamiento del walk-forward, en años.
-# El pipeline intentará este máximo y, si no cumple cobertura mínima de test,
-# reducirá progresivamente hasta WALKFORWARD_TRAIN_MIN_YEARS.
+# Maximum walk-forward training window, in years.
+# The pipeline will try this maximum and, if it does not meet minimum test coverage,
+# will progressively reduce it down to WALKFORWARD_TRAIN_MIN_YEARS.
 WALKFORWARD_TRAIN_LOOKBACK_YEARS = 10
 
-# Límite inferior de ventana de entrenamiento dinámica del walk-forward.
+# Lower bound for dynamic walk-forward training window.
 WALKFORWARD_TRAIN_MIN_YEARS = 5
 
-# Trimestres de test por fold (siempre 1)
+# Test quarters per fold (always 1)
 WALKFORWARD_TEST_QUARTERS = 1
 
-# Mínimo de empresas en el universo de test de un fold.
-# Se calcula dinámicamente como un porcentaje del universo total de tickers.
-# Ejemplo: si hay 500 tickers totales, será 250 (50%).
-MIN_TEST_TICKERS_PERCENT = 80  # porcentaje del universo total
+# Minimum companies in a fold test universe.
+# Computed dynamically as a percentage of the total ticker universe.
+# Example: with 500 total tickers, this is 250 (50%).
+MIN_TEST_TICKERS_PERCENT = 80  # percentage of total universe
 
-# Tasa libre de riesgo anualizada para Sharpe / Sortino
+# Annualized risk-free rate for Sharpe / Sortino
 RISK_FREE_RATE = 0.04
 
-# Máximo de stocks seleccionados en la cartera long por fold
+# Maximum selected stocks in the long portfolio per fold
 TOP_N_STOCKS = 10
 
-# Capital inicial para simulación en USD (modo backtest monetario)
+# Initial capital for USD simulation (monetary backtest mode)
 INITIAL_CAPITAL_USD = 1000.0
 
-# Coste fijo por transacción (cada BUY y cada SELL por ticker)
+# Fixed transaction cost (each BUY and each SELL per ticker)
 TRANSACTION_FEE_USD = 1.0
 
-# Slippage porcentual aplicado al precio de ejecución (0.01 = 1%)
+# Percentage slippage applied to execution price (0.01 = 1%)
 SLIPPAGE_PCT = 0.0
 
-# Si True, además de métricas de retorno, ejecuta backtest monetario en USD.
+# If True, runs USD monetary backtest in addition to return metrics.
 USE_DOLLAR_BACKTEST = True
 
-# Siempre permitir acciones fraccionarias (sin redondeo a enteros)
+# Always allow fractional shares (no integer rounding)
 ALLOW_FRACTIONAL_SHARES = True
 
-# Ejecutar benchmark y baselines adicionales para comparativa robusta
+# Run benchmark and additional baselines for robust comparison
 RUN_BASELINES = True
 
-# Número de simulaciones para baseline random-topN
+# Number of simulations for random-topN baseline
 N_RANDOM_BASELINE_SIMS = 100
 
-# Ventana de momentum para baseline de 12 meses
+# Momentum window for 12-month baseline
 BASELINE_MOMENTUM_LOOKBACK_DAYS = 252
 
-# Exporta artefactos adicionales del run (config, calidad, resúmenes)
+# Export additional run artifacts (config, quality, summaries)
 EXPORT_RUN_ARTIFACTS = True
 
-# Si True, pondera la cartera: el ticker #1 pesa (1 + N/10) veces más que el #N.
-# Distribución lineal entre ambos extremos, normalizada a suma 1.
-# Ejemplo: N=10 → el primero pesa el doble que el último.
-#          N=5  → el primero pesa un 50% más que el último.
-# Si False, todos los tickers tienen el mismo peso.
+# If True, weights the portfolio: ticker #1 weighs (1 + N/10) times more than #N.
+# Linear distribution between both ends, normalized to sum to 1.
+# Example: N=10 -> first weighs double the last.
+#          N=5  -> first weighs 50% more than the last.
+# If False, all tickers have equal weight.
 SCORE_WEIGHTED_PORTFOLIO = True
 
 # =============================================================================
-# 8. Hiperparámetros de los agentes
+# 8. Agent hyperparameters
 # =============================================================================
 
 # ── FundamentalAgent (XGBoost) ────────────────────────────────────────────────
@@ -272,10 +272,10 @@ FUNDAMENTAL_SUBSAMPLE       = 0.8
 FUNDAMENTAL_COLSAMPLE       = 0.7
 FUNDAMENTAL_MIN_CHILD_WEIGHT = 5
 
-# Control de columnas por agente:
-# - *_FEATURE_COLUMNS es la lista AUTORITATIVA que usan los agentes.
-# - *_FEATURE_EXCLUDE es informativa/documental: esas columnas tambien se
-#   garantizan en dataset maestro, pero el entrenamiento usa solo *_FEATURE_COLUMNS.
+# Per-agent column controls:
+# - *_FEATURE_COLUMNS is the AUTHORITATIVE list used by agents.
+# - *_FEATURE_EXCLUDE is informational/documentary: those columns may also
+#   be present in the master dataset, but training uses only *_FEATURE_COLUMNS.
 FUNDAMENTAL_FEATURE_COLUMNS = [
   "roe", "roa", "roi", "roic",
   "net_margin", "gross_margin", "fcf_margin", "ebitda_margin", "operating_margin",
@@ -307,8 +307,8 @@ VALUATION_FEATURE_EXCLUDE = []
 # ── MomentumAgent (Random Forest) ────────────────────────────────────────────
 MOMENTUM_N_ESTIMATORS    = 300
 MOMENTUM_MAX_DEPTH       = 8
-# min_samples_leaf=5: hojas más pequeñas → probabilidades más extremas (mejor dispersión)
-# Con 300 árboles el riesgo de overfitting es bajo incluso con hojas pequeñas.
+# min_samples_leaf=5: smaller leaves -> more extreme probabilities (better dispersion)
+# With 300 trees, overfitting risk remains low even with small leaves.
 MOMENTUM_MIN_SAMPLES_LEAF = 5
 MOMENTUM_FEATURE_COLUMNS = [
   "rsi_14", "rsi_28",
@@ -323,13 +323,13 @@ MOMENTUM_FEATURE_COLUMNS = [
 ]
 MOMENTUM_FEATURE_EXCLUDE = []
 
-# ── BearAgent (Random Forest híbrido) ────────────────────────────────────────
+# ── BearAgent (Hybrid Random Forest) ─────────────────────────────────────────
 BEAR_N_ESTIMATORS = 200
 BEAR_MAX_DEPTH    = 6
-# Peso de la capa de reglas vs ML en el score final
+# Rule-layer vs ML-layer weight in final score
 BEAR_RULE_WEIGHT  = 0.5
 BEAR_ML_WEIGHT    = 0.5
-# Score de riesgo por encima del cual el meta-learner fuerza Underperform
+# Risk score above which the meta-learner forces Underperform
 BEAR_HARD_THRESHOLD = 0.90
 BEAR_FEATURE_COLUMNS = [
   "total_debt_yoy_growth",
@@ -387,27 +387,27 @@ SECTOR_ROTATION_FEATURE_COLUMNS = [
 SECTOR_ROTATION_FEATURE_EXCLUDE = []
 # ── FeatureSelector ──────────────────────────────────────────────────────────
 FEATURE_CORR_THRESHOLD = 0.85
-# Peso del score combinado de selección de features:
-# combined = w * relevancia_con_y + (1-w) * importancia_modelo
+# Weight of the combined feature-selection score:
+# combined = w * relevance_to_y + (1-w) * model_importance
 FEATURE_SELECTOR_RELEVANCE_WEIGHT = 0.65
 
-# Si True, exporta por fold un reporte con columnas pedidas vs realmente usadas.
+# If True, exports a per-fold report of requested vs actually used columns.
 EXPORT_FEATURE_USAGE_REPORT = True
-# Modelo auxiliar interno del selector (RandomForest rápido)
+# Selector internal helper model (fast RandomForest)
 FEATURE_SELECTOR_RF_N_ESTIMATORS = 120
 FEATURE_SELECTOR_RF_MAX_DEPTH = 5
-# Regla de selección final por importancia del selector:
-# - conservar features con importancia >= (top_importance * FEATURE_IMPORTANCE_CUTOFF_FRACTION)
-# - y luego acotar entre [FEATURE_IMPORTANCE_MIN_KEEP, FEATURE_IMPORTANCE_MAX_KEEP].
+# Final selector importance rule:
+# - keep features with importance >= (top_importance * FEATURE_IMPORTANCE_CUTOFF_FRACTION)
+# - then cap final count between [FEATURE_IMPORTANCE_MIN_KEEP, FEATURE_IMPORTANCE_MAX_KEEP].
 FEATURE_IMPORTANCE_CUTOFF_FRACTION = 0.50
 FEATURE_IMPORTANCE_MIN_KEEP = 4
 FEATURE_IMPORTANCE_MAX_KEEP = 10
-# Top-N global para el pre-filtrado del FeatureSelector (todos los agentes).
-# La selección FINAL en todos los agentes se controla uniformemente por:
+# Global Top-N for FeatureSelector pre-filtering (all agents).
+# FINAL selection across all agents is uniformly controlled by:
 #   - FEATURE_IMPORTANCE_CUTOFF_FRACTION = 0.50
 #   - FEATURE_IMPORTANCE_MIN_KEEP = 4
 #   - FEATURE_IMPORTANCE_MAX_KEEP = 10
-# Estos límites garantizan que todos los agentes usen entre 4 y 10 features finales.
+# These limits ensure all agents use between 4 and 10 final features.
 FEATURE_TOP_N = 14
 
 # ── MetaLearner (LR + GBM stacking) ──────────────────────────────────────────
@@ -425,7 +425,7 @@ META_FEATURE_COLUMNS = [
   "sector_score",
 ]
 META_FEATURE_EXCLUDE = []
-# Columnas de scores base sobre las que el meta calcula consenso/interacciones.
+# Base score columns on which meta computes consensus/interactions.
 META_AGENT_SCORE_COLUMNS = [
   "fundamental_score",
   "valuation_score",
@@ -434,21 +434,21 @@ META_AGENT_SCORE_COLUMNS = [
   "sentiment_score",
   "sector_score",
 ]
-# Si True, añade señales de consenso/confianza entre agentes como features extra.
+# If True, adds agent consensus/confidence signals as extra features.
 META_ENABLE_CONSENSUS_FEATURES = True
-# Umbral para contar agentes claramente alcistas en el snapshot.
+# Threshold to count clearly bullish agents in the snapshot.
 META_BULLISH_SCORE_THRESHOLD = 0.55
-# Recalibración robusta de score del meta-learner para evitar colapso en <0.5
-# cuando la probabilidad cruda sale comprimida o sesgada por drift temporal.
+# Robust meta-learner score recalibration to avoid collapse below 0.5
+# when raw probabilities are compressed or time-drift biased.
 META_ENABLE_SCORE_RECALIBRATION = False
-# Temperatura >1 suaviza; <1 hace más agresiva la separación.
+# Temperature >1 smooths; <1 makes separation more aggressive.
 META_SCORE_RECALIBRATION_TEMPERATURE = 1.0
-# Mezcla del score meta con el consenso medio de agentes base para evitar
-# que el meta colapse por drift y pierda toda la señal cross-sectional.
+# Blend meta score with average base-agent consensus to avoid
+# meta collapse from drift and preserve cross-sectional signal.
 META_BASE_SCORE_BLEND_WEIGHT = 0.55
 
 # =============================================================================
-# 9. Reproducibilidad
+# 9. Reproducibility
 # =============================================================================
 
 RANDOM_SEED = 42

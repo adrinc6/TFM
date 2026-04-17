@@ -1,21 +1,21 @@
 # =============================================================================
-# analyzer.py — Orquestador del pipeline Multi-Agente ML Stock Picker
+# analyzer.py - Multi-Agent ML Stock Picker pipeline orchestrator
 # =============================================================================
 """
-Punto de entrada principal del sistema. Coordina los pasos del pipeline:
+Main system entry point. It coordinates the pipeline steps:
 
-    1. Descarga de datos (step_01_data)
-    2. Preparación / consolidación (step_01_data)
-    3. Construcción del dataset maestro (step_02_dataset)
-    4. Walk-Forward Backtest histórico (step_04_evaluation)
+    1. Data download (step_01_data)
+    2. Preparation / consolidation (step_01_data)
+    3. Master dataset construction (step_02_dataset)
+    4. Historical walk-forward backtest (step_04_evaluation)
 
-Toda la lógica de negocio reside en module/steps/:
-    - step_01_data/pipeline.py        : ETL (descarga, consolidación, filtrado de tickers)
-    - step_02_dataset/dataset.py      : construcción de observaciones + features live
-    - step_03_training/training.py    : entrenamiento de agentes + OOF anti-leakage
-    - step_04_evaluation/evaluator.py : walk-forward loop, SHAP, backtest, gráficos
+All business logic lives in module/steps/:
+    - step_01_data/pipeline.py        : ETL (download, consolidation, ticker filtering)
+    - step_02_dataset/dataset.py      : observation construction + live features
+    - step_03_training/training.py    : agent training + anti-leakage OOF
+    - step_04_evaluation/evaluator.py : walk-forward loop, SHAP, backtest, plots
 
-Los parámetros globales están en environment.py.
+Global parameters are defined in environment.py.
 """
 import sys
 import logging
@@ -89,13 +89,13 @@ def _load_sp500_membership(csv_path: str):
 
     p = Path(csv_path)
     if not p.exists():
-        raise FileNotFoundError(f"No existe el CSV de histórico S&P 500: {csv_path}")
+        raise FileNotFoundError(f"Historical S&P 500 CSV does not exist: {csv_path}")
 
     df = pd.read_csv(p)
     required = {"ticker", "start_date", "end_date"}
     missing = required - set(df.columns)
     if missing:
-        raise ValueError(f"CSV S&P 500 inválido. Faltan columnas: {sorted(missing)}")
+        raise ValueError(f"Invalid S&P 500 CSV. Missing columns: {sorted(missing)}")
 
     out = df.copy()
     out["ticker"] = out["ticker"].astype(str).map(_normalize_ticker_symbol)
@@ -245,7 +245,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s  %(levelname)s  %(message)s",
     handlers=[
-        # UTF-8 en consola: evita UnicodeEncodeError en Windows (cp1252)
+        # UTF-8 in console to avoid UnicodeEncodeError on Windows (cp1252)
         logging.StreamHandler(_io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")),
         logging.FileHandler(f"{RESULTS_DIR}/pipeline.log", encoding="utf-8"),
     ],
@@ -411,8 +411,8 @@ def main():
     log.info("  INICIANDO PIPELINE ML MULTI-AGENTE STOCK PICKER")
     log.info("=" * 60)
 
-    # Rango de análisis. En modo trimestral se usa ANALYSIS_START_QUARTER.
-    # En modo anual se ignora ese quarter y se arranca desde el quarter de la fecha ancla anual.
+    # Analysis range. In quarterly mode ANALYSIS_START_QUARTER is used.
+    # In annual mode that quarter is ignored and execution starts from the annual anchor quarter.
     import pandas as pd
     _set_global_seeds(RANDOM_SEED)
     end_date = _quarter_end_date(ANALYSIS_END_YEAR, ANALYSIS_END_QUARTER)
@@ -431,8 +431,8 @@ def main():
                 + pd.Timedelta(days=max(int(SNAPSHOT_LAG_DAYS), 0))
             ).normalize()
 
-        # En anual, el backtester debe generar folds desde el quarter de la anchor,
-        # no desde ANALYSIS_START_QUARTER.
+        # In annual mode, the backtester must generate folds from the anchor quarter,
+        # not from ANALYSIS_START_QUARTER.
         test_start_date = annual_anchor_date.to_period("Q").end_time.normalize()
 
         log.info(
@@ -449,7 +449,7 @@ def main():
     analysis_window_start = test_start_date.normalize()
     analysis_window_end = end_date.normalize()
 
-    # ── 1. Resolver universo solicitado y descargar datos
+    # 1. Resolve requested universe and download data
     if USE_DYNAMIC_SP500_UNIVERSE:
         try:
             candidates, _, _ = _resolve_dynamic_universe(
@@ -460,19 +460,19 @@ def main():
                 top_n=SP500_DYNAMIC_TOP_N,
             )
         except Exception as ex:
-            log.warning("No se pudo resolver universo dinámico S&P 500 (%s). Se usa TICKERS manual.", ex)
+            log.warning("Could not resolve dynamic S&P 500 universe (%s). Falling back to manual TICKERS.", ex)
             candidates = []
 
         tickers_to_download = candidates if candidates else list(dict.fromkeys(TICKERS))
         log.info(
-            "Universo dinámico: %s candidatos activos en [%s, %s]",
+            "Dynamic universe: %s active candidates in [%s, %s]",
             len(tickers_to_download),
             analysis_window_start.date(),
             analysis_window_end.date(),
         )
     else:
         tickers_to_download = list(dict.fromkeys(TICKERS))
-        log.info("Universo manual: %s tickers", len(tickers_to_download))
+        log.info("Manual universe: %s tickers", len(tickers_to_download))
 
     download_data(
         tickers=tickers_to_download,
@@ -486,7 +486,7 @@ def main():
     )
 
     if UPDATE_PRICES_ONLY:
-        log.info("UPDATE_PRICES_ONLY=True — actualizando solo precios y macro, sin consolidacion ni backtest")
+        log.info("UPDATE_PRICES_ONLY=True - updating prices and macro only, without consolidation or backtest")
         if EXPORT_RUN_ARTIFACTS:
             _export_run_config(
                 results_dir=RESULTS_DIR,
@@ -499,10 +499,10 @@ def main():
             )
         return
 
-    # ── 2. Consolidar datos
+    # 2. Consolidate data
     prepare_data(tickers_to_download, data_dir=FINNHUB_DATA_DIR)
 
-    # ── 2b. Selección final del universo para dataset/backtest
+    # 2b. Final universe selection for dataset/backtest
     if USE_DYNAMIC_SP500_UNIVERSE:
         candidates, tickers, yearly_details = _resolve_dynamic_universe(
             csv_path=SP500_HISTORIC_CSV_PATH,
@@ -514,12 +514,12 @@ def main():
         if not tickers:
             tickers = list(dict.fromkeys(tickers_to_download))
         log.info(
-            "Universo dinámico final: %s tickers seleccionados (candidatos=%s, top_n=%s)",
+            "Final dynamic universe: %s selected tickers (candidates=%s, top_n=%s)",
             len(tickers), len(candidates), SP500_DYNAMIC_TOP_N,
         )
         for row in yearly_details:
             log.info(
-                "  Año %s | activos=%s | con_mcap=%s | sin_mcap=%s | seleccionados=%s",
+                "  Year %s | active=%s | with_mcap=%s | without_mcap=%s | selected=%s",
                 row["year"], row["active_members"], row["ranked_with_mcap"],
                 row["missing_mcap"], row["picked"],
             )
@@ -568,9 +568,9 @@ def main():
         cache = CacheManager(CACHE_DIR, cache_context)
         log.info("Cache activa: key=%s dir=%s", cache.key, cache.run_dir)
     else:
-        log.info("Cache desactivada para esta ejecución")
+        log.info("Cache disabled for this run")
 
-    # ── 3. DataRouter y filtrado de tickers disponibles
+    # 3. DataRouter and available ticker filtering
     router = DataRouter(data_dir=FINNHUB_DATA_DIR)
     sector_map = router.get_sector_map()
     tickers_ok = []
@@ -595,7 +595,7 @@ def main():
                 },
             )
 
-    # ── 3b. Reintento para tickers con datos incompletos
+    # 3b. Retry for tickers with incomplete data
     if RETRY_MISSING_TICKERS and missing_detail:
         recovered = retry_missing_tickers(
             missing_detail=missing_detail,
@@ -614,14 +614,14 @@ def main():
                 },
             )
 
-    # ── 4. Builders de features
+    # 4. Feature builders
     fundamental_builder = FundamentalFeatureBuilder()
     technical_builder   = TechnicalFeatureBuilder()
     valuation_builder   = ValuationFeatureBuilder()
     insider_builder     = InsiderFeatureBuilder()
     sentiment_builder   = SentimentFeatureBuilder()
 
-    # ── 5. Construir dataset maestro
+    # 5. Build master dataset
     if SNAPSHOT_LAG_DAYS is None:
         raise ValueError("SNAPSHOT_LAG_DAYS debe estar definido en environment.py")
     dataset_snapshot_lag_days = int(SNAPSHOT_LAG_DAYS)
@@ -652,7 +652,7 @@ def main():
             log.info("Cache save: master_dataset")
 
     df.to_csv(f"{RESULTS_DIR}/master_dataset.csv")
-    log.info("Dataset maestro: %d observaciones — %d tickers", len(df), len(tickers_ok))
+    log.info("Master dataset: %d observations - %d tickers", len(df), len(tickers_ok))
 
     if EXPORT_RUN_ARTIFACTS:
         _export_run_config(
@@ -676,7 +676,7 @@ def main():
     if not SKIP_BACKTEST:
         effective_test_quarters = 4 if analysis_frequency == "annual" else WALKFORWARD_TEST_QUARTERS
 
-        # ── 6. Precios y benchmark para el backtester (cacheable)
+        # 6. Prices and benchmark for the backtester (cacheable)
         prices_dict = None
         spy_prices = None
         benchmark_returns = None
@@ -701,7 +701,7 @@ def main():
             if spy_prices is None:
                 import pandas as pd
 
-                log.warning("Sin S&P 500 — usando retorno cero como benchmark")
+                log.warning("No S&P 500 data available - using zero return as benchmark")
                 benchmark_returns = pd.Series(0.0, index=pd.date_range(test_start_date, end_date))
             else:
                 benchmark_returns = spy_prices.pct_change().dropna()
@@ -717,12 +717,12 @@ def main():
                 )
                 log.info("Cache save: market_bundle")
 
-        # ── 7. Walk-Forward Pipeline
+        # 7. Walk-forward pipeline
         if cache is not None and CACHE_USE_WALKFORWARD_SUMMARY:
             cached_summary = cache.load_json("walkforward_summary")
             if isinstance(cached_summary, dict) and cached_summary:
                 summary = cached_summary
-                log.info("Cache hit: walkforward_summary (se omite recomputo de backtest)")
+                log.info("Cache hit: walkforward_summary (backtest recomputation skipped)")
 
         if not summary:
             summary = run_walkforward_pipeline(
@@ -751,20 +751,20 @@ def main():
                 cache.save_json("walkforward_summary", summary if isinstance(summary, dict) else {})
                 log.info("Cache save: walkforward_summary")
     else:
-        log.info("SKIP_BACKTEST=True — saltando walk-forward backtest histórico")
+        log.info("SKIP_BACKTEST=True - skipping historical walk-forward backtest")
 
-    # ── Resultado final
+    # Final output
     log.info("\n" + "=" * 60)
-    log.info("  PIPELINE COMPLETADO")
+    log.info("  PIPELINE COMPLETED")
     log.info("=" * 60)
-    log.info(f"  Tickers analizados:   {len(tickers_ok)}")
+    log.info(f"  Analyzed tickers:     {len(tickers_ok)}")
     if summary:
         log.info(f"  Alpha medio:          {summary.get('mean_alpha', 0):.2%}")
-        log.info(f"  Folds con alpha > 0:  {summary.get('pct_folds_positive_alpha', 0):.0%}")
+        log.info(f"  Folds with alpha > 0: {summary.get('pct_folds_positive_alpha', 0):.0%}")
         log.info(f"  Sharpe Estrategia:    {summary.get('global_strategy_sharpe', 0):.3f}")
         log.info(f"  Sharpe Benchmark:     {summary.get('global_benchmark_sharpe', 0):.3f}")
         log.info(f"  Max DD Estrategia:    {summary.get('global_strategy_max_drawdown', 0):.2%}")
-    log.info(f"  Resultados en:        {RESULTS_DIR}/")
+    log.info(f"  Results in:           {RESULTS_DIR}/")
     log.info("=" * 60)
 
 

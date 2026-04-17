@@ -1,4 +1,4 @@
-# =============================================================================
+﻿# =============================================================================
 # module/agents/valuation_agent.py — Agente de Valoración (GBM)
 # =============================================================================
 # Detecta infravaloración relativa.
@@ -124,7 +124,7 @@ class ValuationAgent(BaseAgent):
 
     def predict_score(self, X: pd.DataFrame, sector_col: str = "sector") -> pd.Series:
         if not self.is_trained:
-            raise RuntimeError("[ValuationAgent] No entrenado.")
+            raise RuntimeError("[ValuationAgent] Not trained.")
         X_prep = self.clean_features_predict(self._prepare(X, sector_col, fit_mode=False))
         if self._selector is not None:
             X_prep = self._selector.transform(X_prep)

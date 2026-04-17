@@ -1,4 +1,4 @@
-# =============================================================================
+﻿# =============================================================================
 # module/agents/momentum_agent.py — Agente de Momentum (Random Forest)
 # =============================================================================
 # DATOS QUE CONSUME (calculados por TechnicalFeatureBuilder):
@@ -126,7 +126,7 @@ class MomentumAgent(BaseAgent):
 
     def predict_score(self, X: pd.DataFrame) -> pd.Series:
         if not self.is_trained:
-            raise RuntimeError("[MomentumAgent] No entrenado.")
+            raise RuntimeError("[MomentumAgent] Not trained.")
         X_prep = self.clean_features_predict(self._prepare(X, fit_mode=False))
         if self._selector is not None:
             X_prep = self._selector.transform(X_prep)

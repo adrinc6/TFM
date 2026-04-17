@@ -12,7 +12,7 @@ import pandas as pd
 def _qnorm(q: str) -> str:
     s = str(q).strip().upper().replace(" ", "")
     if "Q" not in s:
-        raise ValueError("Quarter inválido. Usa formato YYYYQn, por ejemplo 2026Q1")
+        raise ValueError("Invalid quarter. Use YYYYQn format, for example 2026Q1")
     return s
 
 
@@ -33,7 +33,7 @@ def _to_float(v, default: float = float("nan")) -> float:
 
 
 def _bool_text(v: bool) -> str:
-    return "SI" if bool(v) else "NO"
+    return "YES" if bool(v) else "NO"
 
 
 def _quarter_from_date_str(value) -> str | None:
@@ -80,7 +80,7 @@ def _is_ratio_or_normalized_feature(feature: str) -> bool:
     if any(tok in f for tok in allowed_tokens):
         return True
 
-    # Excluir explícitamente magnitudes absolutas típicas.
+    # Explicitly exclude common absolute-magnitude features.
     blocked_prefixes = [
         "revenue", "net_income", "operating_income", "gross_profit", "fcf", "ebitda",
         "total_assets", "total_liabilities", "total_equity", "total_debt", "cash",
@@ -154,23 +154,23 @@ def analyze_ticker_quarter(ticker: str, quarter: str, results_dir: Path) -> Dict
     if score_row is None:
         available = sorted([p.name for p in results_dir.glob("quarter_*_scores.csv")])
         raise FileNotFoundError(
-            f"No hay datos para {ticker} en {quarter}. Archivos disponibles: {available[:8]}"
+            f"No data available for {ticker} in {quarter}. Available files: {available[:8]}"
         )
 
     snap_row = _find_ticker_row(artifacts["snapshot"], ticker)
 
     final_score = _to_float(score_row.get("final_score"))
     selected = bool(score_row.get("selected", False))
-    pred_label = str(score_row.get("prediccion", "Outperform" if final_score >= 0.5 else "Underperform"))
+    pred_label = str(score_row.get("prediction", "Outperform" if final_score >= 0.5 else "Underperform"))
 
     if selected:
-        recommendation = "INVERTIR"
+        recommendation = "INVEST"
     elif final_score >= 0.55:
-        recommendation = "CONSIDERAR (score alto, no seleccionado)"
+        recommendation = "CONSIDER (high score, not selected)"
     elif final_score >= 0.5:
         recommendation = "NEUTRAL / WATCHLIST"
     else:
-        recommendation = "NO INVERTIR"
+        recommendation = "DO NOT INVEST"
 
     carry_forward = None
     report_end = None
@@ -183,20 +183,23 @@ def analyze_ticker_quarter(ticker: str, quarter: str, results_dir: Path) -> Dict
         snapshot_date = snap_row.get("snapshot_date")
 
     beat_benchmark_real = score_row.get("beat_benchmark")
-    retorno_real = score_row.get("retorno_real")
+    retorno_real = score_row.get("realized_return")
+    if retorno_real is None:
+        retorno_real = score_row.get("retorno_real")
     alpha_real = score_row.get("alpha_real")
 
     out = {
         "ticker": ticker.upper(),
         "year_quarter": quarter.upper(),
         "decision": recommendation,
+        "model_prediction": pred_label,
         "prediccion_modelo": pred_label,
         "probabilidad_outperform": final_score,
         "selected_for_portfolio": selected,
         "expected_vs_market_sector": {
             "expected_outperform_market": bool(final_score >= 0.5),
             "expected_outperform_sector": bool(final_score >= 0.5),
-            "note": "La label del modelo se construye con outperformance relativa por sector en el quarter.",
+            "note": "The model label is built from sector-relative outperformance for the quarter.",
         },
         "realized_if_available": {
             "retorno_real": retorno_real,
@@ -231,55 +234,55 @@ def analyze_ticker_quarter(ticker: str, quarter: str, results_dir: Path) -> Dict
 
 def _print_human(report: Dict) -> None:
     print("=" * 90)
-    print(f"ANALISIS TICKER: {report['ticker']}  |  QUARTER: {report['year_quarter']}")
+    print(f"TICKER ANALYSIS: {report['ticker']}  |  QUARTER: {report['year_quarter']}")
     print("=" * 90)
     print(f"Decision: {report['decision']}")
-    print(f"Prediccion modelo: {report['prediccion_modelo']} | Score final: {report['probabilidad_outperform']:.4f}")
-    print(f"Seleccionado en cartera: {_bool_text(report['selected_for_portfolio'])}")
+    print(f"Model prediction: {report['model_prediction']} | Final score: {report['probabilidad_outperform']:.4f}")
+    print(f"Selected in portfolio: {_bool_text(report['selected_for_portfolio'])}")
 
     src = report["data_source_snapshot"]
-    print("\n[Datos base del snapshot]")
+    print("\n[Base snapshot data]")
     print(f"- Snapshot date: {src.get('snapshot_date')}")
-    print(f"- Reporte del mismo quarter: {_bool_text(src.get('used_report_from_same_quarter')) if src.get('used_report_from_same_quarter') is not None else 'N/A'}")
-    print(f"- Carry-forward (reporte anterior): {_bool_text(src.get('used_previous_report_carry_forward')) if src.get('used_previous_report_carry_forward') is not None else 'N/A'}")
+    print(f"- Same-quarter report used: {_bool_text(src.get('used_report_from_same_quarter')) if src.get('used_report_from_same_quarter') is not None else 'N/A'}")
+    print(f"- Carry-forward (previous report): {_bool_text(src.get('used_previous_report_carry_forward')) if src.get('used_previous_report_carry_forward') is not None else 'N/A'}")
     print(f"- report_end_date_used: {src.get('report_end_date_used')}")
     print(f"- report_end_quarter_used: {src.get('report_end_quarter_used')}")
     print(f"- report_filed_date_used: {src.get('report_filed_date_used')}")
     print(f"- report_filed_quarter_used: {src.get('report_filed_quarter_used')}")
 
-    print("\n[Expectativa vs mercado/sector]")
+    print("\n[Expectation vs market/sector]")
     em = report["expected_vs_market_sector"]
-    print(f"- Espera superar mercado: {_bool_text(em['expected_outperform_market'])}")
-    print(f"- Espera superar sector: {_bool_text(em['expected_outperform_sector'])}")
+    print(f"- Expected to beat market: {_bool_text(em['expected_outperform_market'])}")
+    print(f"- Expected to beat sector: {_bool_text(em['expected_outperform_sector'])}")
 
-    print("\n[Scores por agente]")
+    print("\n[Scores by agent]")
     for k, v in report["scores_by_agent"].items():
         if pd.notna(v):
             print(f"- {k}: {float(v):.4f}")
 
-    print("\n[Detalle por agente]")
+    print("\n[Details by agent]")
     for ag in report["agent_details"]:
         print(f"\n* {ag['agent']} | score={ag['agent_score']:.4f} | label={ag['agent_label']}")
         if ag.get("explanation_text"):
-            print(f"  Razonamiento: {ag['explanation_text']}")
+            print(f"  Rationale: {ag['explanation_text']}")
         if ag.get("favor_factors"):
-            print(f"  A favor: {ag['favor_factors']}")
+            print(f"  In favor: {ag['favor_factors']}")
         if ag.get("contra_factors"):
-            print(f"  En contra: {ag['contra_factors']}")
+            print(f"  Against: {ag['contra_factors']}")
         if ag.get("top_features_snapshot"):
             print("  Top features (snapshot):")
             for f in ag["top_features_snapshot"][:8]:
                 print(f"    - {f['feature']}: {f['value']}")
 
     realized = report["realized_if_available"]
-    print("\n[Resultado real (si disponible)]")
-    print(f"- retorno_real: {realized.get('retorno_real')}")
+    print("\n[Realized result (if available)]")
+    print(f"- realized_return: {realized.get('retorno_real')}")
     print(f"- alpha_vs_benchmark: {realized.get('alpha_vs_benchmark')}")
     print(f"- beat_benchmark: {realized.get('beat_benchmark')}")
 
 
 if __name__ == "__main__":
-    # Parametros de ejecucion (editar aqui directamente)
+    # Execution parameters (edit directly here)
     TICKER = "SMCI"
     QUARTER = "2023YQ1"
     RESULTS_DIR = "results/agents"
@@ -303,4 +306,4 @@ if __name__ == "__main__":
         out_path.parent.mkdir(parents=True, exist_ok=True)
         with open(out_path, "w", encoding="utf-8") as f:
             json.dump(report, f, indent=2, ensure_ascii=False, default=str)
-        print(f"\nGuardado JSON en: {out_path}")
+        print(f"\nJSON saved at: {out_path}")
