@@ -25,7 +25,7 @@ except ImportError:
 
 
 MACRO_SERIES = {
-    "sp500": "^GSPC",  # Único dato macro utilizado: benchmark para forward_return y backtester
+    "sp500": "^GSPC",  # Only macro data used: benchmark for forward_return and backtester
 }
 
 
@@ -86,7 +86,7 @@ def _ticker_is_partial(base_dir: Path, ticker: str, registry: Registry, prices_o
         if failed:
             failed_count += 1
 
-    # Parcial = tiene algo ya descargado o algún fallo persistido, pero no está completo.
+    # Partial = has something already downloaded or a persisted failure, but is not complete.
     return (done_count > 0 or failed_count > 0) and missing_count > 0
 
 
@@ -218,8 +218,8 @@ def download_prices(
     data = yahoo.ohlcv(ticker, start, end)
     if not data or not data.get("data"):
         status_code = getattr(yahoo, "last_status_code", None)
-        # 404 suele indicar ticker inexistente/delistado en Yahoo para ese símbolo.
-        # Lo marcamos como fallo terminal para no reintentar en cada ejecución.
+        # 404 typically indicates a non-existent or delisted ticker in Yahoo for that symbol.
+        # Mark as a terminal failure to avoid retrying on every run.
         if status_code == 404:
             if registry_lock:
                 with registry_lock:
@@ -337,8 +337,8 @@ def download_ticker(
         allow_retry_failed=allow_retry_failed,
     )
 
-    # Si Yahoo marcó prices como fallo terminal (p. ej. 404 por ticker inexistente/delistado),
-    # no tiene sentido seguir llamando al resto de endpoints para este ticker.
+    # If Yahoo marked prices as a terminal failure (e.g. 404 for a non-existent/delisted ticker),
+    # there is no point continuing to call the remaining endpoints for this ticker.
     if r["prices"] == "skip_terminal":
         return r
     if r["prices"] == "nodata" and registry.is_terminal_failure(ticker, "prices"):

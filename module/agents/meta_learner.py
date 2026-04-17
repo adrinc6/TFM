@@ -1,18 +1,17 @@
-﻿# =============================================================================
-# module/agents/meta_learner.py — Meta-Learner (Stacking)
-# =============================================================================
-# Combina las salidas de los 5 agentes en una predicción final.
-#
-# DATOS QUE CONSUME:
-#   Scores de agentes:  fundamental_score, valuation_score,
-#                       momentum_score, bear_score, sentiment_score
-#   Macro context:      vix, yield_curve, sp500_momentum_3m, sp500_momentum_12m
-#   Sector (profiles):  sector_* (one-hot para que el meta-learner
-#                       aprenda pesos distintos por sector)
-#
-# SALIDA:
-#   Probabilidad [0,1] de Outperform + etiqueta binaria
-# =============================================================================
+﻿"""Meta-learner (stacking) for the multi-agent stock picker.
+
+Combines the outputs of the five base agents into a final Outperform prediction.
+
+Inputs:
+  Agent scores:  fundamental_score, valuation_score,
+                 momentum_score, bear_score, sentiment_score
+  Macro context: vix, yield_curve, sp500_momentum_3m, sp500_momentum_12m
+  Sector (profiles): sector_* one-hot dummies (so the meta-learner learns
+                     different agent weights per sector)
+
+Output:
+  Probability [0, 1] of Outperform + binary label
+"""
 import json
 import logging
 import numpy as np
@@ -59,24 +58,24 @@ try:
 except ImportError:
     _DEPS_OK = False
 
-MACRO_COLS: list = []  # Reservado: se eliminó la macro porque enmascara señales de stock picking
+MACRO_COLS: list = []  # Reserved: macro features were removed because they mask stock-picking signals
 
 
 class MetaLearner(BaseAgent):
     """
-    Stacking de dos niveles:
-      - Nivel 1: scores de los 4 agentes (+ macro + sector dummies)
-      - Nivel 2: Logistic Regression (interpretable, evita overfitting)
-                 + GBM (captura no-linealidades)
-                 → ensemble de ambos
+    Two-level stacking:
+      - Level 1: base agent scores (+ macro + sector dummies)
+      - Level 2: Logistic Regression (interpretable, avoids overfitting)
+                 + GBM (captures non-linearities)
+                 → ensemble of both
 
-    El meta-learner también detecta si el Bear Agent ha activado muchas
-    red flags y aplica un penalizador directo (hard rule).
+    The meta-learner also detects when the Bear Agent has raised many
+    red flags and applies a direct penalty (hard rule).
     """
 
-    BEAR_HARD_THRESHOLD = BEAR_HARD_THRESHOLD   # Solo interviene en casos extremos
-    BEAR_SOFT_PENALTY   = 0.0                   # Desactivado: evita doble penalización
-    # Guardrail de calibración: evita que un scale muy estrecho aplaste scores fuera de train.
+    BEAR_HARD_THRESHOLD = BEAR_HARD_THRESHOLD   # Only intervenes in extreme cases
+    BEAR_SOFT_PENALTY   = 0.0                   # Disabled: avoids double-penalisation
+    # Calibration guardrail: prevents a very narrow scale from crushing scores outside train.
     RECAL_MIN_SCALE = 0.08
     RECAL_BLEND_WITH_RAW = 0.40
 
@@ -108,10 +107,10 @@ class MetaLearner(BaseAgent):
     def fit(self, X: pd.DataFrame, y: pd.Series,
             fold: Optional[int] = None, sector_col: str = "sector") -> "MetaLearner":
         """
-        X: DataFrame con columnas de scores de agentes + macro + sector
+        X: DataFrame with agent score columns + macro + sector
         y: 1=Outperform, 0=Underperform
         """
-        log.info(f"[MetaLearner] Entrenando stacking (LR + GBM) sobre scores OOF — {len(X)} obs")
+        log.info(f"[MetaLearner] Training stacking (LR + GBM) on OOF scores — {len(X)} obs")
         min_len = min(len(X), len(y))
         X = X.iloc[:min_len].copy()
         y = y.iloc[:min_len].copy()
@@ -121,7 +120,7 @@ class MetaLearner(BaseAgent):
         y_cl         = y_cl.reset_index(drop=True)
         self._feature_cols = list(X_prep.columns)
         bal          = self.class_balance(y_cl)
-        log.info(f"[MetaLearner] Balance: {bal['n_positive']} Outperform / {bal['n_negative']} Underperform ({bal['n_positive']/(bal['n_positive']+bal['n_negative']):.1%} positivos)")
+        log.info(f"[MetaLearner] Balance: {bal['n_positive']} Outperform / {bal['n_negative']} Underperform ({bal['n_positive']/(bal['n_positive']+bal['n_negative']):.1%} positive)")
 
         # ── Logistic Regression (interpretable)
         self._lr_model = Pipeline([
@@ -151,23 +150,23 @@ class MetaLearner(BaseAgent):
         total   = auc_lr + auc_gbm
         self._lr_weight  = auc_lr  / total if total > 0 else 0.5
         self._gbm_weight = auc_gbm / total if total > 0 else 0.5
-        log.info(f"[MetaLearner] CV — LR AUC={auc_lr:.4f}, GBM AUC={auc_gbm:.4f}  → ensemble pesos LR={self._lr_weight:.2f} / GBM={self._gbm_weight:.2f}")
+        log.info(f"[MetaLearner] CV — LR AUC={auc_lr:.4f}, GBM AUC={auc_gbm:.4f}  → ensemble weights LR={self._lr_weight:.2f} / GBM={self._gbm_weight:.2f}")
 
-        # Entrenamiento final
+        # Final training
         self._lr_model.fit(X_prep, y_cl)
         self._gbm_model.fit(X_prep, y_cl)
         self.is_trained = True
 
-        # Calibración robusta de score usando distribución in-sample de train.
+        # Robust score calibration using in-sample train distribution.
         train_raw = self._raw_ensemble_score(X_prep)
         q1 = float(train_raw.quantile(0.25))
         q3 = float(train_raw.quantile(0.75))
         iqr = max(q3 - q1, 1e-3)
         self._score_center = float(train_raw.median())
-        # Escala robusta: IQR/1.349 ≈ sigma si la distribución fuese normal.
+        # Robust scale: IQR/1.349 ≈ sigma if the distribution were normal.
         self._score_scale = max(iqr / 1.349, 1e-3)
         log.info(
-            "[MetaLearner] Calibración train: center=%.4f scale=%.6f (q25=%.4f q75=%.4f iqr=%.6f)",
+            "[MetaLearner] Train calibration: center=%.4f scale=%.6f (q25=%.4f q75=%.4f iqr=%.6f)",
             self._score_center,
             self._score_scale,
             q1,
@@ -205,7 +204,7 @@ class MetaLearner(BaseAgent):
         self.save_diagnostics(fold)
         self._save_lr_report(lr_coef, fold)
 
-        # Explicabilidad SHAP (sobre el GBM, más informativo que LR)
+        # SHAP explainability (over GBM, more informative than LR)
         gbm_model = self._gbm_model.named_steps["clf"]
         self._explainer = build_explainer_for_agent(
             self.name, gbm_model, self._feature_cols,
@@ -230,8 +229,8 @@ class MetaLearner(BaseAgent):
             log.info(_score_stats_msg("MetaPredict/recalibrated", score))
         score.name = "final_score"
 
-        # Hard rule de riesgo: riesgo alto -> fuerza Underperform.
-        # Preferir bear_risk_score explícito; fallback a (1 - bear_score safety).
+        # Hard risk rule: high risk -> force Underperform.
+        # Prefer explicit bear_risk_score; fallback to (1 - bear_score safety).
         if "bear_risk_score" in X.columns:
             bear_risk = X["bear_risk_score"].reindex(X_prep.index).fillna(0.5)
         elif "bear_score" in X.columns:
@@ -242,7 +241,7 @@ class MetaLearner(BaseAgent):
         if len(bear_risk) > 0:
             n_hard = int((bear_risk >= self.BEAR_HARD_THRESHOLD).sum())
             log.info(
-                "[MetaPredict] Hard-risk gate threshold=%.2f -> afectados=%d/%d (%.1f%%)",
+                "[MetaPredict] Hard-risk gate threshold=%.2f -> affected=%d/%d (%.1f%%)",
                 self.BEAR_HARD_THRESHOLD,
                 n_hard,
                 len(bear_risk),
@@ -300,8 +299,8 @@ class MetaLearner(BaseAgent):
         return blended
 
     def _recalibrate_scores(self, score: pd.Series) -> pd.Series:
-        # Re-centra y re-escala respecto a train para mantener umbral 0.5 interpretable.
-        # Se aplica un mínimo de escala y mezcla con score bruto para evitar colapso extremo.
+        # Re-centres and re-scales relative to train to keep the 0.5 threshold interpretable.
+        # A minimum scale and blend with the raw score are applied to avoid extreme collapse.
         eff_scale = max(self._score_scale, self.RECAL_MIN_SCALE)
         z = (score - self._score_center) / (eff_scale * self._score_recal_temperature)
         recal_sigmoid = 1.0 / (1.0 + np.exp(-z.clip(-10, 10)))
@@ -320,7 +319,7 @@ class MetaLearner(BaseAgent):
 
     def evaluate(self, X: pd.DataFrame, y: pd.Series,
                  sector_col: str = "sector", fold: Optional[int] = None) -> Dict:
-        """Evalúa el meta-learner y guarda reporte completo."""
+        """Evaluate the meta-learner and save a complete report to disk."""
         scores = self.predict_score(X, sector_col)
         preds  = (scores >= 0.5).astype(int)
         y_al   = y.reindex(scores.index).dropna()
@@ -339,13 +338,13 @@ class MetaLearner(BaseAgent):
         cm = confusion_matrix(y_al, preds)
         report = classification_report(y_al, preds, target_names=["Underperform","Outperform"])
         log.info(
-            f"[MetaLearner] Evaluación fold {fold} — "
+            f"[MetaLearner] Evaluation fold {fold} — "
             f"AUC={metrics.get('roc_auc',0):.4f}  Acc={metrics['accuracy']:.4f}  "
             f"Prec={metrics['precision']:.4f}  Recall={metrics['recall']:.4f}  F1={metrics['f1']:.4f}"
         )
         log.info(f"\n{report}")
 
-        # Guardar reporte
+        # Save report
         suffix = f"_{fold}" if fold is not None else ""
         path   = self.results_dir / f"evaluation{suffix}.json"
         with open(path, "w") as f:
@@ -386,8 +385,8 @@ class MetaLearner(BaseAgent):
             df = pd.concat([df, dummies], axis=1)
             selected += self._sector_cols
 
-        # Ranking percentil del final_score dentro del sector (posición relativa)
-        # Captura si el ticker está en el cuartil alto de su sector, no del universo completo
+        # Percentile rank of the score within each sector (relative position)
+        # Captures whether the ticker is in the top quartile of its sector, not of the full universe
         if sector_col in df.columns:
             for score_col in ["fundamental_score", "valuation_score", "momentum_score", "sentiment_score"]:
                 if score_col in df.columns:
@@ -395,7 +394,7 @@ class MetaLearner(BaseAgent):
                     df[rank_col] = df.groupby(df[sector_col])[score_col].rank(pct=True)
                     selected.append(rank_col)
 
-        # Features de interacción entre agentes
+        # Cross-agent interaction features
         if "fundamental_score" in df.columns and "valuation_score" in df.columns:
             df["fund_x_val"] = df["fundamental_score"] * df["valuation_score"]
             selected.append("fund_x_val")
@@ -410,7 +409,7 @@ class MetaLearner(BaseAgent):
             df["mom_x_sentiment"] = df["momentum_score"] * df["sentiment_score"]
             selected.append("mom_x_sentiment")
 
-        # Interacción sector × stock: ticker fuerte en sector fuerte = señal potente
+        # Sector × stock interaction: strong ticker in a strong sector = powerful signal
         if "sector_score" in df.columns and "fundamental_score" in df.columns:
             df["sector_x_fundamental"] = df["sector_score"] * df["fundamental_score"]
             selected.append("sector_x_fundamental")
@@ -418,7 +417,7 @@ class MetaLearner(BaseAgent):
             df["sector_x_momentum"] = df["sector_score"] * df["momentum_score"]
             selected.append("sector_x_momentum")
 
-        # Señales de consenso/confianza entre agentes (orientadas a inversión).
+        # Consensus/confidence signals across agents (investment-oriented).
         if self._use_consensus_features:
             available_agent_scores = [c for c in META_AGENT_SCORE_COLUMNS if c in df.columns]
             if available_agent_scores:
@@ -434,10 +433,10 @@ class MetaLearner(BaseAgent):
                 bullish_mask = score_mat.ge(self._bullish_score_threshold)
                 df["bullish_agent_score_count"] = bullish_mask.sum(axis=1).astype(float)
 
-                # Intensidad de consenso direccional: 0 neutro, 1 consenso fuerte.
+                # Directional consensus intensity: 0 = neutral, 1 = strong consensus.
                 df["consensus_score_strength"] = (df["agent_score_mean"].fillna(0.5) - 0.5).abs() * 2.0
 
-                # Media ponderada por convicción (distancia al 0.5).
+                # Conviction-weighted mean (distance to 0.5).
                 conviction_w = (score_mat - 0.5).abs()
                 weighted_num = (score_mat * conviction_w).sum(axis=1, skipna=True)
                 weighted_den = conviction_w.sum(axis=1, skipna=True).replace(0.0, np.nan)
@@ -505,8 +504,8 @@ class MetaLearner(BaseAgent):
         report = {
             "positive_drivers":  sorted_coef[sorted_coef > 0].to_dict(),
             "negative_drivers":  sorted_coef[sorted_coef < 0].to_dict(),
-            "interpretation":    "Coeficientes positivos → contribuyen a Outperform",
+            "interpretation":    "Positive coefficients → contribute to Outperform",
         }
         with open(path, "w") as f:
             json.dump(report, f, indent=2)
-        log.info(f"[MetaLearner] LR coeficientes → {path.name}")
+        log.info(f"[MetaLearner] LR coefficients → {path.name}")

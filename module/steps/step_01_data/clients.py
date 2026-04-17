@@ -39,12 +39,12 @@ class FinnhubClient:
 			self.last_status_code = int(resp.status_code)
 
 			if resp.status_code == 429:
-				log.warning("Rate limit — esperando 65 s...")
+				log.warning("Rate limit — waiting 65 s...")
 				time.sleep(65)
 				return self._get(endpoint, params)
 
 			if resp.status_code in (401, 403):
-				log.debug(f"  {resp.status_code} -> {endpoint} (Premium / no autorizado)")
+				log.debug(f"  {resp.status_code} -> {endpoint} (Premium / unauthorised)")
 				return None
 
 			resp.raise_for_status()
@@ -52,26 +52,26 @@ class FinnhubClient:
 			return data if data else None
 
 		except requests.exceptions.RequestException as e:
-			log.warning(f"  Error en {endpoint}: {e}")
+			log.warning(f"  Error on {endpoint}: {e}")
 			return None
 
 	def company_profile2(self, symbol):
-		"""Nombre, sector, market cap, exchange, IPO date, logo, web."""
+		"""Name, sector, market cap, exchange, IPO date, logo, web."""
 		return self._get("/stock/profile2", {"symbol": symbol})
 
 	def basic_financials(self, symbol):
 		"""
-		Ratios calculados point-in-time + series anuales:
-		P/E, P/B, P/S, EV/FCF, ROE, ROA, ROIC, margenes, debt/equity,
+		Point-in-time calculated ratios + annual series:
+		P/E, P/B, P/S, EV/FCF, ROE, ROA, ROIC, margins, debt/equity,
 		current ratio, interest coverage, beta, 52w high/low,
-		avg volume, y series anuales de revenue, netIncome, EPS, FCF, etc.
+		avg volume, and annual series for revenue, netIncome, EPS, FCF, etc.
 		"""
 		return self._get("/stock/metric", {"symbol": symbol, "metric": "all"})
 
 	def financials_as_reported(self, symbol, freq: str = "annual"):
 		"""
-		Estados financieros RAW tal como fueron reportados al SEC.
-		Secciones 'bs' (Balance Sheet), 'ic' (Income Statement), 'cf' (Cash Flow).
+		Raw financial statements as reported to the SEC.
+		Sections 'bs' (Balance Sheet), 'ic' (Income Statement), 'cf' (Cash Flow).
 		freq: 'annual' | 'quarterly'
 		"""
 		return self._get("/stock/financials-reported", {
@@ -172,7 +172,7 @@ class YahooClient:
 			self.last_status_code = int(resp.status_code)
 
 			if resp.status_code == 429:
-				log.warning(f"[{ticker}] Yahoo rate limit — esperando 30 s...")
+				log.warning(f"[{ticker}] Yahoo rate limit — waiting 30 s...")
 				time.sleep(30)
 				return self.ohlcv(ticker, start, end)
 

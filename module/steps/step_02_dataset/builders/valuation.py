@@ -23,9 +23,9 @@ class ValuationFeatureBuilder:
     ) -> pd.Series:
         f: Dict = {}
 
-        # Filtrar precios estrictamente hasta as_of para evitar look-ahead.
-        # Este slice se reutiliza en _vs_history para que las medianas históricas
-        # se calculen únicamente con precios conocidos en ese momento.
+        # Filter prices strictly up to as_of to avoid look-ahead.
+        # This slice is reused in _vs_history so that historical medians
+        # are calculated using only prices known at that point in time.
         prices_asof = prices_df[prices_df.index <= as_of]
         if prices_asof.empty:
             return pd.Series(dtype=float)
@@ -82,9 +82,9 @@ class ValuationFeatureBuilder:
         # Pasar prices_asof (ya filtrado) para que _vs_history no use precios futuros
         f.update(self._vs_history(f, hist_fund, prices_asof, shares))
 
-        # EPS surprise y recommendation features se calculan en SentimentFeatureBuilder.
-        # No se añaden aquí para evitar duplicar columnas en el dataset master,
-        # lo que desperdiciaría capacidad del FeatureSelector y confundiría la atribución.
+        # EPS surprise and recommendation features are computed in SentimentFeatureBuilder.
+        # They are not added here to avoid duplicating columns in the master dataset,
+        # which would waste FeatureSelector capacity and confuse attribution.
 
         return pd.Series(f)
 

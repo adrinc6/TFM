@@ -8,7 +8,21 @@ import pandas as pd
 
 
 def is_ratio_or_normalized_feature(col_name: str, series: Optional[pd.Series] = None) -> bool:
-    """Strict policy: allow only ratio/normalized features or binary flags."""
+    """Checks whether a feature column name (and optionally its values) is
+    a ratio, normalized metric, or binary flag.
+
+    This enforces a strict policy: only ratio/normalized features or binary
+    flags are permitted as model inputs to avoid magnitude leakage.
+
+    Args:
+        col_name (str): The feature column name to check.
+        series (Optional[pd.Series]): Optional value series for the column.
+            If provided and all values are in {0, 1}, the feature is accepted
+            as a binary engineered flag.
+
+    Returns:
+        bool: True if the feature passes the policy check, False otherwise.
+    """
     c = str(col_name).lower().strip()
     if not c:
         return False
@@ -48,7 +62,18 @@ def is_ratio_or_normalized_feature(col_name: str, series: Optional[pd.Series] = 
 
 
 def filter_ratio_normalized_columns(df: pd.DataFrame) -> pd.DataFrame:
-    """Keep only ratio/normalized columns from a DataFrame."""
+    """Keeps only ratio/normalized columns from a DataFrame.
+
+    Applies :func:`is_ratio_or_normalized_feature` to every column and retains
+    only those that pass the policy check.
+
+    Args:
+        df (pd.DataFrame): Input DataFrame to filter.
+
+    Returns:
+        pd.DataFrame: Copy of df containing only policy-compliant columns.
+            Returns df unchanged if it is None or empty.
+    """
     if df is None or df.empty:
         return df
     keep_cols = [

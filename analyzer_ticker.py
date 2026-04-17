@@ -10,6 +10,22 @@ import pandas as pd
 
 
 def _qnorm(q: str) -> str:
+    """Normalise and validate a quarter string into ``YYYYQn`` format.
+
+    Strips whitespace, uppercases the input, and removes internal spaces.
+    Raises if the normalised string does not contain a ``"Q"`` character.
+
+    Args:
+        q: Raw quarter string, e.g. ``"2026q1"``, ``"2026 Q1"``, or
+            ``"2026Q1"``.
+
+    Returns:
+        str: Normalised quarter string, e.g. ``"2026Q1"``.
+
+    Raises:
+        ValueError: If the normalised string does not contain ``"Q"``,
+            indicating it is not a valid quarter format.
+    """
     s = str(q).strip().upper().replace(" ", "")
     if "Q" not in s:
         raise ValueError("Invalid quarter. Use YYYYQn format, for example 2026Q1")
@@ -17,6 +33,18 @@ def _qnorm(q: str) -> str:
 
 
 def _safe_read_csv(path: Path) -> pd.DataFrame:
+    """Read a CSV file safely, returning an empty DataFrame on any error.
+
+    If the file does not exist or cannot be parsed (encoding issues, malformed
+    content, etc.), an empty :class:`~pandas.DataFrame` is returned instead of
+    raising an exception.
+
+    Args:
+        path: Filesystem path to the CSV file.
+
+    Returns:
+        pd.DataFrame: Parsed DataFrame, or an empty DataFrame on failure.
+    """
     if not path.exists():
         return pd.DataFrame()
     try:
@@ -26,6 +54,17 @@ def _safe_read_csv(path: Path) -> pd.DataFrame:
 
 
 def _to_float(v, default: float = float("nan")) -> float:
+    """Convert any value to float, falling back to a default on failure.
+
+    Args:
+        v: Value to convert (any type accepted by ``float()``).
+        default: Value to return when conversion fails.  Defaults to
+            ``float("nan")``.
+
+    Returns:
+        float: The converted float, or ``default`` if conversion raises an
+            exception.
+    """
     try:
         return float(v)
     except Exception:
@@ -33,10 +72,31 @@ def _to_float(v, default: float = float("nan")) -> float:
 
 
 def _bool_text(v: bool) -> str:
+    """Convert a boolean value to the string ``"YES"`` or ``"NO"``.
+
+    Args:
+        v: Value to evaluate as a boolean.
+
+    Returns:
+        str: ``"YES"`` if ``bool(v)`` is ``True``, otherwise ``"NO"``.
+    """
     return "YES" if bool(v) else "NO"
 
 
 def _quarter_from_date_str(value) -> str | None:
+    """Convert a date string to a ``"YYYYQn"`` quarter string, or None.
+
+    Parses the input value via :class:`~pandas.Timestamp` and formats the
+    result as ``"<year>Q<quarter>"``, e.g. ``"2024Q1"``.  Returns ``None``
+    for null values or when parsing fails.
+
+    Args:
+        value: Any value that :class:`~pandas.Timestamp` can parse (str,
+            datetime, Timestamp, etc.), or ``None`` / NaN.
+
+    Returns:
+        str | None: Quarter string (e.g. ``"2024Q1"``), or ``None`` on failure.
+    """
     if value is None or pd.isna(value):
         return None
     try:
@@ -47,6 +107,30 @@ def _quarter_from_date_str(value) -> str | None:
 
 
 def _load_artifacts(results_dir: Path, quarter: str) -> Dict[str, pd.DataFrame]:
+    """Load all walk-forward output CSVs for a given quarter into a dict of DataFrames.
+
+    The following files are loaded from ``results_dir``:
+
+    * ``quarter_<quarter>_scores.csv`` — per-ticker final scores and metadata.
+    * ``quarter_<quarter>_ticker_snapshot_audit.csv`` — snapshot/filing audit.
+    * ``quarter_<quarter>_ticker_agent_feature_audit.csv`` — per-agent feature
+      values.
+    * ``quarter_<quarter>_ticker_explanations.csv`` — SHAP/LLM explanations.
+    * ``all_folds_scores.csv`` — aggregated scores across all folds (used as
+      fallback when the quarter-specific file is missing data).
+
+    Missing or unreadable files are silently replaced with empty DataFrames via
+    :func:`_safe_read_csv`.
+
+    Args:
+        results_dir: Directory that contains the exported walk-forward CSVs.
+        quarter: Normalised quarter string, e.g. ``"2024Q1"``.
+
+    Returns:
+        Dict[str, pd.DataFrame]: Mapping with keys ``"scores"``,
+            ``"snapshot"``, ``"agent_feature"``, ``"expl"``, and
+            ``"all_scores"``.
+    """
     return {
         "scores": _safe_read_csv(results_dir / f"quarter_{quarter}_scores.csv"),
         "snapshot": _safe_read_csv(results_dir / f"quarter_{quarter}_ticker_snapshot_audit.csv"),
@@ -57,6 +141,19 @@ def _load_artifacts(results_dir: Path, quarter: str) -> Dict[str, pd.DataFrame]:
 
 
 def _find_ticker_row(df: pd.DataFrame, ticker: str) -> pd.Series | None:
+    """Find the first row matching a ticker in a DataFrame, or None.
+
+    Looks up ``ticker`` in the ``"ticker"`` column of ``df`` using a
+    case-insensitive comparison.
+
+    Args:
+        df: DataFrame that may contain a ``"ticker"`` column.
+        ticker: Ticker symbol to search for (case-insensitive).
+
+    Returns:
+        pd.Series | None: The first matching row as a Series, or ``None`` if
+            ``df`` is empty, has no ``"ticker"`` column, or no match is found.
+    """
     if df.empty or "ticker" not in df.columns:
         return None
     subset = df[df["ticker"].astype(str).str.upper() == ticker.upper()]
@@ -66,7 +163,26 @@ def _find_ticker_row(df: pd.DataFrame, ticker: str) -> pd.Series | None:
 
 
 def _is_ratio_or_normalized_feature(feature: str) -> bool:
-    """Strict filter: only ratio/normalized-like features are allowed in analysis output."""
+    """Determine whether a feature name represents a ratio or a normalised value.
+
+    Uses an allowlist of token substrings (e.g. ``"ratio"``, ``"margin"``,
+    ``"zscore"``) to identify features that are inherently scale-free and
+    therefore safe to display or compare across tickers.
+
+    A feature is accepted when **any** token from the allowlist appears as a
+    substring of the lowercased feature name.  After that check, a blocklist of
+    prefixes for known absolute-magnitude features (e.g. ``"revenue"``,
+    ``"market_cap"``) is applied: if the name starts with a blocked prefix it
+    is rejected, regardless of the allowlist match.
+
+    Args:
+        feature: Feature column name to evaluate.
+
+    Returns:
+        bool: ``True`` if the feature is considered a ratio or normalised
+            value; ``False`` otherwise (including empty strings and features
+            that match only the blocklist).
+    """
     f = str(feature).lower().strip()
     if not f:
         return False
@@ -93,6 +209,31 @@ def _is_ratio_or_normalized_feature(feature: str) -> bool:
 
 
 def _build_agent_blocks(df_expl: pd.DataFrame, df_feat: pd.DataFrame, ticker: str) -> List[Dict]:
+    """Merge explanation and feature DataFrames to build per-agent summary dicts.
+
+    For each agent present in either ``df_expl`` or ``df_feat``, one block is
+    created containing the agent's score, label, explanation text, favour/
+    contra factors, and a list of the top ratio/normalised features by absolute
+    feature value.  Only features that pass :func:`_is_ratio_or_normalized_feature`
+    are included in the feature snapshot.
+
+    Args:
+        df_expl: DataFrame from ``quarter_*_ticker_explanations.csv`` with at
+            least the columns ``ticker``, ``agent``, ``agent_score``,
+            ``agent_label``, ``explanation_text``, ``favor_factors``, and
+            ``contra_factors``.
+        df_feat: DataFrame from ``quarter_*_ticker_agent_feature_audit.csv``
+            with at least the columns ``ticker``, ``agent``, ``feature``,
+            ``feature_value``, and optionally ``feature_present`` and
+            ``agent_score``.
+        ticker: Ticker symbol to filter both DataFrames (case-insensitive).
+
+    Returns:
+        List[Dict]: One dict per agent sorted by agent name, each with keys
+            ``agent``, ``agent_score``, ``agent_label``, ``explanation_text``,
+            ``favor_factors``, ``contra_factors``, and
+            ``top_features_snapshot``.
+    """
     blocks: List[Dict] = []
 
     by_agent_expl: Dict[str, pd.Series] = {}
@@ -142,6 +283,40 @@ def _build_agent_blocks(df_expl: pd.DataFrame, df_feat: pd.DataFrame, ticker: st
 
 
 def analyze_ticker_quarter(ticker: str, quarter: str, results_dir: Path) -> Dict:
+    """Load walk-forward artifacts and build the full analysis dict for one ticker/quarter.
+
+    Loads the relevant CSVs from ``results_dir``, extracts the row for
+    ``ticker`` in ``quarter``, and assembles a structured report dict
+    containing the investment decision, model scores, per-agent details, and
+    (where available) realised returns.
+
+    **Recommendation tiers** (``decision`` key):
+
+    * ``"INVEST"`` — ticker was selected for the portfolio in this quarter.
+    * ``"CONSIDER (high score, not selected)"`` — final score ≥ 0.55 but not
+      in the portfolio (e.g. capacity constraint hit).
+    * ``"NEUTRAL / WATCHLIST"`` — final score in [0.50, 0.55).
+    * ``"DO NOT INVEST"`` — final score < 0.50.
+
+    Args:
+        ticker: Ticker symbol to analyse (case-insensitive).
+        quarter: Normalised quarter string, e.g. ``"2024Q1"``.  Use
+            :func:`_qnorm` to normalise raw user input before calling this
+            function.
+        results_dir: Directory containing the exported walk-forward CSV
+            artifacts.
+
+    Returns:
+        Dict: Analysis dict with keys including ``ticker``, ``year_quarter``,
+            ``decision``, ``model_prediction``, ``probabilidad_outperform``,
+            ``selected_for_portfolio``, ``expected_vs_market_sector``,
+            ``realized_if_available``, ``data_source_snapshot``,
+            ``scores_by_agent``, and ``agent_details``.
+
+    Raises:
+        FileNotFoundError: If no score row can be found for ``ticker`` /
+            ``quarter`` in any of the available artifact files.
+    """
     artifacts = _load_artifacts(results_dir, quarter)
 
     score_row = _find_ticker_row(artifacts["scores"], ticker)
@@ -233,6 +408,22 @@ def analyze_ticker_quarter(ticker: str, quarter: str, results_dir: Path) -> Dict
 
 
 def _print_human(report: Dict) -> None:
+    """Pretty-print an analysis report dict to stdout in a human-readable format.
+
+    Outputs the following sections, separated by horizontal rules:
+
+    * Header with ticker and quarter.
+    * Decision, model prediction, final score, and portfolio selection flag.
+    * Base snapshot data (snapshot date, carry-forward status, report dates).
+    * Expectation vs market/sector (whether the model expects outperformance).
+    * Scores by agent (only non-NaN values).
+    * Per-agent details: score, label, explanation text, favour/contra factors,
+      and the top feature snapshot (up to 8 features).
+    * Realised result (if available): return, alpha, benchmark beat flag.
+
+    Args:
+        report: Dict as returned by :func:`analyze_ticker_quarter`.
+    """
     print("=" * 90)
     print(f"TICKER ANALYSIS: {report['ticker']}  |  QUARTER: {report['year_quarter']}")
     print("=" * 90)

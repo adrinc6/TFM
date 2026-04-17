@@ -1,16 +1,14 @@
-﻿# =============================================================================
-# module/agents/valuation_agent.py — Agente de Valoración (GBM)
-# =============================================================================
-# Detecta infravaloración relativa.
-#
-# DATOS QUE CONSUME:
-#   Múltiplos propios:    pe_ratio, pb_ratio, ps_ratio, ev_to_ebitda,
-#                         fcf_yield, earnings_yield
-#   Vs. historial:        pe_vs_5y_median, pb_vs_5y_median, ev_ebitda_vs_5y_median
-#   Vs. sector (calculado aquí en fit usando companies.csv):
-#                         pe_sector_pct, pb_sector_pct, evebitda_sector_pct
-#   Analistas:            eps_surprise_pct, eps_revision, eps_est, eps_reported
-# =============================================================================
+"""Valuation agent (GBM) for the multi-agent stock picker.
+
+Detects relative undervaluation.
+
+Consumes:
+  Own multiples:   pe_ratio, pb_ratio, ps_ratio, ev_to_ebitda,
+                   fcf_yield, earnings_yield
+  vs. history:     pe_vs_5y_median, pb_vs_5y_median, ev_ebitda_vs_5y_median
+  vs. sector:      pe_sector_pct, pb_sector_pct, evebitda_sector_pct
+  Analysts:        eps_surprise_pct, eps_revision, eps_est, eps_reported
+"""
 import logging
 import numpy as np
 import pandas as pd
@@ -38,11 +36,10 @@ except ImportError:
     _DEPS_OK = False
 
 class ValuationAgent(BaseAgent):
-    """
-    Gradient Boosting calibrado que detecta infravaloración combinando:
-      1. Múltiplos vs propio historial (mean-reversion)
-      2. Percentil del múltiplo dentro del sector (companies.csv)
-      3. Señales de analistas (EPS surprise / revisiones)
+    """Gradient Boosting model that detects undervaluation by combining:
+      1. Multiples vs. own historical median (mean-reversion signal)
+      2. Percentile rank of the multiple within the sector (from companies.csv)
+      3. Analyst signals (EPS surprises / upward revisions)
     """
 
     def __init__(self, results_dir: str, random_seed: int = 42,
@@ -51,9 +48,23 @@ class ValuationAgent(BaseAgent):
                  learning_rate: float = VALUATION_LEARNING_RATE,
                  subsample: float = VALUATION_SUBSAMPLE,
                  save_artifacts: bool = True):
+        """Initialises the ValuationAgent.
+
+        Args:
+            results_dir (str): Directory where training artefacts are saved.
+            random_seed (int): Random seed for reproducibility.
+            n_estimators (int): Number of boosting rounds.
+            max_depth (int): Maximum tree depth.
+            learning_rate (float): Step-shrinkage parameter.
+            subsample (float): Row sub-sampling ratio per tree.
+            save_artifacts (bool): Whether to save diagnostics and models.
+
+        Raises:
+            ImportError: If scikit-learn is not installed.
+        """
         super().__init__("valuation", results_dir, random_seed, save_artifacts)
         if not _DEPS_OK:
-            raise ImportError("scikit-learn requerido.")
+            raise ImportError("scikit-learn is required.")
         self.n_estimators  = n_estimators
         self.max_depth     = max_depth
         self.learning_rate = learning_rate
@@ -67,7 +78,18 @@ class ValuationAgent(BaseAgent):
 
     def fit(self, X: pd.DataFrame, y: pd.Series,
             fold: Optional[int] = None, sector_col: str = "sector") -> "ValuationAgent":
-        log.info(f"[ValuationAgent] Entrenando GBM — {len(X)} obs, {len(X.columns)} features")
+        """Trains the GBM on valuation multiples and analyst signals.
+
+        Args:
+            X (pd.DataFrame): Feature matrix for the training fold.
+            y (pd.Series): Binary target labels (1 = Outperform).
+            fold (Optional[int]): Walk-forward fold index for artefact naming.
+            sector_col (str): Column name for sector labels.
+
+        Returns:
+            ValuationAgent: The fitted agent instance (self).
+        """
+        log.info(f"[ValuationAgent] Training GBM — {len(X)} obs, {len(X.columns)} features")
         min_len = min(len(X), len(y))
         X = X.iloc[:min_len].copy()
         y = y.iloc[:min_len].copy()
@@ -76,7 +98,7 @@ class ValuationAgent(BaseAgent):
         X_prep       = X_prep.reset_index(drop=True)
         y_cl         = y_cl.reset_index(drop=True)
 
-        # Selección de features: solo con datos de train (sin leakage)
+        # Feature selection: training data only (no leakage)
         self._selector = FeatureSelector(corr_threshold=FEATURE_CORR_THRESHOLD, top_n=FEATURE_TOP_N,
                                          min_features=3, random_seed=self.random_seed,
                                          zsector_pair_policy="force_zsector")
@@ -96,14 +118,14 @@ class ValuationAgent(BaseAgent):
         ])
 
         cv = self._cv(X_prep, y_cl)
-        log.info(f"[ValuationAgent] CV AUC={cv['mean_auc']:.4f} ± {cv['std_auc']:.4f}  ({len(self._feature_cols)} features seleccionadas)")
+        log.info(f"[ValuationAgent] CV AUC={cv['mean_auc']:.4f} ± {cv['std_auc']:.4f}  ({len(self._feature_cols)} selected features)")
         self._model.fit(X_prep, y_cl)
         self.is_trained = True
 
         imp = pd.Series(self._model.named_steps["clf"].feature_importances_, index=self._feature_cols)
         self.save_feature_importances(imp, fold)
 
-        # Guardar distribución de múltiplos por sector para análisis
+        # Save sector multiples distribution for analysis
         sector_summary = self._sector_summary(X, sector_col)
         self._diagnostics = {
             "class_balance": bal, "cv_metrics": cv,
@@ -123,6 +145,18 @@ class ValuationAgent(BaseAgent):
     # ── Predict ───────────────────────────────────────────────────────────────
 
     def predict_score(self, X: pd.DataFrame, sector_col: str = "sector") -> pd.Series:
+        """Returns valuation scores in [0, 1].
+
+        Args:
+            X (pd.DataFrame): Feature matrix.
+            sector_col (str): Column name for sector labels.
+
+        Returns:
+            pd.Series: Probability of Outperform indexed like X.
+
+        Raises:
+            RuntimeError: If the agent has not been trained yet.
+        """
         if not self.is_trained:
             raise RuntimeError("[ValuationAgent] Not trained.")
         X_prep = self.clean_features_predict(self._prepare(X, sector_col, fit_mode=False))
@@ -135,6 +169,16 @@ class ValuationAgent(BaseAgent):
     # ── Helpers ───────────────────────────────────────────────────────────────
 
     def _prepare(self, X: pd.DataFrame, sector_col: str, fit_mode: bool) -> pd.DataFrame:
+        """Selects valuation feature columns for training or inference.
+
+        Args:
+            X (pd.DataFrame): Raw feature matrix.
+            sector_col (str): Column name for sector labels (informational).
+            fit_mode (bool): If True, stores the column list for alignment.
+
+        Returns:
+            pd.DataFrame: Prepared feature matrix.
+        """
         df       = X.copy()
         selected = resolve_feature_columns(
             default_cols=[],
@@ -152,9 +196,26 @@ class ValuationAgent(BaseAgent):
         return result
 
     def _align(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Aligns X to the training feature schema.
+
+        Args:
+            X (pd.DataFrame): Feature matrix to align.
+
+        Returns:
+            pd.DataFrame: Aligned feature matrix.
+        """
         return self._align_to_feature_cols(X, fill_value=np.nan)
 
     def _cv(self, X: pd.DataFrame, y: pd.Series) -> Dict:
+        """Runs time-series cross-validation and returns aggregated metrics.
+
+        Args:
+            X (pd.DataFrame): Cleaned, selected feature matrix.
+            y (pd.Series): Binary target series.
+
+        Returns:
+            Dict: Dictionary with mean_auc, std_auc, mean_acc, and mean_f1.
+        """
         date_order = X.index.get_level_values("date") if "date" in X.index.names else X.index
         sort_idx = date_order.argsort()
         X = X.iloc[sort_idx]
@@ -183,6 +244,15 @@ class ValuationAgent(BaseAgent):
         }
 
     def _sector_summary(self, X: pd.DataFrame, sector_col: str) -> Dict:
+        """Computes descriptive statistics for valuation multiples by sector.
+
+        Args:
+            X (pd.DataFrame): Feature matrix containing sector and multiple columns.
+            sector_col (str): Column name for sector labels.
+
+        Returns:
+            Dict: Nested dictionary keyed by multiple → sector → statistics.
+        """
         if sector_col not in X.columns:
             return {}
         out = {}

@@ -1,21 +1,20 @@
-﻿"""
-fold_report.py — Generación del CSV consolidado de resultados por fold.
+"""Fold report generation — consolidated CSV of per-fold results.
 
-Produce dos archivos por cada fold completado, y al final un consolidado global:
+Produces two files per completed fold and a global consolidated file at the end:
 
 1. results/agents/fold_{N}_scores.csv
-   Una fila por ticker. Columnas:
-     - Identificación: year_quarter, fold, ticker, sector, industry
-     - Selección: selected, rank, selection_reason
-     - Scores de cada agente (0-1) con interpretación en texto
-     - Score final y predicción
+   One row per ticker. Columns:
+     - Identification: year_quarter, fold, ticker, sector, industry
+     - Selection: selected, rank, selection_reason
+     - Scores from each agent (0–1) with human-readable interpretation
+     - Final score and prediction
      - Realized result (if available): actual_return, beat_benchmark
-     - Explicación de cada agente: qué factores jugaron a favor y en contra,
-       con los valores reales de las métricas en lenguaje natural
+     - Per-agent explanation: which factors were in favour / against,
+       with actual metric values in natural language
 
 2. results/agents/all_folds_scores.csv
-   Concatenación de todos los fold_{N}_scores.csv. Permite filtrar por quarter,
-   comparar tickers a lo largo del tiempo, y auditar decisiones por agente.
+   Concatenation of all fold_{N}_scores.csv. Enables filtering by quarter,
+   comparing tickers over time, and auditing per-agent decisions.
 """
 
 from __future__ import annotations
@@ -34,39 +33,39 @@ from module.steps.step_04_evaluation.explainability import (
 log = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Umbrales para interpretar cada agente en texto
+# Score interpretation thresholds per agent
 # ---------------------------------------------------------------------------
 
 AGENT_LABELS = {
     "fundamental": {
-        "high":   "Salud financiera sólida",
-        "medium": "Salud financiera aceptable",
-        "low":    "Debilidades financieras detectadas",
+        "high":   "Strong financial health",
+        "medium": "Acceptable financial health",
+        "low":    "Financial weaknesses detected",
     },
     "valuation": {
-        "high":   "Acción atractiva por valoración",
-        "medium": "Valoración razonable",
-        "low":    "Posiblemente sobrevalorada",
+        "high":   "Attractive valuation",
+        "medium": "Reasonable valuation",
+        "low":    "Possibly overvalued",
     },
     "momentum": {
-        "high":   "Tendencia técnica positiva",
-        "medium": "Tendencia técnica neutra",
-        "low":    "Tendencia técnica negativa",
+        "high":   "Positive technical trend",
+        "medium": "Neutral technical trend",
+        "low":    "Negative technical trend",
     },
     "bear": {
-        "high":   "Riesgo bajo (perfil defensivo)",
-        "medium": "Riesgo moderado",
-        "low":    "Riesgo elevado detectado",
+        "high":   "Low risk (defensive profile)",
+        "medium": "Moderate risk",
+        "low":    "High risk detected",
     },
     "sentiment": {
-        "high":   "Sentimiento externo positivo",
-        "medium": "Sentimiento externo neutro",
-        "low":    "Sentimiento externo negativo",
+        "high":   "Positive external sentiment",
+        "medium": "Neutral external sentiment",
+        "low":    "Negative external sentiment",
     },
     "meta_learner": {
-        "high":   "Alta probabilidad de Outperform",
-        "medium": "Señal mixta",
-        "low":    "Alta probabilidad de Underperform",
+        "high":   "High probability of Outperform",
+        "medium": "Mixed signal",
+        "low":    "High probability of Underperform",
     },
 }
 
@@ -97,9 +96,17 @@ def _is_ratio_or_normalized_feature(feature: str) -> bool:
 
 
 def _agent_text_label(agent: str, score: float) -> str:
-    """Convierte el score de un agente en etiqueta de texto con su interpretación."""
+    """Converts an agent score to a human-readable text label.
+
+    Args:
+        agent (str): Agent name (must match a key in AGENT_LABELS).
+        score (float): Agent score in [0, 1].
+
+    Returns:
+        str: Formatted string like "0.72 — Strong financial health".
+    """
     labels = AGENT_LABELS.get(agent, {
-        "high": "Score alto", "medium": "Score medio", "low": "Score bajo"
+        "high": "High score", "medium": "Medium score", "low": "Low score"
     })
     if score >= 0.65:
         tier = "high"
@@ -111,8 +118,8 @@ def _agent_text_label(agent: str, score: float) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Features clave por agente (para la explicación en texto)
-# Los que más aportan contexto sin necesidad de SHAP
+# Key features per agent (for text explanations)
+# These provide the most interpretable context without requiring SHAP
 # ---------------------------------------------------------------------------
 
 AGENT_KEY_FEATURES: Dict[str, List[str]] = {
@@ -141,9 +148,16 @@ AGENT_KEY_FEATURES: Dict[str, List[str]] = {
 
 
 def _describe_feature_value(feature: str, value: float) -> str:
-    """
-    Genera una frase corta en lenguaje natural para un feature y su valor.
-    Ej: roe=0.28 → "ROE del 28% (rentabilidad sobre fondos propios)"
+    """Generates a short natural-language phrase for a feature–value pair.
+
+    Example: roe=0.28 → "Return on Equity = 28.0%"
+
+    Args:
+        feature (str): Feature column name.
+        value (float): Feature value.
+
+    Returns:
+        str: Human-readable description, or empty string if value is NaN.
     """
     if pd.isna(value):
         return ""
@@ -159,20 +173,27 @@ def _build_agent_explanation(
     shap_drivers: Optional[List[Dict]] = None,
     top_n: int = 4,
 ) -> str:
-    """
-    Construye una explicación en lenguaje natural para un agente concreto.
+    """Builds a natural-language explanation for a single agent's prediction.
 
-    Prioridad:
-    1. Si hay SHAP drivers (de explainability.py), usa los top positivos/negativos.
-    2. Si no, usa las features clave del agente con sus valores reales.
+    Priority:
+    1. If SHAP drivers are available (from explainability.py), uses the top
+       positive and negative SHAP contributors.
+    2. Otherwise, uses the agent's key features with their actual values.
 
-    La explicación menciona los valores concretos (ej. "ROE del 28%") para que
-    sea interpretable sin necesidad de conocer los números del dataset.
+    Args:
+        row (pd.Series): Full feature row for the ticker/fold.
+        agent (str): Agent name.
+        agent_score (float): Agent score in [0, 1].
+        shap_drivers (Optional[List[Dict]]): Pre-computed SHAP driver list.
+        top_n (int): Maximum number of positive/negative factors to include.
+
+    Returns:
+        str: Multi-line explanation string.
     """
     label = "Outperform" if agent_score >= 0.5 else "Underperform"
     score_txt = _agent_text_label(agent, agent_score)
 
-    # -- Camino 1: SHAP disponible --
+    # -- Path 1: SHAP available --
     if shap_drivers:
         positives = [d for d in shap_drivers if d.get("shap_value", 0) > 0][:top_n]
         negatives = [d for d in shap_drivers if d.get("shap_value", 0) < 0][:top_n]
@@ -199,7 +220,7 @@ def _build_agent_explanation(
 
         return " | ".join(parts)
 
-    # -- Camino 2: fallback con features clave del agente --
+    # -- Path 2: fallback using agent key features --
     key_features = AGENT_KEY_FEATURES.get(agent, [])
     observations: List[str] = []
 
@@ -215,11 +236,11 @@ def _build_agent_explanation(
         return f"[{label}] {score_txt}"
 
     obs_text = "; ".join(observations[:top_n])
-    return f"[{label}] {score_txt} | Factores observados: {obs_text}"
+    return f"[{label}] {score_txt} | Observed factors: {obs_text}"
 
 
 # ---------------------------------------------------------------------------
-# Construcción del DataFrame de scores por fold
+# Fold score DataFrame construction
 # ---------------------------------------------------------------------------
 
 def build_fold_scores_df(
@@ -233,32 +254,38 @@ def build_fold_scores_df(
     benchmark_return: Optional[float] = None,
     ticker_weights: Optional[Dict[str, float]] = None,
 ) -> pd.DataFrame:
-    """
-    Construye el DataFrame de scores para un fold con:
-    - Una fila por ticker
-    - Scores de cada agente + interpretación en texto
-    - Explicación de cada agente con los factores que influyeron
-    - Resultado real si disponible
+    """Builds the score DataFrame for a single walk-forward fold.
+
+    Produces one row per ticker with:
+      - Per-agent scores plus human-readable interpretation labels.
+      - Per-agent explanations based on SHAP drivers or key features.
+      - Realized result if available.
 
     Args:
-        df_test_scored:  DataFrame de test con scores de agentes y final_score.
-                         Índice: (ticker, date).
-        y_test:          Labels reales del fold.
-        fold_id:         Número de fold.
-        year_quarter:    Ej. "2025Q3".
-        agents:          Dict de agentes entrenados {nombre: agente}.
-        audit_df:        DataFrame de auditoría de selección (optional).
-        actual_returns:  {ticker: retorno_real} si ya ocurrió el período de test.
-        benchmark_return: Retorno del S&P500 en el período de test.
+        df_test_scored (pd.DataFrame): Test DataFrame with agent scores and
+            final_score column. Indexed by (ticker, date).
+        y_test (pd.Series): Ground-truth labels for the fold.
+        fold_id (int): Walk-forward fold number.
+        year_quarter (str): Quarter identifier, e.g. "2025Q3".
+        agents (Dict): Dictionary of trained agents ``{name: agent}``.
+        audit_df (Optional[pd.DataFrame]): Selection audit DataFrame (optional).
+        actual_returns (Optional[Dict[str, float]]): ``{ticker: actual_return}``
+            if the test period has elapsed.
+        benchmark_return (Optional[float]): S&P 500 return for the test period.
+        ticker_weights (Optional[Dict[str, float]]): Portfolio weight per ticker.
+
+    Returns:
+        pd.DataFrame: One row per ticker with all score, explanation, and
+            result columns.
     """
     tickers_index = df_test_scored.index.get_level_values("ticker")
-    # Una fila por ticker: la última observación disponible en el fold
+    # One row per ticker: take the last available observation in the fold
     ticker_rows: Dict[str, pd.Series] = {}
     for ticker in tickers_index.unique():
         mask = tickers_index == ticker
         ticker_rows[ticker] = df_test_scored.loc[mask].iloc[-1]
 
-    # Mapa de auditoría
+    # Build audit mapping from the audit DataFrame
     audit_map: Dict[str, Dict] = {}
     if audit_df is not None and not audit_df.empty and "ticker" in audit_df.columns:
         audit_map = audit_df.drop_duplicates(subset="ticker").set_index("ticker").to_dict(orient="index")
@@ -270,20 +297,20 @@ def build_fold_scores_df(
         audit = audit_map.get(ticker, {})
 
         rec: Dict = {
-            # --- Identificación ---
+            # --- Identification ---
             "year_quarter":     year_quarter,
             "fold":             fold_id,
             "ticker":           ticker,
             "sector":           row.get("sector", "Unknown"),
             "industry":         row.get("industry", "Unknown"),
 
-            # --- Predicción ---
+            # --- Prediction ---
             "final_score":      round(final_score, 4),
             "final_score_raw":  round(float(row.get("final_score_raw", final_score)), 4),
-            "prediccion":       "Outperform" if final_score >= 0.5 else "Underperform",
-            "confianza":        "Alta" if abs(final_score - 0.5) > 0.25 else "Moderada",
+            "prediction":       "Outperform" if final_score >= 0.5 else "Underperform",
+            "confidence":       "High" if abs(final_score - 0.5) > 0.25 else "Moderate",
 
-            # --- Selección y peso en cartera ---
+            # --- Selection and portfolio weight ---
             "selected":         bool(audit.get("selected", False)),
             "rank":             audit.get("rank", None),
             "selection_reason": audit.get("selection_reason", "unknown"),
@@ -292,14 +319,14 @@ def build_fold_scores_df(
             "sector_confidence": round(float(row.get("sector_confidence", 1.0)), 4),
         }
 
-        # --- Scores by agent + texto interpretativo ---
+        # --- Per-agent scores + interpretation text ---
         for ag_name in ["fundamental", "valuation", "momentum", "bear", "sentiment"]:
             score_col = f"{ag_name}_score"
             ag_score = float(row.get(score_col, 0.5))
             rec[score_col] = round(ag_score, 4)
-            rec[f"{ag_name}_interpretacion"] = _agent_text_label(ag_name, ag_score)
+            rec[f"{ag_name}_interpretation"] = _agent_text_label(ag_name, ag_score)
 
-        # --- Explicación por agente con valores concretos ---
+        # --- Per-agent explanation with concrete feature values ---
         for ag_name, agent in agents.items():
             if ag_name == "meta_learner":
                 continue
@@ -308,7 +335,7 @@ def build_fold_scores_df(
             else:
                 ag_score = float(row.get(f"{ag_name}_score", 0.5))
 
-            # Intentar obtener SHAP drivers del explainer del agente
+            # Attempt to get SHAP drivers from the agent's explainer
             shap_drivers = None
             explainer = getattr(agent, "_explainer", None)
             if explainer is not None:
@@ -316,9 +343,9 @@ def build_fold_scores_df(
                     exp = explainer.explain_prediction(row, ticker, ag_score, top_n=5)
                     shap_drivers = exp.get("top_drivers", [])
                 except Exception:
-                    log.debug("SHAP explain falló para %s/%s", ag_name, ticker, exc_info=True)
+                    log.debug("SHAP explain failed for %s/%s", ag_name, ticker, exc_info=True)
 
-            rec[f"{ag_name}_explicacion"] = _build_agent_explanation(
+            rec[f"{ag_name}_explanation"] = _build_agent_explanation(
                 row=row,
                 agent=ag_name,
                 agent_score=ag_score,
@@ -326,10 +353,10 @@ def build_fold_scores_df(
                 top_n=4,
             )
 
-        # --- Resultado real (si ya ocurrió el período) ---
+        # --- Realized result (if the test period has elapsed) ---
         if actual_returns is not None:
             actual = actual_returns.get(ticker)
-            rec["retorno_real"] = round(actual, 4) if actual is not None else None
+            rec["actual_return"] = round(actual, 4) if actual is not None else None
             if actual is not None and benchmark_return is not None:
                 rec["alpha_real"] = round(actual - benchmark_return, 4)
                 rec["beat_benchmark"] = actual > benchmark_return
@@ -337,22 +364,22 @@ def build_fold_scores_df(
                 rec["alpha_real"] = None
                 rec["beat_benchmark"] = None
         else:
-            rec["retorno_real"] = None
+            rec["actual_return"] = None
             rec["alpha_real"] = None
             rec["beat_benchmark"] = None
 
-        # --- Label real del modelo ---
+        # --- Ground-truth label from the model ---
         label_idx = (ticker, row.name[1]) if isinstance(row.name, tuple) else None
         if label_idx is not None and label_idx in y_test.index:
-            rec["label_real"] = int(y_test.loc[label_idx])
+            rec["true_label"] = int(y_test.loc[label_idx])
         else:
-            rec["label_real"] = None
+            rec["true_label"] = None
 
         records.append(rec)
 
     df = pd.DataFrame(records)
 
-    # Ordenar: primero seleccionados, luego por score descendente
+    # Sort: selected tickers first, then by descending final score
     df = df.sort_values(
         ["selected", "final_score"],
         ascending=[False, False],
@@ -362,7 +389,7 @@ def build_fold_scores_df(
 
 
 # ---------------------------------------------------------------------------
-# Export: fold individual + acumulado global
+# Export: individual fold + cumulative global
 # ---------------------------------------------------------------------------
 
 def export_fold_scores(
@@ -370,12 +397,22 @@ def export_fold_scores(
     agents_results_dir: str,
     fold_id: int | str,
 ) -> Path:
-    """Guarda el CSV del fold y devuelve la ruta."""
+    """Saves the fold CSV and returns the output path.
+
+    Args:
+        df (pd.DataFrame): Fold score DataFrame produced by
+            :func:`build_fold_scores_df`.
+        agents_results_dir (str): Root output directory.
+        fold_id (int | str): Fold identifier used in the filename.
+
+    Returns:
+        Path: Path to the written CSV file.
+    """
     out_dir = Path(agents_results_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     path = out_dir / f"quarter_{fold_id}_scores.csv"
     df.to_csv(path, index=False, encoding="utf-8")
-    log.info(f"[FoldReport] Fold {fold_id}: scores de {len(df)} tickers guardados → {path.name}")
+    log.info(f"[FoldReport] Fold {fold_id}: scores for {len(df)} tickers saved → {path.name}")
     return path
 
 
@@ -384,12 +421,22 @@ def export_quarter_snapshot_audit(
     year_quarter: str,
     agents_results_dir: str,
 ) -> Path:
-    """
-    Exporta un snapshot completo por ticker para el quarter:
-    - una fila por ticker
-    - todas las features disponibles
-    - metadatos de snapshot/reporting (carry-forward, fechas usadas)
-    - scores de agentes y score final
+    """Exports a complete per-ticker snapshot for the quarter.
+
+    Includes:
+      - One row per ticker (last available observation in the fold)
+      - All available features
+      - Snapshot/reporting metadata (carry-forward flags, dates used)
+      - Agent scores and final score
+
+    Args:
+        df_test_scored (pd.DataFrame): Scored test DataFrame indexed by
+            (ticker, date).
+        year_quarter (str): Quarter identifier string (e.g. "2025Q3").
+        agents_results_dir (str): Root output directory.
+
+    Returns:
+        Path: Path to the written CSV audit file.
     """
     out_dir = Path(agents_results_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -426,9 +473,20 @@ def export_quarter_agent_feature_audit(
     year_quarter: str,
     agents_results_dir: str,
 ) -> Path:
-    """
-    Exporta trazabilidad granular agente-feature:
-    una fila por (ticker, agente, feature usada por ese agente).
+    """Exports granular agent–feature traceability for a quarter.
+
+    Produces one row per (ticker, agent, feature used by that agent), allowing
+    full inspection of which features drove each agent's score for each ticker.
+
+    Args:
+        df_test_scored (pd.DataFrame): Scored test DataFrame indexed by
+            (ticker, date).
+        agents (Dict): Dictionary of trained agents ``{name: agent}``.
+        year_quarter (str): Quarter identifier string (e.g. "2025Q3").
+        agents_results_dir (str): Root output directory.
+
+    Returns:
+        Path: Path to the written CSV audit file.
     """
     out_dir = Path(agents_results_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -497,21 +555,28 @@ def export_quarter_agent_feature_audit(
                 })
 
     pd.DataFrame(rows).to_csv(path, index=False, encoding="utf-8")
-    log.info(f"[FoldReport] Agent-feature audit {year_quarter}: {len(rows)} filas → {path.name}")
+    log.info(f"[FoldReport] Agent-feature audit {year_quarter}: {len(rows)} rows → {path.name}")
     return path
 
 
 def export_all_folds_scores(
     agents_results_dir: str,
 ) -> Optional[Path]:
-    """
-    Concatena todos los fold_{N}_scores.csv en all_folds_scores.csv.
-    Llamar al final del pipeline, después de todos los folds.
+    """Concatenates all quarter_*_scores.csv files into all_folds_scores.csv.
+
+    Should be called at the end of the pipeline after all folds complete.
+
+    Args:
+        agents_results_dir (str): Root output directory containing per-fold CSV files.
+
+    Returns:
+        Optional[Path]: Path to the consolidated CSV, or None if no fold files
+            were found.
     """
     out_dir = Path(agents_results_dir)
     fold_files = sorted(out_dir.glob("quarter_*_scores.csv"))
     if not fold_files:
-        log.warning("[FoldReport] No se encontraron quarter_*_scores.csv para consolidar.")
+        log.warning("[FoldReport] No quarter_*_scores.csv files found to consolidate.")
         return None
 
     dfs = []
@@ -519,7 +584,7 @@ def export_all_folds_scores(
         try:
             dfs.append(pd.read_csv(f, encoding="utf-8"))
         except Exception as e:
-            log.warning(f"[FoldReport] Error leyendo {f.name}: {e}")
+            log.warning(f"[FoldReport] Error reading {f.name}: {e}")
 
     if not dfs:
         return None
@@ -528,9 +593,9 @@ def export_all_folds_scores(
     path = out_dir / "all_folds_scores.csv"
     combined.to_csv(path, index=False, encoding="utf-8")
     log.info(
-        f"[FoldReport] CSV consolidado de todos los folds: "
-        f"{len(combined)} filas | "
+        f"[FoldReport] Consolidated CSV for all folds: "
+        f"{len(combined)} rows | "
         f"{combined['year_quarter'].nunique()} quarters | "
-        f"{combined['ticker'].nunique()} tickers únicos → {path.name}"
+        f"{combined['ticker'].nunique()} unique tickers → {path.name}"
     )
     return path

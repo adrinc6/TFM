@@ -24,15 +24,15 @@ def download_data(
     allow_retry_failed: bool = False,
 ) -> List[str]:
     log.info("=" * 60)
-    log.info("  PASO 1 — DESCARGA DE DATOS")
-    log.info(f"  Tickers : {len(tickers)} | Periodo: {start_date} → {end_date}")
-    log.info(f"  Destino : {data_dir}")
+    log.info("  STEP 1 — DATA DOWNLOAD")
+    log.info(f"  Tickers : {len(tickers)} | Period: {start_date} → {end_date}")
+    log.info(f"  Destination : {data_dir}")
     log.info("=" * 60)
 
     if not api_key:
         raise ValueError(
-            "FINNHUB_API_KEY no configurada. "
-            "Establece la variable de entorno FINNHUB_API_KEY antes de ejecutar el pipeline."
+            "FINNHUB_API_KEY not configured. "
+            "Set the FINNHUB_API_KEY environment variable before running the pipeline."
         )
 
     run_download(
@@ -46,18 +46,18 @@ def download_data(
         allow_retry_failed=allow_retry_failed,
     )
 
-    log.info("  Descarga completada. Continuando con consolidación...")
+    log.info("  Download completed. Proceeding to consolidation...")
     return tickers
 
 
 def prepare_data(tickers: List[str], data_dir: str) -> None:
     log.info("=" * 60)
-    log.info("  PASO 2 — CONSOLIDACIÓN DE DATOS")
-    log.info(f"  Normalizando y mergeando ficheros Finnhub para {len(tickers)} tickers...")
+    log.info("  STEP 2 — DATA CONSOLIDATION")
+    log.info(f"  Normalising and merging Finnhub files for {len(tickers)} tickers...")
     log.info("=" * 60)
     consolidator = FinnhubConsolidator(finnhub_data_dir=data_dir)
     consolidator.process_all_tickers(tickers)
-    log.info("  Consolidación completada.")
+    log.info("  Consolidation completed.")
 
 
 def get_available_tickers(
@@ -84,10 +84,10 @@ def get_available_tickers(
     available = sorted(available)
 
     if missing_detail:
-        log.info(f"  Tickers sin datos completos: {len(missing_detail)} (sin precios o consolidado)")
+        log.info(f"  Tickers without complete data: {len(missing_detail)} (missing prices or consolidated)")
         for ticker, missing in sorted(missing_detail.items()):
-            log.debug(f"    {ticker}: falta {missing}")
-    log.info(f"  Tickers listos para el pipeline: {len(available)} / {len(tickers)}")
+            log.debug(f"    {ticker}: missing {missing}")
+    log.info(f"  Tickers ready for pipeline: {len(available)} / {len(tickers)}")
     return available, missing_detail
 
 
@@ -102,10 +102,10 @@ def retry_missing_tickers(
         return []
 
     tickers_missing = list(missing_detail.keys())
-    log.info(f"  Reintentando descarga para {len(tickers_missing)} tickers incompletos...")
+    log.info(f"  Retrying download for {len(tickers_missing)} incomplete tickers...")
 
-    # Evita borrar el registry global: limpia solo las entradas de tickers a reintentar.
-    # Asi se preserva el estado del resto del universo y no se dispara re-descarga masiva.
+    # Avoids deleting the global registry: only clears entries for the tickers to retry.
+    # This preserves the rest of the universe state and avoids triggering a mass re-download.
     registry = Registry(Path(data_dir))
     for ticker in tickers_missing:
         registry.clear(group=ticker)
@@ -135,8 +135,8 @@ def retry_missing_tickers(
     ]
     still_missing = set(tickers_missing) - set(recovered)
 
-    log.info(f"  Recuperados tras reintento: {len(recovered)} tickers  {recovered}")
+    log.info(f"  Recovered after retry: {len(recovered)} tickers  {recovered}")
     if still_missing:
-        log.warning(f"  Siguen sin datos tras reintento ({len(still_missing)}): {sorted(still_missing)}")
+        log.warning(f"  Still missing after retry ({len(still_missing)}): {sorted(still_missing)}")
 
     return recovered

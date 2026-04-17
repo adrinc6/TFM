@@ -8,7 +8,16 @@ import pandas as pd
 
 
 def _resolve_dates(df: pd.DataFrame, date_col: Optional[str] = None) -> pd.Series:
-    """Return a normalized datetime series from index or date_col."""
+    """Extracts a normalized datetime series from a DataFrame index or column.
+
+    Args:
+        df (pd.DataFrame): Source DataFrame.
+        date_col (Optional[str]): Column name to use as the date source. If
+            None, the DataFrame index is used.
+
+    Returns:
+        pd.Series: A datetime64[ns] Series. Empty if df is None or empty.
+    """
     if df is None or df.empty:
         return pd.Series(dtype="datetime64[ns]")
 
@@ -31,7 +40,19 @@ def _resolve_dates(df: pd.DataFrame, date_col: Optional[str] = None) -> pd.Serie
 
 
 def filter_asof(df: pd.DataFrame, as_of: pd.Timestamp, date_col: Optional[str] = None) -> pd.DataFrame:
-    """Filter rows where date <= as_of. Returns empty df if date cannot be resolved."""
+    """Filters rows where date <= as_of to prevent look-ahead bias.
+
+    Args:
+        df (pd.DataFrame): DataFrame to filter.
+        as_of (pd.Timestamp): The point-in-time cut-off. Rows with dates
+            strictly after this value are removed.
+        date_col (Optional[str]): Column name holding the date. If None, the
+            DataFrame index is used.
+
+    Returns:
+        pd.DataFrame: Filtered copy of df. Returns df unchanged if None is
+            passed; returns an empty frame if the date cannot be resolved.
+    """
     if df is None or df.empty:
         return df
     dates = _resolve_dates(df, date_col=date_col)
@@ -47,7 +68,19 @@ def detect_future_rows(
     as_of: pd.Timestamp,
     date_col: Optional[str] = None,
 ) -> Tuple[int, Optional[pd.Timestamp]]:
-    """Return number of rows with date > as_of and max future date detected."""
+    """Returns the count of future rows and the latest future date detected.
+
+    Args:
+        df (pd.DataFrame): DataFrame to inspect.
+        as_of (pd.Timestamp): The point-in-time cut-off.
+        date_col (Optional[str]): Column name holding the date. If None, the
+            DataFrame index is used.
+
+    Returns:
+        Tuple[int, Optional[pd.Timestamp]]: A tuple (n_future, max_future_date)
+            where n_future is the count of rows with date > as_of and
+            max_future_date is the latest such date (None if n_future == 0).
+    """
     if df is None or df.empty:
         return 0, None
     dates = _resolve_dates(df, date_col=date_col)
@@ -68,7 +101,23 @@ def assert_no_future_data(
     context: str,
     date_col: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Structured leakage check result for audit exports/logging."""
+    """Produces a structured leakage-check result suitable for audit exports.
+
+    Args:
+        df (pd.DataFrame): DataFrame to audit.
+        as_of (pd.Timestamp): The point-in-time cut-off.
+        context (str): A label identifying the data source for audit purposes.
+        date_col (Optional[str]): Column name holding the date. If None, the
+            DataFrame index is used.
+
+    Returns:
+        Dict[str, Any]: Audit record with keys:
+            - context: the supplied context label
+            - as_of: the cut-off date as a string
+            - n_rows_future_detected: count of rows with date > as_of
+            - max_future_date_detected: the latest future date found (or None)
+            - ok: True if no future rows were detected
+    """
     n_future, max_future_date = detect_future_rows(df=df, as_of=as_of, date_col=date_col)
     return {
         "context": str(context),

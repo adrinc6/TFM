@@ -20,11 +20,11 @@ def generate_text_report(
 	sep_s = "-" * 65
 
 	lines.append(sep)
-	lines.append("  INFORME DE RESULTADOS — Walk-Forward Backtest")
-	lines.append(f"  Generado: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+	lines.append("  RESULTS REPORT — Walk-Forward Backtest")
+	lines.append(f"  Generated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 	lines.append(sep)
 
-	lines.append("\n  METRICAS GLOBALES (todos los folds concatenados)")
+	lines.append("\n  GLOBAL METRICS (all folds concatenated)")
 	lines.append(sep_s)
 	lines.append(f"  Folds completados:         {summary.get('n_folds', 0)}")
 	lines.append(f"  Alpha medio por fold:      {summary.get('mean_alpha', 0):+.2%}")
@@ -83,7 +83,7 @@ def generate_text_report(
 				f"{stats['mean_strategy_sharpe']:>6.3f}"
 			)
 
-	lines.append("\n  AUC DE AGENTES (ultimo fold entrenado)")
+	lines.append("\n  AGENT AUC (last trained fold)")
 	lines.append(sep_s)
 	for ag_name, history in agent_diag_history.items():
 		if not history:
@@ -97,7 +97,7 @@ def generate_text_report(
 			lines.append(f"  {ag_name:<15}  AUC = {auc:.4f}{std_str}")
 
 	lines.append(f"\n{sep}")
-	lines.append(f"  Resultados guardados en: {backtest_results_dir}/")
+	lines.append(f"  Results saved to: {backtest_results_dir}/")
 	lines.append(sep)
 
 	report_text = "\n".join(lines)

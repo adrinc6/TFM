@@ -18,11 +18,11 @@ class FundamentalFeatureBuilder:
 
     def build(self, df: pd.DataFrame) -> pd.DataFrame:
         """
-        Enriquece el DataFrame de fundamentales trimestrales con ratios y señales.
-        NO incluye trend_features aquí porque expanding() sobre todo el df
-        causaría look-ahead: una fila de 2021 vería tendencias calculadas con
-        datos de 2023. Las trend features se calculan en snapshot_trends(),
-        llamado desde dataset.py con solo los datos hasta as_of.
+        Enrich the quarterly fundamentals DataFrame with ratios and signals.
+        Does NOT include trend_features here because expanding() over the full df
+        would cause look-ahead: a 2021 row would see trends computed with
+        2023 data.  Trend features are computed in snapshot_trends(),
+        called from dataset.py with only data available up to as_of.
         """
         df = df.copy()
         df = self._yoy_growth(df)
@@ -33,9 +33,9 @@ class FundamentalFeatureBuilder:
 
     def snapshot_trends(self, fund_hist_asof: pd.DataFrame) -> Dict:
         """
-        Calcula features de tendencia usando SOLO los datos hasta as_of.
-        Llamar con fund_hist_asof = fund_enriched[fund_enriched.index <= as_of].
-        Devuelve un dict de features listos para añadir al record.
+        Calculate trend features using ONLY data up to as_of.
+        Call with fund_hist_asof = fund_enriched[fund_enriched.index <= as_of].
+        Returns a dict of features ready to add to the record.
         """
         out: Dict = {}
         for col, feat in [
@@ -63,8 +63,8 @@ class FundamentalFeatureBuilder:
         return float(coeffs[0])
 
     def _yoy_growth(self, df: pd.DataFrame) -> pd.DataFrame:
-        # Variables monetarias/beneficios: crecimiento YoY relativo (ratio),
-        # no diferencia absoluta, para comparar empresas de distinto tamano.
+        # Monetary/earnings variables: relative YoY growth (ratio),
+        # not absolute difference, to allow comparison across companies of different sizes.
         ratio_growth_pairs = {
             "revenue_yoy_growth": "revenue",
             "net_income_yoy_growth": "net_income",
@@ -74,7 +74,7 @@ class FundamentalFeatureBuilder:
             "total_debt_yoy_growth": "total_debt",
         }
 
-        # Ratios ya normalizados: aqui si usamos cambio absoluto YoY del ratio.
+        # Already-normalised ratios: use absolute YoY change of the ratio here.
         ratio_delta_pairs = {
             "roa_change_yoy": "roa",
             "gross_margin_change_yoy": "gross_margin",
@@ -125,8 +125,8 @@ class FundamentalFeatureBuilder:
                 df["operating_margin"] = df["operating_income"] / df["revenue"].replace(0, np.nan)
 
         # ── Piotroski F-score (Piotroski 2000) ───────────────────────────────
-        # 8 señales binarias normalizadas a [0,1]. Score alto = empresa sana.
-        # Fuente: "Value Investing: The Use of Historical Financial Statement
+        # 8 binary signals normalised to [0,1]. High score = healthy company.
+        # Source: "Value Investing: The Use of Historical Financial Statement
         # Information to Separate Winners from Losers" (Piotroski, JAR 2000).
         piotroski = pd.Series(0.0, index=df.index)
         n_signals = 0

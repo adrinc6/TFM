@@ -13,10 +13,23 @@ from module.agents.sector_rotation import SectorRotationAgent
 
 
 def build_agents_config(agents_results_dir: str, random_seed: int) -> Dict[str, Dict[str, Any]]:
-    """Configuracion declarativa de agentes base y su contrato de entrenamiento.
+    """Builds the declarative configuration for all base agents.
 
-    El SectorRotationAgent se instancia aquí pero se entrena aparte en training.py
-    porque opera a nivel sector (no ticker) y no sigue la misma firma fit(X, y).
+    The SectorRotationAgent is instantiated here but trained separately in
+    training.py because it operates at the sector level (not ticker level) and
+    does not share the standard ``fit(X, y)`` signature.
+
+    Args:
+        agents_results_dir (str): Root directory for agent artefact output.
+        random_seed (int): Random seed forwarded to every agent.
+
+    Returns:
+        Dict[str, Dict[str, Any]]: Mapping of agent name to a configuration
+            dictionary with keys:
+            - cls: Agent class.
+            - kwargs: Constructor keyword arguments.
+            - sector_col: Column name for sector (None if unused).
+            - invert_y: Whether to invert the target label before training.
     """
     return {
         "fundamental": {
@@ -53,5 +66,13 @@ def build_agents_config(agents_results_dir: str, random_seed: int) -> Dict[str, 
 
 
 def build_sector_rotation_agent(agents_results_dir: str, random_seed: int) -> SectorRotationAgent:
-    """Instancia el SectorRotationAgent (se entrena aparte en training.py)."""
+    """Instantiates the SectorRotationAgent (trained separately in training.py).
+
+    Args:
+        agents_results_dir (str): Root directory for agent artefact output.
+        random_seed (int): Random seed for the agent.
+
+    Returns:
+        SectorRotationAgent: An untrained SectorRotationAgent instance.
+    """
     return SectorRotationAgent(results_dir=agents_results_dir, random_seed=random_seed)

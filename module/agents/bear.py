@@ -1,32 +1,31 @@
-﻿# =============================================================================
-# module/agents/bear_agent.py — Agente Bear (Filtro de Riesgo)
-# =============================================================================
-# Detecta riesgo elevado mediante un score estructurado en dos sub-scores:
-#
-#   Sub-score financiero (deterioro empresarial):
-#     F1  Deuda creciendo >20% YoY
-#     F2  Debt/Equity > 3.0
-#     F3  Debt/EBITDA > 6.0
-#     F4  FCF negativo
-#     F5  ≥2 trimestres consecutivos con pérdidas
-#     F6  Caída de revenue YoY
-#     F7  Interest Coverage < 1.5
-#
-#   Sub-score de mercado (señales externas de presión):
-#     F8  Current Ratio < 1.0 (riesgo de liquidez)
-#     F9  Insiders vendiendo neto (sell_ratio > 0.7)
-#     F10 EPS miss >5%
-#
-# Score final = 0.6 × sub_financiero + 0.4 × sub_mercado (capa de reglas)
-# El score de reglas se combina con la capa ML ponderada por BEAR_RULE_WEIGHT.
-#
-# DATOS QUE CONSUME:
-#   Fundamentales:  total_debt_yoy_growth, debt_equity, debt_to_ebitda,
-#                   fcf, current_ratio, consecutive_losses,
-#                   revenue_decline, interest_coverage
-#   Insiders:       insider_net_ratio_90d, insider_sell_ratio
-#   Analistas:      eps_surprise_pct, eps_revision
-# =============================================================================
+﻿"""Bear agent (risk filter) for the multi-agent stock picker.
+
+Detects elevated risk through a structured score composed of two sub-scores:
+
+  Financial sub-score (corporate deterioration):
+    F1  Debt growing >20% YoY
+    F2  Debt/Equity > 3.0
+    F3  Debt/EBITDA > 6.0
+    F4  Negative FCF
+    F5  ≥2 consecutive quarters with losses
+    F6  Declining revenue YoY
+    F7  Interest Coverage < 1.5
+
+  Market sub-score (external pressure signals):
+    F8  Current Ratio < 1.0 (liquidity risk)
+    F9  Net insider selling (sell_ratio > 0.7)
+    F10 EPS miss >5%
+
+Final score = 0.6 × financial_sub + 0.4 × market_sub (rule layer)
+The rule score is blended with the ML layer weighted by BEAR_RULE_WEIGHT.
+
+Consumes:
+  Fundamentals: total_debt_yoy_growth, debt_equity, debt_to_ebitda,
+                fcf, current_ratio, consecutive_losses,
+                revenue_decline, interest_coverage
+  Insiders:     insider_net_ratio_90d, insider_sell_ratio
+  Analysts:     eps_surprise_pct, eps_revision
+"""
 import json
 import logging
 import numpy as np
@@ -54,43 +53,42 @@ try:
 except ImportError:
     _DEPS_OK = False
 
-# Definición de flags: (nombre, columna, operador, umbral, descripción, peso)
-# Peso relativo dentro de su sub-score (se normalizan internamente).
+# Flag definitions: (name, column, operator, threshold, description, weight)
+# Relative weight within the sub-score (normalized internally).
 FLAG_DEFINITIONS = [
-    # ── Sub-score financiero ─────────────────────────────────────────────────
-    ("debt_growth_high",   "total_debt_yoy_growth", ">",  0.20, "Deuda creciendo >20% YoY",    1.0),
-    ("debt_equity_high",   "debt_equity",           ">",  3.00, "Debt/Equity > 3",              1.5),
-    ("debt_ebitda_high",   "debt_to_ebitda",        ">",  6.00, "Debt/EBITDA > 6",              1.5),
-    ("fcf_negative",       "fcf_margin",            "<",  0.00, "FCF margin negativo",          2.0),
-    ("consecutive_losses", "consecutive_losses",    ">=", 2.00, "≥2 trimestres con pérdidas",   2.0),
-    ("revenue_decline",    "revenue_decline",       "==", 1.00, "Caída de revenue YoY",         1.0),
-    ("low_coverage",       "interest_coverage",     "<",  1.50, "Interest Coverage < 1.5",      1.5),
-    # ── Sub-score de mercado ─────────────────────────────────────────────────
-    ("liquidity_risk",     "current_ratio",         "<",  1.00, "Current Ratio < 1",            1.5),
-    ("insider_selling",    "insider_sell_ratio",    ">",  0.70, "Insiders vendiendo >70%",      1.0),
-    ("eps_miss",           "eps_surprise_pct",      "<", -5.00, "EPS miss >5%",                 1.0),
+    # ── Financial sub-score ──────────────────────────────────────────────────
+    ("debt_growth_high",   "total_debt_yoy_growth", ">",  0.20, "Debt growing >20% YoY",         1.0),
+    ("debt_equity_high",   "debt_equity",           ">",  3.00, "Debt/Equity > 3",                1.5),
+    ("debt_ebitda_high",   "debt_to_ebitda",        ">",  6.00, "Debt/EBITDA > 6",                1.5),
+    ("fcf_negative",       "fcf_margin",            "<",  0.00, "Negative FCF margin",            2.0),
+    ("consecutive_losses", "consecutive_losses",    ">=", 2.00, ">=2 consecutive quarters with losses", 2.0),
+    ("revenue_decline",    "revenue_decline",       "==", 1.00, "YoY revenue decline",            1.0),
+    ("low_coverage",       "interest_coverage",     "<",  1.50, "Interest Coverage < 1.5",        1.5),
+    # ── Market sub-score ─────────────────────────────────────────────────────
+    ("liquidity_risk",     "current_ratio",         "<",  1.00, "Current Ratio < 1",              1.5),
+    ("insider_selling",    "insider_sell_ratio",    ">",  0.70, "Insider selling >70%",           1.0),
+    ("eps_miss",           "eps_surprise_pct",      "<", -5.00, "EPS miss >5%",                   1.0),
 ]
 
-# Flags que pertenecen al sub-score financiero (el resto es sub-score de mercado)
+# Flags belonging to the financial sub-score (the rest belong to market)
 _FINANCIAL_FLAGS = {
     "debt_growth_high", "debt_equity_high", "debt_ebitda_high",
     "fcf_negative", "consecutive_losses", "revenue_decline", "low_coverage",
 }
 
-# Peso de sub-score financiero vs. mercado en la capa de reglas
+# Weight of financial sub-score vs. market sub-score in the rule layer
 _FINANCIAL_WEIGHT = 0.60
 _MARKET_WEIGHT    = 0.40
 
 class BearAgent(BaseAgent):
-    """
-    Agente de riesgo estructurado en dos capas:
+    """Risk detection agent structured in two layers.
 
-      1. Capa de reglas ponderadas: evalúa flags con pesos distintos según
-         su severidad, agrupados en sub-score financiero y de mercado.
-      2. Capa ML: Random Forest que aprende patrones de riesgo más sutiles.
+    Layer 1 — Weighted rule layer: evaluates severity-weighted flags grouped
+        into financial and market sub-scores.
+    Layer 2 — ML layer: Random Forest that learns subtler risk patterns.
 
-    El score final [0,1] es la media ponderada de ambas capas.
-    Score 1 = máximo riesgo (el meta-learner lo usa invertido).
+    The final score [0, 1] is a weighted average of both layers.
+    Score 1 = maximum risk (the meta-learner uses this inverted as a bearish signal).
     """
 
     RULE_WEIGHT = BEAR_RULE_WEIGHT
@@ -100,9 +98,21 @@ class BearAgent(BaseAgent):
                  n_estimators: int = BEAR_N_ESTIMATORS,
                  max_depth: int = BEAR_MAX_DEPTH,
                  save_artifacts: bool = True):
+        """Initialises the BearAgent.
+
+        Args:
+            results_dir (str): Directory where training artefacts are saved.
+            random_seed (int): Random seed for reproducibility.
+            n_estimators (int): Number of trees in the Random Forest.
+            max_depth (int): Maximum tree depth.
+            save_artifacts (bool): Whether to save diagnostics and models.
+
+        Raises:
+            ImportError: If scikit-learn is not installed.
+        """
         super().__init__("bear", results_dir, random_seed, save_artifacts)
         if not _DEPS_OK:
-            raise ImportError("scikit-learn requerido.")
+            raise ImportError("scikit-learn is required.")
         self.n_estimators = n_estimators
         self.max_depth    = max_depth
         self._model:        Optional[Pipeline] = None
@@ -114,11 +124,21 @@ class BearAgent(BaseAgent):
 
     def fit(self, X: pd.DataFrame, y: pd.Series,
             fold: Optional[int] = None) -> "BearAgent":
+        """Trains the Random Forest risk detector.
+
+        The target y is expected to be the inverted label (1 = Underperform
+        / risk event). The calling pipeline is responsible for inverting y
+        before calling fit.
+
+        Args:
+            X (pd.DataFrame): Feature matrix for the training fold.
+            y (pd.Series): Inverted binary labels (1 = Underperform).
+            fold (Optional[int]): Walk-forward fold index for artefact naming.
+
+        Returns:
+            BearAgent: The fitted agent instance (self).
         """
-        y aquí es el label INVERTIDO: 1 = Underperform (evento de riesgo).
-        El pipeline principal se encarga de invertir y antes de llamar a fit.
-        """
-        log.info(f"[BearAgent] Entrenando RandomForest (detección de riesgo) — {len(X)} obs")
+        log.info(f"[BearAgent] Training RandomForest (risk detection) — {len(X)} obs")
         min_len = min(len(X), len(y))
         X = X.iloc[:min_len].copy()
         y = y.iloc[:min_len].copy()
@@ -128,8 +148,8 @@ class BearAgent(BaseAgent):
         X_prep       = X_prep.reset_index(drop=True)
         y_cl         = y_cl.reset_index(drop=True)
 
-        # Selección de features: solo con datos de train (sin leakage)
-        # BearAgent usa todas sus features (pocas), top_n >= nº flags+base
+        # Feature selection: only on training data (no leakage)
+        # BearAgent uses all its features (few), so top_n >= n_flags + base
         self._selector = FeatureSelector(corr_threshold=FEATURE_CORR_THRESHOLD, top_n=FEATURE_TOP_N,
                                          min_features=5, random_seed=self.random_seed)
         X_prep = self._selector.fit_transform(X_prep, y_cl, agent_name="bear")
@@ -147,7 +167,7 @@ class BearAgent(BaseAgent):
         ])
 
         cv = self._cv(X_prep, y_cl)
-        log.info(f"[BearAgent] CV AUC={cv['mean_auc']:.4f} ± {cv['std_auc']:.4f}  ({len(self._feature_cols)} features seleccionadas)")
+        log.info(f"[BearAgent] CV AUC={cv['mean_auc']:.4f} ± {cv['std_auc']:.4f}  ({len(self._feature_cols)} selected features)")
         self._model.fit(X_prep, y_cl)
         self.is_trained = True
 
@@ -181,9 +201,19 @@ class BearAgent(BaseAgent):
     # ── Predict ───────────────────────────────────────────────────────────────
 
     def predict_score(self, X: pd.DataFrame) -> pd.Series:
-        """
-        Score de RIESGO [0,1]. En el meta-learner se usa como (1 - bear_score)
-        para que contribuya como señal bajista.
+        """Returns risk scores in [0, 1].
+
+        In the meta-learner this score is used as ``1 - bear_score`` so that
+        it contributes as a bearish signal.
+
+        Args:
+            X (pd.DataFrame): Feature matrix.
+
+        Returns:
+            pd.Series: Risk scores indexed like X (1 = maximum risk).
+
+        Raises:
+            RuntimeError: If the agent has not been trained yet.
         """
         if not self.is_trained:
             raise RuntimeError("[BearAgent] Not trained.")
@@ -204,6 +234,14 @@ class BearAgent(BaseAgent):
 
     @staticmethod
     def _add_flag_cols(X: pd.DataFrame) -> pd.DataFrame:
+        """Evaluates all FLAG_DEFINITIONS and appends binary flag columns.
+
+        Args:
+            X (pd.DataFrame): Input feature matrix.
+
+        Returns:
+            pd.DataFrame: Copy of X with one binary column per flag definition.
+        """
         df = X.copy()
         ops = {">": lambda a, b: a > b, "<": lambda a, b: a < b,
                ">=": lambda a, b: a >= b, "==": lambda a, b: a == b}
@@ -216,12 +254,18 @@ class BearAgent(BaseAgent):
 
     @staticmethod
     def _rule_score_from_flags(df_flags: pd.DataFrame) -> pd.Series:
-        """
-        Score de reglas estructurado en dos sub-scores ponderados.
+        """Computes the rule-based risk score from binary flag columns.
 
-        Sub-score financiero: media ponderada de flags de deterioro empresarial.
-        Sub-score de mercado: media ponderada de flags de presión externa.
-        Score final = _FINANCIAL_WEIGHT × fin + _MARKET_WEIGHT × mkt
+        The score is a weighted combination of two sub-scores:
+          - Financial sub-score: weighted mean of corporate deterioration flags.
+          - Market sub-score: weighted mean of external pressure flags.
+          - Final = _FINANCIAL_WEIGHT × financial + _MARKET_WEIGHT × market.
+
+        Args:
+            df_flags (pd.DataFrame): DataFrame with binary flag columns appended.
+
+        Returns:
+            pd.Series: Rule-based risk scores in [0, 1].
         """
         fin_flags = [(f[0], f[5]) for f in FLAG_DEFINITIONS if f[0] in _FINANCIAL_FLAGS]
         mkt_flags = [(f[0], f[5]) for f in FLAG_DEFINITIONS if f[0] not in _FINANCIAL_FLAGS]
@@ -239,7 +283,15 @@ class BearAgent(BaseAgent):
         return (_FINANCIAL_WEIGHT * fin_score + _MARKET_WEIGHT * mkt_score).rename("rule_score")
 
     def _prepare(self, X: pd.DataFrame, fit_mode: bool = False) -> pd.DataFrame:
-        """Selecciona columnas base + flags presentes en X."""
+        """Selects base columns and flag columns present in X.
+
+        Args:
+            X (pd.DataFrame): Feature matrix (may include pre-computed flags).
+            fit_mode (bool): Unused by BearAgent but preserved for API consistency.
+
+        Returns:
+            pd.DataFrame: Subset of X with base and flag columns.
+        """
         base = resolve_feature_columns(
             default_cols=[],
             available_cols=list(X.columns),
@@ -252,9 +304,26 @@ class BearAgent(BaseAgent):
         return self._prepare_base_features(X, base + flag_col)
 
     def _align(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Aligns X to the training feature schema.
+
+        Args:
+            X (pd.DataFrame): Feature matrix to align.
+
+        Returns:
+            pd.DataFrame: Aligned feature matrix.
+        """
         return self._align_to_feature_cols(X, fill_value=0.0)
 
     def _cv(self, X: pd.DataFrame, y: pd.Series) -> Dict:
+        """Runs time-series cross-validation and returns aggregated metrics.
+
+        Args:
+            X (pd.DataFrame): Cleaned, selected feature matrix.
+            y (pd.Series): Binary target series (inverted label).
+
+        Returns:
+            Dict: Dictionary with mean_auc, std_auc, mean_acc, and mean_f1.
+        """
         date_order = X.index.get_level_values("date") if "date" in X.index.names else X.index
         sort_idx = date_order.argsort()
         X = X.iloc[sort_idx]
@@ -281,6 +350,15 @@ class BearAgent(BaseAgent):
 
     @staticmethod
     def _flag_statistics(X: pd.DataFrame) -> Dict:
+        """Computes activation rates for all risk flags.
+
+        Args:
+            X (pd.DataFrame): Feature matrix (flags are computed internally).
+
+        Returns:
+            Dict: Per-flag statistics including activation_rate, description,
+                threshold, column name, weight, and sub-score category.
+        """
         df    = BearAgent._add_flag_cols(X)
         stats = {}
         for name, col, op, thresh, desc, weight in FLAG_DEFINITIONS:
@@ -298,6 +376,12 @@ class BearAgent(BaseAgent):
         return stats
 
     def _save_flag_report(self, flag_stats: Dict, fold: Optional[int | str]):
+        """Saves the flag activation report to a JSON file.
+
+        Args:
+            flag_stats (Dict): Output of :meth:`_flag_statistics`.
+            fold (Optional[int | str]): Fold index for file naming.
+        """
         suffix = f"_{fold}" if fold is not None else ""
         path   = self.results_dir / f"flag_report{suffix}.json"
         with open(path, "w") as f:

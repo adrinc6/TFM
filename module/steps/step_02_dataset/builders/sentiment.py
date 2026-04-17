@@ -51,7 +51,7 @@ class SentimentFeatureBuilder:
 
         if insider_df is not None and not insider_df.empty:
             available_insider = filter_asof(insider_df, as_of=as_of, date_col="date")
-            # Ventana rolling de 90 días sin mirar el futuro.
+            # Rolling 90-day window without looking into the future.
             if not available_insider.empty and "date" in available_insider.columns:
                 start = pd.Timestamp(as_of) - pd.Timedelta(days=90)
                 available_insider = available_insider.loc[

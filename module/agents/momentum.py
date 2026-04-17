@@ -1,21 +1,20 @@
-﻿# =============================================================================
-# module/agents/momentum_agent.py — Agente de Momentum (Random Forest)
-# =============================================================================
-# DATOS QUE CONSUME (calculados por TechnicalFeatureBuilder):
-#   Osciladores:   rsi_14, rsi_28
-#   Tendencia:     macd, macd_signal, macd_hist, sma_20/50/200 (distancia %)
-#   Bandas:        bb_pct
-#   52 semanas:    price_vs_52w_high, price_vs_52w_low
-#   Momentum:      momentum_1m/3m/6m/12m
-#   Volatilidad:   volatility_20d, volatility_60d, atr_14
-#   Volumen:       vol_ratio_20_50
-#   Macro:         vix, yield_curve, sp500_momentum_3m, sp500_momentum_12m
-#
-# Features derivados que construye internamente:
-#   rsi_overbought, rsi_oversold, above_sma200, macd_bullish,
-#   momentum_quality, vol_expansion, high_vix_regime,
-#   inverted_yield_curve, cross_sma_20_50
-# =============================================================================
+﻿"""Momentum agent (Random Forest) for the multi-agent stock picker.
+
+Consumes technical features computed by TechnicalFeatureBuilder:
+  Oscillators:  rsi_14, rsi_28
+  Trend:        macd, macd_signal, macd_hist, sma_20/50/200 (distance %)
+  Bands:        bb_pct
+  52-week:      price_vs_52w_high, price_vs_52w_low
+  Momentum:     momentum_1m/3m/6m/12m
+  Volatility:   volatility_20d, volatility_60d, atr_14
+  Volume:       vol_ratio_20_50
+  Macro:        vix, yield_curve, sp500_momentum_3m, sp500_momentum_12m
+
+Derived features built internally:
+  rsi_overbought, rsi_oversold, above_sma200, macd_bullish,
+  momentum_quality, vol_expansion, high_vix_regime,
+  inverted_yield_curve, cross_sma_20_50
+"""
 import logging
 import numpy as np
 import pandas as pd
@@ -43,11 +42,10 @@ except ImportError:
     _DEPS_OK = False
 
 class MomentumAgent(BaseAgent):
-    """
-    Random Forest calibrado sobre indicadores técnicos y earnings momentum.
+    """Random Forest trained on technical indicators and earnings momentum.
 
-    Usa TimeSeriesSplit para la CV interna (respeta el orden temporal
-    de los datos de precio, evitando leakage en la validación).
+    Uses TimeSeriesSplit for internal cross-validation (respects temporal
+    order of price data, preventing look-ahead in validation).
     """
 
     def __init__(self, results_dir: str, random_seed: int = 42,
@@ -55,9 +53,22 @@ class MomentumAgent(BaseAgent):
                  max_depth: int = MOMENTUM_MAX_DEPTH,
                  min_samples_leaf: int = MOMENTUM_MIN_SAMPLES_LEAF,
                  save_artifacts: bool = True):
+        """Initialises the MomentumAgent.
+
+        Args:
+            results_dir (str): Directory where training artefacts are saved.
+            random_seed (int): Random seed for reproducibility.
+            n_estimators (int): Number of trees in the Random Forest.
+            max_depth (int): Maximum tree depth.
+            min_samples_leaf (int): Minimum samples per leaf node.
+            save_artifacts (bool): Whether to save diagnostics and models.
+
+        Raises:
+            ImportError: If scikit-learn is not installed.
+        """
         super().__init__("momentum", results_dir, random_seed, save_artifacts)
         if not _DEPS_OK:
-            raise ImportError("scikit-learn requerido.")
+            raise ImportError("scikit-learn is required.")
         self.n_estimators     = n_estimators
         self.max_depth        = max_depth
         self.min_samples_leaf = min_samples_leaf
@@ -70,7 +81,17 @@ class MomentumAgent(BaseAgent):
 
     def fit(self, X: pd.DataFrame, y: pd.Series,
             fold: Optional[int] = None) -> "MomentumAgent":
-        log.info(f"[MomentumAgent] Entrenando RandomForest — {len(X)} obs, {len(X.columns)} features")
+        """Trains the Random Forest on technical and earnings momentum features.
+
+        Args:
+            X (pd.DataFrame): Feature matrix for the training fold.
+            y (pd.Series): Binary target labels (1 = Outperform).
+            fold (Optional[int]): Walk-forward fold index for artefact naming.
+
+        Returns:
+            MomentumAgent: The fitted agent instance (self).
+        """
+        log.info(f"[MomentumAgent] Training RandomForest — {len(X)} obs, {len(X.columns)} features")
         min_len = min(len(X), len(y))
         X = X.iloc[:min_len].copy()
         y = y.iloc[:min_len].copy()
@@ -79,7 +100,7 @@ class MomentumAgent(BaseAgent):
         X_prep       = X_prep.reset_index(drop=True)
         y_cl         = y_cl.reset_index(drop=True)
 
-        # Selección de features: solo con datos de train (sin leakage)
+        # Feature selection: only on training data (no leakage)
         self._selector = FeatureSelector(corr_threshold=FEATURE_CORR_THRESHOLD, top_n=FEATURE_TOP_N,
                                          min_features=3, random_seed=self.random_seed)
         X_prep = self._selector.fit_transform(X_prep, y_cl, agent_name="momentum")
@@ -98,14 +119,14 @@ class MomentumAgent(BaseAgent):
         ])
 
         cv = self._cv(X_prep, y_cl)
-        log.info(f"[MomentumAgent] CV AUC={cv['mean_auc']:.4f} ± {cv['std_auc']:.4f}  ({len(self._feature_cols)} features seleccionadas)")
+        log.info(f"[MomentumAgent] CV AUC={cv['mean_auc']:.4f} ± {cv['std_auc']:.4f}  ({len(self._feature_cols)} selected features)")
         self._model.fit(X_prep, y_cl)
         self.is_trained = True
 
         imp = pd.Series(self._model.named_steps["clf"].feature_importances_, index=self._feature_cols)
         self.save_feature_importances(imp, fold)
 
-        # Guardar distribución de régimen macro
+        # Save macro regime distribution for diagnostics
         regime_summary = self._regime_summary(X_prep)
         self._diagnostics = {
             "class_balance": bal, "cv_metrics": cv,
@@ -125,6 +146,17 @@ class MomentumAgent(BaseAgent):
     # ── Predict ───────────────────────────────────────────────────────────────
 
     def predict_score(self, X: pd.DataFrame) -> pd.Series:
+        """Returns bullish momentum scores in [0, 1].
+
+        Args:
+            X (pd.DataFrame): Feature matrix.
+
+        Returns:
+            pd.Series: Probability of Outperform indexed like X.
+
+        Raises:
+            RuntimeError: If the agent has not been trained yet.
+        """
         if not self.is_trained:
             raise RuntimeError("[MomentumAgent] Not trained.")
         X_prep = self.clean_features_predict(self._prepare(X, fit_mode=False))
@@ -137,6 +169,19 @@ class MomentumAgent(BaseAgent):
     # ── Helpers ───────────────────────────────────────────────────────────────
 
     def _prepare(self, X: pd.DataFrame, fit_mode: bool) -> pd.DataFrame:
+        """Selects and engineers features for training or inference.
+
+        Applies the feature column policy, then derives binary signals and
+        composite features (e.g., rsi_overbought, macd_bullish).
+
+        Args:
+            X (pd.DataFrame): Raw feature matrix.
+            fit_mode (bool): If True, stores the final column list for later
+                alignment at inference time.
+
+        Returns:
+            pd.DataFrame: Prepared feature matrix.
+        """
         df = X.copy()
         selected = resolve_feature_columns(
             default_cols=[],
@@ -147,7 +192,7 @@ class MomentumAgent(BaseAgent):
             owner="MomentumAgent",
         )
 
-        # Features derivados (señales binarias y compuestas)
+        # Derived features: binary signals and composite indicators
         if "rsi_14" in df.columns:
             df["rsi_overbought"] = (df["rsi_14"] > 70).astype(float)
             df["rsi_oversold"]   = (df["rsi_14"] < 30).astype(float)
@@ -168,13 +213,13 @@ class MomentumAgent(BaseAgent):
             df["vol_expansion"] = (df["vol_ratio_20_50"] > 1.5).astype(float)
             selected.append("vol_expansion")
 
-        # Earnings momentum derivados
+        # Earnings momentum derived signals
         if "beat_rate_4q" in df.columns:
-            # Empresa que supera consistentemente las estimaciones → señal alcista
+            # Companies that consistently beat estimates → bullish signal
             df["consistent_beater"] = (df["beat_rate_4q"] >= 0.75).astype(float)
             selected.append("consistent_beater")
         if "eps_surprise_avg_4q" in df.columns and "eps_revision" in df.columns:
-            # Combinación: sorpresa positiva + revisión al alza = señal doble
+            # Combined signal: positive surprise + upward revision = double confirmation
             df["earnings_momentum"] = (
                 (df["eps_surprise_avg_4q"].fillna(0) > 0).astype(float) +
                 (df["eps_revision"].fillna(0) > 0).astype(float)
@@ -188,9 +233,26 @@ class MomentumAgent(BaseAgent):
         return result
 
     def _align(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Aligns X to the training feature schema.
+
+        Args:
+            X (pd.DataFrame): Feature matrix to align.
+
+        Returns:
+            pd.DataFrame: Aligned feature matrix.
+        """
         return self._align_to_feature_cols(X, fill_value=0.0)
 
     def _cv(self, X: pd.DataFrame, y: pd.Series) -> Dict:
+        """Runs time-series cross-validation and returns aggregated metrics.
+
+        Args:
+            X (pd.DataFrame): Cleaned, selected feature matrix.
+            y (pd.Series): Binary target series.
+
+        Returns:
+            Dict: Dictionary with mean_auc, std_auc, mean_acc, and mean_f1.
+        """
         date_order = X.index.get_level_values("date") if "date" in X.index.names else X.index
         sort_idx = date_order.argsort()
         X = X.iloc[sort_idx]
@@ -219,6 +281,14 @@ class MomentumAgent(BaseAgent):
 
     @staticmethod
     def _regime_summary(X: pd.DataFrame) -> Dict:
+        """Computes market-regime proportions from binary indicator columns.
+
+        Args:
+            X (pd.DataFrame): Feature matrix containing binary regime flags.
+
+        Returns:
+            Dict: Proportion of observations where each regime flag is active.
+        """
         out = {}
         if "above_sma200" in X.columns:
             out["pct_above_sma200"]   = float(X["above_sma200"].mean())

@@ -74,6 +74,16 @@ from module.steps.step_04_evaluation.evaluator import run_walkforward_pipeline
 
 
 def _quarter_end_date(year: int, quarter: int):
+    """Return the last calendar day of the given quarter as a Timestamp.
+
+    Args:
+        year: Four-digit calendar year (e.g. 2024).
+        quarter: Quarter number in the range [1, 4].
+
+    Returns:
+        pd.Timestamp: The last day of the specified quarter (time set to
+            midnight, timezone-naive).
+    """
     import pandas as pd
 
     month = quarter * 3
@@ -81,10 +91,38 @@ def _quarter_end_date(year: int, quarter: int):
 
 
 def _normalize_ticker_symbol(ticker: str) -> str:
+    """Strip whitespace, uppercase, and replace dots with dashes in a ticker symbol.
+
+    Args:
+        ticker: Raw ticker string (e.g. ``" brk.b "``).
+
+    Returns:
+        str: Normalised ticker string (e.g. ``"BRK-B"``).
+    """
     return str(ticker).strip().upper().replace(".", "-")
 
 
 def _load_sp500_membership(csv_path: str):
+    """Read the S&P 500 historical membership CSV and normalise its columns.
+
+    The CSV must contain at least the columns ``ticker``, ``start_date``, and
+    ``end_date``.  Ticker symbols are normalised via
+    :func:`_normalize_ticker_symbol`; date columns are parsed with
+    ``errors="coerce"`` and rows missing ``ticker`` or ``start_date`` are
+    dropped.
+
+    Args:
+        csv_path: Absolute or relative path to the CSV file.
+
+    Returns:
+        pd.DataFrame: Cleaned membership DataFrame with columns ``ticker``
+            (str), ``start_date`` (Timestamp, tz-naive) and ``end_date``
+            (Timestamp, tz-naive or NaT).
+
+    Raises:
+        FileNotFoundError: If ``csv_path`` does not exist on disk.
+        ValueError: If the CSV is missing one or more required columns.
+    """
     import pandas as pd
 
     p = Path(csv_path)
@@ -106,6 +144,22 @@ def _load_sp500_membership(csv_path: str):
 
 
 def _membership_active_tickers(df_membership, start_date, end_date) -> list[str]:
+    """Return the sorted list of tickers whose membership overlapped [start_date, end_date].
+
+    A ticker is considered active if its ``start_date`` is on or before
+    ``end_date`` **and** its ``end_date`` is either NaT (still active) or on or
+    after ``start_date``.
+
+    Args:
+        df_membership: DataFrame produced by :func:`_load_sp500_membership`
+            with columns ``ticker``, ``start_date``, and ``end_date``.
+        start_date: Beginning of the target window (inclusive, Timestamp-like).
+        end_date: End of the target window (inclusive, Timestamp-like).
+
+    Returns:
+        list[str]: Alphabetically sorted list of unique normalised ticker
+            symbols active in the given window.
+    """
     mask = (df_membership["start_date"] <= end_date) & (
         df_membership["end_date"].isna() | (df_membership["end_date"] >= start_date)
     )
@@ -114,6 +168,25 @@ def _membership_active_tickers(df_membership, start_date, end_date) -> list[str]
 
 
 def _load_market_cap_panel(data_dir: str, tickers: list[str]) -> dict[str, object]:
+    """Build a per-ticker market-cap time-series dictionary from consolidated CSVs.
+
+    For each ticker, reads ``<data_dir>/consolidated/<ticker>.csv`` and extracts
+    the ``report_date`` column together with the first available market-cap column
+    (``market_cap`` or ``bf_market_cap``).  Only rows with non-null values in
+    both columns are kept.
+
+    Args:
+        data_dir: Path to the Finnhub data root directory.  The consolidated
+            CSVs are expected under ``<data_dir>/consolidated/``.
+        tickers: List of normalised ticker symbols to load.
+
+    Returns:
+        dict[str, pd.DataFrame]: Mapping from ticker to a two-column DataFrame
+            with columns ``date`` (tz-naive Timestamp) and ``market_cap``
+            (float), sorted by ``date`` ascending.  Tickers without a
+            consolidated CSV or without a recognised market-cap column are
+            omitted.
+    """
     import pandas as pd
 
     panel: dict[str, object] = {}
@@ -152,6 +225,19 @@ def _load_market_cap_panel(data_dir: str, tickers: list[str]) -> dict[str, objec
 
 
 def _market_cap_asof(panel: dict[str, object], ticker: str, as_of_date):
+    """Return the most recent market cap for a ticker up to (and including) as_of_date.
+
+    Args:
+        panel: Dict produced by :func:`_load_market_cap_panel` mapping ticker
+            to a DataFrame with columns ``date`` and ``market_cap``.
+        ticker: Normalised ticker symbol to look up.
+        as_of_date: Cutoff date (Timestamp-like).  Only observations on or
+            before this date are considered.
+
+    Returns:
+        float | None: The market cap of the last available observation on or
+            before ``as_of_date``, or ``None`` if no such observation exists.
+    """
     md = panel.get(ticker)
     if md is None or md.empty:
         return None
@@ -171,6 +257,33 @@ def _resolve_dynamic_universe(
     end_date,
     top_n,
 ) -> tuple[list[str], list[str], list[dict]]:
+    """Use S&P 500 membership and market-cap data to select the analysis universe.
+
+    Loads the historical membership CSV, finds all tickers active during
+    [start_date, end_date], and — when ``top_n`` is a positive integer —
+    ranks them by market cap each calendar year and takes the top-N largest.
+    The yearly details are returned for logging and audit purposes.
+
+    Args:
+        csv_path: Path to the historical S&P 500 membership CSV (passed to
+            :func:`_load_sp500_membership`).
+        data_dir: Finnhub data root directory (passed to
+            :func:`_load_market_cap_panel`).
+        start_date: Start of the analysis window (Timestamp-like, inclusive).
+        end_date: End of the analysis window (Timestamp-like, inclusive).
+        top_n: Maximum number of tickers to select per year.  If ``False`` or
+            ``0``, all active candidates are returned without size filtering.
+
+    Returns:
+        tuple:
+            - **all_candidates** (list[str]): All tickers active at any point
+              in [start_date, end_date].
+            - **selected** (list[str]): Tickers chosen after the top-N market-
+              cap filter.  Equals *all_candidates* when ``top_n`` is disabled.
+            - **yearly_details** (list[dict]): One dict per calendar year with
+              keys ``year``, ``active_members``, ``ranked_with_mcap``,
+              ``missing_mcap``, and ``picked``.
+    """
     import pandas as pd
 
     members = _load_sp500_membership(csv_path)
@@ -255,6 +368,12 @@ log = logging.getLogger(__name__)
 
 
 def _set_global_seeds(seed: int) -> None:
+    """Set random seeds for reproducibility across Python's ``random`` and NumPy.
+
+    Args:
+        seed: Integer seed value.  The same value is passed to both
+            ``random.seed`` and ``numpy.random.seed``.
+    """
     random.seed(int(seed))
     try:
         import numpy as np
@@ -265,6 +384,15 @@ def _set_global_seeds(seed: int) -> None:
 
 
 def _safe_git_commit_hash() -> str | None:
+    """Return the current HEAD git commit hash, or None on any error.
+
+    Uses ``git rev-parse HEAD`` under the hood.  All exceptions (e.g. git not
+    installed, not inside a repository) are swallowed silently.
+
+    Returns:
+        str | None: The 40-character commit SHA, or ``None`` if it cannot be
+            determined.
+    """
     try:
         out = subprocess.check_output(
             ["git", "rev-parse", "HEAD"],
@@ -277,6 +405,18 @@ def _safe_git_commit_hash() -> str | None:
 
 
 def _safe_version(module_name: str) -> str | None:
+    """Return the ``__version__`` attribute of a module, or None if unavailable.
+
+    Imports the module by name and reads its ``__version__`` attribute.  Any
+    import error or missing attribute is swallowed silently.
+
+    Args:
+        module_name: Importable module name (e.g. ``"numpy"``).
+
+    Returns:
+        str | None: Version string, or ``None`` if the module cannot be
+            imported or has no ``__version__``.
+    """
     try:
         mod = __import__(module_name)
         return str(getattr(mod, "__version__", None))
@@ -294,6 +434,25 @@ def _export_run_config(
     analysis_frequency: str,
     annual_anchor_date,
 ) -> None:
+    """Serialise all run parameters and environment metadata to run_config.json.
+
+    Writes a JSON file at ``<results_dir>/run_config.json`` containing the
+    current timestamp, git commit hash, Python version, key library versions,
+    feature-control flags, pipeline parameters, the ticker universe, and the
+    analysis time range.
+
+    Args:
+        results_dir: Directory where ``run_config.json`` will be written.
+        tickers_requested: Full list of tickers that were requested for
+            download / analysis.
+        tickers_ok: Subset of tickers for which all required data files are
+            present.
+        start_date: ISO-8601 start date string of the analysis window.
+        end_date: ISO-8601 end date string of the analysis window.
+        analysis_frequency: Either ``"quarterly"`` or ``"annual"``.
+        annual_anchor_date: The annual analysis anchor date (Timestamp-like),
+            or ``None`` for quarterly mode.
+    """
     payload = {
         "timestamp": __import__("datetime").datetime.now().isoformat(),
         "commit_hash": _safe_git_commit_hash(),
@@ -357,6 +516,24 @@ def _export_data_quality_report(
     master_df,
     out_path: Path,
 ) -> None:
+    """Build a per-ticker CSV report of data availability and feature missing rates.
+
+    For every ticker in ``tickers_requested`` the report includes whether price
+    and consolidated data exist, the min/max price date range, the number of
+    observations in the master dataset, and the average missing-value rate for
+    each of the following feature groups: fundamental, technical, valuation,
+    insider, and sentiment.
+
+    Args:
+        tickers_requested: All tickers that were requested for the run.
+        tickers_ok: Subset of tickers that passed the data-availability check.
+        router: Configured :class:`~module.common.data_router.DataRouter`
+            instance used to load prices and consolidated data.
+        master_df: The master dataset DataFrame (multi-indexed by
+            ``(ticker, date)``), or ``None`` if it was not built.
+        out_path: File system path where the CSV report should be written.
+            Parent directories are created if they do not exist.
+    """
     import pandas as pd
 
     if master_df is None:
@@ -407,8 +584,31 @@ def _export_data_quality_report(
 # =============================================================================
 
 def main():
+    """Orchestrate the full multi-agent ML stock-picker pipeline.
+
+    Execution steps:
+
+    1. **Universe resolution** — loads the requested ticker list or, when
+       ``USE_DYNAMIC_SP500_UNIVERSE`` is enabled, derives the universe from the
+       historical S&P 500 membership CSV filtered by market-cap rank.
+    2. **Data download** (Step 01) — calls Finnhub and Yahoo Finance to fetch
+       OHLCV prices, fundamentals, earnings surprises, insider transactions, and
+       analyst recommendations for every ticker in the universe.
+    3. **Data consolidation** (Step 01) — normalises and merges all raw JSON
+       files into per-ticker consolidated CSVs.
+    4. **Master dataset** (Step 02) — builds the observation matrix with
+       point-in-time features (fundamental, technical, valuation, sentiment,
+       insider) for the full analysis window; result is optionally cached.
+    5. **Walk-forward backtest** (Step 04) — runs the rolling train/test loop,
+       trains all agents (fundamental, valuation, momentum, bear, sector
+       rotation, meta-learner) on each fold, generates SHAP explanations,
+       simulates portfolio returns, and exports summary artifacts.
+
+    All parameters are read from ``environment.py``.  The function logs a
+    final summary table with mean alpha, Sharpe ratios, and maximum drawdown.
+    """
     log.info("=" * 60)
-    log.info("  INICIANDO PIPELINE ML MULTI-AGENTE STOCK PICKER")
+    log.info("  STARTING MULTI-AGENT ML STOCK PICKER PIPELINE")
     log.info("=" * 60)
 
     # Analysis range. In quarterly mode ANALYSIS_START_QUARTER is used.
@@ -418,7 +618,7 @@ def main():
     end_date = _quarter_end_date(ANALYSIS_END_YEAR, ANALYSIS_END_QUARTER)
     analysis_frequency = str(ANALYSIS_FREQUENCY).strip().lower()
     if analysis_frequency not in {"quarterly", "annual"}:
-        raise ValueError("ANALYSIS_FREQUENCY debe ser 'quarterly' o 'annual'")
+        raise ValueError("ANALYSIS_FREQUENCY must be 'quarterly' or 'annual'")
 
     test_start_date = _quarter_end_date(ANALYSIS_START_YEAR, ANALYSIS_START_QUARTER)
     annual_anchor_date = None
@@ -436,7 +636,7 @@ def main():
         test_start_date = annual_anchor_date.to_period("Q").end_time.normalize()
 
         log.info(
-            "Modo anual activado: anchor=%s | start_quarter=%sQ%s | holding=%s meses",
+            "Annual mode enabled: anchor=%s | start_quarter=%sQ%s | holding=%s months",
             annual_anchor_date.date(),
             test_start_date.year,
             test_start_date.quarter,
@@ -566,7 +766,7 @@ def main():
             },
         }
         cache = CacheManager(CACHE_DIR, cache_context)
-        log.info("Cache activa: key=%s dir=%s", cache.key, cache.run_dir)
+        log.info("Cache active: key=%s dir=%s", cache.key, cache.run_dir)
     else:
         log.info("Cache disabled for this run")
 
@@ -623,7 +823,7 @@ def main():
 
     # 5. Build master dataset
     if SNAPSHOT_LAG_DAYS is None:
-        raise ValueError("SNAPSHOT_LAG_DAYS debe estar definido en environment.py")
+        raise ValueError("SNAPSHOT_LAG_DAYS must be defined in environment.py")
     dataset_snapshot_lag_days = int(SNAPSHOT_LAG_DAYS)
 
     df = None
@@ -631,7 +831,7 @@ def main():
         cached_df = cache.load_pickle("master_dataset")
         if cached_df is not None:
             df = cached_df
-            log.info("Cache hit: master_dataset (%s observaciones)", len(df))
+            log.info("Cache hit: master_dataset (%s observations)", len(df))
 
     if df is None:
         df = build_master_dataset(
@@ -759,11 +959,11 @@ def main():
     log.info("=" * 60)
     log.info(f"  Analyzed tickers:     {len(tickers_ok)}")
     if summary:
-        log.info(f"  Alpha medio:          {summary.get('mean_alpha', 0):.2%}")
-        log.info(f"  Folds with alpha > 0: {summary.get('pct_folds_positive_alpha', 0):.0%}")
-        log.info(f"  Sharpe Estrategia:    {summary.get('global_strategy_sharpe', 0):.3f}")
-        log.info(f"  Sharpe Benchmark:     {summary.get('global_benchmark_sharpe', 0):.3f}")
-        log.info(f"  Max DD Estrategia:    {summary.get('global_strategy_max_drawdown', 0):.2%}")
+        log.info(f"  Mean alpha:            {summary.get('mean_alpha', 0):.2%}")
+        log.info(f"  Folds with alpha > 0:  {summary.get('pct_folds_positive_alpha', 0):.0%}")
+        log.info(f"  Sharpe Strategy:       {summary.get('global_strategy_sharpe', 0):.3f}")
+        log.info(f"  Sharpe Benchmark:      {summary.get('global_benchmark_sharpe', 0):.3f}")
+        log.info(f"  Max DD Strategy:       {summary.get('global_strategy_max_drawdown', 0):.2%}")
     log.info(f"  Results in:           {RESULTS_DIR}/")
     log.info("=" * 60)
 

@@ -243,7 +243,7 @@ def _build_feature_record(
     if fund_snap is None:
         return None
 
-    # Trend features con datos hasta feature_date (sin look-ahead en fundamentales).
+    # Trend features with data up to feature_date (no look-ahead on fundamentals).
     fund_hist_feature = fund_enriched[fund_enriched.index <= feature_date]
     trend_feats = fundamental_builder.snapshot_trends(fund_hist_feature)
     for k, v in trend_feats.items():
@@ -397,10 +397,10 @@ def build_master_dataset(
             log.info(f"  [{i}/{len(tickers)}] tickers procesados — {len(records)} observaciones acumuladas")
 
     if not records:
-        raise RuntimeError("Master dataset vacio. Revisa los datos en data_finnhub/")
+        raise RuntimeError("Master dataset is empty. Check the data in data_finnhub/")
 
     df = pd.DataFrame(records)
-    # year_quarter se conserva como columna (no como nivel de índice) para análisis posterior
+    # year_quarter is kept as a column (not as an index level) for downstream analysis
     df = df.set_index(["ticker", "date"]).sort_index()
     df = _enforce_master_feature_schema(df)
     log.info(
@@ -462,7 +462,7 @@ def build_live_features(
             log.error(f"[{ticker}] Error inesperado en features live: {type(e).__name__}: {e}", exc_info=True)
 
     if not records:
-        log.error(f"No se generaron features live para as_of={as_of.date()}")
+        log.error(f"No live features were generated for as_of={as_of.date()}")
         return pd.DataFrame()
 
     df = pd.DataFrame(records).set_index(["ticker", "date"]).sort_index()

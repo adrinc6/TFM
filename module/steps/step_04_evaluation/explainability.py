@@ -1,14 +1,14 @@
 # =============================================================================
-# module/explainer.py — Explicabilidad de predicciones (SHAP)
+# module/explainer.py — Prediction explainability (SHAP)
 # =============================================================================
-# Para cada predicción responde: ¿por qué este score?
+# For each prediction answers: why this score?
 #
-# Genera tres niveles de explicación:
-#   1. Global  → qué features importan más en el modelo entrenado
-#   2. Local   → por qué este ticker concreto recibió ese score
-#   3. Texto   → resumen en lenguaje natural legible
+# Generates three levels of explanation:
+#   1. Global  → which features matter most in the trained model
+#   2. Local   → why this specific ticker received that score
+#   3. Text    → human-readable natural-language summary
 #
-# Compatible con: XGBoost, GBM, Random Forest, Logistic Regression
+# Compatible with: XGBoost, GBM, Random Forest, Logistic Regression
 # =============================================================================
 import json
 import logging
@@ -27,120 +27,120 @@ except ImportError:
     log.warning("[Explainer] SHAP no instalado. Instala con: pip install shap")
 
 
-# ── Descripciones legibles de cada feature ───────────────────────────────────
+# ── Human-readable descriptions for each feature ─────────────────────────────
 FEATURE_DESCRIPTIONS = {
-    # Rentabilidad
-    "roe":                      "Rentabilidad sobre fondos propios (ROE)",
-    "roa":                      "Rentabilidad sobre activos (ROA)",
-    "roi":                      "Rentabilidad sobre inversión (ROI)",
-    "roic":                     "Rentabilidad sobre capital invertido (ROIC)",
-    "net_margin":               "Margen neto (beneficio / ventas)",
-    "gross_margin":             "Margen bruto",
-    "fcf_margin":               "Margen de flujo de caja libre",
-    "ebitda_margin":            "Margen EBITDA",
-    "operating_margin":         "Margen operativo",
-    # Liquidez
-    "current_ratio":            "Ratio de liquidez corriente (activo / pasivo cte.)",
-    "quick_ratio":              "Ratio de liquidez inmediata",
-    # Solvencia
-    "debt_equity":              "Ratio deuda / fondos propios",
-    "debt_to_ebitda":           "Deuda neta / EBITDA",
-    "interest_coverage":        "Cobertura de intereses (EBIT / intereses)",
-    # Crecimiento
-    "revenue_yoy_growth":       "Crecimiento de ingresos interanual",
-    "net_income_yoy_growth":    "Crecimiento de beneficio neto interanual",
-    "eps_yoy_growth":           "Crecimiento de BPA (EPS) interanual",
-    "fcf_yoy_growth":           "Crecimiento de FCF interanual",
-    "total_debt_yoy_growth":    "Crecimiento de la deuda total interanual",
-    # Calidad / Crecimiento adicional
-    "accruals_ratio":               "Ratio de devengos (calidad contable, menor=mejor)",
-    "capex_to_revenue":             "Intensidad de capital (CapEx / ventas)",
-    "consecutive_losses":           "Trimestres consecutivos con pérdidas",
-    "earnings_quality":             "Calidad de beneficios: FCF / Net Income (>1 = caja real)",
-    "piotroski_fscore":             "Piotroski F-score (0-1): 8 señales de salud financiera",
-    "operating_income_yoy_growth":  "Crecimiento de beneficio operativo interanual",
-    "roa_change_yoy":               "Mejora interanual del ROA",
-    "gross_margin_change_yoy":      "Mejora interanual del margen bruto",
-    "current_ratio_change_yoy":     "Mejora interanual del ratio de liquidez",
-    # Tendencias (slope normalizado de últimas 8 obs)
-    "roe_trend_2y":                 "Tendencia del ROE a 2 años (positivo = mejorando)",
-    "roe_trend_3y":                 "Tendencia del ROE a 3 años",
-    "net_margin_trend_2y":          "Tendencia del margen neto a 2 años",
-    "net_margin_trend_3y":          "Tendencia del margen neto a 3 años",
-    "gross_margin_trend_3y":        "Tendencia del margen bruto a 3 años",
-    # Valoración
-    "pe_ratio":                 "Precio / BPA (PER)",
-    "pb_ratio":                 "Precio / Valor en libros (P/B)",
-    "ps_ratio":                 "Precio / Ventas (P/S)",
+    # Profitability
+    "roe":                      "Return on Equity (ROE)",
+    "roa":                      "Return on Assets (ROA)",
+    "roi":                      "Return on Investment (ROI)",
+    "roic":                     "Return on Invested Capital (ROIC)",
+    "net_margin":               "Net margin (profit / revenue)",
+    "gross_margin":             "Gross margin",
+    "fcf_margin":               "Free cash flow margin",
+    "ebitda_margin":            "EBITDA margin",
+    "operating_margin":         "Operating margin",
+    # Liquidity
+    "current_ratio":            "Current ratio (current assets / current liabilities)",
+    "quick_ratio":              "Quick ratio",
+    # Solvency
+    "debt_equity":              "Debt / equity ratio",
+    "debt_to_ebitda":           "Net debt / EBITDA",
+    "interest_coverage":        "Interest coverage (EBIT / interest expense)",
+    # Growth
+    "revenue_yoy_growth":       "YoY revenue growth",
+    "net_income_yoy_growth":    "YoY net income growth",
+    "eps_yoy_growth":           "YoY EPS growth",
+    "fcf_yoy_growth":           "YoY FCF growth",
+    "total_debt_yoy_growth":    "YoY total debt growth",
+    # Quality / additional growth
+    "accruals_ratio":               "Accruals ratio (accounting quality, lower=better)",
+    "capex_to_revenue":             "Capital intensity (CapEx / revenue)",
+    "consecutive_losses":           "Consecutive quarters with losses",
+    "earnings_quality":             "Earnings quality: FCF / Net Income (>1 = real cash)",
+    "piotroski_fscore":             "Piotroski F-score (0-1): 8 financial health signals",
+    "operating_income_yoy_growth":  "YoY operating income growth",
+    "roa_change_yoy":               "YoY improvement in ROA",
+    "gross_margin_change_yoy":      "YoY improvement in gross margin",
+    "current_ratio_change_yoy":     "YoY improvement in current ratio",
+    # Trends (normalised slope of last 8 observations)
+    "roe_trend_2y":                 "ROE trend 2Y (positive = improving)",
+    "roe_trend_3y":                 "ROE trend 3Y",
+    "net_margin_trend_2y":          "Net margin trend 2Y",
+    "net_margin_trend_3y":          "Net margin trend 3Y",
+    "gross_margin_trend_3y":        "Gross margin trend 3Y",
+    # Valuation
+    "pe_ratio":                 "Price / EPS (P/E ratio)",
+    "pb_ratio":                 "Price / Book value (P/B ratio)",
+    "ps_ratio":                 "Price / Sales (P/S ratio)",
     "ev_to_ebitda":             "EV / EBITDA",
-    "fcf_yield":                "Rentabilidad por FCF (FCF / market cap)",
-    "earnings_yield":           "Rentabilidad por beneficios (inverso del PER)",
-    "pe_vs_5y_median":          "PER actual vs mediana histórica 5Y (>0 = más caro)",
-    "pb_vs_5y_median":          "P/B actual vs mediana histórica 5Y",
-    "ev_ebitda_vs_5y_median":   "EV/EBITDA actual vs mediana histórica 5Y",
-    # Técnicos
-    "rsi_14":                   "RSI 14 días (>70 sobrecompra, <30 sobreventa)",
-    "rsi_28":                   "RSI 28 días",
+    "fcf_yield":                "FCF yield (FCF / market cap)",
+    "earnings_yield":           "Earnings yield (inverse of P/E)",
+    "pe_vs_5y_median":          "Current P/E vs 5Y historical median (>0 = more expensive)",
+    "pb_vs_5y_median":          "Current P/B vs 5Y historical median",
+    "ev_ebitda_vs_5y_median":   "Current EV/EBITDA vs 5Y historical median",
+    # Technical
+    "rsi_14":                   "RSI 14 days (>70 overbought, <30 oversold)",
+    "rsi_28":                   "RSI 28 days",
     "macd":                     "MACD",
-    "macd_hist":                "Histograma MACD (momentum de tendencia)",
-    "sma_20":                   "Distancia al SMA 20 días (%)",
-    "sma_50":                   "Distancia al SMA 50 días (%)",
-    "sma_200":                  "Distancia al SMA 200 días (tendencia larga)",
-    "bb_pct":                   "Posición en Bandas de Bollinger (0=min, 1=max)",
-    "momentum_1m":              "Momentum 1 mes",
-    "momentum_3m":              "Momentum 3 meses",
-    "momentum_6m":              "Momentum 6 meses",
-    "momentum_12m":             "Momentum 12 meses",
-    "price_vs_52w_high":        "Distancia al máximo de 52 semanas",
-    "volatility_20d":           "Volatilidad realizada 20 días (anualizada)",
-    "volatility_60d":           "Volatilidad realizada 60 días (anualizada)",
-    "vol_ratio_20_50":          "Ratio de volumen 20d / 50d (>1 = expansión)",
-    # Insiders / Sentimiento
-    "insider_net_ratio_90d":        "Balance neto insider normalizado (90 dias)",
-    "insider_sell_ratio":           "Proporción de ventas de insiders (>0.7 = red flag)",
-    "insider_net_zscore":           "Z-score de compras netas de insiders vs sector",
-    "analyst_buy_ratio":            "Proporción de recomendaciones de compra de analistas",
-    "analyst_bearish_score":        "Score bajista de analistas (recomendaciones negativas)",
-    "analyst_consensus":            "Consenso de analistas (1=Compra fuerte, 5=Venta fuerte)",
-    "analyst_dispersion":           "Dispersión entre analistas (alta = incertidumbre)",
-    "analyst_strong_buy_pct":       "% de analistas con recomendación Compra Fuerte",
-    "analyst_consensus_change":     "Cambio reciente en el consenso de analistas",
-    "analyst_net_bullish":          "Balance neto alcista de analistas",
-    "mspr_3m":                      "MSPR (sentimiento institucional) a 3 meses",
-    "mspr_trend":                   "Tendencia del MSPR (mejorando/empeorando)",
-    "mspr_positive":                "Señales positivas de MSPR",
-    "mspr_negative":                "Señales negativas de MSPR",
-    "eps_surprise_pct":             "Sorpresa de EPS respecto a estimación (%)",
-    "eps_revision":                 "Revisión reciente de estimación de EPS por analistas",
-    "eps_est":                      "EPS estimado por analistas",
-    "eps_reported":                 "EPS reportado",
-    "beat_rate_4q":                 "% de trimestres en que el EPS superó la estimación (4Q)",
-    "eps_surprise_avg_4q":          "Sorpresa media de EPS en los últimos 4 trimestres",
-    "revenue_decline":              "FLAG: Ingresos en caída interanual",
-    # Técnicos adicionales
-    "atr_14":                       "Average True Range 14 días (volatilidad de precio)",
-    "price_vs_52w_low":             "Distancia al mínimo de 52 semanas",
-    "macd_signal":                  "Señal MACD (EMA de MACD)",
-    # Flags bear
-    "debt_growth_high":         "FLAG: Deuda creciendo >20% interanual",
-    "fcf_negative":             "FLAG: FCF negativo",
-    "liquidity_risk":           "FLAG: Ratio corriente < 1 (riesgo liquidez)",
-    "low_coverage":             "FLAG: Cobertura intereses < 1.5x",
-    "insider_selling":          "FLAG: Insiders vendiendo >70% de operaciones",
-    # Scores de agentes (meta-learner)
-    "fundamental_score":        "Score del Agente Fundamental (salud financiera)",
-    "valuation_score":          "Score del Agente de Valoración (infravaloración)",
-    "momentum_score":           "Score del Agente de Momentum (tendencia técnica)",
-    "bear_score":               "Score del Agente Bear alineado (safety, >0.5 es mejor)",
-    "bear_risk_score":          "Score de riesgo puro del Agente Bear (alto = peor)",
-    "sentiment_score":          "Score del Agente de Sentimiento (analistas e insiders)",
-    "sector_rotation_score":    "Score del Agente de Rotación Sectorial (sector favorable)",
-    "mom_x_safety":             "Momentum × (1-Bear): momentum con filtro de riesgo",
+    "macd_hist":                "MACD histogram (trend momentum)",
+    "sma_20":                   "Distance to 20-day SMA (%)",
+    "sma_50":                   "Distance to 50-day SMA (%)",
+    "sma_200":                  "Distance to 200-day SMA (long-term trend)",
+    "bb_pct":                   "Bollinger Band position (0=low, 1=high)",
+    "momentum_1m":              "1-month momentum",
+    "momentum_3m":              "3-month momentum",
+    "momentum_6m":              "6-month momentum",
+    "momentum_12m":             "12-month momentum",
+    "price_vs_52w_high":        "Distance to 52-week high",
+    "volatility_20d":           "Realised volatility 20 days (annualised)",
+    "volatility_60d":           "Realised volatility 60 days (annualised)",
+    "vol_ratio_20_50":          "Volume ratio 20d / 50d (>1 = expansion)",
+    # Insiders / Sentiment
+    "insider_net_ratio_90d":        "Normalised net insider ratio (90 days)",
+    "insider_sell_ratio":           "Insider sell ratio (>0.7 = red flag)",
+    "insider_net_zscore":           "Z-score of net insider buys vs sector",
+    "analyst_buy_ratio":            "Analyst buy recommendation ratio",
+    "analyst_bearish_score":        "Analyst bearish score (negative recommendations)",
+    "analyst_consensus":            "Analyst consensus (1=Strong Buy, 5=Strong Sell)",
+    "analyst_dispersion":           "Analyst dispersion (high = uncertainty)",
+    "analyst_strong_buy_pct":       "% of analysts with Strong Buy recommendation",
+    "analyst_consensus_change":     "Recent change in analyst consensus",
+    "analyst_net_bullish":          "Net analyst bullish balance",
+    "mspr_3m":                      "MSPR (institutional sentiment) 3-month",
+    "mspr_trend":                   "MSPR trend (improving/deteriorating)",
+    "mspr_positive":                "Positive MSPR signals",
+    "mspr_negative":                "Negative MSPR signals",
+    "eps_surprise_pct":             "EPS surprise vs estimate (%)",
+    "eps_revision":                 "Recent analyst EPS estimate revision",
+    "eps_est":                      "Analyst estimated EPS",
+    "eps_reported":                 "Reported EPS",
+    "beat_rate_4q":                 "% of quarters where EPS beat the estimate (4Q)",
+    "eps_surprise_avg_4q":          "Mean EPS surprise over last 4 quarters",
+    "revenue_decline":              "FLAG: YoY revenue decline",
+    # Additional technical
+    "atr_14":                       "Average True Range 14 days (price volatility)",
+    "price_vs_52w_low":             "Distance to 52-week low",
+    "macd_signal":                  "MACD signal (EMA of MACD)",
+    # Bear flags
+    "debt_growth_high":         "FLAG: Debt growing >20% YoY",
+    "fcf_negative":             "FLAG: Negative FCF",
+    "liquidity_risk":           "FLAG: Current ratio < 1 (liquidity risk)",
+    "low_coverage":             "FLAG: Interest coverage < 1.5x",
+    "insider_selling":          "FLAG: Insiders selling >70% of transactions",
+    # Agent scores (meta-learner)
+    "fundamental_score":        "Fundamental Agent score (financial health)",
+    "valuation_score":          "Valuation Agent score (undervaluation)",
+    "momentum_score":           "Momentum Agent score (technical trend)",
+    "bear_score":               "Aligned Bear Agent score (safety, >0.5 is better)",
+    "bear_risk_score":          "Pure risk score from Bear Agent (high = worse)",
+    "sentiment_score":          "Sentiment Agent score (analysts and insiders)",
+    "sector_rotation_score":    "Sector Rotation Agent score (favourable sector)",
+    "mom_x_safety":             "Momentum × (1-Bear): momentum with risk filter",
 }
 
 
 def _describe(feature: str) -> str:
-    """Devuelve descripción legible de un feature, o el nombre si no está mapeado."""
+    """Returns a human-readable description of a feature, or the name if not mapped."""
     return FEATURE_DESCRIPTIONS.get(feature, feature.replace("_", " ").title())
 
 
@@ -177,92 +177,92 @@ class AgentExplainer:
         self._shap_values_train: Optional[np.ndarray] = None
         self._X_train_summary:   Optional[pd.DataFrame] = None
 
-    # ── Construcción del explainer ────────────────────────────────────────────
+    # ── Explainer construction ────────────────────────────────────────────────
 
     def fit_explainer(self, model, X_train: pd.DataFrame, max_background: int = 100):
         """
-        Construye el explainer SHAP sobre el modelo entrenado.
+        Build the SHAP explainer on the trained model.
 
-        model:       el objeto sklearn/xgb ya entrenado
-        X_train:     datos de entrenamiento (para el background de SHAP)
-        max_background: filas para el background (más = más preciso, más lento)
+        model:          sklearn/xgb object already fitted
+        X_train:        training data (used as SHAP background)
+        max_background: rows for the background (more = more accurate, slower)
         """
         if not SHAP_AVAILABLE:
-            log.warning(f"[{self.agent_name}] SHAP no disponible — sin explicaciones")
+            log.warning(f"[{self.agent_name}] SHAP not available — no explanations")
             return self
 
         X = X_train[self.feature_cols].copy().fillna(0)
 
         try:
             if self.model_type == "tree":
-                # TreeExplainer: rápido y exacto para XGB/RF/GBM
+                # TreeExplainer: fast and exact for XGB/RF/GBM
                 self._explainer = shap.TreeExplainer(model)
             elif self.model_type == "linear":
-                # LinearExplainer para Logistic Regression
+                # LinearExplainer for Logistic Regression
                 self._explainer = shap.LinearExplainer(model, X)
             else:
-                # KernelExplainer: universal pero lento — usar muestra pequeña
+                # KernelExplainer: universal but slow — use small sample
                 background = shap.sample(X, min(50, len(X)))
                 self._explainer = shap.KernelExplainer(model.predict_proba, background)
 
-            # Calcular SHAP values sobre muestra de train para análisis global
+            # Compute SHAP values on a train sample for global analysis
             background_data = shap.sample(X, min(max_background, len(X)))
             self._shap_values_train = self._explainer.shap_values(background_data)
             self._X_train_summary   = background_data
 
-            # Normalizar a 2D (n_samples, n_features) — clase positiva (índice 1)
+            # Normalise to 2D (n_samples, n_features) — positive class (index 1)
             sv = self._shap_values_train
             if isinstance(sv, list):
-                # SHAP antiguo: lista [clase_0, clase_1]
+                # Old SHAP: list [class_0, class_1]
                 sv = sv[1]
             elif isinstance(sv, np.ndarray) and sv.ndim == 3:
-                # SHAP nuevo con RF/GBM: array 3D (n_samples, n_features, n_classes)
+                # New SHAP with RF/GBM: 3D array (n_samples, n_features, n_classes)
                 sv = sv[:, :, 1]
             self._shap_values_train = sv
 
-            log.info(f"[{self.agent_name}] Explainer SHAP listo "
+            log.info(f"[{self.agent_name}] SHAP explainer ready "
                      f"({type(self._explainer).__name__}, {len(background_data)} background)")
 
         except Exception as e:
-            log.warning(f"[{self.agent_name}] Error construyendo explainer SHAP: {e}")
+            log.warning(f"[{self.agent_name}] Error building SHAP explainer: {e}")
 
         return self
 
-    # ── Explicación global ────────────────────────────────────────────────────
+    # ── Global explanation ────────────────────────────────────────────────────
 
     def global_importance(self) -> Optional[pd.Series]:
         """
-        Importancia global: mean(|SHAP|) por feature sobre el set de entrenamiento.
-        Más robusto que feature_importances_ del modelo ya que tiene unidades reales.
+        Global importance: mean(|SHAP|) per feature over the training set.
+        More robust than model feature_importances_ because it has real units.
         """
         if self._shap_values_train is None:
             return None
         sv = np.array(self._shap_values_train)
-        # Normalizar a 2D (n_samples, n_features) sea cual sea el formato de SHAP
+        # Normalise to 2D (n_samples, n_features) regardless of SHAP format
         if sv.ndim == 3:
-            sv = sv[:, :, 1]       # tomar clase positiva
+            sv = sv[:, :, 1]       # take positive class
         elif sv.ndim == 1:
             sv = sv.reshape(1, -1)
-        mean_abs = np.abs(sv).mean(axis=0)   # ahora siempre (n_features,)
+        mean_abs = np.abs(sv).mean(axis=0)   # always (n_features,)
         return pd.Series(mean_abs, index=self.feature_cols).sort_values(ascending=False)
 
     def save_global_explanation(self, fold: Optional[int] = None):
         """
-        Guarda importancia global SHAP en disco:
-          - CSV con todas las features ordenadas por importancia
-          - JSON con las top 20 features y descripciones legibles
-          - PNG con el gráfico de barras de importancia SHAP
+        Save global SHAP importance to disk:
+          - CSV with all features sorted by importance
+          - JSON with top 20 features and human-readable descriptions
+          - PNG bar chart of SHAP importance
         """
         imp = self.global_importance()
         if imp is None:
             return
         suffix = f"_{fold}" if fold is not None else ""
 
-        # CSV completo
+        # Full CSV
         path = self.results_dir / f"shap_global{suffix}.csv"
         imp.to_csv(path, header=["shap_importance"])
 
-        # JSON top 20 con descripciones
+        # Top-20 JSON with descriptions
         report = {
             feat: {
                 "shap_importance": float(val),
@@ -275,12 +275,12 @@ class AgentExplainer:
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(report, f, indent=2, ensure_ascii=False)
 
-        # Gráfico de barras de las top 15 features por importancia SHAP
+        # Bar chart of top 15 features by SHAP importance
         self._save_shap_bar_plot(imp.head(15), suffix)
 
-        log.info(f"[{self.agent_name}] Importancia SHAP global -> {path.name}")
+        log.info(f"[{self.agent_name}] Global SHAP importance -> {path.name}")
 
-    # ── Explicación local (por ticker) ────────────────────────────────────────
+    # ── Local explanation (per ticker) ────────────────────────────────────────
 
     def explain_prediction(
         self,
@@ -291,16 +291,16 @@ class AgentExplainer:
         fold:   Optional[int] = None,
     ) -> Dict:
         """
-        Explica por qué el agente dio ese score a un ticker concreto.
+        Explain why the agent gave that score to a specific ticker.
 
-        Devuelve:
+        Returns:
             {
               "ticker":        "AAPL",
               "score":         0.73,
               "label":         "Outperform",
               "top_drivers":   [{"feature": "roe", "shap": 0.15, "value": 0.28, ...}, ...],
-              "risk_drivers":  [...],   # features que penalizan
-              "text":          "AAPL recibe score 0.73 (Outperform) principalmente porque..."
+              "risk_drivers":  [...],   # features that penalise the score
+              "text":          "AAPL receives score 0.73 (Outperform) mainly because..."
             }
         """
         result = {
@@ -323,7 +323,7 @@ class AgentExplainer:
                 sv = sv[:, :, 1]
             sv = np.array(sv).flatten()
 
-            # Construir tabla de contribuciones
+            # Build contribution table
             drivers = []
             for feat, shap_val, raw_val in zip(self.feature_cols, sv, x.flatten()):
                 drivers.append({
@@ -344,12 +344,12 @@ class AgentExplainer:
             result["text"]         = self._generate_text(ticker, score, top_pos, top_neg)
 
         except Exception as e:
-            log.debug(f"[{self.agent_name}] SHAP local error para {ticker}: {e}")
+            log.debug(f"[{self.agent_name}] SHAP local error for {ticker}: {e}")
             result["text"] = self._rule_based_text(X_row, score, ticker)
 
         return result
 
-    # ── Texto en lenguaje natural ─────────────────────────────────────────────
+    # ── Natural-language text ─────────────────────────────────────────────────
 
     @staticmethod
     def _generate_text(
@@ -358,46 +358,46 @@ class AgentExplainer:
         positive: List[Dict],
         negative: List[Dict],
     ) -> str:
-        """Genera un párrafo legible explicando la predicción."""
-        label     = "Outperform" if score >= 0.5 else "Underperform"
-        confianza = "alta" if abs(score - 0.5) > 0.25 else "moderada"
-        lines     = [f"{ticker} — Score: {score:.2f} ({label}, confianza {confianza})"]
+        """Generate a human-readable paragraph explaining the prediction."""
+        label      = "Outperform" if score >= 0.5 else "Underperform"
+        confidence = "high" if abs(score - 0.5) > 0.25 else "moderate"
+        lines      = [f"{ticker} — Score: {score:.2f} ({label}, confidence {confidence})"]
         lines.append("")
 
         if positive:
-            lines.append("Factores a FAVOR:")
+            lines.append("Factors IN FAVOUR:")
             for d in positive[:4]:
                 val_str = _format_value(d["feature"], d["raw_value"])
                 lines.append(f"  + {d['description']} = {val_str}  "
-                              f"[contribucion SHAP: +{d['shap_value']:.3f}]")
+                              f"[SHAP contribution: +{d['shap_value']:.3f}]")
 
         if negative:
             lines.append("")
-            lines.append("Factores EN CONTRA:")
+            lines.append("Factors AGAINST:")
             for d in negative[:4]:
                 val_str = _format_value(d["feature"], d["raw_value"])
                 lines.append(f"  - {d['description']} = {val_str}  "
-                              f"[contribucion SHAP: {d['shap_value']:.3f}]")
+                              f"[SHAP contribution: {d['shap_value']:.3f}]")
 
         return "\n".join(lines)
 
     @staticmethod
     def _rule_based_text(X_row: pd.Series, score: float, ticker: str) -> str:
-        """Fallback sin SHAP: texto basado en umbrales de los valores crudos."""
+        """Fallback without SHAP: text based on raw value thresholds."""
         label = "Outperform" if score >= 0.5 else "Underperform"
         lines = [f"{ticker} — Score: {score:.2f} ({label})"]
-        lines.append("(Explicacion basada en reglas — instala shap para analisis completo)")
+        lines.append("(Rule-based explanation — install shap for full analysis)")
         lines.append("")
 
         checks = [
-            ("roe",               "> 0.15", lambda v: v > 0.15,  "ROE solido"),
-            ("net_margin",        "> 0.10", lambda v: v > 0.10,  "Margen neto positivo"),
-            ("debt_to_ebitda",    "> 6",    lambda v: v > 6.0,   "Deuda elevada vs EBITDA"),
-            ("current_ratio",     "< 1",    lambda v: v < 1.0,   "Riesgo de liquidez"),
-            ("revenue_yoy_growth","> 0",    lambda v: v > 0,     "Crecimiento de ingresos"),
-            ("fcf",               "< 0",    lambda v: v < 0,     "FCF negativo"),
-            ("momentum_12m",      "> 0",    lambda v: v > 0,     "Momentum anual positivo"),
-            ("rsi_14",            "> 70",   lambda v: v > 70,    "RSI sobrecomprado"),
+            ("roe",               "> 0.15", lambda v: v > 0.15,  "Strong ROE"),
+            ("net_margin",        "> 0.10", lambda v: v > 0.10,  "Positive net margin"),
+            ("debt_to_ebitda",    "> 6",    lambda v: v > 6.0,   "High debt vs EBITDA"),
+            ("current_ratio",     "< 1",    lambda v: v < 1.0,   "Liquidity risk"),
+            ("revenue_yoy_growth","> 0",    lambda v: v > 0,     "Revenue growth"),
+            ("fcf",               "< 0",    lambda v: v < 0,     "Negative FCF"),
+            ("momentum_12m",      "> 0",    lambda v: v > 0,     "Positive annual momentum"),
+            ("rsi_14",            "> 70",   lambda v: v > 70,    "RSI overbought"),
         ]
         for feat, cond, fn, desc in checks:
             val = X_row.get(feat, np.nan)
@@ -408,8 +408,8 @@ class AgentExplainer:
 
     def _save_shap_bar_plot(self, imp: pd.Series, suffix: str = ""):
         """
-        Guarda un gráfico de barras horizontales con las top features por |SHAP|.
-        El fichero se nombra shap_bar<suffix>.png.
+        Save a horizontal bar chart of the top features by |SHAP|.
+        The file is named shap_bar<suffix>.png.
         """
         try:
             import matplotlib
@@ -422,8 +422,8 @@ class AgentExplainer:
             ax.barh(range(len(imp)), imp.values[::-1], color=colors[::-1], alpha=0.85)
             ax.set_yticks(range(len(imp)))
             ax.set_yticklabels(labels[::-1], fontsize=9)
-            ax.set_xlabel("Importancia SHAP media |Δscore|")
-            ax.set_title(f"[{self.agent_name}] Top features por importancia SHAP{suffix}")
+            ax.set_xlabel("Mean SHAP importance |Δscore|")
+            ax.set_title(f"[{self.agent_name}] Top features by SHAP importance{suffix}")
             ax.axvline(0, color="black", lw=0.7)
             ax.grid(axis="x", alpha=0.3)
             fig.tight_layout()
@@ -431,14 +431,14 @@ class AgentExplainer:
             fig.savefig(plot_path, dpi=120, bbox_inches="tight")
             plt.close(fig)
         except Exception as e:
-            log.debug(f"[{self.agent_name}] No se pudo generar shap_bar: {e}")
+            log.debug(f"[{self.agent_name}] Could not generate shap_bar: {e}")
 
 
 
-# ── Helper de formato de valores ─────────────────────────────────────────────
+# ── Value formatting helper ───────────────────────────────────────────────────
 
 def _format_value(feature: str, value: float) -> str:
-    """Formatea un valor crudo de forma legible según el tipo de feature."""
+    """Format a raw feature value in a human-readable way according to feature type."""
     if pd.isna(value):
         return "N/A"
     pct_features = {
@@ -462,12 +462,12 @@ def _format_value(feature: str, value: float) -> str:
 
 
 # =============================================================================
-# Función de conveniencia para integrar en los agentes
+# Convenience function for integrating into agents
 # =============================================================================
 
 def build_explainer_for_agent(
     agent_name:   str,
-    model,                    # modelo sklearn/xgb ya entrenado
+    model,                    # sklearn/xgb model already fitted
     feature_cols: List[str],
     X_train:      pd.DataFrame,
     results_dir:  str,
@@ -475,8 +475,8 @@ def build_explainer_for_agent(
     model_type:   str = "tree",
 ) -> AgentExplainer:
     """
-    Construye, fitea y guarda la explicacion global de un agente en un solo paso.
-    Llama esto al final del fit() de cada agente.
+    Build, fit, and save the global explanation for an agent in a single step.
+    Call this at the end of each agent's fit() method.
     """
     explainer = AgentExplainer(agent_name, feature_cols, results_dir, model_type)
     explainer.fit_explainer(model, X_train)
