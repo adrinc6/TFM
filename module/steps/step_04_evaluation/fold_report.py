@@ -8,7 +8,7 @@ Produces two files per completed fold and a global consolidated file at the end:
      - Selection: selected, rank, selection_reason
      - Scores from each agent (0–1) with human-readable interpretation
      - Final score and prediction
-     - Realised result (if available): actual_return, beat_benchmark
+     - Realized result (if available): actual_return, beat_benchmark
      - Per-agent explanation: which factors were in favour / against,
        with actual metric values in natural language
 
@@ -259,7 +259,7 @@ def build_fold_scores_df(
     Produces one row per ticker with:
       - Per-agent scores plus human-readable interpretation labels.
       - Per-agent explanations based on SHAP drivers or key features.
-      - Realised result if available.
+      - Realized result if available.
 
     Args:
         df_test_scored (pd.DataFrame): Test DataFrame with agent scores and
@@ -353,7 +353,7 @@ def build_fold_scores_df(
                 top_n=4,
             )
 
-        # --- Realised result (if the test period has elapsed) ---
+        # --- Realized result (if the test period has elapsed) ---
         if actual_returns is not None:
             actual = actual_returns.get(ticker)
             rec["actual_return"] = round(actual, 4) if actual is not None else None

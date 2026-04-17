@@ -11,7 +11,7 @@ from typing import Any
 
 
 def _canonicalize(value: Any) -> Any:
-    """Converts values to stable, JSON-serialisable structures for hashing.
+    """Converts values to stable, JSON-serializable structures for hashing.
 
     Recursively processes dicts (sorted by key), lists/tuples/sets, and
     special types like datetime, date, and Path.
@@ -20,7 +20,7 @@ def _canonicalize(value: Any) -> Any:
         value (Any): The value to canonicalise.
 
     Returns:
-        Any: A JSON-serialisable representation of the value.
+        Any: A JSON-serializable representation of the value.
     """
     if isinstance(value, dict):
         return {str(k): _canonicalize(value[k]) for k in sorted(value.keys(), key=str)}
@@ -36,7 +36,7 @@ def _canonicalize(value: Any) -> Any:
 class CacheManager:
     """File-based cache with a deterministic key derived from a context dictionary.
 
-    The cache key is a 16-character SHA-256 hex digest of the JSON-serialised
+    The cache key is a 16-character SHA-256 hex digest of the JSON-serialized
     context. Each unique context maps to a dedicated subdirectory under
     ``cache_dir / namespace / key``.
 
@@ -59,7 +59,7 @@ class CacheManager:
         self.cache_root = Path(cache_dir)
         self.context = _canonicalize(context)
 
-        # Derive a short deterministic key from the JSON-serialised context
+        # Derive a short deterministic key from the JSON-serialized context
         payload = json.dumps(self.context, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
         self.key = hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
         self.run_dir = self.cache_root / self.namespace / self.key
@@ -162,7 +162,7 @@ class CacheManager:
             name (str): Base name of the file to load.
 
         Returns:
-            Any | None: Deserialised object, or None if the file does not exist
+            Any | None: Deserialized object, or None if the file does not exist
                 or cannot be loaded.
         """
         import pandas as pd

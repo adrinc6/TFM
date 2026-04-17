@@ -8,7 +8,7 @@ import pandas as pd
 
 
 def _resolve_dates(df: pd.DataFrame, date_col: Optional[str] = None) -> pd.Series:
-    """Extracts a normalised datetime series from a DataFrame index or column.
+    """Extracts a normalized datetime series from a DataFrame index or column.
 
     Args:
         df (pd.DataFrame): Source DataFrame.

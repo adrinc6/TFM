@@ -28,7 +28,7 @@ def annualized_return(returns: pd.Series, periods_per_year: int = 252) -> float:
         periods_per_year (int): Number of periods in a year (252 for daily).
 
     Returns:
-        float: Annualised return as a decimal.
+        float: Annualized return as a decimal.
     """
     n = len(returns)
     if n == 0:

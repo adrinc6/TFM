@@ -54,7 +54,7 @@ except ImportError:
     _DEPS_OK = False
 
 # Flag definitions: (name, column, operator, threshold, description, weight)
-# Relative weight within the sub-score (normalised internally).
+# Relative weight within the sub-score (normalized internally).
 FLAG_DEFINITIONS = [
     # ── Financial sub-score ──────────────────────────────────────────────────
     ("debt_growth_high",   "total_debt_yoy_growth", ">",  0.20, "Debt growing >20% YoY",         1.0),

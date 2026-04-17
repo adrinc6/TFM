@@ -9,9 +9,9 @@ import pandas as pd
 
 def is_ratio_or_normalized_feature(col_name: str, series: Optional[pd.Series] = None) -> bool:
     """Checks whether a feature column name (and optionally its values) is
-    a ratio, normalised metric, or binary flag.
+    a ratio, normalized metric, or binary flag.
 
-    This enforces a strict policy: only ratio/normalised features or binary
+    This enforces a strict policy: only ratio/normalized features or binary
     flags are permitted as model inputs to avoid magnitude leakage.
 
     Args:
@@ -27,7 +27,7 @@ def is_ratio_or_normalized_feature(col_name: str, series: Optional[pd.Series] = 
     if not c:
         return False
 
-    # Binary engineered flags are considered normalised features.
+    # Binary engineered flags are considered normalized features.
     if series is not None:
         vals = pd.Series(series).dropna().unique()
         if len(vals) > 0:
@@ -62,7 +62,7 @@ def is_ratio_or_normalized_feature(col_name: str, series: Optional[pd.Series] = 
 
 
 def filter_ratio_normalized_columns(df: pd.DataFrame) -> pd.DataFrame:
-    """Keeps only ratio/normalised columns from a DataFrame.
+    """Keeps only ratio/normalized columns from a DataFrame.
 
     Applies :func:`is_ratio_or_normalized_feature` to every column and retains
     only those that pass the policy check.

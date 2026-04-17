@@ -160,13 +160,13 @@ class BaseAgent(ABC):
             series (Optional[pd.Series]): Optional value series for binary-flag detection.
 
         Returns:
-            bool: True if the feature passes the ratio/normalised policy.
+            bool: True if the feature passes the ratio/normalized policy.
         """
         return is_ratio_or_normalized_feature(col_name, series)
 
     @staticmethod
     def _filter_ratio_normalized_columns(X: pd.DataFrame) -> pd.DataFrame:
-        """Removes non-ratio/normalised magnitude features under strict policy.
+        """Removes non-ratio/normalized magnitude features under strict policy.
 
         Args:
             X (pd.DataFrame): Input feature matrix.
@@ -234,7 +234,7 @@ class BaseAgent(ABC):
 
         Raises:
             ValueError: If no feature columns survive the strict
-                ratio/normalised policy filter.
+                ratio/normalized policy filter.
         """
         X = X.replace([np.inf, -np.inf], np.nan)
         # Remove rows with more than 50% NaN (training only; not in predict)
@@ -254,7 +254,7 @@ class BaseAgent(ABC):
         X = BaseAgent._filter_ratio_normalized_columns(X)
         if X.shape[1] == 0:
             raise ValueError(
-                "No features remained after applying the strict ratio/normalised filter. "
+                "No features remained after applying the strict ratio/normalized filter. "
                 "Update agent features to use ratios, z-scores, or binary flags."
             )
         X = BaseAgent._clean_numeric(X)
@@ -422,7 +422,7 @@ class FeatureSelector:
     Step 3 — Importance-cutoff rule + [min_keep, max_keep] bounds:
         Features with ``RF_importance >= top_importance * cutoff_fraction``
         are retained, then clamped to the [min_keep, max_keep] range.
-        The selected features are rescaled by normalised importance weights.
+        The selected features are rescaled by normalized importance weights.
 
     Example:
         >>> selector = FeatureSelector()
@@ -506,7 +506,7 @@ class FeatureSelector:
             pb_corr = {c: abs(float(X[c].corr(y.astype(float)))) for c in cols}
 
         # ── Step 0: mandatory base vs _zsector exclusion ─────────────────────
-        # Hard rule: never allow both the raw and the sector-normalised version
+        # Hard rule: never allow both the raw and the sector-normalized version
         # of the same indicator simultaneously.
         # For each (base, base_zsector) pair, keep the one with higher |pb_y|.
         # In a tie, prefer _zsector for sectoral comparability.
@@ -724,10 +724,10 @@ class FeatureSelector:
 
         Returns:
             pd.DataFrame: DataFrame restricted to the selected columns and
-                rescaled by their normalised importance weights.
+                rescaled by their normalized importance weights.
         """
         result = X.reindex(columns=self._selected_cols, fill_value=0.0).copy()
-        # Rescale by normalised weights: sum of weights = 100.
+        # Rescale by normalized weights: sum of weights = 100.
         for col, weight_pct in self._selected_weights_pct.items():
             if col in result.columns:
                 result[col] = pd.to_numeric(result[col], errors="coerce").fillna(0.0) * (weight_pct / 100.0)

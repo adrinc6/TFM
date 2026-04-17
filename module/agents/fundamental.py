@@ -45,7 +45,7 @@ class FundamentalAgent(BaseAgent):
 
     The sector from companies.csv is fed in two complementary ways:
       1. One-hot dummies (sector_Technology, sector_Healthcare, …)
-      2. Sector-normalised ratios (*_zsector)
+      2. Sector-normalized ratios (*_zsector)
     """
 
     def __init__(self, results_dir: str, random_seed: int = 42,
@@ -181,7 +181,7 @@ class FundamentalAgent(BaseAgent):
     # ── Helpers ───────────────────────────────────────────────────────────────
 
     def _prepare(self, X: pd.DataFrame, sector_col: str, fit_mode: bool) -> pd.DataFrame:
-        """Selects base features and sector-normalised columns.
+        """Selects base features and sector-normalized columns.
 
         Only base columns and _zsector variants are included; sector one-hot
         dummies are excluded because they capture sector-level means rather
