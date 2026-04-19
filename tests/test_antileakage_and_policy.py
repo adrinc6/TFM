@@ -135,14 +135,12 @@ class TestFeaturePolicyAllowed:
         assert is_ratio_or_normalized_feature(col) is True
 
     @pytest.mark.parametrize("col", [
-        # roe, roa, debt_equity don't contain allowed tokens by name alone,
-        # but pass through agent-level FEATURE_COLUMNS configuration.
-        # The policy function returns False for bare names without tokens.
+        # Canonical financial ratios are now explicitly allowed by the policy.
         "roe", "roa", "debt_equity",
     ])
-    def test_features_needing_agent_config(self, col):
-        """Features that pass through agent config, not the generic policy filter."""
-        assert is_ratio_or_normalized_feature(col) is False
+    def test_canonical_ratios_pass_policy(self, col):
+        """Canonical financial ratios must pass the policy filter directly."""
+        assert is_ratio_or_normalized_feature(col) is True
 
 
 # ---------------------------------------------------------------------------
@@ -282,3 +280,84 @@ class TestDataRouterTickerValidation:
         for bad in ["AAPL;rm -rf", "AAPL/../..", "ticker/../../"]:
             with pytest.raises(ValueError, match="[Ii]nvalid"):
                 router._validate_ticker(bad)
+
+
+# ---------------------------------------------------------------------------
+# Portfolio simulator: exit-date resolution and entry/exit date logic
+# ---------------------------------------------------------------------------
+
+class TestSimulateFoldUsdExitResolution:
+    """simulate_fold_usd must participate even when price data ends before exit_req."""
+
+    def _make_prices(self, dates, start=100.0):
+        prices = pd.Series(
+            [start + i for i in range(len(dates))],
+            index=pd.to_datetime(dates),
+            name="Close",
+        )
+        return pd.DataFrame({"Close": prices})
+
+    def test_ew_folds_with_prices_ending_before_exit_req(self):
+        """Tickers whose prices end before exit_req should still be sold at their
+        last available price (on-or-before resolution) instead of being excluded."""
+        from module.steps.step_04_evaluation.portfolio_simulator import simulate_fold_usd
+
+        # Ticker A: prices go up to 2023-09-15 (before exit_req 2023-10-01)
+        prices_a = self._make_prices(
+            pd.date_range("2023-04-01", "2023-09-15", freq="B"), start=100.0
+        )
+        # Ticker B: prices go all the way past 2023-10-01
+        prices_b = self._make_prices(
+            pd.date_range("2023-04-01", "2023-10-05", freq="B"), start=200.0
+        )
+
+        result = simulate_fold_usd(
+            fold_id="test_ew",
+            prices_dict={"A": prices_a, "B": prices_b},
+            selected_tickers=["A", "B"],
+            weights={"A": 0.5, "B": 0.5},
+            entry_date_requested=pd.Timestamp("2023-04-01"),
+            exit_date_requested=pd.Timestamp("2023-10-01"),
+            starting_cash_usd=1000.0,
+            transaction_fee_usd=0.0,
+            slippage_pct=0.0,
+            allow_fractional_shares=True,
+        )
+
+        summary = result["fold_summary"]
+        # Both tickers should be traded (A sold at its last available price)
+        assert summary["n_selected_tickers"] == 2, "Both tickers should be valid"
+        assert summary["n_buys"] == 2
+        assert summary["n_sells"] == 2
+        # Ending capital should reflect actual price appreciation, not zero
+        assert summary["ending_capital_usd"] > 1000.0
+
+    def test_ticker_excluded_when_no_prices_after_entry(self):
+        """A ticker whose prices end BEFORE entry_req must be excluded."""
+        from module.steps.step_04_evaluation.portfolio_simulator import simulate_fold_usd
+
+        prices_stale = self._make_prices(
+            pd.date_range("2022-01-01", "2023-01-01", freq="B"), start=50.0
+        )
+        prices_ok = self._make_prices(
+            pd.date_range("2023-04-01", "2023-10-05", freq="B"), start=100.0
+        )
+
+        result = simulate_fold_usd(
+            fold_id="test_excl",
+            prices_dict={"STALE": prices_stale, "OK": prices_ok},
+            selected_tickers=["STALE", "OK"],
+            weights={"STALE": 0.5, "OK": 0.5},
+            entry_date_requested=pd.Timestamp("2023-04-03"),
+            exit_date_requested=pd.Timestamp("2023-09-29"),
+            starting_cash_usd=1000.0,
+            transaction_fee_usd=0.0,
+            slippage_pct=0.0,
+            allow_fractional_shares=True,
+        )
+
+        summary = result["fold_summary"]
+        # STALE has no price >= entry_req → excluded; only OK is used
+        assert summary["n_selected_tickers"] == 1
+        assert "STALE" in result["missing_tickers"]
+        assert "OK" not in result["missing_tickers"]

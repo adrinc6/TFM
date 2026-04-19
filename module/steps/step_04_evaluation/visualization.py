@@ -125,8 +125,8 @@ class Visualizer:
 			ax.axis("off")
 			return
 		labels = [f"{r.get('year_quarter', r.get('fold','?'))}\n{r.get('test_start','')[:4]}" for r in fold_results]
-		s_ret = [r.get("strategy_annualized_return", 0) * 100 for r in fold_results]
-		b_ret = [r.get("benchmark_annualized_return", 0) * 100 for r in fold_results]
+		s_ret = [r.get("strategy_annualized_return", r.get("strategy_cumulative_return", 0)) * 100 for r in fold_results]
+		b_ret = [r.get("benchmark_annualized_return", r.get("benchmark_cumulative_return", 0)) * 100 for r in fold_results]
 		x = np.arange(len(labels))
 		w = 0.35
 		ax.bar(x - w / 2, s_ret, w, color=STYLE["strategy"]["color"],

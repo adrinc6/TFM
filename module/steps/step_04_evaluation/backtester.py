@@ -13,6 +13,7 @@ import pandas as pd
 
 from environment import PORTFOLIO_MIN_SCORE, SCORE_WEIGHTED_PORTFOLIO
 from module.steps.step_04_evaluation.metrics import compute_all_metrics
+from module.steps.step_04_evaluation.portfolio_simulator import _get_close_column
 
 log = logging.getLogger(__name__)
 
@@ -166,7 +167,7 @@ class WalkForwardBacktester:
 			if ticker not in prices_dict:
 				continue
 			prices = prices_dict[ticker]
-			cc = "Close" if "Close" in prices.columns else prices.columns[3]
+			cc = _get_close_column(prices)
 			period = prices.loc[test_start:actual_end, cc]
 			if len(period) < 2:
 				continue

@@ -119,11 +119,12 @@ def compute_all_metrics(
         label (str): Prefix applied to all metric keys in the output dictionary.
 
     Returns:
-        Dict: Dictionary containing cumulative_return, sharpe, sortino,
-            max_drawdown, calmar, volatility, and n_periods metrics.
+        Dict: Dictionary containing cumulative_return, annualized_return,
+            sharpe, sortino, max_drawdown, calmar, volatility, and n_periods metrics.
     """
     return {
         f"{label}_cumulative_return": cumulative_return(returns),
+        f"{label}_annualized_return": annualized_return(returns),
         f"{label}_sharpe": sharpe_ratio(returns, risk_free),
         f"{label}_sortino": sortino_ratio(returns, risk_free),
         f"{label}_max_drawdown": max_drawdown(returns),

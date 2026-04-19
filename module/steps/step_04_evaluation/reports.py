@@ -30,7 +30,7 @@ def generate_text_report(
 	lines.append(f"  Alpha medio por fold:      {summary.get('mean_alpha', 0):+.2%}")
 	lines.append(f"  Folds con alpha positivo:  {summary.get('pct_folds_positive_alpha', 0):.0%}")
 
-	gs = summary.get("global_strategy_sharpe", summary.get("global_strategy_sharpe", 0))
+	gs = summary.get("global_strategy_sharpe", 0)
 	gb = summary.get("global_benchmark_sharpe", 0)
 	lines.append(f"  Sharpe estrategia:         {gs:.3f}")
 	lines.append(f"  Sharpe benchmark (S&P500): {gb:.3f}")

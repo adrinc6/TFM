@@ -334,6 +334,8 @@ def train_fold(
         agents_config=agents_config,
         n_splits=OOF_N_SPLITS,
         random_seed=random_seed,
+        sector_map=sector_map,
+        spy_prices=spy_prices,
     )
     df_train_with_oof = df_train_norm.copy()
     for col_name, scores_series in oof_scores.items():
@@ -347,17 +349,16 @@ def train_fold(
         _log_score_stats("OOF/bear_risk", df_train_with_oof["bear_risk_score"])
         _log_score_stats("OOF/bear_safety", df_train_with_oof["bear_score"])
 
-    # Add sector_score to train OOF using the already-trained agent
-    if sector_agent.is_trained and sector_map is not None:
-        sector_scores_train = sector_agent.predict_sector_scores(df_train_with_oof, sector_map)
-        df_train_with_oof["sector_score"] = sector_agent.map_to_tickers(
-            df_train_with_oof, sector_map, sector_scores_train
-        ).values
+    # sector_score is now provided by OOF (generated inside generate_oof_scores).
+    # Fallback to neutral 0.5 only when sector_map was unavailable for OOF.
+    if "sector_score" not in df_train_with_oof.columns:
+        df_train_with_oof["sector_score"] = 0.5
+        log.info("[Fold %s] sector_score OOF not available — using neutral 0.5 for meta training.", fold_id)
+    else:
+        _log_score_stats("OOF/sector_score", df_train_with_oof["sector_score"])
 
     score_cols = [f"{ag_name}_score" for ag_name in agents_config.keys()]
-    if "sector_score" in df_train_with_oof.columns:
-        score_cols.append("sector_score")
-        _log_score_stats("OOF/sector_score", df_train_with_oof["sector_score"])
+    score_cols.append("sector_score")  # always present (OOF or neutral 0.5)
     dispersion_scales = _compute_dispersion_scales(df_train_with_oof, score_cols)
     df_train_with_oof = _apply_dispersion_shrink(df_train_with_oof, dispersion_scales)
 

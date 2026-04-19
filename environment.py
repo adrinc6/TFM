@@ -74,6 +74,11 @@ DOWNLOAD_MAX_WORKERS = 8
 # Finnhub rate limit (seconds between global requests)
 FINNHUB_MIN_INTERVAL = 1
 
+# If True, downloads optional endpoints that are not currently used in the
+# feature pipeline (company_news, peers, quote, earnings_calendar).
+# Set to False to save API quota and storage.
+DOWNLOAD_OPTIONAL_ENDPOINTS = True
+
 # =============================================================================
 # 2. API Keys
 # =============================================================================
