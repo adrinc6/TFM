@@ -10,7 +10,7 @@ Consumes (from consolidated + feature_engineering):
   Growth:        revenue_yoy_growth, net_income_yoy_growth, eps_yoy_growth,
                  fcf_yoy_growth, operating_income_yoy_growth
   Quality:       accruals_ratio, capex_to_revenue, consecutive_losses
-  Sector Z:      *_zsector  (columns added by SectorNormalizer)
+
   Sector dummy:  sector_*   (one-hot from companies.csv)
 """
 import logging
@@ -45,7 +45,7 @@ class FundamentalAgent(BaseAgent):
 
     The sector from companies.csv is fed in two complementary ways:
       1. One-hot dummies (sector_Technology, sector_Healthcare, …)
-      2. Sector-normalized ratios (*_zsector)
+
     """
 
     def __init__(self, results_dir: str, random_seed: int = 42,
@@ -111,10 +111,14 @@ class FundamentalAgent(BaseAgent):
         X_prep       = X_prep.reset_index(drop=True)
         y_cl         = y_cl.reset_index(drop=True)
 
+        if not self.has_multiple_classes(y_cl):
+            log.warning("[FundamentalAgent] Label without enough class variance after cleaning - training skipped.")
+            return self
+
         # Feature selection: only on training data (no leakage)
         self._selector = FeatureSelector(corr_threshold=FEATURE_CORR_THRESHOLD, top_n=FEATURE_TOP_N,
                                          min_features=3, random_seed=self.random_seed,
-                                         zsector_pair_policy="force_zsector")
+                                         )
         X_prep = self._selector.fit_transform(X_prep, y_cl, agent_name="fundamental")
 
         self._feature_cols = list(X_prep.columns)
@@ -183,10 +187,10 @@ class FundamentalAgent(BaseAgent):
     def _prepare(self, X: pd.DataFrame, sector_col: str, fit_mode: bool) -> pd.DataFrame:
         """Selects base features and sector-normalized columns.
 
-        Only base columns and _zsector variants are included; sector one-hot
+        Only base columns are included; sector one-hot
         dummies are excluded because they capture sector-level means rather
         than the relative position of the ticker, which is already encoded by
-        the _zsector columns.
+
 
         Args:
             X (pd.DataFrame): Raw feature matrix.
@@ -204,8 +208,7 @@ class FundamentalAgent(BaseAgent):
             logger=log,
             owner="FundamentalAgent",
         )
-        zsector_cols = [c for c in X.columns if c.endswith("_zsector")]
-        result = X[list(dict.fromkeys(selected + zsector_cols))].copy()
+        result = X[selected].copy()
         if fit_mode:
             self._feature_cols = list(result.columns)
         return result
@@ -239,6 +242,10 @@ class FundamentalAgent(BaseAgent):
         tss = TimeSeriesSplit(n_splits=5)
         aucs, accs, f1s = [], [], []
         for tr, val in tss.split(X):
+            y_tr = y.iloc[tr]
+            y_val = y.iloc[val]
+            if not self.has_multiple_classes(y_tr):
+                continue
             clf = xgb.XGBClassifier(
                 n_estimators=self.n_estimators, max_depth=self.max_depth,
                 learning_rate=self.learning_rate, subsample=self.subsample,
@@ -246,15 +253,15 @@ class FundamentalAgent(BaseAgent):
                 scale_pos_weight=spw, eval_metric="auc",
                 random_state=self.random_seed, n_jobs=-1, tree_method="hist",
             )
-            clf.fit(X.iloc[tr], y.iloc[tr], eval_set=[(X.iloc[val], y.iloc[val])], verbose=False)
+            clf.fit(X.iloc[tr], y_tr, eval_set=[(X.iloc[val], y_val)], verbose=False)
             p = clf.predict_proba(X.iloc[val])[:, 1]
-            if y.iloc[val].nunique() > 1:
-                aucs.append(roc_auc_score(y.iloc[val], p))
-            accs.append(accuracy_score(y.iloc[val], (p >= 0.5).astype(int)))
-            f1s.append(f1_score(y.iloc[val], (p >= 0.5).astype(int), zero_division=0))
+            if self.has_multiple_classes(y_val):
+                aucs.append(roc_auc_score(y_val, p))
+            accs.append(accuracy_score(y_val, (p >= 0.5).astype(int)))
+            f1s.append(f1_score(y_val, (p >= 0.5).astype(int), zero_division=0))
         return {
             "mean_auc": float(np.mean(aucs)) if aucs else 0.0,
             "std_auc":  float(np.std(aucs))  if aucs else 0.0,
-            "mean_acc": float(np.mean(accs)),
-            "mean_f1":  float(np.mean(f1s)),
+            "mean_acc": float(np.mean(accs)) if accs else 0.0,
+            "mean_f1":  float(np.mean(f1s)) if f1s else 0.0,
         }

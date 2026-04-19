@@ -17,7 +17,6 @@ from environment import (
     BASE_LABEL_SECTOR_MIN_PEERS,
     PORTFOLIO_MIN_SCORE,
     RUN_ABLATION_STUDY,
-    SECTOR_ZSCORE_MIN_PEERS,
     WALKFORWARD_TRAIN_MIN_YEARS,
     MIN_TEST_TICKERS_PERCENT,
     ENABLE_FALLBACK_EXTRAPOLATION,
@@ -35,8 +34,7 @@ from environment import (
 )
 from module.common.asof import assert_no_future_data, filter_asof
 from module.common.data_router import DataRouter
-from module.steps.step_02_dataset.builders.sector import SectorNormalizer
-from module.steps.step_02_dataset.normalization import apply_sector_normalization
+
 from module.steps.step_03_training.training import train_fold
 from module.steps.step_04_evaluation.ablation import run_ablation_study, summarize_ablation
 from module.steps.step_04_evaluation.backtester import WalkForwardBacktester
@@ -602,22 +600,20 @@ def _recompute_forward_returns(
 def _prepare_fold_labels(
     df_train: pd.DataFrame,
     df_test: pd.DataFrame,
-    df_train_norm: pd.DataFrame,
-    df_test_norm: pd.DataFrame,
     spy_prices: Optional[pd.Series] = None,
     sector_map: Optional[Dict[str, str]] = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
     # Label configurable para agentes base:
     # - vs_sector (default): y=1 si supera mediana sectorial por snapshot quarter.
     # - vs_universe: y=1 si supera mediana del universo por snapshot quarter.
-    forward_train = _excess_return_label(df_train, spy_prices, sector_map).reindex(df_train_norm.index)
-    forward_test  = _excess_return_label(df_test,  spy_prices, sector_map).reindex(df_test_norm.index)
+    forward_train = _excess_return_label(df_train, spy_prices, sector_map).reindex(df_train.index)
+    forward_test  = _excess_return_label(df_test,  spy_prices, sector_map).reindex(df_test.index)
     y_train = forward_train.dropna().astype(int)
     y_test  = forward_test.dropna().astype(int)
 
-    df_train_norm = df_train_norm.loc[y_train.index]
-    df_test_norm  = df_test_norm.loc[y_test.index]
-    return df_train_norm, df_test_norm, y_train, y_test
+    df_train = df_train.loc[y_train.index]
+    df_test  = df_test.loc[y_test.index]
+    return df_train, df_test, y_train, y_test
 
 
 def _build_selection_df(preds_scored: pd.DataFrame, selected_tickers: List[str], ticker_weights: Dict[str, float]) -> pd.DataFrame:
@@ -643,12 +639,12 @@ def _build_selection_df(preds_scored: pd.DataFrame, selected_tickers: List[str],
 def _export_fold_usd_artifacts(
     *,
     backtest_results_dir: str,
-    fold_id_num: int,
+    period_label: str,
     sim_out: Dict,
     selection_df: pd.DataFrame,
     metrics_payload: Dict,
 ) -> None:
-    fold_dir = Path(backtest_results_dir) / f"fold_{fold_id_num}"
+    fold_dir = Path(backtest_results_dir) / str(period_label)
     fold_dir.mkdir(parents=True, exist_ok=True)
 
     trades_df = sim_out.get("trades_df", pd.DataFrame())
@@ -838,6 +834,7 @@ def run_walkforward_pipeline(
     prices_dict: Dict[str, pd.DataFrame],
     benchmark: pd.Series,
     agents_results_dir: str,
+    agent_models_results_dir: str,
     backtest_results_dir: str,
     plots_dir: str,
     start_date: str,
@@ -855,6 +852,7 @@ def run_walkforward_pipeline(
     annual_anchor_date: Optional[pd.Timestamp] = None,
 ) -> Dict:
     Path(agents_results_dir).mkdir(parents=True, exist_ok=True)
+    Path(agent_models_results_dir).mkdir(parents=True, exist_ok=True)
 
     backtester = WalkForwardBacktester(
         train_years=walkforward_train_years,
@@ -864,7 +862,6 @@ def run_walkforward_pipeline(
         top_n_stocks=top_n_stocks,
     )
     visualizer = Visualizer(plots_dir=plots_dir)
-    normalizer = SectorNormalizer(min_peers=SECTOR_ZSCORE_MIN_PEERS)
 
     folds = backtester.generate_folds(start_date, end_date)
     agent_diag_history: Dict[str, List] = {
@@ -1171,12 +1168,14 @@ def run_walkforward_pipeline(
             selected_eligibility_train_years if selected_eligibility_train_years is not None else last_eligibility_train_years
         )
         if rows_to_export:
-            eligibility_path = Path(agents_results_dir) / f"quarter_{run_id}_ticker_eligibility_audit.csv"
+            period_dir = Path(agents_results_dir) / str(run_id)
+            period_dir.mkdir(parents=True, exist_ok=True)
+            eligibility_path = period_dir / "ticker_eligibility_audit.csv"
             eligibility_path.parent.mkdir(parents=True, exist_ok=True)
             eligibility_df = pd.DataFrame(rows_to_export)
             eligibility_df.to_csv(eligibility_path, index=False)
 
-            summary_path = Path(agents_results_dir) / f"quarter_{run_id}_eligibility_reason_summary.csv"
+            summary_path = period_dir / "eligibility_reason_summary.csv"
             summary_df = (
                 eligibility_df.groupby(
                     [
@@ -1279,49 +1278,45 @@ def run_walkforward_pipeline(
             log.warning(f"[{run_id}] Insufficient train ({len(df_train)} observations, minimum 100) — fold skipped.")
             continue
 
-        df_train_norm = apply_sector_normalization(df_train, sector_map, normalizer, fit=True)
-        df_test_norm = apply_sector_normalization(df_test, sector_map, normalizer, fit=False)
-        df_train_norm = df_train_norm[~df_train_norm.index.duplicated(keep="last")]
-        df_test_norm = df_test_norm[~df_test_norm.index.duplicated(keep="last")]
+        df_train, df_test = df_train[~df_train.index.duplicated(keep="last")], df_test[~df_test.index.duplicated(keep="last")]
 
-        df_train_norm, df_test_norm, y_train, y_test = _prepare_fold_labels(
+        df_train, df_test, y_train, y_test = _prepare_fold_labels(
             df_train=df_train,
             df_test=df_test,
-            df_train_norm=df_train_norm,
-            df_test_norm=df_test_norm,
             spy_prices=spy_prices,
             sector_map=sector_map,
         )
-        if (df_test_norm.empty or y_test.empty) and not df_test_norm.empty:
+        if (df_test.empty or y_test.empty) and not df_test.empty:
             partial_returns = _compute_partial_forward_returns(
                 prices_dict=prices_dict,
-                tickers=df_test_norm.index.get_level_values("ticker"),
+                tickers=df_test.index.get_level_values("ticker"),
                 entry_date=entry_date,
                 exit_date=actual_end,
             )
             if partial_returns:
-                df_test_partial = df_test_norm.copy()
+                df_test_partial = df_test.copy()
                 df_test_partial["forward_return"] = (
                     df_test_partial.index.get_level_values("ticker").map(partial_returns)
                 )
-                forward_test = _excess_return_label(df_test_partial, spy_prices, sector_map).reindex(df_test_norm.index)
+                forward_test = _excess_return_label(df_test_partial, spy_prices, sector_map).reindex(df_test.index)
                 y_test = forward_test.dropna().astype(int)
-                df_test_norm = df_test_norm.loc[y_test.index]
+                df_test = df_test.loc[y_test.index]
                 log.info(
                     f"[{run_id}] Labels parciales con precios hasta {actual_end.date()} "
                     f"— {len(y_test)} observaciones"
                 )
-        if df_test_norm.empty or y_test.empty:
+        if df_test.empty or y_test.empty:
             log.warning(f"[{run_id}] Empty test after preparing labels — fold skipped.")
             continue
 
         try:
             agents, df_test_scored, df_train_with_oof = train_fold(
-                df_train_norm=df_train_norm,
-                df_test_norm=df_test_norm,
+                df_train_norm=df_train,
+                df_test_norm=df_test,
                 y_train=y_train,
                 y_test=y_test,
                 fold_id=run_id,
+                agent_models_results_dir=agent_models_results_dir,
                 agents_results_dir=agents_results_dir,
                 random_seed=random_seed,
                 sector_map=sector_map,
@@ -1420,7 +1415,7 @@ def run_walkforward_pipeline(
                 )
                 _export_fold_usd_artifacts(
                     backtest_results_dir=backtest_results_dir,
-                    fold_id_num=fold_id,
+                    period_label=str(run_id),
                     sim_out=sim_out,
                     selection_df=selection_df,
                     metrics_payload={
@@ -1454,7 +1449,9 @@ def run_walkforward_pipeline(
                 score_col="final_score",
                 threshold=PORTFOLIO_MIN_SCORE,
             )
-            export_selection_audit(audit_df, agents_results_dir, fold_id=analysis_quarter_label, prefix="quarter")
+            period_dir = Path(agents_results_dir) / str(analysis_quarter_label)
+            period_dir.mkdir(parents=True, exist_ok=True)
+            export_selection_audit(audit_df, period_dir.as_posix(), fold_id=analysis_quarter_label, prefix="quarter")
 
             # CSV de scores con explicaciones legibles por agente
             ticker_returns = fold_result.get("ticker_returns", {})
@@ -1471,19 +1468,19 @@ def run_walkforward_pipeline(
                 benchmark_return=bench_ret,
                 ticker_weights=fold_result.get("ticker_weights"),
             )
-            export_fold_scores(fold_scores_df, agents_results_dir, fold_id=analysis_quarter_label)
+            export_fold_scores(fold_scores_df, period_dir.as_posix(), fold_id=analysis_quarter_label)
 
             # Auditoria completa por quarter: snapshot por ticker + detalle agente-feature.
             export_quarter_snapshot_audit(
                 df_test_scored=df_test_scored,
                 year_quarter=analysis_quarter_label,
-                agents_results_dir=agents_results_dir,
+                agents_results_dir=period_dir.as_posix(),
             )
             export_quarter_agent_feature_audit(
                 df_test_scored=df_test_scored,
                 agents=agents,
                 year_quarter=analysis_quarter_label,
-                agents_results_dir=agents_results_dir,
+                agents_results_dir=period_dir.as_posix(),
             )
 
             for ag_name, ag in agents.items():
@@ -1494,7 +1491,7 @@ def run_walkforward_pipeline(
                 if hasattr(ag, "_feature_cols") and ag.is_trained:
                     try:
                         imp_path = (
-                            Path(agents_results_dir) / ag_name
+                            Path(agent_models_results_dir) / ag_name
                             / f"feature_importances_{run_id}.csv"
                         )
                         if imp_path.exists():
@@ -1508,7 +1505,7 @@ def run_walkforward_pipeline(
                 df_test=df_test_scored,
                 scores=df_test_scored["final_score"],
                 fold_id=analysis_quarter_label,
-                agents_results_dir=agents_results_dir,
+                agents_results_dir=period_dir.as_posix(),
                 selected_tickers=fold_result.get("selected_tickers", []),
                 audit_df=audit_df,
             )

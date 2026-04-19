@@ -76,7 +76,7 @@ def _is_ratio_or_normalized_feature(feature: str) -> bool:
         return False
     allowed_tokens = [
         "ratio", "margin", "yield", "growth", "trend", "momentum", "volatility",
-        "rsi", "macd", "beta", "zscore", "zsector", "pct", "coverage",
+        "rsi", "macd", "beta", "zscore", "pct", "coverage",
         "score", "prior", "dispersion", "consensus", "confidence", "quality",
         "fscore", "accrual", "atr", "bb_", "vs_5y", "vs_52w", "debt_to_", "_to_",
         "revision", "surprise", "beater", "overbought", "oversold", "bullish",
@@ -410,7 +410,7 @@ def export_fold_scores(
     """
     out_dir = Path(agents_results_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    path = out_dir / f"quarter_{fold_id}_scores.csv"
+    path = out_dir / "scores.csv"
     df.to_csv(path, index=False, encoding="utf-8")
     log.info(f"[FoldReport] Fold {fold_id}: scores for {len(df)} tickers saved → {path.name}")
     return path
@@ -440,7 +440,7 @@ def export_quarter_snapshot_audit(
     """
     out_dir = Path(agents_results_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    path = out_dir / f"quarter_{year_quarter}_ticker_snapshot_audit.csv"
+    path = out_dir / "ticker_snapshot_audit.csv"
 
     if df_test_scored.empty:
         pd.DataFrame().to_csv(path, index=False, encoding="utf-8")
@@ -490,7 +490,7 @@ def export_quarter_agent_feature_audit(
     """
     out_dir = Path(agents_results_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    path = out_dir / f"quarter_{year_quarter}_ticker_agent_feature_audit.csv"
+    path = out_dir / "ticker_agent_feature_audit.csv"
 
     if df_test_scored.empty:
         pd.DataFrame().to_csv(path, index=False, encoding="utf-8")

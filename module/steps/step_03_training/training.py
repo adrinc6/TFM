@@ -110,8 +110,8 @@ def _export_feature_usage_report(
     out_dir = Path(agents_results_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    csv_path = out_dir / f"quarter_{fold_id}_feature_usage_report.csv"
-    json_path = out_dir / f"quarter_{fold_id}_feature_usage_report.json"
+    csv_path = out_dir / "feature_usage_report.csv"
+    json_path = out_dir / "feature_usage_report.json"
 
     pd.DataFrame(records).to_csv(csv_path, index=False, encoding="utf-8")
     json_path.write_text(json.dumps(records, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -306,20 +306,21 @@ def train_fold(
     y_train: pd.Series,
     y_test: pd.Series,
     fold_id: int,
+    agent_models_results_dir: str,
     agents_results_dir: str,
     random_seed: int = 42,
     sector_map: Optional[Dict[str, str]] = None,
     spy_prices: Optional[pd.Series] = None,
 ) -> Tuple[Dict, pd.DataFrame, pd.DataFrame]:
-    agents_config = build_agents_config(agents_results_dir=agents_results_dir, random_seed=random_seed)
+    agents_config = build_agents_config(agent_models_results_dir=agent_models_results_dir, random_seed=random_seed)
     base_agents = _instantiate_base_agents(agents_config)
-    meta = MetaLearner(results_dir=agents_results_dir, random_seed=random_seed)
+    meta = MetaLearner(results_dir=agent_models_results_dir, random_seed=random_seed)
 
     log.info(f"[Fold {fold_id}] 1/3 — Entrenando 6 agentes base con datos de entrenamiento del fold...")
     _fit_base_agents(base_agents, agents_config, df_train_norm, y_train, fold=fold_id)
 
     # Entrenar SectorRotationAgent (opera a nivel sector, no ticker)
-    sector_agent = build_sector_rotation_agent(agents_results_dir=agents_results_dir, random_seed=random_seed)
+    sector_agent = build_sector_rotation_agent(agent_models_results_dir=agent_models_results_dir, random_seed=random_seed)
     if sector_map is not None and "forward_return" in df_train_norm.columns:
         log.info(f"[Fold {fold_id}] 1/3 — Entrenando SectorRotationAgent (top-down, nivel sector)...")
         sector_agent.fit(df_train_norm, sector_map=sector_map, spy_prices=spy_prices, fold=fold_id)
@@ -383,11 +384,12 @@ def train_fold(
     log.info(f"[Fold {fold_id}] 3/3 — Predicciones listas. Scores en rango [{df_test['final_score'].min():.3f}, {df_test['final_score'].max():.3f}]")
 
     agents_dict = {**base_agents, "sector_rotation": sector_agent, "meta_learner": meta}
+    period_dir = Path(agents_results_dir) / str(fold_id)
     _export_feature_usage_report(
         agents=agents_dict,
         df_train=df_train_norm,
         fold_id=fold_id,
-        agents_results_dir=agents_results_dir,
+        agents_results_dir=period_dir.as_posix(),
     )
     return agents_dict, df_test, df_train_with_oof
 
@@ -395,18 +397,18 @@ def train_fold(
 def train_full_history(
     df_norm: pd.DataFrame,
     y: pd.Series,
-    agents_results_dir: str,
+    agent_models_results_dir: str,
     random_seed: int = 42,
     sector_map: Optional[Dict[str, str]] = None,
     spy_prices: Optional[pd.Series] = None,
 ) -> Tuple[Dict, pd.DataFrame, Dict[str, float]]:
-    agents_config = build_agents_config(agents_results_dir=agents_results_dir, random_seed=random_seed)
+    agents_config = build_agents_config(agent_models_results_dir=agent_models_results_dir, random_seed=random_seed)
     base_agents = _instantiate_base_agents(agents_config)
-    meta = MetaLearner(results_dir=agents_results_dir, random_seed=random_seed)
+    meta = MetaLearner(results_dir=agent_models_results_dir, random_seed=random_seed)
 
     _fit_base_agents(base_agents, agents_config, df_norm, y, fold=0)
 
-    sector_agent = build_sector_rotation_agent(agents_results_dir=agents_results_dir, random_seed=random_seed)
+    sector_agent = build_sector_rotation_agent(agent_models_results_dir=agent_models_results_dir, random_seed=random_seed)
     if sector_map is not None and "forward_return" in df_norm.columns:
         sector_agent.fit(df_norm, sector_map=sector_map, spy_prices=spy_prices, fold=0)
 

@@ -393,9 +393,6 @@ def build_master_dataset(
             )
             continue
 
-        if i % 50 == 0:
-            log.info(f"  [{i}/{len(tickers)}] tickers procesados — {len(records)} observaciones acumuladas")
-
     if not records:
         raise RuntimeError("Master dataset is empty. Check the data in data_finnhub/")
 

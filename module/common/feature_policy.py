@@ -40,7 +40,7 @@ def is_ratio_or_normalized_feature(col_name: str, series: Optional[pd.Series] = 
 
     allowed_tokens = [
         "ratio", "margin", "yield", "growth", "trend", "momentum", "volatility",
-        "rsi", "macd", "beta", "zscore", "zsector", "pct", "coverage",
+        "rsi", "macd", "beta", "zscore", "pct", "coverage",
         "score", "prior", "dispersion", "consensus", "confidence", "quality",
         "fscore", "accrual", "atr", "bb_", "vs_5y", "vs_52w", "debt_to_", "_to_",
         "revision", "surprise", "beater", "overbought", "oversold", "bullish",

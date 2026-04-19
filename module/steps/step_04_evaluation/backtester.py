@@ -47,6 +47,30 @@ class WalkForwardBacktester:
 		"""Snap ts to the last day of the quarter it belongs to."""
 		return ts + pd.offsets.QuarterEnd(0)
 
+	@staticmethod
+	def _quarter_label(ts: pd.Timestamp) -> str:
+		"""Return a compact quarter label like 2024Q3."""
+		period = pd.Timestamp(ts).to_period("Q")
+		return f"{period.year}Q{period.quarter}"
+
+	def _format_folds_overview(self, folds: List[tuple]) -> str:
+		"""Build a readable multi-line summary for generated folds."""
+		if not folds:
+			return "  (sin folds)"
+
+		lines = []
+		for i, (train_start, train_end, test_end, train_years) in enumerate(folds):
+			test_start = train_end + pd.offsets.Day(1)
+			lines.append(
+				"  "
+				f"F{i:02d} | "
+				f"train {train_years}Y [{self._quarter_label(train_start)} -> {self._quarter_label(train_end)}] "
+				f"({train_start.date()} -> {train_end.date()}) | "
+				f"test [{self._quarter_label(test_end)}] "
+				f"({test_start.date()} -> {test_end.date()})"
+			)
+		return "\n".join(lines)
+
 	def generate_folds(
 		self,
 		analysis_start_date: str,
@@ -76,8 +100,10 @@ class WalkForwardBacktester:
 
 		log.info(
 			f"[Backtester] {len(folds)} folds generados | test={self.test_quarters}Q | "
-			f"train={self.train_years}Y | analysis_start={start.date()} | analysis_end={end.date()}"
+			f"train={self.train_years}Y | analysis_start={start.date()} ({self._quarter_label(start)}) | "
+			f"analysis_end={end.date()} ({self._quarter_label(end)})"
 		)
+		log.info("[Backtester] Plan de folds:\n%s", self._format_folds_overview(folds))
 		for i, (ts, te, tse, ny) in enumerate(folds):
 			log.debug(
 				f"  [{i:02d}] {ny}Y train | "

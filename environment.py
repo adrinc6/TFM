@@ -19,6 +19,13 @@ Note: the matplotlib Agg backend is configured in visualization modules,
 so all plots are always saved to disk (headless mode).
 """
 import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+_env_path = Path(__file__).parent / ".env"
+if _env_path.exists():
+    load_dotenv(_env_path)
 
 # =============================================================================
 # 1. Execution flags
@@ -79,10 +86,11 @@ FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
 
 FINNHUB_DATA_DIR         = "data_finnhub"
 
-RESULTS_DIR          = "results"
-AGENTS_RESULTS_DIR   = os.path.join(RESULTS_DIR, "agents")
-BACKTEST_RESULTS_DIR = os.path.join(RESULTS_DIR, "backtest")
-PLOTS_DIR            = os.path.join(RESULTS_DIR, "plots")
+RESULTS_DIR              = os.path.join("results", "general")
+AGENTS_RESULTS_DIR       = os.path.join("results", "agents")
+AGENT_MODELS_RESULTS_DIR = os.path.join("results", "agent_models")
+BACKTEST_RESULTS_DIR     = os.path.join("results", "backtest")
+PLOTS_DIR                = os.path.join("results", "plots")
 
 # =============================================================================
 # 4. Ticker universe
@@ -115,7 +123,7 @@ SP500_DYNAMIC_TOP_N = False
 DOWNLOAD_START_DATE = "2000-01-01"
 
 # Start of the analysis / walk-forward backtest period (snapshot quarters to evaluate).
-ANALYSIS_START_YEAR = 2015
+ANALYSIS_START_YEAR = 2022
 ANALYSIS_START_QUARTER = 3
 
 # End of the analysis / walk-forward backtest period.
@@ -134,7 +142,7 @@ ANALYSIS_ANNUAL_START_DATE = None
 
 # Lag (in days) from quarter close to real analysis/entry time.
 # Example: Q1 snapshot (Mar 31) + 45 days => approximate entry mid-Q2.
-SNAPSHOT_LAG_DAYS = 60
+SNAPSHOT_LAG_DAYS = 45
 
 # If True, when a ticker has no report for the analyzed quarter,
 # features are extrapolated using the average of the last N available quarters.
@@ -156,9 +164,6 @@ HOLDING_PERIOD_MONTHS = 3
 # Minimum historical quarters per ticker to include it in training
 MIN_HISTORY_QUARTERS = 4
 
-# Minimum same-sector companies to compute sector Z-score
-SECTOR_ZSCORE_MIN_PEERS = 3
-
 # Training target for base agents (all except SectorRotation):
 # - "vs_sector": y=1 if the company beats its sector median in the snapshot.
 # - "vs_universe": y=1 if it beats the universe median in the snapshot.
@@ -167,6 +172,10 @@ BASE_AGENTS_LABEL_MODE = "vs_sector"
 # Minimum peers per sector x snapshot to use a sector benchmark for labels.
 # If not met, falls back to universe median in that snapshot.
 BASE_LABEL_SECTOR_MIN_PEERS = 3
+
+# Minimum observations required to train an independent model in each sector.
+# Sectors with fewer observations receive neutral score fallback (0.5).
+SECTOR_SPECIALIST_MIN_SAMPLES = 40
 
 # Number of internal KFold splits to generate OOF scores for the meta-learner
 OOF_N_SPLITS = 3
@@ -401,14 +410,14 @@ FEATURE_SELECTOR_RF_MAX_DEPTH = 5
 # - then cap final count between [FEATURE_IMPORTANCE_MIN_KEEP, FEATURE_IMPORTANCE_MAX_KEEP].
 FEATURE_IMPORTANCE_CUTOFF_FRACTION = 0.50
 FEATURE_IMPORTANCE_MIN_KEEP = 4
-FEATURE_IMPORTANCE_MAX_KEEP = 10
+FEATURE_IMPORTANCE_MAX_KEEP = 8
 # Global Top-N for FeatureSelector pre-filtering (all agents).
 # FINAL selection across all agents is uniformly controlled by:
 #   - FEATURE_IMPORTANCE_CUTOFF_FRACTION = 0.50
 #   - FEATURE_IMPORTANCE_MIN_KEEP = 4
-#   - FEATURE_IMPORTANCE_MAX_KEEP = 10
-# These limits ensure all agents use between 4 and 10 final features.
-FEATURE_TOP_N = 14
+#   - FEATURE_IMPORTANCE_MAX_KEEP = 8
+# These limits ensure all agents use between 4 and 8 final features.
+FEATURE_TOP_N = 12
 
 # ── MetaLearner (LR + GBM stacking) ──────────────────────────────────────────
 META_LR_C             = 0.5

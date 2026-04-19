@@ -98,10 +98,14 @@ class ValuationAgent(BaseAgent):
         X_prep       = X_prep.reset_index(drop=True)
         y_cl         = y_cl.reset_index(drop=True)
 
+        if not self.has_multiple_classes(y_cl):
+            log.warning("[ValuationAgent] Label without enough class variance after cleaning - training skipped.")
+            return self
+
         # Feature selection: training data only (no leakage)
         self._selector = FeatureSelector(corr_threshold=FEATURE_CORR_THRESHOLD, top_n=FEATURE_TOP_N,
                                          min_features=3, random_seed=self.random_seed,
-                                         zsector_pair_policy="force_zsector")
+                                         )
         X_prep = self._selector.fit_transform(X_prep, y_cl, agent_name="valuation")
 
         self._feature_cols = list(X_prep.columns)
@@ -223,6 +227,10 @@ class ValuationAgent(BaseAgent):
         tss = TimeSeriesSplit(n_splits=5)
         aucs, accs, f1s = [], [], []
         for tr, val in tss.split(X):
+            y_tr = y.iloc[tr]
+            y_val = y.iloc[val]
+            if not self.has_multiple_classes(y_tr):
+                continue
             pipe = Pipeline([
                 ("scaler", StandardScaler()),
                 ("clf", GradientBoostingClassifier(
@@ -230,17 +238,17 @@ class ValuationAgent(BaseAgent):
                     learning_rate=self.learning_rate, subsample=self.subsample,
                     random_state=self.random_seed)),
             ])
-            pipe.fit(X.iloc[tr], y.iloc[tr])
+            pipe.fit(X.iloc[tr], y_tr)
             p = pipe.predict_proba(X.iloc[val])[:, 1]
-            if y.iloc[val].nunique() > 1:
-                aucs.append(roc_auc_score(y.iloc[val], p))
-            accs.append(accuracy_score(y.iloc[val], (p >= 0.5).astype(int)))
-            f1s.append(f1_score(y.iloc[val], (p >= 0.5).astype(int), zero_division=0))
+            if self.has_multiple_classes(y_val):
+                aucs.append(roc_auc_score(y_val, p))
+            accs.append(accuracy_score(y_val, (p >= 0.5).astype(int)))
+            f1s.append(f1_score(y_val, (p >= 0.5).astype(int), zero_division=0))
         return {
             "mean_auc": float(np.mean(aucs)) if aucs else 0.0,
             "std_auc":  float(np.std(aucs))  if aucs else 0.0,
-            "mean_acc": float(np.mean(accs)),
-            "mean_f1":  float(np.mean(f1s)),
+            "mean_acc": float(np.mean(accs)) if accs else 0.0,
+            "mean_f1":  float(np.mean(f1s)) if f1s else 0.0,
         }
 
     def _sector_summary(self, X: pd.DataFrame, sector_col: str) -> Dict:

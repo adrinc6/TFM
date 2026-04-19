@@ -15,6 +15,7 @@ TFM/
 ├── pyproject.toml                 # Configuración de packaging y pytest
 ├── tests/
 │   └── test_antileakage_and_policy.py  # Tests anti-leakage y política de features
+│   └── test_sector_specialized_agent.py # Tests de agentes especializados por sector
 ├── data_finnhub/                  # Datos descargados (generado en ejecución)
 │   ├── _registry.json             # Estado de descargas por ticker/endpoint
 │   ├── sp500_historic.csv         # Miembros históricos del S&P 500
@@ -30,6 +31,7 @@ TFM/
 │   │   ├── momentum.py            # Agente de momentum técnico (Random Forest)
 │   │   ├── bear.py                # Agente de riesgo (reglas + RF)
 │   │   ├── sentiment.py           # Agente de sentimiento (Random Forest)
+│   │   ├── sector_specialized.py  # Wrapper: 1 modelo independiente por sector
 │   │   ├── sector_rotation.py     # Agente de rotación sectorial (GBM)
 │   │   └── meta_learner.py        # Meta-learner (LR + GBM stacking)
 │   ├── common/                    # Utilidades compartidas
@@ -171,6 +173,27 @@ Clase base abstracta para todos los agentes del sistema.
 | `predict_sector_scores(X, sector_map)` | `X: pd.DataFrame`, `sector_map: Dict` | `Dict[str, float]` | Scores por sector |
 | `map_to_tickers(sector_scores, tickers, sector_map)` | Ver firma | `pd.Series` | Expande scores sector → ticker |
 
+**Estrategia de benchmark sectorial**:
+- No hace ranking directo entre sectores.
+- Formula el objetivo como clasificación binaria por sector y quarter:
+  - `1` si retorno del sector > retorno trimestral de SPY.
+  - `0` en caso contrario.
+- El benchmark está fijado a SPY en este componente (sin modo universo).
+
+### 2.7.1 `SectorSpecializedAgent` (module/agents/sector_specialized.py)
+
+Wrapper transversal para los agentes base (`fundamental`, `valuation`, `momentum`, `bear`, `sentiment`):
+
+- Entrena una instancia independiente del agente por cada sector.
+- Aísla datos por `sector` antes del `fit`.
+- Cada submodelo ejecuta su propio `FeatureSelector`, por lo que aprende
+  señales relevantes específicas del sector.
+- Sectores con pocas observaciones no entrenan submodelo y usan score neutro `0.5`.
+
+Parámetros clave:
+- `SECTOR_SPECIALIST_MIN_SAMPLES`: mínimo de observaciones para entrenar un submodelo sectorial.
+- `neutral_score=0.5`: fallback para sectores no entrenados o no vistos.
+
 ### 2.8 `MetaLearner` (module/agents/meta_learner.py)
 
 | Método | Parámetros | Retorno | Descripción |
@@ -261,9 +284,10 @@ Clase base abstracta para todos los agentes del sistema.
 | Variable | Tipo | Default | Descripción |
 |----------|------|---------|-------------|
 | `FINNHUB_DATA_DIR` | str | `"data_finnhub"` | Directorio de datos descargados |
-| `RESULTS_DIR` | str | `"results"` | Directorio raíz de resultados |
-| `AGENTS_RESULTS_DIR` | str | `"results/agents"` | Diagnósticos de agentes |
-| `BACKTEST_RESULTS_DIR` | str | `"results/backtest"` | Resultados del backtest |
+| `RESULTS_DIR` | str | `"results/general"` | Resultados generales del pipeline |
+| `AGENTS_RESULTS_DIR` | str | `"results/agents"` | Reportes por periodo de agentes |
+| `AGENT_MODELS_RESULTS_DIR` | str | `"results/agent_models"` | Artefactos de modelos por agente |
+| `BACKTEST_RESULTS_DIR` | str | `"results/backtest"` | Resultados monetarios y métricas del backtest |
 | `PLOTS_DIR` | str | `"results/plots"` | Gráficos generados |
 
 ### 3.4 Universo de tickers
@@ -280,7 +304,7 @@ Clase base abstracta para todos los agentes del sistema.
 | Variable | Tipo | Default | Descripción |
 |----------|------|---------|-------------|
 | `DOWNLOAD_START_DATE` | str | `"2000-01-01"` | Inicio de descarga de datos |
-| `ANALYSIS_START_YEAR` | int | `2015` | Año de inicio del análisis |
+| `ANALYSIS_START_YEAR` | int | `2022` | Año de inicio del análisis |
 | `ANALYSIS_START_QUARTER` | int | `3` | Quarter de inicio |
 | `ANALYSIS_END_YEAR` | int | `2026` | Año de fin del análisis |
 | `ANALYSIS_END_QUARTER` | int | `2` | Quarter de fin |
@@ -296,7 +320,6 @@ Clase base abstracta para todos los agentes del sistema.
 | Variable | Tipo | Default | Descripción |
 |----------|------|---------|-------------|
 | `MIN_HISTORY_QUARTERS` | int | `4` | Mínimo de quarters por ticker |
-| `SECTOR_ZSCORE_MIN_PEERS` | int | `3` | Mínimo de peers para Z-score |
 | `BASE_AGENTS_LABEL_MODE` | str | `"vs_sector"` | Modo de label (vs_sector o vs_universe) |
 | `BASE_LABEL_SECTOR_MIN_PEERS` | int | `3` | Mínimo peers para benchmark sectorial |
 | `OOF_N_SPLITS` | int | `3` | Folds internos de OOF |
@@ -479,16 +502,20 @@ PROCESO:
     6. Si RUN_ABLATION_STUDY: mide impacto de cada agente
 
 SALIDA:
+  - results/general/final_summary.json
+  - results/general/run_config.json
   - results/backtest/walkforward_summary.json
   - results/backtest/folds_detail.csv
   - results/backtest/portfolio_returns.csv
   - results/backtest/equity_curve_usd.csv
-  - results/agents/<agent>/diagnostics_<fold>.json
-  - results/agents/<agent>/feature_importances_<fold>.csv
-  - results/plots/*.png
-  - results/pipeline.log
-  - results/run_config.json
-  - results/data_quality_report.csv
+  - results/backtest/<period>/trades.csv
+  - results/backtest/<period>/equity_curve.csv
+  - results/agents/<period>/scores.csv
+  - results/agents/<period>/selection_audit.csv
+  - results/agents/<period>/ticker_explanations.csv
+  - results/agents/<period>/feature_usage_report.csv
+  - results/agent_models/<agent>/feature_importances_<period>.csv
+  - results/plots/<period>/performance.png
 ```
 
 ---

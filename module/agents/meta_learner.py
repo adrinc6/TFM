@@ -118,6 +118,11 @@ class MetaLearner(BaseAgent):
         X_prep, y_cl = self.clean_features(X_prep, y.reset_index(drop=True))
         X_prep       = X_prep.reset_index(drop=True)
         y_cl         = y_cl.reset_index(drop=True)
+
+        if not self.has_multiple_classes(y_cl):
+            log.warning("[MetaLearner] Label without enough class variance after cleaning - training skipped.")
+            return self
+
         self._feature_cols = list(X_prep.columns)
         bal          = self.class_balance(y_cl)
         log.info(f"[MetaLearner] Balance: {bal['n_positive']} Outperform / {bal['n_negative']} Underperform ({bal['n_positive']/(bal['n_positive']+bal['n_negative']):.1%} positive)")
@@ -474,6 +479,10 @@ class MetaLearner(BaseAgent):
         lr_aucs, lr_f1s = [], []
         gbm_aucs, gbm_f1s = [], []
         for tr, val in tss.split(X):
+            y_tr = y.iloc[tr]
+            y_val = y.iloc[val]
+            if not self.has_multiple_classes(y_tr):
+                continue
             lr  = Pipeline([("s", StandardScaler()),
                             ("c", LogisticRegression(C=META_LR_C, class_weight="balanced",
                                                      max_iter=1000, random_state=self.random_seed))])
@@ -484,17 +493,17 @@ class MetaLearner(BaseAgent):
                                 learning_rate=META_GBM_LEARNING_RATE,
                                 subsample=META_GBM_SUBSAMPLE,
                                 random_state=self.random_seed))])
-            lr.fit(X.iloc[tr], y.iloc[tr])
-            gbm.fit(X.iloc[tr], y.iloc[tr])
+            lr.fit(X.iloc[tr], y_tr)
+            gbm.fit(X.iloc[tr], y_tr)
             for model, aucs, f1s in [(lr, lr_aucs, lr_f1s), (gbm, gbm_aucs, gbm_f1s)]:
                 p = model.predict_proba(X.iloc[val])[:, 1]
-                if y.iloc[val].nunique() > 1:
-                    aucs.append(roc_auc_score(y.iloc[val], p))
-                f1s.append(f1_score(y.iloc[val], (p>=0.5).astype(int), zero_division=0))
+                if self.has_multiple_classes(y_val):
+                    aucs.append(roc_auc_score(y_val, p))
+                f1s.append(f1_score(y_val, (p>=0.5).astype(int), zero_division=0))
         def _agg(aucs, f1s):
             return {"mean_auc": float(np.mean(aucs)) if aucs else 0.0,
                     "std_auc":  float(np.std(aucs))  if aucs else 0.0,
-                    "mean_f1":  float(np.mean(f1s))}
+                    "mean_f1":  float(np.mean(f1s)) if f1s else 0.0}
         return _agg(lr_aucs, lr_f1s), _agg(gbm_aucs, gbm_f1s)
 
     def _save_lr_report(self, coef: pd.Series, fold: Optional[int | str]):

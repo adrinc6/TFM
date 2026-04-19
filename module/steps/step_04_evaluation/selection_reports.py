@@ -202,9 +202,8 @@ def export_selection_audit(
     """Persist the selection audit as CSV and JSON."""
     out_dir = Path(results_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    suffix = f"_{fold_id}" if fold_id is not None else ""
-    csv_path = out_dir / f"{prefix}{suffix}_selection_audit.csv"
-    json_path = out_dir / f"{prefix}{suffix}_selection_audit.json"
+    csv_path = out_dir / "selection_audit.csv"
+    json_path = out_dir / "selection_audit.json"
 
     if audit_df.empty:
         csv_path.write_text("", encoding="utf-8")
@@ -244,8 +243,8 @@ def export_ticker_explanations(
     if scores.empty:
         out_dir = Path(agents_results_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
-        csv_path = out_dir / f"{prefix}_{fold_id}_ticker_explanations.csv"
-        json_path = out_dir / f"{prefix}_{fold_id}_ticker_explanations.json"
+        csv_path = out_dir / "ticker_explanations.csv"
+        json_path = out_dir / "ticker_explanations.json"
         csv_path.write_text("", encoding="utf-8")
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump({"fold": fold_id, "tickers": {}}, f, indent=2, ensure_ascii=False)
@@ -253,8 +252,8 @@ def export_ticker_explanations(
 
     out_dir = Path(agents_results_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    csv_path = out_dir / f"{prefix}_{fold_id}_ticker_explanations.csv"
-    json_path = out_dir / f"{prefix}_{fold_id}_ticker_explanations.json"
+    csv_path = out_dir / "ticker_explanations.csv"
+    json_path = out_dir / "ticker_explanations.json"
 
     tickers_col = df_test.index.get_level_values("ticker")
     ticker_scores = pd.Series(scores.values, index=tickers_col).groupby(level=0).last()

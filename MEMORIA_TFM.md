@@ -167,10 +167,9 @@ El label binario se calcula como: ¿superó el ticker la mediana de su sector en
 ### 5.4 Selección de features
 
 Cada agente ejecuta un `FeatureSelector` que:
-1. Elimina pares exclusivos (base vs zsector): selecciona el de mayor correlación con el target.
-2. Aplica eliminación greedy de correlaciones altas (> 0.85).
-3. Calcula un score combinado = w × relevancia_con_y + (1-w) × importancia_RF.
-4. Aplica corte por importancia: mantiene entre 4 y 10 features finales.
+1. Aplica eliminación greedy de correlaciones altas (> 0.85).
+2. Calcula un score combinado = w × relevancia_con_y + (1-w) × importancia_RF.
+3. Aplica corte por importancia: mantiene entre 4 y 10 features finales.
 
 ---
 

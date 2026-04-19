@@ -6,6 +6,7 @@ from .momentum import MomentumAgent
 from .sentiment import SentimentAgent
 from .valuation import ValuationAgent
 from .bear import BearAgent
+from .sector_specialized import SectorSpecializedAgent
 from .meta_learner import MetaLearner
 
 __all__ = [
@@ -16,5 +17,6 @@ __all__ = [
 	"SentimentAgent",
 	"ValuationAgent",
 	"BearAgent",
+	"SectorSpecializedAgent",
 	"MetaLearner",
 ]

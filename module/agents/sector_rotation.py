@@ -1,12 +1,12 @@
 """Sector rotation agent (top-down predictor) for the multi-agent stock picker.
 
-Predicts whether a sector will outperform the S&P 500 next quarter.
+Predicts whether a sector will outperform a benchmark next quarter.
 
 Logic:
   Operates at SECTOR level, not ticker level. For each (sector, quarter):
     - Aggregates features from all tickers in the sector (median).
     - Adds sectoral price momentum and analyst flow features.
-    - Predicts whether the mean sector return will beat SPY.
+    - Predicts whether the mean sector return will beat the selected benchmark.
 
   Output (sector_score) enters the MetaLearner as top-down context:
     - A strong ticker in a strong sector receives a boosting signal.
@@ -51,13 +51,13 @@ _SUBSAMPLE = 0.8
 
 class SectorRotationAgent(BaseAgent):
     """
-    Top-down agent that predicts whether a sector will outperform the S&P 500.
+    Top-down agent that predicts whether a sector will outperform a benchmark.
 
     Process:
       1. fit(): receives the ticker DataFrame with multi-index (ticker, date).
                 Aggregates to (sector, quarter) level using robust medians.
                 Builds the sector label: 1 if the mean sector return
-                beat SPY in that quarter.
+                beats the configured benchmark in that quarter.
                 Trains a GBM on those sector-level observations.
 
       2. predict_sector_scores(): given a ticker DataFrame, aggregates to
@@ -94,7 +94,7 @@ class SectorRotationAgent(BaseAgent):
         """
         df: DataFrame with multi-index (ticker, date) and a forward_return column.
         sector_map: {ticker: sector}.
-        spy_prices: daily SPY prices for computing the quarterly return.
+        spy_prices: daily SPY prices for benchmark computation when mode='spy'.
         """
         log.info(f"[SectorRotationAgent] Building sector dataset — {len(df)} ticker obs")
 
@@ -160,6 +160,7 @@ class SectorRotationAgent(BaseAgent):
             "class_balance": bal,
             "cv_metrics": cv,
             "n_sector_obs": len(sector_df),
+            "benchmark_mode": "spy",
             "top_features": imp.nlargest(10).to_dict(),
             "feature_selection": self._selector.report(),
         }
@@ -185,7 +186,7 @@ class SectorRotationAgent(BaseAgent):
     ) -> Dict[str, float]:
         """
         Return a dict {sector: score [0,1]} where score is the probability
-        that the sector will beat the S&P 500 next quarter.
+        that the sector will beat the configured benchmark next quarter.
         """
         if not self.is_trained:
             log.warning("[SectorRotationAgent] Not trained — returning neutral score 0.5 for all sectors.")
@@ -241,7 +242,7 @@ class SectorRotationAgent(BaseAgent):
         """
         Build a (sector, quarter) DataFrame with:
           - Aggregated features (mean of tickers in the sector for that quarter)
-          - Label: 1 if the mean sector return beat SPY
+                    - Label: 1 if the mean sector return beat the configured benchmark
         """
         tickers = df.index.get_level_values("ticker")
         dates = df.index.get_level_values("date")
@@ -252,6 +253,8 @@ class SectorRotationAgent(BaseAgent):
         temp = df.copy()
         temp["_sector"] = sector_series.values
         temp["_quarter"] = quarter_series.values
+
+        spy_ret_by_q = _spy_quarterly_returns_dict(spy_prices) if (spy_prices is not None and not spy_prices.empty) else {}
 
         # Features a agregar
         available_feat_cols = resolve_feature_columns(
@@ -275,17 +278,17 @@ class SectorRotationAgent(BaseAgent):
                 continue
             sector_return = float(grp["forward_return"].mean())
 
-            if spy_prices is not None and not spy_prices.empty:
-                spy_ret_by_q = _spy_quarterly_returns_dict(spy_prices)
-                spy_ret = spy_ret_by_q.get(quarter, np.nan)
-                label = int(sector_return > spy_ret) if pd.notna(spy_ret) else int(sector_return > 0)
-            else:
-                label = int(sector_return > 0)
+            benchmark_ret = _resolve_benchmark_return(
+                quarter=quarter,
+                spy_ret_by_q=spy_ret_by_q,
+            )
+            label = int(sector_return > benchmark_ret) if pd.notna(benchmark_ret) else int(sector_return > 0)
 
             feat["sector"] = sector
             feat["quarter"] = quarter
             feat["sector_outperform"] = label
             feat["_sector_return"] = sector_return
+            feat["_benchmark_return"] = float(benchmark_ret) if pd.notna(benchmark_ret) else np.nan
             records.append(feat)
 
         if not records:
@@ -326,7 +329,9 @@ class SectorRotationAgent(BaseAgent):
         tss = TimeSeriesSplit(n_splits=min(3, len(X) // 4))
         aucs, f1s = [], []
         for tr, val in tss.split(X):
-            if y.iloc[val].nunique() < 2:
+            y_tr = y.iloc[tr]
+            y_val = y.iloc[val]
+            if not self.has_multiple_classes(y_tr):
                 continue
             pipe = Pipeline([
                 ("scaler", StandardScaler()),
@@ -338,10 +343,11 @@ class SectorRotationAgent(BaseAgent):
                     random_state=self.random_seed,
                 )),
             ])
-            pipe.fit(X.iloc[tr], y.iloc[tr])
+            pipe.fit(X.iloc[tr], y_tr)
             p = pipe.predict_proba(X.iloc[val])[:, 1]
-            aucs.append(roc_auc_score(y.iloc[val], p))
-            f1s.append(f1_score(y.iloc[val], (p >= 0.5).astype(int), zero_division=0))
+            if self.has_multiple_classes(y_val):
+                aucs.append(roc_auc_score(y_val, p))
+            f1s.append(f1_score(y_val, (p >= 0.5).astype(int), zero_division=0))
         return {
             "mean_auc": float(np.mean(aucs)) if aucs else 0.0,
             "std_auc":  float(np.std(aucs))  if aucs else 0.0,
@@ -361,3 +367,15 @@ def _spy_quarterly_returns_dict(spy_prices: pd.Series) -> Dict[str, float]:
         if p0 > 0:
             result[str(period)] = float(p1 / p0 - 1)
     return result
+
+
+def _resolve_benchmark_return(
+    quarter: str,
+    spy_ret_by_q: Dict[str, float],
+) -> float:
+    """Returns the benchmark return for a sector-quarter comparison.
+
+    Benchmark strategy avoids direct sector-vs-sector ranking and keeps a
+    binary objective: sector return vs benchmark return.
+    """
+    return spy_ret_by_q.get(quarter, np.nan)

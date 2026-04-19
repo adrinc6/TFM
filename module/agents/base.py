@@ -44,7 +44,6 @@ class BaseAgent(ABC):
         """
         self.name          = name
         self.results_dir   = Path(results_dir) / name
-        self.results_dir.mkdir(parents=True, exist_ok=True)
         self.random_seed   = random_seed
         self.is_trained    = False
         self.save_artifacts = save_artifacts
@@ -98,6 +97,7 @@ class BaseAgent(ABC):
             **(extra or {}),
         }
         suffix = f"_{fold}" if fold is not None else ""
+        self.results_dir.mkdir(parents=True, exist_ok=True)
         path   = self.results_dir / f"diagnostics{suffix}.json"
         with open(path, "w") as f:
             json.dump(data, f, indent=2, default=str)
@@ -114,6 +114,7 @@ class BaseAgent(ABC):
         if not self.save_artifacts:
             return
         suffix = f"_{fold}" if fold is not None else ""
+        self.results_dir.mkdir(parents=True, exist_ok=True)
         path   = self.results_dir / f"feature_importances{suffix}.csv"
         importances.sort_values(ascending=False).to_csv(path, header=["importance"])
         log.info(f"[{self.name}] Top-5 features: "
@@ -129,6 +130,7 @@ class BaseAgent(ABC):
         if not self.save_artifacts:
             return
         suffix = f"_{fold}" if fold is not None else ""
+        self.results_dir.mkdir(parents=True, exist_ok=True)
         path   = self.results_dir / f"predictions{suffix}.csv"
         preds_df.to_csv(path)
         log.info(f"[{self.name}] Predictions ({len(preds_df)} obs) → {path.name}")
@@ -145,6 +147,7 @@ class BaseAgent(ABC):
             return
         entry = {"fold": fold, "ts": datetime.now().isoformat(), **metrics}
         self._train_history.append(entry)
+        self.results_dir.mkdir(parents=True, exist_ok=True)
         path = self.results_dir / "train_history.json"
         with open(path, "w") as f:
             json.dump(self._train_history, f, indent=2, default=str)
@@ -295,6 +298,13 @@ class BaseAgent(ABC):
             "positive_ratio": float(counts.get(1, 0) / total) if total > 0 else 0.0,
         }
 
+    @staticmethod
+    def has_multiple_classes(y: pd.Series) -> bool:
+        """Returns True when the target contains at least two non-null classes."""
+        if y is None:
+            return False
+        return int(pd.Series(y).dropna().nunique()) >= 2
+
     # ── Feature structural helpers ────────────────────────────────────────────
 
     @staticmethod
@@ -331,11 +341,9 @@ class BaseAgent(ABC):
         feature_cols: List[str],
         sector_col: str,
         fit_mode: bool,
-        include_zsector: bool = True,
         dummies_attr: str = "_sector_dummies",
     ) -> pd.DataFrame:
-        """Builds a feature matrix with base features, optional z-sector columns,
-        and one-hot sector dummies.
+        """Builds a feature matrix with base features and one-hot sector dummies.
 
         During ``fit_mode=True``, the set of dummy columns is saved to
         ``self.<dummies_attr>`` so that the same schema can be reproduced at
@@ -347,19 +355,14 @@ class BaseAgent(ABC):
             sector_col (str): Column containing the sector label.
             fit_mode (bool): If True, fits the dummy column schema from data.
                 If False, aligns to the previously fitted schema.
-            include_zsector (bool): Whether to append ``*_zsector`` columns.
             dummies_attr (str): Attribute name used to store/retrieve the dummy
                 column list.
 
         Returns:
-            pd.DataFrame: Feature matrix including base, zsector, and dummy columns.
+            pd.DataFrame: Feature matrix including base and dummy columns.
         """
         df = X.copy()
         selected = self._unique_existing_columns(df, feature_cols)
-
-        if include_zsector:
-            zsec_cols = [c for c in df.columns if c.endswith("_zsector")]
-            selected = self._unique_existing_columns(df, selected + zsec_cols)
 
         if sector_col in df.columns:
             dummies = pd.get_dummies(df[sector_col], prefix="sector", dtype=float)
@@ -400,12 +403,7 @@ class BaseAgent(ABC):
 
 
 class FeatureSelector:
-    """Two-step feature selector that must be fitted only on training data.
-
-    Step 0 — Mandatory base-vs-zsector exclusion:
-        For each pair (base_col, base_col_zsector), retains only the version
-        with the higher point-biserial correlation with the target y. In a
-        tie, the _zsector version is preferred for sectoral comparability.
+    """Three-step feature selector that must be fitted only on training data.
 
     Step 1 — Greedy redundancy removal by correlation:
         Features sorted by mean correlation with all others (most redundant
@@ -434,8 +432,7 @@ class FeatureSelector:
                  min_features: int = 5, random_seed: int = 42,
                  relevance_weight: float = FEATURE_SELECTOR_RELEVANCE_WEIGHT,
                  rf_n_estimators: int = FEATURE_SELECTOR_RF_N_ESTIMATORS,
-                 rf_max_depth: int = FEATURE_SELECTOR_RF_MAX_DEPTH,
-                 zsector_pair_policy: str = "auto"):
+                 rf_max_depth: int = FEATURE_SELECTOR_RF_MAX_DEPTH):
         """Initialises the FeatureSelector.
 
         Args:
@@ -450,9 +447,6 @@ class FeatureSelector:
                 combined score (range [0, 1]).
             rf_n_estimators (int): Number of trees in the auxiliary RF.
             rf_max_depth (int): Maximum tree depth in the auxiliary RF.
-            zsector_pair_policy (str): Policy for resolving base/zsector pairs.
-                ``"auto"`` uses pb_y to decide; ``"force_zsector"`` always
-                keeps the zsector version.
         """
         self.corr_threshold  = corr_threshold
         self.top_n           = top_n
@@ -464,8 +458,6 @@ class FeatureSelector:
         self.cutoff_fraction = float(max(0.0, min(1.0, FEATURE_IMPORTANCE_CUTOFF_FRACTION)))
         self.min_keep = max(int(FEATURE_IMPORTANCE_MIN_KEEP), 1)
         self.max_keep = max(int(FEATURE_IMPORTANCE_MAX_KEEP), self.min_keep)
-        policy = str(zsector_pair_policy).strip().lower()
-        self.zsector_pair_policy = policy if policy in {"auto", "force_zsector"} else "auto"
         self._selected_cols: List[str] = []
         self._selected_weights_pct: Dict[str, float] = {}
         self._dropped_pair:  List[str] = []
@@ -505,53 +497,6 @@ class FeatureSelector:
             # Fallback: Pearson correlation with y
             pb_corr = {c: abs(float(X[c].corr(y.astype(float)))) for c in cols}
 
-        # ── Step 0: mandatory base vs _zsector exclusion ─────────────────────
-        # Hard rule: never allow both the raw and the sector-normalized version
-        # of the same indicator simultaneously.
-        # For each (base, base_zsector) pair, keep the one with higher |pb_y|.
-        # In a tie, prefer _zsector for sectoral comparability.
-        to_drop_pair: List[str] = []
-        pair_drop_detail: List[str] = []
-        for col in cols:
-            if not col.endswith("_zsector"):
-                continue
-            base_col = col[:-8]
-            if base_col not in cols:
-                continue
-
-            pb_base = float(pb_corr.get(base_col, 0.0))
-            pb_zsec = float(pb_corr.get(col, 0.0))
-            if self.zsector_pair_policy == "force_zsector":
-                loser = base_col
-                winner = col
-                decision_txt = "policy=force_zsector"
-            elif pb_zsec >= pb_base:
-                loser = base_col
-                winner = col
-                decision_txt = "policy=auto"
-            else:
-                loser = col
-                winner = base_col
-                decision_txt = "policy=auto"
-
-            if loser not in to_drop_pair:
-                to_drop_pair.append(loser)
-                pair_drop_detail.append(
-                    f"{loser} (exclusive pair with {winner}; "
-                    f"pb_y({loser})={pb_corr.get(loser, 0.0):.3f} <= "
-                    f"pb_y({winner})={pb_corr.get(winner, 0.0):.3f}; {decision_txt})"
-                )
-
-        cols_after_pair = [c for c in cols if c not in to_drop_pair]
-        self._dropped_pair = to_drop_pair
-
-        if to_drop_pair:
-            log.info(f"{prefix} Step 0 — base vs _zsector exclusion: "
-                     f"removed {len(to_drop_pair)} / {len(cols)} features "
-                     f"(policy={self.zsector_pair_policy})")
-            for detail in pair_drop_detail:
-                log.info(f"{prefix}   REMOVED by exclusive pair: {detail}")
-
         # ── Step 1: greedy removal by inter-feature correlation ───────────────
         # Algorithm:
         #   1. Compute mean correlation of each feature with all others
@@ -561,7 +506,7 @@ class FeatureSelector:
         #      with ANY already-kept feature.
         #      If yes: compare pb_y of both → discard the one with lower pb_y.
         #   This ensures all pairs are evaluated correctly.
-        corr_matrix = X[cols_after_pair].corr().abs()
+        corr_matrix = X[cols].corr().abs()
 
         # Sort from most to least correlated on average (most redundant first)
         mean_corr = corr_matrix.mean()
@@ -605,10 +550,10 @@ class FeatureSelector:
             else:
                 kept_so_far.append(feat)
 
-        remaining = [c for c in cols_after_pair if c not in to_drop_corr]
+        remaining = [c for c in cols if c not in to_drop_corr]
         if len(remaining) < self.min_features:
             # Revert: not enough features remain after filtering
-            remaining        = cols_after_pair
+            remaining        = cols
             to_drop_corr     = []
             corr_drop_detail = []
         self._dropped_corr = to_drop_corr
@@ -747,7 +692,7 @@ class FeatureSelector:
             "importance_weight": 1.0 - self.relevance_weight,
             "rf_n_estimators": self.rf_n_estimators,
             "rf_max_depth": self.rf_max_depth,
-            "zsector_pair_policy": self.zsector_pair_policy,
+
             "cutoff_fraction": self.cutoff_fraction,
             "min_keep": self.min_keep,
             "max_keep": self.max_keep,

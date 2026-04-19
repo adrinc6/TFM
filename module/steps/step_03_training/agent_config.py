@@ -9,10 +9,12 @@ from module.agents.valuation import ValuationAgent
 from module.agents.momentum import MomentumAgent
 from module.agents.bear import BearAgent
 from module.agents.sentiment import SentimentAgent
+from module.agents.sector_specialized import SectorSpecializedAgent
 from module.agents.sector_rotation import SectorRotationAgent
+from environment import SECTOR_SPECIALIST_MIN_SAMPLES
 
 
-def build_agents_config(agents_results_dir: str, random_seed: int) -> Dict[str, Dict[str, Any]]:
+def build_agents_config(agent_models_results_dir: str, random_seed: int) -> Dict[str, Dict[str, Any]]:
     """Builds the declarative configuration for all base agents.
 
     The SectorRotationAgent is instantiated here but trained separately in
@@ -20,7 +22,7 @@ def build_agents_config(agents_results_dir: str, random_seed: int) -> Dict[str, 
     does not share the standard ``fit(X, y)`` signature.
 
     Args:
-        agents_results_dir (str): Root directory for agent artefact output.
+        agent_models_results_dir (str): Root directory for agent model artefact output.
         random_seed (int): Random seed forwarded to every agent.
 
     Returns:
@@ -33,46 +35,81 @@ def build_agents_config(agents_results_dir: str, random_seed: int) -> Dict[str, 
     """
     return {
         "fundamental": {
-            "cls": FundamentalAgent,
-            "kwargs": {"results_dir": agents_results_dir, "random_seed": random_seed},
+            "cls": SectorSpecializedAgent,
+            "kwargs": {
+                "name": "fundamental",
+                "agent_cls": FundamentalAgent,
+                "results_dir": agent_models_results_dir,
+                "random_seed": random_seed,
+                "agent_kwargs": {},
+                "min_samples_per_sector": SECTOR_SPECIALIST_MIN_SAMPLES,
+            },
             "sector_col": "sector",
             "invert_y": False,
         },
         "valuation": {
-            "cls": ValuationAgent,
-            "kwargs": {"results_dir": agents_results_dir, "random_seed": random_seed},
+            "cls": SectorSpecializedAgent,
+            "kwargs": {
+                "name": "valuation",
+                "agent_cls": ValuationAgent,
+                "results_dir": agent_models_results_dir,
+                "random_seed": random_seed,
+                "agent_kwargs": {},
+                "min_samples_per_sector": SECTOR_SPECIALIST_MIN_SAMPLES,
+            },
             "sector_col": "sector",
             "invert_y": False,
         },
         "momentum": {
-            "cls": MomentumAgent,
-            "kwargs": {"results_dir": agents_results_dir, "random_seed": random_seed},
-            "sector_col": None,
+            "cls": SectorSpecializedAgent,
+            "kwargs": {
+                "name": "momentum",
+                "agent_cls": MomentumAgent,
+                "results_dir": agent_models_results_dir,
+                "random_seed": random_seed,
+                "agent_kwargs": {},
+                "min_samples_per_sector": SECTOR_SPECIALIST_MIN_SAMPLES,
+            },
+            "sector_col": "sector",
             "invert_y": False,
         },
         "bear": {
-            "cls": BearAgent,
-            "kwargs": {"results_dir": agents_results_dir, "random_seed": random_seed},
-            "sector_col": None,
+            "cls": SectorSpecializedAgent,
+            "kwargs": {
+                "name": "bear",
+                "agent_cls": BearAgent,
+                "results_dir": agent_models_results_dir,
+                "random_seed": random_seed,
+                "agent_kwargs": {},
+                "min_samples_per_sector": SECTOR_SPECIALIST_MIN_SAMPLES,
+            },
+            "sector_col": "sector",
             "invert_y": True,
         },
         "sentiment": {
-            "cls": SentimentAgent,
-            "kwargs": {"results_dir": agents_results_dir, "random_seed": random_seed},
-            "sector_col": None,
+            "cls": SectorSpecializedAgent,
+            "kwargs": {
+                "name": "sentiment",
+                "agent_cls": SentimentAgent,
+                "results_dir": agent_models_results_dir,
+                "random_seed": random_seed,
+                "agent_kwargs": {},
+                "min_samples_per_sector": SECTOR_SPECIALIST_MIN_SAMPLES,
+            },
+            "sector_col": "sector",
             "invert_y": False,
         },
     }
 
 
-def build_sector_rotation_agent(agents_results_dir: str, random_seed: int) -> SectorRotationAgent:
+def build_sector_rotation_agent(agent_models_results_dir: str, random_seed: int) -> SectorRotationAgent:
     """Instantiates the SectorRotationAgent (trained separately in training.py).
 
     Args:
-        agents_results_dir (str): Root directory for agent artefact output.
+        agent_models_results_dir (str): Root directory for agent model artefact output.
         random_seed (int): Random seed for the agent.
 
     Returns:
         SectorRotationAgent: An untrained SectorRotationAgent instance.
     """
-    return SectorRotationAgent(results_dir=agents_results_dir, random_seed=random_seed)
+    return SectorRotationAgent(results_dir=agent_models_results_dir, random_seed=random_seed)

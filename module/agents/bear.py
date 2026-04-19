@@ -148,6 +148,10 @@ class BearAgent(BaseAgent):
         X_prep       = X_prep.reset_index(drop=True)
         y_cl         = y_cl.reset_index(drop=True)
 
+        if not self.has_multiple_classes(y_cl):
+            log.warning("[BearAgent] Label without enough class variance after cleaning - training skipped.")
+            return self
+
         # Feature selection: only on training data (no leakage)
         # BearAgent uses all its features (few), so top_n >= n_flags + base
         self._selector = FeatureSelector(corr_threshold=FEATURE_CORR_THRESHOLD, top_n=FEATURE_TOP_N,
@@ -331,21 +335,25 @@ class BearAgent(BaseAgent):
         tss = TimeSeriesSplit(n_splits=5)
         aucs, accs, f1s = [], [], []
         for tr, val in tss.split(X):
+            y_tr = y.iloc[tr]
+            y_val = y.iloc[val]
+            if not self.has_multiple_classes(y_tr):
+                continue
             rf   = RandomForestClassifier(
                 n_estimators=self.n_estimators, max_depth=self.max_depth,
                 class_weight="balanced", random_state=self.random_seed, n_jobs=-1)
             pipe = Pipeline([("scaler", StandardScaler()), ("clf", rf)])
-            pipe.fit(X.iloc[tr], y.iloc[tr])
+            pipe.fit(X.iloc[tr], y_tr)
             p = pipe.predict_proba(X.iloc[val])[:, 1]
-            if y.iloc[val].nunique() > 1:
-                aucs.append(roc_auc_score(y.iloc[val], p))
-            accs.append(accuracy_score(y.iloc[val], (p >= 0.5).astype(int)))
-            f1s.append(f1_score(y.iloc[val], (p >= 0.5).astype(int), zero_division=0))
+            if self.has_multiple_classes(y_val):
+                aucs.append(roc_auc_score(y_val, p))
+            accs.append(accuracy_score(y_val, (p >= 0.5).astype(int)))
+            f1s.append(f1_score(y_val, (p >= 0.5).astype(int), zero_division=0))
         return {
             "mean_auc": float(np.mean(aucs)) if aucs else 0.0,
             "std_auc":  float(np.std(aucs))  if aucs else 0.0,
-            "mean_acc": float(np.mean(accs)),
-            "mean_f1":  float(np.mean(f1s)),
+            "mean_acc": float(np.mean(accs)) if accs else 0.0,
+            "mean_f1":  float(np.mean(f1s)) if f1s else 0.0,
         }
 
     @staticmethod
