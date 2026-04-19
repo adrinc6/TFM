@@ -1,0 +1,27 @@
+{
+  "interest_coverage": {
+    "shap_importance": 0.08911697670290218,
+    "description": "Interest coverage (EBIT / interest expense)",
+    "rank": 1
+  },
+  "current_ratio": {
+    "shap_importance": 0.02925556399295665,
+    "description": "Current ratio (current assets / current liabilities)",
+    "rank": 2
+  },
+  "debt_to_ebitda": {
+    "shap_importance": 0.029221814713319135,
+    "description": "Net debt / EBITDA",
+    "rank": 3
+  },
+  "total_debt_yoy_growth": {
+    "shap_importance": 0.023446085682637695,
+    "description": "YoY total debt growth",
+    "rank": 4
+  },
+  "insider_net_ratio_90d": {
+    "shap_importance": 0.01906717533744278,
+    "description": "Normalised net insider ratio (90 days)",
+    "rank": 5
+  }
+}

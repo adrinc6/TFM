@@ -1,0 +1,42 @@
+{
+  "interest_coverage": {
+    "shap_importance": 0.4203767776489258,
+    "description": "Interest coverage (EBIT / interest expense)",
+    "rank": 1
+  },
+  "net_margin_trend_2y": {
+    "shap_importance": 0.40556782484054565,
+    "description": "Net margin trend 2Y",
+    "rank": 2
+  },
+  "debt_equity": {
+    "shap_importance": 0.39617931842803955,
+    "description": "Debt / equity ratio",
+    "rank": 3
+  },
+  "roe": {
+    "shap_importance": 0.3884448707103729,
+    "description": "Return on Equity (ROE)",
+    "rank": 4
+  },
+  "revenue_yoy_growth": {
+    "shap_importance": 0.3634334206581116,
+    "description": "YoY revenue growth",
+    "rank": 5
+  },
+  "total_debt_yoy_growth": {
+    "shap_importance": 0.3453441262245178,
+    "description": "YoY total debt growth",
+    "rank": 6
+  },
+  "roic": {
+    "shap_importance": 0.3213159143924713,
+    "description": "Return on Invested Capital (ROIC)",
+    "rank": 7
+  },
+  "ebitda_margin": {
+    "shap_importance": 0.2922811210155487,
+    "description": "EBITDA margin",
+    "rank": 8
+  }
+}

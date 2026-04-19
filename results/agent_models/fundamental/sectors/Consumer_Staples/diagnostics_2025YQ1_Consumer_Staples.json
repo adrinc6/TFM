@@ -1,0 +1,93 @@
+{
+  "agent": "fundamental",
+  "timestamp": "2026-04-19T16:35:31.851419",
+  "fold": "2025YQ1_Consumer_Staples",
+  "class_balance": {
+    "n_samples": 680,
+    "n_positive": 338,
+    "n_negative": 342,
+    "positive_ratio": 0.4970588235294118
+  },
+  "cv_metrics": {
+    "mean_auc": 0.501195059859773,
+    "std_auc": 0.050946219762938644,
+    "mean_acc": 0.4884955752212389,
+    "mean_f1": 0.48249353458409744
+  },
+  "n_features": 8,
+  "top_features": {
+    "ebitda_margin": 0.14162702858448029,
+    "fcf_yoy_growth": 0.12816473841667175,
+    "operating_income_yoy_growth": 0.12526550889015198,
+    "capex_to_revenue": 0.12401759624481201,
+    "earnings_quality": 0.12308605015277863,
+    "debt_to_ebitda": 0.12255063652992249,
+    "current_ratio_change_yoy": 0.1180351972579956,
+    "net_income_yoy_growth": 0.11725323647260666
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 8,
+    "selected": [
+      "earnings_quality",
+      "current_ratio_change_yoy",
+      "operating_income_yoy_growth",
+      "ebitda_margin",
+      "net_income_yoy_growth",
+      "debt_to_ebitda",
+      "capex_to_revenue",
+      "fcf_yoy_growth"
+    ],
+    "selected_weights_pct": {
+      "earnings_quality": 13.953241927626141,
+      "current_ratio_change_yoy": 13.089105706749418,
+      "operating_income_yoy_growth": 12.949765785415176,
+      "ebitda_margin": 12.22746815121488,
+      "net_income_yoy_growth": 12.126399941400699,
+      "debt_to_ebitda": 12.057810845662774,
+      "capex_to_revenue": 11.89956281986498,
+      "fcf_yoy_growth": 11.696644822065936
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "roa",
+      "roe",
+      "operating_margin",
+      "net_margin",
+      "fcf_margin"
+    ],
+    "dropped_imp": [
+      "roi",
+      "roic",
+      "gross_margin",
+      "current_ratio",
+      "debt_equity",
+      "interest_coverage",
+      "revenue_yoy_growth",
+      "eps_yoy_growth",
+      "total_debt_yoy_growth",
+      "gross_margin_change_yoy",
+      "accruals_ratio",
+      "consecutive_losses",
+      "piotroski_fscore",
+      "eps",
+      "roe_trend_2y",
+      "net_margin_trend_2y"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.501195059859773,
+    "std_auc": 0.050946219762938644,
+    "mean_acc": 0.4884955752212389,
+    "mean_f1": 0.48249353458409744
+  }
+}

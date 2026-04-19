@@ -1,0 +1,32 @@
+{
+  "net_margin_trend_2y": {
+    "shap_importance": 0.44109871983528137,
+    "description": "Net margin trend 2Y",
+    "rank": 1
+  },
+  "roe_trend_2y": {
+    "shap_importance": 0.3930860459804535,
+    "description": "ROE trend 2Y (positive = improving)",
+    "rank": 2
+  },
+  "fcf_yoy_growth": {
+    "shap_importance": 0.3783043324947357,
+    "description": "YoY FCF growth",
+    "rank": 3
+  },
+  "debt_equity": {
+    "shap_importance": 0.33275020122528076,
+    "description": "Debt / equity ratio",
+    "rank": 4
+  },
+  "operating_income_yoy_growth": {
+    "shap_importance": 0.30809319019317627,
+    "description": "YoY operating income growth",
+    "rank": 5
+  },
+  "current_ratio": {
+    "shap_importance": 0.3078292906284332,
+    "description": "Current ratio (current assets / current liabilities)",
+    "rank": 6
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "debt_growth_high": {
+    "activation_rate": 0.175,
+    "description": "Debt growing >20% YoY",
+    "threshold": 0.2,
+    "column": "total_debt_yoy_growth",
+    "weight": 1.0,
+    "sub_score": "financial"
+  },
+  "debt_equity_high": {
+    "activation_rate": 0.0,
+    "description": "Debt/Equity > 3",
+    "threshold": 3.0,
+    "column": "debt_equity",
+    "weight": 1.5,
+    "sub_score": "financial"
+  },
+  "debt_ebitda_high": {
+    "activation_rate": 0.0,
+    "description": "Debt/EBITDA > 6",
+    "threshold": 6.0,
+    "column": "debt_to_ebitda",
+    "weight": 1.5,
+    "sub_score": "financial"
+  },
+  "fcf_negative": {
+    "activation_rate": 0.0,
+    "description": "Negative FCF margin",
+    "threshold": 0.0,
+    "column": "fcf_margin",
+    "weight": 2.0,
+    "sub_score": "financial"
+  },
+  "consecutive_losses": {
+    "activation_rate": 0.0,
+    "description": ">=2 consecutive quarters with losses",
+    "threshold": 2.0,
+    "column": "consecutive_losses",
+    "weight": 2.0,
+    "sub_score": "financial"
+  },
+  "revenue_decline": {
+    "activation_rate": 0.125,
+    "description": "YoY revenue decline",
+    "threshold": 1.0,
+    "column": "revenue_decline",
+    "weight": 1.0,
+    "sub_score": "financial"
+  },
+  "low_coverage": {
+    "activation_rate": 0.0,
+    "description": "Interest Coverage < 1.5",
+    "threshold": 1.5,
+    "column": "interest_coverage",
+    "weight": 1.5,
+    "sub_score": "financial"
+  },
+  "liquidity_risk": {
+    "activation_rate": 0.0,
+    "description": "Current Ratio < 1",
+    "threshold": 1.0,
+    "column": "current_ratio",
+    "weight": 1.5,
+    "sub_score": "market"
+  },
+  "insider_selling": {
+    "activation_rate": 0.0875,
+    "description": "Insider selling >70%",
+    "threshold": 0.7,
+    "column": "insider_sell_ratio",
+    "weight": 1.0,
+    "sub_score": "market"
+  },
+  "eps_miss": {
+    "activation_rate": 0.0,
+    "description": "EPS miss >5%",
+    "threshold": -5.0,
+    "column": "eps_surprise_pct",
+    "weight": 1.0,
+    "sub_score": "market"
+  }
+}

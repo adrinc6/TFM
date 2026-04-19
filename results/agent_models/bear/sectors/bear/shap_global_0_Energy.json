@@ -1,0 +1,27 @@
+{
+  "debt_equity": {
+    "shap_importance": 0.06890403626439705,
+    "description": "Debt / equity ratio",
+    "rank": 1
+  },
+  "debt_to_ebitda": {
+    "shap_importance": 0.030451558407514838,
+    "description": "Net debt / EBITDA",
+    "rank": 2
+  },
+  "current_ratio": {
+    "shap_importance": 0.019651875688008514,
+    "description": "Current ratio (current assets / current liabilities)",
+    "rank": 3
+  },
+  "total_debt_yoy_growth": {
+    "shap_importance": 0.010862307095738589,
+    "description": "YoY total debt growth",
+    "rank": 4
+  },
+  "insider_net_ratio_90d": {
+    "shap_importance": 0.006075095763657779,
+    "description": "Normalised net insider ratio (90 days)",
+    "rank": 5
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "agent": "momentum",
+  "timestamp": "2026-04-19T16:43:38.241608",
+  "fold": "2025YQ1_Tobacco",
+  "class_balance": {
+    "n_samples": 80,
+    "n_positive": 32,
+    "n_negative": 48,
+    "positive_ratio": 0.4
+  },
+  "cv_metrics": {
+    "mean_auc": 0.6426984126984128,
+    "std_auc": 0.16713117431546856,
+    "mean_acc": 0.5846153846153846,
+    "mean_f1": 0.5214285714285715
+  },
+  "regime_summary": {},
+  "top_features": {
+    "atr_14": 0.23964216364463511,
+    "price_vs_52w_high": 0.20273536028138334,
+    "volatility_60d": 0.14391422072057355,
+    "price_vs_52w_low": 0.13505267316638647,
+    "momentum_6m": 0.1042100985629664,
+    "momentum_3m": 0.09521031299859459,
+    "rsi_28": 0.07923517062546048
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 7,
+    "selected": [
+      "atr_14",
+      "price_vs_52w_high",
+      "price_vs_52w_low",
+      "volatility_60d",
+      "rsi_28",
+      "momentum_3m",
+      "momentum_6m"
+    ],
+    "selected_weights_pct": {
+      "atr_14": 20.135894288674034,
+      "price_vs_52w_high": 19.0080666529594,
+      "price_vs_52w_low": 17.099362803000894,
+      "volatility_60d": 12.69801285978353,
+      "rsi_28": 10.538924988678868,
+      "momentum_3m": 10.346572230693292,
+      "momentum_6m": 10.173166176209987
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "rsi_14",
+      "macd"
+    ],
+    "dropped_imp": [
+      "macd_signal",
+      "macd_hist",
+      "bb_pct",
+      "momentum_1m",
+      "volatility_20d",
+      "vol_ratio_20_50",
+      "rsi_overbought",
+      "rsi_oversold",
+      "above_sma200",
+      "macd_bullish",
+      "cross_sma_20_50",
+      "vol_expansion",
+      "consistent_beater",
+      "earnings_momentum"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.6426984126984128,
+    "std_auc": 0.16713117431546856,
+    "mean_acc": 0.5846153846153846,
+    "mean_f1": 0.5214285714285715
+  }
+}

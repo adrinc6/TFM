@@ -1,0 +1,27 @@
+{
+  "pb_ratio": {
+    "shap_importance": 1.645444207506238,
+    "description": "Price / Book value (P/B ratio)",
+    "rank": 1
+  },
+  "pe_vs_5y_median": {
+    "shap_importance": 1.5272625318608106,
+    "description": "Current P/E vs 5Y historical median (>0 = more expensive)",
+    "rank": 2
+  },
+  "pb_vs_5y_median": {
+    "shap_importance": 0.8591581204175317,
+    "description": "Current P/B vs 5Y historical median",
+    "rank": 3
+  },
+  "earnings_yield": {
+    "shap_importance": 0.7021414443265327,
+    "description": "Earnings yield (inverse of P/E)",
+    "rank": 4
+  },
+  "ps_ratio": {
+    "shap_importance": 0.21935257441738276,
+    "description": "Price / Sales (P/S ratio)",
+    "rank": 5
+  }
+}

@@ -1,0 +1,175 @@
+{
+  "agent": "valuation",
+  "timestamp": "2026-04-19T16:37:33.589935",
+  "fold": "2025YQ1_Commercial_Services_Supplies",
+  "class_balance": {
+    "n_samples": 69,
+    "n_positive": 33,
+    "n_negative": 36,
+    "positive_ratio": 0.4782608695652174
+  },
+  "cv_metrics": {
+    "mean_auc": 0.6595238095238096,
+    "std_auc": 0.17648784429436906,
+    "mean_acc": 0.6,
+    "mean_f1": 0.37888888888888894
+  },
+  "sector_multiples_distribution": {
+    "pe_ratio": {
+      "Commercial Services & Supplies": {
+        "mean": 25.007717786952806,
+        "median": 18.6682672368766,
+        "std": 30.36653737113386,
+        "count": 162
+      }
+    },
+    "pb_ratio": {
+      "Commercial Services & Supplies": {
+        "mean": 5.031105204569868,
+        "median": 3.141956683142678,
+        "std": 5.026894055439483,
+        "count": 77
+      }
+    },
+    "ps_ratio": {
+      "Commercial Services & Supplies": {
+        "mean": 2.754698828663262,
+        "median": 2.292971407704733,
+        "std": 1.9276433775564132,
+        "count": 64
+      }
+    },
+    "ev_to_ebitda": {
+      "Commercial Services & Supplies": {
+        "mean": 14.608094556376045,
+        "median": 11.938105634624474,
+        "std": 17.720839770363096,
+        "count": 72
+      }
+    },
+    "fcf_yield": {
+      "Commercial Services & Supplies": {
+        "mean": 0.010789367675682528,
+        "median": 0.011569468523840469,
+        "std": 0.03160950523890366,
+        "count": 63
+      }
+    },
+    "earnings_yield": {
+      "Commercial Services & Supplies": {
+        "mean": 0.08757025770815002,
+        "median": 0.05356709905824196,
+        "std": 0.08639895739578522,
+        "count": 162
+      }
+    },
+    "pe_vs_5y_median": {
+      "Commercial Services & Supplies": {
+        "mean": 1.4092311114349467,
+        "median": 0.42642218596348835,
+        "std": 4.165365056970973,
+        "count": 162
+      }
+    },
+    "pb_vs_5y_median": {
+      "Commercial Services & Supplies": {
+        "mean": 1.9584530772305144,
+        "median": 1.334353425721242,
+        "std": 1.5710380714501573,
+        "count": 77
+      }
+    },
+    "ev_ebitda_vs_5y_median": {
+      "Commercial Services & Supplies": {
+        "mean": 0.9096199039233607,
+        "median": 0.548560201550528,
+        "std": 1.2400090348393347,
+        "count": 66
+      }
+    },
+    "eps_surprise_pct": {
+      "Commercial Services & Supplies": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_revision": {
+      "Commercial Services & Supplies": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_est": {
+      "Commercial Services & Supplies": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_reported": {
+      "Commercial Services & Supplies": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    }
+  },
+  "top_features": {
+    "ev_to_ebitda": 0.1946834723424055,
+    "earnings_yield": 0.18944035439767445,
+    "fcf_yield": 0.1715801360358091,
+    "pb_vs_5y_median": 0.15193599497075877,
+    "ev_ebitda_vs_5y_median": 0.13542392133253459,
+    "ps_ratio": 0.08364298473111828,
+    "pe_ratio": 0.07329313618969924
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 7,
+    "selected": [
+      "pe_ratio",
+      "earnings_yield",
+      "pb_vs_5y_median",
+      "ev_ebitda_vs_5y_median",
+      "ev_to_ebitda",
+      "fcf_yield",
+      "ps_ratio"
+    ],
+    "selected_weights_pct": {
+      "pe_ratio": 17.33874375759873,
+      "earnings_yield": 15.877159174783104,
+      "pb_vs_5y_median": 15.118518574422396,
+      "ev_ebitda_vs_5y_median": 14.914508698672297,
+      "ev_to_ebitda": 12.806956660908018,
+      "fcf_yield": 12.233528616367003,
+      "ps_ratio": 11.71058451724845
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "pb_ratio",
+      "pe_vs_5y_median"
+    ],
+    "dropped_imp": []
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.6595238095238096,
+    "std_auc": 0.17648784429436906,
+    "mean_acc": 0.6,
+    "mean_f1": 0.37888888888888894
+  }
+}

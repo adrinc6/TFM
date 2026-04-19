@@ -1,0 +1,22 @@
+{
+  "atr_14": {
+    "shap_importance": 0.19349547276252177,
+    "description": "Average True Range 14 days (price volatility)",
+    "rank": 1
+  },
+  "price_vs_52w_low": {
+    "shap_importance": 0.09311807101440929,
+    "description": "Distance to 52-week low",
+    "rank": 2
+  },
+  "macd_signal": {
+    "shap_importance": 0.0618150027653674,
+    "description": "MACD signal (EMA of MACD)",
+    "rank": 3
+  },
+  "price_vs_52w_high": {
+    "shap_importance": 0.0379494587310312,
+    "description": "Distance to 52-week high",
+    "rank": 4
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "agent": "sector_rotation",
+  "timestamp": "2026-04-19T16:00:39.798049",
+  "fold": "2024YQ1",
+  "class_balance": {
+    "n_samples": 1240,
+    "n_positive": 927,
+    "n_negative": 313,
+    "positive_ratio": 0.7475806451612903
+  },
+  "cv_metrics": {
+    "mean_auc": 0.5364238184488149,
+    "std_auc": 0.03128169713533141,
+    "mean_f1": 0.8385298691548692
+  },
+  "n_sector_obs": 1240,
+  "benchmark_mode": "spy",
+  "top_features": {
+    "fcf_yield": 0.262457101911029,
+    "net_income_yoy_growth": 0.25962083875417263,
+    "revenue_yoy_growth": 0.24604026477211804,
+    "eps_yoy_growth": 0.23188179456268024
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 4,
+    "selected": [
+      "net_income_yoy_growth",
+      "eps_yoy_growth",
+      "revenue_yoy_growth",
+      "fcf_yield"
+    ],
+    "selected_weights_pct": {
+      "net_income_yoy_growth": 33.09382364570715,
+      "eps_yoy_growth": 29.114744621305373,
+      "revenue_yoy_growth": 22.080236937466474,
+      "fcf_yield": 15.711194795521022
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "insider_sell_ratio",
+      "ebitda_margin",
+      "operating_margin",
+      "pe_ratio"
+    ],
+    "dropped_imp": [
+      "roe",
+      "roa",
+      "net_margin",
+      "fcf_margin",
+      "debt_to_ebitda",
+      "debt_equity",
+      "interest_coverage",
+      "current_ratio",
+      "earnings_yield",
+      "pe_vs_5y_median",
+      "momentum_1m",
+      "momentum_3m",
+      "momentum_6m",
+      "volatility_20d",
+      "volatility_60d",
+      "rsi_14",
+      "insider_net_ratio_90d",
+      "pb_ratio",
+      "ev_to_ebitda",
+      "pb_vs_5y_median",
+      "gross_margin",
+      "analyst_buy_ratio",
+      "analyst_consensus",
+      "analyst_dispersion",
+      "analyst_bearish_score"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.5364238184488149,
+    "std_auc": 0.03128169713533141,
+    "mean_f1": 0.8385298691548692
+  }
+}

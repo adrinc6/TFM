@@ -1,0 +1,172 @@
+{
+  "agent": "valuation",
+  "timestamp": "2026-04-19T16:38:38.306218",
+  "fold": "2025YQ1_Industrial_Conglomerates",
+  "class_balance": {
+    "n_samples": 27,
+    "n_positive": 16,
+    "n_negative": 11,
+    "positive_ratio": 0.5925925925925926
+  },
+  "cv_metrics": {
+    "mean_auc": 0.5416666666666667,
+    "std_auc": 0.20833333333333331,
+    "mean_acc": 0.35,
+    "mean_f1": 0.38476190476190475
+  },
+  "sector_multiples_distribution": {
+    "pe_ratio": {
+      "Industrial Conglomerates": {
+        "mean": 19.19610926104618,
+        "median": 15.292992401123048,
+        "std": 12.102437828963645,
+        "count": 76
+      }
+    },
+    "pb_ratio": {
+      "Industrial Conglomerates": {
+        "mean": 6.6862873803765455,
+        "median": 5.889662083770826,
+        "std": 3.096537701360606,
+        "count": 30
+      }
+    },
+    "ps_ratio": {
+      "Industrial Conglomerates": {
+        "mean": 2.0810186211037505,
+        "median": 2.0949032225255086,
+        "std": 0.4249189174711114,
+        "count": 30
+      }
+    },
+    "ev_to_ebitda": {
+      "Industrial Conglomerates": {
+        "mean": 8.483832140787287,
+        "median": 8.669561002112383,
+        "std": 0.7903748176151,
+        "count": 7
+      }
+    },
+    "fcf_yield": {
+      "Industrial Conglomerates": {
+        "mean": 0.06574265977688877,
+        "median": 0.07270401468943002,
+        "std": 0.036828125875005197,
+        "count": 23
+      }
+    },
+    "earnings_yield": {
+      "Industrial Conglomerates": {
+        "mean": 0.06462214320648534,
+        "median": 0.06538945511472727,
+        "std": 0.026145321232915658,
+        "count": 76
+      }
+    },
+    "pe_vs_5y_median": {
+      "Industrial Conglomerates": {
+        "mean": 0.4788811423025405,
+        "median": 0.2323957215110629,
+        "std": 0.9063634265380432,
+        "count": 76
+      }
+    },
+    "pb_vs_5y_median": {
+      "Industrial Conglomerates": {
+        "mean": 0.8942069218228827,
+        "median": 0.9829097998413391,
+        "std": 0.7232203254334313,
+        "count": 30
+      }
+    },
+    "ev_ebitda_vs_5y_median": {
+      "Industrial Conglomerates": {
+        "mean": 0.36672933292586585,
+        "median": 0.3808536614213123,
+        "std": 0.062388939823762826,
+        "count": 7
+      }
+    },
+    "eps_surprise_pct": {
+      "Industrial Conglomerates": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_revision": {
+      "Industrial Conglomerates": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_est": {
+      "Industrial Conglomerates": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_reported": {
+      "Industrial Conglomerates": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    }
+  },
+  "top_features": {
+    "fcf_yield": 0.29466102340959704,
+    "ps_ratio": 0.2867175898673606,
+    "pb_ratio": 0.18284219842428118,
+    "earnings_yield": 0.12758861737657098,
+    "pe_ratio": 0.10819057092219031
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 5,
+    "selected": [
+      "ps_ratio",
+      "fcf_yield",
+      "pb_ratio",
+      "earnings_yield",
+      "pe_ratio"
+    ],
+    "selected_weights_pct": {
+      "ps_ratio": 24.75384847378833,
+      "fcf_yield": 23.48567931727475,
+      "pb_ratio": 22.516314950385347,
+      "earnings_yield": 15.880238004059313,
+      "pe_ratio": 13.36391925449226
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "pe_vs_5y_median"
+    ],
+    "dropped_imp": [
+      "ev_to_ebitda",
+      "pb_vs_5y_median",
+      "ev_ebitda_vs_5y_median"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.5416666666666667,
+    "std_auc": 0.20833333333333331,
+    "mean_acc": 0.35,
+    "mean_f1": 0.38476190476190475
+  }
+}

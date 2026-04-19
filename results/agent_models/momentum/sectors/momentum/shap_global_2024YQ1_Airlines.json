@@ -1,0 +1,42 @@
+{
+  "momentum_6m": {
+    "shap_importance": 0.03711589070973597,
+    "description": "6-month momentum",
+    "rank": 1
+  },
+  "price_vs_52w_low": {
+    "shap_importance": 0.0347947989576727,
+    "description": "Distance to 52-week low",
+    "rank": 2
+  },
+  "macd_signal": {
+    "shap_importance": 0.029073060696356866,
+    "description": "MACD signal (EMA of MACD)",
+    "rank": 3
+  },
+  "vol_ratio_20_50": {
+    "shap_importance": 0.023999357817773192,
+    "description": "Volume ratio 20d / 50d (>1 = expansion)",
+    "rank": 4
+  },
+  "volatility_60d": {
+    "shap_importance": 0.012589370061647455,
+    "description": "Realised volatility 60 days (annualised)",
+    "rank": 5
+  },
+  "rsi_14": {
+    "shap_importance": 0.011932657121714547,
+    "description": "RSI 14 days (>70 overbought, <30 oversold)",
+    "rank": 6
+  },
+  "atr_14": {
+    "shap_importance": 0.00819593952007326,
+    "description": "Average True Range 14 days (price volatility)",
+    "rank": 7
+  },
+  "price_vs_52w_high": {
+    "shap_importance": 0.0022891348799625654,
+    "description": "Distance to 52-week high",
+    "rank": 8
+  }
+}

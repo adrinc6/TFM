@@ -1,0 +1,42 @@
+{
+  "operating_income_yoy_growth": {
+    "shap_importance": 0.5700342059135437,
+    "description": "YoY operating income growth",
+    "rank": 1
+  },
+  "current_ratio": {
+    "shap_importance": 0.4886602759361267,
+    "description": "Current ratio (current assets / current liabilities)",
+    "rank": 2
+  },
+  "net_income_yoy_growth": {
+    "shap_importance": 0.38607436418533325,
+    "description": "YoY net income growth",
+    "rank": 3
+  },
+  "revenue_yoy_growth": {
+    "shap_importance": 0.3352954387664795,
+    "description": "YoY revenue growth",
+    "rank": 4
+  },
+  "debt_to_ebitda": {
+    "shap_importance": 0.3154032230377197,
+    "description": "Net debt / EBITDA",
+    "rank": 5
+  },
+  "net_margin_trend_2y": {
+    "shap_importance": 0.30844733119010925,
+    "description": "Net margin trend 2Y",
+    "rank": 6
+  },
+  "roi": {
+    "shap_importance": 0.2987203299999237,
+    "description": "Return on Investment (ROI)",
+    "rank": 7
+  },
+  "roic": {
+    "shap_importance": 0.25712424516677856,
+    "description": "Return on Invested Capital (ROIC)",
+    "rank": 8
+  }
+}

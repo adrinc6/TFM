@@ -1,0 +1,177 @@
+{
+  "agent": "valuation",
+  "timestamp": "2026-04-19T15:53:22.298608",
+  "fold": "2024YQ1_Trading_Companies_Distributors",
+  "class_balance": {
+    "n_samples": 69,
+    "n_positive": 14,
+    "n_negative": 55,
+    "positive_ratio": 0.2028985507246377
+  },
+  "cv_metrics": {
+    "mean_auc": 0.55,
+    "std_auc": 0.31819805153394637,
+    "mean_acc": 0.6909090909090909,
+    "mean_f1": 0.13333333333333333
+  },
+  "sector_multiples_distribution": {
+    "pe_ratio": {
+      "Trading Companies & Distributors": {
+        "mean": 16.68860354681179,
+        "median": 15.31928493997427,
+        "std": 10.289211505811402,
+        "count": 120
+      }
+    },
+    "pb_ratio": {
+      "Trading Companies & Distributors": {
+        "mean": 5.783177995136702,
+        "median": 4.74900693994692,
+        "std": 3.752057794691389,
+        "count": 69
+      }
+    },
+    "ps_ratio": {
+      "Trading Companies & Distributors": {
+        "mean": 1.3869366548316149,
+        "median": 1.389096536069755,
+        "std": 0.5439818048776569,
+        "count": 69
+      }
+    },
+    "ev_to_ebitda": {
+      "Trading Companies & Distributors": {
+        "mean": 10.090814147087864,
+        "median": 9.979886267966824,
+        "std": 6.7993418322784605,
+        "count": 69
+      }
+    },
+    "fcf_yield": {
+      "Trading Companies & Distributors": {
+        "mean": 0.05128020225054484,
+        "median": 0.042680859530794896,
+        "std": 0.030003260018798113,
+        "count": 69
+      }
+    },
+    "earnings_yield": {
+      "Trading Companies & Distributors": {
+        "mean": 0.08125225917872424,
+        "median": 0.065278557258938,
+        "std": 0.04891890281773491,
+        "count": 120
+      }
+    },
+    "pe_vs_5y_median": {
+      "Trading Companies & Distributors": {
+        "mean": 0.25917034317841636,
+        "median": 0.038718947191524355,
+        "std": 0.8809966075803735,
+        "count": 120
+      }
+    },
+    "pb_vs_5y_median": {
+      "Trading Companies & Distributors": {
+        "mean": 0.8307124262818537,
+        "median": 0.6891824309857508,
+        "std": 0.8036714385003412,
+        "count": 69
+      }
+    },
+    "ev_ebitda_vs_5y_median": {
+      "Trading Companies & Distributors": {
+        "mean": 0.5878576851863677,
+        "median": 0.14038418246639384,
+        "std": 0.910698420329204,
+        "count": 69
+      }
+    },
+    "eps_surprise_pct": {
+      "Trading Companies & Distributors": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_revision": {
+      "Trading Companies & Distributors": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_est": {
+      "Trading Companies & Distributors": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_reported": {
+      "Trading Companies & Distributors": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    }
+  },
+  "top_features": {
+    "fcf_yield": 0.21974088562339808,
+    "pe_ratio": 0.1444685996719331,
+    "pb_vs_5y_median": 0.1384787701570847,
+    "pe_vs_5y_median": 0.13009502951852991,
+    "ev_to_ebitda": 0.11006882972767049,
+    "ev_ebitda_vs_5y_median": 0.09601579422910843,
+    "pb_ratio": 0.08994756912022232,
+    "earnings_yield": 0.0711845219520529
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 8,
+    "selected": [
+      "fcf_yield",
+      "ev_to_ebitda",
+      "pe_vs_5y_median",
+      "pb_vs_5y_median",
+      "pb_ratio",
+      "pe_ratio",
+      "ev_ebitda_vs_5y_median",
+      "earnings_yield"
+    ],
+    "selected_weights_pct": {
+      "fcf_yield": 17.460675043856828,
+      "ev_to_ebitda": 15.502623244170566,
+      "pe_vs_5y_median": 12.513684059760449,
+      "pb_vs_5y_median": 12.328258391013721,
+      "pb_ratio": 11.741385818716841,
+      "pe_ratio": 11.130111570096862,
+      "ev_ebitda_vs_5y_median": 10.20270345905208,
+      "earnings_yield": 9.120558413332667
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "ps_ratio"
+    ],
+    "dropped_imp": []
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.55,
+    "std_auc": 0.31819805153394637,
+    "mean_acc": 0.6909090909090909,
+    "mean_f1": 0.13333333333333333
+  }
+}

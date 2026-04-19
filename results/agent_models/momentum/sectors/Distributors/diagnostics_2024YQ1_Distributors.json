@@ -1,0 +1,79 @@
+{
+  "agent": "momentum",
+  "timestamp": "2026-04-19T15:54:40.633775",
+  "fold": "2024YQ1_Distributors",
+  "class_balance": {
+    "n_samples": 120,
+    "n_positive": 40,
+    "n_negative": 80,
+    "positive_ratio": 0.3333333333333333
+  },
+  "cv_metrics": {
+    "mean_auc": 0.5191197691197691,
+    "std_auc": 0.3146113389520119,
+    "mean_acc": 0.61,
+    "mean_f1": 0.125
+  },
+  "regime_summary": {},
+  "top_features": {
+    "atr_14": 0.46820739652416876,
+    "price_vs_52w_low": 0.22968108971213325,
+    "macd_signal": 0.1615853461622007,
+    "momentum_1m": 0.14052616760149728
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 4,
+    "selected": [
+      "atr_14",
+      "macd_signal",
+      "price_vs_52w_low",
+      "momentum_1m"
+    ],
+    "selected_weights_pct": {
+      "atr_14": 39.3803654021604,
+      "macd_signal": 22.657443614691164,
+      "price_vs_52w_low": 21.809239270363275,
+      "momentum_1m": 16.15295171278516
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "rsi_14",
+      "macd"
+    ],
+    "dropped_imp": [
+      "rsi_28",
+      "macd_hist",
+      "bb_pct",
+      "price_vs_52w_high",
+      "momentum_3m",
+      "momentum_6m",
+      "volatility_20d",
+      "volatility_60d",
+      "vol_ratio_20_50",
+      "rsi_overbought",
+      "rsi_oversold",
+      "above_sma200",
+      "macd_bullish",
+      "cross_sma_20_50",
+      "vol_expansion",
+      "consistent_beater",
+      "earnings_momentum"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.5191197691197691,
+    "std_auc": 0.3146113389520119,
+    "mean_acc": 0.61,
+    "mean_f1": 0.125
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "agent": "fundamental",
+  "timestamp": "2026-04-19T15:50:51.394624",
+  "fold": "2024YQ1_Textiles_Apparel_Luxury_Goods",
+  "class_balance": {
+    "n_samples": 200,
+    "n_positive": 80,
+    "n_negative": 120,
+    "positive_ratio": 0.4
+  },
+  "cv_metrics": {
+    "mean_auc": 0.47947195575144763,
+    "std_auc": 0.1412892522001028,
+    "mean_acc": 0.4242424242424243,
+    "mean_f1": 0.31982905982905985
+  },
+  "n_features": 7,
+  "top_features": {
+    "interest_coverage": 0.26925191283226013,
+    "total_debt_yoy_growth": 0.1709493100643158,
+    "fcf_yoy_growth": 0.13016849756240845,
+    "gross_margin": 0.11417058110237122,
+    "current_ratio": 0.110325388610363,
+    "debt_equity": 0.1083199679851532,
+    "net_margin_trend_2y": 0.0968143492937088
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 7,
+    "selected": [
+      "total_debt_yoy_growth",
+      "current_ratio",
+      "interest_coverage",
+      "fcf_yoy_growth",
+      "debt_equity",
+      "net_margin_trend_2y",
+      "gross_margin"
+    ],
+    "selected_weights_pct": {
+      "total_debt_yoy_growth": 21.74428391473739,
+      "current_ratio": 15.28434597322679,
+      "interest_coverage": 14.530897229611808,
+      "fcf_yoy_growth": 13.946203715181987,
+      "debt_equity": 12.03988373354765,
+      "net_margin_trend_2y": 11.377670473505157,
+      "gross_margin": 11.076714960189214
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "roe",
+      "ebitda_margin",
+      "roic",
+      "net_margin"
+    ],
+    "dropped_imp": [
+      "roa",
+      "roi",
+      "fcf_margin",
+      "operating_margin",
+      "debt_to_ebitda",
+      "revenue_yoy_growth",
+      "net_income_yoy_growth",
+      "eps_yoy_growth",
+      "operating_income_yoy_growth",
+      "gross_margin_change_yoy",
+      "current_ratio_change_yoy",
+      "accruals_ratio",
+      "capex_to_revenue",
+      "consecutive_losses",
+      "earnings_quality",
+      "piotroski_fscore",
+      "eps",
+      "roe_trend_2y"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.47947195575144763,
+    "std_auc": 0.1412892522001028,
+    "mean_acc": 0.4242424242424243,
+    "mean_f1": 0.31982905982905985
+  }
+}

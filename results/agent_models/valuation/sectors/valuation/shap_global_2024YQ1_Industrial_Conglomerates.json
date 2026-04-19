@@ -1,0 +1,22 @@
+{
+  "ps_ratio": {
+    "shap_importance": 7.394207503239583,
+    "description": "Price / Sales (P/S ratio)",
+    "rank": 1
+  },
+  "pe_vs_5y_median": {
+    "shap_importance": 0.7459870693594502,
+    "description": "Current P/E vs 5Y historical median (>0 = more expensive)",
+    "rank": 2
+  },
+  "pb_ratio": {
+    "shap_importance": 0.47079137246446034,
+    "description": "Price / Book value (P/B ratio)",
+    "rank": 3
+  },
+  "pb_vs_5y_median": {
+    "shap_importance": 0.42548254093784577,
+    "description": "Current P/B vs 5Y historical median",
+    "rank": 4
+  }
+}

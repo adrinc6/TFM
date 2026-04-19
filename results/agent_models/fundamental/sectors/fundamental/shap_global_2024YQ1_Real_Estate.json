@@ -1,0 +1,37 @@
+{
+  "interest_coverage": {
+    "shap_importance": 0.41048291325569153,
+    "description": "Interest coverage (EBIT / interest expense)",
+    "rank": 1
+  },
+  "operating_margin": {
+    "shap_importance": 0.3483516275882721,
+    "description": "Operating margin",
+    "rank": 2
+  },
+  "revenue_yoy_growth": {
+    "shap_importance": 0.3316439390182495,
+    "description": "YoY revenue growth",
+    "rank": 3
+  },
+  "roi": {
+    "shap_importance": 0.3173035681247711,
+    "description": "Return on Investment (ROI)",
+    "rank": 4
+  },
+  "ebitda_margin": {
+    "shap_importance": 0.3164667785167694,
+    "description": "EBITDA margin",
+    "rank": 5
+  },
+  "net_margin": {
+    "shap_importance": 0.290661484003067,
+    "description": "Net margin (profit / revenue)",
+    "rank": 6
+  },
+  "current_ratio": {
+    "shap_importance": 0.19075235724449158,
+    "description": "Current ratio (current assets / current liabilities)",
+    "rank": 7
+  }
+}

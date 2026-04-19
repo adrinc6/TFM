@@ -1,0 +1,42 @@
+{
+  "gross_margin_change_yoy": {
+    "shap_importance": 0.5352689623832703,
+    "description": "YoY improvement in gross margin",
+    "rank": 1
+  },
+  "earnings_quality": {
+    "shap_importance": 0.5208780169487,
+    "description": "Earnings quality: FCF / Net Income (>1 = real cash)",
+    "rank": 2
+  },
+  "capex_to_revenue": {
+    "shap_importance": 0.47229456901550293,
+    "description": "Capital intensity (CapEx / revenue)",
+    "rank": 3
+  },
+  "roe_trend_2y": {
+    "shap_importance": 0.47035670280456543,
+    "description": "ROE trend 2Y (positive = improving)",
+    "rank": 4
+  },
+  "gross_margin": {
+    "shap_importance": 0.4693771302700043,
+    "description": "Gross margin",
+    "rank": 5
+  },
+  "revenue_yoy_growth": {
+    "shap_importance": 0.42196300625801086,
+    "description": "YoY revenue growth",
+    "rank": 6
+  },
+  "fcf_margin": {
+    "shap_importance": 0.26114702224731445,
+    "description": "Free cash flow margin",
+    "rank": 7
+  },
+  "fcf_yoy_growth": {
+    "shap_importance": 0.25285637378692627,
+    "description": "YoY FCF growth",
+    "rank": 8
+  }
+}

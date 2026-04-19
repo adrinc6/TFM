@@ -1,0 +1,79 @@
+{
+  "agent": "momentum",
+  "timestamp": "2026-04-19T15:57:02.349243",
+  "fold": "2024YQ1_Textiles_Apparel_Luxury_Goods",
+  "class_balance": {
+    "n_samples": 200,
+    "n_positive": 80,
+    "n_negative": 120,
+    "positive_ratio": 0.4
+  },
+  "cv_metrics": {
+    "mean_auc": 0.6050906000633768,
+    "std_auc": 0.08089060361314952,
+    "mean_acc": 0.5212121212121212,
+    "mean_f1": 0.4059192404278676
+  },
+  "regime_summary": {},
+  "top_features": {
+    "atr_14": 0.4520129313489192,
+    "vol_ratio_20_50": 0.20515699588695224,
+    "macd_hist": 0.173749559644593,
+    "volatility_20d": 0.1690805131195357
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 4,
+    "selected": [
+      "atr_14",
+      "vol_ratio_20_50",
+      "macd_hist",
+      "volatility_20d"
+    ],
+    "selected_weights_pct": {
+      "atr_14": 53.25515311628346,
+      "vol_ratio_20_50": 18.310546967307214,
+      "macd_hist": 14.566172370888822,
+      "volatility_20d": 13.868127545520503
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "rsi_28",
+      "rsi_14",
+      "macd"
+    ],
+    "dropped_imp": [
+      "macd_signal",
+      "bb_pct",
+      "price_vs_52w_high",
+      "price_vs_52w_low",
+      "momentum_1m",
+      "momentum_3m",
+      "momentum_6m",
+      "volatility_60d",
+      "rsi_overbought",
+      "rsi_oversold",
+      "above_sma200",
+      "macd_bullish",
+      "cross_sma_20_50",
+      "vol_expansion",
+      "consistent_beater",
+      "earnings_momentum"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.6050906000633768,
+    "std_auc": 0.08089060361314952,
+    "mean_acc": 0.5212121212121212,
+    "mean_f1": 0.4059192404278676
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "atr_14": {
+    "shap_importance": 0.20170498000014425,
+    "description": "Average True Range 14 days (price volatility)",
+    "rank": 1
+  },
+  "macd_signal": {
+    "shap_importance": 0.018462546238284024,
+    "description": "MACD signal (EMA of MACD)",
+    "rank": 2
+  },
+  "macd_hist": {
+    "shap_importance": 0.01015628585042754,
+    "description": "MACD histogram (trend momentum)",
+    "rank": 3
+  },
+  "vol_ratio_20_50": {
+    "shap_importance": 0.006441400143685428,
+    "description": "Volume ratio 20d / 50d (>1 = expansion)",
+    "rank": 4
+  }
+}

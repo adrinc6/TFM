@@ -1,0 +1,42 @@
+{
+  "net_margin_trend_2y": {
+    "shap_importance": 1.0620253086090088,
+    "description": "Net margin trend 2Y",
+    "rank": 1
+  },
+  "gross_margin_change_yoy": {
+    "shap_importance": 0.8542265892028809,
+    "description": "YoY improvement in gross margin",
+    "rank": 2
+  },
+  "total_debt_yoy_growth": {
+    "shap_importance": 0.5548112392425537,
+    "description": "YoY total debt growth",
+    "rank": 3
+  },
+  "current_ratio_change_yoy": {
+    "shap_importance": 0.5307871699333191,
+    "description": "YoY improvement in current ratio",
+    "rank": 4
+  },
+  "debt_equity": {
+    "shap_importance": 0.38456299901008606,
+    "description": "Debt / equity ratio",
+    "rank": 5
+  },
+  "roa": {
+    "shap_importance": 0.3768395185470581,
+    "description": "Return on Assets (ROA)",
+    "rank": 6
+  },
+  "gross_margin": {
+    "shap_importance": 0.30649998784065247,
+    "description": "Gross margin",
+    "rank": 7
+  },
+  "interest_coverage": {
+    "shap_importance": 0.10009104013442993,
+    "description": "Interest coverage (EBIT / interest expense)",
+    "rank": 8
+  }
+}

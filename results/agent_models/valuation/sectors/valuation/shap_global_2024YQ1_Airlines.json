@@ -1,0 +1,22 @@
+{
+  "pb_ratio": {
+    "shap_importance": 2.6323952472537773,
+    "description": "Price / Book value (P/B ratio)",
+    "rank": 1
+  },
+  "earnings_yield": {
+    "shap_importance": 1.6243343775720294,
+    "description": "Earnings yield (inverse of P/E)",
+    "rank": 2
+  },
+  "ev_to_ebitda": {
+    "shap_importance": 0.15334242194838368,
+    "description": "EV / EBITDA",
+    "rank": 3
+  },
+  "pe_ratio": {
+    "shap_importance": 0.12419239245373163,
+    "description": "Price / EPS (P/E ratio)",
+    "rank": 4
+  }
+}

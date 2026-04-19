@@ -1,0 +1,175 @@
+{
+  "agent": "valuation",
+  "timestamp": "2026-04-19T16:39:31.261557",
+  "fold": "2025YQ1_Telecommunication",
+  "class_balance": {
+    "n_samples": 98,
+    "n_positive": 49,
+    "n_negative": 49,
+    "positive_ratio": 0.5
+  },
+  "cv_metrics": {
+    "mean_auc": 0.4913852813852813,
+    "std_auc": 0.1261724052018146,
+    "mean_acc": 0.5,
+    "mean_f1": 0.386651411136537
+  },
+  "sector_multiples_distribution": {
+    "pe_ratio": {
+      "Telecommunication": {
+        "mean": 118.39237144835322,
+        "median": 11.926654429523492,
+        "std": 1161.243333877192,
+        "count": 144
+      }
+    },
+    "pb_ratio": {
+      "Telecommunication": {
+        "mean": 2.2241083041150933,
+        "median": 1.993074259158497,
+        "std": 1.888963743614926,
+        "count": 106
+      }
+    },
+    "ps_ratio": {
+      "Telecommunication": {
+        "mean": 1.057860258870265,
+        "median": 0.9733969095320747,
+        "std": 0.5206720375813756,
+        "count": 106
+      }
+    },
+    "ev_to_ebitda": {
+      "Telecommunication": {
+        "mean": 4.301387085945355,
+        "median": 3.4464201673942254,
+        "std": 2.7833858080182305,
+        "count": 106
+      }
+    },
+    "fcf_yield": {
+      "Telecommunication": {
+        "mean": -0.07520035070289156,
+        "median": -0.07284364809634165,
+        "std": 0.04523975498480182,
+        "count": 31
+      }
+    },
+    "earnings_yield": {
+      "Telecommunication": {
+        "mean": 0.09986282447741876,
+        "median": 0.0838504110740715,
+        "std": 0.06937109607021748,
+        "count": 144
+      }
+    },
+    "pe_vs_5y_median": {
+      "Telecommunication": {
+        "mean": 5.8510198860825735,
+        "median": 0.21505471489417094,
+        "std": 58.754567998841786,
+        "count": 144
+      }
+    },
+    "pb_vs_5y_median": {
+      "Telecommunication": {
+        "mean": 0.9034249869239594,
+        "median": 0.12406229358847287,
+        "std": 2.5664720173648496,
+        "count": 106
+      }
+    },
+    "ev_ebitda_vs_5y_median": {
+      "Telecommunication": {
+        "mean": 0.24330375774253987,
+        "median": 0.12184439397380298,
+        "std": 0.5959456324412604,
+        "count": 106
+      }
+    },
+    "eps_surprise_pct": {
+      "Telecommunication": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_revision": {
+      "Telecommunication": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_est": {
+      "Telecommunication": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_reported": {
+      "Telecommunication": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    }
+  },
+  "top_features": {
+    "ev_ebitda_vs_5y_median": 0.2062322110326987,
+    "ps_ratio": 0.1601238223463487,
+    "ev_to_ebitda": 0.14961543829034407,
+    "pb_ratio": 0.140325227409608,
+    "earnings_yield": 0.132507607306728,
+    "pe_ratio": 0.1304237739189099,
+    "fcf_yield": 0.08077191969536265
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 7,
+    "selected": [
+      "pe_ratio",
+      "ev_ebitda_vs_5y_median",
+      "earnings_yield",
+      "ev_to_ebitda",
+      "ps_ratio",
+      "pb_ratio",
+      "fcf_yield"
+    ],
+    "selected_weights_pct": {
+      "pe_ratio": 18.206692048945396,
+      "ev_ebitda_vs_5y_median": 15.884661598859436,
+      "earnings_yield": 15.428047665595148,
+      "ev_to_ebitda": 14.327493764906524,
+      "ps_ratio": 13.856688043677659,
+      "pb_ratio": 12.378877317367534,
+      "fcf_yield": 9.917539560648313
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "pe_vs_5y_median",
+      "pb_vs_5y_median"
+    ],
+    "dropped_imp": []
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.4913852813852813,
+    "std_auc": 0.1261724052018146,
+    "mean_acc": 0.5,
+    "mean_f1": 0.386651411136537
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "agent": "momentum",
+  "timestamp": "2026-04-19T16:41:13.668327",
+  "fold": "2025YQ1_Electrical_Equipment",
+  "class_balance": {
+    "n_samples": 560,
+    "n_positive": 280,
+    "n_negative": 280,
+    "positive_ratio": 0.5
+  },
+  "cv_metrics": {
+    "mean_auc": 0.5233751158108605,
+    "std_auc": 0.05771196898391619,
+    "mean_acc": 0.5161290322580645,
+    "mean_f1": 0.5695292079814704
+  },
+  "regime_summary": {},
+  "top_features": {
+    "atr_14": 0.3381837670525757,
+    "macd": 0.25191716100963213,
+    "volatility_60d": 0.2218247174419634,
+    "vol_ratio_20_50": 0.1880743544958288
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 4,
+    "selected": [
+      "atr_14",
+      "vol_ratio_20_50",
+      "macd",
+      "volatility_60d"
+    ],
+    "selected_weights_pct": {
+      "atr_14": 38.51574517155299,
+      "vol_ratio_20_50": 21.12564373150002,
+      "macd": 20.587174201128878,
+      "volatility_60d": 19.771436895818113
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "rsi_14",
+      "macd_signal"
+    ],
+    "dropped_imp": [
+      "rsi_28",
+      "macd_hist",
+      "bb_pct",
+      "price_vs_52w_high",
+      "price_vs_52w_low",
+      "momentum_1m",
+      "momentum_3m",
+      "momentum_6m",
+      "volatility_20d",
+      "rsi_overbought",
+      "rsi_oversold",
+      "above_sma200",
+      "macd_bullish",
+      "cross_sma_20_50",
+      "vol_expansion",
+      "consistent_beater",
+      "earnings_momentum"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.5233751158108605,
+    "std_auc": 0.05771196898391619,
+    "mean_acc": 0.5161290322580645,
+    "mean_f1": 0.5695292079814704
+  }
+}

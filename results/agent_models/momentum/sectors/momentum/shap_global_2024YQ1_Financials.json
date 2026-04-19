@@ -1,0 +1,22 @@
+{
+  "atr_14": {
+    "shap_importance": 0.13072228958259394,
+    "description": "Average True Range 14 days (price volatility)",
+    "rank": 1
+  },
+  "momentum_3m": {
+    "shap_importance": 0.012792625672415337,
+    "description": "3-month momentum",
+    "rank": 2
+  },
+  "volatility_20d": {
+    "shap_importance": 0.011486323637683062,
+    "description": "Realised volatility 20 days (annualised)",
+    "rank": 3
+  },
+  "momentum_6m": {
+    "shap_importance": 0.008833048871796194,
+    "description": "6-month momentum",
+    "rank": 4
+  }
+}

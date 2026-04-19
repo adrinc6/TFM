@@ -1,0 +1,22 @@
+{
+  "interest_coverage": {
+    "shap_importance": 0.15204362058526855,
+    "description": "Interest coverage (EBIT / interest expense)",
+    "rank": 1
+  },
+  "insider_sell_ratio": {
+    "shap_importance": 0.07141715630261708,
+    "description": "Insider sell ratio (>0.7 = red flag)",
+    "rank": 2
+  },
+  "current_ratio": {
+    "shap_importance": 0.032921689889941,
+    "description": "Current ratio (current assets / current liabilities)",
+    "rank": 3
+  },
+  "fcf_margin": {
+    "shap_importance": 0.015048742623536702,
+    "description": "Free cash flow margin",
+    "rank": 4
+  }
+}

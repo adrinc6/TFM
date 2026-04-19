@@ -1,0 +1,42 @@
+{
+  "revenue_yoy_growth": {
+    "shap_importance": 0.5583126544952393,
+    "description": "YoY revenue growth",
+    "rank": 1
+  },
+  "net_margin": {
+    "shap_importance": 0.4918627142906189,
+    "description": "Net margin (profit / revenue)",
+    "rank": 2
+  },
+  "total_debt_yoy_growth": {
+    "shap_importance": 0.4787572920322418,
+    "description": "YoY total debt growth",
+    "rank": 3
+  },
+  "roa": {
+    "shap_importance": 0.30656009912490845,
+    "description": "Return on Assets (ROA)",
+    "rank": 4
+  },
+  "accruals_ratio": {
+    "shap_importance": 0.2755233645439148,
+    "description": "Accruals ratio (accounting quality, lower=better)",
+    "rank": 5
+  },
+  "capex_to_revenue": {
+    "shap_importance": 0.2664306163787842,
+    "description": "Capital intensity (CapEx / revenue)",
+    "rank": 6
+  },
+  "earnings_quality": {
+    "shap_importance": 0.20162662863731384,
+    "description": "Earnings quality: FCF / Net Income (>1 = real cash)",
+    "rank": 7
+  },
+  "fcf_margin": {
+    "shap_importance": 0.1485087126493454,
+    "description": "Free cash flow margin",
+    "rank": 8
+  }
+}

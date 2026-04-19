@@ -1,0 +1,174 @@
+{
+  "agent": "valuation",
+  "timestamp": "2026-04-19T16:38:02.825226",
+  "fold": "2025YQ1_Distributors",
+  "class_balance": {
+    "n_samples": 55,
+    "n_positive": 9,
+    "n_negative": 46,
+    "positive_ratio": 0.16363636363636364
+  },
+  "cv_metrics": {
+    "mean_auc": 0.7142857142857143,
+    "std_auc": 0.2102800206268535,
+    "mean_acc": 0.7777777777777778,
+    "mean_f1": 0.16666666666666666
+  },
+  "sector_multiples_distribution": {
+    "pe_ratio": {
+      "Distributors": {
+        "mean": 22.982695752394875,
+        "median": 18.75200121492611,
+        "std": 11.988387893300137,
+        "count": 106
+      }
+    },
+    "pb_ratio": {
+      "Distributors": {
+        "mean": 10.867615297307571,
+        "median": 9.457950094615889,
+        "std": 7.829035027735745,
+        "count": 72
+      }
+    },
+    "ps_ratio": {
+      "Distributors": {
+        "mean": 1.5969843618432784,
+        "median": 1.4569779231516935,
+        "std": 0.9297172123346035,
+        "count": 58
+      }
+    },
+    "ev_to_ebitda": {
+      "Distributors": {
+        "mean": 20.40933161577048,
+        "median": 18.75080342491932,
+        "std": 7.454324380924225,
+        "count": 22
+      }
+    },
+    "fcf_yield": {
+      "Distributors": {
+        "mean": 0.053987271062449604,
+        "median": 0.028319806050081487,
+        "std": 0.06584058512006578,
+        "count": 51
+      }
+    },
+    "earnings_yield": {
+      "Distributors": {
+        "mean": 0.05297356789405731,
+        "median": 0.053330203957610484,
+        "std": 0.022615588287042878,
+        "count": 106
+      }
+    },
+    "pe_vs_5y_median": {
+      "Distributors": {
+        "mean": 0.22275261436082264,
+        "median": 0.15498035374551533,
+        "std": 0.6760538411641918,
+        "count": 106
+      }
+    },
+    "pb_vs_5y_median": {
+      "Distributors": {
+        "mean": 0.6374468179197585,
+        "median": 0.6064716103637035,
+        "std": 0.5854263340258158,
+        "count": 72
+      }
+    },
+    "ev_ebitda_vs_5y_median": {
+      "Distributors": {
+        "mean": 0.2570107522359179,
+        "median": 0.1690532285090831,
+        "std": 0.19292699240008426,
+        "count": 21
+      }
+    },
+    "eps_surprise_pct": {
+      "Distributors": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_revision": {
+      "Distributors": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_est": {
+      "Distributors": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_reported": {
+      "Distributors": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    }
+  },
+  "top_features": {
+    "pb_vs_5y_median": 0.2969976551014891,
+    "fcf_yield": 0.20754853030883222,
+    "earnings_yield": 0.19256895295023832,
+    "ps_ratio": 0.11002127494848109,
+    "pb_ratio": 0.09729547009966416,
+    "pe_vs_5y_median": 0.09556811659129502
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 6,
+    "selected": [
+      "earnings_yield",
+      "pe_vs_5y_median",
+      "ps_ratio",
+      "pb_vs_5y_median",
+      "pb_ratio",
+      "fcf_yield"
+    ],
+    "selected_weights_pct": {
+      "earnings_yield": 22.976820439349318,
+      "pe_vs_5y_median": 22.602430504508295,
+      "ps_ratio": 15.728105228405848,
+      "pb_vs_5y_median": 13.35103219937819,
+      "pb_ratio": 13.062552710233186,
+      "fcf_yield": 12.279058918125163
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "pe_ratio"
+    ],
+    "dropped_imp": [
+      "ev_to_ebitda",
+      "ev_ebitda_vs_5y_median"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.7142857142857143,
+    "std_auc": 0.2102800206268535,
+    "mean_acc": 0.7777777777777778,
+    "mean_f1": 0.16666666666666666
+  }
+}

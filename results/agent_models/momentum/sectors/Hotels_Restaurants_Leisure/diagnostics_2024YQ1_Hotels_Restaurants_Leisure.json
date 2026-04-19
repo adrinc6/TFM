@@ -1,0 +1,87 @@
+{
+  "agent": "momentum",
+  "timestamp": "2026-04-19T15:55:20.381393",
+  "fold": "2024YQ1_Hotels_Restaurants_Leisure",
+  "class_balance": {
+    "n_samples": 600,
+    "n_positive": 280,
+    "n_negative": 320,
+    "positive_ratio": 0.4666666666666667
+  },
+  "cv_metrics": {
+    "mean_auc": 0.49574650220416105,
+    "std_auc": 0.07690758854133921,
+    "mean_acc": 0.4720000000000001,
+    "mean_f1": 0.4193094096629462
+  },
+  "regime_summary": {},
+  "top_features": {
+    "macd_hist": 0.14903845083683823,
+    "atr_14": 0.14269304869450788,
+    "bb_pct": 0.12570995078549652,
+    "volatility_60d": 0.12359462531077409,
+    "momentum_1m": 0.11966078765209168,
+    "macd_signal": 0.11701121252045805,
+    "momentum_3m": 0.11311005348359254,
+    "price_vs_52w_high": 0.10918187071624087
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 8,
+    "selected": [
+      "macd_hist",
+      "bb_pct",
+      "atr_14",
+      "momentum_3m",
+      "volatility_60d",
+      "momentum_1m",
+      "macd_signal",
+      "price_vs_52w_high"
+    ],
+    "selected_weights_pct": {
+      "macd_hist": 13.380854343433601,
+      "bb_pct": 12.845066637822155,
+      "atr_14": 12.74971478051723,
+      "momentum_3m": 12.686219361643191,
+      "volatility_60d": 12.410254804029606,
+      "momentum_1m": 12.203228035581878,
+      "macd_signal": 12.10846752533547,
+      "price_vs_52w_high": 11.616194511636857
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "rsi_28",
+      "rsi_14",
+      "macd"
+    ],
+    "dropped_imp": [
+      "price_vs_52w_low",
+      "momentum_6m",
+      "volatility_20d",
+      "vol_ratio_20_50",
+      "rsi_overbought",
+      "rsi_oversold",
+      "above_sma200",
+      "macd_bullish",
+      "cross_sma_20_50",
+      "vol_expansion",
+      "consistent_beater",
+      "earnings_momentum"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.49574650220416105,
+    "std_auc": 0.07690758854133921,
+    "mean_acc": 0.4720000000000001,
+    "mean_f1": 0.4193094096629462
+  }
+}

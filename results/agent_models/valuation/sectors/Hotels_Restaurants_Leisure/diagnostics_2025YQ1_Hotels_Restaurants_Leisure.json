@@ -1,0 +1,174 @@
+{
+  "agent": "valuation",
+  "timestamp": "2026-04-19T16:38:35.294911",
+  "fold": "2025YQ1_Hotels_Restaurants_Leisure",
+  "class_balance": {
+    "n_samples": 340,
+    "n_positive": 180,
+    "n_negative": 160,
+    "positive_ratio": 0.5294117647058824
+  },
+  "cv_metrics": {
+    "mean_auc": 0.5476210764082308,
+    "std_auc": 0.03185873348425801,
+    "mean_acc": 0.5035714285714287,
+    "mean_f1": 0.45512657677489765
+  },
+  "sector_multiples_distribution": {
+    "pe_ratio": {
+      "Hotels, Restaurants & Leisure": {
+        "mean": 29.02168099293122,
+        "median": 20.94905987907859,
+        "std": 53.170781703103174,
+        "count": 540
+      }
+    },
+    "pb_ratio": {
+      "Hotels, Restaurants & Leisure": {
+        "mean": 7.973114526410395,
+        "median": 3.265565283771928,
+        "std": 29.517482872441505,
+        "count": 341
+      }
+    },
+    "ps_ratio": {
+      "Hotels, Restaurants & Leisure": {
+        "mean": 2.6636820906838095,
+        "median": 1.9077400545162049,
+        "std": 5.14297442282849,
+        "count": 367
+      }
+    },
+    "ev_to_ebitda": {
+      "Hotels, Restaurants & Leisure": {
+        "mean": 13.507833319985773,
+        "median": 9.985484401774457,
+        "std": 17.66364358308666,
+        "count": 365
+      }
+    },
+    "fcf_yield": {
+      "Hotels, Restaurants & Leisure": {
+        "mean": 274.8130579869302,
+        "median": 0.026679032738762543,
+        "std": 2742.1112780642397,
+        "count": 298
+      }
+    },
+    "earnings_yield": {
+      "Hotels, Restaurants & Leisure": {
+        "mean": 0.16476521297921615,
+        "median": 0.04773483922769031,
+        "std": 0.31117207005436115,
+        "count": 540
+      }
+    },
+    "pe_vs_5y_median": {
+      "Hotels, Restaurants & Leisure": {
+        "mean": 0.8453297018581348,
+        "median": 0.052815754453867214,
+        "std": 4.70005121703694,
+        "count": 533
+      }
+    },
+    "pb_vs_5y_median": {
+      "Hotels, Restaurants & Leisure": {
+        "mean": 2.1488147926191963,
+        "median": 0.49032007963489677,
+        "std": 13.373783012427594,
+        "count": 333
+      }
+    },
+    "ev_ebitda_vs_5y_median": {
+      "Hotels, Restaurants & Leisure": {
+        "mean": 4.77795493863764,
+        "median": 0.13419778693767048,
+        "std": 57.1053401858464,
+        "count": 351
+      }
+    },
+    "eps_surprise_pct": {
+      "Hotels, Restaurants & Leisure": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_revision": {
+      "Hotels, Restaurants & Leisure": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_est": {
+      "Hotels, Restaurants & Leisure": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_reported": {
+      "Hotels, Restaurants & Leisure": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    }
+  },
+  "top_features": {
+    "ps_ratio": 0.23026758553700843,
+    "ev_ebitda_vs_5y_median": 0.198445815661682,
+    "fcf_yield": 0.1790040845404464,
+    "pb_ratio": 0.17869570831932538,
+    "earnings_yield": 0.10933724886906118,
+    "pe_ratio": 0.10424955707247659
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 6,
+    "selected": [
+      "ps_ratio",
+      "fcf_yield",
+      "ev_ebitda_vs_5y_median",
+      "pe_ratio",
+      "pb_ratio",
+      "earnings_yield"
+    ],
+    "selected_weights_pct": {
+      "ps_ratio": 25.1921220961622,
+      "fcf_yield": 17.055833655341864,
+      "ev_ebitda_vs_5y_median": 16.330498147524054,
+      "pe_ratio": 15.338437691964609,
+      "pb_ratio": 13.270209240396877,
+      "earnings_yield": 12.812899168610393
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "pb_vs_5y_median",
+      "pe_vs_5y_median"
+    ],
+    "dropped_imp": [
+      "ev_to_ebitda"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.5476210764082308,
+    "std_auc": 0.03185873348425801,
+    "mean_acc": 0.5035714285714287,
+    "mean_f1": 0.45512657677489765
+  }
+}

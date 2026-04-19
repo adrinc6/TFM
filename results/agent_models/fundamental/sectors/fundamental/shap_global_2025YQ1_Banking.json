@@ -1,0 +1,42 @@
+{
+  "eps": {
+    "shap_importance": 0.0,
+    "description": "Eps",
+    "rank": 1
+  },
+  "revenue_yoy_growth": {
+    "shap_importance": 0.0,
+    "description": "YoY revenue growth",
+    "rank": 2
+  },
+  "earnings_quality": {
+    "shap_importance": 0.0,
+    "description": "Earnings quality: FCF / Net Income (>1 = real cash)",
+    "rank": 3
+  },
+  "eps_yoy_growth": {
+    "shap_importance": 0.0,
+    "description": "YoY EPS growth",
+    "rank": 4
+  },
+  "net_margin_trend_2y": {
+    "shap_importance": 0.0,
+    "description": "Net margin trend 2Y",
+    "rank": 5
+  },
+  "total_debt_yoy_growth": {
+    "shap_importance": 0.0,
+    "description": "YoY total debt growth",
+    "rank": 6
+  },
+  "capex_to_revenue": {
+    "shap_importance": 0.0,
+    "description": "Capital intensity (CapEx / revenue)",
+    "rank": 7
+  },
+  "accruals_ratio": {
+    "shap_importance": 0.0,
+    "description": "Accruals ratio (accounting quality, lower=better)",
+    "rank": 8
+  }
+}

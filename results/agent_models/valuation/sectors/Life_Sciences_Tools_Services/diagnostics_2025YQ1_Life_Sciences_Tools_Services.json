@@ -1,0 +1,175 @@
+{
+  "agent": "valuation",
+  "timestamp": "2026-04-19T16:38:46.960529",
+  "fold": "2025YQ1_Life_Sciences_Tools_Services",
+  "class_balance": {
+    "n_samples": 297,
+    "n_positive": 125,
+    "n_negative": 172,
+    "positive_ratio": 0.4208754208754209
+  },
+  "cv_metrics": {
+    "mean_auc": 0.5688071669606709,
+    "std_auc": 0.0728079212158107,
+    "mean_acc": 0.5714285714285714,
+    "mean_f1": 0.37912988115449914
+  },
+  "sector_multiples_distribution": {
+    "pe_ratio": {
+      "Life Sciences Tools & Services": {
+        "mean": 37.778818592984834,
+        "median": 32.60858492586968,
+        "std": 24.528238350485175,
+        "count": 337
+      }
+    },
+    "pb_ratio": {
+      "Life Sciences Tools & Services": {
+        "mean": 26.699463273054988,
+        "median": 5.010853313328155,
+        "std": 250.66539737353406,
+        "count": 299
+      }
+    },
+    "ps_ratio": {
+      "Life Sciences Tools & Services": {
+        "mean": 4.752851686181962,
+        "median": 4.292707192141276,
+        "std": 2.4111971604909956,
+        "count": 314
+      }
+    },
+    "ev_to_ebitda": {
+      "Life Sciences Tools & Services": {
+        "mean": 27.098195396292397,
+        "median": 20.40251914608624,
+        "std": 76.66766877488739,
+        "count": 270
+      }
+    },
+    "fcf_yield": {
+      "Life Sciences Tools & Services": {
+        "mean": 0.03694425514387979,
+        "median": 0.028570145230681594,
+        "std": 0.042069739585839254,
+        "count": 207
+      }
+    },
+    "earnings_yield": {
+      "Life Sciences Tools & Services": {
+        "mean": 0.03610093150821821,
+        "median": 0.030666770798957927,
+        "std": 0.023162296411408427,
+        "count": 337
+      }
+    },
+    "pe_vs_5y_median": {
+      "Life Sciences Tools & Services": {
+        "mean": 0.6536309163826821,
+        "median": 0.22371975196319005,
+        "std": 1.5203546985671794,
+        "count": 330
+      }
+    },
+    "pb_vs_5y_median": {
+      "Life Sciences Tools & Services": {
+        "mean": 2.4139984120764137,
+        "median": 0.826065826085275,
+        "std": 13.571160008621536,
+        "count": 292
+      }
+    },
+    "ev_ebitda_vs_5y_median": {
+      "Life Sciences Tools & Services": {
+        "mean": 1.1940365537575908,
+        "median": 0.4697923803086552,
+        "std": 6.183622318846807,
+        "count": 267
+      }
+    },
+    "eps_surprise_pct": {
+      "Life Sciences Tools & Services": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_revision": {
+      "Life Sciences Tools & Services": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_est": {
+      "Life Sciences Tools & Services": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_reported": {
+      "Life Sciences Tools & Services": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    }
+  },
+  "top_features": {
+    "ps_ratio": 0.19497002203100747,
+    "pb_vs_5y_median": 0.1939759340768482,
+    "pe_vs_5y_median": 0.18798549111040175,
+    "ev_ebitda_vs_5y_median": 0.12993681800157503,
+    "fcf_yield": 0.10304665617265621,
+    "earnings_yield": 0.09644941813322998,
+    "pe_ratio": 0.09363566047428142
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 7,
+    "selected": [
+      "ps_ratio",
+      "pb_vs_5y_median",
+      "pe_vs_5y_median",
+      "earnings_yield",
+      "ev_ebitda_vs_5y_median",
+      "pe_ratio",
+      "fcf_yield"
+    ],
+    "selected_weights_pct": {
+      "ps_ratio": 18.97893338808912,
+      "pb_vs_5y_median": 18.565796132800884,
+      "pe_vs_5y_median": 15.6379197727603,
+      "earnings_yield": 12.270883550142793,
+      "ev_ebitda_vs_5y_median": 11.755422087798621,
+      "pe_ratio": 11.429554933968994,
+      "fcf_yield": 11.361490134439295
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "pb_ratio",
+      "ev_to_ebitda"
+    ],
+    "dropped_imp": []
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.5688071669606709,
+    "std_auc": 0.0728079212158107,
+    "mean_acc": 0.5714285714285714,
+    "mean_f1": 0.37912988115449914
+  }
+}

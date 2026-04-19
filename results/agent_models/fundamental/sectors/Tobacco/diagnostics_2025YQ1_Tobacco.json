@@ -1,0 +1,92 @@
+{
+  "agent": "fundamental",
+  "timestamp": "2026-04-19T16:37:08.759274",
+  "fold": "2025YQ1_Tobacco",
+  "class_balance": {
+    "n_samples": 80,
+    "n_positive": 32,
+    "n_negative": 48,
+    "positive_ratio": 0.4
+  },
+  "cv_metrics": {
+    "mean_auc": 0.6023809523809524,
+    "std_auc": 0.14420986533788518,
+    "mean_acc": 0.5846153846153846,
+    "mean_f1": 0.31764705882352945
+  },
+  "n_features": 8,
+  "top_features": {
+    "earnings_quality": 0.16599054634571075,
+    "accruals_ratio": 0.14425231516361237,
+    "gross_margin": 0.1315583437681198,
+    "roe": 0.12912939488887787,
+    "operating_margin": 0.12109243124723434,
+    "total_debt_yoy_growth": 0.11139975488185883,
+    "debt_to_ebitda": 0.10344497114419937,
+    "current_ratio_change_yoy": 0.09313222765922546
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 8,
+    "selected": [
+      "operating_margin",
+      "gross_margin",
+      "roe",
+      "total_debt_yoy_growth",
+      "debt_to_ebitda",
+      "current_ratio_change_yoy",
+      "earnings_quality",
+      "accruals_ratio"
+    ],
+    "selected_weights_pct": {
+      "operating_margin": 15.272031791354589,
+      "gross_margin": 13.220556030887115,
+      "roe": 12.507500110286013,
+      "total_debt_yoy_growth": 12.500239891861142,
+      "debt_to_ebitda": 12.470547365749804,
+      "current_ratio_change_yoy": 11.882273000262082,
+      "earnings_quality": 11.65143770624664,
+      "accruals_ratio": 10.495414103352608
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "ebitda_margin",
+      "roa"
+    ],
+    "dropped_imp": [
+      "roi",
+      "roic",
+      "net_margin",
+      "fcf_margin",
+      "current_ratio",
+      "debt_equity",
+      "revenue_yoy_growth",
+      "net_income_yoy_growth",
+      "eps_yoy_growth",
+      "fcf_yoy_growth",
+      "operating_income_yoy_growth",
+      "gross_margin_change_yoy",
+      "capex_to_revenue",
+      "consecutive_losses",
+      "piotroski_fscore",
+      "eps",
+      "roe_trend_2y",
+      "net_margin_trend_2y"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.6023809523809524,
+    "std_auc": 0.14420986533788518,
+    "mean_acc": 0.5846153846153846,
+    "mean_f1": 0.31764705882352945
+  }
+}

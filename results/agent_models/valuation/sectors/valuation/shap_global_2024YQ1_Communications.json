@@ -1,0 +1,32 @@
+{
+  "ev_to_ebitda": {
+    "shap_importance": 1.2498668613440285,
+    "description": "EV / EBITDA",
+    "rank": 1
+  },
+  "ev_ebitda_vs_5y_median": {
+    "shap_importance": 1.1344291630993362,
+    "description": "Current EV/EBITDA vs 5Y historical median",
+    "rank": 2
+  },
+  "pb_vs_5y_median": {
+    "shap_importance": 0.9974361593460367,
+    "description": "Current P/B vs 5Y historical median",
+    "rank": 3
+  },
+  "ps_ratio": {
+    "shap_importance": 0.46938122301335755,
+    "description": "Price / Sales (P/S ratio)",
+    "rank": 4
+  },
+  "pe_vs_5y_median": {
+    "shap_importance": 0.2512169790841397,
+    "description": "Current P/E vs 5Y historical median (>0 = more expensive)",
+    "rank": 5
+  },
+  "earnings_yield": {
+    "shap_importance": 0.1063242391779772,
+    "description": "Earnings yield (inverse of P/E)",
+    "rank": 6
+  }
+}

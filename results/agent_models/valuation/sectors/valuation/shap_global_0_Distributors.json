@@ -1,0 +1,22 @@
+{
+  "fcf_yield": {
+    "shap_importance": 2.7824473274292556,
+    "description": "FCF yield (FCF / market cap)",
+    "rank": 1
+  },
+  "ev_ebitda_vs_5y_median": {
+    "shap_importance": 0.8684687447007172,
+    "description": "Current EV/EBITDA vs 5Y historical median",
+    "rank": 2
+  },
+  "pb_ratio": {
+    "shap_importance": 0.7755949252417342,
+    "description": "Price / Book value (P/B ratio)",
+    "rank": 3
+  },
+  "ev_to_ebitda": {
+    "shap_importance": 0.6913960151192082,
+    "description": "EV / EBITDA",
+    "rank": 4
+  }
+}

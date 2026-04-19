@@ -1,0 +1,87 @@
+{
+  "agent": "momentum",
+  "timestamp": "2026-04-19T16:40:24.815893",
+  "fold": "2025YQ1_Communication_Services",
+  "class_balance": {
+    "n_samples": 440,
+    "n_positive": 200,
+    "n_negative": 240,
+    "positive_ratio": 0.45454545454545453
+  },
+  "cv_metrics": {
+    "mean_auc": 0.545242207247769,
+    "std_auc": 0.13729879124730188,
+    "mean_acc": 0.5123287671232877,
+    "mean_f1": 0.522043769075914
+  },
+  "regime_summary": {},
+  "top_features": {
+    "price_vs_52w_low": 0.15444301674704744,
+    "atr_14": 0.1366219772070426,
+    "volatility_60d": 0.13620549501686574,
+    "momentum_6m": 0.12555966130519428,
+    "vol_ratio_20_50": 0.12290390055213798,
+    "macd": 0.12048582683214941,
+    "volatility_20d": 0.1040530280710232,
+    "momentum_3m": 0.09972709426853947
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 8,
+    "selected": [
+      "price_vs_52w_low",
+      "atr_14",
+      "volatility_60d",
+      "momentum_6m",
+      "vol_ratio_20_50",
+      "macd",
+      "momentum_3m",
+      "volatility_20d"
+    ],
+    "selected_weights_pct": {
+      "price_vs_52w_low": 16.92225406508645,
+      "atr_14": 14.518980110148416,
+      "volatility_60d": 14.223755031045382,
+      "momentum_6m": 12.248224168415424,
+      "vol_ratio_20_50": 11.761112207661323,
+      "macd": 11.08137689991476,
+      "momentum_3m": 9.64890797427949,
+      "volatility_20d": 9.595389543448748
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "rsi_28",
+      "rsi_14",
+      "macd_signal"
+    ],
+    "dropped_imp": [
+      "macd_hist",
+      "bb_pct",
+      "price_vs_52w_high",
+      "momentum_1m",
+      "rsi_overbought",
+      "rsi_oversold",
+      "above_sma200",
+      "macd_bullish",
+      "cross_sma_20_50",
+      "vol_expansion",
+      "consistent_beater",
+      "earnings_momentum"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.545242207247769,
+    "std_auc": 0.13729879124730188,
+    "mean_acc": 0.5123287671232877,
+    "mean_f1": 0.522043769075914
+  }
+}

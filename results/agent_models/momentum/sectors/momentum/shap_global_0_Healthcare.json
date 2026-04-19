@@ -1,0 +1,22 @@
+{
+  "atr_14": {
+    "shap_importance": 0.07464073524500933,
+    "description": "Average True Range 14 days (price volatility)",
+    "rank": 1
+  },
+  "momentum_3m": {
+    "shap_importance": 0.040920380359784424,
+    "description": "3-month momentum",
+    "rank": 2
+  },
+  "bb_pct": {
+    "shap_importance": 0.027611131854319928,
+    "description": "Bollinger Band position (0=low, 1=high)",
+    "rank": 3
+  },
+  "macd": {
+    "shap_importance": 0.010555703760006823,
+    "description": "MACD",
+    "rank": 4
+  }
+}

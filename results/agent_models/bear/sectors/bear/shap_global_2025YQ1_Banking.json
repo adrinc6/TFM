@@ -1,0 +1,22 @@
+{
+  "total_debt_yoy_growth": {
+    "shap_importance": 0.07746444076594945,
+    "description": "YoY total debt growth",
+    "rank": 1
+  },
+  "debt_equity": {
+    "shap_importance": 0.05888096030869191,
+    "description": "Debt / equity ratio",
+    "rank": 2
+  },
+  "insider_sell_ratio": {
+    "shap_importance": 0.01527161806118486,
+    "description": "Insider sell ratio (>0.7 = red flag)",
+    "rank": 3
+  },
+  "fcf_margin": {
+    "shap_importance": 0.0011596602723198757,
+    "description": "Free cash flow margin",
+    "rank": 4
+  }
+}

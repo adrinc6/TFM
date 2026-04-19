@@ -41,7 +41,7 @@ from environment import (
     WALKFORWARD_TRAIN_LOOKBACK_YEARS, WALKFORWARD_TEST_QUARTERS, RISK_FREE_RATE,
     RANDOM_SEED, DOWNLOAD_START_DATE,
     ANALYSIS_START_YEAR, ANALYSIS_START_QUARTER, ANALYSIS_END_YEAR, ANALYSIS_END_QUARTER,
-    ANALYSIS_FREQUENCY, ANALYSIS_ANNUAL_START_DATE,
+    ANALYSIS_FREQUENCY,
     SKIP_BACKTEST, FORCE_DOWNLOAD, RETRY_MISSING_TICKERS, UPDATE_PRICES_ONLY,
     DOWNLOAD_OPTIONAL_ENDPOINTS,
     TOP_N_STOCKS, SNAPSHOT_LAG_DAYS, HOLDING_PERIOD_MONTHS, TECHNICAL_LOOKBACK_DAYS,
@@ -621,26 +621,17 @@ def main():
         raise ValueError("ANALYSIS_FREQUENCY must be 'quarterly' or 'annual'")
 
     test_start_date = _quarter_end_date(ANALYSIS_START_YEAR, ANALYSIS_START_QUARTER)
-    annual_anchor_date = None
     if analysis_frequency == "annual":
-        if ANALYSIS_ANNUAL_START_DATE:
-            annual_anchor_date = pd.Timestamp(ANALYSIS_ANNUAL_START_DATE).normalize()
-        else:
-            annual_anchor_date = (
-                pd.Timestamp(year=int(ANALYSIS_START_YEAR), month=1, day=1)
-                + pd.Timedelta(days=max(int(SNAPSHOT_LAG_DAYS), 0))
-            ).normalize()
-
-        # In annual mode, the backtester must generate folds from the anchor quarter,
-        # not from ANALYSIS_START_QUARTER.
-        test_start_date = annual_anchor_date.to_period("Q").end_time.normalize()
+        annual_anchor_date = (
+            test_start_date + pd.Timedelta(days=max(int(SNAPSHOT_LAG_DAYS), 0))
+        ).normalize()
 
         log.info(
-            "Annual mode enabled: anchor=%s | start_quarter=%sQ%s | holding=%s months",
+            "Annual mode enabled: snapshot=%sQ%s (closes %s) | entry ~%s | holding=12 months",
+            ANALYSIS_START_YEAR,
+            ANALYSIS_START_QUARTER,
+            test_start_date.date(),
             annual_anchor_date.date(),
-            test_start_date.year,
-            test_start_date.quarter,
-            12,
         )
 
     download_end_date = pd.Timestamp.today().normalize()
@@ -739,7 +730,6 @@ def main():
             "analysis_end_year": ANALYSIS_END_YEAR,
             "analysis_end_quarter": ANALYSIS_END_QUARTER,
             "analysis_frequency": ANALYSIS_FREQUENCY,
-            "analysis_annual_start_date": ANALYSIS_ANNUAL_START_DATE,
             "snapshot_lag_days": SNAPSHOT_LAG_DAYS,
             "holding_period_months": HOLDING_PERIOD_MONTHS,
             "technical_lookback_days": TECHNICAL_LOOKBACK_DAYS,

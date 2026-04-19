@@ -1,0 +1,22 @@
+{
+  "capex_to_revenue": {
+    "shap_importance": 0.7133094072341919,
+    "description": "Capital intensity (CapEx / revenue)",
+    "rank": 1
+  },
+  "earnings_quality": {
+    "shap_importance": 0.6409893035888672,
+    "description": "Earnings quality: FCF / Net Income (>1 = real cash)",
+    "rank": 2
+  },
+  "fcf_margin": {
+    "shap_importance": 0.390420138835907,
+    "description": "Free cash flow margin",
+    "rank": 3
+  },
+  "fcf_yoy_growth": {
+    "shap_importance": 0.3363338112831116,
+    "description": "YoY FCF growth",
+    "rank": 4
+  }
+}

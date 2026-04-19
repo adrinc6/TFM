@@ -1,0 +1,22 @@
+{
+  "pb_vs_5y_median": {
+    "shap_importance": 1.8350368327748365,
+    "description": "Current P/B vs 5Y historical median",
+    "rank": 1
+  },
+  "ps_ratio": {
+    "shap_importance": 1.4350611700596985,
+    "description": "Price / Sales (P/S ratio)",
+    "rank": 2
+  },
+  "fcf_yield": {
+    "shap_importance": 1.2900650253270516,
+    "description": "FCF yield (FCF / market cap)",
+    "rank": 3
+  },
+  "pb_ratio": {
+    "shap_importance": 0.432910946965717,
+    "description": "Price / Book value (P/B ratio)",
+    "rank": 4
+  }
+}

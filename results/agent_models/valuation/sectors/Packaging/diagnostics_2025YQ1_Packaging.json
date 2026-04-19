@@ -1,0 +1,172 @@
+{
+  "agent": "valuation",
+  "timestamp": "2026-04-19T16:39:04.586412",
+  "fold": "2025YQ1_Packaging",
+  "class_balance": {
+    "n_samples": 115,
+    "n_positive": 49,
+    "n_negative": 66,
+    "positive_ratio": 0.4260869565217391
+  },
+  "cv_metrics": {
+    "mean_auc": 0.7072195941313588,
+    "std_auc": 0.15190889286033663,
+    "mean_acc": 0.5578947368421052,
+    "mean_f1": 0.28401465201465204
+  },
+  "sector_multiples_distribution": {
+    "pe_ratio": {
+      "Packaging": {
+        "mean": 22.834141536595176,
+        "median": 17.13001251220703,
+        "std": 29.295191550745034,
+        "count": 155
+      }
+    },
+    "pb_ratio": {
+      "Packaging": {
+        "mean": 4.795122873686554,
+        "median": 4.432346789569704,
+        "std": 2.7140458132406526,
+        "count": 117
+      }
+    },
+    "ps_ratio": {
+      "Packaging": {
+        "mean": 0.8959080506016752,
+        "median": 0.7061089225062936,
+        "std": 0.5432327542982455,
+        "count": 93
+      }
+    },
+    "ev_to_ebitda": {
+      "Packaging": {
+        "mean": 15.740337376664073,
+        "median": 14.285301724299742,
+        "std": 12.187388182051759,
+        "count": 34
+      }
+    },
+    "fcf_yield": {
+      "Packaging": {
+        "mean": 0.003813188542431492,
+        "median": 0.0271936267297746,
+        "std": 0.09016960573636598,
+        "count": 76
+      }
+    },
+    "earnings_yield": {
+      "Packaging": {
+        "mean": 0.07881854206088595,
+        "median": 0.058377073530295975,
+        "std": 0.07109127553220099,
+        "count": 155
+      }
+    },
+    "pe_vs_5y_median": {
+      "Packaging": {
+        "mean": 0.5452141326430617,
+        "median": 0.02265373112469038,
+        "std": 2.213752520135521,
+        "count": 155
+      }
+    },
+    "pb_vs_5y_median": {
+      "Packaging": {
+        "mean": 0.5932540749916797,
+        "median": 0.3265003530128954,
+        "std": 0.7302017463704981,
+        "count": 115
+      }
+    },
+    "ev_ebitda_vs_5y_median": {
+      "Packaging": {
+        "mean": 0.06221881378583466,
+        "median": -0.11729389850554434,
+        "std": 0.9996178856036531,
+        "count": 32
+      }
+    },
+    "eps_surprise_pct": {
+      "Packaging": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_revision": {
+      "Packaging": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_est": {
+      "Packaging": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_reported": {
+      "Packaging": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    }
+  },
+  "top_features": {
+    "pb_vs_5y_median": 0.2766816854035485,
+    "fcf_yield": 0.22559248542673818,
+    "earnings_yield": 0.20761931468112696,
+    "ps_ratio": 0.1772359334889166,
+    "pb_ratio": 0.11287058099966973
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 5,
+    "selected": [
+      "pb_vs_5y_median",
+      "pb_ratio",
+      "fcf_yield",
+      "earnings_yield",
+      "ps_ratio"
+    ],
+    "selected_weights_pct": {
+      "pb_vs_5y_median": 26.172798736804058,
+      "pb_ratio": 21.52324972474458,
+      "fcf_yield": 19.302812085168767,
+      "earnings_yield": 18.69845674167478,
+      "ps_ratio": 14.302682711607803
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "pe_ratio",
+      "ev_ebitda_vs_5y_median"
+    ],
+    "dropped_imp": [
+      "ev_to_ebitda",
+      "pe_vs_5y_median"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.7072195941313588,
+    "std_auc": 0.15190889286033663,
+    "mean_acc": 0.5578947368421052,
+    "mean_f1": 0.28401465201465204
+  }
+}

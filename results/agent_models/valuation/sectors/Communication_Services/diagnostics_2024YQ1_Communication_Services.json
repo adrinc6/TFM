@@ -1,0 +1,173 @@
+{
+  "agent": "valuation",
+  "timestamp": "2026-04-19T15:51:23.773309",
+  "fold": "2024YQ1_Communication_Services",
+  "class_balance": {
+    "n_samples": 206,
+    "n_positive": 94,
+    "n_negative": 112,
+    "positive_ratio": 0.4563106796116505
+  },
+  "cv_metrics": {
+    "mean_auc": 0.5185307499518026,
+    "std_auc": 0.14053265243143112,
+    "mean_acc": 0.5411764705882354,
+    "mean_f1": 0.3572282838836319
+  },
+  "sector_multiples_distribution": {
+    "pe_ratio": {
+      "Communication Services": {
+        "mean": 30.934254476181977,
+        "median": 20.14145851135254,
+        "std": 36.09110653687874,
+        "count": 299
+      }
+    },
+    "pb_ratio": {
+      "Communication Services": {
+        "mean": 4.751128134316939,
+        "median": 3.9758181906769092,
+        "std": 6.839093375110007,
+        "count": 219
+      }
+    },
+    "ps_ratio": {
+      "Communication Services": {
+        "mean": 3.535219788913328,
+        "median": 2.253236067812126,
+        "std": 3.6210113750719537,
+        "count": 228
+      }
+    },
+    "ev_to_ebitda": {
+      "Communication Services": {
+        "mean": 18.33217002096293,
+        "median": 17.18336207554192,
+        "std": 12.352175731138262,
+        "count": 201
+      }
+    },
+    "fcf_yield": {
+      "Communication Services": {
+        "mean": 0.022901927442273085,
+        "median": 0.013308102591702781,
+        "std": 0.13390937566825897,
+        "count": 160
+      }
+    },
+    "earnings_yield": {
+      "Communication Services": {
+        "mean": 0.079189990686304,
+        "median": 0.04964883746806914,
+        "std": 0.09226787605397967,
+        "count": 299
+      }
+    },
+    "pe_vs_5y_median": {
+      "Communication Services": {
+        "mean": 1.0396964542396778,
+        "median": 0.14174426750335645,
+        "std": 2.820965758181642,
+        "count": 276
+      }
+    },
+    "pb_vs_5y_median": {
+      "Communication Services": {
+        "mean": 0.9124086186879524,
+        "median": 0.34577318008404856,
+        "std": 2.1461996455497023,
+        "count": 214
+      }
+    },
+    "ev_ebitda_vs_5y_median": {
+      "Communication Services": {
+        "mean": 3.7813279348909377,
+        "median": -0.02494787873080251,
+        "std": 19.109884394357078,
+        "count": 176
+      }
+    },
+    "eps_surprise_pct": {
+      "Communication Services": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_revision": {
+      "Communication Services": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_est": {
+      "Communication Services": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_reported": {
+      "Communication Services": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    }
+  },
+  "top_features": {
+    "ev_ebitda_vs_5y_median": 0.22160621027286542,
+    "ev_to_ebitda": 0.17763758840090563,
+    "ps_ratio": 0.15815484736820468,
+    "pb_vs_5y_median": 0.15462868676238584,
+    "pe_vs_5y_median": 0.14406756326524733,
+    "fcf_yield": 0.14390510393039105
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 6,
+    "selected": [
+      "ev_ebitda_vs_5y_median",
+      "pb_vs_5y_median",
+      "ev_to_ebitda",
+      "fcf_yield",
+      "ps_ratio",
+      "pe_vs_5y_median"
+    ],
+    "selected_weights_pct": {
+      "ev_ebitda_vs_5y_median": 24.76184995105757,
+      "pb_vs_5y_median": 16.57287599050308,
+      "ev_to_ebitda": 16.34316682435318,
+      "fcf_yield": 14.655028543521883,
+      "ps_ratio": 14.064759414912134,
+      "pe_vs_5y_median": 13.602319275652158
+    },
+    "dropped_pair": [],
+    "dropped_corr": [],
+    "dropped_imp": [
+      "pe_ratio",
+      "pb_ratio",
+      "earnings_yield"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.5185307499518026,
+    "std_auc": 0.14053265243143112,
+    "mean_acc": 0.5411764705882354,
+    "mean_f1": 0.3572282838836319
+  }
+}

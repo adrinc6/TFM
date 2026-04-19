@@ -1,0 +1,87 @@
+{
+  "agent": "momentum",
+  "timestamp": "2026-04-19T16:42:06.098318",
+  "fold": "2025YQ1_Industrials",
+  "class_balance": {
+    "n_samples": 600,
+    "n_positive": 280,
+    "n_negative": 320,
+    "positive_ratio": 0.4666666666666667
+  },
+  "cv_metrics": {
+    "mean_auc": 0.5769034435387888,
+    "std_auc": 0.034431970968233194,
+    "mean_acc": 0.558,
+    "mean_f1": 0.4498653562484992
+  },
+  "regime_summary": {},
+  "top_features": {
+    "price_vs_52w_low": 0.16660672039769367,
+    "atr_14": 0.13326987194710493,
+    "volatility_20d": 0.13225642940754107,
+    "volatility_60d": 0.12800296936489297,
+    "momentum_6m": 0.12759290166871465,
+    "macd": 0.11601718325615491,
+    "vol_ratio_20_50": 0.10786251206641716,
+    "bb_pct": 0.08839141189148071
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 8,
+    "selected": [
+      "price_vs_52w_low",
+      "volatility_20d",
+      "volatility_60d",
+      "macd",
+      "atr_14",
+      "momentum_6m",
+      "vol_ratio_20_50",
+      "bb_pct"
+    ],
+    "selected_weights_pct": {
+      "price_vs_52w_low": 15.88577027159978,
+      "volatility_20d": 15.43276592518183,
+      "volatility_60d": 12.771268319968199,
+      "macd": 12.314229654743713,
+      "atr_14": 12.27060873348257,
+      "momentum_6m": 11.817968695097955,
+      "vol_ratio_20_50": 10.380989534350148,
+      "bb_pct": 9.126398865575805
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "rsi_28",
+      "momentum_1m",
+      "rsi_14",
+      "macd_signal"
+    ],
+    "dropped_imp": [
+      "macd_hist",
+      "price_vs_52w_high",
+      "momentum_3m",
+      "rsi_overbought",
+      "rsi_oversold",
+      "above_sma200",
+      "macd_bullish",
+      "cross_sma_20_50",
+      "vol_expansion",
+      "consistent_beater",
+      "earnings_momentum"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.5769034435387888,
+    "std_auc": 0.034431970968233194,
+    "mean_acc": 0.558,
+    "mean_f1": 0.4498653562484992
+  }
+}

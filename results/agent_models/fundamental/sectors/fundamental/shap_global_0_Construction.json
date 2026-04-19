@@ -1,0 +1,42 @@
+{
+  "roi": {
+    "shap_importance": 1.0475176572799683,
+    "description": "Return on Investment (ROI)",
+    "rank": 1
+  },
+  "accruals_ratio": {
+    "shap_importance": 0.7617172598838806,
+    "description": "Accruals ratio (accounting quality, lower=better)",
+    "rank": 2
+  },
+  "fcf_margin": {
+    "shap_importance": 0.4257403016090393,
+    "description": "Free cash flow margin",
+    "rank": 3
+  },
+  "roa": {
+    "shap_importance": 0.41639062762260437,
+    "description": "Return on Assets (ROA)",
+    "rank": 4
+  },
+  "roe": {
+    "shap_importance": 0.29517948627471924,
+    "description": "Return on Equity (ROE)",
+    "rank": 5
+  },
+  "earnings_quality": {
+    "shap_importance": 0.2677374482154846,
+    "description": "Earnings quality: FCF / Net Income (>1 = real cash)",
+    "rank": 6
+  },
+  "interest_coverage": {
+    "shap_importance": 0.16872191429138184,
+    "description": "Interest coverage (EBIT / interest expense)",
+    "rank": 7
+  },
+  "eps_yoy_growth": {
+    "shap_importance": 0.043319012969732285,
+    "description": "YoY EPS growth",
+    "rank": 8
+  }
+}

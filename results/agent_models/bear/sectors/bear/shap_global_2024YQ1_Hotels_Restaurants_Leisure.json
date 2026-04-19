@@ -1,0 +1,32 @@
+{
+  "debt_equity": {
+    "shap_importance": 0.07663433182936273,
+    "description": "Debt / equity ratio",
+    "rank": 1
+  },
+  "fcf_margin": {
+    "shap_importance": 0.07013613393829987,
+    "description": "Free cash flow margin",
+    "rank": 2
+  },
+  "debt_to_ebitda": {
+    "shap_importance": 0.02994356186691042,
+    "description": "Net debt / EBITDA",
+    "rank": 3
+  },
+  "interest_coverage": {
+    "shap_importance": 0.020838025395492097,
+    "description": "Interest coverage (EBIT / interest expense)",
+    "rank": 4
+  },
+  "current_ratio": {
+    "shap_importance": 0.016413917997024845,
+    "description": "Current ratio (current assets / current liabilities)",
+    "rank": 5
+  },
+  "total_debt_yoy_growth": {
+    "shap_importance": 0.009046956344848475,
+    "description": "YoY total debt growth",
+    "rank": 6
+  }
+}

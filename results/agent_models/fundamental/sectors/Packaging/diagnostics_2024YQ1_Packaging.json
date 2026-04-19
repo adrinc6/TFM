@@ -1,0 +1,93 @@
+{
+  "agent": "fundamental",
+  "timestamp": "2026-04-19T15:50:26.806951",
+  "fold": "2024YQ1_Packaging",
+  "class_balance": {
+    "n_samples": 141,
+    "n_positive": 65,
+    "n_negative": 76,
+    "positive_ratio": 0.46099290780141844
+  },
+  "cv_metrics": {
+    "mean_auc": 0.4407843137254902,
+    "std_auc": 0.06497744558858268,
+    "mean_acc": 0.49565217391304356,
+    "mean_f1": 0.35548626529101907
+  },
+  "n_features": 8,
+  "top_features": {
+    "capex_to_revenue": 0.19296546280384064,
+    "fcf_margin": 0.1799067109823227,
+    "gross_margin": 0.17110705375671387,
+    "fcf_yoy_growth": 0.1319245845079422,
+    "revenue_yoy_growth": 0.12631657719612122,
+    "accruals_ratio": 0.09899451583623886,
+    "roe": 0.09878506511449814,
+    "interest_coverage": 0.0
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 8,
+    "selected": [
+      "capex_to_revenue",
+      "revenue_yoy_growth",
+      "fcf_margin",
+      "fcf_yoy_growth",
+      "interest_coverage",
+      "roe",
+      "gross_margin",
+      "accruals_ratio"
+    ],
+    "selected_weights_pct": {
+      "capex_to_revenue": 16.83135799920616,
+      "revenue_yoy_growth": 16.821534595541433,
+      "fcf_margin": 14.051356719488318,
+      "fcf_yoy_growth": 11.390792295864745,
+      "interest_coverage": 11.038798423346703,
+      "roe": 10.310163276959276,
+      "gross_margin": 10.062225989406592,
+      "accruals_ratio": 9.493770700186776
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "operating_margin",
+      "eps"
+    ],
+    "dropped_imp": [
+      "roa",
+      "roi",
+      "roic",
+      "net_margin",
+      "ebitda_margin",
+      "current_ratio",
+      "debt_equity",
+      "debt_to_ebitda",
+      "net_income_yoy_growth",
+      "eps_yoy_growth",
+      "operating_income_yoy_growth",
+      "total_debt_yoy_growth",
+      "gross_margin_change_yoy",
+      "current_ratio_change_yoy",
+      "consecutive_losses",
+      "earnings_quality",
+      "piotroski_fscore",
+      "roe_trend_2y",
+      "net_margin_trend_2y"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.4407843137254902,
+    "std_auc": 0.06497744558858268,
+    "mean_acc": 0.49565217391304356,
+    "mean_f1": 0.35548626529101907
+  }
+}

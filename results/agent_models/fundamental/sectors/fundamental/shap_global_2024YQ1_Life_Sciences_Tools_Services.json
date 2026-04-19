@@ -1,0 +1,42 @@
+{
+  "net_margin": {
+    "shap_importance": 0.4848993420600891,
+    "description": "Net margin (profit / revenue)",
+    "rank": 1
+  },
+  "current_ratio_change_yoy": {
+    "shap_importance": 0.4766775369644165,
+    "description": "YoY improvement in current ratio",
+    "rank": 2
+  },
+  "revenue_yoy_growth": {
+    "shap_importance": 0.4241662919521332,
+    "description": "YoY revenue growth",
+    "rank": 3
+  },
+  "capex_to_revenue": {
+    "shap_importance": 0.3976301848888397,
+    "description": "Capital intensity (CapEx / revenue)",
+    "rank": 4
+  },
+  "fcf_yoy_growth": {
+    "shap_importance": 0.39310282468795776,
+    "description": "YoY FCF growth",
+    "rank": 5
+  },
+  "operating_income_yoy_growth": {
+    "shap_importance": 0.3746250569820404,
+    "description": "YoY operating income growth",
+    "rank": 6
+  },
+  "net_margin_trend_2y": {
+    "shap_importance": 0.3435709476470947,
+    "description": "Net margin trend 2Y",
+    "rank": 7
+  },
+  "roic": {
+    "shap_importance": 0.31326621770858765,
+    "description": "Return on Invested Capital (ROIC)",
+    "rank": 8
+  }
+}

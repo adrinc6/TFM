@@ -1,0 +1,37 @@
+{
+  "roe": {
+    "shap_importance": 0.5316996574401855,
+    "description": "Return on Equity (ROE)",
+    "rank": 1
+  },
+  "current_ratio_change_yoy": {
+    "shap_importance": 0.4731022119522095,
+    "description": "YoY improvement in current ratio",
+    "rank": 2
+  },
+  "debt_to_ebitda": {
+    "shap_importance": 0.43291527032852173,
+    "description": "Net debt / EBITDA",
+    "rank": 3
+  },
+  "debt_equity": {
+    "shap_importance": 0.400827556848526,
+    "description": "Debt / equity ratio",
+    "rank": 4
+  },
+  "net_margin_trend_2y": {
+    "shap_importance": 0.38561421632766724,
+    "description": "Net margin trend 2Y",
+    "rank": 5
+  },
+  "ebitda_margin": {
+    "shap_importance": 0.2168801724910736,
+    "description": "EBITDA margin",
+    "rank": 6
+  },
+  "total_debt_yoy_growth": {
+    "shap_importance": 0.21183648705482483,
+    "description": "YoY total debt growth",
+    "rank": 7
+  }
+}

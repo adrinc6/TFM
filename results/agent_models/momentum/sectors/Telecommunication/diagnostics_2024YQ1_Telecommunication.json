@@ -1,0 +1,79 @@
+{
+  "agent": "momentum",
+  "timestamp": "2026-04-19T15:56:55.234505",
+  "fold": "2024YQ1_Telecommunication",
+  "class_balance": {
+    "n_samples": 160,
+    "n_positive": 80,
+    "n_negative": 80,
+    "positive_ratio": 0.5
+  },
+  "cv_metrics": {
+    "mean_auc": 0.7296822213733979,
+    "std_auc": 0.11577906318011696,
+    "mean_acc": 0.6076923076923076,
+    "mean_f1": 0.5369683093675834
+  },
+  "regime_summary": {},
+  "top_features": {
+    "atr_14": 0.4069671032591958,
+    "macd": 0.21167599812837248,
+    "price_vs_52w_high": 0.19792530797993801,
+    "macd_hist": 0.18343159063249387
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 4,
+    "selected": [
+      "atr_14",
+      "macd",
+      "macd_hist",
+      "price_vs_52w_high"
+    ],
+    "selected_weights_pct": {
+      "atr_14": 40.77805735400041,
+      "macd": 20.749385745855676,
+      "macd_hist": 19.340673749592092,
+      "price_vs_52w_high": 19.131883150551825
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "rsi_14",
+      "macd_signal"
+    ],
+    "dropped_imp": [
+      "rsi_28",
+      "bb_pct",
+      "price_vs_52w_low",
+      "momentum_1m",
+      "momentum_3m",
+      "momentum_6m",
+      "volatility_20d",
+      "volatility_60d",
+      "vol_ratio_20_50",
+      "rsi_overbought",
+      "rsi_oversold",
+      "above_sma200",
+      "macd_bullish",
+      "cross_sma_20_50",
+      "vol_expansion",
+      "consistent_beater",
+      "earnings_momentum"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.7296822213733979,
+    "std_auc": 0.11577906318011696,
+    "mean_acc": 0.6076923076923076,
+    "mean_f1": 0.5369683093675834
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "agent": "fundamental",
+  "timestamp": "2026-04-19T15:48:43.811212",
+  "fold": "2024YQ1_Airlines",
+  "class_balance": {
+    "n_samples": 160,
+    "n_positive": 80,
+    "n_negative": 80,
+    "positive_ratio": 0.5
+  },
+  "cv_metrics": {
+    "mean_auc": 0.47666900093370684,
+    "std_auc": 0.1134541817427681,
+    "mean_acc": 0.47692307692307684,
+    "mean_f1": 0.30221052631578943
+  },
+  "n_features": 8,
+  "top_features": {
+    "interest_coverage": 0.2515350878238678,
+    "current_ratio": 0.1366196572780609,
+    "roe": 0.1136854961514473,
+    "roe_trend_2y": 0.10793530941009521,
+    "roi": 0.10021213442087173,
+    "net_margin_trend_2y": 0.09807255864143372,
+    "roic": 0.09602734446525574,
+    "revenue_yoy_growth": 0.095912404358387
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 8,
+    "selected": [
+      "interest_coverage",
+      "net_margin_trend_2y",
+      "current_ratio",
+      "roe_trend_2y",
+      "roi",
+      "roe",
+      "roic",
+      "revenue_yoy_growth"
+    ],
+    "selected_weights_pct": {
+      "interest_coverage": 19.720801801702823,
+      "net_margin_trend_2y": 13.713325895820343,
+      "current_ratio": 12.821712875181118,
+      "roe_trend_2y": 12.205690949895764,
+      "roi": 10.858894937658505,
+      "roe": 10.39839833936794,
+      "roic": 10.193749528973822,
+      "revenue_yoy_growth": 10.08742567139968
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "roa",
+      "net_margin",
+      "operating_margin",
+      "debt_equity"
+    ],
+    "dropped_imp": [
+      "fcf_margin",
+      "ebitda_margin",
+      "debt_to_ebitda",
+      "net_income_yoy_growth",
+      "eps_yoy_growth",
+      "fcf_yoy_growth",
+      "operating_income_yoy_growth",
+      "total_debt_yoy_growth",
+      "current_ratio_change_yoy",
+      "accruals_ratio",
+      "capex_to_revenue",
+      "consecutive_losses",
+      "earnings_quality",
+      "piotroski_fscore",
+      "eps"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.47666900093370684,
+    "std_auc": 0.1134541817427681,
+    "mean_acc": 0.47692307692307684,
+    "mean_f1": 0.30221052631578943
+  }
+}

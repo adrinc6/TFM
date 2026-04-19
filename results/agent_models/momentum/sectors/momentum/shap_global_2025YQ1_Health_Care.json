@@ -1,0 +1,22 @@
+{
+  "atr_14": {
+    "shap_importance": 0.06457591550313425,
+    "description": "Average True Range 14 days (price volatility)",
+    "rank": 1
+  },
+  "macd_hist": {
+    "shap_importance": 0.026070223915979435,
+    "description": "MACD histogram (trend momentum)",
+    "rank": 2
+  },
+  "momentum_3m": {
+    "shap_importance": 0.024743866642343928,
+    "description": "3-month momentum",
+    "rank": 3
+  },
+  "momentum_1m": {
+    "shap_importance": 0.02003749398501854,
+    "description": "1-month momentum",
+    "rank": 4
+  }
+}

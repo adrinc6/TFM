@@ -1,0 +1,85 @@
+{
+  "agent": "momentum",
+  "timestamp": "2026-04-19T15:55:38.660862",
+  "fold": "2024YQ1_Leisure_Products",
+  "class_balance": {
+    "n_samples": 40,
+    "n_positive": 14,
+    "n_negative": 26,
+    "positive_ratio": 0.35
+  },
+  "cv_metrics": {
+    "mean_auc": 0.48125,
+    "std_auc": 0.29758139642793535,
+    "mean_acc": 0.4333333333333333,
+    "mean_f1": 0.21714285714285717
+  },
+  "regime_summary": {},
+  "top_features": {
+    "volatility_60d": 0.23192502007960045,
+    "price_vs_52w_high": 0.17835550902307945,
+    "volatility_20d": 0.156151150891791,
+    "atr_14": 0.13489649376995405,
+    "vol_ratio_20_50": 0.1255333598490405,
+    "macd_hist": 0.10641693606057871,
+    "momentum_6m": 0.06672153032595601
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 7,
+    "selected": [
+      "volatility_60d",
+      "price_vs_52w_high",
+      "volatility_20d",
+      "macd_hist",
+      "atr_14",
+      "vol_ratio_20_50",
+      "momentum_6m"
+    ],
+    "selected_weights_pct": {
+      "volatility_60d": 21.081416310243583,
+      "price_vs_52w_high": 16.338802564141417,
+      "volatility_20d": 14.925990004009615,
+      "macd_hist": 12.876745846846033,
+      "atr_14": 12.689267180872166,
+      "vol_ratio_20_50": 11.439194277786038,
+      "momentum_6m": 10.648583816101135
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "macd",
+      "rsi_28",
+      "rsi_14",
+      "macd_signal"
+    ],
+    "dropped_imp": [
+      "bb_pct",
+      "price_vs_52w_low",
+      "momentum_1m",
+      "momentum_3m",
+      "rsi_overbought",
+      "rsi_oversold",
+      "above_sma200",
+      "macd_bullish",
+      "cross_sma_20_50",
+      "vol_expansion",
+      "consistent_beater",
+      "earnings_momentum"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.48125,
+    "std_auc": 0.29758139642793535,
+    "mean_acc": 0.4333333333333333,
+    "mean_f1": 0.21714285714285717
+  }
+}

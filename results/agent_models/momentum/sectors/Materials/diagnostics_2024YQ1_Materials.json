@@ -1,0 +1,85 @@
+{
+  "agent": "momentum",
+  "timestamp": "2026-04-19T15:56:00.883875",
+  "fold": "2024YQ1_Materials",
+  "class_balance": {
+    "n_samples": 520,
+    "n_positive": 240,
+    "n_negative": 280,
+    "positive_ratio": 0.46153846153846156
+  },
+  "cv_metrics": {
+    "mean_auc": 0.5557239660583126,
+    "std_auc": 0.07174556379089987,
+    "mean_acc": 0.5604651162790698,
+    "mean_f1": 0.47145751689911874
+  },
+  "regime_summary": {},
+  "top_features": {
+    "atr_14": 0.20176468388840563,
+    "price_vs_52w_low": 0.14113519262200758,
+    "volatility_60d": 0.13931131677958059,
+    "momentum_6m": 0.13598808547390195,
+    "vol_ratio_20_50": 0.13445128105956206,
+    "momentum_3m": 0.12850037271926876,
+    "rsi_28": 0.11884906745727347
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 7,
+    "selected": [
+      "atr_14",
+      "price_vs_52w_low",
+      "vol_ratio_20_50",
+      "momentum_6m",
+      "volatility_60d",
+      "momentum_3m",
+      "rsi_28"
+    ],
+    "selected_weights_pct": {
+      "atr_14": 23.46131133006423,
+      "price_vs_52w_low": 13.62688107155181,
+      "vol_ratio_20_50": 13.610636998319691,
+      "momentum_6m": 12.542956605714686,
+      "volatility_60d": 12.450203787101415,
+      "momentum_3m": 12.339800049047815,
+      "rsi_28": 11.968210158200348
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "rsi_14",
+      "macd_signal"
+    ],
+    "dropped_imp": [
+      "macd",
+      "macd_hist",
+      "bb_pct",
+      "price_vs_52w_high",
+      "momentum_1m",
+      "volatility_20d",
+      "rsi_overbought",
+      "rsi_oversold",
+      "above_sma200",
+      "macd_bullish",
+      "cross_sma_20_50",
+      "vol_expansion",
+      "consistent_beater",
+      "earnings_momentum"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.5557239660583126,
+    "std_auc": 0.07174556379089987,
+    "mean_acc": 0.5604651162790698,
+    "mean_f1": 0.47145751689911874
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "earnings_yield": {
+    "shap_importance": 0.949739863054976,
+    "description": "Earnings yield (inverse of P/E)",
+    "rank": 1
+  },
+  "pb_ratio": {
+    "shap_importance": 0.4780510451054213,
+    "description": "Price / Book value (P/B ratio)",
+    "rank": 2
+  },
+  "ps_ratio": {
+    "shap_importance": 0.3020461458798758,
+    "description": "Price / Sales (P/S ratio)",
+    "rank": 3
+  },
+  "ev_to_ebitda": {
+    "shap_importance": 0.26431933033093163,
+    "description": "EV / EBITDA",
+    "rank": 4
+  },
+  "pb_vs_5y_median": {
+    "shap_importance": 0.18498609644083075,
+    "description": "Current P/B vs 5Y historical median",
+    "rank": 5
+  },
+  "ev_ebitda_vs_5y_median": {
+    "shap_importance": 0.16241474035931855,
+    "description": "Current EV/EBITDA vs 5Y historical median",
+    "rank": 6
+  },
+  "fcf_yield": {
+    "shap_importance": 0.142812182337982,
+    "description": "FCF yield (FCF / market cap)",
+    "rank": 7
+  },
+  "pe_vs_5y_median": {
+    "shap_importance": 0.00022801617386643584,
+    "description": "Current P/E vs 5Y historical median (>0 = more expensive)",
+    "rank": 8
+  }
+}

@@ -1,0 +1,170 @@
+{
+  "agent": "valuation",
+  "timestamp": "2026-04-19T16:37:45.546405",
+  "fold": "2025YQ1_Construction",
+  "class_balance": {
+    "n_samples": 103,
+    "n_positive": 40,
+    "n_negative": 63,
+    "positive_ratio": 0.3883495145631068
+  },
+  "cv_metrics": {
+    "mean_auc": 0.5318681318681319,
+    "std_auc": 0.09572788958891515,
+    "mean_acc": 0.6705882352941177,
+    "mean_f1": 0.392463768115942
+  },
+  "sector_multiples_distribution": {
+    "pe_ratio": {
+      "Construction": {
+        "mean": 43.73988964757499,
+        "median": 30.116035003787495,
+        "std": 58.170275319647956,
+        "count": 105
+      }
+    },
+    "pb_ratio": {
+      "Construction": {
+        "mean": 3.0231891566457234,
+        "median": 3.125215911524229,
+        "std": 1.12684226268266,
+        "count": 119
+      }
+    },
+    "ps_ratio": {
+      "Construction": {
+        "mean": 4.653284169530948,
+        "median": 3.1421480569281632,
+        "std": 13.380430233080055,
+        "count": 100
+      }
+    },
+    "ev_to_ebitda": {
+      "Construction": {
+        "mean": 18.34689551980091,
+        "median": 16.281316520460418,
+        "std": 11.05894526551866,
+        "count": 113
+      }
+    },
+    "fcf_yield": {
+      "Construction": {
+        "mean": 0.0027483552986774656,
+        "median": 0.0025890693357621,
+        "std": 0.056818644796301346,
+        "count": 101
+      }
+    },
+    "earnings_yield": {
+      "Construction": {
+        "mean": 0.03464629635977414,
+        "median": 0.0332049023011906,
+        "std": 0.017609766272674326,
+        "count": 105
+      }
+    },
+    "pe_vs_5y_median": {
+      "Construction": {
+        "mean": 0.389377698824319,
+        "median": -0.1160185707529201,
+        "std": 2.4987237958215647,
+        "count": 105
+      }
+    },
+    "pb_vs_5y_median": {
+      "Construction": {
+        "mean": 0.5713108705299211,
+        "median": 0.3854407739152377,
+        "std": 0.7435813931394133,
+        "count": 119
+      }
+    },
+    "ev_ebitda_vs_5y_median": {
+      "Construction": {
+        "mean": 0.19121275786221015,
+        "median": 0.015367849492825991,
+        "std": 0.7138015485092796,
+        "count": 113
+      }
+    },
+    "eps_surprise_pct": {
+      "Construction": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_revision": {
+      "Construction": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_est": {
+      "Construction": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_reported": {
+      "Construction": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    }
+  },
+  "top_features": {
+    "pb_vs_5y_median": 0.3697613072798604,
+    "ps_ratio": 0.2628328571231498,
+    "fcf_yield": 0.2421869964223029,
+    "pe_ratio": 0.12521883917468687
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 4,
+    "selected": [
+      "pb_vs_5y_median",
+      "ps_ratio",
+      "fcf_yield",
+      "pe_ratio"
+    ],
+    "selected_weights_pct": {
+      "pb_vs_5y_median": 35.56414300646477,
+      "ps_ratio": 23.825614633624475,
+      "fcf_yield": 22.544336508527387,
+      "pe_ratio": 18.06590585138338
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "ev_ebitda_vs_5y_median",
+      "pe_vs_5y_median"
+    ],
+    "dropped_imp": [
+      "pb_ratio",
+      "ev_to_ebitda",
+      "earnings_yield"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.5318681318681319,
+    "std_auc": 0.09572788958891515,
+    "mean_acc": 0.6705882352941177,
+    "mean_f1": 0.392463768115942
+  }
+}

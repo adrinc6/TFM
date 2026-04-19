@@ -1,0 +1,42 @@
+{
+  "earnings_quality": {
+    "shap_importance": 0.6746159791946411,
+    "description": "Earnings quality: FCF / Net Income (>1 = real cash)",
+    "rank": 1
+  },
+  "gross_margin": {
+    "shap_importance": 0.5565406084060669,
+    "description": "Gross margin",
+    "rank": 2
+  },
+  "gross_margin_change_yoy": {
+    "shap_importance": 0.5215284824371338,
+    "description": "YoY improvement in gross margin",
+    "rank": 3
+  },
+  "net_income_yoy_growth": {
+    "shap_importance": 0.5113564133644104,
+    "description": "YoY net income growth",
+    "rank": 4
+  },
+  "roi": {
+    "shap_importance": 0.42829903960227966,
+    "description": "Return on Investment (ROI)",
+    "rank": 5
+  },
+  "total_debt_yoy_growth": {
+    "shap_importance": 0.3285588026046753,
+    "description": "YoY total debt growth",
+    "rank": 6
+  },
+  "current_ratio_change_yoy": {
+    "shap_importance": 0.15380726754665375,
+    "description": "YoY improvement in current ratio",
+    "rank": 7
+  },
+  "operating_income_yoy_growth": {
+    "shap_importance": 0.15094232559204102,
+    "description": "YoY operating income growth",
+    "rank": 8
+  }
+}

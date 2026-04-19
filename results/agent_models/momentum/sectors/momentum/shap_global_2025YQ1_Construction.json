@@ -1,0 +1,22 @@
+{
+  "atr_14": {
+    "shap_importance": 0.22218622455556317,
+    "description": "Average True Range 14 days (price volatility)",
+    "rank": 1
+  },
+  "macd_signal": {
+    "shap_importance": 0.07067285110091359,
+    "description": "MACD signal (EMA of MACD)",
+    "rank": 2
+  },
+  "momentum_6m": {
+    "shap_importance": 0.06118069759104027,
+    "description": "6-month momentum",
+    "rank": 3
+  },
+  "rsi_14": {
+    "shap_importance": 0.018508907409532212,
+    "description": "RSI 14 days (>70 overbought, <30 oversold)",
+    "rank": 4
+  }
+}

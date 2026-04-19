@@ -1,0 +1,79 @@
+{
+  "agent": "momentum",
+  "timestamp": "2026-04-19T16:41:37.715895",
+  "fold": "2025YQ1_Health_Care",
+  "class_balance": {
+    "n_samples": 1360,
+    "n_positive": 680,
+    "n_negative": 680,
+    "positive_ratio": 0.5
+  },
+  "cv_metrics": {
+    "mean_auc": 0.5401623784994996,
+    "std_auc": 0.07777724094409766,
+    "mean_acc": 0.536283185840708,
+    "mean_f1": 0.556460346823769
+  },
+  "regime_summary": {},
+  "top_features": {
+    "atr_14": 0.3059387008318648,
+    "momentum_3m": 0.23694053718628003,
+    "momentum_1m": 0.229909807099087,
+    "macd_hist": 0.22721095488276816
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 4,
+    "selected": [
+      "atr_14",
+      "momentum_1m",
+      "momentum_3m",
+      "macd_hist"
+    ],
+    "selected_weights_pct": {
+      "atr_14": 41.156703000978744,
+      "momentum_1m": 19.823656775800004,
+      "momentum_3m": 19.75551192415013,
+      "macd_hist": 19.26412829907112
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "rsi_14",
+      "macd"
+    ],
+    "dropped_imp": [
+      "rsi_28",
+      "macd_signal",
+      "bb_pct",
+      "price_vs_52w_high",
+      "price_vs_52w_low",
+      "momentum_6m",
+      "volatility_20d",
+      "volatility_60d",
+      "vol_ratio_20_50",
+      "rsi_overbought",
+      "rsi_oversold",
+      "above_sma200",
+      "macd_bullish",
+      "cross_sma_20_50",
+      "vol_expansion",
+      "consistent_beater",
+      "earnings_momentum"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.5401623784994996,
+    "std_auc": 0.07777724094409766,
+    "mean_acc": 0.536283185840708,
+    "mean_f1": 0.556460346823769
+  }
+}

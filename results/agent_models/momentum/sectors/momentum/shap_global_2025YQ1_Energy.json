@@ -1,0 +1,42 @@
+{
+  "atr_14": {
+    "shap_importance": 0.029339779984598614,
+    "description": "Average True Range 14 days (price volatility)",
+    "rank": 1
+  },
+  "price_vs_52w_high": {
+    "shap_importance": 0.022651862652750415,
+    "description": "Distance to 52-week high",
+    "rank": 2
+  },
+  "macd_hist": {
+    "shap_importance": 0.020244552346754947,
+    "description": "MACD histogram (trend momentum)",
+    "rank": 3
+  },
+  "momentum_3m": {
+    "shap_importance": 0.016829863984586177,
+    "description": "3-month momentum",
+    "rank": 4
+  },
+  "volatility_20d": {
+    "shap_importance": 0.016051380845779003,
+    "description": "Realised volatility 20 days (annualised)",
+    "rank": 5
+  },
+  "volatility_60d": {
+    "shap_importance": 0.010580804405836563,
+    "description": "Realised volatility 60 days (annualised)",
+    "rank": 6
+  },
+  "price_vs_52w_low": {
+    "shap_importance": 0.009518769764857476,
+    "description": "Distance to 52-week low",
+    "rank": 7
+  },
+  "momentum_6m": {
+    "shap_importance": 0.00193247069762299,
+    "description": "6-month momentum",
+    "rank": 8
+  }
+}

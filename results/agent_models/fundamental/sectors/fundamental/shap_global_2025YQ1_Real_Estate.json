@@ -1,0 +1,32 @@
+{
+  "operating_margin": {
+    "shap_importance": 0.5652257800102234,
+    "description": "Operating margin",
+    "rank": 1
+  },
+  "operating_income_yoy_growth": {
+    "shap_importance": 0.4958488941192627,
+    "description": "YoY operating income growth",
+    "rank": 2
+  },
+  "ebitda_margin": {
+    "shap_importance": 0.4187164306640625,
+    "description": "EBITDA margin",
+    "rank": 3
+  },
+  "total_debt_yoy_growth": {
+    "shap_importance": 0.3960528075695038,
+    "description": "YoY total debt growth",
+    "rank": 4
+  },
+  "debt_equity": {
+    "shap_importance": 0.3689376711845398,
+    "description": "Debt / equity ratio",
+    "rank": 5
+  },
+  "capex_to_revenue": {
+    "shap_importance": 0.19437727332115173,
+    "description": "Capital intensity (CapEx / revenue)",
+    "rank": 6
+  }
+}

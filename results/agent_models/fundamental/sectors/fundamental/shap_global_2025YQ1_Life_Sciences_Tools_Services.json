@@ -1,0 +1,22 @@
+{
+  "net_margin_trend_2y": {
+    "shap_importance": 0.6539869904518127,
+    "description": "Net margin trend 2Y",
+    "rank": 1
+  },
+  "net_income_yoy_growth": {
+    "shap_importance": 0.6405028700828552,
+    "description": "YoY net income growth",
+    "rank": 2
+  },
+  "roe_trend_2y": {
+    "shap_importance": 0.5026209354400635,
+    "description": "ROE trend 2Y (positive = improving)",
+    "rank": 3
+  },
+  "net_margin": {
+    "shap_importance": 0.4124167561531067,
+    "description": "Net margin (profit / revenue)",
+    "rank": 4
+  }
+}

@@ -1,0 +1,176 @@
+{
+  "agent": "valuation",
+  "timestamp": "2026-04-19T15:52:58.102526",
+  "fold": "2024YQ1_Real_Estate",
+  "class_balance": {
+    "n_samples": 626,
+    "n_positive": 311,
+    "n_negative": 315,
+    "positive_ratio": 0.4968051118210863
+  },
+  "cv_metrics": {
+    "mean_auc": 0.47842402633810865,
+    "std_auc": 0.0754960145405582,
+    "mean_acc": 0.4615384615384615,
+    "mean_f1": 0.5484039657813781
+  },
+  "sector_multiples_distribution": {
+    "pe_ratio": {
+      "Real Estate": {
+        "mean": 65.41834320077136,
+        "median": 27.063627845066485,
+        "std": 340.86478920986184,
+        "count": 812
+      }
+    },
+    "pb_ratio": {
+      "Real Estate": {
+        "mean": 3.4926542094047006,
+        "median": 2.309231552489612,
+        "std": 4.502444825304156,
+        "count": 778
+      }
+    },
+    "ps_ratio": {
+      "Real Estate": {
+        "mean": 35.2622319118085,
+        "median": 6.259103840168489,
+        "std": 217.91909125351512,
+        "count": 708
+      }
+    },
+    "ev_to_ebitda": {
+      "Real Estate": {
+        "mean": 19.98120578684573,
+        "median": 14.888937262862374,
+        "std": 17.33649162235663,
+        "count": 629
+      }
+    },
+    "fcf_yield": {
+      "Real Estate": {
+        "mean": 0.027619843667474272,
+        "median": 0.028001431322479356,
+        "std": 0.04616312329872463,
+        "count": 144
+      }
+    },
+    "earnings_yield": {
+      "Real Estate": {
+        "mean": 0.04548695365395879,
+        "median": 0.03694996651813257,
+        "std": 0.04968792317129934,
+        "count": 812
+      }
+    },
+    "pe_vs_5y_median": {
+      "Real Estate": {
+        "mean": 1.1727685320873793,
+        "median": 0.031395028453227836,
+        "std": 10.21858060548812,
+        "count": 794
+      }
+    },
+    "pb_vs_5y_median": {
+      "Real Estate": {
+        "mean": 0.5465318592604606,
+        "median": 0.26623362390848393,
+        "std": 1.4440399212686033,
+        "count": 776
+      }
+    },
+    "ev_ebitda_vs_5y_median": {
+      "Real Estate": {
+        "mean": 0.2557325816288949,
+        "median": 0.11689659034166666,
+        "std": 1.7156919110801123,
+        "count": 614
+      }
+    },
+    "eps_surprise_pct": {
+      "Real Estate": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_revision": {
+      "Real Estate": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_est": {
+      "Real Estate": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_reported": {
+      "Real Estate": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    }
+  },
+  "top_features": {
+    "ps_ratio": 0.18956124427871932,
+    "pb_ratio": 0.17095800397624153,
+    "ev_to_ebitda": 0.1631524293415834,
+    "pb_vs_5y_median": 0.14904888850333844,
+    "ev_ebitda_vs_5y_median": 0.1361073075802371,
+    "earnings_yield": 0.09678703224288972,
+    "pe_ratio": 0.09438509407699039
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 7,
+    "selected": [
+      "ps_ratio",
+      "pb_ratio",
+      "pe_ratio",
+      "earnings_yield",
+      "pb_vs_5y_median",
+      "ev_to_ebitda",
+      "ev_ebitda_vs_5y_median"
+    ],
+    "selected_weights_pct": {
+      "ps_ratio": 19.851847045938335,
+      "pb_ratio": 14.844452232234776,
+      "pe_ratio": 14.426621285034058,
+      "earnings_yield": 14.194395322533913,
+      "pb_vs_5y_median": 14.077768686861539,
+      "ev_to_ebitda": 12.367877833232761,
+      "ev_ebitda_vs_5y_median": 10.237037594164613
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "pe_vs_5y_median"
+    ],
+    "dropped_imp": [
+      "fcf_yield"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.47842402633810865,
+    "std_auc": 0.0754960145405582,
+    "mean_acc": 0.4615384615384615,
+    "mean_f1": 0.5484039657813781
+  }
+}

@@ -127,23 +127,23 @@ SP500_DYNAMIC_TOP_N = False
 # Date from which raw data is downloaded.
 DOWNLOAD_START_DATE = "2000-01-01"
 
-# Start of the analysis / walk-forward backtest period (snapshot quarters to evaluate).
-ANALYSIS_START_YEAR = 2022
-ANALYSIS_START_QUARTER = 3
+# Quarter range to analyze (both quarterly and annual modes use these).
+# - "quarterly": one fold per quarter from START to END.
+# - "annual":    one fold per year starting at the START quarter.
+#
+# Example for 2025Q2 snapshot:
+#   ANALYSIS_START_YEAR = 2025, ANALYSIS_START_QUARTER = 2
+#   => snapshot closes Jun 30 · entry ~Aug 14 (+ SNAPSHOT_LAG_DAYS)
+ANALYSIS_START_YEAR = 2024
+ANALYSIS_START_QUARTER = 2
 
-# End of the analysis / walk-forward backtest period.
 ANALYSIS_END_YEAR = 2026
 ANALYSIS_END_QUARTER = 2
 
 # Walk-forward analysis frequency:
-# - "quarterly": runs one fold per quarter (historical behavior).
-# - "annual": runs one fold per year (same feature logic, lower frequency).
+# - "quarterly": runs one fold per quarter.
+# - "annual":    runs one fold per year.
 ANALYSIS_FREQUENCY = "annual"
-
-# Optional anchor date for annual mode ("YYYY-MM-DD" format).
-# If None in annual mode, it is automatically set to:
-#   January 1st of ANALYSIS_START_YEAR + SNAPSHOT_LAG_DAYS.
-ANALYSIS_ANNUAL_START_DATE = None
 
 # Lag (in days) from quarter close to real analysis/entry time.
 # Example: Q1 snapshot (Mar 31) + 45 days => approximate entry mid-Q2.
@@ -244,7 +244,7 @@ TOP_N_STOCKS = 10
 INITIAL_CAPITAL_USD = 1000.0
 
 # Fixed transaction cost (each BUY and each SELL per ticker)
-TRANSACTION_FEE_USD = 1.0
+TRANSACTION_FEE_USD = 0.0
 
 # Percentage slippage applied to execution price (0.01 = 1%)
 SLIPPAGE_PCT = 0.0

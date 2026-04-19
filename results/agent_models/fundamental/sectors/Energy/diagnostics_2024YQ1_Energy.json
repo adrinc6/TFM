@@ -1,0 +1,85 @@
+{
+  "agent": "fundamental",
+  "timestamp": "2026-04-19T15:49:37.667408",
+  "fold": "2024YQ1_Energy",
+  "class_balance": {
+    "n_samples": 633,
+    "n_positive": 313,
+    "n_negative": 320,
+    "positive_ratio": 0.49447077409162715
+  },
+  "cv_metrics": {
+    "mean_auc": 0.5254940286171381,
+    "std_auc": 0.05992460093234581,
+    "mean_acc": 0.5238095238095238,
+    "mean_f1": 0.5672994131198466
+  },
+  "n_features": 4,
+  "top_features": {
+    "current_ratio": 0.27792078256607056,
+    "operating_income_yoy_growth": 0.25424909591674805,
+    "net_margin_trend_2y": 0.2366618514060974,
+    "current_ratio_change_yoy": 0.23116827011108398
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 4,
+    "selected": [
+      "current_ratio",
+      "current_ratio_change_yoy",
+      "operating_income_yoy_growth",
+      "net_margin_trend_2y"
+    ],
+    "selected_weights_pct": {
+      "current_ratio": 34.4868262117849,
+      "current_ratio_change_yoy": 24.71482737157585,
+      "operating_income_yoy_growth": 23.65036227869828,
+      "net_margin_trend_2y": 17.147984137940952
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "operating_margin",
+      "net_margin",
+      "fcf_margin",
+      "gross_margin"
+    ],
+    "dropped_imp": [
+      "roe",
+      "roa",
+      "roi",
+      "roic",
+      "ebitda_margin",
+      "debt_equity",
+      "debt_to_ebitda",
+      "interest_coverage",
+      "revenue_yoy_growth",
+      "net_income_yoy_growth",
+      "eps_yoy_growth",
+      "fcf_yoy_growth",
+      "total_debt_yoy_growth",
+      "gross_margin_change_yoy",
+      "accruals_ratio",
+      "capex_to_revenue",
+      "consecutive_losses",
+      "earnings_quality",
+      "piotroski_fscore",
+      "eps",
+      "roe_trend_2y"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.5254940286171381,
+    "std_auc": 0.05992460093234581,
+    "mean_acc": 0.5238095238095238,
+    "mean_f1": 0.5672994131198466
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "vol_ratio_20_50": {
+    "shap_importance": 0.03767805015893667,
+    "description": "Volume ratio 20d / 50d (>1 = expansion)",
+    "rank": 1
+  },
+  "atr_14": {
+    "shap_importance": 0.02686601448203567,
+    "description": "Average True Range 14 days (price volatility)",
+    "rank": 2
+  },
+  "macd_hist": {
+    "shap_importance": 0.017809705165874913,
+    "description": "MACD histogram (trend momentum)",
+    "rank": 3
+  },
+  "momentum_3m": {
+    "shap_importance": 0.017331857227673927,
+    "description": "3-month momentum",
+    "rank": 4
+  },
+  "price_vs_52w_high": {
+    "shap_importance": 0.016929354062403586,
+    "description": "Distance to 52-week high",
+    "rank": 5
+  },
+  "price_vs_52w_low": {
+    "shap_importance": 0.015181527272481586,
+    "description": "Distance to 52-week low",
+    "rank": 6
+  },
+  "momentum_6m": {
+    "shap_importance": 0.014628289963795229,
+    "description": "6-month momentum",
+    "rank": 7
+  },
+  "momentum_1m": {
+    "shap_importance": 0.014567366440688186,
+    "description": "1-month momentum",
+    "rank": 8
+  }
+}

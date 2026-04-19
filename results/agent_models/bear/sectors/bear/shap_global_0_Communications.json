@@ -1,0 +1,22 @@
+{
+  "current_ratio": {
+    "shap_importance": 0.11982707202000396,
+    "description": "Current ratio (current assets / current liabilities)",
+    "rank": 1
+  },
+  "debt_equity": {
+    "shap_importance": 0.05473414847265072,
+    "description": "Debt / equity ratio",
+    "rank": 2
+  },
+  "debt_to_ebitda": {
+    "shap_importance": 0.02116967333729945,
+    "description": "Net debt / EBITDA",
+    "rank": 3
+  },
+  "total_debt_yoy_growth": {
+    "shap_importance": 0.014341146072109304,
+    "description": "YoY total debt growth",
+    "rank": 4
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "atr_14": {
+    "shap_importance": 0.06042817759687205,
+    "description": "Average True Range 14 days (price volatility)",
+    "rank": 1
+  },
+  "vol_ratio_20_50": {
+    "shap_importance": 0.030983592067577857,
+    "description": "Volume ratio 20d / 50d (>1 = expansion)",
+    "rank": 2
+  },
+  "volatility_60d": {
+    "shap_importance": 0.024334470935670906,
+    "description": "Realised volatility 60 days (annualised)",
+    "rank": 3
+  },
+  "macd": {
+    "shap_importance": 0.005816137424714794,
+    "description": "MACD",
+    "rank": 4
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "momentum_score_sector_rank": {
+    "shap_importance": 0.12832161703330114,
+    "description": "Momentum Score Sector Rank",
+    "rank": 1
+  },
+  "momentum_score": {
+    "shap_importance": 0.12108344426665822,
+    "description": "Momentum Agent score (technical trend)",
+    "rank": 2
+  },
+  "sentiment_score_sector_rank": {
+    "shap_importance": 0.039377333327133696,
+    "description": "Sentiment Score Sector Rank",
+    "rank": 3
+  },
+  "valuation_score_sector_rank": {
+    "shap_importance": 0.022513741114281848,
+    "description": "Valuation Score Sector Rank",
+    "rank": 4
+  },
+  "confidence_weighted_score_mean": {
+    "shap_importance": 0.021287969190541055,
+    "description": "Confidence Weighted Score Mean",
+    "rank": 5
+  },
+  "agent_score_mean": {
+    "shap_importance": 0.016542458118876436,
+    "description": "Agent Score Mean",
+    "rank": 6
+  },
+  "consensus_score_strength": {
+    "shap_importance": 0.014170293075031476,
+    "description": "Consensus Score Strength",
+    "rank": 7
+  },
+  "fundamental_score_sector_rank": {
+    "shap_importance": 0.01196240019488435,
+    "description": "Fundamental Score Sector Rank",
+    "rank": 8
+  },
+  "sector_x_momentum": {
+    "shap_importance": 0.010644028761863293,
+    "description": "Sector X Momentum",
+    "rank": 9
+  },
+  "agent_score_range": {
+    "shap_importance": 0.010222889973666098,
+    "description": "Agent Score Range",
+    "rank": 10
+  },
+  "bear_score": {
+    "shap_importance": 0.010190204812027322,
+    "description": "Aligned Bear Agent score (safety, >0.5 is better)",
+    "rank": 11
+  },
+  "sector_score": {
+    "shap_importance": 0.007572644255717972,
+    "description": "Sector Score",
+    "rank": 12
+  },
+  "valuation_score": {
+    "shap_importance": 0.006441490499841396,
+    "description": "Valuation Agent score (undervaluation)",
+    "rank": 13
+  },
+  "agent_score_max": {
+    "shap_importance": 0.005845145095667079,
+    "description": "Agent Score Max",
+    "rank": 14
+  },
+  "agent_score_std": {
+    "shap_importance": 0.004133529297192073,
+    "description": "Agent Score Std",
+    "rank": 15
+  },
+  "fundamental_score": {
+    "shap_importance": 0.0026615976590335538,
+    "description": "Fundamental Agent score (financial health)",
+    "rank": 16
+  },
+  "sector_Trading Companies & Distributors": {
+    "shap_importance": 0.0025979393299569217,
+    "description": "Sector Trading Companies & Distributors",
+    "rank": 17
+  },
+  "agent_score_min": {
+    "shap_importance": 0.0013286451129537876,
+    "description": "Agent Score Min",
+    "rank": 18
+  },
+  "sector_Technology": {
+    "shap_importance": 0.0011673949340398804,
+    "description": "Sector Technology",
+    "rank": 19
+  },
+  "sector_Communication Services": {
+    "shap_importance": 0.0008810838744302453,
+    "description": "Sector Communication Services",
+    "rank": 20
+  }
+}

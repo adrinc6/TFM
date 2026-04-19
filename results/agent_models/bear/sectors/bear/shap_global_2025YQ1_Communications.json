@@ -1,0 +1,22 @@
+{
+  "current_ratio": {
+    "shap_importance": 0.12676908960024663,
+    "description": "Current ratio (current assets / current liabilities)",
+    "rank": 1
+  },
+  "debt_equity": {
+    "shap_importance": 0.038778998762259674,
+    "description": "Debt / equity ratio",
+    "rank": 2
+  },
+  "debt_to_ebitda": {
+    "shap_importance": 0.030895494309512155,
+    "description": "Net debt / EBITDA",
+    "rank": 3
+  },
+  "fcf_margin": {
+    "shap_importance": 0.023437249544447557,
+    "description": "Free cash flow margin",
+    "rank": 4
+  }
+}

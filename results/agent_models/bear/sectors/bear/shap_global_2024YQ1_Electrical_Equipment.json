@@ -1,0 +1,22 @@
+{
+  "debt_equity": {
+    "shap_importance": 0.10639938425149158,
+    "description": "Debt / equity ratio",
+    "rank": 1
+  },
+  "debt_to_ebitda": {
+    "shap_importance": 0.07820970272531673,
+    "description": "Net debt / EBITDA",
+    "rank": 2
+  },
+  "interest_coverage": {
+    "shap_importance": 0.07742627824826513,
+    "description": "Interest coverage (EBIT / interest expense)",
+    "rank": 3
+  },
+  "fcf_margin": {
+    "shap_importance": 0.013492500268804393,
+    "description": "Free cash flow margin",
+    "rank": 4
+  }
+}

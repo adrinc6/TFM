@@ -1,0 +1,175 @@
+{
+  "agent": "valuation",
+  "timestamp": "2026-04-19T15:52:10.454907",
+  "fold": "2024YQ1_Health_Care",
+  "class_balance": {
+    "n_samples": 865,
+    "n_positive": 419,
+    "n_negative": 446,
+    "positive_ratio": 0.484393063583815
+  },
+  "cv_metrics": {
+    "mean_auc": 0.4926539277463645,
+    "std_auc": 0.035119883863868474,
+    "mean_acc": 0.5208333333333333,
+    "mean_f1": 0.3768823963418235
+  },
+  "sector_multiples_distribution": {
+    "pe_ratio": {
+      "Health Care": {
+        "mean": 176648971427174.22,
+        "median": 21.522054036458336,
+        "std": 6062946810517678.0,
+        "count": 1178
+      }
+    },
+    "pb_ratio": {
+      "Health Care": {
+        "mean": 9.159523700620099,
+        "median": 3.2609370039901036,
+        "std": 37.970800057598105,
+        "count": 915
+      }
+    },
+    "ps_ratio": {
+      "Health Care": {
+        "mean": 3.607312529237667,
+        "median": 2.4715769189597143,
+        "std": 4.010553573993932,
+        "count": 882
+      }
+    },
+    "ev_to_ebitda": {
+      "Health Care": {
+        "mean": 24.800983932327245,
+        "median": 14.044531683700793,
+        "std": 45.023140991008056,
+        "count": 844
+      }
+    },
+    "fcf_yield": {
+      "Health Care": {
+        "mean": 0.05084548479246975,
+        "median": 0.035796569645274626,
+        "std": 0.09455406238652489,
+        "count": 690
+      }
+    },
+    "earnings_yield": {
+      "Health Care": {
+        "mean": 0.05822807806186721,
+        "median": 0.046463983690792715,
+        "std": 0.0703104837064116,
+        "count": 1178
+      }
+    },
+    "pe_vs_5y_median": {
+      "Health Care": {
+        "mean": 8028254481563.039,
+        "median": 0.4202817944803726,
+        "std": 270112289360266.78,
+        "count": 1132
+      }
+    },
+    "pb_vs_5y_median": {
+      "Health Care": {
+        "mean": 1.5449879712140386,
+        "median": 0.5002149450933442,
+        "std": 7.923540100027943,
+        "count": 907
+      }
+    },
+    "ev_ebitda_vs_5y_median": {
+      "Health Care": {
+        "mean": 1.1496968815510988,
+        "median": 0.3698144510221837,
+        "std": 3.034510462435335,
+        "count": 795
+      }
+    },
+    "eps_surprise_pct": {
+      "Health Care": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_revision": {
+      "Health Care": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_est": {
+      "Health Care": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_reported": {
+      "Health Care": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    }
+  },
+  "top_features": {
+    "fcf_yield": 0.19389747680975336,
+    "pb_ratio": 0.1883430514950177,
+    "earnings_yield": 0.1705069267789314,
+    "ps_ratio": 0.15161749325373625,
+    "ev_ebitda_vs_5y_median": 0.14817129335439158,
+    "ev_to_ebitda": 0.1474637583081698,
+    "pe_ratio": 0.0
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 7,
+    "selected": [
+      "pb_ratio",
+      "fcf_yield",
+      "ps_ratio",
+      "ev_ebitda_vs_5y_median",
+      "ev_to_ebitda",
+      "pe_ratio",
+      "earnings_yield"
+    ],
+    "selected_weights_pct": {
+      "pb_ratio": 20.19220572217221,
+      "fcf_yield": 16.264677774680393,
+      "ps_ratio": 14.73761410170861,
+      "ev_ebitda_vs_5y_median": 13.684649458828002,
+      "ev_to_ebitda": 13.033011470470246,
+      "pe_ratio": 11.658055421612271,
+      "earnings_yield": 10.429786050528266
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "pb_vs_5y_median",
+      "pe_vs_5y_median"
+    ],
+    "dropped_imp": []
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.4926539277463645,
+    "std_auc": 0.035119883863868474,
+    "mean_acc": 0.5208333333333333,
+    "mean_f1": 0.3768823963418235
+  }
+}

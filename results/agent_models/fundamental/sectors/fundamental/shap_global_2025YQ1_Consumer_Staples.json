@@ -1,0 +1,42 @@
+{
+  "operating_income_yoy_growth": {
+    "shap_importance": 0.4328126609325409,
+    "description": "YoY operating income growth",
+    "rank": 1
+  },
+  "capex_to_revenue": {
+    "shap_importance": 0.35762348771095276,
+    "description": "Capital intensity (CapEx / revenue)",
+    "rank": 2
+  },
+  "net_income_yoy_growth": {
+    "shap_importance": 0.3567053973674774,
+    "description": "YoY net income growth",
+    "rank": 3
+  },
+  "ebitda_margin": {
+    "shap_importance": 0.32841038703918457,
+    "description": "EBITDA margin",
+    "rank": 4
+  },
+  "earnings_quality": {
+    "shap_importance": 0.3283350467681885,
+    "description": "Earnings quality: FCF / Net Income (>1 = real cash)",
+    "rank": 5
+  },
+  "current_ratio_change_yoy": {
+    "shap_importance": 0.32618287205696106,
+    "description": "YoY improvement in current ratio",
+    "rank": 6
+  },
+  "debt_to_ebitda": {
+    "shap_importance": 0.3034074604511261,
+    "description": "Net debt / EBITDA",
+    "rank": 7
+  },
+  "fcf_yoy_growth": {
+    "shap_importance": 0.1834256500005722,
+    "description": "YoY FCF growth",
+    "rank": 8
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "agent": "fundamental",
+  "timestamp": "2026-04-19T15:49:08.451769",
+  "fold": "2024YQ1_Construction",
+  "class_balance": {
+    "n_samples": 104,
+    "n_positive": 40,
+    "n_negative": 64,
+    "positive_ratio": 0.38461538461538464
+  },
+  "cv_metrics": {
+    "mean_auc": 0.5966666666666667,
+    "std_auc": 0.2148067739001233,
+    "mean_acc": 0.5882352941176471,
+    "mean_f1": 0.10526315789473684
+  },
+  "n_features": 4,
+  "top_features": {
+    "accruals_ratio": 0.37823769450187683,
+    "debt_to_ebitda": 0.25228336453437805,
+    "fcf_yoy_growth": 0.19751717150211334,
+    "revenue_yoy_growth": 0.1719617396593094
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 4,
+    "selected": [
+      "accruals_ratio",
+      "debt_to_ebitda",
+      "revenue_yoy_growth",
+      "fcf_yoy_growth"
+    ],
+    "selected_weights_pct": {
+      "accruals_ratio": 41.73745495334584,
+      "debt_to_ebitda": 22.479723150672708,
+      "revenue_yoy_growth": 18.17909396004673,
+      "fcf_yoy_growth": 17.60372793593474
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "capex_to_revenue",
+      "roic"
+    ],
+    "dropped_imp": [
+      "roe",
+      "roa",
+      "roi",
+      "net_margin",
+      "gross_margin",
+      "fcf_margin",
+      "ebitda_margin",
+      "operating_margin",
+      "current_ratio",
+      "debt_equity",
+      "interest_coverage",
+      "net_income_yoy_growth",
+      "eps_yoy_growth",
+      "operating_income_yoy_growth",
+      "total_debt_yoy_growth",
+      "gross_margin_change_yoy",
+      "current_ratio_change_yoy",
+      "consecutive_losses",
+      "earnings_quality",
+      "piotroski_fscore",
+      "eps",
+      "roe_trend_2y",
+      "net_margin_trend_2y"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.5966666666666667,
+    "std_auc": 0.2148067739001233,
+    "mean_acc": 0.5882352941176471,
+    "mean_f1": 0.10526315789473684
+  }
+}

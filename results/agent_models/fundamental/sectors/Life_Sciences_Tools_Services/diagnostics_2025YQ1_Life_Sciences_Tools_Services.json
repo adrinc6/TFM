@@ -1,0 +1,85 @@
+{
+  "agent": "fundamental",
+  "timestamp": "2026-04-19T16:36:22.321229",
+  "fold": "2025YQ1_Life_Sciences_Tools_Services",
+  "class_balance": {
+    "n_samples": 358,
+    "n_positive": 159,
+    "n_negative": 199,
+    "positive_ratio": 0.4441340782122905
+  },
+  "cv_metrics": {
+    "mean_auc": 0.5380270455564574,
+    "std_auc": 0.05014143972059369,
+    "mean_acc": 0.5491525423728814,
+    "mean_f1": 0.4987252128305494
+  },
+  "n_features": 4,
+  "top_features": {
+    "net_margin_trend_2y": 0.283176988363266,
+    "net_income_yoy_growth": 0.25132662057876587,
+    "net_margin": 0.2363872081041336,
+    "roe_trend_2y": 0.22910919785499573
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 4,
+    "selected": [
+      "net_margin_trend_2y",
+      "net_margin",
+      "roe_trend_2y",
+      "net_income_yoy_growth"
+    ],
+    "selected_weights_pct": {
+      "net_margin_trend_2y": 37.250151574783764,
+      "net_margin": 23.959935539536165,
+      "roe_trend_2y": 19.879425157933593,
+      "net_income_yoy_growth": 18.91048772774648
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "roa",
+      "current_ratio_change_yoy",
+      "roi",
+      "ebitda_margin",
+      "operating_margin"
+    ],
+    "dropped_imp": [
+      "roe",
+      "roic",
+      "gross_margin",
+      "fcf_margin",
+      "current_ratio",
+      "debt_equity",
+      "debt_to_ebitda",
+      "interest_coverage",
+      "revenue_yoy_growth",
+      "eps_yoy_growth",
+      "fcf_yoy_growth",
+      "operating_income_yoy_growth",
+      "total_debt_yoy_growth",
+      "gross_margin_change_yoy",
+      "accruals_ratio",
+      "capex_to_revenue",
+      "consecutive_losses",
+      "earnings_quality",
+      "piotroski_fscore",
+      "eps"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.5380270455564574,
+    "std_auc": 0.05014143972059369,
+    "mean_acc": 0.5491525423728814,
+    "mean_f1": 0.4987252128305494
+  }
+}

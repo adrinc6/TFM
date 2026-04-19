@@ -1,0 +1,22 @@
+{
+  "debt_to_ebitda": {
+    "shap_importance": 0.27922871893693,
+    "description": "Net debt / EBITDA",
+    "rank": 1
+  },
+  "current_ratio": {
+    "shap_importance": 0.06781843298512549,
+    "description": "Current ratio (current assets / current liabilities)",
+    "rank": 2
+  },
+  "insider_sell_ratio": {
+    "shap_importance": 0.022965982323400854,
+    "description": "Insider sell ratio (>0.7 = red flag)",
+    "rank": 3
+  },
+  "fcf_margin": {
+    "shap_importance": 0.013155689546077489,
+    "description": "Free cash flow margin",
+    "rank": 4
+  }
+}

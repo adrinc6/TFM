@@ -1,0 +1,22 @@
+{
+  "atr_14": {
+    "shap_importance": 0.12177217987489877,
+    "description": "Average True Range 14 days (price volatility)",
+    "rank": 1
+  },
+  "price_vs_52w_high": {
+    "shap_importance": 0.03204268745090379,
+    "description": "Distance to 52-week high",
+    "rank": 2
+  },
+  "vol_ratio_20_50": {
+    "shap_importance": 0.019049267521910798,
+    "description": "Volume ratio 20d / 50d (>1 = expansion)",
+    "rank": 3
+  },
+  "volatility_60d": {
+    "shap_importance": 0.018554689294779506,
+    "description": "Realised volatility 60 days (annualised)",
+    "rank": 4
+  }
+}

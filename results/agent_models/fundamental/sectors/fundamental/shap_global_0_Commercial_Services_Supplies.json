@@ -1,0 +1,42 @@
+{
+  "fcf_margin": {
+    "shap_importance": 0.46051257848739624,
+    "description": "Free cash flow margin",
+    "rank": 1
+  },
+  "ebitda_margin": {
+    "shap_importance": 0.44536593556404114,
+    "description": "EBITDA margin",
+    "rank": 2
+  },
+  "debt_equity": {
+    "shap_importance": 0.3945162892341614,
+    "description": "Debt / equity ratio",
+    "rank": 3
+  },
+  "net_income_yoy_growth": {
+    "shap_importance": 0.34219515323638916,
+    "description": "YoY net income growth",
+    "rank": 4
+  },
+  "operating_margin": {
+    "shap_importance": 0.3314366936683655,
+    "description": "Operating margin",
+    "rank": 5
+  },
+  "roa": {
+    "shap_importance": 0.3220805823802948,
+    "description": "Return on Assets (ROA)",
+    "rank": 6
+  },
+  "roi": {
+    "shap_importance": 0.2311544418334961,
+    "description": "Return on Investment (ROI)",
+    "rank": 7
+  },
+  "net_margin": {
+    "shap_importance": 0.22556868195533752,
+    "description": "Net margin (profit / revenue)",
+    "rank": 8
+  }
+}

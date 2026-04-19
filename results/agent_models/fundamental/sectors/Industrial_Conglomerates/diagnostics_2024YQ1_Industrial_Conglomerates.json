@@ -1,0 +1,89 @@
+{
+  "agent": "fundamental",
+  "timestamp": "2026-04-19T15:49:59.736588",
+  "fold": "2024YQ1_Industrial_Conglomerates",
+  "class_balance": {
+    "n_samples": 76,
+    "n_positive": 31,
+    "n_negative": 45,
+    "positive_ratio": 0.40789473684210525
+  },
+  "cv_metrics": {
+    "mean_auc": 0.6914772727272727,
+    "std_auc": 0.19971893990975834,
+    "mean_acc": 0.5833333333333333,
+    "mean_f1": 0.5777777777777777
+  },
+  "n_features": 7,
+  "top_features": {
+    "debt_equity": 0.1882290095090866,
+    "accruals_ratio": 0.1871441900730133,
+    "capex_to_revenue": 0.1728891283273697,
+    "operating_margin": 0.16423137485980988,
+    "debt_to_ebitda": 0.15031304955482483,
+    "net_margin_trend_2y": 0.1371932327747345,
+    "fcf_yoy_growth": 0.0
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 7,
+    "selected": [
+      "capex_to_revenue",
+      "debt_to_ebitda",
+      "operating_margin",
+      "net_margin_trend_2y",
+      "debt_equity",
+      "accruals_ratio",
+      "fcf_yoy_growth"
+    ],
+    "selected_weights_pct": {
+      "capex_to_revenue": 19.39900430036409,
+      "debt_to_ebitda": 15.753046679666921,
+      "operating_margin": 15.537943988233494,
+      "net_margin_trend_2y": 14.511435251396207,
+      "debt_equity": 13.889189457046424,
+      "accruals_ratio": 11.04498955167878,
+      "fcf_yoy_growth": 9.864390771614087
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "eps",
+      "roic",
+      "roa",
+      "ebitda_margin",
+      "net_margin",
+      "net_income_yoy_growth",
+      "fcf_margin"
+    ],
+    "dropped_imp": [
+      "roe",
+      "roi",
+      "current_ratio",
+      "interest_coverage",
+      "revenue_yoy_growth",
+      "eps_yoy_growth",
+      "operating_income_yoy_growth",
+      "total_debt_yoy_growth",
+      "current_ratio_change_yoy",
+      "consecutive_losses",
+      "earnings_quality",
+      "piotroski_fscore",
+      "roe_trend_2y"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.6914772727272727,
+    "std_auc": 0.19971893990975834,
+    "mean_acc": 0.5833333333333333,
+    "mean_f1": 0.5777777777777777
+  }
+}

@@ -1,0 +1,173 @@
+{
+  "agent": "valuation",
+  "timestamp": "2026-04-19T15:51:45.135254",
+  "fold": "2024YQ1_Consumer_products",
+  "class_balance": {
+    "n_samples": 281,
+    "n_positive": 140,
+    "n_negative": 141,
+    "positive_ratio": 0.498220640569395
+  },
+  "cv_metrics": {
+    "mean_auc": 0.38931127206127203,
+    "std_auc": 0.08188084056780581,
+    "mean_acc": 0.46521739130434786,
+    "mean_f1": 0.39012510010591855
+  },
+  "sector_multiples_distribution": {
+    "pe_ratio": {
+      "Consumer products": {
+        "mean": 32.7359038472709,
+        "median": 19.220696519685273,
+        "std": 110.1471292596491,
+        "count": 463
+      }
+    },
+    "pb_ratio": {
+      "Consumer products": {
+        "mean": 36.14547786492772,
+        "median": 3.5218155298022977,
+        "std": 374.83557999400927,
+        "count": 288
+      }
+    },
+    "ps_ratio": {
+      "Consumer products": {
+        "mean": 2.251633577553549,
+        "median": 2.2211431337282885,
+        "std": 1.5557488739397702,
+        "count": 237
+      }
+    },
+    "ev_to_ebitda": {
+      "Consumer products": {
+        "mean": 24.778888316239843,
+        "median": 13.070747462773408,
+        "std": 76.55130020667978,
+        "count": 189
+      }
+    },
+    "fcf_yield": {
+      "Consumer products": {
+        "mean": 505.35956221372095,
+        "median": 0.040081214625686507,
+        "std": 4461.428735677594,
+        "count": 238
+      }
+    },
+    "earnings_yield": {
+      "Consumer products": {
+        "mean": 0.0659436732293918,
+        "median": 0.05202725088426579,
+        "std": 0.05090931036051031,
+        "count": 463
+      }
+    },
+    "pe_vs_5y_median": {
+      "Consumer products": {
+        "mean": 0.7552044802053769,
+        "median": 0.15125687447704061,
+        "std": 3.8049461832019174,
+        "count": 459
+      }
+    },
+    "pb_vs_5y_median": {
+      "Consumer products": {
+        "mean": 3.2834484568632902,
+        "median": 0.3161914355225447,
+        "std": 19.04312940767467,
+        "count": 284
+      }
+    },
+    "ev_ebitda_vs_5y_median": {
+      "Consumer products": {
+        "mean": 2.039958363392906,
+        "median": 0.22732640595686393,
+        "std": 11.207930676305777,
+        "count": 176
+      }
+    },
+    "eps_surprise_pct": {
+      "Consumer products": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_revision": {
+      "Consumer products": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_est": {
+      "Consumer products": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_reported": {
+      "Consumer products": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    }
+  },
+  "top_features": {
+    "ps_ratio": 0.20340532232901318,
+    "earnings_yield": 0.18698158039891913,
+    "ev_ebitda_vs_5y_median": 0.1748799229177662,
+    "pb_ratio": 0.16696717459729568,
+    "pe_vs_5y_median": 0.14206339181424077,
+    "fcf_yield": 0.1257026079427652
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 6,
+    "selected": [
+      "ev_ebitda_vs_5y_median",
+      "pb_ratio",
+      "earnings_yield",
+      "ps_ratio",
+      "pe_vs_5y_median",
+      "fcf_yield"
+    ],
+    "selected_weights_pct": {
+      "ev_ebitda_vs_5y_median": 19.70051342932272,
+      "pb_ratio": 18.07589839630279,
+      "earnings_yield": 17.98299233986978,
+      "ps_ratio": 16.953005367429324,
+      "pe_vs_5y_median": 14.553869232034296,
+      "fcf_yield": 12.733721235041095
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "pe_ratio",
+      "ev_to_ebitda",
+      "pb_vs_5y_median"
+    ],
+    "dropped_imp": []
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.38931127206127203,
+    "std_auc": 0.08188084056780581,
+    "mean_acc": 0.46521739130434786,
+    "mean_f1": 0.39012510010591855
+  }
+}

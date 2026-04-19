@@ -1,0 +1,37 @@
+{
+  "capex_to_revenue": {
+    "shap_importance": 0.7158295512199402,
+    "description": "Capital intensity (CapEx / revenue)",
+    "rank": 1
+  },
+  "net_margin_trend_2y": {
+    "shap_importance": 0.5284361839294434,
+    "description": "Net margin trend 2Y",
+    "rank": 2
+  },
+  "debt_equity": {
+    "shap_importance": 0.38243523240089417,
+    "description": "Debt / equity ratio",
+    "rank": 3
+  },
+  "accruals_ratio": {
+    "shap_importance": 0.2972247898578644,
+    "description": "Accruals ratio (accounting quality, lower=better)",
+    "rank": 4
+  },
+  "operating_margin": {
+    "shap_importance": 0.03746180608868599,
+    "description": "Operating margin",
+    "rank": 5
+  },
+  "debt_to_ebitda": {
+    "shap_importance": 0.010765385814011097,
+    "description": "Net debt / EBITDA",
+    "rank": 6
+  },
+  "fcf_yoy_growth": {
+    "shap_importance": 0.0,
+    "description": "YoY FCF growth",
+    "rank": 7
+  }
+}

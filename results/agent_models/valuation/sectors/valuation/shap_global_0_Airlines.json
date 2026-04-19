@@ -1,0 +1,22 @@
+{
+  "pb_ratio": {
+    "shap_importance": 2.121944587422939,
+    "description": "Price / Book value (P/B ratio)",
+    "rank": 1
+  },
+  "pb_vs_5y_median": {
+    "shap_importance": 1.7869036190827943,
+    "description": "Current P/B vs 5Y historical median",
+    "rank": 2
+  },
+  "ev_to_ebitda": {
+    "shap_importance": 1.1888244915859716,
+    "description": "EV / EBITDA",
+    "rank": 3
+  },
+  "earnings_yield": {
+    "shap_importance": 0.7301402161922518,
+    "description": "Earnings yield (inverse of P/E)",
+    "rank": 4
+  }
+}

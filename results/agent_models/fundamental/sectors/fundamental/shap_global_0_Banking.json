@@ -1,0 +1,22 @@
+{
+  "eps": {
+    "shap_importance": 0.0,
+    "description": "Eps",
+    "rank": 1
+  },
+  "earnings_quality": {
+    "shap_importance": 0.0,
+    "description": "Earnings quality: FCF / Net Income (>1 = real cash)",
+    "rank": 2
+  },
+  "fcf_margin": {
+    "shap_importance": 0.0,
+    "description": "Free cash flow margin",
+    "rank": 3
+  },
+  "total_debt_yoy_growth": {
+    "shap_importance": 0.0,
+    "description": "YoY total debt growth",
+    "rank": 4
+  }
+}

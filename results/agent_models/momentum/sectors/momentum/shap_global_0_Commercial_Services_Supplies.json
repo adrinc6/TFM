@@ -1,0 +1,42 @@
+{
+  "price_vs_52w_high": {
+    "shap_importance": 0.06949140311775624,
+    "description": "Distance to 52-week high",
+    "rank": 1
+  },
+  "macd_signal": {
+    "shap_importance": 0.04966351078432604,
+    "description": "MACD signal (EMA of MACD)",
+    "rank": 2
+  },
+  "atr_14": {
+    "shap_importance": 0.04614150667893692,
+    "description": "Average True Range 14 days (price volatility)",
+    "rank": 3
+  },
+  "macd_hist": {
+    "shap_importance": 0.030275838251109702,
+    "description": "MACD histogram (trend momentum)",
+    "rank": 4
+  },
+  "volatility_60d": {
+    "shap_importance": 0.01680143211769203,
+    "description": "Realised volatility 60 days (annualised)",
+    "rank": 5
+  },
+  "vol_ratio_20_50": {
+    "shap_importance": 0.016097923363120034,
+    "description": "Volume ratio 20d / 50d (>1 = expansion)",
+    "rank": 6
+  },
+  "volatility_20d": {
+    "shap_importance": 0.010869687677857696,
+    "description": "Realised volatility 20 days (annualised)",
+    "rank": 7
+  },
+  "rsi_28": {
+    "shap_importance": 0.005218122539637307,
+    "description": "RSI 28 days",
+    "rank": 8
+  }
+}

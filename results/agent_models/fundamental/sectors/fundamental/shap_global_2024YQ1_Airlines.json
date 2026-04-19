@@ -1,0 +1,42 @@
+{
+  "current_ratio": {
+    "shap_importance": 0.7028592824935913,
+    "description": "Current ratio (current assets / current liabilities)",
+    "rank": 1
+  },
+  "roi": {
+    "shap_importance": 0.5599149465560913,
+    "description": "Return on Investment (ROI)",
+    "rank": 2
+  },
+  "roe": {
+    "shap_importance": 0.4983272850513458,
+    "description": "Return on Equity (ROE)",
+    "rank": 3
+  },
+  "interest_coverage": {
+    "shap_importance": 0.4339495599269867,
+    "description": "Interest coverage (EBIT / interest expense)",
+    "rank": 4
+  },
+  "revenue_yoy_growth": {
+    "shap_importance": 0.32033771276474,
+    "description": "YoY revenue growth",
+    "rank": 5
+  },
+  "roe_trend_2y": {
+    "shap_importance": 0.29737141728401184,
+    "description": "ROE trend 2Y (positive = improving)",
+    "rank": 6
+  },
+  "net_margin_trend_2y": {
+    "shap_importance": 0.2611289620399475,
+    "description": "Net margin trend 2Y",
+    "rank": 7
+  },
+  "roic": {
+    "shap_importance": 0.24165433645248413,
+    "description": "Return on Invested Capital (ROIC)",
+    "rank": 8
+  }
+}

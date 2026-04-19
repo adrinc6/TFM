@@ -1,0 +1,173 @@
+{
+  "agent": "valuation",
+  "timestamp": "2026-04-19T15:53:18.570006",
+  "fold": "2024YQ1_Textiles_Apparel_Luxury_Goods",
+  "class_balance": {
+    "n_samples": 123,
+    "n_positive": 58,
+    "n_negative": 65,
+    "positive_ratio": 0.4715447154471545
+  },
+  "cv_metrics": {
+    "mean_auc": 0.6363535875888817,
+    "std_auc": 0.2522484883811121,
+    "mean_acc": 0.6300000000000001,
+    "mean_f1": 0.4762588288904078
+  },
+  "sector_multiples_distribution": {
+    "pe_ratio": {
+      "Textiles, Apparel & Luxury Goods": {
+        "mean": 35.79120465187465,
+        "median": 28.80134391784668,
+        "std": 24.22719560956284,
+        "count": 169
+      }
+    },
+    "pb_ratio": {
+      "Textiles, Apparel & Luxury Goods": {
+        "mean": 6.717427883482186,
+        "median": 3.57466867767904,
+        "std": 5.765797111936225,
+        "count": 138
+      }
+    },
+    "ps_ratio": {
+      "Textiles, Apparel & Luxury Goods": {
+        "mean": 2.6897134508896072,
+        "median": 1.8107083496561853,
+        "std": 2.3423528557305957,
+        "count": 135
+      }
+    },
+    "ev_to_ebitda": {
+      "Textiles, Apparel & Luxury Goods": {
+        "mean": 38.46604949659015,
+        "median": 10.562144450104764,
+        "std": 183.02483602160095,
+        "count": 100
+      }
+    },
+    "fcf_yield": {
+      "Textiles, Apparel & Luxury Goods": {
+        "mean": 0.028974610054990833,
+        "median": 0.019529159472451384,
+        "std": 0.033278726049794996,
+        "count": 81
+      }
+    },
+    "earnings_yield": {
+      "Textiles, Apparel & Luxury Goods": {
+        "mean": 0.04568757856307335,
+        "median": 0.034720602026503095,
+        "std": 0.03715884050535792,
+        "count": 169
+      }
+    },
+    "pe_vs_5y_median": {
+      "Textiles, Apparel & Luxury Goods": {
+        "mean": 1.308925740778121,
+        "median": 0.2099644741293969,
+        "std": 2.736791542747511,
+        "count": 169
+      }
+    },
+    "pb_vs_5y_median": {
+      "Textiles, Apparel & Luxury Goods": {
+        "mean": 0.49646225224612334,
+        "median": -0.045545361136225204,
+        "std": 2.790628566817548,
+        "count": 135
+      }
+    },
+    "ev_ebitda_vs_5y_median": {
+      "Textiles, Apparel & Luxury Goods": {
+        "mean": 2.3735053804890893,
+        "median": 0.10469121943871285,
+        "std": 14.223977356490062,
+        "count": 97
+      }
+    },
+    "eps_surprise_pct": {
+      "Textiles, Apparel & Luxury Goods": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_revision": {
+      "Textiles, Apparel & Luxury Goods": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_est": {
+      "Textiles, Apparel & Luxury Goods": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_reported": {
+      "Textiles, Apparel & Luxury Goods": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    }
+  },
+  "top_features": {
+    "pb_ratio": 0.31311482260441986,
+    "pb_vs_5y_median": 0.20695683602683537,
+    "fcf_yield": 0.13641930240558228,
+    "ev_to_ebitda": 0.1201629636654642,
+    "ev_ebitda_vs_5y_median": 0.11593591576995782,
+    "ps_ratio": 0.1074101595277405
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 6,
+    "selected": [
+      "pb_ratio",
+      "pb_vs_5y_median",
+      "fcf_yield",
+      "ev_ebitda_vs_5y_median",
+      "ps_ratio",
+      "ev_to_ebitda"
+    ],
+    "selected_weights_pct": {
+      "pb_ratio": 25.68282930074135,
+      "pb_vs_5y_median": 19.096085343236624,
+      "fcf_yield": 15.454437575563523,
+      "ev_ebitda_vs_5y_median": 13.923054486560767,
+      "ps_ratio": 12.97659209722391,
+      "ev_to_ebitda": 12.867001196673822
+    },
+    "dropped_pair": [],
+    "dropped_corr": [],
+    "dropped_imp": [
+      "pe_ratio",
+      "earnings_yield",
+      "pe_vs_5y_median"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.6363535875888817,
+    "std_auc": 0.2522484883811121,
+    "mean_acc": 0.6300000000000001,
+    "mean_f1": 0.4762588288904078
+  }
+}

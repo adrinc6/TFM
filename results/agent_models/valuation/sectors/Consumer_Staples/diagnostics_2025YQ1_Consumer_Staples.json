@@ -1,0 +1,177 @@
+{
+  "agent": "valuation",
+  "timestamp": "2026-04-19T16:37:55.593829",
+  "fold": "2025YQ1_Consumer_Staples",
+  "class_balance": {
+    "n_samples": 319,
+    "n_positive": 145,
+    "n_negative": 174,
+    "positive_ratio": 0.45454545454545453
+  },
+  "cv_metrics": {
+    "mean_auc": 0.46628389782246293,
+    "std_auc": 0.05168983462916237,
+    "mean_acc": 0.4867924528301887,
+    "mean_f1": 0.3253719780686629
+  },
+  "sector_multiples_distribution": {
+    "pe_ratio": {
+      "Consumer Staples": {
+        "mean": 681643922259376.5,
+        "median": 16.74136584318137,
+        "std": 1.3784869578566124e+16,
+        "count": 585
+      }
+    },
+    "pb_ratio": {
+      "Consumer Staples": {
+        "mean": 3.947593226377959,
+        "median": 3.0119833064714148,
+        "std": 3.34717317512415,
+        "count": 367
+      }
+    },
+    "ps_ratio": {
+      "Consumer Staples": {
+        "mean": 1.983662388722293,
+        "median": 1.3530949814208681,
+        "std": 1.870680520940331,
+        "count": 294
+      }
+    },
+    "ev_to_ebitda": {
+      "Consumer Staples": {
+        "mean": 13.694606658335308,
+        "median": 12.237155180853879,
+        "std": 8.851053568523529,
+        "count": 326
+      }
+    },
+    "fcf_yield": {
+      "Consumer Staples": {
+        "mean": 0.14659311244492976,
+        "median": 0.04824575930700331,
+        "std": 1.5772411674184255,
+        "count": 272
+      }
+    },
+    "earnings_yield": {
+      "Consumer Staples": {
+        "mean": 0.07444985140919576,
+        "median": 0.05973228285954292,
+        "std": 0.05761418534094499,
+        "count": 585
+      }
+    },
+    "pe_vs_5y_median": {
+      "Consumer Staples": {
+        "mean": 49605678184129.766,
+        "median": 0.2366339735840528,
+        "std": 1015696442363053.9,
+        "count": 579
+      }
+    },
+    "pb_vs_5y_median": {
+      "Consumer Staples": {
+        "mean": 0.5456963520345902,
+        "median": 0.41927693245939657,
+        "std": 0.6697465903235699,
+        "count": 367
+      }
+    },
+    "ev_ebitda_vs_5y_median": {
+      "Consumer Staples": {
+        "mean": 1.103556255929757,
+        "median": 0.34066809270593534,
+        "std": 2.2140508632524822,
+        "count": 323
+      }
+    },
+    "eps_surprise_pct": {
+      "Consumer Staples": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_revision": {
+      "Consumer Staples": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_est": {
+      "Consumer Staples": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    },
+    "eps_reported": {
+      "Consumer Staples": {
+        "mean": NaN,
+        "median": NaN,
+        "std": NaN,
+        "count": 0
+      }
+    }
+  },
+  "top_features": {
+    "fcf_yield": 0.16942089589781367,
+    "earnings_yield": 0.16546245775618368,
+    "pb_vs_5y_median": 0.1575894714233158,
+    "ev_ebitda_vs_5y_median": 0.14874407404447793,
+    "ev_to_ebitda": 0.12749545519492023,
+    "pb_ratio": 0.11954787858958052,
+    "ps_ratio": 0.11166763624888287,
+    "pe_vs_5y_median": 7.213084482526583e-05
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 12,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.5,
+    "min_keep": 4,
+    "max_keep": 8,
+    "n_selected": 8,
+    "selected": [
+      "pe_vs_5y_median",
+      "ev_ebitda_vs_5y_median",
+      "ev_to_ebitda",
+      "earnings_yield",
+      "pb_vs_5y_median",
+      "pb_ratio",
+      "ps_ratio",
+      "fcf_yield"
+    ],
+    "selected_weights_pct": {
+      "pe_vs_5y_median": 15.731625956909243,
+      "ev_ebitda_vs_5y_median": 14.35886083940712,
+      "ev_to_ebitda": 12.423610818254785,
+      "earnings_yield": 12.174667408631871,
+      "pb_vs_5y_median": 11.71279201984766,
+      "pb_ratio": 11.7070012169125,
+      "ps_ratio": 11.39194114974881,
+      "fcf_yield": 10.499500590287997
+    },
+    "dropped_pair": [],
+    "dropped_corr": [
+      "pe_ratio"
+    ],
+    "dropped_imp": []
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.46628389782246293,
+    "std_auc": 0.05168983462916237,
+    "mean_acc": 0.4867924528301887,
+    "mean_f1": 0.3253719780686629
+  }
+}

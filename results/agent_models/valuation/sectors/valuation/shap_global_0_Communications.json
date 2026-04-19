@@ -1,0 +1,27 @@
+{
+  "ev_ebitda_vs_5y_median": {
+    "shap_importance": 1.649801105113295,
+    "description": "Current EV/EBITDA vs 5Y historical median",
+    "rank": 1
+  },
+  "fcf_yield": {
+    "shap_importance": 0.9142102761938097,
+    "description": "FCF yield (FCF / market cap)",
+    "rank": 2
+  },
+  "ev_to_ebitda": {
+    "shap_importance": 0.5954087084201998,
+    "description": "EV / EBITDA",
+    "rank": 3
+  },
+  "ps_ratio": {
+    "shap_importance": 0.5576996096931142,
+    "description": "Price / Sales (P/S ratio)",
+    "rank": 4
+  },
+  "pb_ratio": {
+    "shap_importance": 0.43702660070902577,
+    "description": "Price / Book value (P/B ratio)",
+    "rank": 5
+  }
+}

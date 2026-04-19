@@ -1,0 +1,42 @@
+{
+  "debt_equity": {
+    "shap_importance": 0.5855311155319214,
+    "description": "Debt / equity ratio",
+    "rank": 1
+  },
+  "roi": {
+    "shap_importance": 0.4629717171192169,
+    "description": "Return on Investment (ROI)",
+    "rank": 2
+  },
+  "current_ratio": {
+    "shap_importance": 0.46282169222831726,
+    "description": "Current ratio (current assets / current liabilities)",
+    "rank": 3
+  },
+  "capex_to_revenue": {
+    "shap_importance": 0.3947150409221649,
+    "description": "Capital intensity (CapEx / revenue)",
+    "rank": 4
+  },
+  "net_margin_trend_2y": {
+    "shap_importance": 0.3845232427120209,
+    "description": "Net margin trend 2Y",
+    "rank": 5
+  },
+  "net_income_yoy_growth": {
+    "shap_importance": 0.3413150906562805,
+    "description": "YoY net income growth",
+    "rank": 6
+  },
+  "current_ratio_change_yoy": {
+    "shap_importance": 0.334952175617218,
+    "description": "YoY improvement in current ratio",
+    "rank": 7
+  },
+  "total_debt_yoy_growth": {
+    "shap_importance": 0.25702670216560364,
+    "description": "YoY total debt growth",
+    "rank": 8
+  }
+}
