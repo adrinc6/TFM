@@ -34,6 +34,7 @@ def _extract_close_series(price_obj) -> pd.Series:
 
 
 def _resolve_exec_date(price_series: pd.Series, requested: pd.Timestamp) -> Optional[pd.Timestamp]:
+    """Return the first available trading date on or after *requested*."""
     if price_series is None or price_series.empty:
         return None
     ts = pd.Timestamp(requested)
@@ -41,6 +42,23 @@ def _resolve_exec_date(price_series: pd.Series, requested: pd.Timestamp) -> Opti
     if len(candidates) == 0:
         return None
     return pd.Timestamp(candidates[0])
+
+
+def _resolve_exec_date_on_or_before(price_series: pd.Series, requested: pd.Timestamp) -> Optional[pd.Timestamp]:
+    """Return the last available trading date on or before *requested*.
+
+    Used for exit resolution so that a position can be closed at the last
+    available price even when the data does not extend all the way to the
+    requested exit date (e.g. recent folds whose price download is not yet
+    complete, or tickers that were delisted shortly before exit_req).
+    """
+    if price_series is None or price_series.empty:
+        return None
+    ts = pd.Timestamp(requested)
+    candidates = price_series.index[price_series.index <= ts]
+    if len(candidates) == 0:
+        return None
+    return pd.Timestamp(candidates[-1])
 
 
 def _price_on_or_before(price_series: pd.Series, date: pd.Timestamp) -> Optional[float]:
@@ -91,12 +109,21 @@ def simulate_fold_usd(
     tickers = [t for t in tickers if t in prices_dict]
 
     per_ticker_close: Dict[str, pd.Series] = {t: _extract_close_series(prices_dict.get(t)) for t in tickers}
+    # Entry: first trading day ON or AFTER entry_req (do not buy before the entry date).
     entry_candidates = {t: _resolve_exec_date(s, entry_req) for t, s in per_ticker_close.items() if not s.empty}
-    exit_candidates = {t: _resolve_exec_date(s, exit_req) for t, s in per_ticker_close.items() if not s.empty}
+    # Exit: last trading day ON or BEFORE exit_req.  Using "on or before" prevents entire
+    # folds from being skipped when a ticker's price feed does not yet reach exit_req
+    # (e.g. recent quarters whose download is incomplete, or recently delisted stocks).
+    exit_candidates = {t: _resolve_exec_date_on_or_before(s, exit_req) for t, s in per_ticker_close.items() if not s.empty}
 
     valid_tickers = [
         t for t in tickers
-        if entry_candidates.get(t) is not None and exit_candidates.get(t) is not None
+        if (
+            entry_candidates.get(t) is not None
+            and exit_candidates.get(t) is not None
+            # Exit must be strictly after entry so the holding period is positive.
+            and exit_candidates[t] > entry_candidates[t]
+        )
     ]
 
     if not valid_tickers:
@@ -132,9 +159,16 @@ def simulate_fold_usd(
             "missing_reasons": {t: "missing_entry_or_exit_price" for t in tickers},
         }
 
-    entry_used = min(entry_candidates[t] for t in valid_tickers)
+    # Use the LATEST first-available entry date so that every valid ticker
+    # actually has a price on (or before) entry_used.  With min() a ticker whose
+    # first available date is later than entry_used would be bought at a stale
+    # pre-entry_req price returned by _price_on_or_before.
+    entry_used = max(entry_candidates[t] for t in valid_tickers)
+    # Use the EARLIEST last-available exit date so that every valid ticker can
+    # be sold on the common exit day (each exit_candidate is already <= exit_req).
     exit_used = min(exit_candidates[t] for t in valid_tickers)
     if exit_used < entry_used:
+        # Safety fallback: use the latest exit date available across all tickers.
         exit_used = max(exit_candidates[t] for t in valid_tickers)
 
     entry_gap_days = int((entry_used - entry_req).days)

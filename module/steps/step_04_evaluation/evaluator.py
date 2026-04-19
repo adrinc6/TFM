@@ -1539,9 +1539,31 @@ def run_walkforward_pipeline(
         json.dump(agent_diag_history, f, indent=2, default=str)
 
     last_agent_diag = {k: v[-1] if v else {} for k, v in agent_diag_history.items()}
+
+    # Build the global USD equity curve early so the plot uses the same return
+    # series as the JSON summary (i.e. net-of-fees returns from simulate_fold_usd
+    # rather than the gross daily returns from backtester.simulate_portfolio).
+    _pre_equity_global = pd.DataFrame(columns=["date", "equity_usd", "cash_usd", "positions_value_usd"])
+    if USE_DOLLAR_BACKTEST and strategy_equity_parts:
+        _pre_equity_global = (
+            pd.concat(strategy_equity_parts, axis=0)
+            .sort_values("date")
+            .drop_duplicates(subset=["date"], keep="last")
+            .reset_index(drop=True)
+        )
+
+    _plot_strategy_returns = backtester.all_strategy_returns
+    _plot_benchmark_returns = backtester.all_benchmark_returns
+    if USE_DOLLAR_BACKTEST and not _pre_equity_global.empty:
+        # Derive plot returns from the USD equity curve so the wealth-curve
+        # annotation (total return %) is consistent with final_summary.json.
+        _usd_daily = to_daily_returns_from_equity(_pre_equity_global)
+        if not _usd_daily.empty:
+            _plot_strategy_returns = _usd_daily
+
     visualizer.plot_full_report(
-        strategy_returns=backtester.all_strategy_returns,
-        benchmark_returns=backtester.all_benchmark_returns,
+        strategy_returns=_plot_strategy_returns,
+        benchmark_returns=_plot_benchmark_returns,
         fold_results=backtester.fold_results,
         agent_diagnostics=last_agent_diag,
     )
@@ -1584,12 +1606,8 @@ def run_walkforward_pipeline(
 
     strategy_equity_global = pd.DataFrame(columns=["date", "equity_usd", "cash_usd", "positions_value_usd"])
     if USE_DOLLAR_BACKTEST and strategy_equity_parts:
-        strategy_equity_global = (
-            pd.concat(strategy_equity_parts, axis=0)
-            .sort_values("date")
-            .drop_duplicates(subset=["date"], keep="last")
-            .reset_index(drop=True)
-        )
+        # Reuse the equity curve already built for the plot above.
+        strategy_equity_global = _pre_equity_global
         strategy_equity_global.to_csv(backtest_root / "strategy_equity_curve.csv", index=False)
 
         strategy_summary = _summary_row_from_equity(
