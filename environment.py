@@ -57,7 +57,7 @@ CACHE_DIR = "cache"
 
 # Cache schema version. Bump it when artifact structure changes
 # or when dataset column policy changes.
-CACHE_SCHEMA_VERSION = 2
+CACHE_SCHEMA_VERSION = 3
 
 # Reuse master dataset when context matches (tickers + parameters)
 CACHE_USE_MASTER_DATASET = True
@@ -134,11 +134,11 @@ DOWNLOAD_START_DATE = "2000-01-01"
 # Example for 2025Q2 snapshot:
 #   ANALYSIS_START_YEAR = 2025, ANALYSIS_START_QUARTER = 2
 #   => snapshot closes Jun 30 · entry ~Aug 14 (+ SNAPSHOT_LAG_DAYS)
-ANALYSIS_START_YEAR = 2024
-ANALYSIS_START_QUARTER = 2
+ANALYSIS_START_YEAR = 2022
+ANALYSIS_START_QUARTER = 3
 
 ANALYSIS_END_YEAR = 2026
-ANALYSIS_END_QUARTER = 2
+ANALYSIS_END_QUARTER = 4
 
 # Walk-forward analysis frequency:
 # - "quarterly": runs one fold per quarter.
@@ -176,7 +176,8 @@ BASE_AGENTS_LABEL_MODE = "vs_sector"
 
 # Minimum peers per sector x snapshot to use a sector benchmark for labels.
 # If not met, falls back to universe median in that snapshot.
-BASE_LABEL_SECTOR_MIN_PEERS = 3
+# 10 ensures more stable sector median statistics than the previous default of 5.
+BASE_LABEL_SECTOR_MIN_PEERS = 10
 
 # Minimum observations required to train an independent model in each sector.
 # Sectors with fewer observations receive neutral score fallback (0.5).
@@ -203,10 +204,11 @@ PORTFOLIO_MAX_STOCK_WEIGHT = 0.15
 # Penalizes sectors with few peers: sector_confidence = min(1, sqrt(n_peers / k)).
 SECTOR_CONFIDENCE_PEERS = 10
 
-# Soft sector prior over final score:
-# final_score *= (SECTOR_SCORE_PRIOR_BASE + SECTOR_SCORE_PRIOR_WEIGHT * sector_score)
+# Soft sector prior over final score (additive tilt model):
+# final_score += (sector_score - 0.5) * SECTOR_SCORE_PRIOR_WEIGHT * sector_confidence
+# A sector_score of 0.7 with full confidence adds +0.06 to each ticker in that sector.
 SECTOR_SCORE_PRIOR_BASE = 0.5
-SECTOR_SCORE_PRIOR_WEIGHT = 0.5
+SECTOR_SCORE_PRIOR_WEIGHT = 0.3
 
 # If an agent score has low dispersion, it is shrunk toward 0.5.
 # scale = min(1, std / SCORE_DISPERSION_MIN_STD)
@@ -227,10 +229,10 @@ TECHNICAL_LOOKBACK_DAYS = 300
 # Maximum walk-forward training window, in years.
 # The pipeline will try this maximum and, if it does not meet minimum test coverage,
 # will progressively reduce it down to WALKFORWARD_TRAIN_MIN_YEARS.
-WALKFORWARD_TRAIN_LOOKBACK_YEARS = 10
+WALKFORWARD_TRAIN_LOOKBACK_YEARS = 8
 
 # Lower bound for dynamic walk-forward training window.
-WALKFORWARD_TRAIN_MIN_YEARS = 5
+WALKFORWARD_TRAIN_MIN_YEARS = 4
 
 # Test quarters per fold (always 1)
 WALKFORWARD_TEST_QUARTERS = 1
@@ -250,10 +252,10 @@ TOP_N_STOCKS = 10
 INITIAL_CAPITAL_USD = 1000.0
 
 # Fixed transaction cost (each BUY and each SELL per ticker)
-TRANSACTION_FEE_USD = 0.0
+TRANSACTION_FEE_USD = 1.0
 
 # Percentage slippage applied to execution price (0.01 = 1%)
-SLIPPAGE_PCT = 0.0
+SLIPPAGE_PCT = 0.001
 
 # If True, runs USD monetary backtest in addition to return metrics.
 USE_DOLLAR_BACKTEST = True
@@ -306,7 +308,6 @@ FUNDAMENTAL_FEATURE_COLUMNS = [
   "roa_change_yoy", "gross_margin_change_yoy", "current_ratio_change_yoy",
   "accruals_ratio", "capex_to_revenue", "consecutive_losses",
   "earnings_quality", "piotroski_fscore",
-  "eps",
   "roe_trend_2y", "roe_trend_3y",
   "net_margin_trend_2y", "net_margin_trend_3y",
   "gross_margin_trend_3y",
@@ -320,7 +321,7 @@ VALUATION_SUBSAMPLE     = 0.8
 VALUATION_FEATURE_COLUMNS = [
   "pe_ratio", "pb_ratio", "ps_ratio", "ev_to_ebitda", "fcf_yield", "earnings_yield",
   "pe_vs_5y_median", "pb_vs_5y_median", "ev_ebitda_vs_5y_median",
-  "eps_surprise_pct", "eps_revision", "eps_est", "eps_reported",
+  "eps_surprise_pct", "eps_revision",
 ]
 VALUATION_FEATURE_EXCLUDE = []
 
@@ -339,16 +340,17 @@ MOMENTUM_FEATURE_COLUMNS = [
   "momentum_1m", "momentum_3m", "momentum_6m", "momentum_12m",
   "volatility_20d", "volatility_60d", "atr_14",
   "vol_ratio_20_50",
-  "beat_rate_4q", "eps_surprise_avg_4q", "eps_revision",
 ]
 MOMENTUM_FEATURE_EXCLUDE = []
 
 # ── BearAgent (Hybrid Random Forest) ─────────────────────────────────────────
 BEAR_N_ESTIMATORS = 200
 BEAR_MAX_DEPTH    = 6
-# Rule-layer vs ML-layer weight in final score
-BEAR_RULE_WEIGHT  = 0.5
-BEAR_ML_WEIGHT    = 0.5
+# Rule-layer vs ML-layer weight in final score.
+# ML layer gets higher weight because it captures non-linear risk interactions
+# that simple threshold rules miss (e.g., high debt is fine for utilities).
+BEAR_RULE_WEIGHT  = 0.35
+BEAR_ML_WEIGHT    = 0.65
 # Risk score above which the meta-learner forces Underperform
 BEAR_HARD_THRESHOLD = 0.90
 BEAR_FEATURE_COLUMNS = [
@@ -422,9 +424,9 @@ FEATURE_SELECTOR_RF_MAX_DEPTH = 5
 # Final selector importance rule:
 # - keep features with importance >= (top_importance * FEATURE_IMPORTANCE_CUTOFF_FRACTION)
 # - then cap final count between [FEATURE_IMPORTANCE_MIN_KEEP, FEATURE_IMPORTANCE_MAX_KEEP].
-FEATURE_IMPORTANCE_CUTOFF_FRACTION = 0.50
-FEATURE_IMPORTANCE_MIN_KEEP = 4
-FEATURE_IMPORTANCE_MAX_KEEP = 8
+FEATURE_IMPORTANCE_CUTOFF_FRACTION = 0.40
+FEATURE_IMPORTANCE_MIN_KEEP = 5
+FEATURE_IMPORTANCE_MAX_KEEP = 10
 # Global Top-N for FeatureSelector pre-filtering (all agents).
 # FINAL selection across all agents is uniformly controlled by:
 #   - FEATURE_IMPORTANCE_CUTOFF_FRACTION = 0.50
@@ -466,7 +468,7 @@ META_ENABLE_SCORE_RECALIBRATION = False
 META_SCORE_RECALIBRATION_TEMPERATURE = 1.0
 # Blend meta score with average base-agent consensus to avoid
 # meta collapse from drift and preserve cross-sectional signal.
-META_BASE_SCORE_BLEND_WEIGHT = 0.35
+META_BASE_SCORE_BLEND_WEIGHT = 0.15
 
 # =============================================================================
 # 9. Reproducibility

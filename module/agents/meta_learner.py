@@ -58,7 +58,7 @@ try:
 except ImportError:
     _DEPS_OK = False
 
-MACRO_COLS: list = []  # Reserved: macro features were removed because they mask stock-picking signals
+
 
 
 class MetaLearner(BaseAgent):
@@ -74,10 +74,7 @@ class MetaLearner(BaseAgent):
     """
 
     BEAR_HARD_THRESHOLD = BEAR_HARD_THRESHOLD   # Only intervenes in extreme cases
-    BEAR_SOFT_PENALTY   = 0.0                   # Disabled: avoids double-penalisation
-    # Calibration guardrail: prevents a very narrow scale from crushing scores outside train.
-    RECAL_MIN_SCALE = 0.08
-    RECAL_BLEND_WITH_RAW = 0.40
+
 
     def __init__(self, results_dir: str, random_seed: int = 42,
                  use_sector_features: bool = True,
@@ -86,7 +83,6 @@ class MetaLearner(BaseAgent):
         if not _DEPS_OK:
             raise ImportError("scikit-learn requerido.")
         self.use_sector_features = use_sector_features
-        self.use_macro_features  = use_macro_features
         self._lr_model:     Optional[Pipeline] = None
         self._gbm_model:    Optional[Pipeline] = None
         self._feature_cols: List[str]          = []
@@ -253,14 +249,6 @@ class MetaLearner(BaseAgent):
                 (n_hard / len(bear_risk) * 100.0) if len(bear_risk) else 0.0,
             )
             score = score.where(bear_risk < self.BEAR_HARD_THRESHOLD, 0.05)
-            # Soft penalty proporcional al riesgo bear.
-            penalty = (bear_risk * self.BEAR_SOFT_PENALTY).clip(0, 0.4)
-            score   = (score - penalty).clip(0.0, 1.0)
-            log.info(
-                "[MetaPredict] Soft-penalty mean=%.6f max=%.6f",
-                float(penalty.mean()),
-                float(penalty.max()),
-            )
             log.info(_score_stats_msg("MetaPredict/final_after_risk", score))
 
         return score
@@ -367,10 +355,6 @@ class MetaLearner(BaseAgent):
             owner="MetaLearner",
         )
 
-        # Macro features
-        if self.use_macro_features:
-            selected += [c for c in MACRO_COLS if c in df.columns]
-
         # Sector dummies (pesos distintos por sector)
         if self.use_sector_features and sector_col in df.columns:
             dummies = pd.get_dummies(df[sector_col], prefix="sector", dtype=float)
@@ -387,36 +371,24 @@ class MetaLearner(BaseAgent):
         # Percentile rank of the score within each sector (relative position)
         # Captures whether the ticker is in the top quartile of its sector, not of the full universe
         if sector_col in df.columns:
-            for score_col in ["fundamental_score", "valuation_score", "momentum_score", "sentiment_score"]:
+            for score_col in ["fundamental_score", "valuation_score", "momentum_score"]:
                 if score_col in df.columns:
                     rank_col = f"{score_col}_sector_rank"
                     df[rank_col] = df.groupby(df[sector_col])[score_col].rank(pct=True)
                     selected.append(rank_col)
 
-        # Cross-agent interaction features
+        # Cross-agent interaction features (only financially meaningful pairs)
         if "fundamental_score" in df.columns and "valuation_score" in df.columns:
             df["fund_x_val"] = df["fundamental_score"] * df["valuation_score"]
             selected.append("fund_x_val")
-        # mom_x_safety: alto cuando momentum es alto y riesgo bajo.
+        # mom_x_safety: high when momentum is strong and risk is low.
         if "momentum_score" in df.columns and "bear_score" in df.columns:
             df["mom_x_safety"] = df["momentum_score"] * df["bear_score"]
             selected.append("mom_x_safety")
-        if "sentiment_score" in df.columns and "fundamental_score" in df.columns:
-            df["fund_x_sentiment"] = df["fundamental_score"] * df["sentiment_score"]
-            selected.append("fund_x_sentiment")
-        if "sentiment_score" in df.columns and "momentum_score" in df.columns:
-            df["mom_x_sentiment"] = df["momentum_score"] * df["sentiment_score"]
-            selected.append("mom_x_sentiment")
-
-        # Sector × stock interaction: strong ticker in a strong sector = powerful signal
-        if "sector_score" in df.columns and "fundamental_score" in df.columns:
-            df["sector_x_fundamental"] = df["sector_score"] * df["fundamental_score"]
-            selected.append("sector_x_fundamental")
-        if "sector_score" in df.columns and "momentum_score" in df.columns:
-            df["sector_x_momentum"] = df["sector_score"] * df["momentum_score"]
-            selected.append("sector_x_momentum")
 
         # Consensus/confidence signals across agents (investment-oriented).
+        # Keep only the most financially meaningful consensus features to avoid
+        # feature explosion that dilutes signal with noise.
         if self._use_consensus_features:
             available_agent_scores = [c for c in META_AGENT_SCORE_COLUMNS if c in df.columns]
             if available_agent_scores:
@@ -425,31 +397,14 @@ class MetaLearner(BaseAgent):
 
                 df["agent_score_mean"] = score_mat.mean(axis=1, skipna=True).fillna(0.5)
                 df["agent_score_std"] = score_mat.std(axis=1, skipna=True).fillna(0.0)
-                df["agent_score_max"] = score_mat.max(axis=1, skipna=True).fillna(0.5)
-                df["agent_score_min"] = score_mat.min(axis=1, skipna=True).fillna(0.5)
-                df["agent_score_range"] = (df["agent_score_max"] - df["agent_score_min"]).fillna(0.0)
 
                 bullish_mask = score_mat.ge(self._bullish_score_threshold)
-                df["bullish_agent_score_count"] = bullish_mask.sum(axis=1).astype(float)
-
-                # Directional consensus intensity: 0 = neutral, 1 = strong consensus.
-                df["consensus_score_strength"] = (df["agent_score_mean"].fillna(0.5) - 0.5).abs() * 2.0
-
-                # Conviction-weighted mean (distance to 0.5).
-                conviction_w = (score_mat - 0.5).abs()
-                weighted_num = (score_mat * conviction_w).sum(axis=1, skipna=True)
-                weighted_den = conviction_w.sum(axis=1, skipna=True).replace(0.0, np.nan)
-                df["confidence_weighted_score_mean"] = (weighted_num / weighted_den).fillna(0.5)
+                df["bullish_agent_count"] = bullish_mask.sum(axis=1).astype(float)
 
                 selected += [
                     "agent_score_mean",
                     "agent_score_std",
-                    "agent_score_max",
-                    "agent_score_min",
-                    "agent_score_range",
-                    "bullish_agent_score_count",
-                    "consensus_score_strength",
-                    "confidence_weighted_score_mean",
+                    "bullish_agent_count",
                 ]
 
         selected = list(dict.fromkeys(selected))

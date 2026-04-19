@@ -16,7 +16,6 @@ _CANONICAL_FINANCIAL_RATIOS: frozenset[str] = frozenset({
     "debt_equity",  # Debt-to-equity — ratio by definition
     "quick_ratio",  # Quick ratio (though "ratio" token is also present)
     "beta",         # Market beta — normalized market-relative measure
-    "eps",          # Earnings per share — per-share normalised metric
 })
 
 

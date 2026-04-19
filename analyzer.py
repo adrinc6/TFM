@@ -352,19 +352,36 @@ def _resolve_dynamic_universe(
 
     return candidates, selected_list, yearly_details
 
-# ── Logging ───────────────────────────────────────────────────────────────────
-Path(RESULTS_DIR).mkdir(parents=True, exist_ok=True)
+# ── Logging (configured inside main() once the run slug is known) ───────────
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s  %(levelname)s  %(message)s",
     handlers=[
-        # UTF-8 in console to avoid UnicodeEncodeError on Windows (cp1252)
         logging.StreamHandler(_io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")),
-        logging.FileHandler(f"{RESULTS_DIR}/pipeline.log", encoding="utf-8"),
     ],
 )
 logging.getLogger('matplotlib.font_manager').setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
+
+
+def _run_slug(
+    analysis_frequency: str,
+    start_year: int,
+    start_quarter: int,
+    end_year: int,
+    end_quarter: int,
+    top_n: int,
+    train_years: int,
+) -> str:
+    """Build a short human-readable identifier for a pipeline run.
+
+    The slug is used as a subdirectory name under ``results/`` so that
+    outputs from different parameter combinations don't overwrite each other.
+
+    Example: ``annual_2022q3_2026q4_top10_train8y``
+    """
+    freq = str(analysis_frequency).strip().lower()[:3]  # "ann" or "qua"
+    return f"{freq}_{start_year}q{start_quarter}_{end_year}q{end_quarter}_top{top_n}_train{train_years}y"
 
 
 def _set_global_seeds(seed: int) -> None:
@@ -607,10 +624,6 @@ def main():
     All parameters are read from ``environment.py``.  The function logs a
     final summary table with mean alpha, Sharpe ratios, and maximum drawdown.
     """
-    log.info("=" * 60)
-    log.info("  STARTING MULTI-AGENT ML STOCK PICKER PIPELINE")
-    log.info("=" * 60)
-
     # Analysis range. In quarterly mode ANALYSIS_START_QUARTER is used.
     # In annual mode that quarter is ignored and execution starts from the annual anchor quarter.
     import pandas as pd
@@ -620,7 +633,40 @@ def main():
     if analysis_frequency not in {"quarterly", "annual"}:
         raise ValueError("ANALYSIS_FREQUENCY must be 'quarterly' or 'annual'")
 
+    # ── Run-specific result directories ──────────────────────────────────────
+    # Compute a slug that captures the most important run parameters, then
+    # shadow all result-dir variables so every output lands in the same
+    # namespaced folder.  Changing any key parameter automatically produces
+    # a fresh directory without touching previous runs.
+    slug = _run_slug(
+        analysis_frequency=analysis_frequency,
+        start_year=ANALYSIS_START_YEAR,
+        start_quarter=ANALYSIS_START_QUARTER,
+        end_year=ANALYSIS_END_YEAR,
+        end_quarter=ANALYSIS_END_QUARTER,
+        top_n=TOP_N_STOCKS,
+        train_years=WALKFORWARD_TRAIN_LOOKBACK_YEARS,
+    )
+    RESULTS_DIR              = str(Path("results") / slug / "general")
+    AGENTS_RESULTS_DIR       = str(Path("results") / slug / "agents")
+    AGENT_MODELS_RESULTS_DIR = str(Path("results") / slug / "agent_models")
+    BACKTEST_RESULTS_DIR     = str(Path("results") / slug / "backtest")
+    PLOTS_DIR                = str(Path("results") / slug / "plots")
+
+    Path(RESULTS_DIR).mkdir(parents=True, exist_ok=True)
+
+    # Add a run-specific log file now that the directory exists.
+    _file_handler = logging.FileHandler(f"{RESULTS_DIR}/pipeline.log", encoding="utf-8")
+    _file_handler.setFormatter(logging.Formatter("%(asctime)s  %(levelname)s  %(message)s"))
+    logging.getLogger().addHandler(_file_handler)
+
+    log.info("=" * 60)
+    log.info("  STARTING MULTI-AGENT ML STOCK PICKER PIPELINE")
+    log.info("  Run: %s", slug)
+    log.info("=" * 60)
+
     test_start_date = _quarter_end_date(ANALYSIS_START_YEAR, ANALYSIS_START_QUARTER)
+    annual_anchor_date = None
     if analysis_frequency == "annual":
         annual_anchor_date = (
             test_start_date + pd.Timedelta(days=max(int(SNAPSHOT_LAG_DAYS), 0))
@@ -718,28 +764,32 @@ def main():
     else:
         tickers = list(dict.fromkeys(tickers_to_download))
 
-    cache = None
     cache_enabled = bool(ENABLE_CACHE) and not bool(FORCE_DOWNLOAD) and not bool(UPDATE_PRICES_ONLY)
+
+    # Three independent cache managers, each keyed by only the variables
+    # that actually affect that artefact:
+    #
+    #  cache_dataset  — master_dataset pickle + ticker_availability
+    #                   Key: tickers, feature columns/excludes, snapshot_lag,
+    #                        holding_period, technical_lookback, min_history_quarters,
+    #                        schema_version
+    #
+    #  cache_market   — prices_dict + spy/benchmark
+    #                   Key: tickers + date range (prices are just raw data)
+    #
+    #  cache_backtest — walkforward_summary JSON
+    #                   Key: everything (dataset key + backtest params)
+
+    cache_dataset = cache_market = cache_backtest = None
     if cache_enabled:
-        cache_context = {
-            "cache_schema_version": CACHE_SCHEMA_VERSION,
-            "tickers": list(dict.fromkeys(tickers)),
-            "download_start_date": DOWNLOAD_START_DATE,
-            "analysis_start_year": ANALYSIS_START_YEAR,
-            "analysis_start_quarter": ANALYSIS_START_QUARTER,
-            "analysis_end_year": ANALYSIS_END_YEAR,
-            "analysis_end_quarter": ANALYSIS_END_QUARTER,
-            "analysis_frequency": ANALYSIS_FREQUENCY,
+        _dataset_ctx = {
+            "v": CACHE_SCHEMA_VERSION,
+            "tickers": sorted(set(tickers)),
             "snapshot_lag_days": SNAPSHOT_LAG_DAYS,
             "holding_period_months": HOLDING_PERIOD_MONTHS,
             "technical_lookback_days": TECHNICAL_LOOKBACK_DAYS,
             "min_history_quarters": MIN_HISTORY_QUARTERS,
-            "walkforward_train_years": WALKFORWARD_TRAIN_LOOKBACK_YEARS,
-            "walkforward_test_quarters": WALKFORWARD_TEST_QUARTERS,
-            "top_n_stocks": TOP_N_STOCKS,
-            "risk_free_rate": RISK_FREE_RATE,
-            "random_seed": RANDOM_SEED,
-            "feature_controls": {
+            "features": {
                 "fundamental_include": FUNDAMENTAL_FEATURE_COLUMNS,
                 "fundamental_exclude": FUNDAMENTAL_FEATURE_EXCLUDE,
                 "valuation_include": VALUATION_FEATURE_COLUMNS,
@@ -756,8 +806,32 @@ def main():
                 "meta_exclude": META_FEATURE_EXCLUDE,
             },
         }
-        cache = CacheManager(CACHE_DIR, cache_context)
-        log.info("Cache active: key=%s dir=%s", cache.key, cache.run_dir)
+        _market_ctx = {
+            "v": CACHE_SCHEMA_VERSION,
+            "tickers": sorted(set(tickers)),
+            "download_start_date": DOWNLOAD_START_DATE,
+            "analysis_end_year": ANALYSIS_END_YEAR,
+            "analysis_end_quarter": ANALYSIS_END_QUARTER,
+        }
+        _backtest_ctx = {
+            **_dataset_ctx,
+            **_market_ctx,
+            "analysis_start_year": ANALYSIS_START_YEAR,
+            "analysis_start_quarter": ANALYSIS_START_QUARTER,
+            "analysis_frequency": ANALYSIS_FREQUENCY,
+            "walkforward_train_years": WALKFORWARD_TRAIN_LOOKBACK_YEARS,
+            "walkforward_test_quarters": WALKFORWARD_TEST_QUARTERS,
+            "top_n_stocks": TOP_N_STOCKS,
+            "risk_free_rate": RISK_FREE_RATE,
+            "random_seed": RANDOM_SEED,
+        }
+        cache_dataset  = CacheManager(CACHE_DIR, _dataset_ctx,  namespace="dataset")
+        cache_market   = CacheManager(CACHE_DIR, _market_ctx,   namespace="market")
+        cache_backtest = CacheManager(CACHE_DIR, _backtest_ctx,  namespace="backtest")
+        log.info(
+            "Cache active: dataset=%s  market=%s  backtest=%s",
+            cache_dataset.key, cache_market.key, cache_backtest.key,
+        )
     else:
         log.info("Cache disabled for this run")
 
@@ -767,8 +841,8 @@ def main():
     tickers_ok = []
     missing_detail = {}
     loaded_ticker_availability_cache = False
-    if cache is not None and CACHE_USE_ROUTER_DERIVED:
-        cached_availability = cache.load_json("ticker_availability")
+    if cache_dataset is not None and CACHE_USE_ROUTER_DERIVED:
+        cached_availability = cache_dataset.load_json("ticker_availability")
         if cached_availability:
             tickers_ok = list(cached_availability.get("tickers_ok", []))
             missing_detail = dict(cached_availability.get("missing_detail", {}))
@@ -777,8 +851,8 @@ def main():
 
     if not loaded_ticker_availability_cache:
         tickers_ok, missing_detail = get_available_tickers(tickers, data_dir=FINNHUB_DATA_DIR)
-        if cache is not None and CACHE_USE_ROUTER_DERIVED:
-            cache.save_json(
+        if cache_dataset is not None and CACHE_USE_ROUTER_DERIVED:
+            cache_dataset.save_json(
                 "ticker_availability",
                 {
                     "tickers_ok": tickers_ok,
@@ -796,8 +870,8 @@ def main():
             api_key=FINNHUB_API_KEY,
         )
         tickers_ok = sorted(set(tickers_ok) | set(recovered))
-        if cache is not None and CACHE_USE_ROUTER_DERIVED:
-            cache.save_json(
+        if cache_dataset is not None and CACHE_USE_ROUTER_DERIVED:
+            cache_dataset.save_json(
                 "ticker_availability",
                 {
                     "tickers_ok": tickers_ok,
@@ -818,8 +892,8 @@ def main():
     dataset_snapshot_lag_days = int(SNAPSHOT_LAG_DAYS)
 
     df = None
-    if cache is not None and CACHE_USE_MASTER_DATASET:
-        cached_df = cache.load_pickle("master_dataset")
+    if cache_dataset is not None and CACHE_USE_MASTER_DATASET:
+        cached_df = cache_dataset.load_pickle("master_dataset")
         if cached_df is not None:
             df = cached_df
             log.info("Cache hit: master_dataset (%s observations)", len(df))
@@ -838,8 +912,8 @@ def main():
             holding_period_months=HOLDING_PERIOD_MONTHS,
             technical_lookback_days=TECHNICAL_LOOKBACK_DAYS,
         )
-        if cache is not None and CACHE_USE_MASTER_DATASET:
-            cache.save_pickle("master_dataset", df)
+        if cache_dataset is not None and CACHE_USE_MASTER_DATASET:
+            cache_dataset.save_pickle("master_dataset", df)
             log.info("Cache save: master_dataset")
 
     df.to_csv(f"{RESULTS_DIR}/master_dataset.csv")
@@ -872,8 +946,8 @@ def main():
         spy_prices = None
         benchmark_returns = None
 
-        if cache is not None and CACHE_USE_ROUTER_DERIVED:
-            market_bundle = cache.load_pickle("market_bundle")
+        if cache_market is not None and CACHE_USE_ROUTER_DERIVED:
+            market_bundle = cache_market.load_pickle("market_bundle")
             if isinstance(market_bundle, dict):
                 prices_dict = market_bundle.get("prices_dict")
                 spy_prices = market_bundle.get("spy_prices")
@@ -897,8 +971,8 @@ def main():
             else:
                 benchmark_returns = spy_prices.pct_change().dropna()
 
-            if cache is not None and CACHE_USE_ROUTER_DERIVED:
-                cache.save_pickle(
+            if cache_market is not None and CACHE_USE_ROUTER_DERIVED:
+                cache_market.save_pickle(
                     "market_bundle",
                     {
                         "prices_dict": prices_dict,
@@ -909,8 +983,8 @@ def main():
                 log.info("Cache save: market_bundle")
 
         # 7. Walk-forward pipeline
-        if cache is not None and CACHE_USE_WALKFORWARD_SUMMARY:
-            cached_summary = cache.load_json("walkforward_summary")
+        if cache_backtest is not None and CACHE_USE_WALKFORWARD_SUMMARY:
+            cached_summary = cache_backtest.load_json("walkforward_summary")
             if isinstance(cached_summary, dict) and cached_summary:
                 summary = cached_summary
                 log.info("Cache hit: walkforward_summary (backtest recomputation skipped)")
@@ -938,9 +1012,10 @@ def main():
                 finnhub_data_dir=FINNHUB_DATA_DIR,
                 analysis_frequency=analysis_frequency,
                 annual_anchor_date=annual_anchor_date,
+                fold_cache_root=cache_dataset.run_dir / "folds" if cache_dataset is not None else None,
             )
-            if cache is not None:
-                cache.save_json("walkforward_summary", summary if isinstance(summary, dict) else {})
+            if cache_backtest is not None:
+                cache_backtest.save_json("walkforward_summary", summary if isinstance(summary, dict) else {})
                 log.info("Cache save: walkforward_summary")
     else:
         log.info("SKIP_BACKTEST=True - skipping historical walk-forward backtest")

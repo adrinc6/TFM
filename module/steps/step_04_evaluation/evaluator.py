@@ -863,6 +863,7 @@ def run_walkforward_pipeline(
     finnhub_data_dir: str = "data_finnhub",
     analysis_frequency: str = "quarterly",
     annual_anchor_date: Optional[pd.Timestamp] = None,
+    fold_cache_root: Optional[Path] = None,
 ) -> Dict:
     Path(agents_results_dir).mkdir(parents=True, exist_ok=True)
     Path(agent_models_results_dir).mkdir(parents=True, exist_ok=True)
@@ -955,9 +956,9 @@ def run_walkforward_pipeline(
     for fold_id, (_fold_train_start, train_end, _test_end, _fold_train_years) in fold_iter:
         analysis_quarter = train_end.to_period("Q")
 
-        q_start = analysis_quarter.start_time.normalize()
+        q_end = analysis_quarter.end_time.normalize()
         lag_days = max(int(resolved_snapshot_lag_days), 0)
-        entry_date = q_start + pd.Timedelta(days=lag_days)
+        entry_date = q_end + pd.Timedelta(days=lag_days)
 
         if analysis_frequency == "annual":
             if annual_anchor_date is not None and entry_date < annual_anchor_date:
@@ -1239,11 +1240,11 @@ def run_walkforward_pipeline(
         )
         log.info(f"{'='*60}")
 
-        # Calculate entry_date: from the first day of the quarter + configured lag
+        # Calculate entry_date: from the last day of the quarter + configured lag
         
         log.info(
-            f"[{run_id}] Snapshot lag starts at: {q_start.date()} (first day of Q{analysis_quarter.quarter}) "
-            f"+ {lag_days} days maximum = minimum required price date: {entry_date.date()}"
+            f"[{run_id}] Snapshot lag starts at: {q_end.date()} (last day of Q{analysis_quarter.quarter}) "
+            f"+ {lag_days} days = entry date: {entry_date.date()}"
         )
 
         exit_date = entry_date + pd.DateOffset(months=max(int(holding_period_months), 1))
@@ -1331,6 +1332,9 @@ def run_walkforward_pipeline(
                 random_seed=random_seed,
                 sector_map=sector_map,
                 spy_prices=spy_prices,
+                fold_cache_root=fold_cache_root,
+                train_start_ts=_fold_train_start,
+                train_end_ts=train_end,
             )
 
             meta = agents["meta_learner"]

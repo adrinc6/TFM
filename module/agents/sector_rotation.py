@@ -271,12 +271,12 @@ class SectorRotationAgent(BaseAgent):
             if sector == "Unknown" or len(grp) < 3:
                 continue
 
-            feat = {col: float(grp[col].mean()) for col in available_feat_cols if grp[col].notna().any()}
+            feat = {col: float(grp[col].median()) for col in available_feat_cols if grp[col].notna().any()}
 
-            # Sector label: did the mean sector return beat SPY?
+            # Sector label: did the median sector return beat SPY?
             if "forward_return" not in grp.columns:
                 continue
-            sector_return = float(grp["forward_return"].mean())
+            sector_return = float(grp["forward_return"].median())
 
             benchmark_ret = _resolve_benchmark_return(
                 quarter=quarter,
@@ -318,7 +318,7 @@ class SectorRotationAgent(BaseAgent):
             owner="SectorRotationAgent",
         )
 
-        agg = temp.groupby("_sector")[available_feat_cols].mean()
+        agg = temp.groupby("_sector")[available_feat_cols].median()
         agg = agg[agg.index != "Unknown"]
         return agg
 

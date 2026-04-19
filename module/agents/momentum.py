@@ -217,19 +217,6 @@ class MomentumAgent(BaseAgent):
             df["vol_expansion"] = (df["vol_ratio_20_50"] > 1.5).astype(float)
             selected.append("vol_expansion")
 
-        # Earnings momentum derived signals
-        if "beat_rate_4q" in df.columns:
-            # Companies that consistently beat estimates → bullish signal
-            df["consistent_beater"] = (df["beat_rate_4q"] >= 0.75).astype(float)
-            selected.append("consistent_beater")
-        if "eps_surprise_avg_4q" in df.columns and "eps_revision" in df.columns:
-            # Combined signal: positive surprise + upward revision = double confirmation
-            df["earnings_momentum"] = (
-                (df["eps_surprise_avg_4q"].fillna(0) > 0).astype(float) +
-                (df["eps_revision"].fillna(0) > 0).astype(float)
-            )
-            selected.append("earnings_momentum")
-
         selected = self._unique_existing_columns(df, selected)
         result = df[selected].copy()
         if fit_mode:

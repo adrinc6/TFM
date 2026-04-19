@@ -208,7 +208,24 @@ class FundamentalAgent(BaseAgent):
             logger=log,
             owner="FundamentalAgent",
         )
-        result = X[selected].copy()
+        df = X[selected].copy()
+
+        # Derived: profitability quality — combines margins with earnings quality.
+        # High margin + high FCF/NI coherence = sustainable profitability.
+        if "net_margin" in df.columns and "earnings_quality" in df.columns:
+            margin_rank = df["net_margin"].rank(pct=True)
+            quality_rank = df["earnings_quality"].rank(pct=True)
+            df["profitability_quality"] = (margin_rank + quality_rank) / 2.0
+            selected = list(df.columns)
+
+        # Derived: fundamental momentum — are key ratios improving?
+        # Positive when ROE, margins, and current ratio are all trending up.
+        trend_cols = [c for c in ["roe_trend_2y", "net_margin_trend_2y", "gross_margin_trend_3y"] if c in df.columns]
+        if len(trend_cols) >= 2:
+            df["fundamental_momentum"] = df[trend_cols].mean(axis=1)
+            selected = list(df.columns)
+
+        result = df.copy()
         if fit_mode:
             self._feature_cols = list(result.columns)
         return result
