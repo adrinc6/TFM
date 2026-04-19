@@ -12,10 +12,10 @@ import numpy as np
 import pandas as pd
 
 from environment import (
-	PORTFOLIO_MIN_SCORE,
-	SCORE_WEIGHTED_PORTFOLIO,
-	PORTFOLIO_MAX_STOCKS_PER_SECTOR,
-	PORTFOLIO_MAX_STOCK_WEIGHT,
+    PORTFOLIO_MIN_SCORE,
+    SCORE_WEIGHTED_PORTFOLIO,
+    PORTFOLIO_MAX_STOCKS_PER_SECTOR,
+    PORTFOLIO_MAX_STOCK_WEIGHT,
 )
 from module.steps.step_04_evaluation.metrics import compute_all_metrics
 from module.steps.step_04_evaluation.portfolio_simulator import _get_close_column
@@ -223,7 +223,7 @@ class WalkForwardBacktester:
 			)[["ticker", "score"] + (["sector"] if "sector" in ordered.columns else [])].copy()
 			log.info(
 				f"[Backtester] {period_id}: {len(qualified)} tickers superaron umbral {PORTFOLIO_MIN_SCORE:.2f} "
-				f"→ selecting top {len(top_df)} (min={min_stocks}, sector_cap={sector_cap})"
+				f"→ selecting target={n_take}, final={len(top_df)} (min={min_stocks}, sector_cap={sector_cap})"
 			)
 		else:
 			# Compressed regime: keep relative selection by ranking.
