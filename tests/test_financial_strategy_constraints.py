@@ -19,11 +19,12 @@ def test_sentiment_agent_disabled_by_default():
     assert "sentiment" not in cfg
 
 
-def test_backtester_limits_sector_concentration():
+def test_backtester_limits_sector_concentration(tmp_path):
     backtester = WalkForwardBacktester(
         train_years=5,
         test_quarters=1,
         risk_free=0.0,
+        results_dir=str(tmp_path / "backtest"),
         top_n_stocks=5,
         score_weighted=True,
     )
@@ -53,11 +54,12 @@ def test_backtester_limits_sector_concentration():
     assert int((selected_sectors == "Tech").sum()) <= 3
 
 
-def test_backtester_applies_position_weight_cap():
+def test_backtester_applies_position_weight_cap(tmp_path):
     backtester = WalkForwardBacktester(
         train_years=5,
         test_quarters=1,
         risk_free=0.0,
+        results_dir=str(tmp_path / "backtest"),
         top_n_stocks=8,
         score_weighted=True,
     )
