@@ -77,12 +77,12 @@ def generate_oof_scores(
     date_indices = np.arange(len(unique_dates))
 
     # Pre-compute boolean masks for each fold (indexed on X)
-    fold_masks: list[tuple[pd.Index, pd.Index]] = []
+    fold_masks: List[tuple] = []
     for date_tr_idx, date_val_idx in kf.split(date_indices):
         train_dates = {unique_dates[i] for i in date_tr_idx}
-        val_dates   = {unique_dates[i] for i in date_val_idx}
-        train_mask  = dates.isin(train_dates)
-        val_mask    = dates.isin(val_dates)
+        val_dates = {unique_dates[i] for i in date_val_idx}
+        train_mask = dates.isin(train_dates)
+        val_mask = dates.isin(val_dates)
         fold_masks.append((train_mask, val_mask))
 
     oof: Dict[str, pd.Series] = {}
