@@ -126,7 +126,7 @@ class DataRouter:
         """Loads daily OHLCV data from data_finnhub/{ticker}/prices.json.
 
         Columns returned: Open, High, Low, Close, AdjClose, Volume.
-        AdjClose is used as Close when available (adjusted for splits/dividends).
+        Close is preserved as the canonical execution/return price reference.
 
         Args:
             ticker (str): The ticker symbol to load prices for.
@@ -166,10 +166,6 @@ class DataRouter:
             "volume":    "Volume",
         }
         df = df.rename(columns={k: v for k, v in rename.items() if k in df.columns})
-
-        # Use adj_close as Close when available (adjusted for splits/dividends)
-        if "AdjClose" in df.columns and not df["AdjClose"].isna().all():
-            df["Close"] = df["AdjClose"]
 
         return df
 

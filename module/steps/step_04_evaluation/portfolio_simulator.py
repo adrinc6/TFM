@@ -21,7 +21,13 @@ def _get_close_column(prices: pd.DataFrame, fallback_col_idx: int = 3) -> str:
     Uses 'Close' if present, otherwise falls back to the column at *fallback_col_idx*
     (default 3, corresponding to the C in standard OHLCV layout).
     """
-    return "Close" if "Close" in prices.columns else prices.columns[fallback_col_idx]
+    if "Close" in prices.columns:
+        return "Close"
+    if len(prices.columns) == 1:
+        return str(prices.columns[0])
+    if len(prices.columns) > fallback_col_idx:
+        return str(prices.columns[fallback_col_idx])
+    return str(prices.columns[-1])
 
 
 def _extract_close_series(price_obj) -> pd.Series:
@@ -32,10 +38,8 @@ def _extract_close_series(price_obj) -> pd.Series:
         s.index = pd.to_datetime(s.index)
         return s.sort_index()
     if isinstance(price_obj, pd.DataFrame) and not price_obj.empty:
-        if "Close" in price_obj.columns:
-            s = price_obj["Close"]
-        else:
-            s = price_obj.iloc[:, 0]
+        close_col = _get_close_column(price_obj)
+        s = price_obj[close_col]
         s = pd.to_numeric(s, errors="coerce").dropna()
         s.index = pd.to_datetime(s.index)
         return s.sort_index()
