@@ -22,11 +22,15 @@ def _get_close_column(prices: pd.DataFrame, fallback_col_idx: int = 3) -> str:
     (default 3, corresponding to the C in standard OHLCV layout).
     """
     if "Close" in prices.columns:
+        # Canonical path: explicit close column.
         return "Close"
     if len(prices.columns) == 1:
+        # Single-column inputs are treated as pre-extracted close series.
         return str(prices.columns[0])
     if len(prices.columns) > fallback_col_idx:
+        # OHLCV fallback: index 3 usually corresponds to "Close".
         return str(prices.columns[fallback_col_idx])
+    # Defensive fallback for non-standard multi-column inputs.
     return str(prices.columns[-1])
 
 
