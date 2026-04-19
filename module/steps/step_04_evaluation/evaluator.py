@@ -1341,6 +1341,8 @@ def run_walkforward_pipeline(
             preds_df = df_test_scored[["final_score", "label"]].copy()
             preds_df["ticker"] = preds_df.index.get_level_values("ticker")
             preds_df["date"] = preds_df.index.get_level_values("date")
+            if "sector" in df_test_scored.columns:
+                preds_df["sector"] = df_test_scored["sector"].values
             preds_df = preds_df.reset_index(drop=True)
 
             fold_result = backtester.simulate_portfolio(

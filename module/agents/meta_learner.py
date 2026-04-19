@@ -1,6 +1,6 @@
 ﻿"""Meta-learner (stacking) for the multi-agent stock picker.
 
-Combines the outputs of the five base agents into a final Outperform prediction.
+Combines the outputs of the configured base agents into a final Outperform prediction.
 
 Inputs:
   Agent scores:  fundamental_score, valuation_score,
@@ -271,13 +271,7 @@ class MetaLearner(BaseAgent):
         return pd.Series(self._lr_weight * lr_p + self._gbm_weight * gbm_p, index=X_al.index)
 
     def _blend_with_base_consensus(self, meta_score: pd.Series, X: pd.DataFrame) -> pd.Series:
-        base_cols = [
-            "fundamental_score",
-            "valuation_score",
-            "momentum_score",
-            "bear_score",
-            "sentiment_score",
-        ]
+        base_cols = list(META_AGENT_SCORE_COLUMNS)
         available = [c for c in base_cols if c in X.columns]
         if not available or self._base_score_blend_weight <= 0.0:
             return meta_score

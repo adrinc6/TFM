@@ -11,7 +11,12 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 
-from environment import PORTFOLIO_MIN_SCORE, SCORE_WEIGHTED_PORTFOLIO
+from environment import (
+	PORTFOLIO_MIN_SCORE,
+	SCORE_WEIGHTED_PORTFOLIO,
+	PORTFOLIO_MAX_STOCKS_PER_SECTOR,
+	PORTFOLIO_MAX_STOCK_WEIGHT,
+)
 from module.steps.step_04_evaluation.metrics import compute_all_metrics
 from module.steps.step_04_evaluation.portfolio_simulator import _get_close_column
 
@@ -72,6 +77,78 @@ class WalkForwardBacktester:
 			)
 		return "\n".join(lines)
 
+	@staticmethod
+	def _select_with_sector_cap(
+		ordered: pd.DataFrame,
+		target_n: int,
+		sector_cap: int,
+		min_stocks: int,
+	) -> pd.DataFrame:
+		"""Build a ranked shortlist enforcing a max tickers-per-sector cap."""
+		if ordered.empty or target_n <= 0:
+			return ordered.head(0).copy()
+		if sector_cap <= 0 or "sector" not in ordered.columns:
+			return ordered.head(target_n).copy()
+
+		selected_rows = []
+		sector_counts: Dict[str, int] = {}
+		for _, row in ordered.iterrows():
+			sector = str(row.get("sector", "Unknown"))
+			if sector_counts.get(sector, 0) >= sector_cap:
+				continue
+			selected_rows.append(row)
+			sector_counts[sector] = sector_counts.get(sector, 0) + 1
+			if len(selected_rows) >= target_n:
+				break
+
+		# If constraints are too tight, relax to keep investability floor.
+		if len(selected_rows) < min_stocks:
+			existing = {str(r.get("ticker")) for r in selected_rows}
+			for _, row in ordered.iterrows():
+				tk = str(row.get("ticker"))
+				if tk in existing:
+					continue
+				selected_rows.append(row)
+				existing.add(tk)
+				if len(selected_rows) >= min_stocks:
+					break
+
+		if not selected_rows:
+			return ordered.head(min(target_n, len(ordered))).copy()
+		return pd.DataFrame(selected_rows).head(target_n).copy()
+
+	@staticmethod
+	def _apply_weight_cap(weights: np.ndarray, cap: float) -> np.ndarray:
+		"""Apply per-position max weight and renormalize."""
+		if len(weights) == 0:
+			return weights
+		cap = float(cap)
+		if cap <= 0.0:
+			return weights
+		# If cap is infeasible, fall back to equal weights.
+		if cap * len(weights) < 1.0:
+			return np.ones(len(weights)) / len(weights)
+
+		w = weights.astype(float).copy()
+		w = w / max(w.sum(), 1e-12)
+
+		for _ in range(20):
+			over = w > cap
+			if not over.any():
+				break
+			excess = float((w[over] - cap).sum())
+			w[over] = cap
+			under = ~over
+			under_sum = float(w[under].sum())
+			if under_sum <= 0:
+				w = np.ones(len(w)) / len(w)
+				break
+			w[under] += excess * (w[under] / under_sum)
+
+		w = np.minimum(w, cap)
+		w = w / max(w.sum(), 1e-12)
+		return w
+
 	def generate_folds(
 		self,
 		analysis_start_date: str,
@@ -127,22 +204,33 @@ class WalkForwardBacktester:
 		period_id = analysis_quarter if analysis_quarter else str(fold_id)
 		min_stocks = max(1, self.top_n_stocks // 2)
 		ordered = predictions_df.sort_values("score", ascending=False)
+		sector_cap = int(PORTFOLIO_MAX_STOCKS_PER_SECTOR)
 		qualified = ordered[ordered["score"] >= PORTFOLIO_MIN_SCORE]
 		if len(qualified) >= min_stocks:
 			# Tomar hasta top_n pero garantizar al menos min_stocks
 			n_take = max(min(len(qualified), self.top_n_stocks), min_stocks)
-			top_df = ordered.head(n_take)[["ticker", "score"]].copy()
+			top_df = self._select_with_sector_cap(
+				ordered=ordered,
+				target_n=n_take,
+				sector_cap=sector_cap,
+				min_stocks=min_stocks,
+			)[["ticker", "score"] + (["sector"] if "sector" in ordered.columns else [])].copy()
 			log.info(
 				f"[Backtester] {period_id}: {len(qualified)} tickers superaron umbral {PORTFOLIO_MIN_SCORE:.2f} "
-				f"→ selecting top {n_take} (min={min_stocks})"
+				f"→ selecting top {len(top_df)} (min={min_stocks}, sector_cap={sector_cap})"
 			)
 		else:
 			# Compressed regime: keep relative selection by ranking.
-			top_df = ordered.head(self.top_n_stocks)[["ticker", "score"]].copy()
+			top_df = self._select_with_sector_cap(
+				ordered=ordered,
+				target_n=self.top_n_stocks,
+				sector_cap=sector_cap,
+				min_stocks=min_stocks,
+			)[["ticker", "score"] + (["sector"] if "sector" in ordered.columns else [])].copy()
 			log.warning(
 				f"[Backtester] {period_id}: solo {len(qualified)} tickers superaron umbral {PORTFOLIO_MIN_SCORE:.2f} "
-				f"→ seleccionando top-{self.top_n_stocks} por ranking (scores: "
-				f"{ordered['score'].iloc[0]:.3f} .. {ordered['score'].iloc[self.top_n_stocks-1]:.3f})"
+				f"→ seleccionando top-{len(top_df)} por ranking con restricciones (sector_cap={sector_cap}) "
+				f"(scores: {ordered['score'].iloc[0]:.3f} .. {ordered['score'].iloc[min(self.top_n_stocks, len(ordered))-1]:.3f})"
 			)
 		top = top_df["ticker"].tolist()
 		if not top:
@@ -199,6 +287,7 @@ class WalkForwardBacktester:
 			weights = raw / raw.sum()
 		else:
 			weights = np.ones(N) / N
+		weights = self._apply_weight_cap(weights, float(PORTFOLIO_MAX_STOCK_WEIGHT))
 
 		ticker_weights = {t: round(float(w), 6) for t, w in zip(tickers_with_prices, weights)}
 
@@ -218,6 +307,8 @@ class WalkForwardBacktester:
 
 		# Log de pesos
 		weighting_mode = "softmax(score)" if self.score_weighted else "equiponderado"
+		if float(PORTFOLIO_MAX_STOCK_WEIGHT) > 0:
+			weighting_mode = f"{weighting_mode}+cap({float(PORTFOLIO_MAX_STOCK_WEIGHT):.2f})"
 		log.info(f"[Backtester] {period_id} — cartera final ({weighting_mode}, {len(tickers_with_prices)} stocks):")
 		for t in tickers_with_prices:
 			log.info(f"    {t:<8}  peso={ticker_weights[t]:.3f}  score={top_df.set_index('ticker').loc[t,'score']:.3f}  ret={ticker_returns[t]:+.2%}")
