@@ -135,14 +135,12 @@ class TestFeaturePolicyAllowed:
         assert is_ratio_or_normalized_feature(col) is True
 
     @pytest.mark.parametrize("col", [
-        # roe, roa, debt_equity don't contain allowed tokens by name alone,
-        # but pass through agent-level FEATURE_COLUMNS configuration.
-        # The policy function returns False for bare names without tokens.
+        # Canonical financial ratios are now explicitly allowed by the policy.
         "roe", "roa", "debt_equity",
     ])
-    def test_features_needing_agent_config(self, col):
-        """Features that pass through agent config, not the generic policy filter."""
-        assert is_ratio_or_normalized_feature(col) is False
+    def test_canonical_ratios_pass_policy(self, col):
+        """Canonical financial ratios must pass the policy filter directly."""
+        assert is_ratio_or_normalized_feature(col) is True
 
 
 # ---------------------------------------------------------------------------

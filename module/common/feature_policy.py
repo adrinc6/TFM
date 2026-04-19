@@ -6,6 +6,19 @@ from typing import Optional
 
 import pandas as pd
 
+# Canonical financial ratio names that are always considered normalized, even
+# though they lack explicit ratio/margin/etc. tokens in their names.
+_CANONICAL_FINANCIAL_RATIOS: frozenset[str] = frozenset({
+    "roe",          # Return on equity — ratio by definition
+    "roa",          # Return on assets — ratio by definition
+    "roi",          # Return on investment — ratio by definition
+    "roic",         # Return on invested capital — ratio by definition
+    "debt_equity",  # Debt-to-equity — ratio by definition
+    "quick_ratio",  # Quick ratio (though "ratio" token is also present)
+    "beta",         # Market beta — normalized market-relative measure
+    "eps",          # Earnings per share — per-share normalised metric
+})
+
 
 def is_ratio_or_normalized_feature(col_name: str, series: Optional[pd.Series] = None) -> bool:
     """Checks whether a feature column name (and optionally its values) is
@@ -37,6 +50,10 @@ def is_ratio_or_normalized_feature(col_name: str, series: Optional[pd.Series] = 
                     return True
             except Exception:
                 pass
+
+    # Canonical financial ratio names that are always allowed.
+    if c in _CANONICAL_FINANCIAL_RATIOS:
+        return True
 
     allowed_tokens = [
         "ratio", "margin", "yield", "growth", "trend", "momentum", "volatility",

@@ -22,6 +22,7 @@ def download_data(
     api_key: str = "",
     prices_only: bool = False,
     allow_retry_failed: bool = False,
+    download_optional: bool = True,
 ) -> List[str]:
     log.info("=" * 60)
     log.info("  STEP 1 — DATA DOWNLOAD")
@@ -44,6 +45,7 @@ def download_data(
         force=force_download,
         prices_only=prices_only,
         allow_retry_failed=allow_retry_failed,
+        download_optional=download_optional,
     )
 
     log.info("  Download completed. Proceeding to consolidation...")

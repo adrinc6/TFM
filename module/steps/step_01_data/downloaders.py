@@ -28,33 +28,43 @@ MACRO_SERIES = {
     "sp500": "^GSPC",  # Only macro data used: benchmark for forward_return and backtester
 }
 
-
-_TICKER_ENDPOINT_FILES = {
+# Endpoints actively consumed by the feature pipeline.
+_REQUIRED_ENDPOINT_FILES = {
     "prices": "prices.json",
     "profile": "profile.json",
     "basic_financials": "basic_financials.json",
     "financials_reported_annual": "financials_reported_annual.json",
     "financials_reported_quarterly": "financials_reported_quarterly.json",
     "eps_surprises": "eps_surprises.json",
-    "earnings_calendar": "earnings_calendar.json",
     "recommendation_trends": "recommendation_trends.json",
     "insider_transactions": "insider_transactions.json",
     "insider_sentiment": "insider_sentiment.json",
+}
+
+# Endpoints downloaded for completeness but not yet consumed by the feature
+# pipeline. Skipping them with DOWNLOAD_OPTIONAL_ENDPOINTS=False saves API
+# quota and storage without affecting model training.
+_OPTIONAL_ENDPOINT_FILES = {
+    "earnings_calendar": "earnings_calendar.json",
     "company_news": "company_news.json",
     "peers": "peers.json",
     "quote": "quote.json",
 }
 
+_TICKER_ENDPOINT_FILES = {**_REQUIRED_ENDPOINT_FILES, **_OPTIONAL_ENDPOINT_FILES}
 
-def _required_endpoints(prices_only: bool) -> list[str]:
+
+def _required_endpoints(prices_only: bool, include_optional: bool = True) -> list[str]:
     if prices_only:
         return ["prices"]
-    return list(_TICKER_ENDPOINT_FILES.keys())
+    if include_optional:
+        return list(_TICKER_ENDPOINT_FILES.keys())
+    return list(_REQUIRED_ENDPOINT_FILES.keys())
 
 
-def _ticker_is_fully_done(base_dir: Path, ticker: str, registry: Registry, prices_only: bool) -> bool:
+def _ticker_is_fully_done(base_dir: Path, ticker: str, registry: Registry, prices_only: bool, include_optional: bool = True) -> bool:
     ticker_dir = base_dir / ticker
-    for endpoint in _required_endpoints(prices_only):
+    for endpoint in _required_endpoints(prices_only, include_optional=include_optional):
         file_name = _TICKER_ENDPOINT_FILES[endpoint]
         if not registry.is_done(ticker, endpoint):
             return False
@@ -63,9 +73,9 @@ def _ticker_is_fully_done(base_dir: Path, ticker: str, registry: Registry, price
     return True
 
 
-def _ticker_is_partial(base_dir: Path, ticker: str, registry: Registry, prices_only: bool) -> bool:
+def _ticker_is_partial(base_dir: Path, ticker: str, registry: Registry, prices_only: bool, include_optional: bool = True) -> bool:
     ticker_dir = base_dir / ticker
-    required = _required_endpoints(prices_only)
+    required = _required_endpoints(prices_only, include_optional=include_optional)
 
     done_count = 0
     missing_count = 0
@@ -319,6 +329,7 @@ def download_ticker(
     registry_lock: threading.Lock | None = None,
     rate_limiter: "RateLimiter" | None = None,
     allow_retry_failed: bool = False,
+    download_optional: bool = True,
 ) -> dict:
     ticker_dir = base_dir / ticker
     ticker_dir.mkdir(parents=True, exist_ok=True)
@@ -408,16 +419,20 @@ def download_ticker(
         allow_retry_failed=allow_retry_failed,
     )
 
-    r["earnings_calendar"] = fetch_and_save(
-        ticker,
-        "earnings_calendar",
-        lambda: client.earnings_calendar(start, end, symbol=ticker),
-        ticker_dir / "earnings_calendar.json",
-        registry,
-        force,
-        registry_lock=registry_lock,
-        rate_limiter=rate_limiter,
-        allow_retry_failed=allow_retry_failed,
+    r["earnings_calendar"] = (
+        fetch_and_save(
+            ticker,
+            "earnings_calendar",
+            lambda: client.earnings_calendar(start, end, symbol=ticker),
+            ticker_dir / "earnings_calendar.json",
+            registry,
+            force,
+            registry_lock=registry_lock,
+            rate_limiter=rate_limiter,
+            allow_retry_failed=allow_retry_failed,
+        )
+        if download_optional
+        else "skipped"
     )
 
     r["recommendation_trends"] = fetch_and_save(
@@ -458,42 +473,54 @@ def download_ticker(
     )
 
     news_start = (datetime.today() - timedelta(days=365)).strftime("%Y-%m-%d")
-    r["company_news"] = fetch_and_save(
-        ticker,
-        "company_news",
-        lambda: client.company_news(ticker, news_start, end),
-        ticker_dir / "company_news.json",
-        registry,
-        force,
-        wrap="data",
-        registry_lock=registry_lock,
-        rate_limiter=rate_limiter,
-        allow_retry_failed=allow_retry_failed,
+    r["company_news"] = (
+        fetch_and_save(
+            ticker,
+            "company_news",
+            lambda: client.company_news(ticker, news_start, end),
+            ticker_dir / "company_news.json",
+            registry,
+            force,
+            wrap="data",
+            registry_lock=registry_lock,
+            rate_limiter=rate_limiter,
+            allow_retry_failed=allow_retry_failed,
+        )
+        if download_optional
+        else "skipped"
     )
 
-    r["peers"] = fetch_and_save(
-        ticker,
-        "peers",
-        lambda: client.peers(ticker),
-        ticker_dir / "peers.json",
-        registry,
-        force,
-        wrap="peers",
-        registry_lock=registry_lock,
-        rate_limiter=rate_limiter,
-        allow_retry_failed=allow_retry_failed,
+    r["peers"] = (
+        fetch_and_save(
+            ticker,
+            "peers",
+            lambda: client.peers(ticker),
+            ticker_dir / "peers.json",
+            registry,
+            force,
+            wrap="peers",
+            registry_lock=registry_lock,
+            rate_limiter=rate_limiter,
+            allow_retry_failed=allow_retry_failed,
+        )
+        if download_optional
+        else "skipped"
     )
 
-    r["quote"] = fetch_and_save(
-        ticker,
-        "quote",
-        lambda: client.quote(ticker),
-        ticker_dir / "quote.json",
-        registry,
-        force,
-        registry_lock=registry_lock,
-        rate_limiter=rate_limiter,
-        allow_retry_failed=allow_retry_failed,
+    r["quote"] = (
+        fetch_and_save(
+            ticker,
+            "quote",
+            lambda: client.quote(ticker),
+            ticker_dir / "quote.json",
+            registry,
+            force,
+            registry_lock=registry_lock,
+            rate_limiter=rate_limiter,
+            allow_retry_failed=allow_retry_failed,
+        )
+        if download_optional
+        else "skipped"
     )
 
     return r
@@ -514,6 +541,7 @@ def run_download(
     max_workers: int | None = None,
     min_interval: float | None = None,
     allow_retry_failed: bool = False,
+    download_optional: bool = True,
 ) -> None:
     end = end or datetime.today().strftime("%Y-%m-%d")
     base_dir = Path(base_dir)
@@ -531,6 +559,7 @@ def run_download(
     log.info(f"  Tickers  : {len(tickers)}")
     log.info(f"  Periodo  : {start} -> {end}")
     log.info(f"  Destino  : {base_dir.resolve()}")
+    log.info(f"  Optional endpoints: {'enabled' if download_optional else 'disabled'}")
     log.info("=" * 50)
 
     log.info("Descargando macro...")
@@ -546,10 +575,10 @@ def run_download(
         if not force and registry.is_terminal_failure(ticker, "prices"):
             skipped_terminal += 1
             continue
-        if not force and not allow_retry_failed and _ticker_is_partial(base_dir, ticker, registry, prices_only):
+        if not force and not allow_retry_failed and _ticker_is_partial(base_dir, ticker, registry, prices_only, include_optional=download_optional):
             skipped_partial += 1
             continue
-        if not force and _ticker_is_fully_done(base_dir, ticker, registry, prices_only):
+        if not force and _ticker_is_fully_done(base_dir, ticker, registry, prices_only, include_optional=download_optional):
             skipped_complete += 1
             continue
         tickers_to_process.append(ticker)
@@ -590,6 +619,7 @@ def run_download(
             registry_lock=registry_lock,
             rate_limiter=rate_limiter,
             allow_retry_failed=allow_retry_failed,
+            download_optional=download_optional,
         )
 
     if max_workers == 1:

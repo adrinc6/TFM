@@ -142,6 +142,9 @@ def simulate_fold_usd(
 
     weights_used = _build_weights(valid_tickers, weights)
     cash = float(starting_cash_usd)
+    # Snapshot initial capital so every ticker's allocation is based on the
+    # same starting amount, not on the cash remaining after prior purchases.
+    initial_capital = float(starting_cash_usd)
     positions: Dict[str, Position] = {}
     trades: List[Dict[str, object]] = []
     total_fees = 0.0
@@ -153,7 +156,7 @@ def simulate_fold_usd(
         if raw_price is None:
             continue
         exec_price = raw_price * (1.0 + float(slippage_pct))
-        allocated_cash = float(cash * weights_used.get(ticker, 0.0))
+        allocated_cash = float(initial_capital * weights_used.get(ticker, 0.0))
 
         if allocated_cash < float(transaction_fee_usd):
             trades.append({
