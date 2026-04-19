@@ -332,7 +332,12 @@ class TestPriceAndLeakageAudits:
 
             def load_insider_transactions(self, ticker):
                 return pd.DataFrame(
-                    {"date": pd.to_datetime(["2019-12-20", "2020-03-01"]), "is_buy": [1, 1], "is_sell": [0, 0], "shares": [10, 20]}
+                    {
+                        "date": pd.to_datetime(["2019-12-20", "2020-03-01"]),
+                        "is_buy": [1, 1],
+                        "is_sell": [0, 0],
+                        "shares": [10, 20],
+                    }
                 )
 
             def load_eps_surprises(self, ticker):
