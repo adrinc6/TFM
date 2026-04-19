@@ -32,7 +32,7 @@ from environment import (
     USE_DYNAMIC_SP500_UNIVERSE,
     SP500_HISTORIC_CSV_PATH,
 )
-from module.common.asof import assert_no_future_data, filter_asof
+from module.common.asof import assert_no_future_data
 from module.common.data_router import DataRouter
 
 from module.steps.step_03_training.training import train_fold
@@ -794,13 +794,13 @@ def _audit_fold_leakage(
         cons_df = router.load_consolidated(ticker)
 
         checks = [
-            ("sentiment", filter_asof(rec_df, as_of=as_of) if rec_df is not None else pd.DataFrame(), None, f"rec_df:{ticker}"),
-            ("sentiment", filter_asof(mspr_df, as_of=as_of) if mspr_df is not None else pd.DataFrame(), None, f"mspr_df:{ticker}"),
-            ("insider", filter_asof(ins_df, as_of=as_of, date_col="date") if ins_df is not None else pd.DataFrame(), "date", f"insider_df:{ticker}"),
-            ("sentiment", filter_asof(eps_df, as_of=as_of) if eps_df is not None else pd.DataFrame(), None, f"eps_df:{ticker}"),
-            ("technical", filter_asof(prices_df, as_of=as_of) if prices_df is not None else pd.DataFrame(), None, f"prices_df:{ticker}"),
-            ("fundamental", filter_asof(cons_df, as_of=as_of) if cons_df is not None else pd.DataFrame(), None, f"consolidated_df:{ticker}"),
-            ("valuation", filter_asof(cons_df, as_of=as_of) if cons_df is not None else pd.DataFrame(), None, f"valuation_input:{ticker}"),
+            ("sentiment", rec_df if rec_df is not None else pd.DataFrame(), None, f"rec_df:{ticker}"),
+            ("sentiment", mspr_df if mspr_df is not None else pd.DataFrame(), None, f"mspr_df:{ticker}"),
+            ("insider", ins_df if ins_df is not None else pd.DataFrame(), "date", f"insider_df:{ticker}"),
+            ("sentiment", eps_df if eps_df is not None else pd.DataFrame(), None, f"eps_df:{ticker}"),
+            ("technical", prices_df if prices_df is not None else pd.DataFrame(), None, f"prices_df:{ticker}"),
+            ("fundamental", cons_df if cons_df is not None else pd.DataFrame(), None, f"consolidated_df:{ticker}"),
+            ("valuation", cons_df if cons_df is not None else pd.DataFrame(), None, f"valuation_input:{ticker}"),
         ]
 
         for feature_group, frame, date_col, context in checks:
@@ -1341,6 +1341,8 @@ def run_walkforward_pipeline(
             preds_df = df_test_scored[["final_score", "label"]].copy()
             preds_df["ticker"] = preds_df.index.get_level_values("ticker")
             preds_df["date"] = preds_df.index.get_level_values("date")
+            if "sector" in df_test_scored.columns:
+                preds_df["sector"] = df_test_scored["sector"].values
             preds_df = preds_df.reset_index(drop=True)
 
             fold_result = backtester.simulate_portfolio(

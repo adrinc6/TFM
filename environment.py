@@ -189,6 +189,12 @@ OOF_N_SPLITS = 3
 # 0.55 keeps only tickers with clear positive signal; with a score-weighted
 # portfolio + min_stocks floor, it still guarantees a portfolio with few qualifiers.
 PORTFOLIO_MIN_SCORE = 0.55
+# Max number of selected stocks per sector (0 disables sector cap).
+# Prevents concentration in a single winning theme/regime.
+PORTFOLIO_MAX_STOCKS_PER_SECTOR = 3
+# Maximum portfolio weight per ticker (0 disables weight cap).
+# Final weights are re-normalized after capping.
+PORTFOLIO_MAX_STOCK_WEIGHT = 0.15
 
 # -----------------------------------------------------------------------------
 # Scoring robustness settings (sector + dispersion)
@@ -362,6 +368,9 @@ BEAR_FEATURE_COLUMNS = [
 BEAR_FEATURE_EXCLUDE = []
 
 # ── SentimentAgent (Random Forest) ───────────────────────────────────────────
+# Enables/disables the standalone sentiment agent in the base stack.
+# Disabled by default because this signal is often sparse/neutral in current data.
+ENABLE_SENTIMENT_AGENT = False
 SENTIMENT_N_ESTIMATORS    = 200
 SENTIMENT_MAX_DEPTH       = 6
 SENTIMENT_MIN_SAMPLES_LEAF = 5
@@ -435,7 +444,6 @@ META_FEATURE_COLUMNS = [
   "valuation_score",
   "momentum_score",
   "bear_score",
-  "sentiment_score",
   "sector_score",
 ]
 META_FEATURE_EXCLUDE = []
@@ -445,7 +453,6 @@ META_AGENT_SCORE_COLUMNS = [
   "valuation_score",
   "momentum_score",
   "bear_score",
-  "sentiment_score",
   "sector_score",
 ]
 # If True, adds agent consensus/confidence signals as extra features.
@@ -459,7 +466,7 @@ META_ENABLE_SCORE_RECALIBRATION = False
 META_SCORE_RECALIBRATION_TEMPERATURE = 1.0
 # Blend meta score with average base-agent consensus to avoid
 # meta collapse from drift and preserve cross-sectional signal.
-META_BASE_SCORE_BLEND_WEIGHT = 0.55
+META_BASE_SCORE_BLEND_WEIGHT = 0.35
 
 # =============================================================================
 # 9. Reproducibility

@@ -293,7 +293,16 @@ def _predict_base_scores(
             out[f"{ag_name}_score"] = scores.values
             _log_score_stats(f"AgentScore/{ag_name}", out[f"{ag_name}_score"])
 
-    score_cols = [c for c in ["fundamental_score", "valuation_score", "momentum_score", "bear_score", "sentiment_score"] if c in out.columns]
+    score_cols = [
+        c for c in (
+            "fundamental_score",
+            "valuation_score",
+            "momentum_score",
+            "bear_score",
+            "sentiment_score",
+            "sector_score",
+        ) if c in out.columns
+    ]
     if score_cols:
         ensemble_mean = out[score_cols].mean(axis=1)
         _log_score_stats("AgentScore/ensemble_mean_pre_meta", ensemble_mean)

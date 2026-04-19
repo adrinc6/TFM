@@ -11,7 +11,7 @@ from module.agents.bear import BearAgent
 from module.agents.sentiment import SentimentAgent
 from module.agents.sector_specialized import SectorSpecializedAgent
 from module.agents.sector_rotation import SectorRotationAgent
-from environment import SECTOR_SPECIALIST_MIN_SAMPLES
+from environment import SECTOR_SPECIALIST_MIN_SAMPLES, ENABLE_SENTIMENT_AGENT
 
 
 def build_agents_config(agent_models_results_dir: str, random_seed: int) -> Dict[str, Dict[str, Any]]:
@@ -33,7 +33,7 @@ def build_agents_config(agent_models_results_dir: str, random_seed: int) -> Dict
             - sector_col: Column name for sector (None if unused).
             - invert_y: Whether to invert the target label before training.
     """
-    return {
+    config = {
         "fundamental": {
             "cls": SectorSpecializedAgent,
             "kwargs": {
@@ -86,7 +86,9 @@ def build_agents_config(agent_models_results_dir: str, random_seed: int) -> Dict
             "sector_col": "sector",
             "invert_y": True,
         },
-        "sentiment": {
+    }
+    if ENABLE_SENTIMENT_AGENT:
+        config["sentiment"] = {
             "cls": SectorSpecializedAgent,
             "kwargs": {
                 "name": "sentiment",
@@ -98,8 +100,8 @@ def build_agents_config(agent_models_results_dir: str, random_seed: int) -> Dict
             },
             "sector_col": "sector",
             "invert_y": False,
-        },
-    }
+        }
+    return config
 
 
 def build_sector_rotation_agent(agent_models_results_dir: str, random_seed: int) -> SectorRotationAgent:

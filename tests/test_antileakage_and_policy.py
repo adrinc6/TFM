@@ -11,9 +11,12 @@ Priority coverage areas:
 import numpy as np
 import pandas as pd
 import pytest
+import json
 
 from module.common.asof import filter_asof, detect_future_rows, assert_no_future_data
 from module.common.feature_policy import is_ratio_or_normalized_feature, filter_ratio_normalized_columns
+from module.common.data_router import DataRouter
+from module.steps.step_04_evaluation.evaluator import _audit_fold_leakage
 
 
 # ---------------------------------------------------------------------------
@@ -280,6 +283,90 @@ class TestDataRouterTickerValidation:
         for bad in ["AAPL;rm -rf", "AAPL/../..", "ticker/../../"]:
             with pytest.raises(ValueError, match="[Ii]nvalid"):
                 router._validate_ticker(bad)
+
+
+class TestPriceAndLeakageAudits:
+    def test_load_prices_preserves_raw_close(self, tmp_path):
+        ticker_dir = tmp_path / "AAPL"
+        ticker_dir.mkdir(parents=True, exist_ok=True)
+        prices_path = ticker_dir / "prices.json"
+        prices_path.write_text(
+            json.dumps(
+                {
+                    "data": [
+                        {
+                            "date": "2024-01-02",
+                            "open": 99.0,
+                            "high": 101.0,
+                            "low": 98.0,
+                            "close": 100.0,
+                            "adj_close": 95.0,
+                            "volume": 1000,
+                        }
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        router = DataRouter(str(tmp_path))
+        loaded = router.load_prices("AAPL")
+
+        assert loaded is not None
+        assert float(loaded["Close"].iloc[0]) == 100.0
+        assert float(loaded["AdjClose"].iloc[0]) == 95.0
+
+    def test_fold_leakage_audit_detects_future_rows(self):
+        class _DummyRouter:
+            def load_recommendation_trends(self, ticker):
+                return pd.DataFrame(
+                    {"v": [1, 2]},
+                    index=pd.to_datetime(["2019-12-31", "2020-02-01"]),
+                )
+
+            def load_insider_sentiment(self, ticker):
+                return pd.DataFrame(
+                    {"mspr": [0.1, 0.2]},
+                    index=pd.to_datetime(["2019-12-15", "2020-01-15"]),
+                )
+
+            def load_insider_transactions(self, ticker):
+                return pd.DataFrame(
+                    {
+                        "date": pd.to_datetime(["2019-12-20", "2020-03-01"]),
+                        "is_buy": [1, 1],
+                        "is_sell": [0, 0],
+                        "shares": [10, 20],
+                    }
+                )
+
+            def load_eps_surprises(self, ticker):
+                return pd.DataFrame(
+                    {"eps_surprise_pct": [0.1, 0.2]},
+                    index=pd.to_datetime(["2019-11-01", "2020-02-10"]),
+                )
+
+            def load_prices(self, ticker):
+                return pd.DataFrame(
+                    {"Close": [100.0, 105.0]},
+                    index=pd.to_datetime(["2019-12-31", "2020-02-01"]),
+                )
+
+            def load_consolidated(self, ticker):
+                return pd.DataFrame(
+                    {"roe": [0.1, 0.2]},
+                    index=pd.to_datetime(["2019-09-30", "2020-03-31"]),
+                )
+
+        rows = _audit_fold_leakage(
+            router=_DummyRouter(),
+            tickers=["AAPL"],
+            as_of=pd.Timestamp("2020-01-01"),
+            fold_id="F1",
+        )
+
+        assert rows
+        assert any(int(r["n_rows_future_detected"]) > 0 for r in rows)
 
 
 # ---------------------------------------------------------------------------
