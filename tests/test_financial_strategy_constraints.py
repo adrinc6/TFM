@@ -87,4 +87,4 @@ def test_backtester_applies_position_weight_cap(tmp_path):
 
     weights = result["ticker_weights"]
     assert weights
-    assert max(weights.values()) <= 0.150001
+    assert max(weights.values()) <= 0.15 + 1e-6

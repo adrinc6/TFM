@@ -125,8 +125,14 @@ class WalkForwardBacktester:
 		cap = float(cap)
 		if cap <= 0.0:
 			return weights
-		# If cap is infeasible, fall back to equal weights.
+		# If cap is infeasible (e.g., cap=0.10 with 8 names => max total 0.80 < 1.00),
+		# fall back to equal weights to keep a valid invested portfolio.
 		if cap * len(weights) < 1.0:
+			log.warning(
+				"[Backtester] Weight cap %.3f is infeasible for %d positions; falling back to equal weights.",
+				cap,
+				len(weights),
+			)
 			return np.ones(len(weights)) / len(weights)
 
 		w = weights.astype(float).copy()
@@ -227,10 +233,13 @@ class WalkForwardBacktester:
 				sector_cap=sector_cap,
 				min_stocks=min_stocks,
 			)[["ticker", "score"] + (["sector"] if "sector" in ordered.columns else [])].copy()
+			top_score = float(ordered["score"].iloc[0]) if len(ordered) > 0 else float("nan")
+			bottom_idx = min(self.top_n_stocks, len(ordered)) - 1
+			bottom_score = float(ordered["score"].iloc[bottom_idx]) if bottom_idx >= 0 else float("nan")
 			log.warning(
 				f"[Backtester] {period_id}: solo {len(qualified)} tickers superaron umbral {PORTFOLIO_MIN_SCORE:.2f} "
 				f"→ seleccionando top-{len(top_df)} por ranking con restricciones (sector_cap={sector_cap}) "
-				f"(scores: {ordered['score'].iloc[0]:.3f} .. {ordered['score'].iloc[min(self.top_n_stocks, len(ordered))-1]:.3f})"
+				f"(scores: {top_score:.3f} .. {bottom_score:.3f})"
 			)
 		top = top_df["ticker"].tolist()
 		if not top:
