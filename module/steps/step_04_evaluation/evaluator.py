@@ -47,8 +47,9 @@ from module.steps.step_04_evaluation.fold_report import (
 )
 
 from module.steps.step_04_evaluation.reports import generate_text_report
-from module.steps.step_04_evaluation.metrics import compute_all_metrics, max_drawdown, sharpe_ratio
+from module.steps.step_04_evaluation.metrics import sharpe_ratio
 from module.steps.step_04_evaluation.portfolio_simulator import (
+    _get_close_column,
     compute_max_drawdown_from_equity,
     simulate_fold_usd,
     to_daily_returns_from_equity,
@@ -124,6 +125,18 @@ def _safe_json_dump(path: Path, payload: Dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2, default=str)
+
+
+def _concat_equity_parts(parts: List[pd.DataFrame]) -> pd.DataFrame:
+    """Concatenate a list of equity-curve DataFrames into a single time-ordered curve."""
+    if not parts:
+        return pd.DataFrame(columns=["date", "equity_usd", "cash_usd", "positions_value_usd"])
+    return (
+        pd.concat(parts, axis=0)
+        .sort_values("date")
+        .drop_duplicates(subset=["date"], keep="last")
+        .reset_index(drop=True)
+    )
 
 
 def _prepare_fold_frames(
@@ -527,7 +540,7 @@ def _compute_partial_forward_returns(
         prices = prices_dict.get(ticker)
         if prices is None or prices.empty:
             continue
-        cc = "Close" if "Close" in prices.columns else prices.columns[3]
+        cc = _get_close_column(prices)
         period = prices.loc[entry_date:exit_date, cc]
         if len(period) < 2:
             continue
@@ -547,7 +560,7 @@ def _compute_forward_return_from_prices(
 ) -> float | None:
     if prices is None or prices.empty:
         return None
-    cc = "Close" if "Close" in prices.columns else prices.columns[3]
+    cc = _get_close_column(prices)
     entry_date = entry_date_override if entry_date_override is not None else (snapshot_date + pd.Timedelta(days=max(int(lag_days), 0)))
     exit_date = entry_date + pd.DateOffset(months=max(int(holding_period_months), 1))
     entry_window = prices.loc[prices.index <= entry_date, cc]
@@ -927,7 +940,7 @@ def run_walkforward_pipeline(
         for prices in prices_dict.values():
             if prices is None or prices.empty:
                 continue
-            cc = "Close" if "Close" in prices.columns else prices.columns[3]
+            cc = _get_close_column(prices)
             period = prices.loc[entry_date:actual_end, cc]
             if len(period) >= 2:
                 return True
@@ -967,7 +980,6 @@ def run_walkforward_pipeline(
         selected_train_start: Optional[pd.Timestamp] = None
         selected_df_train: Optional[pd.DataFrame] = None
         selected_df_test: Optional[pd.DataFrame] = None
-        selected_test_filed_dates: Optional[pd.Series] = None
         selected_eligibility_rows: Optional[list[dict]] = None
         selected_eligibility_train_years: Optional[int] = None
         last_eligibility_rows: list[dict] = []
@@ -1004,7 +1016,7 @@ def run_walkforward_pipeline(
             candidate_train_start = train_end - pd.DateOffset(years=int(candidate_years))
             candidate_train_start_quarter = candidate_train_start.to_period("Q")
 
-            cand_train, cand_test, cand_test_filed_dates = _prepare_fold_frames_by_filed_quarter(
+            cand_train, cand_test, _ = _prepare_fold_frames_by_filed_quarter(
                 df=df,
                 filing_date_map=filing_date_map,
                 train_start_quarter=candidate_train_start_quarter,
@@ -1154,7 +1166,6 @@ def run_walkforward_pipeline(
                 selected_train_start = pd.Timestamp(candidate_train_start)
                 selected_df_train = cand_train
                 selected_df_test = cand_test
-                selected_test_filed_dates = cand_test_filed_dates
                 selected_eligibility_rows = current_eligibility_rows
                 selected_eligibility_train_years = int(candidate_years)
                 log.info(
@@ -1216,7 +1227,6 @@ def run_walkforward_pipeline(
         _train_years = selected_train_years
         df_train = selected_df_train
         df_test = selected_df_test
-        test_filed_dates = selected_test_filed_dates
 
         log.info(f"\n{'='*60}")
         log.info(f"  ANALYSIS {run_id}")
@@ -1545,12 +1555,7 @@ def run_walkforward_pipeline(
     # rather than the gross daily returns from backtester.simulate_portfolio).
     _pre_equity_global = pd.DataFrame(columns=["date", "equity_usd", "cash_usd", "positions_value_usd"])
     if USE_DOLLAR_BACKTEST and strategy_equity_parts:
-        _pre_equity_global = (
-            pd.concat(strategy_equity_parts, axis=0)
-            .sort_values("date")
-            .drop_duplicates(subset=["date"], keep="last")
-            .reset_index(drop=True)
-        )
+        _pre_equity_global = _concat_equity_parts(strategy_equity_parts)
 
     _plot_strategy_returns = backtester.all_strategy_returns
     _plot_benchmark_returns = backtester.all_benchmark_returns
@@ -1598,7 +1603,6 @@ def run_walkforward_pipeline(
         missing_prices_df = pd.DataFrame(columns=["fold_id", "ticker", "start_date", "end_date", "reason"])
     missing_prices_df.to_csv(backtest_root / "missing_prices_report.csv", index=False)
 
-    final_rows = []
     baselines_rows = []
     value_availability_rows = []
     value_selection_rows = []
@@ -1716,9 +1720,7 @@ def run_walkforward_pipeline(
                     if not r_out.get("equity_curve_df", pd.DataFrame()).empty:
                         sim_parts.append(r_out["equity_curve_df"])
                 if sim_parts:
-                    random_curves.append(
-                        pd.concat(sim_parts).sort_values("date").drop_duplicates(subset=["date"], keep="last")
-                    )
+                    random_curves.append(_concat_equity_parts(sim_parts))
 
             ew_cash = float(INITIAL_CAPITAL_USD)
             mom_cash = float(INITIAL_CAPITAL_USD)
@@ -1868,14 +1870,9 @@ def run_walkforward_pipeline(
                         if not value_out.get("equity_curve_df", pd.DataFrame()).empty:
                             value_parts.append(value_out["equity_curve_df"])
 
-            def _concat_parts(parts: List[pd.DataFrame]) -> pd.DataFrame:
-                if not parts:
-                    return pd.DataFrame(columns=["date", "equity_usd", "cash_usd", "positions_value_usd"])
-                return pd.concat(parts).sort_values("date").drop_duplicates(subset=["date"], keep="last").reset_index(drop=True)
-
-            ew_curve = _concat_parts(ew_parts)
-            mom_curve = _concat_parts(mom_parts)
-            value_curve = _concat_parts(value_parts)
+            ew_curve = _concat_equity_parts(ew_parts)
+            mom_curve = _concat_equity_parts(mom_parts)
+            value_curve = _concat_equity_parts(value_parts)
             ew_curve.to_csv(baselines_dir / "ew_universe_equity_curve.csv", index=False)
             mom_curve.to_csv(baselines_dir / "momentum_12m_equity_curve.csv", index=False)
             value_curve.to_csv(baselines_dir / "value_combined_equity_curve.csv", index=False)

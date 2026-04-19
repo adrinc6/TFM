@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -13,6 +13,15 @@ import pandas as pd
 class Position:
     ticker: str
     shares: float
+
+
+def _get_close_column(prices: pd.DataFrame, fallback_col_idx: int = 3) -> str:
+    """Return the close price column name for a price DataFrame.
+
+    Uses 'Close' if present, otherwise falls back to the column at *fallback_col_idx*
+    (default 3, corresponding to the C in standard OHLCV layout).
+    """
+    return "Close" if "Close" in prices.columns else prices.columns[fallback_col_idx]
 
 
 def _extract_close_series(price_obj) -> pd.Series:

@@ -6,10 +6,7 @@ sector-specialized agents. Features are no longer normalized to sector means.
 
 from __future__ import annotations
 
-from typing import Dict, List, Tuple
-
-import numpy as np
-import pandas as pd
+from typing import Dict, Tuple
 
 
 class SectorNormalizer:
