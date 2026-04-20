@@ -13,6 +13,14 @@ def _safe_pct_rank(s: pd.Series) -> pd.Series:
     return vals.rank(pct=True, method="average").fillna(0.5)
 
 
+def _numeric_col_or_default(df: pd.DataFrame, col: str, default: float = 0.0) -> pd.Series:
+    if col in df.columns:
+        source = df[col]
+    else:
+        source = pd.Series(default, index=df.index, dtype=float)
+    return pd.to_numeric(source, errors="coerce")
+
+
 def enrich_cross_sectional_features(df: pd.DataFrame) -> pd.DataFrame:
     """Add sector-relative and volatility-adjusted factors plus interactions."""
     if df is None or df.empty:
@@ -33,7 +41,7 @@ def enrich_cross_sectional_features(df: pd.DataFrame) -> pd.DataFrame:
         if "roe" in out.columns:
             out["roe_pct_sector"] = out.groupby(grp_sector)["roe"].transform(_safe_pct_rank)
 
-    vol = pd.to_numeric(out.get("volatility_60d", 0.0), errors="coerce").replace(0, np.nan)
+    vol = _numeric_col_or_default(out, "volatility_60d").replace(0, np.nan)
     for src, dst in [
         ("momentum_3m", "momentum_vol_adj"),
         ("earnings_yield", "value_vol_adj"),
@@ -43,12 +51,12 @@ def enrich_cross_sectional_features(df: pd.DataFrame) -> pd.DataFrame:
         if src in out.columns:
             out[dst] = (pd.to_numeric(out[src], errors="coerce") / vol).replace([np.inf, -np.inf], np.nan).fillna(0.0)
 
-    value_signal = pd.to_numeric(out.get("earnings_yield", 0.0), errors="coerce").fillna(0.0)
-    mom_signal = pd.to_numeric(out.get("momentum_6m", 0.0), errors="coerce").fillna(0.0)
-    quality_signal = pd.to_numeric(out.get("roic", 0.0), errors="coerce").fillna(0.0)
-    low_vol = 1.0 / (1.0 + pd.to_numeric(out.get("volatility_60d", 0.0), errors="coerce").abs().fillna(0.0))
-    sentiment = pd.to_numeric(out.get("finbert_sentiment_polarity", 0.0), errors="coerce").fillna(0.0)
-    eps_surprise = pd.to_numeric(out.get("eps_surprise_pct", 0.0), errors="coerce").fillna(0.0)
+    value_signal = _numeric_col_or_default(out, "earnings_yield").fillna(0.0)
+    mom_signal = _numeric_col_or_default(out, "momentum_6m").fillna(0.0)
+    quality_signal = _numeric_col_or_default(out, "roic").fillna(0.0)
+    low_vol = 1.0 / (1.0 + _numeric_col_or_default(out, "volatility_60d").abs().fillna(0.0))
+    sentiment = _numeric_col_or_default(out, "finbert_sentiment_polarity").fillna(0.0)
+    eps_surprise = _numeric_col_or_default(out, "eps_surprise_pct").fillna(0.0)
 
     out["value_x_momentum"] = value_signal * mom_signal
     out["quality_x_lowvol"] = quality_signal * low_vol
