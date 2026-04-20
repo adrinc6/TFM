@@ -8,6 +8,8 @@ from .valuation import ValuationAgent
 from .bear import BearAgent
 from .sector_specialized import SectorSpecializedAgent
 from .meta_learner import MetaLearner
+from .alpha_meta_learner import AlphaMetaLearner
+from .sector_rotation import SectorRotationAgent
 
 __all__ = [
 	"BaseAgent",
@@ -19,4 +21,6 @@ __all__ = [
 	"BearAgent",
 	"SectorSpecializedAgent",
 	"MetaLearner",
+	"AlphaMetaLearner",
+	"SectorRotationAgent",
 ]

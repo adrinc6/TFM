@@ -99,18 +99,21 @@ def apply_regime_weighting(
             "sentiment_score": 1.15,
             "bear_score": 0.95,
             "valuation_score": 0.95,
+            "sector_score": 1.10,
         },
         REGIME_RISK_OFF: {
             "momentum_score": 0.80,
             "sentiment_score": 0.90,
             "bear_score": 1.20,
             "valuation_score": 1.15,
+            "sector_score": 0.90,
         },
         REGIME_NEUTRAL: {
             "momentum_score": 1.0,
             "sentiment_score": 1.0,
             "bear_score": 1.0,
             "valuation_score": 1.0,
+            "sector_score": 1.0,
         },
     }
 

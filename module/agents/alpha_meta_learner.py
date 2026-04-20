@@ -10,7 +10,26 @@ import numpy as np
 import pandas as pd
 
 from module.agents.base import BaseAgent
-from environment import META_FEATURE_COLUMNS, META_FEATURE_EXCLUDE
+from environment import (
+    META_FEATURE_COLUMNS,
+    META_FEATURE_EXCLUDE,
+    ALPHA_META_REG_N_ESTIMATORS,
+    ALPHA_META_REG_MAX_DEPTH,
+    ALPHA_META_REG_LEARNING_RATE,
+    ALPHA_META_REG_SUBSAMPLE,
+    ALPHA_META_REG_COLSAMPLE,
+    ALPHA_META_RANK_N_ESTIMATORS,
+    ALPHA_META_RANK_MAX_DEPTH,
+    ALPHA_META_RANK_LEARNING_RATE,
+    ALPHA_META_RANK_SUBSAMPLE,
+    ALPHA_META_RANK_COLSAMPLE,
+    ALPHA_META_RISK_N_ESTIMATORS,
+    ALPHA_META_RISK_MAX_DEPTH,
+    ALPHA_META_RISK_LEARNING_RATE,
+    ALPHA_META_RISK_SUBSAMPLE,
+    ALPHA_META_RISK_COLSAMPLE,
+    ALPHA_META_RANK_BLEND,
+)
 
 log = logging.getLogger(__name__)
 
@@ -26,7 +45,7 @@ class AlphaMetaLearner(BaseAgent):
     """Meta model that predicts alpha and ranking-ready portfolio signals."""
 
     def __init__(self, results_dir: str, random_seed: int = 42):
-        super().__init__("meta_learner", results_dir, random_seed)
+        super().__init__("alpha_meta_learner", results_dir, random_seed)
         if not _DEPS_OK:
             raise ImportError("xgboost and scikit-learn are required for AlphaMetaLearner")
         self._feature_cols: List[str] = []
@@ -128,11 +147,11 @@ class AlphaMetaLearner(BaseAgent):
         alpha = alpha.reindex(X_prep.index).fillna(alpha.median() if np.isfinite(alpha.median()) else 0.0)
 
         self._reg_model = xgb.XGBRegressor(
-            n_estimators=450,
-            max_depth=5,
-            learning_rate=0.03,
-            subsample=0.85,
-            colsample_bytree=0.8,
+            n_estimators=ALPHA_META_REG_N_ESTIMATORS,
+            max_depth=ALPHA_META_REG_MAX_DEPTH,
+            learning_rate=ALPHA_META_REG_LEARNING_RATE,
+            subsample=ALPHA_META_REG_SUBSAMPLE,
+            colsample_bytree=ALPHA_META_REG_COLSAMPLE,
             objective="reg:squarederror",
             random_state=self.random_seed,
             n_jobs=-1,
@@ -143,11 +162,11 @@ class AlphaMetaLearner(BaseAgent):
         groups = self._group_sizes_from_index(X_prep.index)
         if len(groups) > 1:
             self._rank_model = xgb.XGBRanker(
-                n_estimators=300,
-                max_depth=4,
-                learning_rate=0.05,
-                subsample=0.9,
-                colsample_bytree=0.8,
+                n_estimators=ALPHA_META_RANK_N_ESTIMATORS,
+                max_depth=ALPHA_META_RANK_MAX_DEPTH,
+                learning_rate=ALPHA_META_RANK_LEARNING_RATE,
+                subsample=ALPHA_META_RANK_SUBSAMPLE,
+                colsample_bytree=ALPHA_META_RANK_COLSAMPLE,
                 objective="rank:pairwise",
                 random_state=self.random_seed,
                 n_jobs=-1,
@@ -156,11 +175,11 @@ class AlphaMetaLearner(BaseAgent):
             self._rank_model.fit(X_prep, alpha, group=groups)
 
         self._risk_model = xgb.XGBClassifier(
-            n_estimators=250,
-            max_depth=4,
-            learning_rate=0.05,
-            subsample=0.9,
-            colsample_bytree=0.8,
+            n_estimators=ALPHA_META_RISK_N_ESTIMATORS,
+            max_depth=ALPHA_META_RISK_MAX_DEPTH,
+            learning_rate=ALPHA_META_RISK_LEARNING_RATE,
+            subsample=ALPHA_META_RISK_SUBSAMPLE,
+            colsample_bytree=ALPHA_META_RISK_COLSAMPLE,
             objective="binary:logistic",
             random_state=self.random_seed,
             n_jobs=-1,
@@ -195,7 +214,7 @@ class AlphaMetaLearner(BaseAgent):
 
         if "regime_adjusted_score" in X.columns:
             regime_adj = pd.to_numeric(X["regime_adjusted_score"], errors="coerce").reindex(X.index).fillna(0.5)
-            regime_adjusted_score = (0.65 * ranking_score + 0.35 * regime_adj).clip(0.0, 1.0)
+            regime_adjusted_score = (ALPHA_META_RANK_BLEND * ranking_score + (1.0 - ALPHA_META_RANK_BLEND) * regime_adj).clip(0.0, 1.0)
         else:
             regime_adjusted_score = ranking_score
 

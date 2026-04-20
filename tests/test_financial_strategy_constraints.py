@@ -14,9 +14,9 @@ def _make_prices(start: str = "2024-01-02", periods: int = 15, base: float = 100
     return pd.DataFrame({"Close": vals}, index=idx)
 
 
-def test_sentiment_agent_disabled_by_default():
+def test_sentiment_agent_enabled_by_default():
     cfg = build_agents_config(agent_models_results_dir=".", random_seed=42)
-    assert "sentiment" not in cfg
+    assert "sentiment" in cfg
 
 
 def test_backtester_limits_sector_concentration(tmp_path):

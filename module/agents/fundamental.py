@@ -213,16 +213,16 @@ class FundamentalAgent(BaseAgent):
     # ── Helpers ───────────────────────────────────────────────────────────────
 
     def _prepare(self, X: pd.DataFrame, sector_col: str, fit_mode: bool) -> pd.DataFrame:
-        """Selects base features and sector-normalized columns.
+        """Selects base features and computes derived financial health ratios.
 
-        Only base columns are included; sector one-hot
-        dummies are excluded because they capture sector-level means rather
-        than the relative position of the ticker, which is already encoded by
-
+        Sector one-hot dummies are intentionally excluded: the sector-level
+        signal is already captured by the cross-sectional rank features built
+        by SectorFeatureBuilder (e.g., pe_rank_sector, roe_pct_sector).
 
         Args:
             X (pd.DataFrame): Raw feature matrix.
-            sector_col (str): Column name for the sector label (unused here).
+            sector_col (str): Column name for the sector label (not used
+                internally; retained for API consistency with other agents).
             fit_mode (bool): If True, stores the column list for alignment.
 
         Returns:

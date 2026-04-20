@@ -28,6 +28,7 @@ from environment import (
     MOMENTUM_N_ESTIMATORS, MOMENTUM_MAX_DEPTH, MOMENTUM_MIN_SAMPLES_LEAF,
     FEATURE_CORR_THRESHOLD, FEATURE_TOP_N,
     MOMENTUM_FEATURE_COLUMNS, MOMENTUM_FEATURE_EXCLUDE,
+    MOMENTUM_DEEP_BLEND_WEIGHT,
 )
 
 log = logging.getLogger(__name__)
@@ -46,34 +47,35 @@ try:
     import torch
     import torch.nn as nn
     _TORCH_OK = True
+
+    class _TFTLite(nn.Module):
+        """Lightweight transformer encoder for sequence momentum classification."""
+
+        def __init__(self, n_features: int, d_model: int = 32, n_heads: int = 4):
+            super().__init__()
+            self.proj = nn.Linear(n_features, d_model)
+            encoder_layer = nn.TransformerEncoderLayer(
+                d_model=d_model,
+                nhead=n_heads,
+                dim_feedforward=d_model * 2,
+                dropout=0.1,
+                batch_first=True,
+                activation="gelu",
+            )
+            self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=2)
+            self.gate = nn.Sequential(nn.Linear(d_model, d_model), nn.Sigmoid())
+            self.out = nn.Linear(d_model, 1)
+
+        def forward(self, x):
+            h = self.proj(x)
+            z = self.encoder(h)
+            pooled = z.mean(dim=1)
+            gated = pooled * self.gate(pooled)
+            return self.out(gated).squeeze(-1)
+
 except Exception:
     _TORCH_OK = False
-
-
-class _TFTLite(nn.Module):
-    """Lightweight transformer encoder for sequence momentum classification."""
-
-    def __init__(self, n_features: int, d_model: int = 32, n_heads: int = 4):
-        super().__init__()
-        self.proj = nn.Linear(n_features, d_model)
-        encoder_layer = nn.TransformerEncoderLayer(
-            d_model=d_model,
-            nhead=n_heads,
-            dim_feedforward=d_model * 2,
-            dropout=0.1,
-            batch_first=True,
-            activation="gelu",
-        )
-        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=2)
-        self.gate = nn.Sequential(nn.Linear(d_model, d_model), nn.Sigmoid())
-        self.out = nn.Linear(d_model, 1)
-
-    def forward(self, x):
-        h = self.proj(x)
-        z = self.encoder(h)
-        pooled = z.mean(dim=1)
-        gated = pooled * self.gate(pooled)
-        return self.out(gated).squeeze(-1)
+    log.debug("[MomentumAgent] torch not available; TFT-lite path is disabled.")
 
 class MomentumAgent(BaseAgent):
     """Random Forest trained on technical indicators and earnings momentum.
@@ -114,7 +116,7 @@ class MomentumAgent(BaseAgent):
         self._deep_seq_cols: List[str] = []
         self._deep_seq_features: List[str] = []
         self._deep_seq_len: int = 0
-        self._deep_blend_weight: float = 0.35
+        self._deep_blend_weight: float = MOMENTUM_DEEP_BLEND_WEIGHT
 
     # ── Fit ───────────────────────────────────────────────────────────────────
 
