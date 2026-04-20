@@ -108,8 +108,63 @@ def sortino_ratio(returns: pd.Series, risk_free: float = 0.04,
     return float(excess.mean() / downside * np.sqrt(periods_per_year))
 
 
+def information_ratio(returns: pd.Series, benchmark_returns: pd.Series,
+                      periods_per_year: int = 252) -> float:
+    """Computes the Information Ratio (annualised active return / tracking error).
+
+    Args:
+        returns (pd.Series): Strategy periodic return series.
+        benchmark_returns (pd.Series): Benchmark periodic return series.
+        periods_per_year (int): Number of periods in a year (252 for daily,
+            4 for quarterly). Defaults to 252 to match the convention used by
+            the other metric functions in this module.
+
+    Returns:
+        float: Information ratio; 0.0 if tracking error is zero or no overlap.
+    """
+    active = returns.subtract(benchmark_returns, fill_value=np.nan).dropna()
+    if len(active) == 0 or active.std() == 0:
+        return 0.0
+    return float(active.mean() / active.std() * np.sqrt(periods_per_year))
+
+
+def win_rate(returns: pd.Series) -> float:
+    """Computes the fraction of periods with positive returns.
+
+    Args:
+        returns (pd.Series): Periodic return series.
+
+    Returns:
+        float: Win rate in [0, 1]; 0.0 if empty.
+    """
+    if len(returns) == 0:
+        return 0.0
+    return float((returns > 0).mean())
+
+
+def avg_win_loss_ratio(returns: pd.Series) -> float:
+    """Computes the ratio of the average winning period to the average losing period.
+
+    Args:
+        returns (pd.Series): Periodic return series.
+
+    Returns:
+        float: Average win / |average loss|; 0.0 if no wins or no losses.
+    """
+    wins = returns[returns > 0]
+    losses = returns[returns < 0]
+    if len(wins) == 0 or len(losses) == 0:
+        return 0.0
+    avg_win = float(wins.mean())
+    avg_loss = float(losses.abs().mean())
+    if avg_loss == 0:
+        return 0.0
+    return avg_win / avg_loss
+
+
 def compute_all_metrics(
-    returns: pd.Series, risk_free: float = 0.04, label: str = "strategy"
+    returns: pd.Series, risk_free: float = 0.04, label: str = "strategy",
+    benchmark_returns: pd.Series | None = None,
 ) -> Dict:
     """Computes all standard performance metrics for a return series.
 
@@ -117,12 +172,15 @@ def compute_all_metrics(
         returns (pd.Series): Periodic return series.
         risk_free (float): Annual risk-free rate for Sharpe/Sortino.
         label (str): Prefix applied to all metric keys in the output dictionary.
+        benchmark_returns (pd.Series | None): Optional benchmark returns for
+            computing the Information Ratio.
 
     Returns:
         Dict: Dictionary containing cumulative_return, annualized_return,
-            sharpe, sortino, max_drawdown, calmar, volatility, and n_periods metrics.
+            sharpe, sortino, max_drawdown, calmar, volatility, win_rate,
+            avg_win_loss_ratio, information_ratio, and n_periods metrics.
     """
-    return {
+    metrics = {
         f"{label}_cumulative_return": cumulative_return(returns),
         f"{label}_annualized_return": annualized_return(returns),
         f"{label}_sharpe": sharpe_ratio(returns, risk_free),
@@ -130,5 +188,10 @@ def compute_all_metrics(
         f"{label}_max_drawdown": max_drawdown(returns),
         f"{label}_calmar": calmar_ratio(returns),
         f"{label}_volatility": float(returns.std() * np.sqrt(252)),
+        f"{label}_win_rate": win_rate(returns),
+        f"{label}_avg_win_loss_ratio": avg_win_loss_ratio(returns),
         f"{label}_n_periods": len(returns),
     }
+    if benchmark_returns is not None:
+        metrics[f"{label}_information_ratio"] = information_ratio(returns, benchmark_returns)
+    return metrics
