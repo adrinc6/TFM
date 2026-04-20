@@ -139,10 +139,10 @@ class ValuationAgent(BaseAgent):
         }
         self.record_train_metrics(cv, fold)
         self.save_diagnostics(fold)
-        xgb_model = self._model.named_steps["clf"]
+        gbm_model = self._model.named_steps["clf"]
         if self.save_artifacts:
             self._explainer = build_explainer_for_agent(
-                self.name, xgb_model, self._feature_cols,
+                self.name, gbm_model, self._feature_cols,
                 X_prep, self.results_dir.as_posix(), fold, model_type="tree"
             )
         else:

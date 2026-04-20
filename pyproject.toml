@@ -20,6 +20,7 @@ dependencies = [
     "yfinance>=0.2.36",
     "matplotlib>=3.7",
     "tqdm>=4.65",
+    "python-dotenv>=1.0",
 ]
 
 [project.optional-dependencies]

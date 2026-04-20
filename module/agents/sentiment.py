@@ -118,7 +118,10 @@ class SentimentAgent(BaseAgent):
             if debug_df.index.isin(y.index).all():
                 debug_df["target"] = y.loc[debug_df.index].values
             else:
-                debug_df["target"] = y.iloc[mask.to_numpy()].values
+                try:
+                    debug_df["target"] = y.values[mask.to_numpy()]
+                except (IndexError, ValueError):
+                    pass
         if isinstance(debug_df.index, pd.MultiIndex):
             debug_df = debug_df.reset_index()
         else:

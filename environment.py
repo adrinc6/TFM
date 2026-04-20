@@ -582,10 +582,10 @@ FEATURE_IMPORTANCE_MIN_KEEP = 6
 FEATURE_IMPORTANCE_MAX_KEEP = 10
 # Global Top-N for FeatureSelector pre-filtering (all agents).
 # FINAL selection across all agents is uniformly controlled by:
-#   - FEATURE_IMPORTANCE_CUTOFF_FRACTION = 0.50
-#   - FEATURE_IMPORTANCE_MIN_KEEP = 4
-#   - FEATURE_IMPORTANCE_MAX_KEEP = 8
-# These limits ensure all agents use between 4 and 8 final features.
+#   - FEATURE_IMPORTANCE_CUTOFF_FRACTION = 0.40
+#   - FEATURE_IMPORTANCE_MIN_KEEP = 6
+#   - FEATURE_IMPORTANCE_MAX_KEEP = 10
+# These limits ensure all agents use between 6 and 10 final features.
 FEATURE_TOP_N = 14
 
 # ── MetaLearner (LR + GBM stacking) ──────────────────────────────────────────
@@ -634,6 +634,36 @@ META_SCORE_RECALIBRATION_TEMPERATURE = 1.0
 # Blend meta score with average base-agent consensus to avoid
 # meta collapse from drift and preserve cross-sectional signal.
 META_BASE_SCORE_BLEND_WEIGHT = 0.58
+
+# ── AlphaMetaLearner (XGBoost Regressor + Ranker + Classifier) ───────────────
+ALPHA_META_REG_N_ESTIMATORS  = 450
+ALPHA_META_REG_MAX_DEPTH     = 5
+ALPHA_META_REG_LEARNING_RATE = 0.03
+ALPHA_META_REG_SUBSAMPLE     = 0.85
+ALPHA_META_REG_COLSAMPLE     = 0.8
+
+ALPHA_META_RANK_N_ESTIMATORS  = 300
+ALPHA_META_RANK_MAX_DEPTH     = 4
+ALPHA_META_RANK_LEARNING_RATE = 0.05
+ALPHA_META_RANK_SUBSAMPLE     = 0.9
+ALPHA_META_RANK_COLSAMPLE     = 0.8
+
+ALPHA_META_RISK_N_ESTIMATORS  = 250
+ALPHA_META_RISK_MAX_DEPTH     = 4
+ALPHA_META_RISK_LEARNING_RATE = 0.05
+ALPHA_META_RISK_SUBSAMPLE     = 0.9
+ALPHA_META_RISK_COLSAMPLE     = 0.8
+
+# Blend weight: regime_adjusted_score = ALPHA_META_RANK_BLEND * ranking_score
+#               + (1 - ALPHA_META_RANK_BLEND) * regime_adj
+ALPHA_META_RANK_BLEND = 0.65
+
+# ── MomentumAgent TFT-lite blend weight ──────────────────────────────────────
+# Final score = (1 - MOMENTUM_DEEP_BLEND_WEIGHT) * RF_score
+#               + MOMENTUM_DEEP_BLEND_WEIGHT * TFT_score
+MOMENTUM_DEEP_BLEND_WEIGHT = 0.35
+
+
 
 # =============================================================================
 # 9. Reproducibility
