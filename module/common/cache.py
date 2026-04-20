@@ -76,7 +76,7 @@ class CacheManager:
         manifest = {
             "namespace": self.namespace,
             "key": self.key,
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             "context": self.context,
             "context_json": payload,
         }
