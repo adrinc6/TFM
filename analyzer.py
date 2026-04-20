@@ -48,9 +48,7 @@ from environment import (
     INITIAL_CAPITAL_USD, TRANSACTION_FEE_USD, SLIPPAGE_PCT, USE_DOLLAR_BACKTEST,
     ALLOW_FRACTIONAL_SHARES, RUN_BASELINES, N_RANDOM_BASELINE_SIMS,
     BASELINE_MOMENTUM_LOOKBACK_DAYS, EXPORT_RUN_ARTIFACTS,
-    ENABLE_CACHE, CACHE_DIR, CACHE_USE_MASTER_DATASET,
-    CACHE_USE_ROUTER_DERIVED, CACHE_USE_WALKFORWARD_SUMMARY,
-    CACHE_SCHEMA_VERSION,
+    REBUILD_MASTER_DATASET,
     FUNDAMENTAL_FEATURE_COLUMNS, FUNDAMENTAL_FEATURE_EXCLUDE,
     VALUATION_FEATURE_COLUMNS, VALUATION_FEATURE_EXCLUDE,
     MOMENTUM_FEATURE_COLUMNS, MOMENTUM_FEATURE_EXCLUDE,
@@ -60,7 +58,6 @@ from environment import (
     META_FEATURE_COLUMNS, META_FEATURE_EXCLUDE,
 )
 
-from module.common.cache import CacheManager
 from module.common.data_router import DataRouter
 from module.steps.step_02_dataset.builders.fundamental import FundamentalFeatureBuilder
 from module.steps.step_02_dataset.builders.insider import InsiderFeatureBuilder
@@ -370,18 +367,16 @@ def _run_slug(
     start_quarter: int,
     end_year: int,
     end_quarter: int,
-    top_n: int,
-    train_years: int,
 ) -> str:
     """Build a short human-readable identifier for a pipeline run.
 
     The slug is used as a subdirectory name under ``results/`` so that
     outputs from different parameter combinations don't overwrite each other.
 
-    Example: ``annual_2022q3_2026q4_top10_train8y``
+    Example: ``annual_2022q3_2026q4``
     """
-    freq = str(analysis_frequency).strip().lower()[:3]  # "ann" or "qua"
-    return f"{freq}_{start_year}q{start_quarter}_{end_year}q{end_quarter}_top{top_n}_train{train_years}y"
+    freq = str(analysis_frequency).strip().lower()
+    return f"{freq}_{start_year}Q{start_quarter}_{end_year}Q{end_quarter}"
 
 
 def _set_global_seeds(seed: int) -> None:
@@ -485,10 +480,7 @@ def _export_run_config(
             "UPDATE_PRICES_ONLY": bool(UPDATE_PRICES_ONLY),
             "FORCE_DOWNLOAD": bool(FORCE_DOWNLOAD),
             "RETRY_MISSING_TICKERS": bool(RETRY_MISSING_TICKERS),
-            "ENABLE_CACHE": bool(ENABLE_CACHE),
-            "CACHE_USE_MASTER_DATASET": bool(CACHE_USE_MASTER_DATASET),
-            "CACHE_USE_ROUTER_DERIVED": bool(CACHE_USE_ROUTER_DERIVED),
-            "CACHE_USE_WALKFORWARD_SUMMARY": bool(CACHE_USE_WALKFORWARD_SUMMARY),
+            "REBUILD_MASTER_DATASET": bool(REBUILD_MASTER_DATASET),
         },
         "parameters": {
             "TOP_N_STOCKS": TOP_N_STOCKS,
@@ -596,6 +588,18 @@ def _export_data_quality_report(
     pd.DataFrame(rows).to_csv(out_path, index=False)
 
 
+def _load_master_dataset_disk(path: Path):
+    """Load master dataset from disk (Parquet)."""
+    import pandas as pd
+
+    if path.exists():
+        try:
+            return pd.read_parquet(path)
+        except Exception as ex:
+            log.warning("Master dataset read failed (%s). Will rebuild.", ex)
+    return None
+
+
 # =============================================================================
 # Main
 # =============================================================================
@@ -644,14 +648,13 @@ def main():
         start_quarter=ANALYSIS_START_QUARTER,
         end_year=ANALYSIS_END_YEAR,
         end_quarter=ANALYSIS_END_QUARTER,
-        top_n=TOP_N_STOCKS,
-        train_years=WALKFORWARD_TRAIN_LOOKBACK_YEARS,
     )
-    RESULTS_DIR              = str(Path("results") / slug / "general")
-    AGENTS_RESULTS_DIR       = str(Path("results") / slug / "agents")
-    AGENT_MODELS_RESULTS_DIR = str(Path("results") / slug / "agent_models")
-    BACKTEST_RESULTS_DIR     = str(Path("results") / slug / "backtest")
-    PLOTS_DIR                = str(Path("results") / slug / "plots")
+    RUN_RESULTS_DIR          = Path("results") / slug
+    RESULTS_DIR              = str(RUN_RESULTS_DIR / "general")
+    AGENTS_RESULTS_DIR       = str(RUN_RESULTS_DIR)
+    AGENT_MODELS_RESULTS_DIR = str(RUN_RESULTS_DIR)
+    BACKTEST_RESULTS_DIR     = str(RUN_RESULTS_DIR)
+    PLOTS_DIR                = str(RUN_RESULTS_DIR)
 
     Path(RESULTS_DIR).mkdir(parents=True, exist_ok=True)
 
@@ -764,101 +767,10 @@ def main():
     else:
         tickers = list(dict.fromkeys(tickers_to_download))
 
-    cache_enabled = bool(ENABLE_CACHE) and not bool(FORCE_DOWNLOAD) and not bool(UPDATE_PRICES_ONLY)
-
-    # Three independent cache managers, each keyed by only the variables
-    # that actually affect that artefact:
-    #
-    #  cache_dataset  — master_dataset pickle + ticker_availability
-    #                   Key: tickers, feature columns/excludes, snapshot_lag,
-    #                        holding_period, technical_lookback, min_history_quarters,
-    #                        schema_version
-    #
-    #  cache_market   — prices_dict + spy/benchmark
-    #                   Key: tickers + date range (prices are just raw data)
-    #
-    #  cache_backtest — walkforward_summary JSON
-    #                   Key: everything (dataset key + backtest params)
-
-    cache_dataset = cache_market = cache_backtest = None
-    if cache_enabled:
-        _dataset_ctx = {
-            "v": CACHE_SCHEMA_VERSION,
-            "tickers": sorted(set(tickers)),
-            "snapshot_lag_days": SNAPSHOT_LAG_DAYS,
-            "holding_period_months": HOLDING_PERIOD_MONTHS,
-            "technical_lookback_days": TECHNICAL_LOOKBACK_DAYS,
-            "min_history_quarters": MIN_HISTORY_QUARTERS,
-            "features": {
-                "fundamental_include": FUNDAMENTAL_FEATURE_COLUMNS,
-                "fundamental_exclude": FUNDAMENTAL_FEATURE_EXCLUDE,
-                "valuation_include": VALUATION_FEATURE_COLUMNS,
-                "valuation_exclude": VALUATION_FEATURE_EXCLUDE,
-                "momentum_include": MOMENTUM_FEATURE_COLUMNS,
-                "momentum_exclude": MOMENTUM_FEATURE_EXCLUDE,
-                "bear_include": BEAR_FEATURE_COLUMNS,
-                "bear_exclude": BEAR_FEATURE_EXCLUDE,
-                "sentiment_include": SENTIMENT_FEATURE_COLUMNS,
-                "sentiment_exclude": SENTIMENT_FEATURE_EXCLUDE,
-                "sector_rotation_include": SECTOR_ROTATION_FEATURE_COLUMNS,
-                "sector_rotation_exclude": SECTOR_ROTATION_FEATURE_EXCLUDE,
-                "meta_include": META_FEATURE_COLUMNS,
-                "meta_exclude": META_FEATURE_EXCLUDE,
-            },
-        }
-        _market_ctx = {
-            "v": CACHE_SCHEMA_VERSION,
-            "tickers": sorted(set(tickers)),
-            "download_start_date": DOWNLOAD_START_DATE,
-            "analysis_end_year": ANALYSIS_END_YEAR,
-            "analysis_end_quarter": ANALYSIS_END_QUARTER,
-        }
-        _backtest_ctx = {
-            **_dataset_ctx,
-            **_market_ctx,
-            "analysis_start_year": ANALYSIS_START_YEAR,
-            "analysis_start_quarter": ANALYSIS_START_QUARTER,
-            "analysis_frequency": ANALYSIS_FREQUENCY,
-            "walkforward_train_years": WALKFORWARD_TRAIN_LOOKBACK_YEARS,
-            "walkforward_test_quarters": WALKFORWARD_TEST_QUARTERS,
-            "top_n_stocks": TOP_N_STOCKS,
-            "risk_free_rate": RISK_FREE_RATE,
-            "random_seed": RANDOM_SEED,
-        }
-        cache_dataset  = CacheManager(CACHE_DIR, _dataset_ctx,  namespace="dataset")
-        cache_market   = CacheManager(CACHE_DIR, _market_ctx,   namespace="market")
-        cache_backtest = CacheManager(CACHE_DIR, _backtest_ctx,  namespace="backtest")
-        log.info(
-            "Cache active: dataset=%s  market=%s  backtest=%s",
-            cache_dataset.key, cache_market.key, cache_backtest.key,
-        )
-    else:
-        log.info("Cache disabled for this run")
-
     # 3. DataRouter and available ticker filtering
     router = DataRouter(data_dir=FINNHUB_DATA_DIR)
     sector_map = router.get_sector_map()
-    tickers_ok = []
-    missing_detail = {}
-    loaded_ticker_availability_cache = False
-    if cache_dataset is not None and CACHE_USE_ROUTER_DERIVED:
-        cached_availability = cache_dataset.load_json("ticker_availability")
-        if cached_availability:
-            tickers_ok = list(cached_availability.get("tickers_ok", []))
-            missing_detail = dict(cached_availability.get("missing_detail", {}))
-            loaded_ticker_availability_cache = True
-            log.info("Cache hit: ticker_availability (%s tickers OK)", len(tickers_ok))
-
-    if not loaded_ticker_availability_cache:
-        tickers_ok, missing_detail = get_available_tickers(tickers, data_dir=FINNHUB_DATA_DIR)
-        if cache_dataset is not None and CACHE_USE_ROUTER_DERIVED:
-            cache_dataset.save_json(
-                "ticker_availability",
-                {
-                    "tickers_ok": tickers_ok,
-                    "missing_detail": missing_detail,
-                },
-            )
+    tickers_ok, missing_detail = get_available_tickers(tickers, data_dir=FINNHUB_DATA_DIR)
 
     # 3b. Retry for tickers with incomplete data
     if RETRY_MISSING_TICKERS and missing_detail:
@@ -870,14 +782,6 @@ def main():
             api_key=FINNHUB_API_KEY,
         )
         tickers_ok = sorted(set(tickers_ok) | set(recovered))
-        if cache_dataset is not None and CACHE_USE_ROUTER_DERIVED:
-            cache_dataset.save_json(
-                "ticker_availability",
-                {
-                    "tickers_ok": tickers_ok,
-                    "missing_detail": missing_detail,
-                },
-            )
 
     # 4. Feature builders
     fundamental_builder = FundamentalFeatureBuilder()
@@ -887,18 +791,23 @@ def main():
     sentiment_builder   = SentimentFeatureBuilder()
 
     # 5. Build master dataset
+    #    The master dataset uses ALL available data (all tickers, all quarters)
+    #    and is independent of analysis parameters (start/end dates, top_n, etc.).
+    #    It is stored in data_finnhub/master_dataset.parquet and only rebuilt
+    #    when REBUILD_MASTER_DATASET=True or the file does not exist.
     if SNAPSHOT_LAG_DAYS is None:
         raise ValueError("SNAPSHOT_LAG_DAYS must be defined in environment.py")
     dataset_snapshot_lag_days = int(SNAPSHOT_LAG_DAYS)
 
+    master_dataset_path = Path(FINNHUB_DATA_DIR) / "master_dataset.parquet"
     df = None
-    if cache_dataset is not None and CACHE_USE_MASTER_DATASET:
-        cached_df = cache_dataset.load_pickle("master_dataset")
-        if cached_df is not None:
-            df = cached_df
-            log.info("Cache hit: master_dataset (%s observations)", len(df))
+    if not REBUILD_MASTER_DATASET:
+        df = _load_master_dataset_disk(master_dataset_path)
+        if df is not None:
+            log.info("Master dataset loaded from disk (%s observations)", len(df))
 
     if df is None:
+        log.info("Building master dataset from scratch...")
         df = build_master_dataset(
             tickers=tickers_ok,
             router=router,
@@ -912,11 +821,12 @@ def main():
             holding_period_months=HOLDING_PERIOD_MONTHS,
             technical_lookback_days=TECHNICAL_LOOKBACK_DAYS,
         )
-        if cache_dataset is not None and CACHE_USE_MASTER_DATASET:
-            cache_dataset.save_pickle("master_dataset", df)
-            log.info("Cache save: master_dataset")
+        try:
+            df.to_parquet(master_dataset_path)
+            log.info("Master dataset saved to %s", master_dataset_path)
+        except Exception as ex:
+            log.warning("Could not save master_dataset.parquet (%s)", ex)
 
-    df.to_csv(f"{RESULTS_DIR}/master_dataset.csv")
     log.info("Master dataset: %d observations - %d tickers", len(df), len(tickers_ok))
 
     if EXPORT_RUN_ARTIFACTS:
@@ -941,82 +851,46 @@ def main():
     if not SKIP_BACKTEST:
         effective_test_quarters = 4 if analysis_frequency == "annual" else WALKFORWARD_TEST_QUARTERS
 
-        # 6. Prices and benchmark for the backtester (cacheable)
-        prices_dict = None
-        spy_prices = None
-        benchmark_returns = None
+        # 6. Prices and benchmark for the backtester
+        prices_dict = {}
+        for ticker in tickers_ok:
+            p = router.load_prices(ticker)
+            if p is not None:
+                prices_dict[ticker] = p
 
-        if cache_market is not None and CACHE_USE_ROUTER_DERIVED:
-            market_bundle = cache_market.load_pickle("market_bundle")
-            if isinstance(market_bundle, dict):
-                prices_dict = market_bundle.get("prices_dict")
-                spy_prices = market_bundle.get("spy_prices")
-                benchmark_returns = market_bundle.get("benchmark_returns")
-                if prices_dict is not None and benchmark_returns is not None:
-                    log.info("Cache hit: market_bundle")
+        spy_prices = router.load_sp500_prices()
+        if spy_prices is None:
+            import pandas as pd
 
-        if prices_dict is None or benchmark_returns is None:
-            prices_dict = {}
-            for ticker in tickers_ok:
-                p = router.load_prices(ticker)
-                if p is not None:
-                    prices_dict[ticker] = p
-
-            spy_prices = router.load_sp500_prices()
-            if spy_prices is None:
-                import pandas as pd
-
-                log.warning("No S&P 500 data available - using zero return as benchmark")
-                benchmark_returns = pd.Series(0.0, index=pd.date_range(test_start_date, end_date))
-            else:
-                benchmark_returns = spy_prices.pct_change().dropna()
-
-            if cache_market is not None and CACHE_USE_ROUTER_DERIVED:
-                cache_market.save_pickle(
-                    "market_bundle",
-                    {
-                        "prices_dict": prices_dict,
-                        "spy_prices": spy_prices,
-                        "benchmark_returns": benchmark_returns,
-                    },
-                )
-                log.info("Cache save: market_bundle")
+            log.warning("No S&P 500 data available - using zero return as benchmark")
+            benchmark_returns = pd.Series(0.0, index=pd.date_range(test_start_date, end_date))
+        else:
+            benchmark_returns = spy_prices.pct_change().dropna()
 
         # 7. Walk-forward pipeline
-        if cache_backtest is not None and CACHE_USE_WALKFORWARD_SUMMARY:
-            cached_summary = cache_backtest.load_json("walkforward_summary")
-            if isinstance(cached_summary, dict) and cached_summary:
-                summary = cached_summary
-                log.info("Cache hit: walkforward_summary (backtest recomputation skipped)")
-
-        if not summary:
-            summary = run_walkforward_pipeline(
-                df=df,
-                sector_map=sector_map,
-                prices_dict=prices_dict,
-                benchmark=benchmark_returns,
-                spy_prices=spy_prices,
-                agents_results_dir=AGENTS_RESULTS_DIR,
-                agent_models_results_dir=AGENT_MODELS_RESULTS_DIR,
-                backtest_results_dir=BACKTEST_RESULTS_DIR,
-                plots_dir=PLOTS_DIR,
-                start_date=test_start_date.strftime("%Y-%m-%d"),
-                end_date=end_date.strftime("%Y-%m-%d"),
-                walkforward_train_years=WALKFORWARD_TRAIN_LOOKBACK_YEARS,
-                walkforward_test_quarters=effective_test_quarters,
-                risk_free_rate=RISK_FREE_RATE,
-                top_n_stocks=TOP_N_STOCKS,
-                random_seed=RANDOM_SEED,
-                snapshot_lag_days=dataset_snapshot_lag_days,
-                holding_period_months=12 if analysis_frequency == "annual" else HOLDING_PERIOD_MONTHS,
-                finnhub_data_dir=FINNHUB_DATA_DIR,
-                analysis_frequency=analysis_frequency,
-                annual_anchor_date=annual_anchor_date,
-                fold_cache_root=cache_dataset.run_dir / "folds" if cache_dataset is not None else None,
-            )
-            if cache_backtest is not None:
-                cache_backtest.save_json("walkforward_summary", summary if isinstance(summary, dict) else {})
-                log.info("Cache save: walkforward_summary")
+        summary = run_walkforward_pipeline(
+            df=df,
+            sector_map=sector_map,
+            prices_dict=prices_dict,
+            benchmark=benchmark_returns,
+            spy_prices=spy_prices,
+            agents_results_dir=AGENTS_RESULTS_DIR,
+            agent_models_results_dir=AGENT_MODELS_RESULTS_DIR,
+            backtest_results_dir=BACKTEST_RESULTS_DIR,
+            plots_dir=PLOTS_DIR,
+            start_date=test_start_date.strftime("%Y-%m-%d"),
+            end_date=end_date.strftime("%Y-%m-%d"),
+            walkforward_train_years=WALKFORWARD_TRAIN_LOOKBACK_YEARS,
+            walkforward_test_quarters=effective_test_quarters,
+            risk_free_rate=RISK_FREE_RATE,
+            top_n_stocks=TOP_N_STOCKS,
+            random_seed=RANDOM_SEED,
+            snapshot_lag_days=dataset_snapshot_lag_days,
+            holding_period_months=12 if analysis_frequency == "annual" else HOLDING_PERIOD_MONTHS,
+            finnhub_data_dir=FINNHUB_DATA_DIR,
+            analysis_frequency=analysis_frequency,
+            annual_anchor_date=annual_anchor_date,
+        )
     else:
         log.info("SKIP_BACKTEST=True - skipping historical walk-forward backtest")
 

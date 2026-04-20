@@ -49,24 +49,10 @@ RUN_ABLATION_STUDY = False
 # If True, exports per-ticker debug CSVs (e.g., AAPL) for agent auditing
 DEBUG_EXPORT_AGENT_INPUTS = False
 
-# If True, enables intermediate artifact caching to reuse computation
-ENABLE_CACHE = True
-
-# Cache root folder
-CACHE_DIR = "cache"
-
-# Cache schema version. Bump it when artifact structure changes
-# or when dataset column policy changes.
-CACHE_SCHEMA_VERSION = 3
-
-# Reuse master dataset when context matches (tickers + parameters)
-CACHE_USE_MASTER_DATASET = True
-
-# Reuse DataRouter-derived artifacts (available tickers and prepared market data)
-CACHE_USE_ROUTER_DERIVED = True
-
-# Reuse final walk-forward summary and skip full backtest recomputation
-CACHE_USE_WALKFORWARD_SUMMARY = False
+# If True, forces recomputation of the master dataset even if it already
+# exists on disk.  If False and data_finnhub/master_dataset.parquet exists,
+# the dataset is loaded directly without rebuilding.
+REBUILD_MASTER_DATASET = False
 
 # Parallel download
 DOWNLOAD_MAX_WORKERS = 8
@@ -134,8 +120,8 @@ DOWNLOAD_START_DATE = "2000-01-01"
 # Example for 2025Q2 snapshot:
 #   ANALYSIS_START_YEAR = 2025, ANALYSIS_START_QUARTER = 2
 #   => snapshot closes Jun 30 · entry ~Aug 14 (+ SNAPSHOT_LAG_DAYS)
-ANALYSIS_START_YEAR = 2022
-ANALYSIS_START_QUARTER = 3
+ANALYSIS_START_YEAR = 2024
+ANALYSIS_START_QUARTER = 1
 
 ANALYSIS_END_YEAR = 2026
 ANALYSIS_END_QUARTER = 4
@@ -180,11 +166,23 @@ BASE_AGENTS_LABEL_MODE = "vs_sector"
 BASE_LABEL_SECTOR_MIN_PEERS = 10
 
 # Minimum observations required to train an independent model in each sector.
-# Sectors with fewer observations receive neutral score fallback (0.5).
+# Under-sampled sectors fall back to the agent-specific score policy defined
+# in training config instead of blindly returning 0.5.
 SECTOR_SPECIALIST_MIN_SAMPLES = 40
 
 # Number of internal KFold splits to generate OOF scores for the meta-learner
 OOF_N_SPLITS = 3
+
+# When a sector-specific model is degenerate (e.g. all feature importances are 0),
+# use a conservative fallback score instead of a neutral 0.5 to avoid accidental
+# promotion of low-confidence candidates.
+DEGENERATE_MODEL_FALLBACK_SCORE = 0.25
+# Conservative fallback score for long-oriented sector-specialized agents when a
+# sector model cannot be trained or a fold fails. Kept aligned with the
+# degenerate-model policy so missing/no-signal sectors are penalized consistently.
+SECTOR_SPECIALIST_LONG_FALLBACK_SCORE = DEGENERATE_MODEL_FALLBACK_SCORE
+# Numerical threshold to consider feature importance mass as zero.
+DEGENERATE_MODEL_IMPORTANCE_EPS = 1e-12
 
 # Minimum score threshold to include a stock in the long portfolio / shortlist.
 # 0.55 keeps only tickers with clear positive signal; with a score-weighted
@@ -208,7 +206,7 @@ SECTOR_CONFIDENCE_PEERS = 10
 # final_score += (sector_score - 0.5) * SECTOR_SCORE_PRIOR_WEIGHT * sector_confidence
 # A sector_score of 0.7 with full confidence adds +0.06 to each ticker in that sector.
 SECTOR_SCORE_PRIOR_BASE = 0.5
-SECTOR_SCORE_PRIOR_WEIGHT = 0.3
+SECTOR_SCORE_PRIOR_WEIGHT = 0.4
 
 # If an agent score has low dispersion, it is shrunk toward 0.5.
 # scale = min(1, std / SCORE_DISPERSION_MIN_STD)
@@ -229,8 +227,7 @@ TECHNICAL_LOOKBACK_DAYS = 300
 # Maximum walk-forward training window, in years.
 # The pipeline will try this maximum and, if it does not meet minimum test coverage,
 # will progressively reduce it down to WALKFORWARD_TRAIN_MIN_YEARS.
-WALKFORWARD_TRAIN_LOOKBACK_YEARS = 8
-
+WALKFORWARD_TRAIN_LOOKBACK_YEARS = 5
 # Lower bound for dynamic walk-forward training window.
 WALKFORWARD_TRAIN_MIN_YEARS = 4
 
@@ -240,8 +237,7 @@ WALKFORWARD_TEST_QUARTERS = 1
 # Minimum companies in a fold test universe.
 # Computed dynamically as a percentage of the total ticker universe.
 # Example: with 500 total tickers, this is 250 (50%).
-MIN_TEST_TICKERS_PERCENT = 80  # percentage of total universe
-
+MIN_TEST_TICKERS_PERCENT = 75  # percentage of total universe
 # Annualized risk-free rate for Sharpe / Sortino
 RISK_FREE_RATE = 0.04
 
@@ -250,16 +246,12 @@ TOP_N_STOCKS = 10
 
 # Initial capital for USD simulation (monetary backtest mode)
 INITIAL_CAPITAL_USD = 1000.0
-
 # Fixed transaction cost (each BUY and each SELL per ticker)
 TRANSACTION_FEE_USD = 1.0
-
 # Percentage slippage applied to execution price (0.01 = 1%)
 SLIPPAGE_PCT = 0.001
-
 # If True, runs USD monetary backtest in addition to return metrics.
 USE_DOLLAR_BACKTEST = True
-
 # Always allow fractional shares (no integer rounding)
 ALLOW_FRACTIONAL_SHARES = True
 
@@ -299,31 +291,94 @@ FUNDAMENTAL_MIN_CHILD_WEIGHT = 5
 # - *_FEATURE_EXCLUDE is informational/documentary: those columns may also
 #   be present in the master dataset, but training uses only *_FEATURE_COLUMNS.
 FUNDAMENTAL_FEATURE_COLUMNS = [
-  "roe", "roa", "roi", "roic",
-  "net_margin", "gross_margin", "fcf_margin", "ebitda_margin", "operating_margin",
-  "current_ratio", "quick_ratio",
-  "debt_equity", "debt_to_ebitda", "interest_coverage",
-  "revenue_yoy_growth", "net_income_yoy_growth", "eps_yoy_growth",
-  "fcf_yoy_growth", "operating_income_yoy_growth", "total_debt_yoy_growth",
-  "roa_change_yoy", "gross_margin_change_yoy", "current_ratio_change_yoy",
-  "accruals_ratio", "capex_to_revenue", "consecutive_losses",
-  "earnings_quality", "piotroski_fscore",
-  "roe_trend_2y", "roe_trend_3y",
-  "net_margin_trend_2y", "net_margin_trend_3y",
+  # Profitability (core)
+  "roa",
+  "roe",
+  "roi",
+  "roic",
+  "capex_to_revenue",
+
+  # Margins
+  "net_margin",
+  "gross_margin",
+  "ebitda_margin",
+  "operating_margin",
+  "fcf_margin",
+
+  # Liquidity
+  "current_ratio",
+  "quick_ratio",
+
+  # Leverage / solvency
+  "debt_equity",
+  "debt_to_ebitda",
+  "interest_coverage",
+
+  # Growth (cleaned set)
+  "revenue_yoy_growth",
+  "fcf_yoy_growth",
+
+  # Efficiency / quality
+  "piotroski_fscore",
+
+  # Long-term trends
+  "roe_trend_3y",
+  "net_margin_trend_3y",
   "gross_margin_trend_3y",
 ]
-FUNDAMENTAL_FEATURE_EXCLUDE = []
+
+FUNDAMENTAL_FEATURE_EXCLUDE = [
+  # Highly correlated growth metrics (keep simpler set)
+  "net_income_yoy_growth",
+  "eps_yoy_growth",
+  "operating_income_yoy_growth",
+
+  # Noisy YoY changes of already included metrics
+  "roa_change_yoy",
+  "gross_margin_change_yoy",
+  "current_ratio_change_yoy",
+
+  # Low cross-sector comparability
+  "accruals_ratio",
+  "total_debt_yoy_growth",
+
+  # Weak or redundant signals
+  "consecutive_losses",
+  "earnings_quality",
+
+  # Redundant short-term trends (keep longer horizon)
+  "roe_trend_2y",
+  "net_margin_trend_2y",
+]
 # ── ValuationAgent (GBM) ─────────────────────────────────────────────────────
 VALUATION_N_ESTIMATORS  = 200
 VALUATION_MAX_DEPTH     = 4
 VALUATION_LEARNING_RATE = 0.05
 VALUATION_SUBSAMPLE     = 0.8
 VALUATION_FEATURE_COLUMNS = [
-  "pe_ratio", "pb_ratio", "ps_ratio", "ev_to_ebitda", "fcf_yield", "earnings_yield",
-  "pe_vs_5y_median", "pb_vs_5y_median", "ev_ebitda_vs_5y_median",
-  "eps_surprise_pct", "eps_revision",
+  # Core valuation multiples
+  "pe_ratio",
+  "ps_ratio",
+  "ev_to_ebitda",
+  "pb_ratio",
+
+  # Yield-based valuation (very informative cross-sector)
+  "fcf_yield",
+  "earnings_yield",
+
+  # Relative valuation vs own history
+  "pe_vs_5y_median",
+  "ev_ebitda_vs_5y_median",
 ]
-VALUATION_FEATURE_EXCLUDE = []
+
+VALUATION_FEATURE_EXCLUDE = [
+  # Redundant historical comparisons
+  "pb_vs_5y_median",
+
+  # Weak / noisy signals for valuation vs sector
+  "eps_surprise_pct",         # short-term, more trading signal
+  "eps_revision",             # analyst-driven, not pure valuation
+]
 
 # ── MomentumAgent (Random Forest) ────────────────────────────────────────────
 MOMENTUM_N_ESTIMATORS    = 300
@@ -332,16 +387,51 @@ MOMENTUM_MAX_DEPTH       = 8
 # With 300 trees, overfitting risk remains low even with small leaves.
 MOMENTUM_MIN_SAMPLES_LEAF = 5
 MOMENTUM_FEATURE_COLUMNS = [
-  "rsi_14", "rsi_28",
-  "macd", "macd_signal", "macd_hist",
-  "sma_20", "sma_50", "sma_200",
-  "bb_pct",
-  "price_vs_52w_high", "price_vs_52w_low",
-  "momentum_1m", "momentum_3m", "momentum_6m", "momentum_12m",
-  "volatility_20d", "volatility_60d", "atr_14",
+  # Price position
+  "price_vs_52w_high",
+
+  # Momentum (multi-horizon but non-redundant)
+  "momentum_3m",
+  "momentum_6m",
+  "momentum_12m",
+
+  # Trend (long-term signal)
+  "sma_50",
+  "sma_200",
+
+  # Volatility (regime detection)
+  "volatility_60d",
+
+  # Volume confirmation
   "vol_ratio_20_50",
+
+  # RSI signals
+  "rsi_14",
+  "rsi_28",
 ]
-MOMENTUM_FEATURE_EXCLUDE = []
+
+MOMENTUM_FEATURE_EXCLUDE = [
+  # MACD components (highly correlated, noisy for cross-sectional use)
+  "macd",
+  "macd_signal",
+  "macd_hist",
+
+  # Moving average redundancy
+  "sma_20",
+
+  # Overlapping technical indicators
+  "bb_pct",
+
+  # Redundant price positioning
+  "price_vs_52w_low",
+
+  # Overlapping momentum horizons
+  "momentum_1m",
+
+  # Volatility redundancy
+  "volatility_20d",
+  "atr_14",
+]
 
 # ── BearAgent (Hybrid Random Forest) ─────────────────────────────────────────
 BEAR_N_ESTIMATORS = 200
@@ -354,20 +444,22 @@ BEAR_ML_WEIGHT    = 0.65
 # Risk score above which the meta-learner forces Underperform
 BEAR_HARD_THRESHOLD = 0.90
 BEAR_FEATURE_COLUMNS = [
-  "total_debt_yoy_growth",
   "debt_equity",
   "debt_to_ebitda",
+  "interest_coverage",
   "fcf_margin",
   "current_ratio",
-  "consecutive_losses",
   "revenue_decline",
-  "interest_coverage",
-  "insider_net_ratio_90d",
   "insider_sell_ratio",
+  "consecutive_losses",
+  "total_debt_yoy_growth",
+  "insider_net_ratio_90d",
   "eps_surprise_pct",
   "eps_revision",
 ]
-BEAR_FEATURE_EXCLUDE = []
+
+BEAR_FEATURE_EXCLUDE = [
+]
 
 # ── SentimentAgent (Random Forest) ───────────────────────────────────────────
 # Enables/disables the standalone sentiment agent in the base stack.
@@ -377,39 +469,87 @@ SENTIMENT_N_ESTIMATORS    = 200
 SENTIMENT_MAX_DEPTH       = 6
 SENTIMENT_MIN_SAMPLES_LEAF = 5
 SENTIMENT_FEATURE_COLUMNS = [
-  "analyst_buy_ratio",
-  "analyst_bearish_score",
+  # Analyst sentiment (core)
   "analyst_consensus",
-  "analyst_dispersion",
-  "analyst_strong_buy_pct",
-  "analyst_consensus_change",
+  "analyst_dispersion",          # disagreement = uncertainty
+  "analyst_consensus_change",    # revisions trend
+
+  # Market-implied sentiment
   "mspr_3m",
   "mspr_trend",
+
+  # Insider signal (keep only one clean proxy)
   "insider_net_ratio_90d",
-  "insider_sell_ratio",
+
+  # Earnings expectation vs reality
   "beat_rate_4q",
   "eps_surprise_avg_4q",
+]
+
+SENTIMENT_FEATURE_EXCLUDE = [
+  # Redundant analyst metrics (overlapping with consensus)
+  "analyst_buy_ratio",
+  "analyst_bearish_score",
+  "analyst_strong_buy_pct",
+
+  # Redundant insider metric
+  "insider_sell_ratio",
+
+  # Noisy / too short-term
   "eps_surprise_pct",
 ]
-SENTIMENT_FEATURE_EXCLUDE = []
 
 # SectorRotationAgent
 SECTOR_ROTATION_FEATURE_COLUMNS = [
-  "roe", "roa", "net_margin", "gross_margin", "fcf_margin", "ebitda_margin",
-  "operating_margin",
-  "revenue_yoy_growth", "net_income_yoy_growth", "eps_yoy_growth",
-  "debt_to_ebitda", "debt_equity", "interest_coverage", "current_ratio",
-  "quick_ratio",
-  "pe_ratio", "pb_ratio", "ev_to_ebitda", "fcf_yield",
+  # =========================
+  # 1. MOMENTUM (CORE DRIVER)
+  # =========================
+  "momentum_3m",
+  "momentum_6m",
+  "momentum_12m",
+  "price_vs_52w_high",
+
+  # =========================
+  # 2. GROWTH (CONFIRMATION)
+  # =========================
+  "revenue_yoy_growth",
+
+  # =========================
+  # 3. VALUATION (ENTRY TIMING)
+  # =========================
+  "fcf_yield",
   "earnings_yield",
-  "pe_vs_5y_median", "pb_vs_5y_median",
-  "momentum_1m", "momentum_3m", "momentum_6m", "momentum_12m",
-  "volatility_20d", "volatility_60d", "rsi_14",
-  "analyst_buy_ratio", "analyst_consensus", "analyst_dispersion", "analyst_bearish_score",
-  "insider_net_ratio_90d", "insider_sell_ratio",
-  "beat_rate_4q", "eps_surprise_pct", "eps_surprise_avg_4q", "eps_revision", "mspr_3m",
+  "ev_to_ebitda",
+  "pe_vs_5y_median",
+
+  # =========================
+  # 4. QUALITY (FILTER)
+  # =========================
+  "roic",
+  "fcf_margin",
+  "net_margin",
+
+  # =========================
+  # 5. RISK / BALANCE SHEET
+  # =========================
+  "debt_to_ebitda",
+  "interest_coverage",
+
+  # =========================
+  # 6. SENTIMENT (ACCELERATOR)
+  # =========================
+  "eps_revision",
+  "analyst_consensus_change",
+  "analyst_dispersion",
+
+  # =========================
+  # 7. REGIME / RISK CONTEXT
+  # =========================
+  "volatility_60d",
 ]
+
 SECTOR_ROTATION_FEATURE_EXCLUDE = []
+
 # ── FeatureSelector ──────────────────────────────────────────────────────────
 FEATURE_CORR_THRESHOLD = 0.85
 # Weight of the combined feature-selection score:
@@ -425,7 +565,7 @@ FEATURE_SELECTOR_RF_MAX_DEPTH = 5
 # - keep features with importance >= (top_importance * FEATURE_IMPORTANCE_CUTOFF_FRACTION)
 # - then cap final count between [FEATURE_IMPORTANCE_MIN_KEEP, FEATURE_IMPORTANCE_MAX_KEEP].
 FEATURE_IMPORTANCE_CUTOFF_FRACTION = 0.40
-FEATURE_IMPORTANCE_MIN_KEEP = 5
+FEATURE_IMPORTANCE_MIN_KEEP = 6
 FEATURE_IMPORTANCE_MAX_KEEP = 10
 # Global Top-N for FeatureSelector pre-filtering (all agents).
 # FINAL selection across all agents is uniformly controlled by:
@@ -433,7 +573,7 @@ FEATURE_IMPORTANCE_MAX_KEEP = 10
 #   - FEATURE_IMPORTANCE_MIN_KEEP = 4
 #   - FEATURE_IMPORTANCE_MAX_KEEP = 8
 # These limits ensure all agents use between 4 and 8 final features.
-FEATURE_TOP_N = 12
+FEATURE_TOP_N = 14
 
 # ── MetaLearner (LR + GBM stacking) ──────────────────────────────────────────
 META_LR_C             = 0.5
@@ -468,7 +608,7 @@ META_ENABLE_SCORE_RECALIBRATION = False
 META_SCORE_RECALIBRATION_TEMPERATURE = 1.0
 # Blend meta score with average base-agent consensus to avoid
 # meta collapse from drift and preserve cross-sectional signal.
-META_BASE_SCORE_BLEND_WEIGHT = 0.15
+META_BASE_SCORE_BLEND_WEIGHT = 0.58
 
 # =============================================================================
 # 9. Reproducibility

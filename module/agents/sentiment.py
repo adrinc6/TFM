@@ -206,15 +206,18 @@ class SentimentAgent(BaseAgent):
         imp = pd.Series(rf_fitted.feature_importances_, index=self._feature_cols)
         self.save_feature_importances(imp, fold)
 
-        self._explainer = build_explainer_for_agent(
-            agent_name="sentiment",
-            model=rf_fitted,
-            feature_cols=self._feature_cols,
-            X_train=X_prep,
-            results_dir=self.results_dir.parent.as_posix(),
-            fold=fold,
-            model_type="tree",
-        )
+        if self.save_artifacts:
+            self._explainer = build_explainer_for_agent(
+                agent_name="sentiment",
+                model=rf_fitted,
+                feature_cols=self._feature_cols,
+                X_train=X_prep,
+                results_dir=self.results_dir.as_posix(),
+                fold=fold,
+                model_type="tree",
+            )
+        else:
+            self._explainer = None
 
         self._diagnostics = {
             "class_balance":     bal,
@@ -339,7 +342,14 @@ class SentimentAgent(BaseAgent):
         sort_idx = date_order.argsort()
         X = X.iloc[sort_idx]
         y = y.reindex(X.index)
-        tss = TimeSeriesSplit(n_splits=5)
+        if len(X) < 3:
+            log.warning("[SentimentAgent] CV skipped: insufficient samples (%s)", len(X))
+            return {"mean_auc": 0.0, "std_auc": 0.0, "mean_acc": 0.0, "mean_f1": 0.0}
+        n_splits = min(5, len(X) - 1)
+        if n_splits < 2:
+            log.warning("[SentimentAgent] CV skipped: invalid n_splits=%s for n=%s", n_splits, len(X))
+            return {"mean_auc": 0.0, "std_auc": 0.0, "mean_acc": 0.0, "mean_f1": 0.0}
+        tss = TimeSeriesSplit(n_splits=n_splits)
         aucs, accs, f1s = [], [], []
         for tr, val in tss.split(X):
             y_tr = y.iloc[tr]

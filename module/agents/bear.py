@@ -196,10 +196,13 @@ class BearAgent(BaseAgent):
         self._save_flag_report(flag_stats, fold)
 
         rf_model = self._model.named_steps["clf"]
-        self._explainer = build_explainer_for_agent(
-            self.name, rf_model, self._feature_cols,
-            X_prep, self.results_dir.parent.as_posix(), fold, model_type="tree"
-        )
+        if self.save_artifacts:
+            self._explainer = build_explainer_for_agent(
+                self.name, rf_model, self._feature_cols,
+                X_prep, self.results_dir.as_posix(), fold, model_type="tree"
+            )
+        else:
+            self._explainer = None
         return self
 
     # ── Predict ───────────────────────────────────────────────────────────────
@@ -332,7 +335,14 @@ class BearAgent(BaseAgent):
         sort_idx = date_order.argsort()
         X = X.iloc[sort_idx]
         y = y.reindex(X.index)
-        tss = TimeSeriesSplit(n_splits=5)
+        if len(X) < 3:
+            log.warning("[BearAgent] CV skipped: insufficient samples (%s)", len(X))
+            return {"mean_auc": 0.0, "std_auc": 0.0, "mean_acc": 0.0, "mean_f1": 0.0}
+        n_splits = min(5, len(X) - 1)
+        if n_splits < 2:
+            log.warning("[BearAgent] CV skipped: invalid n_splits=%s for n=%s", n_splits, len(X))
+            return {"mean_auc": 0.0, "std_auc": 0.0, "mean_acc": 0.0, "mean_f1": 0.0}
+        tss = TimeSeriesSplit(n_splits=n_splits)
         aucs, accs, f1s = [], [], []
         for tr, val in tss.split(X):
             y_tr = y.iloc[tr]

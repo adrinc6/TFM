@@ -21,7 +21,7 @@ class SectorSpecializedAgent(BaseAgent):
     This class enforces a strict specialization policy:
       - no global model trained across all sectors,
       - one independent model per sector,
-      - neutral fallback score for unseen or under-sampled sectors.
+            - configurable fallback score for unseen or under-sampled sectors.
     """
 
     def __init__(
@@ -75,23 +75,8 @@ class SectorSpecializedAgent(BaseAgent):
         y: pd.Series,
         fold: Optional[int | str] = None,
         sector_col: str = "sector",
-        sector_cache_dir: Optional[Path] = None,
     ) -> "SectorSpecializedAgent":
-        """Train one child model per sector.
-
-        Args:
-            X: Feature matrix with a sector column.
-            y: Binary target aligned with X.
-            fold: Fold identifier forwarded to child agents.
-            sector_col: Name of the column that identifies the sector.
-            sector_cache_dir: If provided, each per-sector child model is
-                cached here independently.  The directory must already encode
-                all context that affects the agent (fold, hyperparams, …); the
-                only additional differentiator added per-sector is the sector
-                name itself.  This enables interrupted runs to resume from the
-                last completed sector, and allows finer-grained cache
-                invalidation when only a subset of parameters changes.
-        """
+        """Train one child model per sector."""
         self._sector_agents = {}
         self._sector_sample_count = {}
         self._feature_cols = []
@@ -112,7 +97,6 @@ class SectorSpecializedAgent(BaseAgent):
         for sector in sorted(sectors.unique().tolist()):
             if sector == "Unknown":
                 continue
-            sector_safe = self._sanitize_sector_name(sector)
             mask = sectors == sector
             X_sector = X.loc[mask].copy()
             y_sector = y_aligned.loc[X_sector.index].dropna()
@@ -128,28 +112,6 @@ class SectorSpecializedAgent(BaseAgent):
                 skipped += 1
                 continue
 
-            # ── Per-sector cache: try to restore before fitting ───────────────
-            _sc = None
-            if sector_cache_dir is not None:
-                try:
-                    from module.common.cache import CacheManager  # lazy import to avoid cycles
-                    _sc = CacheManager(
-                        Path(sector_cache_dir),
-                        {"sector": sector},
-                        namespace=f"s_{sector_safe}",
-                    )
-                    cached_child = _sc.load_pickle("model")
-                    if cached_child is not None:
-                        self._sector_agents[sector] = cached_child
-                        trained += 1
-                        if not self._feature_cols:
-                            self._feature_cols = list(getattr(cached_child, "_feature_cols", []) or [])
-                        log.debug("[%s] Cache hit: sector=%s", self.name, sector)
-                        continue  # skip fit — model fully restored from cache
-                except Exception as exc:
-                    log.debug("[%s] Sector cache unavailable for sector=%s: %s", self.name, sector, exc)
-                    _sc = None
-
             child = self._instantiate_child_agent(sector)
             fit_kwargs: Dict[str, Any] = {}
             if self._supports_arg(child.fit, "fold"):
@@ -163,13 +125,6 @@ class SectorSpecializedAgent(BaseAgent):
                 trained += 1
                 if not self._feature_cols:
                     self._feature_cols = list(getattr(child, "_feature_cols", []) or [])
-                # ── Persist to per-sector cache ───────────────────────────────
-                if _sc is not None:
-                    try:
-                        _sc.save_pickle("model", child)
-                        log.debug("[%s] Cache save: sector=%s", self.name, sector)
-                    except Exception as exc:
-                        log.debug("[%s] Could not cache sector=%s: %s", self.name, sector, exc)
             else:
                 skipped += 1
 

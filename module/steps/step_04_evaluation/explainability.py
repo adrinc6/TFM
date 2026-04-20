@@ -170,7 +170,13 @@ class AgentExplainer:
     ):
         self.agent_name   = agent_name
         self.feature_cols = feature_cols
-        self.results_dir  = Path(results_dir) / agent_name
+        base_dir = Path(results_dir)
+        # Keep SHAP files directly in sector folders (..../sectors/<sector>/),
+        # and avoid duplicating agent folder names (.../<agent>/<agent>/).
+        if base_dir.name.lower() == str(agent_name).lower() or base_dir.parent.name.lower() == "sectors":
+            self.results_dir = base_dir
+        else:
+            self.results_dir = base_dir / agent_name
         self.results_dir.mkdir(parents=True, exist_ok=True)
         self.model_type   = model_type
         self._explainer   = None
@@ -258,27 +264,8 @@ class AgentExplainer:
             return
         suffix = f"_{fold}" if fold is not None else ""
 
-        # Full CSV
-        path = self.results_dir / f"shap_global{suffix}.csv"
-        imp.to_csv(path, header=["shap_importance"])
-
-        # Top-20 JSON with descriptions
-        report = {
-            feat: {
-                "shap_importance": float(val),
-                "description":     _describe(feat),
-                "rank":            i + 1,
-            }
-            for i, (feat, val) in enumerate(imp.head(20).items())
-        }
-        json_path = self.results_dir / f"shap_global{suffix}.json"
-        with open(json_path, "w", encoding="utf-8") as f:
-            json.dump(report, f, indent=2, ensure_ascii=False)
-
         # Bar chart of top 15 features by SHAP importance
         self._save_shap_bar_plot(imp.head(15), suffix)
-
-        log.info(f"[{self.agent_name}] Global SHAP importance -> {path.name}")
 
     # ── Local explanation (per ticker) ────────────────────────────────────────
 
@@ -390,19 +377,20 @@ class AgentExplainer:
         lines.append("")
 
         checks = [
-            ("roe",               "> 0.15", lambda v: v > 0.15,  "Strong ROE"),
-            ("net_margin",        "> 0.10", lambda v: v > 0.10,  "Positive net margin"),
-            ("debt_to_ebitda",    "> 6",    lambda v: v > 6.0,   "High debt vs EBITDA"),
-            ("current_ratio",     "< 1",    lambda v: v < 1.0,   "Liquidity risk"),
-            ("revenue_yoy_growth","> 0",    lambda v: v > 0,     "Revenue growth"),
-            ("fcf",               "< 0",    lambda v: v < 0,     "Negative FCF"),
-            ("momentum_12m",      "> 0",    lambda v: v > 0,     "Positive annual momentum"),
-            ("rsi_14",            "> 70",   lambda v: v > 70,    "RSI overbought"),
+            ("roe",               lambda v: v > 0.15,  "Strong ROE", "positive"),
+            ("net_margin",        lambda v: v > 0.10,  "Positive net margin", "positive"),
+            ("debt_to_ebitda",    lambda v: v > 6.0,   "High debt vs EBITDA", "negative"),
+            ("current_ratio",     lambda v: v < 1.0,   "Liquidity risk", "negative"),
+            ("revenue_yoy_growth",lambda v: v > 0,     "Revenue growth", "positive"),
+            ("fcf",               lambda v: v < 0,     "Negative FCF", "negative"),
+            ("momentum_12m",      lambda v: v > 0,     "Positive annual momentum", "positive"),
+            ("rsi_14",            lambda v: v > 70,    "RSI overbought", "negative"),
         ]
-        for feat, cond, fn, desc in checks:
+        for feat, fn, desc, direction in checks:
             val = X_row.get(feat, np.nan)
             if pd.notna(val) and fn(val):
-                lines.append(f"  {'+ ' if score >= 0.5 else '- '}{desc} ({feat}={val:.2f})")
+                sign = "+ " if direction == "positive" else "- "
+                lines.append(f"  {sign}{desc} ({feat}={val:.2f})")
 
         return "\n".join(lines)
 

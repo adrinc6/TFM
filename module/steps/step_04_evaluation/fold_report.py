@@ -309,6 +309,8 @@ def build_fold_scores_df(
             "final_score_raw":  round(float(row.get("final_score_raw", final_score)), 4),
             "prediction":       "Outperform" if final_score >= 0.5 else "Underperform",
             "confidence":       "High" if abs(final_score - 0.5) > 0.25 else "Moderate",
+            "common_score":     round(final_score, 4),
+            "common_label":     "Outperform" if final_score >= 0.5 else "Underperform",
 
             # --- Selection and portfolio weight ---
             "selected":         bool(audit.get("selected", False)),

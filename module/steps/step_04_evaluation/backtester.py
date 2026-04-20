@@ -32,6 +32,7 @@ class WalkForwardBacktester:
 		test_quarters: int = 1,
 		risk_free: float = 0.04,
 		results_dir: str = "results/backtest",
+		strategy_dir: str | None = None,
 		top_n_stocks: int = 10,
 		long_only: bool = True,
 		score_weighted: bool = SCORE_WEIGHTED_PORTFOLIO,
@@ -41,6 +42,11 @@ class WalkForwardBacktester:
 		self.risk_free = risk_free
 		self.results_dir = Path(results_dir)
 		self.results_dir.mkdir(parents=True, exist_ok=True)
+		if strategy_dir is None:
+			self.strategy_dir = self.results_dir.parent / "strategy"
+		else:
+			self.strategy_dir = Path(strategy_dir)
+		self.strategy_dir.mkdir(parents=True, exist_ok=True)
 		self.top_n_stocks = top_n_stocks
 		self.long_only = long_only
 		self.score_weighted = score_weighted
@@ -410,14 +416,14 @@ class WalkForwardBacktester:
 			**global_bench,
 		}
 
-		path = self.results_dir / "backtest_summary.json"
+		path = self.strategy_dir / "backtest_summary.json"
 		with open(path, "w") as f:
 			json.dump(summary, f, indent=2, default=str)
 
 		pd.DataFrame({
 			"strategy": self.all_strategy_returns,
 			"benchmark": self.all_benchmark_returns,
-		}).to_csv(self.results_dir / "returns_series.csv")
+		}).to_csv(self.strategy_dir / "returns_series.csv")
 
 		log.info("=" * 65)
 		log.info("  RESUMEN WALK-FORWARD BACKTEST")
@@ -470,7 +476,7 @@ class WalkForwardBacktester:
 				df_csv["test_start"].astype(str) + " -> " + df_csv["test_end"].astype(str),
 			)
 
-		csv_path = self.results_dir / "folds_results.csv"
+		csv_path = self.strategy_dir / "folds_results.csv"
 		df_csv.to_csv(csv_path, index=False, float_format="%.4f")
 		log.info(f"[Backtester] Folds results CSV -> {csv_path}")
 

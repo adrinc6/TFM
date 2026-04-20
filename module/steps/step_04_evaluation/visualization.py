@@ -220,9 +220,7 @@ class Visualizer:
 		ax.set_xlabel("Importancia")
 		ax.grid(alpha=0.3, axis="x")
 		if fold is not None:
-			period_dir = self.plots_dir / str(fold)
-			period_dir.mkdir(parents=True, exist_ok=True)
-			path = period_dir / f"feat_imp_{agent_name}.png"
+			path = self.plots_dir / f"feat_imp_{agent_name}_{fold}.png"
 		else:
 			path = self.plots_dir / f"feat_imp_{agent_name}.png"
 		fig.savefig(path, dpi=120, bbox_inches="tight")
@@ -284,9 +282,7 @@ class Visualizer:
 		ax.grid(alpha=0.3)
 		fig.tight_layout()
 
-		period_dir = self.plots_dir / str(year_quarter)
-		period_dir.mkdir(parents=True, exist_ok=True)
-		path = period_dir / "performance.png"
+		path = self.plots_dir / "performance.png"
 		fig.savefig(path, dpi=130, bbox_inches="tight")
 		plt.close(fig)
 		log.info(f"[Visualizer] Rendimiento {year_quarter} -> {path.name}")
@@ -309,9 +305,7 @@ class Visualizer:
 			ax.legend(fontsize=7)
 			ax.grid(alpha=0.3)
 		if fold is not None:
-			period_dir = self.plots_dir / str(fold)
-			period_dir.mkdir(parents=True, exist_ok=True)
-			path = period_dir / "score_distribution.png"
+			path = self.plots_dir / f"score_distribution_{fold}.png"
 		else:
 			path = self.plots_dir / "score_distribution.png"
 		fig.savefig(path, dpi=120, bbox_inches="tight")

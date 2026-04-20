@@ -26,6 +26,7 @@ from environment import (
     FUNDAMENTAL_SUBSAMPLE, FUNDAMENTAL_COLSAMPLE, FUNDAMENTAL_MIN_CHILD_WEIGHT,
     FEATURE_CORR_THRESHOLD, FEATURE_TOP_N,
     FUNDAMENTAL_FEATURE_COLUMNS, FUNDAMENTAL_FEATURE_EXCLUDE,
+    DEGENERATE_MODEL_FALLBACK_SCORE, DEGENERATE_MODEL_IMPORTANCE_EPS,
 )
 
 log = logging.getLogger(__name__)
@@ -85,6 +86,8 @@ class FundamentalAgent(BaseAgent):
         self._feature_cols: List[str] = []
         self._selector:     Optional[FeatureSelector] = None
         self._explainer:    Optional[AgentExplainer] = None
+        self._is_degenerate_model: bool = False
+        self._degenerate_reason: str = ""
 
     # ── Fit ───────────────────────────────────────────────────────────────────
 
@@ -142,6 +145,16 @@ class FundamentalAgent(BaseAgent):
 
         # Feature importances from the XGBoost estimator
         imp = pd.Series(self._model.feature_importances_, index=self._feature_cols)
+        imp_abs_sum = float(np.abs(imp).sum())
+        self._is_degenerate_model = bool(imp_abs_sum <= float(DEGENERATE_MODEL_IMPORTANCE_EPS))
+        self._degenerate_reason = "all_feature_importances_zero" if self._is_degenerate_model else ""
+        if self._is_degenerate_model:
+            log.warning(
+                "[FundamentalAgent] Degenerate model detected (importance_sum=%.3e). "
+                "Predictions will use conservative fallback score %.2f.",
+                imp_abs_sum,
+                float(DEGENERATE_MODEL_FALLBACK_SCORE),
+            )
         self.save_feature_importances(imp, fold)
 
         self._diagnostics = {
@@ -149,13 +162,22 @@ class FundamentalAgent(BaseAgent):
             "n_features": len(self._feature_cols),
             "top_features": imp.nlargest(15).to_dict(),
             "feature_selection": self._selector.report(),
+            "model_quality": {
+                "degenerate": bool(self._is_degenerate_model),
+                "degenerate_reason": self._degenerate_reason,
+                "importance_abs_sum": imp_abs_sum,
+                "fallback_score": float(DEGENERATE_MODEL_FALLBACK_SCORE),
+            },
         }
         self.record_train_metrics(cv, fold)
         self.save_diagnostics(fold)
-        self._explainer = build_explainer_for_agent(
-            self.name, self._model, self._feature_cols,
-            X_prep, self.results_dir.parent.as_posix(), fold, model_type="tree"
-        )
+        if self.save_artifacts:
+            self._explainer = build_explainer_for_agent(
+                self.name, self._model, self._feature_cols,
+                X_prep, self.results_dir.as_posix(), fold, model_type="tree"
+            )
+        else:
+            self._explainer = None
         return self
 
     # ── Predict ───────────────────────────────────────────────────────────────
@@ -175,6 +197,12 @@ class FundamentalAgent(BaseAgent):
         """
         if not self.is_trained:
             raise RuntimeError("[FundamentalAgent] Not trained.")
+        if self._is_degenerate_model:
+            return pd.Series(
+                float(DEGENERATE_MODEL_FALLBACK_SCORE),
+                index=X.index,
+                name="fundamental_score",
+            )
         X_prep = self.clean_features_predict(self._prepare(X, sector_col, fit_mode=False))
         if self._selector is not None:
             X_prep = self._selector.transform(X_prep)
@@ -256,7 +284,14 @@ class FundamentalAgent(BaseAgent):
         sort_idx = date_order.argsort()
         X = X.iloc[sort_idx]
         y = y.reindex(X.index)
-        tss = TimeSeriesSplit(n_splits=5)
+        if len(X) < 3:
+            log.warning("[FundamentalAgent] CV skipped: insufficient samples (%s)", len(X))
+            return {"mean_auc": 0.0, "std_auc": 0.0, "mean_acc": 0.0, "mean_f1": 0.0}
+        n_splits = min(5, len(X) - 1)
+        if n_splits < 2:
+            log.warning("[FundamentalAgent] CV skipped: invalid n_splits=%s for n=%s", n_splits, len(X))
+            return {"mean_auc": 0.0, "std_auc": 0.0, "mean_acc": 0.0, "mean_f1": 0.0}
+        tss = TimeSeriesSplit(n_splits=n_splits)
         aucs, accs, f1s = [], [], []
         for tr, val in tss.split(X):
             y_tr = y.iloc[tr]

@@ -11,6 +11,14 @@ import pandas as pd
 log = logging.getLogger(__name__)
 
 
+def _agent_fallback_score(cfg: Dict) -> float:
+    kwargs = dict(cfg.get("kwargs") or {})
+    try:
+        return float(kwargs.get("neutral_score", 0.5))
+    except Exception:
+        return 0.5
+
+
 def generate_oof_scores(
     X: pd.DataFrame,
     y: pd.Series,
@@ -48,7 +56,8 @@ def generate_oof_scores(
 
     Returns:
         Dict[str, pd.Series]: Mapping of ``{agent_name}_score`` →
-            OOF score Series. Missing folds are filled with 0.5.
+            OOF score Series. Missing folds are filled with the configured
+            agent fallback score (sector_score keeps 0.5 as neutral no-tilt).
             Also includes ``sector_score`` when ``sector_map`` is provided.
     """
     from sklearn.model_selection import TimeSeriesSplit
@@ -62,12 +71,16 @@ def generate_oof_scores(
     if effective_splits < 2:
         log.warning(
             "[OOF] Only %d unique dates; cannot form %d temporal splits. "
-            "OOF scores will be neutral (0.5).",
+            "OOF scores will use configured fallback values.",
             len(unique_dates), n_splits,
         )
         neutral = {
-            f"{ag_name}_score": pd.Series(0.5, index=X.index, name=f"{ag_name}_score")
-            for ag_name in agents_config
+            f"{ag_name}_score": pd.Series(
+                _agent_fallback_score(cfg),
+                index=X.index,
+                name=f"{ag_name}_score",
+            )
+            for ag_name, cfg in agents_config.items()
         }
         if sector_map is not None:
             neutral["sector_score"] = pd.Series(0.5, index=X.index, name="sector_score")
@@ -102,6 +115,7 @@ def generate_oof_scores(
             y_tr  = y.loc[train_mask]
 
             agent  = cfg["cls"](**cfg["kwargs"], save_artifacts=False)
+            fallback_score = getattr(agent, "_neutral_score", _agent_fallback_score(cfg))
             y_fit  = (1 - y_tr) if cfg.get("invert_y") else y_tr
 
             try:
@@ -110,20 +124,26 @@ def generate_oof_scores(
                     if getattr(agent, "is_trained", False):
                         preds = agent.predict_score(X_val, cfg["sector_col"])
                     else:
-                        preds = pd.Series(0.5, index=X_val.index, name=score_col)
+                        preds = pd.Series(fallback_score, index=X_val.index, name=score_col)
                 else:
                     agent.fit(X_tr, y_fit, fold=0)
                     if getattr(agent, "is_trained", False):
                         preds = agent.predict_score(X_val)
                     else:
-                        preds = pd.Series(0.5, index=X_val.index, name=score_col)
+                        preds = pd.Series(fallback_score, index=X_val.index, name=score_col)
             except Exception:
-                log.warning("[OOF] %s fold %d failed — using score 0.5", ag_name, split_i, exc_info=True)
-                preds = pd.Series(0.5, index=X_val.index, name=score_col)
+                log.warning(
+                    "[OOF] %s fold %d failed — using fallback score %.2f",
+                    ag_name,
+                    split_i,
+                    float(fallback_score),
+                    exc_info=True,
+                )
+                preds = pd.Series(fallback_score, index=X_val.index, name=score_col)
 
             oof_vals.loc[val_mask] = preds.reindex(X_val.index).values
 
-        oof[score_col] = oof_vals.fillna(0.5)
+        oof[score_col] = oof_vals.fillna(float(fallback_score))
 
     # ── Sector agent (OOF) ────────────────────────────────────────────────────
     if sector_map is not None:

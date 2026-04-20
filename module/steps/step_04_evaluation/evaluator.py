@@ -651,13 +651,12 @@ def _build_selection_df(preds_scored: pd.DataFrame, selected_tickers: List[str],
 
 def _export_fold_usd_artifacts(
     *,
-    backtest_results_dir: str,
-    period_label: str,
+    fold_backtest_dir: str,
     sim_out: Dict,
     selection_df: pd.DataFrame,
     metrics_payload: Dict,
 ) -> None:
-    fold_dir = Path(backtest_results_dir) / str(period_label)
+    fold_dir = Path(fold_backtest_dir)
     fold_dir.mkdir(parents=True, exist_ok=True)
 
     trades_df = sim_out.get("trades_df", pd.DataFrame())
@@ -863,19 +862,24 @@ def run_walkforward_pipeline(
     finnhub_data_dir: str = "data_finnhub",
     analysis_frequency: str = "quarterly",
     annual_anchor_date: Optional[pd.Timestamp] = None,
-    fold_cache_root: Optional[Path] = None,
 ) -> Dict:
-    Path(agents_results_dir).mkdir(parents=True, exist_ok=True)
-    Path(agent_models_results_dir).mkdir(parents=True, exist_ok=True)
+    run_root_candidate = Path(backtest_results_dir)
+    run_root = run_root_candidate.parent if run_root_candidate.name.lower() == "backtest" else run_root_candidate
+    run_root.mkdir(parents=True, exist_ok=True)
+    strategy_dir = run_root / "strategy"
+    strategy_dir.mkdir(parents=True, exist_ok=True)
+    baselines_dir = strategy_dir / "baselines"
+    baselines_dir.mkdir(parents=True, exist_ok=True)
 
     backtester = WalkForwardBacktester(
         train_years=walkforward_train_years,
         test_quarters=walkforward_test_quarters,
         risk_free=risk_free_rate,
-        results_dir=backtest_results_dir,
+        results_dir=strategy_dir.as_posix(),
+        strategy_dir=strategy_dir.as_posix(),
         top_n_stocks=top_n_stocks,
     )
-    visualizer = Visualizer(plots_dir=plots_dir)
+    global_visualizer = Visualizer(plots_dir=strategy_dir.as_posix())
 
     folds = backtester.generate_folds(start_date, end_date)
     agent_diag_history: Dict[str, List] = {
@@ -976,6 +980,16 @@ def run_walkforward_pipeline(
             analysis_quarter_label = f"{train_end.year}Q{train_end.quarter}"
 
         run_id = analysis_quarter_label
+        fold_root_dir = run_root / str(run_id)
+        fold_general_dir = fold_root_dir / "general"
+        fold_agents_dir = fold_root_dir / "agents"
+        fold_backtest_dir = fold_root_dir / "backtest"
+        fold_plots_dir = fold_root_dir / "plots"
+        fold_general_dir.mkdir(parents=True, exist_ok=True)
+        fold_agents_dir.mkdir(parents=True, exist_ok=True)
+        fold_backtest_dir.mkdir(parents=True, exist_ok=True)
+        fold_plots_dir.mkdir(parents=True, exist_ok=True)
+        fold_visualizer = Visualizer(plots_dir=fold_plots_dir.as_posix())
 
         selected_train_years: Optional[int] = None
         selected_train_start: Optional[pd.Timestamp] = None
@@ -1180,7 +1194,7 @@ def run_walkforward_pipeline(
             selected_eligibility_train_years if selected_eligibility_train_years is not None else last_eligibility_train_years
         )
         if rows_to_export:
-            period_dir = Path(agents_results_dir) / str(run_id)
+            period_dir = fold_general_dir
             period_dir.mkdir(parents=True, exist_ok=True)
             eligibility_path = period_dir / "ticker_eligibility_audit.csv"
             eligibility_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1327,20 +1341,17 @@ def run_walkforward_pipeline(
                 y_train=y_train,
                 y_test=y_test,
                 fold_id=run_id,
-                agent_models_results_dir=agent_models_results_dir,
-                agents_results_dir=agents_results_dir,
+                agent_models_results_dir=fold_agents_dir.as_posix(),
+                agents_results_dir=fold_agents_dir.as_posix(),
                 random_seed=random_seed,
                 sector_map=sector_map,
                 spy_prices=spy_prices,
-                fold_cache_root=fold_cache_root,
-                train_start_ts=_fold_train_start,
-                train_end_ts=train_end,
             )
 
             meta = agents["meta_learner"]
             eval_metrics = meta.evaluate(df_test_scored, y_test, fold=run_id)
 
-            visualizer.plot_score_distribution(df_test_scored, fold=run_id)
+            fold_visualizer.plot_score_distribution(df_test_scored, fold=run_id)
 
             preds_df = df_test_scored[["final_score", "label"]].copy()
             preds_df["ticker"] = preds_df.index.get_level_values("ticker")
@@ -1375,9 +1386,30 @@ def run_walkforward_pipeline(
                 fold_id=run_id,
             )
             leakage_rows.extend(fold_leak_rows)
-            n_leak_fold = int(sum(1 for r in fold_leak_rows if int(r.get("n_rows_future_detected", 0)) > 0))
+            n_leak_audit = int(sum(1 for r in fold_leak_rows if int(r.get("n_rows_future_detected", 0)) > 0))
+            if n_leak_audit > 0:
+                log.warning("[%s] Source audit detected %s incidents (diagnostic-only).", run_id, n_leak_audit)
+
+            # Strict leakage flag must be based on the actual scored fold frame
+            # used for decisions, not on raw source tables that naturally contain
+            # observations after the as-of date.
+            strict_detail = assert_no_future_data(
+                df_test_scored.reset_index(),
+                as_of=entry_date,
+                context=f"fold_scored:{run_id}",
+                date_col="date",
+            )
+            n_leak_fold = int(strict_detail.get("n_rows_future_detected", 0))
+            leakage_rows.append({
+                "fold_id": run_id,
+                "ticker": "__FOLD_FRAME__",
+                "feature_group": "strict_fold_frame",
+                "n_rows_future_detected": n_leak_fold,
+                "max_future_date_detected": strict_detail.get("max_future_date_detected"),
+                "context": strict_detail.get("context"),
+            })
             if n_leak_fold > 0:
-                log.warning("[%s] Leakage audit detected %s incidents in filtered sources.", run_id, n_leak_fold)
+                log.warning("[%s] Strict fold leakage detected: %s rows after as-of.", run_id, n_leak_fold)
 
             # USD monetary mode (without replacing current historical metrics).
             if USE_DOLLAR_BACKTEST:
@@ -1430,8 +1462,7 @@ def run_walkforward_pipeline(
                     ticker_weights=sim_out.get("weights_used", ticker_weights),
                 )
                 _export_fold_usd_artifacts(
-                    backtest_results_dir=backtest_results_dir,
-                    period_label=str(run_id),
+                    fold_backtest_dir=fold_backtest_dir.as_posix(),
                     sim_out=sim_out,
                     selection_df=selection_df,
                     metrics_payload={
@@ -1452,7 +1483,7 @@ def run_walkforward_pipeline(
                     "eligible_tickers": df_test_scored.index.get_level_values("ticker").unique().tolist(),
                 })
 
-            visualizer.plot_fold_performance(fold_result, fold_id=run_id)
+            fold_visualizer.plot_fold_performance(fold_result, fold_id=run_id)
 
             audit_df = build_selection_audit_df(
                 df_scored=df_test_scored.reset_index()[
@@ -1465,7 +1496,7 @@ def run_walkforward_pipeline(
                 score_col="final_score",
                 threshold=PORTFOLIO_MIN_SCORE,
             )
-            period_dir = Path(agents_results_dir) / str(analysis_quarter_label)
+            period_dir = fold_agents_dir
             period_dir.mkdir(parents=True, exist_ok=True)
             export_selection_audit(audit_df, period_dir.as_posix(), fold_id=analysis_quarter_label, prefix="quarter")
 
@@ -1507,12 +1538,12 @@ def run_walkforward_pipeline(
                 if hasattr(ag, "_feature_cols") and ag.is_trained:
                     try:
                         imp_path = (
-                            Path(agent_models_results_dir) / ag_name
+                            fold_agents_dir / ag_name
                             / f"feature_importances_{run_id}.csv"
                         )
                         if imp_path.exists():
                             imp = pd.read_csv(imp_path, index_col=0)["importance"]
-                            visualizer.plot_feature_importances(imp, ag_name, fold=run_id)
+                            fold_visualizer.plot_feature_importances(imp, ag_name, fold=run_id)
                     except Exception as plot_exc:
                         log.debug(f"[Visualizer] plot_feature_importances {ag_name} {run_id}: {plot_exc}")
 
@@ -1532,7 +1563,7 @@ def run_walkforward_pipeline(
                     y_test=y_test,
                     df_train_norm=df_train_with_oof,
                     y_train=y_train,
-                    agents_results_dir=agents_results_dir,
+                    agents_results_dir=fold_agents_dir.as_posix(),
                     fold_id=run_id,
                     random_seed=random_seed,
                 )
@@ -1544,13 +1575,22 @@ def run_walkforward_pipeline(
             continue
 
     summary = backtester.summarize()
-    backtester.save_folds_summary(plots_dir=plots_dir)
+    backtester.save_folds_summary(plots_dir=strategy_dir.as_posix())
 
     # CSV consolidado de todos los folds: una fila por ticker-quarter con
     # scores, interpretaciones y explicaciones de cada agente.
-    export_all_folds_scores(agents_results_dir)
+    all_fold_score_files = sorted(run_root.glob("*/agents/scores.csv"))
+    if all_fold_score_files:
+        all_scores = []
+        for p in all_fold_score_files:
+            try:
+                all_scores.append(pd.read_csv(p))
+            except Exception as ex:
+                log.warning("[FoldReport] Could not read %s (%s)", p, ex)
+        if all_scores:
+            pd.concat(all_scores, ignore_index=True).to_csv(strategy_dir / "all_folds_scores.csv", index=False)
 
-    diag_path = Path(agents_results_dir) / "all_folds_diagnostics.json"
+    diag_path = strategy_dir / "all_folds_diagnostics.json"
     with open(diag_path, "w") as f:
         json.dump(agent_diag_history, f, indent=2, default=str)
 
@@ -1572,7 +1612,7 @@ def run_walkforward_pipeline(
         if not _usd_daily.empty:
             _plot_strategy_returns = _usd_daily
 
-    visualizer.plot_full_report(
+    global_visualizer.plot_full_report(
         strategy_returns=_plot_strategy_returns,
         benchmark_returns=_plot_benchmark_returns,
         fold_results=backtester.fold_results,
@@ -1580,20 +1620,14 @@ def run_walkforward_pipeline(
     )
 
     if RUN_ABLATION_STUDY and ablation_results:
-        summarize_ablation(ablation_results, agents_results_dir=agents_results_dir)
+        summarize_ablation(ablation_results, agents_results_dir=strategy_dir.as_posix())
 
     generate_text_report(
         summary=summary,
         fold_results=backtester.fold_results,
         agent_diag_history=agent_diag_history,
-        backtest_results_dir=backtest_results_dir,
+        backtest_results_dir=strategy_dir.as_posix(),
     )
-
-    results_root = Path(backtest_results_dir).parent
-    backtest_root = Path(backtest_results_dir)
-    backtest_root.mkdir(parents=True, exist_ok=True)
-    baselines_dir = backtest_root / "baselines"
-    baselines_dir.mkdir(parents=True, exist_ok=True)
 
     # Mandatory audit/leakage and missing-prices reports.
     leakage_df = pd.DataFrame(leakage_rows)
@@ -1602,12 +1636,12 @@ def run_walkforward_pipeline(
             "fold_id", "ticker", "feature_group", "n_rows_future_detected",
             "max_future_date_detected", "context",
         ])
-    leakage_df.to_csv(results_root / "leakage_audit.csv", index=False)
+    leakage_df.to_csv(strategy_dir / "leakage_audit.csv", index=False)
 
     missing_prices_df = pd.DataFrame(missing_prices_rows)
     if missing_prices_df.empty:
         missing_prices_df = pd.DataFrame(columns=["fold_id", "ticker", "start_date", "end_date", "reason"])
-    missing_prices_df.to_csv(backtest_root / "missing_prices_report.csv", index=False)
+    missing_prices_df.to_csv(strategy_dir / "missing_prices_report.csv", index=False)
 
     baselines_rows = []
     value_availability_rows = []
@@ -1618,7 +1652,7 @@ def run_walkforward_pipeline(
     if USE_DOLLAR_BACKTEST and strategy_equity_parts:
         # Reuse the equity curve already built for the plot above.
         strategy_equity_global = _pre_equity_global
-        strategy_equity_global.to_csv(backtest_root / "strategy_equity_curve.csv", index=False)
+        strategy_equity_global.to_csv(strategy_dir / "strategy_equity_curve.csv", index=False)
 
         strategy_summary = _summary_row_from_equity(
             "strategy_main",
@@ -1661,7 +1695,7 @@ def run_walkforward_pipeline(
             )
             benchmark_equity = bench_sim.get("equity_curve_df", benchmark_equity)
             if not benchmark_equity.empty:
-                benchmark_equity.to_csv(backtest_root / "benchmark_equity_curve.csv", index=False)
+                benchmark_equity.to_csv(strategy_dir / "benchmark_equity_curve.csv", index=False)
             bench_available = not benchmark_equity.empty
             benchmark_summary = {
                 "final_value_usd": float(bench_sim.get("fold_summary", {}).get("ending_capital_usd", np.nan)),
@@ -1669,7 +1703,7 @@ def run_walkforward_pipeline(
                 "fees_usd": float(bench_sim.get("fold_summary", {}).get("total_fees_usd", 0.0)),
                 "availability_flag": bool(bench_available),
             }
-            _safe_json_dump(backtest_root / "benchmark_summary.json", benchmark_summary)
+            _safe_json_dump(strategy_dir / "benchmark_summary.json", benchmark_summary)
 
             baselines_rows.append(_summary_row_from_equity(
                 "benchmark",
@@ -1961,7 +1995,7 @@ def run_walkforward_pipeline(
             pct_main = float((pd.DataFrame(usd_fold_rows).get("pnl_pct", pd.Series(dtype=float)) > 0).mean()) if usd_fold_rows else np.nan
             bs_df["pct_folds_positive"] = np.nan
             bs_df.loc[bs_df["strategy_name"] == "strategy_main", "pct_folds_positive"] = pct_main
-            bs_df.to_csv(results_root / "baselines_summary.csv", index=False)
+            bs_df.to_csv(strategy_dir / "baselines_summary.csv", index=False)
 
         final_value_payload = {
             "initial_capital_usd": float(INITIAL_CAPITAL_USD),
@@ -1979,7 +2013,7 @@ def run_walkforward_pipeline(
                 "benchmark_total_return_pct": None if not np.isfinite(float(b_ret)) else float(b_ret),
                 "benchmark_total_fees_usd": float(b_fees),
             })
-        _safe_json_dump(results_root / "final_portfolio_value.json", final_value_payload)
+        _safe_json_dump(strategy_dir / "final_portfolio_value.json", final_value_payload)
 
         # Final summary JSON/CSV.
         fold_usd_df = pd.DataFrame(usd_fold_rows)
@@ -2014,7 +2048,7 @@ def run_walkforward_pipeline(
 
         fold_compare_df = pd.DataFrame(baseline_fold_compare_rows)
         if not fold_compare_df.empty:
-            fold_compare_df.to_csv(backtest_root / "fold_comparison_summary.csv", index=False)
+            fold_compare_df.to_csv(strategy_dir / "fold_comparison_summary.csv", index=False)
 
         summary_payload = {
             "timestamp": datetime.now().isoformat(),
@@ -2024,14 +2058,14 @@ def run_walkforward_pipeline(
             "folds_usd": fold_usd_df.to_dict(orient="records"),
             "baselines": pd.DataFrame(baselines_rows).to_dict(orient="records"),
         }
-        _safe_json_dump(results_root / "final_summary.json", summary_payload)
+        _safe_json_dump(strategy_dir / "final_summary.json", summary_payload)
 
         final_summary_csv_rows = []
         final_summary_csv_rows.append({"name": "strategy_main", **strategy_summary})
         for row in baselines_rows:
             if row.get("name") != "strategy_main":
                 final_summary_csv_rows.append(row)
-        pd.DataFrame(final_summary_csv_rows).to_csv(results_root / "final_summary.csv", index=False)
+        pd.DataFrame(final_summary_csv_rows).to_csv(strategy_dir / "final_summary.csv", index=False)
 
         # Plots requeridos para memoria TFM.
         import matplotlib
@@ -2045,8 +2079,8 @@ def run_walkforward_pipeline(
         if not strategy_equity_global.empty:
             plt.figure(figsize=(12, 6))
             plt.plot(pd.to_datetime(strategy_equity_global["date"]), strategy_equity_global["equity_usd"], label="strategy_main", lw=2)
-            if (backtest_root / "benchmark_equity_curve.csv").exists():
-                bdf = pd.read_csv(backtest_root / "benchmark_equity_curve.csv")
+            if (strategy_dir / "benchmark_equity_curve.csv").exists():
+                bdf = pd.read_csv(strategy_dir / "benchmark_equity_curve.csv")
                 plt.plot(pd.to_datetime(bdf["date"]), bdf["equity_usd"], label="benchmark", lw=1.8)
             plt.legend()
             plt.grid(alpha=0.3)
@@ -2057,8 +2091,8 @@ def run_walkforward_pipeline(
 
             plt.figure(figsize=(12, 6))
             plt.plot(pd.to_datetime(strategy_equity_global["date"]), strategy_equity_global["equity_usd"], label="strategy_main", lw=2)
-            if (backtest_root / "benchmark_equity_curve.csv").exists():
-                bdf = pd.read_csv(backtest_root / "benchmark_equity_curve.csv")
+            if (strategy_dir / "benchmark_equity_curve.csv").exists():
+                bdf = pd.read_csv(strategy_dir / "benchmark_equity_curve.csv")
                 plt.plot(pd.to_datetime(bdf["date"]), bdf["equity_usd"], label="benchmark", lw=1.6)
             for name, fname in [
                 ("ew_universe", "ew_universe_equity_curve.csv"),
@@ -2154,7 +2188,7 @@ def run_walkforward_pipeline(
         if not strategy_equity_global.empty:
             annual_series["strategy_main"] = _yearly_return_from_curve(strategy_equity_global, "equity_usd")
 
-        p_bench = backtest_root / "benchmark_equity_curve.csv"
+        p_bench = strategy_dir / "benchmark_equity_curve.csv"
         if p_bench.exists():
             bdf = pd.read_csv(p_bench)
             annual_series["benchmark"] = _yearly_return_from_curve(bdf, "equity_usd")
@@ -2181,7 +2215,7 @@ def run_walkforward_pipeline(
                 ann_df[name] = s
             ordered_cols = [c for c in preferred_cols if c in ann_df.columns] + [c for c in ann_df.columns if c not in preferred_cols]
             ann_df = ann_df[ordered_cols]
-            ann_df.to_csv(backtest_root / "annual_return_comparison.csv", index_label="year")
+            ann_df.to_csv(strategy_dir / "annual_return_comparison.csv", index_label="year")
 
             ax = ann_df.mul(100.0).plot(kind="bar", figsize=(12.5, 5.4), width=0.84)
             ax.set_title("Annual Return Comparison - Strategy vs Benchmark and Baselines")
@@ -2193,5 +2227,15 @@ def run_walkforward_pipeline(
             plt.tight_layout()
             plt.savefig(plots_path / "annual_return_comparison_with_baselines.png", dpi=140)
             plt.close()
+
+    # ── Portfolio Size vs Benchmark Alpha Analysis ──
+    if usd_fold_contexts:
+        from module.steps.step_04_evaluation.portfolio_size_analysis import run_portfolio_size_analysis
+        run_portfolio_size_analysis(
+            fold_contexts=usd_fold_contexts,
+            prices_dict=prices_dict,
+            benchmark_prices=spy_prices,
+            output_dir=strategy_dir,
+        )
 
     return summary

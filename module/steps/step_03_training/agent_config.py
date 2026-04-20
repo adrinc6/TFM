@@ -11,7 +11,11 @@ from module.agents.bear import BearAgent
 from module.agents.sentiment import SentimentAgent
 from module.agents.sector_specialized import SectorSpecializedAgent
 from module.agents.sector_rotation import SectorRotationAgent
-from environment import SECTOR_SPECIALIST_MIN_SAMPLES, ENABLE_SENTIMENT_AGENT
+from environment import (
+    SECTOR_SPECIALIST_MIN_SAMPLES,
+    ENABLE_SENTIMENT_AGENT,
+    SECTOR_SPECIALIST_LONG_FALLBACK_SCORE,
+)
 
 
 def build_agents_config(agent_models_results_dir: str, random_seed: int) -> Dict[str, Dict[str, Any]]:
@@ -43,6 +47,7 @@ def build_agents_config(agent_models_results_dir: str, random_seed: int) -> Dict
                 "random_seed": random_seed,
                 "agent_kwargs": {},
                 "min_samples_per_sector": SECTOR_SPECIALIST_MIN_SAMPLES,
+                "neutral_score": SECTOR_SPECIALIST_LONG_FALLBACK_SCORE,
             },
             "sector_col": "sector",
             "invert_y": False,
@@ -56,6 +61,7 @@ def build_agents_config(agent_models_results_dir: str, random_seed: int) -> Dict
                 "random_seed": random_seed,
                 "agent_kwargs": {},
                 "min_samples_per_sector": SECTOR_SPECIALIST_MIN_SAMPLES,
+                "neutral_score": SECTOR_SPECIALIST_LONG_FALLBACK_SCORE,
             },
             "sector_col": "sector",
             "invert_y": False,
@@ -69,6 +75,7 @@ def build_agents_config(agent_models_results_dir: str, random_seed: int) -> Dict
                 "random_seed": random_seed,
                 "agent_kwargs": {},
                 "min_samples_per_sector": SECTOR_SPECIALIST_MIN_SAMPLES,
+                "neutral_score": SECTOR_SPECIALIST_LONG_FALLBACK_SCORE,
             },
             "sector_col": "sector",
             "invert_y": False,
@@ -82,6 +89,7 @@ def build_agents_config(agent_models_results_dir: str, random_seed: int) -> Dict
                 "random_seed": random_seed,
                 "agent_kwargs": {},
                 "min_samples_per_sector": SECTOR_SPECIALIST_MIN_SAMPLES,
+                "neutral_score": 0.5,
             },
             "sector_col": "sector",
             "invert_y": True,
@@ -97,6 +105,7 @@ def build_agents_config(agent_models_results_dir: str, random_seed: int) -> Dict
                 "random_seed": random_seed,
                 "agent_kwargs": {},
                 "min_samples_per_sector": SECTOR_SPECIALIST_MIN_SAMPLES,
+                "neutral_score": SECTOR_SPECIALIST_LONG_FALLBACK_SCORE,
             },
             "sector_col": "sector",
             "invert_y": False,

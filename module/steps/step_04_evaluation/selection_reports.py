@@ -24,22 +24,22 @@ def _normalise_ticker_list(tickers: Iterable[str]) -> List[str]:
 
 def _rule_based_drivers(row: pd.Series, score: float) -> List[Dict]:
     checks = [
-        ("roe", "> 0.15", lambda v: v > 0.15, "ROE solido"),
-        ("net_margin", "> 0.10", lambda v: v > 0.10, "Margen neto positivo"),
-        ("debt_to_ebitda", "> 6", lambda v: v > 6.0, "Deuda elevada vs EBITDA"),
-        ("current_ratio", "< 1", lambda v: v < 1.0, "Riesgo de liquidez"),
-        ("revenue_yoy_growth", "> 0", lambda v: v > 0, "Crecimiento de ingresos"),
-        ("fcf", "< 0", lambda v: v < 0, "FCF negativo"),
-        ("momentum_12m", "> 0", lambda v: v > 0, "Momentum anual positivo"),
-        ("rsi_14", "> 70", lambda v: v > 70, "RSI sobrecomprado"),
-        ("eps_surprise_pct", "> 0", lambda v: v > 0, "Sorpresa de EPS positiva"),
-        ("beat_rate_4q", ">= 0.75", lambda v: v >= 0.75, "Beat rate consistente"),
-        ("mspr_3m", "> 0", lambda v: v > 0, "MSPR positivo"),
-        ("insider_net_ratio_90d", "> 0", lambda v: v > 0, "Balance neto insider positivo"),
+        ("roe", lambda v: v > 0.15, "ROE solido", "positive"),
+        ("net_margin", lambda v: v > 0.10, "Margen neto positivo", "positive"),
+        ("debt_to_ebitda", lambda v: v > 6.0, "Deuda elevada vs EBITDA", "negative"),
+        ("current_ratio", lambda v: v < 1.0, "Riesgo de liquidez", "negative"),
+        ("revenue_yoy_growth", lambda v: v > 0, "Crecimiento de ingresos", "positive"),
+        ("fcf", lambda v: v < 0, "FCF negativo", "negative"),
+        ("momentum_12m", lambda v: v > 0, "Momentum anual positivo", "positive"),
+        ("rsi_14", lambda v: v > 70, "RSI sobrecomprado", "negative"),
+        ("eps_surprise_pct", lambda v: v > 0, "Sorpresa de EPS positiva", "positive"),
+        ("beat_rate_4q", lambda v: v >= 0.75, "Beat rate consistente", "positive"),
+        ("mspr_3m", lambda v: v > 0, "MSPR positivo", "positive"),
+        ("insider_net_ratio_90d", lambda v: v > 0, "Balance neto insider positivo", "positive"),
     ]
 
     drivers: List[Dict] = []
-    for feat, _, fn, desc in checks:
+    for feat, fn, desc, direction in checks:
         val = row.get(feat, pd.NA)
         if pd.isna(val):
             continue
@@ -50,7 +50,7 @@ def _rule_based_drivers(row: pd.Series, score: float) -> List[Dict]:
                     "description": desc,
                     "shap_value": float(0.0),
                     "raw_value": float(val),
-                    "direction": "positive" if score >= 0.5 else "negative",
+                    "direction": direction,
                 })
         except Exception:
             log.debug("Rule-based driver check failed for %s", feat, exc_info=True)
@@ -105,8 +105,22 @@ def _flatten_text(text: str) -> str:
 
 
 def _split_driver_groups(drivers: List[Dict]) -> tuple[str, str]:
-    positives = [d for d in drivers if float(d.get("shap_value", 0.0)) >= 0]
-    negatives = [d for d in drivers if float(d.get("shap_value", 0.0)) < 0]
+    positives: List[Dict] = []
+    negatives: List[Dict] = []
+    for d in drivers:
+        shap_value = float(d.get("shap_value", 0.0))
+        direction = str(d.get("direction", "")).strip().lower()
+        if abs(shap_value) > 1e-12:
+            if shap_value > 0:
+                positives.append(d)
+            else:
+                negatives.append(d)
+            continue
+
+        if direction == "negative":
+            negatives.append(d)
+        else:
+            positives.append(d)
     return _format_driver_list(positives), _format_driver_list(negatives)
 
 
@@ -185,10 +199,12 @@ def build_explanation_candidate_tickers(
         candidates.extend(ordered.loc[ordered["selected"], "ticker"].tolist())
 
     candidates.extend(ordered.head(top_extra)["ticker"].tolist())
-    candidates.extend(ordered.tail(top_extra)["ticker"].tolist())
 
     near_mask = ordered["common_score"].sub(threshold).abs() <= near_margin
     candidates.extend(ordered.loc[near_mask, "ticker"].tolist())
+
+    # Complete with highest scores to keep explanations aligned with ranking.
+    candidates.extend(ordered["ticker"].tolist())
 
     return _normalise_ticker_list(candidates)[:max_candidates]
 
