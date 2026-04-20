@@ -400,6 +400,10 @@ class MetaLearner(BaseAgent):
 
                 df["agent_score_mean"] = score_mat.mean(axis=1, skipna=True).fillna(0.5)
                 df["agent_score_std"] = score_mat.std(axis=1, skipna=True).fillna(0.0)
+                # Score range captures the full disagreement magnitude between agents
+                df["agent_score_range"] = (
+                    score_mat.max(axis=1, skipna=True) - score_mat.min(axis=1, skipna=True)
+                ).fillna(0.0)
 
                 bullish_mask = score_mat.ge(self._bullish_score_threshold)
                 df["bullish_agent_count"] = bullish_mask.sum(axis=1).astype(float)
@@ -407,6 +411,7 @@ class MetaLearner(BaseAgent):
                 selected += [
                     "agent_score_mean",
                     "agent_score_std",
+                    "agent_score_range",
                     "bullish_agent_count",
                 ]
 

@@ -595,6 +595,7 @@ META_GBM_MAX_DEPTH    = 3
 META_GBM_LEARNING_RATE = 0.05
 META_GBM_SUBSAMPLE    = 0.8
 META_FEATURE_COLUMNS = [
+  # Base agent scores (stacking layer)
   "fundamental_score",
   "valuation_score",
   "momentum_score",
@@ -602,15 +603,42 @@ META_FEATURE_COLUMNS = [
   "sentiment_score",
   "sector_score",
   "regime_adjusted_score",
+
+  # Sector-relative percentile ranks (original)
   "pe_rank_sector",
   "momentum_pct_sector",
   "roe_pct_sector",
+
+  # Sector-relative value/quality ranks (new)
+  "pb_rank_sector",
+  "fcf_yield_rank_sector",
+  "roic_rank_sector",
+  "ev_ebitda_rank_sector",
+  "debt_rank_sector",
+
+  # Universe-wide percentile ranks (new)
+  "momentum_12m_rank_universe",
+  "quality_rank_universe",
+  "value_rank_universe",
+  "piotroski_rank_universe",
+
+  # Volatility-adjusted signals
   "momentum_vol_adj",
   "value_vol_adj",
   "quality_vol_adj",
+
+  # Interaction features
   "value_x_momentum",
   "quality_x_lowvol",
   "sentiment_x_earnings_surprise",
+  "quality_x_value_universe",
+  "momentum_quality_signal",
+
+  # Macro regime context
+  "vix",
+  "yield_curve",
+  "sp500_momentum_3m",
+  "sp500_momentum_12m",
 ]
 META_FEATURE_EXCLUDE = []
 # Base score columns on which meta computes consensus/interactions.
@@ -633,7 +661,9 @@ META_ENABLE_SCORE_RECALIBRATION = False
 META_SCORE_RECALIBRATION_TEMPERATURE = 1.0
 # Blend meta score with average base-agent consensus to avoid
 # meta collapse from drift and preserve cross-sectional signal.
-META_BASE_SCORE_BLEND_WEIGHT = 0.58
+# Reduced from 0.58 to give the learned meta-model more influence
+# over the final score while still keeping a regularising anchor.
+META_BASE_SCORE_BLEND_WEIGHT = 0.40
 
 # ── AlphaMetaLearner (XGBoost Regressor + Ranker + Classifier) ───────────────
 ALPHA_META_REG_N_ESTIMATORS  = 450

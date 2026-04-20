@@ -41,6 +41,31 @@ def enrich_cross_sectional_features(df: pd.DataFrame) -> pd.DataFrame:
         if "roe" in out.columns:
             out["roe_pct_sector"] = out.groupby(grp_sector)["roe"].transform(_safe_pct_rank)
 
+        # Additional sector-relative value/quality ranks
+        if "pb_ratio" in out.columns:
+            # Lower P/B is cheaper → invert so higher rank = better value
+            out["pb_rank_sector"] = 1.0 - out.groupby(grp_sector)["pb_ratio"].transform(_safe_pct_rank)
+        if "fcf_yield" in out.columns:
+            out["fcf_yield_rank_sector"] = out.groupby(grp_sector)["fcf_yield"].transform(_safe_pct_rank)
+        if "roic" in out.columns:
+            out["roic_rank_sector"] = out.groupby(grp_sector)["roic"].transform(_safe_pct_rank)
+        if "ev_to_ebitda" in out.columns:
+            # Lower EV/EBITDA = cheaper → invert
+            out["ev_ebitda_rank_sector"] = 1.0 - out.groupby(grp_sector)["ev_to_ebitda"].transform(_safe_pct_rank)
+        if "debt_to_ebitda" in out.columns:
+            # Lower debt = better → invert
+            out["debt_rank_sector"] = 1.0 - out.groupby(grp_sector)["debt_to_ebitda"].transform(_safe_pct_rank)
+
+    # Universe-wide percentile ranks (cross-sectional factor exposures)
+    if "momentum_12m" in out.columns:
+        out["momentum_12m_rank_universe"] = out.groupby(dates)["momentum_12m"].transform(_safe_pct_rank)
+    if "roic" in out.columns:
+        out["quality_rank_universe"] = out.groupby(dates)["roic"].transform(_safe_pct_rank)
+    if "earnings_yield" in out.columns:
+        out["value_rank_universe"] = out.groupby(dates)["earnings_yield"].transform(_safe_pct_rank)
+    if "piotroski_fscore" in out.columns:
+        out["piotroski_rank_universe"] = out.groupby(dates)["piotroski_fscore"].transform(_safe_pct_rank)
+
     vol = _numeric_col_or_default(out, "volatility_60d").replace(0, np.nan)
     for src, dst in [
         ("momentum_3m", "momentum_vol_adj"),
@@ -61,5 +86,15 @@ def enrich_cross_sectional_features(df: pd.DataFrame) -> pd.DataFrame:
     out["value_x_momentum"] = value_signal * mom_signal
     out["quality_x_lowvol"] = quality_signal * low_vol
     out["sentiment_x_earnings_surprise"] = sentiment * eps_surprise
+
+    # Composite factor: quality × value (high quality + cheap = strong candidate)
+    if "quality_rank_universe" in out.columns and "value_rank_universe" in out.columns:
+        out["quality_x_value_universe"] = out["quality_rank_universe"] * out["value_rank_universe"]
+
+    # Momentum quality: strong long-run momentum but not overextended short-term
+    if "momentum_12m" in out.columns and "momentum_1m" in out.columns:
+        mom12 = _numeric_col_or_default(out, "momentum_12m").fillna(0.0)
+        mom1 = _numeric_col_or_default(out, "momentum_1m").fillna(0.0)
+        out["momentum_quality_signal"] = mom12 - mom1
 
     return out
