@@ -19,6 +19,7 @@ import logging
 import numpy as np
 import pandas as pd
 from typing import Dict, List, Optional
+import re
 
 from module.agents.base import BaseAgent, FeatureSelector
 from module.common.feature_controls import resolve_feature_columns
@@ -40,6 +41,39 @@ try:
     _DEPS_OK = True
 except ImportError:
     _DEPS_OK = False
+
+try:
+    import torch
+    import torch.nn as nn
+    _TORCH_OK = True
+except Exception:
+    _TORCH_OK = False
+
+
+class _TFTLite(nn.Module):
+    """Lightweight transformer encoder for sequence momentum classification."""
+
+    def __init__(self, n_features: int, d_model: int = 32, n_heads: int = 4):
+        super().__init__()
+        self.proj = nn.Linear(n_features, d_model)
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=d_model,
+            nhead=n_heads,
+            dim_feedforward=d_model * 2,
+            dropout=0.1,
+            batch_first=True,
+            activation="gelu",
+        )
+        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=2)
+        self.gate = nn.Sequential(nn.Linear(d_model, d_model), nn.Sigmoid())
+        self.out = nn.Linear(d_model, 1)
+
+    def forward(self, x):
+        h = self.proj(x)
+        z = self.encoder(h)
+        pooled = z.mean(dim=1)
+        gated = pooled * self.gate(pooled)
+        return self.out(gated).squeeze(-1)
 
 class MomentumAgent(BaseAgent):
     """Random Forest trained on technical indicators and earnings momentum.
@@ -76,6 +110,11 @@ class MomentumAgent(BaseAgent):
         self._feature_cols: List[str]          = []
         self._selector:     Optional[FeatureSelector] = None
         self._explainer:    Optional[AgentExplainer] = None
+        self._deep_model: Optional[object] = None
+        self._deep_seq_cols: List[str] = []
+        self._deep_seq_features: List[str] = []
+        self._deep_seq_len: int = 0
+        self._deep_blend_weight: float = 0.35
 
     # ── Fit ───────────────────────────────────────────────────────────────────
 
@@ -141,6 +180,10 @@ class MomentumAgent(BaseAgent):
         self.record_train_metrics(cv, fold)
         self.save_diagnostics(fold)
         rf_model = self._model.named_steps["clf"]
+
+        # Deep sequence augmentation: uses seq_* columns when available.
+        self._fit_deep_sequence_model(X.reset_index(drop=True), y.reset_index(drop=True))
+
         if self.save_artifacts:
             self._explainer = build_explainer_for_agent(
                 self.name, rf_model, self._feature_cols,
@@ -170,8 +213,15 @@ class MomentumAgent(BaseAgent):
         if self._selector is not None:
             X_prep = self._selector.transform(X_prep)
         X_al = self._align(X_prep)
-        return pd.Series(self._model.predict_proba(X_al)[:, 1],
-                         index=X.index, name="momentum_score")
+        rf_score = pd.Series(self._model.predict_proba(X_al)[:, 1], index=X.index, name="momentum_score")
+
+        deep_score = self._predict_deep_sequence(X)
+        if deep_score is None:
+            return rf_score
+
+        w = float(np.clip(self._deep_blend_weight, 0.0, 1.0))
+        blended = ((1.0 - w) * rf_score + w * deep_score.reindex(rf_score.index).fillna(0.5)).clip(0.0, 1.0)
+        return pd.Series(blended, index=X.index, name="momentum_score")
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -199,6 +249,10 @@ class MomentumAgent(BaseAgent):
             owner="MomentumAgent",
         )
 
+        seq_cols = [c for c in df.columns if str(c).startswith("seq_")]
+        if seq_cols:
+            selected += seq_cols
+
         # Derived features: binary signals and composite indicators
         if "rsi_14" in df.columns:
             df["rsi_overbought"] = (df["rsi_14"] > 70).astype(float)
@@ -225,6 +279,92 @@ class MomentumAgent(BaseAgent):
         if fit_mode:
             self._feature_cols = list(result.columns)
         return result
+
+    def _fit_deep_sequence_model(self, X_raw: pd.DataFrame, y: pd.Series) -> None:
+        """Train a deterministic TFT-lite model on seq_* features when available."""
+        if not _TORCH_OK:
+            return
+
+        seq_cols = [c for c in X_raw.columns if str(c).startswith("seq_")]
+        if len(seq_cols) < 80:
+            return
+
+        pat = re.compile(r"^seq_(.+)_t(\d+)$")
+        parsed = []
+        for c in seq_cols:
+            m = pat.match(str(c))
+            if m:
+                parsed.append((c, m.group(1), int(m.group(2))))
+        if not parsed:
+            return
+
+        feats = sorted({p[1] for p in parsed})
+        steps = sorted({p[2] for p in parsed})
+        if len(feats) < 2 or len(steps) < 20:
+            return
+
+        self._deep_seq_cols = [p[0] for p in parsed]
+        self._deep_seq_features = feats
+        self._deep_seq_len = len(steps)
+
+        col_map = {(feat, t): col for col, feat, t in parsed}
+        X_arr = np.zeros((len(X_raw), len(steps), len(feats)), dtype=np.float32)
+        for fi, feat in enumerate(feats):
+            for ti, step in enumerate(steps):
+                col = col_map.get((feat, step))
+                if col is None:
+                    continue
+                X_arr[:, ti, fi] = pd.to_numeric(X_raw[col], errors="coerce").fillna(0.0).to_numpy(dtype=np.float32)
+
+        y_vec = pd.to_numeric(y.reindex(X_raw.index), errors="coerce").fillna(0.0).to_numpy(dtype=np.float32)
+        if len(np.unique(y_vec)) < 2:
+            return
+
+        torch.manual_seed(int(self.random_seed))
+        np.random.seed(int(self.random_seed))
+
+        model = _TFTLite(n_features=len(feats), d_model=32, n_heads=4)
+        opt = torch.optim.Adam(model.parameters(), lr=1e-3)
+        loss_fn = nn.BCEWithLogitsLoss()
+
+        X_t = torch.tensor(X_arr, dtype=torch.float32)
+        y_t = torch.tensor(y_vec, dtype=torch.float32)
+
+        model.train()
+        for _ in range(15):
+            opt.zero_grad(set_to_none=True)
+            logits = model(X_t)
+            loss = loss_fn(logits, y_t)
+            loss.backward()
+            opt.step()
+
+        self._deep_model = model.eval()
+        log.info("[MomentumAgent] Deep sequence model trained (TFT-lite) with %d seq features x %d steps", len(feats), len(steps))
+
+    def _predict_deep_sequence(self, X_raw: pd.DataFrame) -> Optional[pd.Series]:
+        if not _TORCH_OK or self._deep_model is None or not self._deep_seq_features or self._deep_seq_len <= 0:
+            return None
+
+        pat = re.compile(r"^seq_(.+)_t(\d+)$")
+        parsed = {}
+        for c in X_raw.columns:
+            m = pat.match(str(c))
+            if m:
+                parsed[(m.group(1), int(m.group(2)))] = c
+
+        feats = self._deep_seq_features
+        steps = list(range(self._deep_seq_len))
+        X_arr = np.zeros((len(X_raw), len(steps), len(feats)), dtype=np.float32)
+        for fi, feat in enumerate(feats):
+            for ti, step in enumerate(steps):
+                col = parsed.get((feat, step))
+                if col is None:
+                    continue
+                X_arr[:, ti, fi] = pd.to_numeric(X_raw[col], errors="coerce").fillna(0.0).to_numpy(dtype=np.float32)
+
+        with torch.no_grad():
+            p = torch.sigmoid(self._deep_model(torch.tensor(X_arr, dtype=torch.float32))).detach().cpu().numpy()
+        return pd.Series(p.astype(float), index=X_raw.index)
 
     def _align(self, X: pd.DataFrame) -> pd.DataFrame:
         """Aligns X to the training feature schema.

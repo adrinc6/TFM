@@ -31,9 +31,12 @@ from environment import (
     BASELINE_MOMENTUM_LOOKBACK_DAYS,
     USE_DYNAMIC_SP500_UNIVERSE,
     SP500_HISTORIC_CSV_PATH,
+    PORTFOLIO_OPTIMIZER,
 )
 from module.common.asof import assert_no_future_data
 from module.common.data_router import DataRouter
+from module.common.cross_sectional_features import enrich_cross_sectional_features
+from module.common.target_engineering import build_targets
 
 from module.steps.step_03_training.training import train_fold
 from module.steps.step_04_evaluation.ablation import run_ablation_study, summarize_ablation
@@ -615,18 +618,56 @@ def _prepare_fold_labels(
     df_test: pd.DataFrame,
     spy_prices: Optional[pd.Series] = None,
     sector_map: Optional[Dict[str, str]] = None,
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
+    prices_dict: Optional[Dict[str, pd.DataFrame]] = None,
+    lag_days: int = 45,
+    holding_period_months: int = 3,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series, pd.Series, pd.Series]:
     # Label configurable para agentes base:
     # - vs_sector (default): y=1 si supera mediana sectorial por snapshot quarter.
     # - vs_universe: y=1 si supera mediana del universo por snapshot quarter.
-    forward_train = _excess_return_label(df_train, spy_prices, sector_map).reindex(df_train.index)
-    forward_test  = _excess_return_label(df_test,  spy_prices, sector_map).reindex(df_test.index)
-    y_train = forward_train.dropna().astype(int)
-    y_test  = forward_test.dropna().astype(int)
+    train_targets = build_targets(
+        df_train,
+        prices_dict=prices_dict,
+        spy_prices=spy_prices,
+        sector_map=sector_map,
+        benchmark_mode="sector",
+        min_sector_peers=BASE_LABEL_SECTOR_MIN_PEERS,
+        lag_days=lag_days,
+        holding_period_months=holding_period_months,
+    )
+    test_targets = build_targets(
+        df_test,
+        prices_dict=prices_dict,
+        spy_prices=spy_prices,
+        sector_map=sector_map,
+        benchmark_mode="sector",
+        min_sector_peers=BASE_LABEL_SECTOR_MIN_PEERS,
+        lag_days=lag_days,
+        holding_period_months=holding_period_months,
+    )
+
+    y_train = train_targets.direction.dropna().astype(int)
+    y_test = test_targets.direction.dropna().astype(int)
 
     df_train = df_train.loc[y_train.index]
     df_test  = df_test.loc[y_test.index]
-    return df_train, df_test, y_train, y_test
+
+    df_train["target_alpha"] = pd.to_numeric(train_targets.alpha.reindex(df_train.index), errors="coerce")
+    df_train["target_quintile"] = pd.to_numeric(train_targets.quintile.reindex(df_train.index), errors="coerce")
+    df_train["target_triple_barrier"] = pd.to_numeric(train_targets.triple_barrier.reindex(df_train.index), errors="coerce")
+
+    df_test["target_alpha"] = pd.to_numeric(test_targets.alpha.reindex(df_test.index), errors="coerce")
+    df_test["target_quintile"] = pd.to_numeric(test_targets.quintile.reindex(df_test.index), errors="coerce")
+    df_test["target_triple_barrier"] = pd.to_numeric(test_targets.triple_barrier.reindex(df_test.index), errors="coerce")
+
+    return (
+        df_train,
+        df_test,
+        y_train,
+        y_test,
+        pd.to_numeric(train_targets.alpha.reindex(y_train.index), errors="coerce"),
+        pd.to_numeric(test_targets.alpha.reindex(y_test.index), errors="coerce"),
+    )
 
 
 def _build_selection_df(preds_scored: pd.DataFrame, selected_tickers: List[str], ticker_weights: Dict[str, float]) -> pd.DataFrame:
@@ -878,6 +919,7 @@ def run_walkforward_pipeline(
         results_dir=strategy_dir.as_posix(),
         strategy_dir=strategy_dir.as_posix(),
         top_n_stocks=top_n_stocks,
+        portfolio_optimizer=PORTFOLIO_OPTIMIZER,
     )
     global_visualizer = Visualizer(plots_dir=strategy_dir.as_posix())
 
@@ -1299,17 +1341,24 @@ def run_walkforward_pipeline(
             post_filing_delay_days=0,
         )
 
+        # Cross-sectional normalized and interaction features for ranking models.
+        df_train = enrich_cross_sectional_features(df_train)
+        df_test = enrich_cross_sectional_features(df_test)
+
         if len(df_train) < 100:
             log.warning(f"[{run_id}] Insufficient train ({len(df_train)} observations, minimum 100) — fold skipped.")
             continue
 
         df_train, df_test = df_train[~df_train.index.duplicated(keep="last")], df_test[~df_test.index.duplicated(keep="last")]
 
-        df_train, df_test, y_train, y_test = _prepare_fold_labels(
+        df_train, df_test, y_train, y_test, alpha_train, alpha_test = _prepare_fold_labels(
             df_train=df_train,
             df_test=df_test,
             spy_prices=spy_prices,
             sector_map=sector_map,
+            prices_dict=prices_dict,
+            lag_days=lag_days,
+            holding_period_months=holding_period_months,
         )
         if (df_test.empty or y_test.empty) and not df_test.empty:
             partial_returns = _compute_partial_forward_returns(
@@ -1340,6 +1389,8 @@ def run_walkforward_pipeline(
                 df_test_norm=df_test,
                 y_train=y_train,
                 y_test=y_test,
+                target_alpha_train=alpha_train,
+                target_alpha_test=alpha_test,
                 fold_id=run_id,
                 agent_models_results_dir=fold_agents_dir.as_posix(),
                 agents_results_dir=fold_agents_dir.as_posix(),
@@ -1349,11 +1400,23 @@ def run_walkforward_pipeline(
             )
 
             meta = agents["meta_learner"]
-            eval_metrics = meta.evaluate(df_test_scored, y_test, fold=run_id)
+            eval_metrics = meta.evaluate(df_test_scored, y_test, fold=run_id, target_alpha=alpha_test)
 
             fold_visualizer.plot_score_distribution(df_test_scored, fold=run_id)
 
-            preds_df = df_test_scored[["final_score", "label"]].copy()
+            keep_cols = [
+                c for c in [
+                    "final_score",
+                    "label",
+                    "predicted_alpha",
+                    "ranking_score",
+                    "risk_score",
+                    "regime_adjusted_score",
+                    "target_alpha",
+                ]
+                if c in df_test_scored.columns
+            ]
+            preds_df = df_test_scored[keep_cols].copy()
             preds_df["ticker"] = preds_df.index.get_level_values("ticker")
             preds_df["date"] = preds_df.index.get_level_values("date")
             if "sector" in df_test_scored.columns:
@@ -1566,6 +1629,7 @@ def run_walkforward_pipeline(
                     agents_results_dir=fold_agents_dir.as_posix(),
                     fold_id=run_id,
                     random_seed=random_seed,
+                    fold_result=fold_result,
                 )
                 if abl:
                     ablation_results.append(abl)

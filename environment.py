@@ -173,6 +173,10 @@ SECTOR_SPECIALIST_MIN_SAMPLES = 40
 # Number of internal KFold splits to generate OOF scores for the meta-learner
 OOF_N_SPLITS = 3
 
+# Purged/embargoed validation gaps (in days) for temporal integrity.
+PURGED_CV_GAP_DAYS = 90
+EMBARGO_DAYS = 30
+
 # When a sector-specific model is degenerate (e.g. all feature importances are 0),
 # use a conservative fallback score instead of a neutral 0.5 to avoid accidental
 # promotion of low-confidence candidates.
@@ -273,6 +277,9 @@ EXPORT_RUN_ARTIFACTS = True
 #          N=5  -> first weighs 50% more than the last.
 # If False, all tickers have equal weight.
 SCORE_WEIGHTED_PORTFOLIO = True
+
+# Portfolio optimizer used after model ranking: hrp | risk_parity | markowitz
+PORTFOLIO_OPTIMIZER = "hrp"
 
 # =============================================================================
 # 8. Agent hyperparameters
@@ -464,7 +471,7 @@ BEAR_FEATURE_EXCLUDE = [
 # ── SentimentAgent (Random Forest) ───────────────────────────────────────────
 # Enables/disables the standalone sentiment agent in the base stack.
 # Disabled by default because this signal is often sparse/neutral in current data.
-ENABLE_SENTIMENT_AGENT = False
+ENABLE_SENTIMENT_AGENT = True
 SENTIMENT_N_ESTIMATORS    = 200
 SENTIMENT_MAX_DEPTH       = 6
 SENTIMENT_MIN_SAMPLES_LEAF = 5
@@ -484,6 +491,12 @@ SENTIMENT_FEATURE_COLUMNS = [
   # Earnings expectation vs reality
   "beat_rate_4q",
   "eps_surprise_avg_4q",
+
+  # NLP sentiment (FinBERT)
+  "finbert_sentiment_polarity",
+  "finbert_uncertainty_score",
+  "finbert_risk_intensity",
+  "finbert_bullish_tone",
 ]
 
 SENTIMENT_FEATURE_EXCLUDE = [
@@ -586,7 +599,18 @@ META_FEATURE_COLUMNS = [
   "valuation_score",
   "momentum_score",
   "bear_score",
+  "sentiment_score",
   "sector_score",
+  "regime_adjusted_score",
+  "pe_rank_sector",
+  "momentum_pct_sector",
+  "roe_pct_sector",
+  "momentum_vol_adj",
+  "value_vol_adj",
+  "quality_vol_adj",
+  "value_x_momentum",
+  "quality_x_lowvol",
+  "sentiment_x_earnings_surprise",
 ]
 META_FEATURE_EXCLUDE = []
 # Base score columns on which meta computes consensus/interactions.
@@ -595,6 +619,7 @@ META_AGENT_SCORE_COLUMNS = [
   "valuation_score",
   "momentum_score",
   "bear_score",
+  "sentiment_score",
   "sector_score",
 ]
 # If True, adds agent consensus/confidence signals as extra features.

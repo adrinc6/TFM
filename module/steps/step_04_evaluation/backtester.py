@@ -19,6 +19,7 @@ from environment import (
 )
 from module.steps.step_04_evaluation.metrics import compute_all_metrics
 from module.steps.step_04_evaluation.portfolio_simulator import _get_close_column
+from module.common.portfolio_optimization import hrp_weights, risk_parity_weights, robust_markowitz_weights
 
 log = logging.getLogger(__name__)
 
@@ -36,6 +37,7 @@ class WalkForwardBacktester:
 		top_n_stocks: int = 10,
 		long_only: bool = True,
 		score_weighted: bool = SCORE_WEIGHTED_PORTFOLIO,
+		portfolio_optimizer: str = "hrp",
 	):
 		self.train_years = train_years
 		self.test_quarters = test_quarters
@@ -50,6 +52,7 @@ class WalkForwardBacktester:
 		self.top_n_stocks = top_n_stocks
 		self.long_only = long_only
 		self.score_weighted = score_weighted
+		self.portfolio_optimizer = str(portfolio_optimizer).strip().lower()
 		self.fold_results: List[Dict] = []
 		self.all_strategy_returns = pd.Series(dtype=float)
 		self.all_benchmark_returns = pd.Series(dtype=float)
@@ -282,26 +285,55 @@ class WalkForwardBacktester:
 		if not daily_returns:
 			return {}
 
-		# Weights: real scores scaled to [w_min, w_max] or equal-weight.
-		# Rule: the ticker with the highest score weighs (1 + N/10) times more than the lowest.
-		# Intermediate tickers are positioned according to their real scores within that range.
+		# Portfolio optimization from pre-entry trailing returns (no look-ahead).
 		N = len(tickers_with_prices)
-		if self.score_weighted and N > 1:
-			scores_arr = (
-				top_df.set_index("ticker")
-				.loc[tickers_with_prices]["score"]
-				.values.astype(float)
-			)
-			ratio = 1.0 + N / 10.0  # N=10 → 2.0x, N=5 → 1.5x
-			s_min, s_max = scores_arr.min(), scores_arr.max()
-			if s_max > s_min:
-				# Escalar scores al rango [1, ratio]
-				raw = 1.0 + (ratio - 1.0) * (scores_arr - s_min) / (s_max - s_min)
-			else:
-				raw = np.ones(N)
-			weights = raw / raw.sum()
-		else:
-			weights = np.ones(N) / N
+		weights = np.ones(N) / N
+		if N > 1:
+			trail_start = pd.Timestamp(test_start) - pd.DateOffset(days=252)
+			trail_mat = {}
+			for tk in tickers_with_prices:
+				px = prices_dict.get(tk)
+				if px is None or px.empty:
+					continue
+				cc = _get_close_column(px)
+				s = px.loc[trail_start:test_start, cc].pct_change().dropna()
+				if len(s) >= 20:
+					trail_mat[tk] = s
+
+			if len(trail_mat) >= 2:
+				trail_df = pd.concat(trail_mat, axis=1).dropna(how="all")
+				if not trail_df.empty:
+					if self.portfolio_optimizer == "hrp":
+						w_map = hrp_weights(trail_df)
+					elif self.portfolio_optimizer == "risk_parity":
+						w_map = risk_parity_weights(trail_df)
+					elif self.portfolio_optimizer == "markowitz":
+						w_map = robust_markowitz_weights(trail_df)
+					else:
+						w_map = {}
+
+					if w_map:
+						w_arr = np.array([float(w_map.get(tk, 0.0)) for tk in tickers_with_prices], dtype=float)
+						if np.isfinite(w_arr).all() and w_arr.sum() > 0:
+							weights = w_arr / w_arr.sum()
+							log.info(f"[Backtester] {period_id}: optimizer={self.portfolio_optimizer} pre-entry trailing window applied")
+
+			# Fallback to score-weighted/equal if optimizer did not produce valid weights.
+			if (not np.isfinite(weights).all()) or float(weights.sum()) <= 0:
+				weights = np.ones(N) / N
+			if np.allclose(weights, np.ones(N) / N) and self.score_weighted and N > 1:
+				scores_arr = (
+					top_df.set_index("ticker")
+					.loc[tickers_with_prices]["score"]
+					.values.astype(float)
+				)
+				ratio = 1.0 + N / 10.0
+				s_min, s_max = scores_arr.min(), scores_arr.max()
+				if s_max > s_min:
+					raw = 1.0 + (ratio - 1.0) * (scores_arr - s_min) / (s_max - s_min)
+				else:
+					raw = np.ones(N)
+				weights = raw / raw.sum()
 		weights = self._apply_weight_cap(weights, float(PORTFOLIO_MAX_STOCK_WEIGHT))
 
 		ticker_weights = {t: round(float(w), 6) for t, w in zip(tickers_with_prices, weights)}
@@ -321,7 +353,7 @@ class WalkForwardBacktester:
 		ticker_returns_sorted = dict(sorted(ticker_returns.items(), key=lambda x: x[1], reverse=True))
 
 		# Log de pesos
-		weighting_mode = "softmax(score)" if self.score_weighted else "equiponderado"
+		weighting_mode = f"{self.portfolio_optimizer}" if self.portfolio_optimizer else ("softmax(score)" if self.score_weighted else "equiponderado")
 		if float(PORTFOLIO_MAX_STOCK_WEIGHT) > 0:
 			weighting_mode = f"{weighting_mode}+cap({float(PORTFOLIO_MAX_STOCK_WEIGHT):.2f})"
 		log.info(f"[Backtester] {period_id} — cartera final ({weighting_mode}, {len(tickers_with_prices)} stocks):")

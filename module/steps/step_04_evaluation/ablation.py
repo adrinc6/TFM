@@ -23,6 +23,7 @@ def run_ablation_study(
     agents_results_dir: str,
     fold_id: int,
     random_seed: int = 42,
+    fold_result: Dict | None = None,
 ) -> Dict:
     try:
         from sklearn.metrics import roc_auc_score
@@ -89,12 +90,42 @@ def run_ablation_study(
             f"AUC={auc_ab:.4f} (baseline={baseline_auc:.4f}, d={contribution:+.4f})"
         )
 
+    component_ablation: Dict[str, float] = {}
+
+    # Regime ablation: remove regime-adjusted layer and evaluate raw ranking signal.
+    if "ranking_score" in df_test_scored.columns and y_te.nunique() > 1:
+        try:
+            component_ablation["without_regime_auc"] = float(roc_auc_score(y_te, df_test_scored.loc[y_te.index, "ranking_score"]))
+            component_ablation["regime_layer_auc_delta"] = float(baseline_auc - component_ablation["without_regime_auc"])
+        except Exception:
+            pass
+
+    # NLP ablation: remove FinBERT-derived columns from meta-style linear probe.
+    nlp_cols = [c for c in X_train.columns if str(c).startswith("finbert_")]
+    if nlp_cols and len(X_train.columns) - len(nlp_cols) >= 2:
+        auc_wo_nlp = _auc(X_train.drop(columns=nlp_cols), y_tr, X_test.drop(columns=nlp_cols), y_te)
+        component_ablation["without_nlp_auc"] = float(auc_wo_nlp)
+        component_ablation["nlp_auc_delta"] = float(baseline_auc - auc_wo_nlp)
+
+    # HRP ablation: compare fold return vs equal-weight return on same selected tickers.
+    if fold_result is not None:
+        try:
+            ticker_returns = fold_result.get("ticker_returns", {}) or {}
+            if ticker_returns:
+                ew_ret = float(np.mean(list(ticker_returns.values())))
+                hrp_ret = float(fold_result.get("strategy_cumulative_return", np.nan))
+                component_ablation["without_hrp_equal_weight_return"] = ew_ret
+                component_ablation["hrp_return_delta"] = float(hrp_ret - ew_ret)
+        except Exception:
+            pass
+
     result = {
         "fold": fold_id,
         "baseline_auc": round(baseline_auc, 4),
         "n_train": len(y_tr),
         "n_test": len(y_te),
         "agents": ablation_results,
+        "components": component_ablation,
     }
 
     out_path = Path(agents_results_dir) / f"ablation_fold{fold_id}.json"

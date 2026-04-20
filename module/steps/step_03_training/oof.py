@@ -8,6 +8,8 @@ from typing import Dict, Optional
 import numpy as np
 import pandas as pd
 
+from module.common.purged_cv import PurgedEmbargoKFold
+
 log = logging.getLogger(__name__)
 
 
@@ -60,13 +62,9 @@ def generate_oof_scores(
             agent fallback score (sector_score keeps 0.5 as neutral no-tilt).
             Also includes ``sector_score`` when ``sector_map`` is provided.
     """
-    from sklearn.model_selection import TimeSeriesSplit
-
-    # ── Quarter-level split ───────────────────────────────────────────────────
-    # Sort by date so TimeSeriesSplit always places earlier quarters in train.
+    # ── Quarter-level split with purging + embargo ───────────────────────────
     dates = X.index.get_level_values("date")
     unique_dates = sorted(dates.unique())
-
     effective_splits = min(n_splits, len(unique_dates) - 1)
     if effective_splits < 2:
         log.warning(
@@ -86,16 +84,19 @@ def generate_oof_scores(
             neutral["sector_score"] = pd.Series(0.5, index=X.index, name="sector_score")
         return neutral
 
-    kf = TimeSeriesSplit(n_splits=effective_splits)
-    date_indices = np.arange(len(unique_dates))
+    splitter = PurgedEmbargoKFold(
+        n_splits=effective_splits,
+        purge_days=90,
+        embargo_days=30,
+        allow_future_train=False,
+    )
 
-    # Pre-compute boolean masks for each fold (indexed on X)
-    fold_masks: List[tuple] = []
-    for date_tr_idx, date_val_idx in kf.split(date_indices):
-        train_dates = {unique_dates[i] for i in date_tr_idx}
-        val_dates = {unique_dates[i] for i in date_val_idx}
-        train_mask = dates.isin(train_dates)
-        val_mask = dates.isin(val_dates)
+    fold_masks = []
+    for tr_idx, val_idx in splitter.split(dates):
+        train_mask = np.zeros(len(X), dtype=bool)
+        val_mask = np.zeros(len(X), dtype=bool)
+        train_mask[tr_idx] = True
+        val_mask[val_idx] = True
         fold_masks.append((train_mask, val_mask))
 
     oof: Dict[str, pd.Series] = {}

@@ -7,6 +7,7 @@ from typing import Dict, Optional
 import pandas as pd
 
 from module.common.asof import filter_asof
+from module.common.finbert_features import extract_finbert_features, extract_text_blobs
 
 
 class SentimentFeatureBuilder:
@@ -88,5 +89,9 @@ class SentimentFeatureBuilder:
                     f["beat_rate_4q"] = float(last4["eps_beat"].mean())
                 if "eps_surprise_pct" in last4.columns:
                     f["eps_surprise_avg_4q"] = float(last4["eps_surprise_pct"].mean())
+
+            # Textual sentiment (FinBERT model with deterministic lexical fallback).
+            text_blobs = extract_text_blobs(recommendation_df, insider_df, eps_df)
+            f.update(extract_finbert_features(text_blobs))
 
         return pd.Series(f)

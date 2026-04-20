@@ -27,7 +27,8 @@ from environment import (
     SECTOR_ROTATION_FEATURE_COLUMNS, SECTOR_ROTATION_FEATURE_EXCLUDE,
     META_FEATURE_COLUMNS, META_FEATURE_EXCLUDE,
 )
-from module.agents.meta_learner import MetaLearner
+from module.agents.alpha_meta_learner import AlphaMetaLearner
+from module.common.regime import MarketRegimeModel, apply_regime_weighting
 from module.steps.step_03_training.agent_config import build_agents_config, build_sector_rotation_agent
 from module.steps.step_03_training.oof import generate_oof_scores
 
@@ -325,6 +326,8 @@ def train_fold(
     df_test_norm: pd.DataFrame,
     y_train: pd.Series,
     y_test: pd.Series,
+    target_alpha_train: Optional[pd.Series],
+    target_alpha_test: Optional[pd.Series],
     fold_id: int,
     agent_models_results_dir: str,
     agents_results_dir: str,
@@ -389,9 +392,20 @@ def train_fold(
     df_train_with_oof = _apply_dispersion_shrink(df_train_with_oof, dispersion_scales)
 
     # ── Step 3: MetaLearner ──────────────────────────────────────────────────
-    meta = MetaLearner(results_dir=agent_models_results_dir, random_seed=random_seed)
+    meta = AlphaMetaLearner(results_dir=agent_models_results_dir, random_seed=random_seed)
     log.info(f"[Fold {fold_id}] 2/3 — Entrenando MetaLearner sobre scores OOF (anti-leakage)...")
-    meta.fit(df_train_with_oof, y_train, fold=fold_id, sector_col="sector")
+    regime_model = MarketRegimeModel()
+    regime_model.fit(df_train_with_oof)
+    df_train_with_oof["regime_state"] = regime_model.predict(df_train_with_oof)
+    df_train_with_oof, _ = apply_regime_weighting(df_train_with_oof, regime_col="regime_state")
+
+    meta.fit(
+        df_train_with_oof,
+        y_train,
+        fold=fold_id,
+        sector_col="sector",
+        target_alpha=target_alpha_train,
+    )
 
     # ── Step 4: Test predictions ─────────────────────────────────────────────
     log.info(f"[Fold {fold_id}] 3/3 — Generando predicciones sobre el quarter de test ({len(df_test_norm)} tickers)...")
@@ -405,11 +419,18 @@ def train_fold(
     else:
         df_test["sector_score"] = 0.5
 
+    df_test["regime_state"] = regime_model.predict(df_test)
+    df_test, _ = apply_regime_weighting(df_test, regime_col="regime_state")
+
     df_test = _apply_dispersion_shrink(df_test, dispersion_scales)
-    df_test["final_score"] = meta.predict_score(df_test, "sector").values
+    components = meta.predict_components(df_test, "sector")
+    df_test = pd.concat([df_test, components], axis=1)
+    df_test["final_score"] = df_test["regime_adjusted_score"].values
     _log_score_stats("Meta/final_score_pre_sector_adjust", df_test["final_score"])
     df_test = _apply_sector_adjustments(df_test)
     df_test["label"] = y_test.values
+    if target_alpha_test is not None:
+        df_test["target_alpha"] = pd.to_numeric(target_alpha_test.reindex(df_test.index), errors="coerce")
     log.info(f"[Fold {fold_id}] 3/3 — Predicciones listas. Scores en rango [{df_test['final_score'].min():.3f}, {df_test['final_score'].max():.3f}]")
 
     agents_dict = {**base_agents, "sector_rotation": sector_agent, "meta_learner": meta}
@@ -425,6 +446,7 @@ def train_fold(
 def train_full_history(
     df_norm: pd.DataFrame,
     y: pd.Series,
+    target_alpha: Optional[pd.Series],
     agent_models_results_dir: str,
     random_seed: int = 42,
     sector_map: Optional[Dict[str, str]] = None,
@@ -432,7 +454,7 @@ def train_full_history(
 ) -> Tuple[Dict, pd.DataFrame, Dict[str, float]]:
     agents_config = build_agents_config(agent_models_results_dir=agent_models_results_dir, random_seed=random_seed)
     base_agents = _instantiate_base_agents(agents_config)
-    meta = MetaLearner(results_dir=agent_models_results_dir, random_seed=random_seed)
+    meta = AlphaMetaLearner(results_dir=agent_models_results_dir, random_seed=random_seed)
 
     _fit_base_agents(base_agents, agents_config, df_norm, y, fold=0)
 
@@ -456,7 +478,12 @@ def train_full_history(
     dispersion_scales = _compute_dispersion_scales(df_with_scores, score_cols)
     df_with_scores = _apply_dispersion_shrink(df_with_scores, dispersion_scales)
 
-    meta.fit(df_with_scores, y, fold=0, sector_col="sector")
+    regime_model = MarketRegimeModel()
+    regime_model.fit(df_with_scores)
+    df_with_scores["regime_state"] = regime_model.predict(df_with_scores)
+    df_with_scores, _ = apply_regime_weighting(df_with_scores, regime_col="regime_state")
+
+    meta.fit(df_with_scores, y, fold=0, sector_col="sector", target_alpha=target_alpha)
 
     agents_dict = {**base_agents, "sector_rotation": sector_agent, "meta_learner": meta}
     return agents_dict, df_with_scores, dispersion_scales

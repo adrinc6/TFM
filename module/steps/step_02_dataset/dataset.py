@@ -16,6 +16,7 @@ from module.steps.step_02_dataset.builders.technical import TechnicalFeatureBuil
 from module.steps.step_02_dataset.builders.valuation import ValuationFeatureBuilder
 from module.steps.step_02_dataset.builders.insider import InsiderFeatureBuilder
 from module.steps.step_02_dataset.builders.sentiment import SentimentFeatureBuilder
+from module.common.finbert_features import extract_finbert_features, extract_text_blobs
 from environment import (
     FUNDAMENTAL_FEATURE_COLUMNS,
     FUNDAMENTAL_FEATURE_EXCLUDE,
@@ -79,7 +80,12 @@ def _enforce_master_feature_schema(df: pd.DataFrame) -> pd.DataFrame:
         if col not in df.columns:
             df[col] = np.nan
 
-    keep_cols = [c for c in _MASTER_METADATA_COLS if c in df.columns] + required
+    dynamic_cols = [
+        c for c in df.columns
+        if c.startswith("seq_") or c.startswith("finbert_")
+    ]
+
+    keep_cols = [c for c in _MASTER_METADATA_COLS if c in df.columns] + required + dynamic_cols
     keep_cols = list(dict.fromkeys(keep_cols))
 
     extra_cols = [c for c in df.columns if c not in keep_cols]
@@ -97,6 +103,50 @@ def _enforce_master_feature_schema(df: pd.DataFrame) -> pd.DataFrame:
         log.info("[Dataset] Columnas requeridas faltantes rellenadas como NaN: %d", len(missing_now))
 
     return df[keep_cols].copy()
+
+
+def _build_sequence_features(price_window: pd.DataFrame, seq_len: int = 60) -> pd.Series:
+    """Build fixed-length sequence features from recent OHLCV dynamics."""
+    if price_window is None or price_window.empty:
+        return pd.Series(dtype=float)
+
+    df = price_window.copy().sort_index()
+    need_cols = ["Open", "High", "Low", "Close", "Volume"]
+    for c in need_cols:
+        if c not in df.columns:
+            return pd.Series(dtype=float)
+
+    close = pd.to_numeric(df["Close"], errors="coerce")
+    volume = pd.to_numeric(df["Volume"], errors="coerce")
+    intraday_range = (
+        (pd.to_numeric(df["High"], errors="coerce") - pd.to_numeric(df["Low"], errors="coerce"))
+        / close.replace(0, np.nan)
+    )
+    ret = close.pct_change()
+    vol_rolling = ret.rolling(10).std()
+    vol_z = (volume - volume.rolling(20).mean()) / volume.rolling(20).std().replace(0, np.nan)
+
+    feat_df = pd.DataFrame(
+        {
+            "ret": ret,
+            "range": intraday_range,
+            "vol": vol_rolling,
+            "vol_z": vol_z,
+        },
+        index=df.index,
+    ).replace([np.inf, -np.inf], np.nan)
+
+    feat_df = feat_df.tail(max(int(seq_len), 1)).fillna(0.0)
+    if len(feat_df) < seq_len:
+        pad = pd.DataFrame(0.0, index=range(seq_len - len(feat_df)), columns=feat_df.columns)
+        feat_df = pd.concat([pad, feat_df.reset_index(drop=True)], axis=0)
+
+    out = {}
+    for c in feat_df.columns:
+        vals = feat_df[c].to_numpy(dtype=float)
+        for i, v in enumerate(vals):
+            out[f"seq_{c}_t{i}"] = float(v)
+    return pd.Series(out)
 
 
 def _build_filing_date_map_for_ticker(data_dir: str, ticker: str) -> Dict[pd.Timestamp, pd.Timestamp]:
@@ -288,6 +338,13 @@ def _build_feature_record(
         as_of=feature_date,
     )
 
+    # NLP sentiment features (FinBERT when available, lexical fallback otherwise).
+    text_blobs = extract_text_blobs(rec_df, ins_df, eps_df)
+    finbert_feats = pd.Series(extract_finbert_features(text_blobs))
+
+    # Deep momentum sequence input over the latest 60 trading days.
+    seq_feats = _build_sequence_features(price_window, seq_len=60)
+
     # Identificador trimestral: "2024Q1", "2024Q2", etc.
     year_quarter = f"{as_of.year}Q{as_of.quarter}"
 
@@ -314,6 +371,8 @@ def _build_feature_record(
     record.update(val_feats.to_dict())
     record.update(insider_feats.to_dict())
     record.update(sentiment_feats.to_dict())
+    record.update(finbert_feats.to_dict())
+    record.update(seq_feats.to_dict())
     return record
 
 
