@@ -109,13 +109,15 @@ def sortino_ratio(returns: pd.Series, risk_free: float = 0.04,
 
 
 def information_ratio(returns: pd.Series, benchmark_returns: pd.Series,
-                      periods_per_year: int = 4) -> float:
+                      periods_per_year: int = 252) -> float:
     """Computes the Information Ratio (annualised active return / tracking error).
 
     Args:
         returns (pd.Series): Strategy periodic return series.
         benchmark_returns (pd.Series): Benchmark periodic return series.
-        periods_per_year (int): Number of periods in a year (4 for quarterly).
+        periods_per_year (int): Number of periods in a year (252 for daily,
+            4 for quarterly). Defaults to 252 to match the convention used by
+            the other metric functions in this module.
 
     Returns:
         float: Information ratio; 0.0 if tracking error is zero or no overlap.

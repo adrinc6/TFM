@@ -91,7 +91,10 @@ def enrich_cross_sectional_features(df: pd.DataFrame) -> pd.DataFrame:
     if "quality_rank_universe" in out.columns and "value_rank_universe" in out.columns:
         out["quality_x_value_universe"] = out["quality_rank_universe"] * out["value_rank_universe"]
 
-    # Momentum quality: strong long-run momentum but not overextended short-term
+    # Momentum divergence: long-run momentum minus short-term reversal.
+    # Positive when a stock has strong 12-month trend but a mild 1-month move
+    # (trend is intact without recent excessive run-up); negative when the
+    # recent 1-month surge has overshot the longer-term trend.
     if "momentum_12m" in out.columns and "momentum_1m" in out.columns:
         mom12 = _numeric_col_or_default(out, "momentum_12m").fillna(0.0)
         mom1 = _numeric_col_or_default(out, "momentum_1m").fillna(0.0)
