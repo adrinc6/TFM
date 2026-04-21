@@ -1,13 +1,12 @@
 """Unit and integration tests for the TP/SL + confidence strategy pipeline.
 
 Coverage:
-    1. signal_generation  – TP/SL computation correctness
-    2. confidence_model   – confidence scoring and calibration blending
-    3. portfolio_selection – EV ranking and 4–8 stock constraints
-    4. backtesting_engine  – TP/SL hit detection
-    5. agent_weighting    – EWMA weight updates and persistence
-    6. tp_sl_reporter     – CSV export shape and required columns
-    7. Integration        – full pipeline end-to-end
+    1. confidence_model   – confidence scoring and calibration blending
+    2. portfolio_selection – EV ranking and 4–8 stock constraints
+    3. backtesting_engine  – TP/SL hit detection
+    4. agent_weighting    – EWMA weight updates and persistence
+    5. tp_sl_reporter     – CSV export shape and required columns
+    6. Integration        – full pipeline end-to-end
 """
 
 from __future__ import annotations
@@ -22,7 +21,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from module.strategy.signal_generation import compute_tp_sl, build_signals
 from module.strategy.confidence_model import compute_confidence, attach_confidence
 from module.strategy.portfolio_selection import (
     compute_expected_value,
@@ -76,77 +74,10 @@ def _make_prices_dict(tickers, **kwargs) -> Dict:
 # 1. Signal generation
 # ===========================================================================
 
-class TestComputeTpSl:
-    """Tests for compute_tp_sl."""
-
-    def test_output_shape(self):
-        scores = _make_scores()
-        result = compute_tp_sl(scores)
-        assert isinstance(result, pd.DataFrame)
-        assert set(result.columns) >= {"ticker", "score", "tp_pct", "sl_pct"}
-        assert len(result) == len(scores)
-
-    def test_tp_increases_with_score(self):
-        low = compute_tp_sl(pd.Series({"A": 0.2}))
-        high = compute_tp_sl(pd.Series({"A": 0.8}))
-        assert float(high["tp_pct"].iloc[0]) > float(low["tp_pct"].iloc[0])
-
-    def test_sl_decreases_with_score(self):
-        """Higher score → tighter stop (lower sl_pct)."""
-        low = compute_tp_sl(pd.Series({"A": 0.2}))
-        high = compute_tp_sl(pd.Series({"A": 0.8}))
-        assert float(high["sl_pct"].iloc[0]) < float(low["sl_pct"].iloc[0])
-
-    def test_values_clipped_to_bounds(self):
-        scores = pd.Series({"A": 0.0, "B": 1.0})
-        result = compute_tp_sl(scores, min_tp=0.02, max_tp=0.25, min_sl=0.01, max_sl=0.15)
-        assert result["tp_pct"].between(0.02, 0.25).all()
-        assert result["sl_pct"].between(0.01, 0.15).all()
-
-    def test_empty_scores(self):
-        result = compute_tp_sl(pd.Series(dtype=float))
-        assert result.empty
-
-    def test_baseline_at_midpoint(self):
-        """Score = 0.5 should yield exactly the base TP and SL."""
-        base_tp, base_sl = 0.08, 0.05
-        result = compute_tp_sl(
-            pd.Series({"A": 0.5}),
-            base_tp=base_tp,
-            base_sl=base_sl,
-        )
-        assert abs(float(result["tp_pct"].iloc[0]) - base_tp) < 1e-9
-        assert abs(float(result["sl_pct"].iloc[0]) - base_sl) < 1e-9
-
-
-class TestBuildSignals:
-    """Tests for build_signals (higher-level API)."""
-
-    def test_returns_dataframe(self):
-        df = _make_agent_df()
-        out = build_signals(df)
-        assert isinstance(out, pd.DataFrame)
-        assert "ticker" in out.columns
-
-    def test_custom_agent_weights(self):
-        df = _make_agent_df()
-        w = {"fundamental_score": 2.0, "momentum_score": 1.0, "bear_score": 0.5}
-        out = build_signals(df, agent_weights=w)
-        assert len(out) == len(df)
-
-    def test_raises_without_score_cols(self):
-        df = pd.DataFrame({"ticker": ["A"], "irrelevant": [0.5]})
-        with pytest.raises(ValueError):
-            build_signals(df)
-
-
 # ===========================================================================
-# 2. Confidence model
+# 1. Confidence model
 # Constant used in historical calibration shift test
 _HIGH_HIT_RATE = 0.9
-
-
-# ===========================================================================
 
 class TestComputeConfidence:
 
@@ -187,11 +118,17 @@ class TestComputeConfidence:
 class TestAttachConfidence:
 
     def test_adds_column(self):
-        df = _make_agent_df()
-        signals = compute_tp_sl(_make_scores([f"T{i}" for i in range(8)]))
-        signals["ticker"] = [f"T{i}" for i in range(8)]
-        for col in ["fundamental_score", "momentum_score", "bear_score"]:
-            signals[col] = 0.6
+        n = 8
+        tickers = [f"T{i}" for i in range(n)]
+        rng = np.random.default_rng(7)
+        signals = pd.DataFrame({
+            "ticker": tickers,
+            "fundamental_score": rng.uniform(0.4, 0.9, n),
+            "momentum_score": rng.uniform(0.4, 0.9, n),
+            "bear_score": rng.uniform(0.3, 0.7, n),
+            "tp_pct": rng.uniform(0.05, 0.15, n),
+            "sl_pct": rng.uniform(0.02, 0.08, n),
+        })
         out = attach_confidence(signals)
         assert "confidence" in out.columns
 
@@ -477,38 +414,38 @@ class TestTpSlReporter:
 # ===========================================================================
 
 class TestFullPipelineIntegration:
-    """Integration test: signal → confidence → selection → backtest → CSV."""
+    """Integration test: confidence → EV selection → backtest → CSV."""
 
     def test_end_to_end(self, tmp_path):
-        from module.strategy.signal_generation import build_signals
         from module.strategy.confidence_model import attach_confidence
         from module.strategy.portfolio_selection import select_portfolio
         from module.strategy.backtesting_engine import run_backtest
         from module.steps.step_04_evaluation.tp_sl_reporter import export_strategy_csv
 
-        # --- Create synthetic agent scores for 10 stocks ------------------
+        # --- Create synthetic agent scores with TP/SL levels for 10 stocks ---
         n = 10
         tickers = [f"TICK{i}" for i in range(n)]
         rng = np.random.default_rng(123)
+        # TP/SL levels derived from volatility (native TP/SL training approach)
         agent_df = pd.DataFrame({
             "ticker": tickers,
             "fundamental_score": rng.uniform(0.4, 0.9, n),
             "momentum_score":    rng.uniform(0.35, 0.85, n),
             "bear_score":        rng.uniform(0.3, 0.7, n),
             "sector": (["Tech", "Health", "Energy", "Finance", "Comm"] * 2)[:n],
+            # TP/SL levels set directly from volatility-based inference
+            "tp_pct": rng.uniform(0.06, 0.15, n),
+            "sl_pct": rng.uniform(0.03, 0.08, n),
         })
-
-        # --- Step 1: Signal generation ------------------------------------
-        signals = build_signals(agent_df)
 
         # Propagate sector column
         sector_map = dict(zip(agent_df["ticker"], agent_df["sector"]))
+
+        # --- Step 1: Attach confidence from predict_proba scores --------------
+        signals = attach_confidence(agent_df)
         signals["sector"] = signals["ticker"].map(sector_map)
 
-        # --- Step 2: Attach confidence ------------------------------------
-        signals = attach_confidence(signals)
-
-        # --- Step 3: Portfolio selection ----------------------------------
+        # --- Step 2: Portfolio selection by EV --------------------------------
         signals = select_portfolio(
             signals,
             min_stocks=4,
@@ -516,12 +453,12 @@ class TestFullPipelineIntegration:
             sector_cap=3,
         )
 
-        # --- Step 4: Backtest ---------------------------------------------
+        # --- Step 3: Backtest -------------------------------------------------
         entry_date = pd.Timestamp("2024-01-02")
         prices_dict = _make_prices_dict(tickers, trend=0.002)
         signals = run_backtest(signals, prices_dict, entry_date, max_holding_days=90)
 
-        # --- Step 5: CSV export -------------------------------------------
+        # --- Step 4: CSV export -----------------------------------------------
         out_path = tmp_path / "strategy_output.csv"
         export_strategy_csv(
             signals,
@@ -539,8 +476,8 @@ class TestFullPipelineIntegration:
         assert set(result["ticker"]) == set(tickers)
 
         # Required columns present
-        for col in ("ticker", "fold_id", "score", "tp_pct", "sl_pct",
-                    "confidence", "ev", "selected", "outcome", "days_to_outcome"):
+        for col in ("ticker", "fold_id", "tp_pct", "sl_pct",
+                    "confidence", "selected", "outcome", "days_to_outcome"):
             assert col in result.columns, f"Missing column: {col}"
 
         # Portfolio size constraints

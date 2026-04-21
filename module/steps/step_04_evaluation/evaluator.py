@@ -13,8 +13,6 @@ import numpy as np
 import pandas as pd
 
 from environment import (
-    BASE_AGENTS_LABEL_MODE,
-    BASE_LABEL_SECTOR_MIN_PEERS,
     PORTFOLIO_MIN_SCORE,
     RUN_ABLATION_STUDY,
     WALKFORWARD_TRAIN_MIN_YEARS,
@@ -478,65 +476,6 @@ def _spy_quarterly_returns(spy_prices: pd.Series) -> Dict[str, float]:
         if p0 > 0:
             spy_returns[str(period)] = float(p1 / p0 - 1)
     return spy_returns
-
-
-def _excess_return_label(
-    df: pd.DataFrame,
-    spy_prices: Optional[pd.Series] = None,
-    sector_map: Optional[Dict[str, str]] = None,
-) -> pd.Series:
-    """
-        Sector outperformance label by snapshot: 1 if the ticker beat the
-        sector median using the forward_return defined for that snapshot.
-
-        Grouping is done by snapshot quarter (not by the calendar output quarter),
-        because all tickers from the same snapshot share the same
-        entry/exit rule (lag + holding) and must be compared against each other.
-    """
-    dates = df.index.get_level_values("date")
-    tickers = df.index.get_level_values("ticker")
-    snapshot_quarters = dates.to_period("Q")
-    forward_return = df["forward_return"]
-    valid_mask = forward_return.notna()
-
-    quarter_median = df.groupby(snapshot_quarters)["forward_return"].transform("median")
-
-    want_vs_sector = str(BASE_AGENTS_LABEL_MODE).lower().strip() == "vs_sector"
-    if want_vs_sector and sector_map is not None and len(sector_map) > 0:
-        sector_series = pd.Series(tickers, index=df.index).map(sector_map).fillna("Unknown")
-        temp = pd.DataFrame(
-            {
-                "forward_return": forward_return.values,
-                "sector": sector_series.values,
-                "snapshot_quarter": snapshot_quarters.astype(str),
-            },
-            index=df.index,
-        )
-
-        grp = ["sector", "snapshot_quarter"]
-        sector_quarter_median = temp.groupby(grp)["forward_return"].transform("median")
-        sector_quarter_count = temp.groupby(grp)["forward_return"].transform("count")
-
-        enough_peers = (temp["sector"] != "Unknown") & (sector_quarter_count >= int(BASE_LABEL_SECTOR_MIN_PEERS))
-        benchmark = pd.Series(np.where(enough_peers, sector_quarter_median, quarter_median), index=df.index)
-
-        n_with_sector = int((temp["sector"] != "Unknown").sum())
-        n_sector_label = int(enough_peers.sum())
-        n_fallback = int(len(df) - n_sector_label)
-        log.debug(
-            "[Label] mode=vs_sector | sector conocidos=%d/%d | con peers suficientes=%d | fallback_universo=%d",
-            n_with_sector,
-            len(df),
-            n_sector_label,
-            n_fallback,
-        )
-        labels = (forward_return > benchmark).astype(float)
-        return labels.where(valid_mask)
-
-    # Explicit fallback: universe median per snapshot quarter.
-    log.debug("[Label] mode=vs_universe (or no sector_map) — using universe median per snapshot quarter")
-    labels = (forward_return > quarter_median).astype(float)
-    return labels.where(valid_mask)
 
 
 def _compute_partial_forward_returns(
@@ -1541,7 +1480,7 @@ def run_walkforward_pipeline(
                     metrics_payload={
                         "fold_id": run_id,
                         "classification_metrics": eval_metrics,
-                        "legacy_return_metrics": {k: v for k, v in fold_result.items() if not str(k).startswith("_")},
+                        "return_metrics": {k: v for k, v in fold_result.items() if not str(k).startswith("_")},
                         "usd_summary": sim_out.get("fold_summary", {}),
                     },
                 )

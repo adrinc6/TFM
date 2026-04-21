@@ -155,16 +155,6 @@ HOLDING_PERIOD_MONTHS = 3
 # Minimum historical quarters per ticker to include it in training
 MIN_HISTORY_QUARTERS = 4
 
-# Training target for base agents (all except SectorRotation):
-# - "vs_sector": y=1 if the company beats its sector median in the snapshot.
-# - "vs_universe": y=1 if it beats the universe median in the snapshot.
-BASE_AGENTS_LABEL_MODE = "vs_sector"
-
-# Minimum peers per sector x snapshot to use a sector benchmark for labels.
-# If not met, falls back to universe median in that snapshot.
-# 10 ensures more stable sector median statistics than the previous default of 5.
-BASE_LABEL_SECTOR_MIN_PEERS = 10
-
 # Minimum observations required to train an independent model in each sector.
 # Under-sampled sectors fall back to the agent-specific score policy defined
 # in training config instead of blindly returning 0.5.
