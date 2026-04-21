@@ -223,7 +223,7 @@ class WalkForwardBacktester:
 		ordered = predictions_df.sort_values(ranking_col, ascending=False).copy()
 		if "score" not in ordered.columns:
 			# Keep downstream interfaces stable: "score" is the normalized ranking field.
-			log.info("[Backtester] score column missing; using '%s' as ranking alias.", ranking_col)
+			log.info("[Backtester] score column missing; using %s as ranking alias.", ranking_col)
 			ordered["score"] = pd.to_numeric(ordered[ranking_col], errors="coerce")
 		sector_cap = int(PORTFOLIO_MAX_STOCKS_PER_SECTOR)
 		qualified = ordered[pd.to_numeric(ordered[ranking_col], errors="coerce") >= float(selection_threshold)]

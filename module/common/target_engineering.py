@@ -43,6 +43,8 @@ def _extract_close(price_obj) -> pd.Series:
     if isinstance(price_obj, pd.Series):
         return pd.to_numeric(price_obj, errors="coerce").dropna().sort_index()
     if isinstance(price_obj, pd.DataFrame) and not price_obj.empty:
+        # Upstream price frames are expected to expose "Close"; fallback keeps
+        # compatibility with single-column custom frames used in tests.
         col = "Close" if "Close" in price_obj.columns else price_obj.columns[-1]
         return pd.to_numeric(price_obj[col], errors="coerce").dropna().sort_index()
     return pd.Series(dtype=float)
@@ -99,7 +101,8 @@ def build_tp_sl_targets(
         prices = _extract_close(prices_dict.get(str(ticker)))
         if prices.empty:
             continue
-        snapshot_dt = pd.Timestamp(row.get("snapshot_date")) if "snapshot_date" in row and pd.notna(row.get("snapshot_date")) else pd.Timestamp(dt)
+        has_snapshot = "snapshot_date" in row and pd.notna(row.get("snapshot_date"))
+        snapshot_dt = pd.Timestamp(row.get("snapshot_date")) if has_snapshot else pd.Timestamp(dt)
         entry_date = snapshot_dt + pd.Timedelta(days=max(int(lag_days), 0))
         sim = simulate_tp_sl(
             ticker=str(ticker),

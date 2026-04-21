@@ -632,6 +632,7 @@ def _prepare_fold_labels(
     if not prices_dict:
         raise ValueError("TP/SL target generation requires prices_dict for every fold.")
 
+    # Any fixed anchor works here; we only need month->day conversion for horizon sizing.
     base_ts = pd.Timestamp("2000-01-01")
     horizon_days = int((base_ts + pd.DateOffset(months=max(int(holding_period_months), 1)) - base_ts).days)
     max_holding_days = max(horizon_days, int(TP_SL_MAX_HOLDING_DAYS))
@@ -1377,6 +1378,7 @@ def run_walkforward_pipeline(
                 df_test_norm=df_test,
                 y_train=y_train,
                 y_test=y_test,
+                # Alpha targets are deprecated in TP/SL-native training.
                 target_alpha_train=None,
                 target_alpha_test=None,
                 fold_id=run_id,
