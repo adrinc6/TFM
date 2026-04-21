@@ -43,7 +43,7 @@ from environment import (
 from module.common.asof import assert_no_future_data
 from module.common.data_router import DataRouter
 from module.common.cross_sectional_features import enrich_cross_sectional_features
-from module.common.target_engineering import build_tp_sl_targets
+from module.common.target_engineering import build_tp_sl_targets, infer_tp_sl_levels
 
 from module.steps.step_03_training.training import train_fold
 from module.steps.step_04_evaluation.ablation import run_ablation_study, summarize_ablation
@@ -632,7 +632,9 @@ def _prepare_fold_labels(
     if not prices_dict:
         raise ValueError("TP/SL target generation requires prices_dict for every fold.")
 
-    max_holding_days = max(int(holding_period_months) * 31, int(TP_SL_MAX_HOLDING_DAYS))
+    base_ts = pd.Timestamp("2000-01-01")
+    horizon_days = int((base_ts + pd.DateOffset(months=max(int(holding_period_months), 1)) - base_ts).days)
+    max_holding_days = max(horizon_days, int(TP_SL_MAX_HOLDING_DAYS))
     train_targets = build_tp_sl_targets(
         df_train,
         prices_dict=prices_dict,
@@ -1407,14 +1409,18 @@ def run_walkforward_pipeline(
                 errors="coerce",
             ).fillna(0.5).clip(0.0, 1.0)
             if "tp_level" not in preds_df.columns or preds_df["tp_level"].isna().all():
-                vol = pd.to_numeric(df_test_scored.get("volatility_60d"), errors="coerce")
-                vol_ref = float(vol.dropna().median()) if vol.notna().any() else np.nan
-                if not np.isfinite(vol_ref) or vol_ref <= 0:
-                    scale = pd.Series(1.0, index=preds_df.index, dtype=float)
-                else:
-                    scale = (vol / vol_ref).clip(0.5, 2.0).fillna(1.0).astype(float)
-                preds_df["tp_level"] = (float(TP_SL_BASE_TP) * scale).clip(float(TP_SL_MIN_TP), float(TP_SL_MAX_TP))
-                preds_df["sl_level"] = (float(TP_SL_BASE_SL) * scale).clip(float(TP_SL_MIN_SL), float(TP_SL_MAX_SL))
+                inferred_tp, inferred_sl = infer_tp_sl_levels(
+                    df_test_scored,
+                    tp_default=float(TP_SL_BASE_TP),
+                    sl_default=float(TP_SL_BASE_SL),
+                    volatility_col="volatility_60d",
+                )
+                preds_df["tp_level"] = pd.to_numeric(inferred_tp.reindex(preds_df.index), errors="coerce").clip(
+                    float(TP_SL_MIN_TP), float(TP_SL_MAX_TP)
+                )
+                preds_df["sl_level"] = pd.to_numeric(inferred_sl.reindex(preds_df.index), errors="coerce").clip(
+                    float(TP_SL_MIN_SL), float(TP_SL_MAX_SL)
+                )
             preds_df["ev"] = (
                 preds_df["confidence"] * pd.to_numeric(preds_df["tp_level"], errors="coerce").fillna(float(TP_SL_BASE_TP))
                 - (1.0 - preds_df["confidence"]) * pd.to_numeric(preds_df["sl_level"], errors="coerce").fillna(float(TP_SL_BASE_SL))

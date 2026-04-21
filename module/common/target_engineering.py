@@ -7,7 +7,6 @@ from typing import Dict, Optional
 
 import numpy as np
 import pandas as pd
-from module.strategy.backtesting_engine import simulate_tp_sl
 
 _TP_MIN = 0.02
 _TP_MAX = 0.25
@@ -49,7 +48,7 @@ def _extract_close(price_obj) -> pd.Series:
     return pd.Series(dtype=float)
 
 
-def _infer_tp_sl_levels(
+def infer_tp_sl_levels(
     df: pd.DataFrame,
     *,
     tp_default: float = 0.08,
@@ -91,7 +90,8 @@ def build_tp_sl_targets(
     if not prices_dict:
         raise ValueError("TP/SL target generation requires non-empty prices_dict.")
 
-    tp_level, sl_level = _infer_tp_sl_levels(df, tp_default=tp_default, sl_default=sl_default)
+    from module.strategy.backtesting_engine import simulate_tp_sl
+    tp_level, sl_level = infer_tp_sl_levels(df, tp_default=tp_default, sl_default=sl_default)
     hit_label = pd.Series(np.nan, index=df.index, dtype=float)
     outcome = pd.Series(index=df.index, dtype="object")
 
