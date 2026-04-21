@@ -9,6 +9,13 @@ import numpy as np
 import pandas as pd
 from module.strategy.backtesting_engine import simulate_tp_sl
 
+_TP_MIN = 0.02
+_TP_MAX = 0.25
+_SL_MIN = 0.01
+_SL_MAX = 0.15
+_VOL_SCALE_MIN = 0.5
+_VOL_SCALE_MAX = 2.0
+
 
 @dataclass
 class TargetBundle:
@@ -62,10 +69,10 @@ def _infer_tp_sl_levels(
     if not np.isfinite(vol_ref) or vol_ref <= 0:
         scale = pd.Series(1.0, index=idx, dtype=float)
     else:
-        scale = (vol / vol_ref).clip(lower=0.5, upper=2.0).fillna(1.0).astype(float)
+        scale = (vol / vol_ref).clip(_VOL_SCALE_MIN, _VOL_SCALE_MAX).fillna(1.0).astype(float)
 
-    tp = (float(tp_default) * scale).clip(0.02, 0.25)
-    sl = (float(sl_default) * scale).clip(0.01, 0.15)
+    tp = (float(tp_default) * scale).clip(_TP_MIN, _TP_MAX)
+    sl = (float(sl_default) * scale).clip(_SL_MIN, _SL_MAX)
     return tp, sl
 
 

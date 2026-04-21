@@ -33,6 +33,12 @@ from environment import (
     SP500_HISTORIC_CSV_PATH,
     PORTFOLIO_OPTIMIZER,
     TP_SL_MAX_HOLDING_DAYS,
+    TP_SL_BASE_TP,
+    TP_SL_BASE_SL,
+    TP_SL_MIN_TP,
+    TP_SL_MAX_TP,
+    TP_SL_MIN_SL,
+    TP_SL_MAX_SL,
 )
 from module.common.asof import assert_no_future_data
 from module.common.data_router import DataRouter
@@ -657,13 +663,15 @@ def _prepare_fold_labels(
     df_test["sl_level"] = pd.to_numeric(test_targets.sl_level.reindex(df_test.index), errors="coerce")
     df_test["tp_sl_outcome"] = test_targets.outcome.reindex(df_test.index)
 
+    # Alpha targets are intentionally disabled in TP/SL-native training.
+    empty_alpha = pd.Series(dtype=float)
     return (
         df_train,
         df_test,
         y_train,
         y_test,
-        pd.Series(dtype=float),
-        pd.Series(dtype=float),
+        empty_alpha,
+        empty_alpha,
     )
 
 
@@ -1405,11 +1413,11 @@ def run_walkforward_pipeline(
                     scale = pd.Series(1.0, index=preds_df.index, dtype=float)
                 else:
                     scale = (vol / vol_ref).clip(0.5, 2.0).fillna(1.0).astype(float)
-                preds_df["tp_level"] = (0.08 * scale).clip(0.02, 0.25)
-                preds_df["sl_level"] = (0.05 * scale).clip(0.01, 0.15)
+                preds_df["tp_level"] = (float(TP_SL_BASE_TP) * scale).clip(float(TP_SL_MIN_TP), float(TP_SL_MAX_TP))
+                preds_df["sl_level"] = (float(TP_SL_BASE_SL) * scale).clip(float(TP_SL_MIN_SL), float(TP_SL_MAX_SL))
             preds_df["ev"] = (
-                preds_df["confidence"] * pd.to_numeric(preds_df["tp_level"], errors="coerce").fillna(0.08)
-                - (1.0 - preds_df["confidence"]) * pd.to_numeric(preds_df["sl_level"], errors="coerce").fillna(0.05)
+                preds_df["confidence"] * pd.to_numeric(preds_df["tp_level"], errors="coerce").fillna(float(TP_SL_BASE_TP))
+                - (1.0 - preds_df["confidence"]) * pd.to_numeric(preds_df["sl_level"], errors="coerce").fillna(float(TP_SL_BASE_SL))
             )
             preds_df["ticker"] = preds_df.index.get_level_values("ticker")
             preds_df["date"] = preds_df.index.get_level_values("date")
