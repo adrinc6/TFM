@@ -32,11 +32,12 @@ from environment import (
     USE_DYNAMIC_SP500_UNIVERSE,
     SP500_HISTORIC_CSV_PATH,
     PORTFOLIO_OPTIMIZER,
+    TP_SL_MAX_HOLDING_DAYS,
 )
 from module.common.asof import assert_no_future_data
 from module.common.data_router import DataRouter
 from module.common.cross_sectional_features import enrich_cross_sectional_features
-from module.common.target_engineering import build_targets
+from module.common.target_engineering import build_tp_sl_targets
 
 from module.steps.step_03_training.training import train_fold
 from module.steps.step_04_evaluation.ablation import run_ablation_study, summarize_ablation
@@ -622,51 +623,47 @@ def _prepare_fold_labels(
     lag_days: int = 45,
     holding_period_months: int = 3,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series, pd.Series, pd.Series]:
-    # Label configurable para agentes base:
-    # - vs_sector (default): y=1 si supera mediana sectorial por snapshot quarter.
-    # - vs_universe: y=1 si supera mediana del universo por snapshot quarter.
-    train_targets = build_targets(
+    if not prices_dict:
+        raise ValueError("TP/SL target generation requires prices_dict for every fold.")
+
+    max_holding_days = max(int(holding_period_months) * 31, int(TP_SL_MAX_HOLDING_DAYS))
+    train_targets = build_tp_sl_targets(
         df_train,
         prices_dict=prices_dict,
-        spy_prices=spy_prices,
-        sector_map=sector_map,
-        benchmark_mode="sector",
-        min_sector_peers=BASE_LABEL_SECTOR_MIN_PEERS,
         lag_days=lag_days,
-        holding_period_months=holding_period_months,
+        max_holding_days=max_holding_days,
     )
-    test_targets = build_targets(
+    test_targets = build_tp_sl_targets(
         df_test,
         prices_dict=prices_dict,
-        spy_prices=spy_prices,
-        sector_map=sector_map,
-        benchmark_mode="sector",
-        min_sector_peers=BASE_LABEL_SECTOR_MIN_PEERS,
         lag_days=lag_days,
-        holding_period_months=holding_period_months,
+        max_holding_days=max_holding_days,
     )
 
-    y_train = train_targets.direction.dropna().astype(int)
-    y_test = test_targets.direction.dropna().astype(int)
+    y_train = train_targets.hit_label.dropna().astype(int)
+    y_test = test_targets.hit_label.dropna().astype(int)
 
     df_train = df_train.loc[y_train.index]
     df_test  = df_test.loc[y_test.index]
 
-    df_train["target_alpha"] = pd.to_numeric(train_targets.alpha.reindex(df_train.index), errors="coerce")
-    df_train["target_quintile"] = pd.to_numeric(train_targets.quintile.reindex(df_train.index), errors="coerce")
-    df_train["target_triple_barrier"] = pd.to_numeric(train_targets.triple_barrier.reindex(df_train.index), errors="coerce")
+    if y_train.empty or y_test.empty:
+        raise ValueError("Fold has no valid TP/SL hit labels after target generation.")
 
-    df_test["target_alpha"] = pd.to_numeric(test_targets.alpha.reindex(df_test.index), errors="coerce")
-    df_test["target_quintile"] = pd.to_numeric(test_targets.quintile.reindex(df_test.index), errors="coerce")
-    df_test["target_triple_barrier"] = pd.to_numeric(test_targets.triple_barrier.reindex(df_test.index), errors="coerce")
+    df_train["tp_level"] = pd.to_numeric(train_targets.tp_level.reindex(df_train.index), errors="coerce")
+    df_train["sl_level"] = pd.to_numeric(train_targets.sl_level.reindex(df_train.index), errors="coerce")
+    df_train["tp_sl_outcome"] = train_targets.outcome.reindex(df_train.index)
+
+    df_test["tp_level"] = pd.to_numeric(test_targets.tp_level.reindex(df_test.index), errors="coerce")
+    df_test["sl_level"] = pd.to_numeric(test_targets.sl_level.reindex(df_test.index), errors="coerce")
+    df_test["tp_sl_outcome"] = test_targets.outcome.reindex(df_test.index)
 
     return (
         df_train,
         df_test,
         y_train,
         y_test,
-        pd.to_numeric(train_targets.alpha.reindex(y_train.index), errors="coerce"),
-        pd.to_numeric(test_targets.alpha.reindex(y_test.index), errors="coerce"),
+        pd.Series(dtype=float),
+        pd.Series(dtype=float),
     )
 
 
@@ -1360,25 +1357,6 @@ def run_walkforward_pipeline(
             lag_days=lag_days,
             holding_period_months=holding_period_months,
         )
-        if (df_test.empty or y_test.empty) and not df_test.empty:
-            partial_returns = _compute_partial_forward_returns(
-                prices_dict=prices_dict,
-                tickers=df_test.index.get_level_values("ticker"),
-                entry_date=entry_date,
-                exit_date=actual_end,
-            )
-            if partial_returns:
-                df_test_partial = df_test.copy()
-                df_test_partial["forward_return"] = (
-                    df_test_partial.index.get_level_values("ticker").map(partial_returns)
-                )
-                forward_test = _excess_return_label(df_test_partial, spy_prices, sector_map).reindex(df_test.index)
-                y_test = forward_test.dropna().astype(int)
-                df_test = df_test.loc[y_test.index]
-                log.info(
-                    f"[{run_id}] Labels parciales con precios hasta {actual_end.date()} "
-                    f"— {len(y_test)} observaciones"
-                )
         if df_test.empty or y_test.empty:
             log.warning(f"[{run_id}] Empty test after preparing labels — fold skipped.")
             continue
@@ -1389,8 +1367,8 @@ def run_walkforward_pipeline(
                 df_test_norm=df_test,
                 y_train=y_train,
                 y_test=y_test,
-                target_alpha_train=alpha_train,
-                target_alpha_test=alpha_test,
+                target_alpha_train=None,
+                target_alpha_test=None,
                 fold_id=run_id,
                 agent_models_results_dir=fold_agents_dir.as_posix(),
                 agents_results_dir=fold_agents_dir.as_posix(),
@@ -1400,7 +1378,7 @@ def run_walkforward_pipeline(
             )
 
             meta = agents["meta_learner"]
-            eval_metrics = meta.evaluate(df_test_scored, y_test, fold=run_id, target_alpha=alpha_test)
+            eval_metrics = meta.evaluate(df_test_scored, y_test, fold=run_id, target_alpha=None)
 
             fold_visualizer.plot_score_distribution(df_test_scored, fold=run_id)
 
@@ -1408,15 +1386,31 @@ def run_walkforward_pipeline(
                 c for c in [
                     "final_score",
                     "label",
-                    "predicted_alpha",
-                    "ranking_score",
-                    "risk_score",
                     "regime_adjusted_score",
-                    "target_alpha",
+                    "tp_level",
+                    "sl_level",
+                    "tp_sl_outcome",
                 ]
                 if c in df_test_scored.columns
             ]
             preds_df = df_test_scored[keep_cols].copy()
+            preds_df["confidence"] = pd.to_numeric(
+                preds_df.get("final_score", preds_df.get("regime_adjusted_score", 0.5)),
+                errors="coerce",
+            ).fillna(0.5).clip(0.0, 1.0)
+            if "tp_level" not in preds_df.columns or preds_df["tp_level"].isna().all():
+                vol = pd.to_numeric(df_test_scored.get("volatility_60d"), errors="coerce")
+                vol_ref = float(vol.dropna().median()) if vol.notna().any() else np.nan
+                if not np.isfinite(vol_ref) or vol_ref <= 0:
+                    scale = pd.Series(1.0, index=preds_df.index, dtype=float)
+                else:
+                    scale = (vol / vol_ref).clip(0.5, 2.0).fillna(1.0).astype(float)
+                preds_df["tp_level"] = (0.08 * scale).clip(0.02, 0.25)
+                preds_df["sl_level"] = (0.05 * scale).clip(0.01, 0.15)
+            preds_df["ev"] = (
+                preds_df["confidence"] * pd.to_numeric(preds_df["tp_level"], errors="coerce").fillna(0.08)
+                - (1.0 - preds_df["confidence"]) * pd.to_numeric(preds_df["sl_level"], errors="coerce").fillna(0.05)
+            )
             preds_df["ticker"] = preds_df.index.get_level_values("ticker")
             preds_df["date"] = preds_df.index.get_level_values("date")
             if "sector" in df_test_scored.columns:

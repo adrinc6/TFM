@@ -218,9 +218,13 @@ class WalkForwardBacktester:
 	) -> Dict:
 		period_id = analysis_quarter if analysis_quarter else str(fold_id)
 		min_stocks = max(1, self.top_n_stocks // 2)
-		ordered = predictions_df.sort_values("score", ascending=False)
+		ranking_col = "ev" if "ev" in predictions_df.columns else "score"
+		selection_threshold = 0.0 if ranking_col == "ev" else PORTFOLIO_MIN_SCORE
+		ordered = predictions_df.sort_values(ranking_col, ascending=False).copy()
+		if "score" not in ordered.columns:
+			ordered["score"] = pd.to_numeric(ordered[ranking_col], errors="coerce")
 		sector_cap = int(PORTFOLIO_MAX_STOCKS_PER_SECTOR)
-		qualified = ordered[ordered["score"] >= PORTFOLIO_MIN_SCORE]
+		qualified = ordered[pd.to_numeric(ordered[ranking_col], errors="coerce") >= float(selection_threshold)]
 		if len(qualified) >= min_stocks:
 			# Tomar hasta top_n pero garantizar al menos min_stocks
 			n_take = max(min(len(qualified), self.top_n_stocks), min_stocks)
@@ -231,7 +235,7 @@ class WalkForwardBacktester:
 				min_stocks=min_stocks,
 			)[["ticker", "score"] + (["sector"] if "sector" in ordered.columns else [])].copy()
 			log.info(
-				f"[Backtester] {period_id}: {len(qualified)} tickers superaron umbral {PORTFOLIO_MIN_SCORE:.2f} "
+				f"[Backtester] {period_id}: {len(qualified)} tickers superaron umbral {selection_threshold:.2f} "
 				f"→ selecting target={n_take}, final={len(top_df)} (min={min_stocks}, sector_cap={sector_cap})"
 			)
 		else:
@@ -246,7 +250,7 @@ class WalkForwardBacktester:
 			bottom_idx = min(self.top_n_stocks, len(ordered)) - 1
 			bottom_score = float(ordered["score"].iloc[bottom_idx]) if bottom_idx >= 0 else float("nan")
 			log.warning(
-				f"[Backtester] {period_id}: solo {len(qualified)} tickers superaron umbral {PORTFOLIO_MIN_SCORE:.2f} "
+				f"[Backtester] {period_id}: solo {len(qualified)} tickers superaron umbral {selection_threshold:.2f} "
 				f"→ seleccionando top-{len(top_df)} por ranking con restricciones (sector_cap={sector_cap}) "
 				f"(scores: {top_score:.3f} .. {bottom_score:.3f})"
 			)
