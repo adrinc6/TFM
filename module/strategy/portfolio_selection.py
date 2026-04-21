@@ -165,7 +165,7 @@ def get_portfolio_weights(
     """
     df = signals.copy()
     if selected_only and "selected" in df.columns:
-        df = df[df["selected"] == True]  # noqa: E712
+        df = df[df["selected"].astype(bool)]
 
     if df.empty:
         return pd.Series(dtype=float)

@@ -142,6 +142,10 @@ class TestBuildSignals:
 
 # ===========================================================================
 # 2. Confidence model
+# Constant used in historical calibration shift test
+_HIGH_HIT_RATE = 0.9
+
+
 # ===========================================================================
 
 class TestComputeConfidence:
@@ -170,7 +174,12 @@ class TestComputeConfidence:
         df = _make_agent_df()
         no_hist = compute_confidence(df).mean()
         with_hist = compute_confidence(
-            df, agent_hit_rates={"fundamental_score": 0.9, "momentum_score": 0.9, "bear_score": 0.9}
+            df,
+            agent_hit_rates={
+                "fundamental_score": _HIGH_HIT_RATE,
+                "momentum_score": _HIGH_HIT_RATE,
+                "bear_score": _HIGH_HIT_RATE,
+            },
         ).mean()
         assert with_hist > no_hist
 
@@ -209,7 +218,7 @@ class TestPortfolioSelection:
     def test_respects_max_stocks(self):
         signals = self._make_signals(20)
         out = select_portfolio(signals, min_stocks=4, max_stocks=8)
-        selected = out[out["selected"] == True]
+        selected = out[out["selected"].astype(bool)]
         assert len(selected) <= 8
 
     def test_respects_min_stocks_floor(self):
@@ -220,7 +229,7 @@ class TestPortfolioSelection:
         signals["sl_pct"] = 0.10
         out = select_portfolio(signals, min_stocks=4, ev_threshold=0.0)
         # With very low EV candidates, fewer than 4 may qualify
-        selected = out[out["selected"] == True]
+        selected = out[out["selected"].astype(bool)]
         if len(signals) < 4:
             assert len(selected) == 0
 
@@ -234,7 +243,7 @@ class TestPortfolioSelection:
         signals = self._make_signals(10)
         signals["sector"] = "Tech"  # all same sector
         out = select_portfolio(signals, sector_cap=2)
-        selected = out[out["selected"] == True]
+        selected = out[out["selected"].astype(bool)]
         if len(selected) > 0:
             tech_count = (selected["sector"] == "Tech").sum()
             # May relax cap to meet min_stocks floor, but document the behaviour
@@ -255,11 +264,12 @@ class TestPortfolioWeights:
 
     def test_weights_sum_to_one(self):
         rng = np.random.default_rng(99)
+        n_tickers = 6
         signals = pd.DataFrame({
-            "ticker": [f"T{i}" for i in range(6)],
-            "ev": rng.uniform(0.01, 0.05, 6),
-            "confidence": rng.uniform(0.5, 0.8, 6),
-            "selected": [True] * 6,
+            "ticker": [f"T{i}" for i in range(n_tickers)],
+            "ev": rng.uniform(0.01, 0.05, n_tickers),
+            "confidence": rng.uniform(0.5, 0.8, n_tickers),
+            "selected": [True] * n_tickers,
         })
         w = get_portfolio_weights(signals)
         assert abs(w.sum() - 1.0) < 1e-9
@@ -534,7 +544,7 @@ class TestFullPipelineIntegration:
             assert col in result.columns, f"Missing column: {col}"
 
         # Portfolio size constraints
-        selected = result[result["selected"] == True]
+        selected = result[result["selected"].astype(bool)]
         assert 0 <= len(selected) <= 8
 
         # Outcomes are valid labels
