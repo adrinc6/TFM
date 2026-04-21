@@ -700,3 +700,64 @@ MOMENTUM_DEEP_BLEND_WEIGHT = 0.35
 # =============================================================================
 
 RANDOM_SEED = 42
+
+# =============================================================================
+# 10. TP/SL + Confidence Strategy
+# =============================================================================
+
+# --- Signal generation (take-profit / stop-loss) ----------------------------
+
+# Baseline take-profit percentage applied when agent score == 0.5
+TP_SL_BASE_TP = 0.08       # 8 %
+
+# Baseline stop-loss percentage applied when agent score == 0.5
+TP_SL_BASE_SL = 0.05       # 5 %
+
+# Maximum shift in TP as score moves from 0.5 → 1.0 (or 0.5 → 0.0)
+TP_SL_TP_SENSITIVITY = 0.10
+
+# Maximum shift in SL as score moves from 0.5 → 1.0 (or 0.5 → 0.0)
+TP_SL_SL_SENSITIVITY = 0.04
+
+# Hard bounds on TP and SL percentages
+TP_SL_MIN_TP = 0.02
+TP_SL_MAX_TP = 0.25
+TP_SL_MIN_SL = 0.01
+TP_SL_MAX_SL = 0.15
+
+# --- Confidence model -------------------------------------------------------
+
+# Relative weight of the raw model score vs. historical calibration
+TP_SL_CONFIDENCE_SCORE_WEIGHT = 0.50
+TP_SL_CONFIDENCE_CALIBRATION_WEIGHT = 0.50
+
+# --- Portfolio construction -------------------------------------------------
+
+# Minimum stocks required to invest (0 candidates → no investment)
+TP_SL_MIN_STOCKS = 4
+
+# Maximum portfolio size
+TP_SL_MAX_STOCKS = 8
+
+# Maximum stocks from the same GICS sector in the portfolio
+TP_SL_SECTOR_CAP = 3
+
+# Minimum expected value (EV) for a stock to be eligible
+# EV = confidence × tp_pct − (1 − confidence) × sl_pct
+TP_SL_EV_THRESHOLD = 0.0
+
+# --- Backtesting engine -----------------------------------------------------
+
+# Maximum calendar days to hold a position before forcing closure ("NONE")
+TP_SL_MAX_HOLDING_DAYS = 90
+
+# --- Agent weight tracker ---------------------------------------------------
+
+# EWMA decay factor for historical hit-rate tracking (higher = slower to forget)
+TP_SL_WEIGHT_DECAY = 0.85
+
+# Prior hit-rate before any fold data are available (maximum uncertainty = 0.5)
+TP_SL_WEIGHT_PRIOR = 0.50
+
+# Floor weight so every agent stays active (prevents weight collapse)
+TP_SL_WEIGHT_MIN = 0.05
