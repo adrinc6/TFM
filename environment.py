@@ -655,28 +655,26 @@ META_SCORE_RECALIBRATION_TEMPERATURE = 1.0
 # over the final score while still keeping a regularising anchor.
 META_BASE_SCORE_BLEND_WEIGHT = 0.40
 
-# ── AlphaMetaLearner (XGBoost Regressor + Ranker + Classifier) ───────────────
-ALPHA_META_REG_N_ESTIMATORS  = 450
-ALPHA_META_REG_MAX_DEPTH     = 5
-ALPHA_META_REG_LEARNING_RATE = 0.03
-ALPHA_META_REG_SUBSAMPLE     = 0.85
-ALPHA_META_REG_COLSAMPLE     = 0.8
+# ── TP/SL Meta Learner (Probability + direct TP/SL levels) ─────────────────
+TP_SL_META_PROB_N_ESTIMATORS  = 300
+TP_SL_META_PROB_MAX_DEPTH     = 4
+TP_SL_META_PROB_LEARNING_RATE = 0.05
+TP_SL_META_PROB_SUBSAMPLE     = 0.9
+TP_SL_META_PROB_COLSAMPLE     = 0.8
 
-ALPHA_META_RANK_N_ESTIMATORS  = 300
-ALPHA_META_RANK_MAX_DEPTH     = 4
-ALPHA_META_RANK_LEARNING_RATE = 0.05
-ALPHA_META_RANK_SUBSAMPLE     = 0.9
-ALPHA_META_RANK_COLSAMPLE     = 0.8
+TP_SL_META_LEVEL_N_ESTIMATORS  = 250
+TP_SL_META_LEVEL_MAX_DEPTH     = 4
+TP_SL_META_LEVEL_LEARNING_RATE = 0.05
+TP_SL_META_LEVEL_SUBSAMPLE     = 0.9
+TP_SL_META_LEVEL_COLSAMPLE     = 0.8
 
-ALPHA_META_RISK_N_ESTIMATORS  = 250
-ALPHA_META_RISK_MAX_DEPTH     = 4
-ALPHA_META_RISK_LEARNING_RATE = 0.05
-ALPHA_META_RISK_SUBSAMPLE     = 0.9
-ALPHA_META_RISK_COLSAMPLE     = 0.8
+# Optional blend between model probability and regime-adjusted upstream prior.
+# Final confidence = blend * model_probability + (1 - blend) * regime_prior
+TP_SL_META_PROBA_REGIME_BLEND = 0.80
 
-# Blend weight: regime_adjusted_score = ALPHA_META_RANK_BLEND * ranking_score
-#               + (1 - ALPHA_META_RANK_BLEND) * regime_adj
-ALPHA_META_RANK_BLEND = 0.65
+# Additional confidence shrinkage toward neutral probability (0.5).
+# Calibrated_conf = (1 - k) * conf + k * 0.5
+TP_SL_META_PROBA_SHRINK_TO_NEUTRAL = 0.30
 
 # ── MomentumAgent TFT-lite blend weight ──────────────────────────────────────
 # Final score = (1 - MOMENTUM_DEEP_BLEND_WEIGHT) * RF_score
@@ -703,23 +701,27 @@ TP_SL_BASE_TP = 0.08       # 8 %
 # Baseline stop-loss percentage applied when agent score == 0.5
 TP_SL_BASE_SL = 0.05       # 5 %
 
-# Maximum shift in TP as score moves from 0.5 → 1.0 (or 0.5 → 0.0)
-TP_SL_TP_SENSITIVITY = 0.10
+# Multi-strategy TP/SL profiles (all derived from volatility-scaled base levels).
+# conservative: tighter target/risk, balanced: base profile, aggressive: wider target/risk.
+TP_SL_STRATEGY_TP_MULTIPLIERS = {
+  "conservative": 0.80,
+  "balanced": 1.00,
+  "aggressive": 1.35,
+}
+TP_SL_STRATEGY_SL_MULTIPLIERS = {
+  "conservative": 0.70,
+  "balanced": 1.00,
+  "aggressive": 1.20,
+}
 
-# Maximum shift in SL as score moves from 0.5 → 1.0 (or 0.5 → 0.0)
-TP_SL_SL_SENSITIVITY = 0.04
+# Strategy used as default binary target when a single y label is required.
+TP_SL_PRIMARY_STRATEGY = "balanced"
 
 # Hard bounds on TP and SL percentages
 TP_SL_MIN_TP = 0.02
 TP_SL_MAX_TP = 0.25
 TP_SL_MIN_SL = 0.01
 TP_SL_MAX_SL = 0.15
-
-# --- Confidence model -------------------------------------------------------
-
-# Relative weight of the raw model score vs. historical calibration
-TP_SL_CONFIDENCE_SCORE_WEIGHT = 0.50
-TP_SL_CONFIDENCE_CALIBRATION_WEIGHT = 0.50
 
 # --- Portfolio construction -------------------------------------------------
 

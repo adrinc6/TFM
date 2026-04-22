@@ -853,7 +853,7 @@ def main():
     if not SKIP_BACKTEST:
         effective_test_quarters = 4 if analysis_frequency == "annual" else WALKFORWARD_TEST_QUARTERS
 
-        # 6. Prices and benchmark for the backtester
+        # 6. Prices for the TP/SL-native backtester
         prices_dict = {}
         for ticker in tickers_ok:
             p = router.load_prices(ticker)
@@ -861,20 +861,12 @@ def main():
                 prices_dict[ticker] = p
 
         spy_prices = router.load_sp500_prices()
-        if spy_prices is None:
-            import pandas as pd
-
-            log.warning("No S&P 500 data available - using zero return as benchmark")
-            benchmark_returns = pd.Series(0.0, index=pd.date_range(test_start_date, end_date))
-        else:
-            benchmark_returns = spy_prices.pct_change().dropna()
 
         # 7. Walk-forward pipeline
         summary = run_walkforward_pipeline(
             df=df,
             sector_map=sector_map,
             prices_dict=prices_dict,
-            benchmark=benchmark_returns,
             spy_prices=spy_prices,
             agents_results_dir=AGENTS_RESULTS_DIR,
             agent_models_results_dir=AGENT_MODELS_RESULTS_DIR,
@@ -902,11 +894,10 @@ def main():
     log.info("=" * 60)
     log.info(f"  Analyzed tickers:     {len(tickers_ok)}")
     if summary:
-        log.info(f"  Mean alpha:            {summary.get('mean_alpha', 0):.2%}")
-        log.info(f"  Folds with alpha > 0:  {summary.get('pct_folds_positive_alpha', 0):.0%}")
-        log.info(f"  Sharpe Strategy:       {summary.get('global_strategy_sharpe', 0):.3f}")
-        log.info(f"  Sharpe Benchmark:      {summary.get('global_benchmark_sharpe', 0):.3f}")
-        log.info(f"  Max DD Strategy:       {summary.get('global_strategy_max_drawdown', 0):.2%}")
+        log.info(f"  Mean Portfolio EV:     {summary.get('mean_portfolio_ev', 0):+.4f}")
+        log.info(f"  Mean Actual Hit Rate:  {summary.get('mean_actual_hit_rate', 0):.1%}")
+        log.info(f"  Mean Realized Return:  {summary.get('mean_realized_return_pct', 0):+.2%}")
+        log.info(f"  Positive Return Folds: {summary.get('pct_folds_positive_return', 0):.0%}")
     log.info(f"  Results in:           {RESULTS_DIR}/")
     log.info("=" * 60)
 
