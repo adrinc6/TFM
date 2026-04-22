@@ -1,36 +1,13 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, List, Sequence
+from typing import Dict, Iterable, Sequence
 
 import numpy as np
 import pandas as pd
 
-from environment import (
-    ANALYSIS_FREQUENCY,
-    FINNHUB_DATA_DIR,
-    TP_SL_MAX_HOLDING_DAYS,
-)
-
-
-@dataclass(frozen=True)
-class TradingStrategy:
-    name: str
-    tp_pct: float
-    sl_pct: float
-
-
-DEFAULT_STRATEGIES: tuple[TradingStrategy, ...] = (
-    TradingStrategy(name="conservative", tp_pct=0.09, sl_pct=0.06),
-    TradingStrategy(name="balanced", tp_pct=0.10, sl_pct=0.10),
-    TradingStrategy(name="aggressive", tp_pct=0.15, sl_pct=0.065),
-)
-
-
-def strategies_map() -> Dict[str, TradingStrategy]:
-    return {s.name: s for s in DEFAULT_STRATEGIES}
+from environment import ANALYSIS_FREQUENCY, FINNHUB_DATA_DIR
 
 
 def project_data_dir(data_dir: str | Path = FINNHUB_DATA_DIR) -> Path:
@@ -157,7 +134,3 @@ def split_train_validation_by_time(df: pd.DataFrame, validation_ratio: float = 0
         train, val = df.iloc[:split].copy(), df.iloc[split:].copy()
 
     return train, val
-
-
-def forward_horizon_end(entry_date: pd.Timestamp, max_holding_days: int = TP_SL_MAX_HOLDING_DAYS) -> pd.Timestamp:
-    return pd.Timestamp(entry_date) + pd.Timedelta(days=int(max_holding_days))
