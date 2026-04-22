@@ -13,7 +13,7 @@ from sklearn.metrics import roc_auc_score
 from environment import MOMENTUM_MAX_DEPTH, MOMENTUM_MIN_SAMPLES_LEAF, MOMENTUM_N_ESTIMATORS, RANDOM_SEED
 from module.common.percentile_context import PercentileContext
 from module.common.utils import safe_numeric_frame
-from module.steps.trainer.feature_selection import FeatureSelector
+from module.steps.step_03_trainer.feature_selection import FeatureSelector
 
 
 @dataclass
