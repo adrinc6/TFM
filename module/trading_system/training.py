@@ -20,6 +20,10 @@ from module.trading_system.data import DataLayer
 from module.trading_system.strategies import BaseStrategy, StrategyResult, build_strategies
 
 
+VALIDATION_SPLIT_RATIO = 0.20
+MIN_TRAIN_PERIODS = 8
+
+
 @dataclass
 class TrainingArtifacts:
     diagnostics: pd.DataFrame
@@ -64,18 +68,18 @@ def _split_train_val(df: pd.DataFrame, freq: str) -> tuple[pd.DataFrame, pd.Data
     keys = _time_key(df["snapshot_date"], freq)
     periods = sorted(keys.dropna().unique().tolist())
     if len(periods) <= 2:
-        split_point = max(int(len(df) * 0.8), 1)
+        split_point = max(int(len(df) * (1.0 - VALIDATION_SPLIT_RATIO)), 1)
         return df.iloc[:split_point].copy(), df.iloc[split_point:].copy()
-    val_periods = set(periods[-max(1, int(len(periods) * 0.2)):])
+    val_periods = set(periods[-max(1, int(len(periods) * VALIDATION_SPLIT_RATIO)):])
     train = df[keys.isin([p for p in periods if p not in val_periods])].copy()
     val = df[keys.isin(val_periods)].copy()
     if train.empty or val.empty:
-        split_point = max(int(len(df) * 0.8), 1)
+        split_point = max(int(len(df) * (1.0 - VALIDATION_SPLIT_RATIO)), 1)
         train, val = df.iloc[:split_point].copy(), df.iloc[split_point:].copy()
     return train, val
 
 
-def _walk_forward_folds(df: pd.DataFrame, freq: str, min_train_periods: int = 8) -> list[tuple[pd.Index, pd.Index]]:
+def _walk_forward_folds(df: pd.DataFrame, freq: str, min_train_periods: int = MIN_TRAIN_PERIODS) -> list[tuple[pd.Index, pd.Index]]:
     keys = _time_key(df["snapshot_date"], freq)
     unique_periods = sorted(keys.dropna().unique().tolist())
     if len(unique_periods) <= min_train_periods + 1:
@@ -166,7 +170,15 @@ def _add_strategy_targets(master_df: pd.DataFrame, prices_cache: Dict[str, pd.Da
 
 
 def _agent_feature_frame(df: pd.DataFrame) -> pd.DataFrame:
-    drop_cols = [c for c in df.columns if c.startswith("label_") or c.startswith("outcome_") or c.startswith("days_to_event_") or c.startswith("tp_level_") or c.startswith("sl_level_") or c.startswith("entry_price_")]
+    drop_prefixes = (
+        "label_",
+        "outcome_",
+        "days_to_event_",
+        "tp_level_",
+        "sl_level_",
+        "entry_price_",
+    )
+    drop_cols = [c for c in df.columns if any(c.startswith(prefix) for prefix in drop_prefixes)]
     feat = df.drop(columns=drop_cols, errors="ignore")
     return feat
 
@@ -185,7 +197,7 @@ def train_multi_agent_system(data_layer: DataLayer | None = None) -> TrainingArt
     features_df = _agent_feature_frame(training_df)
     y_full = pd.to_numeric(training_df[label_col], errors="coerce").fillna(0).astype(int)
 
-    folds = _walk_forward_folds(training_df, ANALYSIS_FREQUENCY, min_train_periods=8)
+    folds = _walk_forward_folds(training_df, ANALYSIS_FREQUENCY, min_train_periods=MIN_TRAIN_PERIODS)
     if not folds:
         raise RuntimeError("Not enough temporal periods for walk-forward training")
 
@@ -235,12 +247,29 @@ def train_multi_agent_system(data_layer: DataLayer | None = None) -> TrainingArt
                 }
             )
 
+        meta_train_idx, meta_val_idx = _split_train_val(
+            val_sub.reset_index(),
+            ANALYSIS_FREQUENCY,
+        )
+        val_reset = val_pred.reset_index()
+        val_reset["date"] = pd.to_datetime(val_reset["date"], errors="coerce")
+        val_keys = pd.MultiIndex.from_frame(val_reset[["ticker", "date"]])
+        train_keys = pd.MultiIndex.from_frame(meta_train_idx[["ticker", "date"]]) if not meta_train_idx.empty else pd.MultiIndex(levels=[[], []], codes=[[], []])
+        valid_keys = pd.MultiIndex.from_frame(meta_val_idx[["ticker", "date"]]) if not meta_val_idx.empty else pd.MultiIndex(levels=[[], []], codes=[[], []])
+        train_mask = val_keys.isin(train_keys)
+        valid_mask = val_keys.isin(valid_keys)
+
+        meta_x_train = val_pred.loc[train_mask] if bool(train_mask.any()) else val_pred
+        meta_y_train = y_val.loc[meta_x_train.index]
+        meta_x_val = val_pred.loc[valid_mask] if bool(valid_mask.any()) else val_pred
+        meta_y_val = y_val.loc[meta_x_val.index]
+
         meta = MetaModel()
         meta.fit(
-            x_train=val_pred,
-            y_train=y_val,
-            x_val=val_pred,
-            y_val=y_val,
+            x_train=meta_x_train,
+            y_train=meta_y_train,
+            x_val=meta_x_val,
+            y_val=meta_y_val,
         )
         meta_test = meta.predict(test_pred)
         test_pred["meta_score"] = meta_test
@@ -295,10 +324,11 @@ def _summarize_strategy_performance(strategy_diag: pd.DataFrame) -> pd.DataFrame
 
     rows = []
     for strategy, g in strategy_diag.groupby("strategy"):
-        hit_rate = float(pd.to_numeric(g["label"], errors="coerce").mean())
+        labels = pd.to_numeric(g["label"], errors="coerce").fillna(0.0)
+        hit_rate = float(labels.mean())
         tp_pct = float(pd.to_numeric(g["tp_pct"], errors="coerce").mean())
         sl_pct = float(pd.to_numeric(g["sl_pct"], errors="coerce").mean())
-        ev = float((pd.to_numeric(g["label"], errors="coerce") * tp_pct - (1 - pd.to_numeric(g["label"], errors="coerce")) * sl_pct).mean())
+        ev = float((labels * tp_pct - (1 - labels) * sl_pct).mean())
         avg_days = float(pd.to_numeric(g["days_to_event"], errors="coerce").mean())
         rows.append(
             {

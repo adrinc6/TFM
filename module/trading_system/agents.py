@@ -12,6 +12,9 @@ from sklearn.metrics import roc_auc_score
 
 from environment import (
     FUNDAMENTAL_FEATURE_COLUMNS,
+    MOMENTUM_MAX_DEPTH,
+    MOMENTUM_MIN_SAMPLES_LEAF,
+    MOMENTUM_N_ESTIMATORS,
     MOMENTUM_FEATURE_COLUMNS,
     RANDOM_SEED,
     SECTOR_ROTATION_FEATURE_COLUMNS,
@@ -73,6 +76,10 @@ class BaseAgent:
         return merged[: max(self.max_features * 3, len(merged))]
 
     @staticmethod
+    def _base_features(selected_features: list[str]) -> list[str]:
+        return [f for f in selected_features if not f.endswith("_pct_global") and not f.endswith("_pct_sector")]
+
+    @staticmethod
     def _append_percentile_context(df: pd.DataFrame, selected_features: list[str]) -> tuple[pd.DataFrame, list[str]]:
         out = df.copy()
         added: list[str] = []
@@ -99,12 +106,15 @@ class BaseAgent:
         return out, selected_features + added
 
     def _candidate_models(self) -> Dict[str, object]:
+        rf_n_estimators = int(MOMENTUM_N_ESTIMATORS)
+        rf_max_depth = int(MOMENTUM_MAX_DEPTH)
+        rf_min_samples_leaf = int(MOMENTUM_MIN_SAMPLES_LEAF)
         return {
             "logistic": LogisticRegression(max_iter=1000, class_weight="balanced", random_state=RANDOM_SEED),
             "rf": RandomForestClassifier(
-                n_estimators=300,
-                max_depth=6,
-                min_samples_leaf=5,
+                n_estimators=rf_n_estimators,
+                max_depth=rf_max_depth,
+                min_samples_leaf=rf_min_samples_leaf,
                 class_weight="balanced_subsample",
                 random_state=RANDOM_SEED,
                 n_jobs=-1,
@@ -179,7 +189,7 @@ class BaseAgent:
         if self.model is None or not self.selected_features:
             return pd.Series(0.5, index=df.index, name=f"{self.name}_score")
 
-        augmented, _ = self._append_percentile_context(df, [f for f in self.selected_features if not f.endswith("_pct_global") and not f.endswith("_pct_sector")])
+        augmented, _ = self._append_percentile_context(df, self._base_features(self.selected_features))
         use_cols = [c for c in self.selected_features if c in augmented.columns]
         x = self._safe_numeric(augmented, use_cols)
 

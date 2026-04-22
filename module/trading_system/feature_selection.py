@@ -102,7 +102,7 @@ class FeatureSelector:
         corr = x.corr().abs()
         keep: list[str] = []
         for col in rank_series.index:
-            if col not in corr.columns:
+            if col not in corr.columns or col not in corr.index:
                 continue
             if not keep:
                 keep.append(col)

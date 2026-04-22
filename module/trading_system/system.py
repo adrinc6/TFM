@@ -38,11 +38,9 @@ class MultiAgentTradingSystem:
         diagnostics_per_stock = diagnostics_per_stock.copy()
         diagnostics_per_stock["selected_in_portfolio"] = False
         if not portfolio.empty:
-            selected_keys = set(zip(portfolio["ticker"], portfolio["date"]))
-            diagnostics_per_stock["selected_in_portfolio"] = diagnostics_per_stock.apply(
-                lambda r: (r["ticker"], r["date"]) in selected_keys,
-                axis=1,
-            )
+            selected_index = pd.MultiIndex.from_frame(portfolio[["ticker", "date"]])
+            diagnostics_index = pd.MultiIndex.from_frame(diagnostics_per_stock[["ticker", "date"]])
+            diagnostics_per_stock["selected_in_portfolio"] = diagnostics_index.isin(selected_index)
 
         evaluation_summary = evaluate_model_predictions(diagnostics_all_strategies)
 
