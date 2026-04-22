@@ -56,6 +56,7 @@ from environment import (
     SENTIMENT_FEATURE_COLUMNS, SENTIMENT_FEATURE_EXCLUDE,
     SECTOR_ROTATION_FEATURE_COLUMNS, SECTOR_ROTATION_FEATURE_EXCLUDE,
     META_FEATURE_COLUMNS, META_FEATURE_EXCLUDE,
+    TP_SL_MAX_STOCKS, TP_SL_MIN_STOCKS,
 )
 
 from module.common.data_router import DataRouter
@@ -483,7 +484,8 @@ def _export_run_config(
             "REBUILD_MASTER_DATASET": bool(REBUILD_MASTER_DATASET),
         },
         "parameters": {
-            "TOP_N_STOCKS": TOP_N_STOCKS,
+            "TP_SL_MAX_STOCKS": TP_SL_MAX_STOCKS,
+            "TP_SL_MIN_STOCKS": TP_SL_MIN_STOCKS,
             "SNAPSHOT_LAG_DAYS": SNAPSHOT_LAG_DAYS,
             "HOLDING_PERIOD_MONTHS": HOLDING_PERIOD_MONTHS,
             "RANDOM_SEED": RANDOM_SEED,
@@ -883,7 +885,7 @@ def main():
             walkforward_train_years=WALKFORWARD_TRAIN_LOOKBACK_YEARS,
             walkforward_test_quarters=effective_test_quarters,
             risk_free_rate=RISK_FREE_RATE,
-            top_n_stocks=TOP_N_STOCKS,
+            top_n_stocks=TP_SL_MAX_STOCKS,
             random_seed=RANDOM_SEED,
             snapshot_lag_days=dataset_snapshot_lag_days,
             holding_period_months=12 if analysis_frequency == "annual" else HOLDING_PERIOD_MONTHS,

@@ -13,8 +13,6 @@ import numpy as np
 import pandas as pd
 
 from environment import (
-    BASE_AGENTS_LABEL_MODE,
-    BASE_LABEL_SECTOR_MIN_PEERS,
     PORTFOLIO_MIN_SCORE,
     RUN_ABLATION_STUDY,
     WALKFORWARD_TRAIN_MIN_YEARS,
@@ -32,11 +30,18 @@ from environment import (
     USE_DYNAMIC_SP500_UNIVERSE,
     SP500_HISTORIC_CSV_PATH,
     PORTFOLIO_OPTIMIZER,
+    TP_SL_MAX_HOLDING_DAYS,
+    TP_SL_BASE_TP,
+    TP_SL_BASE_SL,
+    TP_SL_MIN_TP,
+    TP_SL_MAX_TP,
+    TP_SL_MIN_SL,
+    TP_SL_MAX_SL,
 )
 from module.common.asof import assert_no_future_data
 from module.common.data_router import DataRouter
 from module.common.cross_sectional_features import enrich_cross_sectional_features
-from module.common.target_engineering import build_targets
+from module.common.target_engineering import build_tp_sl_targets, infer_tp_sl_levels
 
 from module.steps.step_03_training.training import train_fold
 from module.steps.step_04_evaluation.ablation import run_ablation_study, summarize_ablation
@@ -473,65 +478,6 @@ def _spy_quarterly_returns(spy_prices: pd.Series) -> Dict[str, float]:
     return spy_returns
 
 
-def _excess_return_label(
-    df: pd.DataFrame,
-    spy_prices: Optional[pd.Series] = None,
-    sector_map: Optional[Dict[str, str]] = None,
-) -> pd.Series:
-    """
-        Sector outperformance label by snapshot: 1 if the ticker beat the
-        sector median using the forward_return defined for that snapshot.
-
-        Grouping is done by snapshot quarter (not by the calendar output quarter),
-        because all tickers from the same snapshot share the same
-        entry/exit rule (lag + holding) and must be compared against each other.
-    """
-    dates = df.index.get_level_values("date")
-    tickers = df.index.get_level_values("ticker")
-    snapshot_quarters = dates.to_period("Q")
-    forward_return = df["forward_return"]
-    valid_mask = forward_return.notna()
-
-    quarter_median = df.groupby(snapshot_quarters)["forward_return"].transform("median")
-
-    want_vs_sector = str(BASE_AGENTS_LABEL_MODE).lower().strip() == "vs_sector"
-    if want_vs_sector and sector_map is not None and len(sector_map) > 0:
-        sector_series = pd.Series(tickers, index=df.index).map(sector_map).fillna("Unknown")
-        temp = pd.DataFrame(
-            {
-                "forward_return": forward_return.values,
-                "sector": sector_series.values,
-                "snapshot_quarter": snapshot_quarters.astype(str),
-            },
-            index=df.index,
-        )
-
-        grp = ["sector", "snapshot_quarter"]
-        sector_quarter_median = temp.groupby(grp)["forward_return"].transform("median")
-        sector_quarter_count = temp.groupby(grp)["forward_return"].transform("count")
-
-        enough_peers = (temp["sector"] != "Unknown") & (sector_quarter_count >= int(BASE_LABEL_SECTOR_MIN_PEERS))
-        benchmark = pd.Series(np.where(enough_peers, sector_quarter_median, quarter_median), index=df.index)
-
-        n_with_sector = int((temp["sector"] != "Unknown").sum())
-        n_sector_label = int(enough_peers.sum())
-        n_fallback = int(len(df) - n_sector_label)
-        log.debug(
-            "[Label] mode=vs_sector | sector conocidos=%d/%d | con peers suficientes=%d | fallback_universo=%d",
-            n_with_sector,
-            len(df),
-            n_sector_label,
-            n_fallback,
-        )
-        labels = (forward_return > benchmark).astype(float)
-        return labels.where(valid_mask)
-
-    # Explicit fallback: universe median per snapshot quarter.
-    log.debug("[Label] mode=vs_universe (or no sector_map) — using universe median per snapshot quarter")
-    labels = (forward_return > quarter_median).astype(float)
-    return labels.where(valid_mask)
-
-
 def _compute_partial_forward_returns(
     prices_dict: Dict[str, pd.DataFrame],
     tickers: pd.Index,
@@ -622,51 +568,52 @@ def _prepare_fold_labels(
     lag_days: int = 45,
     holding_period_months: int = 3,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series, pd.Series, pd.Series]:
-    # Label configurable para agentes base:
-    # - vs_sector (default): y=1 si supera mediana sectorial por snapshot quarter.
-    # - vs_universe: y=1 si supera mediana del universo por snapshot quarter.
-    train_targets = build_targets(
+    if not prices_dict:
+        raise ValueError("TP/SL target generation requires prices_dict for every fold.")
+
+    # Any fixed anchor works here; we only need month->day conversion for horizon sizing.
+    base_ts = pd.Timestamp("2000-01-01")
+    horizon_days = int((base_ts + pd.DateOffset(months=max(int(holding_period_months), 1)) - base_ts).days)
+    max_holding_days = max(horizon_days, int(TP_SL_MAX_HOLDING_DAYS))
+    train_targets = build_tp_sl_targets(
         df_train,
         prices_dict=prices_dict,
-        spy_prices=spy_prices,
-        sector_map=sector_map,
-        benchmark_mode="sector",
-        min_sector_peers=BASE_LABEL_SECTOR_MIN_PEERS,
         lag_days=lag_days,
-        holding_period_months=holding_period_months,
+        max_holding_days=max_holding_days,
     )
-    test_targets = build_targets(
+    test_targets = build_tp_sl_targets(
         df_test,
         prices_dict=prices_dict,
-        spy_prices=spy_prices,
-        sector_map=sector_map,
-        benchmark_mode="sector",
-        min_sector_peers=BASE_LABEL_SECTOR_MIN_PEERS,
         lag_days=lag_days,
-        holding_period_months=holding_period_months,
+        max_holding_days=max_holding_days,
     )
 
-    y_train = train_targets.direction.dropna().astype(int)
-    y_test = test_targets.direction.dropna().astype(int)
+    y_train = train_targets.hit_label.dropna().astype(int)
+    y_test = test_targets.hit_label.dropna().astype(int)
 
     df_train = df_train.loc[y_train.index]
     df_test  = df_test.loc[y_test.index]
 
-    df_train["target_alpha"] = pd.to_numeric(train_targets.alpha.reindex(df_train.index), errors="coerce")
-    df_train["target_quintile"] = pd.to_numeric(train_targets.quintile.reindex(df_train.index), errors="coerce")
-    df_train["target_triple_barrier"] = pd.to_numeric(train_targets.triple_barrier.reindex(df_train.index), errors="coerce")
+    if y_train.empty or y_test.empty:
+        raise ValueError("Fold has no valid TP/SL hit labels after target generation.")
 
-    df_test["target_alpha"] = pd.to_numeric(test_targets.alpha.reindex(df_test.index), errors="coerce")
-    df_test["target_quintile"] = pd.to_numeric(test_targets.quintile.reindex(df_test.index), errors="coerce")
-    df_test["target_triple_barrier"] = pd.to_numeric(test_targets.triple_barrier.reindex(df_test.index), errors="coerce")
+    df_train["tp_level"] = pd.to_numeric(train_targets.tp_level.reindex(df_train.index), errors="coerce")
+    df_train["sl_level"] = pd.to_numeric(train_targets.sl_level.reindex(df_train.index), errors="coerce")
+    df_train["tp_sl_outcome"] = train_targets.outcome.reindex(df_train.index)
 
+    df_test["tp_level"] = pd.to_numeric(test_targets.tp_level.reindex(df_test.index), errors="coerce")
+    df_test["sl_level"] = pd.to_numeric(test_targets.sl_level.reindex(df_test.index), errors="coerce")
+    df_test["tp_sl_outcome"] = test_targets.outcome.reindex(df_test.index)
+
+    # Alpha targets are intentionally disabled in TP/SL-native training.
+    empty_alpha = pd.Series(dtype=float)
     return (
         df_train,
         df_test,
         y_train,
         y_test,
-        pd.to_numeric(train_targets.alpha.reindex(y_train.index), errors="coerce"),
-        pd.to_numeric(test_targets.alpha.reindex(y_test.index), errors="coerce"),
+        empty_alpha,
+        empty_alpha,
     )
 
 
@@ -1360,25 +1307,6 @@ def run_walkforward_pipeline(
             lag_days=lag_days,
             holding_period_months=holding_period_months,
         )
-        if (df_test.empty or y_test.empty) and not df_test.empty:
-            partial_returns = _compute_partial_forward_returns(
-                prices_dict=prices_dict,
-                tickers=df_test.index.get_level_values("ticker"),
-                entry_date=entry_date,
-                exit_date=actual_end,
-            )
-            if partial_returns:
-                df_test_partial = df_test.copy()
-                df_test_partial["forward_return"] = (
-                    df_test_partial.index.get_level_values("ticker").map(partial_returns)
-                )
-                forward_test = _excess_return_label(df_test_partial, spy_prices, sector_map).reindex(df_test.index)
-                y_test = forward_test.dropna().astype(int)
-                df_test = df_test.loc[y_test.index]
-                log.info(
-                    f"[{run_id}] Labels parciales con precios hasta {actual_end.date()} "
-                    f"— {len(y_test)} observaciones"
-                )
         if df_test.empty or y_test.empty:
             log.warning(f"[{run_id}] Empty test after preparing labels — fold skipped.")
             continue
@@ -1389,8 +1317,9 @@ def run_walkforward_pipeline(
                 df_test_norm=df_test,
                 y_train=y_train,
                 y_test=y_test,
-                target_alpha_train=alpha_train,
-                target_alpha_test=alpha_test,
+                # Alpha targets are deprecated in TP/SL-native training.
+                target_alpha_train=None,
+                target_alpha_test=None,
                 fold_id=run_id,
                 agent_models_results_dir=fold_agents_dir.as_posix(),
                 agents_results_dir=fold_agents_dir.as_posix(),
@@ -1400,7 +1329,7 @@ def run_walkforward_pipeline(
             )
 
             meta = agents["meta_learner"]
-            eval_metrics = meta.evaluate(df_test_scored, y_test, fold=run_id, target_alpha=alpha_test)
+            eval_metrics = meta.evaluate(df_test_scored, y_test, fold=run_id, target_alpha=None)
 
             fold_visualizer.plot_score_distribution(df_test_scored, fold=run_id)
 
@@ -1408,15 +1337,35 @@ def run_walkforward_pipeline(
                 c for c in [
                     "final_score",
                     "label",
-                    "predicted_alpha",
-                    "ranking_score",
-                    "risk_score",
                     "regime_adjusted_score",
-                    "target_alpha",
+                    "tp_level",
+                    "sl_level",
+                    "tp_sl_outcome",
                 ]
                 if c in df_test_scored.columns
             ]
             preds_df = df_test_scored[keep_cols].copy()
+            preds_df["confidence"] = pd.to_numeric(
+                preds_df.get("final_score", preds_df.get("regime_adjusted_score", 0.5)),
+                errors="coerce",
+            ).fillna(0.5).clip(0.0, 1.0)
+            if "tp_level" not in preds_df.columns or preds_df["tp_level"].isna().all():
+                inferred_tp, inferred_sl = infer_tp_sl_levels(
+                    df_test_scored,
+                    tp_default=float(TP_SL_BASE_TP),
+                    sl_default=float(TP_SL_BASE_SL),
+                    volatility_col="volatility_60d",
+                )
+                preds_df["tp_level"] = pd.to_numeric(inferred_tp.reindex(preds_df.index), errors="coerce").clip(
+                    float(TP_SL_MIN_TP), float(TP_SL_MAX_TP)
+                )
+                preds_df["sl_level"] = pd.to_numeric(inferred_sl.reindex(preds_df.index), errors="coerce").clip(
+                    float(TP_SL_MIN_SL), float(TP_SL_MAX_SL)
+                )
+            preds_df["ev"] = (
+                preds_df["confidence"] * pd.to_numeric(preds_df["tp_level"], errors="coerce").fillna(float(TP_SL_BASE_TP))
+                - (1.0 - preds_df["confidence"]) * pd.to_numeric(preds_df["sl_level"], errors="coerce").fillna(float(TP_SL_BASE_SL))
+            )
             preds_df["ticker"] = preds_df.index.get_level_values("ticker")
             preds_df["date"] = preds_df.index.get_level_values("date")
             if "sector" in df_test_scored.columns:
@@ -1531,7 +1480,7 @@ def run_walkforward_pipeline(
                     metrics_payload={
                         "fold_id": run_id,
                         "classification_metrics": eval_metrics,
-                        "legacy_return_metrics": {k: v for k, v in fold_result.items() if not str(k).startswith("_")},
+                        "return_metrics": {k: v for k, v in fold_result.items() if not str(k).startswith("_")},
                         "usd_summary": sim_out.get("fold_summary", {}),
                     },
                 )
