@@ -52,7 +52,8 @@ def choose_best_strategy_per_stock(strategy_diagnostics: pd.DataFrame, score_col
     tp = pd.to_numeric(df["tp_pct"], errors="coerce").fillna(0.0)
     sl = pd.to_numeric(df["sl_pct"], errors="coerce").fillna(0.0)
     df["expected_value_model"] = score * tp - (1.0 - score) * sl
-    df["risk_reward"] = tp / sl.replace(0, np.nan)
+    sl_safe = sl.where(sl.abs() >= 1e-6, np.nan)
+    df["risk_reward"] = tp / sl_safe
 
     group_cols = ["ticker", "date"]
     idx = df.groupby(group_cols)["expected_value_model"].idxmax()

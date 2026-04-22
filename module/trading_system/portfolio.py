@@ -7,7 +7,7 @@ import pandas as pd
 
 from environment import TP_SL_MAX_STOCKS, TP_SL_MIN_STOCKS, TP_SL_SECTOR_CAP
 
-WEIGHT_FLOOR = 1e-8
+MIN_POSITIVE_WEIGHT = 1e-8
 
 
 def construct_portfolio(
@@ -68,7 +68,7 @@ def construct_portfolio(
     if portfolio.empty:
         return portfolio
 
-    raw_weight = portfolio[score_col].clip(lower=WEIGHT_FLOOR)
+    raw_weight = portfolio[score_col].clip(lower=MIN_POSITIVE_WEIGHT)
     portfolio["weight"] = raw_weight / raw_weight.sum()
     portfolio["selected_in_portfolio"] = True
 

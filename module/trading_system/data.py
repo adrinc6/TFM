@@ -43,7 +43,7 @@ class DataLayer:
         else:
             df["snapshot_date"] = date_values
         if "year_quarter" not in df.columns:
-            yq = pd.PeriodIndex(df["snapshot_date"].dt.to_period("Q"), freq="Q")
+            yq = pd.PeriodIndex(df["snapshot_date"].dt.to_period("Q"))
             df["year_quarter"] = yq.astype(str)
         if "sector" not in df.columns:
             df["sector"] = "Unknown"

@@ -95,6 +95,8 @@ class BaseStrategy:
             sl_hit = np.isfinite(low) and low <= sl_level
 
             if tp_hit and sl_hit:
+                # Daily OHLC does not provide intraday crossing order.
+                # Conservative assumption: stop-loss triggers first.
                 return StrategyResult(
                     strategy=self.name,
                     tp_pct=self.tp_pct,
