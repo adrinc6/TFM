@@ -170,10 +170,19 @@ class VolatilityRegimeTpSlLearner:
 
         # Compute breakpoints that divide the vol distribution into n_clusters
         # equal-frequency bins (quantile-based clustering, Option A).
-        breakpoints = [
+        # Deduplicate breakpoints that may collapse when volatility values are
+        # concentrated (e.g. many identical readings), then warn the caller.
+        raw_breakpoints = [
             float(np.nanpercentile(vol, 100.0 * i / self.n_clusters))
             for i in range(1, self.n_clusters)
         ]
+        breakpoints = sorted(set(raw_breakpoints))
+        if len(breakpoints) < len(raw_breakpoints):
+            log.warning(
+                "[VolatilityRegimeTpSlLearner] %d duplicate breakpoints collapsed "
+                "to %d unique values — consider a larger dataset or fewer clusters.",
+                len(raw_breakpoints) - len(breakpoints), len(breakpoints),
+            )
         self._vol_breakpoints = breakpoints
 
         # Assign each row to a cluster label

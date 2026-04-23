@@ -215,9 +215,12 @@ def get_portfolio_weights(
     else:
         weights = np.full(len(df), 1.0 / len(df))
 
-    # Apply max-weight cap iteratively (water-filling redistribution)
+    # Apply max-weight cap iteratively (water-filling redistribution).
+    # At most len(weights) rounds are needed because each round converts at
+    # least one position from "over" to "capped", reducing remaining iterations.
+    # In practice the loop terminates in 1–3 rounds for typical portfolios.
     max_w = float(np.clip(max_weight, 1e-6, 1.0))
-    for _ in range(len(weights) + 1):
+    for _ in range(len(weights)):
         over = weights > max_w
         if not over.any():
             break
