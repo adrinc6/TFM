@@ -1,31 +1,28 @@
-from module.agents.base import AgentPerformance, BaseAgent
-from module.agents.fundamental import FundamentalAgent
-from module.agents.momentum import MomentumAgent
-from module.agents.sector_rotation import SectorRotationAgent
-from module.agents.sentiment import SentimentAgent
-from module.agents.technical import TechnicalAgent
-from module.agents.valuation import ValuationAgent
+"""Agent package for the multi-agent stock picker."""
 
-
-def build_agents() -> list[BaseAgent]:
-    return [
-        FundamentalAgent(),
-        ValuationAgent(),
-        TechnicalAgent(),
-        MomentumAgent(),
-        SectorRotationAgent(),
-        SentimentAgent(),
-    ]
-
+from .base import BaseAgent, FeatureSelector
+from .fundamental import FundamentalAgent
+from .momentum import MomentumAgent
+from .sentiment import SentimentAgent
+from .valuation import ValuationAgent
+from .bear import BearAgent
+from .sector_specialized import SectorSpecializedAgent
+from .meta_learner import MetaLearner
+from .alpha_meta_learner import AlphaMetaLearner
+from .sector_rotation import SectorRotationAgent
+from .universe_tp_sl import UniversalTpSlAgent
 
 __all__ = [
-    "AgentPerformance",
-    "BaseAgent",
-    "FundamentalAgent",
-    "ValuationAgent",
-    "TechnicalAgent",
-    "MomentumAgent",
-    "SectorRotationAgent",
-    "SentimentAgent",
-    "build_agents",
+	"BaseAgent",
+	"FeatureSelector",
+	"FundamentalAgent",
+	"MomentumAgent",
+	"SentimentAgent",
+	"ValuationAgent",
+	"BearAgent",
+	"SectorSpecializedAgent",
+	"MetaLearner",
+	"AlphaMetaLearner",
+	"SectorRotationAgent",
+	"UniversalTpSlAgent",
 ]
