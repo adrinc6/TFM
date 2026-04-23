@@ -258,7 +258,7 @@ class SentimentAgent(BaseAgent):
             X_prep = self._selector.transform(X_prep)
         X_al = self._align(X_prep)
         return pd.Series(
-            self._model.predict_proba(X_al)[:, 1],
+            self._apply_calibration(self._model.predict_proba(X_al)[:, 1]),
             index=X.index,
             name="sentiment_score",
         )

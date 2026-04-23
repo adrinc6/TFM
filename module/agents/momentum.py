@@ -215,7 +215,11 @@ class MomentumAgent(BaseAgent):
         if self._selector is not None:
             X_prep = self._selector.transform(X_prep)
         X_al = self._align(X_prep)
-        rf_score = pd.Series(self._model.predict_proba(X_al)[:, 1], index=X.index, name="momentum_score")
+        rf_score = pd.Series(
+            self._apply_calibration(self._model.predict_proba(X_al)[:, 1]),
+            index=X.index,
+            name="momentum_score",
+        )
 
         deep_score = self._predict_deep_sequence(X)
         if deep_score is None:

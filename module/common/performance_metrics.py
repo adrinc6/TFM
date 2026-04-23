@@ -162,11 +162,105 @@ def avg_win_loss_ratio(returns: pd.Series) -> float:
     return avg_win / avg_loss
 
 
+def brier_score(y_true: pd.Series, y_prob: pd.Series) -> float:
+    """Computes the Brier score (mean squared error of probability predictions).
+
+    Lower is better. A perfect probabilistic classifier scores 0.0; a
+    classifier that always predicts 0.5 scores 0.25.
+
+    Args:
+        y_true (pd.Series): Binary ground-truth labels (0 or 1).
+        y_prob (pd.Series): Predicted probabilities in [0, 1].
+
+    Returns:
+        float: Brier score in [0, 1]; ``float('nan')`` if no valid pairs exist.
+    """
+    yt = pd.to_numeric(y_true, errors="coerce")
+    yp = pd.to_numeric(y_prob, errors="coerce")
+    valid = yt.notna() & yp.notna()
+    if valid.sum() == 0:
+        return float("nan")
+    return float(((yt[valid] - yp[valid]) ** 2).mean())
+
+
+def tp_sl_classification_metrics(
+    y_true: pd.Series,
+    y_prob: pd.Series,
+    threshold: float = 0.5,
+) -> Dict:
+    """Computes classification metrics for the TP-vs-SL binary prediction task.
+
+    Args:
+        y_true (pd.Series): Binary ground-truth labels (1 = TP hit, 0 = SL hit).
+        y_prob (pd.Series): Predicted probabilities in [0, 1].
+        threshold (float): Decision threshold for converting probabilities to
+            binary predictions. Defaults to 0.5.
+
+    Returns:
+        Dict: Dictionary with accuracy, precision, recall, f1, brier_score,
+            tp_rate (recall for class 1), tn_rate, n_samples, n_tp, and n_sl.
+    """
+    yt = pd.to_numeric(y_true, errors="coerce").dropna()
+    yp = pd.to_numeric(y_prob, errors="coerce").reindex(yt.index).dropna()
+    yt = yt.reindex(yp.index)
+
+    if len(yt) == 0:
+        return {
+            "accuracy": float("nan"), "precision": float("nan"),
+            "recall": float("nan"), "f1": float("nan"),
+            "brier_score": float("nan"), "tp_rate": float("nan"),
+            "tn_rate": float("nan"), "n_samples": 0, "n_tp": 0, "n_sl": 0,
+        }
+
+    y_pred = (yp >= threshold).astype(int)
+    n = len(yt)
+    n_tp = int((yt == 1).sum())
+    n_sl = int((yt == 0).sum())
+
+    tp = int(((y_pred == 1) & (yt == 1)).sum())
+    tn = int(((y_pred == 0) & (yt == 0)).sum())
+    fp = int(((y_pred == 1) & (yt == 0)).sum())
+    fn = int(((y_pred == 0) & (yt == 1)).sum())
+
+    accuracy = (tp + tn) / n if n > 0 else float("nan")
+    precision = tp / (tp + fp) if (tp + fp) > 0 else float("nan")
+    recall = tp / (tp + fn) if (tp + fn) > 0 else float("nan")
+    f1 = (
+        2 * precision * recall / (precision + recall)
+        if (isinstance(precision, float) and isinstance(recall, float)
+            and not np.isnan(precision) and not np.isnan(recall)
+            and (precision + recall) > 0)
+        else float("nan")
+    )
+    tp_rate = tp / n_tp if n_tp > 0 else float("nan")
+    tn_rate = tn / n_sl if n_sl > 0 else float("nan")
+    bs = brier_score(yt, yp)
+
+    return {
+        "accuracy": float(accuracy),
+        "precision": float(precision) if not isinstance(precision, float) or not np.isnan(precision) else float("nan"),
+        "recall": float(recall) if not isinstance(recall, float) or not np.isnan(recall) else float("nan"),
+        "f1": float(f1) if not isinstance(f1, float) or not np.isnan(f1) else float("nan"),
+        "brier_score": bs,
+        "tp_rate": float(tp_rate) if not isinstance(tp_rate, float) or not np.isnan(tp_rate) else float("nan"),
+        "tn_rate": float(tn_rate) if not isinstance(tn_rate, float) or not np.isnan(tn_rate) else float("nan"),
+        "n_samples": n,
+        "n_tp": n_tp,
+        "n_sl": n_sl,
+    }
+
+
 def compute_all_metrics(
     returns: pd.Series, risk_free: float = 0.04, label: str = "strategy",
     benchmark_returns: pd.Series | None = None,
+    y_true: pd.Series | None = None,
+    y_prob: pd.Series | None = None,
 ) -> Dict:
     """Computes all standard performance metrics for a return series.
+
+    Optionally includes probabilistic classification metrics (Brier score,
+    precision, recall, F1) when ground-truth labels and predicted probabilities
+    are provided.
 
     Args:
         returns (pd.Series): Periodic return series.
@@ -174,11 +268,16 @@ def compute_all_metrics(
         label (str): Prefix applied to all metric keys in the output dictionary.
         benchmark_returns (pd.Series | None): Optional benchmark returns for
             computing the Information Ratio.
+        y_true (pd.Series | None): Optional binary TP/SL ground-truth labels
+            (1 = TP hit) for classification metrics.
+        y_prob (pd.Series | None): Optional predicted probabilities aligned
+            with ``y_true``.
 
     Returns:
         Dict: Dictionary containing cumulative_return, annualized_return,
             sharpe, sortino, max_drawdown, calmar, volatility, win_rate,
-            avg_win_loss_ratio, information_ratio, and n_periods metrics.
+            avg_win_loss_ratio, information_ratio, n_periods, and optionally
+            brier_score, accuracy, precision, recall, and f1 metrics.
     """
     metrics = {
         f"{label}_cumulative_return": cumulative_return(returns),
@@ -194,5 +293,9 @@ def compute_all_metrics(
     }
     if benchmark_returns is not None:
         metrics[f"{label}_information_ratio"] = information_ratio(returns, benchmark_returns)
+    if y_true is not None and y_prob is not None:
+        cls = tp_sl_classification_metrics(y_true, y_prob)
+        for key, value in cls.items():
+            metrics[f"{label}_{key}"] = value
     return metrics
 

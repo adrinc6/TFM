@@ -13,6 +13,33 @@ REGIME_RISK_ON = "Risk-On"
 REGIME_NEUTRAL = "Neutral"
 REGIME_RISK_OFF = "Risk-Off"
 
+# BULL / NEUTRAL / BEAR are canonical aliases used in the probabilistic
+# aggregation pipeline.  They map 1-to-1 with the Risk-On / Neutral /
+# Risk-Off labels kept for backwards compatibility.
+REGIME_BULL = REGIME_RISK_ON
+REGIME_BEAR = REGIME_RISK_OFF
+
+# Portfolio exposure multipliers per regime (fraction of available capital to
+# deploy).  BULL = full exposure, NEUTRAL = reduced, BEAR = minimal.
+_REGIME_EXPOSURE: Dict[str, float] = {
+    REGIME_RISK_ON: 1.00,   # BULL
+    REGIME_NEUTRAL: 0.65,   # Reduced exposure
+    REGIME_RISK_OFF: 0.25,  # BEAR — near-flat
+}
+
+
+def get_regime_exposure_multiplier(regime: str) -> float:
+    """Return the portfolio exposure multiplier for a given regime label.
+
+    Args:
+        regime (str): One of ``REGIME_RISK_ON`` (BULL), ``REGIME_NEUTRAL``, or
+            ``REGIME_RISK_OFF`` (BEAR).  Unknown labels are treated as NEUTRAL.
+
+    Returns:
+        float: Fraction of capital to deploy, in (0, 1].
+    """
+    return float(_REGIME_EXPOSURE.get(str(regime), _REGIME_EXPOSURE[REGIME_NEUTRAL]))
+
 
 @dataclass
 class MarketRegimeModel:

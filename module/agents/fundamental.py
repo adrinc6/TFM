@@ -208,6 +208,7 @@ class FundamentalAgent(BaseAgent):
             X_prep = self._selector.transform(X_prep)
         X_al = self._align(X_prep)
         proba = self._model.predict_proba(X_al)[:, 1]
+        proba = self._apply_calibration(proba)
         return pd.Series(proba, index=X.index, name="fundamental_score")
 
     # ── Helpers ───────────────────────────────────────────────────────────────
