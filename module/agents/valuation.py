@@ -170,7 +170,7 @@ class ValuationAgent(BaseAgent):
         if self._selector is not None:
             X_prep = self._selector.transform(X_prep)
         X_al = self._align(X_prep)
-        return pd.Series(self._model.predict_proba(X_al)[:, 1],
+        return pd.Series(self._apply_calibration(self._model.predict_proba(X_al)[:, 1]),
                          index=X.index, name="valuation_score")
 
     # ── Helpers ───────────────────────────────────────────────────────────────

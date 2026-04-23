@@ -163,6 +163,7 @@ class UniversalTpSlAgent(BaseAgent):
             raw = self._model.decision_function(X_model)
             score = 1.0 / (1.0 + np.exp(-raw))
 
+        score = self._apply_calibration(score)
         return pd.Series(np.clip(score, 0.0, 1.0), index=X_model.index, name=f"{self.name}_score")
 
     def _prepare_base_candidate_frame(self, X: pd.DataFrame) -> pd.DataFrame:

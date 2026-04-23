@@ -49,6 +49,8 @@ class BaseAgent(ABC):
         self.save_artifacts = save_artifacts
         self._diagnostics:   Dict[str, Any]  = {}
         self._train_history: List[Dict]       = []
+        self._calibrator:    Optional[Any]    = None
+        self._calibration_method: str         = "none"
 
     # ── Public interface ──────────────────────────────────────────────────────
 
@@ -77,6 +79,101 @@ class BaseAgent(ABC):
             pd.Series: Scores indexed like X. Score of 1 = Outperform.
         """
         ...
+
+    def fit_calibrator(
+        self,
+        oof_proba: "np.ndarray",
+        oof_labels: "np.ndarray",
+        method: str = "isotonic",
+    ) -> "BaseAgent":
+        """Fits a post-hoc probability calibrator on out-of-fold predictions.
+
+        Calibration corrects the reliability of raw model probabilities so that,
+        for example, a predicted probability of 0.7 actually corresponds to a
+        70% empirical TP-hit rate. This implements Option A (Platt scaling via
+        logistic regression) and Option B (isotonic regression) from the spec.
+
+        The calibrator is automatically applied inside :meth:`_apply_calibration`
+        which individual ``predict_score`` implementations should call on their
+        raw probability arrays.
+
+        Args:
+            oof_proba (np.ndarray): 1-D array of raw out-of-fold probabilities
+                produced by the underlying model.
+            oof_labels (np.ndarray): 1-D array of binary ground-truth labels
+                aligned with ``oof_proba``.
+            method (str): Calibration method. ``"isotonic"`` uses
+                :class:`sklearn.isotonic.IsotonicRegression` (non-parametric,
+                better with many samples). ``"platt"`` uses a single logistic
+                regression (Platt scaling, better with few samples). Defaults
+                to ``"isotonic"``.
+
+        Returns:
+            BaseAgent: The agent instance (self) for method chaining.
+        """
+        try:
+            import numpy as _np
+            from sklearn.isotonic import IsotonicRegression
+            from sklearn.linear_model import LogisticRegression
+        except ImportError:
+            log.warning("[%s] scikit-learn not available; calibration skipped.", self.name)
+            return self
+
+        proba = _np.asarray(oof_proba, dtype=float).ravel()
+        labels = _np.asarray(oof_labels, dtype=float).ravel()
+        valid = _np.isfinite(proba) & _np.isfinite(labels)
+        proba, labels = proba[valid], labels[valid]
+
+        if len(proba) < 10 or len(_np.unique(labels)) < 2:
+            log.warning(
+                "[%s] Insufficient calibration data (%d samples, %d classes); "
+                "calibration skipped.",
+                self.name, len(proba), len(_np.unique(labels)),
+            )
+            return self
+
+        method = str(method).lower()
+        if method == "isotonic":
+            cal = IsotonicRegression(out_of_bounds="clip")
+            cal.fit(proba, labels)
+        elif method == "platt":
+            cal = LogisticRegression(C=1.0, max_iter=200, solver="lbfgs")
+            cal.fit(proba.reshape(-1, 1), labels)
+        else:
+            log.warning("[%s] Unknown calibration method '%s'; skipping.", self.name, method)
+            return self
+
+        self._calibrator = cal
+        self._calibration_method = method
+        log.info("[%s] Probability calibrator fitted (method=%s, n=%d).", self.name, method, len(proba))
+        return self
+
+    def _apply_calibration(self, proba: "np.ndarray") -> "np.ndarray":
+        """Applies the fitted calibrator to raw probability predictions.
+
+        If no calibrator has been fitted, the input is returned unchanged.
+
+        Args:
+            proba (np.ndarray): 1-D array of raw probabilities in [0, 1].
+
+        Returns:
+            np.ndarray: Calibrated probability array clipped to [0, 1].
+        """
+        if self._calibrator is None:
+            return proba
+        import numpy as _np
+        arr = _np.asarray(proba, dtype=float).ravel()
+        try:
+            if self._calibration_method == "isotonic":
+                calibrated = self._calibrator.predict(arr)
+            elif self._calibration_method == "platt":
+                calibrated = self._calibrator.predict_proba(arr.reshape(-1, 1))[:, 1]
+            else:
+                return arr
+            return _np.clip(calibrated, 0.0, 1.0)
+        except Exception as exc:
+            log.warning("[%s] Calibration prediction failed (%s); returning raw scores.", self.name, exc)
+            return arr
 
     # ── Diagnostics persistence ───────────────────────────────────────────────
 

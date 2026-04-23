@@ -174,9 +174,30 @@ def select_portfolio(
 def get_portfolio_weights(
     signals: pd.DataFrame,
     selected_only: bool = True,
-    weight_by: str = "ev",
+    weight_by: str = "confidence",
+    max_weight: float = 0.25,
 ) -> pd.Series:
-    """Compute normalized portfolio weights."""
+    """Compute normalized portfolio weights proportional to confidence.
+
+    Weights are computed as ``w_i = P_i / sum(P_all)`` when ``weight_by`` is
+    ``"confidence"``, implementing the probabilistic portfolio sizing rule from
+    the spec.  Optional ``max_weight`` cap prevents excessive concentration.
+
+    Args:
+        signals (pd.DataFrame): Signal DataFrame with a ``"ticker"`` column and
+            a column matching ``weight_by``.
+        selected_only (bool): If True, restricts to rows where ``selected``
+            is ``True``.
+        weight_by (str): Column to use for weight proportionality.  Defaults to
+            ``"confidence"`` (pure P_i-proportional weighting).  Falls back to
+            equal weights when the column is absent or all-zero.
+        max_weight (float): Maximum weight per position (0, 1].  Positions
+            exceeding this cap are truncated and the surplus is redistributed
+            proportionally.  Set to 1.0 to disable the cap.
+
+    Returns:
+        pd.Series: Normalised weights indexed by ticker.
+    """
     df = signals.copy()
     if selected_only and "selected" in df.columns:
         df = df[df["selected"].astype(bool)]
@@ -188,14 +209,74 @@ def get_portfolio_weights(
         raw = pd.to_numeric(df[weight_by], errors="coerce").clip(0.0, None)
         total = float(raw.sum())
         if total > 0:
-            weights = raw / total
+            weights = (raw / total).values
         else:
-            weights = pd.Series(1.0 / len(df), index=df.index)
+            weights = np.full(len(df), 1.0 / len(df))
     else:
-        weights = pd.Series(1.0 / len(df), index=df.index)
+        weights = np.full(len(df), 1.0 / len(df))
 
-    weights.index = df["ticker"].values
-    return weights
+    # Apply max-weight cap iteratively (water-filling redistribution).
+    # At most len(weights) rounds are needed because each round converts at
+    # least one position from "over" to "capped", reducing remaining iterations.
+    # In practice the loop terminates in 1–3 rounds for typical portfolios.
+    max_w = float(np.clip(max_weight, 1e-6, 1.0))
+    for _ in range(len(weights)):
+        over = weights > max_w
+        if not over.any():
+            break
+        excess = float((weights[over] - max_w).sum())
+        weights[over] = max_w
+        under = ~over
+        if under.any():
+            under_sum = float(weights[under].sum())
+            if under_sum > 0:
+                weights[under] += excess * weights[under] / under_sum
+        else:
+            break
+
+    total_after = float(weights.sum())
+    if total_after > 0:
+        weights = weights / total_after
+    else:
+        weights = np.full(len(df), 1.0 / len(df))
+
+    result = pd.Series(weights, index=df["ticker"].values, name="weight")
+    return result
+
+
+def apply_regime_exposure(
+    weights: pd.Series,
+    regime: str,
+    *,
+    cash_ticker: str = "_CASH",
+) -> pd.Series:
+    """Scale portfolio weights by the regime-specific exposure multiplier.
+
+    In a BEAR (Risk-Off) regime the system deploys only a fraction of capital,
+    effectively parking the remainder in cash.  In BULL (Risk-On) the full
+    weight allocation is used.
+
+    Args:
+        weights (pd.Series): Normalised position weights indexed by ticker.
+            Must sum to approximately 1.0.
+        regime (str): Current market regime label. One of ``REGIME_RISK_ON``
+            (BULL), ``REGIME_NEUTRAL``, or ``REGIME_RISK_OFF`` (BEAR).
+        cash_ticker (str): Placeholder label used for the uninvested cash
+            residual in the returned series. Defaults to ``"_CASH"``.
+
+    Returns:
+        pd.Series: Adjusted weights where the invested fraction equals the
+            regime exposure multiplier and the remainder is labelled
+            ``cash_ticker``.  The series always sums to 1.0.
+    """
+    from module.common.regime import get_regime_exposure_multiplier
+    exposure = get_regime_exposure_multiplier(str(regime))
+    invested = weights * float(exposure)
+    cash_residual = max(0.0, 1.0 - float(invested.sum()))
+    if cash_residual > 1e-6:
+        cash_entry = pd.Series({cash_ticker: cash_residual})
+        return pd.concat([invested, cash_entry])
+    return invested
 
 
 def simulate_tp_sl(
@@ -423,6 +504,7 @@ class AgentWeightTracker:
 
 __all__ = [
     "AgentWeightTracker",
+    "apply_regime_exposure",
     "attach_confidence",
     "compute_confidence",
     "compute_expected_value",

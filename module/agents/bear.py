@@ -231,7 +231,10 @@ class BearAgent(BaseAgent):
         if self._selector is not None:
             X_prep = self._selector.transform(X_prep)
         X_al       = self._align(X_prep)
-        ml_score   = pd.Series(self._model.predict_proba(X_al)[:, 1], index=X.index)
+        ml_score   = pd.Series(
+            self._apply_calibration(self._model.predict_proba(X_al)[:, 1]),
+            index=X.index,
+        )
 
         combined = (self.RULE_WEIGHT * rule_score.reindex(X.index).fillna(0.5) +
                     self.ML_WEIGHT   * ml_score)
