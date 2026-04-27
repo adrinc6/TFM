@@ -350,6 +350,14 @@ FUNDAMENTAL_FEATURE_COLUMNS = [
   "roe_trend_3y",
   "net_margin_trend_3y",
   "gross_margin_trend_3y",
+
+  # ROIC trend: captures improvement in capital efficiency over 2 years.
+  # Rising ROIC is a leading indicator of widening competitive moat.
+  "roic_trend_2y",
+
+  # EPS growth trend: slope of YoY earnings growth over 3 years.
+  # Positive = earnings acceleration; captures the second derivative of earnings power.
+  "eps_growth_trend_3y",
 ]
 
 FUNDAMENTAL_FEATURE_EXCLUDE = [
@@ -433,6 +441,14 @@ MOMENTUM_FEATURE_COLUMNS = [
   # RSI signals
   "rsi_14",
   "rsi_28",
+
+  # Momentum consistency: fraction of momentum windows (1m/3m/6m/12m) that are
+  # positive.  Captures directional agreement across horizons.
+  "momentum_consistency_score",
+
+  # Price acceleration: annualised 3m minus annualised 6m momentum.
+  # Positive = trend is speeding up; negative = momentum fading.
+  "price_acceleration",
 ]
 
 MOMENTUM_FEATURE_EXCLUDE = [
@@ -646,10 +662,31 @@ META_FEATURE_COLUMNS = [
   # Revenue growth momentum: identifies accelerating growth vs fading growers
   "revenue_growth_acceleration",
 
+  # EPS surprise acceleration: growing beat magnitudes signal analysts are
+  # systematically underestimating the company's earnings power.
+  "eps_surprise_acceleration",
+
+  # Beat rate rank: consistent earnings beaters signal durable competitive
+  # advantages; cross-sectional rank removes sector-wide easy-beat bias.
+  "beat_rate_rank_universe",
+
+  # Volatility-adjusted (Sharpe-like) momentum: rewards smooth uptrends over
+  # noisy spikes; more reliable signal for cross-sectional stock selection.
+  "vol_adj_momentum_12m_rank",
+
+  # Momentum consistency: fraction of 1m/3m/6m/12m windows that are positive.
+  # Full-spectrum directional agreement is a stronger trend signal.
+  "momentum_consistency",
+
+  # ROIC acceleration rank: companies improving capital efficiency quarter-
+  # over-quarter are compounding their competitive moat.
+  "quality_acceleration_rank",
+
   # Volatility-adjusted signals
   "momentum_vol_adj",
   "value_vol_adj",
   "quality_vol_adj",
+  "sentiment_vol_adj",
 
   # Interaction features
   "value_x_momentum",

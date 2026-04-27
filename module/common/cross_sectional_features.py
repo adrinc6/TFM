@@ -91,6 +91,69 @@ def enrich_cross_sectional_features(df: pd.DataFrame) -> pd.DataFrame:
         # Cross-sectionally rank so the meta-learner gets a relative signal
         out["revenue_growth_acceleration"] = raw_accel.groupby(dates).transform(_safe_pct_rank)
 
+    # EPS surprise acceleration: is the magnitude of earnings beats growing?
+    # Stocks with improving EPS surprise trend signal that analysts are
+    # systematically underestimating earnings power — a leading indicator of
+    # persistent positive earnings momentum.
+    if "eps_surprise_pct" in out.columns:
+        eps_surp = _numeric_col_or_default(out, "eps_surprise_pct").fillna(0.0)
+        if isinstance(out.index, pd.MultiIndex) and "ticker" in out.index.names:
+            eps_surp_lag = (
+                eps_surp
+                .groupby(out.index.get_level_values("ticker"))
+                .shift(1)
+                .fillna(0.0)
+            )
+        else:
+            eps_surp_lag = eps_surp.shift(1).fillna(0.0)
+        raw_eps_accel = eps_surp - eps_surp_lag
+        out["eps_surprise_acceleration"] = raw_eps_accel.groupby(dates).transform(_safe_pct_rank)
+
+    # Beat rate rank: consistent earnings beaters signal durable competitive
+    # advantages and management credibility.  Cross-sectional rank filters out
+    # sector-wide easy-beat environments.
+    if "beat_rate_4q" in out.columns:
+        out["beat_rate_rank_universe"] = out.groupby(dates)["beat_rate_4q"].transform(_safe_pct_rank)
+
+    # Volatility-adjusted 12-month momentum (Sharpe-momentum): dividing realized
+    # return by realized risk rewards smooth uptrends and penalises noisy spikes.
+    # Cross-sectional rank makes the signal comparable across sectors.
+    if "momentum_12m" in out.columns and "volatility_60d" in out.columns:
+        vol_safe = _numeric_col_or_default(out, "volatility_60d").replace(0, np.nan)
+        vol_median = float(vol_safe.median()) if vol_safe.notna().any() else 1.0
+        vol_safe = vol_safe.fillna(vol_median)
+        raw_vol_adj = _numeric_col_or_default(out, "momentum_12m").fillna(0.0) / vol_safe
+        raw_vol_adj = raw_vol_adj.replace([np.inf, -np.inf], np.nan).fillna(0.0)
+        out["vol_adj_momentum_12m_rank"] = raw_vol_adj.groupby(dates).transform(_safe_pct_rank)
+
+    # Momentum consistency: fraction of momentum windows (1m, 3m, 6m, 12m) that
+    # are positive.  A stock with all horizons pointing up has a more reliable
+    # underlying trend than one with mixed multi-period signals.
+    mom_windows = [c for c in ["momentum_1m", "momentum_3m", "momentum_6m", "momentum_12m"] if c in out.columns]
+    if len(mom_windows) >= 2:
+        pos_count = sum(
+            (_numeric_col_or_default(out, c).fillna(0.0) > 0).astype(float)
+            for c in mom_windows
+        )
+        out["momentum_consistency"] = pos_count / len(mom_windows)
+
+    # ROIC acceleration: cross-sectional rank of quarterly capital-efficiency
+    # improvement.  Companies steadily increasing ROIC are compounding their
+    # competitive moat and typically command expanding valuation multiples.
+    if "roic" in out.columns:
+        roic_vals = _numeric_col_or_default(out, "roic").fillna(0.0)
+        if isinstance(out.index, pd.MultiIndex) and "ticker" in out.index.names:
+            roic_lag = (
+                roic_vals
+                .groupby(out.index.get_level_values("ticker"))
+                .shift(1)
+                .fillna(0.0)
+            )
+        else:
+            roic_lag = roic_vals.shift(1).fillna(0.0)
+        roic_accel = roic_vals - roic_lag
+        out["quality_acceleration_rank"] = roic_accel.groupby(dates).transform(_safe_pct_rank)
+
     vol = _numeric_col_or_default(out, "volatility_60d").replace(0, np.nan)
     for src, dst in [
         ("momentum_3m", "momentum_vol_adj"),

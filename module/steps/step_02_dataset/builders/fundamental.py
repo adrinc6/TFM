@@ -44,6 +44,12 @@ class FundamentalFeatureBuilder:
             ("bf_net_margin",  "net_margin_trend_3y"),
             ("roe",            "roe_trend_2y"),
             ("net_margin",     "net_margin_trend_2y"),
+            # ROIC trend: captures improvement in capital efficiency over 2 years.
+            # Rising ROIC signals widening competitive moat and improving profitability.
+            ("roic",           "roic_trend_2y"),
+            # EPS growth trend: slope of YoY earnings growth over 3 years.
+            # Positive = earnings acceleration; negative = decelerating growth.
+            ("eps_yoy_growth", "eps_growth_trend_3y"),
         ]:
             if col in fund_hist_asof.columns:
                 vals = fund_hist_asof[col].dropna().tail(8)

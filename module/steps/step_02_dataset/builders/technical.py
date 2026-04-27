@@ -69,6 +69,22 @@ class TechnicalFeatureBuilder:
             if len(close) > days:
                 f[name] = float(p / close.iloc[-(days + 1)] - 1)
 
+        # Momentum consistency: fraction of momentum windows that are positive.
+        # A stock with all horizons pointing up has a more reliable underlying
+        # trend than one with mixed multi-period signals (0 = all negative, 1 = all positive).
+        mom_vals = {n: f.get(n) for n in ["momentum_1m", "momentum_3m", "momentum_6m", "momentum_12m"] if n in f}
+        if len(mom_vals) >= 2:
+            n_positive = sum(1 for v in mom_vals.values() if v is not None and v > 0)
+            f["momentum_consistency_score"] = float(n_positive) / len(mom_vals)
+
+        # Price acceleration: annualised 3m momentum minus annualised 6m momentum.
+        # Positive = the recent pace of price gains exceeds the 6m average, i.e.
+        # the trend is speeding up.  Negative = momentum is fading.
+        if "momentum_3m" in f and "momentum_6m" in f:
+            mom3_ann = f["momentum_3m"] * 4.0
+            mom6_ann = f["momentum_6m"] * 2.0
+            f["price_acceleration"] = float(mom3_ann - mom6_ann)
+
         ret = close.pct_change().dropna()
         for w in [20, 60]:
             if len(ret) >= w:
