@@ -314,7 +314,6 @@ FUNDAMENTAL_FEATURE_COLUMNS = [
   # Profitability (core)
   "roa",
   "roe",
-  "roi",
   "roic",
   "capex_to_revenue",
 
@@ -327,7 +326,6 @@ FUNDAMENTAL_FEATURE_COLUMNS = [
 
   # Liquidity
   "current_ratio",
-  "quick_ratio",
 
   # Leverage / solvency
   "debt_equity",
@@ -338,18 +336,8 @@ FUNDAMENTAL_FEATURE_COLUMNS = [
   "revenue_yoy_growth",
   "fcf_yoy_growth",
 
-  # Analyst earnings revisions: one of the most consistently predictive
-  # forward-looking signals in equity research.  Upward revisions precede
-  # earnings beats and persistent price momentum.
-  "eps_revision",
-
   # Efficiency / quality
   "piotroski_fscore",
-
-  # Long-term trends
-  "roe_trend_3y",
-  "net_margin_trend_3y",
-  "gross_margin_trend_3y",
 
   # ROIC trend: captures improvement in capital efficiency over 2 years.
   # Rising ROIC is a leading indicator of widening competitive moat.
@@ -382,6 +370,20 @@ FUNDAMENTAL_FEATURE_EXCLUDE = [
   # Redundant short-term trends (keep longer horizon)
   "roe_trend_2y",
   "net_margin_trend_2y",
+
+  # Removed: consistently unavailable (require bf_* annual data not in Finnhub quarterly)
+  "roe_trend_3y",
+  "net_margin_trend_3y",
+  "gross_margin_trend_3y",
+
+  # Removed: redundant with roa + roic; never appeared in top features
+  "roi",
+
+  # Removed: no data in Finnhub quarterly consolidated
+  "quick_ratio",
+
+  # Removed: analyst signal — belongs in SentimentAgent / BearAgent, not FundamentalAgent
+  "eps_revision",
 ]
 # ── ValuationAgent (GBM) ─────────────────────────────────────────────────────
 VALUATION_N_ESTIMATORS  = 200
@@ -423,14 +425,9 @@ MOMENTUM_FEATURE_COLUMNS = [
   # Price position
   "price_vs_52w_high",
 
-  # Momentum (multi-horizon but non-redundant)
+  # Momentum (multi-horizon)
   "momentum_3m",
   "momentum_6m",
-  "momentum_12m",
-
-  # Trend (long-term signal)
-  "sma_50",
-  "sma_200",
 
   # Volatility (regime detection)
   "volatility_60d",
@@ -441,14 +438,6 @@ MOMENTUM_FEATURE_COLUMNS = [
   # RSI signals
   "rsi_14",
   "rsi_28",
-
-  # Momentum consistency: fraction of momentum windows (1m/3m/6m/12m) that are
-  # positive.  Captures directional agreement across horizons.
-  "momentum_consistency_score",
-
-  # Price acceleration: annualised 3m minus annualised 6m momentum.
-  # Positive = trend is speeding up; negative = momentum fading.
-  "price_acceleration",
 ]
 
 MOMENTUM_FEATURE_EXCLUDE = [
@@ -457,8 +446,11 @@ MOMENTUM_FEATURE_EXCLUDE = [
   "macd_signal",
   "macd_hist",
 
-  # Moving average redundancy
+  # Moving average redundancy (information already captured by momentum_3m/6m
+  # and price_vs_52w_high; never appeared in top features across all folds)
   "sma_20",
+  "sma_50",
+  "sma_200",
 
   # Overlapping technical indicators
   "bb_pct",
@@ -469,9 +461,18 @@ MOMENTUM_FEATURE_EXCLUDE = [
   # Overlapping momentum horizons
   "momentum_1m",
 
+  # Not available in the current analysis window (requires 252+ trading days
+  # before the first snapshot; consistently missing in all evaluated folds)
+  "momentum_12m",
+
   # Volatility redundancy
   "volatility_20d",
   "atr_14",
+
+  # Redundant derived signals (not in top features; information already in
+  # momentum_3m/6m and price_vs_52w_high)
+  "price_acceleration",
+  "momentum_consistency_score",
 ]
 
 # ── BearAgent (Hybrid Random Forest) ─────────────────────────────────────────
@@ -523,14 +524,11 @@ SENTIMENT_FEATURE_COLUMNS = [
   "insider_net_ratio_90d",
 
   # Earnings expectation vs reality
-  "beat_rate_4q",
   "eps_surprise_avg_4q",
 
-  # NLP sentiment (FinBERT)
+  # NLP sentiment (FinBERT when available, lexical fallback otherwise)
   "finbert_sentiment_polarity",
-  "finbert_uncertainty_score",
   "finbert_risk_intensity",
-  "finbert_bullish_tone",
 ]
 
 SENTIMENT_FEATURE_EXCLUDE = [
@@ -544,6 +542,15 @@ SENTIMENT_FEATURE_EXCLUDE = [
 
   # Noisy / too short-term
   "eps_surprise_pct",
+
+  # Removed: consistently absent in early folds; marginal importance when present
+  "beat_rate_4q",
+
+  # Removed: redundant with finbert_sentiment_polarity (positive-only vs positive−negative)
+  "finbert_bullish_tone",
+
+  # Removed: near-zero importance; partially overlaps finbert_risk_intensity
+  "finbert_uncertainty_score",
 ]
 
 # SectorRotationAgent
@@ -553,7 +560,6 @@ SECTOR_ROTATION_FEATURE_COLUMNS = [
   # =========================
   "momentum_3m",
   "momentum_6m",
-  "momentum_12m",
   "price_vs_52w_high",
 
   # =========================
@@ -577,25 +583,29 @@ SECTOR_ROTATION_FEATURE_COLUMNS = [
   "net_margin",
 
   # =========================
-  # 5. RISK / BALANCE SHEET
-  # =========================
-  "debt_to_ebitda",
-  "interest_coverage",
-
-  # =========================
-  # 6. SENTIMENT (ACCELERATOR)
+  # 5. SENTIMENT (ACCELERATOR)
   # =========================
   "eps_revision",
-  "analyst_consensus_change",
-  "analyst_dispersion",
 
   # =========================
-  # 7. REGIME / RISK CONTEXT
+  # 6. REGIME / RISK CONTEXT
   # =========================
   "volatility_60d",
 ]
 
-SECTOR_ROTATION_FEATURE_EXCLUDE = []
+SECTOR_ROTATION_FEATURE_EXCLUDE = [
+  # Not available in the current analysis window (requires 252+ trading days)
+  "momentum_12m",
+
+  # Debt/coverage metrics have no sector-rotation importance after aggregation;
+  # captured by bear_score in the meta-learner
+  "debt_to_ebitda",
+  "interest_coverage",
+
+  # Analyst dispersion and consensus-change lose signal when aggregated to sector level
+  "analyst_consensus_change",
+  "analyst_dispersion",
+]
 
 # ── FeatureSelector ──────────────────────────────────────────────────────────
 FEATURE_CORR_THRESHOLD = 0.85
@@ -638,62 +648,26 @@ META_FEATURE_COLUMNS = [
   "sector_score",
   "regime_adjusted_score",
 
-  # Sector-relative percentile ranks (original)
-  "pe_rank_sector",
-  "momentum_pct_sector",
-  "roe_pct_sector",
+  # Sector-relative percentile ranks (3 non-redundant angles)
+  "fcf_yield_rank_sector",    # cheapness vs sector (robust to earnings distortion)
+  "roic_rank_sector",         # capital efficiency vs sector
+  "ev_ebitda_rank_sector",    # enterprise value vs sector
 
-  # Sector-relative value/quality ranks (new)
-  "pb_rank_sector",
-  "fcf_yield_rank_sector",
-  "roic_rank_sector",
-  "ev_ebitda_rank_sector",
-  "debt_rank_sector",
+  # Universe-wide percentile ranks
+  "quality_rank_universe",       # ROIC vs all tickers
+  "value_rank_universe",         # earnings_yield vs all tickers
+  "piotroski_rank_universe",     # financial health score vs all tickers
+  "eps_revision_rank_universe",  # analyst revision momentum (proven alpha)
+  "beat_rate_rank_universe",     # consistent earnings beaters
 
-  # Universe-wide percentile ranks (new)
-  "momentum_12m_rank_universe",
-  "quality_rank_universe",
-  "value_rank_universe",
-  "piotroski_rank_universe",
-
-  # Earnings revision rank (proven alpha factor)
-  "eps_revision_rank_universe",
-
-  # Revenue growth momentum: identifies accelerating growth vs fading growers
-  "revenue_growth_acceleration",
-
-  # EPS surprise acceleration: growing beat magnitudes signal analysts are
-  # systematically underestimating the company's earnings power.
-  "eps_surprise_acceleration",
-
-  # Beat rate rank: consistent earnings beaters signal durable competitive
-  # advantages; cross-sectional rank removes sector-wide easy-beat bias.
-  "beat_rate_rank_universe",
-
-  # Volatility-adjusted (Sharpe-like) momentum: rewards smooth uptrends over
-  # noisy spikes; more reliable signal for cross-sectional stock selection.
-  "vol_adj_momentum_12m_rank",
-
-  # Momentum consistency: fraction of 1m/3m/6m/12m windows that are positive.
-  # Full-spectrum directional agreement is a stronger trend signal.
+  # Momentum consistency: fraction of 1m/3m/6m windows that are positive.
+  # Directional agreement across horizons (momentum_12m excluded — unavailable).
   "momentum_consistency",
 
-  # ROIC acceleration rank: companies improving capital efficiency quarter-
-  # over-quarter are compounding their competitive moat.
-  "quality_acceleration_rank",
-
-  # Volatility-adjusted signals
-  "momentum_vol_adj",
-  "value_vol_adj",
-  "quality_vol_adj",
-  "sentiment_vol_adj",
-
-  # Interaction features
-  "value_x_momentum",
-  "quality_x_lowvol",
-  "sentiment_x_earnings_surprise",
-  "quality_x_value_universe",
-  "momentum_quality_signal",
+  # Interaction features (bounded, robust combinations)
+  "value_x_momentum",         # cheap + momentum = value-momentum blend
+  "quality_x_lowvol",         # high ROIC + low volatility = quality/defensive
+  "quality_x_value_universe", # rank × rank composite (double-confirmation)
 
   # Macro regime context
   "vix",
@@ -701,7 +675,34 @@ META_FEATURE_COLUMNS = [
   "sp500_momentum_3m",
   "sp500_momentum_12m",
 ]
-META_FEATURE_EXCLUDE = []
+META_FEATURE_EXCLUDE = [
+  # Removed sector ranks: redundant or noisy after aggregation
+  "pe_rank_sector",           # redundant with ev_ebitda_rank_sector + fcf_yield_rank_sector
+  "pb_rank_sector",           # too sector-specific (e.g., banks); distorts cross-sector ranking
+  "roe_pct_sector",           # ROE is leverage-influenced; replaced by roic_rank_sector
+  "momentum_pct_sector",      # redundant with universe-level momentum ranks
+  "debt_rank_sector",         # captured by bear_score; redundant
+
+  # Removed: always NaN in current analysis window (momentum_12m unavailable)
+  "momentum_12m_rank_universe",
+  "vol_adj_momentum_12m_rank",
+  "momentum_quality_signal",
+
+  # Removed: second-derivative signals — noisy with sparse quarterly data
+  "revenue_growth_acceleration",
+  "eps_surprise_acceleration",
+  "quality_acceleration_rank",
+
+  # Removed: raw volatility-adjusted values (not cross-sectionally ranked;
+  # near-zero for sentiment-based version; redundant with agent scores)
+  "momentum_vol_adj",
+  "value_vol_adj",
+  "quality_vol_adj",
+  "sentiment_vol_adj",
+
+  # Removed: finbert_sentiment_polarity ≈ 0 makes this interaction near-zero
+  "sentiment_x_earnings_surprise",
+]
 # Base score columns on which meta computes consensus/interactions.
 META_AGENT_SCORE_COLUMNS = [
   "fundamental_score",
