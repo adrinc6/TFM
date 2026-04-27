@@ -26,6 +26,7 @@ from environment import (
     SENTIMENT_FEATURE_COLUMNS, SENTIMENT_FEATURE_EXCLUDE,
     SECTOR_ROTATION_FEATURE_COLUMNS, SECTOR_ROTATION_FEATURE_EXCLUDE,
     META_FEATURE_COLUMNS, META_FEATURE_EXCLUDE,
+    ENABLE_RECENCY_WEIGHTING, TRAINING_RECENCY_HALFLIFE_YEARS,
 )
 from module.agents.alpha_meta_learner import AlphaMetaLearner
 from module.common.regime import MarketRegimeModel, apply_regime_weighting
@@ -245,6 +246,39 @@ def _apply_sector_adjustments(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def _compute_recency_weights(df: pd.DataFrame) -> Optional[np.ndarray]:
+    """Compute per-observation exponential recency weights from the DataFrame index.
+
+    Returns an array of shape ``(len(df),)`` with mean 1.0, or ``None`` when
+    recency weighting is disabled or the date index cannot be resolved.
+    """
+    if not ENABLE_RECENCY_WEIGHTING:
+        return None
+    try:
+        if isinstance(df.index, pd.MultiIndex) and "date" in df.index.names:
+            dates = pd.to_datetime(df.index.get_level_values("date"), errors="coerce")
+        else:
+            dates = pd.to_datetime(df.index, errors="coerce")
+        dates_valid = dates.dropna()
+        if len(dates_valid) < 2:
+            return None
+        t_min = dates_valid.min()
+        t_max = dates_valid.max()
+        if t_min == t_max:
+            return None
+        halflife_days = max(float(TRAINING_RECENCY_HALFLIFE_YEARS), 0.25) * 365.25
+        lam = np.log(2.0) / halflife_days
+        age_days = np.array(
+            [(d - t_min).days if pd.notna(d) else 0.0 for d in dates],
+            dtype=float,
+        )
+        weights = np.exp(lam * age_days)
+        weights /= weights.mean()
+        return weights.astype(np.float32)
+    except Exception:
+        return None
+
+
 def _instantiate_base_agents(agents_config: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
     return {
         ag_name: cfg["cls"](**cfg["kwargs"])
@@ -265,15 +299,23 @@ def _fit_base_agents(
     X: pd.DataFrame,
     y: pd.Series,
     fold: int,
+    sample_weight: Optional[np.ndarray] = None,
 ) -> None:
     for ag_name, agent in agents.items():
         cfg = agents_config[ag_name]
         y_fit = (1 - y) if cfg.get("invert_y") else y
         sector_col = cfg.get("sector_col")
+        fit_kwargs: Dict[str, Any] = {"fold": fold}
         if sector_col:
-            agent.fit(X, y_fit, fold=fold, sector_col=sector_col)
-        else:
-            agent.fit(X, y_fit, fold=fold)
+            fit_kwargs["sector_col"] = sector_col
+        if sample_weight is not None:
+            fit_kwargs["sample_weight"] = sample_weight
+        try:
+            agent.fit(X, y_fit, **fit_kwargs)
+        except TypeError:
+            # Fallback for agents whose fit() does not accept sample_weight
+            fit_kwargs_basic = {k: v for k, v in fit_kwargs.items() if k != "sample_weight"}
+            agent.fit(X, y_fit, **fit_kwargs_basic)
 
 
 def _predict_base_scores(
@@ -342,7 +384,15 @@ def train_fold(
     # ── Step 1: Train base agents ────────────────────────────────────────────
     log.info(f"[Fold {fold_id}] 1/3 — Entrenando agentes base con datos de entrenamiento del fold...")
     base_agents = _instantiate_base_agents(agents_config)
-    _fit_base_agents(base_agents, agents_config, df_train_norm, y_train, fold=fold_id)
+    recency_weights = _compute_recency_weights(df_train_norm)
+    if recency_weights is not None:
+        log.info(
+            f"[Fold {fold_id}] Recency weighting enabled "
+            f"(halflife={TRAINING_RECENCY_HALFLIFE_YEARS}Y, "
+            f"weight_range=[{recency_weights.min():.3f}, {recency_weights.max():.3f}])"
+        )
+    _fit_base_agents(base_agents, agents_config, df_train_norm, y_train, fold=fold_id,
+                     sample_weight=recency_weights)
 
     # Entrenar SectorRotationAgent (opera a nivel sector, no ticker)
     sector_agent = build_sector_rotation_agent(agent_models_results_dir=agent_models_results_dir, random_seed=random_seed)
@@ -453,7 +503,9 @@ def train_full_history(
     base_agents = _instantiate_base_agents(agents_config)
     meta = AlphaMetaLearner(results_dir=agent_models_results_dir, random_seed=random_seed)
 
-    _fit_base_agents(base_agents, agents_config, df_norm, y, fold=0)
+    recency_weights = _compute_recency_weights(df_norm)
+    _fit_base_agents(base_agents, agents_config, df_norm, y, fold=0,
+                     sample_weight=recency_weights)
 
     sector_agent = build_sector_rotation_agent(agent_models_results_dir=agent_models_results_dir, random_seed=random_seed)
     if sector_map is not None and "forward_return" in df_norm.columns:

@@ -39,6 +39,8 @@ from environment import (
     ALPHA_META_RISK_MIN_CHILD,
     ALPHA_META_RANK_BLEND,
     ALPHA_META_RISK_BLEND,
+    ENABLE_RECENCY_WEIGHTING,
+    TRAINING_RECENCY_HALFLIFE_YEARS,
 )
 
 log = logging.getLogger(__name__)
@@ -146,6 +148,51 @@ class AlphaMetaLearner(BaseAgent):
             return s.groupby(idx.get_level_values("date")).rank(pct=True, method="average")
         return s.rank(pct=True, method="average")
 
+    @staticmethod
+    def _compute_recency_weights(X: pd.DataFrame) -> Optional[np.ndarray]:
+        """Compute exponential recency weights from the date index.
+
+        Recent quarters receive exponentially more weight than older ones.
+        This corrects for concept drift: factor premia shift over time, so
+        observations from 4-5 years ago are less predictive of current
+        market dynamics than the most recent 1-2 years.
+
+        Weight for an observation at time ``t`` relative to the oldest
+        observation ``t_min`` and newest ``t_max``:
+
+            w = exp(log(2) / halflife * (t - t_min))
+
+        Weights are normalised to mean = 1.0 so the total gradient magnitude
+        is preserved across any window length.
+        """
+        if not ENABLE_RECENCY_WEIGHTING:
+            return None
+        try:
+            if isinstance(X.index, pd.MultiIndex) and "date" in X.index.names:
+                dates = pd.to_datetime(X.index.get_level_values("date"), errors="coerce")
+            else:
+                dates = pd.to_datetime(X.index, errors="coerce")
+            dates_valid = dates.dropna()
+            if len(dates_valid) < 2:
+                return None
+            t_min = dates_valid.min()
+            t_max = dates_valid.max()
+            if t_min == t_max:
+                return None
+            halflife_days = max(float(TRAINING_RECENCY_HALFLIFE_YEARS), 0.25) * 365.25
+            lam = np.log(2.0) / halflife_days
+            # Days since oldest observation (NaT → treated as 0)
+            age_days = np.array(
+                [(d - t_min).days if pd.notna(d) else 0.0 for d in dates],
+                dtype=float,
+            )
+            weights = np.exp(lam * age_days)
+            # Normalise to mean 1.0 to preserve effective learning rate
+            weights /= weights.mean()
+            return weights.astype(np.float32)
+        except Exception:
+            return None
+
     def fit(
         self,
         X: pd.DataFrame,
@@ -166,6 +213,10 @@ class AlphaMetaLearner(BaseAgent):
         alpha = pd.to_numeric((target_alpha if target_alpha is not None else (y_cls - 0.5)), errors="coerce")
         alpha = alpha.reindex(X_prep.index).fillna(alpha.median() if np.isfinite(alpha.median()) else 0.0)
 
+        # Exponential recency weights: recent quarters carry more influence to
+        # combat concept drift in factor premia without discarding older data.
+        sample_weight = self._compute_recency_weights(X)
+
         self._reg_model = xgb.XGBRegressor(
             n_estimators=ALPHA_META_REG_N_ESTIMATORS,
             max_depth=ALPHA_META_REG_MAX_DEPTH,
@@ -180,7 +231,7 @@ class AlphaMetaLearner(BaseAgent):
             n_jobs=-1,
             tree_method="hist",
         )
-        self._reg_model.fit(X_prep, alpha)
+        self._reg_model.fit(X_prep, alpha, sample_weight=sample_weight)
 
         groups = self._group_sizes_from_index(X_prep.index)
         if len(groups) > 1:
@@ -198,7 +249,22 @@ class AlphaMetaLearner(BaseAgent):
                 n_jobs=-1,
                 tree_method="hist",
             )
-            self._rank_model.fit(X_prep, alpha, group=groups)
+            # XGBRanker's sample_weight must be one value per query group,
+            # not per sample.  Aggregate per-sample weights to group weights
+            # by taking the mean within each group.
+            rank_fit_kwargs: Dict = {"group": groups}
+            if sample_weight is not None:
+                try:
+                    # Each group corresponds to one snapshot date; compute
+                    # mean weight per group to satisfy XGBRanker's constraint.
+                    group_weights = np.array([
+                        float(sample_weight[start:start + g].mean())
+                        for start, g in zip(np.concatenate([[0], np.cumsum(groups[:-1])]), groups)
+                    ], dtype=np.float32)
+                    rank_fit_kwargs["sample_weight"] = group_weights
+                except Exception:
+                    pass  # proceed without sample weights for ranker
+            self._rank_model.fit(X_prep, alpha, **rank_fit_kwargs)
 
         self._risk_model = xgb.XGBClassifier(
             n_estimators=ALPHA_META_RISK_N_ESTIMATORS,
@@ -214,7 +280,7 @@ class AlphaMetaLearner(BaseAgent):
             n_jobs=-1,
             tree_method="hist",
         )
-        self._risk_model.fit(X_prep, (y_cls > 0.5).astype(int))
+        self._risk_model.fit(X_prep, (y_cls > 0.5).astype(int), sample_weight=sample_weight)
 
         self.is_trained = True
         self._diagnostics = {
@@ -223,6 +289,8 @@ class AlphaMetaLearner(BaseAgent):
             "alpha_std_train": float(alpha.std()),
             "rank_blend": float(ALPHA_META_RANK_BLEND),
             "risk_blend": float(self._risk_blend),
+            "recency_weighting": bool(sample_weight is not None),
+            "recency_halflife_years": float(TRAINING_RECENCY_HALFLIFE_YEARS) if sample_weight is not None else None,
         }
         self.save_diagnostics(fold)
         return self

@@ -66,6 +66,31 @@ def enrich_cross_sectional_features(df: pd.DataFrame) -> pd.DataFrame:
     if "piotroski_fscore" in out.columns:
         out["piotroski_rank_universe"] = out.groupby(dates)["piotroski_fscore"].transform(_safe_pct_rank)
 
+    # Analyst earnings revision rank: one of the most consistently predictive
+    # forward-looking cross-sectional signals.  Stocks with top-decile upward
+    # revisions exhibit persistent positive price momentum.
+    if "eps_revision" in out.columns:
+        out["eps_revision_rank_universe"] = out.groupby(dates)["eps_revision"].transform(_safe_pct_rank)
+
+    # Revenue growth acceleration: difference between recent and older growth
+    # rate.  Positive = growth is speeding up; negative = decelerating.
+    # A company re-accelerating revenue beats one with stable but flat growth.
+    if "revenue_yoy_growth" in out.columns:
+        rev_growth = _numeric_col_or_default(out, "revenue_yoy_growth").fillna(0.0)
+        # Lag one cross-section (one quarter back within each ticker)
+        if isinstance(out.index, pd.MultiIndex) and "ticker" in out.index.names:
+            rev_lag = (
+                rev_growth
+                .groupby(out.index.get_level_values("ticker"))
+                .shift(1)
+                .fillna(0.0)
+            )
+        else:
+            rev_lag = rev_growth.shift(1).fillna(0.0)
+        raw_accel = pd.Series((rev_growth - rev_lag).values, index=out.index)
+        # Cross-sectionally rank so the meta-learner gets a relative signal
+        out["revenue_growth_acceleration"] = raw_accel.groupby(dates).transform(_safe_pct_rank)
+
     vol = _numeric_col_or_default(out, "volatility_60d").replace(0, np.nan)
     for src, dst in [
         ("momentum_3m", "momentum_vol_adj"),

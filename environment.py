@@ -167,6 +167,19 @@ OOF_N_SPLITS = 3
 PURGED_CV_GAP_DAYS = 90
 EMBARGO_DAYS = 30
 
+# ── Recency weighting ──────────────────────────────────────────────────────────
+# If True, training observations are weighted exponentially so that recent
+# quarters receive more weight than older ones.  This combats concept drift:
+# factor premia and market dynamics from 4-5 years ago are less predictive
+# of current quarters than the most recent 1-2 years of data.
+ENABLE_RECENCY_WEIGHTING = True
+# Half-life of the exponential decay, in years.
+# A value of 2.0 means an observation from 2 years ago gets half the weight
+# of a current observation. Tuned empirically for quarterly S&P 500 data:
+# - Too short (< 1Y): ignores 80% of training data, high variance
+# - Too long (> 4Y): essentially uniform weights, no recency benefit
+TRAINING_RECENCY_HALFLIFE_YEARS = 2.0
+
 # When a sector-specific model is degenerate (e.g. all feature importances are 0),
 # use a conservative fallback score instead of a neutral 0.5 to avoid accidental
 # promotion of low-confidence candidates.
@@ -224,14 +237,16 @@ TECHNICAL_LOOKBACK_DAYS = 300
 # Maximum walk-forward training window, in years.
 # The pipeline will try this maximum and, if it does not meet minimum test coverage,
 # will progressively reduce it down to WALKFORWARD_TRAIN_MIN_YEARS.
-# Set to 8 to match realistic data availability (Finnhub quarterly snapshots
-# typically cover ~5-8 years). The dynamic fold-selection logic will automatically
-# use a shorter window when sufficient ticker coverage is not achieved.
-WALKFORWARD_TRAIN_LOOKBACK_YEARS = 8
+# Set to 5 to match the empirically-observed optimal window: all production folds
+# already converge to 5Y when the dataset covers ~5Y of quarterly snapshots.
+# 5Y captures COVID crash (2020), recovery (2021), rate hike cycle (2022), and
+# AI-bull market (2023-24) — a diverse set of regimes sufficient for
+# generalisation without introducing factor-decay noise from pre-2020 markets.
+WALKFORWARD_TRAIN_LOOKBACK_YEARS = 5
 # Lower bound for dynamic walk-forward training window.
-# Lowered from 8 to 4 so the pipeline can always build valid folds even when
-# the master dataset only covers ~5 years of quarterly observations.
-WALKFORWARD_TRAIN_MIN_YEARS = 4
+# 3Y is the minimum to maintain ~4,800 training observations (3Y × 4Q × 400
+# tickers) while still covering a meaningful slice of market history.
+WALKFORWARD_TRAIN_MIN_YEARS = 3
 
 # Test quarters per fold (always 1)
 WALKFORWARD_TEST_QUARTERS = 1
@@ -322,6 +337,11 @@ FUNDAMENTAL_FEATURE_COLUMNS = [
   # Growth (cleaned set)
   "revenue_yoy_growth",
   "fcf_yoy_growth",
+
+  # Analyst earnings revisions: one of the most consistently predictive
+  # forward-looking signals in equity research.  Upward revisions precede
+  # earnings beats and persistent price momentum.
+  "eps_revision",
 
   # Efficiency / quality
   "piotroski_fscore",
@@ -619,6 +639,12 @@ META_FEATURE_COLUMNS = [
   "quality_rank_universe",
   "value_rank_universe",
   "piotroski_rank_universe",
+
+  # Earnings revision rank (proven alpha factor)
+  "eps_revision_rank_universe",
+
+  # Revenue growth momentum: identifies accelerating growth vs fading growers
+  "revenue_growth_acceleration",
 
   # Volatility-adjusted signals
   "momentum_vol_adj",
