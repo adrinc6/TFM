@@ -45,8 +45,8 @@ def get_regime_exposure_multiplier(regime: str) -> float:
 class MarketRegimeModel:
     """Deterministic regime detector using macro and volatility context."""
 
-    on_threshold: float = 0.75
-    off_threshold: float = -0.75
+    on_threshold: float = 0.50
+    off_threshold: float = -0.50
 
     def __post_init__(self) -> None:
         self._mu: Dict[str, float] = {}
@@ -122,17 +122,17 @@ def apply_regime_weighting(
 
     multipliers = {
         REGIME_RISK_ON: {
-            "momentum_score": 1.20,
+            "momentum_score": 1.35,
             "sentiment_score": 1.15,
-            "bear_score": 0.95,
+            "bear_score": 0.90,
             "valuation_score": 0.95,
             "sector_score": 1.10,
         },
         REGIME_RISK_OFF: {
-            "momentum_score": 0.80,
-            "sentiment_score": 0.90,
-            "bear_score": 1.20,
-            "valuation_score": 1.15,
+            "momentum_score": 0.75,
+            "sentiment_score": 0.85,
+            "bear_score": 1.25,
+            "valuation_score": 1.20,
             "sector_score": 0.90,
         },
         REGIME_NEUTRAL: {

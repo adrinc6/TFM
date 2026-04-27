@@ -18,16 +18,25 @@ from environment import (
     ALPHA_META_REG_LEARNING_RATE,
     ALPHA_META_REG_SUBSAMPLE,
     ALPHA_META_REG_COLSAMPLE,
+    ALPHA_META_REG_L2_REG,
+    ALPHA_META_REG_L1_REG,
+    ALPHA_META_REG_MIN_CHILD,
     ALPHA_META_RANK_N_ESTIMATORS,
     ALPHA_META_RANK_MAX_DEPTH,
     ALPHA_META_RANK_LEARNING_RATE,
     ALPHA_META_RANK_SUBSAMPLE,
     ALPHA_META_RANK_COLSAMPLE,
+    ALPHA_META_RANK_L2_REG,
+    ALPHA_META_RANK_L1_REG,
+    ALPHA_META_RANK_MIN_CHILD,
     ALPHA_META_RISK_N_ESTIMATORS,
     ALPHA_META_RISK_MAX_DEPTH,
     ALPHA_META_RISK_LEARNING_RATE,
     ALPHA_META_RISK_SUBSAMPLE,
     ALPHA_META_RISK_COLSAMPLE,
+    ALPHA_META_RISK_L2_REG,
+    ALPHA_META_RISK_L1_REG,
+    ALPHA_META_RISK_MIN_CHILD,
     ALPHA_META_RANK_BLEND,
     ALPHA_META_RISK_BLEND,
 )
@@ -60,33 +69,12 @@ class AlphaMetaLearner(BaseAgent):
     def _prepare(self, X: pd.DataFrame, sector_col: str = "sector", fit_mode: bool = False) -> pd.DataFrame:
         df = X.copy()
 
+        # Use only the curated META_FEATURE_COLUMNS to prevent overfitting from
+        # including hundreds of raw fundamental or engineered columns that are not
+        # validated signal carriers.  The original implementation appended *all*
+        # numeric columns, which grew the feature set to ~140+ and caused severe
+        # overfitting on the ~5 years × 500 tickers training corpus.
         selected = [c for c in META_FEATURE_COLUMNS if c in df.columns and c not in META_FEATURE_EXCLUDE]
-
-        # Full-feature meta model: keep all numeric non-target columns.
-        forbidden = {
-            "label",
-            "forward_return",
-            "target_alpha",
-            "target_quintile",
-            "target_triple_barrier",
-            "predicted_alpha",
-            "ranking_score",
-            "risk_score",
-            "regime_adjusted_score",
-            "final_score",
-        }
-        numeric_cols = []
-        for c in df.columns:
-            if c in forbidden:
-                continue
-            try:
-                dtype = getattr(df[c], "dtype", np.dtype("float64"))
-                if np.issubdtype(dtype, np.number):
-                    numeric_cols.append(c)
-            except (TypeError, ValueError):
-                # Skip columns with incompatible dtypes (e.g., StringDtype)
-                pass
-        selected += numeric_cols
 
         if sector_col in df.columns:
             dummies = pd.get_dummies(df[sector_col].astype(str), prefix="sector", dtype=float)
@@ -175,6 +163,9 @@ class AlphaMetaLearner(BaseAgent):
             learning_rate=ALPHA_META_REG_LEARNING_RATE,
             subsample=ALPHA_META_REG_SUBSAMPLE,
             colsample_bytree=ALPHA_META_REG_COLSAMPLE,
+            reg_lambda=ALPHA_META_REG_L2_REG,
+            reg_alpha=ALPHA_META_REG_L1_REG,
+            min_child_weight=ALPHA_META_REG_MIN_CHILD,
             objective="reg:squarederror",
             random_state=self.random_seed,
             n_jobs=-1,
@@ -190,6 +181,9 @@ class AlphaMetaLearner(BaseAgent):
                 learning_rate=ALPHA_META_RANK_LEARNING_RATE,
                 subsample=ALPHA_META_RANK_SUBSAMPLE,
                 colsample_bytree=ALPHA_META_RANK_COLSAMPLE,
+                reg_lambda=ALPHA_META_RANK_L2_REG,
+                reg_alpha=ALPHA_META_RANK_L1_REG,
+                min_child_weight=ALPHA_META_RANK_MIN_CHILD,
                 objective="rank:pairwise",
                 random_state=self.random_seed,
                 n_jobs=-1,
@@ -203,6 +197,9 @@ class AlphaMetaLearner(BaseAgent):
             learning_rate=ALPHA_META_RISK_LEARNING_RATE,
             subsample=ALPHA_META_RISK_SUBSAMPLE,
             colsample_bytree=ALPHA_META_RISK_COLSAMPLE,
+            reg_lambda=ALPHA_META_RISK_L2_REG,
+            reg_alpha=ALPHA_META_RISK_L1_REG,
+            min_child_weight=ALPHA_META_RISK_MIN_CHILD,
             objective="binary:logistic",
             random_state=self.random_seed,
             n_jobs=-1,

@@ -199,12 +199,15 @@ SECTOR_CONFIDENCE_PEERS = 10
 # Soft sector prior over final score (additive tilt model):
 # final_score += (sector_score - 0.5) * SECTOR_SCORE_PRIOR_WEIGHT * sector_confidence
 # A sector_score of 0.7 with full confidence adds +0.06 to each ticker in that sector.
+# Reduced from 0.25 to 0.15 to limit sector-rotation noise in the final score.
 SECTOR_SCORE_PRIOR_BASE = 0.5
-SECTOR_SCORE_PRIOR_WEIGHT = 0.25
+SECTOR_SCORE_PRIOR_WEIGHT = 0.15
 
 # If an agent score has low dispersion, it is shrunk toward 0.5.
 # scale = min(1, std / SCORE_DISPERSION_MIN_STD)
-SCORE_DISPERSION_MIN_STD = 0.03
+# Increased from 0.03 to 0.05 to trigger shrinkage more aggressively for
+# poorly-calibrated agents (e.g., sentiment when sparse data is available).
+SCORE_DISPERSION_MIN_STD = 0.05
 # Scale floor to avoid collapse to 0.5 when train std is close to 0.
 # Applies only when shrink is active (scale<1), preserving some test signal.
 SCORE_DISPERSION_MIN_SCALE = 0.35
@@ -221,9 +224,14 @@ TECHNICAL_LOOKBACK_DAYS = 300
 # Maximum walk-forward training window, in years.
 # The pipeline will try this maximum and, if it does not meet minimum test coverage,
 # will progressively reduce it down to WALKFORWARD_TRAIN_MIN_YEARS.
-WALKFORWARD_TRAIN_LOOKBACK_YEARS = 12
+# Set to 8 to match realistic data availability (Finnhub quarterly snapshots
+# typically cover ~5-8 years). The dynamic fold-selection logic will automatically
+# use a shorter window when sufficient ticker coverage is not achieved.
+WALKFORWARD_TRAIN_LOOKBACK_YEARS = 8
 # Lower bound for dynamic walk-forward training window.
-WALKFORWARD_TRAIN_MIN_YEARS = 8
+# Lowered from 8 to 4 so the pipeline can always build valid folds even when
+# the master dataset only covers ~5 years of quarterly observations.
+WALKFORWARD_TRAIN_MIN_YEARS = 4
 
 # Test quarters per fold (always 1)
 WALKFORWARD_TEST_QUARTERS = 1
@@ -657,30 +665,43 @@ META_BASE_SCORE_BLEND_WEIGHT = 0.40
 
 # ── AlphaMetaLearner (XGBoost Regressor + Ranker + Classifier) ───────────────
 ALPHA_META_REG_N_ESTIMATORS  = 450
-ALPHA_META_REG_MAX_DEPTH     = 5
+ALPHA_META_REG_MAX_DEPTH     = 4
 ALPHA_META_REG_LEARNING_RATE = 0.03
-ALPHA_META_REG_SUBSAMPLE     = 0.85
-ALPHA_META_REG_COLSAMPLE     = 0.8
+ALPHA_META_REG_SUBSAMPLE     = 0.80
+ALPHA_META_REG_COLSAMPLE     = 0.7
+ALPHA_META_REG_L2_REG        = 2.0
+ALPHA_META_REG_L1_REG        = 0.5
+ALPHA_META_REG_MIN_CHILD     = 10
 
 ALPHA_META_RANK_N_ESTIMATORS  = 300
-ALPHA_META_RANK_MAX_DEPTH     = 4
+ALPHA_META_RANK_MAX_DEPTH     = 3
 ALPHA_META_RANK_LEARNING_RATE = 0.05
-ALPHA_META_RANK_SUBSAMPLE     = 0.9
-ALPHA_META_RANK_COLSAMPLE     = 0.8
+ALPHA_META_RANK_SUBSAMPLE     = 0.85
+ALPHA_META_RANK_COLSAMPLE     = 0.7
+ALPHA_META_RANK_L2_REG        = 2.0
+ALPHA_META_RANK_L1_REG        = 0.5
+ALPHA_META_RANK_MIN_CHILD     = 10
 
 ALPHA_META_RISK_N_ESTIMATORS  = 250
-ALPHA_META_RISK_MAX_DEPTH     = 4
+ALPHA_META_RISK_MAX_DEPTH     = 3
 ALPHA_META_RISK_LEARNING_RATE = 0.05
-ALPHA_META_RISK_SUBSAMPLE     = 0.9
-ALPHA_META_RISK_COLSAMPLE     = 0.8
+ALPHA_META_RISK_SUBSAMPLE     = 0.85
+ALPHA_META_RISK_COLSAMPLE     = 0.7
+ALPHA_META_RISK_L2_REG        = 2.0
+ALPHA_META_RISK_L1_REG        = 0.5
+ALPHA_META_RISK_MIN_CHILD     = 10
 
 # Blend weight: regime_adjusted_score = ALPHA_META_RANK_BLEND * ranking_score
 #               + (1 - ALPHA_META_RANK_BLEND) * regime_adj
-ALPHA_META_RANK_BLEND = 0.65
+# Increased from 0.65 to 0.70 to give the pairwise ranking model more influence,
+# since cross-sectional ordering is what drives portfolio construction quality.
+ALPHA_META_RANK_BLEND = 0.70
 # Additional risk-aware blend applied after ranking/regime blend:
 # final_score = (1 - ALPHA_META_RISK_BLEND) * regime_rank_blend
 #               + ALPHA_META_RISK_BLEND * (1 - risk_score)
-ALPHA_META_RISK_BLEND = 0.20
+# Reduced from 0.20 to 0.15 to dampen the anti-momentum bias introduced by the
+# risk classifier when markets trend strongly upward.
+ALPHA_META_RISK_BLEND = 0.15
 
 # ── MomentumAgent TFT-lite blend weight ──────────────────────────────────────
 # Final score = (1 - MOMENTUM_DEEP_BLEND_WEIGHT) * RF_score
