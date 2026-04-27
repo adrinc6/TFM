@@ -701,6 +701,11 @@ ALPHA_META_RANK_BLEND = 0.70
 #               + ALPHA_META_RISK_BLEND * (1 - risk_score)
 # Reduced from 0.20 to 0.15 to dampen the anti-momentum bias introduced by the
 # risk classifier when markets trend strongly upward.
+# Trade-off: this slightly reduces the portfolio's downside protection from the
+# risk model in bear markets, but that drawdown is considered acceptable given
+# that the risk classifier itself has limited predictive AUC (~0.5) on this
+# dataset.  If the risk model's out-of-sample AUC improves significantly in
+# future runs, this value should be revisited upward.
 ALPHA_META_RISK_BLEND = 0.15
 
 # ── MomentumAgent TFT-lite blend weight ──────────────────────────────────────

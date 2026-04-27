@@ -74,6 +74,15 @@ class AlphaMetaLearner(BaseAgent):
         # validated signal carriers.  The original implementation appended *all*
         # numeric columns, which grew the feature set to ~140+ and caused severe
         # overfitting on the ~5 years × 500 tickers training corpus.
+        #
+        # META_FEATURE_COLUMNS is defined in environment.py and covers:
+        #   - Base agent scores (fundamental, valuation, momentum, bear, sentiment,
+        #     sector, regime_adjusted)
+        #   - Sector-relative and universe-wide percentile ranks
+        #   - Volatility-adjusted signals and interaction features
+        #   - Macro regime context (vix, yield_curve, sp500 momentum)
+        #
+        # Sector dummy variables are appended below to encode GICS sector membership.
         selected = [c for c in META_FEATURE_COLUMNS if c in df.columns and c not in META_FEATURE_EXCLUDE]
 
         if sector_col in df.columns:

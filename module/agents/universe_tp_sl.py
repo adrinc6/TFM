@@ -270,6 +270,11 @@ class UniversalTpSlAgent(BaseAgent):
                     ),
                 ]
             ),
+            # min_samples_leaf=10 consistently applied across all tree-based
+            # models to enforce the same regularization floor: at least 10
+            # training samples must be in every leaf.  This prevents individual
+            # tickers/quarters from dominating splits and is the key guard
+            # against overfitting on the ~5Y quarterly dataset.
             "random_forest": RandomForestClassifier(
                 n_estimators=320,
                 max_depth=6,

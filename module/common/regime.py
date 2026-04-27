@@ -120,6 +120,13 @@ def apply_regime_weighting(
     if regime_col not in out.columns:
         out[regime_col] = REGIME_NEUTRAL
 
+    # Multipliers are applied to each agent score before final blending.
+    # The wider RISK_ON/RISK_OFF spread (0.90 vs 1.25 for bear_score) is
+    # intentional: results analysis showed the bear agent had AUC ~0.5 in
+    # bull markets, so its weight is reduced more aggressively in Risk-On to
+    # prevent it from diluting strong momentum signals. Conversely, in
+    # Risk-Off the bear agent's defensive signal deserves more weight than
+    # neutral, hence the 1.25 multiplier.
     multipliers = {
         REGIME_RISK_ON: {
             "momentum_score": 1.35,
