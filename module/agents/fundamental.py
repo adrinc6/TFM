@@ -117,16 +117,20 @@ class FundamentalAgent(BaseAgent):
         X_prep       = X_prep.reset_index(drop=True)
         y_cl         = y_cl.reset_index(drop=True)
 
-        # Align sample weights to the cleaned index if provided
+        # Align sample weights to the cleaned index if provided.
+        # Track which original positions survive clean_features before reset_index.
         sw: Optional[np.ndarray] = None
         if sample_weight is not None:
             sw_full = np.asarray(sample_weight, dtype=float)[:min_len]
-            # clean_features may have dropped rows; keep only matching positions
-            valid_mask = y_cl.index.values  # integer positions after reset
-            if len(valid_mask) == len(sw_full):
+            # y_cl was built from y.reset_index(drop=True) and then passed through
+            # clean_features which may drop rows.  The survived positions are
+            # recorded in y_cl.index (integer positions in the pre-reset array).
+            survived_positions = y_cl.index.values  # integer positions before reset
+            if survived_positions.max() < len(sw_full):
+                sw = sw_full[survived_positions]
+            elif len(y_cl) == len(sw_full):
+                # No rows dropped; use weights directly
                 sw = sw_full
-            elif len(valid_mask) <= len(sw_full):
-                sw = sw_full[valid_mask]
 
         if not self.has_multiple_classes(y_cl):
             log.warning("[FundamentalAgent] Label without enough class variance after cleaning - training skipped.")

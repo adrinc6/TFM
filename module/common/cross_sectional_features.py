@@ -87,7 +87,7 @@ def enrich_cross_sectional_features(df: pd.DataFrame) -> pd.DataFrame:
             )
         else:
             rev_lag = rev_growth.shift(1).fillna(0.0)
-        raw_accel = pd.Series((rev_growth - rev_lag).values, index=out.index)
+        raw_accel = rev_growth - rev_lag
         # Cross-sectionally rank so the meta-learner gets a relative signal
         out["revenue_growth_acceleration"] = raw_accel.groupby(dates).transform(_safe_pct_rank)
 

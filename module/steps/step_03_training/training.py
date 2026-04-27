@@ -29,6 +29,7 @@ from environment import (
     ENABLE_RECENCY_WEIGHTING, TRAINING_RECENCY_HALFLIFE_YEARS,
 )
 from module.agents.alpha_meta_learner import AlphaMetaLearner
+from module.common.recency_weights import compute_recency_weights
 from module.common.regime import MarketRegimeModel, apply_regime_weighting
 from module.steps.step_03_training.agent_config import build_agents_config, build_sector_rotation_agent
 from module.steps.step_03_training.oof import generate_oof_scores
@@ -247,36 +248,16 @@ def _apply_sector_adjustments(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _compute_recency_weights(df: pd.DataFrame) -> Optional[np.ndarray]:
-    """Compute per-observation exponential recency weights from the DataFrame index.
+    """Delegate to the shared recency weight utility.
 
-    Returns an array of shape ``(len(df),)`` with mean 1.0, or ``None`` when
-    recency weighting is disabled or the date index cannot be resolved.
+    Returns per-observation exponential recency weights or ``None`` when
+    disabled.  See :func:`module.common.recency_weights.compute_recency_weights`.
     """
-    if not ENABLE_RECENCY_WEIGHTING:
-        return None
-    try:
-        if isinstance(df.index, pd.MultiIndex) and "date" in df.index.names:
-            dates = pd.to_datetime(df.index.get_level_values("date"), errors="coerce")
-        else:
-            dates = pd.to_datetime(df.index, errors="coerce")
-        dates_valid = dates.dropna()
-        if len(dates_valid) < 2:
-            return None
-        t_min = dates_valid.min()
-        t_max = dates_valid.max()
-        if t_min == t_max:
-            return None
-        halflife_days = max(float(TRAINING_RECENCY_HALFLIFE_YEARS), 0.25) * 365.25
-        lam = np.log(2.0) / halflife_days
-        age_days = np.array(
-            [(d - t_min).days if pd.notna(d) else 0.0 for d in dates],
-            dtype=float,
-        )
-        weights = np.exp(lam * age_days)
-        weights /= weights.mean()
-        return weights.astype(np.float32)
-    except Exception:
-        return None
+    return compute_recency_weights(
+        df,
+        enabled=ENABLE_RECENCY_WEIGHTING,
+        halflife_years=float(TRAINING_RECENCY_HALFLIFE_YEARS),
+    )
 
 
 def _instantiate_base_agents(agents_config: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:

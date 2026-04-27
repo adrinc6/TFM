@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 
 from module.agents.base import BaseAgent
+from module.common.recency_weights import compute_recency_weights
 from environment import (
     META_FEATURE_COLUMNS,
     META_FEATURE_EXCLUDE,
@@ -150,48 +151,17 @@ class AlphaMetaLearner(BaseAgent):
 
     @staticmethod
     def _compute_recency_weights(X: pd.DataFrame) -> Optional[np.ndarray]:
-        """Compute exponential recency weights from the date index.
+        """Delegate to the shared recency weight utility.
 
-        Recent quarters receive exponentially more weight than older ones.
-        This corrects for concept drift: factor premia shift over time, so
-        observations from 4-5 years ago are less predictive of current
-        market dynamics than the most recent 1-2 years.
-
-        Weight for an observation at time ``t`` relative to the oldest
-        observation ``t_min`` and newest ``t_max``:
-
-            w = exp(log(2) / halflife * (t - t_min))
-
-        Weights are normalised to mean = 1.0 so the total gradient magnitude
-        is preserved across any window length.
+        See :func:`module.common.recency_weights.compute_recency_weights` for
+        the full documentation.  Uses pipeline constants ``ENABLE_RECENCY_WEIGHTING``
+        and ``TRAINING_RECENCY_HALFLIFE_YEARS`` from environment.
         """
-        if not ENABLE_RECENCY_WEIGHTING:
-            return None
-        try:
-            if isinstance(X.index, pd.MultiIndex) and "date" in X.index.names:
-                dates = pd.to_datetime(X.index.get_level_values("date"), errors="coerce")
-            else:
-                dates = pd.to_datetime(X.index, errors="coerce")
-            dates_valid = dates.dropna()
-            if len(dates_valid) < 2:
-                return None
-            t_min = dates_valid.min()
-            t_max = dates_valid.max()
-            if t_min == t_max:
-                return None
-            halflife_days = max(float(TRAINING_RECENCY_HALFLIFE_YEARS), 0.25) * 365.25
-            lam = np.log(2.0) / halflife_days
-            # Days since oldest observation (NaT → treated as 0)
-            age_days = np.array(
-                [(d - t_min).days if pd.notna(d) else 0.0 for d in dates],
-                dtype=float,
-            )
-            weights = np.exp(lam * age_days)
-            # Normalise to mean 1.0 to preserve effective learning rate
-            weights /= weights.mean()
-            return weights.astype(np.float32)
-        except Exception:
-            return None
+        return compute_recency_weights(
+            X,
+            enabled=ENABLE_RECENCY_WEIGHTING,
+            halflife_years=float(TRAINING_RECENCY_HALFLIFE_YEARS),
+        )
 
     def fit(
         self,
@@ -255,13 +225,13 @@ class AlphaMetaLearner(BaseAgent):
             rank_fit_kwargs: Dict = {"group": groups}
             if sample_weight is not None:
                 try:
-                    # Each group corresponds to one snapshot date; compute
-                    # mean weight per group to satisfy XGBRanker's constraint.
-                    group_weights = np.array([
-                        float(sample_weight[start:start + g].mean())
-                        for start, g in zip(np.concatenate([[0], np.cumsum(groups[:-1])]), groups)
-                    ], dtype=np.float32)
-                    rank_fit_kwargs["sample_weight"] = group_weights
+                    group_weights = []
+                    group_start = 0
+                    for group_size in groups:
+                        group_end = group_start + group_size
+                        group_weights.append(float(sample_weight[group_start:group_end].mean()))
+                        group_start = group_end
+                    rank_fit_kwargs["sample_weight"] = np.array(group_weights, dtype=np.float32)
                 except Exception:
                     pass  # proceed without sample weights for ranker
             self._rank_model.fit(X_prep, alpha, **rank_fit_kwargs)
