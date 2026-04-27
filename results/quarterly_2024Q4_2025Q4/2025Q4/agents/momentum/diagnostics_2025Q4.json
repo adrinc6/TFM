@@ -1,0 +1,56 @@
+{
+  "agent": "momentum",
+  "timestamp": "2026-04-23T18:48:50.077531",
+  "fold": "2025Q4",
+  "selected_base_features": [
+    "price_vs_52w_high",
+    "momentum_6m",
+    "volatility_60d",
+    "momentum_3m",
+    "rsi_28",
+    "vol_ratio_20_50",
+    "rsi_14"
+  ],
+  "n_base_features": 7,
+  "n_model_features": 21,
+  "best_model": "gradient_boosting",
+  "cv_summary": {
+    "logistic": {
+      "mean_auc": 0.570295324919472,
+      "std_auc": 0.07662446989850065
+    },
+    "random_forest": {
+      "mean_auc": 0.5892268499695283,
+      "std_auc": 0.06848684698440492
+    },
+    "gradient_boosting": {
+      "mean_auc": 0.5900228308385208,
+      "std_auc": 0.0681885490221189
+    },
+    "xgboost": {
+      "mean_auc": 0.5893854350703396,
+      "std_auc": 0.06884160367645523
+    }
+  },
+  "top_features": {
+    "momentum_6m": 0.1595728783118178,
+    "price_vs_52w_high": 0.1297121146502306,
+    "rsi_14": 0.11321782100890684,
+    "volatility_60d": 0.11085019847619923,
+    "price_vs_52w_high__pct_universe": 0.07433092735717538,
+    "volatility_60d__pct_universe": 0.0594722698094024,
+    "momentum_6m__pct_universe": 0.044813499562376714,
+    "rsi_28": 0.043336975337073855,
+    "vol_ratio_20_50__pct_universe": 0.03729119632566115,
+    "vol_ratio_20_50": 0.035611886947960546,
+    "momentum_3m": 0.03239426781705382,
+    "momentum_3m__pct_universe": 0.027673471729480474,
+    "rsi_14__pct_universe": 0.02710157406815102,
+    "price_vs_52w_high__pct_sector": 0.020547498601679114,
+    "rsi_28__pct_universe": 0.018964333762017064
+  },
+  "last_train_metrics": {
+    "best_cv_auc": 0.5900228308385208,
+    "n_features": 21.0
+  }
+}

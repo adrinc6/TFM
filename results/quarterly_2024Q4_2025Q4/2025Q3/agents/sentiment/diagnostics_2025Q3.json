@@ -1,0 +1,55 @@
+{
+  "agent": "sentiment",
+  "timestamp": "2026-04-23T17:51:28.056055",
+  "fold": "2025Q3",
+  "selected_base_features": [
+    "insider_net_ratio_90d",
+    "mspr_trend",
+    "eps_surprise_avg_4q",
+    "analyst_consensus",
+    "analyst_dispersion",
+    "analyst_consensus_change"
+  ],
+  "n_base_features": 6,
+  "n_model_features": 18,
+  "best_model": "random_forest",
+  "cv_summary": {
+    "logistic": {
+      "mean_auc": 0.5970238095238095,
+      "std_auc": 0.07793227589292091
+    },
+    "random_forest": {
+      "mean_auc": 0.6532738095238095,
+      "std_auc": 0.08226181862031187
+    },
+    "gradient_boosting": {
+      "mean_auc": 0.6140595238095237,
+      "std_auc": 0.09066704806842549
+    },
+    "xgboost": {
+      "mean_auc": 0.6088690476190477,
+      "std_auc": 0.08729093910530816
+    }
+  },
+  "top_features": {
+    "insider_net_ratio_90d": 0.12645352318206488,
+    "insider_net_ratio_90d__pct_universe": 0.11103403684902372,
+    "analyst_consensus_change__pct_sector": 0.09440917757307939,
+    "insider_net_ratio_90d__pct_sector": 0.09041335204515481,
+    "eps_surprise_avg_4q__pct_universe": 0.07932291869795542,
+    "analyst_consensus__pct_sector": 0.07800173906854244,
+    "analyst_dispersion__pct_sector": 0.07601213883657044,
+    "eps_surprise_avg_4q": 0.07575422153412581,
+    "mspr_trend__pct_sector": 0.07024354731440484,
+    "mspr_trend": 0.0677684604813021,
+    "mspr_trend__pct_universe": 0.065742649764414,
+    "eps_surprise_avg_4q__pct_sector": 0.06161673830160926,
+    "analyst_dispersion__pct_universe": 0.0011755301277101558,
+    "analyst_consensus_change__pct_universe": 0.0011202992238111885,
+    "analyst_consensus__pct_universe": 0.0009316670002316375
+  },
+  "last_train_metrics": {
+    "best_cv_auc": 0.6532738095238095,
+    "n_features": 18.0
+  }
+}

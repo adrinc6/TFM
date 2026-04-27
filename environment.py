@@ -221,9 +221,9 @@ TECHNICAL_LOOKBACK_DAYS = 300
 # Maximum walk-forward training window, in years.
 # The pipeline will try this maximum and, if it does not meet minimum test coverage,
 # will progressively reduce it down to WALKFORWARD_TRAIN_MIN_YEARS.
-WALKFORWARD_TRAIN_LOOKBACK_YEARS = 5
+WALKFORWARD_TRAIN_LOOKBACK_YEARS = 12
 # Lower bound for dynamic walk-forward training window.
-WALKFORWARD_TRAIN_MIN_YEARS = 4
+WALKFORWARD_TRAIN_MIN_YEARS = 8
 
 # Test quarters per fold (always 1)
 WALKFORWARD_TEST_QUARTERS = 1
@@ -677,6 +677,10 @@ ALPHA_META_RISK_COLSAMPLE     = 0.8
 # Blend weight: regime_adjusted_score = ALPHA_META_RANK_BLEND * ranking_score
 #               + (1 - ALPHA_META_RANK_BLEND) * regime_adj
 ALPHA_META_RANK_BLEND = 0.65
+# Additional risk-aware blend applied after ranking/regime blend:
+# final_score = (1 - ALPHA_META_RISK_BLEND) * regime_rank_blend
+#               + ALPHA_META_RISK_BLEND * (1 - risk_score)
+ALPHA_META_RISK_BLEND = 0.20
 
 # ── MomentumAgent TFT-lite blend weight ──────────────────────────────────────
 # Final score = (1 - MOMENTUM_DEEP_BLEND_WEIGHT) * RF_score

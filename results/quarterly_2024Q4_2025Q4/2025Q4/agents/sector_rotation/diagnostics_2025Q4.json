@@ -1,0 +1,85 @@
+{
+  "agent": "sector_rotation",
+  "timestamp": "2026-04-23T18:50:20.263260",
+  "fold": "2025Q4",
+  "class_balance": {
+    "n_samples": 580,
+    "n_positive": 253,
+    "n_negative": 327,
+    "positive_ratio": 0.4362068965517241
+  },
+  "cv_metrics": {
+    "mean_auc": 0.5495081149966419,
+    "std_auc": 0.03579533807660728,
+    "mean_f1": 0.408286252354049
+  },
+  "n_sector_obs": 580,
+  "benchmark_mode": "spy",
+  "top_features": {
+    "price_vs_52w_high": 0.14177953897528683,
+    "fcf_yield": 0.13514333258985164,
+    "roic": 0.1191805122828043,
+    "pe_vs_5y_median": 0.1143024753781985,
+    "momentum_6m": 0.1125300125904413,
+    "volatility_60d": 0.08729149662026091,
+    "earnings_yield": 0.077940345487323,
+    "revenue_yoy_growth": 0.07616686335551563,
+    "momentum_3m": 0.07416161663670172,
+    "net_margin": 0.061503806083616004
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 14,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.4,
+    "min_keep": 6,
+    "max_keep": 10,
+    "n_selected": 10,
+    "selected": [
+      "momentum_6m",
+      "price_vs_52w_high",
+      "fcf_yield",
+      "pe_vs_5y_median",
+      "revenue_yoy_growth",
+      "earnings_yield",
+      "momentum_3m",
+      "roic",
+      "net_margin",
+      "volatility_60d"
+    ],
+    "selected_weights_pct": {
+      "momentum_6m": 15.08653075775174,
+      "price_vs_52w_high": 14.955200731386459,
+      "fcf_yield": 10.343695404380371,
+      "pe_vs_5y_median": 9.274510530715183,
+      "revenue_yoy_growth": 9.071076798520169,
+      "earnings_yield": 8.875487828081836,
+      "momentum_3m": 8.798591571424216,
+      "roic": 8.546080517924562,
+      "net_margin": 7.657469543895057,
+      "volatility_60d": 7.39135631592042
+    },
+    "dropped_pair": [],
+    "dropped_corr": [],
+    "dropped_imp": [
+      "debt_to_ebitda",
+      "sector_vs_market_momentum",
+      "risk_adjusted_sector_momentum",
+      "ev_to_ebitda",
+      "eps_revision",
+      "fcf_margin",
+      "interest_coverage",
+      "analyst_consensus_change",
+      "analyst_dispersion"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.5495081149966419,
+    "std_auc": 0.03579533807660728,
+    "mean_f1": 0.408286252354049
+  }
+}

@@ -29,6 +29,7 @@ from environment import (
     ALPHA_META_RISK_SUBSAMPLE,
     ALPHA_META_RISK_COLSAMPLE,
     ALPHA_META_RANK_BLEND,
+    ALPHA_META_RISK_BLEND,
 )
 
 log = logging.getLogger(__name__)
@@ -49,10 +50,12 @@ class AlphaMetaLearner(BaseAgent):
         if not _DEPS_OK:
             raise ImportError("xgboost and scikit-learn are required for AlphaMetaLearner")
         self._feature_cols: List[str] = []
+        self._feature_medians: Optional[pd.Series] = None
         self._sector_cols: List[str] = []
         self._reg_model = None
         self._rank_model = None
         self._risk_model = None
+        self._risk_blend = float(np.clip(ALPHA_META_RISK_BLEND, 0.0, 1.0))
 
     def _prepare(self, X: pd.DataFrame, sector_col: str = "sector", fit_mode: bool = False) -> pd.DataFrame:
         df = X.copy()
@@ -97,19 +100,39 @@ class AlphaMetaLearner(BaseAgent):
             df = pd.concat([df, dummies], axis=1)
             selected += list(dummies.columns)
 
-        selected = list(dict.fromkeys([c for c in selected if c in df.columns]))
-        out = df[selected].replace([np.inf, -np.inf], np.nan)
-        out = out.fillna(out.median(numeric_only=True)).fillna(0.0)
         if fit_mode:
+            selected = list(dict.fromkeys([c for c in selected if c in df.columns]))
+            out = df[selected].apply(pd.to_numeric, errors="coerce").replace([np.inf, -np.inf], np.nan)
+            medians = out.median(numeric_only=True).reindex(out.columns).fillna(0.0)
+            out = out.fillna(medians).fillna(0.0)
             self._feature_cols = list(out.columns)
-        return out
+            self._feature_medians = medians.astype(float)
+            return out.astype(np.float32)
+
+        # Inference path: strictly reuse training feature schema for speed and stability.
+        aligned_cols = list(self._feature_cols) if self._feature_cols else list(
+            dict.fromkeys([c for c in selected if c in df.columns])
+        )
+        out = df.reindex(columns=aligned_cols).apply(pd.to_numeric, errors="coerce")
+        out = out.replace([np.inf, -np.inf], np.nan)
+
+        if self._feature_medians is not None and not self._feature_medians.empty:
+            out = out.fillna(self._feature_medians.reindex(out.columns))
+        else:
+            out = out.fillna(out.median(numeric_only=True).reindex(out.columns))
+
+        out = out.fillna(0.0)
+        return out.astype(np.float32)
 
     def _align(self, X: pd.DataFrame) -> pd.DataFrame:
         out = X.copy()
         for c in self._feature_cols:
             if c not in out.columns:
                 out[c] = 0.0
-        return out[self._feature_cols].replace([np.inf, -np.inf], np.nan).fillna(0.0)
+        out = out[self._feature_cols].replace([np.inf, -np.inf], np.nan)
+        if self._feature_medians is not None and not self._feature_medians.empty:
+            out = out.fillna(self._feature_medians.reindex(out.columns))
+        return out.fillna(0.0).astype(np.float32)
 
     @staticmethod
     def _group_sizes_from_index(idx: pd.Index) -> List[int]:
@@ -192,6 +215,8 @@ class AlphaMetaLearner(BaseAgent):
             "n_features": int(len(self._feature_cols)),
             "alpha_mean_train": float(alpha.mean()),
             "alpha_std_train": float(alpha.std()),
+            "rank_blend": float(ALPHA_META_RANK_BLEND),
+            "risk_blend": float(self._risk_blend),
         }
         self.save_diagnostics(fold)
         return self
@@ -214,9 +239,18 @@ class AlphaMetaLearner(BaseAgent):
 
         if "regime_adjusted_score" in X.columns:
             regime_adj = pd.to_numeric(X["regime_adjusted_score"], errors="coerce").reindex(X.index).fillna(0.5)
-            regime_adjusted_score = (ALPHA_META_RANK_BLEND * ranking_score + (1.0 - ALPHA_META_RANK_BLEND) * regime_adj).clip(0.0, 1.0)
+            regime_rank_blend = (
+                ALPHA_META_RANK_BLEND * ranking_score + (1.0 - ALPHA_META_RANK_BLEND) * regime_adj
+            ).clip(0.0, 1.0)
         else:
-            regime_adjusted_score = ranking_score
+            regime_rank_blend = ranking_score
+
+        # Risk-aware calibration of final score: blend ranking signal with
+        # risk-model bullish probability (1 - risk_score).
+        risk_bullish = (1.0 - risk_score).clip(0.0, 1.0)
+        regime_adjusted_score = (
+            (1.0 - self._risk_blend) * regime_rank_blend + self._risk_blend * risk_bullish
+        ).clip(0.0, 1.0)
 
         out = pd.DataFrame(
             {

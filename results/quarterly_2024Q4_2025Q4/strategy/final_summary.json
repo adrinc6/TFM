@@ -1,0 +1,159 @@
+{
+  "timestamp": "2026-04-23T19:06:05.408319",
+  "legacy_summary": {
+    "timestamp": "2026-04-23T19:00:31.312418",
+    "n_folds": 5,
+    "train_years_min": 5,
+    "test_quarters": 1,
+    "top_n_stocks": 8,
+    "mean_alpha": -0.027733901372780867,
+    "pct_folds_positive_alpha": 0.4,
+    "by_train_years": {
+      "5": {
+        "n_folds": 5,
+        "mean_alpha": -0.027733901372780867,
+        "pct_positive_alpha": 0.4,
+        "mean_strategy_sharpe": -0.52952825651126,
+        "mean_strategy_return": -0.013357112822367068
+      }
+    },
+    "global_strategy_cumulative_return": -0.09640091291150377,
+    "global_strategy_annualized_return": -0.08660377836392685,
+    "global_strategy_sharpe": -0.2633631510046747,
+    "global_strategy_sortino": -0.38480536376028585,
+    "global_strategy_max_drawdown": -0.26139822454748657,
+    "global_strategy_calmar": -0.3313097421141592,
+    "global_strategy_volatility": 0.3122879073105091,
+    "global_strategy_win_rate": 0.48936170212765956,
+    "global_strategy_avg_win_loss_ratio": 1.0183372391977512,
+    "global_strategy_n_periods": 282,
+    "global_benchmark_cumulative_return": 0.06790979814423093,
+    "global_benchmark_annualized_return": 0.06047144411449845,
+    "global_benchmark_sharpe": 0.19272534350876794,
+    "global_benchmark_sortino": 0.2521010625945018,
+    "global_benchmark_max_drawdown": -0.18902206184283965,
+    "global_benchmark_calmar": 0.3199173870231972,
+    "global_benchmark_volatility": 0.18450073886832477,
+    "global_benchmark_win_rate": 0.549645390070922,
+    "global_benchmark_avg_win_loss_ratio": 0.8893404484492449,
+    "global_benchmark_n_periods": 282
+  },
+  "usd_strategy": {
+    "name": "strategy_main",
+    "final_value_usd": 678.6326947669727,
+    "total_return_pct": -0.3152103553813108,
+    "total_fees_usd": 80.0,
+    "max_drawdown": -0.33206532594539817,
+    "sharpe": -1.9165178453623444,
+    "availability_flag": true
+  },
+  "total_leakage_incidents": 12425,
+  "folds_usd": [
+    {
+      "fold_id": "2024Q4",
+      "starting_capital_usd": 1000.0,
+      "ending_capital_usd": 859.4683676120711,
+      "pnl_usd": -140.53163238792888,
+      "pnl_pct": -0.14053163238792887,
+      "fees_usd": 16.0,
+      "n_tickers": 8,
+      "leakage_tainted": false
+    },
+    {
+      "fold_id": "2025Q1",
+      "starting_capital_usd": 859.4683676120711,
+      "ending_capital_usd": 856.1681085667044,
+      "pnl_usd": -3.3002590453667153,
+      "pnl_pct": -0.003839884246742087,
+      "fees_usd": 16.0,
+      "n_tickers": 8,
+      "leakage_tainted": false
+    },
+    {
+      "fold_id": "2025Q2",
+      "starting_capital_usd": 856.1681085667044,
+      "ending_capital_usd": 730.9704797010728,
+      "pnl_usd": -125.1976288656316,
+      "pnl_pct": -0.14623019429586404,
+      "fees_usd": 16.0,
+      "n_tickers": 8,
+      "leakage_tainted": false
+    },
+    {
+      "fold_id": "2025Q3",
+      "starting_capital_usd": 730.9704797010728,
+      "ending_capital_usd": 779.7461366442901,
+      "pnl_usd": 48.775656943217314,
+      "pnl_pct": 0.06672725957847692,
+      "fees_usd": 16.0,
+      "n_tickers": 8,
+      "leakage_tainted": false
+    },
+    {
+      "fold_id": "2025Q4",
+      "starting_capital_usd": 779.7461366442901,
+      "ending_capital_usd": 678.6326947669727,
+      "pnl_usd": -101.11344187731743,
+      "pnl_pct": -0.1296748225165546,
+      "fees_usd": 16.0,
+      "n_tickers": 8,
+      "leakage_tainted": false
+    }
+  ],
+  "baselines": [
+    {
+      "name": "strategy_main",
+      "final_value_usd": 678.6326947669727,
+      "total_return_pct": -0.3152103553813108,
+      "total_fees_usd": 80.0,
+      "max_drawdown": -0.33206532594539817,
+      "sharpe": -1.9165178453623444,
+      "availability_flag": true
+    },
+    {
+      "name": "benchmark",
+      "final_value_usd": 1072.3222291156278,
+      "total_return_pct": 0.07446902036510838,
+      "total_fees_usd": 2.0,
+      "max_drawdown": -0.1890220618428401,
+      "sharpe": 0.22123006951186133,
+      "availability_flag": true
+    },
+    {
+      "name": "ew_universe",
+      "final_value_usd": 64.71196570010308,
+      "total_return_pct": -0.8800431895077728,
+      "total_fees_usd": 920.0,
+      "max_drawdown": -0.881171445045681,
+      "sharpe": -0.9917788753977702,
+      "availability_flag": true
+    },
+    {
+      "name": "momentum_12m",
+      "final_value_usd": 1400.1187869400121,
+      "total_return_pct": 0.4128214775473307,
+      "total_fees_usd": 80.0,
+      "max_drawdown": -0.31137469838711657,
+      "sharpe": 0.8592230779926733,
+      "availability_flag": true
+    },
+    {
+      "name": "value_combined",
+      "final_value_usd": 960.6359647852663,
+      "total_return_pct": -0.030648587953577056,
+      "total_fees_usd": 80.0,
+      "max_drawdown": -0.20650697771160423,
+      "sharpe": -0.19708365293664298,
+      "availability_flag": true
+    },
+    {
+      "name": "random_topn_mean",
+      "final_value_usd": 966.857009961962,
+      "total_return_pct": -0.02437110184281699,
+      "total_fees_usd": 0.0,
+      "max_drawdown": -0.16826328349546182,
+      "sharpe": -0.2671130375640092,
+      "availability_flag": true
+    }
+  ]
+}

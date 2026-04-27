@@ -1,0 +1,59 @@
+{
+  "agent": "fundamental",
+  "timestamp": "2026-04-23T15:50:53.191790",
+  "fold": "2025Q1",
+  "selected_base_features": [
+    "capex_to_revenue",
+    "current_ratio",
+    "fcf_yoy_growth",
+    "gross_margin",
+    "net_margin",
+    "fcf_margin",
+    "debt_to_ebitda",
+    "operating_margin",
+    "piotroski_fscore",
+    "ebitda_margin"
+  ],
+  "n_base_features": 10,
+  "n_model_features": 30,
+  "best_model": "gradient_boosting",
+  "cv_summary": {
+    "logistic": {
+      "mean_auc": 0.4937107233562448,
+      "std_auc": 0.024590802372230987
+    },
+    "random_forest": {
+      "mean_auc": 0.5132296892349749,
+      "std_auc": 0.02008702447049287
+    },
+    "gradient_boosting": {
+      "mean_auc": 0.5152654140598949,
+      "std_auc": 0.03545840086040668
+    },
+    "xgboost": {
+      "mean_auc": 0.5111541461555895,
+      "std_auc": 0.027607178944963902
+    }
+  },
+  "top_features": {
+    "gross_margin__pct_universe": 0.17133871830885716,
+    "capex_to_revenue__pct_universe": 0.08698410503950116,
+    "fcf_yoy_growth__pct_universe": 0.0630795371431142,
+    "fcf_margin__pct_universe": 0.059608022077181605,
+    "capex_to_revenue": 0.05126173633662419,
+    "piotroski_fscore__pct_universe": 0.049562010154518485,
+    "fcf_yoy_growth": 0.04627095684653094,
+    "current_ratio": 0.04339466413473437,
+    "current_ratio__pct_universe": 0.03232233136298963,
+    "net_margin__pct_universe": 0.029491976669695334,
+    "gross_margin": 0.028739888452897537,
+    "operating_margin__pct_sector": 0.027862178129600033,
+    "net_margin": 0.02735602797189539,
+    "debt_to_ebitda__pct_universe": 0.02642208594455581,
+    "fcf_margin": 0.02517476491366088
+  },
+  "last_train_metrics": {
+    "best_cv_auc": 0.5152654140598949,
+    "n_features": 30.0
+  }
+}

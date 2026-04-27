@@ -1,0 +1,57 @@
+{
+  "agent": "valuation",
+  "timestamp": "2026-04-23T18:47:26.155610",
+  "fold": "2025Q4",
+  "selected_base_features": [
+    "pe_ratio",
+    "pe_vs_5y_median",
+    "pb_ratio",
+    "earnings_yield",
+    "ev_ebitda_vs_5y_median",
+    "fcf_yield",
+    "ps_ratio",
+    "ev_to_ebitda"
+  ],
+  "n_base_features": 8,
+  "n_model_features": 24,
+  "best_model": "gradient_boosting",
+  "cv_summary": {
+    "logistic": {
+      "mean_auc": 0.5402523619389958,
+      "std_auc": 0.016545855773426148
+    },
+    "random_forest": {
+      "mean_auc": 0.5296260864213225,
+      "std_auc": 0.029636449578481407
+    },
+    "gradient_boosting": {
+      "mean_auc": 0.5425635370171102,
+      "std_auc": 0.0244985671613635
+    },
+    "xgboost": {
+      "mean_auc": 0.5309523349960122,
+      "std_auc": 0.024660509934269156
+    }
+  },
+  "top_features": {
+    "ev_to_ebitda__pct_universe": 0.1240165186479881,
+    "fcf_yield__pct_universe": 0.11113131156110802,
+    "ev_ebitda_vs_5y_median__pct_universe": 0.07268458231967453,
+    "ps_ratio": 0.07231528941670688,
+    "ev_ebitda_vs_5y_median": 0.06758677268385756,
+    "pb_ratio": 0.06619283334348361,
+    "ps_ratio__pct_universe": 0.051206261524131005,
+    "pe_vs_5y_median__pct_universe": 0.046231392978579464,
+    "pe_vs_5y_median": 0.042202732630442295,
+    "ev_ebitda_vs_5y_median__pct_sector": 0.03820580304994618,
+    "pb_ratio__pct_universe": 0.03801482253412203,
+    "fcf_yield__pct_sector": 0.03288312456825621,
+    "ev_to_ebitda": 0.029521097209352355,
+    "earnings_yield__pct_sector": 0.026658283551531645,
+    "pb_ratio__pct_sector": 0.023275308366670352
+  },
+  "last_train_metrics": {
+    "best_cv_auc": 0.5425635370171102,
+    "n_features": 24.0
+  }
+}

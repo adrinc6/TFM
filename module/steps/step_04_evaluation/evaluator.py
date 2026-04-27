@@ -7,6 +7,7 @@ import logging
 import random
 from datetime import datetime
 from pathlib import Path
+from time import perf_counter
 from typing import Dict, List, Optional
 
 import numpy as np
@@ -569,8 +570,18 @@ def _prepare_fold_labels(
     if not prices_dict:
         raise ValueError("TP/SL target generation requires prices_dict for every fold.")
 
+    log.info(
+        "[TP/SL] Building adaptive labels for fold: train_rows=%d, test_rows=%d, strategies=%d",
+        len(df_train),
+        len(df_test),
+        3,
+    )
+
     strategy_candidates: List[Dict[str, object]] = []
+    adaptive_profile_cache: Dict[tuple, Dict[str, object]] = {}
     for s_name in ["conservative", "balanced", "aggressive"]:
+        strategy_t0 = perf_counter()
+        log.info("[TP/SL] Strategy=%s -> generating train adaptive targets...", s_name)
         train_targets = _build_adaptive_tp_sl_targets(
             df_target=df_train,
             history_source=df_train,
@@ -578,7 +589,9 @@ def _prepare_fold_labels(
             lag_days=lag_days,
             holding_period_months=holding_period_months,
             strategy_name=s_name,
+            profile_cache=adaptive_profile_cache,
         )
+        log.info("[TP/SL] Strategy=%s -> generating test adaptive targets...", s_name)
         test_targets = _build_adaptive_tp_sl_targets(
             df_target=df_test,
             history_source=df_train,
@@ -586,12 +599,21 @@ def _prepare_fold_labels(
             lag_days=lag_days,
             holding_period_months=holding_period_months,
             strategy_name=s_name,
+            profile_cache=adaptive_profile_cache,
         )
 
         y_train_s = pd.to_numeric(train_targets["hit_label"], errors="coerce").dropna().astype(int)
         y_test_s = pd.to_numeric(test_targets["hit_label"], errors="coerce").dropna().astype(int)
         common_train = df_train.index.intersection(y_train_s.index)
         if len(common_train) == 0 or y_train_s.nunique() < 2 or len(y_test_s) == 0:
+            log.info(
+                "[TP/SL] Strategy=%s discarded (common_train=%d, unique_labels=%d, test_labels=%d) [%.1fs]",
+                s_name,
+                len(common_train),
+                int(y_train_s.nunique()) if len(y_train_s) else 0,
+                len(y_test_s),
+                perf_counter() - strategy_t0,
+            )
             continue
 
         tp_train = pd.to_numeric(train_targets["tp_level"].reindex(common_train), errors="coerce").fillna(float(TP_SL_BASE_TP))
@@ -610,6 +632,15 @@ def _prepare_fold_labels(
                 "utility": utility,
                 "hit_rate": hit_rate,
             }
+        )
+        log.info(
+            "[TP/SL] Strategy=%s ready: utility=%.4f, hit_rate=%.2f%%, train_labels=%d, test_labels=%d [%.1fs]",
+            s_name,
+            utility,
+            100.0 * hit_rate,
+            len(y_train_s),
+            len(y_test_s),
+            perf_counter() - strategy_t0,
         )
 
     if not strategy_candidates:
@@ -649,15 +680,84 @@ def _prepare_fold_labels(
     df_test["tp_sl_outcome"] = test_targets["outcome"].reindex(df_test.index)
     df_test["tp_sl_strategy"] = selected_strategy
 
-    # Alpha targets are intentionally disabled in TP/SL-native training.
-    empty_alpha = pd.Series(dtype=float)
+    # Benchmark-relative alpha targets for ranking-sensitive meta training.
+    def _benchmark_returns_for_rows(df_part: pd.DataFrame) -> pd.Series:
+        idx = df_part.index
+        if spy_prices is None or len(spy_prices) == 0:
+            return pd.Series(0.0, index=idx, dtype=float)
+
+        spy_series = pd.to_numeric(pd.Series(spy_prices), errors="coerce").dropna()
+        if spy_series.empty:
+            return pd.Series(0.0, index=idx, dtype=float)
+        spy_series.index = pd.to_datetime(spy_series.index, errors="coerce")
+        spy_series = spy_series[~spy_series.index.isna()].sort_index()
+        if spy_series.empty:
+            return pd.Series(0.0, index=idx, dtype=float)
+
+        unique_snaps: set[pd.Timestamp] = set()
+        if "snapshot_date" in df_part.columns:
+            snap_vals = pd.to_datetime(df_part["snapshot_date"], errors="coerce").dropna()
+            unique_snaps.update(pd.Timestamp(x).normalize() for x in snap_vals.tolist())
+        if isinstance(idx, pd.MultiIndex) and "date" in idx.names:
+            unique_snaps.update(pd.Timestamp(x).normalize() for x in idx.get_level_values("date").tolist())
+        else:
+            unique_snaps.update(pd.Timestamp(x).normalize() for x in idx.tolist())
+
+        bench_map: Dict[pd.Timestamp, float] = {}
+        for snap in unique_snaps:
+            entry = snap + pd.Timedelta(days=max(int(lag_days), 0))
+            exit_dt = entry + pd.DateOffset(months=max(int(holding_period_months), 1))
+            entry_window = spy_series.loc[spy_series.index <= entry]
+            exit_window = spy_series.loc[spy_series.index <= exit_dt]
+            if entry_window.empty or exit_window.empty:
+                bench_map[snap] = float("nan")
+                continue
+            p0 = float(entry_window.iloc[-1])
+            p1 = float(exit_window.iloc[-1])
+            if not np.isfinite(p0) or p0 <= 0 or not np.isfinite(p1):
+                bench_map[snap] = float("nan")
+                continue
+            bench_map[snap] = float((p1 - p0) / p0)
+
+        if "snapshot_date" in df_part.columns:
+            snap_series = pd.to_datetime(df_part["snapshot_date"], errors="coerce")
+            bench = snap_series.map(lambda d: bench_map.get(pd.Timestamp(d).normalize(), np.nan) if pd.notna(d) else np.nan)
+            bench.index = idx
+        elif isinstance(idx, pd.MultiIndex) and "date" in idx.names:
+            dvals = pd.to_datetime(idx.get_level_values("date"), errors="coerce")
+            bench = pd.Series(
+                [bench_map.get(pd.Timestamp(d).normalize(), np.nan) if pd.notna(d) else np.nan for d in dvals],
+                index=idx,
+                dtype=float,
+            )
+        else:
+            dvals = pd.to_datetime(idx, errors="coerce")
+            bench = pd.Series(
+                [bench_map.get(pd.Timestamp(d).normalize(), np.nan) if pd.notna(d) else np.nan for d in dvals],
+                index=idx,
+                dtype=float,
+            )
+
+        map_vals = pd.Series(list(bench_map.values()), dtype=float)
+        fallback = float(map_vals.dropna().median()) if not map_vals.dropna().empty else 0.0
+        return pd.to_numeric(bench, errors="coerce").fillna(fallback)
+
+    fr_train = pd.to_numeric(df_train.get("forward_return", pd.Series(index=df_train.index, dtype=float)), errors="coerce")
+    fr_test = pd.to_numeric(df_test.get("forward_return", pd.Series(index=df_test.index, dtype=float)), errors="coerce")
+    bench_train = _benchmark_returns_for_rows(df_train)
+    bench_test = _benchmark_returns_for_rows(df_test)
+    alpha_train = (fr_train.reindex(df_train.index) - bench_train.reindex(df_train.index)).clip(-1.5, 1.5)
+    alpha_test = (fr_test.reindex(df_test.index) - bench_test.reindex(df_test.index)).clip(-1.5, 1.5)
+    alpha_train = pd.to_numeric(alpha_train, errors="coerce").fillna(0.0)
+    alpha_test = pd.to_numeric(alpha_test, errors="coerce").fillna(0.0)
+
     return (
         df_train,
         df_test,
         y_train,
         y_test,
-        empty_alpha,
-        empty_alpha,
+        alpha_train,
+        alpha_test,
     )
 
 
@@ -751,28 +851,43 @@ def _historical_quarter_path_stats(
     return pd.DataFrame(rows).drop_duplicates(subset=["snapshot_date"], keep="last")
 
 
-def _adaptive_tp_sl_for_ticker_snapshot(
+def _build_ticker_snapshot_profile(
     *,
     ticker: str,
     snapshot_date: pd.Timestamp,
-    strategy_name: str,
     history_df_ticker: pd.DataFrame,
     prices_dict: Dict[str, pd.DataFrame],
     lag_days: int,
     holding_period_months: int,
-) -> tuple[float, float]:
+) -> Dict[str, object]:
     prices = _extract_close_from_prices_obj(prices_dict.get(str(ticker)))
     if prices.empty or history_df_ticker is None or history_df_ticker.empty:
-        return float(TP_SL_BASE_TP), float(TP_SL_BASE_SL)
+        return {
+            "tp_quantiles": {},
+            "sl_quantiles": {},
+            "fade": 0.0,
+            "metric_adjust_tp": 0.0,
+            "metric_adjust_sl": 0.0,
+            "has_signal": False,
+        }
 
     snap_ts = pd.Timestamp(snapshot_date).normalize()
     if isinstance(history_df_ticker.index, pd.MultiIndex):
         hist_dates = pd.to_datetime(history_df_ticker.index.get_level_values("date"), errors="coerce")
     else:
         hist_dates = pd.to_datetime(history_df_ticker.index, errors="coerce")
-    prior_dates = sorted(pd.Series(hist_dates).dropna().loc[pd.Series(hist_dates).dropna() < snap_ts].unique().tolist())
+
+    hist_dates_s = pd.Series(hist_dates).dropna()
+    prior_dates = sorted(hist_dates_s.loc[hist_dates_s < snap_ts].unique().tolist())
     if len(prior_dates) == 0:
-        return float(TP_SL_BASE_TP), float(TP_SL_BASE_SL)
+        return {
+            "tp_quantiles": {},
+            "sl_quantiles": {},
+            "fade": 0.0,
+            "metric_adjust_tp": 0.0,
+            "metric_adjust_sl": 0.0,
+            "has_signal": False,
+        }
 
     path_stats = _historical_quarter_path_stats(
         prices=prices,
@@ -781,24 +896,29 @@ def _adaptive_tp_sl_for_ticker_snapshot(
         holding_period_months=holding_period_months,
     )
     if path_stats.empty:
-        return float(TP_SL_BASE_TP), float(TP_SL_BASE_SL)
+        return {
+            "tp_quantiles": {},
+            "sl_quantiles": {},
+            "fade": 0.0,
+            "metric_adjust_tp": 0.0,
+            "metric_adjust_sl": 0.0,
+            "has_signal": False,
+        }
 
-    q_tp, q_sl = _strategy_quantiles(strategy_name)
     mfe_pos = path_stats.loc[path_stats["mfe"] > 0.0, "mfe"]
     mae_abs = path_stats.loc[path_stats["mae_abs"] > 0.0, "mae_abs"]
+    q_values = [0.40, 0.45, 0.58, 0.60, 0.75]
 
-    tp = float(mfe_pos.quantile(q_tp)) if not mfe_pos.empty else float(path_stats["mfe"].clip(lower=0.0).median())
-    sl = float(mae_abs.quantile(q_sl)) if not mae_abs.empty else float(path_stats["mae_abs"].median())
-
-    if not np.isfinite(tp) or tp <= 0:
-        tp = float(TP_SL_BASE_TP)
-    if not np.isfinite(sl) or sl <= 0:
-        sl = float(TP_SL_BASE_SL)
+    tp_quantiles: Dict[float, float] = {}
+    sl_quantiles: Dict[float, float] = {}
+    for q in q_values:
+        tp_q = float(mfe_pos.quantile(q)) if not mfe_pos.empty else float(path_stats["mfe"].clip(lower=0.0).median())
+        sl_q = float(mae_abs.quantile(q)) if not mae_abs.empty else float(path_stats["mae_abs"].median())
+        tp_quantiles[float(q)] = tp_q
+        sl_quantiles[float(q)] = sl_q
 
     fade = float(path_stats["fade_after_peak"].quantile(0.60)) if "fade_after_peak" in path_stats.columns else 0.0
-    tp *= (1.0 - min(max(fade, 0.0), 0.5) * 0.35)
 
-    # Metric-conditioned adjustments using historical correlations for this ticker.
     metric_cols = [
         "momentum_3m",
         "momentum_6m",
@@ -818,7 +938,6 @@ def _adaptive_tp_sl_for_ticker_snapshot(
     hist_features = hist_features[~hist_features.index.isna()].sort_index()
 
     path_stats_idx = path_stats.copy().set_index("snapshot_date")
-
     for mc in metric_cols:
         if mc not in hist_features.columns:
             continue
@@ -835,15 +954,71 @@ def _adaptive_tp_sl_for_ticker_snapshot(
         pct = float((joined[mc] <= cur_val).mean())
         centered = pct - 0.5
         metric_adjust_tp += corr_tp * centered
-        # Positive corr with drawdown => tighten stop when metric is high.
         metric_adjust_sl += corr_mae * centered
         used += 1
 
     if used > 0:
         metric_adjust_tp /= used
         metric_adjust_sl /= used
-        tp *= (1.0 + float(np.clip(metric_adjust_tp, -0.25, 0.25)))
-        sl *= (1.0 - float(np.clip(metric_adjust_sl, -0.25, 0.25)))
+
+    return {
+        "tp_quantiles": tp_quantiles,
+        "sl_quantiles": sl_quantiles,
+        "fade": float(fade),
+        "metric_adjust_tp": float(metric_adjust_tp),
+        "metric_adjust_sl": float(metric_adjust_sl),
+        "has_signal": True,
+    }
+
+
+def _adaptive_tp_sl_for_ticker_snapshot(
+    *,
+    ticker: str,
+    snapshot_date: pd.Timestamp,
+    strategy_name: str,
+    history_df_ticker: pd.DataFrame,
+    prices_dict: Dict[str, pd.DataFrame],
+    lag_days: int,
+    holding_period_months: int,
+    profile_cache: Optional[Dict[tuple, Dict[str, object]]] = None,
+) -> tuple[float, float]:
+    snap_ts = pd.Timestamp(snapshot_date).normalize()
+    cache_key = (str(ticker), snap_ts, int(lag_days), int(holding_period_months))
+    profile: Optional[Dict[str, object]] = None
+    if profile_cache is not None:
+        profile = profile_cache.get(cache_key)
+    if profile is None:
+        profile = _build_ticker_snapshot_profile(
+            ticker=str(ticker),
+            snapshot_date=snap_ts,
+            history_df_ticker=history_df_ticker,
+            prices_dict=prices_dict,
+            lag_days=lag_days,
+            holding_period_months=holding_period_months,
+        )
+        if profile_cache is not None:
+            profile_cache[cache_key] = profile
+
+    if not bool(profile.get("has_signal", False)):
+        return float(TP_SL_BASE_TP), float(TP_SL_BASE_SL)
+
+    q_tp, q_sl = _strategy_quantiles(strategy_name)
+    tp_map = profile.get("tp_quantiles", {}) or {}
+    sl_map = profile.get("sl_quantiles", {}) or {}
+    tp = float(tp_map.get(float(q_tp), TP_SL_BASE_TP))
+    sl = float(sl_map.get(float(q_sl), TP_SL_BASE_SL))
+
+    if not np.isfinite(tp) or tp <= 0:
+        tp = float(TP_SL_BASE_TP)
+    if not np.isfinite(sl) or sl <= 0:
+        sl = float(TP_SL_BASE_SL)
+
+    fade = float(profile.get("fade", 0.0))
+    tp *= (1.0 - min(max(fade, 0.0), 0.5) * 0.35)
+    metric_adjust_tp = float(profile.get("metric_adjust_tp", 0.0))
+    metric_adjust_sl = float(profile.get("metric_adjust_sl", 0.0))
+    tp *= (1.0 + float(np.clip(metric_adjust_tp, -0.25, 0.25)))
+    sl *= (1.0 - float(np.clip(metric_adjust_sl, -0.25, 0.25)))
 
     tp = float(np.clip(tp, float(TP_SL_MIN_TP), float(TP_SL_MAX_TP)))
     sl = float(np.clip(sl, float(TP_SL_MIN_SL), float(TP_SL_MAX_SL)))
@@ -858,6 +1033,7 @@ def _build_adaptive_tp_sl_targets(
     lag_days: int,
     holding_period_months: int,
     strategy_name: str,
+    profile_cache: Optional[Dict[tuple, Dict[str, object]]] = None,
 ) -> Dict[str, pd.Series]:
     idx = df_target.index
     tp_level = pd.Series(np.nan, index=idx, dtype=float)
@@ -873,7 +1049,32 @@ def _build_adaptive_tp_sl_targets(
         for tk in history_source.index.get_level_values("ticker").unique().tolist():
             by_ticker_history[str(tk)] = history_source.xs(tk, level="ticker", drop_level=False).copy()
 
-    for (ticker, dt), row in df_target.iterrows():
+    total_rows = len(df_target)
+    if total_rows == 0:
+        return {
+            "tp_level": tp_level,
+            "sl_level": sl_level,
+            "outcome": outcome,
+            "hit_label": hit_label,
+            "max_holding_days": pd.Series(float(max_holding_days), index=idx, dtype=float),
+        }
+
+    # Roughly 20 progress updates per pass, with a sane floor to avoid noise.
+    report_every = max(250, total_rows // 20)
+    loop_t0 = perf_counter()
+    tp_count = 0
+    sl_count = 0
+    none_count = 0
+
+    log.info(
+        "[TP/SL][%s] Adaptive target pass start: rows=%d, lag_days=%d, holding_months=%d",
+        strategy_name,
+        total_rows,
+        int(lag_days),
+        int(holding_period_months),
+    )
+
+    for i, ((ticker, dt), row) in enumerate(df_target.iterrows(), start=1):
         tk = str(ticker)
         hist_tk = by_ticker_history.get(tk, pd.DataFrame())
         has_snapshot = "snapshot_date" in row and pd.notna(row.get("snapshot_date"))
@@ -887,6 +1088,7 @@ def _build_adaptive_tp_sl_targets(
             prices_dict=prices_dict,
             lag_days=lag_days,
             holding_period_months=holding_period_months,
+            profile_cache=profile_cache,
         )
         tp_level.loc[(ticker, dt)] = tp
         sl_level.loc[(ticker, dt)] = sl
@@ -904,6 +1106,40 @@ def _build_adaptive_tp_sl_targets(
         out = str(sim.get("outcome", "NONE")).upper()
         outcome.loc[(ticker, dt)] = out
         hit_label.loc[(ticker, dt)] = 1.0 if out == "TP" else 0.0
+
+        if out == "TP":
+            tp_count += 1
+        elif out == "SL":
+            sl_count += 1
+        else:
+            none_count += 1
+
+        if i % report_every == 0 or i == total_rows:
+            elapsed = perf_counter() - loop_t0
+            rows_per_sec = i / elapsed if elapsed > 0 else 0.0
+            log.info(
+                "[TP/SL][%s] progress: %d/%d (%.1f%%) | TP=%d SL=%d NONE=%d | %.1fs elapsed (%.1f rows/s)",
+                strategy_name,
+                i,
+                total_rows,
+                100.0 * i / total_rows,
+                tp_count,
+                sl_count,
+                none_count,
+                elapsed,
+                rows_per_sec,
+            )
+
+    elapsed_total = perf_counter() - loop_t0
+    log.info(
+        "[TP/SL][%s] pass complete: rows=%d | TP=%d SL=%d NONE=%d | %.1fs total",
+        strategy_name,
+        total_rows,
+        tp_count,
+        sl_count,
+        none_count,
+        elapsed_total,
+    )
 
     return {
         "tp_level": tp_level,
@@ -943,6 +1179,8 @@ def _build_tp_sl_strategy_universe_matrix(
         for tk in history_source_df.index.get_level_values("ticker").unique().tolist():
             by_ticker_history[str(tk)] = history_source_df.xs(tk, level="ticker", drop_level=False).copy()
 
+    profile_cache: Dict[tuple, Dict[str, object]] = {}
+
     frames: List[pd.DataFrame] = []
     for s_name in ["conservative", "balanced", "aggressive"]:
 
@@ -962,6 +1200,7 @@ def _build_tp_sl_strategy_universe_matrix(
                 prices_dict=prices_dict,
                 lag_days=lag_days,
                 holding_period_months=holding_period_months,
+                profile_cache=profile_cache,
             )
             tp_vals.append(tp)
             sl_vals.append(sl)
@@ -1706,9 +1945,9 @@ def run_walkforward_pipeline(
                 df_test_norm=df_test,
                 y_train=y_train,
                 y_test=y_test,
-                # Alpha targets are deprecated in TP/SL-native training.
-                target_alpha_train=None,
-                target_alpha_test=None,
+                # Feed realized alpha targets to improve cross-sectional ranking quality.
+                target_alpha_train=alpha_train,
+                target_alpha_test=alpha_test,
                 fold_id=run_id,
                 agent_models_results_dir=fold_agents_dir.as_posix(),
                 agents_results_dir=fold_agents_dir.as_posix(),
@@ -1718,7 +1957,7 @@ def run_walkforward_pipeline(
             )
 
             meta = agents["meta_learner"]
-            eval_metrics = meta.evaluate(df_test_scored, y_test, fold=run_id, target_alpha=None)
+            eval_metrics = meta.evaluate(df_test_scored, y_test, fold=run_id, target_alpha=alpha_test)
 
             fold_visualizer.plot_score_distribution(df_test_scored, fold=run_id)
 

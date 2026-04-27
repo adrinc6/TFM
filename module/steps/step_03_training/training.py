@@ -288,9 +288,12 @@ def _predict_base_scores(
         if not getattr(agent, "is_trained", False):
             scores = pd.Series(fallback_score, index=out.index)
         elif sector_col:
-            scores = agent.predict_score(out, sector_col)
+            # Always score from the original feature frame to avoid
+            # cross-agent contamination and keep base models independent.
+            scores = agent.predict_score(X, sector_col)
         else:
-            scores = agent.predict_score(out)
+            scores = agent.predict_score(X)
+        scores = pd.to_numeric(pd.Series(scores, index=out.index), errors="coerce").fillna(fallback_score)
         # Align score direction for investment: high = better to invest.
         # BearAgent devuelve riesgo [0,1], por eso guardamos ambas vistas:
         #   - bear_risk_score: riesgo (alto = peor)
@@ -339,16 +342,7 @@ def train_fold(
     # ── Step 1: Train base agents ────────────────────────────────────────────
     log.info(f"[Fold {fold_id}] 1/3 — Entrenando agentes base con datos de entrenamiento del fold...")
     base_agents = _instantiate_base_agents(agents_config)
-
-    for ag_name, agent in base_agents.items():
-        cfg = agents_config[ag_name]
-        y_fit = (1 - y_train) if cfg.get("invert_y") else y_train
-        sector_col = cfg.get("sector_col")
-        if sector_col:
-            agent.fit(df_train_norm, y_fit, fold=fold_id, sector_col=sector_col)
-        else:
-            agent.fit(df_train_norm, y_fit, fold=fold_id)
-        base_agents[ag_name] = agent
+    _fit_base_agents(base_agents, agents_config, df_train_norm, y_train, fold=fold_id)
 
     # Entrenar SectorRotationAgent (opera a nivel sector, no ticker)
     sector_agent = build_sector_rotation_agent(agent_models_results_dir=agent_models_results_dir, random_seed=random_seed)
