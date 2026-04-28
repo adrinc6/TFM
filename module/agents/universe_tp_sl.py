@@ -270,19 +270,25 @@ class UniversalTpSlAgent(BaseAgent):
                     ),
                 ]
             ),
+            # min_samples_leaf=10 consistently applied across all tree-based
+            # models to enforce the same regularization floor: at least 10
+            # training samples must be in every leaf.  This prevents individual
+            # tickers/quarters from dominating splits and is the key guard
+            # against overfitting on the ~5Y quarterly dataset.
             "random_forest": RandomForestClassifier(
                 n_estimators=320,
-                max_depth=7,
-                min_samples_leaf=6,
+                max_depth=6,
+                min_samples_leaf=10,
                 class_weight="balanced_subsample",
                 n_jobs=-1,
                 random_state=self.random_seed,
             ),
             "gradient_boosting": GradientBoostingClassifier(
                 n_estimators=220,
-                max_depth=3,
+                max_depth=2,
                 learning_rate=0.04,
-                subsample=0.85,
+                subsample=0.80,
+                min_samples_leaf=10,
                 random_state=self.random_seed,
             ),
         }
@@ -290,10 +296,13 @@ class UniversalTpSlAgent(BaseAgent):
         if _XGB_OK:
             models["xgboost"] = xgb.XGBClassifier(
                 n_estimators=260,
-                max_depth=4,
+                max_depth=3,
                 learning_rate=0.04,
-                subsample=0.85,
-                colsample_bytree=0.8,
+                subsample=0.80,
+                colsample_bytree=0.75,
+                reg_lambda=2.0,
+                reg_alpha=0.5,
+                min_child_weight=10,
                 eval_metric="auc",
                 random_state=self.random_seed,
                 n_jobs=-1,

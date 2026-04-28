@@ -26,8 +26,10 @@ from environment import (
     SENTIMENT_FEATURE_COLUMNS, SENTIMENT_FEATURE_EXCLUDE,
     SECTOR_ROTATION_FEATURE_COLUMNS, SECTOR_ROTATION_FEATURE_EXCLUDE,
     META_FEATURE_COLUMNS, META_FEATURE_EXCLUDE,
+    ENABLE_RECENCY_WEIGHTING, TRAINING_RECENCY_HALFLIFE_YEARS,
 )
 from module.agents.alpha_meta_learner import AlphaMetaLearner
+from module.common.recency_weights import compute_recency_weights
 from module.common.regime import MarketRegimeModel, apply_regime_weighting
 from module.steps.step_03_training.agent_config import build_agents_config, build_sector_rotation_agent
 from module.steps.step_03_training.oof import generate_oof_scores
@@ -245,6 +247,19 @@ def _apply_sector_adjustments(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def _compute_recency_weights(df: pd.DataFrame) -> Optional[np.ndarray]:
+    """Delegate to the shared recency weight utility.
+
+    Returns per-observation exponential recency weights or ``None`` when
+    disabled.  See :func:`module.common.recency_weights.compute_recency_weights`.
+    """
+    return compute_recency_weights(
+        df,
+        enabled=ENABLE_RECENCY_WEIGHTING,
+        halflife_years=float(TRAINING_RECENCY_HALFLIFE_YEARS),
+    )
+
+
 def _instantiate_base_agents(agents_config: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
     return {
         ag_name: cfg["cls"](**cfg["kwargs"])
@@ -265,15 +280,23 @@ def _fit_base_agents(
     X: pd.DataFrame,
     y: pd.Series,
     fold: int,
+    sample_weight: Optional[np.ndarray] = None,
 ) -> None:
     for ag_name, agent in agents.items():
         cfg = agents_config[ag_name]
         y_fit = (1 - y) if cfg.get("invert_y") else y
         sector_col = cfg.get("sector_col")
+        fit_kwargs: Dict[str, Any] = {"fold": fold}
         if sector_col:
-            agent.fit(X, y_fit, fold=fold, sector_col=sector_col)
-        else:
-            agent.fit(X, y_fit, fold=fold)
+            fit_kwargs["sector_col"] = sector_col
+        if sample_weight is not None:
+            fit_kwargs["sample_weight"] = sample_weight
+        try:
+            agent.fit(X, y_fit, **fit_kwargs)
+        except TypeError:
+            # Fallback for agents whose fit() does not accept sample_weight
+            fit_kwargs_basic = {k: v for k, v in fit_kwargs.items() if k != "sample_weight"}
+            agent.fit(X, y_fit, **fit_kwargs_basic)
 
 
 def _predict_base_scores(
@@ -342,7 +365,15 @@ def train_fold(
     # ── Step 1: Train base agents ────────────────────────────────────────────
     log.info(f"[Fold {fold_id}] 1/3 — Entrenando agentes base con datos de entrenamiento del fold...")
     base_agents = _instantiate_base_agents(agents_config)
-    _fit_base_agents(base_agents, agents_config, df_train_norm, y_train, fold=fold_id)
+    recency_weights = _compute_recency_weights(df_train_norm)
+    if recency_weights is not None:
+        log.info(
+            f"[Fold {fold_id}] Recency weighting enabled "
+            f"(halflife={TRAINING_RECENCY_HALFLIFE_YEARS}Y, "
+            f"weight_range=[{recency_weights.min():.3f}, {recency_weights.max():.3f}])"
+        )
+    _fit_base_agents(base_agents, agents_config, df_train_norm, y_train, fold=fold_id,
+                     sample_weight=recency_weights)
 
     # Entrenar SectorRotationAgent (opera a nivel sector, no ticker)
     sector_agent = build_sector_rotation_agent(agent_models_results_dir=agent_models_results_dir, random_seed=random_seed)
@@ -453,7 +484,9 @@ def train_full_history(
     base_agents = _instantiate_base_agents(agents_config)
     meta = AlphaMetaLearner(results_dir=agent_models_results_dir, random_seed=random_seed)
 
-    _fit_base_agents(base_agents, agents_config, df_norm, y, fold=0)
+    recency_weights = _compute_recency_weights(df_norm)
+    _fit_base_agents(base_agents, agents_config, df_norm, y, fold=0,
+                     sample_weight=recency_weights)
 
     sector_agent = build_sector_rotation_agent(agent_models_results_dir=agent_models_results_dir, random_seed=random_seed)
     if sector_map is not None and "forward_return" in df_norm.columns:

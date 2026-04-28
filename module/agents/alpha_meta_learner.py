@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 
 from module.agents.base import BaseAgent
+from module.common.recency_weights import compute_recency_weights
 from environment import (
     META_FEATURE_COLUMNS,
     META_FEATURE_EXCLUDE,
@@ -18,18 +19,29 @@ from environment import (
     ALPHA_META_REG_LEARNING_RATE,
     ALPHA_META_REG_SUBSAMPLE,
     ALPHA_META_REG_COLSAMPLE,
+    ALPHA_META_REG_L2_REG,
+    ALPHA_META_REG_L1_REG,
+    ALPHA_META_REG_MIN_CHILD,
     ALPHA_META_RANK_N_ESTIMATORS,
     ALPHA_META_RANK_MAX_DEPTH,
     ALPHA_META_RANK_LEARNING_RATE,
     ALPHA_META_RANK_SUBSAMPLE,
     ALPHA_META_RANK_COLSAMPLE,
+    ALPHA_META_RANK_L2_REG,
+    ALPHA_META_RANK_L1_REG,
+    ALPHA_META_RANK_MIN_CHILD,
     ALPHA_META_RISK_N_ESTIMATORS,
     ALPHA_META_RISK_MAX_DEPTH,
     ALPHA_META_RISK_LEARNING_RATE,
     ALPHA_META_RISK_SUBSAMPLE,
     ALPHA_META_RISK_COLSAMPLE,
+    ALPHA_META_RISK_L2_REG,
+    ALPHA_META_RISK_L1_REG,
+    ALPHA_META_RISK_MIN_CHILD,
     ALPHA_META_RANK_BLEND,
     ALPHA_META_RISK_BLEND,
+    ENABLE_RECENCY_WEIGHTING,
+    TRAINING_RECENCY_HALFLIFE_YEARS,
 )
 
 log = logging.getLogger(__name__)
@@ -60,33 +72,21 @@ class AlphaMetaLearner(BaseAgent):
     def _prepare(self, X: pd.DataFrame, sector_col: str = "sector", fit_mode: bool = False) -> pd.DataFrame:
         df = X.copy()
 
+        # Use only the curated META_FEATURE_COLUMNS to prevent overfitting from
+        # including hundreds of raw fundamental or engineered columns that are not
+        # validated signal carriers.  The original implementation appended *all*
+        # numeric columns, which grew the feature set to ~140+ and caused severe
+        # overfitting on the ~5 years × 500 tickers training corpus.
+        #
+        # META_FEATURE_COLUMNS is defined in environment.py and covers:
+        #   - Base agent scores (fundamental, valuation, momentum, bear, sentiment,
+        #     sector, regime_adjusted)
+        #   - Sector-relative and universe-wide percentile ranks
+        #   - Volatility-adjusted signals and interaction features
+        #   - Macro regime context (vix, yield_curve, sp500 momentum)
+        #
+        # Sector dummy variables are appended below to encode GICS sector membership.
         selected = [c for c in META_FEATURE_COLUMNS if c in df.columns and c not in META_FEATURE_EXCLUDE]
-
-        # Full-feature meta model: keep all numeric non-target columns.
-        forbidden = {
-            "label",
-            "forward_return",
-            "target_alpha",
-            "target_quintile",
-            "target_triple_barrier",
-            "predicted_alpha",
-            "ranking_score",
-            "risk_score",
-            "regime_adjusted_score",
-            "final_score",
-        }
-        numeric_cols = []
-        for c in df.columns:
-            if c in forbidden:
-                continue
-            try:
-                dtype = getattr(df[c], "dtype", np.dtype("float64"))
-                if np.issubdtype(dtype, np.number):
-                    numeric_cols.append(c)
-            except (TypeError, ValueError):
-                # Skip columns with incompatible dtypes (e.g., StringDtype)
-                pass
-        selected += numeric_cols
 
         if sector_col in df.columns:
             dummies = pd.get_dummies(df[sector_col].astype(str), prefix="sector", dtype=float)
@@ -149,6 +149,20 @@ class AlphaMetaLearner(BaseAgent):
             return s.groupby(idx.get_level_values("date")).rank(pct=True, method="average")
         return s.rank(pct=True, method="average")
 
+    @staticmethod
+    def _compute_recency_weights(X: pd.DataFrame) -> Optional[np.ndarray]:
+        """Delegate to the shared recency weight utility.
+
+        See :func:`module.common.recency_weights.compute_recency_weights` for
+        the full documentation.  Uses pipeline constants ``ENABLE_RECENCY_WEIGHTING``
+        and ``TRAINING_RECENCY_HALFLIFE_YEARS`` from environment.
+        """
+        return compute_recency_weights(
+            X,
+            enabled=ENABLE_RECENCY_WEIGHTING,
+            halflife_years=float(TRAINING_RECENCY_HALFLIFE_YEARS),
+        )
+
     def fit(
         self,
         X: pd.DataFrame,
@@ -169,18 +183,25 @@ class AlphaMetaLearner(BaseAgent):
         alpha = pd.to_numeric((target_alpha if target_alpha is not None else (y_cls - 0.5)), errors="coerce")
         alpha = alpha.reindex(X_prep.index).fillna(alpha.median() if np.isfinite(alpha.median()) else 0.0)
 
+        # Exponential recency weights: recent quarters carry more influence to
+        # combat concept drift in factor premia without discarding older data.
+        sample_weight = self._compute_recency_weights(X)
+
         self._reg_model = xgb.XGBRegressor(
             n_estimators=ALPHA_META_REG_N_ESTIMATORS,
             max_depth=ALPHA_META_REG_MAX_DEPTH,
             learning_rate=ALPHA_META_REG_LEARNING_RATE,
             subsample=ALPHA_META_REG_SUBSAMPLE,
             colsample_bytree=ALPHA_META_REG_COLSAMPLE,
+            reg_lambda=ALPHA_META_REG_L2_REG,
+            reg_alpha=ALPHA_META_REG_L1_REG,
+            min_child_weight=ALPHA_META_REG_MIN_CHILD,
             objective="reg:squarederror",
             random_state=self.random_seed,
             n_jobs=-1,
             tree_method="hist",
         )
-        self._reg_model.fit(X_prep, alpha)
+        self._reg_model.fit(X_prep, alpha, sample_weight=sample_weight)
 
         groups = self._group_sizes_from_index(X_prep.index)
         if len(groups) > 1:
@@ -190,12 +211,30 @@ class AlphaMetaLearner(BaseAgent):
                 learning_rate=ALPHA_META_RANK_LEARNING_RATE,
                 subsample=ALPHA_META_RANK_SUBSAMPLE,
                 colsample_bytree=ALPHA_META_RANK_COLSAMPLE,
+                reg_lambda=ALPHA_META_RANK_L2_REG,
+                reg_alpha=ALPHA_META_RANK_L1_REG,
+                min_child_weight=ALPHA_META_RANK_MIN_CHILD,
                 objective="rank:pairwise",
                 random_state=self.random_seed,
                 n_jobs=-1,
                 tree_method="hist",
             )
-            self._rank_model.fit(X_prep, alpha, group=groups)
+            # XGBRanker's sample_weight must be one value per query group,
+            # not per sample.  Aggregate per-sample weights to group weights
+            # by taking the mean within each group.
+            rank_fit_kwargs: Dict = {"group": groups}
+            if sample_weight is not None:
+                try:
+                    group_weights = []
+                    group_start = 0
+                    for group_size in groups:
+                        group_end = group_start + group_size
+                        group_weights.append(float(sample_weight[group_start:group_end].mean()))
+                        group_start = group_end
+                    rank_fit_kwargs["sample_weight"] = np.array(group_weights, dtype=np.float32)
+                except Exception:
+                    pass  # proceed without sample weights for ranker
+            self._rank_model.fit(X_prep, alpha, **rank_fit_kwargs)
 
         self._risk_model = xgb.XGBClassifier(
             n_estimators=ALPHA_META_RISK_N_ESTIMATORS,
@@ -203,12 +242,15 @@ class AlphaMetaLearner(BaseAgent):
             learning_rate=ALPHA_META_RISK_LEARNING_RATE,
             subsample=ALPHA_META_RISK_SUBSAMPLE,
             colsample_bytree=ALPHA_META_RISK_COLSAMPLE,
+            reg_lambda=ALPHA_META_RISK_L2_REG,
+            reg_alpha=ALPHA_META_RISK_L1_REG,
+            min_child_weight=ALPHA_META_RISK_MIN_CHILD,
             objective="binary:logistic",
             random_state=self.random_seed,
             n_jobs=-1,
             tree_method="hist",
         )
-        self._risk_model.fit(X_prep, (y_cls > 0.5).astype(int))
+        self._risk_model.fit(X_prep, (y_cls > 0.5).astype(int), sample_weight=sample_weight)
 
         self.is_trained = True
         self._diagnostics = {
@@ -217,6 +259,8 @@ class AlphaMetaLearner(BaseAgent):
             "alpha_std_train": float(alpha.std()),
             "rank_blend": float(ALPHA_META_RANK_BLEND),
             "risk_blend": float(self._risk_blend),
+            "recency_weighting": bool(sample_weight is not None),
+            "recency_halflife_years": float(TRAINING_RECENCY_HALFLIFE_YEARS) if sample_weight is not None else None,
         }
         self.save_diagnostics(fold)
         return self

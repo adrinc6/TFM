@@ -44,10 +44,9 @@ class TechnicalFeatureBuilder:
         f["macd_hist"] = float((macd - sig).iloc[-1])
 
         p = float(close.iloc[-1])
-        for w in [20, 50, 200]:
-            if len(close) >= w:
-                sma = float(close.rolling(w).mean().iloc[-1])
-                f[f"sma_{w}"] = (p / sma - 1) if sma != 0 else 0.0
+        if len(close) >= 20:
+            sma20 = float(close.rolling(20).mean().iloc[-1])
+            f["sma_20"] = (p / sma20 - 1) if sma20 != 0 else 0.0
 
         if len(close) >= 20:
             s20 = close.rolling(20).mean()
@@ -64,10 +63,17 @@ class TechnicalFeatureBuilder:
             (21, "momentum_1m"),
             (63, "momentum_3m"),
             (126, "momentum_6m"),
-            (252, "momentum_12m"),
         ]:
             if len(close) > days:
                 f[name] = float(p / close.iloc[-(days + 1)] - 1)
+
+        # momentum_12m is kept in the dataset for potential future use but is
+        # excluded from all current agent FEATURE_COLUMNS because it requires
+        # 252+ prior trading days of price history.  When that history is
+        # available the feature will be present; when it is not the feature
+        # is simply absent from the row (not set to NaN or 0).
+        if len(close) > 252:
+            f["momentum_12m"] = float(p / close.iloc[-253] - 1)
 
         ret = close.pct_change().dropna()
         for w in [20, 60]:

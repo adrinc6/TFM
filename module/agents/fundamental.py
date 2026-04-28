@@ -92,7 +92,8 @@ class FundamentalAgent(BaseAgent):
     # ── Fit ───────────────────────────────────────────────────────────────────
 
     def fit(self, X: pd.DataFrame, y: pd.Series,
-            fold: Optional[int] = None, sector_col: str = "sector") -> "FundamentalAgent":
+            fold: Optional[int] = None, sector_col: str = "sector",
+            sample_weight: Optional[np.ndarray] = None) -> "FundamentalAgent":
         """Trains XGBoost on financial ratio features.
 
         Args:
@@ -100,6 +101,8 @@ class FundamentalAgent(BaseAgent):
             y (pd.Series): Binary target labels (1 = Outperform).
             fold (Optional[int]): Walk-forward fold index for artefact naming.
             sector_col (str): Column name for sector labels (used for dummies).
+            sample_weight (Optional[np.ndarray]): Per-sample weights (e.g.,
+                exponential recency weights).  If None, uniform weights are used.
 
         Returns:
             FundamentalAgent: The fitted agent instance (self).
@@ -113,6 +116,21 @@ class FundamentalAgent(BaseAgent):
         X_prep, y_cl = self.clean_features(X_prep, y.reset_index(drop=True))
         X_prep       = X_prep.reset_index(drop=True)
         y_cl         = y_cl.reset_index(drop=True)
+
+        # Align sample weights to the cleaned index if provided.
+        # Track which original positions survive clean_features before reset_index.
+        sw: Optional[np.ndarray] = None
+        if sample_weight is not None:
+            sw_full = np.asarray(sample_weight, dtype=float)[:min_len]
+            # y_cl was built from y.reset_index(drop=True) and then passed through
+            # clean_features which may drop rows.  The survived positions are
+            # recorded in y_cl.index (integer positions in the pre-reset array).
+            survived_positions = y_cl.index.values  # integer positions before reset
+            if survived_positions.max() < len(sw_full):
+                sw = sw_full[survived_positions]
+            elif len(y_cl) == len(sw_full):
+                # No rows dropped; use weights directly
+                sw = sw_full
 
         if not self.has_multiple_classes(y_cl):
             log.warning("[FundamentalAgent] Label without enough class variance after cleaning - training skipped.")
@@ -140,7 +158,7 @@ class FundamentalAgent(BaseAgent):
         cv = self._cv(X_prep, y_cl, spw)
         log.info(f"[FundamentalAgent] CV AUC={cv['mean_auc']:.4f} ± {cv['std_auc']:.4f}  ({len(self._feature_cols)} selected features)")
 
-        self._model.fit(X_prep, y_cl)
+        self._model.fit(X_prep, y_cl, sample_weight=sw)
         self.is_trained = True
 
         # Feature importances from the XGBoost estimator
