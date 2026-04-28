@@ -69,8 +69,9 @@ class TechnicalFeatureBuilder:
 
         # momentum_12m is kept in the dataset for potential future use but is
         # excluded from all current agent FEATURE_COLUMNS because it requires
-        # 252+ prior trading days and is systematically absent in the first
-        # analysis year.
+        # 252+ prior trading days of price history.  When that history is
+        # available the feature will be present; when it is not the feature
+        # is simply absent from the row (not set to NaN or 0).
         if len(close) > 252:
             f["momentum_12m"] = float(p / close.iloc[-253] - 1)
 

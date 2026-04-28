@@ -66,9 +66,10 @@ def enrich_cross_sectional_features(df: pd.DataFrame) -> pd.DataFrame:
 
     # Momentum consistency: fraction of short-to-medium momentum windows
     # (1m, 3m, 6m) that are positive.  momentum_12m is deliberately excluded
-    # because it is systematically unavailable in the current analysis window
-    # (requires 252+ prior trading days) and its NaN values would bias the
-    # ratio downward via the fillna(0.0) fallback.
+    # because it requires 252+ prior trading days and is frequently absent in
+    # the first analysis year.  When a window value is NaN (insufficient
+    # history), fillna(0.0) maps it to a neutral signal that is NOT counted
+    # as positive — this is the intended behaviour (missing ≠ positive).
     mom_windows = [c for c in ["momentum_1m", "momentum_3m", "momentum_6m"] if c in out.columns]
     if len(mom_windows) >= 2:
         pos_count = sum(
