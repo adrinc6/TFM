@@ -44,10 +44,9 @@ class TechnicalFeatureBuilder:
         f["macd_hist"] = float((macd - sig).iloc[-1])
 
         p = float(close.iloc[-1])
-        for w in [20, 50, 200]:
-            if len(close) >= w:
-                sma = float(close.rolling(w).mean().iloc[-1])
-                f[f"sma_{w}"] = (p / sma - 1) if sma != 0 else 0.0
+        if len(close) >= 20:
+            sma20 = float(close.rolling(20).mean().iloc[-1])
+            f["sma_20"] = (p / sma20 - 1) if sma20 != 0 else 0.0
 
         if len(close) >= 20:
             s20 = close.rolling(20).mean()
@@ -64,26 +63,16 @@ class TechnicalFeatureBuilder:
             (21, "momentum_1m"),
             (63, "momentum_3m"),
             (126, "momentum_6m"),
-            (252, "momentum_12m"),
         ]:
             if len(close) > days:
                 f[name] = float(p / close.iloc[-(days + 1)] - 1)
 
-        # Momentum consistency: fraction of momentum windows that are positive.
-        # A stock with all horizons pointing up has a more reliable underlying
-        # trend than one with mixed multi-period signals (0 = all negative, 1 = all positive).
-        mom_vals = {n: f.get(n) for n in ["momentum_1m", "momentum_3m", "momentum_6m", "momentum_12m"] if n in f}
-        if len(mom_vals) >= 2:
-            n_positive = sum(1 for v in mom_vals.values() if v is not None and v > 0)
-            f["momentum_consistency_score"] = float(n_positive) / len(mom_vals)
-
-        # Price acceleration: annualised 3m momentum minus annualised 6m momentum.
-        # Positive = the recent pace of price gains exceeds the 6m average, i.e.
-        # the trend is speeding up.  Negative = momentum is fading.
-        if "momentum_3m" in f and "momentum_6m" in f:
-            mom3_ann = f["momentum_3m"] * 4.0
-            mom6_ann = f["momentum_6m"] * 2.0
-            f["price_acceleration"] = float(mom3_ann - mom6_ann)
+        # momentum_12m is kept in the dataset for potential future use but is
+        # excluded from all current agent FEATURE_COLUMNS because it requires
+        # 252+ prior trading days and is systematically absent in the first
+        # analysis year.
+        if len(close) > 252:
+            f["momentum_12m"] = float(p / close.iloc[-253] - 1)
 
         ret = close.pct_change().dropna()
         for w in [20, 60]:

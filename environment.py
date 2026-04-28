@@ -476,13 +476,15 @@ MOMENTUM_FEATURE_EXCLUDE = [
 ]
 
 # ── BearAgent (Hybrid Random Forest) ─────────────────────────────────────────
-BEAR_N_ESTIMATORS = 200
-BEAR_MAX_DEPTH    = 6
+BEAR_N_ESTIMATORS = 300
+BEAR_MAX_DEPTH    = 5
 # Rule-layer vs ML-layer weight in final score.
-# ML layer gets higher weight because it captures non-linear risk interactions
-# that simple threshold rules miss (e.g., high debt is fine for utilities).
-BEAR_RULE_WEIGHT  = 0.35
-BEAR_ML_WEIGHT    = 0.65
+# Rebalanced toward the rule layer (0.45) because the ML layer exhibits high
+# cross-validation variance (std_auc ≈ 0.10 across folds) while the rule layer
+# is structurally stable.  More trees (300) and shallower depth (5) further
+# reduce ML-layer variance without sacrificing meaningful signal.
+BEAR_RULE_WEIGHT  = 0.45
+BEAR_ML_WEIGHT    = 0.55
 # Risk score above which the meta-learner forces Underperform
 BEAR_HARD_THRESHOLD = 0.90
 BEAR_FEATURE_COLUMNS = [
@@ -496,11 +498,18 @@ BEAR_FEATURE_COLUMNS = [
   "consecutive_losses",
   "total_debt_yoy_growth",
   "insider_net_ratio_90d",
-  "eps_surprise_pct",
-  "eps_revision",
 ]
 
 BEAR_FEATURE_EXCLUDE = [
+  # eps_surprise_pct and eps_revision are analyst/earnings signals that are
+  # already captured by SentimentAgent.  Their presence in BearAgent caused
+  # severe cross-fold instability: both features were absent in the first fold
+  # (Q1 — no earnings history yet) but dominated importance in Q4 (0.17 and
+  # 0.10 respectively), causing the model to learn different risk patterns
+  # across folds.  Removing them stabilises the ML-layer features to the
+  # balance-sheet and cash-flow metrics that are consistently available.
+  "eps_surprise_pct",
+  "eps_revision",
 ]
 
 # ── SentimentAgent (Random Forest) ───────────────────────────────────────────
