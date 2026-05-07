@@ -1,0 +1,6 @@
+candidate_train_months,reason,in_fold_base_universe,has_snapshot_in_analysis_quarter,passes_sp500_entry_filter,passes_history_filter,eligible,count
+108,eligible,True,True,True,True,True,411
+108,not_member_sp500_on_entry,False,True,False,False,False,92
+108,no_snapshot_in_analysis_quarter,True,False,False,False,False,53
+108,insufficient_train_history,True,True,True,False,False,41
+108,out_of_fold_base_universe,False,False,False,False,False,27

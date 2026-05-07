@@ -21,11 +21,72 @@ so all plots are always saved to disk (headless mode).
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+import json
 
 # Load environment variables from .env file
 _env_path = Path(__file__).parent / ".env"
 if _env_path.exists():
     load_dotenv(_env_path)
+
+
+def _coerce_override_value(raw_value, current_value):
+  """Coerce override value to the current constant type when possible."""
+  if isinstance(current_value, bool):
+    if isinstance(raw_value, bool):
+      return raw_value
+    if isinstance(raw_value, str):
+      norm = raw_value.strip().lower()
+      if norm in {"1", "true", "yes", "y", "on"}:
+        return True
+      if norm in {"0", "false", "no", "n", "off"}:
+        return False
+    return bool(raw_value)
+
+  if isinstance(current_value, int) and not isinstance(current_value, bool):
+    return int(raw_value)
+
+  if isinstance(current_value, float):
+    return float(raw_value)
+
+  if isinstance(current_value, str):
+    return str(raw_value)
+
+  # For lists/dicts/tuples/other objects we trust JSON types as-is.
+  return raw_value
+
+
+def _apply_environment_overrides(namespace: dict) -> None:
+  """Apply runtime overrides from ENV_OVERRIDES_JSON onto module constants.
+
+  Example:
+    ENV_OVERRIDES_JSON='{"WALKFORWARD_TRAIN_LOOKBACK_YEARS": 10}'
+  """
+  raw = os.getenv("ENV_OVERRIDES_JSON", "").strip()
+  if not raw:
+    return
+
+  try:
+    payload = json.loads(raw)
+  except Exception:
+    return
+
+  if not isinstance(payload, dict):
+    return
+
+  for key, value in payload.items():
+    if not isinstance(key, str):
+      continue
+    if key not in namespace:
+      continue
+    if not key.isupper():
+      continue
+
+    current = namespace[key]
+    try:
+      namespace[key] = _coerce_override_value(value, current)
+    except Exception:
+      # Skip invalid overrides without breaking module import.
+      continue
 
 # =============================================================================
 # 1. Execution flags
@@ -107,33 +168,24 @@ SP500_HISTORIC_CSV_PATH = os.path.join(FINNHUB_DATA_DIR, "sp500_historic.csv")
 SP500_DYNAMIC_TOP_N = False
 
 # =============================================================================
-# 5. Analysis period
+# 5. Analysis schedule
 # =============================================================================
 
 # Date from which raw data is downloaded.
 DOWNLOAD_START_DATE = "2000-01-01"
 
-# Quarter range to analyze (both quarterly and annual modes use these).
-# - "quarterly": one fold per quarter from START to END.
-# - "annual":    one fold per year starting at the START quarter.
-#
-# Example for 2025Q2 snapshot:
-#   ANALYSIS_START_YEAR = 2025, ANALYSIS_START_QUARTER = 2
-#   => snapshot closes Jun 30 · entry ~Aug 14 (+ SNAPSHOT_LAG_DAYS)
-ANALYSIS_START_YEAR = 2024
-ANALYSIS_START_QUARTER = 4
+# Anchor date for the first test entry.
+# The pipeline then creates additional test windows by moving backwards in
+# HOLDING_PERIOD_MONTHS steps.
+# Example:
+#   ANALYSIS_REFERENCE_DATE = "2026-02-15"
+#   HOLDING_PERIOD_MONTHS = 12
+#   WALKFORWARD_NUM_TESTS = 4
+#   -> test entries at 2026-02-15, 2025-02-15, 2024-02-15, 2023-02-15.
+ANALYSIS_REFERENCE_DATE = "2026-02-15"
 
-ANALYSIS_END_YEAR = 2025
-ANALYSIS_END_QUARTER = 4
-
-# Walk-forward analysis frequency:
-# - "quarterly": runs one fold per quarter.
-# - "annual":    runs one fold per year.
-ANALYSIS_FREQUENCY = "quarterly"
-
-# Lag (in days) from quarter close to real analysis/entry time.
-# Example: Q1 snapshot (Mar 31) + 45 days => approximate entry mid-Q2.
-SNAPSHOT_LAG_DAYS = 45
+# Number of historical test windows generated from ANALYSIS_REFERENCE_DATE.
+WALKFORWARD_NUM_TESTS = 8
 
 # If True, when a ticker has no report for the analyzed quarter,
 # features are extrapolated using the average of the last N available quarters.
@@ -145,8 +197,7 @@ ENABLE_FALLBACK_EXTRAPOLATION = True
 FALLBACK_LOOK_BACK_QUARTERS = 4
 
 # Portfolio holding duration from entry date.
-# 3 months = natural approximation to a shifted quarter holding period.
-HOLDING_PERIOD_MONTHS = 3
+HOLDING_PERIOD_MONTHS = 12
 
 # =============================================================================
 # 6. ML pipeline parameters
@@ -180,6 +231,21 @@ ENABLE_RECENCY_WEIGHTING = True
 # - Too long (> 4Y): essentially uniform weights, no recency benefit
 TRAINING_RECENCY_HALFLIFE_YEARS = 2.0
 
+# Temporal validation of base agents (in-fold, train-only) to detect
+# persistence and trend in each agent's quality before scoring test data.
+ENABLE_TEMPORAL_AGENT_VALIDATION = True
+# Fraction of top-scored tickers per quarter used to evaluate each agent.
+TEMPORAL_VALIDATION_TOP_PCT = 0.15
+# Minimum top-k selected per quarter for temporal agent validation.
+TEMPORAL_VALIDATION_MIN_TOP_K = 12
+# Exponential half-life in quarters for temporal validation weights.
+TEMPORAL_VALIDATION_HALFLIFE_QUARTERS = 6
+# Relative contribution of performance trend to reliability multiplier.
+TEMPORAL_VALIDATION_TREND_WEIGHT = 0.30
+# Bounds for reliability multiplier applied to agent score dispersion.
+TEMPORAL_VALIDATION_WEIGHT_CLIP_MIN = 0.75
+TEMPORAL_VALIDATION_WEIGHT_CLIP_MAX = 1.25
+
 # When a sector-specific model is degenerate (e.g. all feature importances are 0),
 # use a conservative fallback score instead of a neutral 0.5 to avoid accidental
 # promotion of low-confidence candidates.
@@ -188,19 +254,29 @@ DEGENERATE_MODEL_FALLBACK_SCORE = 0.25
 # sector model cannot be trained or a fold fails. Kept aligned with the
 # degenerate-model policy so missing/no-signal sectors are penalized consistently.
 SECTOR_SPECIALIST_LONG_FALLBACK_SCORE = DEGENERATE_MODEL_FALLBACK_SCORE
+# Global neutral score policy used in training-time score sanitation:
+# exact neutral values (typically 0.5) can be pushed down so missing/unknown
+# evidence does not accidentally rank above truly strong names.
+NEUTRAL_SCORE_PENALTY_ENABLED = True
+NEUTRAL_SCORE_VALUE = 0.5
+NEUTRAL_SCORE_PENALIZED_VALUE = 0.25
+NEUTRAL_SCORE_EPS = 1e-9
 # Numerical threshold to consider feature importance mass as zero.
 DEGENERATE_MODEL_IMPORTANCE_EPS = 1e-12
 
 # Minimum score threshold to include a stock in the long portfolio / shortlist.
 # 0.55 keeps only tickers with clear positive signal; with a score-weighted
 # portfolio + min_stocks floor, it still guarantees a portfolio with few qualifiers.
-PORTFOLIO_MIN_SCORE = 0.55
+# Updated after 2025Q1-2025Q4 parallel batch (20260429_212415):
+# 7-3 portfolio with slightly higher score threshold delivered the best
+# alpha, Sharpe and drawdown profile among tested configurations.
+PORTFOLIO_MIN_SCORE = 0.57
 # Max number of selected stocks per sector (0 disables sector cap).
 # Prevents concentration in a single winning theme/regime.
 PORTFOLIO_MAX_STOCKS_PER_SECTOR = 3
 # Maximum portfolio weight per ticker (0 disables weight cap).
 # Final weights are re-normalized after capping.
-PORTFOLIO_MAX_STOCK_WEIGHT = 0.15
+PORTFOLIO_MAX_STOCK_WEIGHT = 0.20
 
 # -----------------------------------------------------------------------------
 # Scoring robustness settings (sector + dispersion)
@@ -237,19 +313,26 @@ TECHNICAL_LOOKBACK_DAYS = 300
 # Maximum walk-forward training window, in years.
 # The pipeline will try this maximum and, if it does not meet minimum test coverage,
 # will progressively reduce it down to WALKFORWARD_TRAIN_MIN_YEARS.
-# Set to 5 to match the empirically-observed optimal window: all production folds
-# already converge to 5Y when the dataset covers ~5Y of quarterly snapshots.
-# 5Y captures COVID crash (2020), recovery (2021), rate hike cycle (2022), and
-# AI-bull market (2023-24) — a diverse set of regimes sufficient for
-# generalisation without introducing factor-decay noise from pre-2020 markets.
-WALKFORWARD_TRAIN_LOOKBACK_YEARS = 5
+# Current default favors long-memory training (12Y -> 8Y fallback) because the
+# latest comparative runs showed better alpha stability and Sharpe versus the
+# shorter 6Y configuration.
+WALKFORWARD_TRAIN_LOOKBACK_YEARS = 12
 # Lower bound for dynamic walk-forward training window.
-# 3Y is the minimum to maintain ~4,800 training observations (3Y × 4Q × 400
-# tickers) while still covering a meaningful slice of market history.
-WALKFORWARD_TRAIN_MIN_YEARS = 3
+# 8Y preserves regime diversity while still keeping enough eligible tickers in
+# recent folds under the minimum test coverage constraint.
+WALKFORWARD_TRAIN_MIN_YEARS = 8
 
-# Test quarters per fold (always 1)
-WALKFORWARD_TEST_QUARTERS = 1
+# Debug output profile:
+# - "focused": keep only high-value artifacts for training/test and TP/SL debugging.
+# - "full": keep every available artifact.
+DEBUG_OUTPUT_PROFILE = "focused"
+
+# Optional detailed artifacts (typically only useful with DEBUG_OUTPUT_PROFILE="full").
+EXPORT_TP_SL_UNIVERSE_MATRIX = False
+EXPORT_GLOBAL_TP_SL_UNIVERSE_MATRIX = False
+EXPORT_SNAPSHOT_AGENT_AUDITS = False
+EXPORT_ALL_FOLDS_SCORES = False
+EXPORT_DETAILED_TRADES_REPORT = False
 
 # Minimum companies in a fold test universe.
 # Computed dynamically as a percentage of the total ticker universe.
@@ -514,8 +597,9 @@ BEAR_FEATURE_EXCLUDE = [
 
 # ── SentimentAgent (Random Forest) ───────────────────────────────────────────
 # Enables/disables the standalone sentiment agent in the base stack.
-# Disabled by default because this signal is often sparse/neutral in current data.
-ENABLE_SENTIMENT_AGENT = True
+# Empirically shown to hurt alpha: 10.44% without vs 9.94% with (8-scenario analysis Q3-Q4 2025).
+# Disabled by default to improve signal quality.
+ENABLE_SENTIMENT_AGENT = False
 SENTIMENT_N_ESTIMATORS    = 200
 SENTIMENT_MAX_DEPTH       = 6
 SENTIMENT_MIN_SAMPLES_LEAF = 5
@@ -656,6 +740,14 @@ META_FEATURE_COLUMNS = [
   "sentiment_score",
   "sector_score",
   "regime_adjusted_score",
+  "rules_consensus_signal",
+  "rules_consensus_confidence",
+  "agent_score_mean",
+  "agent_score_std",
+  "agent_disagreement",
+  "bullish_agents",
+  "bearish_agents",
+  "agent_contradiction_flag",
 
   # Sector-relative percentile ranks (3 non-redundant angles)
   "fcf_yield_rank_sector",    # cheapness vs sector (robust to earnings distortion)
@@ -786,6 +878,53 @@ ALPHA_META_RISK_BLEND = 0.15
 #               + MOMENTUM_DEEP_BLEND_WEIGHT * TFT_score
 MOMENTUM_DEEP_BLEND_WEIGHT = 0.35
 
+# ── Agent rule learning (explicit pattern mining) ───────────────────────────
+# When enabled, each base agent mines historical TP/SL rules from its own
+# feature universe (single-feature ranges and feature-pair interactions).
+# The resulting rule signal is blended with model probabilities at inference.
+ENABLE_AGENT_RULE_ENGINE = True
+
+# Number of quantile bins used to discretize each metric for rule discovery.
+AGENT_RULE_N_BINS = 5
+
+# Minimum samples required for a rule candidate to be considered valid.
+AGENT_RULE_MIN_SAMPLES = 45
+
+# Minimum absolute uplift vs global TP rate required to keep a rule.
+AGENT_RULE_MIN_EDGE = 0.035
+
+# Minimum temporal stability required to keep a mined rule.
+# Stability is estimated from quarter-to-quarter variance of rule hit-rate.
+AGENT_RULE_MIN_STABILITY = 0.52
+
+# Maximum number of strongest rules kept per agent and fold.
+AGENT_RULE_MAX_RULES = 40
+
+# Maximum number of top features considered for pairwise interaction rules.
+AGENT_RULE_MAX_PAIR_FEATURES = 7
+
+# Blend intensity for rule signal over model probability.
+# final = clip(model_proba + AGENT_RULE_BLEND * rule_signal, 0, 1)
+AGENT_RULE_BLEND = 0.22
+
+# Minimum number of training samples a sector must have to receive its own
+# independent rule set.  Sectors below this threshold are pooled together
+# under an "_other" group so their data is not wasted.
+AGENT_RULE_SECTOR_MIN_SAMPLES = 80
+
+# OOF rule-quality gate: downweights per-agent rule telemetry when the
+# out-of-fold signal quality is weak or inverted.
+RULE_QUALITY_GATE_ENABLED = True
+
+# Minimum OOF quality required to keep a non-zero rule contribution.
+RULE_QUALITY_MIN_IC = 0.015
+RULE_QUALITY_MIN_SPREAD = 0.0
+RULE_QUALITY_MIN_STABILITY = 0.45
+
+# Reference scales used to map good rule quality toward multiplier ~= 1.0.
+RULE_QUALITY_REF_IC = 0.08
+RULE_QUALITY_REF_SPREAD = 0.10
+
 
 
 # =============================================================================
@@ -801,10 +940,12 @@ RANDOM_SEED = 42
 # --- Signal generation (take-profit / stop-loss) ----------------------------
 
 # Baseline take-profit percentage applied when agent score == 0.5
-TP_SL_BASE_TP = 0.08       # 8 %
+# Raised to 15% for 12-month holding: 8% was calibrated for quarterly windows.
+TP_SL_BASE_TP = 0.15       # 15 %
 
 # Baseline stop-loss percentage applied when agent score == 0.5
-TP_SL_BASE_SL = 0.05       # 5 %
+# Raised to 10% for 12-month holding.
+TP_SL_BASE_SL = 0.10       # 10 %
 
 # Maximum shift in TP as score moves from 0.5 → 1.0 (or 0.5 → 0.0)
 TP_SL_TP_SENSITIVITY = 0.10
@@ -812,11 +953,13 @@ TP_SL_TP_SENSITIVITY = 0.10
 # Maximum shift in SL as score moves from 0.5 → 1.0 (or 0.5 → 0.0)
 TP_SL_SL_SENSITIVITY = 0.04
 
-# Hard bounds on TP and SL percentages
-TP_SL_MIN_TP = 0.02
-TP_SL_MAX_TP = 0.25
-TP_SL_MIN_SL = 0.01
-TP_SL_MAX_SL = 0.15
+# Hard bounds on TP and SL percentages — calibrated for 12-month holding.
+# S&P500 stocks can gain 40-80% in a strong year and drop 25-40% in severe corrections.
+# Previous MAX_TP=30% was cutting off the natural upside that drives most alpha.
+TP_SL_MIN_TP = 0.08
+TP_SL_MAX_TP = 0.55
+TP_SL_MIN_SL = 0.08
+TP_SL_MAX_SL = 0.35
 
 # --- Confidence model -------------------------------------------------------
 
@@ -827,10 +970,10 @@ TP_SL_CONFIDENCE_CALIBRATION_WEIGHT = 0.50
 # --- Portfolio construction -------------------------------------------------
 
 # Minimum stocks required to invest (0 candidates → no investment)
-TP_SL_MIN_STOCKS = 4
+TP_SL_MIN_STOCKS = 3
 
 # Maximum portfolio size
-TP_SL_MAX_STOCKS = 8
+TP_SL_MAX_STOCKS = 7
 
 # Maximum stocks from the same GICS sector in the portfolio
 TP_SL_SECTOR_CAP = 3
@@ -842,7 +985,8 @@ TP_SL_EV_THRESHOLD = 0.0
 # --- Backtesting engine -----------------------------------------------------
 
 # Maximum calendar days to hold a position before forcing closure ("NONE")
-TP_SL_MAX_HOLDING_DAYS = 90
+# 365 days matches the full 12-month holding period window.
+TP_SL_MAX_HOLDING_DAYS = 365
 
 # --- Agent weight tracker ---------------------------------------------------
 
@@ -854,4 +998,78 @@ TP_SL_WEIGHT_PRIOR = 0.50
 
 # Floor weight so every agent stays active (prevents weight collapse)
 TP_SL_WEIGHT_MIN = 0.05
+
+# --- TP/SL edge overlay (fold-level, no leakage) ----------------------------
+
+# If True, adjusts test-fold confidence using each ticker's historical
+# TP-before-SL behavior observed only in the train window of that fold.
+TP_EDGE_ENABLE = True
+
+# Bayesian prior strength used to estimate ticker TP probability.
+# Higher values mean stronger pull toward neutral 0.5 when few observations.
+TP_EDGE_PRIOR_STRENGTH = 10.0
+
+# Reliability shrink factor by number of historical observations.
+# reliability = sqrt(n / (n + TP_EDGE_RELIABILITY_K))
+TP_EDGE_RELIABILITY_K = 12.0
+
+# Outcome score for NONE when estimating TP edge.
+# TP=1.0, SL=0.0, NONE=TP_EDGE_NONE_SCORE
+TP_EDGE_NONE_SCORE = 0.40
+
+# Confidence overlay intensity applied to the model score.
+# adjusted_conf = clip(conf + TP_EDGE_CONFIDENCE_BLEND * historical_tp_edge)
+# [Batch 20260430] Lowered from 0.25 → 0.10 (winner in round-3 sensitivity sweep, +5.7 bps).
+TP_EDGE_CONFIDENCE_BLEND = 0.10
+
+# Penalization for overly ambitious TP levels vs historical TP reach.
+# feasibility = clip(1 - penalty * max(tp/stretch_ref - 1, 0), min, 1)
+TP_EDGE_TP_STRETCH_PENALTY = 0.60
+
+# Minimum feasibility floor for TP stretch penalization.
+TP_EDGE_MIN_FEASIBILITY = 0.35
+
+# Rule signal contribution in ticker-level strategy ranking.
+# risk_benefit_score is multiplied by (1 + weight * rules_consensus_signal).
+TP_SL_RULE_SIGNAL_RBS_WEIGHT = 0.25
+
+# Minimum holding fraction before TP/SL logic activates.
+# For a 12-month holding period, 0.25 → first 3 months are a grace period
+# where neither TP nor SL can trigger.  Prevents noise-driven early exits
+# caused by normal short-term volatility right after entry.
+TP_SL_GRACE_PERIOD_FRACTION = 0.5
+
+# --- Trailing stop (TP-converted-SL) ----------------------------------------
+
+# Once the price crosses the TP level, the position is NOT closed.
+# Instead, the TP becomes a hard floor for a trailing stop that ratchets up
+# each TP_SL_TRAILING_REVIEW_DAYS calendar days based on the running peak.
+# The trailing stop never moves down; it exits with outcome "TP" when hit.
+#
+# Review interval in calendar days (default 30 = monthly).
+TP_SL_TRAILING_REVIEW_DAYS = 30
+
+# Quantile of the rolling-peak drawdown distribution used to set the trailing
+# distance per ticker.  Higher quantile = wider trailing stop = more tolerance.
+# 0.65: the trailing stop is set at the 65th percentile of historical pullbacks
+# from rolling peak, so the stock would need an unusually large pullback
+# (bigger than 65% of historical ones) to trigger the stop prematurely.
+TP_SL_TRAILING_DRAWDOWN_QUANTILE = 0.65
+
+# Fold-level TP/SL strategy fine-tuning loop. If the best base strategy has
+# weak utility/hit-rate, evaluator tries relaxed variants automatically.
+TP_SL_ENABLE_STRATEGY_FINE_TUNING = True
+TP_SL_FINE_TUNE_MAX_RELAX_STEPS = 2
+TP_SL_FINE_TUNE_MIN_HIT_RATE = 0.48
+TP_SL_FINE_TUNE_MIN_UTILITY = 0.0
+
+# Final ticker selection preferences: prioritize realizable TP with high
+# confidence over extreme but unlikely targets.
+TP_SL_MIN_ACCEPTABLE_TP = 0.12
+TP_SL_SELECTION_CERTAINTY_WEIGHT = 0.35
+TP_SL_SELECTION_TP_QUALITY_WEIGHT = 0.25
+
+
+# Apply optional runtime overrides after all defaults are declared.
+_apply_environment_overrides(globals())
 

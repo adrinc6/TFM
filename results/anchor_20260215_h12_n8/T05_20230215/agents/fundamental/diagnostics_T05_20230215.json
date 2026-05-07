@@ -1,0 +1,278 @@
+{
+  "agent": "fundamental",
+  "timestamp": "2026-05-07T07:00:49.320200",
+  "fold": "T05_20230215",
+  "selected_base_features": [
+    "revenue_yoy_growth",
+    "current_ratio",
+    "interest_coverage",
+    "gross_margin",
+    "ebitda_margin",
+    "roa",
+    "debt_equity",
+    "fcf_yoy_growth",
+    "operating_margin",
+    "fcf_margin"
+  ],
+  "n_base_features": 10,
+  "n_model_features": 31,
+  "best_model": "xgboost",
+  "cv_summary": {
+    "logistic": {
+      "mean_auc": 0.5255576400195233,
+      "std_auc": 0.024682329767195053
+    },
+    "random_forest": {
+      "mean_auc": 0.5326161042731975,
+      "std_auc": 0.024700918087774585
+    },
+    "gradient_boosting": {
+      "mean_auc": 0.5295397160166871,
+      "std_auc": 0.025061615755822404
+    },
+    "xgboost": {
+      "mean_auc": 0.5337442778090002,
+      "std_auc": 0.025251428056748983
+    }
+  },
+  "top_features": {
+    "revenue_yoy_growth__pct_universe": 0.062099356204271317,
+    "interest_coverage__pct_universe": 0.062072865664958954,
+    "gross_margin__pct_universe": 0.05601787194609642,
+    "fcf_yoy_growth__pct_universe": 0.04343338683247566,
+    "ebitda_margin": 0.04211748018860817,
+    "operating_margin": 0.039587363600730896,
+    "interest_coverage": 0.03732002526521683,
+    "interest_coverage__pct_sector": 0.03504722937941551,
+    "fcf_yoy_growth__pct_sector": 0.034840650856494904,
+    "revenue_yoy_growth": 0.034602925181388855,
+    "gross_margin": 0.03443476930260658,
+    "fcf_margin__pct_universe": 0.03229403868317604,
+    "debt_equity__pct_sector": 0.030508100986480713,
+    "operating_margin__pct_universe": 0.029667649418115616,
+    "gross_margin__pct_sector": 0.029229722917079926
+  },
+  "rule_engine_enabled": true,
+  "rule_count": 1081,
+  "global_tp_rate": 0.48060083524181596,
+  "rule_blend": 0.22,
+  "sector_rule_counts": {
+    "Technology": 40,
+    "Financials": 40,
+    "Health Care": 40,
+    "Utilities": 40,
+    "Real Estate": 40,
+    "Consumer Discretionary": 40,
+    "Consumer Staples": 40,
+    "Hotels, Restaurants & Leisure": 40,
+    "Machinery": 40,
+    "Industrials": 40,
+    "Consumer products": 40,
+    "Energy": 40,
+    "Life Sciences Tools & Services": 40,
+    "Materials": 40,
+    "Electrical Equipment": 40,
+    "Communication Services": 40,
+    "Professional Services": 40,
+    "Telecommunication": 40,
+    "Airlines": 40,
+    "Road & Rail": 40,
+    "Commercial Services & Supplies": 40,
+    "Textiles, Apparel & Luxury Goods": 40,
+    "Building": 28,
+    "Packaging": 32,
+    "Communications": 29,
+    "Construction": 26,
+    "Metals & Mining": 17,
+    "Distributors": 29,
+    "Healthcare": 11,
+    "Trading Companies & Distributors": 1,
+    "Tobacco": 8,
+    "Industrial Conglomerates": 11,
+    "_other": 9
+  },
+  "top_rules": [
+    {
+      "type": "single",
+      "sector": "Life Sciences Tools & Services",
+      "features": [
+        "revenue_yoy_growth_trend_4q"
+      ],
+      "bins": [
+        4
+      ],
+      "support": 87,
+      "win_rate": 0.26436781609195403,
+      "edge": -0.28271738570176796,
+      "stability": 0.85,
+      "weight": 1.4936687317327613,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Technology",
+      "features": [
+        "operating_margin_trend_4q",
+        "ebitda_margin_trend_4q"
+      ],
+      "bins": [
+        2,
+        1
+      ],
+      "support": 99,
+      "win_rate": 0.2727272727272727,
+      "edge": -0.2488572879634332,
+      "stability": 0.55,
+      "weight": 1.2388586063057554,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Life Sciences Tools & Services",
+      "features": [
+        "operating_margin_trend_4q",
+        "ebitda_margin_trend_4q"
+      ],
+      "bins": [
+        4,
+        4
+      ],
+      "support": 69,
+      "win_rate": 0.2898550724637681,
+      "edge": -0.25723012932995387,
+      "stability": 0.55,
+      "weight": 1.1813610999962243,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Communication Services",
+      "features": [
+        "ebitda_margin_trend_4q",
+        "operating_margin"
+      ],
+      "bins": [
+        0,
+        0
+      ],
+      "support": 46,
+      "win_rate": 0.8260869565217391,
+      "edge": 0.278383776309725,
+      "stability": 0.55,
+      "weight": 1.1586359376397013,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Communication Services",
+      "features": [
+        "operating_margin_trend_4q",
+        "operating_margin"
+      ],
+      "bins": [
+        0,
+        0
+      ],
+      "support": 46,
+      "win_rate": 0.8260869565217391,
+      "edge": 0.278383776309725,
+      "stability": 0.55,
+      "weight": 1.1586359376397013,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Real Estate",
+      "features": [
+        "roa_delta_8q",
+        "interest_coverage_momentum_4q"
+      ],
+      "bins": [
+        4,
+        4
+      ],
+      "support": 47,
+      "win_rate": 0.14893617021276595,
+      "edge": -0.27512215299501047,
+      "stability": 0.55,
+      "weight": 1.1513224624980327,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Financials",
+      "features": [
+        "interest_coverage_delta_8q",
+        "operating_margin__pct_sector"
+      ],
+      "bins": [
+        1,
+        2
+      ],
+      "support": 115,
+      "win_rate": 0.7217391304347827,
+      "edge": 0.21253667644705265,
+      "stability": 0.6050369140428995,
+      "weight": 1.1433036650122013,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Health Care",
+      "features": [
+        "revenue_yoy_growth_trend_4q",
+        "interest_coverage_delta_4q"
+      ],
+      "bins": [
+        4,
+        3
+      ],
+      "support": 50,
+      "win_rate": 0.3,
+      "edge": -0.2192616372391653,
+      "stability": 0.8125,
+      "weight": 1.1401253000663945,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Communication Services",
+      "features": [
+        "ebitda_margin_trend_4q",
+        "operating_margin_trend_4q"
+      ],
+      "bins": [
+        0,
+        0
+      ],
+      "support": 53,
+      "win_rate": 0.8113207547169812,
+      "edge": 0.26361757450496703,
+      "stability": 0.55,
+      "weight": 1.1367431693209193,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Communication Services",
+      "features": [
+        "ebitda_margin_trend_4q",
+        "ebitda_margin"
+      ],
+      "bins": [
+        0,
+        0
+      ],
+      "support": 45,
+      "win_rate": 0.8222222222222222,
+      "edge": 0.27451904201020805,
+      "stability": 0.55,
+      "weight": 1.1361688008023612,
+      "requires_temporal": true
+    }
+  ],
+  "last_train_metrics": {
+    "best_cv_auc": 0.5337442778090002,
+    "n_features": 31.0
+  }
+}

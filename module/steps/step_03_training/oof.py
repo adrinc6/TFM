@@ -105,6 +105,12 @@ def generate_oof_scores(
     for ag_name, cfg in agents_config.items():
         score_col = f"{ag_name}_score"
         oof_vals  = pd.Series(np.nan, index=X.index, name=score_col)
+        rule_signal_col = f"{ag_name}_rule_signal"
+        rule_hits_col = f"{ag_name}_rule_hits"
+        rule_conf_col = f"{ag_name}_rule_confidence"
+        oof_rule_signal = pd.Series(np.nan, index=X.index, name=rule_signal_col)
+        oof_rule_hits = pd.Series(np.nan, index=X.index, name=rule_hits_col)
+        oof_rule_conf = pd.Series(np.nan, index=X.index, name=rule_conf_col)
         log.info(
             "  [OOF] %s: generating anti-leakage scores (%d quarter-level temporal splits)",
             ag_name, effective_splits,
@@ -144,7 +150,45 @@ def generate_oof_scores(
 
             oof_vals.loc[val_mask] = preds.reindex(X_val.index).values
 
+            if getattr(agent, "is_trained", False) and hasattr(agent, "get_last_rule_details"):
+                try:
+                    details = agent.get_last_rule_details()
+                    rs = pd.to_numeric(pd.Series(details.get("rule_signal"), index=X_val.index), errors="coerce").fillna(0.0)
+                    rh = pd.to_numeric(pd.Series(details.get("rule_hits"), index=X_val.index), errors="coerce").fillna(0.0)
+                    rc = pd.to_numeric(pd.Series(details.get("rule_confidence"), index=X_val.index), errors="coerce").fillna(0.0)
+                    oof_rule_signal.loc[val_mask] = rs.reindex(X_val.index).values
+                    oof_rule_hits.loc[val_mask] = rh.reindex(X_val.index).values
+                    oof_rule_conf.loc[val_mask] = rc.reindex(X_val.index).values
+                except Exception:
+                    # Keep OOF robust when an agent does not provide rule telemetry.
+                    pass
+
         oof[score_col] = oof_vals.fillna(float(fallback_score))
+        if not oof_rule_signal.isna().all():
+            oof[rule_signal_col] = oof_rule_signal.fillna(0.0)
+            oof[rule_hits_col] = oof_rule_hits.fillna(0.0)
+            oof[rule_conf_col] = oof_rule_conf.fillna(0.0)
+
+            # Validate OOF rule signal quality: log IC (Spearman) between rule
+            # signal and actual outcome.  Positive IC confirms rules are
+            # predictive out-of-fold; negative IC is a warning sign of
+            # overfitting or inverted labelling.
+            try:
+                y_num = pd.to_numeric(y.reindex(oof_rule_signal.index), errors="coerce")
+                sig_num = pd.to_numeric(oof_rule_signal, errors="coerce")
+                valid_mask = y_num.notna() & sig_num.notna()
+                n_valid = int(valid_mask.sum())
+                if n_valid >= 30:
+                    ic = float(y_num[valid_mask].corr(sig_num[valid_mask], method="spearman"))
+                    log.info(
+                        "  [OOF/RuleIC] %s: rule_signal Spearman IC=%.4f (n=%d) — %s",
+                        ag_name, ic, n_valid,
+                        "predictive ✓" if ic > 0.02 else ("weak/noise" if abs(ic) <= 0.02 else "inverted ⚠"),
+                    )
+                else:
+                    log.debug("  [OOF/RuleIC] %s: not enough valid pairs for IC (%d)", ag_name, n_valid)
+            except Exception:
+                pass
 
     # ── Sector agent (OOF) ────────────────────────────────────────────────────
     if sector_map is not None:
@@ -177,5 +221,12 @@ def generate_oof_scores(
             sector_oof.loc[val_mask] = preds.reindex(X_val.index).values
 
         oof["sector_score"] = sector_oof.fillna(0.5)
+
+    rule_sig_cols = [c for c in oof.keys() if c.endswith("_rule_signal")]
+    if rule_sig_cols:
+        oof["rules_consensus_signal"] = pd.concat([oof[c] for c in rule_sig_cols], axis=1).mean(axis=1)
+    rule_conf_cols = [c for c in oof.keys() if c.endswith("_rule_confidence")]
+    if rule_conf_cols:
+        oof["rules_consensus_confidence"] = pd.concat([oof[c] for c in rule_conf_cols], axis=1).mean(axis=1)
 
     return oof

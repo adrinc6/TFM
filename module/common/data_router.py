@@ -286,6 +286,75 @@ class DataRouter:
             log.warning(f"[DataRouter] Error loading sp500: {e}")
             return None
 
+    def load_macro_features(self, as_of: pd.Timestamp) -> dict:
+        """Load macro context features as of a given date (no look-ahead).
+
+        Returns a dict with keys: vix, yield_curve,
+        sp500_momentum_3m, sp500_momentum_6m, sp500_momentum_12m.
+        Missing data is returned as 0.0.
+        """
+        macro_dir = self.data_dir / "_macro"
+        result = {
+            "vix": 0.0,
+            "yield_curve": 0.0,
+            "sp500_momentum_3m": 0.0,
+            "sp500_momentum_6m": 0.0,
+            "sp500_momentum_12m": 0.0,
+        }
+
+        def _load_series(filename: str) -> pd.Series:
+            path = macro_dir / filename
+            if not path.exists():
+                return pd.Series(dtype=float)
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                records = data.get("data", [])
+                if not records:
+                    return pd.Series(dtype=float)
+                df = pd.DataFrame(records)
+                df["date"] = pd.to_datetime(df["date"])
+                df = df.set_index("date").sort_index()
+                col = "close" if "close" in df.columns else df.columns[0]
+                return pd.to_numeric(df[col], errors="coerce").dropna()
+            except Exception as e:
+                log.debug(f"[DataRouter] macro {filename}: {e}")
+                return pd.Series(dtype=float)
+
+        as_of_ts = pd.Timestamp(as_of)
+
+        # VIX — lower is calmer, higher is stress
+        vix = _load_series("vix.json")
+        if not vix.empty:
+            vix_past = vix.loc[vix.index <= as_of_ts]
+            if not vix_past.empty:
+                result["vix"] = float(vix_past.iloc[-1])
+
+        # Yield curve = US10Y - US2Y spread
+        us10y = _load_series("us10y.json")
+        us2y = _load_series("us2y.json")
+        if not us10y.empty and not us2y.empty:
+            us10y_past = us10y.loc[us10y.index <= as_of_ts]
+            us2y_past = us2y.loc[us2y.index <= as_of_ts]
+            if not us10y_past.empty and not us2y_past.empty:
+                result["yield_curve"] = float(us10y_past.iloc[-1]) - float(us2y_past.iloc[-1])
+
+        # SP500 momentum
+        sp = _load_series("sp500.json")
+        if not sp.empty:
+            sp_past = sp.loc[sp.index <= as_of_ts]
+            if not sp_past.empty:
+                p_now = float(sp_past.iloc[-1])
+                for months, key in [(3, "sp500_momentum_3m"), (6, "sp500_momentum_6m"), (12, "sp500_momentum_12m")]:
+                    lag_ts = as_of_ts - pd.DateOffset(months=months)
+                    sp_lag = sp.loc[sp.index <= lag_ts]
+                    if not sp_lag.empty:
+                        p_lag = float(sp_lag.iloc[-1])
+                        if p_lag > 0:
+                            result[key] = (p_now / p_lag) - 1.0
+
+        return result
+
     # ── Temporal alignment helpers (no look-ahead) ────────────────────────────
 
     def get_fundamental_snapshot(

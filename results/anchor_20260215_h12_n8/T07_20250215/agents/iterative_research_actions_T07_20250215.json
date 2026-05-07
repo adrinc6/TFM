@@ -1,0 +1,37 @@
+{
+  "fold": "T07_20250215",
+  "behavior_summary": {
+    "agent_score_mean": 0.47159373264908255,
+    "agent_score_std": 0.1017414968246405,
+    "agent_disagreement": 0.10881917657952205,
+    "bullish_agents": 0.6646133814102564,
+    "bearish_agents": 1.5221354166666667,
+    "agent_contradiction_flag": 0.1282051282051282
+  },
+  "actions": [
+    {
+      "priority": "medium",
+      "type": "rule_engine",
+      "issue": "weak_rule_signal",
+      "rule_col": "fundamental_rule_signal",
+      "details": "ic=-0.0202, spread=-0.0476",
+      "recommendation": "Increase min support/edge or trim unstable candidate features in this agent rulebook."
+    },
+    {
+      "priority": "medium",
+      "type": "rule_engine",
+      "issue": "weak_rule_signal",
+      "rule_col": "momentum_rule_signal",
+      "details": "ic=-0.0107, spread=-0.0255",
+      "recommendation": "Increase min support/edge or trim unstable candidate features in this agent rulebook."
+    },
+    {
+      "priority": "medium",
+      "type": "rule_engine",
+      "issue": "weak_rule_signal",
+      "rule_col": "valuation_rule_signal",
+      "details": "ic=-0.0239, spread=-0.0680",
+      "recommendation": "Increase min support/edge or trim unstable candidate features in this agent rulebook."
+    }
+  ]
+}

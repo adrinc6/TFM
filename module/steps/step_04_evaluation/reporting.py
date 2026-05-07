@@ -300,6 +300,14 @@ def build_fold_scores_df(
 
     for ticker, row in ticker_rows.items():
         final_score = float(row.get("final_score", 0.5))
+        confidence_up = float(pd.to_numeric(row.get("confidence_up", row.get("confidence", final_score)), errors="coerce"))
+        if not np.isfinite(confidence_up):
+            confidence_up = final_score
+        confidence_up = float(np.clip(confidence_up, 0.0, 1.0))
+        confidence_tp_vs_sl = float(pd.to_numeric(row.get("confidence_tp_vs_sl", row.get("historical_tp_prob", confidence_up)), errors="coerce"))
+        if not np.isfinite(confidence_tp_vs_sl):
+            confidence_tp_vs_sl = confidence_up
+        confidence_tp_vs_sl = float(np.clip(confidence_tp_vs_sl, 0.0, 1.0))
         audit = audit_map.get(ticker, {})
 
         rec: Dict = {
@@ -314,7 +322,9 @@ def build_fold_scores_df(
             "final_score":      round(final_score, 4),
             "final_score_raw":  round(float(row.get("final_score_raw", final_score)), 4),
             "prediction":       "Outperform" if final_score >= 0.5 else "Underperform",
-            "confidence":       "High" if abs(final_score - 0.5) > 0.25 else "Moderate",
+            "confidence":       "High" if abs(confidence_up - 0.5) > 0.25 else "Moderate",
+            "confidence_up":    round(confidence_up, 4),
+            "confidence_tp_vs_sl": round(confidence_tp_vs_sl, 4),
             "common_score":     round(final_score, 4),
             "common_label":     "Outperform" if final_score >= 0.5 else "Underperform",
 
@@ -567,46 +577,7 @@ def export_quarter_agent_feature_audit(
     return path
 
 
-def export_all_folds_scores(
-    agents_results_dir: str,
-) -> Optional[Path]:
-    """Concatenates all quarter_*_scores.csv files into all_folds_scores.csv.
-
-    Should be called at the end of the pipeline after all folds complete.
-
-    Args:
-        agents_results_dir (str): Root output directory containing per-fold CSV files.
-
-    Returns:
-        Optional[Path]: Path to the consolidated CSV, or None if no fold files
-            were found.
-    """
-    out_dir = Path(agents_results_dir)
-    fold_files = sorted(out_dir.glob("quarter_*_scores.csv"))
-    if not fold_files:
-        log.warning("[FoldReport] No quarter_*_scores.csv files found to consolidate.")
-        return None
-
-    dfs = []
-    for f in fold_files:
-        try:
-            dfs.append(pd.read_csv(f, encoding="utf-8"))
-        except Exception as e:
-            log.warning(f"[FoldReport] Error reading {f.name}: {e}")
-
-    if not dfs:
-        return None
-
-    combined = pd.concat(dfs, ignore_index=True)
-    path = out_dir / "all_folds_scores.csv"
-    combined.to_csv(path, index=False, encoding="utf-8")
-    log.info(
-        f"[FoldReport] Consolidated CSV for all folds: "
-        f"{len(combined)} rows | "
-        f"{combined['year_quarter'].nunique()} quarters | "
-        f"{combined['ticker'].nunique()} unique tickers â†’ {path.name}"
-    )
-    return path
+# NOTE: `export_all_folds_scores` removed — not referenced elsewhere in the codebase.
 
 log = logging.getLogger(__name__)
 

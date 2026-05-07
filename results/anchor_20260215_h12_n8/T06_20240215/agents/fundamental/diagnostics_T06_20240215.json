@@ -1,0 +1,278 @@
+{
+  "agent": "fundamental",
+  "timestamp": "2026-05-07T09:22:45.938713",
+  "fold": "T06_20240215",
+  "selected_base_features": [
+    "current_ratio",
+    "revenue_yoy_growth",
+    "fcf_yoy_growth",
+    "piotroski_fscore",
+    "interest_coverage",
+    "ebitda_margin",
+    "roa",
+    "operating_margin",
+    "fcf_margin",
+    "debt_equity"
+  ],
+  "n_base_features": 10,
+  "n_model_features": 31,
+  "best_model": "gradient_boosting",
+  "cv_summary": {
+    "logistic": {
+      "mean_auc": 0.5174410649443513,
+      "std_auc": 0.03629347161822664
+    },
+    "random_forest": {
+      "mean_auc": 0.5256230655916923,
+      "std_auc": 0.01953096754641235
+    },
+    "gradient_boosting": {
+      "mean_auc": 0.5308403175501656,
+      "std_auc": 0.025951652490827506
+    },
+    "xgboost": {
+      "mean_auc": 0.528181622349537,
+      "std_auc": 0.024280851264867728
+    }
+  },
+  "top_features": {
+    "interest_coverage__pct_universe": 0.1929955941547376,
+    "interest_coverage": 0.10075678067220255,
+    "revenue_yoy_growth": 0.08381710784585505,
+    "revenue_yoy_growth__pct_universe": 0.06837369250593213,
+    "ebitda_margin": 0.06332870664767798,
+    "interest_coverage__pct_sector": 0.05438960755544031,
+    "fcf_margin__pct_universe": 0.0535984096232974,
+    "debt_equity__pct_universe": 0.050423498762659696,
+    "rule_confidence": 0.04660381969316234,
+    "operating_margin": 0.03623249337491131,
+    "current_ratio": 0.031199756290138145,
+    "ebitda_margin__pct_universe": 0.029338962537429004,
+    "current_ratio__pct_universe": 0.024424293020250797,
+    "piotroski_fscore__pct_universe": 0.02154763523742188,
+    "current_ratio__pct_sector": 0.020156804252111384
+  },
+  "rule_engine_enabled": true,
+  "rule_count": 1102,
+  "global_tp_rate": 0.4951543431442929,
+  "rule_blend": 0.22,
+  "sector_rule_counts": {
+    "Technology": 40,
+    "Health Care": 40,
+    "Financials": 40,
+    "Utilities": 40,
+    "Consumer Discretionary": 40,
+    "Real Estate": 40,
+    "Consumer Staples": 40,
+    "Industrials": 40,
+    "Hotels, Restaurants & Leisure": 40,
+    "Machinery": 40,
+    "Energy": 40,
+    "Electrical Equipment": 40,
+    "Consumer products": 40,
+    "Materials": 40,
+    "Life Sciences Tools & Services": 40,
+    "Communication Services": 40,
+    "Professional Services": 40,
+    "Textiles, Apparel & Luxury Goods": 40,
+    "Road & Rail": 40,
+    "Commercial Services & Supplies": 40,
+    "Building": 36,
+    "Airlines": 24,
+    "Telecommunication": 40,
+    "Packaging": 20,
+    "Communications": 26,
+    "Trading Companies & Distributors": 21,
+    "Construction": 31,
+    "Metals & Mining": 21,
+    "Distributors": 27,
+    "Healthcare": 9,
+    "Tobacco": 12,
+    "Industrial Conglomerates": 12,
+    "_other": 23
+  },
+  "top_rules": [
+    {
+      "type": "single",
+      "sector": "Life Sciences Tools & Services",
+      "features": [
+        "revenue_yoy_growth_trend_4q"
+      ],
+      "bins": [
+        4
+      ],
+      "support": 89,
+      "win_rate": 0.25842696629213485,
+      "edge": -0.30130754698220147,
+      "stability": 0.85,
+      "weight": 1.5998754041117214,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Health Care",
+      "features": [
+        "revenue_yoy_growth_momentum_4q",
+        "fcf_margin_trend_4q"
+      ],
+      "bins": [
+        4,
+        4
+      ],
+      "support": 65,
+      "win_rate": 0.23076923076923078,
+      "edge": -0.3048995590396864,
+      "stability": 0.55,
+      "weight": 1.3808952179255514,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Health Care",
+      "features": [
+        "piotroski_fscore_momentum_4q",
+        "revenue_yoy_growth"
+      ],
+      "bins": [
+        4,
+        4
+      ],
+      "support": 59,
+      "win_rate": 0.23728813559322035,
+      "edge": -0.2983806542156968,
+      "stability": 0.55,
+      "weight": 1.3206287389941962,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Materials",
+      "features": [
+        "debt_equity_trend_4q",
+        "debt_equity"
+      ],
+      "bins": [
+        4,
+        4
+      ],
+      "support": 74,
+      "win_rate": 0.7432432432432432,
+      "edge": 0.26563130294473575,
+      "stability": 0.55,
+      "weight": 1.239755652483871,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Health Care",
+      "features": [
+        "revenue_yoy_growth",
+        "fcf_margin_trend_4q"
+      ],
+      "bins": [
+        4,
+        4
+      ],
+      "support": 62,
+      "win_rate": 0.27419354838709675,
+      "edge": -0.26147524142182044,
+      "stability": 0.5925112236308518,
+      "weight": 1.2134459300357299,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Health Care",
+      "features": [
+        "piotroski_fscore_momentum_4q",
+        "revenue_yoy_growth_delta_4q"
+      ],
+      "bins": [
+        4,
+        4
+      ],
+      "support": 83,
+      "win_rate": 0.3132530120481928,
+      "edge": -0.2224157777607244,
+      "stability": 0.6925061219804647,
+      "weight": 1.1945101789078647,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Materials",
+      "features": [
+        "debt_equity_trend_4q",
+        "debt_equity__pct_sector"
+      ],
+      "bins": [
+        4,
+        4
+      ],
+      "support": 70,
+      "win_rate": 0.7285714285714285,
+      "edge": 0.2509594882729211,
+      "stability": 0.55,
+      "weight": 1.1564105174232655,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Financials",
+      "features": [
+        "debt_equity__pct_sector",
+        "revenue_yoy_growth_delta_2q"
+      ],
+      "bins": [
+        2,
+        4
+      ],
+      "support": 55,
+      "win_rate": 0.2545454545454545,
+      "edge": -0.2616289477048971,
+      "stability": 0.55,
+      "weight": 1.138453557675288,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Health Care",
+      "features": [
+        "revenue_yoy_growth_trend_4q",
+        "revenue_yoy_growth_momentum_4q"
+      ],
+      "bins": [
+        4,
+        4
+      ],
+      "support": 100,
+      "win_rate": 0.35,
+      "edge": -0.1856687898089172,
+      "stability": 0.8125,
+      "weight": 1.1332288799661325,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Consumer products",
+      "features": [
+        "fcf_yoy_growth_delta_4q",
+        "ebitda_margin"
+      ],
+      "bins": [
+        1,
+        3
+      ],
+      "support": 59,
+      "win_rate": 0.2033898305084746,
+      "edge": -0.2494403581707707,
+      "stability": 0.55,
+      "weight": 1.1040196507753215,
+      "requires_temporal": true
+    }
+  ],
+  "last_train_metrics": {
+    "best_cv_auc": 0.5308403175501656,
+    "n_features": 31.0
+  }
+}

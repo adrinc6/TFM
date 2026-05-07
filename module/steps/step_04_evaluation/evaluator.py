@@ -37,6 +37,30 @@ from environment import (
     TP_SL_MAX_TP,
     TP_SL_MIN_SL,
     TP_SL_MAX_SL,
+    TP_EDGE_ENABLE,
+    TP_EDGE_PRIOR_STRENGTH,
+    TP_EDGE_RELIABILITY_K,
+    TP_EDGE_NONE_SCORE,
+    TP_EDGE_CONFIDENCE_BLEND,
+    TP_EDGE_TP_STRETCH_PENALTY,
+    TP_EDGE_MIN_FEASIBILITY,
+    TP_SL_RULE_SIGNAL_RBS_WEIGHT,
+    TP_SL_ENABLE_STRATEGY_FINE_TUNING,
+    TP_SL_FINE_TUNE_MAX_RELAX_STEPS,
+    TP_SL_FINE_TUNE_MIN_HIT_RATE,
+    TP_SL_FINE_TUNE_MIN_UTILITY,
+    TP_SL_MIN_ACCEPTABLE_TP,
+    TP_SL_SELECTION_CERTAINTY_WEIGHT,
+    TP_SL_SELECTION_TP_QUALITY_WEIGHT,
+    TP_SL_GRACE_PERIOD_FRACTION,
+    TP_SL_TRAILING_REVIEW_DAYS,
+    TP_SL_TRAILING_DRAWDOWN_QUANTILE,
+    DEBUG_OUTPUT_PROFILE,
+    EXPORT_TP_SL_UNIVERSE_MATRIX,
+    EXPORT_GLOBAL_TP_SL_UNIVERSE_MATRIX,
+    EXPORT_SNAPSHOT_AGENT_AUDITS,
+    EXPORT_ALL_FOLDS_SCORES,
+    EXPORT_DETAILED_TRADES_REPORT,
 )
 from module.common.asof import assert_no_future_data
 from module.common.data_router import DataRouter
@@ -55,7 +79,6 @@ from module.steps.step_04_evaluation.reporting import (
     build_explanation_candidate_tickers,
     build_fold_scores_df,
     build_selection_audit_df,
-    export_all_folds_scores,
     export_fold_scores,
     export_quarter_agent_feature_audit,
     export_quarter_snapshot_audit,
@@ -146,125 +169,63 @@ def _concat_equity_parts(parts: List[pd.DataFrame]) -> pd.DataFrame:
     )
 
 
-def _prepare_fold_frames(
-
-
-    df: pd.DataFrame,
-    dates: pd.Index,
-    train_start: pd.Timestamp,
-    train_end: pd.Timestamp,
-    test_end: pd.Timestamp,
-) -> tuple[pd.DataFrame, pd.DataFrame]:
-    train_mask = (dates >= train_start) & (dates < train_end)
-    test_mask = (dates >= train_end) & (dates < test_end)
-
-    df_train = df.loc[train_mask]
-    df_test = df.loc[test_mask]
-    df_train = df_train[~df_train.index.duplicated(keep="last")]
-    df_test = df_test[~df_test.index.duplicated(keep="last")]
-    return df_train, df_test
-
-
-def _build_filing_date_map(
-    finnhub_data_dir: str,
-
-
-    tickers: List[str],
-) -> Dict[str, Dict[pd.Timestamp, pd.Timestamp]]:
-    out: Dict[str, Dict[pd.Timestamp, pd.Timestamp]] = {}
-    for ticker in tickers:
-        tk = str(ticker)
-        per_ticker: Dict[pd.Timestamp, pd.Timestamp] = {}
-        for file_name in ["financials_reported_quarterly.json", "financials_reported_annual.json"]:
-            path = Path(finnhub_data_dir) / tk / file_name
-            if not path.exists():
-                continue
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    payload = json.load(f)
-            except Exception:
-                log.debug("No se pudo leer %s", path, exc_info=True)
-                continue
-            for item in payload.get("data", []):
-                end_date = item.get("endDate")
-                filed_date = item.get("filedDate") or item.get("acceptedDate")
-                if not end_date or not filed_date:
-                    continue
-                try:
-                    end_ts = pd.Timestamp(end_date).normalize()
-                    filed_ts = pd.Timestamp(filed_date).normalize()
-                except Exception:
-                    continue
-                old = per_ticker.get(end_ts)
-                if old is None or filed_ts > old:
-                    per_ticker[end_ts] = filed_ts
-        out[tk] = per_ticker
-    return out
-
-
 def _prepare_fold_frames_by_filed_quarter(
     df: pd.DataFrame,
-    filing_date_map: Dict[str, Dict[pd.Timestamp, pd.Timestamp]],
-    train_start_quarter: pd.Period,
-    analysis_quarter: pd.Period,
-    fallback_lag_days: int = 45,
+    train_start_date: pd.Timestamp,
+    analysis_date: pd.Timestamp,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series]:
     if df.empty:
 
 
         return df.copy(), df.copy(), pd.Series(dtype="datetime64[ns]")
 
-    # Nuevo modo preferido: panel trimestral continuo por ticker.
-    # Si el dataset trae year_quarter, el split train/test se hace por este campo.
-    if "year_quarter" in df.columns:
-        quarter_series = pd.PeriodIndex(df["year_quarter"], freq="Q")
-        train_mask = (quarter_series >= train_start_quarter) & (quarter_series < analysis_quarter)
-        test_mask = quarter_series == analysis_quarter
+    train_start_date = pd.Timestamp(train_start_date).normalize()
+    analysis_date = pd.Timestamp(analysis_date).normalize()
 
-        df_train = df.loc[train_mask]
-        df_test = df.loc[test_mask]
-        df_train = df_train[~df_train.index.duplicated(keep="last")]
-        df_test = df_test[~df_test.index.duplicated(keep="last")]
+    if "snapshot_date" in df.columns:
+        snapshot_dates = pd.to_datetime(df["snapshot_date"], errors="coerce").dt.normalize()
+    else:
+        snapshot_dates = pd.Series(
+            pd.to_datetime(df.index.get_level_values("date"), errors="coerce").normalize(),
+            index=df.index,
+        )
 
-        # Serie informativa solo para logging/compatibilidad.
-        if "snapshot_date" in df_test.columns:
-            test_snapshot_dates = pd.to_datetime(df_test["snapshot_date"]).copy()
-            test_snapshot_dates.index = df_test.index
-        else:
-            test_snapshot_dates = pd.Series(df_test.index.get_level_values("date").values, index=df_test.index)
-        return df_train, df_test, test_snapshot_dates
+    train_mask = (snapshot_dates >= train_start_date) & (snapshot_dates < analysis_date)
+    train_df = df.loc[train_mask.values].copy() if isinstance(train_mask, pd.Series) else df.loc[train_mask].copy()
 
-    meta = df.reset_index()[["ticker", "date"]].copy()
+    # Test snapshot per ticker = latest available snapshot at or before analysis_date.
+    test_pool_mask = snapshot_dates <= analysis_date
+    test_pool = df.loc[test_pool_mask.values].copy() if isinstance(test_pool_mask, pd.Series) else df.loc[test_pool_mask].copy()
+    if test_pool.empty:
+        return train_df.iloc[0:0], test_pool, pd.Series(dtype="datetime64[ns]")
 
-    def _filed_date(row: pd.Series) -> pd.Timestamp:
-        tk = str(row["ticker"])
-        dt = pd.Timestamp(row["date"]).normalize()
-        filed_dt = filing_date_map.get(tk, {}).get(dt)
-        if filed_dt is not None:
-            return filed_dt
-        return dt + pd.Timedelta(days=max(int(fallback_lag_days), 0))
+    test_snaps = (
+        pd.to_datetime(test_pool["snapshot_date"], errors="coerce").dt.normalize()
+        if "snapshot_date" in test_pool.columns
+        else pd.Series(pd.to_datetime(test_pool.index.get_level_values("date"), errors="coerce").normalize(), index=test_pool.index)
+    )
+    test_pool = test_pool.assign(__snapshot_date_norm=test_snaps.values)
+    test_pool = test_pool.assign(__ticker=test_pool.index.get_level_values("ticker").astype(str).values)
+    test_pool = test_pool.sort_values(["__ticker", "__snapshot_date_norm"])
+    df_test = test_pool.groupby("__ticker", sort=False).tail(1).drop(columns=["__snapshot_date_norm", "__ticker"])
 
-    filed_dates = meta.apply(_filed_date, axis=1)
-    filed_quarters = filed_dates.dt.to_period("Q")
-
-    train_mask = (filed_quarters >= train_start_quarter) & (filed_quarters < analysis_quarter)
-    test_mask = filed_quarters == analysis_quarter
-
-    df_train = df.loc[train_mask.values]
-    df_test = df.loc[test_mask.values]
-    df_train = df_train[~df_train.index.duplicated(keep="last")]
+    train_df = train_df[~train_df.index.duplicated(keep="last")]
     df_test = df_test[~df_test.index.duplicated(keep="last")]
 
-    test_filed_dates = pd.Series(filed_dates[test_mask].values, index=df_test.index)
-    return df_train, df_test, test_filed_dates
+    if "snapshot_date" in df_test.columns:
+        test_snapshot_dates = pd.to_datetime(df_test["snapshot_date"], errors="coerce")
+        test_snapshot_dates.index = df_test.index
+    else:
+        test_snapshot_dates = pd.Series(df_test.index.get_level_values("date").values, index=df_test.index)
+    return train_df, df_test, test_snapshot_dates
 
 
 def _filter_fold_tickers_by_history_span(
     df_train: pd.DataFrame,
     df_test: pd.DataFrame,
-    required_years: int,
+    required_months: int,
 ) -> tuple[pd.DataFrame, pd.DataFrame, list[str]]:
-    """Keep only test tickers with at least required_years of train-history span."""
+    """Keep only test tickers with at least required_months of train-history span."""
     if df_train.empty or df_test.empty:
         return df_train.iloc[0:0], df_test.iloc[0:0], []
 
@@ -279,7 +240,7 @@ def _filter_fold_tickers_by_history_span(
     temp = pd.DataFrame({"ticker": train_tickers.values, "q": train_quarters})
     span = temp.groupby("ticker")["q"].agg(["min", "max"])
     span_quarters = span["max"].astype(int) - span["min"].astype(int) + 1
-    required_quarters = max(1, int(required_years) * 4)
+    required_quarters = max(1, int(np.ceil(max(int(required_months), 1) / 3.0)))
     eligible_train = set(span_quarters[span_quarters >= required_quarters].index.astype(str))
 
     eligible_test = [
@@ -343,16 +304,14 @@ def _filter_test_by_sp500_membership(
 def _extrapolate_missing_snapshots(
     df: pd.DataFrame,
     df_test: pd.DataFrame,
-    analysis_quarter: pd.Period,
-    filing_date_map: Dict[str, Dict[pd.Timestamp, pd.Timestamp]],
+    analysis_date: pd.Timestamp,
     lookback_quarters: int = 4,
-    snapshot_lag_days: int = 0,
 ) -> pd.DataFrame:
     """
-    Extrapolates features for tickers that have no report in analysis_quarter.
+    Extrapolates features for tickers that have no usable snapshot at analysis_date.
     
     If a ticker has at least `lookback_quarters` historical snapshots,
-    the last snapshots prior to analysis_quarter are averaged
+    the last snapshots prior to analysis_date are averaged
     and an "estimated" row is created to add to the test universe.
     
     Returns df_test updated with extrapolated snapshots.
@@ -360,29 +319,32 @@ def _extrapolate_missing_snapshots(
     if df.empty:
         return df_test
     
-    # Tickers already in the test for analysis_quarter
+    analysis_date = pd.Timestamp(analysis_date).normalize()
+
+    # Tickers already in the test for analysis_date
     test_tickers = set(df_test.index.get_level_values("ticker").unique())
     
     # Todos los tickers disponibles
     all_tickers = set(df.index.get_level_values("ticker").unique())
     
-    # Tickers que NO tienen snapshot en analysis_quarter
+    # Tickers que NO tienen snapshot usable en analysis_date
     missing_tickers = all_tickers - test_tickers
     
     extrapolated_rows = []
     
-    analysis_quarter_end = analysis_quarter.end_time.normalize()
-    analysis_quarter_start = analysis_quarter.start_time.normalize()
-    analysis_snapshot_date = analysis_quarter_start + pd.Timedelta(days=max(int(snapshot_lag_days), 0))
+    analysis_snapshot_date = analysis_date
+    analysis_quarter = analysis_date.to_period("Q")
 
     for ticker in missing_tickers:
         # Obtain all historical snapshots for this ticker
         ticker_data = df.loc[df.index.get_level_values("ticker") == ticker].copy()
 
-        # Evitar leakage: solo quarters previos al quarter analizado.
-        if "year_quarter" in ticker_data.columns:
-            ticker_quarters = pd.PeriodIndex(ticker_data["year_quarter"], freq="Q")
-            ticker_data = ticker_data.loc[ticker_quarters < analysis_quarter]
+        # Evitar leakage: usar solo snapshots previos a la fecha analizada.
+        if "snapshot_date" in ticker_data.columns:
+            ticker_snapshot_dates = pd.to_datetime(ticker_data["snapshot_date"], errors="coerce").dt.normalize()
+        else:
+            ticker_snapshot_dates = pd.to_datetime(ticker_data.index.get_level_values("date"), errors="coerce").normalize()
+        ticker_data = ticker_data.loc[ticker_snapshot_dates < analysis_date]
         
         if len(ticker_data) < lookback_quarters:
             # No hay suficiente historia
@@ -412,7 +374,7 @@ def _extrapolate_missing_snapshots(
                 aggregated[col] = last_row[col]
         
         # Create multi-index to add to df_test (ticker, date)
-        new_index = (ticker, analysis_quarter_end)
+        new_index = (ticker, analysis_snapshot_date)
 
         # Forzar metadatos del quarter objetivo para no arrastrar valores del quarter previo.
         aggregated["year_quarter"] = f"{analysis_quarter.year}Q{analysis_quarter.quarter}"
@@ -450,7 +412,12 @@ def _extrapolate_missing_snapshots(
     df_test_extended = pd.concat([df_test, df_extrapolated], axis=0)
     df_test_extended = df_test_extended[~df_test_extended.index.duplicated(keep="first")]
     
-    log.info(f"[Fallback Extrapolation] Added {len(extrapolated_rows)} estimated snapshots (last {lookback_quarters} Q)")
+    log.info(
+        "[Fallback Extrapolation] Added %d estimated snapshots up to %s (last %d Q)",
+        len(extrapolated_rows),
+        analysis_snapshot_date.date(),
+        int(lookback_quarters),
+    )
     
     return df_test_extended
 
@@ -579,7 +546,16 @@ def _prepare_fold_labels(
 
     strategy_candidates: List[Dict[str, object]] = []
     adaptive_profile_cache: Dict[tuple, Dict[str, object]] = {}
-    for s_name in ["conservative", "balanced", "aggressive"]:
+
+    base_strategies = ["conservative", "balanced", "aggressive"]
+    strategy_names = list(base_strategies)
+    max_relax = max(int(TP_SL_FINE_TUNE_MAX_RELAX_STEPS), 0)
+    if bool(TP_SL_ENABLE_STRATEGY_FINE_TUNING) and max_relax > 0:
+        for base in base_strategies:
+            for step in range(1, max_relax + 1):
+                strategy_names.append(f"{base}__relax{step}")
+
+    for s_name in strategy_names:
         strategy_t0 = perf_counter()
         log.info("[TP/SL] Strategy=%s -> generating train adaptive targets...", s_name)
         train_targets = _build_adaptive_tp_sl_targets(
@@ -646,20 +622,50 @@ def _prepare_fold_labels(
     if not strategy_candidates:
         raise ValueError("Fold has no valid TP/SL strategy labels after target generation.")
 
+    base_candidates = [
+        c for c in strategy_candidates if "__relax" not in str(c.get("name", ""))
+    ]
+    base_candidates = sorted(
+        base_candidates,
+        key=lambda x: (float(x.get("utility", -1e9)), float(x.get("hit_rate", -1e9))),
+        reverse=True,
+    )
+
+    use_relaxed = False
+    if base_candidates and bool(TP_SL_ENABLE_STRATEGY_FINE_TUNING):
+        best_base = base_candidates[0]
+        base_utility = float(best_base.get("utility", -1e9))
+        base_hit = float(best_base.get("hit_rate", 0.0))
+        if base_utility < float(TP_SL_FINE_TUNE_MIN_UTILITY) or base_hit < float(TP_SL_FINE_TUNE_MIN_HIT_RATE):
+            use_relaxed = True
+            log.info(
+                "[TP/SL] Fine-tuning activated: base_best=%s utility=%.4f hit_rate=%.2f%% (min_utility=%.4f, min_hit=%.2f%%)",
+                str(best_base.get("name", "")),
+                base_utility,
+                100.0 * base_hit,
+                float(TP_SL_FINE_TUNE_MIN_UTILITY),
+                100.0 * float(TP_SL_FINE_TUNE_MIN_HIT_RATE),
+            )
+
+    if not use_relaxed and base_candidates:
+        strategy_candidates = base_candidates
+
     strategy_candidates = sorted(
         strategy_candidates,
         key=lambda x: (float(x.get("utility", -1e9)), float(x.get("hit_rate", -1e9))),
         reverse=True,
     )
     best = strategy_candidates[0]
-    selected_strategy = str(best["name"])
+    selected_strategy_variant = str(best["name"])
+    selected_strategy = selected_strategy_variant.split("__", 1)[0]
     train_targets = best["train_targets"]
     test_targets = best["test_targets"]
     y_train = best["y_train"]
     y_test = best["y_test"]
     log.info(
-        "[TP/SL] Selected training strategy=%s | utility=%.4f | hit_rate=%.2f%%",
+        "[TP/SL] Selected training strategy=%s (variant=%s) | utility=%.4f | hit_rate=%.2f%%",
         selected_strategy,
+        selected_strategy_variant,
         float(best["utility"]),
         100.0 * float(best["hit_rate"]),
     )
@@ -674,15 +680,18 @@ def _prepare_fold_labels(
     df_train["sl_level"] = pd.to_numeric(train_targets["sl_level"].reindex(df_train.index), errors="coerce")
     df_train["tp_sl_outcome"] = train_targets["outcome"].reindex(df_train.index)
     df_train["tp_sl_strategy"] = selected_strategy
+    df_train["tp_sl_strategy_variant"] = selected_strategy_variant
 
     df_test["tp_level"] = pd.to_numeric(test_targets["tp_level"].reindex(df_test.index), errors="coerce")
     df_test["sl_level"] = pd.to_numeric(test_targets["sl_level"].reindex(df_test.index), errors="coerce")
     df_test["tp_sl_outcome"] = test_targets["outcome"].reindex(df_test.index)
     df_test["tp_sl_strategy"] = selected_strategy
+    df_test["tp_sl_strategy_variant"] = selected_strategy_variant
 
     # Benchmark-relative alpha targets for ranking-sensitive meta training.
     def _benchmark_returns_for_rows(df_part: pd.DataFrame) -> pd.Series:
         idx = df_part.index
+        has_snapshot_date = "snapshot_date" in df_part.columns
         if spy_prices is None or len(spy_prices) == 0:
             return pd.Series(0.0, index=idx, dtype=float)
 
@@ -705,7 +714,8 @@ def _prepare_fold_labels(
 
         bench_map: Dict[pd.Timestamp, float] = {}
         for snap in unique_snaps:
-            entry = snap + pd.Timedelta(days=max(int(lag_days), 0))
+            effective_lag_days = 0 if has_snapshot_date else max(int(lag_days), 0)
+            entry = snap + pd.Timedelta(days=effective_lag_days)
             exit_dt = entry + pd.DateOffset(months=max(int(holding_period_months), 1))
             entry_window = spy_series.loc[spy_series.index <= entry]
             exit_window = spy_series.loc[spy_series.index <= exit_dt]
@@ -783,11 +793,139 @@ def _build_selection_df(preds_scored: pd.DataFrame, selected_tickers: List[str],
 
 def _strategy_quantiles(strategy_name: str) -> tuple[float, float]:
     name = str(strategy_name).strip().lower()
-    if name == "conservative":
-        return 0.40, 0.45
-    if name == "aggressive":
-        return 0.75, 0.75
-    return 0.58, 0.60
+    base = name
+    relax_step = 0
+    if "__relax" in name:
+        parts = name.split("__relax", 1)
+        base = parts[0].strip() or "balanced"
+        try:
+            relax_step = max(int(parts[1]), 0)
+        except Exception:
+            relax_step = 1
+
+    if base == "conservative":
+        q_tp, q_sl = 0.55, 0.45
+    elif base == "aggressive":
+        q_tp, q_sl = 0.80, 0.75
+    else:  # balanced
+        q_tp, q_sl = 0.70, 0.60
+
+    if relax_step > 0:
+        q_tp = float(np.clip(q_tp - (0.05 * relax_step), 0.30, 0.85))
+        q_sl = float(np.clip(q_sl + (0.03 * relax_step), 0.35, 0.90))
+    return float(q_tp), float(q_sl)
+
+
+def _compute_ticker_tp_edge(
+    history_df: pd.DataFrame,
+    *,
+    prior_strength: float,
+    reliability_k: float,
+    none_score: float,
+) -> pd.DataFrame:
+    """Estimate ticker-level TP edge from train fold outcomes (no leakage)."""
+    if history_df is None or history_df.empty or "tp_sl_outcome" not in history_df.columns:
+        return pd.DataFrame(columns=["ticker", "historical_tp_prob", "historical_tp_edge", "historical_tp_obs"])
+
+    idx_ticker = pd.Index(history_df.index.get_level_values("ticker")).astype(str)
+    outcome = history_df["tp_sl_outcome"].astype(str).str.upper().fillna("NONE")
+    score_map = {
+        "TP": 1.0,
+        "SL": 0.0,
+        "NONE": float(none_score),
+    }
+    outcome_score = outcome.map(score_map).fillna(float(none_score))
+
+    temp = pd.DataFrame(
+        {
+            "ticker": idx_ticker.values,
+            "outcome_score": pd.to_numeric(outcome_score, errors="coerce").fillna(float(none_score)).values,
+            "is_tp": (outcome == "TP").astype(float).values,
+            "is_sl": (outcome == "SL").astype(float).values,
+            "is_none": (outcome == "NONE").astype(float).values,
+        }
+    )
+
+    grp = temp.groupby("ticker", dropna=False)
+    stats = grp.agg(
+        outcome_sum=("outcome_score", "sum"),
+        historical_tp_obs=("outcome_score", "size"),
+        tp_rate=("is_tp", "mean"),
+        sl_rate=("is_sl", "mean"),
+        none_rate=("is_none", "mean"),
+    ).reset_index()
+
+    n = pd.to_numeric(stats["historical_tp_obs"], errors="coerce").fillna(0.0)
+    outcome_sum = pd.to_numeric(stats["outcome_sum"], errors="coerce").fillna(0.0)
+    prior = max(float(prior_strength), 0.0)
+    rel_k = max(float(reliability_k), 0.0)
+
+    # Bayesian posterior mean around neutral prior 0.5.
+    tp_prob = (outcome_sum + prior * 0.5) / (n + prior).replace(0.0, np.nan)
+    tp_prob = pd.to_numeric(tp_prob, errors="coerce").fillna(0.5).clip(0.0, 1.0)
+    reliability = np.sqrt(n / (n + rel_k).replace(0.0, np.nan)) if rel_k > 0 else pd.Series(1.0, index=stats.index)
+    reliability = pd.to_numeric(reliability, errors="coerce").fillna(0.0).clip(0.0, 1.0)
+
+    # Edge in [-1, 1], reliability-shrunk.
+    edge = ((tp_prob - 0.5) * 2.0 * reliability).clip(-1.0, 1.0)
+
+    out = stats[["ticker", "historical_tp_obs", "tp_rate", "sl_rate", "none_rate"]].copy()
+    out["historical_tp_prob"] = tp_prob.values
+    out["historical_tp_edge"] = edge.values
+    return out
+
+
+def _get_cached_ticker_snapshot_profile(
+    *,
+    ticker: str,
+    snapshot_date: pd.Timestamp,
+    history_df_ticker: pd.DataFrame,
+    prices_dict: Dict[str, pd.DataFrame],
+    lag_days: int,
+    holding_period_months: int,
+    profile_cache: Optional[Dict[tuple, Dict[str, object]]] = None,
+) -> Dict[str, object]:
+    snap_ts = pd.Timestamp(snapshot_date).normalize()
+    cache_key = (str(ticker), snap_ts, int(lag_days), int(holding_period_months))
+    if profile_cache is not None and cache_key in profile_cache:
+        return profile_cache[cache_key]
+
+    profile = _build_ticker_snapshot_profile(
+        ticker=str(ticker),
+        snapshot_date=snap_ts,
+        history_df_ticker=history_df_ticker,
+        prices_dict=prices_dict,
+        lag_days=lag_days,
+        holding_period_months=holding_period_months,
+    )
+    if profile_cache is not None:
+        profile_cache[cache_key] = profile
+    return profile
+
+
+def _tp_feasibility_from_profile(
+    *,
+    tp_pct: float,
+    strategy_name: str,
+    profile: Dict[str, object],
+) -> float:
+    """Penalize TP targets stretched far above ticker's historical reachable TP."""
+    if not bool(profile.get("has_signal", False)):
+        return 1.0
+    q_tp, _ = _strategy_quantiles(strategy_name)
+    tp_map = profile.get("tp_quantiles", {}) or {}
+    ref_tp = float(tp_map.get(float(q_tp), np.nan))
+    if not np.isfinite(ref_tp) or ref_tp <= 0:
+        return 1.0
+    tp_val = float(tp_pct)
+    if not np.isfinite(tp_val) or tp_val <= 0:
+        return 1.0
+    stretch = tp_val / ref_tp
+    if stretch <= 1.0:
+        return 1.0
+    penalty = float(TP_EDGE_TP_STRETCH_PENALTY) * (stretch - 1.0)
+    feasibility = 1.0 - penalty
+    return float(np.clip(feasibility, float(TP_EDGE_MIN_FEASIBILITY), 1.0))
 
 
 def _extract_close_from_prices_obj(price_obj) -> pd.Series:
@@ -803,6 +941,38 @@ def _extract_close_from_prices_obj(price_obj) -> pd.Series:
         s.index = pd.to_datetime(s.index)
         return s.sort_index()
     return pd.Series(dtype=float)
+
+
+def _compute_trailing_drawdown_pct(
+    prices: pd.Series,
+    *,
+    snap_ts: pd.Timestamp,
+    quantile: float = 0.65,
+    rolling_window: int = 22,
+    min_periods: int = 60,
+) -> float:
+    """Compute the typical pullback from rolling peak for this stock.
+
+    Calculates a rolling 22-day drawdown from rolling 22-day high across the
+    stock's full price history up to snap_ts. Returns the `quantile`-th
+    percentile of absolute drawdown values, clipped to [0.04, 0.40].
+    Used to calibrate the trailing stop distance per ticker.
+    """
+    if prices is None or prices.empty:
+        return 0.12
+    hist = prices.loc[prices.index <= snap_ts].dropna()
+    if len(hist) < min_periods:
+        return 0.12
+    w = min(int(rolling_window), len(hist) // 4)
+    if w < 5:
+        return 0.12
+    rolling_high = hist.rolling(window=w, min_periods=max(w // 2, 5)).max()
+    drawdown = (hist / rolling_high) - 1.0  # values <= 0
+    valid = drawdown.dropna()
+    valid = valid[valid < 0.0]
+    if len(valid) < 10:
+        return 0.12
+    return float(np.clip(np.abs(valid).quantile(quantile), 0.04, 0.40))
 
 
 def _historical_quarter_path_stats(
@@ -907,7 +1077,7 @@ def _build_ticker_snapshot_profile(
 
     mfe_pos = path_stats.loc[path_stats["mfe"] > 0.0, "mfe"]
     mae_abs = path_stats.loc[path_stats["mae_abs"] > 0.0, "mae_abs"]
-    q_values = [0.40, 0.45, 0.58, 0.60, 0.75]
+    q_values = [0.40, 0.45, 0.55, 0.60, 0.70, 0.75, 0.80]
 
     tp_quantiles: Dict[float, float] = {}
     sl_quantiles: Dict[float, float] = {}
@@ -961,12 +1131,19 @@ def _build_ticker_snapshot_profile(
         metric_adjust_tp /= used
         metric_adjust_sl /= used
 
+    trailing_drawdown_pct = _compute_trailing_drawdown_pct(
+        prices=prices,
+        snap_ts=snap_ts,
+        quantile=float(TP_SL_TRAILING_DRAWDOWN_QUANTILE),
+    )
+
     return {
         "tp_quantiles": tp_quantiles,
         "sl_quantiles": sl_quantiles,
         "fade": float(fade),
         "metric_adjust_tp": float(metric_adjust_tp),
         "metric_adjust_sl": float(metric_adjust_sl),
+        "trailing_drawdown_pct": float(trailing_drawdown_pct),
         "has_signal": True,
     }
 
@@ -982,22 +1159,15 @@ def _adaptive_tp_sl_for_ticker_snapshot(
     holding_period_months: int,
     profile_cache: Optional[Dict[tuple, Dict[str, object]]] = None,
 ) -> tuple[float, float]:
-    snap_ts = pd.Timestamp(snapshot_date).normalize()
-    cache_key = (str(ticker), snap_ts, int(lag_days), int(holding_period_months))
-    profile: Optional[Dict[str, object]] = None
-    if profile_cache is not None:
-        profile = profile_cache.get(cache_key)
-    if profile is None:
-        profile = _build_ticker_snapshot_profile(
-            ticker=str(ticker),
-            snapshot_date=snap_ts,
-            history_df_ticker=history_df_ticker,
-            prices_dict=prices_dict,
-            lag_days=lag_days,
-            holding_period_months=holding_period_months,
-        )
-        if profile_cache is not None:
-            profile_cache[cache_key] = profile
+    profile = _get_cached_ticker_snapshot_profile(
+        ticker=str(ticker),
+        snapshot_date=pd.Timestamp(snapshot_date),
+        history_df_ticker=history_df_ticker,
+        prices_dict=prices_dict,
+        lag_days=lag_days,
+        holding_period_months=holding_period_months,
+        profile_cache=profile_cache,
+    )
 
     if not bool(profile.get("has_signal", False)):
         return float(TP_SL_BASE_TP), float(TP_SL_BASE_SL)
@@ -1080,6 +1250,15 @@ def _build_adaptive_tp_sl_targets(
         has_snapshot = "snapshot_date" in row and pd.notna(row.get("snapshot_date"))
         snap_dt = pd.Timestamp(row.get("snapshot_date")) if has_snapshot else pd.Timestamp(dt)
 
+        profile_for_ticker = _get_cached_ticker_snapshot_profile(
+            ticker=tk,
+            snapshot_date=snap_dt,
+            history_df_ticker=hist_tk,
+            prices_dict=prices_dict,
+            lag_days=lag_days,
+            holding_period_months=holding_period_months,
+            profile_cache=profile_cache,
+        )
         tp, sl = _adaptive_tp_sl_for_ticker_snapshot(
             ticker=tk,
             snapshot_date=snap_dt,
@@ -1093,8 +1272,10 @@ def _build_adaptive_tp_sl_targets(
         tp_level.loc[(ticker, dt)] = tp
         sl_level.loc[(ticker, dt)] = sl
 
+        trailing_stop_pct = float(profile_for_ticker.get("trailing_drawdown_pct", 0.12))
         prices = _extract_close_from_prices_obj(prices_dict.get(tk))
         entry_date = pd.Timestamp(snap_dt) + pd.Timedelta(days=max(int(lag_days), 0))
+        grace_days = int(max_holding_days * float(TP_SL_GRACE_PERIOD_FRACTION))
         sim = simulate_tp_sl(
             ticker=tk,
             prices=prices,
@@ -1102,6 +1283,9 @@ def _build_adaptive_tp_sl_targets(
             tp_pct=float(tp),
             sl_pct=float(sl),
             max_holding_days=max_holding_days,
+            min_holding_days=grace_days,
+            trailing_stop_pct=trailing_stop_pct,
+            trailing_review_days=int(TP_SL_TRAILING_REVIEW_DAYS),
         )
         out = str(sim.get("outcome", "NONE")).upper()
         outcome.loc[(ticker, dt)] = out
@@ -1189,9 +1373,20 @@ def _build_tp_sl_strategy_universe_matrix(
 
         tp_vals = []
         sl_vals = []
+        tp_feasibility_vals = []
+        trailing_vals: List[float] = []
         for _, r in s_df.iterrows():
             tk = str(r.get("ticker"))
             snap_dt = pd.Timestamp(r.get("date", entry_date))
+            profile = _get_cached_ticker_snapshot_profile(
+                ticker=tk,
+                snapshot_date=snap_dt,
+                history_df_ticker=by_ticker_history.get(tk, pd.DataFrame()),
+                prices_dict=prices_dict,
+                lag_days=lag_days,
+                holding_period_months=holding_period_months,
+                profile_cache=profile_cache,
+            )
             tp, sl = _adaptive_tp_sl_for_ticker_snapshot(
                 ticker=tk,
                 snapshot_date=snap_dt,
@@ -1204,14 +1399,28 @@ def _build_tp_sl_strategy_universe_matrix(
             )
             tp_vals.append(tp)
             sl_vals.append(sl)
+            tp_feasibility_vals.append(
+                _tp_feasibility_from_profile(
+                    tp_pct=float(tp),
+                    strategy_name=s_name,
+                    profile=profile,
+                )
+            )
+            trailing_vals.append(float(profile.get("trailing_drawdown_pct", 0.12)))
         s_df["tp_pct"] = pd.Series(tp_vals, index=s_df.index, dtype=float)
         s_df["sl_pct"] = pd.Series(sl_vals, index=s_df.index, dtype=float)
+        s_df["trailing_stop_pct"] = pd.Series(trailing_vals, index=s_df.index, dtype=float)
+        s_df["tp_feasibility"] = pd.Series(tp_feasibility_vals, index=s_df.index, dtype=float).clip(0.0, 1.0)
         s_df["max_holding_days"] = period_holding_days
         s_df["rr_ratio"] = (s_df["tp_pct"] / s_df["sl_pct"].replace(0, np.nan)).replace([np.inf, -np.inf], np.nan).fillna(0.0)
         s_df["ev"] = s_df["confidence"] * s_df["tp_pct"] - (1.0 - s_df["confidence"]) * s_df["sl_pct"]
-        s_df["risk_benefit_score"] = s_df["ev"] * (1.0 + s_df["rr_ratio"].clip(lower=0.0, upper=4.0) / 4.0)
+        s_df["risk_benefit_score"] = (
+            s_df["ev"]
+            * (1.0 + s_df["rr_ratio"].clip(lower=0.0, upper=4.0) / 4.0)
+            * s_df["tp_feasibility"].fillna(1.0)
+        )
 
-        signals = s_df[["ticker", "tp_pct", "sl_pct"]].drop_duplicates(subset=["ticker"], keep="last")
+        signals = s_df[["ticker", "tp_pct", "sl_pct", "trailing_stop_pct"]].drop_duplicates(subset=["ticker"], keep="last")
         bt = run_backtest(
             signals=signals,
             prices_dict=prices_dict,
@@ -1254,8 +1463,36 @@ def _pick_best_strategy_per_ticker(tp_sl_matrix: pd.DataFrame) -> pd.DataFrame:
     df["risk_benefit_score"] = pd.to_numeric(df.get("risk_benefit_score", 0.0), errors="coerce").fillna(0.0)
     df["ev"] = pd.to_numeric(df.get("ev", 0.0), errors="coerce").fillna(0.0)
     df["confidence"] = pd.to_numeric(df.get("confidence", 0.5), errors="coerce").fillna(0.5)
+    df["tp_feasibility"] = pd.to_numeric(df.get("tp_feasibility", 1.0), errors="coerce").fillna(1.0)
+    df["tp_pct"] = pd.to_numeric(df.get("tp_pct", TP_SL_BASE_TP), errors="coerce").fillna(float(TP_SL_BASE_TP))
+    df["historical_tp_prob"] = pd.to_numeric(df.get("historical_tp_prob", 0.5), errors="coerce").fillna(0.5).clip(0.0, 1.0)
+    # Rule consensus signal in [-1, 1]: positive means rules favour TP, negative means SL risk.
+    # Used as a multiplicative boost over risk_benefit_score.
+    rule_signal = pd.to_numeric(df.get("rules_consensus_signal", 0.0), errors="coerce").fillna(0.0).clip(-1.0, 1.0)
+    df["rule_adjusted_rbs"] = df["risk_benefit_score"] * (1.0 + float(TP_SL_RULE_SIGNAL_RBS_WEIGHT) * rule_signal)
 
-    rank_cols = ["risk_benefit_score", "ev", "confidence"]
+    # Selection score: reward certainty and feasible/acceptable TP levels,
+    # while keeping EV/rule-adjusted economics as primary driver.
+    certainty = (0.55 * df["confidence"] + 0.45 * df["historical_tp_prob"]).clip(0.0, 1.0)
+    certainty *= df["tp_feasibility"].clip(0.0, 1.0)
+    tp_floor = float(max(TP_SL_MIN_ACCEPTABLE_TP, 0.0))
+    tp_quality = ((df["tp_pct"] - tp_floor) / max(float(TP_SL_MAX_TP) - tp_floor, 1e-6)).clip(0.0, 1.0)
+    below_floor_penalty = np.where(df["tp_pct"] < tp_floor, 0.75, 1.0)
+
+    df["certainty_component"] = certainty
+    df["tp_quality_component"] = tp_quality
+    df["tp_floor_penalty_component"] = below_floor_penalty
+
+    certainty_weight = float(np.clip(TP_SL_SELECTION_CERTAINTY_WEIGHT, 0.0, 1.0))
+    tp_quality_weight = float(np.clip(TP_SL_SELECTION_TP_QUALITY_WEIGHT, 0.0, 1.0))
+    df["selection_score"] = (
+        df["rule_adjusted_rbs"]
+        * (1.0 + certainty_weight * (certainty - 0.5))
+        * (1.0 + tp_quality_weight * (tp_quality - 0.5))
+        * below_floor_penalty
+    )
+
+    rank_cols = ["selection_score", "rule_adjusted_rbs", "risk_benefit_score", "tp_feasibility", "ev", "confidence"]
     chosen = (
         df.sort_values(rank_cols, ascending=False)
         .drop_duplicates(subset=["ticker"], keep="first")
@@ -1264,18 +1501,83 @@ def _pick_best_strategy_per_ticker(tp_sl_matrix: pd.DataFrame) -> pd.DataFrame:
     return chosen
 
 
+def _build_tp_sl_decision_audit(
+    tp_sl_matrix: pd.DataFrame,
+    best_per_ticker: pd.DataFrame,
+) -> pd.DataFrame:
+    """Build a compact per-ticker strategy decision trace with reject reasons."""
+    if tp_sl_matrix is None or tp_sl_matrix.empty:
+        return pd.DataFrame()
+
+    full = tp_sl_matrix.copy()
+    best = best_per_ticker.copy() if best_per_ticker is not None else pd.DataFrame()
+    best_map = {}
+    if not best.empty and "ticker" in best.columns and "strategy" in best.columns:
+        best_map = best.drop_duplicates(subset=["ticker"], keep="first").set_index("ticker")["strategy"].to_dict()
+
+    rows: List[Dict[str, object]] = []
+    for _, row in full.iterrows():
+        ticker = str(row.get("ticker", ""))
+        strategy = str(row.get("strategy", ""))
+        selected_strategy = str(best_map.get(ticker, ""))
+        selected = strategy == selected_strategy and selected_strategy != ""
+
+        tp_pct = float(pd.to_numeric(row.get("tp_pct", np.nan), errors="coerce"))
+        tp_feas = float(pd.to_numeric(row.get("tp_feasibility", np.nan), errors="coerce"))
+        certainty = float(pd.to_numeric(row.get("certainty_component", np.nan), errors="coerce"))
+
+        if selected:
+            reject_reason = "selected"
+        elif np.isfinite(tp_pct) and tp_pct < float(TP_SL_MIN_ACCEPTABLE_TP):
+            reject_reason = "tp_below_min_acceptable"
+        elif np.isfinite(tp_feas) and tp_feas < 0.60:
+            reject_reason = "low_tp_feasibility"
+        elif np.isfinite(certainty) and certainty < 0.45:
+            reject_reason = "low_certainty"
+        else:
+            reject_reason = "lower_selection_score"
+
+        rows.append(
+            {
+                "ticker": ticker,
+                "strategy": strategy,
+                "selected": bool(selected),
+                "selected_strategy": selected_strategy,
+                "reject_reason": reject_reason,
+                "selection_score": pd.to_numeric(row.get("selection_score", np.nan), errors="coerce"),
+                "rule_adjusted_rbs": pd.to_numeric(row.get("rule_adjusted_rbs", np.nan), errors="coerce"),
+                "risk_benefit_score": pd.to_numeric(row.get("risk_benefit_score", np.nan), errors="coerce"),
+                "certainty_component": pd.to_numeric(row.get("certainty_component", np.nan), errors="coerce"),
+                "tp_quality_component": pd.to_numeric(row.get("tp_quality_component", np.nan), errors="coerce"),
+                "tp_floor_penalty_component": pd.to_numeric(row.get("tp_floor_penalty_component", np.nan), errors="coerce"),
+                "tp_pct": pd.to_numeric(row.get("tp_pct", np.nan), errors="coerce"),
+                "sl_pct": pd.to_numeric(row.get("sl_pct", np.nan), errors="coerce"),
+                "tp_feasibility": pd.to_numeric(row.get("tp_feasibility", np.nan), errors="coerce"),
+                "confidence": pd.to_numeric(row.get("confidence", np.nan), errors="coerce"),
+                "historical_tp_prob": pd.to_numeric(row.get("historical_tp_prob", np.nan), errors="coerce"),
+            }
+        )
+
+    if not rows:
+        return pd.DataFrame()
+    return pd.DataFrame(rows)
+
+
 def _export_fold_usd_artifacts(
     *,
     fold_backtest_dir: str,
     sim_out: Dict,
     selection_df: pd.DataFrame,
     metrics_payload: Dict,
+    prices_dict: Optional[Dict[str, object]] = None,
+    export_detailed_trades: bool = False,
 ) -> None:
     fold_dir = Path(fold_backtest_dir)
     fold_dir.mkdir(parents=True, exist_ok=True)
 
     trades_df = sim_out.get("trades_df", pd.DataFrame())
     equity_df = sim_out.get("equity_curve_df", pd.DataFrame())
+    trail_events = sim_out.get("trail_events", [])
     summary = sim_out.get("fold_summary", {})
 
     if not trades_df.empty:
@@ -1299,12 +1601,371 @@ def _export_fold_usd_artifacts(
     else:
         pd.DataFrame(columns=["ticker", "weight", "score", "rank"]).to_csv(fold_dir / "selection.csv", index=False)
 
+    # Export trailing stop evolution events
+    if trail_events:
+        trail_df = pd.DataFrame(trail_events)
+        trail_df.to_csv(fold_dir / "trailing_stop_evolution.csv", index=False)
+        log.info("[Trail] Exported %d trailing stop events to %s", len(trail_df), (fold_dir / "trailing_stop_evolution.csv").name)
+        _export_trailing_stop_stock_charts(
+            fold_dir=fold_dir,
+            trail_df=trail_df,
+            trades_df=trades_df,
+            prices_dict=prices_dict,
+        )
+
     _safe_json_dump(fold_dir / "portfolio_summary.json", summary)
     _safe_json_dump(fold_dir / "metrics.json", metrics_payload)
 
     # Generate detailed trades report showing compra/venta side-by-side with USD values
-    if not trades_df.empty:
+    if export_detailed_trades and not trades_df.empty:
         _generate_detailed_trades_report(trades_df, fold_dir)
+
+
+def _export_trailing_stop_stock_charts(
+    *,
+    fold_dir: Path,
+    trail_df: pd.DataFrame,
+    trades_df: pd.DataFrame,
+    prices_dict: Optional[Dict[str, object]] = None,
+) -> None:
+    """Export one advanced TP/SL/trailing chart per ticker into Backtest/Stocks."""
+    stocks_dir = fold_dir / "Stocks"
+    stocks_dir.mkdir(parents=True, exist_ok=True)
+
+    if trail_df is None or trail_df.empty:
+        return
+
+    try:
+        import matplotlib.dates as mdates
+        import matplotlib.pyplot as plt
+    except Exception as exc:  # pragma: no cover - optional dependency protection
+        log.warning("[Trail] matplotlib unavailable, skipping stock charts: %s", exc)
+        return
+
+    tdf = trail_df.copy()
+    tdf["ticker"] = tdf.get("ticker", "").astype(str).str.upper().str.strip()
+    tdf = tdf[tdf["ticker"] != ""]
+    tdf["event_date"] = pd.to_datetime(tdf.get("event_date"), errors="coerce")
+    tdf["entry_date"] = pd.to_datetime(tdf.get("entry_date"), errors="coerce")
+    for col in ["price", "trailing_stop", "entry_price", "tp_price", "sl_price_original"]:
+        tdf[col] = pd.to_numeric(tdf.get(col), errors="coerce")
+    tdf = tdf.dropna(subset=["event_date", "price"]).sort_values(["ticker", "event_date"])
+    if tdf.empty:
+        return
+
+    def _extract_close_series(raw_obj: object) -> pd.Series:
+        if raw_obj is None:
+            return pd.Series(dtype=float)
+        if isinstance(raw_obj, pd.Series):
+            s = pd.to_numeric(raw_obj, errors="coerce").dropna()
+            s.index = pd.to_datetime(s.index, errors="coerce")
+            return s.sort_index()
+        if isinstance(raw_obj, pd.DataFrame):
+            col_candidates = ["close", "Close", "adj_close", "Adj Close", "adjclose"]
+            for col in col_candidates:
+                if col in raw_obj.columns:
+                    s = pd.to_numeric(raw_obj[col], errors="coerce").dropna()
+                    s.index = pd.to_datetime(raw_obj.loc[s.index].index, errors="coerce")
+                    return s.sort_index()
+        return pd.Series(dtype=float)
+
+    local_trades = trades_df.copy() if trades_df is not None else pd.DataFrame()
+    if not local_trades.empty:
+        local_trades["ticker"] = local_trades.get("ticker", "").astype(str).str.upper().str.strip()
+        local_trades["datetime"] = pd.to_datetime(local_trades.get("datetime"), errors="coerce")
+        local_trades["exec_price"] = pd.to_numeric(local_trades.get("exec_price"), errors="coerce")
+
+    event_styles = {
+        "TRAILING_ACTIVATED": {"color": "#2ca02c", "marker": "^"},
+        "REVIEW": {"color": "#ff7f0e", "marker": "o"},
+        "EXIT_TP_TRAIL": {"color": "#1f77b4", "marker": "*"},
+        "EXIT_TP": {"color": "#1f77b4", "marker": "*"},
+        "EXIT_SL": {"color": "#d62728", "marker": "x"},
+        "EXIT_TIME": {"color": "#7f7f7f", "marker": "s"},
+    }
+
+    for ticker, tk_df in tdf.groupby("ticker", sort=True):
+        tk_df = tk_df.sort_values("event_date")
+        if tk_df.empty:
+            continue
+
+        local_entry = pd.to_datetime(tk_df["entry_date"], errors="coerce").dropna()
+        entry_ts = pd.Timestamp(local_entry.iloc[0]) if not local_entry.empty else pd.Timestamp(tk_df["event_date"].min())
+        exit_ts = pd.Timestamp(tk_df["event_date"].max())
+
+        if not local_trades.empty:
+            tk_trades = local_trades[local_trades["ticker"] == ticker].dropna(subset=["datetime", "exec_price"])
+            if not tk_trades.empty:
+                buy_ts = pd.to_datetime(tk_trades.loc[tk_trades["action"].astype(str).str.upper() == "BUY", "datetime"], errors="coerce").dropna()
+                sell_ts = pd.to_datetime(tk_trades.loc[tk_trades["action"].astype(str).str.upper() == "SELL", "datetime"], errors="coerce").dropna()
+                if not buy_ts.empty:
+                    entry_ts = pd.Timestamp(min(entry_ts, buy_ts.min()))
+                if not sell_ts.empty:
+                    exit_ts = pd.Timestamp(max(exit_ts, sell_ts.max()))
+        else:
+            tk_trades = pd.DataFrame()
+
+        close_s = pd.Series(dtype=float)
+        if prices_dict is not None:
+            close_s = _extract_close_series(prices_dict.get(ticker))
+        if not close_s.empty:
+            close_s = close_s.loc[(close_s.index >= entry_ts) & (close_s.index <= exit_ts)].dropna()
+
+        fig, ax = plt.subplots(figsize=(12, 6))
+        if not close_s.empty:
+            ax.plot(
+                close_s.index,
+                close_s.values,
+                color="#111111",
+                linewidth=1.8,
+                label="Close price",
+                zorder=2,
+            )
+            running_max = close_s.cummax()
+            prev_max = running_max.shift(1).fillna(-np.inf)
+            peak_mask = close_s > prev_max
+            peak_s = close_s[peak_mask]
+            if not peak_s.empty:
+                ax.scatter(
+                    peak_s.index,
+                    peak_s.values,
+                    color="#6a3d9a",
+                    marker="D",
+                    s=24,
+                    alpha=0.7,
+                    label="New peak",
+                    zorder=3,
+                )
+        else:
+            ax.plot(
+                tk_df["event_date"],
+                tk_df["price"],
+                color="#111111",
+                linewidth=1.8,
+                marker=".",
+                markersize=4,
+                label="Event price",
+                zorder=2,
+            )
+
+        first = tk_df.iloc[0]
+        entry_price = pd.to_numeric(first.get("entry_price"), errors="coerce")
+        tp_price = pd.to_numeric(first.get("tp_price"), errors="coerce")
+        sl_price = pd.to_numeric(first.get("sl_price_original"), errors="coerce")
+
+        ev_upper = tk_df["event_type"].astype(str).str.upper()
+        act_mask = ev_upper.eq("TRAILING_ACTIVATED")
+        exit_mask = ev_upper.str.startswith("EXIT_")
+        activation_ts = pd.Timestamp(tk_df.loc[act_mask, "event_date"].iloc[0]) if act_mask.any() else None
+        first_exit_ts = pd.Timestamp(tk_df.loc[exit_mask, "event_date"].iloc[0]) if exit_mask.any() else exit_ts
+        tp_sl_active_end = activation_ts if activation_ts is not None else first_exit_ts
+
+        if np.isfinite(entry_price):
+            ax.hlines(
+                y=float(entry_price),
+                xmin=entry_ts,
+                xmax=first_exit_ts,
+                color="#333333",
+                linestyle=":",
+                linewidth=1.0,
+                label="Entry price (active window)",
+                zorder=1,
+            )
+        if np.isfinite(tp_price):
+            ax.hlines(
+                y=float(tp_price),
+                xmin=entry_ts,
+                xmax=tp_sl_active_end,
+                color="#2ca02c",
+                linestyle=":",
+                linewidth=1.3,
+                label="TP (active)",
+                zorder=1,
+            )
+        if np.isfinite(sl_price):
+            ax.hlines(
+                y=float(sl_price),
+                xmin=entry_ts,
+                xmax=tp_sl_active_end,
+                color="#d62728",
+                linestyle=":",
+                linewidth=1.3,
+                label="Initial SL (active)",
+                zorder=1,
+            )
+
+        stop_state_types = ["TRAILING_ACTIVATED", "REVIEW", "EXIT_TP_TRAIL", "EXIT_TIME", "EXIT_SL", "EXIT_TP"]
+        stop_df = tk_df[ev_upper.isin(stop_state_types)].copy()
+        stop_df = stop_df.dropna(subset=["trailing_stop"]).sort_values("event_date")
+        if not stop_df.empty and (activation_ts is not None):
+            stop_dates = stop_df["event_date"].tolist()
+            stop_vals = stop_df["trailing_stop"].tolist()
+            for i in range(len(stop_dates) - 1):
+                x0 = pd.Timestamp(stop_dates[i])
+                x1 = pd.Timestamp(stop_dates[i + 1])
+                y = float(stop_vals[i])
+                ax.hlines(
+                    y=y,
+                    xmin=x0,
+                    xmax=x1,
+                    color="#c2185b",
+                    linewidth=2.0,
+                    linestyle="-",
+                    label="Trailing stop segment" if i == 0 else None,
+                    zorder=2,
+                )
+
+        for event_type, ev_df in tk_df.groupby(tk_df["event_type"].astype(str).str.upper()):
+            style = event_styles.get(event_type, {"color": "#9467bd", "marker": "o"})
+            ax.scatter(
+                ev_df["event_date"],
+                ev_df["price"],
+                color=style["color"],
+                marker=style["marker"],
+                s=65,
+                label=event_type,
+                zorder=4,
+            )
+
+        if not tk_trades.empty:
+            buys = tk_trades[tk_trades["action"].astype(str).str.upper() == "BUY"]
+            sells = tk_trades[tk_trades["action"].astype(str).str.upper() == "SELL"]
+            if not buys.empty:
+                ax.scatter(
+                    buys["datetime"],
+                    buys["exec_price"],
+                    color="#1565c0",
+                    marker="^",
+                    s=88,
+                    label="BUY",
+                    zorder=5,
+                )
+            if not sells.empty:
+                ax.scatter(
+                    sells["datetime"],
+                    sells["exec_price"],
+                    color="#000000",
+                    marker="v",
+                    s=88,
+                    label="SELL",
+                    zorder=5,
+                )
+
+        ax.set_title(f"{ticker} | TP/SL Trailing Evolution")
+        ax.set_xlabel("Date")
+        ax.set_ylabel("Price")
+        ax.grid(True, alpha=0.25)
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
+        fig.autofmt_xdate()
+        handles, labels = ax.get_legend_handles_labels()
+        seen = set()
+        uniq_h = []
+        uniq_l = []
+        for h, l in zip(handles, labels):
+            if l not in seen:
+                uniq_h.append(h)
+                uniq_l.append(l)
+                seen.add(l)
+        ax.legend(uniq_h, uniq_l, fontsize=8, loc="best")
+        fig.tight_layout()
+
+        safe_ticker = "".join(ch if (ch.isalnum() or ch in "._-") else "_" for ch in ticker)
+        plt.close(fig)
+
+        # ── Panel doble: precio+niveles (top) + retorno acumulado (bottom) ──
+        fig2, (ax_top, ax_bot) = plt.subplots(
+            2, 1, figsize=(13, 8),
+            gridspec_kw={"height_ratios": [3, 1], "hspace": 0.08},
+            sharex=True,
+        )
+
+        # ─ Panel superior: replica curva de precio y niveles ─
+        price_src = close_s if not close_s.empty else pd.Series(
+            tk_df["price"].values, index=pd.to_datetime(tk_df["event_date"]), dtype=float
+        )
+        if not price_src.empty:
+            ax_top.plot(price_src.index, price_src.values, color="#111111", linewidth=1.8,
+                        label="Close price", zorder=2)
+            running_max2 = price_src.cummax()
+            prev_max2 = running_max2.shift(1).fillna(-np.inf)
+            peak_s2 = price_src[price_src > prev_max2]
+            if not peak_s2.empty:
+                ax_top.scatter(peak_s2.index, peak_s2.values, color="#6a3d9a", marker="D",
+                               s=24, alpha=0.7, label="New peak", zorder=3)
+
+        if np.isfinite(entry_price):
+            ax_top.hlines(float(entry_price), entry_ts, first_exit_ts,
+                          color="#333333", linestyle=":", linewidth=1.0, label="Entry price")
+        if np.isfinite(tp_price):
+            ax_top.hlines(float(tp_price), entry_ts, tp_sl_active_end,
+                          color="#2ca02c", linestyle=":", linewidth=1.3, label="TP (active)")
+        if np.isfinite(sl_price):
+            ax_top.hlines(float(sl_price), entry_ts, tp_sl_active_end,
+                          color="#d62728", linestyle=":", linewidth=1.3, label="Initial SL (active)")
+        if not stop_df.empty and activation_ts is not None:
+            for i in range(len(stop_dates) - 1):
+                ax_top.hlines(float(stop_vals[i]),
+                              pd.Timestamp(stop_dates[i]), pd.Timestamp(stop_dates[i + 1]),
+                              color="#c2185b", linewidth=2.0, linestyle="-",
+                              label="Trailing stop" if i == 0 else None, zorder=2)
+        for event_type, ev_df2 in tk_df.groupby(tk_df["event_type"].astype(str).str.upper()):
+            style2 = event_styles.get(event_type, {"color": "#9467bd", "marker": "o"})
+            ax_top.scatter(ev_df2["event_date"], ev_df2["price"],
+                           color=style2["color"], marker=style2["marker"],
+                           s=65, label=event_type, zorder=4)
+        if not tk_trades.empty:
+            buys2 = tk_trades[tk_trades["action"].astype(str).str.upper() == "BUY"]
+            sells2 = tk_trades[tk_trades["action"].astype(str).str.upper() == "SELL"]
+            if not buys2.empty:
+                ax_top.scatter(buys2["datetime"], buys2["exec_price"],
+                               color="#1565c0", marker="^", s=88, label="BUY", zorder=5)
+            if not sells2.empty:
+                ax_top.scatter(sells2["datetime"], sells2["exec_price"],
+                               color="#000000", marker="v", s=88, label="SELL", zorder=5)
+
+        ax_top.set_title(f"{ticker} | TP/SL Trailing Evolution + Retorno acumulado", fontsize=11)
+        ax_top.set_ylabel("Price")
+        ax_top.grid(True, alpha=0.25)
+        handles2, labels2 = ax_top.get_legend_handles_labels()
+        seen2: set = set()
+        uniq_h2, uniq_l2 = [], []
+        for h, l in zip(handles2, labels2):
+            if l not in seen2:
+                uniq_h2.append(h); uniq_l2.append(l); seen2.add(l)
+        ax_top.legend(uniq_h2, uniq_l2, fontsize=7, loc="best", ncol=2)
+
+        # ─ Panel inferior: retorno acumulado desde entrada ─
+        if not price_src.empty and np.isfinite(entry_price) and float(entry_price) > 0:
+            ret_pct = (price_src / float(entry_price) - 1.0) * 100.0
+            ax_bot.plot(ret_pct.index, ret_pct.values, color="#1565c0", linewidth=1.6,
+                        label="Return %", zorder=2)
+            ax_bot.axhline(0.0, color="#333333", linewidth=0.8, linestyle="--")
+            if np.isfinite(tp_price) and float(entry_price) > 0:
+                ax_bot.axhline(
+                    (float(tp_price) / float(entry_price) - 1.0) * 100.0,
+                    xmin=0, xmax=1, color="#2ca02c", linewidth=1.0, linestyle=":",
+                    label="TP %",
+                )
+            if np.isfinite(sl_price) and float(entry_price) > 0:
+                ax_bot.axhline(
+                    (float(sl_price) / float(entry_price) - 1.0) * 100.0,
+                    xmin=0, xmax=1, color="#d62728", linewidth=1.0, linestyle=":",
+                    label="SL %",
+                )
+            ax_bot.fill_between(ret_pct.index, ret_pct.values, 0,
+                                where=ret_pct.values >= 0, alpha=0.15, color="#2ca02c")
+            ax_bot.fill_between(ret_pct.index, ret_pct.values, 0,
+                                where=ret_pct.values < 0, alpha=0.15, color="#d62728")
+            ax_bot.set_ylabel("Return (%)")
+            ax_bot.grid(True, alpha=0.2)
+            ax_bot.legend(fontsize=7, loc="best")
+
+        ax_bot.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
+        fig2.autofmt_xdate()
+        fig2.tight_layout()
+        out_path2 = stocks_dir / f"{safe_ticker}.png"
+        fig2.savefig(out_path2, dpi=140)
+        plt.close(fig2)
 
 
 def _generate_detailed_trades_report(trades_df: pd.DataFrame, fold_dir: Path) -> None:
@@ -1464,19 +2125,15 @@ def run_walkforward_pipeline(
     agent_models_results_dir: str,
     backtest_results_dir: str,
     plots_dir: str,
-    start_date: str,
-    end_date: str,
     walkforward_train_years: int,
-    walkforward_test_quarters: int,
+    walkforward_num_tests: int,
     risk_free_rate: float,
     top_n_stocks: int = 10,
     random_seed: int = 42,
     spy_prices: Optional[pd.Series] = None,
-    snapshot_lag_days: Optional[int] = 45,
     holding_period_months: int = 3,
     finnhub_data_dir: str = "data_finnhub",
-    analysis_frequency: str = "quarterly",
-    annual_anchor_date: Optional[pd.Timestamp] = None,
+    analysis_reference_date: Optional[pd.Timestamp] = None,
 ) -> Dict:
     run_root_candidate = Path(backtest_results_dir)
     run_root = run_root_candidate.parent if run_root_candidate.name.lower() == "backtest" else run_root_candidate
@@ -1488,7 +2145,7 @@ def run_walkforward_pipeline(
 
     backtester = WalkForwardBacktester(
         train_years=walkforward_train_years,
-        test_quarters=walkforward_test_quarters,
+        test_quarters=1,
         risk_free=risk_free_rate,
         results_dir=strategy_dir.as_posix(),
         strategy_dir=strategy_dir.as_posix(),
@@ -1497,7 +2154,6 @@ def run_walkforward_pipeline(
     )
     global_visualizer = Visualizer(plots_dir=strategy_dir.as_posix())
 
-    folds = backtester.generate_folds(start_date, end_date)
     agent_diag_history: Dict[str, List] = {
         "fundamental": [], "valuation": [], "momentum": [], "bear": [],
         "sentiment": [], "sector_rotation": [], "meta_learner": [],
@@ -1520,27 +2176,60 @@ def run_walkforward_pipeline(
     min_train_years = int(WALKFORWARD_TRAIN_MIN_YEARS)
     if max_train_years < min_train_years:
         max_train_years, min_train_years = min_train_years, max_train_years
+    max_train_months = max(1, max_train_years * 12)
+    min_train_months = max(1, min_train_years * 12)
 
     log.info(
-        "[WalkForward] Dynamic train window enabled: max=%sY -> min=%sY | minimum test=%s%%",
-        max_train_years,
-        min_train_years,
+        "[WalkForward] Dynamic train window enabled: max=%sM -> min=%sM (step=%sM) | minimum test=%s%%",
+        max_train_months,
+        min_train_months,
+        max(int(holding_period_months), 1),
         MIN_TEST_TICKERS_PERCENT,
     )
 
-    filing_date_map = _build_filing_date_map(
-        finnhub_data_dir=finnhub_data_dir,
-        tickers=df.index.get_level_values("ticker").unique().tolist(),
-    )
-    resolved_snapshot_lag_days = int(snapshot_lag_days) if snapshot_lag_days is not None else 0
-    analysis_frequency = str(analysis_frequency).strip().lower()
-    if analysis_frequency not in {"quarterly", "annual"}:
-        raise ValueError("analysis_frequency must be 'quarterly' or 'annual'")
+    if analysis_reference_date is None:
+        analysis_reference_date = pd.Timestamp.today().normalize()
+    anchor_entry_date = pd.Timestamp(analysis_reference_date).normalize()
+    n_tests = max(int(walkforward_num_tests), 1)
+    holding_months = max(int(holding_period_months), 1)
 
-    if analysis_frequency == "annual" and annual_anchor_date is None:
-        annual_anchor_date = pd.Timestamp(start_date).normalize() + pd.Timedelta(days=max(int(resolved_snapshot_lag_days), 0))
-    if annual_anchor_date is not None:
-        annual_anchor_date = pd.Timestamp(annual_anchor_date).normalize()
+    scheduled_entry_dates = sorted([
+        (anchor_entry_date - pd.DateOffset(months=holding_months * k)).normalize()
+        for k in range(n_tests)
+    ])
+
+    fold_plan: List[Dict[str, object]] = []
+    for idx, entry_date in enumerate(scheduled_entry_dates, start=1):
+        analysis_date = pd.Timestamp(entry_date).normalize()
+        analysis_quarter = analysis_date.to_period("Q")
+        train_end = analysis_date
+        run_id = f"T{idx:02d}_{entry_date.strftime('%Y%m%d')}"
+        fold_plan.append(
+            {
+                "fold_id": idx,
+                "run_id": run_id,
+                "entry_date": entry_date,
+                "analysis_date": analysis_date,
+                "analysis_quarter": analysis_quarter,
+                "analysis_quarter_label": f"{analysis_quarter.year}Q{analysis_quarter.quarter}",
+                "train_end": train_end,
+            }
+        )
+
+    log.info(
+        "[WalkForward] Scheduled %d tests from anchor %s (holding=%sM)",
+        len(fold_plan),
+        anchor_entry_date.date(),
+        holding_months,
+    )
+
+    debug_profile = str(DEBUG_OUTPUT_PROFILE).strip().lower()
+    full_debug = debug_profile == "full"
+    export_tp_sl_universe = bool(EXPORT_TP_SL_UNIVERSE_MATRIX or full_debug)
+    export_global_tp_sl_universe = bool(EXPORT_GLOBAL_TP_SL_UNIVERSE_MATRIX or full_debug)
+    export_snapshot_agent_audits = bool(EXPORT_SNAPSHOT_AGENT_AUDITS or full_debug)
+    export_all_folds_scores = bool(EXPORT_ALL_FOLDS_SCORES or full_debug)
+    export_detailed_trades = bool(EXPORT_DETAILED_TRADES_REPORT or full_debug)
 
     membership_path = Path(SP500_HISTORIC_CSV_PATH)
     if not membership_path.is_absolute():
@@ -1570,33 +2259,19 @@ def run_walkforward_pipeline(
 
     try:
         from tqdm import tqdm
-        fold_iter = tqdm(list(enumerate(folds, 1)), desc="Walk-forward folds", unit="fold")
+        fold_iter = tqdm(fold_plan, desc="Walk-forward tests", unit="test")
     except ImportError:
-        fold_iter = list(enumerate(folds, 1))
+        fold_iter = fold_plan
 
-    for fold_id, (_fold_train_start, train_end, _test_end, _fold_train_years) in fold_iter:
-        analysis_quarter = train_end.to_period("Q")
-
-        q_end = analysis_quarter.end_time.normalize()
-        lag_days = max(int(resolved_snapshot_lag_days), 0)
-        entry_date = q_end + pd.Timedelta(days=lag_days)
-
-        if analysis_frequency == "annual":
-            if annual_anchor_date is not None and entry_date < annual_anchor_date:
-                log.debug(
-                    "[Fold %s] Skip anual: entry %s < anchor %s",
-                    fold_id,
-                    entry_date.date(),
-                    annual_anchor_date.date(),
-                )
-                continue
-            # Annual format: "2026YQ2" = year 2026, yearly, Q2 report
-            analysis_quarter_label = f"{train_end.year}YQ{train_end.quarter}"
-        else:
-            # Quarterly format: "2026Q2"
-            analysis_quarter_label = f"{train_end.year}Q{train_end.quarter}"
-
-        run_id = analysis_quarter_label
+    for plan in fold_iter:
+        fold_id = int(plan["fold_id"])
+        run_id = str(plan["run_id"])
+        entry_date = pd.Timestamp(plan["entry_date"]).normalize()
+        analysis_date = pd.Timestamp(plan["analysis_date"]).normalize()
+        analysis_quarter = plan["analysis_quarter"]
+        analysis_quarter_label = str(plan["analysis_quarter_label"])
+        train_end = pd.Timestamp(plan["train_end"]).normalize()
+        lag_days = 0
         fold_root_dir = run_root / str(run_id)
         fold_general_dir = fold_root_dir / "general"
         fold_agents_dir = fold_root_dir / "agents"
@@ -1644,26 +2319,26 @@ def run_walkforward_pipeline(
             prev_membership_tickers = set(active_tickers_on_entry)
             prev_membership_entry_date = pd.Timestamp(entry_date)
 
-        for candidate_years in range(max_train_years, min_train_years - 1, -1):
-            candidate_train_start = train_end - pd.DateOffset(years=int(candidate_years))
-            candidate_train_start_quarter = candidate_train_start.to_period("Q")
+        candidate_train_months_grid = list(range(max_train_months, min_train_months - 1, -holding_months))
+        if min_train_months not in candidate_train_months_grid:
+            candidate_train_months_grid.append(min_train_months)
+        candidate_train_months_grid = sorted(set(candidate_train_months_grid), reverse=True)
+
+        for candidate_train_months in candidate_train_months_grid:
+            candidate_train_start = train_end - pd.DateOffset(months=int(candidate_train_months))
 
             cand_train, cand_test, _ = _prepare_fold_frames_by_filed_quarter(
                 df=df,
-                filing_date_map=filing_date_map,
-                train_start_quarter=candidate_train_start_quarter,
-                analysis_quarter=analysis_quarter,
-                fallback_lag_days=45,
+                train_start_date=candidate_train_start,
+                analysis_date=analysis_date,
             )
 
             if ENABLE_FALLBACK_EXTRAPOLATION:
                 cand_test = _extrapolate_missing_snapshots(
                     df=df,
                     df_test=cand_test,
-                    analysis_quarter=analysis_quarter,
-                    filing_date_map=filing_date_map,
+                    analysis_date=analysis_date,
                     lookback_quarters=FALLBACK_LOOK_BACK_QUARTERS,
-                    snapshot_lag_days=resolved_snapshot_lag_days,
                 )
 
             test_tickers_pre_sp500 = (
@@ -1715,7 +2390,7 @@ def run_walkforward_pipeline(
             cand_train, cand_test, eligible_tickers = _filter_fold_tickers_by_history_span(
                 df_train=cand_train,
                 df_test=cand_test,
-                required_years=int(candidate_years),
+                required_months=int(candidate_train_months),
             )
             eligible_set = set(str(tk) for tk in eligible_tickers)
             dropped_insufficient_history = test_tickers_before_history - eligible_set
@@ -1767,7 +2442,7 @@ def run_walkforward_pipeline(
                     {
                         "run_id": run_id,
                         "entry_date": str(entry_date.date()),
-                        "candidate_train_years": int(candidate_years),
+                        "candidate_train_months": int(candidate_train_months),
                         "ticker": tk,
                         "eligible": bool(is_eligible),
                         "reason": reason,
@@ -1779,29 +2454,29 @@ def run_walkforward_pipeline(
                 )
 
             last_eligibility_rows = current_eligibility_rows
-            last_eligibility_train_years = int(candidate_years)
+            last_eligibility_train_years = int(round(candidate_train_months / 12.0))
 
             test_tickers_count = int(cand_test.index.get_level_values("ticker").nunique()) if not cand_test.empty else 0
             test_tickers_pct = (100.0 * test_tickers_count / fold_universe_tickers) if fold_universe_tickers > 0 else 0.0
             if dropped_insufficient_history:
                 log.info(
-                    f"[{run_id}]   Excluidos por historial insuficiente (<{candidate_years}Y train): "
+                    f"[{run_id}]   Excluidos por historial insuficiente (<{candidate_train_months}M train): "
                     f"{len(dropped_insufficient_history)} | muestra: {_sample_tickers(dropped_insufficient_history)}"
                 )
             log.info(
-                f"[{run_id}] Intento train={candidate_years}Y -> test elegible {test_tickers_count}/{fold_universe_tickers} "
+                f"[{run_id}] Intento train={candidate_train_months}M -> test elegible {test_tickers_count}/{fold_universe_tickers} "
                 f"({test_tickers_pct:.1f}%) | min requerido={min_test_tickers_required}"
             )
 
             if test_tickers_count >= min_test_tickers_required:
-                selected_train_years = int(candidate_years)
+                selected_train_years = int(round(candidate_train_months / 12.0))
                 selected_train_start = pd.Timestamp(candidate_train_start)
                 selected_df_train = cand_train
                 selected_df_test = cand_test
                 selected_eligibility_rows = current_eligibility_rows
-                selected_eligibility_train_years = int(candidate_years)
+                selected_eligibility_train_years = int(round(candidate_train_months / 12.0))
                 log.info(
-                    f"[{run_id}] Ventana seleccionada: {selected_train_years}Y "
+                    f"[{run_id}] Ventana seleccionada: {candidate_train_months}M "
                     f"({selected_train_start.date()} -> {train_end.date()}) | tickers elegibles={len(eligible_tickers)}"
                 )
                 break
@@ -1822,7 +2497,7 @@ def run_walkforward_pipeline(
             summary_df = (
                 eligibility_df.groupby(
                     [
-                        "candidate_train_years",
+                        "candidate_train_months",
                         "reason",
                         "in_fold_base_universe",
                         "has_snapshot_in_analysis_quarter",
@@ -1834,7 +2509,7 @@ def run_walkforward_pipeline(
                 )
                 .size()
                 .reset_index(name="count")
-                .sort_values(["candidate_train_years", "count", "reason"], ascending=[True, False, True])
+                .sort_values(["candidate_train_months", "count", "reason"], ascending=[True, False, True])
             )
             summary_df.to_csv(summary_path, index=False)
             if years_to_export is not None:
@@ -1862,21 +2537,12 @@ def run_walkforward_pipeline(
 
         log.info(f"\n{'='*60}")
         log.info(f"  ANALYSIS {run_id}")
-        log.info(f"  Train : {train_start.date()} → {train_end.date()}  ({_train_years} years)")
-        frequency_mode = "annual (Y)" if analysis_frequency == "annual" else "quarterly (Q)"
-        log.info(f"  Mode  : {frequency_mode}")
+        log.info(f"  Train : {train_start.date()} → {train_end.date()}  (~{_train_years} years)")
+        log.info(f"  Mode  : anchored-entry schedule")
         log.info(
-            f"  Test  : snapshot simulado en {entry_date.date()} "
-            f"(Q{analysis_quarter.quarter} start + {lag_days}d)"
+            f"  Test  : snapshot simulado en {entry_date.date()} (as-of exacto, sin lag)"
         )
         log.info(f"{'='*60}")
-
-        # Calculate entry_date: from the last day of the quarter + configured lag
-        
-        log.info(
-            f"[{run_id}] Snapshot lag starts at: {q_end.date()} (last day of Q{analysis_quarter.quarter}) "
-            f"+ {lag_days} days = entry date: {entry_date.date()}"
-        )
 
         exit_date = entry_date + pd.DateOffset(months=max(int(holding_period_months), 1))
         bench_window = benchmark.loc[entry_date:exit_date].dropna()
@@ -1969,6 +2635,8 @@ def run_walkforward_pipeline(
                     "tp_level",
                     "sl_level",
                     "tp_sl_outcome",
+                    "rules_consensus_signal",
+                    "rules_consensus_confidence",
                 ]
                 if c in df_test_scored.columns
             ]
@@ -2000,6 +2668,34 @@ def run_walkforward_pipeline(
                 preds_df["sector"] = df_test_scored["sector"].values
             preds_df = preds_df.reset_index(drop=True)
 
+            if bool(TP_EDGE_ENABLE):
+                hist_edge = _compute_ticker_tp_edge(
+                    history_df=df_train,
+                    prior_strength=float(TP_EDGE_PRIOR_STRENGTH),
+                    reliability_k=float(TP_EDGE_RELIABILITY_K),
+                    none_score=float(TP_EDGE_NONE_SCORE),
+                )
+                if not hist_edge.empty:
+                    preds_df = preds_df.merge(
+                        hist_edge[["ticker", "historical_tp_prob", "historical_tp_edge", "historical_tp_obs"]],
+                        on="ticker",
+                        how="left",
+                    )
+                    preds_df["historical_tp_prob"] = pd.to_numeric(
+                        preds_df.get("historical_tp_prob", 0.5), errors="coerce"
+                    ).fillna(0.5).clip(0.0, 1.0)
+                    preds_df["historical_tp_edge"] = pd.to_numeric(
+                        preds_df.get("historical_tp_edge", 0.0), errors="coerce"
+                    ).fillna(0.0).clip(-1.0, 1.0)
+                    preds_df["historical_tp_obs"] = pd.to_numeric(
+                        preds_df.get("historical_tp_obs", 0.0), errors="coerce"
+                    ).fillna(0.0)
+                    preds_df["confidence_raw"] = preds_df["confidence"].astype(float)
+                    preds_df["confidence"] = (
+                        preds_df["confidence_raw"]
+                        + float(TP_EDGE_CONFIDENCE_BLEND) * preds_df["historical_tp_edge"]
+                    ).clip(0.0, 1.0)
+
             # Build universe x strategy TP/SL matrix and choose best strategy per ticker.
             tp_sl_matrix = _build_tp_sl_strategy_universe_matrix(
                 preds_df=preds_df,
@@ -2013,13 +2709,59 @@ def run_walkforward_pipeline(
                 log.warning("[%s] Empty TP/SL strategy matrix — fold skipped.", run_id)
                 continue
             tp_sl_matrix.insert(0, "fold_id", str(run_id))
-            tp_sl_universe_rows.append(tp_sl_matrix.copy())
-            tp_sl_matrix.to_csv(fold_backtest_dir / "tp_sl_universe_matrix.csv", index=False)
+            if export_global_tp_sl_universe:
+                tp_sl_universe_rows.append(tp_sl_matrix.copy())
+            if export_tp_sl_universe:
+                tp_sl_matrix.to_csv(fold_backtest_dir / "tp_sl_universe_matrix.csv", index=False)
 
             best_per_ticker = _pick_best_strategy_per_ticker(tp_sl_matrix)
             if best_per_ticker.empty:
                 log.warning("[%s] No strategy-selected tickers available — fold skipped.", run_id)
                 continue
+
+            tp_sl_decision_audit = _build_tp_sl_decision_audit(
+                tp_sl_matrix=tp_sl_matrix,
+                best_per_ticker=best_per_ticker,
+            )
+            if not tp_sl_decision_audit.empty:
+                tp_sl_decision_audit.to_csv(
+                    fold_backtest_dir / "tp_sl_strategy_decision_audit.csv",
+                    index=False,
+                )
+
+            # Broadcast per-ticker TP/SL confidence diagnostics to the full test
+            # frame so fold reports include "up" and "TP-before-SL" confidence.
+            aux_cols = [
+                c for c in [
+                    "ticker",
+                    "confidence",
+                    "confidence_raw",
+                    "historical_tp_prob",
+                    "historical_tp_edge",
+                    "historical_tp_obs",
+                    "strategy",
+                    "tp_pct",
+                    "sl_pct",
+                    "ev",
+                    "risk_benefit_score",
+                    "rule_adjusted_rbs",
+                    "selection_score",
+                ]
+                if c in best_per_ticker.columns
+            ]
+            if "ticker" in aux_cols:
+                aux_map = best_per_ticker[aux_cols].drop_duplicates(subset=["ticker"], keep="first").set_index("ticker")
+                idx_ticker = pd.Index(df_test_scored.index.get_level_values("ticker")).astype(str)
+                for c in [x for x in aux_cols if x != "ticker"]:
+                    df_test_scored[c] = idx_ticker.map(aux_map[c])
+                if "confidence" in df_test_scored.columns:
+                    df_test_scored["confidence_up"] = pd.to_numeric(df_test_scored["confidence"], errors="coerce").fillna(0.5).clip(0.0, 1.0)
+                else:
+                    df_test_scored["confidence_up"] = pd.to_numeric(df_test_scored.get("final_score", 0.5), errors="coerce").fillna(0.5).clip(0.0, 1.0)
+                if "historical_tp_prob" in df_test_scored.columns:
+                    df_test_scored["confidence_tp_vs_sl"] = pd.to_numeric(df_test_scored["historical_tp_prob"], errors="coerce").fillna(0.5).clip(0.0, 1.0)
+                else:
+                    df_test_scored["confidence_tp_vs_sl"] = df_test_scored["confidence_up"]
 
             fold_result = backtester.simulate_portfolio(
                 predictions_df=best_per_ticker.rename(columns={"final_score": "score"}),
@@ -2090,6 +2832,7 @@ def run_walkforward_pipeline(
                     }
                     for _, r in selected_plan.iterrows()
                 }
+                fold_trail_events: List[Dict] = []
                 sim_out = simulate_fold_usd(
                     fold_id=str(run_id),
                     prices_dict=prices_dict,
@@ -2102,6 +2845,7 @@ def run_walkforward_pipeline(
                     slippage_pct=float(SLIPPAGE_PCT),
                     allow_fractional_shares=bool(ALLOW_FRACTIONAL_SHARES),
                     tp_sl_plan_by_ticker=tp_sl_plan_by_ticker,
+                    trail_events=fold_trail_events,
                 )
                 sim_out["fold_summary"]["leakage_tainted"] = bool(n_leak_fold > 0)
                 chained_cash_usd = float(sim_out["fold_summary"].get("ending_capital_usd", chained_cash_usd))
@@ -2147,6 +2891,8 @@ def run_walkforward_pipeline(
                         "return_metrics": {k: v for k, v in fold_result.items() if not str(k).startswith("_")},
                         "usd_summary": sim_out.get("fold_summary", {}),
                     },
+                    prices_dict=prices_dict,
+                    export_detailed_trades=export_detailed_trades,
                 )
 
                 usd_fold_contexts.append({
@@ -2194,17 +2940,18 @@ def run_walkforward_pipeline(
             export_fold_scores(fold_scores_df, period_dir.as_posix(), fold_id=analysis_quarter_label)
 
             # Auditoria completa por quarter: snapshot por ticker + detalle agente-feature.
-            export_quarter_snapshot_audit(
-                df_test_scored=df_test_scored,
-                year_quarter=analysis_quarter_label,
-                agents_results_dir=period_dir.as_posix(),
-            )
-            export_quarter_agent_feature_audit(
-                df_test_scored=df_test_scored,
-                agents=agents,
-                year_quarter=analysis_quarter_label,
-                agents_results_dir=period_dir.as_posix(),
-            )
+            if export_snapshot_agent_audits:
+                export_quarter_snapshot_audit(
+                    df_test_scored=df_test_scored,
+                    year_quarter=analysis_quarter_label,
+                    agents_results_dir=period_dir.as_posix(),
+                )
+                export_quarter_agent_feature_audit(
+                    df_test_scored=df_test_scored,
+                    agents=agents,
+                    year_quarter=analysis_quarter_label,
+                    agents_results_dir=period_dir.as_posix(),
+                )
 
             for ag_name, ag in agents.items():
                 agent_diag_history[ag_name].append(ag._diagnostics.copy())
@@ -2257,7 +3004,7 @@ def run_walkforward_pipeline(
     # CSV consolidado de todos los folds: una fila por ticker-quarter con
     # scores, interpretaciones y explicaciones de cada agente.
     all_fold_score_files = sorted(run_root.glob("*/agents/scores.csv"))
-    if all_fold_score_files:
+    if export_all_folds_scores and all_fold_score_files:
         all_scores = []
         for p in all_fold_score_files:
             try:
@@ -2267,7 +3014,7 @@ def run_walkforward_pipeline(
         if all_scores:
             pd.concat(all_scores, ignore_index=True).to_csv(strategy_dir / "all_folds_scores.csv", index=False)
 
-    if tp_sl_universe_rows:
+    if export_global_tp_sl_universe and tp_sl_universe_rows:
         pd.concat(tp_sl_universe_rows, ignore_index=True).to_csv(
             strategy_dir / "all_folds_tp_sl_universe_matrix.csv",
             index=False,

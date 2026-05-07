@@ -266,7 +266,6 @@ def _build_feature_record(
     sentiment_builder: SentimentFeatureBuilder,
     filing_date_map: Dict[pd.Timestamp, pd.Timestamp],
     include_label: bool,
-    snapshot_lag_days: int = 45,
     holding_period_months: int = 3,
     technical_lookback_days: int = 300,
 ) -> Optional[Dict]:
@@ -278,10 +277,9 @@ def _build_feature_record(
     info_source = sources.get("info")
     info = info_source if info_source is not None else {}
 
-    # Snapshot date: primer dia del quarter + snapshot_lag_days.
-    # Esto asegura un punto temporal consistente por quarter.
-    q_start = as_of.to_period("Q").start_time.normalize()
-    feature_date = q_start + pd.Timedelta(days=max(int(snapshot_lag_days), 0))
+    # Date-as-of mode: snapshot is exactly the requested analysis date.
+    # Quarterly availability is handled by filedDate filtering below.
+    feature_date = pd.Timestamp(as_of).normalize()
 
     # Snapshot fundamental por fecha de publicacion real (filedDate).
     # Si no hay reporte del quarter actual, usa el ultimo previamente publicado.
@@ -373,6 +371,11 @@ def _build_feature_record(
     record.update(sentiment_feats.to_dict())
     record.update(finbert_feats.to_dict())
     record.update(seq_feats.to_dict())
+
+    # Macro context features for regime detection (no look-ahead).
+    macro_feats = router.load_macro_features(feature_date)
+    record.update(macro_feats)
+
     return record
 
 
@@ -385,7 +388,6 @@ def build_master_dataset(
     insider_builder: InsiderFeatureBuilder,
     sentiment_builder: SentimentFeatureBuilder,
     min_history_quarters: int = 4,
-    snapshot_lag_days: int = 45,
     holding_period_months: int = 3,
     technical_lookback_days: int = 300,
 ) -> pd.DataFrame:
@@ -435,7 +437,6 @@ def build_master_dataset(
                     sentiment_builder=sentiment_builder,
                     filing_date_map=filing_date_map,
                     include_label=True,
-                    snapshot_lag_days=snapshot_lag_days,
                     holding_period_months=holding_period_months,
                     technical_lookback_days=technical_lookback_days,
                 )

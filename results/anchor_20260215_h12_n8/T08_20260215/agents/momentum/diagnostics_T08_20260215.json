@@ -1,0 +1,277 @@
+{
+  "agent": "momentum",
+  "timestamp": "2026-05-07T14:22:15.937685",
+  "fold": "T08_20260215",
+  "selected_base_features": [
+    "volatility_60d",
+    "price_vs_52w_high",
+    "vol_ratio_20_50",
+    "rsi_28",
+    "momentum_6m",
+    "momentum_3m",
+    "rsi_14"
+  ],
+  "n_base_features": 7,
+  "n_model_features": 22,
+  "best_model": "random_forest",
+  "cv_summary": {
+    "logistic": {
+      "mean_auc": 0.522554186944933,
+      "std_auc": 0.04016826707564493
+    },
+    "random_forest": {
+      "mean_auc": 0.5475689520035723,
+      "std_auc": 0.026656918118633483
+    },
+    "gradient_boosting": {
+      "mean_auc": 0.5417549131769442,
+      "std_auc": 0.03577695138422228
+    },
+    "xgboost": {
+      "mean_auc": 0.532035657684461,
+      "std_auc": 0.028283809986499056
+    }
+  },
+  "top_features": {
+    "volatility_60d": 0.19338968871062223,
+    "momentum_6m": 0.10348346143046881,
+    "momentum_3m": 0.1016588447968761,
+    "volatility_60d__pct_universe": 0.08134619892130003,
+    "price_vs_52w_high": 0.0572455813904975,
+    "rule_confidence": 0.047278049530244455,
+    "vol_ratio_20_50": 0.04349662885858232,
+    "momentum_6m__pct_universe": 0.040625773511937885,
+    "momentum_3m__pct_universe": 0.03803910092844599,
+    "rsi_28": 0.032080987730987415,
+    "volatility_60d__pct_sector": 0.029791335177736182,
+    "price_vs_52w_high__pct_universe": 0.028152151619327076,
+    "vol_ratio_20_50__pct_universe": 0.025575033544541187,
+    "rsi_14": 0.024468034835646062,
+    "rsi_28__pct_universe": 0.022552324489675674
+  },
+  "rule_engine_enabled": true,
+  "rule_count": 1024,
+  "global_tp_rate": 0.47077338129496404,
+  "rule_blend": 0.22,
+  "sector_rule_counts": {
+    "Technology": 40,
+    "Financials": 40,
+    "Health Care": 40,
+    "Real Estate": 40,
+    "Consumer Discretionary": 40,
+    "Energy": 40,
+    "Consumer Staples": 40,
+    "Utilities": 40,
+    "Industrials": 40,
+    "Hotels, Restaurants & Leisure": 40,
+    "Machinery": 33,
+    "Electrical Equipment": 40,
+    "Banking": 25,
+    "Consumer products": 40,
+    "Communication Services": 40,
+    "Materials": 40,
+    "Life Sciences Tools & Services": 40,
+    "Professional Services": 40,
+    "Building": 40,
+    "Healthcare": 40,
+    "Commercial Services & Supplies": 40,
+    "Road & Rail": 40,
+    "Textiles, Apparel & Luxury Goods": 40,
+    "Construction": 40,
+    "Packaging": 12,
+    "Telecommunication": 19,
+    "Metals & Mining": 17,
+    "Communications": 7,
+    "Airlines": 9,
+    "Trading Companies & Distributors": 6,
+    "Distributors": 4,
+    "Industrial Conglomerates": 6,
+    "Tobacco": 6
+  },
+  "top_rules": [
+    {
+      "type": "pair",
+      "sector": "Banking",
+      "features": [
+        "price_vs_52w_high_trend_4q",
+        "price_vs_52w_high_delta_8q"
+      ],
+      "bins": [
+        0,
+        0
+      ],
+      "support": 50,
+      "win_rate": 0.96,
+      "edge": 0.5051388888888888,
+      "stability": 0.7274999999999999,
+      "weight": 2.471326666494933,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Banking",
+      "features": [
+        "volatility_60d_trend_4q",
+        "price_vs_52w_high"
+      ],
+      "bins": [
+        4,
+        0
+      ],
+      "support": 55,
+      "win_rate": 0.9090909090909091,
+      "edge": 0.45422979797979796,
+      "stability": 0.7941666666666666,
+      "weight": 2.3872652729247568,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Banking",
+      "features": [
+        "volatility_60d",
+        "vol_ratio_20_50"
+      ],
+      "bins": [
+        4,
+        0
+      ],
+      "support": 45,
+      "win_rate": 0.9111111111111111,
+      "edge": 0.45625,
+      "stability": 0.85,
+      "weight": 2.3704315336100388,
+      "requires_temporal": false
+    },
+    {
+      "type": "pair",
+      "sector": "Banking",
+      "features": [
+        "volatility_60d_trend_4q",
+        "price_vs_52w_high_delta_8q"
+      ],
+      "bins": [
+        4,
+        0
+      ],
+      "support": 45,
+      "win_rate": 0.9555555555555556,
+      "edge": 0.5006944444444446,
+      "stability": 0.7025056118154258,
+      "weight": 2.3412169323666636,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Banking",
+      "features": [
+        "volatility_60d_trend_4q",
+        "volatility_60d_delta_8q"
+      ],
+      "bins": [
+        4,
+        4
+      ],
+      "support": 57,
+      "win_rate": 0.8947368421052632,
+      "edge": 0.43987573099415206,
+      "stability": 0.7489637028918154,
+      "weight": 2.257701430210116,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Banking",
+      "features": [
+        "price_vs_52w_high_trend_4q",
+        "volatility_60d_trend_4q"
+      ],
+      "bins": [
+        0,
+        4
+      ],
+      "support": 73,
+      "win_rate": 0.863013698630137,
+      "edge": 0.4081525875190259,
+      "stability": 0.768160064294521,
+      "weight": 2.2515947582207265,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Banking",
+      "features": [
+        "price_vs_52w_high_trend_4q",
+        "volatility_60d_delta_8q"
+      ],
+      "bins": [
+        0,
+        4
+      ],
+      "support": 48,
+      "win_rate": 0.9375,
+      "edge": 0.4826388888888889,
+      "stability": 0.6239381916835873,
+      "weight": 2.158260512294279,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Banking",
+      "features": [
+        "price_vs_52w_high_trend_4q",
+        "volatility_60d"
+      ],
+      "bins": [
+        0,
+        4
+      ],
+      "support": 58,
+      "win_rate": 0.8448275862068966,
+      "edge": 0.38996647509578547,
+      "stability": 0.6741666666666666,
+      "weight": 1.900543994375786,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Banking",
+      "features": [
+        "volatility_60d_trend_4q",
+        "volatility_60d"
+      ],
+      "bins": [
+        4,
+        4
+      ],
+      "support": 74,
+      "win_rate": 0.8108108108108109,
+      "edge": 0.35594969969969975,
+      "stability": 0.7008333333333333,
+      "weight": 1.8745479002409897,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Real Estate",
+      "features": [
+        "volatility_60d_delta_8q",
+        "momentum_6m_momentum_4q"
+      ],
+      "bins": [
+        0,
+        0
+      ],
+      "support": 56,
+      "win_rate": 0.07142857142857142,
+      "edge": -0.3278769841269842,
+      "stability": 0.8125,
+      "weight": 1.753137021047172,
+      "requires_temporal": true
+    }
+  ],
+  "last_train_metrics": {
+    "best_cv_auc": 0.5475689520035723,
+    "n_features": 22.0
+  }
+}

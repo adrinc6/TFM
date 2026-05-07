@@ -25,6 +25,7 @@ import json
 import random
 import platform
 import subprocess
+import os
 from pathlib import Path
 
 warnings.filterwarnings("ignore")
@@ -38,16 +39,21 @@ from environment import (
     FINNHUB_DATA_DIR, FINNHUB_API_KEY,
     RESULTS_DIR, AGENTS_RESULTS_DIR, AGENT_MODELS_RESULTS_DIR, BACKTEST_RESULTS_DIR, PLOTS_DIR,
     MIN_HISTORY_QUARTERS,
-    WALKFORWARD_TRAIN_LOOKBACK_YEARS, WALKFORWARD_TEST_QUARTERS, RISK_FREE_RATE,
+    WALKFORWARD_TRAIN_LOOKBACK_YEARS, WALKFORWARD_NUM_TESTS, RISK_FREE_RATE,
     RANDOM_SEED, DOWNLOAD_START_DATE,
-    ANALYSIS_START_YEAR, ANALYSIS_START_QUARTER, ANALYSIS_END_YEAR, ANALYSIS_END_QUARTER,
-    ANALYSIS_FREQUENCY,
+    ANALYSIS_REFERENCE_DATE,
     SKIP_BACKTEST, FORCE_DOWNLOAD, RETRY_MISSING_TICKERS, UPDATE_PRICES_ONLY,
     DOWNLOAD_OPTIONAL_ENDPOINTS,
-    TOP_N_STOCKS, SNAPSHOT_LAG_DAYS, HOLDING_PERIOD_MONTHS, TECHNICAL_LOOKBACK_DAYS,
+    HOLDING_PERIOD_MONTHS, TECHNICAL_LOOKBACK_DAYS,
     INITIAL_CAPITAL_USD, TRANSACTION_FEE_USD, SLIPPAGE_PCT, USE_DOLLAR_BACKTEST,
     ALLOW_FRACTIONAL_SHARES, RUN_BASELINES, N_RANDOM_BASELINE_SIMS,
     BASELINE_MOMENTUM_LOOKBACK_DAYS, EXPORT_RUN_ARTIFACTS,
+    DEBUG_OUTPUT_PROFILE,
+    EXPORT_TP_SL_UNIVERSE_MATRIX,
+    EXPORT_GLOBAL_TP_SL_UNIVERSE_MATRIX,
+    EXPORT_SNAPSHOT_AGENT_AUDITS,
+    EXPORT_ALL_FOLDS_SCORES,
+    EXPORT_DETAILED_TRADES_REPORT,
     REBUILD_MASTER_DATASET,
     FUNDAMENTAL_FEATURE_COLUMNS, FUNDAMENTAL_FEATURE_EXCLUDE,
     VALUATION_FEATURE_COLUMNS, VALUATION_FEATURE_EXCLUDE,
@@ -58,6 +64,7 @@ from environment import (
     META_FEATURE_COLUMNS, META_FEATURE_EXCLUDE,
     TP_SL_MAX_STOCKS, TP_SL_MIN_STOCKS,
 )
+import environment as env_module
 
 from module.common.data_router import DataRouter
 from module.steps.step_02_dataset.builders.fundamental import FundamentalFeatureBuilder
@@ -69,23 +76,6 @@ from module.steps.step_02_dataset.builders.valuation import ValuationFeatureBuil
 from module.steps.step_01_data.pipeline import download_data, prepare_data, get_available_tickers, retry_missing_tickers
 from module.steps.step_02_dataset.dataset import build_master_dataset
 from module.steps.step_04_evaluation.evaluator import run_walkforward_pipeline
-
-
-def _quarter_end_date(year: int, quarter: int):
-    """Return the last calendar day of the given quarter as a Timestamp.
-
-    Args:
-        year: Four-digit calendar year (e.g. 2024).
-        quarter: Quarter number in the range [1, 4].
-
-    Returns:
-        pd.Timestamp: The last day of the specified quarter (time set to
-            midnight, timezone-naive).
-    """
-    import pandas as pd
-
-    month = quarter * 3
-    return pd.Timestamp(year=year, month=month, day=1) + pd.offsets.MonthEnd(0)
 
 
 def _normalize_ticker_symbol(ticker: str) -> str:
@@ -363,21 +353,150 @@ log = logging.getLogger(__name__)
 
 
 def _run_slug(
-    analysis_frequency: str,
-    start_year: int,
-    start_quarter: int,
-    end_year: int,
-    end_quarter: int,
+    analysis_reference_date,
+    holding_period_months: int,
+    walkforward_num_tests: int,
 ) -> str:
     """Build a short human-readable identifier for a pipeline run.
 
     The slug is used as a subdirectory name under ``results/`` so that
     outputs from different parameter combinations don't overwrite each other.
 
-    Example: ``annual_2022q3_2026q4``
+    Example: ``anchor_20260503_h12_n8``
     """
-    freq = str(analysis_frequency).strip().lower()
-    return f"{freq}_{start_year}Q{start_quarter}_{end_year}Q{end_quarter}"
+    import pandas as pd
+
+    anchor = pd.Timestamp(analysis_reference_date).normalize().strftime("%Y%m%d")
+    h = max(int(holding_period_months), 1)
+    n = max(int(walkforward_num_tests), 1)
+    return f"anchor_{anchor}_h{h}_n{n}"
+
+
+def _to_json_compatible(value):
+    """Convert arbitrary Python objects into JSON-serializable values."""
+    if value is None or isinstance(value, (bool, int, float, str)):
+        return value
+
+    if isinstance(value, Path):
+        return str(value)
+
+    if isinstance(value, dict):
+        out = {}
+        for k, v in value.items():
+            out[str(k)] = _to_json_compatible(v)
+        return out
+
+    if isinstance(value, (list, tuple, set)):
+        return [_to_json_compatible(v) for v in value]
+
+    if hasattr(value, "isoformat"):
+        try:
+            return value.isoformat()
+        except Exception:
+            pass
+
+    try:
+        json.dumps(value)
+        return value
+    except Exception:
+        return str(value)
+
+
+def _collect_environment_snapshot() -> dict:
+    """Capture all uppercase constants currently loaded from environment.py."""
+    snapshot = {}
+    for key, value in vars(env_module).items():
+        if isinstance(key, str) and key.isupper():
+            snapshot[key] = _to_json_compatible(value)
+    return dict(sorted(snapshot.items(), key=lambda kv: kv[0]))
+
+
+def _load_environment_snapshot(run_dir: Path) -> dict | None:
+    """Load config/environment_snapshot.json for a run directory if present."""
+    fp = run_dir / "config" / "environment_snapshot.json"
+    if not fp.exists():
+        return None
+    try:
+        return json.loads(fp.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+
+def _diff_snapshots(base: dict | None, current: dict) -> dict:
+    """Compute top-level key differences between two environment snapshots."""
+    if base is None:
+        return {
+            "status": "no_v1_snapshot",
+            "added": sorted(current.keys()),
+            "removed": [],
+            "changed": {},
+        }
+
+    base_keys = set(base.keys())
+    current_keys = set(current.keys())
+    added = sorted(current_keys - base_keys)
+    removed = sorted(base_keys - current_keys)
+    changed = {}
+    for key in sorted(base_keys & current_keys):
+        if base.get(key) != current.get(key):
+            changed[key] = {
+                "v1": base.get(key),
+                "current": current.get(key),
+            }
+    return {
+        "status": "ok",
+        "added": added,
+        "removed": removed,
+        "changed": changed,
+    }
+
+
+def _resolve_versioned_run_dir(slug: str, env_snapshot: dict) -> tuple[Path, int]:
+    """Resolve a non-colliding run directory and persist config snapshots.
+
+    Behavior:
+      - First config for a period -> results/<slug>
+      - Different config same period -> results/<slug>_v2, _v3, ...
+      - Same config as an existing version -> reuse that existing version dir
+    """
+    results_root = Path("results")
+    results_root.mkdir(parents=True, exist_ok=True)
+
+    index = 1
+    while True:
+        candidate = results_root / (slug if index == 1 else f"{slug}_v{index}")
+
+        try:
+            candidate.mkdir(parents=False, exist_ok=False)
+            break
+        except FileExistsError:
+            existing_snapshot = _load_environment_snapshot(candidate)
+            if existing_snapshot is not None and existing_snapshot == env_snapshot:
+                return candidate, index
+            index += 1
+
+    config_dir = candidate / "config"
+    config_dir.mkdir(parents=True, exist_ok=True)
+
+    snapshot_path = config_dir / "environment_snapshot.json"
+    snapshot_path.write_text(json.dumps(env_snapshot, indent=2), encoding="utf-8")
+
+    v1_dir = results_root / slug
+    v1_snapshot = _load_environment_snapshot(v1_dir)
+    diff = _diff_snapshots(v1_snapshot, env_snapshot)
+    diff_payload = {
+        "base_slug": slug,
+        "current_version": f"v{index}",
+        "current_dir": str(candidate).replace("\\", "/"),
+        "compare_against": str(v1_dir).replace("\\", "/"),
+        "diff": diff,
+    }
+    (config_dir / "changes_vs_v1.json").write_text(
+        json.dumps(diff_payload, indent=2),
+        encoding="utf-8",
+    )
+
+    return candidate, index
 
 
 def _set_global_seeds(seed: int) -> None:
@@ -442,10 +561,8 @@ def _export_run_config(
     results_dir: str,
     tickers_requested: list[str],
     tickers_ok: list[str],
-    start_date: str,
-    end_date: str,
-    analysis_frequency: str,
-    annual_anchor_date,
+    analysis_reference_date: str,
+    walkforward_num_tests: int,
 ) -> None:
     """Serialise all run parameters and environment metadata to run_config.json.
 
@@ -460,16 +577,18 @@ def _export_run_config(
             download / analysis.
         tickers_ok: Subset of tickers for which all required data files are
             present.
-        start_date: ISO-8601 start date string of the analysis window.
-        end_date: ISO-8601 end date string of the analysis window.
-        analysis_frequency: Either ``"quarterly"`` or ``"annual"``.
-        annual_anchor_date: The annual analysis anchor date (Timestamp-like),
-            or ``None`` for quarterly mode.
+        analysis_reference_date: ISO-8601 reference entry date.
+        walkforward_num_tests: Number of historical test windows generated.
     """
     payload = {
         "timestamp": __import__("datetime").datetime.now().isoformat(),
         "commit_hash": _safe_git_commit_hash(),
         "python_version": platform.python_version(),
+        "run_context": {
+            "experiment_name": os.getenv("EXPERIMENT_NAME"),
+            "batch_id": os.getenv("EXPERIMENT_BATCH_ID"),
+            "env_overrides_json": os.getenv("ENV_OVERRIDES_JSON"),
+        },
         "library_versions": {
             "numpy": _safe_version("numpy"),
             "pandas": _safe_version("pandas"),
@@ -486,7 +605,6 @@ def _export_run_config(
         "parameters": {
             "TP_SL_MAX_STOCKS": TP_SL_MAX_STOCKS,
             "TP_SL_MIN_STOCKS": TP_SL_MIN_STOCKS,
-            "SNAPSHOT_LAG_DAYS": SNAPSHOT_LAG_DAYS,
             "HOLDING_PERIOD_MONTHS": HOLDING_PERIOD_MONTHS,
             "RANDOM_SEED": RANDOM_SEED,
             "TECHNICAL_LOOKBACK_DAYS": TECHNICAL_LOOKBACK_DAYS,
@@ -500,18 +618,23 @@ def _export_run_config(
             "BASELINE_MOMENTUM_LOOKBACK_DAYS": BASELINE_MOMENTUM_LOOKBACK_DAYS,
             "EXPORT_RUN_ARTIFACTS": EXPORT_RUN_ARTIFACTS,
             "WALKFORWARD_TRAIN_LOOKBACK_YEARS": WALKFORWARD_TRAIN_LOOKBACK_YEARS,
-            "WALKFORWARD_TEST_QUARTERS": WALKFORWARD_TEST_QUARTERS,
+            "WALKFORWARD_NUM_TESTS": WALKFORWARD_NUM_TESTS,
             "RISK_FREE_RATE": RISK_FREE_RATE,
+            "DEBUG_OUTPUT_PROFILE": DEBUG_OUTPUT_PROFILE,
+            "EXPORT_TP_SL_UNIVERSE_MATRIX": EXPORT_TP_SL_UNIVERSE_MATRIX,
+            "EXPORT_GLOBAL_TP_SL_UNIVERSE_MATRIX": EXPORT_GLOBAL_TP_SL_UNIVERSE_MATRIX,
+            "EXPORT_SNAPSHOT_AGENT_AUDITS": EXPORT_SNAPSHOT_AGENT_AUDITS,
+            "EXPORT_ALL_FOLDS_SCORES": EXPORT_ALL_FOLDS_SCORES,
+            "EXPORT_DETAILED_TRADES_REPORT": EXPORT_DETAILED_TRADES_REPORT,
         },
         "universe": {
             "tickers_requested": tickers_requested,
             "tickers_ok": tickers_ok,
         },
         "time_range": {
-            "start_date": start_date,
-            "end_date": end_date,
-            "analysis_frequency": analysis_frequency,
-            "annual_anchor_date": None if annual_anchor_date is None else str(annual_anchor_date.date()),
+            "analysis_reference_date": analysis_reference_date,
+            "walkforward_num_tests": int(walkforward_num_tests),
+            "holding_period_months": int(HOLDING_PERIOD_MONTHS),
         },
     }
     out = Path(results_dir) / "run_config.json"
@@ -630,14 +753,21 @@ def main():
     All parameters are read from ``environment.py``.  The function logs a
     final summary table with mean alpha, Sharpe ratios, and maximum drawdown.
     """
-    # Analysis range. In quarterly mode ANALYSIS_START_QUARTER is used.
-    # In annual mode that quarter is ignored and execution starts from the annual anchor quarter.
     import pandas as pd
     _set_global_seeds(RANDOM_SEED)
-    end_date = _quarter_end_date(ANALYSIS_END_YEAR, ANALYSIS_END_QUARTER)
-    analysis_frequency = str(ANALYSIS_FREQUENCY).strip().lower()
-    if analysis_frequency not in {"quarterly", "annual"}:
-        raise ValueError("ANALYSIS_FREQUENCY must be 'quarterly' or 'annual'")
+
+    anchor_entry_date = pd.Timestamp(ANALYSIS_REFERENCE_DATE).normalize()
+    walkforward_num_tests = max(int(WALKFORWARD_NUM_TESTS), 1)
+    holding_months = max(int(HOLDING_PERIOD_MONTHS), 1)
+
+    scheduled_entry_dates = [
+        (anchor_entry_date - pd.DateOffset(months=holding_months * k)).normalize()
+        for k in range(walkforward_num_tests)
+    ]
+    earliest_entry_date = min(scheduled_entry_dates)
+    latest_entry_date = max(scheduled_entry_dates)
+    analysis_window_start = (earliest_entry_date - pd.DateOffset(years=max(int(WALKFORWARD_TRAIN_LOOKBACK_YEARS), 1))).normalize()
+    analysis_window_end = (latest_entry_date + pd.DateOffset(months=holding_months)).normalize()
 
     # ── Run-specific result directories ──────────────────────────────────────
     # Compute a slug that captures the most important run parameters, then
@@ -645,13 +775,33 @@ def main():
     # namespaced folder.  Changing any key parameter automatically produces
     # a fresh directory without touching previous runs.
     slug = _run_slug(
-        analysis_frequency=analysis_frequency,
-        start_year=ANALYSIS_START_YEAR,
-        start_quarter=ANALYSIS_START_QUARTER,
-        end_year=ANALYSIS_END_YEAR,
-        end_quarter=ANALYSIS_END_QUARTER,
+        analysis_reference_date=anchor_entry_date,
+        holding_period_months=holding_months,
+        walkforward_num_tests=walkforward_num_tests,
     )
-    RUN_RESULTS_DIR          = Path("results") / slug
+    env_snapshot = _collect_environment_snapshot()
+    RUN_RESULTS_DIR, run_version_idx = _resolve_versioned_run_dir(slug, env_snapshot)
+
+    # Ensure config artifacts also exist when reusing an existing version folder.
+    config_dir = RUN_RESULTS_DIR / "config"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    snapshot_fp = config_dir / "environment_snapshot.json"
+    if not snapshot_fp.exists():
+        snapshot_fp.write_text(json.dumps(env_snapshot, indent=2), encoding="utf-8")
+
+    v1_dir = Path("results") / slug
+    changes_fp = config_dir / "changes_vs_v1.json"
+    if not changes_fp.exists():
+        v1_snapshot = _load_environment_snapshot(v1_dir)
+        changes_payload = {
+            "base_slug": slug,
+            "current_version": f"v{run_version_idx}",
+            "current_dir": str(RUN_RESULTS_DIR).replace("\\", "/"),
+            "compare_against": str(v1_dir).replace("\\", "/"),
+            "diff": _diff_snapshots(v1_snapshot, env_snapshot),
+        }
+        changes_fp.write_text(json.dumps(changes_payload, indent=2), encoding="utf-8")
+
     RESULTS_DIR              = str(RUN_RESULTS_DIR / "general")
     AGENTS_RESULTS_DIR       = str(RUN_RESULTS_DIR)
     AGENT_MODELS_RESULTS_DIR = str(RUN_RESULTS_DIR)
@@ -667,29 +817,19 @@ def main():
 
     log.info("=" * 60)
     log.info("  STARTING MULTI-AGENT ML STOCK PICKER PIPELINE")
-    log.info("  Run: %s", slug)
+    log.info("  Run: %s (v%s)", slug, run_version_idx)
     log.info("=" * 60)
 
-    test_start_date = _quarter_end_date(ANALYSIS_START_YEAR, ANALYSIS_START_QUARTER)
-    annual_anchor_date = None
-    if analysis_frequency == "annual":
-        annual_anchor_date = (
-            test_start_date + pd.Timedelta(days=max(int(SNAPSHOT_LAG_DAYS), 0))
-        ).normalize()
-
-        log.info(
-            "Annual mode enabled: snapshot=%sQ%s (closes %s) | entry ~%s | holding=12 months",
-            ANALYSIS_START_YEAR,
-            ANALYSIS_START_QUARTER,
-            test_start_date.date(),
-            annual_anchor_date.date(),
-        )
+    log.info(
+        "Scheduled tests: reference_entry=%s | holding=%s months | num_tests=%s | earliest_entry=%s",
+        anchor_entry_date.date(),
+        holding_months,
+        walkforward_num_tests,
+        earliest_entry_date.date(),
+    )
 
     download_end_date = pd.Timestamp.today().normalize()
     end_date_str = download_end_date.strftime("%Y-%m-%d")
-
-    analysis_window_start = test_start_date.normalize()
-    analysis_window_end = end_date.normalize()
 
     # 1. Resolve requested universe and download data
     if USE_DYNAMIC_SP500_UNIVERSE:
@@ -735,10 +875,8 @@ def main():
                 results_dir=RESULTS_DIR,
                 tickers_requested=tickers_to_download,
                 tickers_ok=[],
-                start_date=str(test_start_date.date()),
-                end_date=str(end_date.date()),
-                analysis_frequency=analysis_frequency,
-                annual_anchor_date=annual_anchor_date,
+                analysis_reference_date=str(anchor_entry_date.date()),
+                walkforward_num_tests=walkforward_num_tests,
             )
         return
 
@@ -797,9 +935,6 @@ def main():
     #    and is independent of analysis parameters (start/end dates, top_n, etc.).
     #    It is stored in data_finnhub/master_dataset.parquet and only rebuilt
     #    when REBUILD_MASTER_DATASET=True or the file does not exist.
-    if SNAPSHOT_LAG_DAYS is None:
-        raise ValueError("SNAPSHOT_LAG_DAYS must be defined in environment.py")
-    dataset_snapshot_lag_days = int(SNAPSHOT_LAG_DAYS)
 
     master_dataset_path = Path(FINNHUB_DATA_DIR) / "master_dataset.parquet"
     df = None
@@ -819,7 +954,6 @@ def main():
             insider_builder=insider_builder,
             sentiment_builder=sentiment_builder,
             min_history_quarters=MIN_HISTORY_QUARTERS,
-            snapshot_lag_days=dataset_snapshot_lag_days,
             holding_period_months=HOLDING_PERIOD_MONTHS,
             technical_lookback_days=TECHNICAL_LOOKBACK_DAYS,
         )
@@ -836,10 +970,8 @@ def main():
             results_dir=RESULTS_DIR,
             tickers_requested=tickers,
             tickers_ok=tickers_ok,
-            start_date=str(test_start_date.date()),
-            end_date=str(end_date.date()),
-            analysis_frequency=analysis_frequency,
-            annual_anchor_date=annual_anchor_date,
+            analysis_reference_date=str(anchor_entry_date.date()),
+            walkforward_num_tests=walkforward_num_tests,
         )
         _export_data_quality_report(
             tickers_requested=tickers,
@@ -851,8 +983,6 @@ def main():
 
     summary = {}
     if not SKIP_BACKTEST:
-        effective_test_quarters = 4 if analysis_frequency == "annual" else WALKFORWARD_TEST_QUARTERS
-
         # 6. Prices and benchmark for the backtester
         prices_dict = {}
         for ticker in tickers_ok:
@@ -865,7 +995,10 @@ def main():
             import pandas as pd
 
             log.warning("No S&P 500 data available - using zero return as benchmark")
-            benchmark_returns = pd.Series(0.0, index=pd.date_range(test_start_date, end_date))
+            benchmark_returns = pd.Series(
+                0.0,
+                index=pd.date_range(analysis_window_start, analysis_window_end),
+            )
         else:
             benchmark_returns = spy_prices.pct_change().dropna()
 
@@ -880,18 +1013,14 @@ def main():
             agent_models_results_dir=AGENT_MODELS_RESULTS_DIR,
             backtest_results_dir=BACKTEST_RESULTS_DIR,
             plots_dir=PLOTS_DIR,
-            start_date=test_start_date.strftime("%Y-%m-%d"),
-            end_date=end_date.strftime("%Y-%m-%d"),
             walkforward_train_years=WALKFORWARD_TRAIN_LOOKBACK_YEARS,
-            walkforward_test_quarters=effective_test_quarters,
+            walkforward_num_tests=walkforward_num_tests,
             risk_free_rate=RISK_FREE_RATE,
             top_n_stocks=TP_SL_MAX_STOCKS,
             random_seed=RANDOM_SEED,
-            snapshot_lag_days=dataset_snapshot_lag_days,
-            holding_period_months=12 if analysis_frequency == "annual" else HOLDING_PERIOD_MONTHS,
+            holding_period_months=holding_months,
             finnhub_data_dir=FINNHUB_DATA_DIR,
-            analysis_frequency=analysis_frequency,
-            annual_anchor_date=annual_anchor_date,
+            analysis_reference_date=anchor_entry_date,
         )
     else:
         log.info("SKIP_BACKTEST=True - skipping historical walk-forward backtest")

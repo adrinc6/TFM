@@ -1,0 +1,80 @@
+{
+  "agent": "sector_rotation",
+  "timestamp": "2026-05-07T02:59:31.148333",
+  "fold": "T03_20210215",
+  "class_balance": {
+    "n_samples": 1116,
+    "n_positive": 820,
+    "n_negative": 296,
+    "positive_ratio": 0.7347670250896058
+  },
+  "cv_metrics": {
+    "mean_auc": 0.5461291716161165,
+    "std_auc": 0.02354933928894443,
+    "mean_f1": 0.7927322103909017
+  },
+  "n_sector_obs": 1116,
+  "benchmark_mode": "spy",
+  "top_features": {
+    "net_margin": 0.1372807325382592,
+    "revenue_yoy_growth": 0.11675598446845226,
+    "fcf_yield": 0.11434866570552125,
+    "roic": 0.10082718474329154,
+    "pe_vs_5y_median": 0.10013792319305628,
+    "earnings_yield": 0.09759727211554466,
+    "momentum_3m": 0.09742586894590934,
+    "momentum_6m": 0.09537031147975207,
+    "volatility_60d": 0.0779752350502312,
+    "price_vs_52w_high": 0.06228082175998223
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 14,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.4,
+    "min_keep": 6,
+    "max_keep": 10,
+    "n_selected": 10,
+    "selected": [
+      "momentum_3m",
+      "fcf_yield",
+      "momentum_6m",
+      "pe_vs_5y_median",
+      "volatility_60d",
+      "net_margin",
+      "earnings_yield",
+      "revenue_yoy_growth",
+      "price_vs_52w_high",
+      "roic"
+    ],
+    "selected_weights_pct": {
+      "momentum_3m": 14.51510990328405,
+      "fcf_yield": 13.24126888719206,
+      "momentum_6m": 10.128902371527209,
+      "pe_vs_5y_median": 9.788321603813444,
+      "volatility_60d": 9.372298269419527,
+      "net_margin": 9.362263872031756,
+      "earnings_yield": 9.298838391788937,
+      "revenue_yoy_growth": 8.663635114915051,
+      "price_vs_52w_high": 7.840800442733562,
+      "roic": 7.788561143294402
+    },
+    "dropped_pair": [],
+    "dropped_corr": [],
+    "dropped_imp": [
+      "ev_to_ebitda",
+      "fcf_margin",
+      "sector_vs_market_momentum",
+      "risk_adjusted_sector_momentum"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.5461291716161165,
+    "std_auc": 0.02354933928894443,
+    "mean_f1": 0.7927322103909017
+  }
+}

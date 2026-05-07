@@ -432,51 +432,6 @@ class BaseAgent(ABC):
         selected = self._unique_existing_columns(df, feature_cols)
         return df[selected].copy()
 
-    def _prepare_with_sector_dummies(
-        self,
-        X: pd.DataFrame,
-        feature_cols: List[str],
-        sector_col: str,
-        fit_mode: bool,
-        dummies_attr: str = "_sector_dummies",
-    ) -> pd.DataFrame:
-        """Builds a feature matrix with base features and one-hot sector dummies.
-
-        During ``fit_mode=True``, the set of dummy columns is saved to
-        ``self.<dummies_attr>`` so that the same schema can be reproduced at
-        inference time.
-
-        Args:
-            X (pd.DataFrame): Full feature matrix.
-            feature_cols (List[str]): Base feature column names.
-            sector_col (str): Column containing the sector label.
-            fit_mode (bool): If True, fits the dummy column schema from data.
-                If False, aligns to the previously fitted schema.
-            dummies_attr (str): Attribute name used to store/retrieve the dummy
-                column list.
-
-        Returns:
-            pd.DataFrame: Feature matrix including base and dummy columns.
-        """
-        df = X.copy()
-        selected = self._unique_existing_columns(df, feature_cols)
-
-        if sector_col in df.columns:
-            dummies = pd.get_dummies(df[sector_col], prefix="sector", dtype=float)
-            dummies.index = df.index
-            if fit_mode:
-                setattr(self, dummies_attr, list(dummies.columns))
-            else:
-                stored = getattr(self, dummies_attr, [])
-                for col in stored:
-                    if col not in dummies.columns:
-                        dummies[col] = 0.0
-                dummies = dummies[[c for c in stored if c in dummies.columns]]
-            df = pd.concat([df, dummies], axis=1)
-            selected = self._unique_existing_columns(df, selected + list(dummies.columns))
-
-        return df[selected].copy()
-
     def _align_to_feature_cols(self, X: pd.DataFrame, fill_value: float = 0.0) -> pd.DataFrame:
         """Aligns a feature matrix to the schema stored in ``self._feature_cols``.
 

@@ -1,0 +1,279 @@
+{
+  "agent": "bear",
+  "timestamp": "2026-05-07T11:58:25.264020",
+  "fold": "T07_20250215",
+  "selected_base_features": [
+    "consecutive_losses",
+    "current_ratio",
+    "revenue_decline",
+    "fcf_margin",
+    "debt_equity",
+    "total_debt_yoy_growth",
+    "debt_to_ebitda",
+    "insider_sell_ratio",
+    "insider_net_ratio_90d",
+    "interest_coverage"
+  ],
+  "n_base_features": 10,
+  "n_model_features": 31,
+  "best_model": "xgboost",
+  "cv_summary": {
+    "logistic": {
+      "mean_auc": 0.5058548337516492,
+      "std_auc": 0.041719024895263274
+    },
+    "random_forest": {
+      "mean_auc": 0.5192841731003954,
+      "std_auc": 0.03956427505282064
+    },
+    "gradient_boosting": {
+      "mean_auc": 0.5176479939138974,
+      "std_auc": 0.0343996988035227
+    },
+    "xgboost": {
+      "mean_auc": 0.5283922388608762,
+      "std_auc": 0.02754578552275245
+    }
+  },
+  "top_features": {
+    "revenue_decline": 0.08970801532268524,
+    "revenue_decline__pct_universe": 0.06288657337427139,
+    "debt_equity__pct_universe": 0.05095288157463074,
+    "interest_coverage__pct_universe": 0.0502367801964283,
+    "interest_coverage": 0.050131797790527344,
+    "consecutive_losses__pct_universe": 0.047146402299404144,
+    "fcf_margin__pct_universe": 0.040978603065013885,
+    "interest_coverage__pct_sector": 0.0332401841878891,
+    "consecutive_losses__pct_sector": 0.032897982746362686,
+    "consecutive_losses": 0.0321648009121418,
+    "rule_confidence": 0.03213223069906235,
+    "current_ratio__pct_universe": 0.03138819336891174,
+    "debt_to_ebitda__pct_universe": 0.030355431139469147,
+    "total_debt_yoy_growth__pct_universe": 0.029213037341833115,
+    "revenue_decline__pct_sector": 0.02901831641793251
+  },
+  "rule_engine_enabled": true,
+  "rule_count": 1146,
+  "global_tp_rate": 0.5138300020189784,
+  "rule_blend": 0.22,
+  "sector_rule_counts": {
+    "Technology": 40,
+    "Financials": 30,
+    "Health Care": 40,
+    "Consumer Discretionary": 40,
+    "Real Estate": 28,
+    "Energy": 31,
+    "Consumer Staples": 40,
+    "Utilities": 40,
+    "Industrials": 40,
+    "Hotels, Restaurants & Leisure": 40,
+    "Machinery": 40,
+    "Electrical Equipment": 40,
+    "Consumer products": 40,
+    "Materials": 40,
+    "Banking": 40,
+    "Communication Services": 40,
+    "Life Sciences Tools & Services": 40,
+    "Professional Services": 40,
+    "Building": 40,
+    "Healthcare": 40,
+    "Commercial Services & Supplies": 40,
+    "Road & Rail": 40,
+    "Textiles, Apparel & Luxury Goods": 40,
+    "Packaging": 40,
+    "Telecommunication": 40,
+    "Metals & Mining": 26,
+    "Communications": 31,
+    "Airlines": 34,
+    "Distributors": 40,
+    "Construction": 7,
+    "Auto Components": 6,
+    "Trading Companies & Distributors": 8,
+    "Industrial Conglomerates": 16,
+    "Tobacco": 9
+  },
+  "top_rules": [
+    {
+      "type": "pair",
+      "sector": "Consumer products",
+      "features": [
+        "current_ratio",
+        "fcf_margin_momentum_4q"
+      ],
+      "bins": [
+        2,
+        3
+      ],
+      "support": 45,
+      "win_rate": 0.24444444444444444,
+      "edge": -0.3145833333333333,
+      "stability": 0.55,
+      "weight": 1.3019853412298155,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Consumer products",
+      "features": [
+        "current_ratio_trend_4q",
+        "fcf_margin_momentum_4q"
+      ],
+      "bins": [
+        2,
+        3
+      ],
+      "support": 48,
+      "win_rate": 0.2708333333333333,
+      "edge": -0.2881944444444445,
+      "stability": 0.55,
+      "weight": 1.2124506687756242,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Electrical Equipment",
+      "features": [
+        "current_ratio_delta_4q",
+        "current_ratio_delta_1q"
+      ],
+      "bins": [
+        0,
+        0
+      ],
+      "support": 52,
+      "win_rate": 0.7692307692307693,
+      "edge": 0.2727029914529915,
+      "stability": 0.55,
+      "weight": 1.1704100307904355,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Financials",
+      "features": [
+        "revenue_decline_delta_8q",
+        "debt_equity__pct_sector"
+      ],
+      "bins": [
+        1,
+        1
+      ],
+      "support": 77,
+      "win_rate": 0.2857142857142857,
+      "edge": -0.21201016608546608,
+      "stability": 0.744767578419273,
+      "weight": 1.1639918290206954,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Life Sciences Tools & Services",
+      "features": [
+        "fcf_margin_trend_4q",
+        "fcf_margin"
+      ],
+      "bins": [
+        3,
+        3
+      ],
+      "support": 60,
+      "win_rate": 0.7166666666666667,
+      "edge": 0.253125,
+      "stability": 0.55,
+      "weight": 1.1248507075652479,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Electrical Equipment",
+      "features": [
+        "current_ratio_momentum_4q",
+        "current_ratio_delta_2q"
+      ],
+      "bins": [
+        0,
+        0
+      ],
+      "support": 50,
+      "win_rate": 0.76,
+      "edge": 0.2634722222222222,
+      "stability": 0.55,
+      "weight": 1.119836910628551,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Electrical Equipment",
+      "features": [
+        "current_ratio_momentum_4q",
+        "revenue_decline_trend_4q"
+      ],
+      "bins": [
+        0,
+        0
+      ],
+      "support": 70,
+      "win_rate": 0.7285714285714285,
+      "edge": 0.23204365079365075,
+      "stability": 0.55,
+      "weight": 1.069247152700794,
+      "requires_temporal": true
+    },
+    {
+      "type": "single",
+      "sector": "Real Estate",
+      "features": [
+        "interest_coverage__pct_sector"
+      ],
+      "bins": [
+        1
+      ],
+      "support": 207,
+      "win_rate": 0.748792270531401,
+      "edge": 0.17329369503282543,
+      "stability": 0.7765549189985133,
+      "weight": 1.0371076921665023,
+      "requires_temporal": false
+    },
+    {
+      "type": "pair",
+      "sector": "Materials",
+      "features": [
+        "debt_equity",
+        "consecutive_losses_momentum_4q"
+      ],
+      "bins": [
+        4,
+        0
+      ],
+      "support": 92,
+      "win_rate": 0.358695652173913,
+      "edge": -0.20750643841842148,
+      "stability": 0.55,
+      "weight": 1.016727607387086,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Consumer products",
+      "features": [
+        "current_ratio__pct_sector",
+        "current_ratio"
+      ],
+      "bins": [
+        1,
+        1
+      ],
+      "support": 79,
+      "win_rate": 0.7721518987341772,
+      "edge": 0.21312412095639943,
+      "stability": 0.55,
+      "weight": 1.0095627360587145,
+      "requires_temporal": false
+    }
+  ],
+  "last_train_metrics": {
+    "best_cv_auc": 0.5283922388608762,
+    "n_features": 31.0
+  }
+}

@@ -175,7 +175,7 @@ def get_portfolio_weights(
     signals: pd.DataFrame,
     selected_only: bool = True,
     weight_by: str = "confidence",
-    max_weight: float = 0.25,
+    max_weight: float = 1.0,
 ) -> pd.Series:
     """Compute normalized portfolio weights proportional to confidence.
 
@@ -193,7 +193,7 @@ def get_portfolio_weights(
             equal weights when the column is absent or all-zero.
         max_weight (float): Maximum weight per position (0, 1].  Positions
             exceeding this cap are truncated and the surplus is redistributed
-            proportionally.  Set to 1.0 to disable the cap.
+            proportionally.  Defaults to 1.0 (cap disabled).
 
     Returns:
         pd.Series: Normalised weights indexed by ticker.
@@ -209,11 +209,11 @@ def get_portfolio_weights(
         raw = pd.to_numeric(df[weight_by], errors="coerce").clip(0.0, None)
         total = float(raw.sum())
         if total > 0:
-            weights = (raw / total).values
+            weights = np.asarray(raw / total, dtype=float).copy()
         else:
-            weights = np.full(len(df), 1.0 / len(df))
+            weights = np.full(len(df), 1.0 / len(df), dtype=float)
     else:
-        weights = np.full(len(df), 1.0 / len(df))
+        weights = np.full(len(df), 1.0 / len(df), dtype=float)
 
     # Apply max-weight cap iteratively (water-filling redistribution).
     # At most len(weights) rounds are needed because each round converts at
@@ -287,8 +287,23 @@ def simulate_tp_sl(
     sl_pct: float,
     *,
     max_holding_days: int = _DEFAULT_MAX_HOLDING_DAYS,
+    min_holding_days: int = 0,
+    trailing_stop_pct: float = 0.0,
+    trailing_review_days: int = 30,
+    trail_events: Optional[List[Dict[str, object]]] = None,
 ) -> Dict[str, object]:
-    """Simulate whether TP or SL is hit first from entry_date onward."""
+    """Simulate whether TP or SL is hit first from entry_date onward.
+
+    ``min_holding_days`` is a grace period: TP/SL checks are skipped for the
+    first *min_holding_days* calendar days after entry, preventing early exits
+    caused by normal short-term volatility.
+
+    When ``trailing_stop_pct > 0``, reaching the TP level does not immediately
+    close the position. Instead the TP becomes a hard floor for a trailing stop
+    that ratchets up every ``trailing_review_days`` calendar days based on the
+    running peak price. The trailing stop never moves down. Exit outcome is
+    reported as "TP" (profitable exit above the original TP level).
+    """
     result: Dict[str, object] = {
         "ticker": ticker,
         "entry_date": entry_date,
@@ -325,24 +340,97 @@ def simulate_tp_sl(
     result["tp_price"] = entry_price * (1.0 + float(tp_pct))
     result["sl_price"] = entry_price * (1.0 - float(sl_pct))
 
+    use_trailing = float(trailing_stop_pct) > 0.0
+    trailing_active = False
+    trailing_stop_price = float(result["sl_price"])  # initialised; set properly at activation
+    peak_price = entry_price
+    last_review_day = 0
+
+    def _record(event_type: str, dt: pd.Timestamp, price: float, stop: float) -> None:
+        if trail_events is None:
+            return
+        trail_events.append({
+            "ticker": ticker,
+            "entry_date": pd.Timestamp(actual_entry).date(),
+            "entry_price": round(entry_price, 4),
+            "tp_price": round(float(result["tp_price"]), 4),
+            "sl_price_original": round(float(result["sl_price"]), 4),
+            "event_type": event_type,
+            "event_date": pd.Timestamp(dt).date(),
+            "days_from_entry": int((pd.Timestamp(dt) - actual_entry).days),
+            "price": round(price, 4),
+            "trailing_stop": round(stop, 4),
+            "peak_price": round(peak_price, 4),
+            "return_pct": round((price / entry_price - 1.0) * 100.0, 2),
+        })
+
     window = prices.loc[(prices.index > actual_entry) & (prices.index <= expiry_ts)]
+    grace = int(max(min_holding_days, 0))
     for dt, px in window.items():
         price = float(px)
         days_elapsed = int((pd.Timestamp(dt) - actual_entry).days)
-        if price >= result["tp_price"]:
-            result["outcome"] = "TP"
-            result["days_to_outcome"] = days_elapsed
-            result["outcome_date"] = pd.Timestamp(dt)
-            return result
-        if price <= result["sl_price"]:
-            result["outcome"] = "SL"
-            result["days_to_outcome"] = days_elapsed
-            result["outcome_date"] = pd.Timestamp(dt)
-            return result
+        if days_elapsed < grace:
+            # Track peak even during grace (trailing activates immediately after)
+            if price > peak_price:
+                peak_price = price
+            continue
+
+        if not trailing_active:
+            # Normal TP/SL mode
+            if price >= result["tp_price"]:
+                if use_trailing:
+                    # TP crossed: switch to trailing mode.
+                    # New SL = price × (1 - trailing_pct) — gives breathing room so a
+                    # tiny 0.5% retrace after crossing TP does NOT trigger exit.
+                    # Hard floor: never below the original SL price.
+                    trailing_active = True
+                    peak_price = price
+                    last_review_day = days_elapsed
+                    initial_stop = price * (1.0 - float(trailing_stop_pct))
+                    trailing_stop_price = max(initial_stop, float(result["sl_price"]))
+                    _record("TRAILING_ACTIVATED", dt, price, trailing_stop_price)
+                else:
+                    result["outcome"] = "TP"
+                    result["days_to_outcome"] = days_elapsed
+                    result["outcome_date"] = pd.Timestamp(dt)
+                    _record("EXIT_TP", dt, price, trailing_stop_price)
+                    return result
+            elif price <= result["sl_price"]:
+                result["outcome"] = "SL"
+                result["days_to_outcome"] = days_elapsed
+                result["outcome_date"] = pd.Timestamp(dt)
+                _record("EXIT_SL", dt, price, trailing_stop_price)
+                return result
+        else:
+            # Trailing stop mode: ratchet up every review interval, never down.
+            if price > peak_price:
+                peak_price = price
+
+            # Monthly review: ratchet trailing stop upward (never down)
+            if (days_elapsed - last_review_day) >= int(trailing_review_days):
+                new_stop = peak_price * (1.0 - float(trailing_stop_pct))
+                # Only ratchet up if price is currently above the new level.
+                # If the price has already pulled back below the new calculated stop,
+                # skip the update: the old stop stays active and the position gets a
+                # chance to recover. A forced exit caused by a calendar event (not a
+                # market move) is an artefact we want to avoid.
+                if new_stop <= price:
+                    trailing_stop_price = max(trailing_stop_price, new_stop, float(result["sl_price"]))
+                last_review_day = days_elapsed
+                _record("REVIEW", dt, price, trailing_stop_price)
+
+            # Daily check: did price fall below current trailing stop?
+            if price <= trailing_stop_price:
+                result["outcome"] = "TP"
+                result["days_to_outcome"] = days_elapsed
+                result["outcome_date"] = pd.Timestamp(dt)
+                _record("EXIT_TP_TRAIL", dt, price, trailing_stop_price)
+                return result
 
     if not window.empty:
         result["days_to_outcome"] = int((pd.Timestamp(window.index[-1]) - actual_entry).days)
         result["outcome_date"] = pd.Timestamp(window.index[-1])
+        _record("EXIT_TIME", window.index[-1], float(window.iloc[-1]), trailing_stop_price)
     else:
         result["outcome_date"] = pd.Timestamp(actual_entry)
     return result
@@ -361,6 +449,7 @@ def run_backtest(
         ticker = str(row["ticker"])
         tp_pct = float(row.get("tp_pct", 0.08))
         sl_pct = float(row.get("sl_pct", 0.05))
+        trailing_stop_pct = float(row.get("trailing_stop_pct", 0.0))
         prices = _extract_close(prices_dict.get(ticker))
         rows.append(
             simulate_tp_sl(
@@ -370,6 +459,7 @@ def run_backtest(
                 tp_pct=tp_pct,
                 sl_pct=sl_pct,
                 max_holding_days=max_holding_days,
+                trailing_stop_pct=trailing_stop_pct,
             )
         )
 

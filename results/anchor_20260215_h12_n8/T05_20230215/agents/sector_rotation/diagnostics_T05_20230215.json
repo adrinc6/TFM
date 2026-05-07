@@ -1,0 +1,72 @@
+{
+  "agent": "sector_rotation",
+  "timestamp": "2026-05-07T07:10:34.149283",
+  "fold": "T05_20230215",
+  "class_balance": {
+    "n_samples": 1440,
+    "n_positive": 985,
+    "n_negative": 455,
+    "positive_ratio": 0.6840277777777778
+  },
+  "cv_metrics": {
+    "mean_auc": 0.5880485456050951,
+    "std_auc": 0.017974431479903144,
+    "mean_f1": 0.7789110467635391
+  },
+  "n_sector_obs": 1440,
+  "benchmark_mode": "spy",
+  "top_features": {
+    "revenue_yoy_growth": 0.24164836686900668,
+    "fcf_yield": 0.18478318399377502,
+    "net_margin": 0.17037143901838617,
+    "volatility_60d": 0.1481830346554656,
+    "momentum_3m": 0.14261510439152383,
+    "pe_vs_5y_median": 0.11239887107184274
+  },
+  "feature_selection": {
+    "corr_threshold": 0.85,
+    "top_n": 14,
+    "min_features": 3,
+    "relevance_weight": 0.65,
+    "importance_weight": 0.35,
+    "rf_n_estimators": 120,
+    "rf_max_depth": 5,
+    "cutoff_fraction": 0.4,
+    "min_keep": 6,
+    "max_keep": 10,
+    "n_selected": 6,
+    "selected": [
+      "revenue_yoy_growth",
+      "volatility_60d",
+      "momentum_3m",
+      "net_margin",
+      "pe_vs_5y_median",
+      "fcf_yield"
+    ],
+    "selected_weights_pct": {
+      "revenue_yoy_growth": 31.224578495587213,
+      "volatility_60d": 15.04880863275862,
+      "momentum_3m": 14.310874551428643,
+      "net_margin": 13.4055495673437,
+      "pe_vs_5y_median": 13.072872497796094,
+      "fcf_yield": 12.93731625508573
+    },
+    "dropped_pair": [],
+    "dropped_corr": [],
+    "dropped_imp": [
+      "momentum_6m",
+      "price_vs_52w_high",
+      "earnings_yield",
+      "ev_to_ebitda",
+      "roic",
+      "fcf_margin",
+      "sector_vs_market_momentum",
+      "risk_adjusted_sector_momentum"
+    ]
+  },
+  "last_train_metrics": {
+    "mean_auc": 0.5880485456050951,
+    "std_auc": 0.017974431479903144,
+    "mean_f1": 0.7789110467635391
+  }
+}

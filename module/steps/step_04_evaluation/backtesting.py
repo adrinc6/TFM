@@ -17,6 +17,8 @@ from environment import (
     SCORE_WEIGHTED_PORTFOLIO,
     PORTFOLIO_MAX_STOCKS_PER_SECTOR,
     PORTFOLIO_MAX_STOCK_WEIGHT,
+    TP_SL_GRACE_PERIOD_FRACTION,
+    TP_SL_TRAILING_REVIEW_DAYS,
 )
 from module.common.performance_metrics import compute_all_metrics
 from module.common.portfolio_optimization import hrp_weights, risk_parity_weights, robust_markowitz_weights
@@ -218,8 +220,13 @@ class WalkForwardBacktester:
 	) -> Dict:
 		period_id = analysis_quarter if analysis_quarter else str(fold_id)
 		min_stocks = max(1, self.top_n_stocks // 2)
-		ranking_col = "ev" if "ev" in predictions_df.columns else "score"
-		selection_threshold = 0.0 if ranking_col == "ev" else PORTFOLIO_MIN_SCORE
+		if "selection_score" in predictions_df.columns:
+			ranking_col = "selection_score"
+		elif "ev" in predictions_df.columns:
+			ranking_col = "ev"
+		else:
+			ranking_col = "score"
+		selection_threshold = 0.0 if ranking_col in {"ev", "selection_score"} else PORTFOLIO_MIN_SCORE
 		ordered = predictions_df.sort_values(ranking_col, ascending=False).copy()
 		if "score" not in ordered.columns:
 			# Keep downstream interfaces stable: "score" is the normalized ranking field.
@@ -264,6 +271,10 @@ class WalkForwardBacktester:
 		daily_returns = []
 		tickers_with_prices = []
 		ticker_returns = {}
+		ticker_exit_dates: Dict[str, str] = {}
+		ticker_exit_reasons: Dict[str, str] = {}
+		ticker_days_to_outcome: Dict[str, int] = {}
+		fold_trail_events: List[Dict] = []
 		bench_period = benchmark.loc[test_start:test_end].dropna()
 		if len(bench_period) < 2:
 			log.warning(f"[Backtester] {period_id}: insufficient benchmark data â€” analysis skipped.")
@@ -275,21 +286,99 @@ class WalkForwardBacktester:
 				f"{test_start.date()} -> {actual_end.date()} (teorico hasta {test_end.date()})"
 			)
 
+		if "max_holding_days" in predictions_df.columns:
+			mh_series = pd.to_numeric(predictions_df.get("max_holding_days"), errors="coerce").dropna()
+			if len(mh_series) > 0 and float(mh_series.median()) > 0:
+				max_holding_days_default = int(float(mh_series.median()))
+			else:
+				max_holding_days_default = int(max((pd.Timestamp(actual_end) - pd.Timestamp(test_start)).days, 1))
+		else:
+			max_holding_days_default = int(max((pd.Timestamp(actual_end) - pd.Timestamp(test_start)).days, 1))
+
+		plan_by_ticker = (
+			predictions_df.set_index("ticker")
+			if "ticker" in predictions_df.columns else pd.DataFrame()
+		)
+		last_exit_dt = pd.Timestamp(test_start)
+
 		for ticker in top:
 			if ticker not in prices_dict:
 				continue
 			prices = prices_dict[ticker]
 			cc = _get_close_column(prices)
-			period = prices.loc[test_start:actual_end, cc]
+			period = pd.to_numeric(prices.loc[test_start:actual_end, cc], errors="coerce").dropna()
 			if len(period) < 2:
 				continue
-			ret = period.pct_change().dropna()
+
+			tp_pct = np.nan
+			sl_pct = np.nan
+			trailing_stop_pct_ticker = 0.0
+			max_holding_days = max_holding_days_default
+			if not plan_by_ticker.empty and ticker in plan_by_ticker.index:
+				row = plan_by_ticker.loc[ticker]
+				if isinstance(row, pd.DataFrame):
+					row = row.iloc[-1]
+				tp_pct = float(pd.to_numeric(row.get("tp_pct", np.nan), errors="coerce"))
+				sl_pct = float(pd.to_numeric(row.get("sl_pct", np.nan), errors="coerce"))
+				trailing_val = pd.to_numeric(row.get("trailing_stop_pct", 0.0), errors="coerce")
+				trailing_stop_pct_ticker = float(trailing_val) if np.isfinite(float(trailing_val if trailing_val is not None else 0.0)) else 0.0
+				mh = pd.to_numeric(row.get("max_holding_days", max_holding_days_default), errors="coerce")
+				if np.isfinite(mh) and float(mh) > 0:
+					max_holding_days = int(float(mh))
+
+			ticker_trail_events: List[Dict] = []
+			exit_dt, exit_reason, days_to_outcome = _tp_sl_exit_from_close(
+				period,
+				entry_date=pd.Timestamp(test_start),
+				fallback_exit_date=pd.Timestamp(actual_end),
+				tp_pct=float(tp_pct),
+				sl_pct=float(sl_pct),
+				max_holding_days=max_holding_days,
+				trailing_stop_pct=trailing_stop_pct_ticker,
+				trail_events=ticker_trail_events,
+			)
+			for ev in ticker_trail_events:
+				ev["ticker"] = ticker
+				ev["fold_id"] = period_id
+				fold_trail_events.append(ev)
+			exit_slice = period.loc[period.index <= pd.Timestamp(exit_dt)]
+			if len(exit_slice) < 2:
+				continue
+
+			ret = exit_slice.pct_change().dropna()
 			daily_returns.append(ret)
 			tickers_with_prices.append(ticker)
 			ticker_returns[ticker] = round(float((1 + ret).prod() - 1), 6)
+			ticker_exit_dates[ticker] = str(pd.Timestamp(exit_dt).date())
+			ticker_exit_reasons[ticker] = str(exit_reason)
+			ticker_days_to_outcome[ticker] = int(days_to_outcome)
+			if pd.Timestamp(exit_dt) > last_exit_dt:
+				last_exit_dt = pd.Timestamp(exit_dt)
 
 		if not daily_returns:
 			return {}
+
+		# Write per-fold trailing stop evolution CSV
+		if fold_trail_events:
+			trail_cols = [
+				"fold_id", "ticker", "entry_date", "entry_price",
+				"tp_price", "sl_price_original",
+				"event_type", "event_date", "days_from_entry",
+				"price", "peak_price", "trailing_stop", "return_pct",
+			]
+			trail_df = pd.DataFrame(fold_trail_events)
+			for col in trail_cols:
+				if col not in trail_df.columns:
+					trail_df[col] = None
+			trail_df = trail_df[trail_cols]
+			csv_path = self.results_dir / f"portfolio_trail_{period_id}.csv"
+			trail_df.to_csv(csv_path, index=False, float_format="%.4f")
+			log.info("[Trail] %s: %d events → %s", period_id, len(trail_df), csv_path.name)
+
+		bench_eval = benchmark.loc[test_start:last_exit_dt].dropna()
+		if len(bench_eval) >= 2:
+			bench_period = bench_eval
+		actual_eval_end = pd.Timestamp(bench_period.index.max())
 
 		# Portfolio optimization from pre-entry trailing returns (no look-ahead).
 		N = len(tickers_with_prices)
@@ -378,14 +467,14 @@ class WalkForwardBacktester:
 		for ticker, ret_series in zip(tickers_with_prices, daily_returns):
 			ticker_price_series[ticker] = (1 + ret_series).cumprod()
 
-		price_days = int(len(bench_period.loc[test_start:actual_end]))
+		price_days = int(len(bench_period))
 		fold_result = {
 			"fold": fold_id,
 			"year_quarter": year_quarter,
 			"train_years": train_years_int,
 			"train_start": str(train_start.date()) if train_start is not None else None,
 			"test_start": str(test_start.date()),
-			"test_end": str(actual_end.date()),
+			"test_end": str(actual_eval_end.date()),
 			"test_end_target": str(test_end.date()),
 			"price_days": price_days,
 			"selected_tickers": top,
@@ -396,6 +485,9 @@ class WalkForwardBacktester:
 			"excess_sharpe": excess_sharpe,
 			"ticker_returns": ticker_returns_sorted,
 			"ticker_weights": ticker_weights,
+			"ticker_exit_dates": ticker_exit_dates,
+			"ticker_exit_reasons": ticker_exit_reasons,
+			"ticker_days_to_outcome": ticker_days_to_outcome,
 			"weighting_mode": weighting_mode,
 			"_ticker_price_series": ticker_price_series,
 			"_strat_price_series": (1 + strat_aligned).cumprod(),
@@ -720,6 +812,63 @@ def _price_on_or_before(price_series: pd.Series, date: pd.Timestamp) -> Optional
     return px
 
 
+def _tp_sl_exit_from_close(
+	close_series: pd.Series,
+	*,
+	entry_date: pd.Timestamp,
+	fallback_exit_date: pd.Timestamp,
+	tp_pct: float,
+	sl_pct: float,
+	max_holding_days: int,
+	trailing_stop_pct: float = 0.0,
+	trail_events: Optional[List[Dict]] = None,
+) -> tuple[pd.Timestamp, str, int]:
+	"""Resolve TP/SL-first exit date for a ticker close-price series."""
+	fallback = pd.Timestamp(fallback_exit_date)
+	entry_ts = pd.Timestamp(entry_date)
+
+	if close_series is None or close_series.empty:
+		return fallback, "time_exit", int(max((fallback - entry_ts).days, 0))
+
+	if (not np.isfinite(tp_pct)) or (not np.isfinite(sl_pct)) or tp_pct <= 0.0 or sl_pct <= 0.0:
+		return fallback, "time_exit", int(max((fallback - entry_ts).days, 0))
+
+	sim = simulate_tp_sl(
+		ticker="__SIM__",
+		prices=close_series,
+		entry_date=entry_ts,
+		tp_pct=float(tp_pct),
+		sl_pct=float(sl_pct),
+		max_holding_days=int(max_holding_days),
+		min_holding_days=int(max_holding_days * float(TP_SL_GRACE_PERIOD_FRACTION)),
+		trailing_stop_pct=float(trailing_stop_pct),
+		trailing_review_days=int(TP_SL_TRAILING_REVIEW_DAYS),
+		trail_events=trail_events,
+	)
+
+	outcome = str(sim.get("outcome", "NONE")).upper()
+	out_dt = sim.get("outcome_date")
+	if pd.isna(out_dt):
+		dt_exit = fallback
+	else:
+		resolved = _resolve_exec_date_on_or_before(close_series, pd.Timestamp(out_dt))
+		dt_exit = pd.Timestamp(resolved) if resolved is not None else fallback
+
+	if dt_exit <= entry_ts:
+		dt_exit = fallback
+		outcome = "NONE"
+
+	if outcome == "TP":
+		reason = "tp_hit"
+	elif outcome == "SL":
+		reason = "sl_hit"
+	else:
+		reason = "time_exit"
+
+	days = int(sim.get("days_to_outcome", max((dt_exit - entry_ts).days, 0)))
+	return pd.Timestamp(dt_exit), reason, int(max(days, 0))
+
+
 def _build_weights(selected_tickers: List[str], weights: Optional[Dict[str, float]]) -> Dict[str, float]:
     if not selected_tickers:
         return {}
@@ -748,6 +897,7 @@ def simulate_fold_usd(
     slippage_pct: float,
     allow_fractional_shares: bool = True,
     tp_sl_plan_by_ticker: Optional[Dict[str, Dict[str, float]]] = None,
+    trail_events: Optional[List[Dict]] = None,
 ) -> Dict[str, object]:
     """Simulate one long-only fold in USD with deterministic trade rules."""
     entry_req = pd.Timestamp(entry_date_requested)
@@ -854,6 +1004,10 @@ def simulate_fold_usd(
                 tp_pct=tp_pct,
                 sl_pct=sl_pct,
                 max_holding_days=max_holding_days,
+                min_holding_days=int(max_holding_days * float(TP_SL_GRACE_PERIOD_FRACTION)),
+                trailing_stop_pct=0.05,
+                trailing_review_days=int(TP_SL_TRAILING_REVIEW_DAYS),
+                trail_events=trail_events,
             )
             out = str(sim.get("outcome", "NONE")).upper()
             out_dt = sim.get("outcome_date")
@@ -1096,6 +1250,7 @@ def simulate_fold_usd(
         "weights_used": weights_used,
         "missing_tickers": missing_tickers,
         "missing_reasons": missing_reasons,
+        "trail_events": trail_events if trail_events else [],
     }
 
 

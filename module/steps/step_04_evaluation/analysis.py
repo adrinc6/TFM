@@ -9,6 +9,7 @@ from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
+from module.steps.step_04_evaluation.strategy import simulate_tp_sl
 log = logging.getLogger(__name__)
 
 ABLATION_AGENTS = ["fundamental", "valuation", "momentum", "bear"]
@@ -210,8 +211,11 @@ def _compute_ticker_return(
     ticker: str,
     entry_date: pd.Timestamp,
     exit_date: pd.Timestamp,
+    tp_pct: Optional[float] = None,
+    sl_pct: Optional[float] = None,
+    max_holding_days: Optional[int] = None,
 ) -> Optional[float]:
-    """Compute simple return for a ticker over [entry_date, exit_date]."""
+    """Compute ticker return over [entry_date, exit_date] with optional TP/SL exit."""
     prices = prices_dict.get(ticker)
     if prices is None or prices.empty:
         return None
@@ -238,7 +242,25 @@ def _compute_ticker_return(
     else:
         p0 = float(entry_window.iloc[0])
 
-    exit_window = close.loc[close.index <= exit_date]
+    exit_ts = pd.Timestamp(exit_date)
+
+    tp = float(tp_pct) if tp_pct is not None and np.isfinite(tp_pct) else np.nan
+    sl = float(sl_pct) if sl_pct is not None and np.isfinite(sl_pct) else np.nan
+    if np.isfinite(tp) and np.isfinite(sl) and tp > 0.0 and sl > 0.0:
+        horizon_days = int(max_holding_days) if max_holding_days is not None else int(max((exit_ts - pd.Timestamp(entry_date)).days, 1))
+        sim = simulate_tp_sl(
+            ticker=str(ticker),
+            prices=close,
+            entry_date=pd.Timestamp(entry_date),
+            tp_pct=float(tp),
+            sl_pct=float(sl),
+            max_holding_days=int(max(horizon_days, 1)),
+        )
+        out_dt = sim.get("outcome_date")
+        if not pd.isna(out_dt):
+            exit_ts = min(exit_ts, pd.Timestamp(out_dt))
+
+    exit_window = close.loc[close.index <= exit_ts]
     if exit_window.empty:
         return None
     p1 = float(exit_window.iloc[-1])
@@ -284,8 +306,9 @@ def compute_portfolio_size_alpha_matrix(
 
         # Reuse scored predictions already produced by the fold (no model rerun).
         # Rank tickers by score (descending)
+        keep_cols = [c for c in ["ticker", "score", "tp_pct", "sl_pct", "max_holding_days"] if c in preds_df.columns]
         ranked = (
-            preds_df[["ticker", "score"]]
+            preds_df[keep_cols]
             .drop_duplicates(subset=["ticker"], keep="last")
             .sort_values("score", ascending=False)
             .reset_index(drop=True)
@@ -303,9 +326,27 @@ def compute_portfolio_size_alpha_matrix(
 
         # Compute return for each ranked ticker
         ticker_returns = {}
+        tp_sl_by_ticker: Dict[str, Dict[str, float]] = {}
+        if "ticker" in ranked.columns:
+            for _, row in ranked.iterrows():
+                tk = str(row["ticker"])
+                tp_sl_by_ticker[tk] = {
+                    "tp_pct": float(pd.to_numeric(row.get("tp_pct", np.nan), errors="coerce")),
+                    "sl_pct": float(pd.to_numeric(row.get("sl_pct", np.nan), errors="coerce")),
+                    "max_holding_days": int(float(pd.to_numeric(row.get("max_holding_days", np.nan), errors="coerce"))) if np.isfinite(pd.to_numeric(row.get("max_holding_days", np.nan), errors="coerce")) else None,
+                }
         for _, row in ranked.iterrows():
             tk = str(row["ticker"])
-            ret = _compute_ticker_return(prices_dict, tk, entry_date, exit_date)
+            plan = tp_sl_by_ticker.get(tk, {})
+            ret = _compute_ticker_return(
+                prices_dict,
+                tk,
+                entry_date,
+                exit_date,
+                tp_pct=plan.get("tp_pct"),
+                sl_pct=plan.get("sl_pct"),
+                max_holding_days=plan.get("max_holding_days"),
+            )
             if ret is not None:
                 ticker_returns[tk] = ret
 

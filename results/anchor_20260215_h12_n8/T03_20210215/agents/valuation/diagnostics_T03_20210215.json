@@ -1,0 +1,259 @@
+{
+  "agent": "valuation",
+  "timestamp": "2026-05-07T02:53:20.263533",
+  "fold": "T03_20210215",
+  "selected_base_features": [
+    "ps_ratio",
+    "ev_ebitda_vs_5y_median",
+    "earnings_yield",
+    "pe_vs_5y_median",
+    "pe_ratio",
+    "ev_to_ebitda",
+    "fcf_yield",
+    "pb_ratio"
+  ],
+  "n_base_features": 8,
+  "n_model_features": 25,
+  "best_model": "xgboost",
+  "cv_summary": {
+    "logistic": {
+      "mean_auc": 0.4982449145883489,
+      "std_auc": 0.021733204525908826
+    },
+    "random_forest": {
+      "mean_auc": 0.5200484584274869,
+      "std_auc": 0.028197759246225258
+    },
+    "gradient_boosting": {
+      "mean_auc": 0.5137672017527481,
+      "std_auc": 0.030344421347562434
+    },
+    "xgboost": {
+      "mean_auc": 0.5211250190395583,
+      "std_auc": 0.026103538388724836
+    }
+  },
+  "top_features": {
+    "ev_ebitda_vs_5y_median__pct_universe": 0.07957454770803452,
+    "fcf_yield__pct_universe": 0.05213000997900963,
+    "ev_ebitda_vs_5y_median": 0.048451993614435196,
+    "pb_ratio__pct_universe": 0.0464903898537159,
+    "ev_to_ebitda__pct_universe": 0.043861087411642075,
+    "ps_ratio__pct_universe": 0.042201608419418335,
+    "pb_ratio": 0.04196123033761978,
+    "ps_ratio": 0.04068246856331825,
+    "ev_to_ebitda": 0.04067636653780937,
+    "earnings_yield": 0.038725595921278,
+    "rule_confidence": 0.03822210058569908,
+    "pb_ratio__pct_sector": 0.0377344973385334,
+    "fcf_yield": 0.037250395864248276,
+    "ev_to_ebitda__pct_sector": 0.03718892112374306,
+    "fcf_yield__pct_sector": 0.037021659314632416
+  },
+  "rule_engine_enabled": true,
+  "rule_count": 712,
+  "global_tp_rate": 0.5076708507670851,
+  "rule_blend": 0.22,
+  "sector_rule_counts": {
+    "Technology": 40,
+    "Financials": 40,
+    "Health Care": 40,
+    "Utilities": 37,
+    "Real Estate": 40,
+    "Consumer Discretionary": 40,
+    "Banking": 40,
+    "Machinery": 40,
+    "Consumer products": 40,
+    "Energy": 40,
+    "Hotels, Restaurants & Leisure": 40,
+    "Consumer Staples": 40,
+    "Materials": 40,
+    "Electrical Equipment": 40,
+    "Life Sciences Tools & Services": 40,
+    "Professional Services": 17,
+    "Industrials": 9,
+    "Telecommunication": 12,
+    "Communication Services": 7,
+    "Healthcare": 10,
+    "Road & Rail": 8,
+    "Packaging": 11,
+    "Textiles, Apparel & Luxury Goods": 1,
+    "_other": 40
+  },
+  "top_rules": [
+    {
+      "type": "single",
+      "sector": "Banking",
+      "features": [
+        "pb_ratio"
+      ],
+      "bins": [
+        4
+      ],
+      "support": 80,
+      "win_rate": 0.15,
+      "edge": -0.32999999999999996,
+      "stability": 0.8125,
+      "weight": 1.6676934541981903,
+      "requires_temporal": false
+    },
+    {
+      "type": "single",
+      "sector": "Banking",
+      "features": [
+        "ps_ratio__pct_sector"
+      ],
+      "bins": [
+        1
+      ],
+      "support": 93,
+      "win_rate": 0.0967741935483871,
+      "edge": -0.38322580645161286,
+      "stability": 0.5262413882342378,
+      "weight": 1.6035482949290043,
+      "requires_temporal": false
+    },
+    {
+      "type": "single",
+      "sector": "Banking",
+      "features": [
+        "ev_to_ebitda__pct_sector"
+      ],
+      "bins": [
+        4
+      ],
+      "support": 46,
+      "win_rate": 0.8478260869565217,
+      "edge": 0.36782608695652175,
+      "stability": 0.6590084353229761,
+      "weight": 1.4547145078844412,
+      "requires_temporal": false
+    },
+    {
+      "type": "pair",
+      "sector": "Banking",
+      "features": [
+        "pb_ratio",
+        "pb_ratio_trend_4q"
+      ],
+      "bins": [
+        4,
+        4
+      ],
+      "support": 63,
+      "win_rate": 0.1746031746031746,
+      "edge": -0.3053968253968254,
+      "stability": 0.55,
+      "weight": 1.3729885758138272,
+      "requires_temporal": true
+    },
+    {
+      "type": "single",
+      "sector": "Banking",
+      "features": [
+        "pb_ratio"
+      ],
+      "bins": [
+        0
+      ],
+      "support": 80,
+      "win_rate": 0.7375,
+      "edge": 0.25750000000000006,
+      "stability": 0.85,
+      "weight": 1.3352533756472211,
+      "requires_temporal": false
+    },
+    {
+      "type": "pair",
+      "sector": "Technology",
+      "features": [
+        "ps_ratio",
+        "ev_ebitda_vs_5y_median"
+      ],
+      "bins": [
+        1,
+        2
+      ],
+      "support": 66,
+      "win_rate": 0.30303030303030304,
+      "edge": -0.25403274565285733,
+      "stability": 0.55,
+      "weight": 1.154648109199337,
+      "requires_temporal": false
+    },
+    {
+      "type": "pair",
+      "sector": "Consumer Discretionary",
+      "features": [
+        "pe_vs_5y_median_trend_4q",
+        "ps_ratio_delta_1q"
+      ],
+      "bins": [
+        4,
+        1
+      ],
+      "support": 47,
+      "win_rate": 0.2765957446808511,
+      "edge": -0.27303660826032544,
+      "stability": 0.55,
+      "weight": 1.1425949410191247,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Machinery",
+      "features": [
+        "ev_ebitda_vs_5y_median_delta_4q",
+        "ev_ebitda_vs_5y_median_momentum_4q"
+      ],
+      "bins": [
+        0,
+        0
+      ],
+      "support": 46,
+      "win_rate": 0.2608695652173913,
+      "edge": -0.2699615339783192,
+      "stability": 0.55,
+      "weight": 1.123582484561242,
+      "requires_temporal": true
+    },
+    {
+      "type": "single",
+      "sector": "Banking",
+      "features": [
+        "pb_ratio_trend_4q"
+      ],
+      "bins": [
+        4
+      ],
+      "support": 78,
+      "win_rate": 0.2564102564102564,
+      "edge": -0.2235897435897436,
+      "stability": 0.8125,
+      "weight": 1.1235082837061356,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Utilities",
+      "features": [
+        "ps_ratio_trend_4q",
+        "pb_ratio_delta_1q"
+      ],
+      "bins": [
+        2,
+        0
+      ],
+      "support": 45,
+      "win_rate": 0.7111111111111111,
+      "edge": 0.2648070664807067,
+      "stability": 0.55,
+      "weight": 1.0959732518525542,
+      "requires_temporal": true
+    }
+  ],
+  "last_train_metrics": {
+    "best_cv_auc": 0.5211250190395583,
+    "n_features": 25.0
+  }
+}

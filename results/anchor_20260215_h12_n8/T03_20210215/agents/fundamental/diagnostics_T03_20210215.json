@@ -1,0 +1,264 @@
+{
+  "agent": "fundamental",
+  "timestamp": "2026-05-07T02:51:02.394292",
+  "fold": "T03_20210215",
+  "selected_base_features": [
+    "current_ratio",
+    "ebitda_margin",
+    "operating_margin",
+    "fcf_yoy_growth",
+    "interest_coverage",
+    "piotroski_fscore",
+    "roe",
+    "gross_margin",
+    "net_margin",
+    "debt_to_ebitda"
+  ],
+  "n_base_features": 10,
+  "n_model_features": 31,
+  "best_model": "random_forest",
+  "cv_summary": {
+    "logistic": {
+      "mean_auc": 0.5159362344891424,
+      "std_auc": 0.0315881023138206
+    },
+    "random_forest": {
+      "mean_auc": 0.5365206829442488,
+      "std_auc": 0.03460826156387949
+    },
+    "gradient_boosting": {
+      "mean_auc": 0.5295828827018979,
+      "std_auc": 0.02773153770461496
+    },
+    "xgboost": {
+      "mean_auc": 0.5315945446823912,
+      "std_auc": 0.0266082367845151
+    }
+  },
+  "top_features": {
+    "gross_margin__pct_universe": 0.10025625464994,
+    "interest_coverage__pct_universe": 0.07248789336999112,
+    "ebitda_margin": 0.05551032123940325,
+    "ebitda_margin__pct_universe": 0.05252814697738761,
+    "operating_margin__pct_universe": 0.044142396400142385,
+    "operating_margin": 0.04313405385609538,
+    "current_ratio__pct_universe": 0.04174747554944075,
+    "current_ratio": 0.037993036833890534,
+    "gross_margin__pct_sector": 0.037590978865194066,
+    "net_margin": 0.03686770000297991,
+    "interest_coverage__pct_sector": 0.03615589364359072,
+    "interest_coverage": 0.029882886806718478,
+    "debt_to_ebitda__pct_universe": 0.02894864687465758,
+    "fcf_yoy_growth__pct_universe": 0.02795371714961014,
+    "current_ratio__pct_sector": 0.025302804902059044
+  },
+  "rule_engine_enabled": true,
+  "rule_count": 883,
+  "global_tp_rate": 0.5125411705092475,
+  "rule_blend": 0.22,
+  "sector_rule_counts": {
+    "Technology": 40,
+    "Health Care": 40,
+    "Financials": 40,
+    "Utilities": 40,
+    "Consumer Discretionary": 40,
+    "Real Estate": 40,
+    "Hotels, Restaurants & Leisure": 40,
+    "Machinery": 40,
+    "Industrials": 40,
+    "Consumer Staples": 40,
+    "Consumer products": 40,
+    "Energy": 40,
+    "Electrical Equipment": 40,
+    "Materials": 40,
+    "Life Sciences Tools & Services": 40,
+    "Communication Services": 40,
+    "Textiles, Apparel & Luxury Goods": 40,
+    "Professional Services": 39,
+    "Airlines": 16,
+    "Telecommunication": 14,
+    "Road & Rail": 28,
+    "Commercial Services & Supplies": 18,
+    "Building": 3,
+    "Packaging": 14,
+    "Communications": 7,
+    "Trading Companies & Distributors": 5,
+    "Construction": 6,
+    "Healthcare": 13,
+    "_other": 40
+  },
+  "top_rules": [
+    {
+      "type": "pair",
+      "sector": "Consumer Staples",
+      "features": [
+        "current_ratio_trend_4q",
+        "current_ratio"
+      ],
+      "bins": [
+        4,
+        4
+      ],
+      "support": 77,
+      "win_rate": 0.6883116883116883,
+      "edge": 0.24707000316756417,
+      "stability": 0.55,
+      "weight": 1.1636014407627908,
+      "requires_temporal": true
+    },
+    {
+      "type": "single",
+      "sector": "_other",
+      "features": [
+        "ebitda_margin_delta_8q"
+      ],
+      "bins": [
+        2
+      ],
+      "support": 49,
+      "win_rate": 0.7551020408163265,
+      "edge": 0.3121672582076308,
+      "stability": 0.55,
+      "weight": 1.147933165910699,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Financials",
+      "features": [
+        "operating_margin_trend_4q",
+        "roe__pct_sector"
+      ],
+      "bins": [
+        2,
+        4
+      ],
+      "support": 68,
+      "win_rate": 0.7794117647058824,
+      "edge": 0.23842815814850526,
+      "stability": 0.55,
+      "weight": 1.0913021627346844,
+      "requires_temporal": true
+    },
+    {
+      "type": "single",
+      "sector": "Consumer Staples",
+      "features": [
+        "current_ratio_trend_4q"
+      ],
+      "bins": [
+        4
+      ],
+      "support": 87,
+      "win_rate": 0.6896551724137931,
+      "edge": 0.248413487269669,
+      "stability": 0.5925112236308518,
+      "weight": 1.083322836234304,
+      "requires_temporal": true
+    },
+    {
+      "type": "single",
+      "sector": "_other",
+      "features": [
+        "operating_margin_delta_8q"
+      ],
+      "bins": [
+        2
+      ],
+      "support": 46,
+      "win_rate": 0.7391304347826086,
+      "edge": 0.29619565217391297,
+      "stability": 0.55,
+      "weight": 1.0719731610630774,
+      "requires_temporal": true
+    },
+    {
+      "type": "single",
+      "sector": "Real Estate",
+      "features": [
+        "debt_to_ebitda__pct_sector"
+      ],
+      "bins": [
+        1
+      ],
+      "support": 90,
+      "win_rate": 0.23333333333333334,
+      "edge": -0.20416666666666666,
+      "stability": 0.7796700992794777,
+      "weight": 1.0349240135729505,
+      "requires_temporal": false
+    },
+    {
+      "type": "single",
+      "sector": "Consumer Staples",
+      "features": [
+        "current_ratio_momentum_4q"
+      ],
+      "bins": [
+        1
+      ],
+      "support": 65,
+      "win_rate": 0.18461538461538463,
+      "edge": -0.2566263005287395,
+      "stability": 0.55,
+      "weight": 1.0106650611225962,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Technology",
+      "features": [
+        "current_ratio_delta_8q",
+        "net_margin__pct_sector"
+      ],
+      "bins": [
+        0,
+        0
+      ],
+      "support": 50,
+      "win_rate": 0.8,
+      "edge": 0.23615676359039195,
+      "stability": 0.55,
+      "weight": 1.0037379209564214,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Financials",
+      "features": [
+        "net_margin_trend_4q",
+        "roe__pct_sector"
+      ],
+      "bins": [
+        3,
+        4
+      ],
+      "support": 47,
+      "win_rate": 0.7659574468085106,
+      "edge": 0.22497384025113354,
+      "stability": 0.55,
+      "weight": 0.9414633933904681,
+      "requires_temporal": true
+    },
+    {
+      "type": "single",
+      "sector": "Hotels, Restaurants & Leisure",
+      "features": [
+        "ebitda_margin_delta_8q"
+      ],
+      "bins": [
+        0
+      ],
+      "support": 75,
+      "win_rate": 0.68,
+      "edge": 0.19659751037344403,
+      "stability": 0.754504217661488,
+      "weight": 0.9396204858568011,
+      "requires_temporal": true
+    }
+  ],
+  "last_train_metrics": {
+    "best_cv_auc": 0.5365206829442488,
+    "n_features": 31.0
+  }
+}

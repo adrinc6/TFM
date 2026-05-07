@@ -60,6 +60,8 @@ def resolve_feature_columns(
         ValueError: If ``include_cols`` is None.
     """
     available = set(str(c) for c in available_cols)
+    # kept for backward compatibility: acknowledge the deprecated `default_cols` parameter
+    _ = default_cols
     if include_cols is None:
         raise ValueError(
             f"[{owner}] include_cols cannot be None: define *_FEATURE_COLUMNS in environment.py"

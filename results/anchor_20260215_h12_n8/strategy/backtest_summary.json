@@ -1,0 +1,59 @@
+{
+  "timestamp": "2026-05-07T14:50:51.822647",
+  "n_folds": 7,
+  "train_years_min": 12,
+  "test_quarters": 1,
+  "top_n_stocks": 7,
+  "mean_alpha": 0.10671438792907796,
+  "pct_folds_positive_alpha": 0.7142857142857143,
+  "by_train_years": {
+    "8": {
+      "n_folds": 1,
+      "mean_alpha": 0.3300720698022832,
+      "pct_positive_alpha": 1.0,
+      "mean_strategy_sharpe": 1.2523916974561435,
+      "mean_strategy_return": 0.49757695291897064
+    },
+    "9": {
+      "n_folds": 1,
+      "mean_alpha": -0.030073621946792306,
+      "pct_positive_alpha": 0.0,
+      "mean_strategy_sharpe": 0.38434275545722335,
+      "mean_strategy_return": 0.10685387985062089
+    },
+    "11": {
+      "n_folds": 1,
+      "mean_alpha": 0.053834061409400835,
+      "pct_positive_alpha": 1.0,
+      "mean_strategy_sharpe": -0.11777187899731847,
+      "mean_strategy_return": -0.018513215479531886
+    },
+    "12": {
+      "n_folds": 4,
+      "mean_alpha": 0.0982920515596635,
+      "pct_positive_alpha": 0.75,
+      "mean_strategy_sharpe": 0.9322966497723577,
+      "mean_strategy_return": 0.22468854289601053
+    }
+  },
+  "global_strategy_cumulative_return": 2.4474042808035184,
+  "global_strategy_annualized_return": 0.22513040095134285,
+  "global_strategy_sharpe": 0.8198762693891503,
+  "global_strategy_sortino": 1.05342179238993,
+  "global_strategy_max_drawdown": -0.3550200504124181,
+  "global_strategy_calmar": 0.6341343275959045,
+  "global_strategy_volatility": 0.23189740179235155,
+  "global_strategy_win_rate": 0.5546875,
+  "global_strategy_avg_win_loss_ratio": 0.9618476639070294,
+  "global_strategy_n_periods": 1536,
+  "global_benchmark_cumulative_return": 0.9474898794250624,
+  "global_benchmark_annualized_return": 0.11555767002612738,
+  "global_benchmark_sharpe": 0.4371185343551413,
+  "global_benchmark_sortino": 0.5425024466132793,
+  "global_benchmark_max_drawdown": -0.339249600026533,
+  "global_benchmark_calmar": 0.3406272845040629,
+  "global_benchmark_volatility": 0.20867525371411685,
+  "global_benchmark_win_rate": 0.5397135416666666,
+  "global_benchmark_avg_win_loss_ratio": 0.9628335121458825,
+  "global_benchmark_n_periods": 1536
+}

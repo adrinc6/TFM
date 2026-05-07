@@ -104,9 +104,8 @@ def build_agents_config(agent_models_results_dir: str, random_seed: int) -> Dict
                 "random_seed": random_seed,
                 "include_features": list(SENTIMENT_FEATURE_COLUMNS),
                 "exclude_features": list(SENTIMENT_FEATURE_EXCLUDE),
-                # When sentiment data is sparse, use neutral fallback instead of
-                # bearish bias to avoid dragging the ensemble unfairly.
-                "neutral_score": 0.5,
+                # Sparse sentiment history is treated as low-conviction signal.
+                "neutral_score": SECTOR_SPECIALIST_LONG_FALLBACK_SCORE,
             },
             "sector_col": "sector",
             "invert_y": False,

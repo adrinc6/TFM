@@ -1,0 +1,268 @@
+{
+  "agent": "valuation",
+  "timestamp": "2026-05-07T09:25:36.176892",
+  "fold": "T06_20240215",
+  "selected_base_features": [
+    "pe_vs_5y_median",
+    "pe_ratio",
+    "ev_ebitda_vs_5y_median",
+    "fcf_yield",
+    "ev_to_ebitda",
+    "earnings_yield",
+    "ps_ratio",
+    "pb_ratio"
+  ],
+  "n_base_features": 8,
+  "n_model_features": 25,
+  "best_model": "xgboost",
+  "cv_summary": {
+    "logistic": {
+      "mean_auc": 0.49509328186100915,
+      "std_auc": 0.026468266255490494
+    },
+    "random_forest": {
+      "mean_auc": 0.5225096757316892,
+      "std_auc": 0.02739762525151375
+    },
+    "gradient_boosting": {
+      "mean_auc": 0.5228608510452541,
+      "std_auc": 0.03584021288983122
+    },
+    "xgboost": {
+      "mean_auc": 0.5260576450098112,
+      "std_auc": 0.021646100015865696
+    }
+  },
+  "top_features": {
+    "ev_ebitda_vs_5y_median__pct_universe": 0.07316022366285324,
+    "fcf_yield__pct_universe": 0.06717587262392044,
+    "ev_ebitda_vs_5y_median": 0.05043024942278862,
+    "ev_to_ebitda__pct_universe": 0.044569164514541626,
+    "pb_ratio": 0.04418596997857094,
+    "fcf_yield": 0.04323909804224968,
+    "pe_ratio__pct_universe": 0.04157310724258423,
+    "ps_ratio": 0.04128974303603172,
+    "pb_ratio__pct_universe": 0.04082384705543518,
+    "ev_to_ebitda": 0.04009457305073738,
+    "rule_confidence": 0.03985334560275078,
+    "ps_ratio__pct_universe": 0.037762369960546494,
+    "pe_vs_5y_median": 0.03745289891958237,
+    "fcf_yield__pct_sector": 0.03727694973349571,
+    "earnings_yield__pct_universe": 0.03710542246699333
+  },
+  "rule_engine_enabled": true,
+  "rule_count": 870,
+  "global_tp_rate": 0.4933197906086413,
+  "rule_blend": 0.22,
+  "sector_rule_counts": {
+    "Technology": 40,
+    "Financials": 40,
+    "Health Care": 40,
+    "Real Estate": 40,
+    "Utilities": 40,
+    "Consumer Discretionary": 40,
+    "Banking": 40,
+    "Machinery": 40,
+    "Energy": 40,
+    "Consumer Staples": 40,
+    "Life Sciences Tools & Services": 40,
+    "Hotels, Restaurants & Leisure": 40,
+    "Electrical Equipment": 40,
+    "Consumer products": 40,
+    "Materials": 40,
+    "Industrials": 40,
+    "Professional Services": 40,
+    "Communication Services": 26,
+    "Road & Rail": 17,
+    "Textiles, Apparel & Luxury Goods": 8,
+    "Packaging": 14,
+    "Metals & Mining": 18,
+    "Telecommunication": 18,
+    "Healthcare": 13,
+    "Construction": 9,
+    "Communications": 10,
+    "Commercial Services & Supplies": 3,
+    "Distributors": 14,
+    "_other": 40
+  },
+  "top_rules": [
+    {
+      "type": "pair",
+      "sector": "Banking",
+      "features": [
+        "pb_ratio_delta_8q",
+        "pb_ratio"
+      ],
+      "bins": [
+        4,
+        4
+      ],
+      "support": 49,
+      "win_rate": 0.0,
+      "edge": -0.4632352941176471,
+      "stability": 0.8125,
+      "weight": 2.3966174761379375,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Banking",
+      "features": [
+        "pb_ratio_delta_8q",
+        "pb_ratio_delta_4q"
+      ],
+      "bins": [
+        0,
+        0
+      ],
+      "support": 59,
+      "win_rate": 0.8813559322033898,
+      "edge": 0.41812063808574274,
+      "stability": 0.8875,
+      "weight": 2.38215054059123,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Banking",
+      "features": [
+        "pb_ratio_delta_8q",
+        "pb_ratio_delta_2q"
+      ],
+      "bins": [
+        0,
+        0
+      ],
+      "support": 52,
+      "win_rate": 0.8653846153846154,
+      "edge": 0.40214932126696834,
+      "stability": 0.85,
+      "weight": 2.1666543190479377,
+      "requires_temporal": true
+    },
+    {
+      "type": "single",
+      "sector": "Banking",
+      "features": [
+        "pb_ratio"
+      ],
+      "bins": [
+        4
+      ],
+      "support": 109,
+      "win_rate": 0.12844036697247707,
+      "edge": -0.33479492714517,
+      "stability": 0.8875,
+      "weight": 1.9041733477514566,
+      "requires_temporal": false
+    },
+    {
+      "type": "pair",
+      "sector": "Banking",
+      "features": [
+        "pb_ratio_delta_4q",
+        "pb_ratio_delta_2q"
+      ],
+      "bins": [
+        0,
+        0
+      ],
+      "support": 62,
+      "win_rate": 0.8387096774193549,
+      "edge": 0.3754743833017078,
+      "stability": 0.5805698743781746,
+      "weight": 1.7253991625137823,
+      "requires_temporal": true
+    },
+    {
+      "type": "single",
+      "sector": "Banking",
+      "features": [
+        "pb_ratio_delta_4q"
+      ],
+      "bins": [
+        0
+      ],
+      "support": 99,
+      "win_rate": 0.797979797979798,
+      "edge": 0.33474450386215093,
+      "stability": 0.7494272424733748,
+      "weight": 1.6950046000496668,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Banking",
+      "features": [
+        "pb_ratio",
+        "pb_ratio_trend_4q"
+      ],
+      "bins": [
+        4,
+        4
+      ],
+      "support": 82,
+      "win_rate": 0.14634146341463414,
+      "edge": -0.3168938307030129,
+      "stability": 0.55,
+      "weight": 1.51372789699582,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Banking",
+      "features": [
+        "pb_ratio_delta_4q",
+        "pb_ratio_delta_1q"
+      ],
+      "bins": [
+        0,
+        0
+      ],
+      "support": 48,
+      "win_rate": 0.7916666666666666,
+      "edge": 0.32843137254901955,
+      "stability": 0.6239381916835873,
+      "weight": 1.46867664145967,
+      "requires_temporal": true
+    },
+    {
+      "type": "single",
+      "sector": "Banking",
+      "features": [
+        "pb_ratio_delta_8q"
+      ],
+      "bins": [
+        4
+      ],
+      "support": 88,
+      "win_rate": 0.14772727272727273,
+      "edge": -0.31550802139037437,
+      "stability": 0.5771672035000326,
+      "weight": 1.362008104794165,
+      "requires_temporal": true
+    },
+    {
+      "type": "pair",
+      "sector": "Technology",
+      "features": [
+        "ev_ebitda_vs_5y_median__pct_sector",
+        "ps_ratio"
+      ],
+      "bins": [
+        1,
+        1
+      ],
+      "support": 91,
+      "win_rate": 0.27472527472527475,
+      "edge": -0.27157102157102153,
+      "stability": 0.55,
+      "weight": 1.3274536693963717,
+      "requires_temporal": false
+    }
+  ],
+  "last_train_metrics": {
+    "best_cv_auc": 0.5260576450098112,
+    "n_features": 25.0
+  }
+}

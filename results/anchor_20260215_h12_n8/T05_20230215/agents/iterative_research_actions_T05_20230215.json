@@ -1,0 +1,21 @@
+{
+  "fold": "T05_20230215",
+  "behavior_summary": {
+    "agent_score_mean": 0.4949123295891806,
+    "agent_score_std": 0.11079130696938469,
+    "agent_disagreement": 0.11856393832949044,
+    "bullish_agents": 0.8061147186147186,
+    "bearish_agents": 1.409848484848485,
+    "agent_contradiction_flag": 0.07067099567099568
+  },
+  "actions": [
+    {
+      "priority": "medium",
+      "type": "rule_engine",
+      "issue": "weak_rule_signal",
+      "rule_col": "bear_rule_signal",
+      "details": "ic=-0.0177, spread=-0.0500",
+      "recommendation": "Increase min support/edge or trim unstable candidate features in this agent rulebook."
+    }
+  ]
+}

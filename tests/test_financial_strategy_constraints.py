@@ -14,6 +14,12 @@ def _make_prices(start: str = "2024-01-02", periods: int = 15, base: float = 100
     return pd.DataFrame({"Close": vals}, index=idx)
 
 
+def _make_falling_prices(start: str = "2024-01-02", periods: int = 20, base: float = 100.0) -> pd.DataFrame:
+    idx = pd.bdate_range(start=start, periods=periods)
+    vals = [base * (0.94 ** i) for i in range(periods)]
+    return pd.DataFrame({"Close": vals}, index=idx)
+
+
 def test_sentiment_agent_enabled_by_default():
     cfg = build_agents_config(agent_models_results_dir=".", random_seed=42)
     assert "sentiment" in cfg
@@ -88,3 +94,42 @@ def test_backtester_applies_position_weight_cap(tmp_path):
     weights = result["ticker_weights"]
     assert weights
     assert max(weights.values()) <= 0.15 + 1e-6
+
+
+def test_backtester_uses_tp_sl_exit_for_ticker_return(tmp_path):
+    backtester = WalkForwardBacktester(
+        train_years=5,
+        test_quarters=1,
+        risk_free=0.0,
+        results_dir=str(tmp_path / "backtest"),
+        top_n_stocks=1,
+        score_weighted=False,
+    )
+
+    predictions = pd.DataFrame(
+        {
+            "ticker": ["SMCI"],
+            "score": [0.95],
+            "sector": ["Tech"],
+            "tp_pct": [0.25],
+            "sl_pct": [0.14],
+            "max_holding_days": [90],
+        }
+    )
+    prices_dict = {"SMCI": _make_falling_prices(periods=30)}
+    bench_idx = pd.bdate_range("2024-01-02", periods=30)
+    benchmark = pd.Series(0.0, index=bench_idx)
+
+    result = backtester.simulate_portfolio(
+        predictions_df=predictions,
+        prices_dict=prices_dict,
+        benchmark=benchmark,
+        fold_id="F3",
+        test_start=pd.Timestamp("2024-01-02"),
+        test_end=pd.Timestamp("2024-02-15"),
+    )
+
+    smci_ret = float(result["ticker_returns"]["SMCI"])
+    assert smci_ret < -0.01
+    assert smci_ret > -0.30
+    assert result["ticker_exit_reasons"]["SMCI"] in {"sl_hit", "time_exit"}
