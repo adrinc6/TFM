@@ -1,4 +1,4 @@
-﻿# =============================================================================
+# =============================================================================
 # environment.py — Global project parameters
 # =============================================================================
 """
@@ -987,6 +987,32 @@ TP_SL_EV_THRESHOLD = 0.0
 # Maximum calendar days to hold a position before forcing closure ("NONE")
 # 365 days matches the full 12-month holding period window.
 TP_SL_MAX_HOLDING_DAYS = 365
+
+
+# --- TP/SL vs Buy & Hold counterfactual evaluation --------------------------
+
+# If True, evaluate a pure 12M Buy & Hold counterfactual on the exact same
+# tickers, entry date and initial weights selected for the TP/SL strategy.
+ENABLE_BUY_HOLD_COUNTERFACTUAL = True
+
+# If True, close Buy & Hold positions at the last available close when a ticker
+# does not have data through the target 12M exit date. This is evaluation-only
+# and does not affect portfolio selection.
+BUY_HOLD_EXIT_ON_LAST_AVAILABLE_PRICE = True
+
+# If True, export fold/ticker CSVs, JSON summary and comparison charts under
+# results/strategy (or the run-specific strategy directory).
+EXPORT_TP_SL_VS_BUY_HOLD = True
+
+# Research switch for future controlled TP/SL variants. The default mode is
+# "base" so the production strategy remains unchanged unless explicitly
+# overridden.
+ENABLE_TP_SL_RESEARCH_VARIANTS = True
+TP_SL_VARIANT_MODE = "base"  # "base" | "vol_adjusted" | "momentum_adjusted" | "regime_adjusted" | "hybrid_learned"
+TP_SL_HYBRID_MIN_TRAIN_PATHS = 6
+TP_SL_HYBRID_TRAILING_MIN_PCT = 0.06
+TP_SL_HYBRID_TRAILING_MAX_PCT = 0.28
+TP_SL_HYBRID_PROFIT_REVIEW_DAYS = 10
 
 # --- Agent weight tracker ---------------------------------------------------
 

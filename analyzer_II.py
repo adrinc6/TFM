@@ -57,6 +57,10 @@ def _experiments() -> list[dict[str, Any]]:
         # blend=0.10 is now the env.py default; stated explicitly so the reference
         # is self-documenting and immune to future default changes.
         "TP_EDGE_CONFIDENCE_BLEND": 0.10,
+        "ENABLE_BUY_HOLD_COUNTERFACTUAL": True,
+        "EXPORT_TP_SL_VS_BUY_HOLD": True,
+        "ENABLE_TP_SL_RESEARCH_VARIANTS": True,
+        "TP_SL_VARIANT_MODE": "base",  # switch to "hybrid_learned" to promote hybrid as main TP/SL
     }
 
     def _merge(**kwargs: Any) -> dict[str, Any]:
@@ -172,6 +176,11 @@ def _extract_summary_metrics(summary: dict[str, Any] | None) -> dict[str, Any]:
             "overall_strategy_drawdown": usd_strategy.get("max_drawdown"),
             "overall_strategy_fees": usd_strategy.get("total_fees_usd"),
             "n_folds": legacy.get("n_folds"),
+            "tp_sl_folds_wins_vs_buy_hold": (legacy.get("tp_sl_vs_buy_hold") or {}).get("folds_tp_sl_wins"),
+            "mean_alpha_buy_hold": (legacy.get("tp_sl_vs_buy_hold") or {}).get("mean_alpha_buy_hold"),
+            "mean_tp_sl_minus_buy_hold": (legacy.get("tp_sl_vs_buy_hold") or {}).get("mean_tp_sl_minus_buy_hold"),
+            "hybrid_folds_wins_vs_base": (legacy.get("tp_sl_hybrid_vs_base") or {}).get("folds_hybrid_wins"),
+            "mean_hybrid_minus_base": (legacy.get("tp_sl_hybrid_vs_base") or {}).get("mean_hybrid_minus_base"),
         }
 
     return {
@@ -183,6 +192,11 @@ def _extract_summary_metrics(summary: dict[str, Any] | None) -> dict[str, Any]:
         "overall_strategy_drawdown": summary.get("strategy_max_drawdown") or summary.get("global_strategy_max_drawdown"),
         "overall_strategy_fees": summary.get("strategy_total_fees_usd"),
         "n_folds": summary.get("n_folds"),
+        "tp_sl_folds_wins_vs_buy_hold": (summary.get("tp_sl_vs_buy_hold") or {}).get("folds_tp_sl_wins"),
+        "mean_alpha_buy_hold": (summary.get("tp_sl_vs_buy_hold") or {}).get("mean_alpha_buy_hold"),
+        "mean_tp_sl_minus_buy_hold": (summary.get("tp_sl_vs_buy_hold") or {}).get("mean_tp_sl_minus_buy_hold"),
+        "hybrid_folds_wins_vs_base": (summary.get("tp_sl_hybrid_vs_base") or {}).get("folds_hybrid_wins"),
+        "mean_hybrid_minus_base": (summary.get("tp_sl_hybrid_vs_base") or {}).get("mean_hybrid_minus_base"),
     }
 
 
@@ -448,6 +462,11 @@ def _write_comparison_artifacts(out_dir: Path, rows: list[dict[str, Any]]) -> No
             "overall_strategy_return",
             "overall_strategy_drawdown",
             "overall_strategy_fees",
+            "tp_sl_folds_wins_vs_buy_hold",
+            "mean_alpha_buy_hold",
+            "mean_tp_sl_minus_buy_hold",
+            "hybrid_folds_wins_vs_base",
+            "mean_hybrid_minus_base",
             "common_fold_count",
             "rank_overall_mean_alpha",
             "rank_overall_strategy_sharpe",
@@ -481,6 +500,11 @@ def _write_comparison_artifacts(out_dir: Path, rows: list[dict[str, Any]]) -> No
         "overall_strategy_return",
         "overall_strategy_drawdown",
         "overall_strategy_fees",
+        "tp_sl_folds_wins_vs_buy_hold",
+        "mean_alpha_buy_hold",
+        "mean_tp_sl_minus_buy_hold",
+        "hybrid_folds_wins_vs_base",
+        "mean_hybrid_minus_base",
         "n_folds",
         "common_fold_mean_alpha",
         "common_fold_pct_positive",
