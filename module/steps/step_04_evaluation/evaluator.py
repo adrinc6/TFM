@@ -55,6 +55,12 @@ from environment import (
     TP_SL_GRACE_PERIOD_FRACTION,
     TP_SL_TRAILING_REVIEW_DAYS,
     TP_SL_TRAILING_DRAWDOWN_QUANTILE,
+    TP_SL_VARIANT_MODE,
+    ENABLE_TP_SL_RESEARCH_VARIANTS,
+    TP_SL_HYBRID_MIN_TRAIN_PATHS,
+    TP_SL_HYBRID_TRAILING_MIN_PCT,
+    TP_SL_HYBRID_TRAILING_MAX_PCT,
+    TP_SL_HYBRID_PROFIT_REVIEW_DAYS,
     DEBUG_OUTPUT_PROFILE,
     EXPORT_TP_SL_UNIVERSE_MATRIX,
     EXPORT_GLOBAL_TP_SL_UNIVERSE_MATRIX,
@@ -1004,18 +1010,56 @@ def _historical_quarter_path_stats(
         mae = float(rel.min())
         peak_dt = pd.Timestamp(rel.idxmax())
         peak = float(rel.loc[peak_dt])
-        tail = rel.loc[rel.index >= peak_dt]
         final_rel = float(rel.iloc[-1])
         fade = float(max(peak - final_rel, 0.0))
-        rows.append(
-            {
-                "snapshot_date": snap_ts.normalize(),
-                "mfe": mfe,
-                "mae": mae,
-                "mae_abs": abs(mae),
-                "fade_after_peak": fade,
-            }
-        )
+        row = {
+            "snapshot_date": snap_ts.normalize(),
+            "path_entry_date": actual_entry.normalize(),
+            "path_end_date": pd.Timestamp(window.index[-1]).normalize(),
+            "mfe": mfe,
+            "mae": mae,
+            "mae_abs": abs(mae),
+            "fade_after_peak": fade,
+            "final_return": final_rel,
+        }
+        for threshold in [0.10, 0.15, 0.20, 0.30, 0.40, 0.50, 0.55]:
+            row[f"reached_{int(threshold * 100)}pct"] = bool((rel >= threshold).any())
+        # Continuation after a strong runup: used to avoid unrealistic far-away TPs.
+        if bool(row["reached_40pct"]):
+            first_40_dt = pd.Timestamp(rel[rel >= 0.40].index[0])
+            row["continued_40_to_55pct"] = bool((rel.loc[rel.index >= first_40_dt] >= 0.55).any())
+        else:
+            row["continued_40_to_55pct"] = np.nan
+
+        for dd in [0.05, 0.10, 0.15, 0.20]:
+            touched = rel <= -dd
+            key = int(dd * 100)
+            row[f"touched_dd_{key}pct"] = bool(touched.any())
+            row[f"positive_after_dd_{key}pct"] = np.nan
+            row[f"recovered_after_dd_{key}pct"] = np.nan
+            row[f"recovery_days_after_dd_{key}pct"] = np.nan
+            if bool(touched.any()):
+                first_dd_dt = pd.Timestamp(touched[touched].index[0])
+                after_dd = rel.loc[rel.index >= first_dd_dt]
+                recovered = after_dd[after_dd >= 0.0]
+                row[f"positive_after_dd_{key}pct"] = bool(final_rel > 0.0)
+                row[f"recovered_after_dd_{key}pct"] = bool(not recovered.empty)
+                if not recovered.empty:
+                    row[f"recovery_days_after_dd_{key}pct"] = int((pd.Timestamp(recovered.index[0]) - first_dd_dt).days)
+        # TP-before-relevant-drawdown evidence for multiple TP hurdles.
+        for tp_thr in [0.10, 0.15, 0.20, 0.30, 0.40]:
+            tp_hit = rel >= tp_thr
+            dd_hit = rel <= -0.10
+            key = int(tp_thr * 100)
+            if bool(tp_hit.any()) and bool(dd_hit.any()):
+                row[f"tp{key}_before_dd10"] = pd.Timestamp(tp_hit[tp_hit].index[0]) < pd.Timestamp(dd_hit[dd_hit].index[0])
+            elif bool(tp_hit.any()):
+                row[f"tp{key}_before_dd10"] = True
+            elif bool(dd_hit.any()):
+                row[f"tp{key}_before_dd10"] = False
+            else:
+                row[f"tp{key}_before_dd10"] = np.nan
+        rows.append(row)
     if not rows:
         return pd.DataFrame()
     return pd.DataFrame(rows).drop_duplicates(subset=["snapshot_date"], keep="last")
@@ -1065,6 +1109,10 @@ def _build_ticker_snapshot_profile(
         lag_days=lag_days,
         holding_period_months=holding_period_months,
     )
+    if not path_stats.empty and "path_end_date" in path_stats.columns:
+        path_stats["path_end_date"] = pd.to_datetime(path_stats["path_end_date"], errors="coerce")
+        path_stats = path_stats.loc[path_stats["path_end_date"] < snap_ts].copy()
+
     if path_stats.empty:
         return {
             "tp_quantiles": {},
@@ -1088,6 +1136,40 @@ def _build_ticker_snapshot_profile(
         sl_quantiles[float(q)] = sl_q
 
     fade = float(path_stats["fade_after_peak"].quantile(0.60)) if "fade_after_peak" in path_stats.columns else 0.0
+
+    max_runup_quantiles = {
+        "p50": float(path_stats["mfe"].clip(lower=0.0).quantile(0.50)),
+        "p75": float(path_stats["mfe"].clip(lower=0.0).quantile(0.75)),
+        "p90": float(path_stats["mfe"].clip(lower=0.0).quantile(0.90)),
+    }
+    reach_probabilities = {
+        str(int(thr * 100)): float(path_stats.get(f"reached_{int(thr * 100)}pct", pd.Series(False, index=path_stats.index)).fillna(False).astype(bool).mean())
+        for thr in [0.10, 0.15, 0.20, 0.30, 0.40, 0.50]
+    }
+    dd_recovery_stats: Dict[str, Dict[str, float]] = {}
+    for dd in [0.05, 0.10, 0.15, 0.20]:
+        key = str(int(dd * 100))
+        touched_col = f"touched_dd_{key}pct"
+        touched = path_stats.get(touched_col, pd.Series(False, index=path_stats.index)).fillna(False).astype(bool)
+        subset = path_stats.loc[touched]
+        if subset.empty:
+            dd_recovery_stats[key] = {"touch_prob": float(touched.mean()), "recovery_prob": np.nan, "positive_finish_prob": np.nan, "avg_recovery_days": np.nan}
+        else:
+            recovered = pd.to_numeric(subset.get(f"recovered_after_dd_{key}pct", np.nan), errors="coerce")
+            positive = pd.to_numeric(subset.get(f"positive_after_dd_{key}pct", np.nan), errors="coerce")
+            days = pd.to_numeric(subset.get(f"recovery_days_after_dd_{key}pct", np.nan), errors="coerce")
+            dd_recovery_stats[key] = {
+                "touch_prob": float(touched.mean()),
+                "recovery_prob": float(recovered.mean()) if recovered.notna().any() else np.nan,
+                "positive_finish_prob": float(positive.mean()) if positive.notna().any() else np.nan,
+                "avg_recovery_days": float(days.mean()) if days.notna().any() else np.nan,
+            }
+    cont_base = path_stats.loc[path_stats.get("reached_40pct", pd.Series(False, index=path_stats.index)).fillna(False).astype(bool)]
+    continuation_40_to_55 = float(pd.to_numeric(cont_base.get("continued_40_to_55pct", np.nan), errors="coerce").mean()) if not cont_base.empty else np.nan
+    tp_before_dd10 = {
+        str(int(tp_thr * 100)): float(pd.to_numeric(path_stats.get(f"tp{int(tp_thr * 100)}_before_dd10", np.nan), errors="coerce").mean())
+        for tp_thr in [0.10, 0.15, 0.20, 0.30, 0.40]
+    }
 
     metric_cols = [
         "momentum_3m",
@@ -1144,6 +1226,14 @@ def _build_ticker_snapshot_profile(
         "metric_adjust_tp": float(metric_adjust_tp),
         "metric_adjust_sl": float(metric_adjust_sl),
         "trailing_drawdown_pct": float(trailing_drawdown_pct),
+        "n_train_paths": int(len(path_stats)),
+        "earliest_train_path_end": str(pd.Timestamp(path_stats["path_end_date"].min()).date()) if "path_end_date" in path_stats.columns and path_stats["path_end_date"].notna().any() else None,
+        "latest_train_path_end": str(pd.Timestamp(path_stats["path_end_date"].max()).date()) if "path_end_date" in path_stats.columns and path_stats["path_end_date"].notna().any() else None,
+        "max_runup_quantiles": max_runup_quantiles,
+        "reach_probabilities": reach_probabilities,
+        "dd_recovery_stats": dd_recovery_stats,
+        "continuation_40_to_55": continuation_40_to_55,
+        "tp_before_dd10": tp_before_dd10,
         "has_signal": True,
     }
 
@@ -1193,6 +1283,129 @@ def _adaptive_tp_sl_for_ticker_snapshot(
     tp = float(np.clip(tp, float(TP_SL_MIN_TP), float(TP_SL_MAX_TP)))
     sl = float(np.clip(sl, float(TP_SL_MIN_SL), float(TP_SL_MAX_SL)))
     return tp, sl
+
+
+
+def _current_regime_label(row: pd.Series) -> str:
+    for col in ["regime_state", "regime", "market_regime"]:
+        val = row.get(col, None)
+        if val is not None and not pd.isna(val):
+            return str(val)
+    return "Neutral"
+
+
+def _hybrid_learned_tp_sl_for_row(
+    *,
+    row: pd.Series,
+    base_tp: float,
+    base_sl: float,
+    base_trailing: float,
+    profile: Dict[str, object],
+) -> Dict[str, object]:
+    """Derive interpretable hybrid TP/SL/trailing levels from train-only evidence."""
+    confidence = float(pd.to_numeric(row.get("confidence", row.get("final_score", 0.5)), errors="coerce"))
+    if not np.isfinite(confidence):
+        confidence = 0.5
+    confidence = float(np.clip(confidence, 0.0, 1.0))
+
+    momentum = float(pd.to_numeric(row.get("momentum_6m", row.get("momentum_3m", 0.0)), errors="coerce"))
+    if not np.isfinite(momentum):
+        momentum = 0.0
+    volatility = float(pd.to_numeric(row.get("volatility_60d", np.nan), errors="coerce"))
+    if not np.isfinite(volatility) or volatility <= 0:
+        volatility = float(base_trailing)
+    regime = _current_regime_label(row)
+    regime_l = regime.lower()
+    is_risk_on = ("risk-on" in regime_l) or ("bull" in regime_l)
+    is_risk_off = ("risk-off" in regime_l) or ("bear" in regime_l)
+
+    q = profile.get("max_runup_quantiles", {}) or {}
+    reach = profile.get("reach_probabilities", {}) or {}
+    recovery = profile.get("dd_recovery_stats", {}) or {}
+    tp_before = profile.get("tp_before_dd10", {}) or {}
+    n_paths = int(profile.get("n_train_paths", 0) or 0)
+    has_signal = bool(profile.get("has_signal", False)) and n_paths >= int(TP_SL_HYBRID_MIN_TRAIN_PATHS)
+
+    p50 = float(q.get("p50", base_tp)) if has_signal else float(base_tp)
+    p75 = float(q.get("p75", max(base_tp, p50))) if has_signal else float(base_tp)
+    p90 = float(q.get("p90", max(base_tp, p75))) if has_signal else float(base_tp)
+    momentum_boost = float(np.clip(momentum, -0.20, 0.35))
+    confidence_boost = confidence - 0.5
+    if has_signal:
+        # Strong momentum/confidence and risk-on regime can justify aiming toward p75/p90;
+        # weak setups anchor closer to p50/p75 so TP is reachable rather than aspirational.
+        tp_blend = 0.45 * p50 + 0.40 * p75 + 0.15 * p90
+        tp_blend *= 1.0 + 0.35 * momentum_boost + 0.25 * confidence_boost
+        if is_risk_on:
+            tp_blend *= 1.08
+        if is_risk_off:
+            tp_blend *= 0.90
+        if float(reach.get("30", 0.0) or 0.0) > 0.55 and momentum > 0:
+            tp_blend = max(tp_blend, min(p75, 0.35))
+        if float(reach.get("40", 0.0) or 0.0) < 0.20:
+            tp_blend = min(tp_blend, 0.35)
+        continuation = float(profile.get("continuation_40_to_55", np.nan))
+        if np.isfinite(continuation) and continuation < 0.25:
+            tp_blend = min(tp_blend, 0.42)
+        learned_tp = tp_blend
+    else:
+        learned_tp = float(base_tp) * (1.0 + 0.20 * momentum_boost + 0.15 * confidence_boost)
+
+    rec10 = recovery.get("10", {}) if isinstance(recovery, dict) else {}
+    rec15 = recovery.get("15", {}) if isinstance(recovery, dict) else {}
+    rec10_prob = float(rec10.get("recovery_prob", np.nan))
+    rec15_prob = float(rec15.get("recovery_prob", np.nan))
+    sl_candidate = float(base_sl)
+    if has_signal:
+        sl_q = profile.get("sl_quantiles", {}) or {}
+        sl_hist = float(sl_q.get(0.60, base_sl))
+        sl_candidate = 0.55 * float(base_sl) + 0.45 * sl_hist
+        if np.isfinite(rec10_prob) and rec10_prob < 0.35:
+            sl_candidate = min(sl_candidate, 0.11)
+        if np.isfinite(rec15_prob) and rec15_prob > 0.55:
+            sl_candidate = max(sl_candidate, min(float(sl_q.get(0.75, sl_candidate)), 0.20))
+        sl_candidate *= 1.0 + 0.30 * min(max(volatility - 0.12, -0.06), 0.18)
+        if confidence > 0.70 and momentum > 0:
+            sl_candidate *= 1.08
+        if is_risk_off:
+            sl_candidate *= 0.90
+    learned_sl = sl_candidate
+
+    trailing_base = float(base_trailing) if np.isfinite(base_trailing) and base_trailing > 0 else float(profile.get("trailing_drawdown_pct", 0.12))
+    fade = float(profile.get("fade", 0.0) or 0.0)
+    trailing = max(trailing_base, float(profile.get("trailing_drawdown_pct", trailing_base)))
+    trailing *= 1.0 + 0.50 * min(max(fade, 0.0), 0.30)
+    if momentum > 0 and is_risk_on:
+        trailing *= 1.10
+    if is_risk_off:
+        trailing *= 0.88
+    trailing = float(np.clip(trailing, float(TP_SL_HYBRID_TRAILING_MIN_PCT), float(TP_SL_HYBRID_TRAILING_MAX_PCT)))
+
+    learned_tp = float(np.clip(learned_tp, float(TP_SL_MIN_TP), float(TP_SL_MAX_TP)))
+    learned_sl = float(np.clip(learned_sl, float(TP_SL_MIN_SL), float(TP_SL_MAX_SL)))
+    tp_before_20 = float(tp_before.get("20", np.nan)) if isinstance(tp_before, dict) else np.nan
+    return {
+        "hybrid_tp_pct": learned_tp,
+        "hybrid_sl_pct": learned_sl,
+        "hybrid_trailing_stop_pct": trailing,
+        "hybrid_trailing_review_days": int(TP_SL_HYBRID_PROFIT_REVIEW_DAYS),
+        "hybrid_has_train_signal": bool(has_signal),
+        "hybrid_train_paths": n_paths,
+        "earliest_train_path_end": profile.get("earliest_train_path_end"),
+        "latest_train_path_end": profile.get("latest_train_path_end"),
+        "max_runup_train_p50": p50,
+        "max_runup_train_p75": p75,
+        "max_runup_train_p90": p90,
+        "recovery_prob_after_10pct_drawdown": rec10_prob,
+        "recovery_prob_after_15pct_drawdown": rec15_prob,
+        "probability_reach_30pct": float(reach.get("30", np.nan)),
+        "probability_reach_40pct": float(reach.get("40", np.nan)),
+        "continuation_prob_40_to_55pct": float(profile.get("continuation_40_to_55", np.nan)),
+        "tp20_before_dd10_prob": tp_before_20,
+        "hybrid_regime": regime,
+        "hybrid_momentum_used": momentum,
+        "hybrid_volatility_used": volatility,
+    }
 
 
 def _build_adaptive_tp_sl_targets(
@@ -1351,9 +1564,9 @@ def _build_tp_sl_strategy_universe_matrix(
     if "ticker" not in base.columns:
         return pd.DataFrame()
 
-    base["confidence"] = pd.to_numeric(base.get("confidence", 0.5), errors="coerce").fillna(0.5).clip(0.0, 1.0)
-    base["tp_level"] = pd.to_numeric(base.get("tp_level", TP_SL_BASE_TP), errors="coerce").fillna(float(TP_SL_BASE_TP))
-    base["sl_level"] = pd.to_numeric(base.get("sl_level", TP_SL_BASE_SL), errors="coerce").fillna(float(TP_SL_BASE_SL))
+    base["confidence"] = pd.to_numeric(base["confidence"] if "confidence" in base.columns else pd.Series(0.5, index=base.index), errors="coerce").fillna(0.5).clip(0.0, 1.0)
+    base["tp_level"] = pd.to_numeric(base["tp_level"] if "tp_level" in base.columns else pd.Series(float(TP_SL_BASE_TP), index=base.index), errors="coerce").fillna(float(TP_SL_BASE_TP))
+    base["sl_level"] = pd.to_numeric(base["sl_level"] if "sl_level" in base.columns else pd.Series(float(TP_SL_BASE_SL), index=base.index), errors="coerce").fillna(float(TP_SL_BASE_SL))
 
     base_ts = pd.Timestamp("2000-01-01")
     period_holding_days = int((base_ts + pd.DateOffset(months=max(int(holding_period_months), 1)) - base_ts).days)
@@ -1375,6 +1588,7 @@ def _build_tp_sl_strategy_universe_matrix(
         sl_vals = []
         tp_feasibility_vals = []
         trailing_vals: List[float] = []
+        hybrid_records: List[Dict[str, object]] = []
         for _, r in s_df.iterrows():
             tk = str(r.get("ticker"))
             snap_dt = pd.Timestamp(r.get("date", entry_date))
@@ -1406,10 +1620,24 @@ def _build_tp_sl_strategy_universe_matrix(
                     profile=profile,
                 )
             )
-            trailing_vals.append(float(profile.get("trailing_drawdown_pct", 0.12)))
+            base_trailing_val = float(profile.get("trailing_drawdown_pct", 0.12))
+            trailing_vals.append(base_trailing_val)
+            hybrid_records.append(
+                _hybrid_learned_tp_sl_for_row(
+                    row=r,
+                    base_tp=float(tp),
+                    base_sl=float(sl),
+                    base_trailing=base_trailing_val,
+                    profile=profile,
+                )
+            )
         s_df["tp_pct"] = pd.Series(tp_vals, index=s_df.index, dtype=float)
         s_df["sl_pct"] = pd.Series(sl_vals, index=s_df.index, dtype=float)
         s_df["trailing_stop_pct"] = pd.Series(trailing_vals, index=s_df.index, dtype=float)
+        if hybrid_records:
+            hybrid_df = pd.DataFrame(hybrid_records, index=s_df.index)
+            for h_col in hybrid_df.columns:
+                s_df[h_col] = hybrid_df[h_col]
         s_df["tp_feasibility"] = pd.Series(tp_feasibility_vals, index=s_df.index, dtype=float).clip(0.0, 1.0)
         s_df["max_holding_days"] = period_holding_days
         s_df["rr_ratio"] = (s_df["tp_pct"] / s_df["sl_pct"].replace(0, np.nan)).replace([np.inf, -np.inf], np.nan).fillna(0.0)
@@ -2729,6 +2957,45 @@ def run_walkforward_pipeline(
                     index=False,
                 )
 
+            learned_cols = [c for c in [
+                "ticker", "strategy", "date", "tp_pct", "sl_pct", "trailing_stop_pct",
+                "hybrid_tp_pct", "hybrid_sl_pct", "hybrid_trailing_stop_pct",
+                "hybrid_trailing_review_days", "hybrid_has_train_signal", "hybrid_train_paths",
+                "earliest_train_path_end", "latest_train_path_end",
+                "max_runup_train_p50", "max_runup_train_p75", "max_runup_train_p90",
+                "recovery_prob_after_10pct_drawdown", "recovery_prob_after_15pct_drawdown",
+                "probability_reach_30pct", "probability_reach_40pct",
+                "continuation_prob_40_to_55pct", "tp20_before_dd10_prob",
+                "hybrid_regime", "hybrid_momentum_used", "hybrid_volatility_used",
+                "historical_tp_prob", "historical_tp_edge", "historical_tp_obs",
+            ] if c in best_per_ticker.columns]
+            if learned_cols:
+                learned_export = best_per_ticker[learned_cols].copy()
+                learned_export = learned_export.rename(columns={
+                    "tp_pct": "base_tp",
+                    "sl_pct": "base_sl",
+                    "trailing_stop_pct": "base_trailing_stop_pct",
+                    "hybrid_tp_pct": "learned_tp",
+                    "hybrid_sl_pct": "learned_sl",
+                    "hybrid_trailing_stop_pct": "learned_trailing_stop_pct",
+                })
+                learned_export.insert(0, "fold", str(run_id))
+                learned_export.insert(1, "entry_date", str(pd.Timestamp(entry_date).date()))
+                learned_export["final_tp_used"] = np.where(
+                    str(TP_SL_VARIANT_MODE).strip().lower() == "hybrid_learned",
+                    pd.to_numeric(learned_export.get("learned_tp", np.nan), errors="coerce"),
+                    pd.to_numeric(learned_export.get("base_tp", np.nan), errors="coerce"),
+                )
+                learned_export["final_sl_used"] = np.where(
+                    str(TP_SL_VARIANT_MODE).strip().lower() == "hybrid_learned",
+                    pd.to_numeric(learned_export.get("learned_sl", np.nan), errors="coerce"),
+                    pd.to_numeric(learned_export.get("base_sl", np.nan), errors="coerce"),
+                )
+                learned_export.to_csv(fold_backtest_dir / "learned_tp_sl_levels_by_ticker.csv", index=False)
+
+                recovery_cols = [c for c in learned_export.columns if c.startswith("max_runup_") or c.startswith("recovery_prob_") or c.startswith("probability_reach_") or c in {"fold", "entry_date", "ticker", "strategy", "continuation_prob_40_to_55pct", "tp20_before_dd10_prob", "hybrid_train_paths"}]
+                learned_export[recovery_cols].to_csv(fold_backtest_dir / "runup_drawdown_recovery_stats.csv", index=False)
+
             # Broadcast per-ticker TP/SL confidence diagnostics to the full test
             # frame so fold reports include "up" and "TP-before-SL" confidence.
             aux_cols = [
@@ -2746,6 +3013,20 @@ def run_walkforward_pipeline(
                     "risk_benefit_score",
                     "rule_adjusted_rbs",
                     "selection_score",
+                    "hybrid_tp_pct",
+                    "hybrid_sl_pct",
+                    "hybrid_trailing_stop_pct",
+                    "hybrid_trailing_review_days",
+                    "hybrid_has_train_signal",
+                    "hybrid_train_paths",
+                    "max_runup_train_p50",
+                    "max_runup_train_p75",
+                    "max_runup_train_p90",
+                    "recovery_prob_after_10pct_drawdown",
+                    "recovery_prob_after_15pct_drawdown",
+                    "probability_reach_30pct",
+                    "probability_reach_40pct",
+                    "continuation_prob_40_to_55pct",
                 ]
                 if c in best_per_ticker.columns
             ]
@@ -3019,6 +3300,16 @@ def run_walkforward_pipeline(
             strategy_dir / "all_folds_tp_sl_universe_matrix.csv",
             index=False,
         )
+
+    for artifact_name in ["learned_tp_sl_levels_by_ticker.csv", "runup_drawdown_recovery_stats.csv"]:
+        parts = []
+        for p in sorted(run_root.glob(f"*/backtest/{artifact_name}")):
+            try:
+                parts.append(pd.read_csv(p))
+            except Exception as ex:
+                log.warning("[HybridTP] Could not read %s (%s)", p, ex)
+        if parts:
+            pd.concat(parts, ignore_index=True).to_csv(strategy_dir / artifact_name, index=False)
 
     diag_path = strategy_dir / "all_folds_diagnostics.json"
     with open(diag_path, "w") as f:
