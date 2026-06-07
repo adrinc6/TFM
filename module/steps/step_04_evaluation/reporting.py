@@ -1,4 +1,4 @@
-﻿"""Consolidated evaluation reporting utilities."""
+"""Consolidated evaluation reporting utilities."""
 
 from __future__ import annotations
 
@@ -1111,6 +1111,55 @@ def generate_text_report(
 	lines.append(f"  Max Drawdown benchmark:    {summary.get('global_benchmark_max_drawdown', 0):.2%}")
 	lines.append(f"  Calmar ratio:              {summary.get('global_strategy_calmar', 0):.3f}")
 	lines.append(f"  Volatilidad anualizada:    {summary.get('global_strategy_volatility', 0):.2%}")
+
+	hy = summary.get("tp_sl_hybrid_vs_base", {}) if isinstance(summary, dict) else {}
+	if hy:
+		mean_h_delta = float(hy.get("mean_hybrid_minus_base", 0) or 0)
+		hy_wins = int(hy.get("folds_hybrid_wins", 0) or 0)
+		hy_folds = int(hy.get("n_folds", 0) or 0)
+		if mean_h_delta > 0:
+			hy_conclusion = "El TP/SL hibrido mejora al TP/SL base en media."
+		elif mean_h_delta < 0:
+			hy_conclusion = "El TP/SL base sigue siendo superior; el hibrido debe revisarse antes de promoverlo."
+		else:
+			hy_conclusion = "El TP/SL hibrido queda empatado con el TP/SL base."
+		lines.append("\n  TP/SL Hybrid Learned vs Base")
+		lines.append(sep_s)
+		lines.append(f"  Conclusion:                    {hy_conclusion}")
+		lines.append(f"  Folds donde hibrido gana:      {hy_wins}/{hy_folds}")
+		lines.append(f"  Retorno medio TP/SL base:      {float(hy.get('mean_return_base', 0) or 0):+.2%}")
+		lines.append(f"  Retorno medio TP/SL hibrido:   {float(hy.get('mean_return_hybrid', 0) or 0):+.2%}")
+		lines.append(f"  Mejora media hibrido-base:     {mean_h_delta:+.2%}")
+		lines.append("  Lectura critica: el hibrido aprende niveles de runup/drawdown con datos train-only; si supera al base y reduce drawdown, su trailing dinamico esta protegiendo mejor. Si pierde frente a Buy & Hold, puede seguir recortando tendencias largas.")
+		lines.append("  Diagnostico operativo: revisar learned_tp_sl_levels_by_ticker.csv, trailing_dynamics_by_ticker.csv y runup_drawdown_recovery_stats.csv para ver si TP corta ganadores, SL salta por ruido, o trailing queda demasiado agresivo/laxo por sector o regimen.")
+		lines.append("  Advertencia metodologica: hybrid_learned es una variante investigable walk-forward, no una estrategia ya optimizada; debe validarse en mas periodos, folds, sectores y regimenes antes de promoverla como configuracion principal.")
+
+	cf = summary.get("tp_sl_vs_buy_hold", {}) if isinstance(summary, dict) else {}
+	if cf:
+		mean_delta = float(cf.get("mean_tp_sl_minus_buy_hold", 0) or 0)
+		wins = int(cf.get("folds_tp_sl_wins", 0) or 0)
+		n_folds_cf = int(cf.get("n_folds", 0) or 0)
+		bh_wins = int(cf.get("folds_buy_hold_wins", max(n_folds_cf - wins, 0)) or 0)
+		if mean_delta > 0:
+			conclusion = "TP/SL esta anadiendo valor frente a mantener el mismo portafolio."
+		elif mean_delta < 0:
+			conclusion = "Buy & Hold captura mas upside; TP/SL podria estar recortando ganancias."
+		else:
+			conclusion = "TP/SL y Buy & Hold quedan practicamente empatados."
+		lines.append("\n  TP/SL vs Buy & Hold Counterfactual")
+		lines.append(sep_s)
+		lines.append(f"  Conclusion global:              {conclusion}")
+		lines.append(f"  Folds donde TP/SL gana:         {wins}/{n_folds_cf}")
+		lines.append(f"  Folds donde Buy & Hold gana:    {bh_wins}/{n_folds_cf}")
+		lines.append(f"  Alpha medio TP/SL:              {float(cf.get('mean_alpha_tp_sl', 0) or 0):+.2%}")
+		lines.append(f"  Alpha medio Buy & Hold:         {float(cf.get('mean_alpha_buy_hold', 0) or 0):+.2%}")
+		lines.append(f"  Mejora media TP/SL vs B&H:      {mean_delta:+.2%}")
+		lines.append(f"  Variante TP/SL evaluada:        {cf.get('variant_mode', 'base')}")
+		if bh_wins > 0:
+			lines.append("  Casos donde Buy & Hold fue superior: revisar folds/tickers con tp_sl_minus_buy_hold < 0; suelen indicar TP/trailing que recorto tendencias fuertes o SL activado antes de una recuperacion.")
+		else:
+			lines.append("  Casos donde Buy & Hold fue superior: ninguno a nivel fold en esta corrida.")
+		lines.append("  Lectura: la comparacion es contrafactual y sin leakage: mismos tickers, pesos y fecha de entrada; Buy & Hold no reentrena ni cambia la seleccion.")
 
 	if fold_results:
 		lines.append("\n  DETALLE POR FOLD")

@@ -1,4 +1,4 @@
-﻿"""Consolidated evaluation backtesting utilities."""
+"""Consolidated evaluation backtesting utilities."""
 
 from __future__ import annotations
 
@@ -19,6 +19,14 @@ from environment import (
     PORTFOLIO_MAX_STOCK_WEIGHT,
     TP_SL_GRACE_PERIOD_FRACTION,
     TP_SL_TRAILING_REVIEW_DAYS,
+    ENABLE_BUY_HOLD_COUNTERFACTUAL,
+    BUY_HOLD_EXIT_ON_LAST_AVAILABLE_PRICE,
+    EXPORT_TP_SL_VS_BUY_HOLD,
+    ENABLE_TP_SL_RESEARCH_VARIANTS,
+    TP_SL_VARIANT_MODE,
+    TP_SL_HYBRID_TRAILING_MIN_PCT,
+    TP_SL_HYBRID_TRAILING_MAX_PCT,
+    TP_SL_HYBRID_PROFIT_REVIEW_DAYS,
 )
 from module.common.performance_metrics import compute_all_metrics
 from module.common.portfolio_optimization import hrp_weights, risk_parity_weights, robust_markowitz_weights
@@ -56,7 +64,13 @@ class WalkForwardBacktester:
 		self.score_weighted = score_weighted
 		self.portfolio_optimizer = str(portfolio_optimizer).strip().lower()
 		self.fold_results: List[Dict] = []
+		self.counterfactual_fold_rows: List[Dict] = []
+		self.counterfactual_ticker_rows: List[Dict] = []
+		self.hybrid_vs_base_fold_rows: List[Dict] = []
+		self.hybrid_vs_base_ticker_rows: List[Dict] = []
+		self.trailing_dynamics_rows: List[Dict] = []
 		self.all_strategy_returns = pd.Series(dtype=float)
+		self.all_buy_hold_returns = pd.Series(dtype=float)
 		self.all_benchmark_returns = pd.Series(dtype=float)
 
 	@staticmethod
@@ -206,6 +220,153 @@ class WalkForwardBacktester:
 			)
 		return folds
 
+
+	@staticmethod
+	def _counterfactual_return_series(period: pd.Series) -> pd.Series:
+		"""Daily Buy & Hold returns for one ticker without TP/SL/trailing exits."""
+		if period is None or len(period) < 2:
+			return pd.Series(dtype=float)
+		return pd.to_numeric(period, errors="coerce").dropna().pct_change().dropna()
+
+	@staticmethod
+	def _counterfactual_exit_date(period: pd.Series, target_exit: pd.Timestamp) -> pd.Timestamp | None:
+		"""Resolve Buy & Hold exit date as target date or last available price."""
+		if period is None or period.empty:
+			return None
+		target = pd.Timestamp(target_exit)
+		on_or_before = period.index[period.index <= target]
+		if len(on_or_before) == 0:
+			return None
+		if BUY_HOLD_EXIT_ON_LAST_AVAILABLE_PRICE:
+			return pd.Timestamp(on_or_before[-1])
+		# Strict mode still resolves to the last tradable date on/before target if
+		# the target is a weekend/holiday, but skips tickers ending before target.
+		if pd.Timestamp(on_or_before[-1]) < target and period.index.max() < target:
+			return None
+		return pd.Timestamp(on_or_before[-1])
+
+	@staticmethod
+	def _variant_mode_label() -> str:
+		mode = str(TP_SL_VARIANT_MODE).strip().lower()
+		if not ENABLE_TP_SL_RESEARCH_VARIANTS:
+			return "base"
+		return mode if mode in {"base", "vol_adjusted", "momentum_adjusted", "regime_adjusted", "hybrid_learned"} else "base"
+
+
+	@staticmethod
+	def _hybrid_exit_from_close(
+		close_series: pd.Series,
+		*,
+		ticker: str,
+		entry_date: pd.Timestamp,
+		fallback_exit_date: pd.Timestamp,
+		tp_pct: float,
+		sl_pct: float,
+		max_holding_days: int,
+		trailing_stop_pct: float,
+		momentum: float = 0.0,
+		volatility: float = 0.12,
+		regime: str = "Neutral",
+		trail_events: Optional[List[Dict]] = None,
+	) -> tuple[pd.Timestamp, str, int, float, float]:
+		"""Hybrid learned TP/SL exit with dynamic profit-protection trailing."""
+		fallback = pd.Timestamp(fallback_exit_date)
+		entry_ts = pd.Timestamp(entry_date)
+		if close_series is None or close_series.empty:
+			return fallback, "time_exit", int(max((fallback - entry_ts).days, 0)), float("nan"), float("nan")
+		prices = pd.to_numeric(close_series, errors="coerce").dropna().sort_index()
+		prices.index = pd.to_datetime(prices.index)
+		entry_candidates = prices.index[prices.index >= entry_ts]
+		if len(entry_candidates) == 0:
+			return fallback, "time_exit", int(max((fallback - entry_ts).days, 0)), float("nan"), float("nan")
+		actual_entry = pd.Timestamp(entry_candidates[0])
+		entry_price = float(prices.loc[actual_entry])
+		if not np.isfinite(entry_price) or entry_price <= 0:
+			return fallback, "time_exit", int(max((fallback - entry_ts).days, 0)), float("nan"), float("nan")
+		tp_price = entry_price * (1.0 + float(tp_pct))
+		initial_sl_price = entry_price * (1.0 - float(sl_pct))
+		expiry_ts = min(actual_entry + pd.Timedelta(days=int(max_holding_days)), fallback)
+		window = prices.loc[(prices.index > actual_entry) & (prices.index <= expiry_ts)]
+		grace = int(max_holding_days * float(TP_SL_GRACE_PERIOD_FRACTION))
+		regime_l = str(regime).lower()
+		is_risk_on = ("risk-on" in regime_l) or ("bull" in regime_l)
+		is_risk_off = ("risk-off" in regime_l) or ("bear" in regime_l)
+		volatility = float(volatility) if np.isfinite(float(volatility)) and float(volatility) > 0 else 0.12
+		base_trail = float(trailing_stop_pct) if np.isfinite(float(trailing_stop_pct)) and float(trailing_stop_pct) > 0 else 0.12
+		base_trail = float(np.clip(base_trail, float(TP_SL_HYBRID_TRAILING_MIN_PCT), float(TP_SL_HYBRID_TRAILING_MAX_PCT)))
+		peak_price = entry_price
+		trailing_active = False
+		trailing_stop = initial_sl_price
+		trailing_initial = float("nan")
+		last_review_day = 0
+
+		def _dynamic_distance(days_elapsed: int, price: float) -> float:
+			profit = max(price / entry_price - 1.0, 0.0)
+			dist = base_trail
+			dist *= 1.0 + 0.35 * max(min(volatility - 0.12, 0.20), -0.06)
+			if momentum > 0 and is_risk_on:
+				dist *= 1.08
+			if is_risk_off:
+				dist *= 0.88
+			# As profit gets very large, gradually tighten but never below min.
+			if profit >= 0.40:
+				dist *= 0.88
+			elif profit >= 0.25:
+				dist *= 0.95
+			return float(np.clip(dist, float(TP_SL_HYBRID_TRAILING_MIN_PCT), float(TP_SL_HYBRID_TRAILING_MAX_PCT)))
+
+		def _record(event_type: str, dt: pd.Timestamp, price: float, stop: float, distance: float) -> None:
+			if trail_events is None:
+				return
+			trail_events.append({
+				"ticker": ticker,
+				"entry_date": pd.Timestamp(actual_entry).date(),
+				"entry_price": round(entry_price, 4),
+				"tp_price": round(tp_price, 4),
+				"sl_price_original": round(initial_sl_price, 4),
+				"event_type": event_type,
+				"event_date": pd.Timestamp(dt).date(),
+				"days_from_entry": int((pd.Timestamp(dt) - actual_entry).days),
+				"price": round(price, 4),
+				"peak_price": round(peak_price, 4),
+				"trailing_stop": round(stop, 4),
+				"trailing_distance_pct": round(distance, 6),
+				"return_pct": round((price / entry_price - 1.0) * 100.0, 2),
+			})
+
+		for dt, px in window.items():
+			price = float(px)
+			days_elapsed = int((pd.Timestamp(dt) - actual_entry).days)
+			if price > peak_price:
+				peak_price = price
+			if days_elapsed < grace:
+				continue
+			if not trailing_active:
+				if price >= tp_price:
+					trailing_active = True
+					last_review_day = days_elapsed
+					dist = _dynamic_distance(days_elapsed, price)
+					trailing_stop = max(price * (1.0 - dist), initial_sl_price)
+					trailing_initial = trailing_stop
+					_record("HYBRID_PROFIT_PROTECTION_ACTIVATED", dt, price, trailing_stop, dist)
+				elif price <= initial_sl_price:
+					_record("HYBRID_EXIT_SL", dt, price, trailing_stop, base_trail)
+					return pd.Timestamp(dt), "sl_hit", days_elapsed, trailing_initial, trailing_stop
+			else:
+				dist = _dynamic_distance(days_elapsed, price)
+				candidate_stop = peak_price * (1.0 - dist)
+				if candidate_stop > trailing_stop and (days_elapsed - last_review_day) >= int(TP_SL_HYBRID_PROFIT_REVIEW_DAYS):
+					trailing_stop = max(trailing_stop, candidate_stop, initial_sl_price)
+					last_review_day = days_elapsed
+					_record("HYBRID_TRAILING_RECALCULATED", dt, price, trailing_stop, dist)
+				if price <= trailing_stop:
+					_record("HYBRID_EXIT_TRAIL", dt, price, trailing_stop, dist)
+					return pd.Timestamp(dt), "tp_hit", days_elapsed, trailing_initial, trailing_stop
+		if not window.empty:
+			last_dt = pd.Timestamp(window.index[-1])
+			return last_dt, "time_exit", int((last_dt - actual_entry).days), trailing_initial, trailing_stop
+		return actual_entry, "time_exit", 0, trailing_initial, trailing_stop
+
 	def simulate_portfolio(
 		self,
 		predictions_df,
@@ -233,6 +394,7 @@ class WalkForwardBacktester:
 			log.info("[Backtester] score column missing; using %s as ranking alias.", ranking_col)
 			ordered["score"] = pd.to_numeric(ordered[ranking_col], errors="coerce")
 		sector_cap = int(PORTFOLIO_MAX_STOCKS_PER_SECTOR)
+		selection_cols = ["ticker", "score"] + [c for c in ["sector", "regime_state", "regime"] if c in ordered.columns]
 		qualified = ordered[pd.to_numeric(ordered[ranking_col], errors="coerce") >= float(selection_threshold)]
 		if len(qualified) >= min_stocks:
 			# Tomar hasta top_n pero garantizar al menos min_stocks
@@ -242,7 +404,7 @@ class WalkForwardBacktester:
 				target_n=n_take,
 				sector_cap=sector_cap,
 				min_stocks=min_stocks,
-			)[["ticker", "score"] + (["sector"] if "sector" in ordered.columns else [])].copy()
+			)[selection_cols].copy()
 			log.info(
 				f"[Backtester] {period_id}: {len(qualified)} tickers superaron umbral {selection_threshold:.2f} "
 				f"â†’ selecting target={n_take}, final={len(top_df)} (min={min_stocks}, sector_cap={sector_cap})"
@@ -254,7 +416,7 @@ class WalkForwardBacktester:
 				target_n=self.top_n_stocks,
 				sector_cap=sector_cap,
 				min_stocks=min_stocks,
-			)[["ticker", "score"] + (["sector"] if "sector" in ordered.columns else [])].copy()
+			)[selection_cols].copy()
 			top_score = float(ordered["score"].iloc[0]) if len(ordered) > 0 else float("nan")
 			bottom_idx = min(self.top_n_stocks, len(ordered)) - 1
 			bottom_score = float(ordered["score"].iloc[bottom_idx]) if bottom_idx >= 0 else float("nan")
@@ -269,8 +431,18 @@ class WalkForwardBacktester:
 			return {}
 
 		daily_returns = []
+		base_daily_returns = []
+		hybrid_daily_returns = []
 		tickers_with_prices = []
 		ticker_returns = {}
+		base_ticker_returns: Dict[str, float] = {}
+		hybrid_ticker_returns: Dict[str, float] = {}
+		base_ticker_exit_reasons: Dict[str, str] = {}
+		hybrid_ticker_exit_reasons: Dict[str, str] = {}
+		base_ticker_exit_dates: Dict[str, str] = {}
+		hybrid_ticker_exit_dates: Dict[str, str] = {}
+		hybrid_trailing_initial: Dict[str, float] = {}
+		hybrid_trailing_final: Dict[str, float] = {}
 		ticker_exit_dates: Dict[str, str] = {}
 		ticker_exit_reasons: Dict[str, str] = {}
 		ticker_days_to_outcome: Dict[str, int] = {}
@@ -313,6 +485,12 @@ class WalkForwardBacktester:
 			tp_pct = np.nan
 			sl_pct = np.nan
 			trailing_stop_pct_ticker = 0.0
+			hybrid_tp_pct = np.nan
+			hybrid_sl_pct = np.nan
+			hybrid_trailing_pct = np.nan
+			hybrid_momentum = 0.0
+			hybrid_volatility = 0.12
+			hybrid_regime = "Neutral"
 			max_holding_days = max_holding_days_default
 			if not plan_by_ticker.empty and ticker in plan_by_ticker.index:
 				row = plan_by_ticker.loc[ticker]
@@ -322,12 +500,24 @@ class WalkForwardBacktester:
 				sl_pct = float(pd.to_numeric(row.get("sl_pct", np.nan), errors="coerce"))
 				trailing_val = pd.to_numeric(row.get("trailing_stop_pct", 0.0), errors="coerce")
 				trailing_stop_pct_ticker = float(trailing_val) if np.isfinite(float(trailing_val if trailing_val is not None else 0.0)) else 0.0
+				hybrid_tp_pct = float(pd.to_numeric(row.get("hybrid_tp_pct", tp_pct), errors="coerce"))
+				hybrid_sl_pct = float(pd.to_numeric(row.get("hybrid_sl_pct", sl_pct), errors="coerce"))
+				hybrid_trailing_pct = float(pd.to_numeric(row.get("hybrid_trailing_stop_pct", trailing_stop_pct_ticker), errors="coerce"))
+				hybrid_momentum = float(pd.to_numeric(row.get("hybrid_momentum_used", 0.0), errors="coerce")) if "hybrid_momentum_used" in row.index else 0.0
+				hybrid_volatility = float(pd.to_numeric(row.get("hybrid_volatility_used", 0.12), errors="coerce")) if "hybrid_volatility_used" in row.index else 0.12
+				hybrid_regime = str(row.get("hybrid_regime", row.get("regime_state", "Neutral")))
 				mh = pd.to_numeric(row.get("max_holding_days", max_holding_days_default), errors="coerce")
 				if np.isfinite(mh) and float(mh) > 0:
 					max_holding_days = int(float(mh))
+			if not np.isfinite(hybrid_tp_pct):
+				hybrid_tp_pct = tp_pct
+			if not np.isfinite(hybrid_sl_pct):
+				hybrid_sl_pct = sl_pct
+			if not np.isfinite(hybrid_trailing_pct):
+				hybrid_trailing_pct = trailing_stop_pct_ticker
 
-			ticker_trail_events: List[Dict] = []
-			exit_dt, exit_reason, days_to_outcome = _tp_sl_exit_from_close(
+			base_trail_events: List[Dict] = []
+			base_exit_dt, base_exit_reason, base_days_to_outcome = _tp_sl_exit_from_close(
 				period,
 				entry_date=pd.Timestamp(test_start),
 				fallback_exit_date=pd.Timestamp(actual_end),
@@ -335,8 +525,28 @@ class WalkForwardBacktester:
 				sl_pct=float(sl_pct),
 				max_holding_days=max_holding_days,
 				trailing_stop_pct=trailing_stop_pct_ticker,
-				trail_events=ticker_trail_events,
+				trail_events=base_trail_events,
 			)
+			hybrid_trail_events: List[Dict] = []
+			hybrid_exit_dt, hybrid_exit_reason, hybrid_days_to_outcome, hybrid_initial_stop, hybrid_final_stop = self._hybrid_exit_from_close(
+				period,
+				ticker=ticker,
+				entry_date=pd.Timestamp(test_start),
+				fallback_exit_date=pd.Timestamp(actual_end),
+				tp_pct=float(hybrid_tp_pct),
+				sl_pct=float(hybrid_sl_pct),
+				max_holding_days=max_holding_days,
+				trailing_stop_pct=hybrid_trailing_pct,
+				momentum=hybrid_momentum,
+				volatility=hybrid_volatility,
+				regime=hybrid_regime,
+				trail_events=hybrid_trail_events,
+			)
+			use_hybrid_as_main = self._variant_mode_label() == "hybrid_learned"
+			exit_dt = hybrid_exit_dt if use_hybrid_as_main else base_exit_dt
+			exit_reason = hybrid_exit_reason if use_hybrid_as_main else base_exit_reason
+			days_to_outcome = hybrid_days_to_outcome if use_hybrid_as_main else base_days_to_outcome
+			ticker_trail_events = hybrid_trail_events if use_hybrid_as_main else base_trail_events
 			for ev in ticker_trail_events:
 				ev["ticker"] = ticker
 				ev["fold_id"] = period_id
@@ -346,9 +556,23 @@ class WalkForwardBacktester:
 				continue
 
 			ret = exit_slice.pct_change().dropna()
+			base_slice = period.loc[period.index <= pd.Timestamp(base_exit_dt)]
+			hybrid_slice = period.loc[period.index <= pd.Timestamp(hybrid_exit_dt)]
+			base_ret = base_slice.pct_change().dropna() if len(base_slice) >= 2 else pd.Series(dtype=float)
+			hybrid_ret = hybrid_slice.pct_change().dropna() if len(hybrid_slice) >= 2 else pd.Series(dtype=float)
 			daily_returns.append(ret)
+			base_daily_returns.append(base_ret)
+			hybrid_daily_returns.append(hybrid_ret)
 			tickers_with_prices.append(ticker)
 			ticker_returns[ticker] = round(float((1 + ret).prod() - 1), 6)
+			base_ticker_returns[ticker] = round(float((1 + base_ret).prod() - 1), 6) if len(base_ret) else 0.0
+			hybrid_ticker_returns[ticker] = round(float((1 + hybrid_ret).prod() - 1), 6) if len(hybrid_ret) else 0.0
+			base_ticker_exit_reasons[ticker] = str(base_exit_reason)
+			hybrid_ticker_exit_reasons[ticker] = str(hybrid_exit_reason)
+			base_ticker_exit_dates[ticker] = str(pd.Timestamp(base_exit_dt).date())
+			hybrid_ticker_exit_dates[ticker] = str(pd.Timestamp(hybrid_exit_dt).date())
+			hybrid_trailing_initial[ticker] = float(hybrid_initial_stop) if np.isfinite(hybrid_initial_stop) else np.nan
+			hybrid_trailing_final[ticker] = float(hybrid_final_stop) if np.isfinite(hybrid_final_stop) else np.nan
 			ticker_exit_dates[ticker] = str(pd.Timestamp(exit_dt).date())
 			ticker_exit_reasons[ticker] = str(exit_reason)
 			ticker_days_to_outcome[ticker] = int(days_to_outcome)
@@ -432,6 +656,33 @@ class WalkForwardBacktester:
 		weights = self._apply_weight_cap(weights, float(PORTFOLIO_MAX_STOCK_WEIGHT))
 
 		ticker_weights = {t: round(float(w), 6) for t, w in zip(tickers_with_prices, weights)}
+		top_indexed = top_df.drop_duplicates(subset=["ticker"], keep="last").set_index("ticker")
+		sector_by_ticker = {t: str(top_indexed.loc[t, "sector"]) for t in tickers_with_prices if "sector" in top_indexed.columns and t in top_indexed.index}
+		regime_col = "regime_state" if "regime_state" in top_indexed.columns else ("regime" if "regime" in top_indexed.columns else None)
+		regime_by_ticker = {t: str(top_indexed.loc[t, regime_col]) for t in tickers_with_prices if regime_col is not None and t in top_indexed.index}
+
+		buy_hold_daily_returns: List[pd.Series] = []
+		buy_hold_ticker_returns: Dict[str, float] = {}
+		buy_hold_exit_dates: Dict[str, str] = {}
+		buy_hold_days_held: Dict[str, int] = {}
+		if ENABLE_BUY_HOLD_COUNTERFACTUAL:
+			for ticker in tickers_with_prices:
+				prices = prices_dict.get(ticker)
+				if prices is None:
+					buy_hold_daily_returns.append(pd.Series(dtype=float))
+					continue
+				cc = _get_close_column(prices)
+				full_period = pd.to_numeric(prices.loc[test_start:test_end, cc], errors="coerce").dropna()
+				exit_dt_bh = self._counterfactual_exit_date(full_period, pd.Timestamp(test_end))
+				if exit_dt_bh is None:
+					buy_hold_daily_returns.append(pd.Series(dtype=float))
+					continue
+				bh_period = full_period.loc[full_period.index <= exit_dt_bh]
+				bh_ret = self._counterfactual_return_series(bh_period)
+				buy_hold_daily_returns.append(bh_ret)
+				buy_hold_ticker_returns[ticker] = round(float((1 + bh_ret).prod() - 1), 6) if len(bh_ret) else 0.0
+				buy_hold_exit_dates[ticker] = str(pd.Timestamp(exit_dt_bh).date())
+				buy_hold_days_held[ticker] = int(max((pd.Timestamp(exit_dt_bh) - pd.Timestamp(test_start)).days, 0))
 
 		returns_matrix = pd.concat(daily_returns, axis=1)
 		returns_matrix.columns = tickers_with_prices
@@ -444,6 +695,58 @@ class WalkForwardBacktester:
 		bench_metrics = compute_all_metrics(bench_aligned, self.risk_free, "benchmark")
 		alpha = strat_metrics["strategy_cumulative_return"] - bench_metrics["benchmark_cumulative_return"]
 		excess_sharpe = strat_metrics["strategy_sharpe"] - bench_metrics["benchmark_sharpe"]
+
+		base_tp_sl_aligned = pd.Series(dtype=float)
+		hybrid_tp_sl_aligned = pd.Series(dtype=float)
+		base_tp_sl_metrics: Dict[str, float] = {}
+		hybrid_tp_sl_metrics: Dict[str, float] = {}
+		if base_daily_returns and hybrid_daily_returns:
+			base_mat = pd.concat(base_daily_returns, axis=1)
+			base_mat.columns = tickers_with_prices
+			hybrid_mat = pd.concat(hybrid_daily_returns, axis=1)
+			hybrid_mat.columns = tickers_with_prices
+			base_tp_sl = (base_mat * weights).sum(axis=1).dropna()
+			hybrid_tp_sl = (hybrid_mat * weights).sum(axis=1).dropna()
+			base_idx = base_tp_sl.index.intersection(benchmark.loc[test_start:test_end].dropna().index)
+			hybrid_idx = hybrid_tp_sl.index.intersection(benchmark.loc[test_start:test_end].dropna().index)
+			base_tp_sl_aligned = base_tp_sl.loc[base_idx]
+			hybrid_tp_sl_aligned = hybrid_tp_sl.loc[hybrid_idx]
+			if len(base_tp_sl_aligned):
+				base_tp_sl_metrics = compute_all_metrics(base_tp_sl_aligned, self.risk_free, "base_tp_sl")
+			if len(hybrid_tp_sl_aligned):
+				hybrid_tp_sl_metrics = compute_all_metrics(hybrid_tp_sl_aligned, self.risk_free, "hybrid_tp_sl")
+
+		buy_hold_returns = pd.Series(dtype=float)
+		buy_hold_aligned = pd.Series(dtype=float)
+		buy_hold_bench_aligned = pd.Series(dtype=float)
+		buy_hold_metrics: Dict[str, float] = {}
+		buy_hold_alpha = float("nan")
+		tp_sl_minus_buy_hold = float("nan")
+		tickers_tp_sl_better: List[str] = []
+		tickers_tp_sl_worse: List[str] = []
+		if ENABLE_BUY_HOLD_COUNTERFACTUAL and buy_hold_daily_returns:
+			bh_matrix = pd.concat(buy_hold_daily_returns, axis=1)
+			bh_matrix.columns = tickers_with_prices
+			buy_hold_returns = (bh_matrix * weights).sum(axis=1).dropna()
+			bh_common_idx = buy_hold_returns.index.intersection(benchmark.loc[test_start:test_end].dropna().index)
+			buy_hold_aligned = buy_hold_returns.loc[bh_common_idx]
+			buy_hold_bench_aligned = benchmark.loc[bh_common_idx].dropna()
+			buy_hold_aligned = buy_hold_aligned.loc[buy_hold_aligned.index.intersection(buy_hold_bench_aligned.index)]
+			buy_hold_bench_aligned = buy_hold_bench_aligned.loc[buy_hold_aligned.index]
+			if len(buy_hold_aligned) >= 1:
+				buy_hold_metrics = compute_all_metrics(buy_hold_aligned, self.risk_free, "buy_hold")
+				bh_bench_metrics = compute_all_metrics(buy_hold_bench_aligned, self.risk_free, "buy_hold_benchmark")
+				buy_hold_alpha = (
+					buy_hold_metrics.get("buy_hold_cumulative_return", 0.0)
+					- bh_bench_metrics.get("buy_hold_benchmark_cumulative_return", 0.0)
+				)
+				tp_sl_minus_buy_hold = strat_metrics["strategy_cumulative_return"] - buy_hold_metrics.get("buy_hold_cumulative_return", 0.0)
+			for ticker in tickers_with_prices:
+				delta = float(ticker_returns.get(ticker, np.nan)) - float(buy_hold_ticker_returns.get(ticker, np.nan))
+				if np.isfinite(delta) and delta > 0:
+					tickers_tp_sl_better.append(ticker)
+				elif np.isfinite(delta) and delta < 0:
+					tickers_tp_sl_worse.append(ticker)
 
 		ticker_returns_sorted = dict(sorted(ticker_returns.items(), key=lambda x: x[1], reverse=True))
 
@@ -468,6 +771,13 @@ class WalkForwardBacktester:
 			ticker_price_series[ticker] = (1 + ret_series).cumprod()
 
 		price_days = int(len(bench_period))
+		exit_reason_counts = {k: int(v) for k, v in pd.Series(ticker_exit_reasons).value_counts().to_dict().items()}
+		avg_holding_days_tp_sl = float(np.mean(list(ticker_days_to_outcome.values()))) if ticker_days_to_outcome else 0.0
+		avg_holding_days_buy_hold = float(np.mean(list(buy_hold_days_held.values()))) if buy_hold_days_held else 0.0
+		return_buy_hold = buy_hold_metrics.get("buy_hold_cumulative_return", float("nan"))
+		return_base_tp_sl = base_tp_sl_metrics.get("base_tp_sl_cumulative_return", float("nan"))
+		return_hybrid_tp_sl = hybrid_tp_sl_metrics.get("hybrid_tp_sl_cumulative_return", float("nan"))
+		hybrid_minus_base = return_hybrid_tp_sl - return_base_tp_sl if np.isfinite(return_hybrid_tp_sl) and np.isfinite(return_base_tp_sl) else float("nan")
 		fold_result = {
 			"fold": fold_id,
 			"year_quarter": year_quarter,
@@ -478,24 +788,108 @@ class WalkForwardBacktester:
 			"test_end_target": str(test_end.date()),
 			"price_days": price_days,
 			"selected_tickers": top,
+			"buy_hold_selected_tickers": list(tickers_with_prices),
 			"n_stocks": len(top),
 			**strat_metrics,
 			**bench_metrics,
 			"alpha": alpha,
 			"excess_sharpe": excess_sharpe,
+			"return_tp_sl": strat_metrics.get("strategy_cumulative_return", 0.0),
+			"return_buy_hold": return_buy_hold,
+			"return_base_tp_sl": return_base_tp_sl,
+			"return_hybrid_tp_sl": return_hybrid_tp_sl,
+			"hybrid_minus_base": hybrid_minus_base,
+			"alpha_tp_sl_vs_benchmark": alpha,
+			"alpha_buy_hold_vs_benchmark": buy_hold_alpha,
+			"tp_sl_minus_buy_hold": tp_sl_minus_buy_hold,
+			"sharpe_tp_sl": strat_metrics.get("strategy_sharpe", 0.0),
+			"sharpe_buy_hold": buy_hold_metrics.get("buy_hold_sharpe", float("nan")),
+			"max_drawdown_tp_sl": strat_metrics.get("strategy_max_drawdown", 0.0),
+			"max_drawdown_buy_hold": buy_hold_metrics.get("buy_hold_max_drawdown", float("nan")),
+			"win_rate_tp_sl": strat_metrics.get("strategy_win_rate", 0.0),
+			"win_rate_buy_hold": buy_hold_metrics.get("buy_hold_win_rate", float("nan")),
+			"avg_holding_days_tp_sl": avg_holding_days_tp_sl,
+			"avg_holding_days_buy_hold": avg_holding_days_buy_hold,
+			"exit_reason_counts": exit_reason_counts,
+			"tickers_tp_sl_better_than_buy_hold": tickers_tp_sl_better,
+			"tickers_tp_sl_worse_than_buy_hold": tickers_tp_sl_worse,
+			"tp_sl_variant_mode": self._variant_mode_label(),
+			**buy_hold_metrics,
+			**base_tp_sl_metrics,
+			**hybrid_tp_sl_metrics,
 			"ticker_returns": ticker_returns_sorted,
 			"ticker_weights": ticker_weights,
 			"ticker_exit_dates": ticker_exit_dates,
 			"ticker_exit_reasons": ticker_exit_reasons,
 			"ticker_days_to_outcome": ticker_days_to_outcome,
+			"base_ticker_returns": dict(sorted(base_ticker_returns.items(), key=lambda x: x[1], reverse=True)),
+			"hybrid_ticker_returns": dict(sorted(hybrid_ticker_returns.items(), key=lambda x: x[1], reverse=True)),
+			"base_ticker_exit_reasons": base_ticker_exit_reasons,
+			"hybrid_ticker_exit_reasons": hybrid_ticker_exit_reasons,
+			"base_ticker_exit_dates": base_ticker_exit_dates,
+			"hybrid_ticker_exit_dates": hybrid_ticker_exit_dates,
+			"hybrid_trailing_initial": hybrid_trailing_initial,
+			"hybrid_trailing_final": hybrid_trailing_final,
+			"buy_hold_ticker_returns": dict(sorted(buy_hold_ticker_returns.items(), key=lambda x: x[1], reverse=True)),
+			"buy_hold_exit_dates": buy_hold_exit_dates,
+			"buy_hold_days_held": buy_hold_days_held,
 			"weighting_mode": weighting_mode,
 			"_ticker_price_series": ticker_price_series,
 			"_strat_price_series": (1 + strat_aligned).cumprod(),
+			"_buy_hold_price_series": (1 + buy_hold_aligned).cumprod() if len(buy_hold_aligned) else pd.Series(dtype=float),
 			"_bench_price_series": (1 + bench_aligned).cumprod(),
 		}
 
 		self.all_strategy_returns = pd.concat([self.all_strategy_returns, strat_aligned])
+		if len(buy_hold_aligned):
+			self.all_buy_hold_returns = pd.concat([self.all_buy_hold_returns, buy_hold_aligned])
 		self.all_benchmark_returns = pd.concat([self.all_benchmark_returns, bench_aligned])
+
+		if ENABLE_BUY_HOLD_COUNTERFACTUAL:
+			self._record_counterfactual_rows(
+				fold_result=None,
+				period_id=period_id,
+				fold_id=fold_id,
+				year_quarter=year_quarter,
+				train_years_int=train_years_int,
+				test_start=test_start,
+				actual_eval_end=actual_eval_end,
+				test_end=test_end,
+				tickers=tickers_with_prices,
+				weights=ticker_weights,
+				tp_sl_returns=ticker_returns,
+				buy_hold_returns=buy_hold_ticker_returns,
+				tp_sl_exit_dates=ticker_exit_dates,
+				buy_hold_exit_dates=buy_hold_exit_dates,
+				tp_sl_days=ticker_days_to_outcome,
+				buy_hold_days=buy_hold_days_held,
+				exit_reasons=ticker_exit_reasons,
+				sector_by_ticker=sector_by_ticker,
+				regime_by_ticker=regime_by_ticker,
+				fold_metrics=fold_result,
+			)
+
+		self._record_hybrid_vs_base_rows(
+			period_id=period_id,
+			fold_id=fold_id,
+			year_quarter=year_quarter,
+			train_years_int=train_years_int,
+			test_start=test_start,
+			tickers=tickers_with_prices,
+			weights=ticker_weights,
+			base_returns=base_ticker_returns,
+			hybrid_returns=hybrid_ticker_returns,
+			buy_hold_returns=buy_hold_ticker_returns,
+			base_exit_reasons=base_ticker_exit_reasons,
+			hybrid_exit_reasons=hybrid_ticker_exit_reasons,
+			base_exit_dates=base_ticker_exit_dates,
+			hybrid_exit_dates=hybrid_ticker_exit_dates,
+			hybrid_trailing_initial=hybrid_trailing_initial,
+			hybrid_trailing_final=hybrid_trailing_final,
+			sector_by_ticker=sector_by_ticker,
+			regime_by_ticker=regime_by_ticker,
+			fold_metrics=fold_result,
+		)
 
 		path = self.results_dir / f"metrics_{period_id}_{train_years_int}Y.json"
 		with open(path, "w") as f:
@@ -509,6 +903,288 @@ class WalkForwardBacktester:
 		)
 		return fold_result
 
+
+	def _record_counterfactual_rows(
+		self,
+		*,
+		fold_result: Optional[Dict],
+		period_id: str,
+		fold_id,
+		year_quarter: str,
+		train_years_int: int,
+		test_start,
+		actual_eval_end,
+		test_end,
+		tickers: List[str],
+		weights: Dict[str, float],
+		tp_sl_returns: Dict[str, float],
+		buy_hold_returns: Dict[str, float],
+		tp_sl_exit_dates: Dict[str, str],
+		buy_hold_exit_dates: Dict[str, str],
+		tp_sl_days: Dict[str, int],
+		buy_hold_days: Dict[str, int],
+		exit_reasons: Dict[str, str],
+		sector_by_ticker: Optional[Dict[str, str]] = None,
+		regime_by_ticker: Optional[Dict[str, str]] = None,
+		fold_metrics: Dict | None = None,
+	) -> None:
+		"""Append export-ready TP/SL vs Buy & Hold rows without touching ML scores."""
+		fm = fold_metrics or fold_result or {}
+		self.counterfactual_fold_rows.append({
+			"fold": fold_id,
+			"fold_id": period_id,
+			"year_quarter": year_quarter,
+			"train_years": train_years_int,
+			"entry_date": str(pd.Timestamp(test_start).date()),
+			"tp_sl_exit_end": str(pd.Timestamp(actual_eval_end).date()),
+			"buy_hold_target_exit": str(pd.Timestamp(test_end).date()),
+			"n_tickers": int(len(tickers)),
+			"return_tp_sl": fm.get("return_tp_sl", fm.get("strategy_cumulative_return", np.nan)),
+			"return_buy_hold": fm.get("return_buy_hold", np.nan),
+			"benchmark_return": fm.get("benchmark_cumulative_return", np.nan),
+			"alpha_tp_sl_vs_benchmark": fm.get("alpha_tp_sl_vs_benchmark", fm.get("alpha", np.nan)),
+			"alpha_buy_hold_vs_benchmark": fm.get("alpha_buy_hold_vs_benchmark", np.nan),
+			"tp_sl_minus_buy_hold": fm.get("tp_sl_minus_buy_hold", np.nan),
+			"sharpe_tp_sl": fm.get("sharpe_tp_sl", fm.get("strategy_sharpe", np.nan)),
+			"sharpe_buy_hold": fm.get("sharpe_buy_hold", np.nan),
+			"max_drawdown_tp_sl": fm.get("max_drawdown_tp_sl", fm.get("strategy_max_drawdown", np.nan)),
+			"max_drawdown_buy_hold": fm.get("max_drawdown_buy_hold", np.nan),
+			"win_rate_tp_sl": fm.get("win_rate_tp_sl", fm.get("strategy_win_rate", np.nan)),
+			"win_rate_buy_hold": fm.get("win_rate_buy_hold", np.nan),
+			"avg_holding_days_tp_sl": fm.get("avg_holding_days_tp_sl", np.nan),
+			"avg_holding_days_buy_hold": fm.get("avg_holding_days_buy_hold", np.nan),
+			"exit_reason_counts": json.dumps(fm.get("exit_reason_counts", {}), sort_keys=True),
+			"tickers_tp_sl_better_than_buy_hold": ",".join(fm.get("tickers_tp_sl_better_than_buy_hold", [])),
+			"tickers_tp_sl_worse_than_buy_hold": ",".join(fm.get("tickers_tp_sl_worse_than_buy_hold", [])),
+			"tp_sl_variant_mode": fm.get("tp_sl_variant_mode", self._variant_mode_label()),
+		})
+
+		for ticker in tickers:
+			tp_ret = float(tp_sl_returns.get(ticker, np.nan))
+			bh_ret = float(buy_hold_returns.get(ticker, np.nan))
+			delta = tp_ret - bh_ret if np.isfinite(tp_ret) and np.isfinite(bh_ret) else np.nan
+			self.counterfactual_ticker_rows.append({
+				"fold": fold_id,
+				"fold_id": period_id,
+				"year_quarter": year_quarter,
+				"ticker": ticker,
+				"sector": (sector_by_ticker or {}).get(ticker),
+				"regime": (regime_by_ticker or {}).get(ticker),
+				"entry_date": str(pd.Timestamp(test_start).date()),
+				"weight": float(weights.get(ticker, np.nan)),
+				"return_tp_sl": tp_ret,
+				"return_buy_hold": bh_ret,
+				"tp_sl_minus_buy_hold": delta,
+				"tp_sl_exit_date": tp_sl_exit_dates.get(ticker),
+				"buy_hold_exit_date": buy_hold_exit_dates.get(ticker),
+				"tp_sl_exit_reason": exit_reasons.get(ticker),
+				"buy_hold_exit_reason": "annual_horizon_or_last_available",
+				"holding_days_tp_sl": int(tp_sl_days.get(ticker, 0)),
+				"holding_days_buy_hold": int(buy_hold_days.get(ticker, 0)),
+				"tp_sl_improved": bool(np.isfinite(delta) and delta > 0),
+			})
+
+
+
+	def _record_hybrid_vs_base_rows(
+		self,
+		*,
+		period_id: str,
+		fold_id,
+		year_quarter: str,
+		train_years_int: int,
+		test_start,
+		tickers: List[str],
+		weights: Dict[str, float],
+		base_returns: Dict[str, float],
+		hybrid_returns: Dict[str, float],
+		buy_hold_returns: Dict[str, float],
+		base_exit_reasons: Dict[str, str],
+		hybrid_exit_reasons: Dict[str, str],
+		base_exit_dates: Dict[str, str],
+		hybrid_exit_dates: Dict[str, str],
+		hybrid_trailing_initial: Dict[str, float],
+		hybrid_trailing_final: Dict[str, float],
+		sector_by_ticker: Optional[Dict[str, str]] = None,
+		regime_by_ticker: Optional[Dict[str, str]] = None,
+		fold_metrics: Dict | None = None,
+	) -> None:
+		"""Append export-ready TP/SL hybrid vs base comparison rows."""
+		self.hybrid_vs_base_fold_rows.append({
+			"fold": fold_id,
+			"fold_id": period_id,
+			"year_quarter": year_quarter,
+			"train_years": train_years_int,
+			"entry_date": str(pd.Timestamp(test_start).date()),
+			"return_base": fold_metrics.get("return_base_tp_sl", np.nan),
+			"return_hybrid": fold_metrics.get("return_hybrid_tp_sl", np.nan),
+			"return_buy_hold": fold_metrics.get("return_buy_hold", np.nan),
+			"hybrid_minus_base": fold_metrics.get("hybrid_minus_base", np.nan),
+			"hybrid_minus_buy_hold": (fold_metrics.get("return_hybrid_tp_sl", np.nan) - fold_metrics.get("return_buy_hold", np.nan)) if np.isfinite(fold_metrics.get("return_hybrid_tp_sl", np.nan)) and np.isfinite(fold_metrics.get("return_buy_hold", np.nan)) else np.nan,
+			"sharpe_base": fold_metrics.get("base_tp_sl_sharpe", np.nan),
+			"sharpe_hybrid": fold_metrics.get("hybrid_tp_sl_sharpe", np.nan),
+			"max_drawdown_base": fold_metrics.get("base_tp_sl_max_drawdown", np.nan),
+			"max_drawdown_hybrid": fold_metrics.get("hybrid_tp_sl_max_drawdown", np.nan),
+			"tp_sl_variant_mode": fold_metrics.get("tp_sl_variant_mode", self._variant_mode_label()),
+		})
+		for ticker in tickers:
+			base_ret = float(base_returns.get(ticker, np.nan))
+			hybrid_ret = float(hybrid_returns.get(ticker, np.nan))
+			bh_ret = float(buy_hold_returns.get(ticker, np.nan))
+			delta = hybrid_ret - base_ret if np.isfinite(hybrid_ret) and np.isfinite(base_ret) else np.nan
+			self.hybrid_vs_base_ticker_rows.append({
+				"fold": fold_id,
+				"fold_id": period_id,
+				"year_quarter": year_quarter,
+				"ticker": ticker,
+				"sector": (sector_by_ticker or {}).get(ticker),
+				"regime": (regime_by_ticker or {}).get(ticker),
+				"entry_date": str(pd.Timestamp(test_start).date()),
+				"weight": float(weights.get(ticker, np.nan)),
+				"return_base": base_ret,
+				"return_hybrid": hybrid_ret,
+				"return_buy_hold": bh_ret,
+				"hybrid_minus_base": delta,
+				"hybrid_minus_buy_hold": hybrid_ret - bh_ret if np.isfinite(hybrid_ret) and np.isfinite(bh_ret) else np.nan,
+				"exit_reason_base": base_exit_reasons.get(ticker),
+				"exit_reason_hybrid": hybrid_exit_reasons.get(ticker),
+				"exit_date_base": base_exit_dates.get(ticker),
+				"exit_date_hybrid": hybrid_exit_dates.get(ticker),
+				"trailing_stop_initial": hybrid_trailing_initial.get(ticker),
+				"trailing_stop_final": hybrid_trailing_final.get(ticker),
+			})
+
+	def _export_counterfactual_artifacts(self, summary_payload: Dict) -> None:
+		"""Export TP/SL vs Buy & Hold CSV, JSON and comparison charts."""
+		if not EXPORT_TP_SL_VS_BUY_HOLD and not self.hybrid_vs_base_fold_rows:
+			return
+
+		self.strategy_dir.mkdir(parents=True, exist_ok=True)
+		fold_df = pd.DataFrame(self.counterfactual_fold_rows)
+		ticker_df = pd.DataFrame(self.counterfactual_ticker_rows)
+		if EXPORT_TP_SL_VS_BUY_HOLD and not fold_df.empty:
+			fold_csv = self.strategy_dir / "tp_sl_vs_buy_hold_by_fold.csv"
+			ticker_csv = self.strategy_dir / "tp_sl_vs_buy_hold_by_ticker.csv"
+			fold_df.to_csv(fold_csv, index=False, float_format="%.6f")
+			ticker_df.to_csv(ticker_csv, index=False, float_format="%.6f")
+		if self.hybrid_vs_base_fold_rows:
+			pd.DataFrame(self.hybrid_vs_base_fold_rows).to_csv(self.strategy_dir / "tp_sl_hybrid_vs_base_by_fold.csv", index=False, float_format="%.6f")
+		if self.hybrid_vs_base_ticker_rows:
+			pd.DataFrame(self.hybrid_vs_base_ticker_rows).to_csv(self.strategy_dir / "tp_sl_hybrid_vs_base_by_ticker.csv", index=False, float_format="%.6f")
+
+
+		if self.hybrid_vs_base_fold_rows or self.hybrid_vs_base_ticker_rows:
+			robustness: Dict[str, object] = {}
+			hf = pd.DataFrame(self.hybrid_vs_base_fold_rows)
+			ht = pd.DataFrame(self.hybrid_vs_base_ticker_rows)
+			if not hf.empty and "hybrid_minus_base" in hf.columns:
+				delta = pd.to_numeric(hf["hybrid_minus_base"], errors="coerce")
+				robustness["folds_where_hybrid_wins"] = hf.loc[delta > 0, [c for c in ["fold_id", "year_quarter", "hybrid_minus_base", "return_base", "return_hybrid"] if c in hf.columns]].to_dict(orient="records")
+				robustness["folds_where_hybrid_loses"] = hf.loc[delta < 0, [c for c in ["fold_id", "year_quarter", "hybrid_minus_base", "return_base", "return_hybrid"] if c in hf.columns]].to_dict(orient="records")
+			if not ht.empty and "hybrid_minus_base" in ht.columns:
+				delta_t = pd.to_numeric(ht["hybrid_minus_base"], errors="coerce")
+				robustness["tickers_where_hybrid_wins"] = ht.loc[delta_t > 0, [c for c in ["fold_id", "ticker", "sector", "regime", "hybrid_minus_base", "return_base", "return_hybrid"] if c in ht.columns]].to_dict(orient="records")
+				robustness["tickers_where_hybrid_loses"] = ht.loc[delta_t < 0, [c for c in ["fold_id", "ticker", "sector", "regime", "hybrid_minus_base", "return_base", "return_hybrid"] if c in ht.columns]].to_dict(orient="records")
+				for group_col, key in [("sector", "by_sector"), ("regime", "by_regime")]:
+					if group_col in ht.columns:
+						grp_rows = []
+						for name, grp in ht.groupby(group_col, dropna=False):
+							gdelta = pd.to_numeric(grp["hybrid_minus_base"], errors="coerce")
+							grp_rows.append({
+								group_col: str(name),
+								"n": int(len(grp)),
+								"hybrid_wins": int((gdelta > 0).sum()),
+								"hybrid_loses": int((gdelta < 0).sum()),
+								"mean_hybrid_minus_base": float(gdelta.mean()) if gdelta.notna().any() else np.nan,
+							})
+						robustness[key] = grp_rows
+			with open(self.strategy_dir / "tp_sl_hybrid_robustness_summary.json", "w", encoding="utf-8") as f:
+				json.dump(robustness, f, indent=2, default=str)
+
+		trail_files = sorted(self.results_dir.glob("portfolio_trail_*.csv"))
+		trail_parts = []
+		for trail_file in trail_files:
+			try:
+				trail_parts.append(pd.read_csv(trail_file))
+			except Exception:
+				continue
+		if trail_parts:
+			pd.concat(trail_parts, ignore_index=True).to_csv(self.strategy_dir / "trailing_dynamics_by_ticker.csv", index=False)
+
+		summary_json = self.strategy_dir / "tp_sl_vs_buy_hold_summary.json"
+		with open(summary_json, "w", encoding="utf-8") as f:
+			json.dump(summary_payload, f, indent=2, default=str)
+
+		if fold_df.empty:
+			return
+
+		try:
+			import matplotlib
+			matplotlib.use("Agg")
+			import matplotlib.pyplot as plt
+
+			labels = fold_df["year_quarter"].astype(str).tolist() if "year_quarter" in fold_df else fold_df["fold_id"].astype(str).tolist()
+			x = np.arange(len(fold_df))
+
+			# Equity curve: concatenated daily return streams.
+			fig, ax = plt.subplots(figsize=(12, 6))
+			if not self.all_strategy_returns.empty:
+				(1 + self.all_strategy_returns).cumprod().plot(ax=ax, label="TP/SL", lw=2)
+			if not self.all_buy_hold_returns.empty:
+				(1 + self.all_buy_hold_returns).cumprod().plot(ax=ax, label="Buy & Hold 12M", lw=2)
+			if not self.all_benchmark_returns.empty:
+				(1 + self.all_benchmark_returns).cumprod().plot(ax=ax, label="Benchmark", lw=1.6, alpha=0.8)
+			ax.set_title("Equity Curve: TP/SL vs Buy & Hold vs Benchmark")
+			ax.set_ylabel("Growth of $1")
+			ax.grid(alpha=0.3)
+			ax.legend()
+			fig.tight_layout()
+			fig.savefig(self.strategy_dir / "equity_curve_tp_sl_vs_buy_hold_vs_benchmark.png", dpi=150, bbox_inches="tight")
+			plt.close(fig)
+
+			fig, ax = plt.subplots(figsize=(12, 6))
+			w = 0.38
+			ax.bar(x - w / 2, fold_df["alpha_tp_sl_vs_benchmark"].astype(float) * 100, width=w, label="TP/SL alpha")
+			ax.bar(x + w / 2, fold_df["alpha_buy_hold_vs_benchmark"].astype(float) * 100, width=w, label="Buy & Hold alpha")
+			ax.axhline(0, color="black", lw=0.8)
+			ax.set_title("Alpha por fold: TP/SL vs Buy & Hold")
+			ax.set_ylabel("Alpha (%)")
+			ax.set_xticks(x)
+			ax.set_xticklabels(labels, rotation=45, ha="right", fontsize=8)
+			ax.grid(axis="y", alpha=0.3)
+			ax.legend()
+			fig.tight_layout()
+			fig.savefig(self.strategy_dir / "alpha_by_fold_tp_sl_vs_buy_hold.png", dpi=150, bbox_inches="tight")
+			plt.close(fig)
+
+			fig, ax = plt.subplots(figsize=(12, 5))
+			delta = fold_df["tp_sl_minus_buy_hold"].astype(float)
+			colors = ["#2E7D32" if v >= 0 else "#C62828" for v in delta]
+			ax.bar(x, delta * 100, color=colors, alpha=0.85)
+			ax.axhline(0, color="black", lw=0.8)
+			ax.set_title("Diferencia por fold: TP/SL - Buy & Hold")
+			ax.set_ylabel("Diferencia de retorno (%)")
+			ax.set_xticks(x)
+			ax.set_xticklabels(labels, rotation=45, ha="right", fontsize=8)
+			ax.grid(axis="y", alpha=0.3)
+			fig.tight_layout()
+			fig.savefig(self.strategy_dir / "tp_sl_minus_buy_hold_by_fold.png", dpi=150, bbox_inches="tight")
+			plt.close(fig)
+
+			if not ticker_df.empty and "tp_sl_exit_reason" in ticker_df.columns:
+				fig, ax = plt.subplots(figsize=(8, 5))
+				counts = ticker_df["tp_sl_exit_reason"].fillna("unknown").value_counts()
+				counts.plot(kind="bar", ax=ax, color="#1976D2", alpha=0.85)
+				ax.set_title("Distribución de exits TP/SL")
+				ax.set_ylabel("Número de posiciones")
+				ax.set_xlabel("Exit reason")
+				ax.grid(axis="y", alpha=0.3)
+				fig.tight_layout()
+				fig.savefig(self.strategy_dir / "tp_sl_exit_distribution.png", dpi=150, bbox_inches="tight")
+				plt.close(fig)
+		except Exception as ex:
+			log.warning("[Counterfactual] Could not export comparison plots (%s)", ex)
+
 	def summarize(self) -> Dict:
 		if not self.fold_results:
 			log.warning("[Backtester] Sin folds completados.")
@@ -516,9 +1192,19 @@ class WalkForwardBacktester:
 
 		global_strat = compute_all_metrics(self.all_strategy_returns, self.risk_free, "global_strategy")
 		global_bench = compute_all_metrics(self.all_benchmark_returns, self.risk_free, "global_benchmark")
+		global_buy_hold = (
+			compute_all_metrics(self.all_buy_hold_returns, self.risk_free, "global_buy_hold")
+			if ENABLE_BUY_HOLD_COUNTERFACTUAL and not self.all_buy_hold_returns.empty
+			else {}
+		)
 		folds_df = pd.DataFrame(self.fold_results)
 		mean_alpha = float(folds_df["alpha"].mean()) if "alpha" in folds_df else 0.0
 		pct_alpha_pos = float((folds_df["alpha"] > 0).mean()) if "alpha" in folds_df else 0.0
+		tp_sl_wins_vs_bh = int((pd.to_numeric(folds_df.get("tp_sl_minus_buy_hold", pd.Series(dtype=float)), errors="coerce") > 0).sum())
+		mean_alpha_bh = float(pd.to_numeric(folds_df.get("alpha_buy_hold_vs_benchmark", pd.Series(dtype=float)), errors="coerce").mean()) if "alpha_buy_hold_vs_benchmark" in folds_df else float("nan")
+		mean_tp_sl_minus_bh = float(pd.to_numeric(folds_df.get("tp_sl_minus_buy_hold", pd.Series(dtype=float)), errors="coerce").mean()) if "tp_sl_minus_buy_hold" in folds_df else float("nan")
+		mean_hybrid_minus_base = float(pd.to_numeric(folds_df.get("hybrid_minus_base", pd.Series(dtype=float)), errors="coerce").mean()) if "hybrid_minus_base" in folds_df else float("nan")
+		hybrid_wins_vs_base = int((pd.to_numeric(folds_df.get("hybrid_minus_base", pd.Series(dtype=float)), errors="coerce") > 0).sum()) if "hybrid_minus_base" in folds_df else 0
 
 		by_train_years: Dict = {}
 		if "train_years" in folds_df.columns:
@@ -541,14 +1227,39 @@ class WalkForwardBacktester:
 			"top_n_stocks": self.top_n_stocks,
 			"mean_alpha": mean_alpha,
 			"pct_folds_positive_alpha": pct_alpha_pos,
+			"tp_sl_hybrid_vs_base": {
+				"variant_mode": self._variant_mode_label(),
+				"n_folds": int(len(folds_df)),
+				"folds_hybrid_wins": hybrid_wins_vs_base,
+				"folds_base_wins": int(len(folds_df) - hybrid_wins_vs_base),
+				"mean_hybrid_minus_base": mean_hybrid_minus_base,
+				"mean_return_base": float(pd.to_numeric(folds_df.get("return_base_tp_sl", pd.Series(dtype=float)), errors="coerce").mean()) if "return_base_tp_sl" in folds_df else float("nan"),
+				"mean_return_hybrid": float(pd.to_numeric(folds_df.get("return_hybrid_tp_sl", pd.Series(dtype=float)), errors="coerce").mean()) if "return_hybrid_tp_sl" in folds_df else float("nan"),
+			},
+			"tp_sl_vs_buy_hold": {
+				"enabled": bool(ENABLE_BUY_HOLD_COUNTERFACTUAL),
+				"variant_mode": self._variant_mode_label(),
+				"n_folds": int(len(folds_df)),
+				"folds_tp_sl_wins": tp_sl_wins_vs_bh,
+				"folds_buy_hold_wins": int(len(folds_df) - tp_sl_wins_vs_bh),
+				"mean_alpha_tp_sl": mean_alpha,
+				"mean_alpha_buy_hold": mean_alpha_bh,
+				"mean_tp_sl_minus_buy_hold": mean_tp_sl_minus_bh,
+				"global_return_tp_sl": global_strat.get("global_strategy_cumulative_return", float("nan")),
+				"global_return_buy_hold": global_buy_hold.get("global_buy_hold_cumulative_return", float("nan")),
+				"global_sharpe_buy_hold": global_buy_hold.get("global_buy_hold_sharpe", float("nan")),
+			},
 			"by_train_years": by_train_years,
 			**global_strat,
+			**global_buy_hold,
 			**global_bench,
 		}
 
 		path = self.strategy_dir / "backtest_summary.json"
 		with open(path, "w") as f:
 			json.dump(summary, f, indent=2, default=str)
+
+		self._export_counterfactual_artifacts(summary.get("tp_sl_vs_buy_hold", {}))
 
 		pd.DataFrame({
 			"strategy": self.all_strategy_returns,
@@ -592,7 +1303,10 @@ class WalkForwardBacktester:
 		col_order = [
 			"fold", "train_years", "train_start", "test_start", "test_end",
 			"strategy_cumulative_return", "benchmark_cumulative_return", "alpha",
+			"return_tp_sl", "return_buy_hold", "alpha_tp_sl_vs_benchmark",
+			"alpha_buy_hold_vs_benchmark", "tp_sl_minus_buy_hold",
 			"strategy_sharpe", "benchmark_sharpe", "excess_sharpe",
+			"sharpe_tp_sl", "sharpe_buy_hold", "max_drawdown_tp_sl", "max_drawdown_buy_hold",
 			"strategy_sortino", "strategy_max_drawdown", "strategy_calmar",
 			"strategy_volatility", "n_stocks",
 		]

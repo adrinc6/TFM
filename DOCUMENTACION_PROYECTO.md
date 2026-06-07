@@ -579,3 +579,112 @@ El sistema aplica múltiples capas de protección:
    ├─ Gráficas: equity curve, PnL por fold, drawdown, heatmaps
    └─ final_summary.json + report.txt
 ```
+
+## TP/SL vs Buy & Hold y variante `hybrid_learned`
+
+La evaluación walk-forward mantiene la estrategia principal del proyecto: el modelo ML selecciona un portafolio punto-en-el-tiempo y la salida se gestiona con TP/SL adaptativo.  El contrafactual Buy & Hold no sustituye esa lógica: se calcula únicamente para responder qué habría pasado manteniendo exactamente los mismos tickers, fecha de entrada y pesos iniciales durante el horizonte anual.
+
+### Flags principales en `environment.py`
+
+- `ENABLE_BUY_HOLD_COUNTERFACTUAL`: activa la simulación contrafactual Buy & Hold.
+- `BUY_HOLD_EXIT_ON_LAST_AVAILABLE_PRICE`: permite cerrar el contrafactual al último precio disponible si no hay datos hasta el vencimiento anual.
+- `EXPORT_TP_SL_VS_BUY_HOLD`: exporta CSV/JSON/gráficos comparativos.
+- `ENABLE_TP_SL_RESEARCH_VARIANTS`: habilita variantes controladas de TP/SL.
+- `TP_SL_VARIANT_MODE`: modo de ejecución. Valores soportados: `base`, `vol_adjusted`, `momentum_adjusted`, `regime_adjusted`, `hybrid_learned`.
+- `TP_SL_HYBRID_MIN_TRAIN_PATHS`: mínimo de trayectorias históricas train-only para confiar en niveles aprendidos.
+- `TP_SL_HYBRID_TRAILING_MIN_PCT` / `TP_SL_HYBRID_TRAILING_MAX_PCT`: límites interpretables del trailing dinámico.
+- `TP_SL_HYBRID_PROFIT_REVIEW_DAYS`: frecuencia de revisión del trailing una vez activada la protección de beneficios.
+
+### Buy & Hold contrafactual
+
+Para cada fold y ticker seleccionado por TP/SL, el backtester calcula una trayectoria Buy & Hold con:
+
+1. la misma fecha de entrada usada por TP/SL;
+2. el mismo portafolio seleccionado por el pipeline ML;
+3. los mismos pesos iniciales;
+4. sin TP, SL ni trailing stop;
+5. salida en el final del holding anual o en el último precio disponible.
+
+Esto permite comparar `return_tp_sl`, `return_buy_hold`, `alpha_tp_sl_vs_benchmark`, `alpha_buy_hold_vs_benchmark`, `tp_sl_minus_buy_hold`, Sharpe, drawdown, win-rate y holding medio sin introducir leakage ni reentrenar modelos.
+
+### Variante `hybrid_learned`
+
+La variante `hybrid_learned` aprende niveles realistas de TP/SL usando únicamente información anterior al snapshot del fold. Para cada ticker se reconstruyen trayectorias históricas de holding anual dentro de la ventana de entrenamiento y se estiman:
+
+- percentiles de `max_runup_12m` (`p50`, `p75`, `p90`);
+- probabilidad de alcanzar +10%, +15%, +20%, +30%, +40% y +50%;
+- probabilidad de continuación de +40% a +55%, usada para evitar TPs aspiracionales que históricamente rara vez se materializan;
+- distribución de drawdowns máximos;
+- probabilidad de recuperación tras tocar -5%, -10%, -15% y -20%;
+- probabilidad de terminar positivo después de esos drawdowns;
+- evidencia de TP-before-10% drawdown para varios umbrales.
+
+El TP híbrido combina esos históricos con momentum, volatilidad, régimen macro y confianza del modelo. En entornos de momentum fuerte/risk-on puede apuntar hacia percentiles superiores de runup; en nombres con baja probabilidad de alcanzar +40% o baja continuación posterior, reduce el TP para hacerlo más realista. El SL híbrido se estrecha si los drawdowns históricos rara vez recuperan y se amplía cuando el ticker suele sufrir caídas temporales pero recupera.
+
+### Trailing dinámico de la variante híbrida
+
+La lógica base se conserva. En `hybrid_learned`, antes de alcanzar TP se usa el SL aprendido. Al superar el TP se activa el modo de protección de beneficios:
+
+- el stop se recalcula desde el máximo alcanzado;
+- el stop nunca baja;
+- la distancia del trailing depende de volatilidad histórica, momentum, régimen y beneficio acumulado;
+- la revisión se hace con `TP_SL_HYBRID_PROFIT_REVIEW_DAYS`, más frecuente que la revisión mensual base si se desea;
+- en ganancias muy elevadas el trailing se puede ajustar gradualmente para proteger beneficios sin liquidar automáticamente la tendencia.
+
+### Outputs nuevos
+
+En la carpeta `strategy/` o en cada carpeta de fold se generan:
+
+- `tp_sl_vs_buy_hold_by_fold.csv`
+- `tp_sl_vs_buy_hold_by_ticker.csv`
+- `tp_sl_vs_buy_hold_summary.json`
+- `tp_sl_hybrid_vs_base_by_fold.csv`
+- `tp_sl_hybrid_vs_base_by_ticker.csv`
+- `learned_tp_sl_levels_by_ticker.csv`
+- `runup_drawdown_recovery_stats.csv`
+- `trailing_dynamics_by_ticker.csv`
+- gráficos: equity curve TP/SL vs Buy & Hold vs benchmark, alpha por fold, diferencia TP/SL-Buy&Hold y distribución de exits.
+
+Columnas importantes para interpretar la variante híbrida:
+
+- `base_tp`, `base_sl`, `learned_tp`, `learned_sl`, `final_tp_used`, `final_sl_used`;
+- `max_runup_train_p50`, `max_runup_train_p75`, `max_runup_train_p90`;
+- `recovery_prob_after_10pct_drawdown`, `recovery_prob_after_15pct_drawdown`;
+- `probability_reach_30pct`, `probability_reach_40pct`;
+- `trailing_stop_initial`, `trailing_stop_final`;
+- `exit_reason_base`, `exit_reason_hybrid`;
+- `return_base`, `return_hybrid`, `return_buy_hold`.
+
+### Interpretación del reporte
+
+`report.txt` incluye dos lecturas separadas:
+
+1. **TP/SL vs Buy & Hold Counterfactual**: indica si la gestión activa añade valor frente a mantener el mismo portafolio.
+2. **TP/SL Hybrid Learned vs Base**: indica si los niveles aprendidos y el trailing dinámico mejoran la implementación base.
+
+Una mejora positiva de `hybrid_minus_base` sugiere que la variante aprendida calibra mejor salidas y protección de beneficios. Si `hybrid_minus_base` es positivo pero `hybrid_minus_buy_hold` es negativo, la variante protege mejor que el TP/SL base pero aún recorta parte del upside. Si el híbrido mejora drawdown y Sharpe en regímenes risk-off, puede estar cumpliendo una función defensiva aunque no maximice retorno absoluto.
+
+### Garantías anti-leakage
+
+- Los niveles aprendidos se calculan con precios y observaciones históricas anteriores al snapshot.
+- El contrafactual Buy & Hold no modifica scores, selección ni pesos.
+- No se usa el máximo, mínimo ni drawdown del periodo de test para calibrar TP/SL.
+- No hay grid masivo sobre el test: la metodología aplica reglas interpretables aprendidas del pasado al fold futuro.
+
+### Limitaciones
+
+- Tickers con pocas trayectorias históricas vuelven parcialmente a niveles base para evitar sobreajuste.
+- Los percentiles históricos no garantizan distribución futura, especialmente en cambios estructurales de negocio o régimen.
+- La comparación es sensible a disponibilidad de precios recientes o delistings; por eso se documenta la salida al último precio disponible.
+- La variante híbrida mejora interpretabilidad y robustez, pero debe validarse por sector, régimen y horizonte antes de promoverla como configuración principal.
+
+### Validation checklist
+
+Antes de promover una corrida o comparar escenarios, revisar explícitamente:
+
+- **Base backward compatibility**: con `TP_SL_VARIANT_MODE="base"`, los tickers seleccionados, niveles TP/SL usados, fechas de salida, `exit_reason` y retornos deben coincidir con la implementación TP/SL base. La variante híbrida puede calcular diagnósticos, pero no debe alterar la ruta principal en modo `base`.
+- **Train-only learning**: todas las trayectorias usadas para aprender `max_runup`, drawdown, recovery probability y TP-before-drawdown deben terminar antes del snapshot/entry del fold evaluado. Los campos `earliest_train_path_end` y `latest_train_path_end` ayudan a auditarlo.
+- **Same portfolio comparison**: TP/SL base, `hybrid_learned` y Buy & Hold deben compartir exactamente los mismos tickers y pesos iniciales. La única diferencia permitida entre base e híbrido son los niveles/fechas de salida; Buy & Hold solo cambia la política de salida al mantener hasta horizonte anual o último precio disponible.
+- **No score mutation**: el contrafactual y la variante híbrida no pueden modificar `score`, `selection_score`, ranking, sector cap ni optimización de pesos. Cualquier análisis posterior debe consumir los artefactos exportados, no reentrenar ni reordenar tickers.
+- **No test-set tuning**: no se debe elegir `TP_SL_VARIANT_MODE`, cuantiles ni trailing a partir de máximos/drawdowns del fold de test. Los CSVs `tp_sl_hybrid_vs_base_*` y `tp_sl_vs_buy_hold_*` son diagnósticos out-of-sample, no una grilla para optimizar sobre el test.
+- **Robustez mínima**: revisar `tp_sl_hybrid_robustness_summary.json` para separar folds/tickers/sectores/regímenes donde el híbrido gana o pierde frente al TP/SL base. Un resultado agregado positivo no basta si la mejora se concentra en pocos nombres o un único régimen.
