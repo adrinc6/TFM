@@ -43,25 +43,40 @@ _COLUMN_ORDER = [
 # ---------------------------------------------------------------------------
 
 AGENT_LABELS = {
-    "fundamental": {
-        "high":   "Strong financial health",
-        "medium": "Acceptable financial health",
-        "low":    "Financial weaknesses detected",
+    "quality": {
+        "high":   "High business quality",
+        "medium": "Acceptable business quality",
+        "low":    "Weak quality profile",
+    },
+    "growth": {
+        "high":   "Strong growth profile",
+        "medium": "Reasonable growth profile",
+        "low":    "Weak growth profile",
     },
     "valuation": {
-        "high":   "Attractive valuation",
+        "high":   "Attractive valuation / margin of safety",
         "medium": "Reasonable valuation",
-        "low":    "Possibly overvalued",
+        "low":    "Expensive versus fundamentals",
     },
-    "momentum": {
-        "high":   "Positive technical trend",
-        "medium": "Neutral technical trend",
-        "low":    "Negative technical trend",
+    "fundamental_trend": {
+        "high":   "Fundamentals improving",
+        "medium": "Fundamentals stable",
+        "low":    "Fundamentals deteriorating",
     },
-    "bear": {
-        "high":   "Low risk (defensive profile)",
+    "catalyst": {
+        "high":   "Positive catalyst profile",
+        "medium": "Some catalyst support",
+        "low":    "Few catalysts detected",
+    },
+    "risk_bear": {
+        "high":   "Low value-trap/risk profile",
         "medium": "Moderate risk",
         "low":    "High risk detected",
+    },
+    "technical_guardrail": {
+        "high":   "Technical risk acceptable",
+        "medium": "Technical risk neutral",
+        "low":    "Technical deterioration warning",
     },
     "sentiment": {
         "high":   "Positive external sentiment",
@@ -129,23 +144,13 @@ def _agent_text_label(agent: str, score: float) -> str:
 # ---------------------------------------------------------------------------
 
 AGENT_KEY_FEATURES: Dict[str, List[str]] = {
-    "fundamental": [
-        "roe", "net_margin", "revenue_yoy_growth", "debt_to_ebitda",
-        "interest_coverage", "fcf_margin", "piotroski_fscore",
-        "earnings_quality", "consecutive_losses",
-    ],
-    "valuation": [
-        "pe_ratio", "pb_ratio", "ev_to_ebitda", "fcf_yield",
-        "pe_vs_5y_median", "ev_ebitda_vs_5y_median",
-    ],
-    "momentum": [
-        "momentum_3m", "momentum_6m", "momentum_12m",
-        "rsi_14", "sma_200", "volatility_60d",
-    ],
-    "bear": [
-        "debt_to_ebitda", "consecutive_losses", "insider_sell_ratio",
-        "current_ratio", "revenue_yoy_growth",
-    ],
+    "quality": ["roic", "roe", "roa", "gross_margin", "operating_margin", "fcf_margin", "piotroski_fscore"],
+    "growth": ["revenue_yoy_growth", "eps_yoy_growth", "fcf_yoy_growth", "eps_growth_trend_3y"],
+    "valuation": ["pe_ratio", "ev_to_ebitda", "fcf_yield", "earnings_yield", "valuation_percentile_sector"],
+    "fundamental_trend": ["roic_trend_2y", "net_margin_trend_2y", "fcf_margin_trend_2y", "eps_revision"],
+    "catalyst": ["eps_revision", "eps_surprise_avg_4q", "beat_rate_4q", "insider_net_ratio_90d"],
+    "risk_bear": ["debt_to_ebitda", "consecutive_losses", "insider_sell_ratio", "current_ratio", "volatility_60d"],
+    "technical_guardrail": ["momentum_3m", "momentum_6m", "momentum_12m", "rsi_14", "volatility_60d"],
     "sentiment": [
         "analyst_buy_ratio", "analyst_consensus", "eps_surprise_pct",
         "beat_rate_4q", "mspr_3m", "insider_net_ratio_90d",
@@ -338,7 +343,7 @@ def build_fold_scores_df(
         }
 
         # --- Per-agent scores + interpretation text ---
-        for ag_name in ["fundamental", "valuation", "momentum", "bear", "sentiment"]:
+        for ag_name in ["quality", "growth", "valuation", "fundamental_trend", "catalyst", "risk_bear", "technical_guardrail", "sentiment"]:
             score_col = f"{ag_name}_score"
             ag_score = float(row.get(score_col, 0.5))
             rec[score_col] = round(ag_score, 4)
@@ -517,7 +522,7 @@ def export_quarter_agent_feature_audit(
     tickers = df_test_scored.index.get_level_values("ticker")
     rows: List[Dict] = []
 
-    agent_order = ["fundamental", "valuation", "momentum", "bear", "sentiment", "sector_rotation", "meta_learner"]
+    agent_order = ["quality", "growth", "valuation", "fundamental_trend", "catalyst", "risk_bear", "technical_guardrail", "sentiment", "sector_rotation", "meta_learner"]
     for ticker in tickers.unique():
         mask = tickers == ticker
         row = df_test_scored.loc[mask].iloc[-1]
@@ -1016,7 +1021,7 @@ def build_strategy_csv(
     # Determine column order
     base_cols = [c for c in _COLUMN_ORDER if c in df.columns]
 
-    # Agent score columns (e.g. fundamental_score, momentum_score, â€¦)
+    # Agent score columns (GARP domain scores)
     score_cols = sorted([c for c in df.columns if c.endswith("_score")])
 
     # Agent weight / hit-rate columns
@@ -1132,7 +1137,7 @@ def generate_text_report(
 		lines.append(f"  Mejora media hibrido-base:     {mean_h_delta:+.2%}")
 		lines.append("  Lectura critica: el hibrido aprende niveles de runup/drawdown con datos train-only; si supera al base y reduce drawdown, su trailing dinamico esta protegiendo mejor. Si pierde frente a Buy & Hold, puede seguir recortando tendencias largas.")
 		lines.append("  Diagnostico operativo: revisar learned_tp_sl_levels_by_ticker.csv, trailing_dynamics_by_ticker.csv y runup_drawdown_recovery_stats.csv para ver si TP corta ganadores, SL salta por ruido, o trailing queda demasiado agresivo/laxo por sector o regimen.")
-		lines.append("  Advertencia metodologica: hybrid_learned es una variante investigable walk-forward, no una estrategia ya optimizada; debe validarse en mas periodos, folds, sectores y regimenes antes de promoverla como configuracion principal.")
+		lines.append("  Advertencia metodologica: la gestion de salidas TP/SL es diagnostica y no forma parte del objetivo GARP principal.")
 
 	cf = summary.get("tp_sl_vs_buy_hold", {}) if isinstance(summary, dict) else {}
 	if cf:

@@ -45,6 +45,17 @@ def enrich_cross_sectional_features(df: pd.DataFrame) -> pd.DataFrame:
         if "ev_to_ebitda" in out.columns:
             # Lower EV/EBITDA = cheaper → invert so higher rank = better value
             out["ev_ebitda_rank_sector"] = 1.0 - out.groupby(grp_sector)["ev_to_ebitda"].transform(_safe_pct_rank)
+        value_parts = []
+        if "fcf_yield" in out.columns:
+            value_parts.append(out.groupby(grp_sector)["fcf_yield"].transform(_safe_pct_rank))
+        if "earnings_yield" in out.columns:
+            value_parts.append(out.groupby(grp_sector)["earnings_yield"].transform(_safe_pct_rank))
+        if "ev_to_ebitda" in out.columns:
+            value_parts.append(1.0 - out.groupby(grp_sector)["ev_to_ebitda"].transform(_safe_pct_rank))
+        if "pe_ratio" in out.columns:
+            value_parts.append(1.0 - out.groupby(grp_sector)["pe_ratio"].transform(_safe_pct_rank))
+        if value_parts:
+            out["valuation_percentile_sector"] = pd.concat(value_parts, axis=1).mean(axis=1).fillna(0.5)
 
     # Universe-wide percentile ranks (cross-sectional factor exposures)
     if "roic" in out.columns:
@@ -53,6 +64,61 @@ def enrich_cross_sectional_features(df: pd.DataFrame) -> pd.DataFrame:
         out["value_rank_universe"] = out.groupby(dates)["earnings_yield"].transform(_safe_pct_rank)
     if "piotroski_fscore" in out.columns:
         out["piotroski_rank_universe"] = out.groupby(dates)["piotroski_fscore"].transform(_safe_pct_rank)
+
+    value_universe_parts = []
+    for col, invert in [("fcf_yield", False), ("earnings_yield", False), ("ev_to_ebitda", True), ("pe_ratio", True), ("ps_ratio", True)]:
+        if col in out.columns:
+            r = out.groupby(dates)[col].transform(_safe_pct_rank)
+            value_universe_parts.append(1.0 - r if invert else r)
+    if value_universe_parts:
+        out["valuation_percentile_universe"] = pd.concat(value_universe_parts, axis=1).mean(axis=1).fillna(0.5)
+
+
+    # GARP mispricing / expectation-gap features. These are point-in-time
+    # cross-sectional transforms: no future returns or future fundamentals are
+    # used. Higher values mean the current quality/growth profile looks
+    # underappreciated by current valuation.
+    quality_parts = []
+    for col in ["gross_margin", "operating_margin", "fcf_margin", "roic", "piotroski_fscore"]:
+        if col in out.columns:
+            quality_parts.append(out.groupby(dates)[col].transform(_safe_pct_rank))
+    growth_parts = []
+    for col in ["revenue_yoy_growth", "fcf_yoy_growth", "eps_growth_trend_3y"]:
+        if col in out.columns:
+            growth_parts.append(out.groupby(dates)[col].transform(_safe_pct_rank))
+    if quality_parts:
+        quality_composite = pd.concat(quality_parts, axis=1).mean(axis=1).fillna(0.5)
+    else:
+        quality_composite = pd.Series(0.5, index=out.index, dtype=float)
+    if growth_parts:
+        growth_composite = pd.concat(growth_parts, axis=1).mean(axis=1).fillna(0.5)
+    else:
+        growth_composite = pd.Series(0.5, index=out.index, dtype=float)
+
+    margin_stability = pd.Series(0.5, index=out.index, dtype=float)
+    if "gross_margin" in out.columns and isinstance(out.index, pd.MultiIndex) and "ticker" in out.index.names:
+        gm = pd.to_numeric(out["gross_margin"], errors="coerce")
+        ticker_vals = out.index.get_level_values("ticker")
+        rolling_std = gm.groupby(ticker_vals).transform(lambda x: x.rolling(8, min_periods=3).std())
+        margin_stability = (1.0 - rolling_std.groupby(dates).transform(_safe_pct_rank)).fillna(0.5)
+
+    out["moat_proxy_score"] = (0.45 * quality_composite + 0.35 * margin_stability + 0.20 * _numeric_col_or_default(out, "roic").groupby(dates).transform(_safe_pct_rank)).fillna(0.5).clip(0.0, 1.0)
+
+    valuation_reasonable = out.get("valuation_percentile_universe", pd.Series(0.5, index=out.index, dtype=float))
+    quality_growth = (0.55 * quality_composite + 0.45 * growth_composite).fillna(0.5)
+    out["mispricing_quality_growth"] = (quality_growth * valuation_reasonable).fillna(0.5).clip(0.0, 1.0)
+    out["expectation_gap_score"] = (0.65 * quality_growth + 0.35 * valuation_reasonable).fillna(0.5).clip(0.0, 1.0)
+    out["valuation_to_growth_reasonableness"] = (valuation_reasonable - (growth_composite - 0.5).clip(lower=0.0) * 0.25).fillna(0.5).clip(0.0, 1.0)
+
+    expensive_parts = []
+    for col in ["peg_ratio", "ev_to_sales", "pe_vs_5y_median", "ev_ebitda_vs_5y_median", "ps_ratio"]:
+        if col in out.columns:
+            expensive_parts.append(out.groupby(dates)[col].transform(_safe_pct_rank))
+    if expensive_parts:
+        expensive = pd.concat(expensive_parts, axis=1).mean(axis=1).fillna(0.5)
+    else:
+        expensive = 1.0 - valuation_reasonable
+    out["overexpectation_penalty"] = (expensive * (0.5 + 0.5 * growth_composite)).fillna(0.5).clip(0.0, 1.0)
 
     # Analyst earnings revision rank: one of the most consistently predictive
     # forward-looking cross-sectional signals.

@@ -1,251 +1,126 @@
-# Multi-Agent ML Stock Picker
+# Multi-Agent ML Stock Picker — GARP / Value-Growth
 
-Sistema de investigación cuantitativa para seleccionar acciones del S&P 500 con una arquitectura multi-agente de ML, snapshots punto-en-tiempo y backtesting walk-forward. El objetivo principal es evaluar si un portafolio seleccionado por modelos especializados puede generar alpha frente al benchmark cuando las posiciones se gestionan con TP/SL adaptativos durante un horizonte objetivo de 12 meses.
+Sistema cuantitativo automatizable para seleccionar acciones del S&P 500 mediante una arquitectura multi-agente de machine learning, snapshots punto-en-tiempo y backtesting walk-forward. La filosofía principal es **GARP / Value-Growth**: detectar empresas de calidad, con crecimiento futuro probable, infravaloradas o razonablemente valoradas frente a sus fundamentales, tendencia y riesgo.
 
-> **Estado del proyecto:** repositorio de investigación académica/TFM. No constituye asesoramiento financiero ni una estrategia lista para producción sin validación adicional.
+> Proyecto académico/TFM. No constituye asesoramiento financiero.
 
-## Qué hace el proyecto
+## Filosofía actual
 
-El pipeline completo:
+El sistema ya no usa TP/SL como objetivo de aprendizaje principal. El objetivo primario es seleccionar un portafolio fundamental Buy & Hold 12M y validar alpha frente a SPY y frente al sector. Los indicadores técnicos se mantienen únicamente como guardrails de riesgo/timing.
 
-1. Descarga y consolida datos financieros, precios y macro.
-2. Construye un dataset maestro con features punto-en-tiempo por ticker y snapshot.
-3. Entrena agentes especializados por dominio.
-4. Combina señales con un meta-learner.
-5. Selecciona un portafolio por fold walk-forward.
-6. Simula la estrategia principal TP/SL adaptativa.
-7. Compara contra:
-   - benchmark S&P 500/SPY;
-   - Buy & Hold 12M contrafactual sobre el mismo portafolio;
-   - variantes TP/SL investigables como `hybrid_learned`.
-8. Exporta CSVs, JSONs, gráficos, auditorías anti-leakage y reportes interpretativos.
+## Pipeline
 
-## Arquitectura de alto nivel
+1. Descarga y consolidación de datos financieros, precios, insiders, sentimiento y macro.
+2. Construcción del dataset maestro punto-en-tiempo por ticker/snapshot.
+3. Enriquecimiento cross-sectional sectorial/universal sin mirar el futuro.
+4. Entrenamiento walk-forward de agentes GARP:
+   - `quality`
+   - `growth`
+   - `valuation`
+   - `fundamental_trend`
+   - `catalyst`
+   - `risk_bear`
+   - `technical_guardrail`
+   - `sector_rotation` como prior top-down
+5. Meta-learner para ranking, alpha esperado y riesgo.
+6. Selección de portafolio por fold.
+7. Evaluación 12M vs SPY, sector-neutral y Buy & Hold.
+8. Exportación de auditorías anti-leakage, anti-momentum, explicabilidad por ticker/fold y reportes.
 
-```text
-Data / Finnhub / Yahoo / Macro
-        |
-        v
-Point-in-time master dataset
-        |
-        v
-Multi-agent training
-  - fundamental
-  - valuation
-  - momentum
-  - bear/risk
-  - sector rotation
-  - optional sentiment
-        |
-        v
-Meta-learner + ranking + portfolio selection
-        |
-        v
-Walk-forward backtest
-  - TP/SL base strategy
-  - hybrid_learned TP/SL variant
-  - Buy & Hold 12M counterfactual
-  - benchmark comparison
-        |
-        v
-results/<run>/strategy artifacts
-```
+## Target GARP compuesto
 
-## Estructura principal
+`garp_composite_target` combina:
 
-```text
-.
-├── analyzer.py                          # Entrypoint principal del pipeline
-├── analyzer_II.py                       # Grid/escenarios en paralelo
-├── environment.py                       # Configuración global del proyecto
-├── DOCUMENTACION_PROYECTO.md            # Documentación técnica extensa
-├── requirements.txt
-├── pyproject.toml
-├── data_finnhub/                        # Datos locales y dataset maestro
-├── module/
-│   ├── agents/                          # Agentes ML y meta-learner
-│   ├── common/                          # Métricas, as-of, régimen, optimización
-│   └── steps/
-│       ├── step_01_data/                # Descarga/consolidación
-│       ├── step_02_dataset/             # Dataset punto-en-tiempo
-│       ├── step_03_training/            # Entrenamiento walk-forward
-│       └── step_04_evaluation/          # Backtesting, reporting, análisis
-├── tests/                               # Tests unitarios/regresión
-└── results/                             # Artefactos generados por corrida
-```
+- 30% alpha forward 12M vs SPY.
+- 15% alpha sector-neutral.
+- 20% mejora fundamental futura (márgenes, ROIC, FCF/EPS/calidad de beneficios cuando existen snapshots posteriores en train).
+- 15% expectation gap / mispricing entre calidad-crecimiento observado y valoración actual.
+- 10% valoración inicial razonable.
+- -5% penalización de expectativas excesivas.
+- -5% penalización de downside/fragilidad.
 
-## Instalación
+El umbral positivo se calcula únicamente en el fold de entrenamiento (`GARP_OUTPERFORM_QUANTILE`) para evitar leakage.
 
-Requiere Python 3.10+.
+## Mispricing, moat y expectativas excesivas
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-pip install -e .[dev]
-```
+- `moat_proxy_score`: proxy de durabilidad dentro de Quality basado en márgenes, ROIC, calidad/FCF y estabilidad histórica de margen cuando hay historial.
+- `expectation_gap_score`: mide si la calidad + crecimiento observados parecen infravalorados por la valoración relativa actual.
+- `overexpectation_penalty`: penaliza PEG, EV/Sales, P/S o múltiplos relativos extremos cuando el precio parece descontar un futuro perfecto.
+- `technical_guardrail_score`: solo controla riesgo/timing; no es tesis compradora.
 
-Si se van a descargar datos desde Finnhub, configura la API key:
+La cartera principal es Buy & Hold 12M y debe mantenerse entre 5 y 10 posiciones. TP/SL no participa en features, target, scoring, ranking ni selección; queda aislado como diagnóstico opcional de salidas.
 
-```bash
-export FINNHUB_API_KEY="<tu_api_key>"
-```
+## Configuración principal
 
-También puedes crear un archivo `.env` en la raíz del proyecto con la misma variable.
-
-## Configuración
-
-`environment.py` es la fuente de verdad de parámetros. Algunos flags clave:
+`environment.py` es la fuente de verdad. Parámetros clave:
 
 | Parámetro | Descripción |
 |---|---|
-| `ANALYSIS_REFERENCE_DATE` | Fecha ancla del fold más reciente. |
-| `WALKFORWARD_NUM_TESTS` | Número de folds walk-forward. |
+| `PRIMARY_STRATEGY_PROFILE` | Debe ser `garp_value_growth`. |
+| `REQUIRED_GARP_AGENTS` | Agentes obligatorios; el sistema falla si falta alguno. |
+| `GARP_SCORE_WEIGHTS` | Pesos transparentes de scoring/reporting. |
+| `GARP_MIN_STOCKS` / `GARP_MAX_STOCKS` | Rango obligatorio del portafolio: 5-10 acciones. |
+| `PORTFOLIO_OPTIMIZER` | Optimizador de pesos (`hrp`, `risk_parity`, `markowitz`). |
 | `HOLDING_PERIOD_MONTHS` | Horizonte objetivo, normalmente 12 meses. |
-| `TP_SL_MAX_STOCKS` / `TP_SL_MIN_STOCKS` | Tamaño del portafolio seleccionado. |
-| `PORTFOLIO_OPTIMIZER` | Optimizador de pesos (`hrp`, `risk_parity`, `markowitz`, etc.). |
-| `ENABLE_BUY_HOLD_COUNTERFACTUAL` | Activa comparación Buy & Hold 12M sobre el mismo portafolio. |
-| `EXPORT_TP_SL_VS_BUY_HOLD` | Exporta CSV/JSON/gráficos de comparación TP/SL vs Buy & Hold. |
-| `ENABLE_TP_SL_RESEARCH_VARIANTS` | Habilita variantes investigables de TP/SL. |
-| `TP_SL_VARIANT_MODE` | Modo TP/SL activo: `base`, `vol_adjusted`, `momentum_adjusted`, `regime_adjusted`, `hybrid_learned`. |
-
-Puedes sobreescribir parámetros sin editar el archivo usando `ENV_OVERRIDES_JSON`:
-
-```bash
-ENV_OVERRIDES_JSON='{"TP_SL_VARIANT_MODE":"hybrid_learned","WALKFORWARD_NUM_TESTS":4}' python analyzer.py
-```
 
 ## Ejecución
-
-### Pipeline completo
 
 ```bash
 python analyzer.py
 ```
 
-El pipeline crea una carpeta de resultados versionada bajo `results/`, con subcarpetas de configuración, logs, folds, agentes, backtest y estrategia.
-
-### Grid de escenarios
+Revisión ligera de una posición, varios tickers o una cartera existente sin
+ejecutar el backtest completo:
 
 ```bash
-python analyzer_II.py
+python analyzer.py portfolio_review --tickers AAPL,MSFT,NVDA --review-date 2026-03-31
+python analyzer.py portfolio_review --positions portfolio.csv --review-date 2026-03-31
 ```
 
-`analyzer_II.py` ejecuta escenarios en paralelo con overrides de `environment.py` y consolida métricas comparables, incluyendo TP/SL vs Buy & Hold e híbrido vs base cuando están habilitados.
+`portfolio.csv` debe incluir `ticker` y puede añadir `weight`,
+`purchase_date`, `avg_cost` y `snapshot_date`. Si existe `snapshot_date`, la
+capa compara la tesis original de compra contra la tesis actual.
 
-### Tests
+Además de la revisión puntual, el modo genera historial de tesis y eventos
+materiales para revisiones mensuales/trimestrales sin ruido diario:
+`portfolio_thesis_history.csv`, `portfolio_thesis_events.csv` y
+`portfolio_review_report.md`.
+
+Tests:
 
 ```bash
 pytest -q
 ```
 
-Tests focalizados:
+Tests focalizados del rediseño:
 
 ```bash
-pytest -q tests/test_buy_hold_counterfactual.py
-pytest -q tests/test_financial_strategy_constraints.py
-pytest -q tests/test_tp_sl_strategy.py
+pytest -q tests/test_garp_value_growth_redesign.py
 ```
 
-## Estrategias evaluadas
+## Artefactos de validación
 
-### TP/SL base
+Por fold se exportan, entre otros:
 
-Es la estrategia principal. El sistema entra con el portafolio seleccionado por ML y gestiona cada posición con niveles adaptativos de Take-Profit, Stop-Loss y trailing stop. No se elimina TP/SL: todos los análisis nuevos comparan contra esta ruta base.
+- `garp_feature_leakage_audit.csv`: features usadas, origen temporal y columnas prohibidas.
+- `garp_anti_momentum_audit.json`: correlación score final vs momentum 6M/12M y ejemplos anti-momentum.
+- `garp_agent_score_contribution.csv`: contribución/correlación de agentes con el score final.
+- `survivorship_bias_audit.json`: confirma si el fold usa membresía histórica del S&P 500 en la fecha de entrada y cuantifica miembros activos sin snapshot/precios disponibles.
+- `sector_concentration_audit.csv`: pesos por sector, HHI, peso máximo sectorial y número de sectores seleccionados para medir concentración sin imponer límites adicionales.
+- `portfolio_review_positions.csv`: salud de posiciones existentes, estado de tesis, rating Buy/Hold/Review/Reduce/Sell, exit score y coste de oportunidad.
+- `portfolio_thesis_history.csv` / `portfolio_thesis_events.csv`: evolución histórica de tesis, conviction score, valoración y eventos relevantes por posición.
+- Scores por ticker con `opportunity_type`, `moat_proxy_score`, `expectation_gap_score`, flags value trap / expensive growth, drivers, riesgos y razones de selección/descarte.
 
-### Buy & Hold 12M contrafactual
-
-Simula qué habría pasado si se comprara exactamente el mismo portafolio seleccionado por TP/SL, con la misma fecha de entrada y los mismos pesos iniciales, pero sin ejecutar TP, SL ni trailing stop.
-
-Este contrafactual es solo evaluación: no reentrena modelos, no cambia scores, no modifica selección y no usa información futura para decidir tickers.
-
-### `hybrid_learned`
-
-Variante investigable de TP/SL que aprende niveles más realistas a partir de trayectorias históricas train-only del propio ticker. Combina:
-
-- volatilidad histórica;
-- momentum;
-- régimen macro;
-- score/confianza del modelo;
-- distribución de runups/drawdowns de 12 meses;
-- probabilidad de recuperación tras drawdowns;
-- evidencia histórica de TP-before-drawdown.
-
-Al alcanzar TP, activa una lógica de profit protection con trailing dinámico que recalcula el stop desde máximos recientes, nunca lo baja y ajusta la distancia según volatilidad, momentum, régimen y beneficio acumulado.
-
-## Outputs principales
-
-Los artefactos suelen generarse en `results/<run>/strategy/` y en carpetas por fold:
-
-| Archivo | Descripción |
-|---|---|
-| `report.txt` | Reporte textual global con métricas, conclusiones y advertencias metodológicas. |
-| `backtest_summary.json` | Resumen global de estrategia, benchmark, Buy & Hold e híbrido. |
-| `folds_results.csv` | Métricas principales por fold. |
-| `tp_sl_vs_buy_hold_by_fold.csv` | Comparación TP/SL vs Buy & Hold por fold. |
-| `tp_sl_vs_buy_hold_by_ticker.csv` | Comparación TP/SL vs Buy & Hold por ticker. |
-| `tp_sl_vs_buy_hold_summary.json` | Resumen agregado de la comparación contrafactual. |
-| `tp_sl_hybrid_vs_base_by_fold.csv` | Comparación TP/SL híbrido vs base por fold. |
-| `tp_sl_hybrid_vs_base_by_ticker.csv` | Comparación TP/SL híbrido vs base por ticker. |
-| `tp_sl_hybrid_robustness_summary.json` | Folds/tickers/sectores/regímenes donde el híbrido gana o pierde. |
-| `learned_tp_sl_levels_by_ticker.csv` | Niveles aprendidos TP/SL/trailing y diagnósticos por ticker. |
-| `runup_drawdown_recovery_stats.csv` | Estadísticas históricas train-only de runup/drawdown/recuperación. |
-| `trailing_dynamics_by_ticker.csv` | Eventos de trailing stop y recalculaciones. |
-| `leakage_audit.csv` | Auditoría anti-leakage. |
-| `missing_prices_report.csv` | Tickers/folds omitidos por falta de precios. |
-
-Gráficos típicos:
-
-- equity curve TP/SL vs Buy & Hold vs benchmark;
-- alpha por fold;
-- diferencia TP/SL - Buy & Hold;
-- distribución de exits TP/SL;
-- gráficos de performance y drawdown global.
-
-## Validación anti-leakage
-
-El diseño busca evitar leakage mediante:
-
-- snapshots punto-en-tiempo;
-- features disponibles as-of;
-- purga/embargo temporal en entrenamiento;
-- aprendizaje `hybrid_learned` solo con trayectorias históricas que terminan antes del snapshot/fold evaluado;
-- Buy & Hold como contrafactual post-selección, sin afectar ranking ni pesos;
-- tests de regresión para compatibilidad base y comparación sobre el mismo portafolio.
-
-Checklist mínimo antes de interpretar resultados:
-
-1. `TP_SL_VARIANT_MODE="base"` reproduce la ruta TP/SL base.
-2. `latest_train_path_end < snapshot/entry_date` en diagnósticos híbridos.
-3. TP/SL base, híbrido y Buy & Hold comparten tickers y pesos.
-4. El contrafactual no modifica scores ni selección.
-5. No se eligen parámetros mirando el fold de test.
-6. La mejora no está concentrada en un único ticker, sector o régimen.
-
-## Interpretación de resultados
-
-Preguntas clave que el proyecto permite responder:
-
-- Dado el mismo portafolio seleccionado por ML, ¿TP/SL mejora frente a Buy & Hold 12M?
-- ¿El TP/SL base protege capital o recorta upside?
-- ¿`hybrid_learned` mejora al TP/SL base por fold, ticker, sector o régimen?
-- ¿El trailing actual protege beneficios o sale demasiado pronto?
-- ¿Los SL saltan por ruido o evitan pérdidas persistentes?
-
-Una mejora de `hybrid_learned` frente a base debe interpretarse como evidencia de investigación walk-forward, no como optimización final lista para producción.
-
-## Notas y limitaciones
-
-- La calidad de la simulación depende de la disponibilidad y limpieza de precios/fundamentales.
-- Tickers con poca historia usan más fallback hacia niveles base.
-- Los patrones históricos de runup/drawdown pueden no repetirse en nuevos regímenes.
-- El objetivo es investigación interpretable y auditada, no maximización por grid sobre test.
-- No se modelan impuestos ni retornos after-tax.
-
-## Documentación ampliada
-
-Para detalles completos de arquitectura, features, entrenamiento, auditorías, outputs y metodología, consulta:
+## Estructura
 
 ```text
-DOCUMENTACION_PROYECTO.md
+analyzer.py                          # Entrypoint
+analyzer_II.py                       # Escenarios en paralelo
+environment.py                       # Configuración GARP
+module/agents/                       # Agentes ML y meta-learner
+module/common/                       # As-of, validación GARP, métricas, régimen, optimización
+module/steps/step_01_data/           # Descarga/consolidación
+module/steps/step_02_dataset/        # Dataset punto-en-tiempo
+module/steps/step_03_training/       # Entrenamiento walk-forward
+module/steps/step_04_evaluation/     # Evaluación, reporting y backtesting
 ```

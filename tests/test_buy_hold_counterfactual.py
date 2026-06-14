@@ -129,6 +129,34 @@ def test_counterfactual_does_not_mutate_predictions_or_selection(tmp_path):
     assert result["buy_hold_selected_tickers"] == ["AAA", "BBB"]
 
 
+def test_sector_concentration_metrics_are_recorded_for_selected_portfolio(tmp_path):
+    backtester = WalkForwardBacktester(
+        train_years=3,
+        risk_free=0.0,
+        results_dir=str(tmp_path / "backtest"),
+        strategy_dir=str(tmp_path / "strategy"),
+        top_n_stocks=2,
+        score_weighted=False,
+        portfolio_optimizer="none",
+    )
+    prices_dict = {"AAA": _prices([100, 101, 102]), "BBB": _prices([100, 99, 101])}
+    benchmark = pd.Series(0.0, index=pd.bdate_range("2024-01-02", periods=3))
+
+    result = backtester.simulate_portfolio(
+        predictions_df=_predictions(),
+        prices_dict=prices_dict,
+        benchmark=benchmark,
+        fold_id="F_SECTOR_AUDIT",
+        test_start=pd.Timestamp("2024-01-02"),
+        test_end=pd.Timestamp("2024-01-04"),
+    )
+
+    assert result["sector_weights"] == {"Tech": 0.5, "Health": 0.5}
+    assert result["sector_concentration_hhi"] == 0.5
+    assert result["max_sector_weight"] == 0.5
+    assert result["n_selected_sectors"] == 2
+
+
 
 def test_base_variant_preserves_original_tp_sl_outputs(tmp_path, monkeypatch):
     import module.steps.step_04_evaluation.backtesting as backtesting_mod

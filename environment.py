@@ -147,7 +147,7 @@ PLOTS_DIR                = os.path.join("results", "plots")
 # =============================================================================
 # 4. Ticker universe
 # =============================================================================
-# Manual fallback list (legacy).
+# Manual fallback list.
 # Note: by default the pipeline uses a dynamic universe from sp500_historic.csv.
 # This list is used only if USE_DYNAMIC_SP500_UNIVERSE is disabled.
 TICKERS = [
@@ -306,6 +306,61 @@ SCORE_DISPERSION_MIN_SCALE = 0.35
 # without requiring unnecessary extra history.
 TECHNICAL_LOOKBACK_DAYS = 300
 
+
+# =============================================================================
+# 6B. GARP / Value-Growth strategy profile
+# =============================================================================
+
+# New default research objective: learn 12M alpha/ranking for GARP/value-growth
+# stock selection. TP/SL labels are still available as secondary research
+# artefacts, but they are no longer the primary training label.
+PRIMARY_STRATEGY_PROFILE = "garp_value_growth"
+ENABLE_TP_SL_AS_SECONDARY_EVALUATION = True
+
+# Composite score weights used for transparent reporting / fallback scoring.
+GARP_SCORE_WEIGHTS = {
+  "quality": 0.20,
+  "growth": 0.20,
+  "valuation": 0.25,
+  "fundamental_trend": 0.15,
+  "catalyst": 0.10,
+  "technical_guardrail": 0.05,
+  "risk_penalty": 0.20,
+}
+
+# Composite training label weights. Positive terms reward forward 12M alpha
+# and robust value-growth fundamentals; negative terms penalize severe downside,
+# value traps and expensive low-quality growth.
+GARP_TARGET_WEIGHTS = {
+  "spy_alpha": 0.30,
+  "sector_alpha": 0.15,
+  "future_fundamental_improvement": 0.20,
+  "expectation_gap": 0.15,
+  "initial_valuation_reasonableness": 0.10,
+  "overexpectation_penalty": 0.05,
+  "downside_penalty": 0.05,
+}
+GARP_OUTPERFORM_QUANTILE = 0.60
+GARP_VALUE_TRAP_MAX_SCORE = 0.35
+GARP_TECHNICAL_GUARDRAIL_WEIGHT = 0.05
+REQUIRED_GARP_AGENTS = [
+  "quality", "growth", "valuation", "fundamental_trend",
+  "catalyst", "risk_bear", "technical_guardrail",
+]
+GARP_FORBIDDEN_FEATURE_PATTERNS = [
+  "forward_", "future_", "target", "alpha_test", "return_12m_fwd",
+  "tp_level", "sl_level", "tp_sl", "outcome",
+]
+GARP_CRITICAL_FEATURES = [
+  "roic", "fcf_margin", "gross_margin", "revenue_yoy_growth", "fcf_yoy_growth",
+  "fcf_yield", "earnings_yield", "ev_to_ebitda", "pe_ratio",
+  "roic_trend_2y", "eps_growth_trend_3y", "debt_to_ebitda", "volatility_60d",
+]
+GARP_MIN_STOCKS = 5
+GARP_MAX_STOCKS = 10
+GARP_SECTOR_CAP = 3
+RISK_BEAR_HARD_THRESHOLD = 0.90
+
 # =============================================================================
 # 7. Walk-forward backtesting
 # =============================================================================
@@ -381,219 +436,7 @@ PORTFOLIO_OPTIMIZER = "hrp"
 # 8. Agent hyperparameters
 # =============================================================================
 
-# ── FundamentalAgent (XGBoost) ────────────────────────────────────────────────
-FUNDAMENTAL_N_ESTIMATORS    = 400
-FUNDAMENTAL_MAX_DEPTH       = 5
-FUNDAMENTAL_LEARNING_RATE   = 0.05
-FUNDAMENTAL_SUBSAMPLE       = 0.8
-FUNDAMENTAL_COLSAMPLE       = 0.7
-FUNDAMENTAL_MIN_CHILD_WEIGHT = 5
-
-# Per-agent column controls:
-# - *_FEATURE_COLUMNS is the AUTHORITATIVE list used by agents.
-# - *_FEATURE_EXCLUDE is informational/documentary: those columns may also
-#   be present in the master dataset, but training uses only *_FEATURE_COLUMNS.
-FUNDAMENTAL_FEATURE_COLUMNS = [
-  # Profitability (core)
-  "roa",
-  "roe",
-  "roic",
-  "capex_to_revenue",
-
-  # Margins
-  "net_margin",
-  "gross_margin",
-  "ebitda_margin",
-  "operating_margin",
-  "fcf_margin",
-
-  # Liquidity
-  "current_ratio",
-
-  # Leverage / solvency
-  "debt_equity",
-  "debt_to_ebitda",
-  "interest_coverage",
-
-  # Growth (cleaned set)
-  "revenue_yoy_growth",
-  "fcf_yoy_growth",
-
-  # Efficiency / quality
-  "piotroski_fscore",
-
-  # ROIC trend: captures improvement in capital efficiency over 2 years.
-  # Rising ROIC is a leading indicator of widening competitive moat.
-  "roic_trend_2y",
-
-  # EPS growth trend: slope of YoY earnings growth over 3 years.
-  # Positive = earnings acceleration; captures the second derivative of earnings power.
-  "eps_growth_trend_3y",
-]
-
-FUNDAMENTAL_FEATURE_EXCLUDE = [
-  # Highly correlated growth metrics (keep simpler set)
-  "net_income_yoy_growth",
-  "eps_yoy_growth",
-  "operating_income_yoy_growth",
-
-  # Noisy YoY changes of already included metrics
-  "roa_change_yoy",
-  "gross_margin_change_yoy",
-  "current_ratio_change_yoy",
-
-  # Low cross-sector comparability
-  "accruals_ratio",
-  "total_debt_yoy_growth",
-
-  # Weak or redundant signals
-  "consecutive_losses",
-  "earnings_quality",
-
-  # Redundant short-term trends (keep longer horizon)
-  "roe_trend_2y",
-  "net_margin_trend_2y",
-
-  # Removed: consistently unavailable (require bf_* annual data not in Finnhub quarterly)
-  "roe_trend_3y",
-  "net_margin_trend_3y",
-  "gross_margin_trend_3y",
-
-  # Removed: redundant with roa + roic; never appeared in top features
-  "roi",
-
-  # Removed: no data in Finnhub quarterly consolidated
-  "quick_ratio",
-
-  # Removed: analyst signal — belongs in SentimentAgent / BearAgent, not FundamentalAgent
-  "eps_revision",
-]
-# ── ValuationAgent (GBM) ─────────────────────────────────────────────────────
-VALUATION_N_ESTIMATORS  = 200
-VALUATION_MAX_DEPTH     = 4
-VALUATION_LEARNING_RATE = 0.05
-VALUATION_SUBSAMPLE     = 0.8
-VALUATION_FEATURE_COLUMNS = [
-  # Core valuation multiples
-  "pe_ratio",
-  "ps_ratio",
-  "ev_to_ebitda",
-  "pb_ratio",
-
-  # Yield-based valuation (very informative cross-sector)
-  "fcf_yield",
-  "earnings_yield",
-
-  # Relative valuation vs own history
-  "pe_vs_5y_median",
-  "ev_ebitda_vs_5y_median",
-]
-
-VALUATION_FEATURE_EXCLUDE = [
-  # Redundant historical comparisons
-  "pb_vs_5y_median",
-
-  # Weak / noisy signals for valuation vs sector
-  "eps_surprise_pct",         # short-term, more trading signal
-  "eps_revision",             # analyst-driven, not pure valuation
-]
-
-# ── MomentumAgent (Random Forest) ────────────────────────────────────────────
-MOMENTUM_N_ESTIMATORS    = 300
-MOMENTUM_MAX_DEPTH       = 8
-# min_samples_leaf=5: smaller leaves -> more extreme probabilities (better dispersion)
-# With 300 trees, overfitting risk remains low even with small leaves.
-MOMENTUM_MIN_SAMPLES_LEAF = 5
-MOMENTUM_FEATURE_COLUMNS = [
-  # Price position
-  "price_vs_52w_high",
-
-  # Momentum (multi-horizon)
-  "momentum_3m",
-  "momentum_6m",
-
-  # Volatility (regime detection)
-  "volatility_60d",
-
-  # Volume confirmation
-  "vol_ratio_20_50",
-
-  # RSI signals
-  "rsi_14",
-  "rsi_28",
-]
-
-MOMENTUM_FEATURE_EXCLUDE = [
-  # MACD components (highly correlated, noisy for cross-sectional use)
-  "macd",
-  "macd_signal",
-  "macd_hist",
-
-  # Moving average redundancy (information already captured by momentum_3m/6m
-  # and price_vs_52w_high; never appeared in top features across all folds)
-  "sma_20",
-  "sma_50",
-  "sma_200",
-
-  # Overlapping technical indicators
-  "bb_pct",
-
-  # Redundant price positioning
-  "price_vs_52w_low",
-
-  # Overlapping momentum horizons
-  "momentum_1m",
-
-  # Not available in the current analysis window (requires 252+ trading days
-  # before the first snapshot; consistently missing in all evaluated folds)
-  "momentum_12m",
-
-  # Volatility redundancy
-  "volatility_20d",
-  "atr_14",
-
-  # Redundant derived signals (not in top features; information already in
-  # momentum_3m/6m and price_vs_52w_high)
-  "price_acceleration",
-  "momentum_consistency_score",
-]
-
-# ── BearAgent (Hybrid Random Forest) ─────────────────────────────────────────
-BEAR_N_ESTIMATORS = 300
-BEAR_MAX_DEPTH    = 5
-# Rule-layer vs ML-layer weight in final score.
-# Rebalanced toward the rule layer (0.45) because the ML layer exhibits high
-# cross-validation variance (std_auc ≈ 0.10 across folds) while the rule layer
-# is structurally stable.  More trees (300) and shallower depth (5) further
-# reduce ML-layer variance without sacrificing meaningful signal.
-BEAR_RULE_WEIGHT  = 0.45
-BEAR_ML_WEIGHT    = 0.55
-# Risk score above which the meta-learner forces Underperform
-BEAR_HARD_THRESHOLD = 0.90
-BEAR_FEATURE_COLUMNS = [
-  "debt_equity",
-  "debt_to_ebitda",
-  "interest_coverage",
-  "fcf_margin",
-  "current_ratio",
-  "revenue_decline",
-  "insider_sell_ratio",
-  "consecutive_losses",
-  "total_debt_yoy_growth",
-  "insider_net_ratio_90d",
-]
-
-BEAR_FEATURE_EXCLUDE = [
-  # eps_surprise_pct and eps_revision are analyst/earnings signals that are
-  # already captured by SentimentAgent.  Their presence in BearAgent caused
-  # severe cross-fold instability: both features were absent in the first fold
-  # (Q1 — no earnings history yet) but dominated importance in Q4 (0.17 and
-  # 0.10 respectively), causing the model to learn different risk patterns
-  # across folds.  Removing them stabilises the ML-layer features to the
-  # balance-sheet and cash-flow metrics that are consistently available.
-  "eps_surprise_pct",
-  "eps_revision",
-]
+# Old fundamental/momentum/bear agent feature sets removed: GARP domain feature sets below are authoritative.
 
 # ── SentimentAgent (Random Forest) ───────────────────────────────────────────
 # Enables/disables the standalone sentiment agent in the base stack.
@@ -700,6 +543,68 @@ SECTOR_ROTATION_FEATURE_EXCLUDE = [
   "analyst_dispersion",
 ]
 
+
+# ── GARP / Value-Growth agent feature universes ──────────────────────────────
+QUALITY_FEATURE_COLUMNS = [
+  "gross_margin", "operating_margin", "net_margin", "ebitda_margin", "fcf_margin",
+  "roic", "roe", "roa", "asset_turnover", "current_ratio", "debt_equity",
+  "debt_to_ebitda", "interest_coverage", "piotroski_fscore", "accruals_ratio",
+  "earnings_quality", "cash_conversion", "dilution_yoy", "moat_proxy_score",
+]
+QUALITY_FEATURE_EXCLUDE = []
+
+GROWTH_FEATURE_COLUMNS = [
+  "revenue_yoy_growth", "eps_yoy_growth", "fcf_yoy_growth", "gross_profit_yoy_growth",
+  "operating_income_yoy_growth", "revenue_growth_3y", "eps_growth_trend_3y",
+  "revenue_growth_acceleration", "fcf_growth_acceleration", "market_growth_proxy",
+  "analyst_consensus_change", "eps_revision",
+]
+GROWTH_FEATURE_EXCLUDE = []
+
+GARP_VALUATION_FEATURE_COLUMNS = [
+  "pe_ratio", "forward_pe", "peg_ratio", "ps_ratio", "ev_to_ebitda", "ev_to_sales",
+  "ev_sales_to_gross_margin", "ev_sales_to_operating_margin", "pb_ratio", "p_fcf",
+  "fcf_yield", "earnings_yield", "pe_vs_5y_median", "ev_ebitda_vs_5y_median",
+  "valuation_percentile_sector", "valuation_percentile_universe", "valuation_percentile_history",
+  "fcf_yield_rank_sector", "ev_ebitda_rank_sector", "quality_x_value_universe",
+  "expectation_gap_score", "overexpectation_penalty", "valuation_to_growth_reasonableness",
+]
+GARP_VALUATION_FEATURE_EXCLUDE = []
+
+FUNDAMENTAL_TREND_FEATURE_COLUMNS = [
+  "roic_trend_2y", "roe_trend_2y", "net_margin_trend_2y", "gross_margin_trend_2y",
+  "operating_margin_trend_2y", "fcf_margin_trend_2y", "leverage_trend",
+  "revenue_growth_acceleration", "eps_growth_trend_3y", "fcf_yoy_growth",
+  "total_debt_yoy_growth", "current_ratio_change_yoy", "gross_margin_change_yoy",
+  "roa_change_yoy", "eps_revision",
+]
+FUNDAMENTAL_TREND_FEATURE_EXCLUDE = []
+
+CATALYST_FEATURE_COLUMNS = [
+  "eps_revision", "analyst_consensus_change", "eps_surprise_pct", "eps_surprise_avg_4q",
+  "beat_rate_4q", "insider_net_ratio_90d", "mspr_3m", "mspr_trend",
+  "buyback_yield", "sector_score", "sp500_momentum_3m", "sector_momentum",
+  "finbert_sentiment_polarity", "expectation_gap_score", "mispricing_quality_growth",
+  "revenue_growth_acceleration", "fcf_growth_acceleration", "fcf_margin_trend_2y",
+]
+CATALYST_FEATURE_EXCLUDE = []
+
+RISK_BEAR_FEATURE_COLUMNS = [
+  "debt_equity", "debt_to_ebitda", "interest_coverage", "current_ratio",
+  "fcf_margin", "fcf_yoy_growth", "consecutive_losses", "revenue_decline",
+  "total_debt_yoy_growth", "insider_sell_ratio", "insider_net_ratio_90d",
+  "volatility_60d", "price_vs_52w_high", "momentum_6m", "max_drawdown_252d",
+  "dilution_yoy", "accruals_ratio",
+]
+RISK_BEAR_FEATURE_EXCLUDE = []
+
+TECHNICAL_GUARDRAIL_FEATURE_COLUMNS = [
+  "momentum_3m", "momentum_6m", "momentum_12m", "price_vs_52w_high",
+  "price_vs_52w_low", "volatility_60d", "rsi_14", "rsi_28", "sma_200",
+  "distance_to_200dma", "max_drawdown_252d", "vol_ratio_20_50",
+]
+TECHNICAL_GUARDRAIL_FEATURE_EXCLUDE = []
+
 # ── FeatureSelector ──────────────────────────────────────────────────────────
 FEATURE_CORR_THRESHOLD = 0.85
 # Weight of the combined feature-selection score:
@@ -732,11 +637,14 @@ META_GBM_MAX_DEPTH    = 3
 META_GBM_LEARNING_RATE = 0.05
 META_GBM_SUBSAMPLE    = 0.8
 META_FEATURE_COLUMNS = [
-  # Base agent scores (stacking layer)
-  "fundamental_score",
+  # Base agent scores (stacking layer): GARP/value-growth agents.
+  "quality_score",
+  "growth_score",
   "valuation_score",
-  "momentum_score",
-  "bear_score",
+  "fundamental_trend_score",
+  "catalyst_score",
+  "risk_bear_score",
+  "technical_guardrail_score",
   "sentiment_score",
   "sector_score",
   "regime_adjusted_score",
@@ -806,10 +714,13 @@ META_FEATURE_EXCLUDE = [
 ]
 # Base score columns on which meta computes consensus/interactions.
 META_AGENT_SCORE_COLUMNS = [
-  "fundamental_score",
+  "quality_score",
+  "growth_score",
   "valuation_score",
-  "momentum_score",
-  "bear_score",
+  "fundamental_trend_score",
+  "catalyst_score",
+  "risk_bear_score",
+  "technical_guardrail_score",
   "sentiment_score",
   "sector_score",
 ]
@@ -934,7 +845,7 @@ RULE_QUALITY_REF_SPREAD = 0.10
 RANDOM_SEED = 42
 
 # =============================================================================
-# 10. TP/SL + Confidence Strategy
+# 10. Secondary exit diagnostics (not a training objective)
 # =============================================================================
 
 # --- Signal generation (take-profit / stop-loss) ----------------------------
@@ -970,13 +881,10 @@ TP_SL_CONFIDENCE_CALIBRATION_WEIGHT = 0.50
 # --- Portfolio construction -------------------------------------------------
 
 # Minimum stocks required to invest (0 candidates → no investment)
-TP_SL_MIN_STOCKS = 3
 
 # Maximum portfolio size
-TP_SL_MAX_STOCKS = 7
 
 # Maximum stocks from the same GICS sector in the portfolio
-TP_SL_SECTOR_CAP = 3
 
 # Minimum expected value (EV) for a stock to be eligible
 # EV = confidence × tp_pct − (1 − confidence) × sl_pct
@@ -1007,8 +915,8 @@ EXPORT_TP_SL_VS_BUY_HOLD = True
 # Research switch for future controlled TP/SL variants. The default mode is
 # "base" so the production strategy remains unchanged unless explicitly
 # overridden.
-ENABLE_TP_SL_RESEARCH_VARIANTS = True
-TP_SL_VARIANT_MODE = "base"  # "base" | "vol_adjusted" | "momentum_adjusted" | "regime_adjusted" | "hybrid_learned"
+ENABLE_TP_SL_RESEARCH_VARIANTS = False
+TP_SL_VARIANT_MODE = "base"  # secondary diagnostic only; not a training profile
 TP_SL_HYBRID_MIN_TRAIN_PATHS = 6
 TP_SL_HYBRID_TRAILING_MIN_PCT = 0.06
 TP_SL_HYBRID_TRAILING_MAX_PCT = 0.28
