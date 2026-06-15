@@ -6,26 +6,21 @@ import pandas as pd
 
 from environment import MAX_PORTFOLIO_SIZE, MIN_PORTFOLIO_SIZE, MIN_SCORE_ADVANTAGE_TO_REPLACE
 
+INVESTABLE_STATES = {"Improving", "Intact"}
+HOLDABLE_STATES = {"Improving", "Intact", "Maturing"}
+BLOCKED_OPPORTUNITIES = {"Avoid", "Value Trap"}
+MIN_ENTRY_SCORE = 0.56
+MIN_ENTRY_QUALITY = 0.48
+MIN_HOLD_SCORE = 0.46
+MIN_BUY_TODAY_SCORE = 0.54
+REVIEW_TOP_N = max(MAX_PORTFOLIO_SIZE * 3, 20)
+
 
 def initial_portfolio(universe: pd.DataFrame, snapshot_date: str) -> dict[str, dict]:
     ranked = _rank(universe, snapshot_date)
-    candidates = _investable(ranked).head(MAX_PORTFOLIO_SIZE)
+    candidates = _entry_candidates(ranked).head(MAX_PORTFOLIO_SIZE)
     if len(candidates) < MIN_PORTFOLIO_SIZE:
-        fillers = ranked[
-            ~ranked["ticker"].isin(candidates["ticker"])
-            & ~ranked["opportunity_type"].isin({"Avoid", "Value Trap"})
-            & (ranked["business_quality_score"] >= 0.40)
-        ]
-        candidates = pd.concat([candidates, fillers]).head(MAX_PORTFOLIO_SIZE)
-    if len(candidates) < MIN_PORTFOLIO_SIZE:
-        research_candidates = ranked[
-            ~ranked["ticker"].isin(candidates["ticker"])
-            & ~ranked["opportunity_type"].isin({"Avoid", "Value Trap"})
-            & (ranked["business_quality_score"] >= 0.30)
-        ]
-        candidates = pd.concat([candidates, research_candidates]).head(MAX_PORTFOLIO_SIZE)
-    if len(candidates) < MIN_PORTFOLIO_SIZE:
-        raise RuntimeError(f"Not enough candidates at {snapshot_date} to build portfolio.")
+        raise RuntimeError(f"Not enough investable candidates at {snapshot_date} to build portfolio.")
     return {row.ticker: _position_from_row(row, snapshot_date) for row in candidates.itertuples(index=False)}
 
 
@@ -37,62 +32,131 @@ def review_portfolio(current: dict[str, dict], universe: pd.DataFrame, snapshot_
 
     for ticker, position in list(current.items()):
         if ticker not in by_ticker.index:
+            transactions.append(_sell_missing(ticker, snapshot_date, position))
+            updated.pop(ticker, None)
             continue
         row = by_ticker.loc[ticker]
-        position["months_since_entry"] += 3
-        position["last_snapshot_date"] = snapshot_date
-        position["current_thesis_state"] = row["thesis_state"]
-        position["current_conviction_score"] = float(row["conviction_score"])
-        position["current_thesis_rank_score"] = float(row["thesis_rank_score"])
-        position["current_would_buy_today"] = bool(row["would_buy_today"])
-        position["current_buy_today_score"] = float(row["buy_today_score"])
-        position["current_best_alternative_ticker"] = row["best_alternative_ticker"]
-        position["current_opportunity_cost_score"] = float(row["opportunity_cost_score"])
-        position["current_thesis"] = row["investment_thesis"]
-        position["current_catalyst"] = row["catalyst"]
-        if row["thesis_state"] in {"Improving", "Intact", "Maturing"}:
-            position["months_thesis_intact"] += 3
-            position["thesis_improvement_count"] += int(row["thesis_state"] == "Improving")
-        else:
-            position["thesis_deterioration_count"] += 1
-        position["thesis_persistence_score"] = position["months_thesis_intact"] / max(position["months_since_entry"], 1)
-        if row["thesis_state"] == "Broken" or row["exit_score"] >= 0.70:
-            transactions.append(_sell(ticker, snapshot_date, row, "Thesis Broken" if row["thesis_state"] == "Broken" else "Thesis Deterioration"))
+        _refresh_position(position, row, snapshot_date)
+        exit_reason = _exit_reason(row, position)
+        if exit_reason:
+            transactions.append(_sell(ticker, snapshot_date, row, exit_reason))
             updated.pop(ticker, None)
 
-    for row in today.itertuples(index=False):
+    for row in _entry_candidates(today).head(REVIEW_TOP_N).itertuples(index=False):
+        if row.ticker in updated:
+            continue
         if len(updated) >= MAX_PORTFOLIO_SIZE:
-            weakest = min(updated.items(), key=lambda item: item[1]["current_conviction_score"])
-            advantage = float(row.thesis_rank_score) - weakest[1]["current_thesis_rank_score"]
-            if row.ticker not in updated and advantage >= MIN_SCORE_ADVANTAGE_TO_REPLACE and row.business_quality_score >= 0.55:
-                transactions.append(_sell(weakest[0], snapshot_date, by_ticker.loc[weakest[0]], "Opportunity Cost"))
-                updated.pop(weakest[0], None)
-            else:
+            replacement = _replacement_target(updated, row)
+            if replacement is None:
                 continue
-        if (
-            row.ticker not in updated
-            and len(updated) < MAX_PORTFOLIO_SIZE
-            and row.thesis_state in {"Improving", "Intact"}
-            and row.business_quality_score >= 0.55
-        ):
-            updated[row.ticker] = _position_from_row(row, snapshot_date)
-            transactions.append(_buy(row, snapshot_date))
+            sell_ticker, sell_position = replacement
+            transactions.append(_sell(sell_ticker, snapshot_date, by_ticker.loc[sell_ticker], _replacement_reason(row, sell_position)))
+            updated.pop(sell_ticker, None)
+        updated[row.ticker] = _position_from_row(row, snapshot_date)
+        transactions.append(_buy(row, snapshot_date))
         if len(updated) >= MAX_PORTFOLIO_SIZE:
             break
 
     return updated, transactions
 
 
+def manager_score(row) -> float:
+    """Multi-factor score used by the live manager, not just the ML rank."""
+    return float((
+        0.24 * row.thesis_rank_score
+        + 0.18 * row.buy_today_score
+        + 0.16 * row.business_quality_score
+        + 0.12 * row.positive_expectation_gap
+        + 0.10 * row.valuation_score
+        + 0.08 * row.moat_score
+        + 0.06 * row.catalyst_score
+        + 0.06 * row.risk_score
+    ))
+
+
 def _rank(universe: pd.DataFrame, snapshot_date: str) -> pd.DataFrame:
-    return universe[universe["snapshot_date"] == snapshot_date].sort_values("thesis_rank_score", ascending=False)
+    today = universe[universe["snapshot_date"] == snapshot_date].copy()
+    if today.empty:
+        return today
+    today["manager_score"] = today.apply(manager_score, axis=1)
+    return today.sort_values(["manager_score", "thesis_rank_score", "buy_today_score"], ascending=False)
 
 
-def _investable(universe: pd.DataFrame) -> pd.DataFrame:
+def _entry_candidates(universe: pd.DataFrame) -> pd.DataFrame:
+    if universe.empty:
+        return universe
     return universe[
-        universe["thesis_state"].isin({"Improving", "Intact", "Maturing"})
-        & ~universe["opportunity_type"].isin({"Avoid", "Value Trap"})
-        & (universe["business_quality_score"] >= 0.50)
+        universe["thesis_state"].isin(INVESTABLE_STATES)
+        & ~universe["opportunity_type"].isin(BLOCKED_OPPORTUNITIES)
+        & (universe["business_quality_score"] >= MIN_ENTRY_QUALITY)
+        & (universe["buy_today_score"] >= MIN_BUY_TODAY_SCORE)
+        & (universe["manager_score"] >= MIN_ENTRY_SCORE)
     ]
+
+
+def _refresh_position(position: dict, row: pd.Series, snapshot_date: str) -> None:
+    position["months_since_entry"] += 1
+    position["last_snapshot_date"] = snapshot_date
+    fields = {
+        "current_thesis_state": row["thesis_state"],
+        "current_conviction_score": float(row["conviction_score"]),
+        "current_thesis_rank_score": float(row["thesis_rank_score"]),
+        "current_manager_score": float(row["manager_score"]),
+        "current_would_buy_today": bool(row["would_buy_today"]),
+        "current_buy_today_score": float(row["buy_today_score"]),
+        "current_best_alternative_ticker": row["best_alternative_ticker"],
+        "current_opportunity_cost_score": float(row["opportunity_cost_score"]),
+        "current_business_quality_score": float(row["business_quality_score"]),
+        "current_risk_score": float(row["risk_score"]),
+        "current_valuation_score": float(row["valuation_score"]),
+        "current_expectation_gap": float(row["expectation_gap"]),
+        "current_positive_expectation_gap": float(row["positive_expectation_gap"]),
+        "current_thesis": row["investment_thesis"],
+        "current_exit_thesis": row["exit_thesis"],
+        "current_catalyst": row["catalyst"],
+    }
+    position.update(fields)
+    if row["thesis_state"] in HOLDABLE_STATES:
+        position["months_thesis_intact"] += 1
+        position["thesis_improvement_count"] += int(row["thesis_state"] == "Improving")
+    else:
+        position["thesis_deterioration_count"] += 1
+    if not bool(row["would_buy_today"]):
+        position["not_buy_today_count"] += 1
+    else:
+        position["not_buy_today_count"] = 0
+    position["thesis_persistence_score"] = position["months_thesis_intact"] / max(position["months_since_entry"], 1)
+
+
+def _exit_reason(row: pd.Series, position: dict) -> str | None:
+    if row["thesis_state"] == "Broken":
+        return "Thesis Broken"
+    if row["exit_score"] >= 0.66:
+        return "Exit Score Trigger"
+    if row["manager_score"] < MIN_HOLD_SCORE and not bool(row["would_buy_today"]):
+        return "Manager Score Below Hold Hurdle"
+    if position["not_buy_today_count"] >= 3 and row["opportunity_cost_score"] >= 0.05:
+        return "Persistent Better Use Of Capital"
+    if row["thesis_state"] == "Weakening" and position["thesis_deterioration_count"] >= 2:
+        return "Repeated Thesis Deterioration"
+    return None
+
+
+def _replacement_target(updated: dict[str, dict], candidate) -> tuple[str, dict] | None:
+    weakest = min(updated.items(), key=lambda item: item[1]["current_manager_score"])
+    score_advantage = float(candidate.manager_score) - weakest[1]["current_manager_score"]
+    conviction_advantage = float(candidate.conviction_score) - weakest[1]["current_conviction_score"]
+    better_capital_use = score_advantage >= MIN_SCORE_ADVANTAGE_TO_REPLACE or (
+        score_advantage >= 0.035 and conviction_advantage >= 0.04 and bool(candidate.would_buy_today)
+    )
+    if better_capital_use:
+        return weakest
+    return None
+
+
+def _replacement_reason(candidate, weakest_position: dict) -> str:
+    advantage = float(candidate.manager_score) - weakest_position["current_manager_score"]
+    return f"Opportunity Cost: {candidate.ticker} manager_score advantage {advantage:.2f}"
 
 
 def _position_from_row(row, snapshot_date: str) -> dict:
@@ -110,6 +174,7 @@ def _position_from_row(row, snapshot_date: str) -> dict:
         "entry_trigger": row.entry_trigger,
         "would_buy_today": bool(row.would_buy_today),
         "buy_today_score": float(row.buy_today_score),
+        "manager_score": float(row.manager_score),
         "best_alternative_ticker": row.best_alternative_ticker,
         "opportunity_cost_score": float(row.opportunity_cost_score),
         "original_scores": {
@@ -117,6 +182,7 @@ def _position_from_row(row, snapshot_date: str) -> dict:
             "thesis_score": float(row.thesis_score),
             "conviction_score": float(row.conviction_score),
             "business_quality_score": float(row.business_quality_score),
+            "manager_score": float(row.manager_score),
         },
         "opportunity_type_original": row.opportunity_type,
         "buy_reason": row.buy_reason,
@@ -125,13 +191,20 @@ def _position_from_row(row, snapshot_date: str) -> dict:
         "thesis_persistence_score": 1.0,
         "thesis_improvement_count": 0,
         "thesis_deterioration_count": 0,
+        "not_buy_today_count": 0,
         "current_thesis_state": row.thesis_state,
         "current_conviction_score": float(row.conviction_score),
         "current_thesis_rank_score": float(row.thesis_rank_score),
+        "current_manager_score": float(row.manager_score),
         "current_would_buy_today": bool(row.would_buy_today),
         "current_buy_today_score": float(row.buy_today_score),
         "current_best_alternative_ticker": row.best_alternative_ticker,
         "current_opportunity_cost_score": float(row.opportunity_cost_score),
+        "current_business_quality_score": float(row.business_quality_score),
+        "current_risk_score": float(row.risk_score),
+        "current_valuation_score": float(row.valuation_score),
+        "current_expectation_gap": float(row.expectation_gap),
+        "current_positive_expectation_gap": float(row.positive_expectation_gap),
         "current_thesis": row.investment_thesis,
         "current_exit_thesis": row.exit_thesis,
         "current_catalyst": row.catalyst,
@@ -149,6 +222,7 @@ def _buy(row, snapshot_date: str) -> dict:
         "exit_thesis": row.exit_thesis,
         "would_buy_today": bool(row.would_buy_today),
         "buy_today_score": float(row.buy_today_score),
+        "manager_score": float(row.manager_score),
         "best_alternative_ticker": row.best_alternative_ticker,
         "opportunity_cost_score": float(row.opportunity_cost_score),
     }
@@ -159,8 +233,20 @@ def _sell(ticker: str, snapshot_date: str, row, reason: str) -> dict:
         "date": snapshot_date,
         "ticker": ticker,
         "action": "SELL",
-        "reason": f"{reason}: state={row['thesis_state']}, exit={row['exit_score']:.2f}",
+        "reason": f"{reason}: state={row['thesis_state']}, exit={row['exit_score']:.2f}, manager={row['manager_score']:.2f}",
         "thesis": row["investment_thesis"],
         "exit_thesis": row["exit_thesis"],
         "catalyst": row["catalyst"],
+    }
+
+
+def _sell_missing(ticker: str, snapshot_date: str, position: dict) -> dict:
+    return {
+        "date": snapshot_date,
+        "ticker": ticker,
+        "action": "SELL",
+        "reason": "No current data available for review",
+        "thesis": position.get("current_thesis", ""),
+        "exit_thesis": position.get("current_exit_thesis", ""),
+        "catalyst": position.get("current_catalyst", ""),
     }

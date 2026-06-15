@@ -8,7 +8,7 @@ import pandas as pd
 
 from environment import PROCESSED_DIR, RAW_DIR, Settings
 from module.common.io import read_parquet, write_json
-from module.portfolio.construction import initial_portfolio, review_portfolio
+from module.portfolio.construction import initial_portfolio, manager_score, review_portfolio
 from module.portfolio.sizing import add_position_sizing
 from module.thesis.intelligence import enrich_with_thesis_scores
 
@@ -34,6 +34,7 @@ def run_backtest(settings: Settings) -> dict[str, pd.DataFrame]:
             "catalyst": pos["catalyst"],
             "would_buy_today": pos["would_buy_today"],
             "buy_today_score": pos["buy_today_score"],
+            "manager_score": pos["manager_score"],
         }
         for ticker, pos in portfolio.items()
     ]
@@ -62,9 +63,14 @@ def run_backtest(settings: Settings) -> dict[str, pd.DataFrame]:
         "portfolio_decision_log": pd.DataFrame(decisions),
         "portfolio_review_diagnostics": pd.DataFrame(review_diagnostics),
     }
-    outputs["portfolio_allocation"] = outputs["portfolio_monthly_holdings"][
-        ["date", "ticker", "equal_weight", "conviction_weight", "hybrid_weight", "current_conviction_score"]
+    allocation_columns = [
+        "date", "ticker", "equal_weight", "conviction_weight", "risk_adjusted_weight", "hybrid_weight",
+        "sizing_score", "position_action", "current_conviction_score", "current_manager_score",
+        "current_buy_today_score", "current_opportunity_cost_score",
     ]
+    outputs["portfolio_allocation"] = outputs["portfolio_monthly_holdings"][[
+        col for col in allocation_columns if col in outputs["portfolio_monthly_holdings"].columns
+    ]]
     outputs["rebalance_report"] = _rebalance_report(outputs["portfolio_transactions"], outputs["portfolio_decision_log"])
     outputs["portfolio_vs_benchmark"] = _portfolio_vs_benchmark(outputs["portfolio_evolution"], prices, settings.benchmark_ticker)
     outputs["portfolio_turnover"] = _turnover(outputs["portfolio_transactions"], len(dates))
@@ -81,13 +87,16 @@ def run_backtest(settings: Settings) -> dict[str, pd.DataFrame]:
 def _decision_rows(date: str, portfolio: dict[str, dict]) -> list[dict]:
     rows = []
     for ticker, pos in portfolio.items():
-        decision = "REDUCE" if _should_reduce(pos) else "HOLD"
-        reason = "Risk, overvaluation or thesis maturity requires lower exposure" if decision == "REDUCE" else "Thesis remains investable"
+        decision, reason = _manager_decision(pos)
         rows.append({
             "date": date,
             "ticker": ticker,
             "state": pos["current_thesis_state"],
             "conviction_score": pos["current_conviction_score"],
+            "manager_score": pos.get("current_manager_score"),
+            "business_quality_score": pos.get("current_business_quality_score"),
+            "risk_score": pos.get("current_risk_score"),
+            "expectation_gap": pos.get("current_expectation_gap"),
             "thesis_persistence_score": pos["thesis_persistence_score"],
             "decision": decision,
             "reason": reason,
@@ -103,28 +112,32 @@ def _decision_rows(date: str, portfolio: dict[str, dict]) -> list[dict]:
 
 
 def _review_diagnostics(date: str, portfolio: dict[str, dict], universe: pd.DataFrame) -> list[dict]:
-    today = universe[universe["snapshot_date"] == date].sort_values("thesis_rank_score", ascending=False)
+    today = universe[universe["snapshot_date"] == date].copy()
+    if not today.empty and "manager_score" not in today.columns:
+        today["manager_score"] = today.apply(manager_score, axis=1)
+    today = today.sort_values(["manager_score", "thesis_rank_score"], ascending=False)
     if today.empty or not portfolio:
         return []
-    weakest_ticker, weakest_position = min(portfolio.items(), key=lambda item: item[1]["current_thesis_rank_score"])
+    weakest_ticker, weakest_position = min(portfolio.items(), key=lambda item: item[1].get("current_manager_score", item[1]["current_thesis_rank_score"]))
     rows = []
     for rank, row in enumerate(today.head(20).itertuples(index=False), start=1):
         in_portfolio = row.ticker in portfolio
-        advantage = float(row.thesis_rank_score) - float(weakest_position["current_thesis_rank_score"])
+        advantage = float(getattr(row, "manager_score", row.thesis_rank_score)) - float(weakest_position.get("current_manager_score", weakest_position["current_thesis_rank_score"]))
         rows.append({
             "date": date,
             "rank": rank,
             "ticker": row.ticker,
             "in_portfolio": in_portfolio,
             "thesis_rank_score": float(row.thesis_rank_score),
+            "manager_score": float(getattr(row, "manager_score", row.thesis_rank_score)),
             "conviction_score": float(row.conviction_score),
             "would_buy_today": bool(row.would_buy_today),
             "buy_today_score": float(row.buy_today_score),
             "opportunity_type": row.opportunity_type,
             "weakest_holding": weakest_ticker,
-            "weakest_holding_score": float(weakest_position["current_thesis_rank_score"]),
+            "weakest_holding_score": float(weakest_position.get("current_manager_score", weakest_position["current_thesis_rank_score"])),
             "score_advantage_vs_weakest": advantage,
-            "replacement_candidate": (not in_portfolio) and advantage >= 0.06,
+            "replacement_candidate": (not in_portfolio) and advantage >= 0.06 and bool(row.would_buy_today),
             "reason": _review_reason(in_portfolio, advantage),
         })
     return rows
@@ -210,12 +223,20 @@ def _rebalance_report(transactions: pd.DataFrame, decisions: pd.DataFrame) -> pd
     return pd.DataFrame(rows)
 
 
-def _should_reduce(position: dict) -> bool:
-    return (
+def _manager_decision(position: dict) -> tuple[str, str]:
+    if position["current_thesis_state"] == "Improving" and position.get("current_would_buy_today") and position.get("current_manager_score", 0) >= 0.65:
+        return "ADD", "Thesis is improving and still deserves fresh capital"
+    if (
         position["current_thesis_state"] == "Maturing"
         or position["current_conviction_score"] < 0.50
+        or position.get("current_manager_score", 1) < 0.50
         or position["thesis_deterioration_count"] >= 2
-    )
+        or position.get("not_buy_today_count", 0) >= 2
+    ):
+        return "REDUCE", "Risk, opportunity cost, overvaluation or thesis maturity requires lower exposure"
+    if not position.get("current_would_buy_today"):
+        return "WATCH", "Existing thesis is holdable, but the manager would not add new capital today"
+    return "HOLD", "Thesis remains investable and competitive versus alternatives"
 
 
 def _basket_return(prices: pd.DataFrame, tickers: list[str], start_date: pd.Timestamp, end_date: pd.Timestamp) -> float:
