@@ -12,6 +12,24 @@ def test_garp_agent_stack_replaces_momentum_buyer():
     assert cfg['risk_bear']['invert_y'] is True
 
 
+def test_analyzer_is_configuration_driven_without_holding_period_or_argparse():
+    import environment
+    from pathlib import Path
+
+    removed_strategy_constant = "HOLDING" + "_PERIOD_MONTHS"
+    assert not hasattr(environment, removed_strategy_constant)
+    assert hasattr(environment, "RUN_MODE")
+    assert hasattr(environment, "PORTFOLIO_START_DATE")
+    assert hasattr(environment, "PORTFOLIO_END_DATE")
+    assert hasattr(environment, "PORTFOLIO_REVIEW_FREQUENCY")
+    assert hasattr(environment, "GARP_TARGET_HORIZON_MONTHS")
+
+    source = Path("analyzer.py").read_text(encoding="utf-8")
+    assert "import argparse" not in source
+    assert "ArgumentParser" not in source
+    assert "--review-frequency" not in source
+
+
 def test_cross_sectional_valuation_percentiles_are_added():
     idx = pd.MultiIndex.from_product([['AAA', 'BBB', 'CCC'], [pd.Timestamp('2024-03-31')]], names=['ticker', 'date'])
     df = pd.DataFrame({

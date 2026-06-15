@@ -92,7 +92,17 @@ def _apply_environment_overrides(namespace: dict) -> None:
 # 1. Execution flags
 # =============================================================================
 
-# If True, skips walk-forward backtest and runs only the live fold
+# Main execution mode used by ``python analyzer.py``.
+#
+# Supported values:
+#   - "portfolio_evolution": simulate the live thesis-managed GARP portfolio.
+#   - "portfolio_review": review configured current positions/tickers only.
+#   - "full_pipeline": rebuild/update data, train/evaluate walk-forward folds,
+#      then also export artifacts/viewer for research validation.
+#   - "update_prices": update only prices and macro data.
+RUN_MODE = "portfolio_evolution"
+
+# If True, skips walk-forward research validation inside RUN_MODE="full_pipeline".
 SKIP_BACKTEST = False
 
 # If True, re-downloads all data even if it already exists on disk
@@ -174,18 +184,30 @@ SP500_DYNAMIC_TOP_N = False
 # Date from which raw data is downloaded.
 DOWNLOAD_START_DATE = "2000-01-01"
 
-# Anchor date for the first test entry.
-# The pipeline then creates additional test windows by moving backwards in
-# HOLDING_PERIOD_MONTHS steps.
-# Example:
-#   ANALYSIS_REFERENCE_DATE = "2026-02-15"
-#   HOLDING_PERIOD_MONTHS = 12
-#   WALKFORWARD_NUM_TESTS = 4
-#   -> test entries at 2026-02-15, 2025-02-15, 2024-02-15, 2023-02-15.
+# Live thesis-managed portfolio period.  The main strategy no longer has a
+# fixed holding period: it starts here, reviews positions periodically, keeps
+# intact theses, sells broken/overvalued theses and rotates only when a new
+# opportunity is clearly superior.  If PORTFOLIO_END_DATE is None the latest
+# available snapshot date is used.
+PORTFOLIO_START_DATE = "2022-01-01"
+PORTFOLIO_END_DATE = None
+PORTFOLIO_REVIEW_FREQUENCY = "M"  # M | 2M | Q
+
+# Optional portfolio-review inputs used by RUN_MODE="portfolio_review".
+PORTFOLIO_REVIEW_TICKERS = []
+PORTFOLIO_POSITIONS_CSV = ""
+PORTFOLIO_REVIEW_DATE = None
+
+# Research-validation anchor used only by RUN_MODE="full_pipeline" walk-forward
+# folds and by the GARP label horizon. It is not a portfolio holding period.
 ANALYSIS_REFERENCE_DATE = "2026-02-15"
 
 # Number of historical test windows generated from ANALYSIS_REFERENCE_DATE.
 WALKFORWARD_NUM_TESTS = 8
+
+# Horizon used only to build the supervised GARP target (forward alpha +
+# fundamental improvement label). This is a label horizon, not a trading rule.
+GARP_TARGET_HORIZON_MONTHS = 12
 
 # If True, when a ticker has no report for the analyzed quarter,
 # features are extrapolated using the average of the last N available quarters.
@@ -195,9 +217,6 @@ ENABLE_FALLBACK_EXTRAPOLATION = True
 # Number of prior quarters used for feature extrapolation when the exact report is missing.
 # Requires at least this number of historical reports.
 FALLBACK_LOOK_BACK_QUARTERS = 4
-
-# Portfolio holding duration from entry date.
-HOLDING_PERIOD_MONTHS = 3
 
 # =============================================================================
 # 6. ML pipeline parameters
@@ -431,24 +450,6 @@ SCORE_WEIGHTED_PORTFOLIO = True
 
 # Portfolio optimizer used after model ranking: hrp | risk_parity | markowitz
 PORTFOLIO_OPTIMIZER = "hrp"
-
-# Frequency for live thesis-managed portfolio reviews: M | 2M | Q.
-PORTFOLIO_REVIEW_FREQUENCY = "M"
-
-# Entrypoint selected when running analyzer.py directly:
-#   "pipeline"             -> full data/dataset/backtest pipeline
-#   "portfolio_review"     -> review current positions from an existing dataset
-#   "portfolio_evolution"  -> simulate thesis-managed portfolio evolution
-MAIN_ACTION = "pipeline"
-
-# Lightweight portfolio-review inputs. These replace command-line flags.
-# Use either PORTFOLIO_REVIEW_POSITIONS_CSV or PORTFOLIO_REVIEW_TICKERS.
-PORTFOLIO_MASTER_DATASET_PATH = os.path.join(FINNHUB_DATA_DIR, "master_dataset.parquet")
-PORTFOLIO_REVIEW_TICKERS = []
-PORTFOLIO_REVIEW_POSITIONS_CSV = ""
-PORTFOLIO_REVIEW_DATE = ANALYSIS_REFERENCE_DATE
-PORTFOLIO_REVIEW_OUTPUT_DIR = os.path.join(RESULTS_DIR, "portfolio_review")
-PORTFOLIO_EVOLUTION_OUTPUT_DIR = os.path.join(RESULTS_DIR, "portfolio_evolution")
 
 # Rotation discipline for live portfolio evolution.
 MIN_ROTATION_ADVANTAGE = 0.15
@@ -1035,4 +1036,3 @@ TP_SL_SELECTION_TP_QUALITY_WEIGHT = 0.25
 
 # Apply optional runtime overrides after all defaults are declared.
 _apply_environment_overrides(globals())
-

@@ -1,12 +1,16 @@
 # Multi-Agent ML Stock Picker — GARP / Value-Growth
 
-Sistema cuantitativo automatizable para seleccionar acciones del S&P 500 mediante una arquitectura multi-agente de machine learning, snapshots punto-en-tiempo y backtesting walk-forward. La filosofía principal es **GARP / Value-Growth**: detectar empresas de calidad, con crecimiento futuro probable, infravaloradas o razonablemente valoradas frente a sus fundamentales, tendencia y riesgo.
+Sistema cuantitativo automatizable para gestionar una **cartera viva GARP / Value-Growth** de 5 a 10 acciones usando datos punto-en-tiempo, agentes ML por dominio, Thesis Engine, Portfolio Intelligence y revisión periódica. La filosofía principal es detectar empresas de calidad, con crecimiento probable, mejora fundamental e infravaloración relativa, mantenerlas mientras la tesis siga viva y vender/rotar solo cuando exista una razón clara.
 
 > Proyecto académico/TFM. No constituye asesoramiento financiero.
 
 ## Filosofía actual
 
-El sistema ya no usa TP/SL como objetivo de aprendizaje principal. El objetivo primario es seleccionar un portafolio fundamental Buy & Hold 12M y validar alpha frente a SPY y frente al sector. Los indicadores técnicos se mantienen únicamente como guardrails de riesgo/timing.
+El sistema ya no usa TP/SL ni un holding period fijo como objetivo de estrategia principal. La unidad operativa es:
+
+`fecha_inicio → cartera inicial → revisiones periódicas → mantener tesis intactas → vender tesis rotas/sobrevaloradas → añadir oportunidades claramente superiores → fecha_final`.
+
+Los snapshots siguen siendo la base anti-leakage para entrenar y reconstruir historia, pero la estrategia principal es una cartera viva con memoria de posición, persistencia de tesis, control de rotación y comparación continua contra benchmark.
 
 ## Pipeline
 
@@ -23,9 +27,10 @@ El sistema ya no usa TP/SL como objetivo de aprendizaje principal. El objetivo p
    - `technical_guardrail`
    - `sector_rotation` como prior top-down
 5. Meta-learner para ranking, alpha esperado y riesgo.
-6. Selección de portafolio por fold.
-7. Evaluación 12M vs SPY, sector-neutral y Buy & Hold.
-8. Exportación de auditorías anti-leakage, anti-momentum, explicabilidad por ticker/fold y reportes.
+6. Simulación principal de cartera viva con revisiones `M`, `2M` o `Q`.
+7. Evaluación continua contra benchmark, turnover, decisiones, tesis y holdings mes a mes.
+8. Walk-forward GARP disponible como validación de investigación, no como la unidad principal de gestión.
+9. Exportación de auditorías anti-leakage, anti-momentum, explicabilidad, viewer HTML y reportes.
 
 ## Target GARP compuesto
 
@@ -48,7 +53,7 @@ El umbral positivo se calcula únicamente en el fold de entrenamiento (`GARP_OUT
 - `overexpectation_penalty`: penaliza PEG, EV/Sales, P/S o múltiplos relativos extremos cuando el precio parece descontar un futuro perfecto.
 - `technical_guardrail_score`: solo controla riesgo/timing; no es tesis compradora.
 
-La cartera principal es Buy & Hold 12M y debe mantenerse entre 5 y 10 posiciones. TP/SL no participa en features, target, scoring, ranking ni selección; queda aislado como diagnóstico opcional de salidas.
+La cartera principal debe mantenerse entre 5 y 10 posiciones y no tiene vencimiento fijo. TP/SL no participa en features, target, scoring, ranking, selección ni decisiones de cartera; queda aislado como diagnóstico opcional de salidas.
 
 ## Configuración principal
 
@@ -57,28 +62,30 @@ La cartera principal es Buy & Hold 12M y debe mantenerse entre 5 y 10 posiciones
 | Parámetro | Descripción |
 |---|---|
 | `PRIMARY_STRATEGY_PROFILE` | Debe ser `garp_value_growth`. |
+| `RUN_MODE` | Modo ejecutado por `python analyzer.py`: `portfolio_evolution`, `portfolio_review`, `full_pipeline` o `update_prices`. |
+| `PORTFOLIO_START_DATE` / `PORTFOLIO_END_DATE` | Periodo de cartera viva. Si `PORTFOLIO_END_DATE=None`, se usa el último snapshot disponible. |
+| `PORTFOLIO_REVIEW_FREQUENCY` | Frecuencia de revisión: `M`, `2M` o `Q`. |
 | `REQUIRED_GARP_AGENTS` | Agentes obligatorios; el sistema falla si falta alguno. |
 | `GARP_SCORE_WEIGHTS` | Pesos transparentes de scoring/reporting. |
 | `GARP_MIN_STOCKS` / `GARP_MAX_STOCKS` | Rango obligatorio del portafolio: 5-10 acciones. |
-| `PORTFOLIO_OPTIMIZER` | Optimizador de pesos (`hrp`, `risk_parity`, `markowitz`). |
-| `HOLDING_PERIOD_MONTHS` | Horizonte objetivo, normalmente 12 meses. |
+| `GARP_TARGET_HORIZON_MONTHS` | Horizonte de etiqueta ML para investigación walk-forward; no es una regla de permanencia. |
 
 ## Ejecución
+
+El proyecto no usa `argparse`: se configura en `environment.py` y se ejecuta siempre igual:
 
 ```bash
 python analyzer.py
 ```
 
-Revisión ligera de una posición, varios tickers o una cartera existente sin
-ejecutar el backtest completo:
+Tipos de ejecución:
 
-```bash
-python analyzer.py portfolio_review --tickers AAPL,MSFT,NVDA --review-date 2026-03-31
-python analyzer.py portfolio_review --positions portfolio.csv --review-date 2026-03-31
-python analyzer.py portfolio_evolution --review-frequency M
-```
+- `RUN_MODE = "portfolio_evolution"`: modo principal. Reutiliza `data_finnhub/master_dataset.parquet`, simula la cartera viva desde `PORTFOLIO_START_DATE` hasta `PORTFOLIO_END_DATE` o último snapshot y genera CSV/JSON/viewer.
+- `RUN_MODE = "portfolio_review"`: revisión puntual de `PORTFOLIO_REVIEW_TICKERS` o `PORTFOLIO_POSITIONS_CSV` contra `PORTFOLIO_REVIEW_DATE`.
+- `RUN_MODE = "full_pipeline"`: ejecuta descarga/consolidación/dataset/entrenamiento walk-forward de investigación y genera artefactos.
+- `RUN_MODE = "update_prices"`: actualiza precios/macro sin entrenar ni simular.
 
-`portfolio.csv` debe incluir `ticker` y puede añadir `weight`,
+`PORTFOLIO_POSITIONS_CSV` debe apuntar a un CSV que incluya `ticker` y puede añadir `weight`,
 `purchase_date`, `avg_cost` y `snapshot_date`. Si existe `snapshot_date`, la
 capa compara la tesis original de compra contra la tesis actual.
 

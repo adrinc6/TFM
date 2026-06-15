@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-El proyecto implementa un sistema multi-agent ML para detectar empresas infravaloradas o razonablemente valoradas con crecimiento futuro probable, calidad empresarial, mejora fundamental y riesgo controlado. La estrategia se valida mediante snapshots punto-en-tiempo y backtesting walk-forward.
+El proyecto implementa un sistema multi-agent ML para gestionar una **cartera viva GARP / Value-Growth**: detecta empresas infravaloradas o razonablemente valoradas con crecimiento futuro probable, calidad empresarial, mejora fundamental y riesgo controlado; después las mantiene, revisa, reduce, vende o rota mediante Thesis Engine y Portfolio Intelligence. Los snapshots punto-en-tiempo siguen siendo la base anti-leakage, pero la unidad principal de gestión es cartera + evolución temporal + decisiones.
 
 ## Arquitectura soportada
 
@@ -71,9 +71,9 @@ Cada ticker se clasifica en:
 
 La clasificación usa reglas objetivas sobre scores de calidad, crecimiento, valoración, tendencia, catalizadores, riesgo y guardrail técnico.
 
-## Métricas de validación
+## Métricas de validación de investigación
 
-- Alpha 12M vs SPY.
+- Alpha del horizonte de etiqueta GARP vs SPY.
 - Alpha sector-neutral.
 - Hit rate de outperform.
 - Drawdown y alpha/drawdown.
@@ -91,9 +91,25 @@ La configuración antigua basada en agentes `fundamental`, `momentum` y `bear` c
 
 `expectation_gap_score` cruza calidad/crecimiento punto-en-tiempo con valoración relativa para detectar crecimiento o calidad infravalorados. `overexpectation_penalty` castiga múltiplos extremos que sugieren expectativas demasiado exigentes. `moat_proxy_score` vive dentro de Quality y aproxima durabilidad mediante márgenes, ROIC, FCF/calidad y estabilidad histórica de margen.
 
+## Configuración y tipos de ejecución
+
+`python analyzer.py` no acepta argumentos. El comportamiento se decide en `environment.py`:
+
+- `RUN_MODE = "portfolio_evolution"`: modo principal. Reutiliza `data_finnhub/master_dataset.parquet`, empieza en `PORTFOLIO_START_DATE`, termina en `PORTFOLIO_END_DATE` o en el último snapshot disponible y revisa según `PORTFOLIO_REVIEW_FREQUENCY`.
+- `RUN_MODE = "portfolio_review"`: revisión puntual de `PORTFOLIO_REVIEW_TICKERS` o de `PORTFOLIO_POSITIONS_CSV` en `PORTFOLIO_REVIEW_DATE`.
+- `RUN_MODE = "full_pipeline"`: descarga/consolida datos, construye dataset, entrena/evalúa folds walk-forward de investigación y genera artefactos.
+- `RUN_MODE = "update_prices"`: actualiza precios/macro sin entrenar.
+
+Configuración principal de cartera viva:
+
+- `PORTFOLIO_START_DATE`: fecha de inicio.
+- `PORTFOLIO_END_DATE`: fecha final; `None` usa el último snapshot disponible.
+- `PORTFOLIO_REVIEW_FREQUENCY`: `M`, `2M` o `Q`.
+- `GARP_TARGET_HORIZON_MONTHS`: horizonte solo para la etiqueta ML de investigación; no es una regla de permanencia.
+
 ## Cartera principal
 
-La referencia de construcción de cartera es 5-10 posiciones (`GARP_MIN_STOCKS=5`, `GARP_MAX_STOCKS=10`) en Buy & Hold 12M. TP/SL no forma parte del núcleo de aprendizaje ni ranking.
+La referencia de construcción de cartera es 5-10 posiciones (`GARP_MIN_STOCKS=5`, `GARP_MAX_STOCKS=10`) sin holding period fijo. La cartera empieza en una fecha inicial, se revisa periódicamente, conserva tesis intactas, vende tesis rotas o excesivamente valoradas y rota solo ante oportunidades claramente superiores. TP/SL no forma parte del núcleo de aprendizaje, ranking ni gestión.
 
 ## Portfolio Intelligence / Thesis Engine
 
@@ -126,7 +142,7 @@ La prioridad de revisión se clasifica como `Critical`, `High`, `Medium` o `Low`
 
 ## Portfolio Evolution Simulator
 
-`python analyzer.py portfolio_evolution --review-frequency M` simula una cartera viva revisada periódicamente. No reconstruye fotografías independientes: mantiene posiciones cuya tesis sigue viva, vende o reduce tesis deterioradas, añade nuevas oportunidades para respetar 5-10 posiciones y registra todas las decisiones.
+Con `RUN_MODE = "portfolio_evolution"`, `python analyzer.py` simula una cartera viva revisada periódicamente. No reconstruye fotografías independientes: mantiene posiciones cuya tesis sigue viva, vende o reduce tesis deterioradas, añade nuevas oportunidades para respetar 5-10 posiciones y registra todas las decisiones.
 
 Outputs: `portfolio_evolution.csv`, `portfolio_transactions.csv`, `portfolio_monthly_holdings.csv`, `portfolio_decision_log.csv`, `portfolio_turnover.csv` y `portfolio_monthly_summary.json`. La frecuencia se controla con `PORTFOLIO_REVIEW_FREQUENCY` (`M`, `2M`, `Q`). La rotación exige ventajas materiales (`MIN_ROTATION_ADVANTAGE`, `MIN_SCORE_ADVANTAGE_TO_REPLACE`, `MIN_CONVICTION_ADVANTAGE`) y premia persistencia (`HOLD_WINNER_BONUS`, `THESIS_INTACT_HOLD_PREFERENCE`).
 
@@ -150,10 +166,8 @@ Páginas generadas:
 
 Uso:
 
-```bash
-python analyzer.py portfolio_review --tickers AAPL,MSFT --review-date 2026-03-31
-python analyzer.py portfolio_review --positions portfolio.csv --review-date 2026-03-31
-```
+1. Ajustar `RUN_MODE`, `PORTFOLIO_START_DATE`, `PORTFOLIO_END_DATE`, `PORTFOLIO_REVIEW_FREQUENCY` y, si aplica, `PORTFOLIO_REVIEW_TICKERS`/`PORTFOLIO_POSITIONS_CSV` en `environment.py`.
+2. Ejecutar `python analyzer.py`.
 
 ## Auditoría final de sesgos
 

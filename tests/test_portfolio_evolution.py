@@ -85,3 +85,21 @@ def test_portfolio_evolution_sells_broken_thesis_with_explanation(tmp_path):
     sell = aaa_actions[aaa_actions["action"].eq("SELL")].iloc[0]
     assert sell["thesis_status"] == "Broken"
     assert isinstance(sell["reason"], str) and sell["reason"]
+
+
+def test_portfolio_evolution_respects_configured_start_and_end_dates(tmp_path):
+    evolution, transactions, holdings, summary = run_portfolio_evolution(
+        _snapshots(),
+        review_frequency="M",
+        start_date="2024-02-01",
+        end_date="2024-02-29",
+        min_positions=5,
+        max_positions=5,
+        output_dir=tmp_path,
+    )
+
+    assert evolution["date"].tolist() == ["2024-02-29"]
+    assert summary["start_date"] == "2024-02-29"
+    assert summary["end_date"] == "2024-02-29"
+    assert transactions["date"].nunique() == 1
+    assert holdings["date"].nunique() == 1

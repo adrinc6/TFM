@@ -178,12 +178,18 @@ def run_portfolio_evolution(
     prices_dict: Mapping[str, pd.DataFrame] | None = None,
     benchmark_returns: pd.Series | None = None,
     review_frequency: str | None = None,
+    start_date: str | pd.Timestamp | None = None,
+    end_date: str | pd.Timestamp | None = None,
     min_positions: int = GARP_MIN_STOCKS,
     max_positions: int = GARP_MAX_STOCKS,
     output_dir: str | Path | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, dict[str, object]]:
     """Simulate a live thesis-managed portfolio through periodic reviews."""
     scored = add_portfolio_review_scores(snapshots)
+    if start_date is not None:
+        scored = scored[pd.to_datetime(scored["date"]) >= pd.Timestamp(start_date).normalize()].copy()
+    if end_date is not None:
+        scored = scored[pd.to_datetime(scored["date"]) <= pd.Timestamp(end_date).normalize()].copy()
     dates = _review_dates(scored, review_frequency or PORTFOLIO_REVIEW_FREQUENCY)
     holdings: dict[str, dict[str, object]] = {}
     evolution_rows: list[dict[str, object]] = []
