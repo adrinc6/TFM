@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>portfolio_vs_benchmark.html</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 0; color: #172026; background: #f7f8f8; }
+nav { position: sticky; top: 0; display: flex; gap: 12px; overflow-x: auto; padding: 12px 18px; background: #172026; }
+nav a { color: white; text-decoration: none; white-space: nowrap; font-size: 13px; }
+main { max-width: 1180px; margin: 0 auto; padding: 24px; }
+h1 { font-size: 28px; margin: 8px 0 18px; }
+table { width: 100%; border-collapse: collapse; margin: 18px 0; background: white; border: 1px solid #d7dddd; }
+th, td { padding: 9px 10px; border-bottom: 1px solid #e7ebeb; text-align: left; font-size: 13px; vertical-align: top; }
+th { background: #eef2f2; }
+.chart { width: 100%; max-width: 100%; height: auto; background: white; border: 1px solid #d7dddd; margin: 18px 0; }
+.portfolio-line { fill: none; stroke: #1f7a8c; stroke-width: 3; }
+.benchmark-line { fill: none; stroke: #b23a48; stroke-width: 3; }
+.axis { stroke: #c8d0d0; stroke-width: 1; }
+.legend { font-size: 13px; fill: #172026; }
+</style>
+</head>
+<body><nav><a href="index.html">index</a> <a href="portfolio_review.html">portfolio_review</a> <a href="portfolio_evolution.html">portfolio_evolution</a> <a href="portfolio_vs_benchmark.html">portfolio_vs_benchmark</a> <a href="portfolio_turnover.html">portfolio_turnover</a> <a href="decision_log.html">decision_log</a> <a href="thesis_persistence.html">thesis_persistence</a> <a href="allocation_dashboard.html">allocation_dashboard</a> <a href="watchlist.html">watchlist</a> <a href="rebalance_report.html">rebalance_report</a> <a href="research.html">research</a> <a href="research_ai.html">research_ai</a> <a href="exit_thesis.html">exit_thesis</a> <a href="model_explainability.html">model_explainability</a></nav><main><h1>Portfolio Vs Benchmark</h1>
+<svg class="chart" viewBox="0 0 980 360" role="img" aria-label="Portfolio versus benchmark chart">
+  <line class="axis" x1="42" y1="318" x2="938" y2="318" />
+  <line class="axis" x1="42" y1="42" x2="42" y2="318" />
+  <polyline class="portfolio-line" points="42.0,274.1 98.0,270.1 154.0,300.3 210.0,262.4 266.0,193.9 322.0,165.3 378.0,139.7 434.0,140.6 490.0,82.3 546.0,70.0 602.0,75.5 658.0,42.0 714.0,89.6 770.0,133.0 826.0,165.0 882.0,161.3 938.0,126.8" />
+  <polyline class="benchmark-line" points="42.0,274.1 98.0,281.4 154.0,313.3 210.0,318.0 266.0,284.4 322.0,255.1 378.0,241.3 434.0,228.8 490.0,206.5 546.0,191.1 602.0,189.8 658.0,189.3 714.0,179.5 770.0,185.3 826.0,218.3 882.0,151.6 938.0,114.7" />
+  <text class="legend" x="42" y="24">Portfolio: 1.25</text>
+  <text class="legend" x="222" y="24">Benchmark: 1.28</text>
+</svg><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>date</th>
+      <th>portfolio_period_return</th>
+      <th>benchmark_period_return</th>
+      <th>period_alpha</th>
+      <th>portfolio_value</th>
+      <th>benchmark_value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>2025-01-31</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>1.000000</td>
+      <td>1.000000</td>
+    </tr>
+    <tr>
+      <td>2025-02-28</td>
+      <td>0.006935</td>
+      <td>-0.012695</td>
+      <td>0.019630</td>
+      <td>1.006935</td>
+      <td>0.987305</td>
+    </tr>
+    <tr>
+      <td>2025-03-31</td>
+      <td>-0.051855</td>
+      <td>-0.055719</td>
+      <td>0.003865</td>
+      <td>0.954721</td>
+      <td>0.932293</td>
+    </tr>
+    <tr>
+      <td>2025-04-30</td>
+      <td>0.068566</td>
+      <td>-0.008670</td>
+      <td>0.077237</td>
+      <td>1.020183</td>
+      <td>0.924210</td>
+    </tr>
+    <tr>
+      <td>2025-05-31</td>
+      <td>0.115890</td>
+      <td>0.062845</td>
+      <td>0.053045</td>
+      <td>1.138412</td>
+      <td>0.982292</td>
+    </tr>
+    <tr>
+      <td>2025-06-30</td>
+      <td>0.043456</td>
+      <td>0.051386</td>
+      <td>-0.007931</td>
+      <td>1.187882</td>
+      <td>1.032768</td>
+    </tr>
+    <tr>
+      <td>2025-07-31</td>
+      <td>0.037101</td>
+      <td>0.023032</td>
+      <td>0.014070</td>
+      <td>1.231954</td>
+      <td>1.056555</td>
+    </tr>
+    <tr>
+      <td>2025-08-31</td>
+      <td>-0.001175</td>
+      <td>0.020520</td>
+      <td>-0.021695</td>
+      <td>1.230506</td>
+      <td>1.078235</td>
+    </tr>
+    <tr>
+      <td>2025-09-30</td>
+      <td>0.081753</td>
+      <td>0.035620</td>
+      <td>0.046132</td>
+      <td>1.331104</td>
+      <td>1.116642</td>
+    </tr>
+    <tr>
+      <td>2025-10-31</td>
+      <td>0.015991</td>
+      <td>0.023837</td>
+      <td>-0.007846</td>
+      <td>1.352390</td>
+      <td>1.143260</td>
+    </tr>
+    <tr>
+      <td>2025-11-30</td>
+      <td>-0.007114</td>
+      <td>0.001950</td>
+      <td>-0.009064</td>
+      <td>1.342768</td>
+      <td>1.145489</td>
+    </tr>
+    <tr>
+      <td>2025-12-31</td>
+      <td>0.043105</td>
+      <td>0.000798</td>
+      <td>0.042308</td>
+      <td>1.400649</td>
+      <td>1.146402</td>
+    </tr>
+    <tr>
+      <td>2026-01-31</td>
+      <td>-0.058677</td>
+      <td>0.014738</td>
+      <td>-0.073415</td>
+      <td>1.318462</td>
+      <td>1.163298</td>
+    </tr>
+    <tr>
+      <td>2026-02-28</td>
+      <td>-0.056872</td>
+      <td>-0.008642</td>
+      <td>-0.048230</td>
+      <td>1.243479</td>
+      <td>1.153245</td>
+    </tr>
+    <tr>
+      <td>2026-03-31</td>
+      <td>-0.044306</td>
+      <td>-0.049380</td>
+      <td>0.005074</td>
+      <td>1.188386</td>
+      <td>1.096298</td>
+    </tr>
+    <tr>
+      <td>2026-04-30</td>
+      <td>0.005365</td>
+      <td>0.105053</td>
+      <td>-0.099688</td>
+      <td>1.194762</td>
+      <td>1.211467</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>0.049778</td>
+      <td>0.052626</td>
+      <td>-0.002848</td>
+      <td>1.254234</td>
+      <td>1.275221</td>
+    </tr>
+  </tbody>
+</table></main></body>
+</html>

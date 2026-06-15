@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>watchlist.html</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 0; color: #172026; background: #f7f8f8; }
+nav { position: sticky; top: 0; display: flex; gap: 12px; overflow-x: auto; padding: 12px 18px; background: #172026; }
+nav a { color: white; text-decoration: none; white-space: nowrap; font-size: 13px; }
+main { max-width: 1180px; margin: 0 auto; padding: 24px; }
+h1 { font-size: 28px; margin: 8px 0 18px; }
+table { width: 100%; border-collapse: collapse; margin: 18px 0; background: white; border: 1px solid #d7dddd; }
+th, td { padding: 9px 10px; border-bottom: 1px solid #e7ebeb; text-align: left; font-size: 13px; vertical-align: top; }
+th { background: #eef2f2; }
+.chart { width: 100%; max-width: 100%; height: auto; background: white; border: 1px solid #d7dddd; margin: 18px 0; }
+.portfolio-line { fill: none; stroke: #1f7a8c; stroke-width: 3; }
+.benchmark-line { fill: none; stroke: #b23a48; stroke-width: 3; }
+.axis { stroke: #c8d0d0; stroke-width: 1; }
+.legend { font-size: 13px; fill: #172026; }
+</style>
+</head>
+<body><nav><a href="index.html">index</a> <a href="portfolio_review.html">portfolio_review</a> <a href="portfolio_evolution.html">portfolio_evolution</a> <a href="portfolio_vs_benchmark.html">portfolio_vs_benchmark</a> <a href="portfolio_turnover.html">portfolio_turnover</a> <a href="decision_log.html">decision_log</a> <a href="thesis_persistence.html">thesis_persistence</a> <a href="allocation_dashboard.html">allocation_dashboard</a> <a href="watchlist.html">watchlist</a> <a href="rebalance_report.html">rebalance_report</a> <a href="research.html">research</a> <a href="research_ai.html">research_ai</a> <a href="exit_thesis.html">exit_thesis</a> <a href="model_explainability.html">model_explainability</a></nav><main><h1>Watchlist</h1><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>snapshot_date</th>
+      <th>ticker</th>
+      <th>opportunity_type</th>
+      <th>investment_thesis</th>
+      <th>catalyst</th>
+      <th>moat_analysis</th>
+      <th>valuation_score</th>
+      <th>conviction_score</th>
+      <th>entry_trigger</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>2026-05-31</td>
+      <td>PLTR</td>
+      <td>Fully Valued Compounder</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>0.020202</td>
+      <td>0.749031</td>
+      <td>Wait for a better valuation or stronger evidence of durable growth.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>NVDA</td>
+      <td>Quality Growth Reasonable</td>
+      <td>Quality Growth Reasonable: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>0.444444</td>
+      <td>0.805216</td>
+      <td>Eligible if portfolio capacity and thesis persistence remain favorable.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>APP</td>
+      <td>Fully Valued Compounder</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>0.191919</td>
+      <td>0.727268</td>
+      <td>Wait for a better valuation or stronger evidence of durable growth.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>ANET</td>
+      <td>Turnaround</td>
+      <td>Turnaround: High-quality business profile with attractive durability signals. Moderate moat: business quality exists but requires continued monitoring. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Moderate moat: business quality exists but requires continued monitoring.</td>
+      <td>0.090909</td>
+      <td>0.634117</td>
+      <td>Wait for a better valuation or stronger evidence of durable growth.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>LLY</td>
+      <td>Fully Valued Compounder</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>0.242424</td>
+      <td>0.726708</td>
+      <td>Wait for a better valuation or stronger evidence of durable growth.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>META</td>
+      <td>Quality Growth Reasonable</td>
+      <td>Quality Growth Reasonable: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>0.666667</td>
+      <td>0.757841</td>
+      <td>Eligible if portfolio capacity and thesis persistence remain favorable.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>VRTX</td>
+      <td>Fully Valued Compounder</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. No clear catalyst detected.</td>
+      <td>No clear catalyst detected.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>0.479798</td>
+      <td>0.727004</td>
+      <td>Eligible if portfolio capacity and thesis persistence remain favorable.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>GOOG</td>
+      <td>Quality Growth Reasonable</td>
+      <td>Quality Growth Reasonable: High-quality business profile with attractive durability signals. Moderate moat: business quality exists but requires continued monitoring. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Moderate moat: business quality exists but requires continued monitoring.</td>
+      <td>0.383838</td>
+      <td>0.673526</td>
+      <td>Wait for a better valuation or stronger evidence of durable growth.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>BKNG</td>
+      <td>Quality Growth Reasonable</td>
+      <td>Quality Growth Reasonable: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>0.722222</td>
+      <td>0.728341</td>
+      <td>Eligible if portfolio capacity and thesis persistence remain favorable.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>V</td>
+      <td>Compounder</td>
+      <td>Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. No clear catalyst detected.</td>
+      <td>No clear catalyst detected.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>0.449495</td>
+      <td>0.665246</td>
+      <td>Eligible if portfolio capacity and thesis persistence remain favorable.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>MSFT</td>
+      <td>Quality Growth Reasonable</td>
+      <td>Quality Growth Reasonable: High-quality business profile with attractive durability signals. Moderate moat: business quality exists but requires continued monitoring. Growth acceleration or expectation gap may support rerating.</td>
+      <td>Growth acceleration or expectation gap may support rerating.</td>
+      <td>Moderate moat: business quality exists but requires continued monitoring.</td>
+      <td>0.525253</td>
+      <td>0.704497</td>
+      <td>Eligible if portfolio capacity and thesis persistence remain favorable.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>GILD</td>
+      <td>Compounder</td>
+      <td>Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. No clear catalyst detected.</td>
+      <td>No clear catalyst detected.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>0.474747</td>
+      <td>0.642763</td>
+      <td>Eligible if portfolio capacity and thesis persistence remain favorable.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>AVGO</td>
+      <td>Fully Valued Compounder</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>0.176768</td>
+      <td>0.652265</td>
+      <td>Wait for a better valuation or stronger evidence of durable growth.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>GOOGL</td>
+      <td>Quality Growth Reasonable</td>
+      <td>Quality Growth Reasonable: High-quality business profile with attractive durability signals. Moderate moat: business quality exists but requires continued monitoring. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Moderate moat: business quality exists but requires continued monitoring.</td>
+      <td>0.383838</td>
+      <td>0.647867</td>
+      <td>Wait for a better valuation or stronger evidence of durable growth.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>MU</td>
+      <td>Growth Undervalued</td>
+      <td>Growth Undervalued: High-quality business profile with attractive durability signals. Weak moat: limited evidence of durable competitive advantage. Growth acceleration or expectation gap may support rerating.</td>
+      <td>Growth acceleration or expectation gap may support rerating.</td>
+      <td>Weak moat: limited evidence of durable competitive advantage.</td>
+      <td>0.550505</td>
+      <td>0.736342</td>
+      <td>Eligible if portfolio capacity and thesis persistence remain favorable.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>KO</td>
+      <td>Fully Valued Compounder</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Moderate moat: business quality exists but requires continued monitoring. No clear catalyst detected.</td>
+      <td>No clear catalyst detected.</td>
+      <td>Moderate moat: business quality exists but requires continued monitoring.</td>
+      <td>0.459596</td>
+      <td>0.554710</td>
+      <td>Wait for clearer catalyst confirmation.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>SCHW</td>
+      <td>Quality Growth Reasonable</td>
+      <td>Quality Growth Reasonable: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>0.823232</td>
+      <td>0.729304</td>
+      <td>Eligible if portfolio capacity and thesis persistence remain favorable.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>PM</td>
+      <td>Quality Growth Reasonable</td>
+      <td>Quality Growth Reasonable: High-quality business profile with attractive durability signals. Moderate moat: business quality exists but requires continued monitoring. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Moderate moat: business quality exists but requires continued monitoring.</td>
+      <td>0.545455</td>
+      <td>0.610888</td>
+      <td>Eligible if portfolio capacity and thesis persistence remain favorable.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>T</td>
+      <td>Deep Value</td>
+      <td>Deep Value: High-quality business profile with attractive durability signals. Moderate moat: business quality exists but requires continued monitoring. Valuation gap exists, but catalyst evidence is limited.</td>
+      <td>Valuation gap exists, but catalyst evidence is limited.</td>
+      <td>Moderate moat: business quality exists but requires continued monitoring.</td>
+      <td>0.964646</td>
+      <td>0.650157</td>
+      <td>Eligible if portfolio capacity and thesis persistence remain favorable.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>CB</td>
+      <td>Value with Catalyst</td>
+      <td>Value with Catalyst: Acceptable business profile that requires valuation and catalyst support. Weak moat: limited evidence of durable competitive advantage. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Weak moat: limited evidence of durable competitive advantage.</td>
+      <td>0.939394</td>
+      <td>0.673113</td>
+      <td>Eligible if portfolio capacity and thesis persistence remain favorable.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>INTU</td>
+      <td>Quality Growth Reasonable</td>
+      <td>Quality Growth Reasonable: Acceptable business profile that requires valuation and catalyst support. Strong moat: persistent profitability and margin quality support durability. Growth acceleration or expectation gap may support rerating.</td>
+      <td>Growth acceleration or expectation gap may support rerating.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>0.858586</td>
+      <td>0.759033</td>
+      <td>Eligible if portfolio capacity and thesis persistence remain favorable.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>HCA</td>
+      <td>Deep Value</td>
+      <td>Deep Value: Acceptable business profile that requires valuation and catalyst support. Strong moat: persistent profitability and margin quality support durability. Valuation gap exists, but catalyst evidence is limited.</td>
+      <td>Valuation gap exists, but catalyst evidence is limited.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>0.898990</td>
+      <td>0.686921</td>
+      <td>Eligible if portfolio capacity and thesis persistence remain favorable.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>BLK</td>
+      <td>Quality Growth Reasonable</td>
+      <td>Quality Growth Reasonable: Acceptable business profile that requires valuation and catalyst support. Strong moat: persistent profitability and margin quality support durability. No clear catalyst detected.</td>
+      <td>No clear catalyst detected.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>0.560606</td>
+      <td>0.653913</td>
+      <td>Wait for clearer catalyst confirmation.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>NEE</td>
+      <td>Quality Growth Reasonable</td>
+      <td>Quality Growth Reasonable: Acceptable business profile that requires valuation and catalyst support. Weak moat: limited evidence of durable competitive advantage. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Weak moat: limited evidence of durable competitive advantage.</td>
+      <td>0.580808</td>
+      <td>0.590844</td>
+      <td>Eligible if portfolio capacity and thesis persistence remain favorable.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>KLAC</td>
+      <td>Quality Growth Reasonable</td>
+      <td>Quality Growth Reasonable: Acceptable business profile that requires valuation and catalyst support. Moderate moat: business quality exists but requires continued monitoring. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Moderate moat: business quality exists but requires continued monitoring.</td>
+      <td>0.560606</td>
+      <td>0.597376</td>
+      <td>Eligible if portfolio capacity and thesis persistence remain favorable.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>SPGI</td>
+      <td>Fully Valued Compounder</td>
+      <td>Fully Valued Compounder: Acceptable business profile that requires valuation and catalyst support. Moderate moat: business quality exists but requires continued monitoring. No clear catalyst detected.</td>
+      <td>No clear catalyst detected.</td>
+      <td>Moderate moat: business quality exists but requires continued monitoring.</td>
+      <td>0.530303</td>
+      <td>0.570927</td>
+      <td>Eligible if portfolio capacity and thesis persistence remain favorable.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>APH</td>
+      <td>Turnaround</td>
+      <td>Turnaround: Acceptable business profile that requires valuation and catalyst support. Weak moat: limited evidence of durable competitive advantage. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Weak moat: limited evidence of durable competitive advantage.</td>
+      <td>0.207071</td>
+      <td>0.500650</td>
+      <td>Wait for a better valuation or stronger evidence of durable growth.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>AMGN</td>
+      <td>Quality Growth Reasonable</td>
+      <td>Quality Growth Reasonable: Acceptable business profile that requires valuation and catalyst support. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>0.661616</td>
+      <td>0.611740</td>
+      <td>Eligible if portfolio capacity and thesis persistence remain favorable.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>PGR</td>
+      <td>Cyclical Opportunity</td>
+      <td>Cyclical Opportunity: Acceptable business profile that requires valuation and catalyst support. Weak moat: limited evidence of durable competitive advantage. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Weak moat: limited evidence of durable competitive advantage.</td>
+      <td>0.934343</td>
+      <td>0.656328</td>
+      <td>Eligible if portfolio capacity and thesis persistence remain favorable.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>JPM</td>
+      <td>Value with Catalyst</td>
+      <td>Value with Catalyst: Acceptable business profile that requires valuation and catalyst support. Weak moat: limited evidence of durable competitive advantage. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Weak moat: limited evidence of durable competitive advantage.</td>
+      <td>0.858586</td>
+      <td>0.589825</td>
+      <td>Eligible if portfolio capacity and thesis persistence remain favorable.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>LRCX</td>
+      <td>Turnaround</td>
+      <td>Turnaround: Acceptable business profile that requires valuation and catalyst support. Weak moat: limited evidence of durable competitive advantage. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Weak moat: limited evidence of durable competitive advantage.</td>
+      <td>0.085859</td>
+      <td>0.497718</td>
+      <td>Wait for a better valuation or stronger evidence of durable growth.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>BAC</td>
+      <td>Value with Catalyst</td>
+      <td>Value with Catalyst: Acceptable business profile that requires valuation and catalyst support. Weak moat: limited evidence of durable competitive advantage. Growth acceleration or expectation gap may support rerating.</td>
+      <td>Growth acceleration or expectation gap may support rerating.</td>
+      <td>Weak moat: limited evidence of durable competitive advantage.</td>
+      <td>0.888889</td>
+      <td>0.618913</td>
+      <td>Eligible if portfolio capacity and thesis persistence remain favorable.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>MDT</td>
+      <td>Cyclical Opportunity</td>
+      <td>Cyclical Opportunity: Weak business profile; any investment case must be treated cautiously. Moderate moat: business quality exists but requires continued monitoring. Valuation gap exists, but catalyst evidence is limited.</td>
+      <td>Valuation gap exists, but catalyst evidence is limited.</td>
+      <td>Moderate moat: business quality exists but requires continued monitoring.</td>
+      <td>0.777778</td>
+      <td>0.568113</td>
+      <td>Wait for clearer catalyst confirmation.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>CRM</td>
+      <td>Value with Catalyst</td>
+      <td>Value with Catalyst: Weak business profile; any investment case must be treated cautiously. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>0.818182</td>
+      <td>0.659340</td>
+      <td>Wait for business quality improvement.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>ADI</td>
+      <td>Turnaround</td>
+      <td>Turnaround: Weak business profile; any investment case must be treated cautiously. Moderate moat: business quality exists but requires continued monitoring. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Moderate moat: business quality exists but requires continued monitoring.</td>
+      <td>0.151515</td>
+      <td>0.570119</td>
+      <td>Wait for a better valuation or stronger evidence of durable growth.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>NFLX</td>
+      <td>Turnaround</td>
+      <td>Turnaround: Weak business profile; any investment case must be treated cautiously. Weak moat: limited evidence of durable competitive advantage. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Weak moat: limited evidence of durable competitive advantage.</td>
+      <td>0.494949</td>
+      <td>0.536130</td>
+      <td>Wait for business quality improvement.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>GEV</td>
+      <td>Turnaround</td>
+      <td>Turnaround: Weak business profile; any investment case must be treated cautiously. Weak moat: limited evidence of durable competitive advantage. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Weak moat: limited evidence of durable competitive advantage.</td>
+      <td>0.267677</td>
+      <td>0.447844</td>
+      <td>Wait for a better valuation or stronger evidence of durable growth.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>UBER</td>
+      <td>Cyclical Opportunity</td>
+      <td>Cyclical Opportunity: Weak business profile; any investment case must be treated cautiously. Weak moat: limited evidence of durable competitive advantage. No clear catalyst detected.</td>
+      <td>No clear catalyst detected.</td>
+      <td>Weak moat: limited evidence of durable competitive advantage.</td>
+      <td>0.681818</td>
+      <td>0.452298</td>
+      <td>Wait for clearer catalyst confirmation.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>MCD</td>
+      <td>Quality Growth Reasonable</td>
+      <td>Quality Growth Reasonable: Weak business profile; any investment case must be treated cautiously. Weak moat: limited evidence of durable competitive advantage. No clear catalyst detected.</td>
+      <td>No clear catalyst detected.</td>
+      <td>Weak moat: limited evidence of durable competitive advantage.</td>
+      <td>0.575758</td>
+      <td>0.429426</td>
+      <td>Wait for clearer catalyst confirmation.</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>IBM</td>
+      <td>Turnaround</td>
+      <td>Turnaround: Weak business profile; any investment case must be treated cautiously. Weak moat: limited evidence of durable competitive advantage. Growth acceleration or expectation gap may support rerating.</td>
+      <td>Growth acceleration or expectation gap may support rerating.</td>
+      <td>Weak moat: limited evidence of durable competitive advantage.</td>
+      <td>0.525253</td>
+      <td>0.508643</td>
+      <td>Wait for business quality improvement.</td>
+    </tr>
+  </tbody>
+</table></main></body>
+</html>

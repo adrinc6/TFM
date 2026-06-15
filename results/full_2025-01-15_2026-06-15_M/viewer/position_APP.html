@@ -1,0 +1,749 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APP</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 0; color: #172026; background: #f7f8f8; }
+nav { position: sticky; top: 0; display: flex; gap: 12px; overflow-x: auto; padding: 12px 18px; background: #172026; }
+nav a { color: white; text-decoration: none; white-space: nowrap; font-size: 13px; }
+main { max-width: 1180px; margin: 0 auto; padding: 24px; }
+h1 { font-size: 28px; margin: 8px 0 18px; }
+table { width: 100%; border-collapse: collapse; margin: 18px 0; background: white; border: 1px solid #d7dddd; }
+th, td { padding: 9px 10px; border-bottom: 1px solid #e7ebeb; text-align: left; font-size: 13px; vertical-align: top; }
+th { background: #eef2f2; }
+.chart { width: 100%; max-width: 100%; height: auto; background: white; border: 1px solid #d7dddd; margin: 18px 0; }
+.portfolio-line { fill: none; stroke: #1f7a8c; stroke-width: 3; }
+.benchmark-line { fill: none; stroke: #b23a48; stroke-width: 3; }
+.axis { stroke: #c8d0d0; stroke-width: 1; }
+.legend { font-size: 13px; fill: #172026; }
+</style>
+</head>
+<body><nav><a href="index.html">index</a> <a href="portfolio_review.html">portfolio_review</a> <a href="portfolio_evolution.html">portfolio_evolution</a> <a href="portfolio_vs_benchmark.html">portfolio_vs_benchmark</a> <a href="portfolio_turnover.html">portfolio_turnover</a> <a href="decision_log.html">decision_log</a> <a href="thesis_persistence.html">thesis_persistence</a> <a href="allocation_dashboard.html">allocation_dashboard</a> <a href="watchlist.html">watchlist</a> <a href="rebalance_report.html">rebalance_report</a> <a href="research.html">research</a> <a href="research_ai.html">research_ai</a> <a href="exit_thesis.html">exit_thesis</a> <a href="model_explainability.html">model_explainability</a></nav><main><h1>APP</h1><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>date</th>
+      <th>ticker</th>
+      <th>entry_date</th>
+      <th>original_snapshot_date</th>
+      <th>original_thesis</th>
+      <th>investment_thesis</th>
+      <th>bull_thesis</th>
+      <th>bear_thesis</th>
+      <th>catalyst</th>
+      <th>moat_analysis</th>
+      <th>exit_thesis</th>
+      <th>entry_trigger</th>
+      <th>would_buy_today</th>
+      <th>buy_today_score</th>
+      <th>best_alternative_ticker</th>
+      <th>opportunity_cost_score</th>
+      <th>original_scores</th>
+      <th>opportunity_type_original</th>
+      <th>buy_reason</th>
+      <th>months_since_entry</th>
+      <th>months_thesis_intact</th>
+      <th>thesis_persistence_score</th>
+      <th>thesis_improvement_count</th>
+      <th>thesis_deterioration_count</th>
+      <th>current_thesis_state</th>
+      <th>current_conviction_score</th>
+      <th>current_thesis_rank_score</th>
+      <th>current_would_buy_today</th>
+      <th>current_buy_today_score</th>
+      <th>current_best_alternative_ticker</th>
+      <th>current_opportunity_cost_score</th>
+      <th>current_thesis</th>
+      <th>current_exit_thesis</th>
+      <th>current_catalyst</th>
+      <th>last_snapshot_date</th>
+      <th>equal_weight</th>
+      <th>conviction_weight</th>
+      <th>hybrid_weight</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>2025-01-31</td>
+      <td>APP</td>
+      <td>2025-01-31</td>
+      <td>2025-01-31</td>
+      <td>Improving</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Bull case: possible catalyst or acceleration, durable competitive position.</td>
+      <td>Bear case: balance sheet or financial risk, valuation already discounts too much optimism.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Wait for a better valuation or stronger evidence of durable growth.</td>
+      <td>True</td>
+      <td>0.704604</td>
+      <td>NVDA</td>
+      <td>0.055935</td>
+      <td>{'final_score': 0.7750539209995012, 'thesis_score': 0.8187700955735473, 'conviction_score': 0.7446779264540198, 'business_quality_score': 0.8902824561049584}</td>
+      <td>Fully Valued Compounder</td>
+      <td>Fully Valued Compounder: Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews. conviction=0.74</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1.0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>Improving</td>
+      <td>0.744678</td>
+      <td>0.766425</td>
+      <td>True</td>
+      <td>0.704604</td>
+      <td>NVDA</td>
+      <td>0.055935</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>NaN</td>
+      <td>0.1</td>
+      <td>0.100068</td>
+      <td>0.100034</td>
+    </tr>
+    <tr>
+      <td>2025-02-28</td>
+      <td>APP</td>
+      <td>2025-01-31</td>
+      <td>2025-01-31</td>
+      <td>Improving</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Bull case: possible catalyst or acceleration, durable competitive position.</td>
+      <td>Bear case: balance sheet or financial risk, valuation already discounts too much optimism.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Wait for a better valuation or stronger evidence of durable growth.</td>
+      <td>True</td>
+      <td>0.704604</td>
+      <td>NVDA</td>
+      <td>0.055935</td>
+      <td>{'final_score': 0.7750539209995012, 'thesis_score': 0.8187700955735473, 'conviction_score': 0.7446779264540198, 'business_quality_score': 0.8902824561049584}</td>
+      <td>Fully Valued Compounder</td>
+      <td>Fully Valued Compounder: Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews. conviction=0.74</td>
+      <td>3</td>
+      <td>3</td>
+      <td>1.0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>Improving</td>
+      <td>0.744678</td>
+      <td>0.766425</td>
+      <td>True</td>
+      <td>0.704604</td>
+      <td>NVDA</td>
+      <td>0.055935</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>2025-02-28</td>
+      <td>0.1</td>
+      <td>0.100068</td>
+      <td>0.100034</td>
+    </tr>
+    <tr>
+      <td>2025-03-31</td>
+      <td>APP</td>
+      <td>2025-01-31</td>
+      <td>2025-01-31</td>
+      <td>Improving</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Bull case: possible catalyst or acceleration, durable competitive position.</td>
+      <td>Bear case: balance sheet or financial risk, valuation already discounts too much optimism.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Wait for a better valuation or stronger evidence of durable growth.</td>
+      <td>True</td>
+      <td>0.704604</td>
+      <td>NVDA</td>
+      <td>0.055935</td>
+      <td>{'final_score': 0.7750539209995012, 'thesis_score': 0.8187700955735473, 'conviction_score': 0.7446779264540198, 'business_quality_score': 0.8902824561049584}</td>
+      <td>Fully Valued Compounder</td>
+      <td>Fully Valued Compounder: Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews. conviction=0.74</td>
+      <td>6</td>
+      <td>6</td>
+      <td>1.0</td>
+      <td>2</td>
+      <td>0</td>
+      <td>Improving</td>
+      <td>0.728322</td>
+      <td>0.763972</td>
+      <td>True</td>
+      <td>0.704370</td>
+      <td>NVDA</td>
+      <td>0.058275</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>2025-03-31</td>
+      <td>0.1</td>
+      <td>0.098428</td>
+      <td>0.099214</td>
+    </tr>
+    <tr>
+      <td>2025-04-30</td>
+      <td>APP</td>
+      <td>2025-01-31</td>
+      <td>2025-01-31</td>
+      <td>Improving</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Bull case: possible catalyst or acceleration, durable competitive position.</td>
+      <td>Bear case: balance sheet or financial risk, valuation already discounts too much optimism.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Wait for a better valuation or stronger evidence of durable growth.</td>
+      <td>True</td>
+      <td>0.704604</td>
+      <td>NVDA</td>
+      <td>0.055935</td>
+      <td>{'final_score': 0.7750539209995012, 'thesis_score': 0.8187700955735473, 'conviction_score': 0.7446779264540198, 'business_quality_score': 0.8902824561049584}</td>
+      <td>Fully Valued Compounder</td>
+      <td>Fully Valued Compounder: Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews. conviction=0.74</td>
+      <td>9</td>
+      <td>9</td>
+      <td>1.0</td>
+      <td>3</td>
+      <td>0</td>
+      <td>Improving</td>
+      <td>0.728322</td>
+      <td>0.763972</td>
+      <td>True</td>
+      <td>0.704370</td>
+      <td>NVDA</td>
+      <td>0.058275</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>2025-04-30</td>
+      <td>0.1</td>
+      <td>0.098428</td>
+      <td>0.099214</td>
+    </tr>
+    <tr>
+      <td>2025-05-31</td>
+      <td>APP</td>
+      <td>2025-01-31</td>
+      <td>2025-01-31</td>
+      <td>Improving</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Bull case: possible catalyst or acceleration, durable competitive position.</td>
+      <td>Bear case: balance sheet or financial risk, valuation already discounts too much optimism.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Wait for a better valuation or stronger evidence of durable growth.</td>
+      <td>True</td>
+      <td>0.704604</td>
+      <td>NVDA</td>
+      <td>0.055935</td>
+      <td>{'final_score': 0.7750539209995012, 'thesis_score': 0.8187700955735473, 'conviction_score': 0.7446779264540198, 'business_quality_score': 0.8902824561049584}</td>
+      <td>Fully Valued Compounder</td>
+      <td>Fully Valued Compounder: Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews. conviction=0.74</td>
+      <td>12</td>
+      <td>12</td>
+      <td>1.0</td>
+      <td>4</td>
+      <td>0</td>
+      <td>Improving</td>
+      <td>0.728322</td>
+      <td>0.763972</td>
+      <td>True</td>
+      <td>0.704370</td>
+      <td>NVDA</td>
+      <td>0.058275</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>2025-05-31</td>
+      <td>0.1</td>
+      <td>0.098428</td>
+      <td>0.099214</td>
+    </tr>
+    <tr>
+      <td>2025-06-30</td>
+      <td>APP</td>
+      <td>2025-01-31</td>
+      <td>2025-01-31</td>
+      <td>Improving</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Bull case: possible catalyst or acceleration, durable competitive position.</td>
+      <td>Bear case: balance sheet or financial risk, valuation already discounts too much optimism.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Wait for a better valuation or stronger evidence of durable growth.</td>
+      <td>True</td>
+      <td>0.704604</td>
+      <td>NVDA</td>
+      <td>0.055935</td>
+      <td>{'final_score': 0.7750539209995012, 'thesis_score': 0.8187700955735473, 'conviction_score': 0.7446779264540198, 'business_quality_score': 0.8902824561049584}</td>
+      <td>Fully Valued Compounder</td>
+      <td>Fully Valued Compounder: Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews. conviction=0.74</td>
+      <td>15</td>
+      <td>15</td>
+      <td>1.0</td>
+      <td>5</td>
+      <td>0</td>
+      <td>Improving</td>
+      <td>0.728322</td>
+      <td>0.763972</td>
+      <td>True</td>
+      <td>0.704370</td>
+      <td>NVDA</td>
+      <td>0.058275</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>2025-06-30</td>
+      <td>0.1</td>
+      <td>0.098428</td>
+      <td>0.099214</td>
+    </tr>
+    <tr>
+      <td>2025-07-31</td>
+      <td>APP</td>
+      <td>2025-01-31</td>
+      <td>2025-01-31</td>
+      <td>Improving</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Bull case: possible catalyst or acceleration, durable competitive position.</td>
+      <td>Bear case: balance sheet or financial risk, valuation already discounts too much optimism.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Wait for a better valuation or stronger evidence of durable growth.</td>
+      <td>True</td>
+      <td>0.704604</td>
+      <td>NVDA</td>
+      <td>0.055935</td>
+      <td>{'final_score': 0.7750539209995012, 'thesis_score': 0.8187700955735473, 'conviction_score': 0.7446779264540198, 'business_quality_score': 0.8902824561049584}</td>
+      <td>Fully Valued Compounder</td>
+      <td>Fully Valued Compounder: Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews. conviction=0.74</td>
+      <td>18</td>
+      <td>18</td>
+      <td>1.0</td>
+      <td>6</td>
+      <td>0</td>
+      <td>Improving</td>
+      <td>0.728322</td>
+      <td>0.763972</td>
+      <td>True</td>
+      <td>0.704370</td>
+      <td>NVDA</td>
+      <td>0.058275</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>2025-07-31</td>
+      <td>0.1</td>
+      <td>0.098428</td>
+      <td>0.099214</td>
+    </tr>
+    <tr>
+      <td>2025-08-31</td>
+      <td>APP</td>
+      <td>2025-01-31</td>
+      <td>2025-01-31</td>
+      <td>Improving</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Bull case: possible catalyst or acceleration, durable competitive position.</td>
+      <td>Bear case: balance sheet or financial risk, valuation already discounts too much optimism.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Wait for a better valuation or stronger evidence of durable growth.</td>
+      <td>True</td>
+      <td>0.704604</td>
+      <td>NVDA</td>
+      <td>0.055935</td>
+      <td>{'final_score': 0.7750539209995012, 'thesis_score': 0.8187700955735473, 'conviction_score': 0.7446779264540198, 'business_quality_score': 0.8902824561049584}</td>
+      <td>Fully Valued Compounder</td>
+      <td>Fully Valued Compounder: Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews. conviction=0.74</td>
+      <td>21</td>
+      <td>21</td>
+      <td>1.0</td>
+      <td>7</td>
+      <td>0</td>
+      <td>Improving</td>
+      <td>0.728322</td>
+      <td>0.763972</td>
+      <td>True</td>
+      <td>0.704370</td>
+      <td>NVDA</td>
+      <td>0.058275</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>2025-08-31</td>
+      <td>0.1</td>
+      <td>0.098428</td>
+      <td>0.099214</td>
+    </tr>
+    <tr>
+      <td>2025-09-30</td>
+      <td>APP</td>
+      <td>2025-01-31</td>
+      <td>2025-01-31</td>
+      <td>Improving</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Bull case: possible catalyst or acceleration, durable competitive position.</td>
+      <td>Bear case: balance sheet or financial risk, valuation already discounts too much optimism.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Wait for a better valuation or stronger evidence of durable growth.</td>
+      <td>True</td>
+      <td>0.704604</td>
+      <td>NVDA</td>
+      <td>0.055935</td>
+      <td>{'final_score': 0.7750539209995012, 'thesis_score': 0.8187700955735473, 'conviction_score': 0.7446779264540198, 'business_quality_score': 0.8902824561049584}</td>
+      <td>Fully Valued Compounder</td>
+      <td>Fully Valued Compounder: Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews. conviction=0.74</td>
+      <td>24</td>
+      <td>24</td>
+      <td>1.0</td>
+      <td>8</td>
+      <td>0</td>
+      <td>Improving</td>
+      <td>0.728322</td>
+      <td>0.763972</td>
+      <td>True</td>
+      <td>0.704370</td>
+      <td>NVDA</td>
+      <td>0.058275</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>2025-09-30</td>
+      <td>0.1</td>
+      <td>0.098428</td>
+      <td>0.099214</td>
+    </tr>
+    <tr>
+      <td>2025-10-31</td>
+      <td>APP</td>
+      <td>2025-01-31</td>
+      <td>2025-01-31</td>
+      <td>Improving</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Bull case: possible catalyst or acceleration, durable competitive position.</td>
+      <td>Bear case: balance sheet or financial risk, valuation already discounts too much optimism.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Wait for a better valuation or stronger evidence of durable growth.</td>
+      <td>True</td>
+      <td>0.704604</td>
+      <td>NVDA</td>
+      <td>0.055935</td>
+      <td>{'final_score': 0.7750539209995012, 'thesis_score': 0.8187700955735473, 'conviction_score': 0.7446779264540198, 'business_quality_score': 0.8902824561049584}</td>
+      <td>Fully Valued Compounder</td>
+      <td>Fully Valued Compounder: Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews. conviction=0.74</td>
+      <td>27</td>
+      <td>27</td>
+      <td>1.0</td>
+      <td>9</td>
+      <td>0</td>
+      <td>Improving</td>
+      <td>0.728322</td>
+      <td>0.763972</td>
+      <td>True</td>
+      <td>0.704370</td>
+      <td>NVDA</td>
+      <td>0.058275</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>2025-10-31</td>
+      <td>0.1</td>
+      <td>0.098428</td>
+      <td>0.099214</td>
+    </tr>
+    <tr>
+      <td>2025-11-30</td>
+      <td>APP</td>
+      <td>2025-01-31</td>
+      <td>2025-01-31</td>
+      <td>Improving</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Bull case: possible catalyst or acceleration, durable competitive position.</td>
+      <td>Bear case: balance sheet or financial risk, valuation already discounts too much optimism.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Wait for a better valuation or stronger evidence of durable growth.</td>
+      <td>True</td>
+      <td>0.704604</td>
+      <td>NVDA</td>
+      <td>0.055935</td>
+      <td>{'final_score': 0.7750539209995012, 'thesis_score': 0.8187700955735473, 'conviction_score': 0.7446779264540198, 'business_quality_score': 0.8902824561049584}</td>
+      <td>Fully Valued Compounder</td>
+      <td>Fully Valued Compounder: Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews. conviction=0.74</td>
+      <td>30</td>
+      <td>30</td>
+      <td>1.0</td>
+      <td>10</td>
+      <td>0</td>
+      <td>Improving</td>
+      <td>0.728322</td>
+      <td>0.763972</td>
+      <td>True</td>
+      <td>0.704370</td>
+      <td>NVDA</td>
+      <td>0.058275</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>2025-11-30</td>
+      <td>0.1</td>
+      <td>0.098428</td>
+      <td>0.099214</td>
+    </tr>
+    <tr>
+      <td>2025-12-31</td>
+      <td>APP</td>
+      <td>2025-01-31</td>
+      <td>2025-01-31</td>
+      <td>Improving</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Bull case: possible catalyst or acceleration, durable competitive position.</td>
+      <td>Bear case: balance sheet or financial risk, valuation already discounts too much optimism.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Wait for a better valuation or stronger evidence of durable growth.</td>
+      <td>True</td>
+      <td>0.704604</td>
+      <td>NVDA</td>
+      <td>0.055935</td>
+      <td>{'final_score': 0.7750539209995012, 'thesis_score': 0.8187700955735473, 'conviction_score': 0.7446779264540198, 'business_quality_score': 0.8902824561049584}</td>
+      <td>Fully Valued Compounder</td>
+      <td>Fully Valued Compounder: Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews. conviction=0.74</td>
+      <td>33</td>
+      <td>33</td>
+      <td>1.0</td>
+      <td>11</td>
+      <td>0</td>
+      <td>Improving</td>
+      <td>0.728322</td>
+      <td>0.763972</td>
+      <td>True</td>
+      <td>0.704370</td>
+      <td>NVDA</td>
+      <td>0.058275</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>2025-12-31</td>
+      <td>0.1</td>
+      <td>0.098428</td>
+      <td>0.099214</td>
+    </tr>
+    <tr>
+      <td>2026-01-31</td>
+      <td>APP</td>
+      <td>2025-01-31</td>
+      <td>2025-01-31</td>
+      <td>Improving</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Bull case: possible catalyst or acceleration, durable competitive position.</td>
+      <td>Bear case: balance sheet or financial risk, valuation already discounts too much optimism.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Wait for a better valuation or stronger evidence of durable growth.</td>
+      <td>True</td>
+      <td>0.704604</td>
+      <td>NVDA</td>
+      <td>0.055935</td>
+      <td>{'final_score': 0.7750539209995012, 'thesis_score': 0.8187700955735473, 'conviction_score': 0.7446779264540198, 'business_quality_score': 0.8902824561049584}</td>
+      <td>Fully Valued Compounder</td>
+      <td>Fully Valued Compounder: Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews. conviction=0.74</td>
+      <td>36</td>
+      <td>36</td>
+      <td>1.0</td>
+      <td>12</td>
+      <td>0</td>
+      <td>Improving</td>
+      <td>0.728322</td>
+      <td>0.763972</td>
+      <td>True</td>
+      <td>0.704370</td>
+      <td>NVDA</td>
+      <td>0.058275</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>2026-01-31</td>
+      <td>0.1</td>
+      <td>0.098428</td>
+      <td>0.099214</td>
+    </tr>
+    <tr>
+      <td>2026-02-28</td>
+      <td>APP</td>
+      <td>2025-01-31</td>
+      <td>2025-01-31</td>
+      <td>Improving</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Bull case: possible catalyst or acceleration, durable competitive position.</td>
+      <td>Bear case: balance sheet or financial risk, valuation already discounts too much optimism.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Wait for a better valuation or stronger evidence of durable growth.</td>
+      <td>True</td>
+      <td>0.704604</td>
+      <td>NVDA</td>
+      <td>0.055935</td>
+      <td>{'final_score': 0.7750539209995012, 'thesis_score': 0.8187700955735473, 'conviction_score': 0.7446779264540198, 'business_quality_score': 0.8902824561049584}</td>
+      <td>Fully Valued Compounder</td>
+      <td>Fully Valued Compounder: Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews. conviction=0.74</td>
+      <td>39</td>
+      <td>39</td>
+      <td>1.0</td>
+      <td>13</td>
+      <td>0</td>
+      <td>Improving</td>
+      <td>0.728322</td>
+      <td>0.763972</td>
+      <td>True</td>
+      <td>0.704370</td>
+      <td>NVDA</td>
+      <td>0.058275</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>2026-02-28</td>
+      <td>0.1</td>
+      <td>0.098428</td>
+      <td>0.099214</td>
+    </tr>
+    <tr>
+      <td>2026-03-31</td>
+      <td>APP</td>
+      <td>2025-01-31</td>
+      <td>2025-01-31</td>
+      <td>Improving</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Bull case: possible catalyst or acceleration, durable competitive position.</td>
+      <td>Bear case: balance sheet or financial risk, valuation already discounts too much optimism.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Wait for a better valuation or stronger evidence of durable growth.</td>
+      <td>True</td>
+      <td>0.704604</td>
+      <td>NVDA</td>
+      <td>0.055935</td>
+      <td>{'final_score': 0.7750539209995012, 'thesis_score': 0.8187700955735473, 'conviction_score': 0.7446779264540198, 'business_quality_score': 0.8902824561049584}</td>
+      <td>Fully Valued Compounder</td>
+      <td>Fully Valued Compounder: Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews. conviction=0.74</td>
+      <td>42</td>
+      <td>42</td>
+      <td>1.0</td>
+      <td>14</td>
+      <td>0</td>
+      <td>Improving</td>
+      <td>0.727268</td>
+      <td>0.763813</td>
+      <td>True</td>
+      <td>0.704362</td>
+      <td>NVDA</td>
+      <td>0.058356</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>2026-03-31</td>
+      <td>0.1</td>
+      <td>0.098324</td>
+      <td>0.099162</td>
+    </tr>
+    <tr>
+      <td>2026-04-30</td>
+      <td>APP</td>
+      <td>2025-01-31</td>
+      <td>2025-01-31</td>
+      <td>Improving</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Bull case: possible catalyst or acceleration, durable competitive position.</td>
+      <td>Bear case: balance sheet or financial risk, valuation already discounts too much optimism.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Wait for a better valuation or stronger evidence of durable growth.</td>
+      <td>True</td>
+      <td>0.704604</td>
+      <td>NVDA</td>
+      <td>0.055935</td>
+      <td>{'final_score': 0.7750539209995012, 'thesis_score': 0.8187700955735473, 'conviction_score': 0.7446779264540198, 'business_quality_score': 0.8902824561049584}</td>
+      <td>Fully Valued Compounder</td>
+      <td>Fully Valued Compounder: Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews. conviction=0.74</td>
+      <td>45</td>
+      <td>45</td>
+      <td>1.0</td>
+      <td>15</td>
+      <td>0</td>
+      <td>Improving</td>
+      <td>0.727268</td>
+      <td>0.763813</td>
+      <td>True</td>
+      <td>0.704362</td>
+      <td>NVDA</td>
+      <td>0.058356</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>2026-04-30</td>
+      <td>0.1</td>
+      <td>0.098324</td>
+      <td>0.099162</td>
+    </tr>
+    <tr>
+      <td>2026-05-31</td>
+      <td>APP</td>
+      <td>2025-01-31</td>
+      <td>2025-01-31</td>
+      <td>Improving</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Bull case: possible catalyst or acceleration, durable competitive position.</td>
+      <td>Bear case: balance sheet or financial risk, valuation already discounts too much optimism.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Strong moat: persistent profitability and margin quality support durability.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Wait for a better valuation or stronger evidence of durable growth.</td>
+      <td>True</td>
+      <td>0.704604</td>
+      <td>NVDA</td>
+      <td>0.055935</td>
+      <td>{'final_score': 0.7750539209995012, 'thesis_score': 0.8187700955735473, 'conviction_score': 0.7446779264540198, 'business_quality_score': 0.8902824561049584}</td>
+      <td>Fully Valued Compounder</td>
+      <td>Fully Valued Compounder: Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews. conviction=0.74</td>
+      <td>48</td>
+      <td>48</td>
+      <td>1.0</td>
+      <td>16</td>
+      <td>0</td>
+      <td>Improving</td>
+      <td>0.727268</td>
+      <td>0.763813</td>
+      <td>True</td>
+      <td>0.704362</td>
+      <td>NVDA</td>
+      <td>0.058356</td>
+      <td>Fully Valued Compounder: High-quality business profile with attractive durability signals. Strong moat: persistent profitability and margin quality support durability. Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>Exit thesis for APP: valuation no longer offers a reasonable margin.</td>
+      <td>Possible catalyst, but confirmation is required at future reviews.</td>
+      <td>2026-05-31</td>
+      <td>0.1</td>
+      <td>0.098324</td>
+      <td>0.099162</td>
+    </tr>
+  </tbody>
+</table></main></body>
+</html>

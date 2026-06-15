@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>model_explainability.html</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 0; color: #172026; background: #f7f8f8; }
+nav { position: sticky; top: 0; display: flex; gap: 12px; overflow-x: auto; padding: 12px 18px; background: #172026; }
+nav a { color: white; text-decoration: none; white-space: nowrap; font-size: 13px; }
+main { max-width: 1180px; margin: 0 auto; padding: 24px; }
+h1 { font-size: 28px; margin: 8px 0 18px; }
+table { width: 100%; border-collapse: collapse; margin: 18px 0; background: white; border: 1px solid #d7dddd; }
+th, td { padding: 9px 10px; border-bottom: 1px solid #e7ebeb; text-align: left; font-size: 13px; vertical-align: top; }
+th { background: #eef2f2; }
+.chart { width: 100%; max-width: 100%; height: auto; background: white; border: 1px solid #d7dddd; margin: 18px 0; }
+.portfolio-line { fill: none; stroke: #1f7a8c; stroke-width: 3; }
+.benchmark-line { fill: none; stroke: #b23a48; stroke-width: 3; }
+.axis { stroke: #c8d0d0; stroke-width: 1; }
+.legend { font-size: 13px; fill: #172026; }
+</style>
+</head>
+<body><nav><a href="index.html">index</a> <a href="portfolio_review.html">portfolio_review</a> <a href="portfolio_evolution.html">portfolio_evolution</a> <a href="portfolio_vs_benchmark.html">portfolio_vs_benchmark</a> <a href="portfolio_turnover.html">portfolio_turnover</a> <a href="decision_log.html">decision_log</a> <a href="thesis_persistence.html">thesis_persistence</a> <a href="allocation_dashboard.html">allocation_dashboard</a> <a href="watchlist.html">watchlist</a> <a href="rebalance_report.html">rebalance_report</a> <a href="research.html">research</a> <a href="research_ai.html">research_ai</a> <a href="exit_thesis.html">exit_thesis</a> <a href="model_explainability.html">model_explainability</a></nav><main><h1>Model Explainability</h1><h2>Feature Importance</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>feature</th>
+      <th>importance</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>quality_probability</td>
+      <td>{'quality_score': 355, 'growth_score': 132, 'valuation_score': 176, 'moat_score': 424, 'catalyst_score': 0, 'risk_score': 482, 'expected_growth': 20, 'implied_growth': 3, 'realized_growth': 57, 'positive_expectation_gap': 53, 'quality_score_vs_sector': 259, 'quality_score_vs_industry': 0, 'quality_score_vs_universe': 215, 'growth_score_vs_sector': 99, 'growth_score_vs_industry': 0, 'growth_score_vs_universe': 6, 'valuation_score_vs_sector': 101, 'valuation_score_vs_industry': 0, 'valuation_score_vs_universe': 18, 'quality_trend_1y': 0, 'quality_trend_2y': 0, 'roic_trend': 0, 'margin_trend': 0, 'fcf_trend': 0, 'growth_acceleration': 0, 'growth_deceleration': 0, 'moat_trend': 0}</td>
+    </tr>
+    <tr>
+      <td>improvement_probability</td>
+      <td>{'quality_score': 274, 'growth_score': 212, 'valuation_score': 186, 'moat_score': 90, 'catalyst_score': 0, 'risk_score': 130, 'expected_growth': 397, 'implied_growth': 9, 'realized_growth': 234, 'positive_expectation_gap': 152, 'quality_score_vs_sector': 91, 'quality_score_vs_industry': 0, 'quality_score_vs_universe': 18, 'growth_score_vs_sector': 447, 'growth_score_vs_industry': 0, 'growth_score_vs_universe': 90, 'valuation_score_vs_sector': 64, 'valuation_score_vs_industry': 0, 'valuation_score_vs_universe': 6, 'quality_trend_1y': 0, 'quality_trend_2y': 0, 'roic_trend': 0, 'margin_trend': 0, 'fcf_trend': 0, 'growth_acceleration': 0, 'growth_deceleration': 0, 'moat_trend': 0}</td>
+    </tr>
+    <tr>
+      <td>mispricing_probability</td>
+      <td>{'quality_score': 294, 'growth_score': 193, 'valuation_score': 407, 'moat_score': 111, 'catalyst_score': 0, 'risk_score': 104, 'expected_growth': 36, 'implied_growth': 6, 'realized_growth': 58, 'positive_expectation_gap': 345, 'quality_score_vs_sector': 166, 'quality_score_vs_industry': 0, 'quality_score_vs_universe': 9, 'growth_score_vs_sector': 95, 'growth_score_vs_industry': 0, 'growth_score_vs_universe': 15, 'valuation_score_vs_sector': 480, 'valuation_score_vs_industry': 0, 'valuation_score_vs_universe': 81, 'quality_trend_1y': 0, 'quality_trend_2y': 0, 'roic_trend': 0, 'margin_trend': 0, 'fcf_trend': 0, 'growth_acceleration': 0, 'growth_deceleration': 0, 'moat_trend': 0}</td>
+    </tr>
+    <tr>
+      <td>alpha_probability</td>
+      <td>{'quality_score': 208, 'growth_score': 233, 'valuation_score': 180, 'moat_score': 186, 'catalyst_score': 0, 'risk_score': 177, 'expected_growth': 158, 'implied_growth': 0, 'realized_growth': 127, 'positive_expectation_gap': 117, 'quality_score_vs_sector': 32, 'quality_score_vs_industry': 0, 'quality_score_vs_universe': 107, 'growth_score_vs_sector': 44, 'growth_score_vs_industry': 0, 'growth_score_vs_universe': 65, 'valuation_score_vs_sector': 14, 'valuation_score_vs_industry': 0, 'valuation_score_vs_universe': 57, 'quality_trend_1y': 178, 'quality_trend_2y': 252, 'roic_trend': 0, 'margin_trend': 0, 'fcf_trend': 0, 'growth_acceleration': 50, 'growth_deceleration': 109, 'moat_trend': 106}</td>
+    </tr>
+  </tbody>
+</table><h2>SHAP</h2><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>feature</th>
+      <th>mean_abs_shap</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>realized_growth</td>
+      <td>0.037772</td>
+    </tr>
+    <tr>
+      <td>growth_score</td>
+      <td>0.031566</td>
+    </tr>
+    <tr>
+      <td>growth_score_vs_universe</td>
+      <td>0.029840</td>
+    </tr>
+    <tr>
+      <td>valuation_score</td>
+      <td>0.027523</td>
+    </tr>
+    <tr>
+      <td>positive_expectation_gap</td>
+      <td>0.016403</td>
+    </tr>
+    <tr>
+      <td>expected_growth</td>
+      <td>0.016238</td>
+    </tr>
+    <tr>
+      <td>quality_trend_2y</td>
+      <td>0.011112</td>
+    </tr>
+    <tr>
+      <td>risk_score</td>
+      <td>0.010189</td>
+    </tr>
+    <tr>
+      <td>quality_score_vs_universe</td>
+      <td>0.010027</td>
+    </tr>
+    <tr>
+      <td>moat_score</td>
+      <td>0.009036</td>
+    </tr>
+    <tr>
+      <td>moat_trend</td>
+      <td>0.007900</td>
+    </tr>
+    <tr>
+      <td>growth_score_vs_sector</td>
+      <td>0.007028</td>
+    </tr>
+    <tr>
+      <td>growth_deceleration</td>
+      <td>0.005963</td>
+    </tr>
+    <tr>
+      <td>quality_score</td>
+      <td>0.005136</td>
+    </tr>
+    <tr>
+      <td>quality_score_vs_sector</td>
+      <td>0.004019</td>
+    </tr>
+    <tr>
+      <td>quality_trend_1y</td>
+      <td>0.003761</td>
+    </tr>
+    <tr>
+      <td>valuation_score_vs_universe</td>
+      <td>0.002292</td>
+    </tr>
+    <tr>
+      <td>growth_acceleration</td>
+      <td>0.001842</td>
+    </tr>
+    <tr>
+      <td>valuation_score_vs_sector</td>
+      <td>0.000812</td>
+    </tr>
+    <tr>
+      <td>implied_growth</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <td>catalyst_score</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <td>quality_score_vs_industry</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <td>growth_score_vs_industry</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <td>valuation_score_vs_industry</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <td>roic_trend</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <td>margin_trend</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <td>fcf_trend</td>
+      <td>0.000000</td>
+    </tr>
+  </tbody>
+</table></main></body>
+</html>
