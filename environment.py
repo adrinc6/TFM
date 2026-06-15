@@ -197,7 +197,7 @@ ENABLE_FALLBACK_EXTRAPOLATION = True
 FALLBACK_LOOK_BACK_QUARTERS = 4
 
 # Portfolio holding duration from entry date.
-HOLDING_PERIOD_MONTHS = 12
+HOLDING_PERIOD_MONTHS = 3
 
 # =============================================================================
 # 6. ML pipeline parameters
@@ -434,6 +434,22 @@ PORTFOLIO_OPTIMIZER = "hrp"
 
 # Frequency for live thesis-managed portfolio reviews: M | 2M | Q.
 PORTFOLIO_REVIEW_FREQUENCY = "M"
+
+# Entrypoint selected when running analyzer.py directly:
+#   "pipeline"             -> full data/dataset/backtest pipeline
+#   "portfolio_review"     -> review current positions from an existing dataset
+#   "portfolio_evolution"  -> simulate thesis-managed portfolio evolution
+MAIN_ACTION = "pipeline"
+
+# Lightweight portfolio-review inputs. These replace command-line flags.
+# Use either PORTFOLIO_REVIEW_POSITIONS_CSV or PORTFOLIO_REVIEW_TICKERS.
+PORTFOLIO_MASTER_DATASET_PATH = os.path.join(FINNHUB_DATA_DIR, "master_dataset.parquet")
+PORTFOLIO_REVIEW_TICKERS = []
+PORTFOLIO_REVIEW_POSITIONS_CSV = ""
+PORTFOLIO_REVIEW_DATE = ANALYSIS_REFERENCE_DATE
+PORTFOLIO_REVIEW_OUTPUT_DIR = os.path.join(RESULTS_DIR, "portfolio_review")
+PORTFOLIO_EVOLUTION_OUTPUT_DIR = os.path.join(RESULTS_DIR, "portfolio_evolution")
+
 # Rotation discipline for live portfolio evolution.
 MIN_ROTATION_ADVANTAGE = 0.15
 MIN_SCORE_ADVANTAGE_TO_REPLACE = 0.12

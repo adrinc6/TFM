@@ -59,6 +59,14 @@ from environment import (
     SECTOR_ROTATION_FEATURE_COLUMNS, SECTOR_ROTATION_FEATURE_EXCLUDE,
     META_FEATURE_COLUMNS, META_FEATURE_EXCLUDE,
     GARP_MAX_STOCKS, GARP_MIN_STOCKS,
+    MAIN_ACTION,
+    PORTFOLIO_MASTER_DATASET_PATH,
+    PORTFOLIO_REVIEW_TICKERS,
+    PORTFOLIO_REVIEW_POSITIONS_CSV,
+    PORTFOLIO_REVIEW_DATE,
+    PORTFOLIO_REVIEW_OUTPUT_DIR,
+    PORTFOLIO_EVOLUTION_OUTPUT_DIR,
+    PORTFOLIO_REVIEW_FREQUENCY,
 )
 import environment as env_module
 
@@ -724,80 +732,87 @@ def _load_master_dataset_disk(path: Path):
     return None
 
 
+def _load_existing_snapshots(dataset_path: str | Path):
+    """Load an existing master dataset from parquet or CSV."""
+    import pandas as pd
+
+    path = Path(dataset_path)
+    if not path.exists():
+        raise FileNotFoundError(
+            f"Master dataset not found: {path}. Build it with `python analyzer.py` before running portfolio tools."
+        )
+    return pd.read_csv(path) if path.suffix.lower() == ".csv" else pd.read_parquet(path)
+
+
+def _coerce_ticker_list(value) -> list[str]:
+    """Normalize a string/list ticker input into a clean list."""
+    if value is None:
+        return []
+    if isinstance(value, str):
+        raw_items = value.split(",")
+    else:
+        raw_items = list(value)
+    return [str(t).strip().upper().replace(".", "-") for t in raw_items if str(t).strip()]
+
+
 # =============================================================================
 # Main
 # =============================================================================
 
-def portfolio_review_main(argv: list[str] | None = None):
+def portfolio_review_main(
+    *,
+    tickers: list[str] | str | None = None,
+    positions_path: str | Path | None = None,
+    review_date: str | None = None,
+    output_dir: str | Path | None = None,
+    master_dataset_path: str | Path | None = None,
+):
     """Run a lightweight thesis-based review without executing the full pipeline."""
-    import argparse
-    import pandas as pd
+    dataset_path = master_dataset_path or PORTFOLIO_MASTER_DATASET_PATH
+    snapshots = _load_existing_snapshots(dataset_path)
 
-    parser = argparse.ArgumentParser(
-        prog="python analyzer.py portfolio_review",
-        description="Review existing positions using point-in-time GARP thesis snapshots.",
-    )
-    parser.add_argument("--tickers", default="", help="Comma-separated tickers to review when --positions is not provided.")
-    parser.add_argument("--positions", default="", help="CSV with ticker plus optional weight, purchase_date, avg_cost and snapshot_date.")
-    parser.add_argument("--review-date", default=str(pd.Timestamp(ANALYSIS_REFERENCE_DATE).date()), help="Review date; latest snapshot on or before this date is used.")
-    parser.add_argument("--output-dir", default=os.path.join(RESULTS_DIR, "portfolio_review"), help="Directory for portfolio-review CSV/JSON outputs.")
-    parser.add_argument("--master-dataset", default=os.path.join(FINNHUB_DATA_DIR, "master_dataset.parquet"), help="Existing master dataset parquet/csv to reuse.")
-    args = parser.parse_args(argv)
+    positions_value = positions_path if positions_path is not None else PORTFOLIO_REVIEW_POSITIONS_CSV
+    positions = load_positions_csv(positions_value) if positions_value and str(positions_value).strip() else None
+    tickers_value = PORTFOLIO_REVIEW_TICKERS if tickers is None else tickers
+    review_tickers = None if positions is not None else _coerce_ticker_list(tickers_value)
+    review_date_value = review_date or PORTFOLIO_REVIEW_DATE or ANALYSIS_REFERENCE_DATE
+    output_dir_value = output_dir or PORTFOLIO_REVIEW_OUTPUT_DIR
 
-    dataset_path = Path(args.master_dataset)
-    if not dataset_path.exists():
-        raise FileNotFoundError(
-            f"Master dataset not found: {dataset_path}. Build it with `python analyzer.py` before running portfolio_review."
-        )
-    if dataset_path.suffix.lower() == ".csv":
-        snapshots = pd.read_csv(dataset_path)
-    else:
-        snapshots = pd.read_parquet(dataset_path)
-
-    positions = load_positions_csv(args.positions) if args.positions else None
-    tickers = [t.strip() for t in str(args.tickers).split(",") if t.strip()] if not args.positions else None
     review, summary = review_portfolio(
         snapshots=snapshots,
         positions=positions,
-        tickers=tickers,
-        review_date=args.review_date,
-        output_dir=args.output_dir,
+        tickers=review_tickers,
+        review_date=review_date_value,
+        output_dir=output_dir_value,
     )
     print(json.dumps(summary, indent=2, default=str))
-    print(f"Portfolio review exported to: {args.output_dir}")
+    print(f"Portfolio review exported to: {output_dir_value}")
     return review, summary
 
 
-def portfolio_evolution_main(argv: list[str] | None = None):
+def portfolio_evolution_main(
+    *,
+    review_frequency: str | None = None,
+    output_dir: str | Path | None = None,
+    master_dataset_path: str | Path | None = None,
+):
     """Run a lightweight live-portfolio evolution simulation from existing snapshots."""
-    import argparse
-    import pandas as pd
-
-    parser = argparse.ArgumentParser(
-        prog="python analyzer.py portfolio_evolution",
-        description="Simulate a thesis-managed GARP portfolio through periodic reviews.",
-    )
-    parser.add_argument("--review-frequency", default="M", help="Review frequency: M, 2M or Q.")
-    parser.add_argument("--output-dir", default=os.path.join(RESULTS_DIR, "portfolio_evolution"), help="Directory for evolution CSV/JSON outputs.")
-    parser.add_argument("--master-dataset", default=os.path.join(FINNHUB_DATA_DIR, "master_dataset.parquet"), help="Existing master dataset parquet/csv to reuse.")
-    args = parser.parse_args(argv)
-
-    dataset_path = Path(args.master_dataset)
-    if not dataset_path.exists():
-        raise FileNotFoundError(
-            f"Master dataset not found: {dataset_path}. Build it with `python analyzer.py` before running portfolio_evolution."
-        )
-    snapshots = pd.read_csv(dataset_path) if dataset_path.suffix.lower() == ".csv" else pd.read_parquet(dataset_path)
+    output_dir_value = output_dir or PORTFOLIO_EVOLUTION_OUTPUT_DIR
+    snapshots = _load_existing_snapshots(master_dataset_path or PORTFOLIO_MASTER_DATASET_PATH)
     evolution, transactions, holdings, summary = run_portfolio_evolution(
         snapshots=snapshots,
-        review_frequency=args.review_frequency,
-        output_dir=args.output_dir,
+        review_frequency=review_frequency or PORTFOLIO_REVIEW_FREQUENCY,
+        output_dir=output_dir_value,
     )
-    viewer_dir = generate_static_viewer(Path(args.output_dir).parent, viewer_dir=Path(args.output_dir).parent / "viewer")
+    viewer_dir = generate_static_viewer(
+        Path(output_dir_value).parent,
+        viewer_dir=Path(output_dir_value).parent / "viewer",
+    )
     print(json.dumps(summary, indent=2, default=str))
-    print(f"Portfolio evolution exported to: {args.output_dir}")
+    print(f"Portfolio evolution exported to: {output_dir_value}")
     print(f"Static viewer exported to: {viewer_dir}")
     return evolution, transactions, holdings, summary
+
 
 def main():
     """Orchestrate the full multi-agent ML stock-picker pipeline.
@@ -1114,10 +1129,19 @@ def main():
         log.warning("Could not generate static viewer (%s)", ex)
 
 
+def run_configured_action(action: str | None = None):
+    """Run the analyzer entrypoint selected by environment variables or parameter."""
+    selected = str(action or MAIN_ACTION or "pipeline").strip().lower()
+    if selected in {"pipeline", "main", "full"}:
+        return main()
+    if selected in {"portfolio_review", "review"}:
+        return portfolio_review_main()
+    if selected in {"portfolio_evolution", "evolution"}:
+        return portfolio_evolution_main()
+    raise ValueError(
+        "Unknown MAIN_ACTION. Use 'pipeline', 'portfolio_review', or 'portfolio_evolution'."
+    )
+
+
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "portfolio_review":
-        portfolio_review_main(sys.argv[2:])
-    elif len(sys.argv) > 1 and sys.argv[1] == "portfolio_evolution":
-        portfolio_evolution_main(sys.argv[2:])
-    else:
-        main()
+    run_configured_action()
