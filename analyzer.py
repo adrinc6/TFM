@@ -745,6 +745,29 @@ def _load_master_dataset_disk(path: Path):
     return None
 
 
+def _load_existing_snapshots(dataset_path: str | Path):
+    """Load an existing master dataset from parquet or CSV."""
+    import pandas as pd
+
+    path = Path(dataset_path)
+    if not path.exists():
+        raise FileNotFoundError(
+            f"Master dataset not found: {path}. Build it with `python analyzer.py` before running portfolio tools."
+        )
+    return pd.read_csv(path) if path.suffix.lower() == ".csv" else pd.read_parquet(path)
+
+
+def _coerce_ticker_list(value) -> list[str]:
+    """Normalize a string/list ticker input into a clean list."""
+    if value is None:
+        return []
+    if isinstance(value, str):
+        raw_items = value.split(",")
+    else:
+        raw_items = list(value)
+    return [str(t).strip().upper().replace(".", "-") for t in raw_items if str(t).strip()]
+
+
 # =============================================================================
 # Main
 # =============================================================================
