@@ -73,6 +73,7 @@ from module.steps.step_01_data.pipeline import download_data, prepare_data, get_
 from module.steps.step_02_dataset.dataset import build_master_dataset
 from module.steps.step_04_evaluation.evaluator import run_walkforward_pipeline
 from module.common.portfolio_intelligence import load_positions_csv, review_portfolio
+from module.common.static_viewer import generate_static_viewer
 
 
 def _normalize_ticker_symbol(ticker: str) -> str:
@@ -1073,6 +1074,11 @@ def main():
         log.info(f"  Max DD Strategy:       {summary.get('global_strategy_max_drawdown', 0):.2%}")
     log.info(f"  Results in:           {RESULTS_DIR}/")
     log.info("=" * 60)
+    try:
+        viewer_dir = generate_static_viewer(RUN_RESULTS_DIR)
+        log.info("  Static viewer in:      %s/", viewer_dir)
+    except Exception as ex:
+        log.warning("Could not generate static viewer (%s)", ex)
 
 
 if __name__ == "__main__":

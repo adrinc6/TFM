@@ -86,6 +86,11 @@ materiales para revisiones mensuales/trimestrales sin ruido diario:
 `portfolio_thesis_history.csv`, `portfolio_thesis_events.csv` y
 `portfolio_review_report.md`.
 
+Cada ejecución relevante genera también un viewer HTML estático en `viewer/`
+con `index.html`, dashboards de resumen, cartera, salud, historial de tesis,
+eventos, coste de oportunidad, watchlist y páginas por posición. No requiere
+servidor ni framework web; solo HTML, CSS, Plotly y DataTables vía CDN.
+
 Tests:
 
 ```bash
@@ -109,6 +114,7 @@ Por fold se exportan, entre otros:
 - `sector_concentration_audit.csv`: pesos por sector, HHI, peso máximo sectorial y número de sectores seleccionados para medir concentración sin imponer límites adicionales.
 - `portfolio_review_positions.csv`: salud de posiciones existentes, estado de tesis, rating Buy/Hold/Review/Reduce/Sell, exit score y coste de oportunidad.
 - `portfolio_thesis_history.csv` / `portfolio_thesis_events.csv`: evolución histórica de tesis, conviction score, valoración y eventos relevantes por posición.
+- `viewer/index.html`: visor HTML estático para revisar visualmente resultados, cartera, tesis, eventos, watchlist y páginas por posición.
 - Scores por ticker con `opportunity_type`, `moat_proxy_score`, `expectation_gap_score`, flags value trap / expensive growth, drivers, riesgos y razones de selección/descarte.
 
 ## Estructura

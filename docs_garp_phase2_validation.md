@@ -161,3 +161,9 @@ La arquitectura de selección queda congelada. La evolución posterior se implem
 - Los estados de tesis son `Improving`, `Intact`, `Maturing`, `Weakening` y `Broken`.
 - Las decisiones `Strong Buy`, `Buy`, `Hold`, `Review`, `Reduce` y `Sell` se basan en salud de tesis, valoración, riesgo y coste de oportunidad; no en TP/SL.
 - El Thesis History Engine persiste `portfolio_thesis_history.csv`, `portfolio_thesis_events.csv` y `portfolio_review_report.md` para revisión mensual/trimestral de cambios relevantes sin ruido diario.
+
+## 14. Static Results Viewer
+
+La revisión humana se apoya en `viewer/index.html`, generado automáticamente desde artefactos existentes. El viewer usa HTML estático, CSS, Plotly y DataTables; no introduce servidor, framework web, agentes, modelos ni recálculo de métricas.
+
+Páginas principales: `run_summary.html`, `portfolio_review.html`, `portfolio_health.html`, `thesis_history.html`, `thesis_events.html`, `opportunity_cost.html`, `watchlist.html` y `position_<ticker>.html`.

@@ -124,6 +124,21 @@ El Thesis History Engine exporta:
 
 La prioridad de revisión se clasifica como `Critical`, `High`, `Medium` o `Low`, priorizando deterioro reciente, tesis rota/debilitada, riesgo, sobrevaloración y coste de oportunidad.
 
+## Static Results Viewer
+
+Cada ejecución relevante genera `viewer/index.html` como entrada a un visor HTML estático. El viewer es solo presentación: reutiliza CSV/JSON/Markdown existentes y no recalcula métricas, modelos, rankings ni backtests.
+
+Páginas generadas:
+
+- `run_summary.html`: configuración/resumen, top posiciones, opportunity types y distribución de scores.
+- `portfolio_review.html`: conviction, thesis score, health, valoración, recomendación y prioridad.
+- `portfolio_health.html`: posiciones fuertes, débiles, críticas, a revisar, vender o aumentar.
+- `thesis_history.html`: evolución temporal de thesis score, conviction, health, moat, catalyst y expectation gap.
+- `thesis_events.html`: timeline de eventos como upgrades, deterioros, re-rating y overvaluation risk.
+- `opportunity_cost.html`: mejores alternativas y posiciones reemplazables.
+- `watchlist.html`: mejores oportunidades disponibles a partir de artefactos ya exportados.
+- `position_<ticker>.html`: detalle por posición con tesis original, tesis actual, cambios y recomendación.
+
 Uso:
 
 ```bash

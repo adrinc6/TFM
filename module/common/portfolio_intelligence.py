@@ -734,6 +734,14 @@ def review_portfolio(
         event_df.to_csv(out_dir / "portfolio_thesis_events.csv", index=False)
         (out_dir / "portfolio_review_summary.json").write_text(json.dumps(summary, indent=2, default=str), encoding="utf-8")
         _write_review_report(out_dir / "portfolio_review_report.md", review, summary, event_df)
+        try:
+            from module.common.static_viewer import generate_static_viewer
+
+            generate_static_viewer(out_dir, viewer_dir=out_dir.parent / "viewer")
+        except Exception:
+            # Viewer generation is presentation-only and must never block the
+            # portfolio-review CSV/JSON artifacts.
+            pass
         if not opportunity_pool.empty:
             cols = ["ticker", "date", "thesis_score", "quality_score", "growth_score", "valuation_score", "expectation_gap_score", "risk_score"]
             opportunity_pool[[c for c in cols if c in opportunity_pool.columns]].head(25).to_csv(out_dir / "portfolio_review_opportunity_cost.csv", index=False)
