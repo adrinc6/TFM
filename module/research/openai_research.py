@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -36,10 +37,24 @@ RESEARCH_FIELDS = [
 
 def build_openai_research(settings: Settings) -> Path:
     scored = enrich_with_thesis_scores(read_parquet(PROCESSED_DIR / "scored_universe.parquet"))
+    settings.run_dir.mkdir(parents=True, exist_ok=True)
+    audit_dir = settings.run_dir / "audit"
+    audit_dir.mkdir(parents=True, exist_ok=True)
+    for stale in (settings.run_dir / "research_ai_history.csv", settings.run_dir / "research_ai"):
+        if stale.is_file():
+            stale.unlink()
+        elif stale.is_dir():
+            shutil.rmtree(stale)
+    history_cols = [
+        "snapshot_date", "ticker", "business_summary", "moat_analysis", "catalyst",
+        "risk_summary", "investment_thesis", "exit_thesis", "opportunity_type",
+        "conviction_score", "buy_today_score", "would_buy_today",
+    ]
+    scored[[col for col in history_cols if col in scored.columns]].to_csv(audit_dir / "research_ai_history.csv", index=False)
     latest_date = sorted(scored["snapshot_date"].unique())[-1]
     latest = scored[scored["snapshot_date"] == latest_date].copy()
     news = _load_news()
-    output_dir = settings.run_dir / "research_ai"
+    output_dir = audit_dir / "research_ai"
     output_dir.mkdir(parents=True, exist_ok=True)
 
     rows = []
@@ -47,10 +62,15 @@ def build_openai_research(settings: Settings) -> Path:
         payload = _research_payload(pd.Series(row._asdict()), news.get(row.ticker, []))
         path = output_dir / f"{row.ticker}.json"
         write_json(payload, path)
-        rows.append({"ticker": row.ticker, "path": str(path), **payload})
+        rows.append({"snapshot_date": latest_date, "ticker": row.ticker, "path": str(path), **payload})
 
     pd.DataFrame(rows).to_csv(settings.run_dir / "research_ai.csv", index=False)
-    log.info("Research AI artifacts written to %s", output_dir)
+    log.info(
+        "Research AI artifacts written to %s latest_rows=%s history_rows=%s",
+        output_dir,
+        len(rows),
+        len(scored),
+    )
     return output_dir
 
 

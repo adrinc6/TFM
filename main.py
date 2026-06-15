@@ -21,10 +21,27 @@ log = logging.getLogger(__name__)
 
 
 def main() -> None:
-    setup_logging()
     ensure_directories()
     settings = Settings()
-    log.info("Run mode=%s dev_mode=%s tickers=%s", settings.run_mode, settings.dev_mode, len(settings.tickers))
+    setup_logging(settings.run_dir / "logs" / "pipeline.log")
+    log.info(
+        "Run mode=%s dev_mode=%s tickers=%s fundamental_frequency=%s price_frequency=%s portfolio_review_frequency=%s",
+        settings.run_mode,
+        settings.dev_mode,
+        len(settings.tickers),
+        settings.fundamental_review_frequency,
+        settings.price_update_frequency,
+        settings.review_frequency,
+    )
+    log.info(
+        "Model/backtest settings walk_forward=%s label_horizon_months=%s min_train_years=%s max_train_years=%s transaction_cost_bps=%.2f slippage_bps=%.2f",
+        settings.walk_forward_scoring,
+        settings.walk_forward_label_horizon_months,
+        settings.min_walk_forward_training_years,
+        settings.max_walk_forward_training_years,
+        settings.transaction_cost_bps,
+        settings.slippage_bps,
+    )
 
     if settings.run_mode in {"download", "full"}:
         download_raw_data(settings)

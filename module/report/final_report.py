@@ -4,19 +4,26 @@ from __future__ import annotations
 
 import html
 import json
+import logging
 from pathlib import Path
 
 import pandas as pd
 
 from environment import PROCESSED_DIR, Settings
 
+log = logging.getLogger(__name__)
+
 
 def build_final_report(settings: Settings) -> Path:
     run_dir = settings.run_dir
-    vs = _read_csv(run_dir / "portfolio_vs_benchmark.csv")
-    transactions = _read_csv(run_dir / "portfolio_transactions.csv")
-    holdings = _read_csv(run_dir / "portfolio_monthly_holdings.csv")
-    decisions = _read_csv(run_dir / "portfolio_decision_log.csv")
+    log.info("Building final report for %s", run_dir.name)
+    vs = _read_result_csv(run_dir, "portfolio_vs_benchmark")
+    transactions = _read_result_csv(run_dir, "portfolio_transactions")
+    holdings = _read_result_csv(run_dir, "portfolio_monthly_holdings")
+    decisions = _read_result_csv(run_dir, "portfolio_decision_log")
+    position_performance = _read_result_csv(run_dir, "position_performance")
+    sell_reasons = _read_result_csv(run_dir, "sell_reasons_summary")
+    sector_exposure = _read_result_csv(run_dir, "sector_exposure")
     explainability = _read_json(PROCESSED_DIR / "model_explainability.json")
 
     metrics = _metrics(vs)
@@ -26,7 +33,18 @@ def build_final_report(settings: Settings) -> Path:
         + "<h2>Performance Metrics</h2>"
         + _table(pd.DataFrame([metrics]))
         + "<h2>Portfolio Vs Benchmark</h2>"
+        + _figure("viewer/charts/portfolio_vs_benchmark.png", "Portfolio value versus SPY benchmark")
+        + _figure("viewer/charts/period_alpha.png", "Monthly alpha versus benchmark")
+        + _figure("viewer/charts/drawdown.png", "Portfolio drawdown")
         + _table(vs.tail(24))
+        + "<h2>Position Performance</h2>"
+        + _figure("viewer/charts/position_performance_bars.png", "Stock return, annualized stock return and benchmark annualized return during each holding period")
+        + _table(_position_performance_summary(position_performance))
+        + "<h2>Sector Exposure</h2>"
+        + _figure("viewer/charts/sector_exposure.png", "Portfolio sector exposure through time")
+        + _table(sector_exposure.tail(20))
+        + "<h2>Sell Reason Summary</h2>"
+        + _table(sell_reasons)
         + "<h2>Best Decisions</h2>"
         + _table(_best_decisions(decisions))
         + "<h2>Worst Decisions</h2>"
@@ -38,6 +56,7 @@ def build_final_report(settings: Settings) -> Path:
         + "<h2>Opportunity Classification</h2>"
         + _table(_classification_summary(holdings))
         + "<h2>Component Importance</h2>"
+        + _figure("viewer/charts/feature_importance.png", "Top model feature importances")
         + _table(_component_importance(explainability))
         + "<h2>Feature Importance</h2>"
         + _table(_feature_importance(explainability))
@@ -46,6 +65,7 @@ def build_final_report(settings: Settings) -> Path:
     )
     path = run_dir / "final_report.html"
     path.write_text(_layout(body), encoding="utf-8")
+    log.info("Final report written to %s", path)
     return path
 
 
@@ -56,15 +76,19 @@ def _metrics(vs: pd.DataFrame) -> dict:
     benchmark_returns = vs["benchmark_period_return"].fillna(0)
     years = max((pd.to_datetime(vs["date"]).max() - pd.to_datetime(vs["date"]).min()).days / 365.25, 1 / 12)
     ending = float(vs["portfolio_value"].iloc[-1])
+    gross_ending = float(vs["portfolio_gross_value"].iloc[-1]) if "portfolio_gross_value" in vs.columns else ending
     benchmark_ending = float(vs.get("benchmark_value", pd.Series([1])).iloc[-1])
     downside = returns[returns < 0]
     return {
         "CAGR": ending ** (1 / years) - 1,
+        "Gross CAGR": gross_ending ** (1 / years) - 1,
         "Benchmark CAGR": benchmark_ending ** (1 / years) - 1,
         "Sharpe": _annualized_ratio(returns),
         "Sortino": _annualized_ratio(returns, downside_only=True),
         "Max Drawdown": _max_drawdown(vs["portfolio_value"]),
         "Alpha": (ending - 1) - (benchmark_ending - 1),
+        "Gross Alpha": (gross_ending - 1) - (benchmark_ending - 1),
+        "Total Cost Drag": float(vs.get("transaction_cost_drag", pd.Series([0])).sum()),
         "Average Period Alpha": float((returns - benchmark_returns).mean()),
     }
 
@@ -111,6 +135,27 @@ def _classification_summary(holdings: pd.DataFrame) -> pd.DataFrame:
     ).reset_index().sort_values("avg_persistence", ascending=False)
 
 
+def _position_performance_summary(position_performance: pd.DataFrame) -> pd.DataFrame:
+    required = ["ticker", "holding_days", "total_return", "annualized_return", "benchmark_annualized_return", "excess_total_return"]
+    if position_performance.empty or any(column not in position_performance.columns for column in required):
+        return pd.DataFrame()
+    df = position_performance.copy()
+    for column in required[1:]:
+        df[column] = pd.to_numeric(df[column], errors="coerce").fillna(0)
+    rows = []
+    for ticker, group in df.groupby("ticker"):
+        weights = group["holding_days"].clip(lower=1)
+        rows.append({
+            "ticker": ticker,
+            "lots": int(len(group)),
+            "total_return": float((1 + group["total_return"]).prod() - 1),
+            "annualized_return": float((group["annualized_return"] * weights).sum() / weights.sum()),
+            "benchmark_annualized_return": float((group["benchmark_annualized_return"] * weights).sum() / weights.sum()),
+            "excess_total_return": float(group["excess_total_return"].sum()),
+        })
+    return pd.DataFrame(rows).sort_values("excess_total_return", ascending=False).head(20)
+
+
 def _component_importance(payload: dict) -> pd.DataFrame:
     formula = payload.get("garp_score_formula", {})
     return pd.DataFrame([{"component": key, "weight": value} for key, value in formula.items()])
@@ -148,6 +193,16 @@ def _read_csv(path: Path) -> pd.DataFrame:
     return pd.read_csv(path) if path.exists() else pd.DataFrame()
 
 
+def _read_result_csv(run_dir: Path, name: str) -> pd.DataFrame:
+    root_path = run_dir / f"{name}.csv"
+    audit_path = run_dir / "audit" / f"{name}.csv"
+    if root_path.exists():
+        return pd.read_csv(root_path)
+    if audit_path.exists():
+        return pd.read_csv(audit_path)
+    return pd.DataFrame()
+
+
 def _read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
 
@@ -160,6 +215,13 @@ def _table(df: pd.DataFrame) -> str:
     if df.empty:
         return "<p>No data available.</p>"
     return df.to_html(index=False, escape=True)
+
+
+def _figure(src: str, caption: str) -> str:
+    return (
+        f'<figure><img src="{html.escape(src)}" alt="{html.escape(caption)}">'
+        f"<figcaption>{html.escape(caption)}</figcaption></figure>"
+    )
 
 
 def _layout(body: str) -> str:
@@ -177,6 +239,9 @@ h2 {{ margin-top: 30px; font-size: 20px; }}
 table {{ width: 100%; border-collapse: collapse; margin: 14px 0; background: white; border: 1px solid #d7dddd; }}
 th, td {{ padding: 8px 10px; border-bottom: 1px solid #e7ebeb; text-align: left; font-size: 13px; vertical-align: top; }}
 th {{ background: #eef2f2; }}
+figure {{ margin: 18px 0 24px; background: white; border: 1px solid #d7dddd; padding: 12px; }}
+figure img {{ display: block; width: 100%; height: auto; }}
+figcaption {{ color: #516066; font-size: 13px; margin-top: 8px; }}
 </style>
 </head>
 <body><main>{body}</main></body>

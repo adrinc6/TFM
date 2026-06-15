@@ -19,15 +19,20 @@ def add_buy_today_decision(df: pd.DataFrame) -> pd.DataFrame:
         group["best_alternative_ticker"] = group["ticker"].map(lambda ticker: best_by_ticker[ticker]["ticker"])
         group["best_alternative_score"] = group["ticker"].map(lambda ticker: best_by_ticker[ticker]["score"])
         group["opportunity_cost_score"] = (group["best_alternative_score"] - group["thesis_rank_score"]).clip(lower=0)
+        valuation = group.get("price_adjusted_valuation_score", group["valuation_score"])
+        momentum = group.get("momentum_score", pd.Series(0.5, index=group.index))
         group["buy_today_score"] = (
-            0.30 * group["thesis_score"]
-            + 0.25 * group["business_quality_score"]
-            + 0.20 * group["positive_expectation_gap"]
-            + 0.15 * group["valuation_score"]
-            + 0.10 * (1 - group["opportunity_cost_score"].clip(0, 1))
+            0.28 * group["thesis_score"]
+            + 0.24 * group["business_quality_score"]
+            + 0.17 * group["positive_expectation_gap"]
+            + 0.15 * valuation
+            + 0.08 * momentum
+            + 0.08 * (1 - group["opportunity_cost_score"].clip(0, 1))
         ).clip(0, 1)
         group["would_buy_today"] = (
-            group["buy_today_score"] >= 0.58
+            group["buy_today_score"] >= 0.60
+        ) & (
+            (momentum >= 0.35) | ((valuation >= 0.72) & (group["business_quality_score"] >= 0.58))
         ) & group["thesis_state"].isin({"Improving", "Intact"}) & ~group["opportunity_type"].isin({"Avoid", "Value Trap"})
         rows.append(group)
     return pd.concat(rows, ignore_index=True)

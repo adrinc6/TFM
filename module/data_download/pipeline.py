@@ -10,7 +10,7 @@ from typing import Callable, Any
 
 import pandas as pd
 
-from clients_download import FinnhubClient, YahooClient
+from module.data_download.clients_download import FinnhubClient, YahooClient
 from environment import FINNHUB_API_KEY, FORCE_RAW_DOWNLOAD, RAW_DIR, RAW_JSON_DIR, Settings
 from module.common.io import write_parquet
 

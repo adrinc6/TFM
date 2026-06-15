@@ -35,10 +35,12 @@ _load_dotenv(PROJECT_ROOT / ".env")
 
 # Editable project configuration. Keep .env only for API keys/secrets.
 RUN_MODE = "full"
-DATA_START_DATE = "2021-01-01"
-PORTFOLIO_START_DATE = "2025-01-15"
+DATA_START_DATE = "2000-01-01"
+PORTFOLIO_START_DATE = "2023-02-15"
 PORTFOLIO_END_DATE = "2026-06-15"
 PORTFOLIO_REVIEW_FREQUENCY = "M"
+FUNDAMENTAL_REVIEW_FREQUENCY = "Q"
+PRICE_UPDATE_FREQUENCY = "M"
 
 DEV_MODE = False
 DEV_TICKERS = ["AAPL", "MSFT", "NVDA", "JPM", "XOM"]
@@ -51,6 +53,13 @@ MIN_ROTATION_ADVANTAGE = 0.08
 MIN_SCORE_ADVANTAGE_TO_REPLACE = 0.06
 MIN_CONVICTION_ADVANTAGE = 0.05
 MIN_OPPORTUNITY_COST_THRESHOLD = 0.07
+WALK_FORWARD_SCORING = True
+WALK_FORWARD_LABEL_HORIZON_MONTHS = 12
+MIN_WALK_FORWARD_TRAINING_ROWS = 120
+MIN_WALK_FORWARD_TRAINING_YEARS = 4
+MAX_WALK_FORWARD_TRAINING_YEARS = 8
+TRANSACTION_COST_BPS = 5.0
+SLIPPAGE_BPS = 10.0
 
 FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
@@ -59,7 +68,7 @@ ENABLE_OPENAI_RESEARCH = False
 
 TICKERS = [
     "NVDA","AAPL","MSFT","AMZN","GOOGL","GOOG","META","AVGO","TSLA","BRK-B","WMT","LLY","JPM","XOM","V","JNJ","MU","COST","MA","ORCL","NFLX","CVX","ABBV","PLTR","PG","BAC","HD","KO","AMD","CAT","GE","CSCO","MRK","LRCX","AMAT","RTX","PM","UNH","MS","GS","IBM","WFC","GEV","TMUS","LIN","MCD","INTC","PEP","VZ","AXP","KLAC","T","NEE","C","AMGN","ABT","CRM","DIS","GILD","TXN","TMO","ANET","TJX","ISRG","SCHW","BA","UBER","APH","DE","PFE","COP","BLK","ADI","LMT","APP","HON","WELL","UNP","QCOM","BKNG","ETN","PANW","DHR","SYK","LOW","CB","SPGI","INTU","PLD","ACN","BMY","NOW","PGR","PH","VRTX","CEG","MCK","MDT","COF","HCA","CME","CRWD","GLW","MO","NEM","SO","SBUX","BSX","SNDK","CMCSA","NOC","DUK","WDC","ADBE","DELL","HWM","EQIX","GD","WM","TT","CVS","STX","WMB","ICE","BX","MAR","PWR","ADP","AMT","MRSH","JCI","UPS","FDX","SNPS","PNC","USB","KKR","CDNS","REGN","BK","NKE","ABNB","MCO","SHW","MSI","FCX","MMM","ITW","CTAS","CMI","ECL","EOG","ORLY","CSX","MNST","RCL","EMR","KMI","MDLZ","VLO","DASH","AEP","CL","CI","MPC","PSX","TDG","RSG","LHX","SLB","HLT","AON","WBD","ROST","HOOD","CRH","GM","ELV","TRV","APO","NSC","COR","APD","FTNT","SRE","SPG","DLR","PCAR","O","OXY","TEL","BKR","VST","AFL","AZO","TFC","D","OKE","CIEN","FANG","AJG","CTVA","COIN","ALL","MPWR","ADSK","TGT","FAST","EXC","TRGP","EA","CAH","XEL","FIX","ZTS","GWW","PSA","AME","KEYS","NXPI","NDAQ","CARR","EW","ETR","F","DDOG","TER","URI","IDXX","BDX","KR","MET","GRMN","YUM","HSY","PEG","CMG","CVNA","DAL","EBAY","ED","AXON","PYPL","MSCI","VTR","WAB","EQT","PCG","AMP","DHI","ROK","AIG","CBRE","FITB","SYY","ODFL","TTWO","WEC","LYV","CCI","TPL","NUE","KDP","HIG","ROP","LVS","MCHP","WDAY","XYZ","MLM","ADM","VMC","NRG","STT","CCL","KVUE","RMD","KMB","EME","ACGL","PAYX","PRU","IR","GEHC","CPRT","A","IRM","EL","ATO","OTIS","AEE","HAL","HBAN","FISV","IBKR","CBOE","DTE","DVN","UAL","VICI","TDY","WAT","FE","MTB","XYL","EXPE","CTSH","EXR","PPL","DOV","HPE","FICO","CNP","TPR","RJF","EIX","VRSK","DG","ES","IQV","WTW","JBL","DOW","AWK","BIIB","CHTR","STZ","KHC","DXCM","ROL","CTRA","EXE","FIS","HUBB","WRB","NTRS","CINF","LYB","STLD","TSCO","CFG","ARES","MTD","BG","Q","LEN","CMS","ON","OMC","AVB","DRI","ULTA","PPG","BRO","CHD","SYF","EQR","PHM","NI","VLTO","EFX","WSM","VRSN","LH","RF","L","DGX","TSN","DLTR","STE","FSLR","LDOS","RL","KEY","MRNA","BR","HUM","CHRW","CF","GIS","SW","NTAP","GPN","LUV","CPAY","LULU","EXPD","TROW","ALB","EVRG","IP","SBAC","PFG","SNA","PKG","INCY","LNT","JBHT","AMCR","SMCI","CSGP","DD","NVR","IFF","PTC","CNC","ZBH","WST","WY","FTV","HOLX","HPQ","LII","HII","PODD","BALL","FFIV","ESS","TXT","VTRS","AKAM","TKO","TRMB","KIM","J","INVH","CDW","MAA","APTV","NDSN","MKC","TYL","DECK","PNR","IEX","GPC","REG","COO","BBY","CLX","HST","APA","ALGN","HAS","EG","DPZ","AVY","ERIE","HRL","GEN","BEN","ALLE","MAS","DOC","PNW","JKHY","GNRC","SOLV","FOX","UHS","UDR","FOXA","IT","TTD","GDDY","SWK","SJM","GL","WYNN","AIZ","BF-B","IVZ","CPT","ZBRA","PSKY","AES","DVA","BLDR","RVTY","MGM","FRT","MOS","NCLH","AOS","NWSA","BAX","HSIC","ARE","BXP","SWKS","TECH","TAP","CRL","FDS","MOH","POOL","CAG","EPAM","MTCH","PAYC","CPB","LW","NWS"
-][:100]
+]
 
 
 @dataclass(frozen=True)
@@ -69,6 +78,15 @@ class Settings:
     start_date: str = PORTFOLIO_START_DATE
     end_date: str = PORTFOLIO_END_DATE
     review_frequency: str = PORTFOLIO_REVIEW_FREQUENCY
+    fundamental_review_frequency: str = FUNDAMENTAL_REVIEW_FREQUENCY
+    price_update_frequency: str = PRICE_UPDATE_FREQUENCY
+    walk_forward_scoring: bool = WALK_FORWARD_SCORING
+    walk_forward_label_horizon_months: int = WALK_FORWARD_LABEL_HORIZON_MONTHS
+    min_walk_forward_training_rows: int = MIN_WALK_FORWARD_TRAINING_ROWS
+    min_walk_forward_training_years: int = MIN_WALK_FORWARD_TRAINING_YEARS
+    max_walk_forward_training_years: int = MAX_WALK_FORWARD_TRAINING_YEARS
+    transaction_cost_bps: float = TRANSACTION_COST_BPS
+    slippage_bps: float = SLIPPAGE_BPS
     dev_mode: bool = DEV_MODE
     benchmark_ticker: str = BENCHMARK_TICKER
 

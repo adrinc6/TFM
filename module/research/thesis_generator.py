@@ -41,9 +41,10 @@ def _investment_thesis(row: pd.Series) -> str:
 
 
 def _base_thesis(row: pd.Series) -> str:
+    valuation = row.get("price_adjusted_valuation_score", row["valuation_score"])
     return (
         f"Base case: business quality {row['business_quality_score']:.2f}, "
-        f"valuation {row['valuation_score']:.2f}, catalyst {row['catalyst_score']:.2f}."
+        f"price-adjusted valuation {valuation:.2f}, catalyst {row['catalyst_score']:.2f}."
     )
 
 

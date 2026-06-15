@@ -20,6 +20,16 @@ La configuracion operativa vive en `environment.py`:
 - `OPENAI_MODEL`
 - `ENABLE_OPENAI_RESEARCH`
 
+Configuracion actual relevante:
+
+- Datos desde `2000-01-01`.
+- Simulacion desde `PORTFOLIO_START_DATE`.
+- Walk-forward con minimo `MIN_WALK_FORWARD_TRAINING_YEARS` anos efectivos y maximo `MAX_WALK_FORWARD_TRAINING_YEARS` anos de ventana historica.
+- El dataset maestro no materializa snapshots desde `DATA_START_DATE` si no hacen falta: empieza en `PORTFOLIO_START_DATE - MAX_WALK_FORWARD_TRAINING_YEARS`, respetando siempre el minimo `DATA_START_DATE`.
+- En cada fecha, el entrenamiento usa filas desde `fecha_actual - MAX_WALK_FORWARD_TRAINING_YEARS` hasta la propia fecha actual. No se descarta el ultimo ano.
+- Las filas recientes entran en el entrenamiento, pero si su alpha futuro aun no seria observable en esa fecha, ese componente usa fallback GARP para evitar fuga de informacion futura.
+- Horizonte de etiqueta: 12 meses.
+
 El archivo `.env` se usa solo para API keys:
 
 - `FINNHUB_API_KEY`
@@ -55,18 +65,25 @@ data_download -> dataset_builder -> features -> ml -> research -> thesis -> watc
 - `data/processed/features.parquet`
 - `data/processed/scored_universe.parquet`
 - `data/processed/model_explainability.json`
-- `results/<run>/portfolio_evolution.csv`
-- `results/<run>/portfolio_transactions.csv`
-- `results/<run>/portfolio_monthly_holdings.csv`
-- `results/<run>/portfolio_turnover.csv`
-- `results/<run>/portfolio_decision_log.csv`
+- `expl_results.md`: guia de lectura de resultados.
+- `results/<run>/result_manifest.json`
+- `results/<run>/executive_summary.csv`
+- `results/<run>/current_portfolio.csv`
+- `results/<run>/tracking_dashboard.csv`
+- `results/<run>/action_journal.csv`
+- `results/<run>/position_performance.csv`
+- `results/<run>/buy_rationale.csv`
+- `results/<run>/sell_reasons_summary.csv`
+- `results/<run>/top_opportunities_latest.csv`
+- `results/<run>/strategy_learning_log.csv`
+- `results/<run>/improvement_backlog.csv`
 - `results/<run>/portfolio_vs_benchmark.csv`
-- `results/<run>/rebalance_report.csv`
+- `results/<run>/portfolio_transactions.csv`
 - `results/<run>/watchlist.csv`
-- `results/<run>/portfolio_allocation.csv`
-- `results/<run>/research_ai.csv`
 - `results/<run>/portfolio_monthly_summary.json`
 - `results/<run>/final_report.html`
+- `results/<run>/viewer/index.html`
+- `results/<run>/audit/*.csv`: tablas grandes de auditoria.
 
 ## Nota de Validación
 

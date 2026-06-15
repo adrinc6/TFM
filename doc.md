@@ -66,7 +66,7 @@ Toda la configuracion principal vive en `environment.py`.
 Variables principales:
 
 - `RUN_MODE`: controla que fase ejecutar.
-- `DATA_START_DATE`: fecha inicial de descarga y construccion de historico para entrenamiento.
+- `DATA_START_DATE`: fecha inicial de descarga raw. El dataset maestro empieza mas tarde si el walk-forward no necesita todo ese historico.
 - `PORTFOLIO_START_DATE`: fecha inicial de la simulacion.
 - `PORTFOLIO_END_DATE`: fecha final de la simulacion.
 - `PORTFOLIO_REVIEW_FREQUENCY`: frecuencia de revision, con valores `M`, `2M` o `Q`.
@@ -162,6 +162,7 @@ La regla principal es evitar leakage:
 - No usar informacion futura.
 - Cada snapshot debe contener solo informacion disponible en esa fecha.
 - El dataset debe ser reproducible y auditable.
+- Para no hacer trabajo inutil, si el walk-forward esta activo los snapshots empiezan en `PORTFOLIO_START_DATE - MAX_WALK_FORWARD_TRAINING_YEARS`, sin bajar nunca de `DATA_START_DATE`.
 
 ## 7. Feature Engineering
 
