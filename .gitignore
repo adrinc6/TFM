@@ -1,0 +1,96 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Entornos virtuales
+venv/
+.venv/
+env/
+ENV/
+
+# Distribución / build
+build/
+dist/
+*.egg-info/
+
+# =========================
+# Jupyter
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# VS Code
+# =========================
+.vscode/
+
+# =========================
+# Variables de entorno
+# =========================
+.env
+.env.*
+
+# =========================
+# Logs
+# =========================
+*.log
+
+# =========================
+# Archivos temporales
+# =========================
+*.tmp
+*.temp
+*.bak
+
+# =========================
+# Sistemas operativos
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Datos y datasets
+# =========================
+*.parquet
+*.csv
+*.feather
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+
+data/
+datasets/
+cache/
+tmp/
+
+# =========================
+# Bases de datos locales
+# =========================
+*.db
+*.sqlite
+*.sqlite3
+
+# =========================
+# Modelos de IA
+# =========================
+*.pt
+*.pth
+*.onnx
+*.joblib
+
+# =========================
+# Resultados y salidas
+# =========================
+outputs/
+results/
+artifacts/
+
+# =========================
+# JSON (descomenta si no quieres subir ninguno)
+# =========================
+*.json
+
+*.png
