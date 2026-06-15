@@ -7,13 +7,18 @@ Main system entry point. It coordinates the pipeline steps:
     1. Data download (step_01_data)
     2. Preparation / consolidation (step_01_data)
     3. Master dataset construction (step_02_dataset)
-    4. Historical walk-forward backtest (step_04_evaluation)
+    4. Configured run mode:
+       - live portfolio evolution (default operational mode)
+       - portfolio review
+       - full walk-forward research validation
+       - price update
 
 All business logic lives in module/steps/:
     - step_01_data/pipeline.py        : ETL (download, consolidation, ticker filtering)
     - step_02_dataset/dataset.py      : observation construction + live features
     - step_03_training/training.py    : agent training + anti-leakage OOF
-    - step_04_evaluation/evaluator.py : walk-forward loop, SHAP, backtest, plots
+    - common/portfolio_evolution.py    : live thesis-managed portfolio simulator
+    - step_04_evaluation/evaluator.py : walk-forward research loop, SHAP, plots
 
 Global parameters are defined in environment.py.
 """
@@ -42,9 +47,11 @@ from environment import (
     WALKFORWARD_TRAIN_LOOKBACK_YEARS, WALKFORWARD_NUM_TESTS, RISK_FREE_RATE,
     RANDOM_SEED, DOWNLOAD_START_DATE,
     ANALYSIS_REFERENCE_DATE,
+    RUN_MODE, PORTFOLIO_START_DATE, PORTFOLIO_END_DATE, PORTFOLIO_REVIEW_FREQUENCY,
+    PORTFOLIO_REVIEW_TICKERS, PORTFOLIO_POSITIONS_CSV, PORTFOLIO_REVIEW_DATE,
     SKIP_BACKTEST, FORCE_DOWNLOAD, RETRY_MISSING_TICKERS, UPDATE_PRICES_ONLY,
     DOWNLOAD_OPTIONAL_ENDPOINTS,
-    HOLDING_PERIOD_MONTHS, TECHNICAL_LOOKBACK_DAYS,
+    GARP_TARGET_HORIZON_MONTHS, TECHNICAL_LOOKBACK_DAYS,
     INITIAL_CAPITAL_USD, TRANSACTION_FEE_USD, SLIPPAGE_PCT, USE_DOLLAR_BACKTEST,
     ALLOW_FRACTIONAL_SHARES, RUN_BASELINES, N_RANDOM_BASELINE_SIMS,
     BASELINE_MOMENTUM_LOOKBACK_DAYS, EXPORT_RUN_ARTIFACTS,
@@ -55,14 +62,10 @@ from environment import (
     EXPORT_ALL_FOLDS_SCORES,
     EXPORT_DETAILED_TRADES_REPORT,
     REBUILD_MASTER_DATASET,
-    FUNDAMENTAL_FEATURE_COLUMNS, FUNDAMENTAL_FEATURE_EXCLUDE,
-    VALUATION_FEATURE_COLUMNS, VALUATION_FEATURE_EXCLUDE,
-    MOMENTUM_FEATURE_COLUMNS, MOMENTUM_FEATURE_EXCLUDE,
-    BEAR_FEATURE_COLUMNS, BEAR_FEATURE_EXCLUDE,
     SENTIMENT_FEATURE_COLUMNS, SENTIMENT_FEATURE_EXCLUDE,
     SECTOR_ROTATION_FEATURE_COLUMNS, SECTOR_ROTATION_FEATURE_EXCLUDE,
     META_FEATURE_COLUMNS, META_FEATURE_EXCLUDE,
-    TP_SL_MAX_STOCKS, TP_SL_MIN_STOCKS,
+    GARP_MAX_STOCKS, GARP_MIN_STOCKS,
 )
 import environment as env_module
 
@@ -76,6 +79,9 @@ from module.steps.step_02_dataset.builders.valuation import ValuationFeatureBuil
 from module.steps.step_01_data.pipeline import download_data, prepare_data, get_available_tickers, retry_missing_tickers
 from module.steps.step_02_dataset.dataset import build_master_dataset
 from module.steps.step_04_evaluation.evaluator import run_walkforward_pipeline
+from module.common.portfolio_intelligence import load_positions_csv, review_portfolio
+from module.common.static_viewer import generate_static_viewer
+from module.common.portfolio_evolution import run_portfolio_evolution
 
 
 def _normalize_ticker_symbol(ticker: str) -> str:
@@ -354,7 +360,7 @@ log = logging.getLogger(__name__)
 
 def _run_slug(
     analysis_reference_date,
-    holding_period_months: int,
+    target_horizon_months: int,
     walkforward_num_tests: int,
 ) -> str:
     """Build a short human-readable identifier for a pipeline run.
@@ -362,14 +368,24 @@ def _run_slug(
     The slug is used as a subdirectory name under ``results/`` so that
     outputs from different parameter combinations don't overwrite each other.
 
-    Example: ``anchor_20260503_h12_n8``
+    Example: ``anchor_20260503_label12_n8``
     """
     import pandas as pd
 
     anchor = pd.Timestamp(analysis_reference_date).normalize().strftime("%Y%m%d")
-    h = max(int(holding_period_months), 1)
+    h = max(int(target_horizon_months), 1)
     n = max(int(walkforward_num_tests), 1)
-    return f"anchor_{anchor}_h{h}_n{n}"
+    return f"anchor_{anchor}_label{h}_n{n}"
+
+
+def _portfolio_run_slug(start_date, end_date, review_frequency: str) -> str:
+    """Build a run slug for the live thesis-managed portfolio simulator."""
+    import pandas as pd
+
+    start = pd.Timestamp(start_date).normalize().strftime("%Y%m%d")
+    end = "latest" if end_date is None else pd.Timestamp(end_date).normalize().strftime("%Y%m%d")
+    freq = str(review_frequency or "M").strip().upper().replace("/", "-")
+    return f"portfolio_{start}_{end}_{freq}"
 
 
 def _to_json_compatible(value):
@@ -603,9 +619,13 @@ def _export_run_config(
             "REBUILD_MASTER_DATASET": bool(REBUILD_MASTER_DATASET),
         },
         "parameters": {
-            "TP_SL_MAX_STOCKS": TP_SL_MAX_STOCKS,
-            "TP_SL_MIN_STOCKS": TP_SL_MIN_STOCKS,
-            "HOLDING_PERIOD_MONTHS": HOLDING_PERIOD_MONTHS,
+            "GARP_MAX_STOCKS": GARP_MAX_STOCKS,
+            "GARP_MIN_STOCKS": GARP_MIN_STOCKS,
+            "RUN_MODE": RUN_MODE,
+            "PORTFOLIO_START_DATE": PORTFOLIO_START_DATE,
+            "PORTFOLIO_END_DATE": PORTFOLIO_END_DATE,
+            "PORTFOLIO_REVIEW_FREQUENCY": PORTFOLIO_REVIEW_FREQUENCY,
+            "GARP_TARGET_HORIZON_MONTHS": GARP_TARGET_HORIZON_MONTHS,
             "RANDOM_SEED": RANDOM_SEED,
             "TECHNICAL_LOOKBACK_DAYS": TECHNICAL_LOOKBACK_DAYS,
             "INITIAL_CAPITAL_USD": INITIAL_CAPITAL_USD,
@@ -634,7 +654,7 @@ def _export_run_config(
         "time_range": {
             "analysis_reference_date": analysis_reference_date,
             "walkforward_num_tests": int(walkforward_num_tests),
-            "holding_period_months": int(HOLDING_PERIOD_MONTHS),
+            "garp_target_horizon_months": int(GARP_TARGET_HORIZON_MONTHS),
         },
     }
     out = Path(results_dir) / "run_config.json"
@@ -729,6 +749,63 @@ def _load_master_dataset_disk(path: Path):
 # Main
 # =============================================================================
 
+def _load_master_dataset_for_operational_mode():
+    import pandas as pd
+
+    dataset_path = Path(FINNHUB_DATA_DIR) / "master_dataset.parquet"
+    if not dataset_path.exists():
+        csv_path = dataset_path.with_suffix(".csv")
+        dataset_path = csv_path if csv_path.exists() else dataset_path
+    if not dataset_path.exists():
+        raise FileNotFoundError(
+            f"Master dataset not found: {dataset_path}. Run RUN_MODE='full_pipeline' first to build it."
+        )
+    return pd.read_csv(dataset_path) if dataset_path.suffix.lower() == ".csv" else pd.read_parquet(dataset_path)
+
+
+def portfolio_review_main():
+    """Run a configured thesis-based review without executing the full pipeline."""
+    import pandas as pd
+
+    snapshots = _load_master_dataset_for_operational_mode()
+    output_dir = Path(RESULTS_DIR) / "portfolio_review"
+    review_date = PORTFOLIO_REVIEW_DATE or PORTFOLIO_END_DATE or ANALYSIS_REFERENCE_DATE
+    positions = load_positions_csv(PORTFOLIO_POSITIONS_CSV) if PORTFOLIO_POSITIONS_CSV else None
+    tickers = list(PORTFOLIO_REVIEW_TICKERS or []) if positions is None else None
+    review, summary = review_portfolio(
+        snapshots=snapshots,
+        positions=positions,
+        tickers=tickers,
+        review_date=str(pd.Timestamp(review_date).date()),
+        output_dir=output_dir,
+    )
+    print(json.dumps(summary, indent=2, default=str))
+    print(f"Portfolio review exported to: {output_dir}")
+    return review, summary
+
+
+def portfolio_evolution_main():
+    """Run the configured live-portfolio evolution simulation from existing snapshots."""
+    snapshots = _load_master_dataset_for_operational_mode()
+    run_root = Path(RESULTS_DIR) / _portfolio_run_slug(
+        PORTFOLIO_START_DATE,
+        PORTFOLIO_END_DATE,
+        PORTFOLIO_REVIEW_FREQUENCY,
+    )
+    output_dir = run_root / "portfolio_evolution"
+    evolution, transactions, holdings, summary = run_portfolio_evolution(
+        snapshots=snapshots,
+        review_frequency=PORTFOLIO_REVIEW_FREQUENCY,
+        start_date=PORTFOLIO_START_DATE,
+        end_date=PORTFOLIO_END_DATE,
+        output_dir=output_dir,
+    )
+    viewer_dir = generate_static_viewer(run_root, viewer_dir=run_root / "viewer")
+    print(json.dumps(summary, indent=2, default=str))
+    print(f"Portfolio evolution exported to: {output_dir}")
+    print(f"Static viewer exported to: {viewer_dir}")
+    return evolution, transactions, holdings, summary
+
 def main():
     """Orchestrate the full multi-agent ML stock-picker pipeline.
 
@@ -746,8 +823,7 @@ def main():
        point-in-time features (fundamental, technical, valuation, sentiment,
        insider) for the full analysis window; result is optionally cached.
     5. **Walk-forward backtest** (Step 04) — runs the rolling train/test loop,
-       trains all agents (fundamental, valuation, momentum, bear, sector
-       rotation, meta-learner) on each fold, generates SHAP explanations,
+       trains all GARP agents (quality, growth, valuation, trend, catalyst, risk, technical guardrail, sector prior, meta-learner) on each fold, generates SHAP explanations,
        simulates portfolio returns, and exports summary artifacts.
 
     All parameters are read from ``environment.py``.  The function logs a
@@ -756,18 +832,29 @@ def main():
     import pandas as pd
     _set_global_seeds(RANDOM_SEED)
 
+    if str(RUN_MODE).strip().lower() == "portfolio_evolution":
+        return portfolio_evolution_main()
+    if str(RUN_MODE).strip().lower() == "portfolio_review":
+        return portfolio_review_main()
+    if str(RUN_MODE).strip().lower() == "update_prices":
+        globals()["UPDATE_PRICES_ONLY"] = True
+    if str(RUN_MODE).strip().lower() not in {"full_pipeline", "update_prices"}:
+        raise ValueError(
+            "RUN_MODE must be one of: portfolio_evolution, portfolio_review, full_pipeline, update_prices"
+        )
+
     anchor_entry_date = pd.Timestamp(ANALYSIS_REFERENCE_DATE).normalize()
     walkforward_num_tests = max(int(WALKFORWARD_NUM_TESTS), 1)
-    holding_months = max(int(HOLDING_PERIOD_MONTHS), 1)
+    target_horizon_months = max(int(GARP_TARGET_HORIZON_MONTHS), 1)
 
     scheduled_entry_dates = [
-        (anchor_entry_date - pd.DateOffset(months=holding_months * k)).normalize()
+        (anchor_entry_date - pd.DateOffset(months=target_horizon_months * k)).normalize()
         for k in range(walkforward_num_tests)
     ]
     earliest_entry_date = min(scheduled_entry_dates)
     latest_entry_date = max(scheduled_entry_dates)
     analysis_window_start = (earliest_entry_date - pd.DateOffset(years=max(int(WALKFORWARD_TRAIN_LOOKBACK_YEARS), 1))).normalize()
-    analysis_window_end = (latest_entry_date + pd.DateOffset(months=holding_months)).normalize()
+    analysis_window_end = (latest_entry_date + pd.DateOffset(months=target_horizon_months)).normalize()
 
     # ── Run-specific result directories ──────────────────────────────────────
     # Compute a slug that captures the most important run parameters, then
@@ -776,7 +863,7 @@ def main():
     # a fresh directory without touching previous runs.
     slug = _run_slug(
         analysis_reference_date=anchor_entry_date,
-        holding_period_months=holding_months,
+        target_horizon_months=target_horizon_months,
         walkforward_num_tests=walkforward_num_tests,
     )
     env_snapshot = _collect_environment_snapshot()
@@ -821,9 +908,9 @@ def main():
     log.info("=" * 60)
 
     log.info(
-        "Scheduled tests: reference_entry=%s | holding=%s months | num_tests=%s | earliest_entry=%s",
+        "Scheduled research folds: reference_entry=%s | label_horizon=%s months | num_tests=%s | earliest_entry=%s",
         anchor_entry_date.date(),
-        holding_months,
+        target_horizon_months,
         walkforward_num_tests,
         earliest_entry_date.date(),
     )
@@ -954,7 +1041,7 @@ def main():
             insider_builder=insider_builder,
             sentiment_builder=sentiment_builder,
             min_history_quarters=MIN_HISTORY_QUARTERS,
-            holding_period_months=HOLDING_PERIOD_MONTHS,
+            holding_period_months=GARP_TARGET_HORIZON_MONTHS,
             technical_lookback_days=TECHNICAL_LOOKBACK_DAYS,
         )
         try:
@@ -1016,9 +1103,9 @@ def main():
             walkforward_train_years=WALKFORWARD_TRAIN_LOOKBACK_YEARS,
             walkforward_num_tests=walkforward_num_tests,
             risk_free_rate=RISK_FREE_RATE,
-            top_n_stocks=TP_SL_MAX_STOCKS,
+            top_n_stocks=GARP_MAX_STOCKS,
             random_seed=RANDOM_SEED,
-            holding_period_months=holding_months,
+            holding_period_months=target_horizon_months,
             finnhub_data_dir=FINNHUB_DATA_DIR,
             analysis_reference_date=anchor_entry_date,
         )
@@ -1038,7 +1125,17 @@ def main():
         log.info(f"  Max DD Strategy:       {summary.get('global_strategy_max_drawdown', 0):.2%}")
     log.info(f"  Results in:           {RESULTS_DIR}/")
     log.info("=" * 60)
+    try:
+        viewer_dir = generate_static_viewer(RUN_RESULTS_DIR)
+        log.info("  Static viewer in:      %s/", viewer_dir)
+    except Exception as ex:
+        log.warning("Could not generate static viewer (%s)", ex)
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        raise SystemExit(
+            "Este proyecto ya no usa argumentos CLI. Configura RUN_MODE y las fechas en environment.py "
+            "y ejecuta simplemente: python analyzer.py"
+        )
     main()

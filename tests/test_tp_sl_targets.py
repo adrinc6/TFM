@@ -41,12 +41,14 @@ def test_build_tp_sl_targets_generates_tp_hit_label():
     assert str(bundle.outcome.iloc[0]) == "TP"
 
 
-def test_prepare_fold_labels_requires_prices_dict():
+def test_prepare_fold_labels_is_garp_and_does_not_require_tp_sl_prices():
     df_train = _make_fold_df()
     df_test = _make_fold_df()
-    with pytest.raises(ValueError, match="prices_dict"):
-        _prepare_fold_labels(
-            df_train=df_train,
-            df_test=df_test,
-            prices_dict=None,
-        )
+    df_train, df_test, y_train, y_test, alpha_train, alpha_test = _prepare_fold_labels(
+        df_train=df_train,
+        df_test=df_test,
+        prices_dict=None,
+    )
+    assert "garp_composite_target" in df_train.columns
+    assert len(y_train) == len(df_train)
+    assert len(y_test) == len(df_test)

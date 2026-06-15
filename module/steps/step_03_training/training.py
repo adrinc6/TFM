@@ -1,4 +1,4 @@
-﻿"""Training workflows for base agents and the meta learner."""
+"""Training workflows for base agents and the meta learner."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 from environment import (
-    BEAR_HARD_THRESHOLD,
+    RISK_BEAR_HARD_THRESHOLD,
     SCORE_DISPERSION_MIN_SCALE,
     OOF_N_SPLITS,
     SCORE_DISPERSION_MIN_STD,
@@ -19,10 +19,13 @@ from environment import (
     SECTOR_SCORE_PRIOR_BASE,
     SECTOR_SCORE_PRIOR_WEIGHT,
     EXPORT_FEATURE_USAGE_REPORT,
-    FUNDAMENTAL_FEATURE_COLUMNS, FUNDAMENTAL_FEATURE_EXCLUDE,
-    VALUATION_FEATURE_COLUMNS, VALUATION_FEATURE_EXCLUDE,
-    MOMENTUM_FEATURE_COLUMNS, MOMENTUM_FEATURE_EXCLUDE,
-    BEAR_FEATURE_COLUMNS, BEAR_FEATURE_EXCLUDE,
+    QUALITY_FEATURE_COLUMNS, QUALITY_FEATURE_EXCLUDE,
+    GROWTH_FEATURE_COLUMNS, GROWTH_FEATURE_EXCLUDE,
+    GARP_VALUATION_FEATURE_COLUMNS, GARP_VALUATION_FEATURE_EXCLUDE,
+    FUNDAMENTAL_TREND_FEATURE_COLUMNS, FUNDAMENTAL_TREND_FEATURE_EXCLUDE,
+    CATALYST_FEATURE_COLUMNS, CATALYST_FEATURE_EXCLUDE,
+    RISK_BEAR_FEATURE_COLUMNS, RISK_BEAR_FEATURE_EXCLUDE,
+    TECHNICAL_GUARDRAIL_FEATURE_COLUMNS, TECHNICAL_GUARDRAIL_FEATURE_EXCLUDE,
     SENTIMENT_FEATURE_COLUMNS, SENTIMENT_FEATURE_EXCLUDE,
     SECTOR_ROTATION_FEATURE_COLUMNS, SECTOR_ROTATION_FEATURE_EXCLUDE,
     META_FEATURE_COLUMNS, META_FEATURE_EXCLUDE,
@@ -47,6 +50,7 @@ from environment import (
 )
 from module.agents.alpha_meta_learner import AlphaMetaLearner
 from module.common.recency_weights import compute_recency_weights
+from module.common.garp_validation import validate_no_forward_features, validate_critical_garp_features
 from module.common.regime import MarketRegimeModel, apply_regime_weighting
 from module.steps.step_03_training.agent_diagnostics import (
     apply_diversity_multipliers,
@@ -62,39 +66,42 @@ from module.steps.step_03_training.oof import generate_oof_scores
 log = logging.getLogger(__name__)
 
 
-_LEGACY_UNUSED_COLUMNS = {
+_OBSOLETE_UNUSED_COLUMNS = {
     "sector_specialized_score",
     "meta_score",
-    "legacy_meta_score",
-    "fundamental_legacy_score",
-    "valuation_legacy_score",
-    "momentum_legacy_score",
-    "bear_legacy_score",
-    "sentiment_legacy_score",
+    "obsolete_meta_score",
+    "obsolete_fundamental_score",
+    "obsolete_valuation_score",
+    "obsolete_momentum_score",
+    "obsolete_bear_score",
+    "obsolete_sentiment_score",
 }
 
 
 def _requested_feature_map() -> Dict[str, Dict[str, list[str]]]:
     return {
-        "fundamental": {"include": list(FUNDAMENTAL_FEATURE_COLUMNS), "exclude": list(FUNDAMENTAL_FEATURE_EXCLUDE)},
-        "valuation": {"include": list(VALUATION_FEATURE_COLUMNS), "exclude": list(VALUATION_FEATURE_EXCLUDE)},
-        "momentum": {"include": list(MOMENTUM_FEATURE_COLUMNS), "exclude": list(MOMENTUM_FEATURE_EXCLUDE)},
-        "bear": {"include": list(BEAR_FEATURE_COLUMNS), "exclude": list(BEAR_FEATURE_EXCLUDE)},
+        "quality": {"include": list(QUALITY_FEATURE_COLUMNS), "exclude": list(QUALITY_FEATURE_EXCLUDE)},
+        "growth": {"include": list(GROWTH_FEATURE_COLUMNS), "exclude": list(GROWTH_FEATURE_EXCLUDE)},
+        "valuation": {"include": list(GARP_VALUATION_FEATURE_COLUMNS), "exclude": list(GARP_VALUATION_FEATURE_EXCLUDE)},
+        "fundamental_trend": {"include": list(FUNDAMENTAL_TREND_FEATURE_COLUMNS), "exclude": list(FUNDAMENTAL_TREND_FEATURE_EXCLUDE)},
+        "catalyst": {"include": list(CATALYST_FEATURE_COLUMNS), "exclude": list(CATALYST_FEATURE_EXCLUDE)},
+        "risk_bear": {"include": list(RISK_BEAR_FEATURE_COLUMNS), "exclude": list(RISK_BEAR_FEATURE_EXCLUDE)},
+        "technical_guardrail": {"include": list(TECHNICAL_GUARDRAIL_FEATURE_COLUMNS), "exclude": list(TECHNICAL_GUARDRAIL_FEATURE_EXCLUDE)},
         "sentiment": {"include": list(SENTIMENT_FEATURE_COLUMNS), "exclude": list(SENTIMENT_FEATURE_EXCLUDE)},
         "sector_rotation": {"include": list(SECTOR_ROTATION_FEATURE_COLUMNS), "exclude": list(SECTOR_ROTATION_FEATURE_EXCLUDE)},
         "meta_learner": {"include": list(META_FEATURE_COLUMNS), "exclude": list(META_FEATURE_EXCLUDE)},
     }
 
 
-def _drop_legacy_unused_columns(df: pd.DataFrame, *, owner: str) -> pd.DataFrame:
-    """Drop known legacy columns if present (progressive dead-code cleanup)."""
+def _drop_obsolete_unused_columns(df: pd.DataFrame, *, owner: str) -> pd.DataFrame:
+    """Drop obsolete columns if present before model training."""
     if df is None or df.empty:
         return df
-    drop_cols = [c for c in _LEGACY_UNUSED_COLUMNS if c in df.columns]
+    drop_cols = [c for c in _OBSOLETE_UNUSED_COLUMNS if c in df.columns]
     if not drop_cols:
         return df
     out = df.drop(columns=drop_cols, errors="ignore")
-    log.info("[%s] Dropped legacy unused columns: %s", owner, ", ".join(sorted(drop_cols)))
+    log.info("[%s] Dropped obsolete unused columns: %s", owner, ", ".join(sorted(drop_cols)))
     return out
 
 
@@ -408,8 +415,8 @@ def _apply_sector_adjustments(df: pd.DataFrame) -> pd.DataFrame:
     if "bear_risk_score" in df.columns:
         bear_risk = pd.to_numeric(df["bear_risk_score"], errors="coerce").fillna(0.5)
         log.info(
-            f"[RiskDiag] bear_risk>=hard_threshold({BEAR_HARD_THRESHOLD:.2f}): "
-            f"{int((bear_risk >= BEAR_HARD_THRESHOLD).sum())}/{len(bear_risk)} ({(bear_risk >= BEAR_HARD_THRESHOLD).mean():.1%})"
+            f"[RiskDiag] bear_risk>=hard_threshold({RISK_BEAR_HARD_THRESHOLD:.2f}): "
+            f"{int((bear_risk >= RISK_BEAR_HARD_THRESHOLD).sum())}/{len(bear_risk)} ({(bear_risk >= RISK_BEAR_HARD_THRESHOLD).mean():.1%})"
         )
 
     return df
@@ -682,12 +689,14 @@ def _predict_base_scores(
         # BearAgent devuelve riesgo [0,1], por eso guardamos ambas vistas:
         #   - bear_risk_score: riesgo (alto = peor)
         #   - bear_score: safety (alto = mejor)
-        if ag_name == "bear":
+        if ag_name in {"bear", "risk_bear"}:
             risk = scores.astype(float).clip(0.0, 1.0)
-            out["bear_risk_score"] = risk.values
-            out["bear_score"] = (1.0 - risk).values
-            _log_score_stats(f"AgentScore/{ag_name}/risk", out["bear_risk_score"])
-            _log_score_stats(f"AgentScore/{ag_name}/safety", out["bear_score"])
+            risk_col = "risk_bear_risk_score" if ag_name == "risk_bear" else "bear_risk_score"
+            safety_col = "risk_bear_score" if ag_name == "risk_bear" else "bear_score"
+            out[risk_col] = risk.values
+            out[safety_col] = (1.0 - risk).values
+            _log_score_stats(f"AgentScore/{ag_name}/risk", out[risk_col])
+            _log_score_stats(f"AgentScore/{ag_name}/safety", out[safety_col])
         else:
             out[f"{ag_name}_score"] = scores.values
             _log_score_stats(f"AgentScore/{ag_name}", out[f"{ag_name}_score"])
@@ -706,16 +715,7 @@ def _predict_base_scores(
             except Exception as exc:
                 log.debug("[RuleDiag/%s] Could not export rule details: %s", ag_name, exc)
 
-    score_cols = [
-        c for c in (
-            "fundamental_score",
-            "valuation_score",
-            "momentum_score",
-            "bear_score",
-            "sentiment_score",
-            "sector_score",
-        ) if c in out.columns
-    ]
+    score_cols = [c for c in [f"{name}_score" for name in agents_config.keys()] + ["sector_score"] if c in out.columns]
     if score_cols:
         ensemble_mean = out[score_cols].mean(axis=1)
         _log_score_stats("AgentScore/ensemble_mean_pre_meta", ensemble_mean)
@@ -743,10 +743,16 @@ def train_fold(
     sector_map: Optional[Dict[str, str]] = None,
     spy_prices: Optional[pd.Series] = None,
 ) -> Tuple[Dict, pd.DataFrame, pd.DataFrame]:
-    df_train_norm = _drop_legacy_unused_columns(df_train_norm, owner=f"Fold {fold_id}/train")
-    df_test_norm = _drop_legacy_unused_columns(df_test_norm, owner=f"Fold {fold_id}/test")
+    df_train_norm = _drop_obsolete_unused_columns(df_train_norm, owner=f"Fold {fold_id}/train")
+    df_test_norm = _drop_obsolete_unused_columns(df_test_norm, owner=f"Fold {fold_id}/test")
 
     agents_config = build_agents_config(agent_models_results_dir=agent_models_results_dir, random_seed=random_seed)
+    requested_model_features = []
+    for _cfg in agents_config.values():
+        requested_model_features.extend((_cfg.get("kwargs") or {}).get("include_features", []))
+    validate_no_forward_features(requested_model_features, context=f"fold {fold_id}/agent_config")
+    validate_critical_garp_features(df_train_norm, context=f"fold {fold_id}/train")
+    validate_critical_garp_features(df_test_norm, context=f"fold {fold_id}/test")
     # ── Step 1: Train base agents ────────────────────────────────────────────
     log.info(f"[Fold {fold_id}] 1/3 — Entrenando agentes base con datos de entrenamiento del fold...")
     base_agents = _instantiate_base_agents(agents_config)
@@ -783,12 +789,12 @@ def train_fold(
     for col_name, scores_series in oof_scores.items():
         df_train_with_oof[col_name] = scores_series
 
-    if "bear_score" in df_train_with_oof.columns:
-        bear_risk = df_train_with_oof["bear_score"].astype(float).clip(0.0, 1.0)
-        df_train_with_oof["bear_risk_score"] = bear_risk
-        df_train_with_oof["bear_score"] = 1.0 - bear_risk
-        _log_score_stats("OOF/bear_risk", df_train_with_oof["bear_risk_score"])
-        _log_score_stats("OOF/bear_safety", df_train_with_oof["bear_score"])
+    if "risk_bear_score" in df_train_with_oof.columns:
+        bear_risk = df_train_with_oof["risk_bear_score"].astype(float).clip(0.0, 1.0)
+        df_train_with_oof["risk_bear_risk_score"] = bear_risk
+        df_train_with_oof["risk_bear_score"] = 1.0 - bear_risk
+        _log_score_stats("OOF/risk_bear_risk", df_train_with_oof["risk_bear_risk_score"])
+        _log_score_stats("OOF/risk_bear_safety", df_train_with_oof["risk_bear_score"])
 
     if "sector_score" not in df_train_with_oof.columns:
         df_train_with_oof["sector_score"] = 0.5
@@ -800,8 +806,8 @@ def train_fold(
         neutral_penalty_cols = [
             c for c in [f"{ag_name}_score" for ag_name in agents_config.keys()] if c in df_train_with_oof.columns
         ]
-        if "bear_score" in df_train_with_oof.columns and "bear_score" not in neutral_penalty_cols:
-            neutral_penalty_cols.append("bear_score")
+        if "risk_bear_score" in df_train_with_oof.columns and "risk_bear_score" not in neutral_penalty_cols:
+            neutral_penalty_cols.append("risk_bear_score")
         df_train_with_oof = _apply_neutral_penalty(
             df_train_with_oof,
             neutral_penalty_cols,
@@ -907,8 +913,8 @@ def train_fold(
         neutral_penalty_cols_test = [
             c for c in [f"{ag_name}_score" for ag_name in agents_config.keys()] if c in df_test.columns
         ]
-        if "bear_score" in df_test.columns and "bear_score" not in neutral_penalty_cols_test:
-            neutral_penalty_cols_test.append("bear_score")
+        if "risk_bear_score" in df_test.columns and "risk_bear_score" not in neutral_penalty_cols_test:
+            neutral_penalty_cols_test.append("risk_bear_score")
         df_test = _apply_neutral_penalty(
             df_test,
             neutral_penalty_cols_test,
@@ -965,7 +971,7 @@ def train_full_history(
     sector_map: Optional[Dict[str, str]] = None,
     spy_prices: Optional[pd.Series] = None,
 ) -> Tuple[Dict, pd.DataFrame, Dict[str, float]]:
-    df_norm = _drop_legacy_unused_columns(df_norm, owner="FullHistory")
+    df_norm = _drop_obsolete_unused_columns(df_norm, owner="FullHistory")
 
     agents_config = build_agents_config(agent_models_results_dir=agent_models_results_dir, random_seed=random_seed)
     base_agents = _instantiate_base_agents(agents_config)
@@ -993,8 +999,8 @@ def train_full_history(
         neutral_penalty_cols_full = [
             c for c in [f"{ag_name}_score" for ag_name in agents_config.keys()] if c in df_with_scores.columns
         ]
-        if "bear_score" in df_with_scores.columns and "bear_score" not in neutral_penalty_cols_full:
-            neutral_penalty_cols_full.append("bear_score")
+        if "risk_bear_score" in df_with_scores.columns and "risk_bear_score" not in neutral_penalty_cols_full:
+            neutral_penalty_cols_full.append("risk_bear_score")
         df_with_scores = _apply_neutral_penalty(
             df_with_scores,
             neutral_penalty_cols_full,

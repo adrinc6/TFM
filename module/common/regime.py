@@ -120,45 +120,49 @@ def apply_regime_weighting(
     if regime_col not in out.columns:
         out[regime_col] = REGIME_NEUTRAL
 
-    # Multipliers are applied to each agent score before final blending.
-    # The wider RISK_ON/RISK_OFF spread (0.90 vs 1.25 for bear_score) is
-    # intentional: results analysis showed the bear agent had AUC ~0.5 in
-    # bull markets, so its weight is reduced more aggressively in Risk-On to
-    # prevent it from diluting strong momentum signals. Conversely, in
-    # Risk-Off the bear agent's defensive signal deserves more weight than
-    # neutral, hence the 1.25 multiplier.
+    # Multipliers are applied to GARP agent scores before final blending.
+    # Risk-off regimes modestly increase valuation/quality/risk safety; risk-on
+    # regimes can slightly increase growth/catalyst exposure. Technical guardrail
+    # remains defensive and never becomes a primary buy signal.
     multipliers = {
         REGIME_RISK_ON: {
-            "momentum_score": 1.35,
-            "sentiment_score": 1.15,
-            "bear_score": 0.90,
-            "valuation_score": 0.95,
-            "sector_score": 1.10,
+            "growth_score": 1.08,
+            "catalyst_score": 1.08,
+            "technical_guardrail_score": 1.00,
+            "risk_bear_score": 0.95,
+            "valuation_score": 0.98,
+            "quality_score": 1.00,
+            "sector_score": 1.05,
         },
         REGIME_RISK_OFF: {
-            "momentum_score": 0.75,
-            "sentiment_score": 0.85,
-            "bear_score": 1.25,
-            "valuation_score": 1.20,
-            "sector_score": 0.90,
+            "quality_score": 1.10,
+            "valuation_score": 1.12,
+            "risk_bear_score": 1.18,
+            "technical_guardrail_score": 1.08,
+            "growth_score": 0.92,
+            "catalyst_score": 0.95,
+            "sector_score": 0.95,
         },
         REGIME_NEUTRAL: {
-            "momentum_score": 1.0,
-            "sentiment_score": 1.0,
-            "bear_score": 1.0,
+            "quality_score": 1.0,
+            "growth_score": 1.0,
             "valuation_score": 1.0,
+            "fundamental_trend_score": 1.0,
+            "catalyst_score": 1.0,
+            "risk_bear_score": 1.0,
+            "technical_guardrail_score": 1.0,
             "sector_score": 1.0,
         },
     }
 
-    for c in ["fundamental_score", "valuation_score", "momentum_score", "bear_score", "sentiment_score", "sector_score"]:
+    for c in ["quality_score", "growth_score", "valuation_score", "fundamental_trend_score", "catalyst_score", "risk_bear_score", "technical_guardrail_score", "sentiment_score", "sector_score"]:
         if c not in out.columns:
             continue
         vals = pd.to_numeric(out[c], errors="coerce").fillna(0.5)
         m = out[regime_col].map(lambda r: multipliers.get(str(r), multipliers[REGIME_NEUTRAL]).get(c, 1.0)).astype(float)
         out[c] = (vals * m).clip(0.0, 1.0)
 
-    score_cols = [c for c in ["fundamental_score", "valuation_score", "momentum_score", "bear_score", "sentiment_score", "sector_score"] if c in out.columns]
+    score_cols = [c for c in ["quality_score", "growth_score", "valuation_score", "fundamental_trend_score", "catalyst_score", "risk_bear_score", "technical_guardrail_score", "sentiment_score", "sector_score"] if c in out.columns]
     if score_cols:
         regime_adjusted = out[score_cols].mean(axis=1)
     else:
