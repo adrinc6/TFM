@@ -55,14 +55,10 @@ from environment import (
     EXPORT_ALL_FOLDS_SCORES,
     EXPORT_DETAILED_TRADES_REPORT,
     REBUILD_MASTER_DATASET,
-    FUNDAMENTAL_FEATURE_COLUMNS, FUNDAMENTAL_FEATURE_EXCLUDE,
-    VALUATION_FEATURE_COLUMNS, VALUATION_FEATURE_EXCLUDE,
-    MOMENTUM_FEATURE_COLUMNS, MOMENTUM_FEATURE_EXCLUDE,
-    BEAR_FEATURE_COLUMNS, BEAR_FEATURE_EXCLUDE,
     SENTIMENT_FEATURE_COLUMNS, SENTIMENT_FEATURE_EXCLUDE,
     SECTOR_ROTATION_FEATURE_COLUMNS, SECTOR_ROTATION_FEATURE_EXCLUDE,
     META_FEATURE_COLUMNS, META_FEATURE_EXCLUDE,
-    TP_SL_MAX_STOCKS, TP_SL_MIN_STOCKS,
+    GARP_MAX_STOCKS, GARP_MIN_STOCKS,
 )
 import environment as env_module
 
@@ -76,6 +72,9 @@ from module.steps.step_02_dataset.builders.valuation import ValuationFeatureBuil
 from module.steps.step_01_data.pipeline import download_data, prepare_data, get_available_tickers, retry_missing_tickers
 from module.steps.step_02_dataset.dataset import build_master_dataset
 from module.steps.step_04_evaluation.evaluator import run_walkforward_pipeline
+from module.common.portfolio_intelligence import load_positions_csv, review_portfolio
+from module.common.static_viewer import generate_static_viewer
+from module.common.portfolio_evolution import run_portfolio_evolution
 
 
 def _normalize_ticker_symbol(ticker: str) -> str:
@@ -603,8 +602,8 @@ def _export_run_config(
             "REBUILD_MASTER_DATASET": bool(REBUILD_MASTER_DATASET),
         },
         "parameters": {
-            "TP_SL_MAX_STOCKS": TP_SL_MAX_STOCKS,
-            "TP_SL_MIN_STOCKS": TP_SL_MIN_STOCKS,
+            "GARP_MAX_STOCKS": GARP_MAX_STOCKS,
+            "GARP_MIN_STOCKS": GARP_MIN_STOCKS,
             "HOLDING_PERIOD_MONTHS": HOLDING_PERIOD_MONTHS,
             "RANDOM_SEED": RANDOM_SEED,
             "TECHNICAL_LOOKBACK_DAYS": TECHNICAL_LOOKBACK_DAYS,
@@ -729,6 +728,77 @@ def _load_master_dataset_disk(path: Path):
 # Main
 # =============================================================================
 
+def portfolio_review_main(argv: list[str] | None = None):
+    """Run a lightweight thesis-based review without executing the full pipeline."""
+    import argparse
+    import pandas as pd
+
+    parser = argparse.ArgumentParser(
+        prog="python analyzer.py portfolio_review",
+        description="Review existing positions using point-in-time GARP thesis snapshots.",
+    )
+    parser.add_argument("--tickers", default="", help="Comma-separated tickers to review when --positions is not provided.")
+    parser.add_argument("--positions", default="", help="CSV with ticker plus optional weight, purchase_date, avg_cost and snapshot_date.")
+    parser.add_argument("--review-date", default=str(pd.Timestamp(ANALYSIS_REFERENCE_DATE).date()), help="Review date; latest snapshot on or before this date is used.")
+    parser.add_argument("--output-dir", default=os.path.join(RESULTS_DIR, "portfolio_review"), help="Directory for portfolio-review CSV/JSON outputs.")
+    parser.add_argument("--master-dataset", default=os.path.join(FINNHUB_DATA_DIR, "master_dataset.parquet"), help="Existing master dataset parquet/csv to reuse.")
+    args = parser.parse_args(argv)
+
+    dataset_path = Path(args.master_dataset)
+    if not dataset_path.exists():
+        raise FileNotFoundError(
+            f"Master dataset not found: {dataset_path}. Build it with `python analyzer.py` before running portfolio_review."
+        )
+    if dataset_path.suffix.lower() == ".csv":
+        snapshots = pd.read_csv(dataset_path)
+    else:
+        snapshots = pd.read_parquet(dataset_path)
+
+    positions = load_positions_csv(args.positions) if args.positions else None
+    tickers = [t.strip() for t in str(args.tickers).split(",") if t.strip()] if not args.positions else None
+    review, summary = review_portfolio(
+        snapshots=snapshots,
+        positions=positions,
+        tickers=tickers,
+        review_date=args.review_date,
+        output_dir=args.output_dir,
+    )
+    print(json.dumps(summary, indent=2, default=str))
+    print(f"Portfolio review exported to: {args.output_dir}")
+    return review, summary
+
+
+def portfolio_evolution_main(argv: list[str] | None = None):
+    """Run a lightweight live-portfolio evolution simulation from existing snapshots."""
+    import argparse
+    import pandas as pd
+
+    parser = argparse.ArgumentParser(
+        prog="python analyzer.py portfolio_evolution",
+        description="Simulate a thesis-managed GARP portfolio through periodic reviews.",
+    )
+    parser.add_argument("--review-frequency", default="M", help="Review frequency: M, 2M or Q.")
+    parser.add_argument("--output-dir", default=os.path.join(RESULTS_DIR, "portfolio_evolution"), help="Directory for evolution CSV/JSON outputs.")
+    parser.add_argument("--master-dataset", default=os.path.join(FINNHUB_DATA_DIR, "master_dataset.parquet"), help="Existing master dataset parquet/csv to reuse.")
+    args = parser.parse_args(argv)
+
+    dataset_path = Path(args.master_dataset)
+    if not dataset_path.exists():
+        raise FileNotFoundError(
+            f"Master dataset not found: {dataset_path}. Build it with `python analyzer.py` before running portfolio_evolution."
+        )
+    snapshots = pd.read_csv(dataset_path) if dataset_path.suffix.lower() == ".csv" else pd.read_parquet(dataset_path)
+    evolution, transactions, holdings, summary = run_portfolio_evolution(
+        snapshots=snapshots,
+        review_frequency=args.review_frequency,
+        output_dir=args.output_dir,
+    )
+    viewer_dir = generate_static_viewer(Path(args.output_dir).parent, viewer_dir=Path(args.output_dir).parent / "viewer")
+    print(json.dumps(summary, indent=2, default=str))
+    print(f"Portfolio evolution exported to: {args.output_dir}")
+    print(f"Static viewer exported to: {viewer_dir}")
+    return evolution, transactions, holdings, summary
+
 def main():
     """Orchestrate the full multi-agent ML stock-picker pipeline.
 
@@ -746,8 +816,7 @@ def main():
        point-in-time features (fundamental, technical, valuation, sentiment,
        insider) for the full analysis window; result is optionally cached.
     5. **Walk-forward backtest** (Step 04) — runs the rolling train/test loop,
-       trains all agents (fundamental, valuation, momentum, bear, sector
-       rotation, meta-learner) on each fold, generates SHAP explanations,
+       trains all GARP agents (quality, growth, valuation, trend, catalyst, risk, technical guardrail, sector prior, meta-learner) on each fold, generates SHAP explanations,
        simulates portfolio returns, and exports summary artifacts.
 
     All parameters are read from ``environment.py``.  The function logs a
@@ -1016,7 +1085,7 @@ def main():
             walkforward_train_years=WALKFORWARD_TRAIN_LOOKBACK_YEARS,
             walkforward_num_tests=walkforward_num_tests,
             risk_free_rate=RISK_FREE_RATE,
-            top_n_stocks=TP_SL_MAX_STOCKS,
+            top_n_stocks=GARP_MAX_STOCKS,
             random_seed=RANDOM_SEED,
             holding_period_months=holding_months,
             finnhub_data_dir=FINNHUB_DATA_DIR,
@@ -1038,7 +1107,17 @@ def main():
         log.info(f"  Max DD Strategy:       {summary.get('global_strategy_max_drawdown', 0):.2%}")
     log.info(f"  Results in:           {RESULTS_DIR}/")
     log.info("=" * 60)
+    try:
+        viewer_dir = generate_static_viewer(RUN_RESULTS_DIR)
+        log.info("  Static viewer in:      %s/", viewer_dir)
+    except Exception as ex:
+        log.warning("Could not generate static viewer (%s)", ex)
 
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 1 and sys.argv[1] == "portfolio_review":
+        portfolio_review_main(sys.argv[2:])
+    elif len(sys.argv) > 1 and sys.argv[1] == "portfolio_evolution":
+        portfolio_evolution_main(sys.argv[2:])
+    else:
+        main()

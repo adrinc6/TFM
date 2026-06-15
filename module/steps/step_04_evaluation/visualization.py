@@ -288,8 +288,8 @@ class Visualizer:
 		log.info(f"[Visualizer] Rendimiento {year_quarter} -> {path.name}")
 
 	def plot_score_distribution(self, scores_df: pd.DataFrame, fold: Optional[int | str] = None):
-		agent_cols = [c for c in ["fundamental_score", "valuation_score",
-								   "momentum_score", "bear_score", "final_score"]
+		agent_cols = [c for c in ["quality_score", "growth_score", "valuation_score",
+								   "fundamental_trend_score", "risk_bear_score", "technical_guardrail_score", "final_score"]
 					  if c in scores_df.columns]
 		if not agent_cols or "label" not in scores_df.columns:
 			return
