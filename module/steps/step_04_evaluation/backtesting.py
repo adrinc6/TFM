@@ -658,6 +658,12 @@ class WalkForwardBacktester:
 		ticker_weights = {t: round(float(w), 6) for t, w in zip(tickers_with_prices, weights)}
 		top_indexed = top_df.drop_duplicates(subset=["ticker"], keep="last").set_index("ticker")
 		sector_by_ticker = {t: str(top_indexed.loc[t, "sector"]) for t in tickers_with_prices if "sector" in top_indexed.columns and t in top_indexed.index}
+		sector_weights: Dict[str, float] = {}
+		for ticker, weight in ticker_weights.items():
+			sector = sector_by_ticker.get(ticker, "Unknown")
+			sector_weights[sector] = sector_weights.get(sector, 0.0) + float(weight)
+		sector_weight_hhi = float(sum(w * w for w in sector_weights.values())) if sector_weights else float("nan")
+		max_sector_weight = float(max(sector_weights.values())) if sector_weights else float("nan")
 		regime_col = "regime_state" if "regime_state" in top_indexed.columns else ("regime" if "regime" in top_indexed.columns else None)
 		regime_by_ticker = {t: str(top_indexed.loc[t, regime_col]) for t in tickers_with_prices if regime_col is not None and t in top_indexed.index}
 
@@ -819,6 +825,10 @@ class WalkForwardBacktester:
 			**hybrid_tp_sl_metrics,
 			"ticker_returns": ticker_returns_sorted,
 			"ticker_weights": ticker_weights,
+			"sector_weights": dict(sorted(sector_weights.items(), key=lambda x: x[1], reverse=True)),
+			"sector_concentration_hhi": sector_weight_hhi,
+			"max_sector_weight": max_sector_weight,
+			"n_selected_sectors": int(len(sector_weights)),
 			"ticker_exit_dates": ticker_exit_dates,
 			"ticker_exit_reasons": ticker_exit_reasons,
 			"ticker_days_to_outcome": ticker_days_to_outcome,

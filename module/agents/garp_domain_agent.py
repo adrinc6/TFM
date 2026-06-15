@@ -1,7 +1,6 @@
-"""Universal TP/SL agent with dynamic feature selection and model search.
+"""Generic GARP domain agent with dynamic feature selection and model search.
 
-This agent is designed for the target:
-  P(TP hit before SL within horizon)
+This agent is designed for domain-specific GARP/value-growth binary labels.
 
 Key behavior:
   - Trains on the full universe (no per-sector model split).
@@ -70,7 +69,7 @@ _TEMPORAL_FEATURE_SUFFIXES = (
 )
 
 
-class UniversalTpSlAgent(BaseAgent):
+class GarpDomainAgent(BaseAgent):
     """Single-universe TP/SL classifier with percentile-aware feature engineering."""
 
     def __init__(
@@ -87,7 +86,7 @@ class UniversalTpSlAgent(BaseAgent):
     ):
         super().__init__(name=name, results_dir=results_dir, random_seed=random_seed, save_artifacts=save_artifacts)
         if not _SK_OK:
-            raise ImportError("scikit-learn is required for UniversalTpSlAgent")
+            raise ImportError("scikit-learn is required for GarpDomainAgent")
 
         self.include_features = list(include_features or [])
         self.exclude_features = set(exclude_features or [])
@@ -118,7 +117,7 @@ class UniversalTpSlAgent(BaseAgent):
         y: pd.Series,
         fold: Optional[int] = None,
         sector_col: str = "sector",
-    ) -> "UniversalTpSlAgent":
+    ) -> "GarpDomainAgent":
         if X is None or X.empty:
             return self
 
@@ -259,7 +258,7 @@ class UniversalTpSlAgent(BaseAgent):
     def _fit_rule_engine(
         self, X_base: pd.DataFrame, y: pd.Series, sector_series: Optional[pd.Series] = None
     ) -> None:
-        """Mine sector-specific bin rules correlated with P(TP hit).
+        """Mine sector-specific bin rules correlated with P(GARP outperform).
 
         Rules are mined independently per sector.  Sectors with fewer than
         ``AGENT_RULE_SECTOR_MIN_SAMPLES`` observations are pooled together

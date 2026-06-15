@@ -67,12 +67,14 @@ from environment import (
     EXPORT_SNAPSHOT_AGENT_AUDITS,
     EXPORT_ALL_FOLDS_SCORES,
     EXPORT_DETAILED_TRADES_REPORT,
+    GARP_OUTPERFORM_QUANTILE,
 )
 from module.common.asof import assert_no_future_data
 from module.common.data_router import DataRouter
 from module.common.cross_sectional_features import enrich_cross_sectional_features
 from module.common.performance_metrics import sharpe_ratio
 from module.common.target_engineering import infer_tp_sl_levels
+from module.common.garp_validation import add_ticker_explainability, build_validation_audit
 from module.steps.step_04_evaluation.analysis import run_ablation_study, summarize_ablation
 from module.steps.step_04_evaluation.backtesting import WalkForwardBacktester
 from module.steps.step_04_evaluation.backtesting import (
@@ -540,167 +542,17 @@ def _prepare_fold_labels(
     lag_days: int = 45,
     holding_period_months: int = 3,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series, pd.Series, pd.Series]:
-    if not prices_dict:
-        raise ValueError("TP/SL target generation requires prices_dict for every fold.")
+    """Prepare walk-forward labels.
 
-    log.info(
-        "[TP/SL] Building adaptive labels for fold: train_rows=%d, test_rows=%d, strategies=%d",
-        len(df_train),
-        len(df_test),
-        3,
-    )
-
-    strategy_candidates: List[Dict[str, object]] = []
-    adaptive_profile_cache: Dict[tuple, Dict[str, object]] = {}
-
-    base_strategies = ["conservative", "balanced", "aggressive"]
-    strategy_names = list(base_strategies)
-    max_relax = max(int(TP_SL_FINE_TUNE_MAX_RELAX_STEPS), 0)
-    if bool(TP_SL_ENABLE_STRATEGY_FINE_TUNING) and max_relax > 0:
-        for base in base_strategies:
-            for step in range(1, max_relax + 1):
-                strategy_names.append(f"{base}__relax{step}")
-
-    for s_name in strategy_names:
-        strategy_t0 = perf_counter()
-        log.info("[TP/SL] Strategy=%s -> generating train adaptive targets...", s_name)
-        train_targets = _build_adaptive_tp_sl_targets(
-            df_target=df_train,
-            history_source=df_train,
-            prices_dict=prices_dict,
-            lag_days=lag_days,
-            holding_period_months=holding_period_months,
-            strategy_name=s_name,
-            profile_cache=adaptive_profile_cache,
-        )
-        log.info("[TP/SL] Strategy=%s -> generating test adaptive targets...", s_name)
-        test_targets = _build_adaptive_tp_sl_targets(
-            df_target=df_test,
-            history_source=df_train,
-            prices_dict=prices_dict,
-            lag_days=lag_days,
-            holding_period_months=holding_period_months,
-            strategy_name=s_name,
-            profile_cache=adaptive_profile_cache,
-        )
-
-        y_train_s = pd.to_numeric(train_targets["hit_label"], errors="coerce").dropna().astype(int)
-        y_test_s = pd.to_numeric(test_targets["hit_label"], errors="coerce").dropna().astype(int)
-        common_train = df_train.index.intersection(y_train_s.index)
-        if len(common_train) == 0 or y_train_s.nunique() < 2 or len(y_test_s) == 0:
-            log.info(
-                "[TP/SL] Strategy=%s discarded (common_train=%d, unique_labels=%d, test_labels=%d) [%.1fs]",
-                s_name,
-                len(common_train),
-                int(y_train_s.nunique()) if len(y_train_s) else 0,
-                len(y_test_s),
-                perf_counter() - strategy_t0,
-            )
-            continue
-
-        tp_train = pd.to_numeric(train_targets["tp_level"].reindex(common_train), errors="coerce").fillna(float(TP_SL_BASE_TP))
-        sl_train = pd.to_numeric(train_targets["sl_level"].reindex(common_train), errors="coerce").fillna(float(TP_SL_BASE_SL))
-        y_train_al = y_train_s.reindex(common_train).fillna(0).astype(int)
-        utility = float((y_train_al * tp_train - (1.0 - y_train_al) * sl_train).mean())
-        hit_rate = float(y_train_al.mean())
-
-        strategy_candidates.append(
-            {
-                "name": s_name,
-                "train_targets": train_targets,
-                "test_targets": test_targets,
-                "y_train": y_train_s,
-                "y_test": y_test_s,
-                "utility": utility,
-                "hit_rate": hit_rate,
-            }
-        )
-        log.info(
-            "[TP/SL] Strategy=%s ready: utility=%.4f, hit_rate=%.2f%%, train_labels=%d, test_labels=%d [%.1fs]",
-            s_name,
-            utility,
-            100.0 * hit_rate,
-            len(y_train_s),
-            len(y_test_s),
-            perf_counter() - strategy_t0,
-        )
-
-    if not strategy_candidates:
-        raise ValueError("Fold has no valid TP/SL strategy labels after target generation.")
-
-    base_candidates = [
-        c for c in strategy_candidates if "__relax" not in str(c.get("name", ""))
-    ]
-    base_candidates = sorted(
-        base_candidates,
-        key=lambda x: (float(x.get("utility", -1e9)), float(x.get("hit_rate", -1e9))),
-        reverse=True,
-    )
-
-    use_relaxed = False
-    if base_candidates and bool(TP_SL_ENABLE_STRATEGY_FINE_TUNING):
-        best_base = base_candidates[0]
-        base_utility = float(best_base.get("utility", -1e9))
-        base_hit = float(best_base.get("hit_rate", 0.0))
-        if base_utility < float(TP_SL_FINE_TUNE_MIN_UTILITY) or base_hit < float(TP_SL_FINE_TUNE_MIN_HIT_RATE):
-            use_relaxed = True
-            log.info(
-                "[TP/SL] Fine-tuning activated: base_best=%s utility=%.4f hit_rate=%.2f%% (min_utility=%.4f, min_hit=%.2f%%)",
-                str(best_base.get("name", "")),
-                base_utility,
-                100.0 * base_hit,
-                float(TP_SL_FINE_TUNE_MIN_UTILITY),
-                100.0 * float(TP_SL_FINE_TUNE_MIN_HIT_RATE),
-            )
-
-    if not use_relaxed and base_candidates:
-        strategy_candidates = base_candidates
-
-    strategy_candidates = sorted(
-        strategy_candidates,
-        key=lambda x: (float(x.get("utility", -1e9)), float(x.get("hit_rate", -1e9))),
-        reverse=True,
-    )
-    best = strategy_candidates[0]
-    selected_strategy_variant = str(best["name"])
-    selected_strategy = selected_strategy_variant.split("__", 1)[0]
-    train_targets = best["train_targets"]
-    test_targets = best["test_targets"]
-    y_train = best["y_train"]
-    y_test = best["y_test"]
-    log.info(
-        "[TP/SL] Selected training strategy=%s (variant=%s) | utility=%.4f | hit_rate=%.2f%%",
-        selected_strategy,
-        selected_strategy_variant,
-        float(best["utility"]),
-        100.0 * float(best["hit_rate"]),
-    )
-
-    df_train = df_train.loc[y_train.index]
-    df_test  = df_test.loc[y_test.index]
-
-    if y_train.empty or y_test.empty:
-        raise ValueError("Fold has no valid TP/SL hit labels after target generation.")
-
-    df_train["tp_level"] = pd.to_numeric(train_targets["tp_level"].reindex(df_train.index), errors="coerce")
-    df_train["sl_level"] = pd.to_numeric(train_targets["sl_level"].reindex(df_train.index), errors="coerce")
-    df_train["tp_sl_outcome"] = train_targets["outcome"].reindex(df_train.index)
-    df_train["tp_sl_strategy"] = selected_strategy
-    df_train["tp_sl_strategy_variant"] = selected_strategy_variant
-
-    df_test["tp_level"] = pd.to_numeric(test_targets["tp_level"].reindex(df_test.index), errors="coerce")
-    df_test["sl_level"] = pd.to_numeric(test_targets["sl_level"].reindex(df_test.index), errors="coerce")
-    df_test["tp_sl_outcome"] = test_targets["outcome"].reindex(df_test.index)
-    df_test["tp_sl_strategy"] = selected_strategy
-    df_test["tp_sl_strategy_variant"] = selected_strategy_variant
-
-    # Benchmark-relative alpha targets for ranking-sensitive meta training.
+    Default mode is the GARP/value-growth composite objective: 12M excess
+    return vs SPY plus sector-neutral alpha and penalties for fragile downside.
+    Forward labels are used only as training targets; they are never allowed as model features.
+    """
     def _benchmark_returns_for_rows(df_part: pd.DataFrame) -> pd.Series:
         idx = df_part.index
         has_snapshot_date = "snapshot_date" in df_part.columns
         if spy_prices is None or len(spy_prices) == 0:
             return pd.Series(0.0, index=idx, dtype=float)
-
         spy_series = pd.to_numeric(pd.Series(spy_prices), errors="coerce").dropna()
         if spy_series.empty:
             return pd.Series(0.0, index=idx, dtype=float)
@@ -726,14 +578,9 @@ def _prepare_fold_labels(
             entry_window = spy_series.loc[spy_series.index <= entry]
             exit_window = spy_series.loc[spy_series.index <= exit_dt]
             if entry_window.empty or exit_window.empty:
-                bench_map[snap] = float("nan")
-                continue
-            p0 = float(entry_window.iloc[-1])
-            p1 = float(exit_window.iloc[-1])
-            if not np.isfinite(p0) or p0 <= 0 or not np.isfinite(p1):
-                bench_map[snap] = float("nan")
-                continue
-            bench_map[snap] = float((p1 - p0) / p0)
+                bench_map[snap] = float("nan"); continue
+            p0 = float(entry_window.iloc[-1]); p1 = float(exit_window.iloc[-1])
+            bench_map[snap] = float((p1 - p0) / p0) if np.isfinite(p0) and p0 > 0 and np.isfinite(p1) else float("nan")
 
         if "snapshot_date" in df_part.columns:
             snap_series = pd.to_datetime(df_part["snapshot_date"], errors="coerce")
@@ -741,41 +588,88 @@ def _prepare_fold_labels(
             bench.index = idx
         elif isinstance(idx, pd.MultiIndex) and "date" in idx.names:
             dvals = pd.to_datetime(idx.get_level_values("date"), errors="coerce")
-            bench = pd.Series(
-                [bench_map.get(pd.Timestamp(d).normalize(), np.nan) if pd.notna(d) else np.nan for d in dvals],
-                index=idx,
-                dtype=float,
-            )
+            bench = pd.Series([bench_map.get(pd.Timestamp(d).normalize(), np.nan) if pd.notna(d) else np.nan for d in dvals], index=idx, dtype=float)
         else:
             dvals = pd.to_datetime(idx, errors="coerce")
-            bench = pd.Series(
-                [bench_map.get(pd.Timestamp(d).normalize(), np.nan) if pd.notna(d) else np.nan for d in dvals],
-                index=idx,
-                dtype=float,
-            )
+            bench = pd.Series([bench_map.get(pd.Timestamp(d).normalize(), np.nan) if pd.notna(d) else np.nan for d in dvals], index=idx, dtype=float)
+        fallback = float(pd.Series(list(bench_map.values()), dtype=float).dropna().median()) if bench_map else 0.0
+        return pd.to_numeric(bench, errors="coerce").fillna(fallback if np.isfinite(fallback) else 0.0)
 
-        map_vals = pd.Series(list(bench_map.values()), dtype=float)
-        fallback = float(map_vals.dropna().median()) if not map_vals.dropna().empty else 0.0
-        return pd.to_numeric(bench, errors="coerce").fillna(fallback)
+    def _sector_alpha(df_part: pd.DataFrame, alpha: pd.Series) -> pd.Series:
+        if "sector" not in df_part.columns:
+            return alpha
+        sec = df_part["sector"].astype(str)
+        med = alpha.groupby(sec).transform("median")
+        return (alpha - med.fillna(0.0)).clip(-1.5, 1.5)
+
+    def _z_rank(df_part: pd.DataFrame, col: str, invert: bool = False) -> pd.Series:
+        vals = pd.to_numeric(df_part.get(col, pd.Series(index=df_part.index, dtype=float)), errors="coerce")
+        if vals.notna().sum() <= 1:
+            return pd.Series(0.5, index=df_part.index, dtype=float)
+        r = vals.rank(pct=True).fillna(0.5)
+        return 1.0 - r if invert else r
+
+    def _future_delta_rank(df_part: pd.DataFrame, col: str) -> pd.Series:
+        if col not in df_part.columns or not isinstance(df_part.index, pd.MultiIndex) or "ticker" not in df_part.index.names:
+            return pd.Series(0.5, index=df_part.index, dtype=float)
+        vals = pd.to_numeric(df_part[col], errors="coerce")
+        ticker_vals = df_part.index.get_level_values("ticker")
+        future = vals.groupby(ticker_vals).shift(-1)
+        delta = future - vals
+        return delta.rank(pct=True, method="average").fillna(0.5)
+
+    def _garp_components(df_part: pd.DataFrame, alpha: pd.Series) -> pd.DataFrame:
+        comp = pd.DataFrame(index=df_part.index)
+        comp["spy_alpha"] = alpha.clip(-1.5, 1.5)
+        comp["sector_alpha"] = _sector_alpha(df_part, alpha)
+        quality = pd.concat([_z_rank(df_part, c) for c in ["roic", "fcf_margin", "gross_margin", "piotroski_fscore", "moat_proxy_score"]], axis=1).mean(axis=1)
+        growth = pd.concat([_z_rank(df_part, c) for c in ["revenue_yoy_growth", "fcf_yoy_growth", "eps_growth_trend_3y"]], axis=1).mean(axis=1)
+        value = pd.concat([_z_rank(df_part, "fcf_yield"), _z_rank(df_part, "earnings_yield"), _z_rank(df_part, "ev_to_ebitda", invert=True), _z_rank(df_part, "pe_ratio", invert=True), _z_rank(df_part, "expectation_gap_score")], axis=1).mean(axis=1)
+        trend = pd.concat([_z_rank(df_part, c) for c in ["roic_trend_2y", "net_margin_trend_2y", "eps_revision"]], axis=1).mean(axis=1)
+        risk = pd.concat([_z_rank(df_part, "debt_to_ebitda", invert=False), _z_rank(df_part, "volatility_60d", invert=False), _z_rank(df_part, "price_vs_52w_high", invert=True)], axis=1).mean(axis=1)
+        future_improvement = pd.concat([
+            _future_delta_rank(df_part, "gross_margin"),
+            _future_delta_rank(df_part, "operating_margin"),
+            _future_delta_rank(df_part, "fcf_margin"),
+            _future_delta_rank(df_part, "roic"),
+            _future_delta_rank(df_part, "eps_yoy_growth"),
+            _future_delta_rank(df_part, "earnings_quality"),
+        ], axis=1).mean(axis=1).fillna(0.5)
+        comp["future_fundamental_improvement"] = future_improvement
+        comp["fundamental_improvement_proxy"] = (0.25 * quality + 0.25 * growth + 0.25 * trend + 0.25 * future_improvement).fillna(0.5)
+        comp["initial_valuation_reasonableness"] = value.fillna(0.5)
+        comp["expectation_gap"] = pd.to_numeric(df_part.get("expectation_gap_score", comp["fundamental_improvement_proxy"] * comp["initial_valuation_reasonableness"]), errors="coerce").fillna(0.5)
+        comp["overexpectation_penalty"] = pd.to_numeric(df_part.get("overexpectation_penalty", pd.Series(0.5, index=df_part.index)), errors="coerce").fillna(0.5)
+        comp["downside_penalty"] = risk.fillna(0.5)
+        comp["garp_composite_target"] = (
+            0.30 * comp["spy_alpha"] + 0.15 * comp["sector_alpha"]
+            + 0.20 * (comp["future_fundamental_improvement"] - 0.5)
+            + 0.15 * (comp["expectation_gap"] - 0.5)
+            + 0.10 * (comp["initial_valuation_reasonableness"] - 0.5)
+            - 0.05 * (comp["overexpectation_penalty"] - 0.5)
+            - 0.05 * (comp["downside_penalty"] - 0.5)
+        ).clip(-1.5, 1.5)
+        return comp
 
     fr_train = pd.to_numeric(df_train.get("forward_return", pd.Series(index=df_train.index, dtype=float)), errors="coerce")
     fr_test = pd.to_numeric(df_test.get("forward_return", pd.Series(index=df_test.index, dtype=float)), errors="coerce")
     bench_train = _benchmark_returns_for_rows(df_train)
     bench_test = _benchmark_returns_for_rows(df_test)
-    alpha_train = (fr_train.reindex(df_train.index) - bench_train.reindex(df_train.index)).clip(-1.5, 1.5)
-    alpha_test = (fr_test.reindex(df_test.index) - bench_test.reindex(df_test.index)).clip(-1.5, 1.5)
-    alpha_train = pd.to_numeric(alpha_train, errors="coerce").fillna(0.0)
-    alpha_test = pd.to_numeric(alpha_test, errors="coerce").fillna(0.0)
+    alpha_train = (fr_train.reindex(df_train.index) - bench_train.reindex(df_train.index)).clip(-1.5, 1.5).fillna(0.0)
+    alpha_test = (fr_test.reindex(df_test.index) - bench_test.reindex(df_test.index)).clip(-1.5, 1.5).fillna(0.0)
 
-    return (
-        df_train,
-        df_test,
-        y_train,
-        y_test,
-        alpha_train,
-        alpha_test,
-    )
-
+    train_comp = _garp_components(df_train, alpha_train)
+    test_comp = _garp_components(df_test, alpha_test)
+    for c in train_comp.columns:
+        df_train[c] = train_comp[c]
+        df_test[c] = test_comp[c]
+    threshold = float(train_comp["garp_composite_target"].quantile(float(GARP_OUTPERFORM_QUANTILE)))
+    if not np.isfinite(threshold):
+        threshold = 0.0
+    y_train = (train_comp["garp_composite_target"] >= threshold).astype(int)
+    y_test = (test_comp["garp_composite_target"] >= threshold).astype(int)
+    log.info("[GARP Target] composite threshold=%.4f | train positives=%.1f%% | test positives=%.1f%%", threshold, 100*y_train.mean(), 100*y_test.mean())
+    return df_train.loc[y_train.index], df_test.loc[y_test.index], y_train, y_test, alpha_train, alpha_test
 
 def _build_selection_df(preds_scored: pd.DataFrame, selected_tickers: List[str], ticker_weights: Dict[str, float]) -> pd.DataFrame:
     if not selected_tickers:
@@ -2383,7 +2277,8 @@ def run_walkforward_pipeline(
     global_visualizer = Visualizer(plots_dir=strategy_dir.as_posix())
 
     agent_diag_history: Dict[str, List] = {
-        "fundamental": [], "valuation": [], "momentum": [], "bear": [],
+        "quality": [], "growth": [], "valuation": [], "fundamental_trend": [],
+        "catalyst": [], "risk_bear": [], "technical_guardrail": [],
         "sentiment": [], "sector_rotation": [], "meta_learner": [],
     }
     ablation_results: List[Dict] = []
@@ -2751,6 +2646,25 @@ def run_walkforward_pipeline(
                 log.info("[%s] Eligibility audit -> %s", run_id, eligibility_path.name)
             log.info("[%s] Eligibility reason summary -> %s", run_id, summary_path.name)
 
+        survivorship_payload = {
+            "fold_id": run_id,
+            "entry_date": str(entry_date.date()),
+            "uses_dynamic_sp500_universe": bool(USE_DYNAMIC_SP500_UNIVERSE),
+            "membership_file": str(membership_path),
+            "active_sp500_members_at_entry": int(len(active_tickers_on_entry)) if active_tickers_on_entry else 0,
+            "fold_base_universe_tickers": int(len(fold_base_universe)) if 'fold_base_universe' in locals() else 0,
+            "test_snapshots_before_sp500_filter": int(len(test_tickers_pre_sp500)) if 'test_tickers_pre_sp500' in locals() else 0,
+            "eligible_after_history_filter": int(len(eligible_set)) if 'eligible_set' in locals() else 0,
+            "active_without_snapshot_count": int(len(active_without_snapshot)) if 'active_without_snapshot' in locals() else 0,
+            "dropped_not_member_count": int(len(dropped_not_member)) if 'dropped_not_member' in locals() else 0,
+            "dropped_insufficient_history_count": int(len(dropped_insufficient_history)) if 'dropped_insufficient_history' in locals() else 0,
+            "survivorship_bias_status": "mitigated_by_historical_membership" if bool(USE_DYNAMIC_SP500_UNIVERSE) and not sp500_membership_df.empty else "risk_dynamic_membership_missing_or_disabled",
+            "notes": "Universe is anchored to S&P 500 membership at entry date when membership data is available; missing snapshots/prices are counted explicitly.",
+        }
+        (fold_general_dir / "survivorship_bias_audit.json").write_text(
+            json.dumps(survivorship_payload, indent=2, default=str), encoding="utf-8"
+        )
+
         if selected_df_train is None or selected_df_test is None or selected_train_years is None or selected_train_start is None:
             log.warning(
                 f"[{run_id}] Minimum test coverage ({MIN_TEST_TICKERS_PERCENT}%) not reached "
@@ -2852,6 +2766,13 @@ def run_walkforward_pipeline(
 
             meta = agents["meta_learner"]
             eval_metrics = meta.evaluate(df_test_scored, y_test, fold=run_id, target_alpha=alpha_test)
+            df_test_scored = add_ticker_explainability(df_test_scored, score_col="final_score")
+            build_validation_audit(
+                df=df_test_scored,
+                feature_columns=df_train.columns,
+                output_dir=fold_general_dir,
+                fold_id=run_id,
+            )
 
             fold_visualizer.plot_score_distribution(df_test_scored, fold=run_id)
 
@@ -2865,6 +2786,20 @@ def run_walkforward_pipeline(
                     "tp_sl_outcome",
                     "rules_consensus_signal",
                     "rules_consensus_confidence",
+                    "opportunity_class",
+                    "opportunity_type",
+                    "reason_for_classification",
+                    "value_trap_flag",
+                    "expensive_growth_flag",
+                    "moat_proxy_score",
+                    "expectation_gap_score",
+                    "overexpectation_penalty",
+                    "top_5_positive_drivers",
+                    "top_5_risks",
+                    "selection_reason",
+                    "discard_reason",
+                    "why_not_value_trap",
+                    "why_not_expensive_growth",
                 ]
                 if c in df_test_scored.columns
             ]
@@ -3044,8 +2979,12 @@ def run_walkforward_pipeline(
                 else:
                     df_test_scored["confidence_tp_vs_sl"] = df_test_scored["confidence_up"]
 
+            # Core GARP portfolio construction must rank only by final GARP score.
+            # TP/SL diagnostics above are intentionally excluded from ranking/selection.
+            core_predictions = df_test_scored.reset_index().copy()
+            core_predictions["score"] = pd.to_numeric(core_predictions.get("final_score", 0.5), errors="coerce").fillna(0.5)
             fold_result = backtester.simulate_portfolio(
-                predictions_df=best_per_ticker.rename(columns={"final_score": "score"}),
+                predictions_df=core_predictions,
                 prices_dict=prices_dict,
                 benchmark=benchmark,
                 fold_id=run_id,
@@ -3060,6 +2999,20 @@ def run_walkforward_pipeline(
                 continue
             fold_result.update(eval_metrics)
             backtester.fold_results.append(fold_result)
+            sector_weights_payload = fold_result.get("sector_weights", {}) or {}
+            sector_rows = [
+                {
+                    "fold_id": run_id,
+                    "sector": str(sec),
+                    "weight": float(weight),
+                    "hhi": float(fold_result.get("sector_concentration_hhi", np.nan)),
+                    "max_sector_weight": float(fold_result.get("max_sector_weight", np.nan)),
+                    "n_selected_sectors": int(fold_result.get("n_selected_sectors", 0) or 0),
+                }
+                for sec, weight in sector_weights_payload.items()
+            ]
+            if sector_rows:
+                pd.DataFrame(sector_rows).to_csv(fold_general_dir / "sector_concentration_audit.csv", index=False)
 
             # PIT leakage audit on as-of sources used by the fold.
             fold_test_tickers = df_test_scored.index.get_level_values("ticker").unique().tolist()
@@ -3191,8 +3144,9 @@ def run_walkforward_pipeline(
             audit_df = build_selection_audit_df(
                 df_scored=df_test_scored.reset_index()[
                     ["ticker", "final_score", "label"]
-                    + [c for c in ["fundamental_score", "valuation_score", "momentum_score",
-                                   "bear_score", "sentiment_score", "sector_score"]
+                    + [c for c in ["quality_score", "growth_score", "valuation_score",
+                                   "fundamental_trend_score", "catalyst_score", "risk_bear_score",
+                                   "technical_guardrail_score", "sentiment_score", "sector_score"]
                        if c in df_test_scored.columns]
                 ],
                 selected_tickers=fold_result.get("selected_tickers", []),
@@ -3237,7 +3191,7 @@ def run_walkforward_pipeline(
             for ag_name, ag in agents.items():
                 agent_diag_history[ag_name].append(ag._diagnostics.copy())
 
-            for ag_name in ["fundamental", "valuation", "momentum", "bear", "sector_rotation"]:
+            for ag_name in ["quality", "growth", "valuation", "fundamental_trend", "catalyst", "risk_bear", "technical_guardrail", "sector_rotation"]:
                 ag = agents[ag_name]
                 if hasattr(ag, "_feature_cols") and ag.is_trained:
                     try:
@@ -3773,7 +3727,7 @@ def run_walkforward_pipeline(
 
         summary_payload = {
             "timestamp": datetime.now().isoformat(),
-            "legacy_summary": summary,
+            "strategy_summary": summary,
             "usd_strategy": strategy_summary,
             "total_leakage_incidents": int((leakage_df["n_rows_future_detected"] > 0).sum()) if not leakage_df.empty else 0,
             "folds_usd": fold_usd_df.to_dict(orient="records"),
