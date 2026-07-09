@@ -62,18 +62,27 @@ def review_portfolio(current: dict[str, dict], universe: pd.DataFrame, snapshot_
 
 
 def manager_score(row) -> float:
-    """Multi-factor score used by the live manager, not just the ML rank."""
+    """Live manager score.
+
+    The ML block is `final_score`, the output of the learned meta-agent (the four specialist
+    agents combined with weights learned walk-forward from realized forward alpha, see
+    module/ml.py::_meta_agent_scores). Weight raised from 0.40 to 0.45 (2026-07 diagnostic round):
+    on the full-universe run, the underlying alpha_probability agent's OOS rank-IC was positive in
+    6 of 8 calendar years (2019-2020, 2022-2025), negative only in 2021 (a sharp growth-to-value
+    rotation) and 2026 (partial year, 5 obs) — consistent enough to lean on it a bit more, but the
+    2021 miss argues against going further than 0.45 with ~40 months of live-portfolio data. The
+    remaining factors are manager overlays (timing/valuation/risk) not captured by the ML score.
+    """
+    learned_ml = getattr(row, "final_score", 0.5)
     return float((
-        0.20 * row.thesis_rank_score
-        + 0.16 * row.buy_today_score
-        + 0.16 * row.business_quality_score
-        + 0.12 * getattr(row, "momentum_score", 0.5)
-        + 0.10 * row.positive_expectation_gap
-        + 0.10 * getattr(row, "price_adjusted_valuation_score", row.valuation_score)
-        + 0.08 * getattr(row, "alpha_probability", row.final_score)
-        + 0.08 * row.moat_score
-        + 0.05 * row.catalyst_score
-        + 0.05 * row.risk_score
+        0.45 * learned_ml
+        + 0.13 * row.thesis_rank_score
+        + 0.11 * row.buy_today_score
+        + 0.09 * getattr(row, "momentum_score", 0.5)
+        + 0.08 * getattr(row, "price_adjusted_valuation_score", row.valuation_score)
+        + 0.05 * row.positive_expectation_gap
+        + 0.05 * row.moat_score
+        + 0.04 * row.risk_score
     ))
 
 
@@ -155,7 +164,12 @@ def _exit_reason(row: pd.Series, position: dict) -> str | None:
         return "Exit Score Trigger"
     if adjusted_valuation < 0.20 and not bool(row["would_buy_today"]):
         return "Price Adjusted Valuation No Longer Attractive"
-    if momentum < 0.20 and row["thesis_state"] == "Weakening":
+    if momentum < 0.35 and row["thesis_state"] == "Weakening":
+        # Threshold raised from 0.20 to 0.35 (2026-07 diagnostic round): this trigger had by far
+        # the worst mean excess return per sale (-26.4%) of any exit reason on the full-universe
+        # run, indicating it fired only after most of the relative damage was already priced in.
+        # Reacting at the first sign of weakening thesis + fading momentum (rather than waiting for
+        # momentum to collapse below 0.20) should cut losses earlier.
         return "Momentum And Thesis Deterioration"
     if row["manager_score"] < MIN_HOLD_SCORE and not bool(row["would_buy_today"]):
         return "Manager Score Below Hold Hurdle"

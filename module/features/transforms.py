@@ -18,15 +18,28 @@ TEMPORAL_FEATURES = [
 
 
 def add_expectation_features(df: pd.DataFrame) -> pd.DataFrame:
+    """Expectation-gap features.
+
+    `expected_growth` (the market's implied expectation) is a proxy derived from valuation:
+    a low valuation_score (expensive) implies the market prices in high growth. `realized_growth`
+    is the **actually observed** fundamental growth (cross-sectional percentile of the reported
+    revenue/eps growth from module/dataset.py's `_historical_growth`), NOT a deterministic
+    re-projection of the input scores. The gap between the two is what forward targets exploit.
+    """
     df = df.copy()
-    df["expected_growth"] = (
-        0.45 * df["growth_score"] + 0.30 * df["quality_score"] + 0.25 * df["catalyst_score"]
-    ).clip(0, 1)
+    # Market-implied growth expectation: cheaper multiples => lower implied growth.
     df["implied_growth"] = (1 - df["valuation_score"]).clip(0, 1)
-    df["realized_growth"] = (
-        0.60 * df["growth_score"] + 0.25 * df["quality_score"] + 0.15 * df["moat_score"]
-    ).clip(0, 1)
-    df["expectation_gap"] = (df["expected_growth"] - df["implied_growth"]).clip(-1, 1)
+    df["expected_growth"] = df["implied_growth"]
+    # Observed fundamental growth, ranked cross-sectionally so it stays on [0, 1] and comparable.
+    reported = [col for col in ("revenue_growth", "eps_growth") if col in df.columns]
+    if reported:
+        df["realized_growth"] = (
+            df.groupby("snapshot_date")[reported].rank(pct=True).mean(axis=1).clip(0, 1)
+        )
+    else:  # pragma: no cover - defensive; master always carries these
+        df["realized_growth"] = df["growth_score"].clip(0, 1)
+    # Gap: observed fundamental growth beating the market's implied expectation.
+    df["expectation_gap"] = (df["realized_growth"] - df["implied_growth"]).clip(-1, 1)
     df["positive_expectation_gap"] = ((df["expectation_gap"] + 1) / 2).clip(0, 1)
     return df
 
@@ -69,16 +82,23 @@ def _relative_rank(df: pd.DataFrame, groups: list[str], column: str) -> pd.Serie
 
 
 def _historical_delta(df: pd.DataFrame, column: str, months: int) -> pd.Series:
-    values = []
-    for row in df.itertuples(index=False):
-        history = df[
-            (df["ticker"] == row.ticker)
-            & (df["snapshot_date_dt"] <= row.snapshot_date_dt - pd.DateOffset(months=months))
-        ].sort_values("snapshot_date_dt")
-        if history.empty or column not in df.columns:
-            values.append(0.0)
-            continue
-        current = getattr(row, column, None)
-        previous = history.iloc[-1][column]
-        values.append(0.0 if pd.isna(current) or pd.isna(previous) else float(current) - float(previous))
-    return pd.Series(values, index=df.index)
+    """current - value `months` ago for the same ticker, via merge_asof (O(n log n)).
+
+    For each row, finds the same ticker's most recent snapshot at or before
+    `snapshot_date - months` and subtracts that value from the current one. NaN gaps -> 0.
+    """
+    if column not in df.columns:
+        return pd.Series(0.0, index=df.index)
+    left = df[["ticker", "snapshot_date_dt", column]].copy()
+    left["_orig_index"] = df.index
+    left["_lookup_date"] = left["snapshot_date_dt"] - pd.DateOffset(months=months)
+    left = left.sort_values("_lookup_date")
+    right = df[["ticker", "snapshot_date_dt", column]].rename(
+        columns={"snapshot_date_dt": "_hist_date", column: "_prev"}
+    ).sort_values("_hist_date")
+    merged = pd.merge_asof(
+        left, right, left_on="_lookup_date", right_on="_hist_date",
+        by="ticker", direction="backward",
+    )
+    delta = (merged[column] - merged["_prev"]).fillna(0.0).astype(float)
+    return pd.Series(delta.to_numpy(), index=merged["_orig_index"].to_numpy()).reindex(df.index)

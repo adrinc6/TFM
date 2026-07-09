@@ -9,7 +9,7 @@ from collections.abc import Iterable
 
 import pandas as pd
 
-from environment import MASTER_DIR, RAW_DIR, Settings
+from environment import FUNDAMENTAL_PUBLICATION_LAG_WEEKS, MASTER_DIR, RAW_DIR, Settings
 from module.utils import read_parquet, write_parquet
 
 log = logging.getLogger(__name__)
@@ -246,11 +246,15 @@ def _prepared_rows(series: dict, key: str) -> list[tuple[pd.Timestamp, float | N
     rows = series.get(key, [])
     if not isinstance(rows, Iterable) or isinstance(rows, (str, bytes, dict)):
         return []
+    # Shift each period-end date forward by the publication lag so a fundamental only becomes
+    # observable weeks after its period ends (removes the subtle lookahead of using period-end
+    # as the knowledge date). All downstream as-of lookups then respect the publication date.
+    lag = pd.Timedelta(weeks=FUNDAMENTAL_PUBLICATION_LAG_WEEKS)
     valid = []
     for row in rows:
         period = pd.to_datetime(row.get("period"), errors="coerce")
         if pd.notna(period):
-            valid.append((pd.Timestamp(period), _num(row.get("v"))))
+            valid.append((pd.Timestamp(period) + lag, _num(row.get("v"))))
     return sorted(valid, key=lambda item: item[0])
 
 

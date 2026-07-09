@@ -81,15 +81,19 @@ download → dataset → features → ml → watchlist → research_ai → backt
   `garp_score`; delegates expectation-gap, sector/universe percentile, and trailing-window trend
   features to `transforms.py`.
 - `module/ml.py` — `train_and_score` is walk-forward: for each historical snapshot date, trains only
-  on a trailing `[date - max_walk_forward_training_years, date]` window. **All 4 component targets
-  are genuinely forward-looking** (not restatements of input features): `target_quality` (change in
-  quality_score 12m ahead), `target_improvement` (realized vs. expected growth gap 12m ahead),
-  `target_mispricing` (resolution of valuation gap via future return), `target_future_alpha` (excess
-  return 12m ahead). All 4 are masked identically on rows whose 12-month future is unobservable at
-  training date (falls back to deterministic GARP score component). Every fallback is logged to
-  `results/<run>/model_walk_forward_diagnostics.csv` for auditability. Produces `final_score` and
-  an `opportunity_type` classification (Avoid/Value Trap/Compounder/etc.). See "All four component
-  targets must stay genuinely forward-looking" below.
+  on a trailing `[date - max_walk_forward_training_years, date]` window. **Four specialist agents**,
+  each fit on its own feature subset (`AGENT_FEATURES`), against forward-looking targets anchored to
+  *observed* outcomes (not re-projections of input features): `target_quality` (forward change in
+  **reported ROIC**), `target_improvement` (forward **observed** fundamental growth vs. today's
+  market-implied expectation), `target_mispricing` (whether today's real valuation discount resolved
+  into forward alpha), `target_future_alpha` (excess return 12m ahead — the master signal). All 4 are
+  masked identically on rows whose 12-month future is unobservable at training date (falls back to
+  deterministic GARP component). Per-snapshot **out-of-sample rank-IC / RMSE** vs. realized alpha and
+  every fallback are logged to `results/<run>/model_walk_forward_diagnostics.csv`. A **meta-agent**
+  (`_meta_agent_scores`) then LEARNS, per snapshot via non-negative least squares on realized forward
+  alpha, how to weight the four agents into `final_score` (weights persisted to
+  `data/processed/meta_weights_by_snapshot.parquet`; falls back to the fixed prior when history is
+  thin). `opportunity_type` is a descriptive rule-based label. See invariants below.
 - `module/research/` — `synthesis.py` is pure rule-based text generation from the numeric scores (no
   external calls). `thesis.py` computes thesis/health/conviction/exit scores and calls
   `module.strategy.selection.add_buy_today_decision` (imported lazily inside the function to avoid a
@@ -100,9 +104,10 @@ download → dataset → features → ml → watchlist → research_ai → backt
   or when disabled, so downstream artifacts never break.
 - `module/strategy/` — `selection.py` ranks/filters into a watchlist and computes opportunity-cost
   vs. the best alternative ticker per snapshot. `portfolio.py` (`initial_portfolio`,
-  `review_portfolio`) is pure in-memory concentrated-portfolio logic using a hand-tuned
-  `manager_score` distinct from the ML `final_score`, with minimum-hold-period and
-  opportunity-cost-based rotation rules. `sizing.py` computes equal/conviction/risk-adjusted/hybrid
+  `review_portfolio`) is pure in-memory concentrated-portfolio logic. `manager_score` now leads with
+  the learned `final_score` (weight 0.40, the meta-agent output) plus manager overlays
+  (timing/valuation/risk); it is still distinct from `final_score` but is driven by the learned
+  signal, not a single agent probability at 0.08. Minimum-hold-period and opportunity-cost rotation. `sizing.py` computes equal/conviction/risk-adjusted/hybrid
   position weights; `hybrid_weight` also drives the actual return simulation in
   `module/backtest/performance.py` (not just display). No file I/O in this package — it's consumed
   by `module/backtest/engine.py`.
@@ -116,19 +121,19 @@ download → dataset → features → ml → watchlist → research_ai → backt
   `artifacts.py` shapes the executive-tier output tables and computes **information ratio, tracking
   error, t-stat with explicit small-sample caveat**. Heavy per-ticker/per-snapshot tables go to
   `results/<run>/audit/` (see `AUDIT_OUTPUTS`); compact summaries stay at `results/<run>/` root.
-- `module/viewer/` — **All UI is in Spanish**. `pages.py`'s `build_viewer` reads every CSV under
-  `results/<run>/`, renders charts via `charts.py` (matplotlib, `Agg` backend), wraps each page build
-  in try/except (one bad page doesn't crash entire viewer), and writes one static HTML page per entry
-  in `shared.PAGES` (with hierarchical grouping: Principal 5 pages / Secundaria/Auditoría 12 pages)
-  plus one `position_<ticker>.html` per held ticker. `dashboard.py` builds a single self-contained
-  interactive `dashboard.html` (inline JS/CSS + embedded JSON payload, no server round-trip) with
-  recursive NaN/Inf sanitizer before JSON.dumps. All numeric columns formatted consistently: %
-  (pct), ×(mult), .3f(float). `manifest.py` writes `result_manifest.json`, tiering every artifact as
-  executive/audit/detail with "read_first" hints — mirrors `AUDIT_OUTPUTS` split.
-- `module/report.py` — **All in Spanish**. `build_final_report` computes CAGR/Sharpe/Sortino/max-drawdown/alpha
-  (gross and net), **plus information ratio, tracking error, t-stat with small-sample caveat, table
-  of drawdown episodes, and explicit methodological limitations (survivorship bias, small sample)**,
-  and writes the single self-contained `results/<run>/final_report.html`.
+- `module/viewer/` — **All UI is in Spanish**. Rewritten as **one professional single-page report**
+  (`results/<run>/viewer/index.html`), not a 16-page dump. `pages.py`'s `build_viewer` loads the run
+  CSVs and renders six purpose-driven sections (executive KPIs, portfolio-vs-benchmark, current
+  portfolio + trades, **learning evidence** = learned meta-agent weights + OOS rank-IC, position
+  attribution, and a separate debug/TFM block). `charts.py` renders a small set of charts (matplotlib
+  `Agg`) with the validated dataviz palette. `shared.py` holds the theme-aware CSS design system and
+  table/kpi/figure helpers with a NaN/Inf-safe formatter. Heavy audit CSVs stay on disk under
+  `results/<run>/audit/` and are only linked, never embedded. Every element must pass the utility
+  test in `shared.py` (answers a TFM question or aids debugging) before it is added.
+- `module/report.py` — **All in Spanish**. Now the metrics module: keeps `_metrics`
+  (CAGR/Sharpe/Sortino/max-drawdown/alpha, IR/TE/t-stat) and `drawdown_episodes`, reused by the
+  viewer. `build_final_report` builds the single viewer report (the report **is** the viewer report),
+  so the `report` stage points at `results/<run>/viewer/index.html` instead of a second HTML page.
 - `module/utils.py` — shared `setup_logging`, `write_parquet`/`read_parquet`, `write_json` helpers
   used throughout.
 
@@ -144,18 +149,27 @@ download → dataset → features → ml → watchlist → research_ai → backt
   (hand-weighted, used for actual entry/exit decisions). Don't collapse them into one score — the
   divergence between the two is what the opportunity-cost analysis in `backtest/reviews.py` depends
   on.
-- **Executive vs. audit output tiering**: new backtest/viewer outputs should be classified into
-  `AUDIT_OUTPUTS` (heavy, per-ticker/per-snapshot) vs. executive (compact summary) consistently in
-  both `module/backtest/engine.py` and `module/viewer/manifest.py`.
+- **Executive vs. audit output tiering**: heavy per-ticker/per-snapshot tables go to
+  `results/<run>/audit/` (`AUDIT_OUTPUTS` in `module/backtest/engine.py`); compact summaries stay at
+  the run root. The viewer embeds only compact/executive tables and **links** audit CSVs, never
+  embeds them — keep that split (a new page must pass the utility test in `module/viewer/shared.py`).
 - **External calls stay optional and fail safe**: `module/research/ai.py` must keep working (via
   deterministic fallback) with `ENABLE_OPENAI_RESEARCH=False` or no API key — don't make any stage
   hard-depend on the OpenAI call succeeding.
-- **All four `module/ml.py` component targets must stay genuinely forward-looking**: `target_quality`,
-  `target_improvement`, `target_mispricing`, and `target_future_alpha` are each built from information
-  observable `walk_forward_label_horizon_months` ahead of the snapshot (see `_add_component_targets`,
-  `_feature_cache`/`_forward_feature_value`), and masked identically during walk-forward training. Do
-  not reintroduce same-day-feature restatements as targets — that was the original design flaw this
-  was fixed from.
+- **The four `module/ml.py` targets must stay anchored to observed outcomes, not re-projections**:
+  `target_quality` (forward reported ROIC change), `target_improvement` (forward observed fundamental
+  growth vs. expectation), `target_mispricing` (real valuation discount resolving into forward alpha),
+  and `target_future_alpha` (forward excess return) are each built from information observable
+  `walk_forward_label_horizon_months` ahead and masked identically during walk-forward training. Do
+  not reintroduce deterministic same-day-feature blends as targets (e.g. the old circular
+  `realized_growth = 0.6*growth+0.25*quality+0.15*moat`) — that was the original design flaw fixed here.
+- **Meta-agent weights are learned, not hard-coded**: `_meta_agent_scores` learns the four-agent
+  combination per snapshot from realized forward alpha (NNLS, non-negative sum-to-one), under the same
+  observability mask (no lookahead). This is the "learns from the simulation" loop. Don't revert
+  `final_score` to a fixed 0.30/0.25/0.25/0.20 blend; keep `garp_score` as the fixed baseline.
+- **Fundamental publication lag**: `module/dataset.py::_prepared_rows` shifts every fundamental's
+  period-end date forward by `FUNDAMENTAL_PUBLICATION_LAG_WEEKS` so a fundamental is only observable
+  after its real reporting date. Preserve this shift — removing it reintroduces a subtle lookahead.
 - **`hybrid_weight` (from `module/strategy/sizing.py`) drives the actual backtest P&L**: `module/backtest/performance.py`'s
   `weighted_basket_return`/`period_transaction_cost` consume normalized per-period `hybrid_weight`
   values (falling back to equal-weight only when weights are unavailable). Keep sizing and the return
@@ -171,7 +185,7 @@ download → dataset → features → ml → watchlist → research_ai → backt
   This is a deliberate scope decision (documented, not fixed) — the live portfolio only trades within
   `PORTFOLIO_START_DATE`/`PORTFOLIO_END_DATE`, which bounds but does not eliminate the issue, and the
   ML training window (`MAX_WALK_FORWARD_TRAINING_YEARS` of lookback) inherits the same bias. This
-  caveat is surfaced in `report.py`'s `_conclusions` output.
+  caveat is surfaced in the viewer report's executive summary (`SMALL_SAMPLE_CAVEAT`).
 - **Small-sample statistical power**: the backtest window is a few dozen monthly observations.
   `module/backtest/artifacts.py::excess_return_statistics` reports information ratio, tracking error,
   and a t-stat on excess return, but deliberately does not attempt bootstrap confidence intervals or

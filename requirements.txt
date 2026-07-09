@@ -1,0 +1,19 @@
+# Core data / numerics
+pandas>=2.0
+numpy>=1.24
+pyarrow>=12.0
+
+# Modelling (LightGBM preferred; sklearn is the automatic fallback in module/ml.py)
+lightgbm>=4.0
+scikit-learn>=1.3
+scipy>=1.10
+shap>=0.44          # optional; explainability is wrapped in try/except
+
+# Ingestion / IO
+requests>=2.31
+
+# Visualization
+matplotlib>=3.7
+
+# Tests
+pytest>=7.4

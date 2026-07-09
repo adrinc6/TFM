@@ -1,171 +1,413 @@
-"""Static page rendering and build orchestration for the result viewer."""
+"""Single-page professional report — the only viewer output.
+
+Sections are chosen by the utility test in shared.py: executive summary, portfolio vs. benchmark,
+current portfolio + recent trades, learning evidence (learned meta-agent weights + OOS rank-IC),
+position attribution, and a separate debug block (walk-forward diagnostics + audit file links).
+Heavy per-ticker/per-snapshot tables stay on disk under results/<run>/audit/ and are only linked.
+"""
 
 from __future__ import annotations
 
-import html
-import json
 import logging
+import math
+from pathlib import Path
 
 import pandas as pd
 
-from pathlib import Path
-
 from environment import PROCESSED_DIR, Settings
+from module.backtest.artifacts import SMALL_SAMPLE_CAVEAT
 
 from .charts import build_charts
-from .manifest import write_results_explainer
-from .shared import PAGE_GROUPS, PAGES, figure, layout, select, table
-from .dashboard import dashboard_body
+from .shared import PALETTE, figure, kpi, report_layout, select, table
 
 log = logging.getLogger(__name__)
 
 
-def page_body(page: str, tables: dict[str, pd.DataFrame], charts: dict[str, str]) -> str:
-    if page == "dashboard.html":
-        return dashboard_body(tables, charts)
-    if page == "index.html":
-        return ("<h1>Cartera GARP AI</h1><h2>Resumen Ejecutivo</h2>" + table(tables.get("executive_summary", pd.DataFrame())) + figure(charts.get("portfolio_vs_benchmark"), "Valor de la cartera frente al benchmark SPY") + figure(charts.get("period_alpha"), "Contribucion mensual de alpha") + figure(charts.get("position_performance_bars"), "Retorno por accion frente al benchmark durante cada periodo de holding") + figure(charts.get("sector_exposure"), "Exposicion sectorial en el tiempo") + "<h2>Cartera Actual</h2>" + table(tables.get("current_portfolio", pd.DataFrame())) + "<h2>Operaciones Recientes</h2>" + table(tables.get("action_journal", pd.DataFrame()).tail(20)))
-    if page == "current_portfolio.html":
-        return "<h1>Cartera Actual</h1>" + table(tables.get("current_portfolio", pd.DataFrame()))
-    if page == "tracking_dashboard.html":
-        return "<h1>Seguimiento de la Cartera</h1>" + table(select(tables.get("tracking_dashboard", pd.DataFrame()), ["date", "portfolio_value", "portfolio_gross_value", "benchmark_value", "portfolio_period_return", "portfolio_gross_period_return", "transaction_cost_drag", "benchmark_period_return", "period_alpha", "cumulative_alpha", "holdings", "buys", "sells", "tickers"]))
-    if page == "portfolio_vs_benchmark.html":
-        vs = tables.get("portfolio_vs_benchmark", pd.DataFrame())
-        return "<h1>Cartera Frente a Benchmark</h1>" + figure(charts.get("portfolio_vs_benchmark"), "Valor de la cartera frente al benchmark SPY") + figure(charts.get("period_alpha"), "Retorno mensual en exceso frente al benchmark") + figure(charts.get("drawdown"), "Perfil de drawdown") + drawdown_episode_table(vs) + table(vs)
-    if page == "action_journal.html":
-        return "<h1>Diario de Operaciones</h1>" + table(select(tables.get("action_journal", pd.DataFrame()), ["date", "ticker", "action", "reason_category", "rank", "manager_score", "buy_today_score", "holding_days", "total_return", "benchmark_total_return", "excess_total_return", "reason"]))
-    if page == "position_performance.html":
-        data = tables.get("position_performance", pd.DataFrame())
-        data = data.sort_values("excess_total_return", ascending=False) if "excess_total_return" in data.columns else data
-        return "<h1>Rendimiento de Posiciones</h1>" + figure(charts.get("position_performance_bars"), "Retorno de la accion, retorno anualizado de la accion y retorno anualizado del benchmark por ticker") + table(select(data, ["ticker", "entry_date", "exit_date", "closed", "holding_days", "total_return", "annualized_return", "benchmark_annualized_return", "excess_total_return", "exit_reason_category"]))
-    if page == "buy_rationale.html":
-        return "<h1>Justificacion de Compra</h1>" + table(select(tables.get("buy_rationale", pd.DataFrame()), ["date", "ticker", "rank", "manager_score", "buy_today_score", "thesis_rank_score", "business_quality_score", "price_adjusted_valuation_score", "momentum_score", "alpha_probability", "opportunity_type", "best_alternative_ticker", "opportunity_cost_score", "reason"]))
-    if page == "sell_reasons.html":
-        return "<h1>Motivos de Venta</h1>" + table(tables.get("sell_reasons_summary", pd.DataFrame()))
-    if page == "sector_exposure.html":
-        return "<h1>Exposicion Sectorial</h1>" + figure(charts.get("sector_exposure"), "Pesos sectoriales en el tiempo") + table(tables.get("sector_exposure", pd.DataFrame()))
-    if page == "allocation_dashboard.html":
-        return "<h1>Dimensionamiento de Posiciones</h1>" + figure(charts.get("latest_allocation"), "Ultima asignacion hibrida") + figure(charts.get("allocation_drift"), "Peso por ticker en el tiempo") + table(tables.get("portfolio_allocation", pd.DataFrame()))
-    if page == "watchlist.html":
-        return "<h1>Watchlist</h1>" + figure(charts.get("watchlist_map"), "Watchlist: valoracion frente a conviccion") + table(tables.get("watchlist", pd.DataFrame()))
-    if page == "top_opportunities.html":
-        return "<h1>Mejores Oportunidades</h1>" + table(tables.get("top_opportunities_latest", pd.DataFrame()))
-    if page == "strategy_learning.html":
-        return "<h1>Aprendizaje de la Estrategia</h1><h2>Backlog de Mejora</h2>" + table(tables.get("improvement_backlog", pd.DataFrame())) + "<h2>Registro de Evidencia</h2>" + table(tables.get("strategy_learning_log", pd.DataFrame()))
-    if page == "model_explainability.html":
-        return "<h1>Explicabilidad del Modelo</h1>" + figure(charts.get("feature_importance"), "Variables mas relevantes del modelo") + explainability()
-    if page == "audit.html":
-        return "<h1>Archivos de Auditoria</h1>" + table(audit_file_table(tables))
-    return "<h1>No disponible</h1><p>No hay datos para esta pagina.</p>"
-
-
-def explainability() -> str:
-    path = PROCESSED_DIR / "model_explainability.json"
-    if not path.exists():
-        return "<p>No hay artefacto de explicabilidad disponible.</p>"
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    importance = pd.DataFrame([{"feature": key, "importance": value} for key, value in payload.get("feature_importance", {}).items()])
-    shap = payload.get("shap", {})
-    shap_values = shap.get("mean_abs_contribution", {}) if shap.get("available") else {}
-    shap_table = pd.DataFrame([{"feature": key, "mean_abs_shap": value} for key, value in shap_values.items()])
-    reason = "" if shap.get("available") else f"<p>{html.escape(shap.get('reason', 'SHAP no disponible.'))}</p>"
-    return (
-        "<h2>Importancia de Variables</h2>" + table(importance)
-        + "<h2>SHAP</h2>" + reason + table(shap_table)
-        + "<h2>Diagnostico Walk-Forward</h2>"
-        + "<p>Muestra, para cada snapshot, si el modelo se entreno con datos suficientes o si se uso el "
-        "fallback determinista GARP, y cuantas etiquetas futuras eran observables en ese momento.</p>"
-        + walk_forward_diagnostics_table()
-    )
-
-
-def walk_forward_diagnostics_table() -> str:
-    path = Settings().run_dir / "model_walk_forward_diagnostics.csv"
-    if not path.exists():
-        return "<p>No hay diagnostico walk-forward disponible para esta ejecucion.</p>"
-    diagnostics = pd.read_csv(path)
-    cols = [
-        "snapshot_date", "mode", "fallback_reason", "training_rows", "training_years",
-        "training_tickers", "alpha_label_observable_rows", "alpha_label_fallback_rows",
-    ]
-    return table(select(diagnostics, cols))
-
-
-def drawdown_episode_table(vs: pd.DataFrame) -> str:
-    if vs.empty or "portfolio_value" not in vs.columns or "date" not in vs.columns:
-        return ""
-    from module.report import drawdown_episodes
-
-    episodes = drawdown_episodes(vs)
-    if episodes.empty:
-        return "<h2>Episodios de Drawdown</h2><p>No se detectaron caidas relevantes.</p>"
-    return "<h2>Episodios de Drawdown</h2>" + table(episodes)
-
-
-def audit_file_table(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
-    descriptions = {
-        "portfolio_monthly_holdings": "Historico completo posicion x mes usado para paginas por ticker y sizing.",
-        "rebalance_report": "Union detallada de transacciones y decisiones HOLD/WATCH/REDUCE.",
-        "universe_monthly_scores": "Scoring mensual completo de todo el universo.",
-        "universe_monthly_price_update": "Subconjunto de meses intermedios con actualizacion por precio.",
-        "universe_quarterly_fundamental_review": "Subconjunto de revisiones trimestrales de fundamentales.",
-        "universe_top_candidates": "Top candidatos historicos por fecha.",
-        "research_ai_history": "Research historico por compania y snapshot.",
-        "watchlist_history": "Watchlist historica por snapshot.",
-    }
-    rows = []
-    for name in descriptions:
-        df = tables.get(name, pd.DataFrame())
-        rows.append({"file": f"audit/{name}.csv", "purpose": descriptions[name], "rows": len(df), "columns": len(df.columns) if not df.empty else 0, "read_first": "No"})
-    return pd.DataFrame(rows)
-
-
-def build_nav() -> str:
-    groups = []
-    for group_name, pages in PAGE_GROUPS.items():
-        css_class = "nav-group" if group_name == "Principal" else "nav-group secondary"
-        links = " ".join(f'<a href="{page}">{page.replace(".html", "")}</a>' for page in pages)
-        groups.append(f'<span class="{css_class}">{links}</span>')
-    return '<span class="nav-sep"></span>'.join(groups)
+NAV = [
+    ("resumen", "Resumen"),
+    ("rendimiento", "Rendimiento"),
+    ("cartera", "Cartera"),
+    ("aprendizaje", "Aprendizaje"),
+    ("posiciones", "Posiciones"),
+    ("metodologia", "Metodología"),
+    ("debug", "Debug / TFM"),
+]
 
 
 def build_viewer(settings: Settings) -> Path:
     run_dir = settings.run_dir
     viewer_dir = run_dir / "viewer"
     charts_dir = viewer_dir / "charts"
-    viewer_dir.mkdir(parents=True, exist_ok=True)
     charts_dir.mkdir(parents=True, exist_ok=True)
-    tables = {path.stem: pd.read_csv(path) for path in (run_dir / "audit").glob("*.csv")} if (run_dir / "audit").exists() else {}
-    tables.update({path.stem: pd.read_csv(path) for path in run_dir.glob("*.csv")})
-    if "watchlist" not in tables and (PROCESSED_DIR / "watchlist.parquet").exists():
-        tables["watchlist"] = pd.read_parquet(PROCESSED_DIR / "watchlist.parquet")
-    charts = build_charts(charts_dir, tables)
-    nav = build_nav()
-    remove_stale_pages(viewer_dir)
-    for page in PAGES:
-        try:
-            body = page_body(page, tables, charts)
-        except Exception:
-            log.exception("Failed to render viewer page %s, writing placeholder instead", page)
-            body = f"<h1>{page}</h1><p>Esta pagina no pudo generarse en esta ejecucion. Revisa los logs del pipeline.</p>"
-        (viewer_dir / page).write_text(layout(page, nav, body), encoding="utf-8")
-    holdings = tables.get("portfolio_monthly_holdings", pd.DataFrame())
-    for ticker in sorted(holdings.get("ticker", pd.Series(dtype=str)).dropna().unique()):
-        try:
-            ticker_rows = holdings[holdings["ticker"] == ticker]
-            body = f"<h1>{ticker}</h1>" + figure(charts.get(f"position_{ticker}"), f"{ticker} thesis and allocation over time") + table(ticker_rows)
-        except Exception:
-            log.exception("Failed to render position page for %s, writing placeholder instead", ticker)
-            body = f"<h1>{ticker}</h1><p>Esta pagina no pudo generarse en esta ejecucion.</p>"
-        (viewer_dir / f"position_{ticker}.html").write_text(layout(ticker, nav, body), encoding="utf-8")
-    write_results_explainer(run_dir, viewer_dir, charts, tables)
+    _remove_legacy_pages(viewer_dir)
+
+    tables = _load_tables(run_dir)
+    charts = build_charts(charts_dir, tables, settings.train_cutoff_date)
+
+    body = _report_body(settings, tables, charts, run_dir)
+    (viewer_dir / "index.html").write_text(
+        report_layout("Informe GARP AI", body), encoding="utf-8"
+    )
+    log.info("Report written to %s", viewer_dir / "index.html")
     return viewer_dir
 
 
-def remove_stale_pages(viewer_dir: Path) -> None:
-    keep = set(PAGES)
+def _report_body(settings: Settings, tables: dict, charts: dict, run_dir: Path) -> str:
+    from module.report import _metrics, drawdown_episodes  # reuse the vetted metric functions
+
+    vs = tables.get("portfolio_vs_benchmark", pd.DataFrame())
+    metrics = _metrics(vs)
+    train_start = (
+        pd.Timestamp(settings.train_cutoff_date) - pd.DateOffset(years=settings.walk_forward_train_years)
+    ).date().isoformat()
+    header = (
+        '<header><div class="wrap">'
+        "<h1>Informe GARP AI &mdash; cartera infravalorada de calidad</h1>"
+        f'<div class="meta">Entrenamiento {train_start} → {settings.train_cutoff_date} · '
+        f'simulación {settings.train_cutoff_date} → {settings.end_date} · '
+        f'benchmark {settings.benchmark_ticker} · revisión {settings.review_frequency}</div>'
+        "</div></header>"
+    )
+    nav = '<nav><div class="wrap">' + "".join(
+        f'<a href="#{anchor}">{label}</a>' for anchor, label in NAV
+    ) + "</div></nav>"
+
+    sections = "".join([
+        _section_resumen(metrics),
+        _section_rendimiento(charts, vs, drawdown_episodes),
+        _section_cartera(tables),
+        _section_aprendizaje(charts, tables, settings),
+        _section_posiciones(charts, tables),
+        _section_metodologia(tables, settings),
+        _section_debug(tables, run_dir),
+    ])
+    return header + nav + f'<main><div class="wrap">{sections}</div></main>'
+
+
+# --- sections ---------------------------------------------------------------
+
+def _section_resumen(metrics: dict) -> str:
+    alpha = metrics.get("Alpha", 0) or 0
+    ir = metrics.get("Information Ratio", 0) or 0
+    tone = "pos" if alpha > 0 else "neg"
+    verdict = "batió" if alpha > 0 else "no batió"
+    kpis = "".join([
+        kpi("Alpha vs SPY", _pct(alpha), "retorno total en exceso", tone),
+        kpi("CAGR", _pct(metrics.get("CAGR")), f"benchmark {_pct(metrics.get('Benchmark CAGR'))}"),
+        kpi("Sharpe", _num(metrics.get("Sharpe")), f"Sortino {_num(metrics.get('Sortino'))}"),
+        kpi("Max Drawdown", _pct(metrics.get("Max Drawdown")), "caída máxima"),
+        kpi("Information Ratio", _num(ir), f"TE {_pct(metrics.get('Tracking Error (annualized)'))}"),
+        kpi("t-stat exceso", _num(metrics.get("Excess Return t-stat")),
+            f"{int(metrics.get('Periods (n)', 0) or 0)} periodos"),
+    ])
+    return (
+        '<section id="resumen"><h2>Resumen ejecutivo</h2>'
+        f'<p class="lead">La estrategia sistemática GARP {verdict} al benchmark en esta ventana. '
+        f'{SMALL_SAMPLE_CAVEAT}</p>'
+        f'<div class="kpis">{kpis}</div></section>'
+    )
+
+
+def _section_rendimiento(charts: dict, vs: pd.DataFrame, drawdown_episodes) -> str:
+    episodes = drawdown_episodes(vs) if not vs.empty else pd.DataFrame()
+    episode_cols = {"peak_date": "Pico", "trough_date": "Valle", "recovery_date": "Recuperación",
+                    "depth": "Profundidad", "duration_days": "Días", "recovered": "Recuperado"}
+    ep_table = (
+        "<h3 class=\"note\" style=\"margin-top:22px\">Episodios de drawdown</h3>"
+        + table(episodes.rename(columns=episode_cols)) if not episodes.empty else ""
+    )
+    return (
+        '<section id="rendimiento"><h2>Cartera frente al benchmark</h2>'
+        '<p class="lead">El gráfico central del trabajo: crecimiento de 1 € en la cartera neta '
+        'frente a SPY, el alpha acumulado, y el perfil de caídas.</p>'
+        + figure(charts.get("value_vs_benchmark"), "Valor de la cartera neta frente al benchmark SPY")
+        + '<div style="height:16px"></div>'
+        + figure(charts.get("cumulative_alpha"), "Alpha acumulado frente al benchmark")
+        + '<div style="height:16px"></div>'
+        + figure(charts.get("drawdown"), "Perfil de drawdown de la cartera")
+        + ep_table
+        + "</section>"
+    )
+
+
+def _section_cartera(tables: dict) -> str:
+    current = tables.get("current_portfolio", pd.DataFrame())
+    current_cols = ["ticker", "sector", "hybrid_weight", "manager_score", "final_score",
+                    "opportunity_type", "current_thesis_state", "watch_reason"]
+    journal = tables.get("action_journal", pd.DataFrame())
+    journal_cols = ["date", "ticker", "action", "reason_category", "manager_score",
+                    "holding_days", "excess_total_return", "reason"]
+    recent = journal.tail(15) if not journal.empty else journal
+    return (
+        '<section id="cartera"><h2>Cartera actual y operaciones</h2>'
+        '<p class="lead">Qué se tiene ahora (pesos, score de gestión, tesis) y las últimas '
+        'compras/ventas con su motivo.</p>'
+        + table(select(current, current_cols))
+        + '<h3 class="note" style="margin-top:22px">Últimas operaciones</h3>'
+        + table(select(recent, journal_cols))
+        + "</section>"
+    )
+
+
+def _section_aprendizaje(charts: dict, tables: dict, settings: Settings) -> str:
+    weights = tables.get("meta_weights_by_snapshot", pd.DataFrame())
+    training_weights = weights[weights.get("phase", "training") == "training"] if not weights.empty else weights
+    learned = int((training_weights.get("source", pd.Series(dtype=str)) == "learned").sum()) if not training_weights.empty else 0
+    total = len(training_weights) if not training_weights.empty else 0
+    cutoff_note = (
+        f'El modelo aprende (reentrenamiento trimestral) desde el inicio de la ventana de '
+        f'entrenamiento hasta el <strong>{settings.train_cutoff_date}</strong>. A partir de esa '
+        f'fecha el modelo queda <strong>congelado</strong>: la cartera se sigue revisando cada mes, '
+        f'pero siempre con los mismos agentes y los mismos pesos del meta-agente — el rank-IC y los '
+        f'pesos que se ven después del corte miden cómo envejece ese modelo fijo, no aprendizaje '
+        f'nuevo.'
+    )
+    lead = (
+        'La prueba de que el sistema aprende: en cada snapshot de entrenamiento el meta-agente '
+        'ajusta —a partir del alpha realmente realizado a 12 meses (walk-forward, sin lookahead)— '
+        f'cuánto pesa cada agente especializado. {learned} de {total} snapshots de entrenamiento '
+        'usaron pesos aprendidos (el resto, prior por falta de historia). El segundo gráfico muestra '
+        'el rank-IC out-of-sample del agente Alpha por snapshot y su media móvil de 12 periodos: si '
+        'sube con el tiempo, el sistema afina; si oscila plano, la muestra (unas 90 observaciones) '
+        'no permite todavía distinguir mejora de ruido — se reporta el dato tal cual sale, sin '
+        f'forzar una lectura de mejora. {cutoff_note}'
+    )
+    year_stats = _year_ic_table(tables.get("model_walk_forward_diagnostics", pd.DataFrame()))
+    year_block = (
+        '<h3 class="note" style="margin-top:22px">Rank-IC del agente Alpha por año</h3>'
+        + table(year_stats) if not year_stats.empty else ""
+    )
+    horizon_block = _horizon_comparison_block(charts, tables.get("label_horizon_comparison", pd.DataFrame()), settings)
+    dominant_block = _dominant_agent_block(weights, tables.get("model_walk_forward_diagnostics", pd.DataFrame()))
+    return (
+        '<section id="aprendizaje"><h2>Evidencia de aprendizaje</h2>'
+        f'<p class="lead">{lead}</p>'
+        + figure(charts.get("learned_weights"), "Evolución de los pesos aprendidos del meta-agente por snapshot")
+        + dominant_block
+        + '<div style="height:16px"></div>'
+        + figure(charts.get("rank_ic"), "Rank-IC out-of-sample del agente Alpha por snapshot, con media móvil de tendencia")
+        + year_block
+        + horizon_block
+        + "</section>"
+    )
+
+
+def _horizon_comparison_block(charts: dict, horizon_df: pd.DataFrame, settings: Settings) -> str:
+    """¿Qué horizonte de predicción funciona mejor? — answers the user's own question with data."""
+    if horizon_df.empty or "rank_ic_mean" not in horizon_df.columns:
+        return ""
+    d = horizon_df.dropna(subset=["rank_ic_mean"])
+    if d.empty:
+        return ""
+    best_row = d.loc[d["rank_ic_mean"].idxmax()]
+    default_row = d[d["horizon_months"] == settings.walk_forward_label_horizon_months]
+    default_ic = float(default_row["rank_ic_mean"].iloc[0]) if not default_row.empty else None
+    best_months = int(best_row["horizon_months"])
+    best_ic = float(best_row["rank_ic_mean"])
+    if default_ic is not None and best_months == settings.walk_forward_label_horizon_months:
+        conclusion = (
+            f'Con los datos de esta ejecución, {best_months} meses (el horizonte configurado) es '
+            f'el que mejor predice (rank-IC medio {best_ic:.3f}) — se mantiene como está, decisión '
+            f'informada por el propio dato en vez de asumida.'
+        )
+    elif default_ic is not None:
+        diff = best_ic - default_ic
+        conclusion = (
+            f'Con los datos de esta ejecución, {best_months} meses predice algo mejor (rank-IC '
+            f'{best_ic:.3f}) que el horizonte configurado de {settings.walk_forward_label_horizon_months} '
+            f'meses (rank-IC {default_ic:.3f}, diferencia {diff:+.3f}). La diferencia es pequeña '
+            f'frente al ruido snapshot a snapshot visto arriba; no se cambia el horizonte por defecto '
+            f'sin repetir esta comparación en más ejecuciones.'
+        )
+    else:
+        conclusion = f'Horizonte con mejor rank-IC observado: {best_months} meses (rank-IC {best_ic:.3f}).'
+    return (
+        '<h3 class="note" style="margin-top:22px">¿Qué horizonte de predicción funciona mejor?</h3>'
+        '<p class="note">El agente Alpha ya entrenado se compara contra el alfa real a 3, 6 y 12 '
+        'meses, usando solo los snapshots de la fase de entrenamiento (la fase congelada usa siempre '
+        'el mismo modelo, así que no aporta información nueva sobre el horizonte).</p>'
+        + figure(charts.get("horizon_comparison"), "Rank-IC medio del agente Alpha a 3, 6 y 12 meses")
+        + f'<p class="note">{conclusion}</p>'
+    )
+
+
+def _dominant_agent_block(weights: pd.DataFrame, diag: pd.DataFrame) -> str:
+    """Qué agente pesa más y por qué — turns the weights chart into a readable sentence."""
+    if weights.empty:
+        return ""
+    latest = weights.sort_values("snapshot_date").iloc[-1]
+    agent_labels = {
+        "quality_probability": "Calidad", "improvement_probability": "Crecimiento",
+        "mispricing_probability": "Infravaloración", "alpha_probability": "Alpha",
+    }
+    agent_keys = [k for k in agent_labels if k in weights.columns]
+    if not agent_keys:
+        return ""
+    dominant_key = max(agent_keys, key=lambda k: latest[k])
+    dominant_share = float(latest[dominant_key])
+    rank_ic_col = "rank_ic_alpha" if dominant_key == "alpha_probability" else f"rank_ic_{dominant_key}"
+    ic_sentence = ""
+    if not diag.empty and rank_ic_col in diag.columns:
+        ic_series = pd.to_numeric(diag[rank_ic_col], errors="coerce").dropna()
+        if not ic_series.empty:
+            ic_sentence = f' Su rank-IC medio histórico es {ic_series.mean():.3f}, la señal más consistente de las cuatro en esta ejecución.'
+    phase_label = "congelado" if str(latest.get("phase")) == "frozen" else "aprendido"
+    return (
+        '<p class="note" style="margin-top:10px">'
+        f'En el snapshot más reciente ({phase_label}), el agente <strong>{agent_labels[dominant_key]}</strong> '
+        f'domina la combinación con un peso de {dominant_share:.0%}.{ic_sentence}'
+        '</p>'
+    )
+
+
+def _year_ic_table(diag: pd.DataFrame) -> pd.DataFrame:
+    cols = ["rank_ic_alpha_year_mean", "rank_ic_alpha_year_tstat"]
+    if diag.empty or "snapshot_date" not in diag.columns or not all(c in diag.columns for c in cols):
+        return pd.DataFrame()
+    d = diag.copy()
+    d["year"] = pd.to_datetime(d["snapshot_date"], errors="coerce").dt.year
+    yearly = d.dropna(subset=["year"]).groupby("year")[cols].first().reset_index()
+    return yearly.rename(columns={
+        "year": "Año", "rank_ic_alpha_year_mean": "Rank-IC medio", "rank_ic_alpha_year_tstat": "t-stat aprox.",
+    })
+
+
+def _section_posiciones(charts: dict, tables: dict) -> str:
+    perf = tables.get("position_performance", pd.DataFrame())
+    cols = ["ticker", "entry_date", "exit_date", "holding_days", "total_return",
+            "annualized_return", "benchmark_annualized_return", "excess_total_return", "exit_reason_category"]
+    top = perf.copy()
+    if "excess_total_return" in top.columns:
+        top["excess_total_return"] = pd.to_numeric(top["excess_total_return"], errors="coerce")
+        top = top.sort_values("excess_total_return", ascending=False).head(20)
+    return (
+        '<section id="posiciones"><h2>Rendimiento por posición</h2>'
+        '<p class="lead">Atribución por lote (FIFO): retorno de cada posición frente al benchmark '
+        'durante su periodo de tenencia.</p>'
+        + figure(charts.get("position_performance"), "Mejores y peores posiciones por retorno en exceso acumulado")
+        + '<div style="height:16px"></div>'
+        + table(select(top, cols))
+        + "</section>"
+    )
+
+
+def _section_metodologia(tables: dict, settings: Settings) -> str:
+    """Explains the design in prose so the report is readable without opening the code."""
+    explain_path = PROCESSED_DIR / "model_explainability.json"
+    definitions = {}
+    if explain_path.exists():
+        import json
+        payload = json.loads(explain_path.read_text(encoding="utf-8"))
+        definitions = payload.get("component_target_definitions", {})
+    agent_names = {
+        "quality_probability": "Calidad", "improvement_probability": "Crecimiento",
+        "mispricing_probability": "Infravaloración", "alpha_probability": "Alpha (maestro)",
+    }
+    agent_rows = "".join(
+        f'<li><strong>{agent_names.get(key, key)}</strong>: {definitions.get(key, "")}</li>'
+        for key in agent_names
+    )
+    train_start = (
+        pd.Timestamp(settings.train_cutoff_date) - pd.DateOffset(years=settings.walk_forward_train_years)
+    ).date().isoformat()
+    mechanics = (
+        f'El modelo se entrenó con cadencia trimestral desde <strong>{train_start}</strong> hasta '
+        f'<strong>{settings.train_cutoff_date}</strong>, usando en cada reentrenamiento hasta '
+        f'{settings.max_walk_forward_training_years} años de historia hacia atrás. Desde '
+        f'<strong>{settings.train_cutoff_date}</strong> hasta <strong>{settings.end_date}</strong>, '
+        f'la cartera se simula con ese modelo <strong>congelado</strong> (sin reentrenar), '
+        f'revisándose mensualmente ({settings.review_frequency}).'
+    )
+    params = pd.DataFrame([{
+        "Parámetro": "Fecha de corte (entrenar hasta aquí)", "Valor": settings.train_cutoff_date,
+    }, {
+        "Parámetro": "Años de entrenamiento previos", "Valor": settings.walk_forward_train_years,
+    }, {
+        "Parámetro": "Cadencia de reentrenamiento", "Valor": settings.walk_forward_train_frequency,
+    }, {
+        "Parámetro": "Horizonte de predicción (por defecto)", "Valor": f"{settings.walk_forward_label_horizon_months} meses",
+    }, {
+        "Parámetro": "Ventana móvil de historia por reentrenamiento", "Valor": f"{settings.max_walk_forward_training_years} años",
+    }, {
+        "Parámetro": "Universo", "Valor": f"{len(settings.investable_tickers)} tickers + {settings.benchmark_ticker}",
+    }])
+    return (
+        '<section id="metodologia"><h2>Metodología</h2>'
+        '<p class="lead">Cómo está construido el sistema y por qué, sin necesidad de leer el código.</p>'
+        '<h3 class="note">Los 4 agentes especializados + el meta-agente decisor</h3>'
+        f'<ul class="findings">{agent_rows}'
+        '<li>El <strong>meta-agente</strong> combina las cuatro señales anteriores en <code>final_score</code>, '
+        'aprendiendo qué peso dar a cada una a partir de su <strong>rank-IC</strong> (correlación de '
+        'Spearman) frente al alpha realmente realizado en cada snapshot de entrenamiento — un agente '
+        'sin capacidad de ordenar bien las acciones recibe peso ~0, en vez de pesos fijos a mano. '
+        '(Cambio 2026-07: la versión anterior ajustaba por mínimos cuadrados sobre el alpha en bruto, '
+        'lo que premiaba a agentes de baja varianza aunque no ordenasen bien las acciones.)</li></ul>'
+        '<h3 class="note" style="margin-top:18px">Entrenar hasta un corte, luego congelar</h3>'
+        f'<p class="note">{mechanics}</p>'
+        '<h3 class="note" style="margin-top:18px">Parámetros efectivos de esta ejecución</h3>'
+        + table(params)
+        + "</section>"
+    )
+
+
+def _section_debug(tables: dict, run_dir: Path) -> str:
+    diag = tables.get("model_walk_forward_diagnostics", pd.DataFrame())
+    diag_cols = ["snapshot_date", "phase", "mode", "fallback_reason", "training_snapshot_date",
+                 "training_rows", "training_years", "alpha_label_observable_rows",
+                 "rank_ic_alpha", "rmse_alpha", "n_oos"]
+    audit_dir = run_dir / "audit"
+    audit_links = ""
+    if audit_dir.exists():
+        files = sorted(audit_dir.glob("*.csv"))
+        if files:
+            items = "".join(
+                f'<li><a class="audit" href="../audit/{f.name}">{f.name}</a></li>' for f in files
+            )
+            audit_links = (
+                '<h3 class="note" style="margin-top:22px">Archivos de auditoría (en disco)</h3>'
+                '<p class="note">Tablas pesadas por ticker/snapshot; enlazadas, no embebidas.</p>'
+                f'<ul class="findings">{items}</ul>'
+            )
+    return (
+        '<section id="debug"><h2>Debug / TFM</h2>'
+        '<p class="lead">Diagnóstico del entrenamiento walk-forward: qué snapshots entrenaron modelo '
+        'vs. fallback determinista, y la calidad OOS por snapshot.</p>'
+        + table(select(diag, diag_cols))
+        + audit_links
+        + "</section>"
+    )
+
+
+# --- helpers ----------------------------------------------------------------
+
+def _load_tables(run_dir: Path) -> dict[str, pd.DataFrame]:
+    tables: dict[str, pd.DataFrame] = {}
+    audit_dir = run_dir / "audit"
+    if audit_dir.exists():
+        tables.update({p.stem: pd.read_csv(p) for p in audit_dir.glob("*.csv")})
+    tables.update({p.stem: pd.read_csv(p) for p in run_dir.glob("*.csv")})
+    meta = PROCESSED_DIR / "meta_weights_by_snapshot.parquet"
+    if "meta_weights_by_snapshot" not in tables and meta.exists():
+        tables["meta_weights_by_snapshot"] = pd.read_parquet(meta)
+    return tables
+
+
+def _remove_legacy_pages(viewer_dir: Path) -> None:
+    """Delete the old multi-page viewer output so only the new single report remains."""
+    if not viewer_dir.exists():
+        return
     for path in viewer_dir.glob("*.html"):
-        if path.name.startswith("position_"):
-            continue
-        if path.name not in keep:
+        if path.name != "index.html":
             path.unlink()
+
+
+def _pct(value) -> str:
+    if value is None or (isinstance(value, float) and (math.isnan(value) or math.isinf(value))):
+        return "—"
+    return f"{value:.1%}"
+
+
+def _num(value, decimals: int = 2) -> str:
+    if value is None or (isinstance(value, float) and (math.isnan(value) or math.isinf(value))):
+        return "—"
+    return f"{value:.{decimals}f}"

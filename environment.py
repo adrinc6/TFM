@@ -36,7 +36,7 @@ _load_dotenv(PROJECT_ROOT / ".env")
 # Editable project configuration. Keep .env only for API keys/secrets.
 RUN_MODE = "full"
 DATA_START_DATE = "2000-01-01"
-PORTFOLIO_START_DATE = "2023-02-15"
+PORTFOLIO_START_DATE = "2018-02-15"
 PORTFOLIO_END_DATE = "2026-06-15"
 PORTFOLIO_REVIEW_FREQUENCY = "M"
 FUNDAMENTAL_REVIEW_FREQUENCY = "Q"
@@ -58,8 +58,20 @@ WALK_FORWARD_LABEL_HORIZON_MONTHS = 12
 MIN_WALK_FORWARD_TRAINING_ROWS = 120
 MIN_WALK_FORWARD_TRAINING_YEARS = 4
 MAX_WALK_FORWARD_TRAINING_YEARS = 8
+# Train-until-cutoff-then-freeze: the walk-forward loop only reruns/relearns (agents + meta-agent
+# weights) on TRAIN_CUTOFF_DATE and earlier, at WALK_FORWARD_TRAIN_FREQUENCY cadence, starting
+# WALK_FORWARD_TRAIN_YEARS before the cutoff. From the cutoff onward, the last trained model/weights
+# are FROZEN and only used to predict (no further learning) — the portfolio is still reviewed
+# monthly (PORTFOLIO_REVIEW_FREQUENCY) using that frozen model. This replaces the previous "pure"
+# walk-forward that kept relearning every month all the way through the live-portfolio window.
+TRAIN_CUTOFF_DATE = PORTFOLIO_START_DATE
+WALK_FORWARD_TRAIN_YEARS = 8
+WALK_FORWARD_TRAIN_FREQUENCY = "Q"
 TRANSACTION_COST_BPS = 5.0
 SLIPPAGE_BPS = 10.0
+# Fundamentals carry a PERIOD-END date but are reported to the market weeks later. A fundamental is
+# only treated as observable this many weeks after its period end, removing a subtle lookahead.
+FUNDAMENTAL_PUBLICATION_LAG_WEEKS = 7
 
 FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
@@ -91,8 +103,12 @@ class Settings:
     min_walk_forward_training_rows: int = MIN_WALK_FORWARD_TRAINING_ROWS
     min_walk_forward_training_years: int = MIN_WALK_FORWARD_TRAINING_YEARS
     max_walk_forward_training_years: int = MAX_WALK_FORWARD_TRAINING_YEARS
+    train_cutoff_date: str = TRAIN_CUTOFF_DATE
+    walk_forward_train_years: int = WALK_FORWARD_TRAIN_YEARS
+    walk_forward_train_frequency: str = WALK_FORWARD_TRAIN_FREQUENCY
     transaction_cost_bps: float = TRANSACTION_COST_BPS
     slippage_bps: float = SLIPPAGE_BPS
+    fundamental_publication_lag_weeks: int = FUNDAMENTAL_PUBLICATION_LAG_WEEKS
     dev_mode: bool = DEV_MODE
     benchmark_ticker: str = BENCHMARK_TICKER
 
@@ -108,7 +124,7 @@ class Settings:
     @property
     def run_name(self) -> str:
         scope = "dev" if self.dev_mode else "full"
-        return f"{scope}_{self.start_date}_{self.end_date}_{self.review_frequency}"
+        return f"{scope}_{self.start_date}_{self.end_date}_{self.review_frequency}_cutoff{self.train_cutoff_date}"
 
     @property
     def run_dir(self) -> Path:
