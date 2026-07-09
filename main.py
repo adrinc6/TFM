@@ -5,16 +5,16 @@ from __future__ import annotations
 import logging
 
 from environment import Settings, ensure_directories
-from module.backtest.engine import run_backtest
-from module.common.logging import setup_logging
-from module.data_download.pipeline import download_raw_data
-from module.dataset_builder.master import build_master_dataset
-from module.features.engineering import build_features
-from module.ml.model import train_and_score
-from module.research.openai_research import build_openai_research
-from module.report.final_report import build_final_report
-from module.viewer.html import build_viewer
-from module.watchlist.engine import build_watchlist
+from module.backtest import run_backtest
+from module.ingest.pipeline import download_raw_data
+from module.dataset import build_master_dataset
+from module.features.pipeline import build_features
+from module.ml import train_and_score
+from module.research.ai import build_openai_research
+from module.report import build_final_report
+from module.strategy.selection import build_watchlist
+from module.utils import setup_logging
+from module.viewer import build_viewer
 
 
 log = logging.getLogger(__name__)

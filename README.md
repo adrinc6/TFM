@@ -8,34 +8,34 @@ Sistema de IA explicable para investigar si una cartera GARP / Value-Growth pued
 python main.py
 ```
 
-La configuracion operativa vive en `environment.py`:
+La configuración operativa vive en `environment.py`:
 
 - `RUN_MODE`: `download`, `dataset`, `features`, `ml`, `backtest`, `viewer`, `full`
 - `DATA_START_DATE`
 - `PORTFOLIO_START_DATE`
 - `PORTFOLIO_END_DATE`
 - `PORTFOLIO_REVIEW_FREQUENCY`: `M`, `2M`, `Q`
-- `DEV_MODE`: `true` o `false`
-- `FORCE_RAW_DOWNLOAD`: `False` reutiliza JSON raw ya descargados; `True` fuerza redescarga.
+- `DEV_MODE`: `true` o `false` (límite a `DEV_TICKERS` + SPY para desarrollo rápido)
+- `FORCE_RAW_DOWNLOAD`: `False` reutiliza JSON raw cacheados; `True` fuerza redescarga
 - `OPENAI_MODEL`
 - `ENABLE_OPENAI_RESEARCH`
 
-Configuracion actual relevante:
+Configuración actual:
 
-- Datos desde `2000-01-01`.
-- Simulacion desde `PORTFOLIO_START_DATE`.
-- Walk-forward con minimo `MIN_WALK_FORWARD_TRAINING_YEARS` anos efectivos y maximo `MAX_WALK_FORWARD_TRAINING_YEARS` anos de ventana historica.
-- El dataset maestro no materializa snapshots desde `DATA_START_DATE` si no hacen falta: empieza en `PORTFOLIO_START_DATE - MAX_WALK_FORWARD_TRAINING_YEARS`, respetando siempre el minimo `DATA_START_DATE`.
-- En cada fecha, el entrenamiento usa filas desde `fecha_actual - MAX_WALK_FORWARD_TRAINING_YEARS` hasta la propia fecha actual. No se descarta el ultimo ano.
-- Las filas recientes entran en el entrenamiento, pero si su alpha futuro aun no seria observable en esa fecha, ese componente usa fallback GARP para evitar fuga de informacion futura.
-- Horizonte de etiqueta: 12 meses.
+- Datos históricos desde `2000-01-01` (universo estático, ver "Limitaciones metodológicas" abajo)
+- Simulación desde `PORTFOLIO_START_DATE`
+- Walk-forward con `MIN_WALK_FORWARD_TRAINING_YEARS` (mín. efectivo) y `MAX_WALK_FORWARD_TRAINING_YEARS` (ventana máxima)
+- Targets ML genuinamente forward-looking (quality, improvement, mispricing, alpha) con enmascarado de fuga de 12 meses
+- Sizing hybrid (`0.35 * equal_weight + 0.65 * risk_adjusted_weight`) integrado en el P&L del backtest
+- Coste de transacción ponderado por notional rotado, no por conteo de operaciones
+- Métricas de rigor estadístico: information ratio, tracking error, t-stat con advertencia explícita de muestra pequeña
 
 El archivo `.env` se usa solo para API keys:
 
 - `FINNHUB_API_KEY`
 - `OPENAI_API_KEY`
 
-En `DEV_MODE=true` el universo se limita a `DEV_TICKERS` más `SPY`.
+En `DEV_MODE=true` el universo se limita a `DEV_TICKERS` más `SPY`, permitiendo ciclos de desarrollo rápidos.
 
 ## Arquitectura
 
@@ -85,6 +85,17 @@ data_download -> dataset_builder -> features -> ml -> research -> thesis -> watc
 - `results/<run>/viewer/index.html`
 - `results/<run>/audit/*.csv`: tablas grandes de auditoria.
 
-## Nota de Validación
+## Limitaciones metodológicas
 
-La prueba local incluida en este estado del workspace se genero con datos sinteticos minimos para validar integracion sin depender de red. Para una ejecucion real, configura `FINNHUB_API_KEY`, ajusta `RUN_MODE = "full"` en `environment.py` y ejecuta `python main.py`.
+**Sesgo de supervivencia**: `TICKERS` es un listado estático de empresas del S&P 500 actual aplicado retroactivamente desde 2000. No incluye nombres delisted/adquiridos ni excluye IPOs recientes. Esto constituye sesgo de supervivencia que hereda el entrenamiento ML. La cartera viva solo opera entre `PORTFOLIO_START_DATE` y `PORTFOLIO_END_DATE`, lo que acota pero no elimina el problema. Se documenta explícitamente en todas las conclusiones.
+
+**Muestra pequeña**: ~40 observaciones mensuales típicas. No se aplican correcciones bootstrap, Sharpe deflactado ni ajustes por comparaciones múltiples. El t-stat del retorno en exceso es directional, no prueba de significancia estadística. Ver aviso explícito en `final_report.html`.
+
+## Validación
+
+El sistema ha sido auditado en tres dimensiones:
+1. **Metodológica**: sin lookahead bias, targets ML genuinamente predictivos, walk-forward con enmascarado de fuga
+2. **Robustez**: error handling por ticker, límite de reintentos en rate-limiting, informe de cobertura de descarga
+3. **Presentación**: formato numérico unificado, toda la UI en español, diagnóstico walk-forward visible, tabla de drawdowns
+
+Se incluye un smoke test con datos sintéticos para validar integración. Para ejecución real: configura `FINNHUB_API_KEY`, ajusta `RUN_MODE = "full"` en `environment.py` y ejecuta `python main.py`.
