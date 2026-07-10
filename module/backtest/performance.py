@@ -257,10 +257,6 @@ def weighted_basket_return(
     return float(pd.Series(list(returns.values())).mean())
 
 
-def basket_return(prices: pd.DataFrame, tickers: list[str], start_date: pd.Timestamp, end_date: pd.Timestamp) -> float:
-    return weighted_basket_return(prices, tickers, start_date, end_date, weights=None)
-
-
 def last_price(prices: pd.DataFrame, ticker: str, date: pd.Timestamp) -> float | None:
     rows = prices[(prices["ticker"] == ticker) & (prices["date"] <= date)].sort_values("date")
     return None if rows.empty else float(rows.iloc[-1]["adj_close"])

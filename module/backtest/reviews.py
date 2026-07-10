@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pandas as pd
 
+from environment import MIN_SCORE_ADVANTAGE_TO_REPLACE
 from module.strategy.portfolio import manager_score
 
 
@@ -27,7 +28,7 @@ def universe_review_rows(date: str, universe: pd.DataFrame) -> list[dict]:
             "thesis_rank_score": float(row.thesis_rank_score),
             "conviction_score": float(row.conviction_score),
             "business_quality_score": float(row.business_quality_score),
-            "alpha_probability": float(getattr(row, "alpha_probability", row.final_score)),
+            "timing_probability": float(getattr(row, "timing_probability", row.final_score)),
             "valuation_score": float(row.valuation_score),
             "price_adjusted_valuation_score": float(getattr(row, "price_adjusted_valuation_score", row.valuation_score)),
             "momentum_score": float(getattr(row, "momentum_score", 0.5)),
@@ -125,7 +126,7 @@ def review_diagnostics(date: str, portfolio: dict[str, dict], universe: pd.DataF
             "weakest_holding": weakest_ticker,
             "weakest_holding_score": weakest_score,
             "score_advantage_vs_weakest": advantage,
-            "replacement_candidate": (not in_portfolio) and advantage >= 0.06 and bool(row.would_buy_today),
+            "replacement_candidate": (not in_portfolio) and advantage >= MIN_SCORE_ADVANTAGE_TO_REPLACE and bool(row.would_buy_today),
             "reason": review_reason(in_portfolio, advantage),
         })
     return rows
@@ -134,7 +135,7 @@ def review_diagnostics(date: str, portfolio: dict[str, dict], universe: pd.DataF
 def review_reason(in_portfolio: bool, advantage: float) -> str:
     if in_portfolio:
         return "Already held"
-    if advantage >= 0.06:
+    if advantage >= MIN_SCORE_ADVANTAGE_TO_REPLACE:
         return "Materially better than weakest holding"
     return "Not enough advantage to justify rotation"
 

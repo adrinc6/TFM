@@ -18,7 +18,7 @@ from environment import PROCESSED_DIR, Settings
 from module.backtest.artifacts import SMALL_SAMPLE_CAVEAT
 
 from .charts import build_charts
-from .shared import PALETTE, figure, kpi, report_layout, select, table
+from .shared import figure, kpi, report_layout, select, table
 
 log = logging.getLogger(__name__)
 
@@ -29,6 +29,7 @@ NAV = [
     ("cartera", "Cartera"),
     ("aprendizaje", "Aprendizaje"),
     ("posiciones", "Posiciones"),
+    ("robustez", "Robustez"),
     ("metodologia", "Metodología"),
     ("debug", "Debug / TFM"),
 ]
@@ -78,6 +79,7 @@ def _report_body(settings: Settings, tables: dict, charts: dict, run_dir: Path) 
         _section_cartera(tables),
         _section_aprendizaje(charts, tables, settings),
         _section_posiciones(charts, tables),
+        _section_robustez(tables),
         _section_metodologia(tables, settings),
         _section_debug(tables, run_dir),
     ])
@@ -103,7 +105,8 @@ def _section_resumen(metrics: dict) -> str:
     return (
         '<section id="resumen"><h2>Resumen ejecutivo</h2>'
         f'<p class="lead">La estrategia sistemática GARP {verdict} al benchmark en esta ventana. '
-        f'{SMALL_SAMPLE_CAVEAT}</p>'
+        f'{SMALL_SAMPLE_CAVEAT} La confianza del resultado se lee mejor con el intervalo de confianza '
+        f'por bootstrap de la sección <a href="#robustez">Robustez</a> que con el t-stat aislado.</p>'
         f'<div class="kpis">{kpis}</div></section>'
     )
 
@@ -165,16 +168,18 @@ def _section_aprendizaje(charts: dict, tables: dict, settings: Settings) -> str:
     lead = (
         'La prueba de que el sistema aprende: en cada snapshot de entrenamiento el meta-agente '
         'ajusta —a partir del alpha realmente realizado a 12 meses (walk-forward, sin lookahead)— '
-        f'cuánto pesa cada agente especializado. {learned} de {total} snapshots de entrenamiento '
-        'usaron pesos aprendidos (el resto, prior por falta de historia). El segundo gráfico muestra '
-        'el rank-IC out-of-sample del agente Alpha por snapshot y su media móvil de 12 periodos: si '
-        'sube con el tiempo, el sistema afina; si oscila plano, la muestra (unas 90 observaciones) '
-        'no permite todavía distinguir mejora de ruido — se reporta el dato tal cual sale, sin '
-        f'forzar una lectura de mejora. {cutoff_note}'
+        f'cuánto pesa cada agente especializado, premiando su contribución <em>marginal</em> '
+        '(rank-IC parcial frente al alpha que los otros tres agentes no explican), no su solape. '
+        f'{learned} de {total} snapshots de entrenamiento usaron pesos aprendidos (el resto, prior '
+        'por falta de historia). El segundo gráfico muestra el rank-IC out-of-sample de la señal '
+        'maestra (final_score, la combinación del meta-agente) por snapshot y su media móvil de 12 '
+        'periodos: si sube con el tiempo, el sistema afina; si oscila plano, la muestra (unas 90 '
+        'observaciones) no permite todavía distinguir mejora de ruido — se reporta el dato tal cual '
+        f'sale, sin forzar una lectura de mejora. {cutoff_note}'
     )
     year_stats = _year_ic_table(tables.get("model_walk_forward_diagnostics", pd.DataFrame()))
     year_block = (
-        '<h3 class="note" style="margin-top:22px">Rank-IC del agente Alpha por año</h3>'
+        '<h3 class="note" style="margin-top:22px">Rank-IC de la señal maestra por año</h3>'
         + table(year_stats) if not year_stats.empty else ""
     )
     horizon_block = _horizon_comparison_block(charts, tables.get("label_horizon_comparison", pd.DataFrame()), settings)
@@ -185,7 +190,7 @@ def _section_aprendizaje(charts: dict, tables: dict, settings: Settings) -> str:
         + figure(charts.get("learned_weights"), "Evolución de los pesos aprendidos del meta-agente por snapshot")
         + dominant_block
         + '<div style="height:16px"></div>'
-        + figure(charts.get("rank_ic"), "Rank-IC out-of-sample del agente Alpha por snapshot, con media móvil de tendencia")
+        + figure(charts.get("rank_ic"), "Rank-IC out-of-sample de la señal maestra por snapshot, con media móvil de tendencia")
         + year_block
         + horizon_block
         + "</section>"
@@ -223,10 +228,10 @@ def _horizon_comparison_block(charts: dict, horizon_df: pd.DataFrame, settings: 
         conclusion = f'Horizonte con mejor rank-IC observado: {best_months} meses (rank-IC {best_ic:.3f}).'
     return (
         '<h3 class="note" style="margin-top:22px">¿Qué horizonte de predicción funciona mejor?</h3>'
-        '<p class="note">El agente Alpha ya entrenado se compara contra el alfa real a 3, 6 y 12 '
+        '<p class="note">La señal maestra ya combinada se compara contra el alfa real a 3, 6 y 12 '
         'meses, usando solo los snapshots de la fase de entrenamiento (la fase congelada usa siempre '
         'el mismo modelo, así que no aporta información nueva sobre el horizonte).</p>'
-        + figure(charts.get("horizon_comparison"), "Rank-IC medio del agente Alpha a 3, 6 y 12 meses")
+        + figure(charts.get("horizon_comparison"), "Rank-IC medio de la señal maestra a 3, 6 y 12 meses")
         + f'<p class="note">{conclusion}</p>'
     )
 
@@ -238,19 +243,19 @@ def _dominant_agent_block(weights: pd.DataFrame, diag: pd.DataFrame) -> str:
     latest = weights.sort_values("snapshot_date").iloc[-1]
     agent_labels = {
         "quality_probability": "Calidad", "improvement_probability": "Crecimiento",
-        "mispricing_probability": "Infravaloración", "alpha_probability": "Alpha",
+        "mispricing_probability": "Infravaloración", "timing_probability": "Temporización",
     }
     agent_keys = [k for k in agent_labels if k in weights.columns]
     if not agent_keys:
         return ""
     dominant_key = max(agent_keys, key=lambda k: latest[k])
     dominant_share = float(latest[dominant_key])
-    rank_ic_col = "rank_ic_alpha" if dominant_key == "alpha_probability" else f"rank_ic_{dominant_key}"
+    rank_ic_col = f"rank_ic_{dominant_key}"
     ic_sentence = ""
     if not diag.empty and rank_ic_col in diag.columns:
         ic_series = pd.to_numeric(diag[rank_ic_col], errors="coerce").dropna()
         if not ic_series.empty:
-            ic_sentence = f' Su rank-IC medio histórico es {ic_series.mean():.3f}, la señal más consistente de las cuatro en esta ejecución.'
+            ic_sentence = f' Su rank-IC OOS medio histórico es {ic_series.mean():.3f}, la señal más consistente de las cuatro en esta ejecución.'
     phase_label = "congelado" if str(latest.get("phase")) == "frozen" else "aprendido"
     return (
         '<p class="note" style="margin-top:10px">'
@@ -261,14 +266,14 @@ def _dominant_agent_block(weights: pd.DataFrame, diag: pd.DataFrame) -> str:
 
 
 def _year_ic_table(diag: pd.DataFrame) -> pd.DataFrame:
-    cols = ["rank_ic_alpha_year_mean", "rank_ic_alpha_year_tstat"]
+    cols = ["rank_ic_final_year_mean", "rank_ic_final_year_tstat"]
     if diag.empty or "snapshot_date" not in diag.columns or not all(c in diag.columns for c in cols):
         return pd.DataFrame()
     d = diag.copy()
     d["year"] = pd.to_datetime(d["snapshot_date"], errors="coerce").dt.year
     yearly = d.dropna(subset=["year"]).groupby("year")[cols].first().reset_index()
     return yearly.rename(columns={
-        "year": "Año", "rank_ic_alpha_year_mean": "Rank-IC medio", "rank_ic_alpha_year_tstat": "t-stat aprox.",
+        "year": "Año", "rank_ic_final_year_mean": "Rank-IC medio", "rank_ic_final_year_tstat": "t-stat aprox.",
     })
 
 
@@ -291,6 +296,58 @@ def _section_posiciones(charts: dict, tables: dict) -> str:
     )
 
 
+def _section_robustez(tables: dict) -> str:
+    """¿Es sólido el alpha o cabe en el ruido de una muestra pequeña? — bootstrap + sensibilidad a costes."""
+    bootstrap = tables.get("robustness_bootstrap", pd.DataFrame())
+    cost = tables.get("robustness_cost_sensitivity", pd.DataFrame())
+    summary = tables.get("robustness_summary", pd.DataFrame())
+    bootstrap_cols = {
+        "metrica": "Métrica", "estimacion": "Estimación", "ic_2_5": "IC 2.5%", "ic_97_5": "IC 97.5%",
+        "prob_positiva": "P(>0)", "n_resamples": "Resamples", "bloque_meses": "Bloque (meses)",
+    }
+    cost_cols = {
+        "multiplicador": "Multiplicador de coste", "coste_total_bps": "Coste total (bps)",
+        "alpha_acumulada_neta": "Alpha acumulada neta", "sigue_positiva": "¿Sigue positiva?",
+    }
+    breakeven_note = ""
+    if not summary.empty:
+        breakeven = summary.iloc[0].get("breakeven_cost_multiplier")
+        if breakeven is not None and not (isinstance(breakeven, float) and math.isnan(breakeven)):
+            breakeven_note = (
+                f'<p class="note">Punto de equilibrio de costes: la alpha acumulada cruza a negativa '
+                f'a partir de <strong>{float(breakeven):.1f}×</strong> los costes de transacción y '
+                f'slippage actuales. Por debajo de ese múltiplo el resultado sigue siendo positivo.</p>'
+            )
+        else:
+            breakeven_note = (
+                '<p class="note">La alpha acumulada no llega a cruzar a negativa dentro del barrido de '
+                'costes probado (o ya es no positiva sin coste extra); ver la tabla.</p>'
+            )
+    lead = (
+        'Con solo unas decenas de observaciones mensuales, el t-stat por sí solo exagera lo que '
+        'sabemos. La forma principal de leer la confianza del resultado es el <strong>intervalo de '
+        'confianza por bootstrap</strong> de abajo: se remuestrea el exceso mensual en bloques de '
+        'varios meses (para preservar la autocorrelación) y se recalcula la alpha acumulada y el '
+        'information ratio miles de veces. Si el intervalo 2.5–97.5% se mantiene por encima de cero, '
+        'el edge es más creíble; si cruza el cero, la muestra no permite descartar que sea ruido.'
+    )
+    return (
+        '<section id="robustez"><h2>Robustez estadística</h2>'
+        f'<p class="lead">{lead}</p>'
+        '<h3 class="note">Bootstrap por bloques del exceso mensual</h3>'
+        + table(bootstrap, rename=bootstrap_cols)
+        + '<h3 class="note" style="margin-top:22px">Sensibilidad a costes y slippage</h3>'
+        '<p class="note">La alpha se recalcula escalando el coste ya aplicado (lineal en el múltiplo), '
+        'sin rehacer selección ni sizing.</p>'
+        + table(cost, rename=cost_cols)
+        + breakeven_note
+        + '<p class="note" style="margin-top:10px">La distribución completa por resample se guarda en '
+        '<a class="audit" href="../audit/robustness_bootstrap_distribution.csv">'
+        'robustness_bootstrap_distribution.csv</a> (enlazada, no embebida).</p>'
+        + "</section>"
+    )
+
+
 def _section_metodologia(tables: dict, settings: Settings) -> str:
     """Explains the design in prose so the report is readable without opening the code."""
     explain_path = PROCESSED_DIR / "model_explainability.json"
@@ -301,7 +358,7 @@ def _section_metodologia(tables: dict, settings: Settings) -> str:
         definitions = payload.get("component_target_definitions", {})
     agent_names = {
         "quality_probability": "Calidad", "improvement_probability": "Crecimiento",
-        "mispricing_probability": "Infravaloración", "alpha_probability": "Alpha (maestro)",
+        "mispricing_probability": "Infravaloración", "timing_probability": "Temporización",
     }
     agent_rows = "".join(
         f'<li><strong>{agent_names.get(key, key)}</strong>: {definitions.get(key, "")}</li>'
@@ -337,11 +394,13 @@ def _section_metodologia(tables: dict, settings: Settings) -> str:
         '<h3 class="note">Los 4 agentes especializados + el meta-agente decisor</h3>'
         f'<ul class="findings">{agent_rows}'
         '<li>El <strong>meta-agente</strong> combina las cuatro señales anteriores en <code>final_score</code>, '
-        'aprendiendo qué peso dar a cada una a partir de su <strong>rank-IC</strong> (correlación de '
-        'Spearman) frente al alpha realmente realizado en cada snapshot de entrenamiento — un agente '
-        'sin capacidad de ordenar bien las acciones recibe peso ~0, en vez de pesos fijos a mano. '
-        '(Cambio 2026-07: la versión anterior ajustaba por mínimos cuadrados sobre el alpha en bruto, '
-        'lo que premiaba a agentes de baja varianza aunque no ordenasen bien las acciones.)</li></ul>'
+        'aprendiendo qué peso dar a cada una por su <strong>contribución marginal</strong>: el rank-IC '
+        'parcial de cada agente frente al alpha realizado que los otros tres <em>no</em> explican '
+        '(regresión sobre un 70% cronológico, medido en el 30% restante, sin lookahead). Así se premia '
+        'a un agente por aportar información nueva, no por solaparse con el resto; un agente redundante o '
+        'sin capacidad de ordenar recibe peso ~0, en vez de pesos fijos a mano. Ya no existe un agente '
+        '«alpha» generalista: era el mismo objetivo que evalúa al meta-agente y con el superconjunto de '
+        'features, así que dominaba estructuralmente la mezcla.</li></ul>'
         '<h3 class="note" style="margin-top:18px">Entrenar hasta un corte, luego congelar</h3>'
         f'<p class="note">{mechanics}</p>'
         '<h3 class="note" style="margin-top:18px">Parámetros efectivos de esta ejecución</h3>'
@@ -354,7 +413,7 @@ def _section_debug(tables: dict, run_dir: Path) -> str:
     diag = tables.get("model_walk_forward_diagnostics", pd.DataFrame())
     diag_cols = ["snapshot_date", "phase", "mode", "fallback_reason", "training_snapshot_date",
                  "training_rows", "training_years", "alpha_label_observable_rows",
-                 "rank_ic_alpha", "rmse_alpha", "n_oos"]
+                 "rank_ic_final", "n_oos"]
     audit_dir = run_dir / "audit"
     audit_links = ""
     if audit_dir.exists():

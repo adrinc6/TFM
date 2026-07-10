@@ -139,7 +139,7 @@ def _chart_learned_weights(charts_dir, charts, df, train_cutoff_date: str | None
         "quality_probability": ("Calidad", PALETTE["portfolio"]),
         "improvement_probability": ("Crecimiento", PALETTE["series_3"]),
         "mispricing_probability": ("Infravaloración", PALETTE["series_4"]),
-        "alpha_probability": ("Alpha", PALETTE["benchmark"]),
+        "timing_probability": ("Temporización", PALETTE["benchmark"]),
     }
     if df.empty or "snapshot_date" not in df.columns or not all(a in df.columns for a in agents):
         return
@@ -157,42 +157,43 @@ def _chart_learned_weights(charts_dir, charts, df, train_cutoff_date: str | None
 
 
 def _chart_rank_ic(charts_dir, charts, df, train_cutoff_date: str | None = None) -> None:
-    """Out-of-sample rank-IC of the alpha agent per snapshot — model quality over time.
+    """Out-of-sample rank-IC of the master signal (`final_score`, the meta-agent output) per
+    snapshot — model quality over time.
 
     After the train cutoff (marked with a vertical line), every snapshot is scored with the SAME
     frozen model, so the rank-IC there measures how well that fixed model ages, not further
     learning.
     """
-    if df.empty or "snapshot_date" not in df.columns or "rank_ic_alpha" not in df.columns:
+    if df.empty or "snapshot_date" not in df.columns or "rank_ic_final" not in df.columns:
         return
     d = df.copy()
-    d["rank_ic_alpha"] = pd.to_numeric(d["rank_ic_alpha"], errors="coerce")
-    d = d.dropna(subset=["rank_ic_alpha"])
+    d["rank_ic_final"] = pd.to_numeric(d["rank_ic_final"], errors="coerce")
+    d = d.dropna(subset=["rank_ic_final"])
     if d.empty:
         return
     d["snapshot_date"] = pd.to_datetime(d["snapshot_date"])
     d = d.sort_values("snapshot_date")
-    colors = [PALETTE["positive"] if v >= 0 else PALETTE["negative"] for v in d["rank_ic_alpha"]]
+    colors = [PALETTE["positive"] if v >= 0 else PALETTE["negative"] for v in d["rank_ic_final"]]
     fig, ax = _new(2.8)
-    ax.bar(d["snapshot_date"], d["rank_ic_alpha"], width=20, color=colors, alpha=0.55, label="Rank-IC por snapshot")
+    ax.bar(d["snapshot_date"], d["rank_ic_final"], width=20, color=colors, alpha=0.55, label="Rank-IC por snapshot")
     ax.axhline(0, color=PALETTE["muted"], linewidth=1.0)
-    if "rank_ic_alpha_rolling" in d.columns and d["rank_ic_alpha_rolling"].notna().any():
+    if "rank_ic_final_rolling" in d.columns and d["rank_ic_final_rolling"].notna().any():
         # Rolling mean shows whether OOS predictive power trends up, stays flat, or oscillates —
         # with ~90 snapshots this is descriptive, not a significance test; shown as-is either way.
-        ax.plot(d["snapshot_date"], d["rank_ic_alpha_rolling"], color=PALETTE["portfolio"],
+        ax.plot(d["snapshot_date"], d["rank_ic_final_rolling"], color=PALETTE["portfolio"],
                  linewidth=2.2, label="Media móvil (12 snapshots)")
     else:
-        ax.axhline(float(d["rank_ic_alpha"].mean()), color=PALETTE["portfolio"], linewidth=1.4,
-                   linestyle="--", label=f"Media {d['rank_ic_alpha'].mean():.2f}")
+        ax.axhline(float(d["rank_ic_final"].mean()), color=PALETTE["portfolio"], linewidth=1.4,
+                   linestyle="--", label=f"Media {d['rank_ic_final'].mean():.2f}")
     _mark_cutoff(ax, train_cutoff_date, d["snapshot_date"].min(), d["snapshot_date"].max())
-    ax.set_ylabel("Rank-IC OOS (agente Alpha)")
+    ax.set_ylabel("Rank-IC OOS (señal maestra)")
     ax.legend(frameon=False, loc="upper left")
     _save(fig, charts_dir, charts, "rank_ic")
 
 
 def _chart_horizon_comparison(charts_dir, charts, df) -> None:
-    """Rank-IC of the (already-trained) alpha agent at 3/6/12-month horizons — answers whether a
-    shorter or longer label horizon would predict better, with data instead of assumption.
+    """Rank-IC of the combined master signal at 3/6/12-month horizons — answers whether the
+    strategy's edge lives at a shorter or longer horizon, with data instead of assumption.
     """
     if df.empty or "horizon_months" not in df.columns or "rank_ic_mean" not in df.columns:
         return
@@ -211,7 +212,7 @@ def _chart_horizon_comparison(charts_dir, charts, df) -> None:
     ax.set_facecolor("white")
     ax.bar([f"{m}m" for m in d["horizon_months"]], d["rank_ic_mean"], color=colors, width=0.55)
     ax.axhline(0, color=PALETTE["muted"], linewidth=1.0)
-    ax.set_ylabel("Rank-IC medio (agente Alpha)")
+    ax.set_ylabel("Rank-IC medio (señal maestra)")
     ax.set_xlabel("Horizonte de predicción")
     _save(fig, charts_dir, charts, "horizon_comparison")
 

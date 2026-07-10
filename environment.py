@@ -49,10 +49,14 @@ FORCE_RAW_DOWNLOAD = False
 
 MIN_PORTFOLIO_SIZE = 5
 MAX_PORTFOLIO_SIZE = 10
-MIN_ROTATION_ADVANTAGE = 0.08
-MIN_SCORE_ADVANTAGE_TO_REPLACE = 0.06
-MIN_CONVICTION_ADVANTAGE = 0.05
-MIN_OPPORTUNITY_COST_THRESHOLD = 0.07
+# Rotation / replacement thresholds, all consumed in module/strategy/portfolio.py. These are the
+# A/B knob for how aggressively the book rotates: editing them here is the only place a value lives,
+# there is no hardcoded duplicate in the strategy code. Raising them (or the minimum holding period)
+# lowers turnover.
+MIN_ROTATION_ADVANTAGE = 0.10          # primary: manager_score edge a challenger needs to replace a holding
+MIN_SCORE_ADVANTAGE_TO_REPLACE = 0.06  # secondary path: a smaller score edge is enough only if conviction is also better
+MIN_CONVICTION_ADVANTAGE = 0.05        # secondary path: conviction edge required alongside the smaller score edge
+MIN_OPPORTUNITY_COST_THRESHOLD = 0.08  # soft sell: opportunity_cost_score above this = capital is better used elsewhere
 WALK_FORWARD_SCORING = True
 WALK_FORWARD_LABEL_HORIZON_MONTHS = 12
 MIN_WALK_FORWARD_TRAINING_ROWS = 120

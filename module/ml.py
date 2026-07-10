@@ -1,16 +1,26 @@
-"""Train, score and explain the GARP alpha model.
+"""Train and score the GARP model: four disjoint specialist agents + a learned meta-agent.
 
-Four component agents (quality, improvement, mispricing, alpha) are trained against forward-looking
-targets built from information observable `walk_forward_label_horizon_months` ahead of each snapshot
-(see _add_component_targets), leakage-masked identically during walk-forward training (see
-_walk_forward_component_scores).
+The four agents are genuine GARP experts, each fit on its OWN, non-overlapping feature subset
+(AGENT_FEATURES) against its OWN forward-looking target (COMPONENT_TARGETS):
 
-`target_future_alpha` is the master signal: realized forward stock return minus benchmark return.
-The other three targets are anchored to *observed* forward outcomes (forward change in realized
-ROIC/quality, realized fundamental growth vs. today's expectation, and mispricing resolution
-conditioned on the initial valuation discount) — not deterministic re-projections of same-day
-features. Out-of-sample rank-IC / RMSE of each agent vs. the realized forward alpha is computed per
-snapshot and written to model_walk_forward_diagnostics.csv so model quality is auditable.
+    quality      — durable business quality (forward change in reported ROIC)
+    improvement  — growth trajectory (forward observed growth vs. today's market expectation)
+    mispricing   — valuation (whether today's real discount resolved into forward alpha)
+    timing       — entry/momentum (short-horizon forward excess return)
+
+There is deliberately NO generalist "alpha" agent that sees every feature and predicts the same
+`target_future_alpha` the meta-agent scores against — that agent structurally dominated the blend
+(same target, superset of features) and was removed. `target_future_alpha` (realized 12m forward
+excess return) survives only as the *evaluation* label: what the meta-agent learns its weights
+against and what OOS rank-IC is measured on — never as an agent that predicts it.
+
+Every target is observable only `its own horizon` ahead (AGENT_HORIZON_MONTHS_OVERRIDE), and is
+leakage-masked identically during walk-forward training (see _walk_forward_component_scores). The
+meta-agent (`_meta_agent_scores` / `_fit_meta_weights`) then learns how to combine the four agents
+by each agent's *marginal* ranking contribution (partial rank-IC against the alpha left unexplained
+by the other three), so an agent is rewarded for information the others don't already carry, not for
+redundancy. Per-snapshot OOS rank-IC / RMSE of each agent and of the combined `final_score` is
+written to model_walk_forward_diagnostics.csv so model quality is auditable.
 """
 
 from __future__ import annotations
@@ -22,7 +32,6 @@ import numpy as np
 import pandas as pd
 
 from environment import PROCESSED_DIR, RAW_DIR, Settings
-from module.features.pipeline import FEATURE_COLUMNS
 from module.utils import read_parquet, write_json, write_parquet
 
 log = logging.getLogger(__name__)
@@ -68,41 +77,48 @@ COMPONENT_TARGETS = {
     "quality_probability": "target_quality",
     "improvement_probability": "target_improvement",
     "mispricing_probability": "target_mispricing",
-    "alpha_probability": "target_future_alpha",
+    "timing_probability": "target_timing",
 }
 
-# Per-agent label horizon override (months). A valuation discount plausibly resolves faster than a
-# 12-month fundamental-quality change, so `mispricing` gets its own shorter horizon; everything else
-# keeps the default `walk_forward_label_horizon_months`. Isolated experiment: if it doesn't improve
-# this agent's OOS rank-IC, revert to the shared horizon rather than keeping an unproven parameter.
+# Per-agent label horizon override (months). Each GARP dimension resolves on its own clock: a
+# valuation discount plausibly closes faster than a 12-month fundamental-quality change, and an
+# entry-timing edge is by nature short-term — so `mispricing` and `timing` get their own shorter
+# horizons while `quality`/`improvement` keep the default `walk_forward_label_horizon_months`. Each
+# is masked separately in the walk-forward loop under the same no-lookahead rule, just a different
+# offset.
 AGENT_HORIZON_MONTHS_OVERRIDE = {
     "mispricing_probability": 6,
+    "timing_probability": 3,
 }
 
-# Each specialist agent sees only the features relevant to its dimension, so the four agents
-# genuinely specialise (distinct feature importances) instead of all fitting the same 30 columns.
-# The alpha agent is the generalist and keeps the full feature set.
+# Each specialist agent sees ONLY the features relevant to its GARP dimension, and the four subsets
+# are mutually DISJOINT — no feature is shared across agents. This is what makes them genuine
+# complements (distinct feature importances, distinct targets) rather than four views of the same
+# signal, and it is what lets the meta-agent's partial-IC weighting reward marginal contribution.
 AGENT_FEATURES = {
+    # Durable business quality: profitability, moat, balance-sheet risk and their multi-year trends.
     "quality_probability": [
         "quality_score", "moat_score", "risk_score",
         "quality_score_vs_sector", "quality_score_vs_universe",
         "quality_trend_1y", "quality_trend_2y", "roic_trend", "margin_trend", "fcf_trend", "moat_trend",
     ],
-    # Trimmed to the top-4 by realized feature importance on a full run (see model_explainability.json):
-    # growth_score/expected_growth/growth_acceleration/growth_deceleration together already carried
-    # ~72% of this agent's importance with the wider set, and its walk-forward OOS rank-IC was
-    # negative in most years (2019-2025) even so — fewer, higher-signal features trade off variance
-    # without pretending the extra columns were adding real predictive power.
+    # Growth trajectory: level of growth, market-implied expectation, and growth acceleration.
     "improvement_probability": [
         "growth_score", "expected_growth", "growth_acceleration", "growth_deceleration",
     ],
-    # Trimmed to the top-4 (~69% of this agent's importance): quality_value_gap, valuation vs
-    # sector, positive_expectation_gap, valuation vs universe. Same rationale as improvement above.
+    # Valuation: the undervalued-quality gap and cross-sectional cheapness vs. sector/universe.
     "mispricing_probability": [
         "quality_value_gap", "valuation_score_vs_sector",
         "positive_expectation_gap", "valuation_score_vs_universe",
     ],
-    "alpha_probability": MODEL_FEATURES,
+    # Entry/momentum: price momentum, earnings-surprise catalyst, short-window price returns and how
+    # stale the last fundamental is (a fresh print re-times the entry). Deliberately excludes every
+    # feature already owned by the other three agents (e.g. growth_acceleration → improvement).
+    "timing_probability": [
+        "momentum_score", "catalyst_score",
+        "price_return_1m", "price_return_3m", "price_return_since_fundamental",
+        "stale_fundamental_months",
+    ],
 }
 
 
@@ -148,19 +164,22 @@ def train_and_score(settings: Settings) -> pd.DataFrame:
     labeled = _add_component_targets(features, prices, settings.benchmark_ticker, settings.walk_forward_label_horizon_months)
     if settings.walk_forward_scoring:
         labeled, importance, diagnostics = _walk_forward_component_scores(labeled, settings)
-        settings.run_dir.mkdir(parents=True, exist_ok=True)
-        diagnostics.to_csv(settings.run_dir / "model_walk_forward_diagnostics.csv", index=False)
     else:
         models, importance = _fit_component_models(labeled)
         for probability, model in models.items():
             labeled[probability] = _predict(model, labeled[_agent_features(probability)])
         diagnostics = pd.DataFrame([{"mode": "full_sample", "training_rows": len(labeled)}])
-    # Meta-agent (the global decision-maker): instead of hard-coded 0.30/0.25/0.25/0.20 weights,
-    # it LEARNS, walk-forward, how much to trust each specialist agent by fitting the realized
-    # forward alpha on the four agent scores. Falls back to the fixed GARP formula when a snapshot
-    # has too little observable history. Weights are persisted for the "learning evidence" view.
+    # Meta-agent (the global decision-maker): instead of hard-coded prior weights, it LEARNS,
+    # walk-forward, how much to trust each specialist agent from each agent's marginal ranking
+    # contribution to realized forward alpha. Falls back to the fixed GARP prior when a snapshot has
+    # too little observable history. Weights + partial ICs are persisted for the "learning" view.
     labeled, meta_weights = _meta_agent_scores(labeled, settings)
+    # The master signal is now the meta-agent output `final_score` (there is no alpha agent). Its
+    # per-snapshot OOS rank-IC vs. realized forward alpha — plus a rolling and per-year trend — is
+    # appended to the diagnostics here, once final_score exists.
+    diagnostics = _master_signal_diagnostics(diagnostics, labeled)
     settings.run_dir.mkdir(parents=True, exist_ok=True)
+    diagnostics.to_csv(settings.run_dir / "model_walk_forward_diagnostics.csv", index=False)
     write_parquet(meta_weights, PROCESSED_DIR / "meta_weights_by_snapshot.parquet")
     meta_weights.to_csv(settings.run_dir / "meta_weights_by_snapshot.csv", index=False)
     horizon_comparison = _label_horizon_comparison(labeled, prices, settings)
@@ -173,8 +192,6 @@ def train_and_score(settings: Settings) -> pd.DataFrame:
         + 0.10 * labeled["risk_score"]
     ).clip(0, 1)
     labeled["opportunity_type"] = labeled.apply(_opportunity_type, axis=1)
-    explain_model = _fit_component_models(labeled)[0].get("alpha_probability")
-    shap_summary = _shap_summary(explain_model, labeled[MODEL_FEATURES])
     write_parquet(labeled, PROCESSED_DIR / "scored_universe.parquet")
     write_json(
         {
@@ -187,23 +204,33 @@ def train_and_score(settings: Settings) -> pd.DataFrame:
             "walk_forward_training_policy": (
                 "For each snapshot, train with rows from current_date minus max years through the "
                 "current snapshot. All four component targets (quality, improvement, mispricing, "
-                "alpha) are genuine forward-looking labels observed at current_date + "
-                "walk_forward_label_horizon_months; any label not yet observable at the training "
-                "cutoff is masked and replaced by the deterministic GARP fallback for that component."
+                "timing) are genuine forward-looking labels observed at current_date + that agent's "
+                "own horizon; any label not yet observable at the training cutoff is masked and "
+                "replaced by the deterministic GARP fallback for that component."
             ),
             "component_target_definitions": {
                 "quality_probability": "Forward change in reported ROIC over the label horizon (fundamental quality improving).",
                 "improvement_probability": "Forward observed fundamental growth vs. today's market-implied expectation.",
                 "mispricing_probability": "Whether today's real valuation discount resolved into forward alpha (cheap-and-won / expensive-and-lost).",
-                "alpha_probability": "Forward stock return minus benchmark return over the label horizon.",
+                "timing_probability": "Short-horizon forward excess return — an entry/momentum timing signal.",
             },
             "agent_feature_subsets": {key: _agent_features(key) for key in COMPONENT_TARGETS},
+            "agent_horizon_months": {
+                key: AGENT_HORIZON_MONTHS_OVERRIDE.get(key, settings.walk_forward_label_horizon_months)
+                for key in COMPONENT_TARGETS
+            },
             "meta_agent": {
-                "policy": "Per-snapshot rank-IC (Spearman) of each agent's score against realized forward alpha, clipped at 0 and normalized to sum to 1; falls back to prior when history is thin or no agent has positive ranking power.",
+                "policy": (
+                    "Per training snapshot, each agent's weight is its MARGINAL ranking contribution: "
+                    "the partial Spearman rank-IC of the agent's score against the realized forward "
+                    "alpha left unexplained by the other three agents (measured out-of-sample on a "
+                    "30% chronological hold-out inside the training window), clipped at 0 and "
+                    "normalized to sum to 1. Falls back to the prior when history is thin or no agent "
+                    "adds marginal ranking power."
+                ),
                 "prior_weights": AGENT_PRIOR_WEIGHTS,
             },
             "feature_importance": importance,
-            "shap": shap_summary,
         },
         PROCESSED_DIR / "model_explainability.json",
     )
@@ -217,13 +244,14 @@ def train_and_score(settings: Settings) -> pd.DataFrame:
 
 
 def _add_component_targets(df: pd.DataFrame, prices: pd.DataFrame, benchmark_ticker: str, horizon_months: int) -> pd.DataFrame:
-    """Build all four component targets from information observable `horizon_months` ahead.
+    """Build the master evaluation label plus all four agent targets, each from information
+    observable ONLY `its own horizon` ahead.
 
-    quality/improvement/alpha share the default forward horizon and its walk-forward observability
-    mask (see _walk_forward_component_scores). `mispricing` uses its own shorter horizon
-    (AGENT_HORIZON_MONTHS_OVERRIDE) since a valuation discount plausibly resolves faster than a
-    12-month fundamental-quality change; it is masked separately in the walk-forward loop with the
-    same no-lookahead rule, just a different offset.
+    `target_future_alpha` (realized forward excess return over the default horizon) is the master
+    evaluation label — the meta-agent learns against it and OOS rank-IC is measured on it. The four
+    agent targets each use their own horizon (AGENT_HORIZON_MONTHS_OVERRIDE): quality/improvement at
+    the default 12m, mispricing at 6m, timing at 3m. Each is masked separately in the walk-forward
+    loop under the same no-lookahead rule, just a different offset.
     """
     prices = prices.copy()
     prices["date"] = pd.to_datetime(prices["date"])
@@ -236,27 +264,29 @@ def _add_component_targets(df: pd.DataFrame, prices: pd.DataFrame, benchmark_tic
     feature_cache = _feature_cache(df, forward_columns)
 
     mispricing_horizon = AGENT_HORIZON_MONTHS_OVERRIDE.get("mispricing_probability", horizon_months)
+    timing_horizon = AGENT_HORIZON_MONTHS_OVERRIDE.get("timing_probability", horizon_months)
+
+    def forward_alpha(ticker: str, start: pd.Timestamp, months: int) -> float | None:
+        stock_ret = _forward_return(price_cache, ticker, start, months=months)
+        bench_ret = _forward_return(price_cache, benchmark_ticker, start, months=months)
+        return None if stock_ret is None or bench_ret is None else stock_ret - bench_ret
+
     alphas = []
     quality_targets = []
     improvement_targets = []
     mispricing_targets = []
+    timing_targets = []
     log.info(
-        "Building forward-looking labels rows=%s horizon_months=%s mispricing_horizon_months=%s",
-        len(df), horizon_months, mispricing_horizon,
+        "Building forward-looking labels rows=%s horizon_months=%s mispricing_horizon=%s timing_horizon=%s",
+        len(df), horizon_months, mispricing_horizon, timing_horizon,
     )
     for index, row in enumerate(df.itertuples(index=False), start=1):
-        stock_ret = _forward_return(price_cache, row.ticker, row.snapshot_date_dt, months=horizon_months)
-        bench_ret = _forward_return(price_cache, benchmark_ticker, row.snapshot_date_dt, months=horizon_months)
-        alpha = None if stock_ret is None or bench_ret is None else stock_ret - bench_ret
+        alpha = forward_alpha(row.ticker, row.snapshot_date_dt, horizon_months)
         alphas.append(alpha)
 
-        # mispricing uses its own (shorter) horizon, so it needs its own forward return/alpha.
-        if mispricing_horizon == horizon_months:
-            mispricing_alpha = alpha
-        else:
-            mp_stock_ret = _forward_return(price_cache, row.ticker, row.snapshot_date_dt, months=mispricing_horizon)
-            mp_bench_ret = _forward_return(price_cache, benchmark_ticker, row.snapshot_date_dt, months=mispricing_horizon)
-            mispricing_alpha = None if mp_stock_ret is None or mp_bench_ret is None else mp_stock_ret - mp_bench_ret
+        # Each agent that overrides the horizon needs its own forward alpha at that horizon.
+        mispricing_alpha = alpha if mispricing_horizon == horizon_months else forward_alpha(row.ticker, row.snapshot_date_dt, mispricing_horizon)
+        timing_alpha = alpha if timing_horizon == horizon_months else forward_alpha(row.ticker, row.snapshot_date_dt, timing_horizon)
 
         # target_quality: forward improvement in the ACTUALLY REPORTED ROIC (fundamental quality),
         # not the derived quality_score. NA when roic unavailable at either end.
@@ -286,6 +316,10 @@ def _add_component_targets(df: pd.DataFrame, prices: pd.DataFrame, benchmark_tic
             outperformed = 1.0 if mispricing_alpha > 0 else 0.0
             mispricing_targets.append(discount * outperformed + (1 - discount) * (1 - outperformed))
 
+        # target_timing: short-horizon (3m) forward excess return, squashed to [0,1]. High = the
+        # stock outran the benchmark shortly after this snapshot — the entry was well timed.
+        timing_targets.append(None if timing_alpha is None else float(min(1.0, max(0.0, (timing_alpha + 1) / 2))))
+
         if index % 10000 == 0:
             log.info("Forward-looking labels progress rows=%s/%s", index, len(df))
 
@@ -293,6 +327,7 @@ def _add_component_targets(df: pd.DataFrame, prices: pd.DataFrame, benchmark_tic
     df["target_quality"] = quality_targets
     df["target_improvement"] = improvement_targets
     df["target_mispricing"] = mispricing_targets
+    df["target_timing"] = timing_targets
     trainable = df["target_future_alpha"].notna()
     if trainable.sum() < 5:
         log.warning("Few future labels available; model will lean on deterministic GARP score.")
@@ -423,44 +458,54 @@ def _walk_forward_component_scores(df: pd.DataFrame, settings: Settings) -> tupl
                 "max_training_years": settings.max_walk_forward_training_years,
                 "label_horizon_months": settings.walk_forward_label_horizon_months,
             })
-    diagnostics_df = _add_rolling_ic_trend(pd.DataFrame(diagnostics))
-    return scored.drop(columns=["snapshot_date_dt"]), latest_importance, diagnostics_df
+    return scored.drop(columns=["snapshot_date_dt"]), latest_importance, pd.DataFrame(diagnostics)
 
 
-def _add_rolling_ic_trend(diagnostics: pd.DataFrame, window: int = 12) -> pd.DataFrame:
-    """Does the walk-forward system's OOS predictive power trend up, stay flat, or oscillate?
+def _master_signal_diagnostics(diagnostics: pd.DataFrame, labeled: pd.DataFrame, window: int = 12) -> pd.DataFrame:
+    """Append the OOS quality of the MASTER signal (`final_score`, the meta-agent output) to the
+    per-snapshot diagnostics: its Spearman rank-IC vs. realized forward alpha, a rolling mean, and a
+    per-calendar-year mean + approximate t-stat (mean / (std / sqrt(n))).
 
-    Adds a rolling mean of the master agent's (alpha_probability) OOS rank-IC over `window`
-    snapshots, plus a per-calendar-year mean and an approximate t-stat (mean / (std / sqrt(n))) so
-    any apparent trend can be read against how many snapshots support it. With ~90 walk-forward
-    snapshots this is descriptive, not a formal significance test — report it as-is, do not force a
-    "the system is improving" narrative if the data doesn't show one.
+    This replaces the old per-agent "alpha" IC column: with no generalist alpha agent, the signal
+    whose quality-over-time actually matters is the combined meta-agent score. With ~90 walk-forward
+    snapshots the rolling/year trend is descriptive, not a formal significance test — reported as-is,
+    without forcing a "the system is improving" narrative if the data doesn't show one.
     """
     diagnostics = diagnostics.copy()
-    if "rank_ic_alpha" not in diagnostics.columns or diagnostics.empty:
-        diagnostics["rank_ic_alpha_rolling"] = pd.NA
+    if diagnostics.empty or "snapshot_date" not in diagnostics.columns or "final_score" not in labeled.columns:
+        diagnostics["rank_ic_final"] = pd.NA
+        diagnostics["rank_ic_final_rolling"] = pd.NA
         return diagnostics
-    ic = pd.to_numeric(diagnostics["rank_ic_alpha"], errors="coerce")
-    diagnostics["rank_ic_alpha_rolling"] = ic.rolling(window=window, min_periods=max(3, window // 2)).mean()
+    scored = labeled[["snapshot_date"]].copy()
+    scored["pred"] = pd.to_numeric(labeled["final_score"], errors="coerce")
+    scored["real"] = pd.to_numeric(labeled.get("target_future_alpha"), errors="coerce")
+    ic_by_snapshot: dict[str, float] = {}
+    for snapshot, group in scored.groupby("snapshot_date"):
+        pair = group[["pred", "real"]].dropna()
+        if len(pair) >= 5 and pair["pred"].nunique() > 1:
+            ic = pair["pred"].corr(pair["real"], method="spearman")
+            if np.isfinite(ic):
+                ic_by_snapshot[str(snapshot)] = float(ic)
 
-    if "snapshot_date" in diagnostics.columns:
-        years = pd.to_datetime(diagnostics["snapshot_date"], errors="coerce").dt.year
-        year_stats = ic.groupby(years).agg(["mean", "std", "count"])
-        year_stats["t_stat"] = year_stats["mean"] / (year_stats["std"] / year_stats["count"].pow(0.5))
-        year_map = year_stats["mean"].to_dict()
-        tstat_map = year_stats["t_stat"].to_dict()
-        diagnostics["rank_ic_alpha_year_mean"] = years.map(year_map)
-        diagnostics["rank_ic_alpha_year_tstat"] = years.map(tstat_map)
+    diagnostics["rank_ic_final"] = diagnostics["snapshot_date"].astype(str).map(ic_by_snapshot)
+    ic = pd.to_numeric(diagnostics["rank_ic_final"], errors="coerce")
+    diagnostics["rank_ic_final_rolling"] = ic.rolling(window=window, min_periods=max(3, window // 2)).mean()
+    years = pd.to_datetime(diagnostics["snapshot_date"], errors="coerce").dt.year
+    year_stats = ic.groupby(years).agg(["mean", "std", "count"])
+    year_stats["t_stat"] = year_stats["mean"] / (year_stats["std"] / year_stats["count"].pow(0.5))
+    diagnostics["rank_ic_final_year_mean"] = years.map(year_stats["mean"].to_dict())
+    diagnostics["rank_ic_final_year_tstat"] = years.map(year_stats["t_stat"].to_dict())
     return diagnostics
 
 
-# Prior (the old hard-coded GARP combination) — used as the fallback and as the seed/baseline the
-# learned meta-agent is compared against.
+# Prior (the fixed GARP combination) — used as the meta-agent fallback and as the baseline the
+# learned weights are compared against. No alpha agent: the four experts are quality/improvement/
+# mispricing/timing.
 AGENT_PRIOR_WEIGHTS = {
     "quality_probability": 0.30,
     "improvement_probability": 0.25,
     "mispricing_probability": 0.25,
-    "alpha_probability": 0.20,
+    "timing_probability": 0.20,
 }
 AGENT_KEYS = list(AGENT_PRIOR_WEIGHTS.keys())
 
@@ -483,7 +528,10 @@ def _meta_agent_scores(labeled: pd.DataFrame, settings: Settings) -> tuple[pd.Da
 
     if not settings.walk_forward_scoring:
         labeled["ml_score"] = labeled["final_score"]
-        rows = [{"snapshot_date": "all", "source": "prior", "phase": "training", "n_train": 0, **AGENT_PRIOR_WEIGHTS}]
+        rows = [{
+            "snapshot_date": "all", "source": "prior", "phase": "training", "n_train": 0,
+            **AGENT_PRIOR_WEIGHTS, **{f"partial_ic_{key}": float("nan") for key in AGENT_KEYS},
+        }]
         return labeled.drop(columns=["snapshot_date_dt"]), pd.DataFrame(rows)
 
     all_dates = sorted(labeled["snapshot_date_dt"].dropna().unique())
@@ -493,7 +541,8 @@ def _meta_agent_scores(labeled: pd.DataFrame, settings: Settings) -> tuple[pd.Da
     label_offset = pd.DateOffset(months=settings.walk_forward_label_horizon_months)
     max_history = pd.DateOffset(years=settings.max_walk_forward_training_years)
     weight_rows = []
-    weights = AGENT_PRIOR_WEIGHTS
+    weights = dict(AGENT_PRIOR_WEIGHTS)
+    partial_ics = {key: float("nan") for key in AGENT_KEYS}
     source = "prior"
     last_training_snapshot: pd.Timestamp | None = None
     for date in apply_dates:
@@ -507,9 +556,9 @@ def _meta_agent_scores(labeled: pd.DataFrame, settings: Settings) -> tuple[pd.Da
             train = labeled[train_mask]
             fitted = _fit_meta_weights(train)
             if fitted is not None:
-                weights, source = fitted, "learned"
+                weights, partial_ics, source = fitted[0], fitted[1], "learned"
             else:
-                weights, source = AGENT_PRIOR_WEIGHTS, "prior"
+                weights, partial_ics, source = dict(AGENT_PRIOR_WEIGHTS), {key: float("nan") for key in AGENT_KEYS}, "prior"
             last_training_snapshot = pd.Timestamp(date)
         else:
             train = labeled.iloc[0:0]
@@ -525,6 +574,7 @@ def _meta_agent_scores(labeled: pd.DataFrame, settings: Settings) -> tuple[pd.Da
             "training_snapshot_date": last_training_snapshot.date().isoformat() if last_training_snapshot is not None else "",
             "n_train": int(len(train)),
             **{key: float(weights[key]) for key in AGENT_KEYS},
+            **{f"partial_ic_{key}": float(partial_ics[key]) for key in AGENT_KEYS},
         })
     labeled["ml_score"] = labeled["final_score"]
     return labeled.drop(columns=["snapshot_date_dt"]), pd.DataFrame(weight_rows)
@@ -534,57 +584,76 @@ def _prior_combination(df: pd.DataFrame) -> pd.Series:
     return sum(AGENT_PRIOR_WEIGHTS[key] * df[key] for key in AGENT_KEYS).clip(0, 1)
 
 
-def _fit_meta_weights(train: pd.DataFrame) -> dict[str, float] | None:
-    """Non-negative, sum-to-one weights of the 4 agents, learned from RANKING power, not raw MSE.
+META_FIT_MIN_ROWS = 80
+META_FIT_MIN_VALIDATION_ROWS = 30
+META_FIT_VALIDATION_FRACTION = 0.30
 
-    Rationale (2026-07 diagnostic round): the previous version fit `scipy.optimize.nnls` on raw
-    `target_future_alpha` values. That minimizes squared error, which a low-variance,
-    near-constant agent can do well simply by predicting close to the mean — without any ability
-    to rank stocks. Verified on the real full-universe run: `quality_probability`'s weight climbed
-    to ~55-60% through the 2020 window specifically where its OOS rank-IC was negative
-    (-0.10 to -0.12), while `alpha_probability`'s weight fell even though its rank-IC in the same
-    snapshots was strongly positive (+0.30 to +0.35) — the meta-agent was rewarding the agent that
-    ranked worst. Since what actually matters is portfolio selection (a ranking task), each
-    snapshot now fits per-agent Spearman rank-IC against realized forward alpha directly, and
-    turns those into weights (clipped at 0, so an agent with negative/no ranking power gets ~0
-    weight instead of being treated as informative).
+
+def _fit_meta_weights(train: pd.DataFrame) -> tuple[dict[str, float], dict[str, float]] | None:
+    """Weight each agent by its MARGINAL ranking contribution, not its raw rank-IC.
+
+    Two design choices, both to reward complementarity over redundancy:
+
+    1. A chronological 70/30 split INSIDE the training window (fit vs. validation), same walk-forward
+       discipline as the outer train/apply split — no lookahead, and an agent must generalize within
+       the window to earn weight, not just fit it.
+
+    2. For each agent, we regress the realized forward alpha on the OTHER three agents (OLS on the
+       fit part), take the residual on the validation part — the alpha the other three left
+       unexplained — and score the agent by its Spearman rank-IC against THAT residual (partial
+       rank-IC). An agent that merely echoes the others' ranking scores ~0; an agent that ranks the
+       leftover alpha earns weight. Weights are the clipped-at-0 partial ICs, normalized to sum 1.
+
+    Returns (weights, partial_ics) or None when the window is too thin or no agent adds marginal
+    ranking power (the caller then falls back to the fixed prior).
     """
-    if len(train) < 50:
+    t = train.dropna(subset=["target_future_alpha"]).sort_values("snapshot_date_dt")
+    if len(t) < META_FIT_MIN_ROWS:
         return None
-    y = pd.to_numeric(train["target_future_alpha"], errors="coerce")
-    valid = y.notna()
-    if valid.sum() < 50 or np.ptp(y[valid].to_numpy(dtype=float)) == 0:
+    y = pd.to_numeric(t["target_future_alpha"], errors="coerce").to_numpy(dtype=float)
+    if np.ptp(y) == 0:
         return None
-    ics = {}
-    for key in AGENT_KEYS:
-        pred = pd.to_numeric(train.loc[valid, key], errors="coerce")
-        pair = pd.DataFrame({"pred": pred, "real": y[valid]}).dropna()
-        if len(pair) < 50 or pair["pred"].nunique() < 2:
-            ics[key] = 0.0
+    scores = t[AGENT_KEYS].astype(float).to_numpy()
+    split = int(len(t) * (1 - META_FIT_VALIDATION_FRACTION))
+    if split < META_FIT_MIN_ROWS - META_FIT_MIN_VALIDATION_ROWS or len(t) - split < META_FIT_MIN_VALIDATION_ROWS:
+        return None
+    fit_slice, val_slice = slice(0, split), slice(split, len(t))
+
+    partial_ics: dict[str, float] = {}
+    for position, key in enumerate(AGENT_KEYS):
+        others = [i for i in range(len(AGENT_KEYS)) if i != position]
+        design_fit = np.column_stack([scores[fit_slice][:, others], np.ones(split)])
+        coefficients, *_ = np.linalg.lstsq(design_fit, y[fit_slice], rcond=None)
+        design_val = np.column_stack([scores[val_slice][:, others], np.ones(len(t) - split)])
+        residual = y[val_slice] - design_val @ coefficients
+        agent_val = scores[val_slice][:, position]
+        pair = pd.DataFrame({"agent": agent_val, "residual": residual}).dropna()
+        if len(pair) < META_FIT_MIN_VALIDATION_ROWS or pair["agent"].nunique() < 2:
+            partial_ics[key] = 0.0
             continue
-        ic = pair["pred"].corr(pair["real"], method="spearman")
-        ics[key] = max(0.0, float(ic)) if np.isfinite(ic) else 0.0
-    total = sum(ics.values())
+        ic = pair["agent"].corr(pair["residual"], method="spearman")
+        partial_ics[key] = max(0.0, float(ic)) if np.isfinite(ic) else 0.0
+
+    total = sum(partial_ics.values())
     if total <= 0:
         return None
-    return {key: ics[key] / total for key in AGENT_KEYS}
+    weights = {key: partial_ics[key] / total for key in AGENT_KEYS}
+    return weights, partial_ics
 
 
 LABEL_HORIZON_CANDIDATES_MONTHS = [3, 6, 12]
 
 
 def _label_horizon_comparison(scored: pd.DataFrame, prices: pd.DataFrame, settings: Settings) -> pd.DataFrame:
-    """Does the alpha agent's score predict better at 3, 6, or 12 months out?
+    """Does the master signal predict better at 3, 6, or 12 months out?
 
-    Reuses the ALREADY-TRAINED `alpha_probability` score (trained at the default 12-month horizon)
-    and checks its Spearman rank-IC against the realized forward alpha computed at each candidate
-    horizon, per training-phase snapshot (the frozen phase always uses the same model, so it adds
-    no new information about which horizon is best). This answers "should we retrain at a shorter
-    horizon?" without actually retraining 3x — if a shorter horizon's rank-IC isn't clearly better,
-    there's no case for the extra complexity of a per-agent horizon override beyond the one already
-    used for mispricing (see AGENT_HORIZON_MONTHS_OVERRIDE).
+    Reuses the ALREADY-COMBINED meta-agent score `final_score` and checks its Spearman rank-IC
+    against the realized forward alpha computed at each candidate horizon, per training-phase
+    snapshot (the frozen phase always uses the same model, so it adds no new information about which
+    horizon is best). This answers "does the strategy's edge live at a shorter or longer horizon?"
+    without retraining 3x — an evidence-based check on the default 12m label horizon.
     """
-    if "alpha_probability" not in scored.columns:
+    if "final_score" not in scored.columns:
         return pd.DataFrame()
     cutoff = pd.Timestamp(settings.train_cutoff_date)
     scored = scored.copy()
@@ -609,7 +678,7 @@ def _label_horizon_comparison(scored: pd.DataFrame, prices: pd.DataFrame, settin
             index=training_rows.index,
         )
         realized = pd.to_numeric(realized, errors="coerce")
-        pair = pd.DataFrame({"pred": training_rows["alpha_probability"], "real": realized}).dropna()
+        pair = pd.DataFrame({"pred": training_rows["final_score"], "real": realized}).dropna()
         if len(pair) < 20 or pair["pred"].nunique() < 2:
             rows.append({"horizon_months": months, "rank_ic_mean": None, "n_snapshots": 0, "n_rows": len(pair)})
             continue
@@ -649,8 +718,8 @@ def _oos_metrics(current: pd.DataFrame) -> dict:
     n_oos = int(valid.sum())
     metrics["n_oos"] = n_oos
     for probability in COMPONENT_TARGETS:
-        rank_key = "rank_ic_alpha" if probability == "alpha_probability" else f"rank_ic_{probability}"
-        rmse_key = "rmse_alpha" if probability == "alpha_probability" else f"rmse_{probability}"
+        rank_key = f"rank_ic_{probability}"
+        rmse_key = f"rmse_{probability}"
         if n_oos < 5 or probability not in current.columns:
             metrics[rank_key] = ""
             metrics[rmse_key] = ""
@@ -769,22 +838,6 @@ def _predict(model, x: pd.DataFrame) -> pd.Series:
     if raw.max() == raw.min():
         return pd.Series(0.5, index=x.index)
     return (raw - raw.min()) / (raw.max() - raw.min())
-
-
-def _shap_summary(model, x: pd.DataFrame) -> dict:
-    try:
-        import shap
-
-        sample = x.fillna(0.5).head(200)
-        explainer = shap.TreeExplainer(model)
-        values = explainer.shap_values(sample)
-        values_df = pd.DataFrame(values, columns=MODEL_FEATURES)
-        return {
-            "available": True,
-            "mean_abs_contribution": values_df.abs().mean().sort_values(ascending=False).to_dict(),
-        }
-    except Exception as exc:
-        return {"available": False, "reason": f"SHAP unavailable or failed: {exc}"}
 
 
 def _opportunity_type(row: pd.Series) -> str:
