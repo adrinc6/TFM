@@ -9,13 +9,12 @@ stays functional and points at the one report instead of emitting a second, redu
 from __future__ import annotations
 
 import logging
-import math
 from pathlib import Path
 
 import pandas as pd
 
-from environment import PROCESSED_DIR, Settings
-from module.backtest.artifacts import SMALL_SAMPLE_CAVEAT, excess_return_statistics
+from environment import Settings
+from module.backtest.artifacts import excess_return_statistics
 
 log = logging.getLogger(__name__)
 
@@ -71,7 +70,6 @@ def _metrics(vs: pd.DataFrame) -> dict:
     ending = float(vs["portfolio_value"].iloc[-1])
     gross_ending = float(vs["portfolio_gross_value"].iloc[-1]) if "portfolio_gross_value" in vs.columns else ending
     benchmark_ending = float(vs.get("benchmark_value", pd.Series([1])).iloc[-1])
-    downside = returns[returns < 0]
     stats = excess_return_statistics(vs)
     return {
         "CAGR": ending ** (1 / years) - 1,

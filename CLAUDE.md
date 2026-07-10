@@ -81,17 +81,24 @@ download → dataset → features → ml → watchlist → research_ai → backt
   `garp_score`; delegates expectation-gap, sector/universe percentile, and trailing-window trend
   features to `transforms.py`.
 - `module/ml.py` — `train_and_score` is walk-forward: for each historical snapshot date, trains only
-  on a trailing `[date - max_walk_forward_training_years, date]` window. **Four specialist agents**,
-  each fit on its own feature subset (`AGENT_FEATURES`), against forward-looking targets anchored to
-  *observed* outcomes (not re-projections of input features): `target_quality` (forward change in
-  **reported ROIC**), `target_improvement` (forward **observed** fundamental growth vs. today's
-  market-implied expectation), `target_mispricing` (whether today's real valuation discount resolved
-  into forward alpha), `target_future_alpha` (excess return 12m ahead — the master signal). All 4 are
-  masked identically on rows whose 12-month future is unobservable at training date (falls back to
-  deterministic GARP component). Per-snapshot **out-of-sample rank-IC / RMSE** vs. realized alpha and
-  every fallback are logged to `results/<run>/model_walk_forward_diagnostics.csv`. A **meta-agent**
-  (`_meta_agent_scores`) then LEARNS, per snapshot via non-negative least squares on realized forward
-  alpha, how to weight the four agents into `final_score` (weights persisted to
+  on a trailing `[date - max_walk_forward_training_years, date]` window. **Four DISJOINT specialist
+  agents** (`AGENT_FEATURES` subsets share no feature), each fit against its own forward-looking
+  target anchored to *observed* outcomes (not re-projections of input features): `target_quality`
+  (forward change in **reported ROIC**), `target_improvement` (forward **observed** fundamental growth
+  vs. today's market-implied expectation), `target_mispricing` (whether today's real valuation
+  discount resolved into forward alpha, 6m horizon), `target_timing` (short-horizon **3m** forward
+  excess return — entry/momentum). There is deliberately **no generalist "alpha" agent**: it predicted
+  the same `target_future_alpha` the meta-agent scores against, with a superset of features, so it
+  structurally dominated the blend and was removed. `target_future_alpha` (excess return 12m ahead)
+  survives only as the **evaluation label** — what the meta-agent learns against and what OOS rank-IC
+  is measured on, never an agent that predicts it. Each target is masked on rows whose *own-horizon*
+  future is unobservable at training date (falls back to the deterministic GARP component). Per-snapshot
+  **out-of-sample rank-IC / RMSE** vs. realized alpha (per agent and for the combined `final_score`)
+  and every fallback are logged to `results/<run>/model_walk_forward_diagnostics.csv`. A **meta-agent**
+  (`_meta_agent_scores` / `_fit_meta_weights`) then LEARNS, per snapshot, how to weight the four agents
+  by each agent's **marginal ranking contribution** (partial rank-IC against the forward alpha the
+  other three leave unexplained, on a 30% chronological hold-out inside the training window) into
+  `final_score` (weights + partial ICs persisted to
   `data/processed/meta_weights_by_snapshot.parquet`; falls back to the fixed prior when history is
   thin). `opportunity_type` is a descriptive rule-based label. See invariants below.
 - `module/research/` — `synthesis.py` is pure rule-based text generation from the numeric scores (no
@@ -105,10 +112,16 @@ download → dataset → features → ml → watchlist → research_ai → backt
 - `module/strategy/` — `selection.py` ranks/filters into a watchlist and computes opportunity-cost
   vs. the best alternative ticker per snapshot. `portfolio.py` (`initial_portfolio`,
   `review_portfolio`) is pure in-memory concentrated-portfolio logic. `manager_score` now leads with
-  the learned `final_score` (weight 0.40, the meta-agent output) plus manager overlays
+  the learned `final_score` (weight 0.45, the meta-agent output) plus manager overlays
   (timing/valuation/risk); it is still distinct from `final_score` but is driven by the learned
-  signal, not a single agent probability at 0.08. Minimum-hold-period and opportunity-cost rotation. `sizing.py` computes equal/conviction/risk-adjusted/hybrid
-  position weights; `hybrid_weight` also drives the actual return simulation in
+  signal. Rotation is governed by explicit `environment.py` thresholds (`MIN_ROTATION_ADVANTAGE`,
+  `MIN_SCORE_ADVANTAGE_TO_REPLACE`, `MIN_CONVICTION_ADVANTAGE`, `MIN_OPPORTUNITY_COST_THRESHOLD` — no
+  hardcoded duplicates), and **soft** exit triggers (manager-score hurdle, capital opportunity cost,
+  slow deterioration) respect `MIN_HOLD_MONTHS_BEFORE_ROTATION` while **hard** triggers (broken thesis,
+  exit-score, momentum+thesis breakdown) fire immediately. `sizing.py` computes
+  equal/conviction/risk-adjusted/hybrid position weights, tilted hard toward the conviction component
+  with a convexity exponent so the book concentrates on its best ideas; `hybrid_weight` also drives the
+  actual return simulation in
   `module/backtest/performance.py` (not just display). No file I/O in this package — it's consumed
   by `module/backtest/engine.py`.
 - `module/backtest/` — `engine.py`'s `run_backtest` is the monthly simulation loop calling
@@ -119,13 +132,18 @@ download → dataset → features → ml → watchlist → research_ai → backt
   full-universe BUY/SELL/HOLD/AVOID review (independent of current holdings) plus held-position
   ADD/REDUCE/WATCH/HOLD decisions — kept deliberately separate to support opportunity-cost analysis.
   `artifacts.py` shapes the executive-tier output tables and computes **information ratio, tracking
-  error, t-stat with explicit small-sample caveat**. Heavy per-ticker/per-snapshot tables go to
-  `results/<run>/audit/` (see `AUDIT_OUTPUTS`); compact summaries stay at `results/<run>/` root.
+  error, t-stat with explicit small-sample caveat**. `robustness.py` re-reads the finished tables
+  (no re-scoring) to add a **block bootstrap** CI on cumulative alpha / IR, a **cost-sensitivity
+  sweep** whose headline is the cost multiplier at which alpha crosses zero, and a pure multi-cutoff
+  aggregator (`compare_train_cutoffs`) ready for A/B over `TRAIN_CUTOFF_DATE`. Heavy per-ticker/
+  per-snapshot tables go to `results/<run>/audit/` (see `AUDIT_OUTPUTS`); compact summaries stay at
+  `results/<run>/` root.
 - `module/viewer/` — **All UI is in Spanish**. Rewritten as **one professional single-page report**
   (`results/<run>/viewer/index.html`), not a 16-page dump. `pages.py`'s `build_viewer` loads the run
-  CSVs and renders six purpose-driven sections (executive KPIs, portfolio-vs-benchmark, current
-  portfolio + trades, **learning evidence** = learned meta-agent weights + OOS rank-IC, position
-  attribution, and a separate debug/TFM block). `charts.py` renders a small set of charts (matplotlib
+  CSVs and renders purpose-driven sections (executive KPIs, portfolio-vs-benchmark, current
+  portfolio + trades, **learning evidence** = learned meta-agent weights + OOS rank-IC of the combined
+  `final_score`, position attribution, a **Robustez** section = bootstrap CI + cost-sensitivity, and a
+  separate debug/TFM block). `charts.py` renders a small set of charts (matplotlib
   `Agg`) with the validated dataviz palette. `shared.py` holds the theme-aware CSS design system and
   table/kpi/figure helpers with a NaN/Inf-safe formatter. Heavy audit CSVs stay on disk under
   `results/<run>/audit/` and are only linked, never embedded. Every element must pass the utility
@@ -156,17 +174,21 @@ download → dataset → features → ml → watchlist → research_ai → backt
 - **External calls stay optional and fail safe**: `module/research/ai.py` must keep working (via
   deterministic fallback) with `ENABLE_OPENAI_RESEARCH=False` or no API key — don't make any stage
   hard-depend on the OpenAI call succeeding.
-- **The four `module/ml.py` targets must stay anchored to observed outcomes, not re-projections**:
+- **The four `module/ml.py` agent targets must stay anchored to observed outcomes, not re-projections**:
   `target_quality` (forward reported ROIC change), `target_improvement` (forward observed fundamental
   growth vs. expectation), `target_mispricing` (real valuation discount resolving into forward alpha),
-  and `target_future_alpha` (forward excess return) are each built from information observable
-  `walk_forward_label_horizon_months` ahead and masked identically during walk-forward training. Do
-  not reintroduce deterministic same-day-feature blends as targets (e.g. the old circular
+  and `target_timing` (short-horizon forward excess return) are each built from information observable
+  their **own horizon** ahead (`AGENT_HORIZON_MONTHS_OVERRIDE`) and masked accordingly during
+  walk-forward training. `target_future_alpha` is the separate 12m **evaluation label**, not an agent
+  target — do not resurrect a generalist "alpha" agent that predicts it (it structurally dominated the
+  blend). Do not reintroduce deterministic same-day-feature blends as targets (e.g. the old circular
   `realized_growth = 0.6*growth+0.25*quality+0.15*moat`) — that was the original design flaw fixed here.
-- **Meta-agent weights are learned, not hard-coded**: `_meta_agent_scores` learns the four-agent
-  combination per snapshot from realized forward alpha (NNLS, non-negative sum-to-one), under the same
-  observability mask (no lookahead). This is the "learns from the simulation" loop. Don't revert
-  `final_score` to a fixed 0.30/0.25/0.25/0.20 blend; keep `garp_score` as the fixed baseline.
+- **Meta-agent weights are learned by marginal contribution, not hard-coded**: `_fit_meta_weights`
+  weights each agent by its **partial rank-IC** — its Spearman IC against the realized forward alpha
+  the other three agents leave unexplained, measured on a 30% chronological hold-out inside the
+  training window (no lookahead) — so complements are rewarded over redundancy. This is the "learns
+  from the simulation" loop. Don't revert `final_score` to a fixed blend or to raw (non-partial) IC;
+  keep `AGENT_PRIOR_WEIGHTS` only as the thin-history fallback and `garp_score` as the fixed baseline.
 - **Fundamental publication lag**: `module/dataset.py::_prepared_rows` shifts every fundamental's
   period-end date forward by `FUNDAMENTAL_PUBLICATION_LAG_WEEKS` so a fundamental is only observable
   after its real reporting date. Preserve this shift — removing it reintroduces a subtle lookahead.

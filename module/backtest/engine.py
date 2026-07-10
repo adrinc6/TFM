@@ -27,6 +27,7 @@ from .artifacts import (
 )
 from .performance import portfolio_vs_benchmark, position_performance, turnover
 from .reviews import decision_rows, rebalance_report, review_diagnostics, top_candidates, universe_review_rows
+from .robustness import build_robustness
 
 log = logging.getLogger(__name__)
 
@@ -44,6 +45,7 @@ AUDIT_OUTPUTS = {
     "universe_monthly_price_update",
     "universe_quarterly_fundamental_review",
     "universe_top_candidates",
+    "robustness_bootstrap_distribution",
 }
 
 
@@ -125,6 +127,9 @@ def run_backtest(settings: Settings) -> dict[str, pd.DataFrame]:
     outputs["executive_summary"] = executive_summary_table(outputs)
     outputs["strategy_learning_log"] = strategy_learning_log(outputs)
     outputs["improvement_backlog"] = improvement_backlog(outputs)
+    # Statistical robustness (bootstrap CI, cost-sensitivity breakeven) computed from the finished
+    # tables above — no re-scoring or re-selection; see module/backtest/robustness.py.
+    outputs.update(build_robustness(outputs, settings))
     for name, df in outputs.items():
         if isinstance(df, pd.DataFrame):
             output_dir = run_dir / "audit" if name in AUDIT_OUTPUTS else run_dir
@@ -142,6 +147,7 @@ def clean_managed_outputs(run_dir) -> None:
         "rebalance_report", "sector_exposure", "sell_reasons_summary", "strategy_learning_log", "improvement_backlog",
         "top_opportunities_latest", "tracking_dashboard", "universe_monthly_price_update", "universe_monthly_scores",
         "universe_quarterly_fundamental_review", "universe_top_candidates",
+        "robustness_bootstrap", "robustness_bootstrap_distribution", "robustness_cost_sensitivity", "robustness_summary",
     }
     for name in managed_names:
         for path in (run_dir / f"{name}.csv", run_dir / "audit" / f"{name}.csv"):

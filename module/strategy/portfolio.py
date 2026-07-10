@@ -4,7 +4,14 @@ from __future__ import annotations
 
 import pandas as pd
 
-from environment import MAX_PORTFOLIO_SIZE, MIN_PORTFOLIO_SIZE, MIN_SCORE_ADVANTAGE_TO_REPLACE
+from environment import (
+    MAX_PORTFOLIO_SIZE,
+    MIN_CONVICTION_ADVANTAGE,
+    MIN_OPPORTUNITY_COST_THRESHOLD,
+    MIN_PORTFOLIO_SIZE,
+    MIN_ROTATION_ADVANTAGE,
+    MIN_SCORE_ADVANTAGE_TO_REPLACE,
+)
 
 INVESTABLE_STATES = {"Improving", "Intact"}
 HOLDABLE_STATES = {"Improving", "Intact", "Maturing"}
@@ -64,14 +71,13 @@ def review_portfolio(current: dict[str, dict], universe: pd.DataFrame, snapshot_
 def manager_score(row) -> float:
     """Live manager score.
 
-    The ML block is `final_score`, the output of the learned meta-agent (the four specialist
-    agents combined with weights learned walk-forward from realized forward alpha, see
-    module/ml.py::_meta_agent_scores). Weight raised from 0.40 to 0.45 (2026-07 diagnostic round):
-    on the full-universe run, the underlying alpha_probability agent's OOS rank-IC was positive in
-    6 of 8 calendar years (2019-2020, 2022-2025), negative only in 2021 (a sharp growth-to-value
-    rotation) and 2026 (partial year, 5 obs) — consistent enough to lean on it a bit more, but the
-    2021 miss argues against going further than 0.45 with ~40 months of live-portfolio data. The
-    remaining factors are manager overlays (timing/valuation/risk) not captured by the ML score.
+    The ML block is `final_score`, the output of the learned meta-agent: the four disjoint
+    specialist agents (quality / improvement / mispricing / timing) combined with weights learned
+    walk-forward from each agent's marginal contribution to realized forward alpha (see
+    module/ml.py::_meta_agent_scores). It carries weight 0.45 — enough to lead the score, capped
+    there because with ~40 months of live-portfolio data the combined signal's OOS rank-IC still
+    swings year to year. The remaining factors are manager overlays (timing/valuation/risk) that the
+    ML score does not fully capture.
     """
     learned_ml = getattr(row, "final_score", 0.5)
     return float((
@@ -156,8 +162,19 @@ def _refresh_position(position: dict, row: pd.Series, snapshot_date: str) -> Non
 
 
 def _exit_reason(row: pd.Series, position: dict) -> str | None:
+    """Why (if at all) to sell a held position.
+
+    Two tiers. HARD triggers cut losses/risk immediately regardless of how long the name has been
+    held — a broken thesis, an exit-score spike, a name that has become genuinely expensive, or a
+    joint momentum+thesis breakdown. SOFT triggers (a mediocre manager score, capital that is better
+    used elsewhere, slow repeated deterioration) are about reallocating capital, not damage control,
+    so they respect `MIN_HOLD_MONTHS_BEFORE_ROTATION` — the same minimum holding period the
+    opportunity-cost rotation path already honors. This stops the most frequent, lowest-conviction
+    sell reason from churning the book before a thesis has had time to play out.
+    """
     adjusted_valuation = float(row.get("price_adjusted_valuation_score", row["valuation_score"]))
     momentum = float(row.get("momentum_score", 0.5))
+    # --- hard triggers: fire immediately (cut losses / risk fast) ---
     if row["thesis_state"] == "Broken":
         return "Thesis Broken"
     if row["exit_score"] >= 0.66:
@@ -171,9 +188,12 @@ def _exit_reason(row: pd.Series, position: dict) -> str | None:
         # Reacting at the first sign of weakening thesis + fading momentum (rather than waiting for
         # momentum to collapse below 0.20) should cut losses earlier.
         return "Momentum And Thesis Deterioration"
+    # --- soft triggers: only after the minimum holding period (reduce needless rotation) ---
+    if position.get("months_since_entry", 0) < MIN_HOLD_MONTHS_BEFORE_ROTATION:
+        return None
     if row["manager_score"] < MIN_HOLD_SCORE and not bool(row["would_buy_today"]):
         return "Manager Score Below Hold Hurdle"
-    if position["not_buy_today_count"] >= 4 and row["opportunity_cost_score"] >= 0.08:
+    if position["not_buy_today_count"] >= 4 and row["opportunity_cost_score"] >= MIN_OPPORTUNITY_COST_THRESHOLD:
         return "Persistent Better Use Of Capital"
     if row["thesis_state"] == "Weakening" and position["thesis_deterioration_count"] >= 3:
         return "Repeated Thesis Deterioration"
@@ -193,8 +213,14 @@ def _replacement_target(updated: dict[str, dict], candidate) -> tuple[str, dict]
     score_advantage = float(candidate.manager_score) - weakest[1]["current_manager_score"]
     conviction_advantage = float(candidate.conviction_score) - weakest[1]["current_conviction_score"]
     momentum_advantage = float(getattr(candidate, "momentum_score", 0.5)) - weakest[1].get("current_momentum_score", 0.5)
-    better_capital_use = score_advantage >= max(MIN_SCORE_ADVANTAGE_TO_REPLACE, 0.09) or (
-        score_advantage >= 0.06 and conviction_advantage >= 0.04 and momentum_advantage >= 0.05 and bool(candidate.would_buy_today)
+    # Primary path: a clear manager_score edge alone justifies the swap. Secondary path: a smaller
+    # score edge is enough only when the challenger is also higher-conviction, has better momentum,
+    # and is a buy today. All thresholds live in environment.py (single source, no hardcoded copy).
+    better_capital_use = score_advantage >= MIN_ROTATION_ADVANTAGE or (
+        score_advantage >= MIN_SCORE_ADVANTAGE_TO_REPLACE
+        and conviction_advantage >= MIN_CONVICTION_ADVANTAGE
+        and momentum_advantage >= 0.05
+        and bool(candidate.would_buy_today)
     )
     if better_capital_use:
         return weakest

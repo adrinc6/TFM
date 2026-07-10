@@ -104,6 +104,7 @@ PCT_COLUMNS = {
     "excess_total_return", "period_alpha", "cumulative_alpha", "portfolio_period_return",
     "benchmark_period_return", "transaction_cost_drag", "depth", "avg_excess_return",
     "avg_total_return", "win_rate_vs_benchmark", "information_ratio", "tracking_error_annualized",
+    "alpha_acumulada_neta",
 }
 
 

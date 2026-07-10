@@ -51,7 +51,7 @@ def buy_rationale(transactions: pd.DataFrame, universe_scores: pd.DataFrame) -> 
     cols = [
         "date", "ticker", "rank", "review_type", "universe_action", "manager_score",
         "thesis_rank_score", "conviction_score", "business_quality_score",
-        "price_adjusted_valuation_score", "momentum_score", "alpha_probability",
+        "price_adjusted_valuation_score", "momentum_score", "timing_probability",
         "buy_today_score", "opportunity_type", "best_alternative_ticker",
         "opportunity_cost_score", "investment_thesis",
     ]
@@ -62,7 +62,7 @@ def buy_rationale(transactions: pd.DataFrame, universe_scores: pd.DataFrame) -> 
     output_cols = [
         "date", "ticker", "rank", "review_type", "manager_score", "buy_today_score",
         "thesis_rank_score", "conviction_score", "business_quality_score",
-        "price_adjusted_valuation_score", "momentum_score", "alpha_probability",
+        "price_adjusted_valuation_score", "momentum_score", "timing_probability",
         "opportunity_type", "best_alternative_ticker", "opportunity_cost_score",
         "reason", "investment_thesis",
     ]
@@ -78,7 +78,7 @@ def action_journal(transactions: pd.DataFrame, performance: pd.DataFrame, ration
         buy_cols = [
             "date", "ticker", "rank", "manager_score", "buy_today_score",
             "business_quality_score", "price_adjusted_valuation_score",
-            "momentum_score", "alpha_probability", "opportunity_type",
+            "momentum_score", "timing_probability", "opportunity_type",
         ]
         tx = tx.merge(select_columns(rationale, buy_cols), on=["date", "ticker"], how="left", suffixes=("", "_buy"))
     if not performance.empty:
@@ -98,7 +98,7 @@ def action_journal(transactions: pd.DataFrame, performance: pd.DataFrame, ration
     columns = [
         "date", "ticker", "action", "reason_category", "reason", "rank",
         "manager_score", "buy_today_score", "business_quality_score",
-        "price_adjusted_valuation_score", "momentum_score", "alpha_probability",
+        "price_adjusted_valuation_score", "momentum_score", "timing_probability",
         "opportunity_type", "holding_days", "total_return", "benchmark_total_return",
         "excess_total_return", "thesis", "exit_thesis", "catalyst",
     ]
@@ -157,7 +157,7 @@ def latest_top_opportunities(universe_top: pd.DataFrame, top_n: int = 25) -> pd.
     cols = [
         "date", "rank", "ticker", "universe_action", "manager_score", "buy_today_score",
         "thesis_rank_score", "conviction_score", "business_quality_score", "price_adjusted_valuation_score",
-        "momentum_score", "alpha_probability", "opportunity_type", "best_alternative_ticker",
+        "momentum_score", "timing_probability", "opportunity_type", "best_alternative_ticker",
         "opportunity_cost_score", "investment_thesis",
     ]
     return select_columns(latest, cols)
