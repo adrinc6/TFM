@@ -15,20 +15,23 @@ Lanzar con:
 from module.experiments import Scenario
 
 SCENARIOS = [
-    Scenario(name="baseline", why="Sistema completo con la configuración de cartera por defecto. Referencia."),
+    Scenario(name="baseline", why="Sistema completo con la configuración de cartera por defecto. Referencia.", block="baseline"),
     Scenario(
         name="concentrada",
         why="Concentra en las de mayor convicción (cap 22%, más convexidad). ¿Sube la alpha o solo la varianza?",
         overrides={"strategy.MAX_POSITION_WEIGHT": 0.22, "strategy.CONVICTION_CONVEXITY": 1.6},
+        block="utilidad",
     ),
     Scenario(
         name="rotacion_baja",
         why="Menos turnover (umbral de rotación 0.15, mínimo 6 meses de tenencia). ¿Cae la alpha bruta pero sube la neta de costes?",
         overrides={"strategy.MIN_ROTATION_ADVANTAGE": 0.15, "strategy.MIN_HOLD_MONTHS_BEFORE_ROTATION": 6},
+        block="utilidad",
     ),
     Scenario(
         name="cartera_amplia",
         why="Más nombres (hasta 15), menos concentración. Trade-off diversificación vs. dilución de la señal.",
         overrides={"strategy.MAX_PORTFOLIO_SIZE": 15},
+        block="utilidad",
     ),
 ]

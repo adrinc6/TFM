@@ -102,7 +102,6 @@ results/<run>/audit/portfolio_review_diagnostics.csv — por qué cada candidato
 results/<run>/audit/universe_monthly_scores.csv      — scores de TODO el universo, cada mes
 results/<run>/audit/universe_top_candidates.csv      — ranking completo por snapshot
 results/<run>/audit/watchlist_history.csv            — histórico completo de watchlist
-results/<run>/audit/research_ai/<ticker>.json        — research generado por empresa
 ```
 
 Los CSV compactos que el viewer sí consume están en la raíz de `results/<run>/` (uno por sección

@@ -179,6 +179,87 @@ def test_ensure_inputs_corre_solo_las_etapas_que_faltan(tmp_path, monkeypatch):
     assert calls == {"download": 0, "dataset": 0, "features": 1}
 
 
+def test_scenario_block_default_y_explicito():
+    """El campo block es opcional (default '') y llega tal cual cuando se declara."""
+    assert Scenario(name="s", why="w").block == ""
+    assert Scenario(name="s", why="w", block="aprendizaje").block == "aprendizaje"
+
+
+def _mock_pipeline_stages(monkeypatch, order):
+    """Sustituye las cinco etapas del pipeline por registradores de orden y collect_metrics por un
+    dict fijo. Las etapas diferidas (watchlist/viewer/report) se importan en tiempo de llamada desde
+    su módulo fuente, así que se parchean ahí; las de import directo, sobre el runner."""
+    monkeypatch.setattr(exp_runner, "train_and_score", lambda s: order.append("train_and_score"))
+    monkeypatch.setattr("module.strategy.selection.build_watchlist", lambda s: order.append("build_watchlist"))
+    monkeypatch.setattr(exp_runner, "run_backtest", lambda s: (order.append("run_backtest"), {})[1])
+    monkeypatch.setattr("module.viewer.build_viewer", lambda s: order.append("build_viewer"))
+    monkeypatch.setattr("module.report.build_final_report", lambda s: order.append("build_final_report"))
+    monkeypatch.setattr(exp_runner, "collect_metrics",
+                        lambda outputs, run_dir: {"rank_ic_final_mean": 0.05, "cumulative_alpha": 0.2})
+
+
+def test_run_scenario_corre_pipeline_completo_en_orden(tmp_path, monkeypatch):
+    """run_scenario reproduce el pipeline normal: ml → watchlist → backtest → viewer → report."""
+    base = Settings()
+    exp_dir = tmp_path / "exp"
+    scenario = Scenario(name="baseline", why="w", block="baseline")
+    (exp_dir / scenario.name).mkdir(parents=True)  # run_dir donde se persiste la fila
+
+    order: list[str] = []
+    _mock_pipeline_stages(monkeypatch, order)
+    row = exp_runner.run_scenario(scenario, base, exp_dir, cache={})
+
+    assert order == ["train_and_score", "build_watchlist", "run_backtest", "build_viewer", "build_final_report"]
+    assert row["name"] == "baseline"
+    assert row["block"] == "baseline"
+    assert row["rank_ic_final_mean"] == 0.05
+
+
+def test_run_scenario_propaga_block_vacio(tmp_path, monkeypatch):
+    """Un escenario sin block deja block='' en su fila de resultados."""
+    base = Settings()
+    exp_dir = tmp_path / "exp"
+    scenario = Scenario(name="otro", why="w")  # sin block
+    (exp_dir / scenario.name).mkdir(parents=True)
+
+    order: list[str] = []
+    _mock_pipeline_stages(monkeypatch, order)
+    row = exp_runner.run_scenario(scenario, base, exp_dir, cache={})
+    assert row["block"] == ""
+
+
+def test_report_agrupa_por_bloque_y_enlaza_viewer(tmp_path):
+    """El informe abre una subsección por bloque y enlaza a <nombre>/viewer/index.html; el CSV lleva
+    la columna block y las deltas frente al baseline (0 en el propio baseline)."""
+    from module.experiments.report import build_html, write_comparison
+
+    rows = [
+        {"name": "baseline", "why": "b", "block": "baseline", "overrides": "{}",
+         "rank_ic_final_mean": 0.05, "cumulative_alpha": 0.20, "alpha_vs_best_baseline": 0.03,
+         "placebo_percentile": 0.90, "information_ratio": 0.50},
+        {"name": "solo_calidad", "why": "q", "block": "aprendizaje", "overrides": "{...}",
+         "rank_ic_final_mean": 0.04, "cumulative_alpha": 0.10, "alpha_vs_best_baseline": 0.01,
+         "placebo_percentile": 0.80, "information_ratio": 0.40},
+        {"name": "concentrada", "why": "c", "block": "utilidad", "overrides": "{...}",
+         "rank_ic_final_mean": 0.03, "cumulative_alpha": 0.25, "alpha_vs_best_baseline": 0.05,
+         "placebo_percentile": 0.70, "information_ratio": 0.60},
+    ]
+    html_out = build_html(rows)
+    assert "Aprendizaje" in html_out
+    assert "Utilidad" in html_out
+    assert "solo_calidad/viewer/index.html" in html_out
+    assert "concentrada/viewer/index.html" in html_out
+
+    write_comparison(rows, tmp_path)
+    comp = pd.read_csv(tmp_path / "comparison.csv")
+    assert "block" in comp.columns
+    assert "delta_rank_ic_final_mean" in comp.columns
+    base_delta = comp.loc[comp["name"] == "baseline", "delta_rank_ic_final_mean"].iloc[0]
+    assert base_delta == pytest.approx(0.0)
+    calidad_delta = comp.loc[comp["name"] == "solo_calidad", "delta_rank_ic_final_mean"].iloc[0]
+    assert calidad_delta == pytest.approx(-0.01)
+
+
 def test_ensure_inputs_encadena_todo_si_no_hay_nada(tmp_path, monkeypatch):
     """Sin ningún artefacto, corre download → dataset → features en cadena (como el pipeline)."""
     raw, master, processed = tmp_path / "raw", tmp_path / "master", tmp_path / "processed"

@@ -79,7 +79,7 @@ divergencia).
 ## 3. Arquitectura del pipeline
 
 ```text
-download → dataset → features → ml → watchlist → research_ai → backtest → viewer → report
+download → dataset → features → ml → watchlist → backtest → viewer → report
 ```
 
 Orquestado por `main.py`, gateado por `settings.run_mode` (o `"full"` para ejecutar todo). Cada
@@ -87,8 +87,9 @@ etapa lee/escribe bajo `Settings.run_dir` = `results/<dev|full>_<inicio>_<fin>_<
 (`environment.py`), de modo que cambiar fechas, `DEV_MODE` o el esquema de entrenamiento apunta a
 una carpeta de resultados distinta en vez de sobrescribir un run anterior.
 
-Existe un modo transversal aparte, `run_mode="experiments"`, que **no** ejecuta este pipeline sino
-que barre múltiples configuraciones reutilizando las etapas `ml` y `backtest` — se documenta en §16.
+Existe un modo transversal aparte, `run_mode="experiments"`, que barre múltiples configuraciones
+corriendo el pipeline completo por escenario y reutilizando solo las etapas comunes
+(`download`/`dataset`/`features`) más el scoring caro por clave de caché — se documenta en §16.
 
 | Etapa | Módulo | Entrada | Salida |
 |---|---|---|---|
@@ -97,7 +98,6 @@ que barre múltiples configuraciones reutilizando las etapas `ml` y `backtest` �
 | features | `module.features.pipeline` | dataset maestro | `data/processed/features.parquet` |
 | ml | `module.ml` | features + precios | `data/processed/scored_universe.parquet`, diagnósticos walk-forward |
 | watchlist | `module.strategy.selection` | universo puntuado | `data/processed/watchlist.parquet`, `results/<run>/watchlist.csv` |
-| research_ai | `module.research.ai` | universo puntuado + noticias | `results/<run>/research_ai.csv` |
 | backtest | `module.backtest` | universo puntuado + precios | ~20 CSV en `results/<run>/` y `.../audit/` |
 | viewer | `module.viewer` | CSVs del run | `results/<run>/viewer/index.html` |
 | report | `module.report` | viewer ya construido | apunta al mismo `index.html` |
@@ -105,7 +105,7 @@ que barre múltiples configuraciones reutilizando las etapas `ml` y `backtest` �
 ## 4. Configuración (`environment.py`)
 
 No hay CLI/argparse: todo se edita directamente como constantes en `environment.py`. `.env` solo
-guarda `FINNHUB_API_KEY` y `OPENAI_API_KEY` (parseado a mano, sin `python-dotenv`).
+guarda `FINNHUB_API_KEY` (parseado a mano, sin `python-dotenv`).
 
 Parámetros clave:
 
@@ -427,11 +427,8 @@ exit_score              = 1 - (0.45·thesis_score + 0.35·position_health_score 
   `Improving` (thesis_score≥0.78 y health≥0.70), `Intact` (thesis_score≥0.62), `Maturing`
   (valoración<0.25 y calidad≥0.65), `Weakening` (thesis_score≥0.45).
 
-- **`ai.py`**: única integración con OpenAI, gateada por `ENABLE_OPENAI_RESEARCH` +
-  `OPENAI_API_KEY` (desactivada por defecto). Llama a `https://api.openai.com/v1/responses` con
-  `requests` puro (sin SDK `openai`). **Siempre** cae al fallback determinista de `synthesis.py`
-  ante cualquier fallo o si está desactivada — ninguna etapa depende de que la llamada externa
-  tenga éxito.
+Ambos módulos son deterministas (sin red ni LLM) y los consumen `watchlist`
+(`module/strategy/selection.py`) y `backtest` (`module/backtest/engine.py`).
 
 ## 11. Selección y watchlist (`module/strategy/selection.py`)
 
@@ -601,8 +598,11 @@ por qué.
 
 ### 16.3 Qué ejecuta por escenario (y qué NO)
 
-Un cambio de configuración solo puede alterar dos etapas: `ml` (puntuar el universo) y `backtest`.
-Por eso el runner ejecuta **solo esas dos** por escenario, y **omite** el resto:
+Cada escenario corre el **pipeline completo** como una ejecución normal, en el mismo orden que
+`main.py`: `ml` (puntuar el universo) → `watchlist` → `backtest` → `viewer` → `report`. Todas las
+etapas honran `settings.run_dir` (fijado por el runner a `results/escenarios/<exp_id>/<nombre>/`), así
+que cada escenario queda **autocontenido**, con su propio `viewer/index.html` navegable. Lo único que
+NO repite son las etapas comunes:
 
 - `download`/`dataset`/`features` producen datos que **no dependen** de los overrides → se preparan
   **una vez** antes del barrido (`_ensure_experiment_inputs`) y se reutilizan. Esa función reproduce
@@ -610,9 +610,12 @@ Por eso el runner ejecuta **solo esas dos** por escenario, y **omite** el resto:
   reconstruye `prices.parquet` y los demás crudos desde el JSON cacheado en `data/raw/json/`, **sin
   red** mientras `FORCE_RAW_DOWNLOAD=False`), `dataset` y `features`. Una vez en disco, corridas
   posteriores no repiten nada de esto.
-- `research_ai` se omite (coste de LLM, y está desactivado por defecto).
-- El `viewer`/`report` **individuales** se omiten: su salida es el informe por-run, redundante con el
-  informe comparativo que sí genera el runner.
+- El **scoring caro** (`ml`) se ejecuta **una vez por clave de caché** (`scoring_cache_key`): los
+  escenarios que solo cambian estrategia restauran el scoring cacheado en vez de re-entrenar
+  (`re_scored=False`).
+
+Como cada escenario deja ya su informe propio, el índice del experimento no lo duplica: la comparativa
+enlaza a `<nombre>/viewer/index.html` de cada uno.
 
 ### 16.4 La pieza clave: overrides aislados y con tres mecanismos
 
