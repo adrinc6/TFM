@@ -90,6 +90,8 @@ thead th {{ color: var(--ink-soft); font-weight: 600; font-size: 11.5px;
 tbody tr + tr td {{ border-top: 1px solid var(--border); }}
 .note {{ color: var(--ink-soft); font-size: 12.5px; }}
 ul.findings {{ padding-left: 18px; }} ul.findings li {{ margin: 6px 0; }}
+ul.note {{ padding-left: 18px; margin: 8px 0; }} ul.note li {{ margin: 8px 0; }}
+details summary {{ cursor: pointer; font-weight: 600; font-size: 13px; color: var(--ink); }}
 a.audit {{ color: var(--accent); text-decoration: none; }} a.audit:hover {{ text-decoration: underline; }}
 .empty {{ color: var(--ink-soft); font-size: 13px; padding: 14px; }}
 </style>

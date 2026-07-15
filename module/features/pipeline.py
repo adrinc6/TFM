@@ -7,7 +7,12 @@ import logging
 import pandas as pd
 
 from environment import PROCESSED_DIR
-from module.features.transforms import TEMPORAL_FEATURES, add_expectation_features, add_relative_features, add_temporal_business_features
+from module.features.transforms import (
+    TEMPORAL_FEATURES,
+    add_expectation_features,
+    add_relative_features,
+    add_temporal_business_features,
+)
 from module.utils import read_parquet, write_parquet
 
 log = logging.getLogger(__name__)
@@ -28,7 +33,6 @@ CORE_FEATURE_COLUMNS = [
 
 FEATURE_COLUMNS = [
     *CORE_FEATURE_COLUMNS,
-    "expected_growth",
     "implied_growth",
     "realized_growth",
     "expectation_gap",
@@ -122,4 +126,10 @@ def _mean_percentile(df: pd.DataFrame, columns: list[str]) -> pd.Series:
     usable = [col for col in columns if col in df.columns]
     if not usable:
         return pd.Series(0.5, index=df.index)
-    return df.groupby("snapshot_date")[usable].rank(pct=True).mean(axis=1)
+    # Coerce to numeric before ranking: some multiples (notably peg/peg_price_adjusted) arrive as
+    # object dtype from the parquet round-trip when they mix None and float, and .rank() on object
+    # dtype would rank lexicographically or error. errors="coerce" turns any stray strings into NaN,
+    # which rank(pct=True) skips per column, so valuation_score is computed on real numbers.
+    numeric = df[usable].apply(pd.to_numeric, errors="coerce")
+    numeric["snapshot_date"] = df["snapshot_date"].to_numpy()
+    return numeric.groupby("snapshot_date")[usable].rank(pct=True).mean(axis=1)

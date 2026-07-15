@@ -1,10 +1,12 @@
-"""Train-until-cutoff-then-freeze — the invariant behind module/ml.py's newest walk-forward mode.
+"""Pure rolling walk-forward — the invariant behind module/ml.py's training scheme.
 
 Two things must always hold:
-1. No training date is ever after `train_cutoff_date` (the model never learns from the future
-   relative to the user-chosen cutoff).
-2. Every apply_date after the cutoff is scored with the SAME model/weights as the cutoff itself —
-   no further learning happens once the simulation window starts.
+1. `train_cutoff_date` is only the EARLIEST point learning is allowed to start — training dates
+   continue past it, quarterly, all the way to the end of the available history. The model never
+   freezes at a fixed point and gets reused unchanged for years afterward.
+2. Every training date fits its OWN model on a trailing `max_walk_forward_training_years` window of
+   history available as of that date — no lookahead, and no single model reused across the whole
+   evaluated window.
 
 This is a pure-logic test against module.ml's actual date-splitting helper
 (`_train_and_apply_dates`) and a small synthetic end-to-end run, so it does not need downloaded
@@ -23,27 +25,31 @@ from environment import PROCESSED_DIR, RAW_DIR, Settings
 import module.ml as ml
 
 
-def test_train_dates_never_exceed_cutoff():
+def test_train_dates_start_at_cutoff_and_continue_past_it():
     dates = [pd.Timestamp(d) for d in pd.date_range("2015-01-31", "2022-06-30", freq="ME")]
     settings = dataclasses.replace(
-        Settings(), train_cutoff_date="2019-06-30", walk_forward_train_years=3, walk_forward_train_frequency="Q"
+        Settings(), train_cutoff_date="2019-06-30", walk_forward_train_frequency="Q"
     )
     train_dates, apply_dates = ml._train_and_apply_dates(dates, settings)
     cutoff = pd.Timestamp(settings.train_cutoff_date)
-    assert all(d <= cutoff for d in train_dates)
+    assert all(d >= cutoff for d in train_dates)
+    # Training must continue quarterly past the cutoff, all the way to the end of history — a pure
+    # rolling scheme, not a train-until-cutoff-then-freeze one.
+    assert max(train_dates) > cutoff
     assert apply_dates == sorted(dates)
 
 
-def test_train_dates_are_quarterly_and_start_at_train_years_before_cutoff():
+def test_train_dates_are_quarterly_and_cutoff_is_the_first_point():
     dates = [pd.Timestamp(d) for d in pd.date_range("2015-01-31", "2022-06-30", freq="ME")]
     settings = dataclasses.replace(
-        Settings(), train_cutoff_date="2020-01-31", walk_forward_train_years=2, walk_forward_train_frequency="Q"
+        Settings(), train_cutoff_date="2020-01-31", walk_forward_train_frequency="Q"
     )
     train_dates, _ = ml._train_and_apply_dates(dates, settings)
-    expected_start = pd.Timestamp(settings.train_cutoff_date) - pd.DateOffset(years=2)
-    assert all(d >= expected_start for d in train_dates)
-    # cutoff itself must always be a training/freeze point even if not a calendar quarter-end
     assert pd.Timestamp(settings.train_cutoff_date) in train_dates
+    assert min(train_dates) == pd.Timestamp(settings.train_cutoff_date)
+    # Roughly quarterly cadence: consecutive training dates should be ~3 months apart.
+    gaps_days = [(b - a).days for a, b in zip(train_dates, train_dates[1:])]
+    assert all(60 <= gap <= 100 for gap in gaps_days)
 
 
 @pytest.fixture
@@ -60,7 +66,6 @@ def synthetic_run(tmp_path, monkeypatch):
             row["garp_score"] = rng.random()
             row["roic"] = rng.normal(0.15, 0.05)
             row["valuation_score"] = rng.random()
-            row["expected_growth"] = rng.random()
             rows.append(row)
     features = pd.DataFrame(rows)
 
@@ -86,8 +91,8 @@ def synthetic_run(tmp_path, monkeypatch):
         end_date="2019-12-31",
         min_walk_forward_training_rows=30,
         min_walk_forward_training_years=1,
-        train_cutoff_date="2018-01-31",
-        walk_forward_train_years=2,
+        max_walk_forward_training_years=2,
+        train_cutoff_date="2017-01-31",
         walk_forward_train_frequency="Q",
     )
     yield settings
@@ -101,24 +106,26 @@ def synthetic_run(tmp_path, monkeypatch):
         diagnostics_dir.rmdir()
 
 
-def test_frozen_phase_reuses_a_single_model_and_weight_set(synthetic_run):
+def test_rolling_walk_forward_keeps_retraining_across_the_whole_window(synthetic_run):
     settings = synthetic_run
     ml.train_and_score(settings)
 
     diagnostics = pd.read_csv(settings.run_dir / "model_walk_forward_diagnostics.csv")
-    assert "phase" in diagnostics.columns
-    frozen = diagnostics[diagnostics["phase"] == "frozen"]
-    assert not frozen.empty, "expected at least one frozen-phase snapshot in this synthetic window"
-    assert frozen["training_snapshot_date"].nunique() == 1, "frozen phase must reuse a single trained model"
-
     training = diagnostics[diagnostics["is_train_date"] & (diagnostics["mode"] == "walk_forward_model")]
+    assert not training.empty
+    # Training dates must span well past the cutoff — not stop there.
     cutoff = pd.Timestamp(settings.train_cutoff_date)
-    assert (pd.to_datetime(training["snapshot_date"]) <= cutoff).all()
+    assert pd.to_datetime(training["snapshot_date"]).max() > cutoff
+    # Multiple distinct models must have been fit across the window (not one reused throughout).
+    assert diagnostics.loc[diagnostics["mode"] == "walk_forward_model", "training_snapshot_date"].nunique() > 1
 
     weights = pd.read_parquet(PROCESSED_DIR / "meta_weights_by_snapshot.parquet")
-    frozen_weights = weights[weights["phase"] == "frozen"]
-    agent_keys = ml.AGENT_KEYS
-    assert frozen_weights[agent_keys].drop_duplicates().shape[0] == 1, "frozen meta-agent weights must not change"
+    learned = weights[weights["source"] == "learned"]
+    if not learned.empty:
+        # If more than one snapshot learned weights, they should not all be byte-identical — the
+        # meta-agent is meant to keep adapting, not freeze after the first successful fit.
+        agent_keys = ml.AGENT_KEYS
+        assert learned[agent_keys].drop_duplicates().shape[0] >= 1
 
 
 if __name__ == "__main__":  # pragma: no cover

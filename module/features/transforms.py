@@ -20,16 +20,16 @@ TEMPORAL_FEATURES = [
 def add_expectation_features(df: pd.DataFrame) -> pd.DataFrame:
     """Expectation-gap features.
 
-    `expected_growth` (the market's implied expectation) is a proxy derived from valuation:
-    a low valuation_score (expensive) implies the market prices in high growth. `realized_growth`
-    is the **actually observed** fundamental growth (cross-sectional percentile of the reported
-    revenue/eps growth from module/dataset.py's `_historical_growth`), NOT a deterministic
-    re-projection of the input scores. The gap between the two is what forward targets exploit.
+    `implied_growth` (the market's implied expectation) is a proxy derived from valuation: a low
+    valuation_score (expensive) implies the market prices in high growth. `realized_growth` is the
+    **actually observed** fundamental growth (cross-sectional percentile of the reported revenue/eps
+    growth from module/dataset.py's `_historical_growth`), NOT a deterministic re-projection of the
+    input scores. The gap between the two (`positive_expectation_gap`) is a feature of the alpha
+    agent — high when observed growth beats what the market's valuation implies.
     """
     df = df.copy()
     # Market-implied growth expectation: cheaper multiples => lower implied growth.
     df["implied_growth"] = (1 - df["valuation_score"]).clip(0, 1)
-    df["expected_growth"] = df["implied_growth"]
     # Observed fundamental growth, ranked cross-sectionally so it stays on [0, 1] and comparable.
     reported = [col for col in ("revenue_growth", "eps_growth") if col in df.columns]
     if reported:

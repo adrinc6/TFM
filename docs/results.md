@@ -37,12 +37,14 @@ decisión salió bien.
 
 Esta es la sección más importante desde el punto de vista metodológico. Incluye:
 
-- **Nota de la fecha de corte**: explica en una frase que antes del corte el modelo se
-  reentrena trimestralmente (aprendizaje real) y después queda **congelado** — lo que se ve
-  después del corte mide cómo envejece ese modelo fijo, no aprendizaje nuevo.
+- **Nota de la fecha de corte**: explica en una frase que el corte es solo el punto más
+  temprano de reentrenamiento; a partir de ahí el modelo se **reentrena cada trimestre a lo
+  largo de toda la ventana** (walk-forward rodante, nunca congelado), usando en cada punto solo
+  su ventana móvil de historia disponible — lo que se ve mide aprendizaje continuo, no el
+  envejecimiento de un modelo fijo.
 - **Evolución de los pesos aprendidos del meta-agente** (gráfico): cómo cambia en el tiempo el
-  peso que el sistema da a cada uno de los 4 agentes especializados (Calidad, Crecimiento,
-  Infravaloración, Alpha), con una línea vertical marcando el corte.
+  peso que el sistema da a cada uno de los 3 agentes especializados (Calidad, Temporización,
+  Alpha), con una línea vertical marcando el corte.
 - **Qué agente domina y por qué** (frase generada desde los datos reales del snapshot más
   reciente): identifica el agente con mayor peso y su rank-IC histórico medio, para no tener que
   interpretar el gráfico a ojo.
@@ -73,11 +75,11 @@ peores 16 posiciones por retorno en exceso acumulado, y una tabla con las 20 mej
 
 Pensada para que cualquiera entienda el diseño sin leer el código:
 
-- Descripción en prosa de los 4 agentes especializados + el meta-agente, con la definición exacta
+- Descripción en prosa de los 3 agentes especializados + el meta-agente, con la definición exacta
   de cada target (reutilizada de `model_explainability.json`).
-- Mecánica de "entrenar hasta un corte, luego congelar" con las **fechas concretas de esa
-  ejecución** (no genéricas): desde cuándo hasta cuándo se entrenó, cuántos años de historia usó
-  cada reentrenamiento, y cómo se simula después del corte.
+- Mecánica del **walk-forward rodante** con las **fechas concretas de esa ejecución** (no
+  genéricas): desde qué corte empieza el reentrenamiento, con qué cadencia trimestral continúa
+  hasta el final, y cuántos años de historia móvil usa cada reentrenamiento.
 - Tabla de "ficha técnica": fecha de corte, años de entrenamiento previos, cadencia de
   reentrenamiento, horizonte de predicción, ventana móvil de historia, tamaño del universo.
 

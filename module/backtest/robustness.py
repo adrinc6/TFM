@@ -9,9 +9,15 @@ D1  Block bootstrap of the monthly excess return — a confidence interval on th
 D2  Cost/slippage sensitivity — because the per-period cost drag is already stored and scales
     linearly with the cost rate, we can recompute net alpha at any cost multiplier without touching
     the pipeline. The headline is one number: the multiplier at which cumulative alpha crosses zero.
-D3  Multi-cutoff comparison — a pure aggregator that stacks the executive summaries of several runs
-    with different TRAIN_CUTOFF_DATE into one table. Launching those runs is out of scope here; the
-    aggregation is ready to consume them.
+D3  Sub-period split — `sub_period_alpha` cuts the single live-portfolio window into contiguous
+    chunks and reports alpha/IR per chunk, re-using the already-computed monthly excess return (no
+    re-scoring). Flags a result that is really "one great stretch" rather than a sustained edge.
+
+(A multi-cutoff TRAIN_CUTOFF_DATE sweep was considered and deliberately dropped: varying the
+cutoff changes both the training window AND the evaluated live-portfolio window at once, and with
+only a handful of cutoffs that all end in 2026 and overlap heavily on the same recent bull stretch,
+it mostly measures shared market regime, not model robustness — a weaker, more confounded test than
+D1-D3 above for the "is this edge real" question.)
 
 Following the project's executive/audit tiering, `build_robustness` returns compact summary tables
 for the viewer plus one heavy per-resample distribution table meant to live under results/<run>/audit
@@ -166,24 +172,32 @@ def robustness_summary(vs_benchmark: pd.DataFrame, bootstrap: pd.DataFrame, brea
     }])
 
 
-def compare_train_cutoffs(summaries_by_cutoff: dict[str, pd.DataFrame]) -> pd.DataFrame:
-    """Stack several runs' executive summaries (one per TRAIN_CUTOFF_DATE) into a comparison table.
-
-    Each value is the run's `executive_summary` DataFrame (or its first row as a dict/Series). The
-    orchestration that produces those runs lives outside this module; this only aggregates whatever
-    is handed to it, so a future A/B over cutoffs has a ready place to land.
+def sub_period_alpha(vs_benchmark: pd.DataFrame, n_periods: int = 3) -> pd.DataFrame:
+    """Split the single backtest window into `n_periods` contiguous, roughly equal-length chunks
+    and report alpha/IR per chunk — cheap (re-slices the already-computed monthly excess return,
+    no re-scoring), but tells a different story than the bootstrap: whether the edge is spread
+    across the whole window or concentrated in one sub-period (a single strong stretch driving the
+    entire headline result is a red flag the bootstrap CI alone won't surface).
     """
-    key_metrics = [
-        "cumulative_alpha", "information_ratio", "tracking_error_annualized", "excess_return_t_stat",
-        "annual_turnover", "closed_position_win_rate_vs_benchmark", "average_closed_excess_return",
-    ]
+    if vs_benchmark.empty or "portfolio_period_return" not in vs_benchmark.columns:
+        return pd.DataFrame(columns=["sub_periodo", "fecha_inicio", "fecha_fin", "n_periodos", "alpha_acumulada", "information_ratio"])
+    ordered = vs_benchmark.sort_values("date").reset_index(drop=True)
+    chunks = np.array_split(ordered.index, n_periods)
     rows = []
-    for cutoff, summary in summaries_by_cutoff.items():
-        if summary is None or (isinstance(summary, pd.DataFrame) and summary.empty):
+    for i, chunk in enumerate(chunks, start=1):
+        if len(chunk) == 0:
             continue
-        record = summary.iloc[0] if isinstance(summary, pd.DataFrame) else pd.Series(summary)
-        rows.append({"train_cutoff_date": cutoff, **{metric: record.get(metric) for metric in key_metrics}})
-    return pd.DataFrame(rows).sort_values("train_cutoff_date") if rows else pd.DataFrame(columns=["train_cutoff_date", *key_metrics])
+        window = ordered.loc[chunk]
+        excess = _monthly_excess(window)
+        rows.append({
+            "sub_periodo": i,
+            "fecha_inicio": window["date"].iloc[0],
+            "fecha_fin": window["date"].iloc[-1],
+            "n_periodos": int(len(window)),
+            "alpha_acumulada": float(excess.sum()) if excess.size else 0.0,
+            "information_ratio": _information_ratio(excess),
+        })
+    return pd.DataFrame(rows)
 
 
 def build_robustness(outputs: dict[str, pd.DataFrame], settings: Settings) -> dict[str, pd.DataFrame]:
@@ -199,4 +213,5 @@ def build_robustness(outputs: dict[str, pd.DataFrame], settings: Settings) -> di
         "robustness_bootstrap_distribution": distribution,
         "robustness_cost_sensitivity": cost_sensitivity_sweep(vs_benchmark, settings),
         "robustness_summary": robustness_summary(vs_benchmark, bootstrap, breakeven),
+        "robustness_sub_periods": sub_period_alpha(vs_benchmark),
     }

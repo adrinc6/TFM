@@ -101,6 +101,7 @@ def action_journal(transactions: pd.DataFrame, performance: pd.DataFrame, ration
         "price_adjusted_valuation_score", "momentum_score", "timing_probability",
         "opportunity_type", "holding_days", "total_return", "benchmark_total_return",
         "excess_total_return", "thesis", "exit_thesis", "catalyst",
+        "manager_score_breakdown", "vs_best_alternative", "entry_vs_current",
     ]
     return select_columns(tx, columns)
 
@@ -145,7 +146,8 @@ def current_portfolio(holdings: pd.DataFrame) -> pd.DataFrame:
         "current_manager_score", "current_conviction_score", "current_buy_today_score",
         "current_would_buy_today", "current_thesis_state", "current_price_adjusted_valuation_score",
         "current_momentum_score", "thesis_persistence_score", "months_since_entry",
-        "investment_thesis", "current_exit_thesis",
+        "investment_thesis", "current_exit_thesis", "manager_score_breakdown_at_entry",
+        "vs_best_alternative_at_entry", "entry_vs_current",
     ]
     return select_columns(latest.sort_values("hybrid_weight", ascending=False), cols)
 
@@ -303,6 +305,78 @@ def summary_metrics(outputs: dict) -> dict:
         "average_closed_excess_return": float(closed["excess_total_return"].mean()) if not closed.empty else 0.0,
         **excess_return_statistics(vs_benchmark),
     }
+
+
+def edge_attribution(position_performance: pd.DataFrame, walk_forward_diagnostics: pd.DataFrame) -> pd.DataFrame:
+    """Where does the alpha actually come from — the ML ranking, or something else?
+
+    The rolling OOS rank-IC of `final_score` can be persistently low or negative (the ML signal
+    fails to rank forward alpha correctly even while relearning every quarter) even while
+    cumulative alpha is positive. This decomposes the closed-position record into the pieces needed
+    to judge that: the correlation between the entry manager_score/buy_today_score and the realized
+    excess return (does a HIGHER score at entry actually predict a BETTER outcome, independent of
+    rank-IC), and the winner/loser skew (a few large winners carrying a losing-on-average book vs. a
+    broadly positive edge). Returns one row per metric so it prints as a simple table — no forced
+    narrative, just numbers.
+    """
+    rows: list[dict] = []
+    closed = (
+        position_performance[position_performance["closed"]].copy()
+        if not position_performance.empty and "closed" in position_performance.columns
+        else pd.DataFrame()
+    )
+    if not closed.empty and "excess_total_return" in closed.columns:
+        excess = pd.to_numeric(closed["excess_total_return"], errors="coerce")
+        winners = excess[excess > 0]
+        losers = excess[excess <= 0]
+        for score_col, label in (
+            ("entry_manager_score", "manager_score"),
+            ("entry_buy_today_score", "buy_today_score"),
+        ):
+            if score_col in closed.columns:
+                pair = pd.DataFrame({
+                    "score": pd.to_numeric(closed[score_col], errors="coerce"),
+                    "excess": excess,
+                }).dropna()
+                corr = pair["score"].corr(pair["excess"], method="spearman") if len(pair) >= 5 else None
+                rows.append({
+                    "metrica": f"Correlación entrada ({label}) vs. exceso realizado",
+                    "valor": corr,
+                    "n": int(len(pair)),
+                })
+        rows.append({
+            "metrica": "Win rate (posiciones cerradas, exceso > 0)",
+            "valor": float((excess > 0).mean()) if not excess.empty else None,
+            "n": int(len(excess)),
+        })
+        rows.append({
+            "metrica": "Retorno medio en exceso, ganadoras",
+            "valor": float(winners.mean()) if not winners.empty else None,
+            "n": int(len(winners)),
+        })
+        rows.append({
+            "metrica": "Retorno medio en exceso, perdedoras",
+            "valor": float(losers.mean()) if not losers.empty else None,
+            "n": int(len(losers)),
+        })
+        rows.append({
+            "metrica": "Suma total de exceso (ganadoras)",
+            "valor": float(winners.sum()) if not winners.empty else None,
+            "n": int(len(winners)),
+        })
+        rows.append({
+            "metrica": "Suma total de exceso (perdedoras)",
+            "valor": float(losers.sum()) if not losers.empty else None,
+            "n": int(len(losers)),
+        })
+    if not walk_forward_diagnostics.empty and "rank_ic_final" in walk_forward_diagnostics.columns:
+        ic = pd.to_numeric(walk_forward_diagnostics["rank_ic_final"], errors="coerce").dropna()
+        rows.append({
+            "metrica": "Rank-IC medio de final_score (toda la ventana, rolling)",
+            "valor": float(ic.mean()) if not ic.empty else None,
+            "n": int(len(ic)),
+        })
+    return pd.DataFrame(rows)
 
 
 def excess_return_statistics(vs_benchmark: pd.DataFrame) -> dict:

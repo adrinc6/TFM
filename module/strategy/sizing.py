@@ -26,8 +26,13 @@ MAX_POSITION_WEIGHT = 0.18
 EQUAL_WEIGHT_SHARE = 0.20
 CONVICTION_WEIGHT_SHARE = 0.80
 # Convexity applied to the conviction core (>1): on [0,1] scores this widens the top-vs-middle gap,
-# rewarding the highest-conviction ideas disproportionately over the merely good ones.
-CONVICTION_CONVEXITY = 1.5
+# rewarding the highest-conviction ideas disproportionately over the merely good ones. Lowered from
+# 1.5: now that manager_score itself leads with a 0.70-weighted learned final_score (see
+# portfolio.py::MANAGER_SCORE_TERMS), conviction already tracks the AI signal strongly — a lower
+# exponent avoids compounding that with sizing convexity, which is what let a single high-conviction
+# name (NVDA, +334%) dominate the aggregate backtest result instead of the strategy's consistency
+# across positions doing so.
+CONVICTION_CONVEXITY = 1.35
 
 
 def add_position_sizing(holdings: pd.DataFrame) -> pd.DataFrame:

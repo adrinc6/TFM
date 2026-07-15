@@ -40,7 +40,7 @@ def test_realized_growth_is_observed_not_circular():
 
 def test_expectation_features_in_range():
     out = add_expectation_features(_panel())
-    for col in ["realized_growth", "implied_growth", "expected_growth", "positive_expectation_gap"]:
+    for col in ["realized_growth", "implied_growth", "positive_expectation_gap"]:
         assert out[col].between(0, 1).all(), f"{col} out of [0,1]"
     assert out["expectation_gap"].between(-1, 1).all()
 

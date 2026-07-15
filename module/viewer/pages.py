@@ -8,6 +8,7 @@ Heavy per-ticker/per-snapshot tables stay on disk under results/<run>/audit/ and
 
 from __future__ import annotations
 
+import html
 import logging
 import math
 from pathlib import Path
@@ -25,9 +26,9 @@ log = logging.getLogger(__name__)
 
 NAV = [
     ("resumen", "Resumen"),
+    ("aprendizaje", "Aprendizaje (IA)"),
     ("rendimiento", "Rendimiento"),
     ("cartera", "Cartera"),
-    ("aprendizaje", "Aprendizaje"),
     ("posiciones", "Posiciones"),
     ("robustez", "Robustez"),
     ("metodologia", "Metodología"),
@@ -43,7 +44,7 @@ def build_viewer(settings: Settings) -> Path:
     _remove_legacy_pages(viewer_dir)
 
     tables = _load_tables(run_dir)
-    charts = build_charts(charts_dir, tables, settings.train_cutoff_date)
+    charts = build_charts(charts_dir, tables)
 
     body = _report_body(settings, tables, charts, run_dir)
     (viewer_dir / "index.html").write_text(
@@ -58,26 +59,26 @@ def _report_body(settings: Settings, tables: dict, charts: dict, run_dir: Path) 
 
     vs = tables.get("portfolio_vs_benchmark", pd.DataFrame())
     metrics = _metrics(vs)
-    train_start = (
-        pd.Timestamp(settings.train_cutoff_date) - pd.DateOffset(years=settings.walk_forward_train_years)
-    ).date().isoformat()
     header = (
         '<header><div class="wrap">'
         "<h1>Informe GARP AI &mdash; cartera infravalorada de calidad</h1>"
-        f'<div class="meta">Entrenamiento {train_start} → {settings.train_cutoff_date} · '
-        f'simulación {settings.train_cutoff_date} → {settings.end_date} · '
-        f'benchmark {settings.benchmark_ticker} · revisión {settings.review_frequency}</div>'
+        f'<div class="meta">Simulación {settings.train_cutoff_date} → {settings.end_date} '
+        f'(modelo reentrenado cada trimestre con los últimos {settings.max_walk_forward_training_years} '
+        f'años de historia — sin congelar) · benchmark {settings.benchmark_ticker} · '
+        f'revisión {settings.review_frequency}</div>'
         "</div></header>"
     )
     nav = '<nav><div class="wrap">' + "".join(
         f'<a href="#{anchor}">{label}</a>' for anchor, label in NAV
     ) + "</div></nav>"
 
+    # La sección de aprendizaje va justo después del resumen ejecutivo: es el núcleo del TFM (la IA
+    # como motor de la estrategia), no una nota secundaria tras el rendimiento del backtest.
     sections = "".join([
         _section_resumen(metrics),
+        _section_aprendizaje(charts, tables, settings),
         _section_rendimiento(charts, vs, drawdown_episodes),
         _section_cartera(tables),
-        _section_aprendizaje(charts, tables, settings),
         _section_posiciones(charts, tables),
         _section_robustez(tables),
         _section_metodologia(tables, settings),
@@ -89,13 +90,17 @@ def _report_body(settings: Settings, tables: dict, charts: dict, run_dir: Path) 
 # --- sections ---------------------------------------------------------------
 
 def _section_resumen(metrics: dict) -> str:
-    alpha = metrics.get("Alpha", 0) or 0
+    cagr = metrics.get("CAGR", 0) or 0
+    benchmark_cagr = metrics.get("Benchmark CAGR", 0) or 0
+    excess_total = metrics.get("Total Excess Return (compounded)", 0) or 0
     ir = metrics.get("Information Ratio", 0) or 0
-    tone = "pos" if alpha > 0 else "neg"
-    verdict = "batió" if alpha > 0 else "no batió"
+    tone = "pos" if cagr > benchmark_cagr else "neg"
+    verdict = "batió" if cagr > benchmark_cagr else "no batió"
     kpis = "".join([
-        kpi("Alpha vs SPY", _pct(alpha), "retorno total en exceso", tone),
-        kpi("CAGR", _pct(metrics.get("CAGR")), f"benchmark {_pct(metrics.get('Benchmark CAGR'))}"),
+        kpi("CAGR cartera", _pct(cagr), "retorno anualizado neto", tone),
+        kpi("CAGR benchmark", _pct(benchmark_cagr), "SPY, mismo periodo"),
+        kpi("Retorno total en exceso", _pct(excess_total),
+            "diferencia de retornos compuestos a fin de periodo — no es la cifra con IC bootstrap, ver Robustez"),
         kpi("Sharpe", _num(metrics.get("Sharpe")), f"Sortino {_num(metrics.get('Sortino'))}"),
         kpi("Max Drawdown", _pct(metrics.get("Max Drawdown")), "caída máxima"),
         kpi("Information Ratio", _num(ir), f"TE {_pct(metrics.get('Tracking Error (annualized)'))}"),
@@ -106,7 +111,8 @@ def _section_resumen(metrics: dict) -> str:
         '<section id="resumen"><h2>Resumen ejecutivo</h2>'
         f'<p class="lead">La estrategia sistemática GARP {verdict} al benchmark en esta ventana. '
         f'{SMALL_SAMPLE_CAVEAT} La confianza del resultado se lee mejor con el intervalo de confianza '
-        f'por bootstrap de la sección <a href="#robustez">Robustez</a> que con el t-stat aislado.</p>'
+        f'por bootstrap de la sección <a href="#robustez">Robustez</a> (alpha acumulada mensual) que con '
+        f'el retorno total en exceso o el t-stat aislado de arriba.</p>'
         f'<div class="kpis">{kpis}</div></section>'
     )
 
@@ -146,36 +152,98 @@ def _section_cartera(tables: dict) -> str:
         '<p class="lead">Qué se tiene ahora (pesos, score de gestión, tesis) y las últimas '
         'compras/ventas con su motivo.</p>'
         + table(select(current, current_cols))
+        + _holdings_rationale_block(current)
         + '<h3 class="note" style="margin-top:22px">Últimas operaciones</h3>'
         + table(select(recent, journal_cols))
+        + _journal_rationale_block(recent)
         + "</section>"
+    )
+
+
+def _clean_text(value) -> str:
+    """NaN-safe stringification for free-text columns round-tripped through CSV: an empty cell
+    reads back as float('nan'), which is truthy and breaks html.escape (expects str)."""
+    if value is None or (isinstance(value, float) and math.isnan(value)):
+        return ""
+    return str(value)
+
+
+def _holdings_rationale_block(current: pd.DataFrame) -> str:
+    """Por qué está cada posición en cartera: tesis, desglose real de manager_score al comprar
+    (qué componente de la fórmula pesó más), comparación contra la mejor alternativa descartada
+    ese día, y qué cambió desde entonces (si algo)."""
+    if current.empty:
+        return ""
+    items = []
+    for row in current.itertuples(index=False):
+        ticker = _clean_text(getattr(row, "ticker", ""))
+        thesis = _clean_text(getattr(row, "investment_thesis", ""))
+        breakdown = _clean_text(getattr(row, "manager_score_breakdown_at_entry", ""))
+        vs_alt = _clean_text(getattr(row, "vs_best_alternative_at_entry", ""))
+        change = _clean_text(getattr(row, "entry_vs_current", ""))
+        exit_thesis = _clean_text(getattr(row, "current_exit_thesis", ""))
+        lines = [line for line in (thesis, breakdown, vs_alt, change, exit_thesis) if line]
+        if not lines:
+            continue
+        body = "<br>".join(html.escape(line) for line in lines)
+        items.append(f"<li><strong>{html.escape(str(ticker))}</strong>: {body}</li>")
+    if not items:
+        return ""
+    return (
+        '<details style="margin-top:14px"><summary>Por qué está cada posición en cartera</summary>'
+        f'<ul class="note">{"".join(items)}</ul></details>'
+    )
+
+
+def _journal_rationale_block(journal: pd.DataFrame) -> str:
+    """Texto completo de motivo (con comparación entrada-vs-ahora en ventas) para las últimas
+    operaciones, sin saturar la tabla compacta de arriba."""
+    if journal.empty:
+        return ""
+    items = []
+    for row in journal.itertuples(index=False):
+        reason = _clean_text(getattr(row, "reason", ""))
+        if not reason:
+            continue
+        date = _clean_text(getattr(row, "date", ""))
+        ticker = _clean_text(getattr(row, "ticker", ""))
+        action = _clean_text(getattr(row, "action", ""))
+        items.append(
+            f"<li><strong>{html.escape(date)} {html.escape(action)} "
+            f"{html.escape(ticker)}</strong>: {html.escape(reason)}</li>"
+        )
+    if not items:
+        return ""
+    return (
+        '<details style="margin-top:14px"><summary>Motivo completo de cada operación</summary>'
+        f'<ul class="note">{"".join(items)}</ul></details>'
     )
 
 
 def _section_aprendizaje(charts: dict, tables: dict, settings: Settings) -> str:
     weights = tables.get("meta_weights_by_snapshot", pd.DataFrame())
-    training_weights = weights[weights.get("phase", "training") == "training"] if not weights.empty else weights
-    learned = int((training_weights.get("source", pd.Series(dtype=str)) == "learned").sum()) if not training_weights.empty else 0
-    total = len(training_weights) if not training_weights.empty else 0
-    cutoff_note = (
-        f'El modelo aprende (reentrenamiento trimestral) desde el inicio de la ventana de '
-        f'entrenamiento hasta el <strong>{settings.train_cutoff_date}</strong>. A partir de esa '
-        f'fecha el modelo queda <strong>congelado</strong>: la cartera se sigue revisando cada mes, '
-        f'pero siempre con los mismos agentes y los mismos pesos del meta-agente — el rank-IC y los '
-        f'pesos que se ven después del corte miden cómo envejece ese modelo fijo, no aprendizaje '
-        f'nuevo.'
+    learned = int((weights.get("source", pd.Series(dtype=str)) == "learned").sum()) if not weights.empty else 0
+    total = len(weights) if not weights.empty else 0
+    consistency_block = _consistency_headline(tables.get("robustness_sub_periods", pd.DataFrame()))
+    rolling_note = (
+        f'El modelo se reentrena cada trimestre <strong>durante toda la ventana simulada</strong> '
+        f'(desde {settings.train_cutoff_date} hasta {settings.end_date}), usando siempre los últimos '
+        f'{settings.max_walk_forward_training_years} años de historia disponibles hasta ese punto — '
+        f'nunca se congela. Esto significa que el rank-IC y los pesos que se ven abajo reflejan '
+        f'aprendizaje real en toda la ventana, no solo en un tramo inicial de entrenamiento seguido '
+        f'de un modelo fijo aplicándose a un régimen de mercado que nunca vio.'
     )
     lead = (
-        'La prueba de que el sistema aprende: en cada snapshot de entrenamiento el meta-agente '
+        'La prueba de que el sistema aprende: en cada snapshot de reentrenamiento el meta-agente '
         'ajusta —a partir del alpha realmente realizado a 12 meses (walk-forward, sin lookahead)— '
         f'cuánto pesa cada agente especializado, premiando su contribución <em>marginal</em> '
         '(rank-IC parcial frente al alpha que los otros tres agentes no explican), no su solape. '
-        f'{learned} de {total} snapshots de entrenamiento usaron pesos aprendidos (el resto, prior '
-        'por falta de historia). El segundo gráfico muestra el rank-IC out-of-sample de la señal '
-        'maestra (final_score, la combinación del meta-agente) por snapshot y su media móvil de 12 '
-        'periodos: si sube con el tiempo, el sistema afina; si oscila plano, la muestra (unas 90 '
-        'observaciones) no permite todavía distinguir mejora de ruido — se reporta el dato tal cual '
-        f'sale, sin forzar una lectura de mejora. {cutoff_note}'
+        f'{learned} de {total} snapshots usaron pesos aprendidos (el resto, prior por falta de '
+        'historia). El segundo gráfico muestra el rank-IC out-of-sample de la señal maestra '
+        '(final_score, la combinación del meta-agente) por snapshot y su media móvil de 12 periodos: '
+        'si sube con el tiempo, el sistema afina; si oscila plano, la muestra (unas 90 observaciones) '
+        'no permite todavía distinguir mejora de ruido — se reporta el dato tal cual sale, sin forzar '
+        f'una lectura de mejora. {rolling_note}'
     )
     year_stats = _year_ic_table(tables.get("model_walk_forward_diagnostics", pd.DataFrame()))
     year_block = (
@@ -184,16 +252,116 @@ def _section_aprendizaje(charts: dict, tables: dict, settings: Settings) -> str:
     )
     horizon_block = _horizon_comparison_block(charts, tables.get("label_horizon_comparison", pd.DataFrame()), settings)
     dominant_block = _dominant_agent_block(weights, tables.get("model_walk_forward_diagnostics", pd.DataFrame()))
+    attribution_block = _edge_attribution_block(tables.get("edge_attribution", pd.DataFrame()))
+    importance_block = _feature_importance_block()
     return (
-        '<section id="aprendizaje"><h2>Evidencia de aprendizaje</h2>'
+        '<section id="aprendizaje"><h2>Evidencia de aprendizaje — la IA como motor de la estrategia</h2>'
         f'<p class="lead">{lead}</p>'
+        + consistency_block
         + figure(charts.get("learned_weights"), "Evolución de los pesos aprendidos del meta-agente por snapshot")
         + dominant_block
         + '<div style="height:16px"></div>'
         + figure(charts.get("rank_ic"), "Rank-IC out-of-sample de la señal maestra por snapshot, con media móvil de tendencia")
         + year_block
         + horizon_block
+        + attribution_block
+        + importance_block
         + "</section>"
+    )
+
+
+def _feature_importance_block() -> str:
+    """Qué features pesan más dentro de cada agente — evidencia de aprendizaje real a nivel de
+    variable, no solo de la combinación entre agentes (LightGBM gain importance; existía en
+    model_explainability.json pero nunca se renderizaba en ningún sitio del reporte)."""
+    explain_path = PROCESSED_DIR / "model_explainability.json"
+    if not explain_path.exists():
+        return ""
+    import json
+    payload = json.loads(explain_path.read_text(encoding="utf-8"))
+    importance = payload.get("feature_importance", {})
+    if not importance:
+        return ""
+    agent_names = {
+        "quality_probability": "Calidad", "timing_probability": "Temporización",
+        "alpha_probability": "Alpha (ranking directo)",
+    }
+    rows = []
+    for agent_key, agent_label in agent_names.items():
+        agent_importance = importance.get(agent_key, {})
+        if not agent_importance:
+            continue
+        top = sorted(agent_importance.items(), key=lambda kv: kv[1], reverse=True)[:3]
+        total = sum(agent_importance.values()) or 1
+        for feature, gain in top:
+            rows.append({
+                "Agente": agent_label, "Feature": feature, "Importancia relativa": f"{gain / total:.0%}",
+            })
+    if not rows:
+        return ""
+    return (
+        '<h3 class="note" style="margin-top:22px">Qué variables pesan más dentro de cada agente</h3>'
+        '<p class="note">Importancia por ganancia (LightGBM) del último modelo entrenado en cada agente '
+        '— top 3 features por agente, evidencia de aprendizaje a nivel de variable individual, no solo '
+        'de la combinación entre agentes.</p>'
+        + table(pd.DataFrame(rows))
+    )
+
+
+def _consistency_headline(sub_periods: pd.DataFrame) -> str:
+    """Métrica principal de éxito del TFM: ¿la IA es consistente entre periodos, o el resultado
+    depende de un tramo/posición excepcional? Se muestra aquí, al frente del relato de aprendizaje,
+    no relegada a una nota secundaria dentro de Robustez — ver detalle completo por tramo allí."""
+    if sub_periods.empty or "alpha_acumulada" not in sub_periods.columns:
+        return ""
+    alphas = pd.to_numeric(sub_periods["alpha_acumulada"], errors="coerce").dropna()
+    if alphas.empty:
+        return ""
+    positive_periods = int((alphas > 0).sum())
+    total_periods = len(alphas)
+    spread = float(alphas.max() - alphas.min())
+    if positive_periods == total_periods:
+        verdict = (
+            f'positiva en los {total_periods} tramos analizados — el resultado no depende de un '
+            'único periodo excepcional.'
+        )
+    else:
+        verdict = (
+            f'positiva en {positive_periods} de {total_periods} tramos — no es uniforme en toda '
+            'la ventana simulada; ver el detalle por tramo en la sección Robustez.'
+        )
+    return (
+        '<div class="note" style="margin:14px 0;padding:12px 16px;border-left:3px solid var(--accent, #2f6f4f);">'
+        f'<strong>Consistencia entre sub-periodos</strong> (métrica principal de éxito de este TFM, no '
+        f'solo la alpha acumulada total): la alpha ha sido {verdict} Dispersión entre el tramo mejor y '
+        f'el peor: {spread:.1%}. Detalle completo por tramo en la sección '
+        '<a href="#robustez">Robustez</a>.'
+        '</div>'
+    )
+
+
+def _edge_attribution_block(attribution: pd.DataFrame) -> str:
+    """¿De dónde sale el alpha si el rank-IC rolling es bajo o negativo? — muestra los números
+    crudos, sin forzar una conclusión que los datos no sostengan."""
+    if attribution.empty:
+        return ""
+    display = attribution.copy()
+    display["valor"] = display["valor"].map(
+        lambda v: "—" if v is None or (isinstance(v, float) and math.isnan(v)) else f"{v:.3f}"
+    )
+    rename = {"metrica": "Métrica", "valor": "Valor", "n": "n"}
+    lead = (
+        'Si el ranking del modelo predijera bien fuera de muestra, el rank-IC de <code>final_score</code> '
+        'a lo largo de toda la ventana simulada (el modelo se reentrena cada trimestre, nunca se congela) '
+        'debería ser claramente positivo. Si no lo es (ver tabla), el resultado agregado no puede '
+        'explicarse por "el modelo aprendió a rankear bien" — hay que mirar si viene de la correlación '
+        'entrada-score/retorno realizado, o de una asimetría ganador/perdedor (pocas posiciones grandes '
+        'cargando con el resultado frente a muchas pequeñas perdedoras).'
+    )
+    return (
+        '<h3 class="note" style="margin-top:22px">¿De dónde viene el alpha? — descomposición del edge</h3>'
+        f'<p class="note">{lead}</p>'
+        + table(display.rename(columns=rename))
     )
 
 
@@ -229,8 +397,8 @@ def _horizon_comparison_block(charts: dict, horizon_df: pd.DataFrame, settings: 
     return (
         '<h3 class="note" style="margin-top:22px">¿Qué horizonte de predicción funciona mejor?</h3>'
         '<p class="note">La señal maestra ya combinada se compara contra el alfa real a 3, 6 y 12 '
-        'meses, usando solo los snapshots de la fase de entrenamiento (la fase congelada usa siempre '
-        'el mismo modelo, así que no aporta información nueva sobre el horizonte).</p>'
+        'meses, usando todos los snapshots de la ventana simulada (el modelo se reentrena cada '
+        'trimestre, así que cada snapshot aporta información nueva sobre el horizonte).</p>'
         + figure(charts.get("horizon_comparison"), "Rank-IC medio de la señal maestra a 3, 6 y 12 meses")
         + f'<p class="note">{conclusion}</p>'
     )
@@ -242,8 +410,8 @@ def _dominant_agent_block(weights: pd.DataFrame, diag: pd.DataFrame) -> str:
         return ""
     latest = weights.sort_values("snapshot_date").iloc[-1]
     agent_labels = {
-        "quality_probability": "Calidad", "improvement_probability": "Crecimiento",
-        "mispricing_probability": "Infravaloración", "timing_probability": "Temporización",
+        "quality_probability": "Calidad", "timing_probability": "Temporización",
+        "alpha_probability": "Alpha (ranking directo)",
     }
     agent_keys = [k for k in agent_labels if k in weights.columns]
     if not agent_keys:
@@ -255,11 +423,10 @@ def _dominant_agent_block(weights: pd.DataFrame, diag: pd.DataFrame) -> str:
     if not diag.empty and rank_ic_col in diag.columns:
         ic_series = pd.to_numeric(diag[rank_ic_col], errors="coerce").dropna()
         if not ic_series.empty:
-            ic_sentence = f' Su rank-IC OOS medio histórico es {ic_series.mean():.3f}, la señal más consistente de las cuatro en esta ejecución.'
-    phase_label = "congelado" if str(latest.get("phase")) == "frozen" else "aprendido"
+            ic_sentence = f' Su rank-IC OOS medio histórico es {ic_series.mean():.3f}, la señal más consistente de las tres en esta ejecución.'
     return (
         '<p class="note" style="margin-top:10px">'
-        f'En el snapshot más reciente ({phase_label}), el agente <strong>{agent_labels[dominant_key]}</strong> '
+        f'En el snapshot más reciente, el agente <strong>{agent_labels[dominant_key]}</strong> '
         f'domina la combinación con un peso de {dominant_share:.0%}.{ic_sentence}'
         '</p>'
     )
@@ -297,10 +464,15 @@ def _section_posiciones(charts: dict, tables: dict) -> str:
 
 
 def _section_robustez(tables: dict) -> str:
-    """¿Es sólido el alpha o cabe en el ruido de una muestra pequeña? — bootstrap + sensibilidad a costes."""
+    """Evidencia de apoyo a la consistencia reportada en Aprendizaje (no el relato principal):
+    ¿es sólido el alpha o cabe en el ruido de una muestra pequeña? — bootstrap + sensibilidad a costes
+    + comparación contra baselines/placebo + desglose completo por sub-periodo."""
     bootstrap = tables.get("robustness_bootstrap", pd.DataFrame())
     cost = tables.get("robustness_cost_sensitivity", pd.DataFrame())
     summary = tables.get("robustness_summary", pd.DataFrame())
+    baseline = tables.get("baseline_comparison", pd.DataFrame())
+    placebo = tables.get("placebo_summary", pd.DataFrame())
+    sub_periods = tables.get("robustness_sub_periods", pd.DataFrame())
     bootstrap_cols = {
         "metrica": "Métrica", "estimacion": "Estimación", "ic_2_5": "IC 2.5%", "ic_97_5": "IC 97.5%",
         "prob_positiva": "P(>0)", "n_resamples": "Resamples", "bloque_meses": "Bloque (meses)",
@@ -344,7 +516,100 @@ def _section_robustez(tables: dict) -> str:
         + '<p class="note" style="margin-top:10px">La distribución completa por resample se guarda en '
         '<a class="audit" href="../audit/robustness_bootstrap_distribution.csv">'
         'robustness_bootstrap_distribution.csv</a> (enlazada, no embebida).</p>'
+        + _baseline_block(baseline)
+        + _placebo_block(placebo)
+        + _sub_periods_block(sub_periods)
         + "</section>"
+    )
+
+
+def _sub_periods_block(sub_periods: pd.DataFrame) -> str:
+    """¿La alpha viene de todo el periodo o de un solo tramo? — parte la ventana única del backtest
+    en 3 tramos y compara alpha/IR entre ellos, sin volver a puntuar ni seleccionar nada."""
+    if sub_periods.empty:
+        return ""
+    display = sub_periods.copy()
+    display["alpha_acumulada"] = display["alpha_acumulada"].map(lambda v: f"{v:.1%}" if pd.notna(v) else "—")
+    display["information_ratio"] = display["information_ratio"].map(lambda v: f"{v:.2f}" if pd.notna(v) else "—")
+    lead = (
+        'La misma ventana del backtest, partida en tres tramos consecutivos de igual longitud '
+        '(sin rehacer selección ni entrenamiento). Si la alpha y el IR son parecidos en los tres '
+        'tramos, el resultado no depende de un único periodo excepcional; si un tramo concentra '
+        'casi toda la alpha, el resto de la ventana no la respalda y la robustez del resultado es '
+        'menor de lo que sugiere la cifra agregada.'
+    )
+    rename = {
+        "sub_periodo": "Tramo", "fecha_inicio": "Desde", "fecha_fin": "Hasta",
+        "n_periodos": "Meses", "alpha_acumulada": "Alpha acumulada", "information_ratio": "Information Ratio",
+    }
+    return (
+        '<h3 class="note" style="margin-top:22px">Alpha por sub-periodo</h3>'
+        f'<p class="note">{lead}</p>'
+        + table(display.rename(columns=rename))
+    )
+
+
+def _baseline_block(baseline: pd.DataFrame) -> str:
+    """¿Aporta el sistema completo algo sobre reglas mucho más simples? — comparación directa."""
+    if baseline.empty:
+        return ""
+    display = baseline.copy()
+    display["alpha_acumulada"] = display["alpha_acumulada"].map(lambda v: f"{v:.1%}" if pd.notna(v) else "—")
+    lead = (
+        'La alpha acumulada del sistema completo (manager_score + estados de tesis + reglas de '
+        'rotación) frente a tres reglas triviales calculadas sobre el mismo universo y las mismas '
+        'fechas: comprar todo el universo por igual, quedarse solo con el momentum más alto, o solo '
+        'con la valoración más barata. Si el sistema no supera claramente a las reglas simples, el '
+        'diseño completo no está aportando nada sobre una heurística de una línea.'
+    )
+    return (
+        '<h3 class="note" style="margin-top:22px">Comparación contra reglas simples</h3>'
+        f'<p class="note">{lead}</p>'
+        + table(display.rename(columns={"estrategia": "Estrategia", "alpha_acumulada": "Alpha acumulada"}))
+    )
+
+
+def _placebo_block(placebo: pd.DataFrame) -> str:
+    """¿Importa el ranking, o cualquier orden aleatorio habría dado un resultado parecido?"""
+    if placebo.empty:
+        return ""
+    row = placebo.iloc[0]
+    percentile = row.get("percentil_real")
+    if percentile is None or (isinstance(percentile, float) and math.isnan(percentile)):
+        return ""
+    n = int(row.get("n_barajados", 0) or 0)
+    real = row.get("alpha_real")
+    random_mean = row.get("alpha_medio_aleatorio")
+    if percentile >= 0.95:
+        verdict = (
+            f'el ranking real queda en el percentil {percentile:.0%} de {n} barajados aleatorios — '
+            'muy por encima de lo típico de un orden aleatorio, evidencia de que el ranking sí aporta '
+            'información.'
+        )
+    elif percentile <= 0.60:
+        verdict = (
+            f'el ranking real queda en el percentil {percentile:.0%} de {n} barajados aleatorios — '
+            'dentro de lo que produciría un orden aleatorio, no hay evidencia clara de que el ranking '
+            'en sí aporte algo sobre el azar en esta ventana.'
+        )
+    else:
+        verdict = (
+            f'el ranking real queda en el percentil {percentile:.0%} de {n} barajados aleatorios — '
+            'por encima de la media aleatoria pero sin ser un caso extremo; evidencia mixta.'
+        )
+    lead = (
+        'Se baraja aleatoriamente el orden de <code>final_score</code> dentro de cada snapshot '
+        f'(mismo universo, mismas fechas) {n} veces, y se recalcula la alpha acumulada de una cartera '
+        'top-N mecánica con cada orden barajado. Si el ranking real no fuera mejor que un orden al '
+        'azar, esto lo mostraría.'
+    )
+    stats = (
+        f'Alpha real: {real:.1%}. Alpha media de los barajados: '
+        f'{random_mean:.1%}.' if random_mean is not None and pd.notna(random_mean) else ''
+    )
+    return (
+        '<h3 class="note" style="margin-top:22px">Test de aleatorización (placebo)</h3>'
+        f'<p class="note">{lead} {stats} En esta ejecución, {verdict}</p>'
     )
 
 
@@ -357,28 +622,25 @@ def _section_metodologia(tables: dict, settings: Settings) -> str:
         payload = json.loads(explain_path.read_text(encoding="utf-8"))
         definitions = payload.get("component_target_definitions", {})
     agent_names = {
-        "quality_probability": "Calidad", "improvement_probability": "Crecimiento",
-        "mispricing_probability": "Infravaloración", "timing_probability": "Temporización",
+        "quality_probability": "Calidad", "timing_probability": "Temporización",
+        "alpha_probability": "Alpha (ranking directo)",
     }
     agent_rows = "".join(
         f'<li><strong>{agent_names.get(key, key)}</strong>: {definitions.get(key, "")}</li>'
         for key in agent_names
     )
-    train_start = (
-        pd.Timestamp(settings.train_cutoff_date) - pd.DateOffset(years=settings.walk_forward_train_years)
-    ).date().isoformat()
     mechanics = (
-        f'El modelo se entrenó con cadencia trimestral desde <strong>{train_start}</strong> hasta '
-        f'<strong>{settings.train_cutoff_date}</strong>, usando en cada reentrenamiento hasta '
-        f'{settings.max_walk_forward_training_years} años de historia hacia atrás. Desde '
-        f'<strong>{settings.train_cutoff_date}</strong> hasta <strong>{settings.end_date}</strong>, '
-        f'la cartera se simula con ese modelo <strong>congelado</strong> (sin reentrenar), '
-        f'revisándose mensualmente ({settings.review_frequency}).'
+        f'El modelo se reentrena con cadencia trimestral desde <strong>{settings.train_cutoff_date}</strong> '
+        f'hasta <strong>{settings.end_date}</strong> — <strong>sin congelar</strong>: en cada punto de '
+        f'reentrenamiento usa solo los últimos {settings.max_walk_forward_training_years} años de historia '
+        f'disponibles hasta esa fecha (walk-forward puro, rolling). Esto evita que la cartera quede '
+        f'operando con un modelo fijo entrenado años atrás en un régimen de mercado distinto — cada '
+        f'trimestre el modelo se pone al día con la información más reciente que tenía en ese momento, '
+        f'sin usar nunca datos futuros (no hay fuga de información). La cartera se revisa mensualmente '
+        f'({settings.review_frequency}).'
     )
     params = pd.DataFrame([{
-        "Parámetro": "Fecha de corte (entrenar hasta aquí)", "Valor": settings.train_cutoff_date,
-    }, {
-        "Parámetro": "Años de entrenamiento previos", "Valor": settings.walk_forward_train_years,
+        "Parámetro": "Inicio de la simulación / primer reentrenamiento", "Valor": settings.train_cutoff_date,
     }, {
         "Parámetro": "Cadencia de reentrenamiento", "Valor": settings.walk_forward_train_frequency,
     }, {
@@ -391,17 +653,18 @@ def _section_metodologia(tables: dict, settings: Settings) -> str:
     return (
         '<section id="metodologia"><h2>Metodología</h2>'
         '<p class="lead">Cómo está construido el sistema y por qué, sin necesidad de leer el código.</p>'
-        '<h3 class="note">Los 4 agentes especializados + el meta-agente decisor</h3>'
+        '<h3 class="note">Los 3 agentes especializados + el meta-agente decisor</h3>'
         f'<ul class="findings">{agent_rows}'
-        '<li>El <strong>meta-agente</strong> combina las cuatro señales anteriores en <code>final_score</code>, '
+        '<li>El <strong>meta-agente</strong> combina las tres señales anteriores en <code>final_score</code>, '
         'aprendiendo qué peso dar a cada una por su <strong>contribución marginal</strong>: el rank-IC '
-        'parcial de cada agente frente al alpha realizado que los otros tres <em>no</em> explican '
+        'parcial de cada agente frente al alpha realizado que los otros dos <em>no</em> explican '
         '(regresión sobre un 70% cronológico, medido en el 30% restante, sin lookahead). Así se premia '
         'a un agente por aportar información nueva, no por solaparse con el resto; un agente redundante o '
-        'sin capacidad de ordenar recibe peso ~0, en vez de pesos fijos a mano. Ya no existe un agente '
-        '«alpha» generalista: era el mismo objetivo que evalúa al meta-agente y con el superconjunto de '
-        'features, así que dominaba estructuralmente la mezcla.</li></ul>'
-        '<h3 class="note" style="margin-top:18px">Entrenar hasta un corte, luego congelar</h3>'
+        'sin capacidad de ordenar recibe peso ~0, en vez de pesos fijos a mano. El agente <strong>Alpha</strong> '
+        'aprende a ordenar directamente el exceso de retorno a 12 meses (la propia magnitud evaluada), '
+        'pero desde un subconjunto acotado de features de momentum y valoración, no desde el superconjunto '
+        'completo: por eso complementa a los otros dos en vez de dominar estructuralmente la mezcla.</li></ul>'
+        '<h3 class="note" style="margin-top:18px">Reentrenamiento continuo, sin congelar</h3>'
         f'<p class="note">{mechanics}</p>'
         '<h3 class="note" style="margin-top:18px">Parámetros efectivos de esta ejecución</h3>'
         + table(params)
@@ -411,7 +674,7 @@ def _section_metodologia(tables: dict, settings: Settings) -> str:
 
 def _section_debug(tables: dict, run_dir: Path) -> str:
     diag = tables.get("model_walk_forward_diagnostics", pd.DataFrame())
-    diag_cols = ["snapshot_date", "phase", "mode", "fallback_reason", "training_snapshot_date",
+    diag_cols = ["snapshot_date", "mode", "fallback_reason", "training_snapshot_date",
                  "training_rows", "training_years", "alpha_label_observable_rows",
                  "rank_ic_final", "n_oos"]
     audit_dir = run_dir / "audit"

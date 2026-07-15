@@ -5,7 +5,7 @@ from __future__ import annotations
 import pandas as pd
 
 from environment import MIN_SCORE_ADVANTAGE_TO_REPLACE
-from module.strategy.portfolio import manager_score
+from module.strategy.portfolio import manager_score, manager_score_breakdown
 
 
 def universe_review_rows(date: str, universe: pd.DataFrame) -> list[dict]:
@@ -48,6 +48,7 @@ def universe_review_rows(date: str, universe: pd.DataFrame) -> list[dict]:
             "opportunity_cost_score": float(row.opportunity_cost_score),
             "investment_thesis": row.investment_thesis,
             "exit_thesis": row.exit_thesis,
+            "manager_score_breakdown": manager_score_breakdown(row),
         })
     return rows
 
@@ -92,6 +93,7 @@ def decision_rows(date: str, portfolio: dict[str, dict]) -> list[dict]:
             "thesis": position["current_thesis"],
             "exit_thesis": position["current_exit_thesis"],
             "catalyst": position["current_catalyst"],
+            "entry_vs_current": position.get("entry_vs_current", ""),
         })
     return rows
 
@@ -164,6 +166,9 @@ def rebalance_report(transactions: pd.DataFrame, decisions: pd.DataFrame) -> pd.
             "catalyst": getattr(tx, "catalyst", ""),
             "would_buy_today": getattr(tx, "would_buy_today", ""),
             "buy_today_score": getattr(tx, "buy_today_score", ""),
+            "manager_score_breakdown": getattr(tx, "manager_score_breakdown", ""),
+            "vs_best_alternative": getattr(tx, "vs_best_alternative", ""),
+            "entry_vs_current": getattr(tx, "entry_vs_current", ""),
         })
     for hold in decisions.itertuples(index=False):
         rows.append({
@@ -176,6 +181,9 @@ def rebalance_report(transactions: pd.DataFrame, decisions: pd.DataFrame) -> pd.
             "catalyst": getattr(hold, "catalyst", ""),
             "would_buy_today": getattr(hold, "would_buy_today", ""),
             "buy_today_score": getattr(hold, "buy_today_score", ""),
+            "manager_score_breakdown": "",
+            "vs_best_alternative": "",
+            "entry_vs_current": getattr(hold, "entry_vs_current", ""),
         })
     return pd.DataFrame(rows)
 

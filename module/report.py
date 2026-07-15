@@ -63,7 +63,7 @@ def drawdown_episodes(vs: pd.DataFrame) -> pd.DataFrame:
 
 def _metrics(vs: pd.DataFrame) -> dict:
     if vs.empty:
-        return {"CAGR": 0, "Sharpe": 0, "Sortino": 0, "Max Drawdown": 0, "Alpha": 0}
+        return {"CAGR": 0, "Sharpe": 0, "Sortino": 0, "Max Drawdown": 0, "Total Excess Return (compounded)": 0}
     returns = vs.get("portfolio_period_return", pd.Series(dtype=float)).fillna(0)
     benchmark_returns = vs.get("benchmark_period_return", pd.Series(dtype=float)).fillna(0)
     years = max((pd.to_datetime(vs["date"]).max() - pd.to_datetime(vs["date"]).min()).days / 365.25, 1 / 12)
@@ -78,8 +78,8 @@ def _metrics(vs: pd.DataFrame) -> dict:
         "Sharpe": _annualized_ratio(returns),
         "Sortino": _annualized_ratio(returns, downside_only=True),
         "Max Drawdown": _max_drawdown(vs["portfolio_value"]),
-        "Alpha": (ending - 1) - (benchmark_ending - 1),
-        "Gross Alpha": (gross_ending - 1) - (benchmark_ending - 1),
+        "Total Excess Return (compounded)": (ending - 1) - (benchmark_ending - 1),
+        "Gross Total Excess Return (compounded)": (gross_ending - 1) - (benchmark_ending - 1),
         "Total Cost Drag": float(vs.get("transaction_cost_drag", pd.Series([0])).sum()),
         "Average Period Alpha": float((returns - benchmark_returns).mean()),
         "Information Ratio": stats["information_ratio"],

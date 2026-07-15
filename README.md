@@ -3,9 +3,9 @@
 Pipeline de investigación (TFM) que responde a una pregunta concreta: **¿puede una estrategia
 GARP (Growth At a Reasonable Price / Value-Growth), gestionada por un sistema de IA explicable
 con varios agentes especializados, generar alpha frente a SPY?** El sistema usa un dataset
-point-in-time (sin lookahead), un modelo ML walk-forward que aprende hasta una fecha de corte y
-luego se congela, y un backtest de cartera concentrada mensual con un informe HTML de una sola
-página como salida.
+point-in-time (sin lookahead), un modelo ML walk-forward rodante que se reentrena cada trimestre
+a lo largo de toda la ventana (nunca se congela), y un backtest de cartera concentrada mensual
+con un informe HTML de una sola página como salida.
 
 ## Ejecución
 
@@ -17,8 +17,9 @@ No hay CLI/argparse: toda la configuración de ejecución vive en `environment.p
 editables directamente, no se leen de variables de entorno salvo las API keys).
 
 - `RUN_MODE`: `download`, `dataset`, `features`, `ml`, `watchlist`, `research_ai`, `backtest`,
-  `viewer`, `report`, o `full`. Cada etapa es re-ejecutable de forma independiente mientras sus
-  entradas parquet/CSV ya existan en disco.
+  `viewer`, `report`, `full`, o `experiments`. Cada etapa es re-ejecutable de forma independiente
+  mientras sus entradas parquet/CSV ya existan en disco; `experiments` barre escenarios en vez de
+  correr el pipeline (ver más abajo).
 - `DEV_MODE`: `True` restringe el universo a `DEV_TICKERS + SPY` — úsalo para iterar/depurar en
   vez del universo completo (~500 tickers).
 - `FORCE_RAW_DOWNLOAD`: `False` reutiliza el JSON crudo cacheado en `data/raw/json/`; `True`
@@ -56,6 +57,49 @@ download → dataset → features → ml → watchlist → research_ai → backt
 — cambiar fechas, `DEV_MODE` o el esquema de entrenamiento apunta a una carpeta de resultados
 distinta en vez de sobrescribir la anterior.
 
+## Experimentos (barrer escenarios)
+
+El pipeline normal corre **una** configuración. Para responder las preguntas centrales del TFM
+—**¿la IA aprende?, ¿es estable?, ¿es útil?**— hace falta comparar muchas: distintos pesos de
+agentes, semillas, ventanas de entrenamiento, umbrales de cartera... El **runner de experimentos**
+(`module/experiments/`) ejecuta una lista de escenarios de una sola vez y produce **un informe HTML
+que los compara entre sí**, no uno por escenario.
+
+```bash
+python -m module.experiments run experiments/escenarios_aprendizaje.py
+python -m module.experiments run todos      # junta los cuatro bloques en un solo barrido
+```
+
+También desde `main.py`: pon `RUN_MODE = "experiments"` y `EXPERIMENTS_FILE` (la ruta de un fichero
+de escenarios o `"todos"`) en `environment.py`, y ejecuta `python main.py`.
+
+**Qué hace por escenario (importante):** no re-ejecuta el pipeline entero. Solo corre las dos etapas
+que un cambio de configuración puede alterar —`ml` (puntuar el universo) y `backtest`— y omite
+`research_ai` (coste de LLM) y el `viewer`/`report` individuales (redundantes con el informe
+comparativo). Las etapas previas comunes a todos los escenarios (`download`→`dataset`→`features`) se
+preparan **una sola vez** antes del barrido: si sus artefactos ya están en disco se reutilizan, y si
+faltan se construyen igual que en el pipeline normal (`download` reconstruye `prices.parquet` desde el
+JSON cacheado en `data/raw/json/`, sin red mientras `FORCE_RAW_DOWNLOAD=False`). Además, el **scoring
+caro** (`ml`) se ejecuta **una sola vez por combinación de parámetros de ML**: los escenarios que solo
+cambian estrategia reutilizan ese scoring cacheado (se marcan `re_scored=False`). Así el barrido
+"corre el pipeline" para cada escenario pero sin recalcular nada de lo que es común — mucho más rápido
+que "correr `main.py` N veces".
+
+- Un **fichero de escenarios** (`experiments/escenarios_*.py`) declara `SCENARIOS: list[Scenario]`.
+  Cada `Scenario(name, why, overrides)` cambia parámetros con prefijo de namespace: `settings.*`
+  (campos de `Settings`), `ml.*` (constantes de `module/ml.py` como `AGENT_PRIOR_WEIGHTS`,
+  `RANDOM_STATE`), `strategy.*` (umbrales de cartera y sizing). Los overrides se **aplican y
+  restauran** por escenario, sin tocar los valores por defecto del proyecto.
+- Cada escenario se aísla en `results/escenarios/<fecha>/<escenario>/`; la comparación queda en
+  `results/escenarios/<fecha>/comparison.csv` e `index.html`, con una tabla y gráficos que rankean
+  los escenarios priorizando las métricas de **aprendizaje** (rank-IC out-of-sample, placebo, mejora
+  sobre baselines) sobre las económicas (alpha, IR, breakeven de costes).
+- Ficheros incluidos, uno por pregunta del TFM: `escenarios_aprendizaje.py` (ablaciones que apagan
+  el aprendizaje para ver si el rank-IC cae), `escenarios_estabilidad.py` (semillas, costes,
+  ventana), `escenarios_utilidad.py` (agresividad de cartera), `escenarios_pesos_meta.py` (barrido
+  del prior de pesos) y `escenarios_todos.py` (los cuatro juntos). Ver `docs/doc.md §16` y
+  `docs/diagnostico_aprendizaje.md`.
+
 ## Módulos
 
 - `module/ingest/` — descarga y cachea datos crudos por ticker (Finnhub + Yahoo, sin dependencia
@@ -64,8 +108,12 @@ distinta en vez de sobrescribir la anterior.
   lookahead: cada valor es el último disponible estrictamente antes o en la fecha del snapshot.
 - `module/features/` — calcula los scores GARP transversales (calidad, crecimiento, valoración,
   momentum, moat, catalyst, riesgo) y features de tendencia/expectativa.
-- `module/ml.py` — 4 agentes ML especializados + 1 meta-agente que aprende cómo combinarlos, con
-  entrenamiento walk-forward hasta una fecha de corte y modelo congelado después (ver `doc.md`).
+- `module/ml.py` — 3 agentes ML especializados (calidad / temporización / alpha, cada uno
+  LightGBM) + 1 meta-agente que aprende cómo combinarlos por **contribución marginal** (rank-IC
+  parcial), no por rank-IC bruto, para no pagar dos veces por una señal compartida. El prior/ancla
+  del meta-agente está inclinado a Calidad (`0.45/0.30/0.25`) porque es la señal de ranking estable
+  (ver `doc.md` §8.2.1 y `docs/diagnostico_aprendizaje.md`). Entrenamiento walk-forward rodante que
+  se reentrena cada trimestre a lo largo de toda la ventana, sin congelar.
 - `module/research/` — investigación determinista (y opcionalmente LLM) sobre tesis, moat,
   catalizadores y riesgos por empresa.
 - `module/strategy/` — selección de watchlist, lógica de cartera concentrada (entradas/salidas) y
@@ -76,6 +124,9 @@ distinta en vez de sobrescribir la anterior.
   (cada sección debe responder una pregunta del TFM o ayudar a depurar).
 - `module/report.py` — métricas compartidas (CAGR/Sharpe/Sortino/drawdown/alpha) reutilizadas por
   el viewer; la etapa `report` apunta al mismo informe que `viewer` genera.
+- `module/experiments/` — runner de experimentos: por escenario aplica overrides aislados, corre
+  solo `ml`+`backtest` (cacheando el scoring caro entre escenarios que comparten config de ML),
+  recoge métricas de aprendizaje/economía y genera la tabla e informe comparativos.
 
 Ver `doc.md` para la explicación exhaustiva de cada fase y decisión de diseño, y `results.md` para
 cómo leer el informe HTML generado.
@@ -100,6 +151,8 @@ results/<run>/sell_reasons_summary.csv
 results/<run>/portfolio_monthly_summary.json
 results/<run>/viewer/index.html   ← informe final
 results/<run>/audit/*.csv         ← tablas pesadas de auditoría, enlazadas no embebidas
+results/escenarios/<fecha>/comparison.csv   ← una fila por escenario (modo experiments)
+results/escenarios/<fecha>/index.html       ← informe comparativo de escenarios
 ```
 
 ## Limitaciones metodológicas (explícitas, no corregidas)
@@ -117,6 +170,19 @@ y t-stat del retorno en exceso, pero deliberadamente no aplica bootstrap ni corr
 comparaciones múltiples — eso implicaría más precisión estadística de la que este tamaño de
 muestra soporta. El t-stat es directional, no prueba de significancia.
 
+**La alfa no proviene (principalmente) del ranking del modelo**: el rank-IC out-of-sample de
+`final_score` es débil (~+0.02 de media, negativo en 2020-2021) y la correlación entre el score de
+entrada y el exceso realizado es casi nula. La alfa acumulada procede de la asimetría
+ganador/perdedor (pocas ganadoras grandes, con el sesgo de supervivencia detrás), no de que el
+modelo ordene bien. La robustez de la alfa (bootstrap, subperiodos, placebo) es real pero es una
+afirmación **distinta** de "el ML rankea"; el proyecto las mantiene separadas a propósito. Por eso
+el trabajo de modelo persigue un rank-IC **estable**, no más rentabilidad. Detalle en
+`docs/diagnostico_aprendizaje.md`.
+
+**Un baseline de solo momentum bate al sistema en rentabilidad bruta**: `baseline_comparison.csv`
+muestra que `momentum_only` ha producido más alfa acumulada que el sistema completo — resultado
+negativo legítimo que se reporta, no se esconde.
+
 ## Tests
 
 ```bash
@@ -124,5 +190,6 @@ pytest tests/
 ```
 
 Cubren: ausencia de lookahead en el walk-forward, invariantes de features, y la correctitud del
-esquema entrenar-hasta-corte-luego-congelar (ninguna fecha de entrenamiento supera el corte; toda
-fecha posterior al corte reutiliza el mismo modelo/pesos).
+esquema walk-forward rodante (el corte es solo el punto más temprano de reentrenamiento; las fechas
+de entrenamiento continúan trimestralmente más allá del corte y cada una ajusta su propio modelo
+sobre su ventana móvil de historia — el modelo nunca se congela).

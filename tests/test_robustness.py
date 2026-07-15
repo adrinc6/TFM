@@ -1,4 +1,4 @@
-"""Statistical-robustness helpers — bootstrap CI, cost breakeven, multi-cutoff aggregation.
+"""Statistical-robustness helpers — bootstrap CI, cost breakeven, sub-period split.
 
 Pure tests on module.backtest.robustness against synthetic vs-benchmark tables. No pipeline run,
 downloaded data, or trained model required.
@@ -77,18 +77,26 @@ def test_cost_sweep_is_monotonic_decreasing():
     assert not bool(sweep.loc[sweep["multiplicador"] == 10.0, "sigue_positiva"].iloc[0])
 
 
-def test_compare_train_cutoffs_stacks_summaries():
-    summaries = {
-        "2018-02-15": pd.DataFrame([{"cumulative_alpha": 0.46, "information_ratio": 1.28, "annual_turnover": 15.6}]),
-        "2019-02-15": pd.DataFrame([{"cumulative_alpha": 0.30, "information_ratio": 0.90, "annual_turnover": 12.0}]),
-    }
-    out = rob.compare_train_cutoffs(summaries)
-    assert list(out["train_cutoff_date"]) == ["2018-02-15", "2019-02-15"]
-    assert out.iloc[0]["cumulative_alpha"] == 0.46
+def test_sub_period_alpha_splits_into_n_contiguous_chunks():
+    excess = np.full(24, 0.01)
+    out = rob.sub_period_alpha(_vs_benchmark(excess), n_periods=3)
+    assert len(out) == 3
+    assert list(out["sub_periodo"]) == [1, 2, 3]
+    assert out["n_periodos"].sum() == 24
+    # A steady, constant edge should split evenly across chunks (each chunk sees the same series).
+    assert out["alpha_acumulada"].nunique() <= 1 or np.allclose(out["alpha_acumulada"], out["alpha_acumulada"].iloc[0])
 
 
-def test_compare_train_cutoffs_empty_is_safe():
-    assert rob.compare_train_cutoffs({}).empty
+def test_sub_period_alpha_flags_a_single_strong_chunk():
+    # Only the last third of the window carries any edge; the rest is flat.
+    excess = np.concatenate([np.zeros(16), np.full(8, 0.03)])
+    out = rob.sub_period_alpha(_vs_benchmark(excess), n_periods=3)
+    assert out.iloc[-1]["alpha_acumulada"] > out.iloc[0]["alpha_acumulada"]
+    assert out.iloc[0]["alpha_acumulada"] == pytest.approx(0.0)
+
+
+def test_sub_period_alpha_empty_is_safe():
+    assert rob.sub_period_alpha(pd.DataFrame()).empty
 
 
 if __name__ == "__main__":  # pragma: no cover

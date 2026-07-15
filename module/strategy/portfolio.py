@@ -22,14 +22,23 @@ MIN_HOLD_SCORE = 0.46
 MIN_BUY_TODAY_SCORE = 0.54
 MIN_HOLD_MONTHS_BEFORE_ROTATION = 4
 REVIEW_TOP_N = max(MAX_PORTFOLIO_SIZE * 3, 20)
+# Hard price-risk brake: sell immediately if a position's price return since entry falls at or
+# below this, regardless of thesis state or holding period. Without this, nothing bounds a single
+# position's downside — the full-universe backtest's worst closed trade lost >50% before this
+# existed, and the book's result should not hinge on whether a single name's price collapse is
+# caught by the (fundamentals-only) thesis logic in time. Deliberately no symmetric take-profit:
+# only the loss tail is capped, winners are left to run (see manager_score-driven exit/rotation
+# logic for how gains are eventually realized).
+STOP_LOSS_THRESHOLD = -0.25
 
 
 def initial_portfolio(universe: pd.DataFrame, snapshot_date: str) -> dict[str, dict]:
     ranked = _rank(universe, snapshot_date)
+    by_ticker = ranked.set_index("ticker")
     candidates = _entry_candidates(ranked).head(MAX_PORTFOLIO_SIZE)
     if len(candidates) < MIN_PORTFOLIO_SIZE:
         raise RuntimeError(f"Not enough investable candidates at {snapshot_date} to build portfolio.")
-    return {row.ticker: _position_from_row(row, snapshot_date) for row in candidates.itertuples(index=False)}
+    return {row.ticker: _position_from_row(row, snapshot_date, by_ticker) for row in candidates.itertuples(index=False)}
 
 
 def review_portfolio(current: dict[str, dict], universe: pd.DataFrame, snapshot_date: str) -> tuple[dict[str, dict], list[dict]]:
@@ -47,7 +56,7 @@ def review_portfolio(current: dict[str, dict], universe: pd.DataFrame, snapshot_
         _refresh_position(position, row, snapshot_date)
         exit_reason = _exit_reason(row, position)
         if exit_reason:
-            transactions.append(_sell(ticker, snapshot_date, row, exit_reason))
+            transactions.append(_sell(ticker, snapshot_date, row, exit_reason, position))
             updated.pop(ticker, None)
 
     for row in _entry_candidates(today).head(REVIEW_TOP_N).itertuples(index=False):
@@ -58,38 +67,108 @@ def review_portfolio(current: dict[str, dict], universe: pd.DataFrame, snapshot_
             if replacement is None:
                 continue
             sell_ticker, sell_position = replacement
-            transactions.append(_sell(sell_ticker, snapshot_date, by_ticker.loc[sell_ticker], _replacement_reason(row, sell_position)))
+            transactions.append(_sell(sell_ticker, snapshot_date, by_ticker.loc[sell_ticker], _replacement_reason(row, sell_position), sell_position))
             updated.pop(sell_ticker, None)
-        updated[row.ticker] = _position_from_row(row, snapshot_date)
-        transactions.append(_buy(row, snapshot_date))
+        updated[row.ticker] = _position_from_row(row, snapshot_date, by_ticker)
+        transactions.append(_buy(row, snapshot_date, by_ticker))
         if len(updated) >= MAX_PORTFOLIO_SIZE:
             break
 
     return updated, transactions
 
 
+# (weight, row attribute, fallback attribute/value, Spanish label) — single source of truth for
+# both `manager_score` and `manager_score_breakdown`, so the narrative can never drift from the
+# actual formula that drives buy/sell/hold decisions.
+MANAGER_SCORE_TERMS = [
+    (0.70, "final_score", 0.5, "señal ML aprendida (meta-agente)"),
+    (0.07, "thesis_rank_score", 0.5, "ranking de tesis"),
+    (0.06, "buy_today_score", 0.5, "convicción de compra hoy"),
+    (0.05, "momentum_score", 0.5, "momentum de precio"),
+    (0.04, "price_adjusted_valuation_score", "valuation_score", "valoración ajustada por precio"),
+    (0.03, "positive_expectation_gap", 0.5, "expectativas de mercado vs. crecimiento real"),
+    (0.03, "moat_score", 0.5, "moat / ventaja competitiva"),
+    (0.02, "risk_score", 0.5, "riesgo financiero (menor deuda = mejor)"),
+]
+
+
 def manager_score(row) -> float:
     """Live manager score.
 
-    The ML block is `final_score`, the output of the learned meta-agent: the four disjoint
-    specialist agents (quality / improvement / mispricing / timing) combined with weights learned
-    walk-forward from each agent's marginal contribution to realized forward alpha (see
-    module/ml.py::_meta_agent_scores). It carries weight 0.45 — enough to lead the score, capped
-    there because with ~40 months of live-portfolio data the combined signal's OOS rank-IC still
-    swings year to year. The remaining factors are manager overlays (timing/valuation/risk) that the
-    ML score does not fully capture.
+    The ML block is `final_score`, the output of the learned meta-agent: the three specialist
+    agents (quality / timing / alpha — see module/ml.py::COMPONENT_TARGETS) combined with weights
+    learned walk-forward from each agent's marginal contribution to realized forward alpha (see
+    module/ml.py::_meta_agent_scores). The agents' feature subsets are no longer required to be
+    disjoint; the meta-agent's partial-IC weighting is what prevents double-counting a shared
+    signal. `final_score` carries weight 0.70 here — the dominant term, by design: this project's
+    core claim is that the AI is the engine of the strategy, not a minor overlay. The remaining
+    0.30 are manager risk/timing/valuation overlays the ML score does not fully capture (thesis
+    breakdown, near-term buy conviction, momentum, price-adjusted valuation, expectation gap, moat,
+    leverage risk) — kept small and explicitly secondary to the learned signal.
     """
-    learned_ml = getattr(row, "final_score", 0.5)
-    return float((
-        0.45 * learned_ml
-        + 0.13 * row.thesis_rank_score
-        + 0.11 * row.buy_today_score
-        + 0.09 * getattr(row, "momentum_score", 0.5)
-        + 0.08 * getattr(row, "price_adjusted_valuation_score", row.valuation_score)
-        + 0.05 * row.positive_expectation_gap
-        + 0.05 * row.moat_score
-        + 0.04 * row.risk_score
-    ))
+    return float(sum(weight * _term_value(row, attr, fallback) for weight, attr, fallback, _ in MANAGER_SCORE_TERMS))
+
+
+def _term_value(row, attr: str, fallback) -> float:
+    if isinstance(fallback, str):
+        return float(getattr(row, attr, getattr(row, fallback, 0.5)))
+    return float(getattr(row, attr, fallback))
+
+
+def manager_score_contributions(row) -> list[tuple[str, float, float]]:
+    """Per-term (label, contribution, share-of-total) breakdown of `manager_score`, sorted by
+    absolute contribution. This is the actual arithmetic behind the ranking, not a proxy metric —
+    reusing MANAGER_SCORE_TERMS keeps it impossible to drift from `manager_score` itself."""
+    total = manager_score(row)
+    contributions = [
+        (label, weight * _term_value(row, attr, fallback))
+        for weight, attr, fallback, label in MANAGER_SCORE_TERMS
+    ]
+    return sorted(
+        [(label, contribution, contribution / total if total else 0.0) for label, contribution in contributions],
+        key=lambda item: item[1],
+        reverse=True,
+    )
+
+
+def manager_score_breakdown(row, top_n: int = 3) -> str:
+    """Frase en español: qué componentes de manager_score explican la puntuación de esta acción
+    en este snapshot, ordenados por impacto — los que más suman primero, luego los que más restan
+    si penalizan. Esto explica la decisión real de compra/venta/mantener, no una métrica lateral."""
+    contributions = manager_score_contributions(row)
+    if not contributions:
+        return ""
+    total = manager_score(row)
+    strongest = contributions[:top_n]
+    weakest = [item for item in contributions[-2:] if item not in strongest]
+    parts = [f"{label} ({share:.0%} del total)" for label, _, share in strongest]
+    lead = f"Puntuación de gestión {total:.2f}, explicada sobre todo por: " + "; ".join(parts) + "."
+    if weakest:
+        drag = "; ".join(f"{label} ({share:.0%})" for label, _, share in weakest)
+        lead += f" Componentes que menos aportan: {drag}."
+    return lead
+
+
+def manager_score_comparison(row, alternative_row) -> str:
+    """Frase en español comparando el manager_score del ganador frente a la mejor alternativa
+    descartada en ese snapshot, desglosando en qué componente estuvo la mayor diferencia — la
+    justificación numérica de "por qué esta y no aquella"."""
+    winner_total = manager_score(row)
+    alt_total = manager_score(alternative_row)
+    advantage = winner_total - alt_total
+    winner_terms = dict((label, contribution) for label, contribution, _ in manager_score_contributions(row))
+    alt_terms = dict((label, contribution) for label, contribution, _ in manager_score_contributions(alternative_row))
+    deltas = sorted(
+        ((label, winner_terms[label] - alt_terms.get(label, 0.0)) for label in winner_terms),
+        key=lambda item: abs(item[1]),
+        reverse=True,
+    )
+    top_deltas = "; ".join(f"{label} ({delta:+.2f})" for label, delta in deltas[:2])
+    alt_ticker = getattr(alternative_row, "ticker", "la alternativa")
+    return (
+        f"Frente a {alt_ticker} (manager_score {alt_total:.2f} vs. {winner_total:.2f}, "
+        f"ventaja {advantage:+.2f}): la diferencia viene sobre todo de {top_deltas}."
+    )
 
 
 def _rank(universe: pd.DataFrame, snapshot_date: str) -> pd.DataFrame:
@@ -119,9 +198,23 @@ def _entry_candidates(universe: pd.DataFrame) -> pd.DataFrame:
     ]
 
 
+def _return_since_entry(position: dict, row: pd.Series) -> float | None:
+    """Actual price return since the position was opened — the number the stop-loss checks.
+
+    Deliberately independent of `price_return_3m/6m/12m` (fixed trailing windows relative to
+    today, not to the entry date) and of `price_return_since_fundamental` (measured from the last
+    reported fundamental, not from when the position was actually opened)."""
+    entry_price = position.get("entry_price")
+    current_price = row.get("price")
+    if entry_price is None or current_price is None or pd.isna(current_price) or entry_price <= 0:
+        return None
+    return float(current_price) / entry_price - 1
+
+
 def _refresh_position(position: dict, row: pd.Series, snapshot_date: str) -> None:
     position["months_since_entry"] += 1
     position["last_snapshot_date"] = snapshot_date
+    position["return_since_entry"] = _return_since_entry(position, row)
     fields = {
         "current_thesis_state": row["thesis_state"],
         "current_conviction_score": float(row["conviction_score"]),
@@ -149,6 +242,7 @@ def _refresh_position(position: dict, row: pd.Series, snapshot_date: str) -> Non
         "sector": row.get("sector", "Unknown"),
     }
     position.update(fields)
+    position["entry_vs_current"] = _entry_vs_current_narrative(position)
     if row["thesis_state"] in HOLDABLE_STATES:
         position["months_thesis_intact"] += 1
         position["thesis_improvement_count"] += int(row["thesis_state"] == "Improving")
@@ -159,6 +253,33 @@ def _refresh_position(position: dict, row: pd.Series, snapshot_date: str) -> Non
     else:
         position["not_buy_today_count"] = 0
     position["thesis_persistence_score"] = position["months_thesis_intact"] / max(position["months_since_entry"], 1)
+
+
+_ENTRY_VS_CURRENT_METRICS = [
+    ("conviction_score", "current_conviction_score", "convicción"),
+    ("business_quality_score", "current_business_quality_score", "calidad"),
+    ("price_adjusted_valuation_score", "current_price_adjusted_valuation_score", "valoración"),
+    ("manager_score", "current_manager_score", "manager_score"),
+]
+
+
+def _entry_vs_current_narrative(position: dict) -> str:
+    """Frase en español: valor de cada métrica clave al comprar vs. su valor ahora, con delta
+    explícito, para que una venta se pueda justificar con "esto es lo que cambió desde la compra"
+    en vez de solo una etiqueta fija."""
+    original = position.get("original_scores", {})
+    parts = []
+    for original_key, current_key, label in _ENTRY_VS_CURRENT_METRICS:
+        entry_value = original.get(original_key)
+        current_value = position.get(current_key)
+        if entry_value is None or current_value is None:
+            continue
+        delta = float(current_value) - float(entry_value)
+        parts.append(f"{label} {float(entry_value):.2f} → {float(current_value):.2f} ({delta:+.2f})")
+    if not parts:
+        return ""
+    months = position.get("months_since_entry", 0)
+    return f"Desde la compra ({months} meses): " + "; ".join(parts) + "."
 
 
 def _exit_reason(row: pd.Series, position: dict) -> str | None:
@@ -175,6 +296,14 @@ def _exit_reason(row: pd.Series, position: dict) -> str | None:
     adjusted_valuation = float(row.get("price_adjusted_valuation_score", row["valuation_score"]))
     momentum = float(row.get("momentum_score", 0.5))
     # --- hard triggers: fire immediately (cut losses / risk fast) ---
+    return_since_entry = position.get("return_since_entry")
+    if return_since_entry is not None and return_since_entry <= STOP_LOSS_THRESHOLD:
+        # Pure price risk brake, independent of thesis state: a name can look fundamentally intact
+        # (quality/valuation scores unchanged) while the market price has already fallen sharply —
+        # without this, nothing bounds the downside of a single position (the backtest's worst
+        # closed trade lost >50% before this existed). Upside is deliberately left unbounded (no
+        # take-profit) — only the loss tail is capped.
+        return "Stop-Loss"
     if row["thesis_state"] == "Broken":
         return "Thesis Broken"
     if row["exit_score"] >= 0.66:
@@ -229,23 +358,31 @@ def _replacement_target(updated: dict[str, dict], candidate) -> tuple[str, dict]
 
 def _replacement_reason(candidate, weakest_position: dict) -> str:
     advantage = float(candidate.manager_score) - weakest_position["current_manager_score"]
-    return f"Opportunity Cost: {candidate.ticker} manager_score advantage {advantage:.2f}"
+    breakdown = manager_score_breakdown(candidate)
+    reason = (
+        f"Opportunity Cost: {candidate.ticker} manager_score advantage "
+        f"{advantage:+.2f} sobre {weakest_position.get('ticker', 'la posición más débil')}."
+    )
+    if breakdown:
+        reason = f"{reason} {breakdown}"
+    return reason
 
 
-def _position_from_row(row, snapshot_date: str) -> dict:
+def _position_from_row(row, snapshot_date: str, by_ticker: pd.DataFrame) -> dict:
     return {
         "ticker": row.ticker,
         "entry_date": snapshot_date,
+        "entry_price": float(row.price) if pd.notna(getattr(row, "price", None)) else None,
         "original_snapshot_date": snapshot_date,
         "original_thesis": row.thesis_state,
         "investment_thesis": row.investment_thesis,
-        "bull_thesis": row.bull_thesis,
-        "bear_thesis": row.bear_thesis,
         "catalyst": row.catalyst,
         "sector": getattr(row, "sector", "Unknown"),
-        "moat_analysis": row.moat_analysis,
         "exit_thesis": row.exit_thesis,
         "entry_trigger": row.entry_trigger,
+        "manager_score_breakdown_at_entry": manager_score_breakdown(row),
+        "vs_best_alternative_at_entry": _vs_best_alternative(row, by_ticker),
+        "entry_vs_current": "",
         "would_buy_today": bool(row.would_buy_today),
         "buy_today_score": float(row.buy_today_score),
         "manager_score": float(row.manager_score),
@@ -293,15 +430,34 @@ def _position_from_row(row, snapshot_date: str) -> dict:
     }
 
 
-def _buy(row, snapshot_date: str) -> dict:
+def _vs_best_alternative(row, by_ticker: pd.DataFrame) -> str:
+    """Compara manager_score contra la mejor alternativa descartada (best_alternative_ticker, ya
+    calculado en module/strategy/selection.py) para justificar "por qué esta y no aquella"."""
+    alt_ticker = getattr(row, "best_alternative_ticker", "")
+    if not alt_ticker or by_ticker is None or alt_ticker not in by_ticker.index:
+        return ""
+    alt_row = by_ticker.loc[alt_ticker]
+    return manager_score_comparison(row, alt_row)
+
+
+def _buy(row, snapshot_date: str, by_ticker: pd.DataFrame) -> dict:
+    breakdown = manager_score_breakdown(row)
+    vs_alternative = _vs_best_alternative(row, by_ticker)
+    reason = row.buy_reason
+    if breakdown:
+        reason = f"{reason} {breakdown}"
+    if vs_alternative:
+        reason = f"{reason} {vs_alternative}"
     return {
         "date": snapshot_date,
         "ticker": row.ticker,
         "action": "BUY",
-        "reason": row.buy_reason,
+        "reason": reason,
         "thesis": row.investment_thesis,
         "catalyst": row.catalyst,
         "exit_thesis": row.exit_thesis,
+        "manager_score_breakdown": breakdown,
+        "vs_best_alternative": vs_alternative,
         "would_buy_today": bool(row.would_buy_today),
         "buy_today_score": float(row.buy_today_score),
         "manager_score": float(row.manager_score),
@@ -310,15 +466,27 @@ def _buy(row, snapshot_date: str) -> dict:
     }
 
 
-def _sell(ticker: str, snapshot_date: str, row, reason: str) -> dict:
+def _sell(ticker: str, snapshot_date: str, row, reason: str, position: dict) -> dict:
+    entry_vs_current = position.get("entry_vs_current", "")
+    breakdown = manager_score_breakdown(row)
+    return_since_entry = position.get("return_since_entry")
+    full_reason = f"{reason}: state={row['thesis_state']}, exit={row['exit_score']:.2f}, manager={row['manager_score']:.2f}"
+    if return_since_entry is not None:
+        full_reason = f"{full_reason}, price_return_since_entry={return_since_entry:+.1%}"
+    if entry_vs_current:
+        full_reason = f"{full_reason}. {entry_vs_current}"
+    if breakdown:
+        full_reason = f"{full_reason} {breakdown}"
     return {
         "date": snapshot_date,
         "ticker": ticker,
         "action": "SELL",
-        "reason": f"{reason}: state={row['thesis_state']}, exit={row['exit_score']:.2f}, manager={row['manager_score']:.2f}",
+        "reason": full_reason,
         "thesis": row["investment_thesis"],
         "exit_thesis": row["exit_thesis"],
         "catalyst": row["catalyst"],
+        "entry_vs_current": entry_vs_current,
+        "manager_score_breakdown": breakdown,
     }
 
 
@@ -331,4 +499,6 @@ def _sell_missing(ticker: str, snapshot_date: str, position: dict) -> dict:
         "thesis": position.get("current_thesis", ""),
         "exit_thesis": position.get("current_exit_thesis", ""),
         "catalyst": position.get("current_catalyst", ""),
+        "entry_vs_current": position.get("entry_vs_current", ""),
+        "manager_score_breakdown": "",
     }

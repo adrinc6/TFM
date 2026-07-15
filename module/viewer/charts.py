@@ -37,7 +37,7 @@ plt.rcParams.update({
 })
 
 
-def build_charts(charts_dir: Path, tables: dict[str, pd.DataFrame], train_cutoff_date: str | None = None) -> dict[str, str]:
+def build_charts(charts_dir: Path, tables: dict[str, pd.DataFrame]) -> dict[str, str]:
     for old in charts_dir.glob("*.png"):
         old.unlink()
     charts: dict[str, str] = {}
@@ -45,8 +45,8 @@ def build_charts(charts_dir: Path, tables: dict[str, pd.DataFrame], train_cutoff
     _chart_value(charts_dir, charts, vs)
     _chart_cumulative_alpha(charts_dir, charts, vs)
     _chart_drawdown(charts_dir, charts, vs)
-    _chart_learned_weights(charts_dir, charts, tables.get("meta_weights_by_snapshot", pd.DataFrame()), train_cutoff_date)
-    _chart_rank_ic(charts_dir, charts, tables.get("model_walk_forward_diagnostics", pd.DataFrame()), train_cutoff_date)
+    _chart_learned_weights(charts_dir, charts, tables.get("meta_weights_by_snapshot", pd.DataFrame()))
+    _chart_rank_ic(charts_dir, charts, tables.get("model_walk_forward_diagnostics", pd.DataFrame()))
     _chart_position_performance(charts_dir, charts, tables.get("position_performance", pd.DataFrame()))
     _chart_horizon_comparison(charts_dir, charts, tables.get("label_horizon_comparison", pd.DataFrame()))
     return charts
@@ -69,22 +69,6 @@ def _save(fig, charts_dir: Path, charts: dict[str, str], name: str) -> None:
 
 def _has(df: pd.DataFrame, cols: list[str]) -> bool:
     return not df.empty and all(c in df.columns for c in cols)
-
-
-def _mark_cutoff(ax, train_cutoff_date: str | None, series_min_date=None, series_max_date=None) -> None:
-    """Draw the train-until-cutoff-then-freeze boundary: before it the agents/meta-agent are still
-    learning (quarterly retraining); after it, the model is frozen and only predicts.
-    """
-    if not train_cutoff_date:
-        return
-    cutoff = pd.Timestamp(train_cutoff_date)
-    if series_min_date is not None and series_max_date is not None and not (series_min_date <= cutoff <= series_max_date):
-        return
-    ax.axvline(cutoff, color=PALETTE["muted"], linewidth=1.4, linestyle=":")
-    ax.annotate(
-        "Corte: modelo congelado →", xy=(cutoff, 1.0), xycoords=("data", "axes fraction"),
-        xytext=(4, -4), textcoords="offset points", fontsize=9, color=PALETTE["muted"], va="top",
-    )
 
 
 def _chart_value(charts_dir, charts, df) -> None:
@@ -128,18 +112,16 @@ def _chart_drawdown(charts_dir, charts, df) -> None:
     _save(fig, charts_dir, charts, "drawdown")
 
 
-def _chart_learned_weights(charts_dir, charts, df, train_cutoff_date: str | None = None) -> None:
+def _chart_learned_weights(charts_dir, charts, df) -> None:
     """Evolution of the meta-agent's learned agent weights — the visual proof of learning.
 
-    Marked with a vertical line at the train cutoff: to its left the weights are actively learned
-    (quarterly retraining); to its right they are frozen (the last learned combination reused for
-    every prediction, no further learning).
+    Pure rolling walk-forward: the meta-agent relearns every quarter across the entire simulated
+    window, so this whole series reflects active learning, not a fixed combination applied late.
     """
     agents = {
         "quality_probability": ("Calidad", PALETTE["portfolio"]),
-        "improvement_probability": ("Crecimiento", PALETTE["series_3"]),
-        "mispricing_probability": ("Infravaloración", PALETTE["series_4"]),
         "timing_probability": ("Temporización", PALETTE["benchmark"]),
+        "alpha_probability": ("Alpha (ranking directo)", PALETTE["series_3"]),
     }
     if df.empty or "snapshot_date" not in df.columns or not all(a in df.columns for a in agents):
         return
@@ -149,20 +131,18 @@ def _chart_learned_weights(charts_dir, charts, df, train_cutoff_date: str | None
     fig, ax = _new(3.2)
     for col, (label, color) in agents.items():
         ax.plot(d["snapshot_date"], d[col], linewidth=2.0, color=color, label=label)
-    _mark_cutoff(ax, train_cutoff_date, d["snapshot_date"].min(), d["snapshot_date"].max())
     ax.yaxis.set_major_formatter(PercentFormatter(xmax=1.0))
     ax.set_ylabel("Peso aprendido")
     ax.legend(frameon=False, ncol=4, loc="upper center", bbox_to_anchor=(0.5, 1.16))
     _save(fig, charts_dir, charts, "learned_weights")
 
 
-def _chart_rank_ic(charts_dir, charts, df, train_cutoff_date: str | None = None) -> None:
+def _chart_rank_ic(charts_dir, charts, df) -> None:
     """Out-of-sample rank-IC of the master signal (`final_score`, the meta-agent output) per
     snapshot — model quality over time.
 
-    After the train cutoff (marked with a vertical line), every snapshot is scored with the SAME
-    frozen model, so the rank-IC there measures how well that fixed model ages, not further
-    learning.
+    Pure rolling walk-forward: every snapshot is scored with a model retrained as of that quarter,
+    so the whole series measures genuine OOS predictive power, not a fixed model aging.
     """
     if df.empty or "snapshot_date" not in df.columns or "rank_ic_final" not in df.columns:
         return
@@ -185,7 +165,6 @@ def _chart_rank_ic(charts_dir, charts, df, train_cutoff_date: str | None = None)
     else:
         ax.axhline(float(d["rank_ic_final"].mean()), color=PALETTE["portfolio"], linewidth=1.4,
                    linestyle="--", label=f"Media {d['rank_ic_final'].mean():.2f}")
-    _mark_cutoff(ax, train_cutoff_date, d["snapshot_date"].min(), d["snapshot_date"].max())
     ax.set_ylabel("Rank-IC OOS (señal maestra)")
     ax.legend(frameon=False, loc="upper left")
     _save(fig, charts_dir, charts, "rank_ic")

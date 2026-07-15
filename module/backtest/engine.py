@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 
 import pandas as pd
 
@@ -16,6 +17,7 @@ from .artifacts import (
     action_journal,
     buy_rationale,
     current_portfolio,
+    edge_attribution,
     executive_summary_table,
     improvement_backlog,
     latest_top_opportunities,
@@ -25,6 +27,7 @@ from .artifacts import (
     summary_metrics,
     tracking_dashboard,
 )
+from .baselines import baseline_comparison, placebo_distribution, placebo_summary
 from .performance import portfolio_vs_benchmark, position_performance, turnover
 from .reviews import decision_rows, rebalance_report, review_diagnostics, top_candidates, universe_review_rows
 from .robustness import build_robustness
@@ -74,7 +77,8 @@ def run_backtest(settings: Settings) -> dict[str, pd.DataFrame]:
     decisions: list[dict] = []
     review_rows: list[dict] = []
     universe_reviews: list[dict] = []
-    for date in dates:
+    loop_start = time.perf_counter()
+    for date_index, date in enumerate(dates, start=1):
         universe_reviews.extend(universe_review_rows(date, scored))
         if date != dates[0]:
             portfolio, tx = review_portfolio(portfolio, scored, date)
@@ -83,6 +87,12 @@ def run_backtest(settings: Settings) -> dict[str, pd.DataFrame]:
         holdings.extend({"date": date, **position} for position in portfolio.values())
         decisions.extend(decision_rows(date, portfolio))
         review_rows.extend(review_diagnostics(date, portfolio, scored))
+        if date_index % 10 == 0 or date_index == len(dates):
+            log.info(
+                "Backtest snapshot %s/%s %s holdings=%s elapsed=%.1fs",
+                date_index, len(dates), date, len(portfolio), time.perf_counter() - loop_start,
+            )
+    log.info("Monthly simulation loop done in %.1fs", time.perf_counter() - loop_start)
     run_dir = settings.run_dir
     run_dir.mkdir(parents=True, exist_ok=True)
     clean_managed_outputs(run_dir)
@@ -129,7 +139,24 @@ def run_backtest(settings: Settings) -> dict[str, pd.DataFrame]:
     outputs["improvement_backlog"] = improvement_backlog(outputs)
     # Statistical robustness (bootstrap CI, cost-sensitivity breakeven) computed from the finished
     # tables above — no re-scoring or re-selection; see module/backtest/robustness.py.
+    stage_start = time.perf_counter()
     outputs.update(build_robustness(outputs, settings))
+    log.info("Bootstrap/cost-sensitivity robustness done in %.1fs", time.perf_counter() - stage_start)
+    diagnostics_path = run_dir / "model_walk_forward_diagnostics.csv"
+    walk_forward_diagnostics = pd.read_csv(diagnostics_path) if diagnostics_path.exists() else pd.DataFrame()
+    outputs["edge_attribution"] = edge_attribution(outputs["position_performance"], walk_forward_diagnostics)
+    # Simple-signal baselines and a shuffled-ranking placebo — both computed on the same universe/
+    # dates/prices already loaded above, independent of the thesis/rotation state machine (see
+    # module/backtest/baselines.py for why).
+    live_universe = scored[scored["snapshot_date"].isin(dates)]
+    system_alpha = float(outputs["portfolio_vs_benchmark"]["period_alpha"].sum()) if not outputs["portfolio_vs_benchmark"].empty else 0.0
+    stage_start = time.perf_counter()
+    outputs["baseline_comparison"] = baseline_comparison(live_universe, prices, settings.benchmark_ticker, system_alpha)
+    log.info("Baseline comparison done in %.1fs", time.perf_counter() - stage_start)
+    stage_start = time.perf_counter()
+    real_alpha, shuffled_alphas = placebo_distribution(live_universe, prices, settings.benchmark_ticker, score_column="final_score")
+    outputs["placebo_summary"] = placebo_summary(real_alpha, shuffled_alphas)
+    log.info("Placebo test done in %.1fs", time.perf_counter() - stage_start)
     for name, df in outputs.items():
         if isinstance(df, pd.DataFrame):
             output_dir = run_dir / "audit" if name in AUDIT_OUTPUTS else run_dir
@@ -148,6 +175,8 @@ def clean_managed_outputs(run_dir) -> None:
         "top_opportunities_latest", "tracking_dashboard", "universe_monthly_price_update", "universe_monthly_scores",
         "universe_quarterly_fundamental_review", "universe_top_candidates",
         "robustness_bootstrap", "robustness_bootstrap_distribution", "robustness_cost_sensitivity", "robustness_summary",
+        "robustness_sub_periods",
+        "edge_attribution", "baseline_comparison", "placebo_summary",
     }
     for name in managed_names:
         for path in (run_dir / f"{name}.csv", run_dir / "audit" / f"{name}.csv"):

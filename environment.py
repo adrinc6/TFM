@@ -34,7 +34,17 @@ def _load_dotenv(path: Path) -> None:
 _load_dotenv(PROJECT_ROOT / ".env")
 
 # Editable project configuration. Keep .env only for API keys/secrets.
-RUN_MODE = "full"
+# RUN_MODE controla qué etapa(s) ejecuta main.py: una etapa suelta, "full" (el pipeline entero) o
+# "experiments" (barre escenarios con module/experiments; no ejecuta el pipeline normal).
+RUN_MODE = "experiments"
+# Con RUN_MODE="experiments", qué escenarios corre main.py: la ruta de un fichero de escenarios
+# (p.ej. "experiments/escenarios_aprendizaje.py") o el literal "todos" para juntar los cuatro bloques
+# (aprendizaje + estabilidad + utilidad + pesos_meta) en un solo barrido.
+EXPERIMENTS_FILE = "todos"
+# Con RUN_MODE="experiments": si True, reanuda el último barrido en su carpeta y SALTA los escenarios
+# ya completados (los que dejaron su fila persistida), corriendo solo los que faltan y reescribiendo
+# la comparación con todos. Ponlo a False para forzar un barrido limpio en carpeta nueva.
+EXPERIMENTS_RESUME = True
 DATA_START_DATE = "2000-01-01"
 PORTFOLIO_START_DATE = "2018-02-15"
 PORTFOLIO_END_DATE = "2026-06-15"
@@ -61,21 +71,23 @@ WALK_FORWARD_SCORING = True
 WALK_FORWARD_LABEL_HORIZON_MONTHS = 12
 MIN_WALK_FORWARD_TRAINING_ROWS = 120
 MIN_WALK_FORWARD_TRAINING_YEARS = 4
-MAX_WALK_FORWARD_TRAINING_YEARS = 8
-# Train-until-cutoff-then-freeze: the walk-forward loop only reruns/relearns (agents + meta-agent
-# weights) on TRAIN_CUTOFF_DATE and earlier, at WALK_FORWARD_TRAIN_FREQUENCY cadence, starting
-# WALK_FORWARD_TRAIN_YEARS before the cutoff. From the cutoff onward, the last trained model/weights
-# are FROZEN and only used to predict (no further learning) — the portfolio is still reviewed
-# monthly (PORTFOLIO_REVIEW_FREQUENCY) using that frozen model. This replaces the previous "pure"
-# walk-forward that kept relearning every month all the way through the live-portfolio window.
+# MAX_WALK_FORWARD_TRAINING_YEARS is the actual trailing-history window used at every relearning
+# point (module/ml.py's `max_history`) — a shorter window adapts faster to regime change (e.g. the
+# 2023-2025 AI/megacap rally looking nothing like 2010-2018) at the cost of less data per fit.
+MAX_WALK_FORWARD_TRAINING_YEARS = 4
+# Pure rolling walk-forward, no freeze: the walk-forward loop reruns/relearns (agents + meta-agent
+# weights) every WALK_FORWARD_TRAIN_FREQUENCY across the ENTIRE evaluated window, from
+# TRAIN_CUTOFF_DATE through PORTFOLIO_END_DATE — never freezing the model at a fixed point. Each
+# relearning step uses only the trailing MAX_WALK_FORWARD_TRAINING_YEARS of history available as of
+# that date (no lookahead), so the live portfolio is always scored by a model trained on recent
+# data, not one trained once in 2010-2018 and deployed unchanged for 8 years afterward — the
+# earlier train-until-cutoff-then-freeze scheme was replaced because it produced a near-zero/
+# negative out-of-sample rank-IC in the later years of the evaluated window (the frozen model never
+# saw the market regime it was being scored against).
 TRAIN_CUTOFF_DATE = PORTFOLIO_START_DATE
-WALK_FORWARD_TRAIN_YEARS = 8
 WALK_FORWARD_TRAIN_FREQUENCY = "Q"
 TRANSACTION_COST_BPS = 5.0
 SLIPPAGE_BPS = 10.0
-# Fundamentals carry a PERIOD-END date but are reported to the market weeks later. A fundamental is
-# only treated as observable this many weeks after its period end, removing a subtle lookahead.
-FUNDAMENTAL_PUBLICATION_LAG_WEEKS = 7
 
 FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
@@ -108,13 +120,18 @@ class Settings:
     min_walk_forward_training_years: int = MIN_WALK_FORWARD_TRAINING_YEARS
     max_walk_forward_training_years: int = MAX_WALK_FORWARD_TRAINING_YEARS
     train_cutoff_date: str = TRAIN_CUTOFF_DATE
-    walk_forward_train_years: int = WALK_FORWARD_TRAIN_YEARS
     walk_forward_train_frequency: str = WALK_FORWARD_TRAIN_FREQUENCY
     transaction_cost_bps: float = TRANSACTION_COST_BPS
     slippage_bps: float = SLIPPAGE_BPS
-    fundamental_publication_lag_weeks: int = FUNDAMENTAL_PUBLICATION_LAG_WEEKS
     dev_mode: bool = DEV_MODE
     benchmark_ticker: str = BENCHMARK_TICKER
+    experiments_file: str = EXPERIMENTS_FILE
+    experiments_resume: bool = EXPERIMENTS_RESUME
+    # Cuando el runner de experimentos ejecuta un escenario aislado, fija aquí la carpeta destino
+    # (results/experiments/<exp_id>/<escenario>/) para que sus artefactos no colisionen con los de
+    # otro escenario que comparta fechas/frecuencia. En una ejecución normal queda None y run_dir
+    # deriva del run_name clásico, sin cambio de comportamiento.
+    run_dir_override: str | None = None
 
     @property
     def tickers(self) -> list[str]:
@@ -132,6 +149,8 @@ class Settings:
 
     @property
     def run_dir(self) -> Path:
+        if self.run_dir_override:
+            return Path(self.run_dir_override)
         return RESULTS_DIR / self.run_name
 
 

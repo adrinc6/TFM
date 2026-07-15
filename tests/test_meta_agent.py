@@ -15,7 +15,7 @@ import module.ml as ml
 
 
 def _train_frame(n_dates: int = 24, per_date: int = 12, seed: int = 0) -> pd.DataFrame:
-    """One agent (timing) tracks the realized alpha; the other three are independent noise."""
+    """One agent (timing) tracks the realized alpha; the other two are independent noise."""
     rng = np.random.default_rng(seed)
     dates = pd.date_range("2010-01-31", periods=n_dates, freq="ME")
     rows = []
@@ -28,10 +28,9 @@ def _train_frame(n_dates: int = 24, per_date: int = 12, seed: int = 0) -> pd.Dat
                 "target_future_alpha": alpha,
                 # timing carries the signal (monotonic in the driver, squashed to [0,1]);
                 "timing_probability": 1 / (1 + np.exp(-driver)),
-                # the other three are pure noise, uncorrelated with alpha.
+                # the other two are pure noise, uncorrelated with alpha.
                 "quality_probability": rng.random(),
-                "improvement_probability": rng.random(),
-                "mispricing_probability": rng.random(),
+                "alpha_probability": rng.random(),
             })
     return pd.DataFrame(rows)
 
@@ -50,20 +49,29 @@ def test_informative_agent_dominates_noise_agents():
     weights, partial_ics = ml._fit_meta_weights(_train_frame())
     assert weights["timing_probability"] == max(weights.values())
     assert weights["timing_probability"] > 0.5
-    for noise in ("quality_probability", "improvement_probability", "mispricing_probability"):
+    for noise in ("quality_probability", "alpha_probability"):
         assert weights[noise] < weights["timing_probability"]
 
 
 def test_duplicating_the_signal_collapses_its_marginal_ic():
-    """Marginal-contribution property: once a second agent carries the SAME signal, neither can rank
-    the alpha the other already explains, so the informative agent's partial IC drops sharply vs. the
-    non-duplicated case — the meta-agent does not pay twice for one signal."""
+    """Marginal-contribution property: once a second agent carries (nearly) the SAME signal, neither
+    can rank the alpha the other already explains, so the informative agent's partial IC drops
+    sharply vs. the non-duplicated case — the meta-agent does not pay twice for one signal."""
     base = _train_frame()
     _, base_partial_ics = ml._fit_meta_weights(base)
     solo_ic = base_partial_ics["timing_probability"]
 
     duplicated = _train_frame()
     duplicated["quality_probability"] = duplicated["timing_probability"]  # exact duplicate of the signal
+    # Give the third agent a weak INDEPENDENT slice of the alpha so the OLS residual stays well-posed
+    # (with only 3 agents, two exact duplicates + one pure-noise agent leave no marginal signal at
+    # all and the fit correctly returns None). This anchor lets us still observe the duplicates'
+    # marginal IC collapse relative to the solo case.
+    rng = np.random.default_rng(7)
+    duplicated["alpha_probability"] = (
+        0.5 + 0.15 * (duplicated["target_future_alpha"] - duplicated["target_future_alpha"].mean())
+        + rng.normal(scale=0.05, size=len(duplicated))
+    ).clip(0, 1)
     _, dup_partial_ics = ml._fit_meta_weights(duplicated)
     # The two duplicates split the credit and each individually contributes far less than the solo
     # agent did; symmetry means they land close to each other.
