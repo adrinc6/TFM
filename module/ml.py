@@ -494,6 +494,13 @@ def _walk_forward_component_scores(df: pd.DataFrame, settings: Settings) -> tupl
     return scored.drop(columns=["snapshot_date_dt"]), latest_importance, pd.DataFrame(diagnostics)
 
 
+# Curva de BREADTH / tamaño de cartera para el análisis "¿5 o 50 acciones?". Para cada N se mide, por
+# snapshot, el alpha medio de los N mejores del ranking y su ventaja (lift) sobre la media del universo
+# — el tramo que de verdad se compraría. Se guarda por snapshot en el diagnóstico para poder elegir el
+# tamaño óptimo a posteriori sin re-correr el backtest por cada N.
+BREADTH_TOP_NS = [5, 10, 20, 50]
+
+
 def _master_signal_diagnostics(
     diagnostics: pd.DataFrame,
     labeled: pd.DataFrame,
@@ -502,8 +509,9 @@ def _master_signal_diagnostics(
 ) -> pd.DataFrame:
     """Append the OOS quality of the MASTER signal (`final_score`, the meta-agent output) to the
     per-snapshot diagnostics: its Spearman rank-IC vs. realized forward alpha, a rolling mean, a
-    per-calendar-year mean + approximate t-stat (mean / (std / sqrt(n))), y las métricas de BREADTH
-    del top-N (`top_n_alpha`, `top_n_alpha_lift`).
+    per-calendar-year mean + approximate t-stat (mean / (std / sqrt(n))), y la CURVA de BREADTH por
+    tamaño de cartera (`top{N}_alpha`, `top{N}_alpha_lift` para N en BREADTH_TOP_NS; `top_n_alpha`/
+    `top_n_alpha_lift` son alias del tamaño real de cartera para compatibilidad).
 
     This replaces the old per-agent "alpha" IC column: with no generalist alpha agent, the signal
     whose quality-over-time actually matters is the combined meta-agent score. With ~90 walk-forward
@@ -532,23 +540,33 @@ def _master_signal_diagnostics(
                 ic_by_snapshot[str(snapshot)] = float(ic)
 
     # Métrica de BREADTH: el rank-IC mide el orden de TODO el universo (~71k filas/snapshot), pero la
-    # cartera solo compra el top-10. Ordenar bien 71k filas no implica acertar el top-10 (correlación
-    # empírica IC↔alpha entre escenarios, medida sobre el rank-IC OOS: Spearman ~+0.36). Estas dos
-    # métricas miden lo que de verdad se ejecuta: el alpha medio de los N que se comprarían y su
-    # ventaja sobre el universo.
-    top_alpha_by_snapshot: dict[str, float] = {}
-    top_lift_by_snapshot: dict[str, float] = {}
+    # cartera solo compra el top-N. Ordenar bien 71k filas no implica acertar el top-N (correlación
+    # empírica IC↔alpha entre escenarios, medida sobre el rank-IC OOS: Spearman ~+0.36). Se calcula la
+    # CURVA para varios N (BREADTH_TOP_NS): el alpha medio de los N mejores y su ventaja sobre el
+    # universo, para responder "¿5 o 50 acciones?" desde el ranking guardado.
+    breadth_ns = sorted(set(BREADTH_TOP_NS) | {top_n})
+    alpha_by_n: dict[int, dict[str, float]] = {n: {} for n in breadth_ns}
+    lift_by_n: dict[int, dict[str, float]] = {n: {} for n in breadth_ns}
     for snapshot, group in scored.groupby("snapshot_date"):
         pair = group[["pred", "real"]].dropna()
-        if len(pair) < max(5, top_n):
+        if len(pair) < 5:
             continue
-        top = pair.nlargest(top_n, "pred")
-        top_alpha = float(top["real"].mean())
-        top_alpha_by_snapshot[str(snapshot)] = top_alpha
-        top_lift_by_snapshot[str(snapshot)] = top_alpha - float(pair["real"].mean())
+        universe_mean = float(pair["real"].mean())
+        ranked = pair.sort_values("pred", ascending=False)
+        for n in breadth_ns:
+            if len(pair) < n:
+                continue
+            top_alpha = float(ranked.head(n)["real"].mean())
+            alpha_by_n[n][str(snapshot)] = top_alpha
+            lift_by_n[n][str(snapshot)] = top_alpha - universe_mean
 
-    diagnostics["top_n_alpha"] = diagnostics["snapshot_date"].astype(str).map(top_alpha_by_snapshot)
-    diagnostics["top_n_alpha_lift"] = diagnostics["snapshot_date"].astype(str).map(top_lift_by_snapshot)
+    keys = diagnostics["snapshot_date"].astype(str)
+    for n in breadth_ns:
+        diagnostics[f"top{n}_alpha"] = keys.map(alpha_by_n[n])
+        diagnostics[f"top{n}_alpha_lift"] = keys.map(lift_by_n[n])
+    # Alias del tamaño real de cartera (top_n) para compatibilidad con metrics/viewer.
+    diagnostics["top_n_alpha"] = diagnostics[f"top{top_n}_alpha"]
+    diagnostics["top_n_alpha_lift"] = diagnostics[f"top{top_n}_alpha_lift"]
 
     diagnostics["rank_ic_final"] = diagnostics["snapshot_date"].astype(str).map(ic_by_snapshot)
     ic = pd.to_numeric(diagnostics["rank_ic_final"], errors="coerce")
