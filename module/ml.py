@@ -43,7 +43,7 @@ import numpy as np
 import pandas as pd
 
 from environment import MAX_PORTFOLIO_SIZE, PROCESSED_DIR, RAW_DIR, Settings
-from module.utils import read_parquet, write_json, write_parquet
+from module.utils import price_cache_by_ticker, read_parquet, write_json, write_parquet
 
 log = logging.getLogger(__name__)
 
@@ -206,7 +206,7 @@ def train_and_score(settings: Settings) -> pd.DataFrame:
     stage_start = time.perf_counter()
     labeled, meta_weights = _meta_agent_scores(labeled, settings)
     log.info("Meta-agent weight learning done in %.1fs", time.perf_counter() - stage_start)
-    # The master signal is now the meta-agent output `final_score` (there is no alpha agent). Its
+    # The master signal is the meta-agent output `final_score` (the blend of the three agents). Its
     # per-snapshot OOS rank-IC vs. realized forward alpha — plus a rolling and per-year trend — is
     # appended to the diagnostics here, once final_score exists.
     diagnostics = _master_signal_diagnostics(diagnostics, labeled)
@@ -295,7 +295,7 @@ def _add_component_targets(df: pd.DataFrame, prices: pd.DataFrame, benchmark_tic
     """
     prices = prices.copy()
     prices["date"] = pd.to_datetime(prices["date"])
-    price_cache = _price_cache(prices)
+    price_cache = price_cache_by_ticker(prices)
     df = df.copy()
     df["snapshot_date_dt"] = pd.to_datetime(df["snapshot_date"])
     # roic is a hard reported fundamental (the only forward feature still needed now that the growth-
@@ -513,8 +513,8 @@ def _master_signal_diagnostics(
     tamaño de cartera (`top{N}_alpha`, `top{N}_alpha_lift` para N en BREADTH_TOP_NS; `top_n_alpha`/
     `top_n_alpha_lift` son alias del tamaño real de cartera para compatibilidad).
 
-    This replaces the old per-agent "alpha" IC column: with no generalist alpha agent, the signal
-    whose quality-over-time actually matters is the combined meta-agent score. With ~90 walk-forward
+    This replaces the old per-agent "alpha" IC column: the signal whose quality-over-time actually
+    matters is the combined meta-agent score (`final_score`), not any single agent. With ~90 walk-forward
     snapshots the rolling/year trend is descriptive, not a formal significance test — reported as-is,
     without forcing a "the system is improving" narrative if the data doesn't show one.
 
@@ -636,7 +636,6 @@ def _meta_agent_scores(labeled: pd.DataFrame, settings: Settings) -> tuple[pd.Da
     labeled["meta_weight_source"] = "prior"
 
     if not settings.walk_forward_scoring:
-        labeled["ml_score"] = labeled["final_score"]
         rows = [{
             "snapshot_date": "all", "source": "prior", "n_train": 0,
             **AGENT_PRIOR_WEIGHTS, **{f"partial_ic_{key}": float("nan") for key in AGENT_KEYS},
@@ -690,7 +689,6 @@ def _meta_agent_scores(labeled: pd.DataFrame, settings: Settings) -> tuple[pd.Da
                 meta_index, len(apply_dates), pd.Timestamp(date).date().isoformat(),
                 time.perf_counter() - meta_loop_start,
             )
-    labeled["ml_score"] = labeled["final_score"]
     return labeled.drop(columns=["snapshot_date_dt"]), pd.DataFrame(weight_rows)
 
 
@@ -820,7 +818,7 @@ def _label_horizon_comparison(scored: pd.DataFrame, prices: pd.DataFrame, settin
     scored = scored.copy()
     scored["snapshot_date_dt"] = pd.to_datetime(scored["snapshot_date"])
     training_rows = scored.copy()
-    price_cache = _price_cache(prices.assign(date=pd.to_datetime(prices["date"])))
+    price_cache = price_cache_by_ticker(prices.assign(date=pd.to_datetime(prices["date"])))
 
     rows = []
     for months in LABEL_HORIZON_CANDIDATES_MONTHS:
@@ -902,16 +900,6 @@ def _fallback_probability(df: pd.DataFrame, target: str) -> pd.Series:
     if target in df.columns:
         return df[target].fillna(df["garp_score"]).clip(0, 1)
     return df["garp_score"].fillna(0.5).clip(0, 1)
-
-
-def _price_cache(prices: pd.DataFrame) -> dict[str, tuple[list[pd.Timestamp], list[float]]]:
-    cache = {}
-    for ticker, group in prices.sort_values(["ticker", "date"]).groupby("ticker", sort=False):
-        cache[ticker] = (
-            group["date"].tolist(),
-            group["adj_close"].astype(float).tolist(),
-        )
-    return cache
 
 
 def _forward_return(price_cache: dict[str, tuple[list[pd.Timestamp], list[float]]], ticker: str, start: pd.Timestamp, months: int) -> float | None:

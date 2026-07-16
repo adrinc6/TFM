@@ -152,19 +152,6 @@ def current_portfolio(holdings: pd.DataFrame) -> pd.DataFrame:
     return select_columns(latest.sort_values("hybrid_weight", ascending=False), cols)
 
 
-def latest_top_opportunities(universe_top: pd.DataFrame, top_n: int = 25) -> pd.DataFrame:
-    if universe_top.empty or "date" not in universe_top.columns:
-        return pd.DataFrame()
-    latest = universe_top[universe_top["date"] == universe_top["date"].max()].copy().head(top_n)
-    cols = [
-        "date", "rank", "ticker", "universe_action", "manager_score", "buy_today_score",
-        "thesis_rank_score", "conviction_score", "business_quality_score", "price_adjusted_valuation_score",
-        "momentum_score", "timing_probability", "opportunity_type", "best_alternative_ticker",
-        "opportunity_cost_score", "investment_thesis",
-    ]
-    return select_columns(latest, cols)
-
-
 def executive_summary_table(outputs: dict[str, pd.DataFrame]) -> pd.DataFrame:
     summary = summary_metrics(outputs)
     vs = outputs.get("portfolio_vs_benchmark", pd.DataFrame())

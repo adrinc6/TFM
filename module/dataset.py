@@ -52,7 +52,7 @@ def build_master_dataset(settings: Settings) -> pd.DataFrame:
     fundamental_dates = _fundamental_date_set(settings)
     rows: list[dict] = []
     price_by_ticker = {
-        ticker: _price_cache(group)
+        ticker: _ticker_price_series(group)
         for ticker, group in prices.groupby("ticker")
     }
     benchmark_dates, _ = price_by_ticker.get(settings.benchmark_ticker, ([], []))
@@ -172,7 +172,7 @@ def _parse_payload(payload: object) -> dict:
     return payload if isinstance(payload, dict) else {}
 
 
-def _price_cache(group: pd.DataFrame) -> tuple[list[pd.Timestamp], list[float]]:
+def _ticker_price_series(group: pd.DataFrame) -> tuple[list[pd.Timestamp], list[float]]:
     sorted_group = group.sort_values("date")
     dates = [pd.Timestamp(value) for value in sorted_group["date"].tolist()]
     values = [float(value) if pd.notna(value) else float("nan") for value in sorted_group["adj_close"].tolist()]

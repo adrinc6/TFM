@@ -40,8 +40,8 @@ _load_dotenv(PROJECT_ROOT / ".env")
 # "experiments" (barre escenarios con module/experiments; no ejecuta el pipeline normal).
 RUN_MODE = "experiments"
 # Con RUN_MODE="experiments", qué escenarios corre main.py: la ruta de un fichero de escenarios
-# (p.ej. "experiments/escenarios_aprendizaje.py") o el literal "todos" para juntar los cuatro bloques
-# (aprendizaje + estabilidad + utilidad + pesos_meta) en un solo barrido.
+# (p.ej. "experiments/rejilla.py") o el literal "todos", que resuelve al generador de rejilla
+# (barrido sistemático: ventana × cadencia + horizonte + ablations de pesos/meta).
 EXPERIMENTS_FILE = "todos"
 # Con RUN_MODE="experiments": si True, reanuda el último barrido en su carpeta y SALTA los escenarios
 # ya completados (los que dejaron su fila persistida), corriendo solo los que faltan y reescribiendo

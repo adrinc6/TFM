@@ -37,3 +37,12 @@ def read_parquet(path: Path) -> pd.DataFrame:
 def write_json(payload: dict[str, Any], path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
+
+
+def price_cache_by_ticker(prices: pd.DataFrame) -> dict[str, tuple[list, list[float]]]:
+    """Índice ticker -> (fechas ordenadas, adj_close) para búsqueda point-in-time con bisect. Fuente
+    única compartida por ml y backtest (antes duplicada en ambos)."""
+    cache: dict[str, tuple[list, list[float]]] = {}
+    for ticker, group in prices.sort_values(["ticker", "date"]).groupby("ticker", sort=False):
+        cache[ticker] = (group["date"].tolist(), group["adj_close"].astype(float).tolist())
+    return cache

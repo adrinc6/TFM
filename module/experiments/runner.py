@@ -74,7 +74,9 @@ _ML_SETTINGS_FIELDS = [
 ]
 
 
-_ALL_SCENARIOS_FILE = "experiments/escenarios_todos.py"
+# El barrido completo vive ahora en un único generador de rejilla (absorbe los antiguos
+# escenarios_*.py sueltos). El literal "todos" resuelve a él.
+_ALL_SCENARIOS_FILE = "experiments/rejilla.py"
 
 # Fila terminada de un escenario, escrita en su run_dir. Su presencia marca el escenario como
 # completado y permite reanudar un barrido sin re-ejecutarlo.
