@@ -10,6 +10,8 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+import pandas as pd
+
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 DATA_DIR = PROJECT_ROOT / "data"
@@ -46,7 +48,33 @@ EXPERIMENTS_FILE = "todos"
 # la comparación con todos. Ponlo a False para forzar un barrido limpio en carpeta nueva.
 EXPERIMENTS_RESUME = False
 DATA_START_DATE = "2000-01-01"
-PORTFOLIO_START_DATE = "2018-02-15"
+
+# Punto de arranque de la simulación, expresado como TRIMESTRE (auto-documentado): "2010Q1" = primer
+# día de ese trimestre (Q1->1-ene, Q2->1-abr, Q3->1-jul, Q4->1-oct). Sobre ese día se suma el retardo
+# de publicación de fundamentales para obtener la FECHA ANCLA desde la que se entrena y evalúa. La
+# idea: al arrancar en 2010Q1 + 45 días = 15-feb-2010, ya están publicados los resultados del
+# trimestre anterior (Q4-2009) de todas las empresas, que es cuando cambian de verdad los ratios.
+EVAL_START_QUARTER = "2010Q1"
+# Días tras el cierre de un periodo en que su fundamental pasa a ser observable (un 10-K/10-Q tarda en
+# publicarse). Antes de este retardo, ese periodo NO existe para el modelo: corrige el lookahead sutil
+# de tratar el fundamental como conocido el mismo día del cierre de periodo.
+FUNDAMENTAL_PUBLICATION_LAG_DAYS = 45
+
+
+def _quarter_to_anchor(spec: str, lag_days: int) -> str:
+    """'2010Q1' + lag -> fecha ancla ISO. Q1->1-ene, Q2->1-abr, Q3->1-jul, Q4->1-oct, + lag_days."""
+    year_str, quarter_str = spec.upper().split("Q")
+    year, quarter = int(year_str), int(quarter_str)
+    if quarter not in (1, 2, 3, 4):
+        raise ValueError(f"Trimestre inválido en '{spec}': usa Q1..Q4.")
+    quarter_start = pd.Timestamp(year=year, month=(quarter - 1) * 3 + 1, day=1)
+    return (quarter_start + pd.Timedelta(days=lag_days)).date().isoformat()
+
+
+# Fecha ancla derivada del trimestre + retardo. Es el punto desde el que arranca el walk-forward (se
+# entrena por primera vez) y desde el que opera la cartera: simula "haber ejecutado el pipeline aquí".
+EVAL_START_DATE = _quarter_to_anchor(EVAL_START_QUARTER, FUNDAMENTAL_PUBLICATION_LAG_DAYS)
+PORTFOLIO_START_DATE = EVAL_START_DATE
 PORTFOLIO_END_DATE = "2026-06-15"
 PORTFOLIO_REVIEW_FREQUENCY = "M"
 FUNDAMENTAL_REVIEW_FREQUENCY = "Q"
@@ -76,15 +104,15 @@ MIN_WALK_FORWARD_TRAINING_YEARS = 4
 # 2023-2025 AI/megacap rally looking nothing like 2010-2018) at the cost of less data per fit.
 MAX_WALK_FORWARD_TRAINING_YEARS = 4
 # Pure rolling walk-forward, no freeze: the walk-forward loop reruns/relearns (agents + meta-agent
-# weights) every WALK_FORWARD_TRAIN_FREQUENCY across the ENTIRE evaluated window, from
-# TRAIN_CUTOFF_DATE through PORTFOLIO_END_DATE — never freezing the model at a fixed point. Each
+# weights) every WALK_FORWARD_TRAIN_FREQUENCY across the ENTIRE evaluated window, from the eval anchor
+# (TRAIN_CUTOFF_DATE = EVAL_START_DATE) through PORTFOLIO_END_DATE — never freezing the model. Each
 # relearning step uses only the trailing MAX_WALK_FORWARD_TRAINING_YEARS of history available as of
-# that date (no lookahead), so the live portfolio is always scored by a model trained on recent
-# data, not one trained once in 2010-2018 and deployed unchanged for 8 years afterward — the
-# earlier train-until-cutoff-then-freeze scheme was replaced because it produced a near-zero/
-# negative out-of-sample rank-IC in the later years of the evaluated window (the frozen model never
-# saw the market regime it was being scored against).
-TRAIN_CUTOFF_DATE = PORTFOLIO_START_DATE
+# that date (no lookahead), so the model is always trained on recent data.
+TRAIN_CUTOFF_DATE = EVAL_START_DATE
+# Cadencia de ENTRENAMIENTO (reajuste del modelo): "Q" trimestral o "A"/"Y" anual. Solo tiene sentido
+# reentrenar cuando hay fundamentales nuevos; la revisión de cartera es mensual (PRICE_UPDATE_FREQUENCY)
+# y re-precia sin reentrenar. El entrenamiento mensual se descarta a propósito (3 meses con los mismos
+# fundamentales). Es uno de los ejes del barrido de escenarios.
 WALK_FORWARD_TRAIN_FREQUENCY = "Q"
 TRANSACTION_COST_BPS = 5.0
 SLIPPAGE_BPS = 10.0
@@ -106,6 +134,8 @@ TICKERS = [
 class Settings:
     run_mode: str = RUN_MODE
     data_start_date: str = DATA_START_DATE
+    eval_start_quarter: str = EVAL_START_QUARTER
+    fundamental_publication_lag_days: int = FUNDAMENTAL_PUBLICATION_LAG_DAYS
     start_date: str = PORTFOLIO_START_DATE
     end_date: str = PORTFOLIO_END_DATE
     review_frequency: str = PORTFOLIO_REVIEW_FREQUENCY
@@ -129,6 +159,12 @@ class Settings:
     # otro escenario que comparta fechas/frecuencia. En una ejecución normal queda None y run_dir
     # deriva del run_name clásico, sin cambio de comportamiento.
     run_dir_override: str | None = None
+
+    @property
+    def eval_start_date(self) -> str:
+        """Fecha ancla ISO desde la que arranca el walk-forward y opera la cartera. Coincide con
+        train_cutoff_date; se expone con nombre propio para leerla semánticamente en ml/dataset."""
+        return self.train_cutoff_date
 
     @property
     def tickers(self) -> list[str]:

@@ -135,32 +135,36 @@ def _agent_features(probability: str) -> list[str]:
     return [feature for feature in AGENT_FEATURES.get(probability, MODEL_FEATURES) if feature in MODEL_FEATURES]
 
 
-_TRAIN_FREQUENCY_ALIASES = {"M": "ME", "Q": "QE"}
+# Cadencia de ENTRENAMIENTO en meses: trimestral (3) o anual (12). El entrenamiento mensual (1) se
+# permite por completitud pero se desaconseja (durante 3 meses los fundamentales no cambian).
+_TRAIN_FREQUENCY_MONTHS = {"M": 1, "2M": 2, "Q": 3, "A": 12, "Y": 12}
+
+
+def _months_between(a: pd.Timestamp, b: pd.Timestamp) -> int:
+    return (b.year - a.year) * 12 + (b.month - a.month)
 
 
 def _train_and_apply_dates(all_dates: list[pd.Timestamp], settings: Settings) -> tuple[list[pd.Timestamp], list[pd.Timestamp]]:
-    """Split all snapshot dates into (train_dates, apply_dates) for pure rolling walk-forward:
-    train_dates are every date from `train_cutoff_date` onward, downsampled to
-    `walk_forward_train_frequency` (quarterly by default) — the model relearns every quarter across
-    the ENTIRE evaluated window, not just up to a cutoff then frozen. Each relearning step only uses
-    the trailing `max_walk_forward_training_years` of history available AT that point (enforced in
-    the caller's max_history window), so the model is always trained on recent-enough data and never
-    on the future. `train_cutoff_date` is kept only as the earliest point learning is allowed to
-    start (matching PORTFOLIO_START_DATE by default, since scoring before the live portfolio starts
-    is moot); apply_dates is every date (all of them receive a freshly retrained-as-of-then score).
+    """Reparte los snapshots en (train_dates, apply_dates) para walk-forward rodante puro.
+
+    apply_dates = todos los snapshots (cada uno recibe la puntuación del último modelo entrenado).
+    train_dates = desde la fecha ancla (`eval_start_date`), los snapshots que distan de ella un
+    múltiplo de la cadencia de entrenamiento (`walk_forward_train_frequency`): trimestral por
+    defecto, anual como eje del barrido. Como la rejilla de snapshots está fasada al ancla, esos
+    puntos coinciden con los refrescos de fundamentales — solo se reentrena cuando hay datos nuevos.
+    Cada reentreno usa solo los últimos `max_walk_forward_training_years` de historia disponible en
+    esa fecha (sin lookahead); el modelo nunca se congela.
     """
-    cutoff = pd.Timestamp(settings.train_cutoff_date)
-    freq = _TRAIN_FREQUENCY_ALIASES.get(settings.walk_forward_train_frequency, settings.walk_forward_train_frequency)
-    quarter_ends = set(pd.date_range(cutoff, max(all_dates, default=cutoff), freq=freq))
-    train_dates = sorted(d for d in all_dates if d >= cutoff and d in quarter_ends)
-    if not train_dates or train_dates[0] != cutoff:
-        # Ensure the cutoff itself is always the first training/relearning point, even if it
-        # doesn't fall exactly on a quarter-end in the dataset's monthly snapshot calendar.
-        eligible = [d for d in all_dates if d >= cutoff]
-        if eligible:
-            train_dates = sorted(set(train_dates) | {eligible[0]})
-    apply_dates = sorted(all_dates)
-    return train_dates, apply_dates
+    all_dates = sorted(all_dates)
+    apply_dates = list(all_dates)
+    cutoff = pd.Timestamp(settings.eval_start_date)
+    eligible = [d for d in all_dates if d >= cutoff]
+    if not eligible:
+        return [], apply_dates
+    anchor = eligible[0]
+    step = _TRAIN_FREQUENCY_MONTHS.get(settings.walk_forward_train_frequency, 3)
+    train_dates = [d for d in eligible if _months_between(anchor, d) % step == 0]
+    return (train_dates or [anchor]), apply_dates
 
 
 def train_and_score(settings: Settings) -> pd.DataFrame:

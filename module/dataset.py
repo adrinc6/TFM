@@ -48,7 +48,7 @@ def build_master_dataset(settings: Settings) -> pd.DataFrame:
     profiles = read_parquet(RAW_DIR / "profiles.parquet")
 
     prices["date"] = pd.to_datetime(prices["date"])
-    snapshots = _price_update_dates(settings)
+    snapshots = _snapshot_grid(settings)
     fundamental_dates = _fundamental_date_set(settings)
     rows: list[dict] = []
     price_by_ticker = {
@@ -57,8 +57,9 @@ def build_master_dataset(settings: Settings) -> pd.DataFrame:
     }
     benchmark_dates, _ = price_by_ticker.get(settings.benchmark_ticker, ([], []))
 
+    lag_days = settings.fundamental_publication_lag_days
     payload_by_ticker = {
-        row.ticker: _metric_cache(_parse_payload(row.payload))
+        row.ticker: _metric_cache(_parse_payload(row.payload), lag_days)
         for row in metrics.itertuples(index=False)
     }
     profile_by_ticker = profiles.drop_duplicates("ticker").set_index("ticker").to_dict("index")
@@ -107,32 +108,55 @@ def build_master_dataset(settings: Settings) -> pd.DataFrame:
     return master
 
 
-def _price_update_dates(settings: Settings) -> pd.DatetimeIndex:
-    aliases = {"M": "ME", "2M": "2ME", "Q": "QE"}
-    frequency = aliases.get(settings.price_update_frequency, settings.price_update_frequency)
-    start_date = _snapshot_start_date(settings)
+def _phased_dates(anchor: pd.Timestamp, panel_start: pd.Timestamp, end: pd.Timestamp, step_months: int) -> list[pd.Timestamp]:
+    """Fechas ancladas al DÍA del `anchor` (p.ej. día 15), separadas `step_months`, cubriendo
+    [panel_start, end] tanto hacia adelante como hacia atrás desde el ancla. Anclar a la fecha de
+    publicación hace que el ancla y los refrescos trimestrales caigan en snapshots reales."""
+    dates: list[pd.Timestamp] = []
+    current = anchor
+    while current <= end:
+        dates.append(current)
+        current = current + pd.DateOffset(months=step_months)
+    current = anchor - pd.DateOffset(months=step_months)
+    while current >= panel_start:
+        dates.append(current)
+        current = current - pd.DateOffset(months=step_months)
+    return sorted(dates)
+
+
+def _snapshot_grid(settings: Settings) -> list[pd.Timestamp]:
+    """Rejilla MENSUAL de revisión, fasada a la fecha ancla. Cada mes re-precia los fundamentales
+    vigentes; cada trimestre (ver _fundamental_date_set) hay fundamentales nuevos."""
+    anchor = pd.Timestamp(settings.eval_start_date)
+    panel_start = _snapshot_start_date(settings)
+    end = pd.Timestamp(settings.end_date)
+    grid = _phased_dates(anchor, panel_start, end, step_months=1)
     log.info(
-        "Master snapshot window start=%s end=%s raw_data_start=%s portfolio_start=%s max_walk_forward_years=%s",
-        start_date.date().isoformat(),
-        pd.Timestamp(settings.end_date).date().isoformat(),
+        "Master snapshot window anchor=%s start=%s end=%s raw_data_start=%s max_walk_forward_years=%s snapshots=%s",
+        anchor.date().isoformat(),
+        panel_start.date().isoformat(),
+        end.date().isoformat(),
         pd.Timestamp(settings.data_start_date).date().isoformat(),
-        pd.Timestamp(settings.start_date).date().isoformat(),
         settings.max_walk_forward_training_years,
+        len(grid),
     )
-    return pd.date_range(start_date, settings.end_date, freq=frequency)
+    return grid
 
 
 def _fundamental_date_set(settings: Settings) -> set:
-    aliases = {"Q": "QE", "M": "ME", "2M": "2ME"}
-    frequency = aliases.get(settings.fundamental_review_frequency, settings.fundamental_review_frequency)
-    return {date.date() for date in pd.date_range(_snapshot_start_date(settings), settings.end_date, freq=frequency)}
+    """Fechas TRIMESTRALES (refresco de fundamentales), fasadas al ancla: son las únicas con datos
+    nuevos y los puntos donde tiene sentido reentrenar."""
+    anchor = pd.Timestamp(settings.eval_start_date)
+    panel_start = _snapshot_start_date(settings)
+    end = pd.Timestamp(settings.end_date)
+    return {date.date() for date in _phased_dates(anchor, panel_start, end, step_months=3)}
 
 
 def _snapshot_start_date(settings: Settings) -> pd.Timestamp:
     raw_start = pd.Timestamp(settings.data_start_date)
     if not settings.walk_forward_scoring:
         return raw_start
-    needed_start = pd.Timestamp(settings.start_date) - pd.DateOffset(years=settings.max_walk_forward_training_years)
+    needed_start = pd.Timestamp(settings.eval_start_date) - pd.DateOffset(years=settings.max_walk_forward_training_years)
     return max(raw_start, needed_start)
 
 
@@ -155,7 +179,7 @@ def _price_cache(group: pd.DataFrame) -> tuple[list[pd.Timestamp], list[float]]:
     return dates, values
 
 
-def _metric_cache(payload: dict) -> dict:
+def _metric_cache(payload: dict, lag_days: int) -> dict:
     metric = payload.get("metric", {}) if isinstance(payload, dict) else {}
     metric = metric if isinstance(metric, dict) else {}
     raw_series = payload.get("series", {}) if isinstance(payload, dict) else {}
@@ -166,7 +190,7 @@ def _metric_cache(payload: dict) -> dict:
     quarterly = quarterly if isinstance(quarterly, dict) else {}
     series = {}
     for key in set(HISTORICAL_SERIES_MAP.values()) | {"salesPerShare", "eps"}:
-        series[key] = _prepared_rows(quarterly, key) or _prepared_rows(annual, key)
+        series[key] = _prepared_rows(quarterly, key, lag_days) or _prepared_rows(annual, key, lag_days)
     return {"metric": metric, "series": series}
 
 
@@ -242,18 +266,20 @@ def _historical_growth(
     return current / previous - 1, rows[index][0]
 
 
-def _prepared_rows(series: dict, key: str) -> list[tuple[pd.Timestamp, float | None]]:
+def _prepared_rows(series: dict, key: str, lag_days: int) -> list[tuple[pd.Timestamp, float | None]]:
     rows = series.get(key, [])
     if not isinstance(rows, Iterable) or isinstance(rows, (str, bytes, dict)):
         return []
-    # A fundamental becomes observable at its period-end date. No extra publication-lag margin is
-    # added here: the snapshot dates the caller chooses (PORTFOLIO_START_DATE, snapshot cadence)
-    # already encode how much buffer to leave before treating a period as "known".
+    # Un fundamental de un periodo NO es observable el mismo día del cierre de periodo: un 10-K/10-Q
+    # tarda en publicarse. Su fecha observable = cierre de periodo + lag_days, y esa es la que usa el
+    # resto del pipeline (bisect point-in-time). Corrige el lookahead sutil de tratar el fundamental
+    # como conocido en la fecha de cierre.
+    lag = pd.Timedelta(days=lag_days)
     valid = []
     for row in rows:
         period = pd.to_datetime(row.get("period"), errors="coerce")
         if pd.notna(period):
-            valid.append((pd.Timestamp(period), _num(row.get("v"))))
+            valid.append((pd.Timestamp(period) + lag, _num(row.get("v"))))
     return sorted(valid, key=lambda item: item[0])
 
 
