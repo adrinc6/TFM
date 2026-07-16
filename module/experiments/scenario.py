@@ -24,6 +24,9 @@ class Scenario:
     name: str
     why: str
     overrides: dict[str, Any] = field(default_factory=dict)
+    # Bloque temático del barrido (aprendizaje / estabilidad / utilidad / pesos_meta / baseline). Se
+    # usa solo para agrupar la comparativa por bloque; vacío = sin bloque asignado.
+    block: str = ""
 
     def __post_init__(self) -> None:
         if not self.name or not self.name.strip():

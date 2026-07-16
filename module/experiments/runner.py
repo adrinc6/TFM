@@ -7,11 +7,16 @@ Flujo de un experimento:
 2. Para cada escenario, ``apply_overrides`` fija su configuración y su ``run_dir`` propio bajo
    ``results/escenarios/<exp_id>/<nombre>/``. La comparación (comparison.csv + index.html) queda en
    ``results/escenarios/<exp_id>/``.
-3. La etapa cara (``train_and_score``) se ejecuta UNA vez por ``scoring_cache_key`` — el hash de lo
+3. Cada escenario corre el pipeline completo (como ``main.py``), sin las etapas comunes ya
+   preparadas por ``_ensure_experiment_inputs`` (``download``/``dataset``/``features``): en orden
+   ``ml`` (``train_and_score``) → ``watchlist`` (``build_watchlist``) → ``backtest``
+   (``run_backtest``) → ``viewer`` (``build_viewer``) → ``report`` (``build_final_report``). Todas
+   honran ``settings.run_dir``, así que el escenario queda autocontenido con su propio
+   ``viewer/index.html`` navegable. De la salida del backtest se extraen las métricas con
+   ``collect_metrics``.
+4. La etapa cara (``train_and_score``) se ejecuta UNA vez por ``scoring_cache_key`` — el hash de lo
    que afecta al scoring (overrides de ml, campos ML de Settings, tickers). Escenarios que solo
    cambian estrategia comparten scoring y se marcan ``re_scored=False``.
-4. La etapa barata (``run_backtest``) se ejecuta siempre; de su dict de salida se extraen las
-   métricas con ``collect_metrics``.
 
 La caché guarda los artefactos que la etapa ml produce en carpetas compartidas —``scored_universe``
 y ``meta_weights`` en ``PROCESSED_DIR``, más el ``model_walk_forward_diagnostics.csv`` que va al
@@ -178,9 +183,17 @@ def run_scenario(
     cache_dir = exp_dir / "_scoring_cache" / key
     re_scored = key not in cache
 
+    # Imports diferidos: el escenario corre el pipeline completo (como main.py, pero sin
+    # download/dataset/features —ya preparados una vez— ni research_ai —eliminado del proyecto—).
+    # Se importan aquí para no arrastrar el viewer si solo se usa la maquinaria del runner.
+    from module.report import build_final_report
+    from module.strategy.selection import build_watchlist
+    from module.viewer import build_viewer
+
     with apply_overrides(scenario, base_settings) as settings:
         settings = dataclasses.replace(settings, run_dir_override=str(run_dir))
         started = time.perf_counter()
+        # ml: puntuar el universo (etapa cara, cacheada por clave de scoring).
         if re_scored:
             log.info("[%s] scoring (clave nueva %s)", scenario.name, key)
             train_and_score(settings)
@@ -189,13 +202,20 @@ def run_scenario(
         else:
             log.info("[%s] reutiliza scoring cacheado (clave %s)", scenario.name, key)
             _restore_scoring_from_cache(cache_dir, run_dir)
+        # Resto del pipeline normal, en el mismo orden que main.py: watchlist → backtest →
+        # viewer → report. Cada etapa honra settings.run_dir, así que el escenario queda
+        # autocontenido en su carpeta con su propio viewer/index.html navegable.
+        build_watchlist(settings)
         outputs = run_backtest(settings)
         metrics = collect_metrics(outputs, run_dir)
+        build_viewer(settings)
+        build_final_report(settings)
         elapsed = time.perf_counter() - started
 
     row = {
         "name": scenario.name,
         "why": scenario.why,
+        "block": scenario.block,
         "re_scored": re_scored,
         "cache_key": key,
         "run_dir": str(run_dir),
@@ -215,7 +235,7 @@ def run_scenario(
 def _ensure_baseline(scenarios: list[Scenario]) -> list[Scenario]:
     if any(s.is_baseline for s in scenarios):
         return scenarios
-    baseline = Scenario(name="baseline", why="Configuración por defecto del proyecto (referencia).")
+    baseline = Scenario(name="baseline", why="Configuración por defecto del proyecto (referencia).", block="baseline")
     return [baseline, *scenarios]
 
 

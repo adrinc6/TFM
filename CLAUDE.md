@@ -17,7 +17,7 @@ negativo bien medido, que explique con claridad qué aprende el modelo y qué no
 El pipeline principal es:
 
 ```text
-download → dataset → features → ml → watchlist → research_ai → backtest → viewer → report
+download → dataset → features → ml → watchlist → backtest → viewer → report
 ```
 
 - `environment.py`: configuración central de la ejecución.

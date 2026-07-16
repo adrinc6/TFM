@@ -90,9 +90,6 @@ TRANSACTION_COST_BPS = 5.0
 SLIPPAGE_BPS = 10.0
 
 FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-OPENAI_MODEL = "gpt-5.5"
-ENABLE_OPENAI_RESEARCH = False
 
 # Methodological limitation (survivorship bias): this is a static, present-day large-cap roster
 # applied retroactively back to DATA_START_DATE. It excludes names delisted/acquired/dropped from

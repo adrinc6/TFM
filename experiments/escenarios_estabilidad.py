@@ -14,12 +14,13 @@ Lanzar con:
 from module.experiments import Scenario
 
 SCENARIOS = [
-    Scenario(name="baseline", why="Semilla 42, costes 5/10 bps, ventana 4 años, horizonte 12m. Referencia."),
+    Scenario(name="baseline", why="Semilla 42, costes 5/10 bps, ventana 4 años, horizonte 12m. Referencia.", block="baseline"),
     *[
         Scenario(
             name=f"semilla_{s}",
             why=f"Re-siembra LightGBM con random_state={s}. Un sistema estable no cambia de conclusión al re-sembrar.",
             overrides={"ml.RANDOM_STATE": s},
+            block="estabilidad",
         )
         for s in (1, 7, 13, 29)
     ],
@@ -27,6 +28,7 @@ SCENARIOS = [
         name="costes_realistas",
         why="Costes al doble (10/20 bps). ¿La utilidad sobrevive? Se lee contra el breakeven de costes.",
         overrides={"settings.transaction_cost_bps": 10.0, "settings.slippage_bps": 20.0},
+        block="estabilidad",
     ),
     Scenario(
         name="ventana_corta",
@@ -37,10 +39,12 @@ SCENARIOS = [
             "settings.max_walk_forward_training_years": 3,
             "settings.min_walk_forward_training_years": 3,
         },
+        block="estabilidad",
     ),
     Scenario(
         name="horizonte_6m",
         why="Horizonte de etiqueta a 6m en vez de 12m. ¿Rankea mejor el forward a medio plazo?",
         overrides={"settings.walk_forward_label_horizon_months": 6},
+        block="estabilidad",
     ),
 ]

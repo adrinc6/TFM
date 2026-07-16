@@ -11,7 +11,6 @@ from module.ingest.pipeline import download_raw_data
 from module.dataset import build_master_dataset
 from module.features.pipeline import build_features
 from module.ml import train_and_score
-from module.research.ai import build_openai_research
 from module.report import build_final_report
 from module.strategy.selection import build_watchlist
 from module.utils import setup_logging
@@ -72,7 +71,6 @@ def main() -> None:
     _stage("features", settings.run_mode in {"features", "full"}, build_features)
     _stage("ml", settings.run_mode in {"ml", "full"}, lambda: train_and_score(settings))
     _stage("watchlist", settings.run_mode in {"watchlist", "full"}, lambda: build_watchlist(settings))
-    _stage("research_ai", settings.run_mode in {"research_ai", "full"}, lambda: build_openai_research(settings))
     _stage("backtest", settings.run_mode in {"backtest", "full"}, lambda: run_backtest(settings))
 
     if settings.run_mode in {"viewer", "full"}:

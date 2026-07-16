@@ -16,7 +16,7 @@ python main.py
 No hay CLI/argparse: toda la configuración de ejecución vive en `environment.py` (constantes
 editables directamente, no se leen de variables de entorno salvo las API keys).
 
-- `RUN_MODE`: `download`, `dataset`, `features`, `ml`, `watchlist`, `research_ai`, `backtest`,
+- `RUN_MODE`: `download`, `dataset`, `features`, `ml`, `watchlist`, `backtest`,
   `viewer`, `report`, `full`, o `experiments`. Cada etapa es re-ejecutable de forma independiente
   mientras sus entradas parquet/CSV ya existan en disco; `experiments` barre escenarios en vez de
   correr el pipeline (ver más abajo).
@@ -24,7 +24,7 @@ editables directamente, no se leen de variables de entorno salvo las API keys).
   vez del universo completo (~500 tickers).
 - `FORCE_RAW_DOWNLOAD`: `False` reutiliza el JSON crudo cacheado en `data/raw/json/`; `True`
   fuerza redescarga desde Finnhub/Yahoo.
-- `.env` solo contiene `FINNHUB_API_KEY` y `OPENAI_API_KEY` (parseado a mano en `environment.py`,
+- `.env` solo contiene `FINNHUB_API_KEY` (parseado a mano en `environment.py`,
   sin dependencia de `python-dotenv`).
 
 Instala dependencias con:
@@ -38,7 +38,7 @@ pip install -r requirements.txt
 `main.py` ejecuta las etapas en este orden fijo, controladas por `settings.run_mode`:
 
 ```text
-download → dataset → features → ml → watchlist → research_ai → backtest → viewer → report
+download → dataset → features → ml → watchlist → backtest → viewer → report
 ```
 
 | Etapa | Entrada principal | Lee | Escribe |
@@ -48,7 +48,6 @@ download → dataset → features → ml → watchlist → research_ai → backt
 | features | `module.features.pipeline.build_features` | `data/master/*.parquet` | `data/processed/features.parquet` |
 | ml | `module.ml.train_and_score` | `data/processed/features.parquet`, `data/raw/prices.parquet` | `data/processed/scored_universe.parquet`, diagnósticos walk-forward |
 | watchlist | `module.strategy.selection.build_watchlist` | `data/processed/scored_universe.parquet` | `data/processed/watchlist.parquet`, `results/<run>/watchlist.csv` |
-| research_ai | `module.research.ai.build_openai_research` | universo puntuado + noticias | `results/<run>/research_ai.csv` |
 | backtest | `module.backtest.run_backtest` | universo puntuado + precios | ~20 CSV en `results/<run>/` y `.../audit/` |
 | viewer | `module.viewer.build_viewer` | CSVs de `results/<run>/` | `results/<run>/viewer/index.html` |
 | report | `module.report.build_final_report` | viewer ya construido | apunta al mismo `viewer/index.html` |
@@ -73,27 +72,31 @@ python -m module.experiments run todos      # junta los cuatro bloques en un sol
 También desde `main.py`: pon `RUN_MODE = "experiments"` y `EXPERIMENTS_FILE` (la ruta de un fichero
 de escenarios o `"todos"`) en `environment.py`, y ejecuta `python main.py`.
 
-**Qué hace por escenario (importante):** no re-ejecuta el pipeline entero. Solo corre las dos etapas
-que un cambio de configuración puede alterar —`ml` (puntuar el universo) y `backtest`— y omite
-`research_ai` (coste de LLM) y el `viewer`/`report` individuales (redundantes con el informe
-comparativo). Las etapas previas comunes a todos los escenarios (`download`→`dataset`→`features`) se
-preparan **una sola vez** antes del barrido: si sus artefactos ya están en disco se reutilizan, y si
-faltan se construyen igual que en el pipeline normal (`download` reconstruye `prices.parquet` desde el
-JSON cacheado en `data/raw/json/`, sin red mientras `FORCE_RAW_DOWNLOAD=False`). Además, el **scoring
-caro** (`ml`) se ejecuta **una sola vez por combinación de parámetros de ML**: los escenarios que solo
-cambian estrategia reutilizan ese scoring cacheado (se marcan `re_scored=False`). Así el barrido
-"corre el pipeline" para cada escenario pero sin recalcular nada de lo que es común — mucho más rápido
-que "correr `main.py` N veces".
+**Qué hace por escenario (importante):** cada escenario corre el **pipeline completo** como una
+ejecución normal —`ml` (puntuar el universo) → `watchlist` → `backtest` → `viewer` → `report`— y deja
+su **propio informe navegable** en `results/escenarios/<fecha>/<escenario>/viewer/index.html`. Lo
+único que NO repite son las etapas previas comunes a todos los escenarios
+(`download`→`dataset`→`features`), que se preparan **una sola vez** antes del barrido: si sus
+artefactos ya están en disco se reutilizan, y si faltan se construyen igual que en el pipeline normal
+(`download` reconstruye `prices.parquet` desde el JSON cacheado en `data/raw/json/`, sin red mientras
+`FORCE_RAW_DOWNLOAD=False`). Además, el **scoring caro** (`ml`) se ejecuta **una sola vez por
+combinación de parámetros de ML**: los escenarios que solo cambian estrategia reutilizan ese scoring
+cacheado (se marcan `re_scored=False`). Así el barrido "corre el pipeline" completo para cada
+escenario pero sin recalcular nada de lo que es común — mucho más rápido que "correr `main.py` N
+veces".
 
 - Un **fichero de escenarios** (`experiments/escenarios_*.py`) declara `SCENARIOS: list[Scenario]`.
   Cada `Scenario(name, why, overrides)` cambia parámetros con prefijo de namespace: `settings.*`
   (campos de `Settings`), `ml.*` (constantes de `module/ml.py` como `AGENT_PRIOR_WEIGHTS`,
   `RANDOM_STATE`), `strategy.*` (umbrales de cartera y sizing). Los overrides se **aplican y
   restauran** por escenario, sin tocar los valores por defecto del proyecto.
-- Cada escenario se aísla en `results/escenarios/<fecha>/<escenario>/`; la comparación queda en
-  `results/escenarios/<fecha>/comparison.csv` e `index.html`, con una tabla y gráficos que rankean
-  los escenarios priorizando las métricas de **aprendizaje** (rank-IC out-of-sample, placebo, mejora
-  sobre baselines) sobre las económicas (alpha, IR, breakeven de costes).
+- Cada escenario se aísla en `results/escenarios/<fecha>/<escenario>/` (con su propio
+  `viewer/index.html`); la comparación queda en `results/escenarios/<fecha>/comparison.csv` e
+  `index.html`. El informe comparativo es profundo: vista **global** (todos los escenarios + deltas
+  frente al baseline) y una subsección **por bloque** (aprendizaje / estabilidad / utilidad /
+  pesos_meta), donde cada escenario se compara por pares contra el baseline y enlaza a su informe
+  propio. Prioriza las métricas de **aprendizaje** (rank-IC out-of-sample, placebo, mejora sobre
+  baselines) sobre las económicas (alpha, IR, breakeven de costes).
 - Ficheros incluidos, uno por pregunta del TFM: `escenarios_aprendizaje.py` (ablaciones que apagan
   el aprendizaje para ver si el rank-IC cae), `escenarios_estabilidad.py` (semillas, costes,
   ventana), `escenarios_utilidad.py` (agresividad de cartera), `escenarios_pesos_meta.py` (barrido
@@ -114,8 +117,8 @@ que "correr `main.py` N veces".
   del meta-agente está inclinado a Calidad (`0.45/0.30/0.25`) porque es la señal de ranking estable
   (ver `doc.md` §8.2.1 y `docs/diagnostico_aprendizaje.md`). Entrenamiento walk-forward rodante que
   se reentrena cada trimestre a lo largo de toda la ventana, sin congelar.
-- `module/research/` — investigación determinista (y opcionalmente LLM) sobre tesis, moat,
-  catalizadores y riesgos por empresa.
+- `module/research/` — investigación determinista sobre tesis, moat, catalizadores y riesgos por
+  empresa (usada por `watchlist` y `backtest`).
 - `module/strategy/` — selección de watchlist, lógica de cartera concentrada (entradas/salidas) y
   cálculo de tamaño de posición.
 - `module/backtest/` — simulación mensual de cartera viva, métricas de rendimiento (IR/TE/t-stat) y

@@ -21,11 +21,12 @@ def _pesos(q: float, t: float, a: float) -> Scenario:
         name=f"pesos_{q:.2f}_{t:.2f}_{a:.2f}".replace(".", ""),
         why=f"Prior calidad/timing/alpha = {q}/{t}/{a}. Punto del trade-off estabilidad vs. alpha.",
         overrides={"ml.AGENT_PRIOR_WEIGHTS": {_Q: q, _T: t, _A: a}},
+        block="pesos_meta",
     )
 
 
 SCENARIOS = [
-    Scenario(name="baseline", why="Prior por defecto 0.45/0.30/0.25 (punto medio adoptado). Referencia."),
+    Scenario(name="baseline", why="Prior por defecto 0.45/0.30/0.25 (punto medio adoptado). Referencia.", block="baseline"),
     _pesos(0.30, 0.35, 0.35),  # tilt a timing/alpha: más alpha, menos estable
     _pesos(0.60, 0.25, 0.15),  # tilt fuerte a calidad: más estable, cede alpha
 ]
