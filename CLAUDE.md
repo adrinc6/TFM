@@ -28,7 +28,14 @@ download → dataset → features → ml → watchlist → backtest → viewer �
 - `module/strategy/`: selección, cartera y tamaño de posición.
 - `module/backtest/`: simulación, métricas, baselines y artefactos.
 - `module/viewer/` y `module/report.py`: informe final y visualización.
+- `module/experiments/` y `experiments/rejilla.py`: barrido sistemático de
+  escenarios y selección automática del sistema final por estabilidad multi-era
+  (`aggregate.py`, protocolo dev/confirmación).
 - `tests/`: pruebas de leakage, ML, features, estrategia y robustez.
+
+La simulación arranca en una fecha ancla configurable (`EVAL_START_QUARTER` +
+retardo de publicación) y separa entrenar (fundamentales nuevos, trimestral/
+anual) de revisar (mensual, re-precio). Ver `README.md`.
 
 Antes de cambiar comportamiento, localiza la etapa propietaria y sigue el flujo
 de datos de entrada a salida. Evita solucionar un problema en una capa ajena.

@@ -1,11 +1,33 @@
 # GARP AI Portfolio System
 
-Pipeline de investigación (TFM) que responde a una pregunta concreta: **¿puede una estrategia
-GARP (Growth At a Reasonable Price / Value-Growth), gestionada por un sistema de IA explicable
-con varios agentes especializados, generar alpha frente a SPY?** El sistema usa un dataset
-point-in-time (sin lookahead), un modelo ML walk-forward rodante que se reentrena cada trimestre
-a lo largo de toda la ventana (nunca se congela), y un backtest de cartera concentrada mensual
-con un informe HTML de una sola página como salida.
+Pipeline de investigación (TFM) cuyo **núcleo es la IA/ML**; la bolsa es el entorno de validación.
+La pregunta principal es **¿aprende el sistema a ordenar activos fuera de muestra de forma estable a
+lo largo de muchas eras, y es ese aprendizaje útil?** — y solo en segundo plano si bate a SPY.
+
+El sistema simula **haber ejecutado el pipeline desde una fecha configurable** y avanzar en el
+tiempo: usa un dataset point-in-time (sin lookahead, con retardo de publicación de fundamentales),
+un modelo ML **walk-forward rodante** que **entrena** solo cuando hay fundamentales nuevos
+(trimestral o anual) y **revisa** la cartera cada mes re-preciando sin reentrenar, y un backtest de
+cartera concentrada como validación económica secundaria. Sobre esa base, un **barrido sistemático
+de escenarios** (longitud de ventana, cadencia, horizonte, composición de agentes) permite elegir
+automáticamente un **sistema final** por estabilidad multi-era, con era de desarrollo y era de
+confirmación reservada.
+
+## Simulación: fecha de inicio, entrenar vs. revisar
+
+El arranque se define como un **trimestre** más un **retardo de publicación** (en `environment.py`):
+
+- `EVAL_START_QUARTER` (p. ej. `"2010Q1"`) → primer día del trimestre (Q1→1-ene, …, Q4→1-oct).
+- `FUNDAMENTAL_PUBLICATION_LAG_DAYS` (45) → días hasta que los resultados del trimestre anterior están
+  publicados. **Fecha ancla = inicio de trimestre + retardo** (`2010Q1 + 45d = 15-feb-2010`, cuando ya
+  se conocen los resultados de Q4-2009 de todas las empresas).
+
+Desde el ancla, el walk-forward **entrena** en cada refresco de fundamentales (cadencia
+`WALK_FORWARD_TRAIN_FREQUENCY` = `Q` trimestral o `A` anual) usando los últimos
+`MAX_WALK_FORWARD_TRAINING_YEARS` años de historia, y **revisa** la cartera cada mes re-preciando los
+fundamentales vigentes sin reentrenar (durante un trimestre los fundamentales no cambian; solo el
+precio). El dataset modela el **retardo de publicación**: un fundamental es observable en
+`cierre_de_periodo + retardo`, no el mismo día del cierre.
 
 ## Ejecución
 
@@ -65,12 +87,12 @@ agentes, semillas, ventanas de entrenamiento, umbrales de cartera... El **runner
 que los compara entre sí**, no uno por escenario.
 
 ```bash
-python -m module.experiments run experiments/escenarios_aprendizaje.py
-python -m module.experiments run todos      # junta los cuatro bloques en un solo barrido
+python -m module.experiments run experiments/rejilla.py
+python -m module.experiments run todos      # alias del generador de rejilla
 ```
 
-También desde `main.py`: pon `RUN_MODE = "experiments"` y `EXPERIMENTS_FILE` (la ruta de un fichero
-de escenarios o `"todos"`) en `environment.py`, y ejecuta `python main.py`.
+También desde `main.py`: pon `RUN_MODE = "experiments"` y `EXPERIMENTS_FILE` (`"experiments/rejilla.py"`
+o el alias `"todos"`) en `environment.py`, y ejecuta `python main.py`.
 
 **Qué hace por escenario (importante):** cada escenario corre el **pipeline completo** como una
 ejecución normal —`ml` (puntuar el universo) → `watchlist` → `backtest` → `viewer` → `report`— y deja
@@ -85,38 +107,43 @@ cacheado (se marcan `re_scored=False`). Así el barrido "corre el pipeline" comp
 escenario pero sin recalcular nada de lo que es común — mucho más rápido que "correr `main.py` N
 veces".
 
-- Un **fichero de escenarios** (`experiments/escenarios_*.py`) declara `SCENARIOS: list[Scenario]`.
-  Cada `Scenario(name, why, overrides)` cambia parámetros con prefijo de namespace: `settings.*`
-  (campos de `Settings`), `ml.*` (constantes de `module/ml.py` como `AGENT_PRIOR_WEIGHTS`,
-  `RANDOM_STATE`), `strategy.*` (umbrales de cartera y sizing). Los overrides se **aplican y
-  restauran** por escenario, sin tocar los valores por defecto del proyecto.
+- El **generador de rejilla** (`experiments/rejilla.py`) declara `SCENARIOS: list[Scenario]` como
+  producto sistemático de ejes en vez de casos sueltos: **núcleo** = ventana `{2,4,6,8,10}` años ×
+  cadencia `{Q,A}`; más variaciones de **horizonte** `{3,6,24}m` y **ablations** de composición/pesos
+  de agentes (equal, solo-calidad, solo-alpha, sin-meta-aprendido). `build_grid(...)` es configurable
+  y `subrejilla()` da un barrido reducido para validar barato en `DEV_MODE`.
+- Cada `Scenario(name, why, overrides)` cambia parámetros con prefijo de namespace: `settings.*`
+  (campos de `Settings`), `ml.*` (constantes de `module/ml.py`), `strategy.*` (umbrales de cartera y
+  sizing). Los overrides se **aplican y restauran** por escenario, sin tocar los valores por defecto.
 - Cada escenario se aísla en `results/escenarios/<fecha>/<escenario>/` (con su propio
   `viewer/index.html`); la comparación queda en `results/escenarios/<fecha>/comparison.csv` e
-  `index.html`. El informe comparativo es profundo: vista **global** (todos los escenarios + deltas
-  frente al baseline) y una subsección **por bloque** (aprendizaje / estabilidad / utilidad /
-  pesos_meta), donde cada escenario se compara por pares contra el baseline y enlaza a su informe
-  propio. Prioriza las métricas de **aprendizaje** (rank-IC out-of-sample, placebo, mejora sobre
-  baselines) sobre las económicas (alpha, IR, breakeven de costes).
-- Ficheros incluidos, uno por pregunta del TFM: `escenarios_aprendizaje.py` (ablaciones que apagan
-  el aprendizaje para ver si el rank-IC cae), `escenarios_estabilidad.py` (semillas, costes,
-  ventana), `escenarios_utilidad.py` (agresividad de cartera), `escenarios_pesos_meta.py` (barrido
-  del prior de pesos) y `escenarios_todos.py` (los cuatro juntos). Ver `docs/doc.md §16` y
-  `docs/diagnostico_aprendizaje.md`.
+  `index.html`, priorizando el **aprendizaje** (rank-IC OOS, breadth, placebo) sobre lo económico.
+- **Selección automática del sistema final** (`module/experiments/aggregate.py`): tras el barrido,
+  calcula una métrica compuesta de estabilidad/utilidad (media del rank-IC + poca dispersión + años
+  positivos + lift del top-N; **no** alpha cruda) sobre la **era de desarrollo**
+  (`< CONFIRMATION_ERA_START_YEAR`) y **confirma** al ganador en la **era reservada** — anti-sobreajuste
+  por selección. Escribe `system_selection.csv/json` y un banner de veredicto en la comparativa.
+- **Tamaño de cartera óptimo** (¿5 o 50 acciones?): se analiza dentro de cada escenario desde el
+  ranking guardado (curva breadth top-N `{5,10,20,50}` en `model_walk_forward_diagnostics.csv`), sin
+  re-simular la cartera por cada tamaño. Ver `docs/doc.md` y `docs/diagnostico_aprendizaje.md`.
 
 ## Módulos
 
 - `module/ingest/` — descarga y cachea datos crudos por ticker (Finnhub + Yahoo, sin dependencia
   de `yfinance`), con reintentos limitados y reporte de cobertura.
 - `module/dataset.py` — construye el dataset maestro point-in-time (`ticker × snapshot_date`), sin
-  lookahead: cada valor es el último disponible estrictamente antes o en la fecha del snapshot.
+  lookahead: cada valor es el último disponible estrictamente antes o en la fecha del snapshot. La
+  rejilla de snapshots está fasada a la fecha ancla (mensual de revisión, trimestral de fundamentales)
+  y modela el **retardo de publicación** (un fundamental es observable en `cierre + retardo`).
 - `module/features/` — calcula los scores GARP transversales (calidad, crecimiento, valoración,
   momentum, moat, catalyst, riesgo) y features de tendencia/expectativa.
 - `module/ml.py` — 3 agentes ML especializados (calidad / temporización / alpha, cada uno
   LightGBM) + 1 meta-agente que aprende cómo combinarlos por **contribución marginal** (rank-IC
   parcial), no por rank-IC bruto, para no pagar dos veces por una señal compartida. El prior/ancla
   del meta-agente está inclinado a Calidad (`0.45/0.30/0.25`) porque es la señal de ranking estable
-  (ver `doc.md` §8.2.1 y `docs/diagnostico_aprendizaje.md`). Entrenamiento walk-forward rodante que
-  se reentrena cada trimestre a lo largo de toda la ventana, sin congelar.
+  (ver `doc.md` §8.2.1 y `docs/diagnostico_aprendizaje.md`). Walk-forward rodante que **entrena** en
+  cada refresco de fundamentales (cadencia `Q`/`A`) sobre los últimos N años y **revisa** mensualmente
+  re-preciando sin reentrenar, a lo largo de toda la ventana y sin congelar.
 - `module/research/` — investigación determinista sobre tesis, moat, catalizadores y riesgos por
   empresa (usada por `watchlist` y `backtest`).
 - `module/strategy/` — selección de watchlist, lógica de cartera concentrada (entradas/salidas) y
@@ -127,9 +154,10 @@ veces".
   (cada sección debe responder una pregunta del TFM o ayudar a depurar).
 - `module/report.py` — métricas compartidas (CAGR/Sharpe/Sortino/drawdown/alpha) reutilizadas por
   el viewer; la etapa `report` apunta al mismo informe que `viewer` genera.
-- `module/experiments/` — runner de experimentos: por escenario aplica overrides aislados, corre
-  solo `ml`+`backtest` (cacheando el scoring caro entre escenarios que comparten config de ML),
-  recoge métricas de aprendizaje/economía y genera la tabla e informe comparativos.
+- `module/experiments/` — runner de experimentos: por escenario aplica overrides aislados, corre el
+  pipeline (cacheando el scoring caro entre escenarios que comparten config de ML), recoge métricas de
+  aprendizaje/economía por era y genera la comparativa. `aggregate.py` elige el sistema final por
+  estabilidad multi-era (dev/confirmación). El barrido se declara en `experiments/rejilla.py`.
 
 Ver `doc.md` para la explicación exhaustiva de cada fase y decisión de diseño, y `results.md` para
 cómo leer el informe HTML generado.
@@ -156,6 +184,8 @@ results/<run>/viewer/index.html   ← informe final
 results/<run>/audit/*.csv         ← tablas pesadas de auditoría, enlazadas no embebidas
 results/escenarios/<fecha>/comparison.csv   ← una fila por escenario (modo experiments)
 results/escenarios/<fecha>/index.html       ← informe comparativo de escenarios
+results/escenarios/<fecha>/system_selection.csv   ← ranking por métrica compuesta (era desarrollo)
+results/escenarios/<fecha>/system_selection.json  ← veredicto del sistema final + confirmación OOS
 ```
 
 ## Limitaciones metodológicas (explícitas, no corregidas)
