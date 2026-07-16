@@ -7,6 +7,7 @@ covered by the relief rule.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import matplotlib
@@ -49,7 +50,43 @@ def build_charts(charts_dir: Path, tables: dict[str, pd.DataFrame]) -> dict[str,
     _chart_rank_ic(charts_dir, charts, tables.get("model_walk_forward_diagnostics", pd.DataFrame()))
     _chart_position_performance(charts_dir, charts, tables.get("position_performance", pd.DataFrame()))
     _chart_horizon_comparison(charts_dir, charts, tables.get("label_horizon_comparison", pd.DataFrame()))
+    _chart_breadth_curve(charts_dir, charts, tables.get("model_walk_forward_diagnostics", pd.DataFrame()))
     return charts
+
+
+def breadth_curve(diag: pd.DataFrame) -> pd.DataFrame:
+    """Curva tamaño de cartera → ventaja media de alpha del top-N (lift), sobre los snapshots con
+    modelo entrenado. Responde "¿5 o 50 acciones?" desde el ranking guardado. Devuelve columnas
+    (n, lift) ordenadas por n; vacío si no hay datos."""
+    if diag.empty:
+        return pd.DataFrame(columns=["n", "lift"])
+    d = diag[diag["mode"] == "walk_forward_model"] if "mode" in diag.columns else diag
+    points = []
+    for column in d.columns:
+        match = re.fullmatch(r"top(\d+)_alpha_lift", str(column))
+        if not match:
+            continue
+        values = pd.to_numeric(d[column], errors="coerce").dropna()
+        if not values.empty:
+            points.append({"n": int(match.group(1)), "lift": float(values.mean())})
+    return pd.DataFrame(points).sort_values("n").reset_index(drop=True) if points else pd.DataFrame(columns=["n", "lift"])
+
+
+def _chart_breadth_curve(charts_dir, charts, diag) -> None:
+    curve = breadth_curve(diag)
+    if curve.empty:
+        return
+    best = curve.loc[curve["lift"].idxmax(), "n"]
+    colors = [PALETTE["portfolio"] if n == best else PALETTE["muted"] for n in curve["n"]]
+    fig, ax = plt.subplots(figsize=(5.6, 3.0))
+    fig.patch.set_facecolor("white")
+    ax.set_facecolor("white")
+    ax.bar([str(n) for n in curve["n"]], curve["lift"], color=colors, width=0.6)
+    ax.axhline(0, color=PALETTE["muted"], linewidth=1.0)
+    ax.yaxis.set_major_formatter(PercentFormatter(xmax=1.0))
+    ax.set_ylabel("Ventaja media de alpha del top-N")
+    ax.set_xlabel("Tamaño de cartera (N mejores del ranking)")
+    _save(fig, charts_dir, charts, "breadth_curve")
 
 
 def _new(height: float = 3.4):
