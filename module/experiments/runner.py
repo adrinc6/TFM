@@ -356,9 +356,15 @@ def run_experiment(
                 continue
             rows.append(run_scenario(scenario, base_settings, exp_dir, cache))
 
+    # Agregación global: elige el sistema final (config más estable/útil) sobre la era de desarrollo
+    # y lo confirma en la reservada. Escribe system_selection.csv/json en la carpeta del experimento.
+    from .aggregate import aggregate_scenarios
+
+    verdict = aggregate_scenarios(rows, exp_dir)
+
     # Import diferido para no arrastrar el viewer si solo se quiere el runner.
     from .report import write_comparison
 
-    write_comparison(rows, exp_dir)
+    write_comparison(rows, exp_dir, selection=verdict)
     log.info("Comparación lista: %s", exp_dir / "index.html")
     return exp_dir

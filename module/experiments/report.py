@@ -287,6 +287,37 @@ def _verdict_banner(df: pd.DataFrame) -> str:
     )
 
 
+def _selection_banner(selection: dict | None) -> str:
+    """Veredicto del sistema final elegido automáticamente: qué config, por qué (estabilidad del
+    aprendizaje, no batir al mercado) y si generaliza en la era de confirmación reservada."""
+    if not selection:
+        return ""
+    winner = html.escape(str(selection.get("winner", "?")))
+    dev = selection.get("rank_ic_dev_mean")
+    conf = selection.get("rank_ic_conf_mean")
+    year = selection.get("confirmation_start_year")
+    generalizes = bool(selection.get("generalizes"))
+    dev_txt = "n/d" if dev is None else f"{float(dev):+.4f}"
+    conf_txt = "n/d" if conf is None else f"{float(conf):+.4f}"
+    if generalizes:
+        tail = (
+            f"y en la era de confirmación reservada (≥{year}) mantiene un rank-IC {conf_txt}: la "
+            "elección generaliza fuera de la era en que se eligió."
+        )
+        cls = "verdict-pos"
+    else:
+        tail = (
+            f"pero en la era de confirmación reservada (≥{year}) su rank-IC queda en {conf_txt}: la "
+            "elección NO generaliza — aviso de sobreajuste por selección, y así se reporta."
+        )
+        cls = "verdict-neg"
+    return (
+        f'<div class="verdict {cls}"><strong>Sistema final (selección automática):</strong> '
+        f"<code>{winner}</code>, elegido por la estabilidad y utilidad del aprendizaje sobre la era de "
+        f"desarrollo (rank-IC medio {dev_txt}), NO por batir al mercado. {tail}</div>"
+    )
+
+
 def _why_notes(rows: pd.DataFrame) -> str:
     return "".join(
         f'<p class="scenario-why"><strong>{html.escape(str(r["name"]))}:</strong> '
@@ -318,7 +349,7 @@ def _block_section(block: str, df: pd.DataFrame) -> str:
 """
 
 
-def build_html(rows: list[dict]) -> str:
+def build_html(rows: list[dict], selection: dict | None = None) -> str:
     df = _with_deltas(pd.DataFrame(rows))
     ranked = _ranked(df)
 
@@ -330,6 +361,7 @@ def build_html(rows: list[dict]) -> str:
     body = f"""
 {_EXTRA_CSS}
 <h1>Comparación de escenarios</h1>
+{_selection_banner(selection)}
 {_verdict_banner(df)}
 <p class="scenario-why">Ordenado por rank-IC medio out-of-sample (¿la IA rankea bien el alpha
 futuro?). El bloque de KPIs resume el escenario <strong>baseline</strong> (configuración por defecto).
@@ -357,7 +389,7 @@ La columna <em>Ventaja alpha del top-N</em> mide el tramo que de verdad se ejecu
     return report_layout("Comparación de escenarios — TFM", body)
 
 
-def write_comparison(rows: list[dict], exp_dir: Path) -> Path:
+def write_comparison(rows: list[dict], exp_dir: Path, selection: dict | None = None) -> Path:
     df = _with_deltas(pd.DataFrame(rows))
     df.to_csv(exp_dir / "comparison.csv", index=False)
     try:
@@ -365,5 +397,5 @@ def write_comparison(rows: list[dict], exp_dir: Path) -> Path:
     except Exception:  # parquet es opcional; el CSV es la fuente de verdad
         pass
     index_path = exp_dir / "index.html"
-    index_path.write_text(build_html(rows), encoding="utf-8")
+    index_path.write_text(build_html(rows, selection=selection), encoding="utf-8")
     return index_path
