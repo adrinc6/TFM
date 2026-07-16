@@ -1,0 +1,122 @@
+% =============================================================================
+%  Trabajo Fin de Máster
+%  Evaluación del aprendizaje de un sistema multi-agente de IA aplicado a la
+%  selección de acciones
+%
+%  Compilar con pdfLaTeX o XeLaTeX en Overleaf.
+%  Los \include de capítulos aún no escritos están comentados: se descomentan
+%  según se van redactando. Ver PLAN.md para el guion de cada capítulo.
+% =============================================================================
+
+\documentclass[12pt,a4paper,oneside]{report}
+
+% --- Idioma y codificación -------------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage{lmodern}
+
+% --- Matemáticas y unidades ------------------------------------------------
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{siunitx}
+\sisetup{output-decimal-marker={,}, group-separator={.}}
+
+% --- Tablas y figuras ------------------------------------------------------
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{graphicx}
+\usepackage{float}
+\graphicspath{{figuras/}}
+
+% --- Código ----------------------------------------------------------------
+\usepackage{listings}
+\usepackage{xcolor}
+\definecolor{codegris}{gray}{0.95}
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{codegris},
+  breaklines=true,
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  captionpos=b,
+  extendedchars=true,
+  literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
+           {ñ}{{\~n}}1 {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1
+           {Ú}{{\'U}}1 {Ñ}{{\~N}}1 {¿}{{?`}}1 {¡}{{!`}}1
+}
+
+% --- Márgenes y espaciado --------------------------------------------------
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+
+% --- Referencias y enlaces -------------------------------------------------
+\usepackage[hidelinks]{hyperref}
+\hypersetup{
+  pdftitle={Evaluación del aprendizaje de un sistema multi-agente de IA aplicado a la selección de acciones},
+  pdfauthor={Adrián Núñez},
+}
+
+% --- Bibliografía ----------------------------------------------------------
+% Estilo pendiente de confirmar con la normativa de la universidad.
+\usepackage[numbers,sort&compress]{natbib}
+\bibliographystyle{plainnat}
+
+% =============================================================================
+
+\begin{document}
+
+% --- Portada ---------------------------------------------------------------
+% Sustituir por la portada oficial de la universidad cuando se disponga de ella.
+\begin{titlepage}
+  \centering
+  \vspace*{2cm}
+  {\Large\bfseries Trabajo Fin de Máster\par}
+  \vspace{2cm}
+  {\huge\bfseries Evaluación del aprendizaje de un sistema multi-agente de IA aplicado a la selección de acciones\par}
+  \vspace{1cm}
+  {\large Un estudio sobre cómo aprende un sistema de IA, con la bolsa como entorno de validación\par}
+  \vspace{3cm}
+  {\large\itshape Adrián Núñez\par}
+  \vfill
+  {\large \today\par}
+\end{titlepage}
+
+% --- Preliminares ----------------------------------------------------------
+\pagenumbering{roman}
+
+% \include{chapters/00_resumen}
+
+\tableofcontents
+\listoffigures
+\listoftables
+
+\cleardoublepage
+\pagenumbering{arabic}
+
+% --- Capítulos -------------------------------------------------------------
+% Se descomentan a medida que se escriben (ver PLAN.md, Fase 3, para el orden
+% de escritura recomendado: 3 → 4 → 5 → 6 → 7 → 8 → 9 → 2 → 1).
+
+% \include{chapters/01_introduccion}
+% \include{chapters/02_estado_del_arte}
+% \include{chapters/03_metodologia}
+% \include{chapters/04_datos}
+% \include{chapters/05_arquitectura}
+% \include{chapters/06_aprendizaje}
+% \include{chapters/07_experimentos}
+% \include{chapters/08_resultados}
+% \include{chapters/09_conclusiones}
+
+% --- Apéndices -------------------------------------------------------------
+% \appendix
+% \include{chapters/A_reproducibilidad}
+% \include{chapters/B_artefactos}
+% \include{chapters/C_escenarios}
+
+% --- Bibliografía ----------------------------------------------------------
+\bibliography{bibliography}
+
+\end{document}

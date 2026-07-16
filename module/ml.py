@@ -42,7 +42,7 @@ from bisect import bisect_left, bisect_right
 import numpy as np
 import pandas as pd
 
-from environment import PROCESSED_DIR, RAW_DIR, Settings
+from environment import MAX_PORTFOLIO_SIZE, PROCESSED_DIR, RAW_DIR, Settings
 from module.utils import read_parquet, write_json, write_parquet
 
 log = logging.getLogger(__name__)
@@ -490,20 +490,31 @@ def _walk_forward_component_scores(df: pd.DataFrame, settings: Settings) -> tupl
     return scored.drop(columns=["snapshot_date_dt"]), latest_importance, pd.DataFrame(diagnostics)
 
 
-def _master_signal_diagnostics(diagnostics: pd.DataFrame, labeled: pd.DataFrame, window: int = 12) -> pd.DataFrame:
+def _master_signal_diagnostics(
+    diagnostics: pd.DataFrame,
+    labeled: pd.DataFrame,
+    window: int = 12,
+    top_n: int = MAX_PORTFOLIO_SIZE,
+) -> pd.DataFrame:
     """Append the OOS quality of the MASTER signal (`final_score`, the meta-agent output) to the
-    per-snapshot diagnostics: its Spearman rank-IC vs. realized forward alpha, a rolling mean, and a
-    per-calendar-year mean + approximate t-stat (mean / (std / sqrt(n))).
+    per-snapshot diagnostics: its Spearman rank-IC vs. realized forward alpha, a rolling mean, a
+    per-calendar-year mean + approximate t-stat (mean / (std / sqrt(n))), y las métricas de BREADTH
+    del top-N (`top_n_alpha`, `top_n_alpha_lift`).
 
     This replaces the old per-agent "alpha" IC column: with no generalist alpha agent, the signal
     whose quality-over-time actually matters is the combined meta-agent score. With ~90 walk-forward
     snapshots the rolling/year trend is descriptive, not a formal significance test — reported as-is,
     without forcing a "the system is improving" narrative if the data doesn't show one.
+
+    `top_n` es el tamaño real de la cartera: las métricas top-N miden el tramo del ranking que de
+    verdad se compra, que es donde el rank-IC global no llega.
     """
     diagnostics = diagnostics.copy()
     if diagnostics.empty or "snapshot_date" not in diagnostics.columns or "final_score" not in labeled.columns:
         diagnostics["rank_ic_final"] = pd.NA
         diagnostics["rank_ic_final_rolling"] = pd.NA
+        diagnostics["top_n_alpha"] = pd.NA
+        diagnostics["top_n_alpha_lift"] = pd.NA
         return diagnostics
     scored = labeled[["snapshot_date"]].copy()
     scored["pred"] = pd.to_numeric(labeled["final_score"], errors="coerce")
@@ -516,8 +527,35 @@ def _master_signal_diagnostics(diagnostics: pd.DataFrame, labeled: pd.DataFrame,
             if np.isfinite(ic):
                 ic_by_snapshot[str(snapshot)] = float(ic)
 
+    # Métrica de BREADTH: el rank-IC mide el orden de TODO el universo (~71k filas/snapshot), pero la
+    # cartera solo compra el top-10. Ordenar bien 71k filas no implica acertar el top-10 (correlación
+    # empírica IC↔alpha entre escenarios, medida sobre el rank-IC OOS: Spearman ~+0.36). Estas dos
+    # métricas miden lo que de verdad se ejecuta: el alpha medio de los N que se comprarían y su
+    # ventaja sobre el universo.
+    top_alpha_by_snapshot: dict[str, float] = {}
+    top_lift_by_snapshot: dict[str, float] = {}
+    for snapshot, group in scored.groupby("snapshot_date"):
+        pair = group[["pred", "real"]].dropna()
+        if len(pair) < max(5, top_n):
+            continue
+        top = pair.nlargest(top_n, "pred")
+        top_alpha = float(top["real"].mean())
+        top_alpha_by_snapshot[str(snapshot)] = top_alpha
+        top_lift_by_snapshot[str(snapshot)] = top_alpha - float(pair["real"].mean())
+
+    diagnostics["top_n_alpha"] = diagnostics["snapshot_date"].astype(str).map(top_alpha_by_snapshot)
+    diagnostics["top_n_alpha_lift"] = diagnostics["snapshot_date"].astype(str).map(top_lift_by_snapshot)
+
     diagnostics["rank_ic_final"] = diagnostics["snapshot_date"].astype(str).map(ic_by_snapshot)
     ic = pd.to_numeric(diagnostics["rank_ic_final"], errors="coerce")
+    # Solo los snapshots con modelo entrenado entran en las agregaciones. Antes del cutoff
+    # `final_score` cae al `garp_score` determinista y su IC (~0.62) mide la correlación del baseline
+    # consigo mismo, no aprendizaje. Un único snapshot de fallback dentro de un año mixto bastaba para
+    # duplicar la media de ese año (2018: 0.098 contaminado vs. 0.048 real), y esa media es la que
+    # consume el runner de experimentos. El IC por snapshot se conserva sin enmascarar: es auditable y
+    # `mode` dice de dónde sale cada fila.
+    if "mode" in diagnostics.columns:
+        ic = ic.where(diagnostics["mode"] == "walk_forward_model")
     diagnostics["rank_ic_final_rolling"] = ic.rolling(window=window, min_periods=max(3, window // 2)).mean()
     years = pd.to_datetime(diagnostics["snapshot_date"], errors="coerce").dt.year
     year_stats = ic.groupby(years).agg(["mean", "std", "count"])

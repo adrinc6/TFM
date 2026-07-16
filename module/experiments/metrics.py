@@ -27,12 +27,44 @@ def _f(value) -> float:
 
 
 def _learning_metrics(run_dir: Path) -> dict[str, float]:
-    """Rank-IC OOS de final_score: media, t-stat medio por año y nº de años con IC positivo."""
+    """Rank-IC OOS de final_score (media, t-stat medio por año, años con IC positivo) y las métricas
+    de BREADTH del top-N.
+
+    El rank-IC ordena TODO el universo (~71k filas/snapshot), pero la cartera solo compra el top-10:
+    por eso un rank-IC mejor no implica más retorno (Spearman IC↔alpha entre escenarios ~+0.36).
+    `top_n_alpha_lift` mide justo el tramo que se ejecuta — cuánto alpha saca el top-N sobre la media
+    del universo — y es el puente honesto entre "la IA rankea" y "la cartera gana".
+
+    SOLO agrega los snapshots con `mode == "walk_forward_model"`. Antes del cutoff no hay modelo
+    entrenado y `final_score` cae al `garp_score` determinista, que se correlaciona consigo mismo:
+    rank-IC ~0.62 frente al ~0.02 real, sin solaparse siquiera en rango. Promediar ambos no daba una
+    media ruidosa sino un ranking DISTINTO (Spearman entre el ranking contaminado y el limpio: -0.09),
+    que invertía el orden de las ablaciones. El filtro es por `mode`, no por fecha, para no fijar el
+    cutoff en el código y para excluir también el modo `full_sample`.
+    """
+    nan_metrics = {
+        "rank_ic_final_mean": float("nan"), "rank_ic_final_tstat": float("nan"),
+        "rank_ic_positive_years": float("nan"), "top_n_alpha": float("nan"),
+        "top_n_alpha_lift": float("nan"),
+    }
     path = run_dir / "model_walk_forward_diagnostics.csv"
     if not path.exists():
-        return {"rank_ic_final_mean": float("nan"), "rank_ic_final_tstat": float("nan"), "rank_ic_positive_years": float("nan")}
+        return nan_metrics
     diag = pd.read_csv(path)
-    ic = pd.to_numeric(diag.get("rank_ic_final"), errors="coerce").dropna()
+    if "mode" in diag.columns:
+        diag = diag[diag["mode"] == "walk_forward_model"]
+    if diag.empty:
+        return nan_metrics
+
+    def _column(name: str) -> pd.Series:
+        """Serie numérica de una columna, vacía si no existe (diagnósticos de runs antiguos)."""
+        if name not in diag.columns:
+            return pd.Series(dtype="float64")
+        return pd.to_numeric(diag[name], errors="coerce").dropna()
+
+    ic = _column("rank_ic_final")
+    top_alpha = _column("top_n_alpha")
+    top_lift = _column("top_n_alpha_lift")
     # Las columnas *_year_* traen el mismo valor repetido en cada snapshot del año. Deduplicamos a
     # un valor por año antes de agregar, para no ponderar de más los años con más snapshots.
     per_year = diag.assign(
@@ -47,6 +79,8 @@ def _learning_metrics(run_dir: Path) -> dict[str, float]:
         # t-stat medio de la media anual de rank-IC: un valor por año, luego promedio.
         "rank_ic_final_tstat": _f(year_tstat.mean()) if len(year_tstat) else float("nan"),
         "rank_ic_positive_years": float((year_mean > 0).sum()) if len(year_mean) else float("nan"),
+        "top_n_alpha": _f(top_alpha.mean()) if len(top_alpha) else float("nan"),
+        "top_n_alpha_lift": _f(top_lift.mean()) if len(top_lift) else float("nan"),
     }
 
 

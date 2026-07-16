@@ -43,6 +43,7 @@ de datos de entrada a salida. Evita solucionar un problema en una capa ajena.
 4. Conservar y mostrar limitaciones, baselines y resultados negativos.
 5. Tratar el tamaño reducido de muestra y el sesgo de supervivencia como
    limitaciones explícitas, nunca como detalles que se puedan ocultar.
+6. Siempre que te pida un plan debes mostrarmelo entero y hasta que no te diga que lo implementes no cambies nada, solo planea.
 
 ## Cambios que requieren aprobación previa
 

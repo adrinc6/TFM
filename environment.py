@@ -44,7 +44,7 @@ EXPERIMENTS_FILE = "todos"
 # Con RUN_MODE="experiments": si True, reanuda el último barrido en su carpeta y SALTA los escenarios
 # ya completados (los que dejaron su fila persistida), corriendo solo los que faltan y reescribiendo
 # la comparación con todos. Ponlo a False para forzar un barrido limpio en carpeta nueva.
-EXPERIMENTS_RESUME = True
+EXPERIMENTS_RESUME = False
 DATA_START_DATE = "2000-01-01"
 PORTFOLIO_START_DATE = "2018-02-15"
 PORTFOLIO_END_DATE = "2026-06-15"

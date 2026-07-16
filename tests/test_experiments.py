@@ -160,6 +160,41 @@ def test_rank_ic_tstat_promedia_por_ano_no_por_snapshot(tmp_path):
     assert metrics["rank_ic_positive_years"] == 2
 
 
+def test_rank_ic_solo_agrega_snapshots_con_modelo_entrenado(tmp_path):
+    """Los snapshots previos al cutoff no cuentan como aprendizaje.
+
+    Sin modelo, `final_score` cae al `garp_score` determinista y su rank-IC (~0.6 en el run real)
+    mide la correlación del baseline consigo mismo. Promediarlo con los snapshots OOS no daba una
+    media ruidosa sino un ranking distinto entre escenarios, que invertía las ablaciones.
+    """
+    diag = pd.DataFrame({
+        "snapshot_date": ["2017-01-31", "2017-06-30", "2019-01-31", "2020-01-31"],
+        "mode": ["fallback_garp", "fallback_garp", "walk_forward_model", "walk_forward_model"],
+        "rank_ic_final": [0.62, 0.60, 0.05, 0.03],
+        "rank_ic_final_year_mean": [0.61, 0.61, 0.05, 0.03],
+        "rank_ic_final_year_tstat": [9.0, 9.0, 1.2, 0.8],
+    })
+    diag.to_csv(tmp_path / "model_walk_forward_diagnostics.csv", index=False)
+    metrics = collect_metrics({"portfolio_monthly_summary": {}}, tmp_path)
+    assert metrics["rank_ic_final_mean"] == pytest.approx(0.04)  # (0.05 + 0.03) / 2, no 0.325
+    assert metrics["rank_ic_positive_years"] == 2  # 2019 y 2020, no los 4 años
+    assert metrics["rank_ic_final_tstat"] == pytest.approx(1.0)  # (1.2 + 0.8) / 2, sin el 9.0
+
+
+def test_rank_ic_sin_snapshots_con_modelo_devuelve_nan(tmp_path):
+    """Un escenario que degradó a fallback en todos los snapshots no reporta aprendizaje falso."""
+    diag = pd.DataFrame({
+        "snapshot_date": ["2017-01-31", "2017-06-30"],
+        "mode": ["fallback_garp", "fallback_garp"],
+        "rank_ic_final": [0.62, 0.60],
+        "rank_ic_final_year_mean": [0.61, 0.61],
+        "rank_ic_final_year_tstat": [9.0, 9.0],
+    })
+    diag.to_csv(tmp_path / "model_walk_forward_diagnostics.csv", index=False)
+    metrics = collect_metrics({"portfolio_monthly_summary": {}}, tmp_path)
+    assert metrics["rank_ic_final_mean"] != metrics["rank_ic_final_mean"]  # nan, no 0.61
+
+
 def test_ensure_inputs_corre_solo_las_etapas_que_faltan(tmp_path, monkeypatch):
     """Con prices y master presentes pero sin features, corre solo 'features' (no download ni dataset)."""
     raw, master, processed = tmp_path / "raw", tmp_path / "master", tmp_path / "processed"

@@ -178,6 +178,23 @@ def portfolio_vs_benchmark(
     return pd.DataFrame(rows)
 
 
+def compound_alpha(vs_benchmark: pd.DataFrame) -> float:
+    """Alpha acumulada COMPUESTA: retorno total de la cartera menos el del benchmark.
+
+    Definición única compartida por el sistema, las baselines, el placebo y la robustez, para que
+    todos se midan con la misma vara. Se compone (no se suma): la suma aritmética de los excesos
+    mensuales no es un retorno realizable porque ignora la reinversión sobre el capital acumulado.
+    Con ~100 meses la diferencia es enorme (baseline real: suma=1.14 vs. compuesta=5.77) y además la
+    suma era incoherente con las series `portfolio_value`/`benchmark_value`, que sí se componen.
+    """
+    columns = {"portfolio_period_return", "benchmark_period_return"}
+    if vs_benchmark.empty or not columns.issubset(vs_benchmark.columns):
+        return 0.0
+    portfolio = float((1 + vs_benchmark["portfolio_period_return"].fillna(0)).prod() - 1)
+    benchmark = float((1 + vs_benchmark["benchmark_period_return"].fillna(0)).prod() - 1)
+    return portfolio - benchmark
+
+
 def _weight_map(weights: pd.DataFrame | None) -> dict[str, dict[str, float]]:
     if weights is None or weights.empty or "hybrid_weight" not in weights.columns:
         return {}

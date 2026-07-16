@@ -26,6 +26,8 @@ import pandas as pd
 
 from environment import MAX_PORTFOLIO_SIZE
 
+from .performance import compound_alpha
+
 log = logging.getLogger(__name__)
 
 
@@ -72,9 +74,11 @@ def top_n_monthly_returns(
 
 
 def cumulative_alpha(monthly_returns: pd.DataFrame) -> float:
-    if monthly_returns.empty or "period_alpha" not in monthly_returns.columns:
-        return 0.0
-    return float(monthly_returns["period_alpha"].sum())
+    """Alpha acumulada compuesta de una serie de retornos por periodo.
+
+    Delega en `compound_alpha` para que baselines, placebo y sistema usen la MISMA definición.
+    """
+    return compound_alpha(monthly_returns)
 
 
 def baseline_comparison(

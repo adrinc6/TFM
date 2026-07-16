@@ -33,6 +33,7 @@ _COLUMN_LABELS = {
     "rank_ic_final_mean": "Rank-IC medio (OOS)",
     "rank_ic_final_tstat": "Rank-IC t-stat (anual)",
     "rank_ic_positive_years": "Años rank-IC > 0",
+    "top_n_alpha_lift": "Ventaja alpha del top-N",
     "placebo_percentile": "Percentil placebo",
     "alpha_vs_best_baseline": "Alpha vs. mejor baseline",
     "entry_score_excess_corr": "Corr. score-entrada / exceso",
@@ -53,6 +54,7 @@ _BLOCK_COLUMNS = [c for c in _GLOBAL_COLUMNS if c != "block"]
 # baseline queda a 0 por construcción. Se escriben en comparison.csv como delta_<metrica>.
 _DELTA_METRICS = {
     "rank_ic_final_mean": "Δ Rank-IC medio",
+    "top_n_alpha_lift": "Δ Ventaja alpha del top-N",
     "placebo_percentile": "Δ Percentil placebo",
     "alpha_vs_best_baseline": "Δ Alpha vs. baseline",
     "cumulative_alpha": "Δ Alpha acumulada",
@@ -65,7 +67,7 @@ _DELTA_LABELS = {"name": "Escenario", **{f"delta_{m}": lbl for m, lbl in _DELTA_
 # como barras dentro de su subsección.
 _BLOCK_AXIS = {
     "aprendizaje": ("rank_ic_final_mean", "Rank-IC medio out-of-sample por escenario"),
-    "estabilidad": ("cumulative_alpha", "Alpha acumulada por escenario (dispersión entre semillas y supuestos)"),
+    "estabilidad": ("cumulative_alpha", "Alpha acumulada por escenario (sensibilidad a ventana, horizonte y costes)"),
     "utilidad": ("alpha_vs_best_baseline", "Alpha del sistema menos la mejor baseline simple"),
     "pesos_meta": ("rank_ic_final_mean", "Rank-IC medio out-of-sample por prior de pesos"),
 }
@@ -226,6 +228,10 @@ _EXTRA_CSS = """
 .scenario-why { color: var(--ink-soft); font-size: 13px; margin: 2px 0 10px; }
 .block-section { margin-top: 44px; padding-top: 8px; border-top: 2px solid var(--border); }
 .subtle { color: var(--ink-soft); font-size: 13px; margin: 14px 0 6px; font-weight: 600; }
+.verdict { padding: 14px 16px; border-radius: 8px; margin: 14px 0 18px; font-size: 14px; line-height: 1.5; }
+.verdict-neg { background: rgba(200, 60, 60, 0.10); border-left: 4px solid var(--negative, #c83c3c); }
+.verdict-pos { background: rgba(40, 150, 90, 0.10); border-left: 4px solid var(--positive, #28965a); }
+.verdict code { font-size: 13px; }
 </style>
 """
 
@@ -248,6 +254,36 @@ def _baseline_kpis(df: pd.DataFrame) -> str:
         + kpi("Alpha vs. baseline", _fmt(b.get("alpha_vs_best_baseline"), pct=True), "sobre la mejor regla simple",
               "pos" if _num(b.get("alpha_vs_best_baseline")) > 0 else "neg")
         + kpi("Alpha acumulada", _fmt(b.get("cumulative_alpha"), pct=True), "sistema completo")
+    )
+
+
+def _verdict_banner(df: pd.DataFrame) -> str:
+    """Lectura honesta del barrido, arriba del todo y sin adornos.
+
+    El TFM exige conservar y MOSTRAR los resultados negativos, no enterrarlos. El dato que decide si
+    el sistema aporta algo es `alpha_vs_best_baseline`: si es negativo, una regla trivial (momentum,
+    equal-weight o valoración) bate al sistema completo, y eso manda por encima de cualquier rank-IC.
+    """
+    if "alpha_vs_best_baseline" not in df.columns:
+        return ""
+    values = pd.to_numeric(df["alpha_vs_best_baseline"], errors="coerce").dropna()
+    if values.empty:
+        return ""
+    n_negative = int((values < 0).sum())
+    total = int(len(values))
+    if n_negative == 0:
+        return (
+            '<div class="verdict verdict-pos"><strong>Lectura:</strong> ningún escenario queda por '
+            "debajo de la mejor baseline simple. El sistema aporta sobre las reglas triviales.</div>"
+        )
+    worst = float(values.min())
+    todos = "TODOS los" if n_negative == total else f"{n_negative} de {total}"
+    return (
+        f'<div class="verdict verdict-neg"><strong>Lectura honesta:</strong> {todos} escenarios tienen '
+        f"<code>alpha_vs_best_baseline</code> NEGATIVO (peor caso {worst:.1%}). Es decir: una regla "
+        "trivial de una sola señal bate al sistema completo en todas esas configuraciones. Ningún "
+        "rank-IC compensa esto — es el resultado principal del barrido y debe leerse antes que "
+        "cualquier otra métrica de esta página.</div>"
     )
 
 
@@ -294,14 +330,20 @@ def build_html(rows: list[dict]) -> str:
     body = f"""
 {_EXTRA_CSS}
 <h1>Comparación de escenarios</h1>
+{_verdict_banner(df)}
 <p class="scenario-why">Ordenado por rank-IC medio out-of-sample (¿la IA rankea bien el alpha
 futuro?). El bloque de KPIs resume el escenario <strong>baseline</strong> (configuración por defecto).
 Cada escenario corre el pipeline completo: pincha su nombre para abrir su informe propio.</p>
+<p class="scenario-why"><strong>Cómo leer rank-IC vs. alpha:</strong> el rank-IC ordena TODO el
+universo (~71k filas por snapshot), pero la cartera solo compra el top-10. Ordenar mejor el universo
+entero no implica acertar el top-10, así que un rank-IC más alto puede convivir con menos retorno.
+La columna <em>Ventaja alpha del top-N</em> mide el tramo que de verdad se ejecuta.</p>
 <div class="kpis">{_baseline_kpis(df)}</div>
 
 <h2>Global — todos los escenarios</h2>
 {_linked_table(ranked, _GLOBAL_COLUMNS, _COLUMN_LABELS)}
 {_svg_bars(ranked, "rank_ic_final_mean", "Rank-IC medio out-of-sample por escenario")}
+{_svg_bars(ranked, "top_n_alpha_lift", "Ventaja de alpha del top-N sobre la media del universo")}
 {_svg_scatter(ranked)}
 {_svg_bars(ranked, "alpha_vs_best_baseline", "Alpha del sistema menos la mejor baseline simple")}
 

@@ -6,7 +6,7 @@ import math
 
 import pandas as pd
 
-from .performance import reason_category
+from .performance import compound_alpha, reason_category
 
 SMALL_SAMPLE_CAVEAT = (
     "With only a few dozen monthly observations, the t-stat below has limited statistical power; "
@@ -298,7 +298,8 @@ def summary_metrics(outputs: dict) -> dict:
         "transactions": int(len(transactions)),
         "buys": int((transactions["action"] == "BUY").sum()),
         "sells": int((transactions["action"] == "SELL").sum()),
-        "cumulative_alpha": float(vs_benchmark["period_alpha"].sum()) if not vs_benchmark.empty else 0.0,
+        "cumulative_alpha": compound_alpha(vs_benchmark),
+        "sum_period_alpha": float(vs_benchmark["period_alpha"].sum()) if not vs_benchmark.empty else 0.0,
         "closed_positions": int(len(closed)),
         "closed_position_win_rate_vs_benchmark": float((closed["excess_total_return"] > 0).mean()) if not closed.empty else 0.0,
         "average_closed_total_return": float(closed["total_return"].mean()) if not closed.empty else 0.0,

@@ -28,7 +28,7 @@ from .artifacts import (
     tracking_dashboard,
 )
 from .baselines import baseline_comparison, placebo_distribution, placebo_summary
-from .performance import portfolio_vs_benchmark, position_performance, turnover
+from .performance import compound_alpha, portfolio_vs_benchmark, position_performance, turnover
 from .reviews import decision_rows, rebalance_report, review_diagnostics, top_candidates, universe_review_rows
 from .robustness import build_robustness
 
@@ -149,7 +149,9 @@ def run_backtest(settings: Settings) -> dict[str, pd.DataFrame]:
     # dates/prices already loaded above, independent of the thesis/rotation state machine (see
     # module/backtest/baselines.py for why).
     live_universe = scored[scored["snapshot_date"].isin(dates)]
-    system_alpha = float(outputs["portfolio_vs_benchmark"]["period_alpha"].sum()) if not outputs["portfolio_vs_benchmark"].empty else 0.0
+    # Alpha compuesta (no suma de excesos): misma definición que usan las baselines y el placebo, para
+    # que la comparación sea con la misma vara. Ver performance.compound_alpha.
+    system_alpha = compound_alpha(outputs["portfolio_vs_benchmark"])
     stage_start = time.perf_counter()
     outputs["baseline_comparison"] = baseline_comparison(live_universe, prices, settings.benchmark_ticker, system_alpha)
     log.info("Baseline comparison done in %.1fs", time.perf_counter() - stage_start)

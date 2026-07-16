@@ -16,7 +16,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from module.backtest.baselines import placebo_distribution, placebo_summary, top_n_monthly_returns
+from module.backtest.baselines import (
+    cumulative_alpha,
+    placebo_distribution,
+    placebo_summary,
+    top_n_monthly_returns,
+)
 
 
 def _synthetic_panel(n_snapshots: int = 10, n_tickers: int = 20, predictive: bool = True, seed: int = 1):
@@ -78,6 +83,39 @@ def test_top_n_monthly_returns_is_point_in_time():
     assert not monthly.empty
     assert set(monthly.columns) == {"date", "portfolio_period_return", "benchmark_period_return", "period_alpha"}
     assert len(monthly) == universe["snapshot_date"].nunique() - 1
+
+
+def test_cumulative_alpha_compone_no_suma():
+    """La alpha acumulada debe COMPONERSE, no sumar los excesos mensuales.
+
+    Regresión de un bug real: se reportaba `period_alpha.sum()`, que no es un retorno realizable e
+    infravaloraba el resultado (en el baseline: suma=1.14 vs. compuesta=5.77). Con 12 meses al 10%
+    de cartera y 0% de benchmark, la respuesta correcta es 1.10^12 - 1 ≈ 2.138, no 12*0.10 = 1.20.
+    """
+    monthly = pd.DataFrame({
+        "portfolio_period_return": [0.10] * 12,
+        "benchmark_period_return": [0.0] * 12,
+        "period_alpha": [0.10] * 12,
+    })
+    alpha = cumulative_alpha(monthly)
+    assert alpha == pytest.approx(1.10**12 - 1)
+    assert alpha != pytest.approx(1.20), "no debe ser la suma aritmética de los excesos"
+
+
+def test_cumulative_alpha_resta_benchmark_compuesto():
+    """El benchmark también se compone: alpha = (Π(1+rp) - 1) - (Π(1+rb) - 1)."""
+    monthly = pd.DataFrame({
+        "portfolio_period_return": [0.10] * 6,
+        "benchmark_period_return": [0.05] * 6,
+        "period_alpha": [0.05] * 6,
+    })
+    assert cumulative_alpha(monthly) == pytest.approx((1.10**6 - 1) - (1.05**6 - 1))
+
+
+def test_cumulative_alpha_casos_borde():
+    """Vacío o sin las columnas necesarias -> 0.0, sin romper."""
+    assert cumulative_alpha(pd.DataFrame()) == 0.0
+    assert cumulative_alpha(pd.DataFrame({"otra": [1.0]})) == 0.0
 
 
 if __name__ == "__main__":  # pragma: no cover

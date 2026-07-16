@@ -126,3 +126,66 @@ python main.py
 
 No hace falta re-descargar datos ni reentrenar el modelo — `viewer`/`report` solo leen los CSV ya
 escritos por `backtest`.
+
+## Hallazgos del barrido de escenarios (20260716_105304)
+
+Resultados del primer barrido con los 19 escenarios corriendo el pipeline completo. Se conservan
+aquí, incluidos los negativos, porque son la evidencia principal del TFM.
+
+### 1. El sistema NO bate a una regla trivial (resultado negativo principal)
+
+`alpha_vs_best_baseline` es **negativo en los 19 escenarios**. La comparación del baseline:
+
+| Estrategia | Alpha acumulada |
+|---|---|
+| Sistema completo | 1.14 |
+| **momentum_only** | **3.00** |
+| equal_weight_universe | 0.11 |
+| valuation_only | −0.10 |
+
+Rankear el universo por `momentum_score` a secas triplica al sistema completo, que usa esa misma
+señal con peso 0.05 dentro de `manager_score`. Ninguna configuración del barrido revierte esto.
+Es un resultado negativo bien medido y se reporta como tal: el informe comparativo lo muestra en
+un aviso en cabecera (`_verdict_banner` en `module/experiments/report.py`), no enterrado.
+
+### 2. Más rank-IC no implica más retorno: falta de breadth
+
+Correlación entre `rank_ic_final_mean` y `cumulative_alpha` entre escenarios: **Spearman ≈ +0.28**
+(débil, dominada por ruido). El caso más claro: `solo_alpha` tiene el **mejor** rank-IC (0.332) y la
+**peor** alpha (0.796).
+
+No es un fallo de precios ni de la evolución de la cartera (verificado: `adj_close` ajustado, mismo
+precio y fechas para cartera y benchmark, identidad `period_alpha = retorno_cartera − retorno_bench`
+exacta, 0 outliers). Es **estructural**: el rank-IC mide el orden de TODO el universo (~71k filas por
+snapshot) mientras la cartera compra **exactamente 10 nombres**. Ordenar bien 71.000 filas no implica
+acertar el top-10. Además `manager_score` pesa `final_score` al 0.70 y 4 de las 5 puertas de entrada
+no usan ML.
+
+Por eso se añadieron `top_n_alpha` y `top_n_alpha_lift` (`module/ml.py`): miden el alpha del tramo
+que **de verdad se compra** y su ventaja sobre la media del universo. Son el puente honesto entre
+"la IA rankea" y "la cartera gana".
+
+### 3. El modelo es determinista: no hay dispersión por semilla
+
+`LGBM_PARAM_GRID` no fija `subsample` ni `colsample_bytree`, así que LightGBM corre sin submuestreo
+de filas ni columnas: un GBDT **determinista**. Variar `ml.RANDOM_STATE` no cambia nada — comprobado:
+`semilla_1/7/13/29` devolvieron rank-IC y alpha **bit-idénticos** al baseline (0.215461 / 1.137596)
+pese a re-entrenar de verdad.
+
+Se eliminaron esos 4 escenarios (gastaban ~85 min por barrido para producir una columna constante y
+presentaban como "robustez ante la semilla" algo que solo demostraba determinismo). Se declara como
+**limitación explícita**: este trabajo no mide estabilidad frente a la aleatoriedad del entrenamiento
+porque no la hay. El bloque de estabilidad se reforzó con sensibilidad real a ventana (3/4/6 años),
+horizonte (6/12/24 m) y costes (1x/2x/4x).
+
+### 4. Corrección de la alpha acumulada: se compone, no se suma
+
+`cumulative_alpha` sumaba aritméticamente ~100 excesos mensuales, lo que **no es un retorno
+realizable** e incumplía la coherencia con las series `portfolio_value`/`benchmark_value`, que sí se
+componen. Corregido a la definición compuesta única (`compound_alpha` en
+`module/backtest/performance.py`), compartida por sistema, baselines, placebo y comparación.
+
+Impacto en el baseline: la alpha reportada pasa de **1.14** (suma) a **5.77** (compuesta real);
+retorno compuesto de la cartera 7.93 vs. benchmark 2.16. Se conserva `sum_period_alpha` en el
+resumen por trazabilidad. **Los números publicados antes de esta corrección no son comparables con
+los posteriores.**
