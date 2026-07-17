@@ -58,8 +58,9 @@ def build_master_dataset(settings: Settings) -> pd.DataFrame:
     benchmark_dates, _ = price_by_ticker.get(settings.benchmark_ticker, ([], []))
 
     lag_days = settings.fundamental_publication_lag_days
+    publication_dates = _load_publication_dates()
     payload_by_ticker = {
-        row.ticker: _metric_cache(_parse_payload(row.payload), lag_days)
+        row.ticker: _metric_cache(_parse_payload(row.payload), lag_days, publication_dates.get(row.ticker, {}))
         for row in metrics.itertuples(index=False)
     }
     profile_by_ticker = profiles.drop_duplicates("ticker").set_index("ticker").to_dict("index")
@@ -172,6 +173,26 @@ def _parse_payload(payload: object) -> dict:
     return payload if isinstance(payload, dict) else {}
 
 
+def _load_publication_dates() -> dict[str, dict[pd.Timestamp, pd.Timestamp]]:
+    """Mapa {ticker: {fin_de_periodo -> fecha_de_publicación_real}} desde report_dates.parquet (si
+    existe). Se usa para decidir la observabilidad de cada fundamental por su fecha de publicación
+    REAL; si el fichero no existe o falta un periodo, el dataset cae al retardo fijo."""
+    path = RAW_DIR / "report_dates.parquet"
+    if not path.exists():
+        return {}
+    table = read_parquet(path)
+    if table.empty or not {"ticker", "period", "filed_date"}.issubset(table.columns):
+        return {}
+    table = table.assign(
+        period=pd.to_datetime(table["period"], errors="coerce").dt.normalize(),
+        filed_date=pd.to_datetime(table["filed_date"], errors="coerce").dt.normalize(),
+    ).dropna(subset=["period", "filed_date"])
+    result: dict[str, dict[pd.Timestamp, pd.Timestamp]] = {}
+    for ticker, group in table.groupby("ticker"):
+        result[ticker] = dict(zip(group["period"], group["filed_date"]))
+    return result
+
+
 def _ticker_price_series(group: pd.DataFrame) -> tuple[list[pd.Timestamp], list[float]]:
     sorted_group = group.sort_values("date")
     dates = [pd.Timestamp(value) for value in sorted_group["date"].tolist()]
@@ -179,7 +200,7 @@ def _ticker_price_series(group: pd.DataFrame) -> tuple[list[pd.Timestamp], list[
     return dates, values
 
 
-def _metric_cache(payload: dict, lag_days: int) -> dict:
+def _metric_cache(payload: dict, lag_days: int, publication_map: dict[pd.Timestamp, pd.Timestamp]) -> dict:
     metric = payload.get("metric", {}) if isinstance(payload, dict) else {}
     metric = metric if isinstance(metric, dict) else {}
     raw_series = payload.get("series", {}) if isinstance(payload, dict) else {}
@@ -190,7 +211,7 @@ def _metric_cache(payload: dict, lag_days: int) -> dict:
     quarterly = quarterly if isinstance(quarterly, dict) else {}
     series = {}
     for key in set(HISTORICAL_SERIES_MAP.values()) | {"salesPerShare", "eps"}:
-        series[key] = _prepared_rows(quarterly, key, lag_days) or _prepared_rows(annual, key, lag_days)
+        series[key] = _prepared_rows(quarterly, key, lag_days, publication_map) or _prepared_rows(annual, key, lag_days, publication_map)
     return {"metric": metric, "series": series}
 
 
@@ -266,20 +287,31 @@ def _historical_growth(
     return current / previous - 1, rows[index][0]
 
 
-def _prepared_rows(series: dict, key: str, lag_days: int) -> list[tuple[pd.Timestamp, float | None]]:
+def _prepared_rows(
+    series: dict,
+    key: str,
+    lag_days: int,
+    publication_map: dict[pd.Timestamp, pd.Timestamp],
+) -> list[tuple[pd.Timestamp, float | None]]:
     rows = series.get(key, [])
     if not isinstance(rows, Iterable) or isinstance(rows, (str, bytes, dict)):
         return []
     # Un fundamental de un periodo NO es observable el mismo día del cierre de periodo: un 10-K/10-Q
-    # tarda en publicarse. Su fecha observable = cierre de periodo + lag_days, y esa es la que usa el
-    # resto del pipeline (bisect point-in-time). Corrige el lookahead sutil de tratar el fundamental
-    # como conocido en la fecha de cierre.
+    # tarda en publicarse. Su fecha observable es la fecha de publicación REAL (filedDate, de
+    # report_dates.parquet, cruzada por fin de periodo); si no se conoce, cae al fallback
+    # cierre_de_periodo + lag_days. Esa fecha observable es la que usa el resto del pipeline (bisect
+    # point-in-time). Corrige el lookahead de tratar el fundamental como conocido en la fecha de cierre.
     lag = pd.Timedelta(days=lag_days)
     valid = []
     for row in rows:
         period = pd.to_datetime(row.get("period"), errors="coerce")
-        if pd.notna(period):
-            valid.append((pd.Timestamp(period) + lag, _num(row.get("v"))))
+        if pd.isna(period):
+            continue
+        period = pd.Timestamp(period).normalize()
+        observable = publication_map.get(period)
+        if observable is None:
+            observable = period + lag
+        valid.append((observable, _num(row.get("v"))))
     return sorted(valid, key=lambda item: item[0])
 
 

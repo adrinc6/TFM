@@ -47,12 +47,24 @@ def test_quarterly_cadence_trains_every_three_months_from_the_anchor():
     assert all(80 <= gap <= 100 for gap in gaps)
 
 
-def test_prepared_rows_shift_observability_by_the_publication_lag():
+def test_prepared_rows_fall_back_to_fixed_lag_without_real_dates():
+    """Sin fecha de publicación real (mapa vacío), la observabilidad es cierre + retardo fijo."""
     series = {"roic": [{"period": "2020-12-31", "v": 0.10}, {"period": "2021-03-31", "v": 0.14}]}
-    rows = dataset._prepared_rows(series, "roic", lag_days=45)
+    rows = dataset._prepared_rows(series, "roic", 45, {})
     assert rows[0][0] == pd.Timestamp("2020-12-31") + pd.Timedelta(days=45)
     assert rows[1][0] == pd.Timestamp("2021-03-31") + pd.Timedelta(days=45)
     assert [value for _, value in rows] == [0.10, 0.14]
+
+
+def test_prepared_rows_use_real_publication_date_over_the_lag():
+    """Con fecha de publicación real, la observabilidad es esa fecha (no cierre + lag). Un periodo sin
+    fecha real usa el fallback."""
+    series = {"roic": [{"period": "2020-12-31", "v": 0.10}, {"period": "2021-03-31", "v": 0.14}]}
+    # Q4-2020 se publicó tarde (el 20-mar, mucho después de cierre+45=13-feb); Q1-2021 sin fecha real.
+    publication_map = {pd.Timestamp("2020-12-31"): pd.Timestamp("2021-03-20")}
+    rows = dataset._prepared_rows(series, "roic", 45, publication_map)
+    assert rows[0][0] == pd.Timestamp("2021-03-20"), "usa la fecha de publicación real"
+    assert rows[1][0] == pd.Timestamp("2021-03-31") + pd.Timedelta(days=45), "sin fecha real -> fallback"
 
 
 @pytest.fixture
@@ -88,13 +100,13 @@ def lag_master(tmp_path, monkeypatch):
         walk_forward_scoring=False,
         fundamental_publication_lag_days=45,
     )
-    return settings, ticker
+    return settings, ticker, tmp_path
 
 
 def test_publication_lag_delays_fundamental_observability(lag_master):
     from module.dataset import build_master_dataset
 
-    settings, ticker = lag_master
+    settings, ticker, _ = lag_master
     master = build_master_dataset(settings)
     by_date = master[master["ticker"] == ticker].set_index("snapshot_date")["roic"]
     # El fundamental de Q4-2020 (cierre 2020-12-31) se publica el 2021-02-14: NO es observable el
@@ -104,6 +116,23 @@ def test_publication_lag_delays_fundamental_observability(lag_master):
     # El de Q1-2021 (cierre 2021-03-31) se publica el 2021-05-15: aún 0.10 en abril, 0.14 desde mayo.
     assert by_date.get("2021-04-15") == pytest.approx(0.10)
     assert by_date.get("2021-05-15") == pytest.approx(0.14)
+
+
+def test_real_publication_date_overrides_the_fixed_lag_end_to_end(lag_master):
+    """Con report_dates.parquet, la observabilidad sigue la fecha de publicación REAL. Una empresa que
+    reporta tarde (20-mar) no aparece hasta después de esa fecha, aunque cierre+lag (13-feb) fuese antes."""
+    from module.dataset import build_master_dataset
+
+    settings, ticker, tmp_path = lag_master
+    pd.DataFrame([{"ticker": ticker, "period": "2020-12-31", "filed_date": "2021-03-20"}]).to_parquet(
+        tmp_path / "report_dates.parquet"
+    )
+    master = build_master_dataset(settings)
+    by_date = master[master["ticker"] == ticker].set_index("snapshot_date")["roic"]
+    # Con lag fijo estaría disponible el 2021-02-15; con la fecha real (2021-03-20) no, hasta abril.
+    assert pd.isna(by_date.get("2021-02-15"))
+    assert pd.isna(by_date.get("2021-03-15"))
+    assert by_date.get("2021-04-15") == pytest.approx(0.10)
 
 
 if __name__ == "__main__":  # pragma: no cover

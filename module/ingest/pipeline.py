@@ -29,6 +29,7 @@ def download_raw_data(settings: Settings) -> None:
     metrics: list[dict] = []
     prices: list[dict] = []
     news: list[dict] = []
+    report_dates: list[dict] = []
     downloaded_at = datetime.utcnow().isoformat(timespec="seconds")
     coverage = {"profiles": 0, "metrics": 0, "prices": 0, "news": 0}
     failures: list[tuple[str, str, str]] = []
@@ -56,6 +57,21 @@ def download_raw_data(settings: Settings) -> None:
                 metrics.append({"ticker": ticker, "downloaded_at": metric.get("_downloaded_at", downloaded_at), "payload": _strip_meta(metric)})
             else:
                 failures.append((ticker, "basic_financials", "missing"))
+
+            # Fecha de PUBLICACIÓN real de cada informe (endDate -> filedDate), para decidir la
+            # observabilidad point-in-time por su fecha real y no por un retardo fijo. Best-effort: si
+            # falta (sin cobertura o sin API key), no rompe el resto; dataset cae al retardo fijo.
+            try:
+                reported = _cached_json(
+                    _json_path("finnhub", ticker, "financials_reported"),
+                    lambda: _require_finnhub(finnhub).financials_as_reported(ticker, freq="quarterly"),
+                )
+                for item in (reported or {}).get("data", []):
+                    end_date, filed_date = item.get("endDate"), item.get("filedDate")
+                    if end_date and filed_date:
+                        report_dates.append({"ticker": ticker, "period": end_date, "filed_date": filed_date})
+            except Exception:
+                log.warning("[%s] financials-reported no disponible; observabilidad caerá al retardo fijo", ticker)
 
             ohlcv = _cached_json(
                 _json_path("yahoo", ticker, f"ohlcv_{settings.data_start_date}_{settings.end_date}"),
@@ -113,6 +129,11 @@ def download_raw_data(settings: Settings) -> None:
     write_parquet(pd.DataFrame(prices), RAW_DIR / "prices.parquet")
     if news:
         write_parquet(pd.DataFrame(news), RAW_DIR / "news.parquet")
+    # Deduplica por (ticker, period) quedándose con la primera presentación de cada periodo.
+    if report_dates:
+        deduped = pd.DataFrame(report_dates).drop_duplicates(subset=["ticker", "period"], keep="first")
+        write_parquet(deduped, RAW_DIR / "report_dates.parquet")
+        log.info("Fechas de publicación reales: %s informes en %s tickers", len(deduped), deduped["ticker"].nunique())
 
 
 def _require_rows(rows: list[dict], name: str) -> None:
