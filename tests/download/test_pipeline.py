@@ -98,9 +98,12 @@ def test_full_coverage_contains_annual_schema() -> None:
     )
 
 
-def test_stage_selector_runs_implemented_stages_and_rejects_pending_ones() -> None:
+def test_stage_selector_runs_implemented_stages() -> None:
     assert main.stages_for_run("download") == ("download",)
-    assert main.stages_for_run("full") == ("download", "dataset", "features", "agents")
+    assert main.stages_for_run("full") == (
+        "download", "dataset", "features", "agents", "backtest", "report",
+    )
     assert main.stages_for_run("features") == ("features",)
-    with pytest.raises(NotImplementedError):
-        main.stages_for_run("backtest")
+    assert main.stages_for_run("backtest") == ("backtest",)
+    assert main.stages_for_run("report") == ("report",)
+    assert main.stages_for_run("experiments") == ("experiments",)

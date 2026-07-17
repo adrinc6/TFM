@@ -12,9 +12,9 @@
 | **1 — Dataset point-in-time** | Implementada y validada en modo `dev` |
 | **2 — Features y baselines** | Implementada y probada con fixtures point-in-time |
 | **3 — Agentes ML + meta-agente** | Implementada y probada con walk-forward sintético |
-| 4 — Cartera y backtest | Pendiente |
-| 5 — Informe HTML | Pendiente |
-| 6 — Rejilla y selección final | Pendiente |
+| **4 — Cartera y backtest** | Implementada y probada con 7 tests (reglas + invariantes PIT + contabilidad) |
+| **5 — Informe HTML** | Implementada (`report.html` por run con 6 hojas + `comparison.html` para el barrido con 5 hojas) |
+| **6 — Rejilla y selección final** | Implementada (barrido con reutilización por huella + selección automática por consistencia) |
 | 7 — Redacción del TFM en LaTeX | Pendiente (documento de rumbo en `latex/plan_tfm.md`) |
 
 Cada fase se diseña y se aprueba antes de implementarla (ver `CLAUDE.md`). Lo descrito en las
@@ -278,22 +278,127 @@ Los tres casos están cubiertos por tests de regresión (`tests/dataset/test_fun
 
 ## Fase 4 — Cartera y backtest
 
-`module/portfolio.py` (top-N, sizing, rotación con periodo mínimo de tenencia y umbral de
-ventaja) y `module/backtest.py` (simulación con costes y slippage → alfa **neta**). Métricas:
-rentabilidad, alfa, information ratio, tracking error, drawdown, t-stat, y las de aprendizaje
-(rank-IC por era y por agente) reportadas **por separado** (`docs/doc.md:37-47`).
+Implementada como dos módulos separados: `module/portfolio.py` con la lógica de decisión
+(sin I/O) y `module/backtest.py` con el simulador puro (aplica órdenes a precios PIT).
+Ambos disparados por `RUN_MODE=backtest`, que localiza el último `run_dir` de agentes y
+añade en su interior los cinco parquets del backtest + `backtest_summary.json`.
+
+**Reglas de cartera acordadas** (todas configurables desde `environment.py`):
+
+1. **Expulsión**: un tenente cuyo percentil cae por debajo de `MIN_HOLD_PERCENTILE` (por
+   defecto 50) sale, aunque nadie tenga la ventaja para desplazarle. Motivo
+   `dropped_below_min`.
+2. **Umbral de ventaja**: un candidato fuera solo desplaza a un tenente si le supera por
+   `ROTATION_EDGE_PERCENTILES` (por defecto 5). Evita rotar por ruido.
+3. **Sin tenencia mínima**: cada revisión decide desde cero. Un ticker puede entrar en
+   `t`, salir en `t+1` porque ha subido y su valuación ya no compensa, y volver a entrar
+   más tarde. La revisión mensual también decide, no solo la trimestral, porque los
+   scores incluyen precio (P/E, P/B, momentum) y cambian aunque los fundamentales no.
+4. **Tamaño flexible** `TARGET_MIN` = 5, `TARGET_MAX` = 10, `ENTRY_MIN_PERCENTILE` = 80.
+   La cartera llega a 10 solo si hay 10 candidatos por encima del 80; si no, se queda
+   con los que haya, sin bajar de 5 mientras haya candidatos que cumplan.
+5. **Sizing con tope**: peso proporcional al ranking dentro de la cartera con tope
+   `MAX_WEIGHT_PER_POSITION` (por defecto 20 %). El excedente se reparte proporcionalmente
+   entre las posiciones que no tocan el tope. Con los defaults, 5 × 20 % = 100 %.
+6. **Costes**: `COMMISSION_BPS` = 5, `SLIPPAGE_BPS` = 10 sobre el nocional de cada
+   compra/venta. La alfa se reporta siempre neta.
+
+**Salidas dentro del `run_dir` de agentes**:
+
+- `positions.parquet`: `snapshot_date × ticker` con `weight`, `entry_date`, `months_held`,
+  `current_percentile`.
+- `orders.parquet`: cada compra/venta con `side`, `weight_before`, `weight_after`,
+  `price`, `commission`, `slippage`, `reason` (`initial_fill`, `hole_filled_after_drop`,
+  `edge_over_worst`, `displaced_by_edge`, `dropped_below_min`, `rebalance`).
+- `equity.parquet`: `portfolio_value`, `benchmark_value`, `portfolio_return`,
+  `benchmark_return`, `excess_return`, `turnover_pct` por snapshot.
+- `annual_metrics.parquet`: `alpha`, `beats_benchmark`, `max_drawdown_year`,
+  `information_ratio_year` por año.
+- `backtest_summary.json`: agregado + las cuatro dimensiones de la métrica de
+  estabilidad de Fase 6 (`beat_rate`, `median_alpha`, `worst_year_alpha`, `max_drawdown`).
+- `manifest.json` actualizado con los parámetros de cartera y costes usados.
+
+**Tests** (`tests/backtest/`):
+- Reglas: ventaja insuficiente no rota; expulsión sin sustituto deja hueco; ida y vuelta
+  (entrar-salir-volver) sin regla de tenencia mínima; sizing respeta tope y suma 1;
+  tamaño flexible con pocos candidatos.
+- Invariantes: mutar scores futuros no cambia posiciones ni equity pasados; contabilidad
+  cuadra (`equity[t] − equity[t−1]` = retorno de posiciones − costes del día).
 
 ## Fase 5 — Informe HTML
 
-`module/report.py`: viewer autocontenido de un run (resumen, rendimiento, evidencia de
-aprendizaje, posiciones, metodología, limitaciones). Muestra baselines y resultados negativos.
+Implementada como dos productos en `module/report.py`:
 
-## Fase 6 — Rejilla de escenarios y selección final
+**A) HTML por run** (`build_run_report(run_dir)` → `run_dir/report.html`). Seis hojas
+navegables por pestañas:
 
-`module/experiments.py`: barrido de ventana de entrenamiento, cadencia, horizonte de etiqueta,
-top-N, ablations de agentes **y la fecha ancla** (año/trimestre/`lag_days`). Selección por
-**estabilidad multi-era**, no por mayor alfa (`docs/doc.md:153-169`), con era de desarrollo y
-era de confirmación reservada.
+1. **Resumen** — alfa total, beat rate, IR, drawdown; curva de equity y barras de alfa anual.
+2. **Rendimiento** — drawdown continuo y tabla anual completa (retorno, alfa, drawdown, IR).
+3. **Aprendizaje** — rank-IC por agente y por revisión, evolución de pesos del meta-agente.
+4. **Cartera** — composición actual y turnover reciente; los históricos completos se sirven
+   como CSVs sueltos al lado (`positions_history.csv`, `orders_history.csv`) que la
+   página carga por `fetch`.
+5. **Cobertura** — sesgo de supervivencia leído de `universe_coverage.json` +
+   prohibiciones metodológicas activas (sector excluido, `payload.metric` prohibido, etc.).
+6. **Posiciones** — cuánto rentó cada ticker mientras estuvo en cartera. Respuesta directa
+   a *"¿el sistema mantiene ganadores o corta demasiado pronto?"*.
+
+**B) HTML del barrido** (`build_comparison_report(scenarios_root)` →
+`scenarios_root/comparison.html`). Cinco hojas: ranking, heatmap `escenario × año` de
+alfa, sensibilidad por parámetro, selección justificada con validación en la era
+reservada, tabla completa con enlaces a cada run.
+
+**Gráficos**: `matplotlib` → PNG embebido base64. Se añade `matplotlib>=3.7` a
+`requirements.txt`.
+
+**Tests** (`tests/report/`): el HTML contiene los IDs de las seis hojas; las cifras del
+Resumen cuadran con `backtest_summary.json`; el ganador del barrido es determinista según
+el rango medio (test con escenarios sintéticos donde el estable gana al que tiene un solo
+año excepcional).
+
+## Fase 6 — Rejilla de escenarios y selección automática
+
+Implementada en `module/experiments.py`. Los escenarios se definen en `escenarios/*.py` (no
+YAML/JSON) como listas de `ScenarioSpec(name, overrides)`, para poder incluir listas y
+cálculos derivados. La rejilla base vive en `escenarios/rejilla_base.py` con ~17 escenarios
+distribuidos entre ancla temporal, entrenamiento, cadencia, horizonte de etiqueta,
+políticas de cartera y observabilidad.
+
+**Reutilización por huella SHA-256**. Cada etapa (`dataset`, `features`, `agents`,
+`backtest`) declara qué campos de `Settings` la afectan; se hashean y comparan entre
+escenarios. Si coinciden, el escenario reutiliza el artefacto compartido vía symlink en
+lugar de regenerarlo. Los escenarios que solo cambian política de cartera (`portfolio_3_7`,
+`rotation_strict`, etc.) reusan `dataset/features/agents` del baseline y solo simulan otro
+backtest.
+
+**Estructura de resultados** en `results/escenarios/`:
+
+- `<nombre>/processed/` con los parquets de dataset/features (compartidos por symlink).
+- `<nombre>/agents/<run_id>/` con scores, pesos, backtest, `report.html` y CSVs.
+- `<nombre>/scenario_config.json` documenta overrides, huellas y qué reutilizó.
+- `scenarios_summary.parquet` y `.csv` con el ranking.
+- `selection.json` con el ganador, sus 4 rangos, top-3 y métricas de la era reservada.
+- `comparison.html` con las 5 hojas del barrido.
+
+**Selección por consistencia**. Cuatro dimensiones anuales calculadas en la era de
+desarrollo (por defecto 1990-2015):
+
+1. `beat_rate` — fracción de años que baten SPY.
+2. `median_alpha` — alfa mediana anual.
+3. `worst_year_alpha` — peor alfa anual.
+4. `max_drawdown` — máximo drawdown (menor es mejor).
+
+Se rankea cada escenario en las cuatro y el ganador es el que **minimiza el rango medio**.
+Así un escenario con un año excepcional pero peor resto no gana a otro consistente.
+
+**Era de confirmación reservada** (por defecto 2016-fin): las cuatro dimensiones se
+calculan también aquí para el ganador, pero **no** para reordenar. Solo valida. Si el
+ganador se hunde en confirmación, se reporta como resultado negativo.
+
+**Tests** (`tests/experiments/`): huellas deterministas y aisladas por etapa (cambiar
+`target_max` NO cambia la huella de dataset/features/agents); el ganador es determinista
+por rango medio (test con escenarios sintéticos donde el estable gana al de un año
+excepcional).
 
 ## Fase 7 — Redacción del TFM en LaTeX
 

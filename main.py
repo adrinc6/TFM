@@ -11,9 +11,12 @@ from collections.abc import Callable
 
 from environment import Settings, ensure_directories
 from module.agents import build_agent_scores
+from module.backtest import run_backtest_from_run_dir
 from module.dataset import build_point_in_time_dataset
+from module.experiments import run_experiments_from_settings
 from module.features import build_features
 from module.ingest.pipeline import download_raw_data
+from module.report import build_report_from_settings
 from module.utils import setup_logging
 
 
@@ -27,6 +30,9 @@ STAGE_HANDLERS: dict[str, Callable[[Settings], None]] = {
     "dataset": build_point_in_time_dataset,
     "features": build_features,
     "agents": build_agent_scores,
+    "backtest": run_backtest_from_run_dir,
+    "report": build_report_from_settings,
+    "experiments": run_experiments_from_settings,
 }
 
 

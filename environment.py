@@ -72,6 +72,19 @@ RIDGE_ALPHA = 1.0
 MIN_TRAINING_ROWS = 30
 MIN_RANK_IC_CROSS_SECTION = 10
 
+# Parametros de cartera (Fase 4). Todos con valores por defecto conservadores.
+# La logica que sigue: expulsa a los que se hunden, protege del ruido con umbral de ventaja,
+# no fija tenencia minima. Ver `docs/plan_fases.md` (Fase 4) para el razonamiento completo.
+TARGET_MIN = 5                    # cartera nunca baja de 5 mientras haya candidatos que cumplan
+TARGET_MAX = 10                   # cartera nunca supera 10
+ENTRY_MIN_PERCENTILE = 80         # solo entran candidatos por encima de este percentil (0..100)
+MIN_HOLD_PERCENTILE = 50          # tenente cae por debajo -> sale, aunque nadie le supere
+ROTATION_EDGE_PERCENTILES = 5     # umbral de ventaja para que un candidato desplace a un tenente
+MAX_WEIGHT_PER_POSITION = 0.20    # tope de peso por posicion; el excedente se reparte
+COMMISSION_BPS = 5                # comision por operacion, en puntos basicos
+SLIPPAGE_BPS = 10                 # slippage por operacion, en puntos basicos
+REBALANCE_DRIFT_TOLERANCE = 1.5   # solo re-sizing si un peso excede MAX_WEIGHT * este factor
+
 # Se pueden establecer temporalmente desde la consola sin editar este archivo.
 RUN_MODE = os.getenv("RUN_MODE", "download").strip().lower()
 RUN_SCOPE = os.getenv("RUN_SCOPE", "full").strip().lower()
@@ -105,6 +118,15 @@ class Settings:
     ridge_alpha: float = RIDGE_ALPHA
     min_training_rows: int = MIN_TRAINING_ROWS
     min_rank_ic_cross_section: int = MIN_RANK_IC_CROSS_SECTION
+    target_min: int = TARGET_MIN
+    target_max: int = TARGET_MAX
+    entry_min_percentile: float = ENTRY_MIN_PERCENTILE
+    min_hold_percentile: float = MIN_HOLD_PERCENTILE
+    rotation_edge_percentiles: float = ROTATION_EDGE_PERCENTILES
+    max_weight_per_position: float = MAX_WEIGHT_PER_POSITION
+    commission_bps: float = COMMISSION_BPS
+    slippage_bps: float = SLIPPAGE_BPS
+    rebalance_drift_tolerance: float = REBALANCE_DRIFT_TOLERANCE
 
     def __post_init__(self) -> None:
         if self.run_mode not in RUN_MODES:
@@ -120,6 +142,20 @@ class Settings:
             raise ValueError("EXECUTION_QUARTER debe estar entre 1 y 4.")
         if self.train_lookback_years <= 0 or self.target_horizon_months <= 0:
             raise ValueError("Las ventanas temporales deben ser positivas.")
+        if not 1 <= self.target_min <= self.target_max:
+            raise ValueError("TARGET_MIN y TARGET_MAX deben cumplir 1 <= min <= max.")
+        for name, value in (
+            ("entry_min_percentile", self.entry_min_percentile),
+            ("min_hold_percentile", self.min_hold_percentile),
+        ):
+            if not 0 <= value <= 100:
+                raise ValueError(f"{name} debe estar en [0, 100], recibido {value!r}.")
+        if not 0 < self.max_weight_per_position <= 1:
+            raise ValueError("MAX_WEIGHT_PER_POSITION debe estar en (0, 1].")
+        if self.max_weight_per_position * self.target_min < 0.999:
+            raise ValueError(
+                "MAX_WEIGHT_PER_POSITION * TARGET_MIN < 1: la cartera minima no puede llegar al 100 %."
+            )
         if self.max_price_age_days < 0:
             raise ValueError("MAX_PRICE_AGE_DAYS no puede ser negativo.")
 
