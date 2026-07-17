@@ -91,8 +91,9 @@ LABEL_WINSOR_PCT = 0.02   # recorta el 2 % de cada cola (solo si LABEL_TRANSFORM
 FUNDAMENTAL_MOMENTUM = False
 # B5: anadir el regimen de mercado (bull/bear, detectado SOLO con datos pasados del SP500) como
 # feature, junto con interacciones factor x regimen, para que el modelo aprenda a ponderar
-# distinto en cada regimen. Ver docs/bitacora.md (B5).
-MARKET_REGIME_FEATURE = False
+# distinto en cada regimen. Mejora marginal (rank-IC +0.0011 -> +0.0015) y ayuda a los agentes
+# fundamentales (quality cruza a positivo); se conserva activo. Ver docs/bitacora.md (B5).
+MARKET_REGIME_FEATURE = True
 
 # Parametros de cartera (Fase 4). Todos con valores por defecto conservadores.
 # La logica que sigue: expulsa a los que se hunden, protege del ruido con umbral de ventaja,

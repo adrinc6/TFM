@@ -235,3 +235,56 @@ cada feature ruidosa resta grados de libertad efectivos y degrada el orden OOS.
 patrón se repite (B1 y B3, las dos palancas que añaden features, empeoran; B2, que limpia la
 etiqueta, ayuda un poco): **el cuello de botella no es la falta de features, es que la relación
 factor→retorno es débil y el modelo lineal ya la exprime.**
+
+---
+
+## B5 — Régimen de mercado (bull/bear)
+
+**Hipótesis.** Lo que predice el retorno en un mercado alcista no es lo mismo que en uno
+bajista. Si el sistema sabe en qué régimen está (detectado solo con datos pasados del SP500) y
+se le dan interacciones factor×régimen, el modelo puede aprender a ponderar distinto en cada
+uno — más momentum en bull, más calidad/defensa en bear.
+
+**Qué se probó.** Parámetro `market_regime_feature`. Régimen = SP500 con retorno a 12 meses
+positivo (bull) o no (bear), leído del benchmark hasta la fecha del snapshot (sin lookahead).
+Se añaden tres features al agente momentum: el régimen, `momentum × bull` y `quality × bear`.
+Sobre la base B2 (`label_transform=rank`).
+
+**Resultado medido (full, vs base rank +0.0011 / 0.534):**
+
+| config | rank-IC medio | frac cohortes IC>0 | IR del IC |
+|---|---|---|---|
+| rank (base B2) | +0.0011 | 0.534 | +0.012 |
+| rank + B5 | **+0.0015** | **0.536** | +0.012 |
+
+**Es la mejor configuración**, por muy poco. Detalle por agente relevante: con el régimen,
+**quality cruza a positivo** (+0.0035, antes −0.021) y value sube a +0.0125; a momentum le va
+algo peor. El régimen ayuda a los agentes fundamentales.
+
+**Decisión.** Mejora marginal (+0.0011 → +0.0015), dentro del ruido. Se **conserva** porque no
+hace daño, tiene fundamento y ayuda a los fundamentales, pero **no resuelve el problema**:
++0.0015 sigue siendo un rank-IC ≈ 0.
+
+---
+
+## Cierre de la Parte B — veredicto
+
+| palanca | rank-IC | frac IC>0 | decisión |
+|---|---|---|---|
+| baseline (none) | −0.0058 | 0.486 | referencia |
+| B1 neutralización sector | −0.0083 | 0.467 | descartada (empeora) |
+| B2 etiqueta rank | +0.0011 | 0.534 | **adoptada** |
+| B3 momentum fundamentales | −0.0046 | 0.513 | descartada (empeora) |
+| B5 régimen (sobre B2) | +0.0015 | 0.536 | conservada (marginal) |
+
+**Lo mejor que se consigue tras todas las palancas: rank-IC +0.0015, fracción de cohortes
+ganadoras 53.6 %.** Se ha pasado de "peor que el azar" a "empatado con el azar más un pelo".
+**No es una señal explotable.** Las dos palancas que añaden información (sector, momentum de
+fundamentales) empeoran; solo las que reordenan/limpian lo que ya hay (etiqueta rank, régimen)
+ayudan, y muy poco.
+
+**Conclusión metodológica.** Con datos gratuitos, universo del S&P 500 sesgado por
+supervivencia, factores GARP+momentum lineales y un modelo Ridge, **el sistema no aprende a
+ordenar activos fuera de muestra de forma útil.** El techo de este enfoque está en rank-IC ≈ 0.
+Para obtener señal real haría falta un cambio de planteamiento (ver informe de conclusiones):
+otro objetivo, otro universo, o capturar no-linealidades — no seguir puliendo esta vía.
