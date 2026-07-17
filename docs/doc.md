@@ -215,31 +215,48 @@ El proyecto debe ser **fácil de modificar y experimentar**:
   - Perfil de empresa (nombre, sector, capitalización).
   - Fundamentales calculados y series (`/stock/metric`: P/E, P/B, ROE, ROIC,
     márgenes, crecimiento…).
-  - Estados financieros tal como se reportaron a la SEC, con **fechas reales de
-    publicación** (para la observabilidad point-in-time por fecha real, no por
-    retardo fijo).
   - Noticias por empresa (descargadas, aún sin procesar).
+- **SEC EDGAR** (`data.sec.gov`, sin clave): fechas reales de presentación de los
+  formularios 10-Q y 10-K. Es la fuente de `report_dates.parquet`; no se usa
+  un retardo fijo ni el endpoint equivalente de Finnhub. Los CIK ambiguos por
+  reutilización de ticker se validan con el buscador SEC.
 - **Yahoo Finance** (API v8 de charts, sin clave): OHLCV diario, cierre ajustado,
   dividendos y splits. No se usa `yfinance`; se llama la API directamente.
 
-**Universo**: lista estática de tickers en `environment.py` (grandes
-capitalizaciones actuales), con su limitación de sesgo de supervivencia
-documentada en el propio archivo. El benchmark es SPY.
+**Universo**: composición histórica dinámica del S&P 500 desde el CSV de
+componentes. En cada fecha se consideran solo las empresas que pertenecían al
+índice entonces; el benchmark es SPY.
 
 **Salidas de la descarga** (en `data/raw/`, no versionadas):
 
 - Cache JSON por ticker: `data/raw/json/<fuente>/<ticker>/<dataset>.json`.
 - Parquet agregados: `profiles.parquet`, `finnhub_metrics.parquet`,
   `prices.parquet`, `news.parquet`, `report_dates.parquet`.
-- Metadatos: `download_coverage.json`, `download_failures.csv`.
+- Metadatos: `download_coverage.json`, `download_failures.csv`,
+  `universe_coverage.json`.
 
 ## 13. Estado actual vs. arquitectura objetivo
 
+### Ejecución por etapas
+
+La entrada única usa dos parámetros independientes: `RUN_MODE` selecciona la
+etapa y `RUN_SCOPE` el alcance de los datos. `download` adquiere datos crudos;
+las etapas disponibles son `dataset`, `features` y `agents`; `backtest`, `report`
+y `experiments` siguen pendientes. `full` ejecuta en orden todas las etapas que ya estén
+implementadas. Una etapa solicitada antes de existir falla explícitamente.
+
+`RUN_SCOPE=dev` guarda agregados bajo `data/raw/dev/` y paneles bajo
+`data/processed/dev/`; `RUN_SCOPE=full` usa las rutas sin ese subdirectorio.
+Por tanto una verificación de desarrollo no sobrescribe una descarga completa.
+
 **Lo que existe hoy** (tras el reinicio en limpio):
 
-- `environment.py`: configuración de la descarga.
-- `main.py`: entrada única que ejecuta la descarga.
-- `module/ingest/`: clientes HTTP (Finnhub, Yahoo) y `download_raw_data`.
+- `environment.py`: configuración, `RUN_MODE` y `RUN_SCOPE`.
+- `main.py`: entrada única que selecciona una etapa o el flujo completo.
+- `module/ingest/`: clientes HTTP de Finnhub, Yahoo y EDGAR, y `download_raw_data`.
+- `module/dataset.py`: panel mensual, precio de activos y benchmark point-in-time.
+- `module/features.py` y `module/baselines.py`: factores observables, baselines y etiquetas separadas.
+- `module/agents.py` y `module/meta.py`: Ridge walk-forward, meta-pesos y rank-IC OOS.
 - `module/utils.py`: utilidades de logging y escritura de archivos.
 
 **Arquitectura objetivo por etapas** (a reconstruir sobre la descarga):
@@ -251,11 +268,11 @@ download → dataset → features → ml (agentes) → selección → cartera �
 ```
 
 - `download` (hecho): adquisición de datos crudos.
-- `dataset`: panel point-in-time (ticker × fecha) con observabilidad por fecha de
+- `dataset` (hecho): panel point-in-time (ticker × fecha) con observabilidad por fecha de
   publicación; prevención de lookahead.
-- `features`: variables GARP/momentum y baselines deterministas.
-- `ml`: agentes especializados + meta-agente, entrenamiento walk-forward,
-  combinación de señales, diagnóstico de aprendizaje.
+- `features` (hecho): variables GARP/momentum, baselines deterministas y etiquetas futuras separadas.
+- `ml` (hecho): agentes especializados + meta-agente, entrenamiento walk-forward,
+  combinación de señales y diagnóstico de aprendizaje.
 - `selección`: watchlist a partir de los scores.
 - `cartera` + `backtest`: construcción, sizing, rotación, costes, simulación y
   métricas frente al benchmark.
@@ -293,6 +310,10 @@ propios tests (empezando por leakage y separación temporal):
 5. **Informe HTML**: viewer de un run con la evidencia de aprendizaje.
 6. **Experimentos (rejilla) + selección del sistema final**: barrido de
    escenarios, agregación por estabilidad y protocolo dev/confirmación.
+7. **Redacción del TFM en LaTeX**: el documento entregable, escrito capítulo a
+   capítulo sobre los resultados ya producidos por las fases 1-6. Plan de
+   estructura en `latex/plan_tfm.md`.
 
 Cada fase mantiene el flujo de datos limpio de entrada a salida y respeta los
-principios metodológicos de la sección 3.
+principios metodológicos de la sección 3. El detalle ejecutable de cada fase
+—ficheros, decisiones y tests— vive en `docs/plan_fases.md`.

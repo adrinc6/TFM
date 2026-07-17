@@ -22,10 +22,13 @@ Código que existe hoy:
 
 - `environment.py`: configuración editable de la descarga (universo de tickers,
   fechas, modo desarrollo, clave de API).
-- `main.py`: entrada única que ejecuta la descarga.
+- `main.py`: entrada única que ejecuta las etapas disponibles.
 - `module/ingest/`: clientes HTTP (Finnhub, Yahoo) y orquestación de la descarga
   de datos crudos (`download_raw_data`).
 - `module/utils.py`: utilidades compartidas de logging y escritura de archivos.
+- `module/dataset.py`: artefactos point-in-time de acciones, precios y benchmark.
+- `module/features.py`, `module/baselines.py`, `module/agents.py` y `module/meta.py`:
+  factores, baselines, etiquetas separadas, agentes Ridge y diagnóstico OOS.
 
 Arquitectura **objetivo** por etapas (a reconstruir sobre la descarga; descrita
 en detalle en `docs/doc.md`):
@@ -116,3 +119,4 @@ mucho. Indica con claridad qué prueba se ejecutó y qué no se pudo verificar.
   flechas y símbolos matemáticos: nunca introduzcas texto mal codificado.
 - Actualiza `README.md` o `docs/` cuando un cambio autorizado altere el uso,
   la arquitectura o la metodología descrita.
+- Debes adaptar la documentación necesaria después de cada cambio.

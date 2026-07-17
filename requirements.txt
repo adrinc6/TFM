@@ -2,6 +2,10 @@
 pandas>=2.0
 numpy>=1.24
 pyarrow>=12.0
+scikit-learn==1.4.2
 
 # Ingesta / IO (descarga desde Finnhub y Yahoo Finance)
 requests>=2.31
+
+# Pruebas
+pytest>=8.0
