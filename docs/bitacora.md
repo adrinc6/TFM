@@ -110,5 +110,47 @@ momentum y descomposición de fundamentales, régimen de mercado). Cada palanca 
 si sube el rank-IC OOS** en el walk-forward completo. Si tras agotarlas el rank-IC sigue ≈0,
 ese es el resultado, y se reporta con honestidad en lugar de maquillarlo con alfa.
 
-*(Las entradas de las palancas B1-B5 se añaden a continuación conforme se prueban, cada una con
-su número de rank-IC antes/después.)*
+**Baseline de referencia (full, 680 tickers, 942 cohortes):** rank-IC medio **−0.0058**,
+fracción de cohortes positivas **0.486**. Por agente: momentum −0.007, quality −0.021, value
++0.011. Este es el número contra el que se compara cada palanca.
+
+---
+
+## B1 — Neutralización por sector
+
+**Hipótesis.** El ranking transversal de cada factor es global, así que un factor de calidad
+puede estar midiendo "sector con ROE estructuralmente alto" en vez de "empresa mejor que sus
+comparables". Rankear **dentro de sector** debería quitar ese ruido sistemático y dejar solo la
+señal relativa, que es la que predice retorno relativo.
+
+**Qué se probó.** Se añade `neutralize_by_sector` (parámetro): cada factor se rankea dentro de
+`(fecha, sector)` en vez de `(fecha)`. El sector viene de `profiles.parquet` (snapshot actual
+de Finnhub) y se usa **solo para agrupar, nunca como señal** — lookahead residual menor y
+documentado. Guarda de tamaño: con menos de `neutralize_min_group` (5) miembros útiles, el
+grupo cae a ranking global, porque en los años 2000 muchos sectores tienen 1-2 tickers (27 de
+44 sectores tienen <5 miembros en 2000) y un grupo diminuto da un percentil degenerado.
+
+**Resultado medido (full).** **Empeora**, no mejora:
+
+| | baseline | B1 (sector) |
+|---|---|---|
+| rank-IC medio | −0.0058 | **−0.0083** |
+| frac cohortes IC>0 | 0.486 | **0.467** |
+| value (agente menos malo) | +0.0107 | +0.0034 |
+
+Todos los agentes bajan.
+
+**Interpretación.** La hipótesis era razonable pero los datos la rechazan. La causa más
+probable es el tamaño de los grupos: solo 242 de 492 tickers del índice en 2000 tienen perfil,
+y 27 de 44 sectores tienen menos de 5 miembros. Neutralizar en grupos diminutos añade ruido —
+el poco orden transversal que había se reparte en subgrupos donde el ranking es casi aleatorio.
+La neutralización por sector es una técnica de carteras grandes y bien pobladas; con este
+universo reducido y sesgado por supervivencia, hace daño.
+
+**Decisión.** **Se descarta B1.** El código queda en el repositorio desactivado por defecto
+(`neutralize_by_sector=False`) porque es una opción legítima y el propio experimento —que no
+funcione— es un resultado documentable del TFM, pero no se usa. Diagnóstico complementario
+(B4): la correlación de Spearman entre agentes es quality↔value 0.51, momentum casi ortogonal
+(0.15). Momentum aporta la señal más independiente; quality y value se solapan. Sugiere que la
+mejora, si llega, vendrá de **mejorar la señal de cada agente** (etiqueta, features), no de
+neutralizar ni de añadir agentes redundantes.

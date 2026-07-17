@@ -67,6 +67,11 @@ FUNDAMENTAL_STEP_MONTHS = 3
 SNAPSHOT_DAY = 15
 TARGET_HORIZON_MONTHS = 3
 MAX_PRICE_AGE_DAYS = 7
+# B1: neutralizar factores rankeando dentro de sector en vez de sobre todo el universo.
+# El sector viene de profiles.parquet (snapshot actual): se usa SOLO para agrupar, nunca
+# como senal. Con menos de NEUTRALIZE_MIN_GROUP miembros, el grupo cae a ranking global.
+NEUTRALIZE_BY_SECTOR = False
+NEUTRALIZE_MIN_GROUP = 5
 META_IC_LOOKBACK_QUARTERS = 12
 RIDGE_ALPHA = 1.0
 MIN_TRAINING_ROWS = 30
@@ -114,6 +119,8 @@ class Settings:
     snapshot_day: int = SNAPSHOT_DAY
     target_horizon_months: int = TARGET_HORIZON_MONTHS
     max_price_age_days: int = MAX_PRICE_AGE_DAYS
+    neutralize_by_sector: bool = NEUTRALIZE_BY_SECTOR
+    neutralize_min_group: int = NEUTRALIZE_MIN_GROUP
     meta_ic_lookback_quarters: int = META_IC_LOOKBACK_QUARTERS
     ridge_alpha: float = RIDGE_ALPHA
     min_training_rows: int = MIN_TRAINING_ROWS

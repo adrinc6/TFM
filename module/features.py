@@ -43,7 +43,8 @@ def build_features(settings: Settings) -> pd.DataFrame:
             "Ejecuta RUN_MODE='download' y después RUN_MODE='dataset' con el mismo alcance."
         )
 
-    features = _build_feature_frame(panel, benchmark, settings)
+    sector_by_ticker = _load_sector_map(settings) if settings.neutralize_by_sector else {}
+    features = _build_feature_frame(panel, benchmark, settings, sector_by_ticker)
     targets = _build_targets(features, asset_prices, benchmark, settings)
     baselines = build_baseline_scores(features)
 
@@ -61,7 +62,32 @@ def build_features(settings: Settings) -> pd.DataFrame:
     return features
 
 
-def _build_feature_frame(panel: pd.DataFrame, benchmark: pd.DataFrame, settings: Settings) -> pd.DataFrame:
+def _load_sector_map(settings: Settings) -> dict[str, str]:
+    """Mapa ticker -> sector desde profiles.parquet, SOLO para agrupar (nunca como senal).
+
+    El sector es un snapshot actual de Finnhub. Su uso como variable de neutralizacion
+    introduce un lookahead residual menor (la industria de una empresa rara vez cambia), que se
+    documenta en la bitacora. No entra en el panel ni se usa como feature predictiva.
+    """
+    profiles_path = settings.raw_output_dir / "profiles.parquet"
+    if not profiles_path.exists():
+        log.warning("neutralize_by_sector activo pero no hay %s; se rankea global.", profiles_path)
+        return {}
+    profiles = pd.read_parquet(profiles_path)
+    if "finnhubIndustry" not in profiles.columns:
+        return {}
+    return {
+        row.ticker: (row.finnhubIndustry or "N/A")
+        for row in profiles[["ticker", "finnhubIndustry"]].itertuples(index=False)
+    }
+
+
+def _build_feature_frame(
+    panel: pd.DataFrame,
+    benchmark: pd.DataFrame,
+    settings: Settings,
+    sector_by_ticker: dict[str, str] | None = None,
+) -> pd.DataFrame:
     required_panel = {"ticker", "snapshot_date", "in_sp500", "price_age_days", "price_return_3m"}
     required_benchmark = {"snapshot_date", "price_age_days", "price_return_3m"}
     if missing := required_panel - set(panel.columns):
@@ -91,13 +117,20 @@ def _build_feature_frame(panel: pd.DataFrame, benchmark: pd.DataFrame, settings:
         & frame["benchmark_price_age_days"].le(settings.max_price_age_days)
     )
 
+    # Grupo de neutralizacion: sector si B1 esta activo, si no un unico grupo global.
+    sector_by_ticker = sector_by_ticker or {}
+    frame["_group"] = (
+        frame["ticker"].map(sector_by_ticker).fillna("N/A") if sector_by_ticker else "ALL"
+    )
+    min_group = settings.neutralize_min_group if settings.neutralize_by_sector else 0
+
     for horizon in (3, 6, 12):
         stock = pd.to_numeric(frame[f"price_return_{horizon}m"], errors="coerce")
         index = pd.to_numeric(frame[f"benchmark_return_{horizon}m"], errors="coerce")
         relative = stock - index
         frame[f"relative_return_{horizon}m"] = relative.where(frame["is_price_fresh"])
         frame[f"factor_relative_return_{horizon}m"] = _cross_section_rank(
-            frame, frame[f"relative_return_{horizon}m"], ascending=True
+            frame, frame[f"relative_return_{horizon}m"], ascending=True, min_group=min_group
         )
 
     for source, (factor, ascending, positive_only) in FACTOR_SOURCES.items():
@@ -105,14 +138,41 @@ def _build_feature_frame(panel: pd.DataFrame, benchmark: pd.DataFrame, settings:
         if positive_only:
             values = values.where(values.gt(0))
         values = values.where(frame["is_price_fresh"])
-        frame[factor] = _cross_section_rank(frame, values, ascending=ascending)
+        frame[factor] = _cross_section_rank(frame, values, ascending=ascending, min_group=min_group)
 
+    frame.drop(columns=["_group"], inplace=True)
     frame.sort_values(["snapshot_date", "ticker"], inplace=True, ignore_index=True)
     return frame
 
 
-def _cross_section_rank(frame: pd.DataFrame, values: pd.Series, ascending: bool) -> pd.Series:
-    ranked = values.groupby(frame["snapshot_date"]).rank(method="average", pct=True, ascending=ascending)
+def _cross_section_rank(
+    frame: pd.DataFrame, values: pd.Series, ascending: bool, min_group: int = 0
+) -> pd.Series:
+    """Rank percentil del corte transversal.
+
+    Con `min_group <= 0`, rankea todo el corte de cada fecha junto (comportamiento base). Con
+    `min_group > 0`, rankea dentro de `(fecha, grupo)` — neutralizacion por sector (B1) — pero
+    cae a ranking por fecha global para los grupos con menos de `min_group` miembros validos,
+    porque un grupo diminuto da un percentil degenerado (un grupo de 1 siempre da 0.5).
+    """
+    if min_group <= 0:
+        ranked = values.groupby(frame["snapshot_date"]).rank(
+            method="average", pct=True, ascending=ascending
+        )
+        return ranked.where(frame["is_price_fresh"])
+
+    # Tamano de cada (fecha, grupo) contando solo valores utilizables (no NA y precio fresco).
+    usable = (values.notna() & frame["is_price_fresh"]).astype(int)
+    group_size = usable.groupby([frame["snapshot_date"], frame["_group"]]).transform("sum")
+    big_enough = group_size >= min_group
+
+    within_group = values.groupby([frame["snapshot_date"], frame["_group"]]).rank(
+        method="average", pct=True, ascending=ascending
+    )
+    global_rank = values.groupby(frame["snapshot_date"]).rank(
+        method="average", pct=True, ascending=ascending
+    )
+    ranked = within_group.where(big_enough, global_rank)
     return ranked.where(frame["is_price_fresh"])
 
 
