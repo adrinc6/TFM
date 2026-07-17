@@ -399,11 +399,19 @@ def _confirmation_era_metrics(
 
 
 def _pick_run_dir(scenario_dir: Path) -> Path | None:
-    agents_root = scenario_dir / "agents"
-    if not agents_root.exists():
-        return None
-    candidates = sorted(path for path in agents_root.iterdir() if path.is_dir())
-    return candidates[-1] if candidates else None
+    """Busca `agents/<run_id>` primero directamente y despues bajo `processed/`.
+
+    Los escenarios que corren dataset/features propios acaban con la estructura
+    `<scenario>/processed/agents/<run_id>`. Los que reutilizan solo tienen el enlace
+    en `<scenario>/agents/<run_id>`.
+    """
+    for candidate_root in (scenario_dir / "agents", scenario_dir / "processed" / "agents"):
+        if not candidate_root.exists():
+            continue
+        candidates = sorted(path for path in candidate_root.iterdir() if path.is_dir())
+        if candidates:
+            return candidates[-1]
+    return None
 
 
 def _comparison_summary_section(summary: pd.DataFrame, winner: str) -> str:
