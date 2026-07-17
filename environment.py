@@ -76,6 +76,15 @@ META_IC_LOOKBACK_QUARTERS = 12
 RIDGE_ALPHA = 1.0
 MIN_TRAINING_ROWS = 30
 MIN_RANK_IC_CROSS_SECTION = 10
+# B2: tratamiento de la etiqueta de entrenamiento para reducir ruido.
+#   "none"   -> exceso de retorno crudo
+#   "winsor" -> recorta las colas al percentil LABEL_WINSOR_PCT (reduce outliers)
+#   "rank"   -> percentil transversal del retorno futuro (entrena contra el orden, Spearman)
+# El tratamiento se aplica SOLO a la etiqueta de entrenamiento, nunca al scoring.
+# "rank" es el mejor medido (rank-IC -0.0058 -> +0.0011, frac 0.486 -> 0.534): entrenar contra
+# el orden alinea la perdida con el rank-IC. Ver docs/bitacora.md (B2).
+LABEL_TRANSFORM = "rank"
+LABEL_WINSOR_PCT = 0.02   # recorta el 2 % de cada cola (solo si LABEL_TRANSFORM="winsor")
 
 # Parametros de cartera (Fase 4). Todos con valores por defecto conservadores.
 # La logica que sigue: expulsa a los que se hunden, protege del ruido con umbral de ventaja,
@@ -125,6 +134,8 @@ class Settings:
     ridge_alpha: float = RIDGE_ALPHA
     min_training_rows: int = MIN_TRAINING_ROWS
     min_rank_ic_cross_section: int = MIN_RANK_IC_CROSS_SECTION
+    label_transform: str = LABEL_TRANSFORM
+    label_winsor_pct: float = LABEL_WINSOR_PCT
     target_min: int = TARGET_MIN
     target_max: int = TARGET_MAX
     entry_min_percentile: float = ENTRY_MIN_PERCENTILE

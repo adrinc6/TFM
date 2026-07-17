@@ -103,8 +103,9 @@ def _walk_forward_scores(frame: pd.DataFrame, settings: Settings) -> tuple[pd.Da
             if len(train) < settings.min_training_rows:
                 log.warning("[%s %s] filas insuficientes: %s", agent, retrain_date.date(), len(train))
                 continue
+            target = _transform_label(train, "forward_excess_return_3m", settings)
             model = _ridge_pipeline(settings)
-            model.fit(train[columns], train["forward_excess_return_3m"])
+            model.fit(train[columns], target)
             if scoring.empty:
                 continue
             values = model.predict(scoring[columns])
@@ -124,6 +125,26 @@ def _walk_forward_scores(frame: pd.DataFrame, settings: Settings) -> tuple[pd.Da
                 )
             coefficients.extend(_coefficient_rows(model, agent, retrain_date, len(train)))
     return pd.DataFrame(rows), pd.DataFrame(coefficients)
+
+
+def _transform_label(train: pd.DataFrame, column: str, settings: Settings) -> pd.Series:
+    """Tratamiento de la etiqueta de entrenamiento (B2). Solo sobre `train`, nunca scoring.
+
+    - "none": exceso de retorno crudo.
+    - "winsor": recorta las colas al percentil `label_winsor_pct` para que los outliers no
+      dominen la regresion (unos pocos retornos extremos arrastran el ajuste y degradan el orden).
+    - "rank": percentil transversal del retorno futuro DENTRO de cada snapshot. Entrena contra el
+      orden en vez del valor, que es exactamente lo que mide el rank-IC.
+    """
+    values = train[column].astype(float)
+    transform = settings.label_transform
+    if transform == "winsor":
+        lower = values.quantile(settings.label_winsor_pct)
+        upper = values.quantile(1 - settings.label_winsor_pct)
+        return values.clip(lower, upper)
+    if transform == "rank":
+        return values.groupby(train["snapshot_date"]).rank(method="average", pct=True)
+    return values
 
 
 def _ridge_pipeline(settings: Settings) -> Pipeline:
@@ -185,6 +206,10 @@ def _run_id(settings: Settings, feature_path: Path, target_path: Path) -> str:
         "target_horizon_months": settings.target_horizon_months,
         "ridge_alpha": settings.ridge_alpha,
         "meta_ic_lookback_quarters": settings.meta_ic_lookback_quarters,
+        "min_training_rows": settings.min_training_rows,
+        "min_rank_ic_cross_section": settings.min_rank_ic_cross_section,
+        "label_transform": settings.label_transform,
+        "label_winsor_pct": settings.label_winsor_pct,
         "features": sha256_file(feature_path),
         "targets": sha256_file(target_path),
     }
@@ -209,6 +234,8 @@ def _manifest(
             "target_horizon_months": settings.target_horizon_months,
             "ridge_alpha": settings.ridge_alpha,
             "meta_ic_lookback_quarters": settings.meta_ic_lookback_quarters,
+            "label_transform": settings.label_transform,
+            "label_winsor_pct": settings.label_winsor_pct,
             "missing_policy": "median_train_only_with_indicator",
         },
         "versions": {"scikit_learn": sklearn.__version__},

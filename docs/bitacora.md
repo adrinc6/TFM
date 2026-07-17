@@ -154,3 +154,44 @@ funcione— es un resultado documentable del TFM, pero no se usa. Diagnóstico c
 (0.15). Momentum aporta la señal más independiente; quality y value se solapan. Sugiere que la
 mejora, si llega, vendrá de **mejorar la señal de cada agente** (etiqueta, features), no de
 neutralizar ni de añadir agentes redundantes.
+
+---
+
+## B2 — Etiqueta menos ruidosa
+
+**Hipótesis.** El exceso de retorno a 3 meses es muy ruidoso; unos pocos outliers dominan la
+regresión Ridge y degradan el orden aprendido. Tratar la etiqueta (recortar colas, alargar
+horizonte, o entrenar contra el rango en vez del valor) debería subir el rank-IC.
+
+**Qué se probó.** Parámetro `label_transform` aplicado **solo a la etiqueta de entrenamiento**
+(nunca al scoring): `winsor` (recorta el 2 % de cada cola), `rank` (percentil transversal del
+retorno futuro dentro de cada snapshot), y horizonte 6m con etiqueta cruda y con rank.
+
+**Resultado medido (full, baseline 3m/none = −0.0058, frac 0.486):**
+
+| horizonte | etiqueta | rank-IC medio | frac cohortes IC>0 |
+|---|---|---|---|
+| 3m | none | −0.0058 | 0.486 |
+| 3m | winsor | −0.0021 | 0.511 |
+| **3m** | **rank** | **+0.0011** | **0.534** |
+| 6m | none | −0.0162 | 0.459 |
+| 6m | rank | −0.0137 | 0.481 |
+
+**Interpretación.** Entrenar contra el **rango** del retorno (no su magnitud) es lo que más
+ayuda: cruza el rank-IC a positivo y sube la fracción de cohortes ganadoras a 53.4 % (deja de
+ser azar puro). Es coherente: el objetivo real es ordenar, y entrenar contra el orden alinea
+la pérdida con la métrica. El **horizonte 6m empeora** de forma clara y contraintuitiva —
+menos cohortes independientes, más solapamiento temporal y la relación factor→retorno se
+diluye más de lo que se limpia. Winsor ayuda algo, menos que rank.
+
+**Decisión.** Se adopta **`label_transform="rank"` a 3 meses** como nueva base. Es una mejora
+real pero pequeña: +0.0011 sigue siendo un rank-IC ≈ 0, **no una señal explotable**. Se
+mantiene el horizonte de 3 meses. Aviso honesto: tratar mejor la etiqueta no crea señal donde
+no la hay; solo deja de destruir la poca que existe. La palanca con potencial de aportar
+información nueva es B3 (tendencia de fundamentales) y B5 (régimen).
+
+**Bug encontrado por el camino.** El `_run_id` de `agents.py` no incluía `label_transform` en
+su huella, así que winsor y rank colapsaban al mismo `run_dir` y se sobrescribían. Arreglado
+(la huella ahora incluye `label_transform`, `label_winsor_pct`, `min_training_rows`,
+`min_rank_ic_cross_section`). Lección: la huella de un run debe cubrir **todo** parámetro que
+altere el resultado, o dos experimentos distintos se pisan en silencio.

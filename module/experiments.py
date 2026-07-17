@@ -78,7 +78,7 @@ FINGERPRINT_FIELDS: dict[str, tuple[str, ...]] = {
         "target_horizon_months", "execution_year", "execution_quarter",
         "execution_lag_days", "train_lookback_years", "fundamental_step_months",
         "meta_ic_lookback_quarters", "ridge_alpha", "min_training_rows",
-        "min_rank_ic_cross_section",
+        "min_rank_ic_cross_section", "label_transform", "label_winsor_pct",
     ),
     "backtest": (
         "run_scope", "data_start_date", "end_date", "benchmark_ticker",
@@ -87,7 +87,7 @@ FINGERPRINT_FIELDS: dict[str, tuple[str, ...]] = {
         "target_horizon_months", "execution_year", "execution_quarter",
         "execution_lag_days", "train_lookback_years", "fundamental_step_months",
         "meta_ic_lookback_quarters", "ridge_alpha", "min_training_rows",
-        "min_rank_ic_cross_section",
+        "min_rank_ic_cross_section", "label_transform", "label_winsor_pct",
         "target_min", "target_max", "entry_min_percentile", "min_hold_percentile",
         "rotation_edge_percentiles", "max_weight_per_position",
         "commission_bps", "slippage_bps", "rebalance_drift_tolerance",
