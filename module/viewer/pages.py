@@ -18,7 +18,7 @@ import pandas as pd
 from environment import PROCESSED_DIR, Settings
 from module.backtest.artifacts import SMALL_SAMPLE_CAVEAT
 
-from .charts import build_charts
+from .charts import breadth_curve, build_charts
 from .shared import figure, kpi, report_layout, select, table
 
 log = logging.getLogger(__name__)
@@ -117,6 +117,36 @@ def _section_resumen(metrics: dict) -> str:
     )
 
 
+def _annual_performance_table(vs: pd.DataFrame) -> str:
+    """Comparativa anual: retorno compuesto de la cartera neta vs. benchmark y su alpha, año a año.
+    Responde de un vistazo en qué años el sistema batió al mercado y en cuáles no."""
+    needed = {"date", "portfolio_period_return", "benchmark_period_return"}
+    if vs.empty or not needed.issubset(vs.columns):
+        return ""
+    d = vs.copy()
+    d["year"] = pd.to_datetime(d["date"], errors="coerce").dt.year
+    d = d.dropna(subset=["year"])
+    if d.empty:
+        return ""
+    rows = []
+    for year, group in d.groupby("year"):
+        port = float((1 + pd.to_numeric(group["portfolio_period_return"], errors="coerce").fillna(0)).prod() - 1)
+        bench = float((1 + pd.to_numeric(group["benchmark_period_return"], errors="coerce").fillna(0)).prod() - 1)
+        rows.append({
+            "Año": int(year),
+            "Cartera": _pct(port),
+            "Benchmark": _pct(bench),
+            "Alpha": _pct(port - bench),
+        })
+    annual = pd.DataFrame(rows)
+    return (
+        '<h3 class="note" style="margin-top:22px">Desempeño anual</h3>'
+        '<p class="note">Retorno compuesto de la cartera neta y del benchmark, y su diferencia (alpha), '
+        'año a año.</p>'
+        + table(annual)
+    )
+
+
 def _section_rendimiento(charts: dict, vs: pd.DataFrame, drawdown_episodes) -> str:
     episodes = drawdown_episodes(vs) if not vs.empty else pd.DataFrame()
     episode_cols = {"peak_date": "Pico", "trough_date": "Valle", "recovery_date": "Recuperación",
@@ -134,6 +164,7 @@ def _section_rendimiento(charts: dict, vs: pd.DataFrame, drawdown_episodes) -> s
         + figure(charts.get("cumulative_alpha"), "Alpha acumulado frente al benchmark")
         + '<div style="height:16px"></div>'
         + figure(charts.get("drawdown"), "Perfil de drawdown de la cartera")
+        + _annual_performance_table(vs)
         + ep_table
         + "</section>"
     )
@@ -220,6 +251,26 @@ def _journal_rationale_block(journal: pd.DataFrame) -> str:
     )
 
 
+def _breadth_size_block(charts: dict, diag: pd.DataFrame) -> str:
+    """Tamaño de cartera óptimo: ventaja media de alpha del top-N para varios N, desde el ranking
+    guardado. Responde "¿5 o 50 acciones?" sin re-correr el backtest por cada tamaño."""
+    curve = breadth_curve(diag)
+    if curve.empty:
+        return ""
+    best = int(curve.loc[curve["lift"].idxmax(), "n"])
+    display = curve.rename(columns={"n": "Tamaño (N mejores)"})
+    display["Ventaja media alpha top-N"] = display["lift"].map(_pct)
+    display = display[["Tamaño (N mejores)", "Ventaja media alpha top-N"]]
+    return (
+        '<h3 class="note" style="margin-top:22px">Tamaño de cartera óptimo (breadth)</h3>'
+        f'<p class="note">Ventaja media de alpha del top-N sobre la media del universo, por tamaño de '
+        f'cartera. El máximo está en N={best}: concentrar más allá de ahí deja de compensar. Se calcula '
+        f'desde el ranking guardado, sin re-simular la cartera por cada tamaño.</p>'
+        + figure(charts.get("breadth_curve"), "Ventaja de alpha del top-N según el tamaño de cartera")
+        + table(display)
+    )
+
+
 def _section_aprendizaje(charts: dict, tables: dict, settings: Settings) -> str:
     weights = tables.get("meta_weights_by_snapshot", pd.DataFrame())
     learned = int((weights.get("source", pd.Series(dtype=str)) == "learned").sum()) if not weights.empty else 0
@@ -250,6 +301,7 @@ def _section_aprendizaje(charts: dict, tables: dict, settings: Settings) -> str:
         '<h3 class="note" style="margin-top:22px">Rank-IC de la señal maestra por año</h3>'
         + table(year_stats) if not year_stats.empty else ""
     )
+    breadth_block = _breadth_size_block(charts, tables.get("model_walk_forward_diagnostics", pd.DataFrame()))
     horizon_block = _horizon_comparison_block(charts, tables.get("label_horizon_comparison", pd.DataFrame()), settings)
     dominant_block = _dominant_agent_block(weights, tables.get("model_walk_forward_diagnostics", pd.DataFrame()))
     attribution_block = _edge_attribution_block(tables.get("edge_attribution", pd.DataFrame()))
@@ -263,6 +315,7 @@ def _section_aprendizaje(charts: dict, tables: dict, settings: Settings) -> str:
         + '<div style="height:16px"></div>'
         + figure(charts.get("rank_ic"), "Rank-IC out-of-sample de la señal maestra por snapshot, con media móvil de tendencia")
         + year_block
+        + breadth_block
         + horizon_block
         + attribution_block
         + importance_block

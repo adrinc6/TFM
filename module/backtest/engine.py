@@ -20,7 +20,6 @@ from .artifacts import (
     edge_attribution,
     executive_summary_table,
     improvement_backlog,
-    latest_top_opportunities,
     sector_exposure,
     sell_reasons_summary,
     strategy_learning_log,
@@ -133,7 +132,6 @@ def run_backtest(settings: Settings) -> dict[str, pd.DataFrame]:
     outputs["sector_exposure"] = sector_exposure(outputs["portfolio_monthly_holdings"])
     outputs["portfolio_monthly_summary"] = summary_metrics(outputs)
     outputs["current_portfolio"] = current_portfolio(outputs["portfolio_monthly_holdings"])
-    outputs["top_opportunities_latest"] = latest_top_opportunities(outputs["universe_top_candidates"])
     outputs["executive_summary"] = executive_summary_table(outputs)
     outputs["strategy_learning_log"] = strategy_learning_log(outputs)
     outputs["improvement_backlog"] = improvement_backlog(outputs)
@@ -174,7 +172,7 @@ def clean_managed_outputs(run_dir) -> None:
         "portfolio_decision_log", "portfolio_evolution", "portfolio_monthly_holdings", "portfolio_review_diagnostics",
         "portfolio_transactions", "portfolio_turnover", "portfolio_vs_benchmark", "position_performance",
         "rebalance_report", "sector_exposure", "sell_reasons_summary", "strategy_learning_log", "improvement_backlog",
-        "top_opportunities_latest", "tracking_dashboard", "universe_monthly_price_update", "universe_monthly_scores",
+        "tracking_dashboard", "universe_monthly_price_update", "universe_monthly_scores",
         "universe_quarterly_fundamental_review", "universe_top_candidates",
         "robustness_bootstrap", "robustness_bootstrap_distribution", "robustness_cost_sensitivity", "robustness_summary",
         "robustness_sub_periods",

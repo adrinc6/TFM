@@ -74,7 +74,9 @@ _ML_SETTINGS_FIELDS = [
 ]
 
 
-_ALL_SCENARIOS_FILE = "experiments/escenarios_todos.py"
+# El barrido completo vive ahora en un único generador de rejilla (absorbe los antiguos
+# escenarios_*.py sueltos). El literal "todos" resuelve a él.
+_ALL_SCENARIOS_FILE = "experiments/rejilla.py"
 
 # Fila terminada de un escenario, escrita en su run_dir. Su presencia marca el escenario como
 # completado y permite reanudar un barrido sin re-ejecutarlo.
@@ -356,9 +358,15 @@ def run_experiment(
                 continue
             rows.append(run_scenario(scenario, base_settings, exp_dir, cache))
 
+    # Agregación global: elige el sistema final (config más estable/útil) sobre la era de desarrollo
+    # y lo confirma en la reservada. Escribe system_selection.csv/json en la carpeta del experimento.
+    from .aggregate import aggregate_scenarios
+
+    verdict = aggregate_scenarios(rows, exp_dir)
+
     # Import diferido para no arrastrar el viewer si solo se quiere el runner.
     from .report import write_comparison
 
-    write_comparison(rows, exp_dir)
+    write_comparison(rows, exp_dir, selection=verdict)
     log.info("Comparación lista: %s", exp_dir / "index.html")
     return exp_dir

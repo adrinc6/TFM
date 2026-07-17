@@ -1,5 +1,18 @@
 # Documentación exhaustiva — GARP AI Portfolio System
 
+> **Nota (reestructuración en curso).** El proyecto se ha recentrado en la IA/ML como núcleo. Cambios
+> que afectan a partes de este documento (ver `README.md` para el modelo actualizado):
+> 1. La simulación arranca en una **fecha ancla configurable** = `EVAL_START_QUARTER` (p. ej.
+>    `2010Q1`) + `FUNDAMENTAL_PUBLICATION_LAG_DAYS` (45), desacoplada de la ventana de cartera.
+> 2. Se separa **entrenar** (solo con fundamentales nuevos: trimestral `Q` o anual `A`) de **revisar**
+>    (mensual, re-precio sin reentrenar). El dataset modela el **retardo de publicación**.
+> 3. El barrido de escenarios vive en un **generador de rejilla** (`experiments/rejilla.py`), que
+>    sustituye a los antiguos `escenarios_*.py`; `module/experiments/aggregate.py` elige el **sistema
+>    final** por estabilidad multi-era (dev/confirmación).
+> 4. Análisis de **tamaño de cartera óptimo** (curva breadth top-N) desde el ranking guardado.
+> Las cifras concretas de este documento son del esquema anterior (2018+) y se regenerarán con el
+> nuevo barrido.
+
 ## 0. Resumen general del proyecto
 
 Este es, ante todo, **un proyecto de Inteligencia Artificial y Machine Learning**. La bolsa no es
@@ -147,11 +160,11 @@ lookahead bias** en todo el proyecto:
 - La búsqueda point-in-time usa `bisect_right(fechas, fecha_snapshot) - 1`: siempre devuelve el
   último valor disponible **estrictamente en o antes** de la fecha del snapshot
   (`_latest_price`, `_latest_row`, `_historical_growth`).
-- **Fecha de observabilidad de fundamentales**: `_prepared_rows` usa la fecha de fin de periodo de
-  cada fundamental directamente como su fecha de observabilidad, sin margen adicional automático —
-  el margen entre la fecha real de publicación y la fecha en que la estrategia lo trata como
-  "conocido" se espera que venga de cómo se elijan `PORTFOLIO_START_DATE` y la cadencia de snapshots,
-  no de un lag interno en la capa de datos.
+- **Fecha de observabilidad de fundamentales**: `_prepared_rows` desplaza cada fundamental a
+  `cierre_de_periodo + FUNDAMENTAL_PUBLICATION_LAG_DAYS` (45 por defecto) como su fecha de
+  observabilidad. Es decir, el retardo de publicación se modela **explícitamente en la capa de datos**
+  (antes se dejaba a la elección de las fechas de snapshot; ahora es un parámetro), corrigiendo el
+  lookahead sutil de tratar un fundamental como conocido el mismo día del cierre de periodo.
 - Columnas producidas: `price`, `price_return_{1,3,6,12}m`, `sector`, múltiplos de valoración
   (`pe`, `forward_pe`, `peg`) tanto en su forma base como **ajustada por precio**
   (`{multiplo}_price_adjusted = valor_base * (1 + variación_de_precio)`, para reflejar que un
@@ -582,14 +595,15 @@ sobrevive. El sistema de experimentos convierte eso en algo reproducible: **un f
 escenarios, un comando los corre todos, y el resultado es un informe HTML que los compara entre sí**
 (no un informe por escenario).
 
-Hay evidencia de que la necesidad era real: el comentario en `module/ml.py` alrededor de
-`AGENT_PRIOR_WEIGHTS` cita un barrido de pesos (`scripts/buscar_pesos_meta.py`) que se hizo *offline*
-y no quedó versionado. `experiments/escenarios_pesos_meta.py` lo reconstruye de forma trazable.
+El barrido se declara ahora como una **rejilla sistemática** (`experiments/rejilla.py`) en vez de
+ficheros sueltos: producto cartesiano de ventana × cadencia, más variaciones de horizonte y ablations
+de pesos/composición de agentes. Tras el barrido, `module/experiments/aggregate.py` elige el sistema
+final por una métrica compuesta de estabilidad sobre la era de desarrollo y lo confirma en la reservada.
 
 ### 16.2 Cómo se lanza
 
-- `python -m module.experiments run experiments/escenarios_aprendizaje.py` (o cualquier fichero).
-- `python -m module.experiments run todos` — junta los cuatro bloques.
+- `python -m module.experiments run experiments/rejilla.py` (o cualquier fichero de escenarios).
+- `python -m module.experiments run todos` — alias del generador de rejilla.
 - Desde `main.py`: `RUN_MODE="experiments"` + `EXPERIMENTS_FILE` en `environment.py`.
 
 Un fichero de escenarios declara `SCENARIOS: list[Scenario]`. Cada `Scenario(name, why, overrides)`
@@ -664,20 +678,20 @@ La salida queda en `results/escenarios/<fecha>/`: `comparison.csv` (una fila por
 rank-IC por escenario, dispersión rank-IC vs. alfa que visualiza el trade-off estabilidad/
 rentabilidad, y la hipótesis de cada uno). Reutiliza el sistema de diseño de `module/viewer/shared.py`.
 
-### 16.7 Los cuatro bloques de escenarios
+### 16.7 Ejes de la rejilla de escenarios
 
-Uno por faceta de la pregunta del TFM (`experiments/escenarios_*.py`):
+El barrido se genera en `experiments/rejilla.py` como producto de ejes (bloques `block=`):
 
-- **`aprendizaje`** — *ablaciones*: apagan una pieza del aprendizaje (meta-agente aprendido, prior
-  tilteado, penalización de consistencia, shrinkage) y se leen contra el baseline. La lógica: si
-  apagarlo **no** empeora el rank-IC OOS ni el placebo, el sistema no estaba aprendiendo nada útil
-  (resultado negativo válido); si empeora, es evidencia de aprendizaje real, no ruido.
-- **`estabilidad`** — semillas (dispersión del resultado al re-sembrar), costes al doble, ventana de
-  entrenamiento más corta, horizonte de etiqueta alternativo.
-- **`utilidad`** — variaciones de agresividad de cartera (concentración, rotación, nº de posiciones)
-  sin tocar el ML, leídas contra las baselines y la alfa neta de costes.
-- **`pesos_meta`** — barrido del prior `AGENT_PRIOR_WEIGHTS` (§8.2.1), trazando el trade-off
-  estabilidad vs. alfa.
+- **`ventana_cadencia`** (núcleo) — producto cartesiano de longitud de ventana `{2,4,6,8,10}` años ×
+  cadencia de entrenamiento `{Q,A}`: el eje central de la pregunta —¿con cuántos años y cada cuánto
+  reentrenar aprende de forma más estable?
+- **`horizonte`** — horizonte de etiqueta `{3,6,24}m` (12 es el baseline): ¿vive el edge a otro plazo?
+- **`pesos_ablacion`** — ablations de composición/pesos de agentes (equal, solo-calidad, solo-alpha,
+  sin-meta-aprendido): aíslan de dónde sale (o no) el aprendizaje.
+
+El **tamaño de cartera** óptimo no es un eje del barrido: se analiza dentro de cada escenario desde el
+ranking guardado (curva breadth top-N). La **selección del sistema final** la hace `aggregate.py` por
+estabilidad multi-era (dev/confirmación).
 
 Un resultado **negativo bien medido en cualquiera de los tres ejes es un entregable válido del TFM**,
 no un fallo — el sistema está construido para poder mostrarlo con honestidad (coherente con §17).

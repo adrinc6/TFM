@@ -1,5 +1,13 @@
 # Diagnóstico del aprendizaje — ¿qué agente aprende y qué no?
 
+> **Nota (reestructuración):** las cifras de este documento corresponden al esquema **anterior**
+> (evaluación desde 2018, ventana fija de 4 años, reentreno trimestral). Tras la reestructuración la
+> simulación arranca en una **fecha ancla configurable** (`EVAL_START_QUARTER` + retardo de
+> publicación), separa **entrenar** (trimestral/anual) de **revisar** (mensual), y el barrido
+> sistemático (`experiments/rejilla.py`) elige el **sistema final** por estabilidad multi-era. Las
+> tablas concretas de abajo **se regenerarán** con el nuevo barrido (aún no ejecutado por su coste); la
+> metodología y las conclusiones cualitativas siguen siendo válidas.
+
 Este documento recoge el diagnóstico cuantitativo del run de referencia
 (`results/full_2018-02-15_2026-06-15_M_cutoff2018-02-15/`, congelado en
 `results/_baseline_frozen/`) sobre **la calidad de ranking del modelo**, no sobre su

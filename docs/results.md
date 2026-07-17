@@ -1,5 +1,11 @@
 # Cómo leer `results/<run>/viewer/index.html`
 
+> **Nota (reestructuración):** el informe por run mantiene su estructura, con dos añadidos: **tabla de
+> desempeño anual** (Rendimiento) y **curva de tamaño de cartera / breadth** (Aprendizaje). La
+> comparativa de escenarios incorpora el **veredicto del sistema final** elegido automáticamente. Las
+> cifras citadas en este documento son del esquema anterior (2018+) y se regenerarán con el nuevo
+> barrido.
+
 El informe es una **única página HTML** en español, autocontenida (sin dependencias externas),
 generada por `module/viewer/`. No hay 16 páginas ni un dashboard aparte: cada sección existe
 porque responde a una pregunta concreta del TFM o ayuda a depurar el modelo — ese es el criterio

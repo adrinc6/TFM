@@ -18,6 +18,13 @@ from pathlib import Path
 import pandas as pd
 
 
+# Frontera dev/confirmación: los años ANTERIORES a este forman la era de DESARROLLO (donde se elige el
+# mejor config) y los años DESDE este la era de CONFIRMACIÓN reservada (donde se comprueba, sin haber
+# elegido sobre ella, que la elección generaliza). 2020 marca un régimen genuinamente distinto
+# (COVID/megacaps/IA) frente a los 2010, buen banco de prueba de robustez. Editable aquí.
+CONFIRMATION_ERA_START_YEAR = 2020
+
+
 def _f(value) -> float:
     try:
         result = float(value)
@@ -46,6 +53,10 @@ def _learning_metrics(run_dir: Path) -> dict[str, float]:
         "rank_ic_final_mean": float("nan"), "rank_ic_final_tstat": float("nan"),
         "rank_ic_positive_years": float("nan"), "top_n_alpha": float("nan"),
         "top_n_alpha_lift": float("nan"),
+        "rank_ic_dev_mean": float("nan"), "rank_ic_dev_std": float("nan"),
+        "rank_ic_dev_positive_years": float("nan"), "rank_ic_dev_n_years": float("nan"),
+        "rank_ic_conf_mean": float("nan"), "rank_ic_conf_positive_years": float("nan"),
+        "rank_ic_conf_n_years": float("nan"),
     }
     path = run_dir / "model_walk_forward_diagnostics.csv"
     if not path.exists():
@@ -74,6 +85,10 @@ def _learning_metrics(run_dir: Path) -> dict[str, float]:
     ).dropna(subset=["year"]).groupby("year").agg(year_mean=("year_mean", "first"), year_tstat=("year_tstat", "first"))
     year_mean = per_year["year_mean"].dropna()
     year_tstat = per_year["year_tstat"].dropna()
+    # Reparto por era (desarrollo vs. confirmación) sobre la media anual de rank-IC, para elegir el
+    # sistema final en desarrollo y confirmarlo fuera de muestra (ver aggregate.py).
+    dev_years = year_mean[year_mean.index < CONFIRMATION_ERA_START_YEAR]
+    conf_years = year_mean[year_mean.index >= CONFIRMATION_ERA_START_YEAR]
     return {
         "rank_ic_final_mean": _f(ic.mean()) if len(ic) else float("nan"),
         # t-stat medio de la media anual de rank-IC: un valor por año, luego promedio.
@@ -81,6 +96,13 @@ def _learning_metrics(run_dir: Path) -> dict[str, float]:
         "rank_ic_positive_years": float((year_mean > 0).sum()) if len(year_mean) else float("nan"),
         "top_n_alpha": _f(top_alpha.mean()) if len(top_alpha) else float("nan"),
         "top_n_alpha_lift": _f(top_lift.mean()) if len(top_lift) else float("nan"),
+        "rank_ic_dev_mean": _f(dev_years.mean()) if len(dev_years) else float("nan"),
+        "rank_ic_dev_std": _f(dev_years.std()) if len(dev_years) > 1 else 0.0,
+        "rank_ic_dev_positive_years": float((dev_years > 0).sum()) if len(dev_years) else float("nan"),
+        "rank_ic_dev_n_years": float(len(dev_years)),
+        "rank_ic_conf_mean": _f(conf_years.mean()) if len(conf_years) else float("nan"),
+        "rank_ic_conf_positive_years": float((conf_years > 0).sum()) if len(conf_years) else float("nan"),
+        "rank_ic_conf_n_years": float(len(conf_years)),
     }
 
 

@@ -61,6 +61,9 @@ def review_portfolio(current: dict[str, dict], universe: pd.DataFrame, snapshot_
 
     for row in _entry_candidates(today).head(REVIEW_TOP_N).itertuples(index=False):
         if row.ticker in updated:
+            # Mantener, no rotar: si un nombre ya en cartera vuelve a estar seleccionado, se
+            # CONSERVA — no se vende para recomprarlo. Solo se opera el delta (nuevas entradas y
+            # salidas reales), así que no genera transacción ni coste (ver period_transaction_cost).
             continue
         if len(updated) >= MAX_PORTFOLIO_SIZE:
             replacement = _replacement_target(updated, row)

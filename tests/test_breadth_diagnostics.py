@@ -62,6 +62,21 @@ def test_top_n_lift_positivo_cuando_el_top_es_bueno():
     assert out.iloc[0]["top_n_alpha_lift"] > 0
 
 
+def test_curva_breadth_por_tamano_de_cartera():
+    """La curva top-N (BREADTH_TOP_NS) permite elegir el tamaño óptimo de cartera desde el ranking:
+    concentrar en menos nombres (los mejores) da más alpha medio cuando el orden es bueno."""
+    n = 50
+    scores = [i / n for i in range(n, 0, -1)]
+    alphas = list(scores)  # alpha crece con el score: orden perfecto
+    out = ml._master_signal_diagnostics(_diagnostics(), _labeled(scores, alphas))
+    row = out.iloc[0]
+    for size in ml.BREADTH_TOP_NS:
+        assert f"top{size}_alpha" in out.columns and f"top{size}_alpha_lift" in out.columns
+    assert row["top5_alpha"] > row["top10_alpha"] > row["top20_alpha"] > row["top50_alpha"]
+    # top_n_alpha es alias del tamaño real de cartera (MAX_PORTFOLIO_SIZE por defecto).
+    assert row["top_n_alpha"] == pytest.approx(row[f"top{ml.MAX_PORTFOLIO_SIZE}_alpha"])
+
+
 def test_sin_final_score_no_rompe():
     """Sin la columna de señal, las métricas quedan a NA en vez de reventar."""
     labeled = pd.DataFrame({"snapshot_date": ["2020-01-31"], "target_future_alpha": [0.1]})

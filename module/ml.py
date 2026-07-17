@@ -43,7 +43,7 @@ import numpy as np
 import pandas as pd
 
 from environment import MAX_PORTFOLIO_SIZE, PROCESSED_DIR, RAW_DIR, Settings
-from module.utils import read_parquet, write_json, write_parquet
+from module.utils import price_cache_by_ticker, read_parquet, write_json, write_parquet
 
 log = logging.getLogger(__name__)
 
@@ -135,32 +135,36 @@ def _agent_features(probability: str) -> list[str]:
     return [feature for feature in AGENT_FEATURES.get(probability, MODEL_FEATURES) if feature in MODEL_FEATURES]
 
 
-_TRAIN_FREQUENCY_ALIASES = {"M": "ME", "Q": "QE"}
+# Cadencia de ENTRENAMIENTO en meses: trimestral (3) o anual (12). El entrenamiento mensual (1) se
+# permite por completitud pero se desaconseja (durante 3 meses los fundamentales no cambian).
+_TRAIN_FREQUENCY_MONTHS = {"M": 1, "2M": 2, "Q": 3, "A": 12, "Y": 12}
+
+
+def _months_between(a: pd.Timestamp, b: pd.Timestamp) -> int:
+    return (b.year - a.year) * 12 + (b.month - a.month)
 
 
 def _train_and_apply_dates(all_dates: list[pd.Timestamp], settings: Settings) -> tuple[list[pd.Timestamp], list[pd.Timestamp]]:
-    """Split all snapshot dates into (train_dates, apply_dates) for pure rolling walk-forward:
-    train_dates are every date from `train_cutoff_date` onward, downsampled to
-    `walk_forward_train_frequency` (quarterly by default) — the model relearns every quarter across
-    the ENTIRE evaluated window, not just up to a cutoff then frozen. Each relearning step only uses
-    the trailing `max_walk_forward_training_years` of history available AT that point (enforced in
-    the caller's max_history window), so the model is always trained on recent-enough data and never
-    on the future. `train_cutoff_date` is kept only as the earliest point learning is allowed to
-    start (matching PORTFOLIO_START_DATE by default, since scoring before the live portfolio starts
-    is moot); apply_dates is every date (all of them receive a freshly retrained-as-of-then score).
+    """Reparte los snapshots en (train_dates, apply_dates) para walk-forward rodante puro.
+
+    apply_dates = todos los snapshots (cada uno recibe la puntuación del último modelo entrenado).
+    train_dates = desde la fecha ancla (`eval_start_date`), los snapshots que distan de ella un
+    múltiplo de la cadencia de entrenamiento (`walk_forward_train_frequency`): trimestral por
+    defecto, anual como eje del barrido. Como la rejilla de snapshots está fasada al ancla, esos
+    puntos coinciden con los refrescos de fundamentales — solo se reentrena cuando hay datos nuevos.
+    Cada reentreno usa solo los últimos `max_walk_forward_training_years` de historia disponible en
+    esa fecha (sin lookahead); el modelo nunca se congela.
     """
-    cutoff = pd.Timestamp(settings.train_cutoff_date)
-    freq = _TRAIN_FREQUENCY_ALIASES.get(settings.walk_forward_train_frequency, settings.walk_forward_train_frequency)
-    quarter_ends = set(pd.date_range(cutoff, max(all_dates, default=cutoff), freq=freq))
-    train_dates = sorted(d for d in all_dates if d >= cutoff and d in quarter_ends)
-    if not train_dates or train_dates[0] != cutoff:
-        # Ensure the cutoff itself is always the first training/relearning point, even if it
-        # doesn't fall exactly on a quarter-end in the dataset's monthly snapshot calendar.
-        eligible = [d for d in all_dates if d >= cutoff]
-        if eligible:
-            train_dates = sorted(set(train_dates) | {eligible[0]})
-    apply_dates = sorted(all_dates)
-    return train_dates, apply_dates
+    all_dates = sorted(all_dates)
+    apply_dates = list(all_dates)
+    cutoff = pd.Timestamp(settings.eval_start_date)
+    eligible = [d for d in all_dates if d >= cutoff]
+    if not eligible:
+        return [], apply_dates
+    anchor = eligible[0]
+    step = _TRAIN_FREQUENCY_MONTHS.get(settings.walk_forward_train_frequency, 3)
+    train_dates = [d for d in eligible if _months_between(anchor, d) % step == 0]
+    return (train_dates or [anchor]), apply_dates
 
 
 def train_and_score(settings: Settings) -> pd.DataFrame:
@@ -202,7 +206,7 @@ def train_and_score(settings: Settings) -> pd.DataFrame:
     stage_start = time.perf_counter()
     labeled, meta_weights = _meta_agent_scores(labeled, settings)
     log.info("Meta-agent weight learning done in %.1fs", time.perf_counter() - stage_start)
-    # The master signal is now the meta-agent output `final_score` (there is no alpha agent). Its
+    # The master signal is the meta-agent output `final_score` (the blend of the three agents). Its
     # per-snapshot OOS rank-IC vs. realized forward alpha — plus a rolling and per-year trend — is
     # appended to the diagnostics here, once final_score exists.
     diagnostics = _master_signal_diagnostics(diagnostics, labeled)
@@ -291,7 +295,7 @@ def _add_component_targets(df: pd.DataFrame, prices: pd.DataFrame, benchmark_tic
     """
     prices = prices.copy()
     prices["date"] = pd.to_datetime(prices["date"])
-    price_cache = _price_cache(prices)
+    price_cache = price_cache_by_ticker(prices)
     df = df.copy()
     df["snapshot_date_dt"] = pd.to_datetime(df["snapshot_date"])
     # roic is a hard reported fundamental (the only forward feature still needed now that the growth-
@@ -490,6 +494,13 @@ def _walk_forward_component_scores(df: pd.DataFrame, settings: Settings) -> tupl
     return scored.drop(columns=["snapshot_date_dt"]), latest_importance, pd.DataFrame(diagnostics)
 
 
+# Curva de BREADTH / tamaño de cartera para el análisis "¿5 o 50 acciones?". Para cada N se mide, por
+# snapshot, el alpha medio de los N mejores del ranking y su ventaja (lift) sobre la media del universo
+# — el tramo que de verdad se compraría. Se guarda por snapshot en el diagnóstico para poder elegir el
+# tamaño óptimo a posteriori sin re-correr el backtest por cada N.
+BREADTH_TOP_NS = [5, 10, 20, 50]
+
+
 def _master_signal_diagnostics(
     diagnostics: pd.DataFrame,
     labeled: pd.DataFrame,
@@ -498,11 +509,12 @@ def _master_signal_diagnostics(
 ) -> pd.DataFrame:
     """Append the OOS quality of the MASTER signal (`final_score`, the meta-agent output) to the
     per-snapshot diagnostics: its Spearman rank-IC vs. realized forward alpha, a rolling mean, a
-    per-calendar-year mean + approximate t-stat (mean / (std / sqrt(n))), y las métricas de BREADTH
-    del top-N (`top_n_alpha`, `top_n_alpha_lift`).
+    per-calendar-year mean + approximate t-stat (mean / (std / sqrt(n))), y la CURVA de BREADTH por
+    tamaño de cartera (`top{N}_alpha`, `top{N}_alpha_lift` para N en BREADTH_TOP_NS; `top_n_alpha`/
+    `top_n_alpha_lift` son alias del tamaño real de cartera para compatibilidad).
 
-    This replaces the old per-agent "alpha" IC column: with no generalist alpha agent, the signal
-    whose quality-over-time actually matters is the combined meta-agent score. With ~90 walk-forward
+    This replaces the old per-agent "alpha" IC column: the signal whose quality-over-time actually
+    matters is the combined meta-agent score (`final_score`), not any single agent. With ~90 walk-forward
     snapshots the rolling/year trend is descriptive, not a formal significance test — reported as-is,
     without forcing a "the system is improving" narrative if the data doesn't show one.
 
@@ -528,23 +540,33 @@ def _master_signal_diagnostics(
                 ic_by_snapshot[str(snapshot)] = float(ic)
 
     # Métrica de BREADTH: el rank-IC mide el orden de TODO el universo (~71k filas/snapshot), pero la
-    # cartera solo compra el top-10. Ordenar bien 71k filas no implica acertar el top-10 (correlación
-    # empírica IC↔alpha entre escenarios, medida sobre el rank-IC OOS: Spearman ~+0.36). Estas dos
-    # métricas miden lo que de verdad se ejecuta: el alpha medio de los N que se comprarían y su
-    # ventaja sobre el universo.
-    top_alpha_by_snapshot: dict[str, float] = {}
-    top_lift_by_snapshot: dict[str, float] = {}
+    # cartera solo compra el top-N. Ordenar bien 71k filas no implica acertar el top-N (correlación
+    # empírica IC↔alpha entre escenarios, medida sobre el rank-IC OOS: Spearman ~+0.36). Se calcula la
+    # CURVA para varios N (BREADTH_TOP_NS): el alpha medio de los N mejores y su ventaja sobre el
+    # universo, para responder "¿5 o 50 acciones?" desde el ranking guardado.
+    breadth_ns = sorted(set(BREADTH_TOP_NS) | {top_n})
+    alpha_by_n: dict[int, dict[str, float]] = {n: {} for n in breadth_ns}
+    lift_by_n: dict[int, dict[str, float]] = {n: {} for n in breadth_ns}
     for snapshot, group in scored.groupby("snapshot_date"):
         pair = group[["pred", "real"]].dropna()
-        if len(pair) < max(5, top_n):
+        if len(pair) < 5:
             continue
-        top = pair.nlargest(top_n, "pred")
-        top_alpha = float(top["real"].mean())
-        top_alpha_by_snapshot[str(snapshot)] = top_alpha
-        top_lift_by_snapshot[str(snapshot)] = top_alpha - float(pair["real"].mean())
+        universe_mean = float(pair["real"].mean())
+        ranked = pair.sort_values("pred", ascending=False)
+        for n in breadth_ns:
+            if len(pair) < n:
+                continue
+            top_alpha = float(ranked.head(n)["real"].mean())
+            alpha_by_n[n][str(snapshot)] = top_alpha
+            lift_by_n[n][str(snapshot)] = top_alpha - universe_mean
 
-    diagnostics["top_n_alpha"] = diagnostics["snapshot_date"].astype(str).map(top_alpha_by_snapshot)
-    diagnostics["top_n_alpha_lift"] = diagnostics["snapshot_date"].astype(str).map(top_lift_by_snapshot)
+    keys = diagnostics["snapshot_date"].astype(str)
+    for n in breadth_ns:
+        diagnostics[f"top{n}_alpha"] = keys.map(alpha_by_n[n])
+        diagnostics[f"top{n}_alpha_lift"] = keys.map(lift_by_n[n])
+    # Alias del tamaño real de cartera (top_n) para compatibilidad con metrics/viewer.
+    diagnostics["top_n_alpha"] = diagnostics[f"top{top_n}_alpha"]
+    diagnostics["top_n_alpha_lift"] = diagnostics[f"top{top_n}_alpha_lift"]
 
     diagnostics["rank_ic_final"] = diagnostics["snapshot_date"].astype(str).map(ic_by_snapshot)
     ic = pd.to_numeric(diagnostics["rank_ic_final"], errors="coerce")
@@ -614,7 +636,6 @@ def _meta_agent_scores(labeled: pd.DataFrame, settings: Settings) -> tuple[pd.Da
     labeled["meta_weight_source"] = "prior"
 
     if not settings.walk_forward_scoring:
-        labeled["ml_score"] = labeled["final_score"]
         rows = [{
             "snapshot_date": "all", "source": "prior", "n_train": 0,
             **AGENT_PRIOR_WEIGHTS, **{f"partial_ic_{key}": float("nan") for key in AGENT_KEYS},
@@ -668,7 +689,6 @@ def _meta_agent_scores(labeled: pd.DataFrame, settings: Settings) -> tuple[pd.Da
                 meta_index, len(apply_dates), pd.Timestamp(date).date().isoformat(),
                 time.perf_counter() - meta_loop_start,
             )
-    labeled["ml_score"] = labeled["final_score"]
     return labeled.drop(columns=["snapshot_date_dt"]), pd.DataFrame(weight_rows)
 
 
@@ -798,7 +818,7 @@ def _label_horizon_comparison(scored: pd.DataFrame, prices: pd.DataFrame, settin
     scored = scored.copy()
     scored["snapshot_date_dt"] = pd.to_datetime(scored["snapshot_date"])
     training_rows = scored.copy()
-    price_cache = _price_cache(prices.assign(date=pd.to_datetime(prices["date"])))
+    price_cache = price_cache_by_ticker(prices.assign(date=pd.to_datetime(prices["date"])))
 
     rows = []
     for months in LABEL_HORIZON_CANDIDATES_MONTHS:
@@ -880,16 +900,6 @@ def _fallback_probability(df: pd.DataFrame, target: str) -> pd.Series:
     if target in df.columns:
         return df[target].fillna(df["garp_score"]).clip(0, 1)
     return df["garp_score"].fillna(0.5).clip(0, 1)
-
-
-def _price_cache(prices: pd.DataFrame) -> dict[str, tuple[list[pd.Timestamp], list[float]]]:
-    cache = {}
-    for ticker, group in prices.sort_values(["ticker", "date"]).groupby("ticker", sort=False):
-        cache[ticker] = (
-            group["date"].tolist(),
-            group["adj_close"].astype(float).tolist(),
-        )
-    return cache
 
 
 def _forward_return(price_cache: dict[str, tuple[list[pd.Timestamp], list[float]]], ticker: str, start: pd.Timestamp, months: int) -> float | None:

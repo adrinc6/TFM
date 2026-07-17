@@ -83,50 +83,11 @@ class FinnhubClient:
 			"freq": freq,
 		})
 
-	def eps_surprises(self, symbol, limit: int = 20):
-		"""EPS real vs estimado + surprise% por trimestre (hasta 20Q)."""
-		return self._get("/stock/earnings", {"symbol": symbol, "limit": limit})
-
-	def earnings_calendar(self, from_date, to_date, symbol: str = ""):
-		"""Fechas de resultados con EPS y revenue real vs estimado."""
-		params = {"from": from_date, "to": to_date}
-		if symbol:
-			params["symbol"] = symbol
-		return self._get("/calendar/earnings", params)
-
-	def recommendation_trends(self, symbol):
-		"""Tendencias de analistas: strongBuy/buy/hold/sell/strongSell por mes."""
-		return self._get("/stock/recommendation", {"symbol": symbol})
-
-	def insider_transactions(self, symbol, from_date, to_date):
-		"""Compras y ventas de insiders. change > 0 = compra, < 0 = venta."""
-		return self._get("/stock/insider-transactions", {
-			"symbol": symbol, "from": from_date, "to": to_date,
-		})
-
-	def insider_sentiment(self, symbol, from_date, to_date):
-		"""
-		MSPR mensual (Monthly Share Purchase Ratio), rango -100 a 100.
-		Senal predictiva documentada para los siguientes 30-90 dias.
-		"""
-		return self._get("/stock/insider-sentiment", {
-			"symbol": symbol, "from": from_date, "to": to_date,
-		})
-
 	def company_news(self, symbol, from_date, to_date):
 		"""Noticias recientes (descargadas pero no procesadas por el pipeline)."""
 		return self._get("/company-news", {
 			"symbol": symbol, "from": from_date, "to": to_date,
 		})
-
-	def peers(self, symbol):
-		"""Peers en el mismo pais y sub-industria."""
-		return self._get("/stock/peers", {"symbol": symbol})
-
-	def quote(self, symbol):
-		"""Precio actual, cambio dia, maximo/minimo diario, cierre anterior."""
-		return self._get("/quote", {"symbol": symbol})
-
 
 
 class YahooClient:

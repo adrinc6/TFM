@@ -1,5 +1,22 @@
 # Plan: estructura y redacción de la memoria del TFM en LaTeX
 
+> **Actualización (reestructuración del proyecto).** El código se ha recentrado en la IA/ML como
+> núcleo; esto cambia partes de la metodología y de los resultados que este plan asume. A incorporar
+> al redactar:
+> - **Cap. 3 (Metodología)** y **Cap. 5 (Arquitectura)**: la simulación arranca en una **fecha ancla
+>   configurable** (`EVAL_START_QUARTER` + retardo de publicación de fundamentales, modelado
+>   explícitamente — resuelve la limitación de lag que el propio plan marcaba como la más atacable en
+>   la defensa); se separa **entrenar** (fundamentales nuevos, trimestral/anual) de **revisar**
+>   (mensual, re-precio); el barrido es una **rejilla sistemática** (ventana × cadencia + horizonte +
+>   ablations) y el **sistema final** se elige automáticamente por estabilidad multi-era con protocolo
+>   **dev/confirmación** (anti-sobreajuste por selección).
+> - **Cap. 6 (Aprendizaje)**: añadir el análisis de **tamaño de cartera óptimo** (curva breadth top-N)
+>   y la lectura **multi-era** del rank-IC.
+> - **Cap. 6-8 (cifras)**: las tablas de resultados se **regeneran** con el nuevo barrido (aún no
+>   ejecutado por su coste). Mantener el criterio del plan: **no inventar números**; marcar como
+>   pendientes hasta el barrido autorizado. `experiments/rejilla.py` y `module/experiments/aggregate.py`
+>   son las nuevas piezas a describir; los antiguos `escenarios_*.py` ya no existen.
+
 ## Context
 
 El proyecto está terminado a nivel de código y experimentos (19 escenarios ejecutados en

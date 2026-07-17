@@ -25,6 +25,7 @@ import numpy as np
 import pandas as pd
 
 from environment import MAX_PORTFOLIO_SIZE
+from module.utils import price_cache_by_ticker
 
 from .performance import compound_alpha
 
@@ -54,7 +55,7 @@ def top_n_monthly_returns(
     if price_cache is None:
         prices = prices.copy()
         prices["date"] = pd.to_datetime(prices["date"])
-        price_cache = _price_cache(prices)
+        price_cache = price_cache_by_ticker(prices)
     dates = sorted(pd.to_datetime(universe["snapshot_date"]).unique())
     rows = []
     for i in range(len(dates) - 1):
@@ -99,7 +100,7 @@ def baseline_comparison(
     }
     prices = prices.copy()
     prices["date"] = pd.to_datetime(prices["date"])
-    price_cache = _price_cache(prices)
+    price_cache = price_cache_by_ticker(prices)
     rows = [{"estrategia": "Sistema completo (manager_score + tesis + rotación)", "alpha_acumulada": system_cumulative_alpha}]
     for name, score_column in baselines.items():
         if name == "equal_weight_universe":
@@ -132,7 +133,7 @@ def placebo_distribution(
     """
     prices = prices.copy()
     prices["date"] = pd.to_datetime(prices["date"])
-    price_cache = _price_cache(prices)
+    price_cache = price_cache_by_ticker(prices)
     real_monthly = top_n_monthly_returns(universe, prices, benchmark_ticker, score_column, top_n=top_n, price_cache=price_cache)
     real_alpha = cumulative_alpha(real_monthly)
     if universe.empty or score_column not in universe.columns:
@@ -168,13 +169,6 @@ def placebo_summary(real_alpha: float, shuffled_alphas: np.ndarray) -> pd.DataFr
         "percentil_real": percentile,
         "n_barajados": int(shuffled_alphas.size),
     }])
-
-
-def _price_cache(prices: pd.DataFrame) -> dict[str, tuple[list[pd.Timestamp], list[float]]]:
-    cache = {}
-    for ticker, group in prices.sort_values(["ticker", "date"]).groupby("ticker", sort=False):
-        cache[ticker] = (group["date"].tolist(), group["adj_close"].astype(float).tolist())
-    return cache
 
 
 def _equal_weight_return(
