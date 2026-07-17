@@ -1,55 +1,43 @@
-"""Rejilla base de escenarios para el barrido de la Fase 6.
+"""Rejilla del barrido — Etapa A: motor y objetivo (plan revisado, Camino C).
 
-Cada `ScenarioSpec` es una config nombrada con overrides sobre `environment.Settings`.
-Selección dirigida (no producto cartesiano) organizada por categoría. La reutilización de
-etapas se decide automáticamente por huella: los escenarios que solo cambian el backtest
-comparten dataset/features/agents con `baseline`.
+Esta etapa AISLA el efecto del motor de aprendizaje y del objetivo. Todos los escenarios usan
+el mismo meta simple (rank_ic), las mismas features, ventana, fechas y cartera de diagnostico.
+Asi la comparacion es limpia: lo unico que cambia es el modelo.
 
-Los categorías:
+La seleccion se hace por rank-IC del meta_final (no por rentabilidad). La Puerta 1 decide si
+LightGBM aporta senal sobre Ridge de forma estable; solo entonces se pasa a las Etapas B/C/D
+(regularizacion, meta, cartera), que se activan editando esta rejilla.
 
-- **Ancla**: distintas fechas de arranque, para ver si el sistema no solo funciona en 2000.
-- **Entrenamiento**: ventana de historia usada para reentrenar.
-- **Cadencia**: cada cuánto se reentrena el fundamental.
-- **Etiqueta**: horizonte de la etiqueta (3/6/12 meses).
-- **Cartera** (solo cambian backtest): tamaño y política de rotación.
-- **Ablations** (solo cambia agentes): quitar un agente para ver qué aporta.
-- **Observabilidad**: margen de frescura del precio.
+Ver docs/plan_camino_c_revisado.md y la bitacora para el detalle metodologico.
 """
 
 from module.experiments import ScenarioSpec
 
 
 SCENARIOS = [
-    # --- baseline ---------------------------------------------------------------------
-    ScenarioSpec(name="baseline_2000q1", overrides={}),
-
-    # --- ancla temporal ---------------------------------------------------------------
-    ScenarioSpec(name="anchor_2003q1", overrides={"execution_year": 2003}),
-    ScenarioSpec(name="anchor_2008q1", overrides={"execution_year": 2008}),
-    ScenarioSpec(name="anchor_2013q1", overrides={"execution_year": 2013}),
-    ScenarioSpec(name="anchor_2018q1", overrides={"execution_year": 2018}),
-
-    # --- entrenamiento ----------------------------------------------------------------
-    ScenarioSpec(name="train_5y", overrides={"train_lookback_years": 5}),
-    ScenarioSpec(name="train_12y", overrides={"train_lookback_years": 12}),
-
-    # --- cadencia fundamental ---------------------------------------------------------
-    ScenarioSpec(name="cadence_semestral", overrides={"fundamental_step_months": 6}),
-
-    # --- horizonte de etiqueta --------------------------------------------------------
-    ScenarioSpec(name="target_6m", overrides={"target_horizon_months": 6}),
-    ScenarioSpec(name="target_12m", overrides={"target_horizon_months": 12}),
-
-    # --- cartera (solo cambian backtest) ----------------------------------------------
-    ScenarioSpec(name="portfolio_3_7", overrides={"target_min": 3, "target_max": 7,
-                                                    "max_weight_per_position": 0.35}),
-    ScenarioSpec(name="portfolio_8_15", overrides={"target_min": 8, "target_max": 15,
-                                                     "max_weight_per_position": 0.15}),
-    ScenarioSpec(name="rotation_strict", overrides={"rotation_edge_percentiles": 10}),
-    ScenarioSpec(name="rotation_loose", overrides={"rotation_edge_percentiles": 3}),
-    ScenarioSpec(name="entry_high_bar", overrides={"entry_min_percentile": 90}),
-
-    # --- observabilidad --------------------------------------------------------------
-    ScenarioSpec(name="stale_prices_3d", overrides={"max_price_age_days": 3}),
-    ScenarioSpec(name="stale_prices_14d", overrides={"max_price_age_days": 14}),
+    # --- Etapa A: motor x objetivo, mismo meta simple ---------------------------------
+    # Control conocido: Ridge lineal sobre el percentil del retorno (la mejor config de la Parte B).
+    ScenarioSpec(
+        name="A_ridge_rankreg",
+        overrides={"model_type": "ridge", "objective": "regression",
+                   "label_transform": "rank", "meta_type": "rank_ic"},
+    ),
+    # Comparacion limpia: cambia SOLO el motor (LightGBM), mismo objetivo de ranking.
+    ScenarioSpec(
+        name="A_lgbm_rankreg",
+        overrides={"model_type": "lightgbm", "objective": "rank_regression",
+                   "meta_type": "rank_ic"},
+    ),
+    # LGBMRanker (lambdarank) agrupado por snapshot: optimiza el orden directamente.
+    ScenarioSpec(
+        name="A_lgbm_ranker",
+        overrides={"model_type": "lightgbm", "objective": "ranking",
+                   "meta_type": "rank_ic"},
+    ),
+    # Ablacion: clasificacion de cuartiles (descarta el centro del universo en entrenamiento).
+    ScenarioSpec(
+        name="A_lgbm_quartile",
+        overrides={"model_type": "lightgbm", "objective": "quartile",
+                   "meta_type": "rank_ic"},
+    ),
 ]

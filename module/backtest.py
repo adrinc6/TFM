@@ -319,21 +319,28 @@ def _summary(
     beat_rate = float((annual["alpha"] > 0).mean()) if not annual.empty else 0.0
     median_alpha = float(annual["alpha"].median()) if not annual.empty else 0.0
     worst_year_alpha = float(annual["alpha"].min()) if not annual.empty else 0.0
-    annualized_alpha = _annualized_alpha(annual)
+    mean_annual_alpha = float(annual["alpha"].mean()) if not annual.empty else 0.0
+
+    cagr_portfolio, cagr_benchmark, geometric_excess = _economic_metrics(equity)
 
     mean_rank_ic, rank_ic_positive_fraction, rank_ic_std = _rank_ic_signals(diagnostics)
 
     return {
-        # --- senales de APRENDIZAJE (lo que decide la seleccion en Fase 6) ---
+        # --- senales de APRENDIZAJE (lo que decide la seleccion) ---
         "mean_rank_ic": mean_rank_ic,
         "rank_ic_positive_fraction": rank_ic_positive_fraction,
         "rank_ic_std": rank_ic_std,
-        # --- consistencia y riesgo (tambien seleccionan; no son magnitud de alfa) ---
+        # --- consistencia y riesgo ---
         "beat_rate": beat_rate,
         "max_drawdown": max_drawdown_total,
-        # --- alfa: SOLO se reporta, no selecciona; anual, nunca compuesto a 25 anios ---
-        "annualized_alpha": annualized_alpha,
-        "median_alpha": median_alpha,
+        # --- rendimiento economico (CAGR estandar, no acumulados inflados) ---
+        "cagr_portfolio": cagr_portfolio,
+        "cagr_benchmark": cagr_benchmark,
+        "cagr_difference": cagr_portfolio - cagr_benchmark,
+        "geometric_excess_return": geometric_excess,
+        # --- alfa aritmetica media anual (estadistico aparte, bien nombrado) ---
+        "mean_annual_alpha": mean_annual_alpha,
+        "median_annual_alpha": median_alpha,
         "worst_year_alpha": worst_year_alpha,
         "information_ratio": ir_total,
         # --- parametros del run ---
@@ -348,29 +355,50 @@ def _summary(
     }
 
 
-def _annualized_alpha(annual: pd.DataFrame) -> float:
-    """Media geometrica del alfa anual: (prod(1+alfa))^(1/n) - 1. Interpretable como % al anio.
+def _economic_metrics(equity: pd.DataFrame) -> tuple[float, float, float]:
+    """(CAGR cartera, CAGR benchmark, exceso geometrico relativo anualizado).
 
-    No es lo mismo que componer el retorno total: aqui se compone el EXCESO anual y se
-    anualiza, asi que no explota con el horizonte ni lo domina un unico anio.
+    CAGR = (valor_final / valor_inicial) ^ (1/anios) - 1, con `anios` = tiempo real transcurrido
+    entre el primer y el ultimo snapshot. Es la metrica estandar de rendimiento, interpretable y
+    no inflada por el numero de periodos (a diferencia del acumulado bruto).
+
+    Exceso geometrico relativo = geomean((1+r_cart)/(1+r_bench)) - 1, anualizado: cuanto bate la
+    cartera al indice por anio, de forma multiplicativa (no la resta aritmetica de retornos).
     """
-    if annual.empty:
-        return 0.0
-    factors = (1 + annual["alpha"]).clip(lower=1e-9)   # evita log de negativo por un anio catastrofico
-    n = len(factors)
-    geometric = float(factors.prod()) ** (1 / n) - 1
-    return geometric
+    dates = pd.to_datetime(equity["snapshot_date"])
+    years = max((dates.iloc[-1] - dates.iloc[0]).days / 365.25, 1e-9)
+
+    pv = equity["portfolio_value"].to_numpy()
+    bv = equity["benchmark_value"].to_numpy()
+    cagr_portfolio = float((pv[-1] / pv[0]) ** (1 / years) - 1) if pv[0] > 0 else 0.0
+    cagr_benchmark = float((bv[-1] / bv[0]) ** (1 / years) - 1) if bv[0] > 0 else 0.0
+
+    pr = pd.to_numeric(equity["portfolio_return"], errors="coerce").fillna(0).to_numpy()
+    br = pd.to_numeric(equity["benchmark_return"], errors="coerce").fillna(0).to_numpy()
+    relative = (1 + pr) / (1 + br)
+    relative = relative[np.isfinite(relative) & (relative > 0)]
+    if len(relative) > 1:
+        periods_per_year = len(relative) / years
+        geometric_excess = float(np.prod(relative) ** (periods_per_year / len(relative)) - 1)
+    else:
+        geometric_excess = 0.0
+    return cagr_portfolio, cagr_benchmark, geometric_excess
 
 
 def _rank_ic_signals(diagnostics: pd.DataFrame | None) -> tuple[float, float, float]:
-    """(rank-IC medio, fraccion de cohortes con rank-IC>0, std del rank-IC).
+    """(rank-IC medio, fraccion de cohortes con rank-IC>0, std del rank-IC) del META_FINAL.
 
-    Es la evidencia de aprendizaje del proyecto. Se agrega sobre TODAS las cohortes y todos
-    los agentes. Si no hay diagnostics (p. ej. en tests puros de cartera), devuelve ceros.
+    Es la evidencia de aprendizaje del sistema REALMENTE operado: la cartera consume el
+    meta_score, asi que la metrica principal es el rank-IC del `meta_final`, NO el promedio de
+    los agentes individuales (que no es lo que se opera). Si no hay filas de meta_final (p. ej.
+    diagnostics antiguos o tests puros de cartera), cae al conjunto completo por compatibilidad.
     """
     if diagnostics is None or diagnostics.empty or "rank_ic" not in diagnostics.columns:
         return 0.0, 0.0, 0.0
-    values = diagnostics["rank_ic"].dropna()
+    subset = diagnostics
+    if "agent" in diagnostics.columns and (diagnostics["agent"] == "meta_final").any():
+        subset = diagnostics.loc[diagnostics["agent"] == "meta_final"]
+    values = subset["rank_ic"].dropna()
     if values.empty:
         return 0.0, 0.0, 0.0
     mean_ic = float(values.mean())

@@ -77,8 +77,10 @@ def _section_resumen(summary: dict, annual: pd.DataFrame, equity: pd.DataFrame) 
     mean_rank_ic = summary.get("mean_rank_ic", 0)
     ic_positive_pct = int(summary.get("rank_ic_positive_fraction", 0) * 100)
     beat_pct = int(summary.get("beat_rate", 0) * 100)
-    annualized_alpha_pct = summary.get("annualized_alpha", 0) * 100
     dd_pct = summary.get("max_drawdown", 0) * 100
+    cagr_pf = summary.get("cagr_portfolio", 0) * 100
+    cagr_bench = summary.get("cagr_benchmark", 0) * 100
+    cagr_diff = summary.get("cagr_difference", 0) * 100
 
     equity_chart = _plot_equity_curve(equity) if not equity.empty else ""
     alpha_bars = _plot_annual_alpha_bars(annual) if not annual.empty else ""
@@ -86,14 +88,15 @@ def _section_resumen(summary: dict, annual: pd.DataFrame, equity: pd.DataFrame) 
 
     return f"""
         <div class="cards">
-            <div class="card"><div class="metric">{mean_rank_ic:.4f}</div><div>rank-IC medio (aprendizaje)</div></div>
+            <div class="card"><div class="metric">{mean_rank_ic:.4f}</div><div>rank-IC medio (meta_final)</div></div>
             <div class="card"><div class="metric">{ic_positive_pct}%</div><div>cohortes con rank-IC&gt;0</div></div>
             <div class="card"><div class="metric">{beat_pct}%</div><div>anios batiendo SPY</div></div>
             <div class="card"><div class="metric">-{dd_pct:.2f}%</div><div>drawdown maximo</div></div>
         </div>
-        <p class="muted">Alfa anualizada (informativo, no es el criterio del proyecto):
-        <strong>{annualized_alpha_pct:.2f}%</strong> al anio. El rank-IC mide si el sistema
-        <em>aprende a ordenar</em>; el alfa es una consecuencia, no la evidencia.</p>
+        <p class="muted">Rendimiento economico (informativo, no es el criterio de seleccion):
+        CAGR cartera <strong>{cagr_pf:.2f}%</strong> vs SPY <strong>{cagr_bench:.2f}%</strong>
+        (diferencia {cagr_diff:+.2f}% al anio). El rank-IC mide si el sistema <em>aprende a
+        ordenar</em>; el rendimiento es una consecuencia, no la evidencia.</p>
         <h3>Equity vs SPY</h3>
         {equity_chart}
         <h3>Alfa anual</h3>
@@ -315,10 +318,10 @@ def build_comparison_report(scenarios_root: Path) -> Path:
             "beat_rate": float(winner_row.get("beat_rate", 0)),
             "max_drawdown": float(winner_row.get("max_drawdown", 0)),
         },
-        "winner_alpha_reported_only": {
-            "annualized_alpha": float(winner_row.get("annualized_alpha", 0)),
-            "median_alpha": float(winner_row.get("median_alpha", 0)),
-            "worst_year_alpha": float(winner_row.get("worst_year_alpha", 0)),
+        "winner_economics_reported_only": {
+            "cagr_portfolio": float(winner_row.get("cagr_portfolio", 0)),
+            "cagr_benchmark": float(winner_row.get("cagr_benchmark", 0)),
+            "geometric_excess_return": float(winner_row.get("geometric_excess_return", 0)),
         },
         "top_3": summary.head(3)["scenario"].tolist(),
     }
@@ -367,10 +370,11 @@ def _collect_scenario_summaries(scenario_dirs: list[Path]) -> list[dict]:
             "rank_ic_std": float(summary.get("rank_ic_std", 0)),
             "beat_rate": float((annual["alpha"] > 0).mean()),
             "max_drawdown": float(summary.get("max_drawdown", 0)),
-            # alfa: SOLO reportada, no selecciona
-            "annualized_alpha": float(summary.get("annualized_alpha", 0)),
-            "median_alpha": float(annual["alpha"].median()),
-            "worst_year_alpha": float(annual["alpha"].min()),
+            # rendimiento economico: SOLO reportado, no selecciona
+            "cagr_portfolio": float(summary.get("cagr_portfolio", 0)),
+            "cagr_benchmark": float(summary.get("cagr_benchmark", 0)),
+            "geometric_excess_return": float(summary.get("geometric_excess_return", 0)),
+            "mean_annual_alpha": float(annual["alpha"].mean()),
             "information_ratio": float(summary.get("information_ratio", 0)),
         })
     return rows
@@ -402,7 +406,7 @@ def _comparison_summary_section(summary: pd.DataFrame, winner: str) -> str:
         f"<td>{row['rank_ic_positive_fraction']*100:.0f}%</td>"
         f"<td>{row['beat_rate']*100:.0f}%</td>"
         f"<td>-{row['max_drawdown']*100:.2f}%</td>"
-        f"<td class='muted'>{row['annualized_alpha']*100:.2f}%</td></tr>"
+        f"<td class='muted'>{row.get('geometric_excess_return',0)*100:.2f}%</td></tr>"
         for index, row in enumerate(ordered.to_dict("records"))
     )
     return f"""
@@ -504,7 +508,7 @@ def _comparison_all_runs_section(summary: pd.DataFrame, scenario_dirs: list[Path
         f"<td>{row['mean_rank_ic']:.4f}</td>"
         f"<td>{row['rank_ic_positive_fraction']*100:.0f}%</td>"
         f"<td>{row['beat_rate']*100:.0f}%</td>"
-        f"<td class='muted'>{row['annualized_alpha']*100:.2f}%</td></tr>"
+        f"<td class='muted'>{row.get('geometric_excess_return',0)*100:.2f}%</td></tr>"
         for row in summary.sort_values("composite_rank_mean").to_dict("records")
     )
     return f"""

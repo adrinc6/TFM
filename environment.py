@@ -76,6 +76,33 @@ META_IC_LOOKBACK_QUARTERS = 12
 RIDGE_ALPHA = 1.0
 MIN_TRAINING_ROWS = 30
 MIN_RANK_IC_CROSS_SECTION = 10
+
+# Motor de aprendizaje de los agentes: "ridge" (lineal) o "lightgbm" (arboles, no lineal).
+# LightGBM captura interacciones que el lineal promedia a cero. Ver docs/informe_situacion_y_critica.md.
+MODEL_TYPE = "lightgbm"
+# Objetivo de aprendizaje:
+#   "rank_regression" -> regresion sobre el PERCENTIL transversal del retorno (0..1) dentro de
+#                        cada snapshot. Objetivo principal: alinea el entrenamiento con el rank-IC.
+#   "regression"      -> exceso de retorno crudo (tratado por LABEL_TRANSFORM).
+#   "ranking"         -> LGBMRanker agrupado por snapshot (lambdarank). Solo LightGBM.
+#   "quartile"        -> clasifica cuartil superior vs inferior; ablacion secundaria.
+OBJECTIVE = "rank_regression"
+# Hiperparametros LightGBM. Defaults conservadores anti-overfitting (arboles poco profundos,
+# muchas muestras minimas por hoja) porque hay pocas eras independientes.
+LGBM_N_ESTIMATORS = 200
+LGBM_MAX_DEPTH = 4
+LGBM_LEARNING_RATE = 0.05
+LGBM_MIN_CHILD_SAMPLES = 50
+# Semilla del modelo. Fija en la comparacion principal; se barre para medir sensibilidad del
+# candidato ganador (una senal que solo aparece con una semilla es sospechosa).
+RANDOM_SEED = 42
+# Meta-agente: como se combinan los 3 agentes.
+#   "equal"   -> promedio equiponderado de los rangos de los agentes
+#   "rank_ic" -> ponderacion por rank-IC reciente de cada agente
+#   "regime"  -> pesos distintos segun regimen bull/bear
+#   "stacker" -> stacker lineal (Ridge) walk-forward sobre scores + contexto de mercado
+# Se empieza por rank_ic; el stacker solo se prueba tras superar la Puerta 1 (ver plan).
+META_TYPE = "rank_ic"
 # B2: tratamiento de la etiqueta de entrenamiento para reducir ruido.
 #   "none"   -> exceso de retorno crudo
 #   "winsor" -> recorta las colas al percentil LABEL_WINSOR_PCT (reduce outliers)
@@ -143,6 +170,14 @@ class Settings:
     ridge_alpha: float = RIDGE_ALPHA
     min_training_rows: int = MIN_TRAINING_ROWS
     min_rank_ic_cross_section: int = MIN_RANK_IC_CROSS_SECTION
+    model_type: str = MODEL_TYPE
+    objective: str = OBJECTIVE
+    lgbm_n_estimators: int = LGBM_N_ESTIMATORS
+    lgbm_max_depth: int = LGBM_MAX_DEPTH
+    lgbm_learning_rate: float = LGBM_LEARNING_RATE
+    lgbm_min_child_samples: int = LGBM_MIN_CHILD_SAMPLES
+    random_seed: int = RANDOM_SEED
+    meta_type: str = META_TYPE
     label_transform: str = LABEL_TRANSFORM
     label_winsor_pct: float = LABEL_WINSOR_PCT
     fundamental_momentum: bool = FUNDAMENTAL_MOMENTUM
@@ -169,6 +204,19 @@ class Settings:
 
         if self.execution_quarter not in (1, 2, 3, 4):
             raise ValueError("EXECUTION_QUARTER debe estar entre 1 y 4.")
+        if self.model_type not in ("ridge", "lightgbm"):
+            raise ValueError(f"MODEL_TYPE invalido: {self.model_type!r}. Usa 'ridge' o 'lightgbm'.")
+        if self.objective not in ("rank_regression", "regression", "ranking", "quartile"):
+            raise ValueError(
+                f"OBJECTIVE invalido: {self.objective!r}. Usa 'rank_regression', 'regression', "
+                "'ranking' o 'quartile'."
+            )
+        if self.objective == "ranking" and self.model_type != "lightgbm":
+            raise ValueError("OBJECTIVE='ranking' requiere MODEL_TYPE='lightgbm' (LGBMRanker).")
+        if self.meta_type not in ("equal", "rank_ic", "regime", "stacker"):
+            raise ValueError(
+                f"META_TYPE invalido: {self.meta_type!r}. Usa 'equal', 'rank_ic', 'regime' o 'stacker'."
+            )
         if self.train_lookback_years <= 0 or self.target_horizon_months <= 0:
             raise ValueError("Las ventanas temporales deben ser positivas.")
         if not 1 <= self.target_min <= self.target_max:

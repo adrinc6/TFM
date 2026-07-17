@@ -1,4 +1,16 @@
-"""Combinación temporal de agentes mediante rank-IC fuera de muestra."""
+"""Combinación temporal de los agentes en un meta-score.
+
+Tres formas de ponderar (`meta_type`), de menos a más ambiciosa:
+
+- "rank_ic": pesos proporcionales al rank-IC OOS reciente de cada agente (el original).
+- "regime": pesos condicionados al régimen de mercado (bull/bear), detectado sin lookahead.
+- "ml": un modelo ligero que aprende walk-forward a ponderar los agentes según el contexto de
+  mercado. Con salvaguarda: si en OOS no bate a "rank_ic", no se usa (se documenta en la
+  bitácora; la selección de escenarios ya elige por rank-IC, así que un meta peor no gana).
+
+La combinación en sí (rankear los scores de cada agente y promediarlos con esos pesos) es común
+a las tres; solo cambia de dónde salen los pesos por fecha.
+"""
 
 from __future__ import annotations
 
@@ -68,7 +80,58 @@ def combine_agent_scores(
     meta = pd.DataFrame(meta_scores)
     if not meta.empty:
         meta["meta_rank"] = meta.groupby("snapshot_date")["meta_score"].rank(method="average", pct=True)
+
+    # Diagnostico del META_FINAL: es el score que de verdad consume la cartera, asi que su rank-IC
+    # es la metrica principal del escenario. Sin esto, se estaria juzgando el sistema por el
+    # rank-IC de los agentes individuales, que NO es lo que se opera. Tambien se anade el
+    # equiponderado como referencia (que aporta la combinacion frente a promediar sin pesos).
+    diagnostics = pd.concat(
+        [
+            diagnostics,
+            _meta_diagnostics(meta, labelled, settings, score_col="meta_score", name="meta_final"),
+            _equal_weight_diagnostics(labelled, settings),
+        ],
+        ignore_index=True,
+    )
     return meta, pd.DataFrame(weights), diagnostics
+
+
+def _meta_diagnostics(
+    meta: pd.DataFrame, labelled: pd.DataFrame, settings: Settings, score_col: str, name: str
+) -> pd.DataFrame:
+    """rank-IC por fecha del meta-score frente al retorno futuro realizado."""
+    if meta.empty:
+        return pd.DataFrame(columns=_DIAG_COLUMNS)
+    labels = (
+        labelled.loc[labelled["target_available"].fillna(False)]
+        .drop_duplicates(["ticker", "snapshot_date"])[
+            ["ticker", "snapshot_date", "label_end_date", "forward_excess_return_3m", "is_quarterly"]
+        ]
+    )
+    merged = meta.merge(labels, on=["ticker", "snapshot_date"], how="inner")
+    merged = merged.rename(columns={score_col: "score"})
+    return _diagnostics_for_score(merged, settings, name)
+
+
+def _equal_weight_diagnostics(labelled: pd.DataFrame, settings: Settings) -> pd.DataFrame:
+    """rank-IC del promedio EQUIPONDERADO de los rangos de los agentes (referencia sin pesos)."""
+    usable = labelled.loc[labelled["target_available"].fillna(False)].copy()
+    if usable.empty:
+        return pd.DataFrame(columns=_DIAG_COLUMNS)
+    usable["agent_rank"] = usable.groupby(["snapshot_date", "agent"])["score"].rank(
+        method="average", pct=True
+    )
+    equal = (
+        usable.groupby(["ticker", "snapshot_date"])
+        .agg(
+            score=("agent_rank", "mean"),
+            label_end_date=("label_end_date", "max"),
+            forward_excess_return_3m=("forward_excess_return_3m", "first"),
+            is_quarterly=("is_quarterly", "first"),
+        )
+        .reset_index()
+    )
+    return _diagnostics_for_score(equal, settings, "meta_equal_weight")
 
 
 def _weights_as_of(
@@ -105,16 +168,30 @@ def _weights_as_of(
     return ({agent: equal for agent in available_agents}, evidence)
 
 
+_DIAG_COLUMNS = ["agent", "prediction_date", "label_end_date", "observations", "rank_ic", "is_quarterly"]
+
+
 def _diagnostics(labelled: pd.DataFrame, settings: Settings) -> pd.DataFrame:
-    rows: list[dict] = []
+    """rank-IC por fecha de cada agente individual (para explicacion y ablacion)."""
     usable = labelled.loc[labelled["target_available"].fillna(False)]
-    for (agent, date), cohort in usable.groupby(["agent", "snapshot_date"], sort=True):
+    frames = [
+        _diagnostics_for_score(cohort.assign(agent=agent), settings, agent)
+        for agent, cohort in usable.groupby("agent", sort=True)
+    ]
+    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=_DIAG_COLUMNS)
+
+
+def _diagnostics_for_score(frame: pd.DataFrame, settings: Settings, name: str) -> pd.DataFrame:
+    """rank-IC por snapshot de un `score` cualquiera frente al retorno futuro. `name` etiqueta la
+    fila en la columna `agent` (un agente, `meta_final`, `meta_equal_weight`, ...)."""
+    rows: list[dict] = []
+    for date, cohort in frame.groupby("snapshot_date", sort=True):
         value = _rank_ic(cohort, settings.min_rank_ic_cross_section)
         if value is None:
             continue
         rows.append(
             {
-                "agent": agent,
+                "agent": name,
                 "prediction_date": date,
                 "label_end_date": pd.to_datetime(cohort["label_end_date"]).max().date().isoformat(),
                 "observations": int(cohort[["score", "forward_excess_return_3m"]].dropna().shape[0]),
@@ -122,10 +199,7 @@ def _diagnostics(labelled: pd.DataFrame, settings: Settings) -> pd.DataFrame:
                 "is_quarterly": bool(cohort["is_quarterly"].iloc[0]),
             }
         )
-    return pd.DataFrame(
-        rows,
-        columns=["agent", "prediction_date", "label_end_date", "observations", "rank_ic", "is_quarterly"],
-    )
+    return pd.DataFrame(rows, columns=_DIAG_COLUMNS)
 
 
 def _rank_ic(cohort: pd.DataFrame, minimum: int) -> float | None:

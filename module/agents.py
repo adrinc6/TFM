@@ -1,4 +1,15 @@
-"""Agentes Ridge especializados con entrenamiento walk-forward trimestral."""
+"""Agentes especializados (Ridge o LightGBM) con entrenamiento walk-forward trimestral.
+
+Cada agente aprende, en cada retrain, a ordenar las acciones por su retorno futuro. El motor
+(`model_type`) y el objetivo (`objective`) son configurables:
+
+- `model_type="ridge"`: regresion lineal (el enfoque original).
+- `model_type="lightgbm"`: arboles con gradient boosting, captura interacciones no lineales.
+- `objective="regression"`: predice el exceso de retorno (tratado segun `label_transform`).
+- `objective="quartile"`: clasifica el cuartil superior vs el inferior del retorno futuro (los
+  del medio se excluyen del entrenamiento). El score es la probabilidad del cuartil superior,
+  un ranking valido que la cartera y el rank-IC consumen igual que un score de regresion.
+"""
 
 from __future__ import annotations
 
@@ -7,7 +18,9 @@ import json
 import logging
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
+from lightgbm import LGBMClassifier, LGBMRanker, LGBMRegressor
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import Ridge
 from sklearn.pipeline import Pipeline
@@ -65,7 +78,7 @@ def build_agent_scores(settings: Settings) -> pd.DataFrame:
     write_parquet(wide, run_dir / "agent_scores.parquet")
     write_parquet(weights, run_dir / "meta_weights.parquet")
     write_parquet(diagnostics, run_dir / "rank_ic_diagnostics.parquet")
-    write_parquet(coefficients, run_dir / "model_coefficients.parquet")
+    write_parquet(coefficients, run_dir / "model_feature_attribution.parquet")
     write_json(_manifest(settings, feature_path, target_path, predictions, run_dir), run_dir / "manifest.json")
     log.info("Agentes: rows=%s runs=%s output=%s", len(wide), wide["snapshot_date"].nunique(), run_dir)
     return wide
@@ -117,15 +130,15 @@ def _walk_forward_scores(frame: pd.DataFrame, settings: Settings) -> tuple[pd.Da
         ]
         for agent, columns in agent_features.items():
             train = training.dropna(subset=["forward_excess_return_3m"])
+            train, target = _prepare_training(train, settings)
             if len(train) < settings.min_training_rows:
                 log.warning("[%s %s] filas insuficientes: %s", agent, retrain_date.date(), len(train))
                 continue
-            target = _transform_label(train, "forward_excess_return_3m", settings)
-            model = _ridge_pipeline(settings)
-            model.fit(train[columns], target)
+            model = _build_model(settings)
+            _fit_model(model, train, columns, target, settings)
             if scoring.empty:
                 continue
-            values = model.predict(scoring[columns])
+            values = _score(model, scoring[columns], settings)
             for row, score in zip(scoring.itertuples(index=False), values, strict=True):
                 rows.append(
                     {
@@ -140,18 +153,43 @@ def _walk_forward_scores(frame: pd.DataFrame, settings: Settings) -> tuple[pd.Da
                         "training_rows": len(train),
                     }
                 )
-            coefficients.extend(_coefficient_rows(model, agent, retrain_date, len(train)))
+            coefficients.extend(_importance_rows(model, agent, retrain_date, len(train), settings))
     return pd.DataFrame(rows), pd.DataFrame(coefficients)
 
 
+def _prepare_training(train: pd.DataFrame, settings: Settings) -> tuple[pd.DataFrame, pd.Series]:
+    """Devuelve (filas de entrenamiento, etiqueta) segun el objetivo.
+
+    - "rank_regression" (principal): etiqueta = percentil transversal del retorno (0..1) dentro de
+      cada snapshot. Regresion normal, pero alineada con el rank-IC. Todas las filas.
+    - "ranking": etiqueta = grados enteros de relevancia por snapshot (para LGBMRanker). Todas.
+    - "regression": exceso de retorno crudo tratado por `label_transform`. Todas.
+    - "quartile" (ablacion): clasificacion binaria del cuartil superior (1) vs inferior (0) del
+      retorno DENTRO de cada snapshot; el centro se EXCLUYE del entrenamiento pero se puntua entero.
+    """
+    returns = train["forward_excess_return_3m"].astype(float)
+    if settings.objective == "rank_regression":
+        return train, returns.groupby(train["snapshot_date"]).rank(method="average", pct=True)
+    if settings.objective == "ranking":
+        # LGBMRanker necesita etiquetas de relevancia enteras (0..K). Usamos deciles por snapshot.
+        deciles = returns.groupby(train["snapshot_date"]).rank(method="average", pct=True)
+        return train, (deciles * 9).round().astype(int)
+    if settings.objective == "quartile":
+        quartile = returns.groupby(train["snapshot_date"]).rank(method="average", pct=True)
+        top = quartile >= 0.75
+        bottom = quartile <= 0.25
+        mask = top | bottom
+        return train.loc[mask], top.loc[mask].astype(int)
+    return train, _transform_label(train, "forward_excess_return_3m", settings)
+
+
 def _transform_label(train: pd.DataFrame, column: str, settings: Settings) -> pd.Series:
-    """Tratamiento de la etiqueta de entrenamiento (B2). Solo sobre `train`, nunca scoring.
+    """Tratamiento de la etiqueta de REGRESION (B2). Solo sobre `train`, nunca scoring.
 
     - "none": exceso de retorno crudo.
-    - "winsor": recorta las colas al percentil `label_winsor_pct` para que los outliers no
-      dominen la regresion (unos pocos retornos extremos arrastran el ajuste y degradan el orden).
-    - "rank": percentil transversal del retorno futuro DENTRO de cada snapshot. Entrena contra el
-      orden en vez del valor, que es exactamente lo que mide el rank-IC.
+    - "winsor": recorta las colas al percentil `label_winsor_pct` (los outliers no dominan).
+    - "rank": percentil transversal del retorno futuro. Entrena contra el orden, que es lo que
+      mide el rank-IC.
     """
     values = train[column].astype(float)
     transform = settings.label_transform
@@ -164,7 +202,32 @@ def _transform_label(train: pd.DataFrame, column: str, settings: Settings) -> pd
     return values
 
 
-def _ridge_pipeline(settings: Settings) -> Pipeline:
+def _build_model(settings: Settings) -> Pipeline:
+    """Pipeline del agente segun motor y objetivo.
+
+    LightGBM no necesita escalado (los arboles son invariantes a transformaciones monotonas) y
+    maneja los NA de forma nativa, asi que va sin imputer ni scaler. Ridge si los necesita.
+    """
+    if settings.model_type == "lightgbm":
+        common = dict(
+            n_estimators=settings.lgbm_n_estimators,
+            max_depth=settings.lgbm_max_depth,
+            learning_rate=settings.lgbm_learning_rate,
+            min_child_samples=settings.lgbm_min_child_samples,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            random_state=settings.random_seed,
+            n_jobs=1,
+            verbose=-1,
+        )
+        if settings.objective == "quartile":
+            estimator = LGBMClassifier(**common)
+        elif settings.objective == "ranking":
+            estimator = LGBMRanker(objective="lambdarank", **common)
+        else:
+            estimator = LGBMRegressor(**common)
+        return Pipeline([("model", estimator)])
+    # Ridge (lineal): imputa, escala y regresa. La clasificacion con Ridge no aplica.
     return Pipeline(
         [
             ("imputer", SimpleImputer(strategy="median", add_indicator=True)),
@@ -174,9 +237,39 @@ def _ridge_pipeline(settings: Settings) -> Pipeline:
     )
 
 
-def _coefficient_rows(model: Pipeline, agent: str, retrain_date: pd.Timestamp, rows: int) -> list[dict]:
-    names = model[:-1].get_feature_names_out()
-    coefficients = model.named_steps["ridge"].coef_
+def _fit_model(
+    model: Pipeline, train: pd.DataFrame, columns: list[str], target: pd.Series, settings: Settings
+) -> None:
+    """Ajusta el modelo. El LGBMRanker necesita `group` = nº de filas por snapshot, y que las
+    filas esten agrupadas (contiguas) por snapshot; el resto de modelos se ajustan directo.
+    """
+    if settings.objective == "ranking":
+        order = train.sort_values("snapshot_date").index
+        ordered = train.loc[order]
+        group = ordered.groupby("snapshot_date", sort=True).size().to_numpy()
+        model.named_steps["model"].fit(ordered[columns], target.loc[order], group=group)
+    else:
+        model.fit(train[columns], target)
+
+
+def _score(model: Pipeline, features: pd.DataFrame, settings: Settings) -> np.ndarray:
+    """Score por fila. Probabilidad del cuartil superior en clasificacion; el valor en el resto."""
+    if settings.objective == "quartile" and settings.model_type == "lightgbm":
+        return model.predict_proba(features)[:, 1]
+    return model.predict(features)
+
+
+def _importance_rows(
+    model: Pipeline, agent: str, retrain_date: pd.Timestamp, rows: int, settings: Settings
+) -> list[dict]:
+    """Trazabilidad del modelo: coeficientes (Ridge) o importancias de features (LightGBM)."""
+    if settings.model_type == "lightgbm":
+        estimator = model.named_steps["model"]
+        names = estimator.feature_name_
+        values = estimator.feature_importances_
+    else:
+        names = model[:-1].get_feature_names_out()
+        values = model.named_steps["ridge"].coef_
     return [
         {
             "agent": agent,
@@ -185,7 +278,7 @@ def _coefficient_rows(model: Pipeline, agent: str, retrain_date: pd.Timestamp, r
             "coefficient": float(value),
             "training_rows": rows,
         }
-        for name, value in zip(names, coefficients, strict=True)
+        for name, value in zip(names, values, strict=True)
     ]
 
 
@@ -229,11 +322,17 @@ def _run_id(settings: Settings, feature_path: Path, target_path: Path) -> str:
         "label_winsor_pct": settings.label_winsor_pct,
         "fundamental_momentum": settings.fundamental_momentum,
         "market_regime_feature": settings.market_regime_feature,
+        "model_type": settings.model_type,
+        "objective": settings.objective,
+        "lgbm": [settings.lgbm_n_estimators, settings.lgbm_max_depth,
+                 settings.lgbm_learning_rate, settings.lgbm_min_child_samples],
+        "random_seed": settings.random_seed,
+        "meta_type": settings.meta_type,
         "features": sha256_file(feature_path),
         "targets": sha256_file(target_path),
     }
     encoded = json.dumps(config, sort_keys=True).encode("utf-8")
-    return f"ridge-{hashlib.sha256(encoded).hexdigest()[:12]}"
+    return f"{settings.model_type}-{hashlib.sha256(encoded).hexdigest()[:12]}"
 
 
 def _manifest(
@@ -251,10 +350,19 @@ def _manifest(
             "execution_lag_days": settings.execution_lag_days,
             "train_lookback_years": settings.train_lookback_years,
             "target_horizon_months": settings.target_horizon_months,
+            "model_type": settings.model_type,
+            "objective": settings.objective,
+            "lgbm_n_estimators": settings.lgbm_n_estimators,
+            "lgbm_max_depth": settings.lgbm_max_depth,
+            "lgbm_learning_rate": settings.lgbm_learning_rate,
+            "lgbm_min_child_samples": settings.lgbm_min_child_samples,
+            "meta_type": settings.meta_type,
             "ridge_alpha": settings.ridge_alpha,
             "meta_ic_lookback_quarters": settings.meta_ic_lookback_quarters,
             "label_transform": settings.label_transform,
             "label_winsor_pct": settings.label_winsor_pct,
+            "fundamental_momentum": settings.fundamental_momentum,
+            "market_regime_feature": settings.market_regime_feature,
             "missing_policy": "median_train_only_with_indicator",
         },
         "versions": {"scikit_learn": sklearn.__version__},
