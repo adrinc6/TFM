@@ -12,33 +12,35 @@ El proyecto debe ser académico, reproducible, explicable y honesto. Un buen
 resultado no es solo una cartera rentable: también puede ser un resultado
 negativo bien medido, que explique con claridad qué aprende el modelo y qué no.
 
-## Modelo mental del sistema
+## Estado actual y modelo mental del sistema
 
-El pipeline principal es:
+El proyecto está en un **reinicio en limpio**. Ahora mismo el repositorio solo
+contiene la **descarga de datos**; el resto de etapas se reconstruirá siguiendo
+el plan maestro en `docs/doc.md`.
+
+Código que existe hoy:
+
+- `environment.py`: configuración editable de la descarga (universo de tickers,
+  fechas, modo desarrollo, clave de API).
+- `main.py`: entrada única que ejecuta la descarga.
+- `module/ingest/`: clientes HTTP (Finnhub, Yahoo) y orquestación de la descarga
+  de datos crudos (`download_raw_data`).
+- `module/utils.py`: utilidades compartidas de logging y escritura de archivos.
+
+Arquitectura **objetivo** por etapas (a reconstruir sobre la descarga; descrita
+en detalle en `docs/doc.md`):
 
 ```text
-download → dataset → features → ml → watchlist → backtest → viewer → report
+download → dataset → features → ml (agentes) → selección → cartera → backtest → informe
 ```
 
-- `environment.py`: configuración central de la ejecución.
-- `main.py`: orquestación de etapas.
-- `module/dataset.py`: dataset point-in-time y prevención de lookahead.
-- `module/features/`: variables y baselines deterministas.
-- `module/ml.py`: agentes ML, combinación de señales y diagnóstico.
-- `module/strategy/`: selección, cartera y tamaño de posición.
-- `module/backtest/`: simulación, métricas, baselines y artefactos.
-- `module/viewer/` y `module/report.py`: informe final y visualización.
-- `module/experiments/` y `experiments/rejilla.py`: barrido sistemático de
-  escenarios y selección automática del sistema final por estabilidad multi-era
-  (`aggregate.py`, protocolo dev/confirmación).
-- `tests/`: pruebas de leakage, ML, features, estrategia y robustez.
+con un barrido de escenarios (rejilla) y una selección del sistema final por
+estabilidad multi-era, no solo por alfa. La simulación arrancará en una fecha
+ancla derivada de trimestre + retardo de publicación de fundamentales, separando
+entrenar (fundamentales nuevos) de revisar (mensual, re-precio).
 
-La simulación arranca en una fecha ancla configurable (`EVAL_START_QUARTER` +
-retardo de publicación) y separa entrenar (fundamentales nuevos, trimestral/
-anual) de revisar (mensual, re-precio). Ver `README.md`.
-
-Antes de cambiar comportamiento, localiza la etapa propietaria y sigue el flujo
-de datos de entrada a salida. Evita solucionar un problema en una capa ajena.
+Antes de reconstruir una etapa, léela en `docs/doc.md`, respeta el flujo de datos
+de entrada a salida y no resuelvas un problema en una capa ajena.
 
 ## Prioridades metodológicas
 
@@ -97,9 +99,10 @@ Escribe código sencillo de leer, revisar y explicar por una persona:
 
 ## Pruebas y verificación
 
-Tras un cambio, ejecuta los tests relacionados en `tests/`. Por ejemplo,
-ejecuta pruebas de leakage y ML ante cambios temporales o de entrenamiento, y
-pruebas de estrategia/backtest ante cambios de cartera o métricas.
+Todavía no hay carpeta `tests/` tras el reinicio. Al reconstruir cada etapa,
+añade sus pruebas (empezando por las de leakage y separación temporal, que son
+las críticas del proyecto) y ejecútalas tras cada cambio relacionado. Indica con
+claridad qué se ejecutó y qué no se pudo verificar.
 
 No ejecutes un pipeline completo ni descargues datos externos sin que sea
 necesario para la tarea o sin autorización cuando pueda tener coste o tardar
