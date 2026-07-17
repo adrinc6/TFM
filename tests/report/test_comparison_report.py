@@ -39,41 +39,44 @@ def _write_scenario(scenarios_root: Path, name: str, summary: dict, annual_alpha
     return scenario_dir
 
 
-def test_comparison_report_ranks_scenarios_by_composite_stability(tmp_path: Path) -> None:
-    """El ganador es el mas estable, no el que mas alfa total tiene."""
+def test_comparison_report_ranks_scenarios_by_learning(tmp_path: Path) -> None:
+    """El ganador es el que APRENDE (rank-IC), no el que mas alfa tiene."""
     scenarios_root = tmp_path / "escenarios"
     scenarios_root.mkdir()
 
-    # A: alfa media alta pero un ano brutal y otros mediocres (inestable).
-    _write_scenario(scenarios_root, "spike_year", {
-        "total_alpha": 1.20, "beat_rate": 0.5, "median_alpha": 0.01,
-        "worst_year_alpha": -0.15, "max_drawdown": 0.40, "information_ratio": 0.6,
+    # high_alpha: alfa alto pero rank-IC nulo. Ruido afortunado, no aprende.
+    _write_scenario(scenarios_root, "high_alpha", {
+        "mean_rank_ic": 0.002, "rank_ic_positive_fraction": 0.49, "rank_ic_std": 0.14,
+        "beat_rate": 0.6, "max_drawdown": 0.40, "annualized_alpha": 0.25,
+        "median_alpha": 0.05, "worst_year_alpha": -0.20, "information_ratio": 0.6,
     }, {2000: 1.0, 2001: -0.10, 2002: 0.02, 2003: 0.03, 2004: -0.05})
 
-    # B: alfa mediana baja pero todos los anos positivos, drawdown pequeno (estable).
-    _write_scenario(scenarios_root, "steady", {
-        "total_alpha": 0.15, "beat_rate": 1.0, "median_alpha": 0.03,
-        "worst_year_alpha": 0.015, "max_drawdown": 0.08, "information_ratio": 0.9,
+    # learner: aprende de verdad (rank-IC positivo y consistente), alfa modesto.
+    _write_scenario(scenarios_root, "learner", {
+        "mean_rank_ic": 0.06, "rank_ic_positive_fraction": 0.68, "rank_ic_std": 0.09,
+        "beat_rate": 0.6, "max_drawdown": 0.15, "annualized_alpha": 0.03,
+        "median_alpha": 0.02, "worst_year_alpha": -0.03, "information_ratio": 0.5,
     }, {2000: 0.03, 2001: 0.02, 2002: 0.03, 2003: 0.025, 2004: 0.02})
 
-    # C: intermedio.
+    # middle.
     _write_scenario(scenarios_root, "middle", {
-        "total_alpha": 0.30, "beat_rate": 0.6, "median_alpha": 0.02,
-        "worst_year_alpha": -0.04, "max_drawdown": 0.20, "information_ratio": 0.4,
+        "mean_rank_ic": 0.02, "rank_ic_positive_fraction": 0.55, "rank_ic_std": 0.12,
+        "beat_rate": 0.6, "max_drawdown": 0.20, "annualized_alpha": 0.10,
+        "median_alpha": 0.03, "worst_year_alpha": -0.04, "information_ratio": 0.4,
     }, {2000: 0.10, 2001: -0.04, 2002: 0.05, 2003: 0.08, 2004: 0.02})
 
-    build_comparison_report(scenarios_root, dev_era=(1990, 2015))
+    build_comparison_report(scenarios_root)
 
     comparison_html = (scenarios_root / "comparison.html").read_text(encoding="utf-8")
     for section in COMPARISON_SECTIONS:
         assert section in comparison_html, f"falta {section}"
 
     selection = json.loads((scenarios_root / "selection.json").read_text(encoding="utf-8"))
-    assert selection["winner"] == "steady", (
-        f"esperaba 'steady' como ganador; salio {selection['winner']!r}"
+    assert selection["winner"] == "learner", (
+        f"esperaba 'learner' como ganador; salio {selection['winner']!r}"
     )
 
     summary = pd.read_parquet(scenarios_root / "scenarios_summary.parquet")
-    steady_rank = int(summary.loc[summary["scenario"] == "steady", "composite_rank_mean"].iloc[0] * 1000)
-    spike_rank = int(summary.loc[summary["scenario"] == "spike_year", "composite_rank_mean"].iloc[0] * 1000)
-    assert steady_rank < spike_rank, "steady debe tener mejor (menor) rango medio que spike_year"
+    learner_rank = float(summary.loc[summary["scenario"] == "learner", "composite_rank_mean"].iloc[0])
+    high_alpha_rank = float(summary.loc[summary["scenario"] == "high_alpha", "composite_rank_mean"].iloc[0])
+    assert learner_rank < high_alpha_rank, "learner debe tener mejor (menor) rango medio"

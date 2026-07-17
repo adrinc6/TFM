@@ -57,8 +57,10 @@ def run_backtest_from_run_dir(settings: Settings) -> BacktestResult:
     benchmark = read_parquet(
         processed / "benchmark_point_in_time.parquet", "RUN_MODE='dataset'"
     )
+    diagnostics_path = run_dir / "rank_ic_diagnostics.parquet"
+    diagnostics = pd.read_parquet(diagnostics_path) if diagnostics_path.exists() else None
 
-    result = run_backtest(scores, asset_prices, benchmark, settings)
+    result = run_backtest(scores, asset_prices, benchmark, settings, diagnostics)
     _write_outputs(result, run_dir, settings)
     log.info("Backtest completado en %s", run_dir)
     return result
@@ -69,8 +71,13 @@ def run_backtest(
     prices: pd.DataFrame,
     benchmark: pd.DataFrame,
     settings: Settings,
+    diagnostics: pd.DataFrame | None = None,
 ) -> BacktestResult:
-    """Simula la cartera fecha a fecha. Pura funcion: no escribe nada al disco."""
+    """Simula la cartera fecha a fecha. Pura funcion: no escribe nada al disco.
+
+    `diagnostics` son los rank-IC OOS por agente y cohorte (de la Fase 3). Si se pasan,
+    el summary incluye las senales de aprendizaje que usa la seleccion de la Fase 6.
+    """
     scores = scores.sort_values("snapshot_date").copy()
     price_index = _price_lookup(prices)
     benchmark_index = _benchmark_lookup(benchmark)
@@ -154,7 +161,7 @@ def run_backtest(
     orders = pd.DataFrame(orders_rows)
     equity = pd.DataFrame(equity_rows)
     annual_metrics = _annual_metrics(equity)
-    summary = _summary(equity, annual_metrics, settings)
+    summary = _summary(equity, annual_metrics, settings, diagnostics)
 
     return BacktestResult(
         positions=positions, orders=orders, equity=equity,
@@ -283,12 +290,23 @@ def _annual_metrics(equity: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def _summary(equity: pd.DataFrame, annual: pd.DataFrame, settings: Settings) -> dict:
+def _summary(
+    equity: pd.DataFrame,
+    annual: pd.DataFrame,
+    settings: Settings,
+    diagnostics: pd.DataFrame | None = None,
+) -> dict:
+    """Resumen del run.
+
+    IMPORTANTE sobre el alfa: NO se compone a lo largo de los anios. Multiplicar el alfa de
+    25 anios produce cifras absurdas (cientos de miles de %) que ademas premian
+    desproporcionadamente un unico anio excepcional. Se reporta la **alfa anualizada
+    geometrica** (media compuesta del alfa anual) y la **alfa mediana anual**, ambas
+    interpretables como "X % al anio". El alfa NO decide que escenario gana: la seleccion de
+    la Fase 6 usa senales de aprendizaje (rank-IC), no de rentabilidad. Ver docs/doc.md.
+    """
     if equity.empty:
         return {}
-    total_portfolio = equity["portfolio_value"].iloc[-1] / equity["portfolio_value"].iloc[0] - 1
-    total_benchmark = equity["benchmark_value"].iloc[-1] / equity["benchmark_value"].iloc[0] - 1
-    total_alpha = total_portfolio - total_benchmark
 
     excess = equity["excess_return"].to_numpy()
     te = float(np.std(excess, ddof=1)) if len(excess) > 1 else 0.0
@@ -301,17 +319,24 @@ def _summary(equity: pd.DataFrame, annual: pd.DataFrame, settings: Settings) -> 
     beat_rate = float((annual["alpha"] > 0).mean()) if not annual.empty else 0.0
     median_alpha = float(annual["alpha"].median()) if not annual.empty else 0.0
     worst_year_alpha = float(annual["alpha"].min()) if not annual.empty else 0.0
+    annualized_alpha = _annualized_alpha(annual)
+
+    mean_rank_ic, rank_ic_positive_fraction, rank_ic_std = _rank_ic_signals(diagnostics)
 
     return {
-        "total_portfolio_return": total_portfolio,
-        "total_benchmark_return": total_benchmark,
-        "total_alpha": total_alpha,
-        "information_ratio": ir_total,
-        "max_drawdown": max_drawdown_total,
-        # Los cuatro que consume Fase 6 para la metrica de estabilidad:
+        # --- senales de APRENDIZAJE (lo que decide la seleccion en Fase 6) ---
+        "mean_rank_ic": mean_rank_ic,
+        "rank_ic_positive_fraction": rank_ic_positive_fraction,
+        "rank_ic_std": rank_ic_std,
+        # --- consistencia y riesgo (tambien seleccionan; no son magnitud de alfa) ---
         "beat_rate": beat_rate,
+        "max_drawdown": max_drawdown_total,
+        # --- alfa: SOLO se reporta, no selecciona; anual, nunca compuesto a 25 anios ---
+        "annualized_alpha": annualized_alpha,
         "median_alpha": median_alpha,
         "worst_year_alpha": worst_year_alpha,
+        "information_ratio": ir_total,
+        # --- parametros del run ---
         "commission_bps": settings.commission_bps,
         "slippage_bps": settings.slippage_bps,
         "target_min": settings.target_min,
@@ -321,6 +346,37 @@ def _summary(equity: pd.DataFrame, annual: pd.DataFrame, settings: Settings) -> 
         "rotation_edge_percentiles": settings.rotation_edge_percentiles,
         "max_weight_per_position": settings.max_weight_per_position,
     }
+
+
+def _annualized_alpha(annual: pd.DataFrame) -> float:
+    """Media geometrica del alfa anual: (prod(1+alfa))^(1/n) - 1. Interpretable como % al anio.
+
+    No es lo mismo que componer el retorno total: aqui se compone el EXCESO anual y se
+    anualiza, asi que no explota con el horizonte ni lo domina un unico anio.
+    """
+    if annual.empty:
+        return 0.0
+    factors = (1 + annual["alpha"]).clip(lower=1e-9)   # evita log de negativo por un anio catastrofico
+    n = len(factors)
+    geometric = float(factors.prod()) ** (1 / n) - 1
+    return geometric
+
+
+def _rank_ic_signals(diagnostics: pd.DataFrame | None) -> tuple[float, float, float]:
+    """(rank-IC medio, fraccion de cohortes con rank-IC>0, std del rank-IC).
+
+    Es la evidencia de aprendizaje del proyecto. Se agrega sobre TODAS las cohortes y todos
+    los agentes. Si no hay diagnostics (p. ej. en tests puros de cartera), devuelve ceros.
+    """
+    if diagnostics is None or diagnostics.empty or "rank_ic" not in diagnostics.columns:
+        return 0.0, 0.0, 0.0
+    values = diagnostics["rank_ic"].dropna()
+    if values.empty:
+        return 0.0, 0.0, 0.0
+    mean_ic = float(values.mean())
+    positive_fraction = float((values > 0).mean())
+    std_ic = float(values.std(ddof=1)) if len(values) > 1 else 0.0
+    return mean_ic, positive_fraction, std_ic
 
 
 def _write_outputs(result: BacktestResult, run_dir: Path, settings: Settings) -> None:

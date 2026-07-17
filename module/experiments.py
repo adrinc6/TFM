@@ -105,19 +105,35 @@ def stage_fingerprint(stage: str, settings: Settings) -> str:
 # -------- Seleccion --------------------------------------------------------------
 
 
+# Dimensiones de la seleccion. NINGUNA es magnitud de alfa: el sistema se elige por
+# aprendizaje (rank-IC) y consistencia, no por rentabilidad. El alfa se reporta aparte.
+# Cada tupla: (columna, ascending del rank). ascending=False -> mayor es mejor.
+SELECTION_DIMENSIONS = (
+    ("mean_rank_ic", False),               # aprendizaje: ordena bien fuera de muestra
+    ("rank_ic_positive_fraction", False),  # estabilidad del aprendizaje entre eras
+    ("beat_rate", False),                  # consistencia (frecuencia, no magnitud)
+    ("max_drawdown", True),                # riesgo: menor es mejor
+)
+
+
 def select_winner(summary: pd.DataFrame) -> tuple[str, pd.DataFrame]:
-    """Ganador por rango medio de las cuatro dimensiones anuales.
+    """Ganador por rango medio de las dimensiones de aprendizaje y estabilidad.
+
+    NO usa alfa. La pregunta del TFM es si el sistema APRENDE a ordenar activos fuera de
+    muestra de forma estable; elegir por rentabilidad seria seleccionar ruido cuando el
+    rank-IC es debil. El alfa se reporta como consecuencia, nunca como criterio.
 
     Devuelve (nombre_ganador, DataFrame ordenado con los rangos y la composite metric).
     """
     ranked = summary.copy()
-    ranked["rank_beat_rate"] = ranked["beat_rate"].rank(ascending=False, method="min").astype(int)
-    ranked["rank_median_alpha"] = ranked["median_alpha"].rank(ascending=False, method="min").astype(int)
-    ranked["rank_worst_year_alpha"] = ranked["worst_year_alpha"].rank(ascending=False, method="min").astype(int)
-    ranked["rank_max_drawdown"] = ranked["max_drawdown"].rank(ascending=True, method="min").astype(int)
-    ranked["composite_rank_mean"] = ranked[
-        ["rank_beat_rate", "rank_median_alpha", "rank_worst_year_alpha", "rank_max_drawdown"]
-    ].mean(axis=1)
+    rank_columns: list[str] = []
+    for column, ascending in SELECTION_DIMENSIONS:
+        rank_name = f"rank_{column}"
+        if column not in ranked.columns:
+            ranked[column] = 0.0
+        ranked[rank_name] = ranked[column].rank(ascending=ascending, method="min").astype(int)
+        rank_columns.append(rank_name)
+    ranked["composite_rank_mean"] = ranked[rank_columns].mean(axis=1)
     ranked = ranked.sort_values("composite_rank_mean").reset_index(drop=True)
     winner = str(ranked.iloc[0]["scenario"])
     return winner, ranked
@@ -286,7 +302,9 @@ def _run_stage_backtest(settings: Settings, processed: Path, run_dir: Path) -> N
     scores = read_parquet(run_dir / "agent_scores.parquet", "agents run_dir")
     asset_prices = read_parquet(processed / "asset_price_point_in_time.parquet", "dataset")
     benchmark = read_parquet(processed / "benchmark_point_in_time.parquet", "dataset")
-    result = run_backtest(scores, asset_prices, benchmark, settings)
+    diagnostics_path = run_dir / "rank_ic_diagnostics.parquet"
+    diagnostics = pd.read_parquet(diagnostics_path) if diagnostics_path.exists() else None
+    result = run_backtest(scores, asset_prices, benchmark, settings, diagnostics)
 
     from module.utils import write_parquet
     write_parquet(result.positions, run_dir / "positions.parquet")

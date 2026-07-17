@@ -156,17 +156,28 @@ El sistema final **no se elige por la mayor alfa**. Elegir el escenario con más
 rentabilidad sobre el S&P 500 sería *overfitting por selección*: casi siempre el
 ganador aparente es el más afortunado, no el más robusto.
 
-En su lugar, la selección se hace por **rankings y estabilidad**:
+La selección se hace **solo por aprendizaje y estabilidad, nunca por alfa**. La
+pregunta del proyecto es si el sistema *aprende a ordenar activos fuera de muestra*;
+si el aprendizaje (rank-IC) es débil, cualquier rentabilidad observada es en buena
+parte suerte de composición, y elegir por ella sería seleccionar ruido.
 
-- Se puntúa cada escenario por una **métrica compuesta de estabilidad** a lo largo
-  de **muchas eras** (¿es consistente su rank-IC?, ¿su alfa?, ¿su drawdown?), no
-  por un único número puntual.
-- Se separa una **era de desarrollo** (donde se explora y se ordena) de una **era
-  de confirmación reservada** (donde solo se valida el finalista). Así se controla
-  el sesgo de haber mirado mil escenarios.
-- El criterio es elegir la configuración más **estable, segura y útil**: la que da
-  resultados fiables y repetibles, aunque no sea la más brillante en un tramo
-  concreto.
+La métrica de selección es el **rango medio de cuatro dimensiones**, ninguna de las
+cuales es magnitud de rentabilidad:
+
+- **rank-IC medio** fuera de muestra (evidencia de aprendizaje).
+- **fracción de cohortes con rank-IC positivo** (estabilidad del aprendizaje entre
+  eras: que no sea un pico afortunado).
+- **beat rate**: fracción de años que baten al benchmark (frecuencia de acierto, no
+  cuánto).
+- **máximo drawdown** (riesgo).
+
+El **alfa se reporta como consecuencia**, junto a los resultados, pero **no
+interviene** en qué configuración se elige. La comparación es un **único ranking
+global** sobre todos los años disponibles, sin separar en eras: se prefiere una
+lectura honesta de la consistencia año a año antes que dividir la muestra (ya
+pequeña) o quedarse con lo que mejor funcionó en un tramo. Si el rank-IC del ganador
+es cercano a cero, la conclusión —válida— es que el sistema no aprende de forma
+estable, y se dice con claridad.
 
 ## 9. Cartera y backtest
 

@@ -89,14 +89,19 @@ def minimal_run_dir(tmp_path) -> Path:
     annual.to_parquet(run_dir / "annual_metrics.parquet")
 
     summary = {
-        "total_portfolio_return": 0.15,
-        "total_benchmark_return": 0.08,
-        "total_alpha": 0.07,
-        "information_ratio": 0.5,
-        "max_drawdown": 0.05,
+        # senales de aprendizaje (lo que selecciona)
+        "mean_rank_ic": 0.05,
+        "rank_ic_positive_fraction": 0.62,
+        "rank_ic_std": 0.12,
+        # consistencia y riesgo
         "beat_rate": 1.0,
+        "max_drawdown": 0.05,
+        # alfa: solo reportada, anual, no compuesta
+        "annualized_alpha": 0.033,
         "median_alpha": 0.033,
         "worst_year_alpha": 0.03,
+        "information_ratio": 0.5,
+        # parametros del run
         "commission_bps": 5, "slippage_bps": 10,
         "target_min": 5, "target_max": 10,
         "entry_min_percentile": 80, "min_hold_percentile": 50,

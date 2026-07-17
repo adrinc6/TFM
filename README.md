@@ -103,7 +103,7 @@ alfa **neta de costes**. Las reglas están detalladas en [docs/plan_fases.md](do
 
 Genera dentro del `run_dir` de agentes: `positions.parquet`, `orders.parquet`
 (con `reason` legible), `equity.parquet`, `annual_metrics.parquet` y `backtest_summary.json`
-(incluye las cuatro dimensiones de la métrica de estabilidad que consumirá Fase 6).
+(señales de aprendizaje rank-IC + consistencia + alfa informativa, ver Fase 6).
 
 ## Barrido de escenarios y selección automática
 
@@ -114,6 +114,14 @@ los escenarios que solo cambian política de cartera reusan dataset, features y 
 baseline via symlink; solo se regenera lo estrictamente necesario.
 
 Los resultados van a `results/escenarios/<nombre>/`, cada uno con su `report.html` completo.
-Al final, `results/escenarios/comparison.html` presenta el ranking con la métrica de
-estabilidad (rango medio de beat rate, alfa mediana, peor año y drawdown máximo). El ganador
-se elige por consistencia, no por alfa puntual, y se valida en una era reservada.
+Al final, `results/escenarios/comparison.html` presenta el ranking por **aprendizaje y
+estabilidad, nunca por alfa**: rango medio de rank-IC medio OOS, fracción de cohortes con
+rank-IC positivo, beat rate y drawdown máximo. El alfa se reporta como consecuencia pero no
+decide. Es un único ranking global sobre todos los años, sin separación en eras. Ver
+[docs/doc.md](docs/doc.md) §8 para el razonamiento metodológico.
+
+## Bitácora de decisiones
+
+El desarrollo se documenta en [docs/bitacora.md](docs/bitacora.md): un diario cronológico del
+*porqué* de cada decisión (problema, hipótesis, qué se probó, resultado medido, decisión),
+incluidos los caminos descartados. Es la materia prima del capítulo de metodología del TFM.

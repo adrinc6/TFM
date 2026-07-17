@@ -314,8 +314,10 @@ añade en su interior los cinco parquets del backtest + `backtest_summary.json`.
   `benchmark_return`, `excess_return`, `turnover_pct` por snapshot.
 - `annual_metrics.parquet`: `alpha`, `beats_benchmark`, `max_drawdown_year`,
   `information_ratio_year` por año.
-- `backtest_summary.json`: agregado + las cuatro dimensiones de la métrica de
-  estabilidad de Fase 6 (`beat_rate`, `median_alpha`, `worst_year_alpha`, `max_drawdown`).
+- `backtest_summary.json`: señales de aprendizaje (`mean_rank_ic`,
+  `rank_ic_positive_fraction`, `rank_ic_std`), consistencia y riesgo (`beat_rate`,
+  `max_drawdown`) y alfa informativa (`annualized_alpha`, `median_alpha`, `worst_year_alpha`).
+  Las cuatro primeras alimentan la selección de Fase 6; el alfa solo se reporta.
 - `manifest.json` actualizado con los parámetros de cartera y costes usados.
 
 **Tests** (`tests/backtest/`):
@@ -377,28 +379,29 @@ backtest.
 - `<nombre>/agents/<run_id>/` con scores, pesos, backtest, `report.html` y CSVs.
 - `<nombre>/scenario_config.json` documenta overrides, huellas y qué reutilizó.
 - `scenarios_summary.parquet` y `.csv` con el ranking.
-- `selection.json` con el ganador, sus 4 rangos, top-3 y métricas de la era reservada.
+- `selection.json` con el ganador, sus 4 rangos, señales de aprendizaje y alfa (informativa).
 - `comparison.html` con las 5 hojas del barrido.
 
-**Selección por consistencia**. Cuatro dimensiones anuales calculadas en la era de
-desarrollo (por defecto 1990-2015):
+**Selección por aprendizaje y estabilidad, NUNCA por alfa** (ver `docs/doc.md` §8). Cuatro
+dimensiones, calculadas sobre **todos los años disponibles** (un único ranking global, sin
+separación en eras):
 
-1. `beat_rate` — fracción de años que baten SPY.
-2. `median_alpha` — alfa mediana anual.
-3. `worst_year_alpha` — peor alfa anual.
-4. `max_drawdown` — máximo drawdown (menor es mejor).
+1. `mean_rank_ic` — rank-IC medio OOS (evidencia de aprendizaje). Mayor es mejor.
+2. `rank_ic_positive_fraction` — fracción de cohortes con rank-IC positivo (estabilidad del
+   aprendizaje entre eras). Mayor es mejor.
+3. `beat_rate` — fracción de años que baten SPY (frecuencia, no magnitud). Mayor es mejor.
+4. `max_drawdown` — máximo drawdown (riesgo). Menor es mejor.
 
-Se rankea cada escenario en las cuatro y el ganador es el que **minimiza el rango medio**.
-Así un escenario con un año excepcional pero peor resto no gana a otro consistente.
-
-**Era de confirmación reservada** (por defecto 2016-fin): las cuatro dimensiones se
-calculan también aquí para el ganador, pero **no** para reordenar. Solo valida. Si el
-ganador se hunde en confirmación, se reporta como resultado negativo.
+Se rankea cada escenario en las cuatro y el ganador es el que **minimiza el rango medio**. El
+alfa (anualizada, mediana, peor año) se **reporta** en el HTML y el `selection.json` como
+consecuencia, pero **no participa en el ranking**: elegir por rentabilidad cuando el rank-IC
+es débil sería seleccionar ruido. Si el rank-IC del ganador es ≈0, la conclusión honesta es
+que el sistema no aprende a ordenar de forma estable, y se reporta como tal.
 
 **Tests** (`tests/experiments/`): huellas deterministas y aisladas por etapa (cambiar
-`target_max` NO cambia la huella de dataset/features/agents); el ganador es determinista
-por rango medio (test con escenarios sintéticos donde el estable gana al de un año
-excepcional).
+`target_max` NO cambia la huella de dataset/features/agents); el ganador es el que aprende
+(mayor rank-IC + estabilidad), y el alfa **no** altera el ranking (test con un escenario de
+alfa alto pero rank-IC nulo que debe perder ante otro que aprende).
 
 ## Fase 7 — Redacción del TFM en LaTeX
 

@@ -48,6 +48,6 @@ def test_summary_figures_match_backtest_summary(minimal_run_dir: Path) -> None:
     html = (minimal_run_dir / "report.html").read_text(encoding="utf-8")
     summary = json.loads((minimal_run_dir / "backtest_summary.json").read_text(encoding="utf-8"))
 
-    # Cifras clave: alfa total, beat_rate, drawdown maximo, IR.
-    assert f"{summary['total_alpha'] * 100:.2f}" in html or f"{summary['total_alpha']:.4f}" in html
-    assert f"{int(summary['beat_rate'] * 100)}" in html or f"{summary['beat_rate']:.2f}" in html
+    # La hoja Resumen pinta el rank-IC medio (aprendizaje) y el beat_rate, no el alfa total.
+    assert f"{summary['mean_rank_ic']:.4f}" in html
+    assert f"{int(summary['beat_rate'] * 100)}" in html

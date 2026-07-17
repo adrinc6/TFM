@@ -74,10 +74,11 @@ def _section_resumen(summary: dict, annual: pd.DataFrame, equity: pd.DataFrame) 
     if not summary:
         return "<p>Sin datos de backtest.</p>"
 
+    mean_rank_ic = summary.get("mean_rank_ic", 0)
+    ic_positive_pct = int(summary.get("rank_ic_positive_fraction", 0) * 100)
     beat_pct = int(summary.get("beat_rate", 0) * 100)
-    alfa_pct = summary.get("total_alpha", 0) * 100
+    annualized_alpha_pct = summary.get("annualized_alpha", 0) * 100
     dd_pct = summary.get("max_drawdown", 0) * 100
-    ir = summary.get("information_ratio", 0)
 
     equity_chart = _plot_equity_curve(equity) if not equity.empty else ""
     alpha_bars = _plot_annual_alpha_bars(annual) if not annual.empty else ""
@@ -85,11 +86,14 @@ def _section_resumen(summary: dict, annual: pd.DataFrame, equity: pd.DataFrame) 
 
     return f"""
         <div class="cards">
-            <div class="card"><div class="metric">{alfa_pct:.2f}%</div><div>alfa total neta</div></div>
+            <div class="card"><div class="metric">{mean_rank_ic:.4f}</div><div>rank-IC medio (aprendizaje)</div></div>
+            <div class="card"><div class="metric">{ic_positive_pct}%</div><div>cohortes con rank-IC&gt;0</div></div>
             <div class="card"><div class="metric">{beat_pct}%</div><div>anios batiendo SPY</div></div>
-            <div class="card"><div class="metric">{ir:.2f}</div><div>information ratio</div></div>
             <div class="card"><div class="metric">-{dd_pct:.2f}%</div><div>drawdown maximo</div></div>
         </div>
+        <p class="muted">Alfa anualizada (informativo, no es el criterio del proyecto):
+        <strong>{annualized_alpha_pct:.2f}%</strong> al anio. El rank-IC mide si el sistema
+        <em>aprende a ordenar</em>; el alfa es una consecuencia, no la evidencia.</p>
         <h3>Equity vs SPY</h3>
         {equity_chart}
         <h3>Alfa anual</h3>
@@ -273,12 +277,14 @@ def _compute_holding_returns(positions: pd.DataFrame, orders: pd.DataFrame) -> l
 # -------- HTML del barrido --------------------------------------------------------------
 
 
-def build_comparison_report(
-    scenarios_root: Path,
-    dev_era: tuple[int, int] = (1990, 2015),
-    confirmation_era: tuple[int, int] = (2016, 2100),
-) -> Path:
-    """Rankea todos los escenarios por metrica compuesta y produce el HTML global."""
+def build_comparison_report(scenarios_root: Path) -> Path:
+    """Rankea todos los escenarios por metrica de aprendizaje y produce el HTML global.
+
+    Sin eras: un unico ranking global sobre todos los anios disponibles. La seleccion usa
+    senales de aprendizaje (rank-IC) y consistencia, NUNCA alfa. Ver `select_winner`.
+    """
+    from module.experiments import SELECTION_DIMENSIONS, select_winner
+
     scenarios_root = Path(scenarios_root)
     scenario_dirs = sorted(
         path for path in scenarios_root.iterdir()
@@ -287,37 +293,41 @@ def build_comparison_report(
     if not scenario_dirs:
         raise RuntimeError(f"No hay escenarios en {scenarios_root}.")
 
-    summary_rows = _collect_scenario_summaries(scenario_dirs, dev_era)
+    summary_rows = _collect_scenario_summaries(scenario_dirs)
     if not summary_rows:
         raise RuntimeError("No hay summaries de backtest en los escenarios.")
 
-    summary = pd.DataFrame(summary_rows)
-    summary = _rank_scenarios(summary)
+    winner_name, summary = select_winner(pd.DataFrame(summary_rows))
     summary.to_parquet(scenarios_root / "scenarios_summary.parquet", index=False)
     summary.to_csv(scenarios_root / "scenarios_summary.csv", index=False)
 
-    winner_row = summary.sort_values("composite_rank_mean").iloc[0]
-    winner_name = str(winner_row["scenario"])
-
-    confirmation_metrics = _confirmation_era_metrics(scenarios_root, winner_name, confirmation_era)
+    winner_row = summary.iloc[0]
     selection = {
         "winner": winner_name,
         "composite_rank_mean": float(winner_row["composite_rank_mean"]),
-        "rank_beat_rate": int(winner_row["rank_beat_rate"]),
-        "rank_median_alpha": int(winner_row["rank_median_alpha"]),
-        "rank_worst_year_alpha": int(winner_row["rank_worst_year_alpha"]),
-        "rank_max_drawdown": int(winner_row["rank_max_drawdown"]),
-        "dev_era": list(dev_era),
-        "confirmation_era": list(confirmation_era),
-        "confirmation_metrics": confirmation_metrics,
-        "top_3": summary.sort_values("composite_rank_mean").head(3)["scenario"].tolist(),
+        "selection_dimensions": [name for name, _ in SELECTION_DIMENSIONS],
+        "ranks": {
+            name: int(winner_row[f"rank_{name}"]) for name, _ in SELECTION_DIMENSIONS
+        },
+        "winner_learning": {
+            "mean_rank_ic": float(winner_row.get("mean_rank_ic", 0)),
+            "rank_ic_positive_fraction": float(winner_row.get("rank_ic_positive_fraction", 0)),
+            "beat_rate": float(winner_row.get("beat_rate", 0)),
+            "max_drawdown": float(winner_row.get("max_drawdown", 0)),
+        },
+        "winner_alpha_reported_only": {
+            "annualized_alpha": float(winner_row.get("annualized_alpha", 0)),
+            "median_alpha": float(winner_row.get("median_alpha", 0)),
+            "worst_year_alpha": float(winner_row.get("worst_year_alpha", 0)),
+        },
+        "top_3": summary.head(3)["scenario"].tolist(),
     }
     (scenarios_root / "selection.json").write_text(
         json.dumps(selection, indent=2), encoding="utf-8"
     )
 
     resumen = _comparison_summary_section(summary, winner_name)
-    anual = _comparison_annual_heatmap_section(scenario_dirs, dev_era)
+    anual = _comparison_annual_heatmap_section(scenario_dirs)
     sensibilidad = _comparison_sensitivity_section(summary, scenario_dirs)
     seleccion = _comparison_selection_section(selection, summary)
     todos = _comparison_all_runs_section(summary, scenario_dirs)
@@ -335,7 +345,11 @@ def build_comparison_report(
     return output_path
 
 
-def _collect_scenario_summaries(scenario_dirs: list[Path], dev_era: tuple[int, int]) -> list[dict]:
+def _collect_scenario_summaries(scenario_dirs: list[Path]) -> list[dict]:
+    """Una fila por escenario con sus senales de aprendizaje, consistencia y alfa (reportada).
+
+    Todo se calcula sobre TODOS los anios disponibles: sin separacion en eras.
+    """
     rows: list[dict] = []
     for scenario_dir in scenario_dirs:
         run_dir = _pick_run_dir(scenario_dir)
@@ -345,57 +359,21 @@ def _collect_scenario_summaries(scenario_dirs: list[Path], dev_era: tuple[int, i
         annual = _read_parquet(run_dir / "annual_metrics.parquet")
         if summary is None or annual.empty:
             continue
-        dev_annual = annual.loc[
-            annual["year"].between(dev_era[0], dev_era[1])
-        ]
-        if dev_annual.empty:
-            dev_annual = annual
         rows.append({
             "scenario": scenario_dir.name,
-            "beat_rate": float((dev_annual["alpha"] > 0).mean()),
-            "median_alpha": float(dev_annual["alpha"].median()),
-            "worst_year_alpha": float(dev_annual["alpha"].min()),
+            # senales de seleccion (aprendizaje + consistencia + riesgo)
+            "mean_rank_ic": float(summary.get("mean_rank_ic", 0)),
+            "rank_ic_positive_fraction": float(summary.get("rank_ic_positive_fraction", 0)),
+            "rank_ic_std": float(summary.get("rank_ic_std", 0)),
+            "beat_rate": float((annual["alpha"] > 0).mean()),
             "max_drawdown": float(summary.get("max_drawdown", 0)),
-            "total_alpha": float(summary.get("total_alpha", 0)),
+            # alfa: SOLO reportada, no selecciona
+            "annualized_alpha": float(summary.get("annualized_alpha", 0)),
+            "median_alpha": float(annual["alpha"].median()),
+            "worst_year_alpha": float(annual["alpha"].min()),
             "information_ratio": float(summary.get("information_ratio", 0)),
         })
     return rows
-
-
-def _rank_scenarios(summary: pd.DataFrame) -> pd.DataFrame:
-    """Rango medio de las cuatro dimensiones. Menor es mejor.
-
-    Para las tres dimensiones donde "mas grande es mejor" (beat_rate, median_alpha,
-    worst_year_alpha), rankeo descendente. Para max_drawdown, ascendente.
-    """
-    ranked = summary.copy()
-    ranked["rank_beat_rate"] = ranked["beat_rate"].rank(ascending=False, method="min").astype(int)
-    ranked["rank_median_alpha"] = ranked["median_alpha"].rank(ascending=False, method="min").astype(int)
-    ranked["rank_worst_year_alpha"] = ranked["worst_year_alpha"].rank(ascending=False, method="min").astype(int)
-    ranked["rank_max_drawdown"] = ranked["max_drawdown"].rank(ascending=True, method="min").astype(int)
-    ranked["composite_rank_mean"] = ranked[
-        ["rank_beat_rate", "rank_median_alpha", "rank_worst_year_alpha", "rank_max_drawdown"]
-    ].mean(axis=1)
-    return ranked
-
-
-def _confirmation_era_metrics(
-    scenarios_root: Path, winner: str, confirmation_era: tuple[int, int]
-) -> dict:
-    scenario_dir = scenarios_root / winner
-    run_dir = _pick_run_dir(scenario_dir)
-    if run_dir is None:
-        return {"note": "sin run_dir accesible"}
-    annual = _read_parquet(run_dir / "annual_metrics.parquet")
-    reserved = annual.loc[annual["year"].between(confirmation_era[0], confirmation_era[1])]
-    if reserved.empty:
-        return {"note": "sin anios en la era reservada"}
-    return {
-        "years_covered": int(len(reserved)),
-        "beat_rate": float((reserved["alpha"] > 0).mean()),
-        "median_alpha": float(reserved["alpha"].median()),
-        "worst_year_alpha": float(reserved["alpha"].min()),
-    }
 
 
 def _pick_run_dir(scenario_dir: Path) -> Path | None:
@@ -420,22 +398,27 @@ def _comparison_summary_section(summary: pd.DataFrame, winner: str) -> str:
         f"<tr class='{'winner' if row['scenario'] == winner else ''}'>"
         f"<td>{index + 1}</td><td>{row['scenario']}</td>"
         f"<td>{row['composite_rank_mean']:.2f}</td>"
+        f"<td>{row['mean_rank_ic']:.4f}</td>"
+        f"<td>{row['rank_ic_positive_fraction']*100:.0f}%</td>"
         f"<td>{row['beat_rate']*100:.0f}%</td>"
-        f"<td>{row['median_alpha']*100:.2f}%</td>"
-        f"<td>{row['worst_year_alpha']*100:.2f}%</td>"
-        f"<td>-{row['max_drawdown']*100:.2f}%</td></tr>"
+        f"<td>-{row['max_drawdown']*100:.2f}%</td>"
+        f"<td class='muted'>{row['annualized_alpha']*100:.2f}%</td></tr>"
         for index, row in enumerate(ordered.to_dict("records"))
     )
     return f"""
-        <p>Ranking por metrica compuesta de estabilidad (rango medio de las cuatro
-        dimensiones). Menor rango medio es mejor. El ganador se destaca en verde.</p>
+        <p>Ranking por metrica de <strong>aprendizaje y estabilidad</strong> (rango medio de
+        rank-IC medio, fraccion de cohortes con rank-IC positivo, beat rate y drawdown).
+        Menor rango medio es mejor. <strong>El alfa NO participa en la seleccion</strong>:
+        se muestra en gris a la derecha solo como consecuencia, no como criterio. El ganador
+        se destaca en verde.</p>
         <table><thead><tr><th>#</th><th>escenario</th><th>rango medio</th>
-        <th>beat rate</th><th>alfa mediana</th><th>peor anio</th><th>drawdown max</th></tr></thead>
+        <th>rank-IC medio</th><th>% cohortes IC&gt;0</th><th>beat rate</th>
+        <th>drawdown max</th><th class='muted'>alfa anualiz. (info)</th></tr></thead>
         <tbody>{rows}</tbody></table>
     """
 
 
-def _comparison_annual_heatmap_section(scenario_dirs: list[Path], dev_era: tuple[int, int]) -> str:
+def _comparison_annual_heatmap_section(scenario_dirs: list[Path]) -> str:
     rows = []
     for scenario_dir in scenario_dirs:
         run_dir = _pick_run_dir(scenario_dir)
@@ -443,76 +426,92 @@ def _comparison_annual_heatmap_section(scenario_dirs: list[Path], dev_era: tuple
             continue
         annual = _read_parquet(run_dir / "annual_metrics.parquet")
         for row in annual.to_dict("records"):
-            if not (dev_era[0] <= row["year"] <= dev_era[1]):
-                continue
             rows.append({"scenario": scenario_dir.name, "year": row["year"], "alpha": row["alpha"]})
     if not rows:
         return "<p>Sin datos anuales.</p>"
     frame = pd.DataFrame(rows).pivot(index="scenario", columns="year", values="alpha").fillna(0)
-    chart = _plot_heatmap(frame, title="Alfa anual por escenario", cmap="RdYlGn")
+    chart = _plot_heatmap(frame, title="Alfa anual por escenario (todos los anios)", cmap="RdYlGn")
     return f"""
-        <p>Cada fila es un escenario, cada columna un anio. Verde &rarr; alfa positivo,
-        rojo &rarr; alfa negativo. Un escenario con muchas columnas rojas y una muy verde
-        se identifica de inmediato como &laquo;gana por un anio excepcional&raquo; y no
-        deberia ganar el ranking.</p>
+        <p>Cada fila es un escenario, cada columna un anio (todos los disponibles, sin
+        separacion en eras). Verde &rarr; alfa positivo, rojo &rarr; alfa negativo. Es la
+        vista honesta de la consistencia: un escenario con muchas columnas rojas y una muy
+        verde gano por un anio excepcional, no por aprender.</p>
         {chart}
     """
 
 
 def _comparison_sensitivity_section(summary: pd.DataFrame, scenario_dirs: list[Path]) -> str:
-    """Extrae parametros de `scenario_config.json` y muestra sensibilidad basica."""
-    configs = {
-        scenario_dir.name: _read_json(scenario_dir / "scenario_config.json")
-        for scenario_dir in scenario_dirs
-    }
-    return """
-        <p>Como cambia la metrica compuesta al mover cada parametro del barrido. Se elige
-        el valor mas estable, no el maximo puntual (evita <em>overfitting por seleccion</em>).</p>
-        <p><em>Panel completo pendiente de definir cuando la rejilla real este cargada.</em></p>
+    """Muestra la senal de aprendizaje de cada escenario junto a sus overrides."""
+    rows = []
+    for scenario_dir in scenario_dirs:
+        config = _read_json(scenario_dir / "scenario_config.json") or {}
+        overrides = config.get("overrides", {})
+        match = summary.loc[summary["scenario"] == scenario_dir.name]
+        if match.empty:
+            continue
+        mean_ic = float(match.iloc[0]["mean_rank_ic"])
+        overrides_text = ", ".join(f"{k}={v}" for k, v in overrides.items()) or "(baseline)"
+        rows.append((scenario_dir.name, overrides_text, mean_ic))
+    rows.sort(key=lambda item: item[2], reverse=True)
+    body = "".join(
+        f"<tr><td>{name}</td><td><code>{overrides}</code></td><td>{ic:.4f}</td></tr>"
+        for name, overrides, ic in rows
+    )
+    return f"""
+        <p>Que overrides mueven el aprendizaje (rank-IC medio). Se elige el valor mas estable
+        en aprendizaje, no el de mayor alfa puntual.</p>
+        <table><thead><tr><th>escenario</th><th>overrides</th><th>rank-IC medio</th></tr></thead>
+        <tbody>{body}</tbody></table>
     """
 
 
 def _comparison_selection_section(selection: dict, summary: pd.DataFrame) -> str:
-    top3 = summary.sort_values("composite_rank_mean").head(3).to_dict("records")
+    top3 = summary.head(3).to_dict("records")
     top_rows = "".join(
         f"<tr><td>{row['scenario']}</td>"
+        f"<td>{row['rank_mean_rank_ic']}</td>"
+        f"<td>{row['rank_rank_ic_positive_fraction']}</td>"
         f"<td>{row['rank_beat_rate']}</td>"
-        f"<td>{row['rank_median_alpha']}</td>"
-        f"<td>{row['rank_worst_year_alpha']}</td>"
         f"<td>{row['rank_max_drawdown']}</td>"
         f"<td><strong>{row['composite_rank_mean']:.2f}</strong></td></tr>"
         for row in top3
     )
-    confirmation = selection.get("confirmation_metrics", {})
-    conf_body = "".join(f"<li>{key}: {value}</li>" for key, value in confirmation.items())
+    learning = selection.get("winner_learning", {})
+    alpha_info = selection.get("winner_alpha_reported_only", {})
+    learning_body = "".join(f"<li>{key}: {value:.4f}</li>" for key, value in learning.items())
+    alpha_body = "".join(f"<li>{key}: {value*100:.2f}%</li>" for key, value in alpha_info.items())
     return f"""
         <h3>Ganador: <code>{selection['winner']}</code></h3>
-        <p>Rango medio: <strong>{selection['composite_rank_mean']:.2f}</strong>. Se rankea
-        en las cuatro dimensiones y el rango medio decide.</p>
-        <table><thead><tr><th>escenario</th><th>rk beat</th><th>rk mediana</th>
-        <th>rk peor anio</th><th>rk drawdown</th><th>rango medio</th></tr></thead>
+        <p>Rango medio: <strong>{selection['composite_rank_mean']:.2f}</strong>. Se rankea por
+        aprendizaje (rank-IC), estabilidad del aprendizaje, beat rate y drawdown. <strong>El
+        alfa no interviene.</strong></p>
+        <table><thead><tr><th>escenario</th><th>rk rank-IC</th><th>rk estab. IC</th>
+        <th>rk beat</th><th>rk drawdown</th><th>rango medio</th></tr></thead>
         <tbody>{top_rows}</tbody></table>
-        <h3>Validacion en la era reservada ({selection['confirmation_era'][0]}-{selection['confirmation_era'][1]})</h3>
-        <p>La era reservada NO participa en el ranking. Solo valida al ganador. Si se
-        hunde aqui, se reporta como resultado negativo, no se elige otro.</p>
-        <ul>{conf_body}</ul>
+        <h3>Senales de aprendizaje del ganador</h3>
+        <ul>{learning_body}</ul>
+        <h3>Alfa del ganador (solo informativo, no selecciono)</h3>
+        <ul>{alpha_body}</ul>
+        <p><em>Si el rank-IC medio del ganador es cercano a cero, la conclusion honesta es que
+        el sistema NO aprende a ordenar activos de forma estable, y cualquier alfa observado no
+        es atribuible al aprendizaje. Ese es un resultado valido del TFM.</em></p>
     """
 
 
 def _comparison_all_runs_section(summary: pd.DataFrame, scenario_dirs: list[Path]) -> str:
     rows = "".join(
         f"<tr><td><a href='{row['scenario']}/agents/'>{row['scenario']}</a></td>"
+        f"<td>{row['mean_rank_ic']:.4f}</td>"
+        f"<td>{row['rank_ic_positive_fraction']*100:.0f}%</td>"
         f"<td>{row['beat_rate']*100:.0f}%</td>"
-        f"<td>{row['median_alpha']*100:.2f}%</td>"
-        f"<td>{row['worst_year_alpha']*100:.2f}%</td>"
-        f"<td>-{row['max_drawdown']*100:.2f}%</td></tr>"
+        f"<td class='muted'>{row['annualized_alpha']*100:.2f}%</td></tr>"
         for row in summary.sort_values("composite_rank_mean").to_dict("records")
     )
     return f"""
         <p>Tabla completa con enlace al HTML de cada escenario, para poder auditar
-        cualquiera de los runs.</p>
-        <table><thead><tr><th>escenario</th><th>beat rate</th>
-        <th>alfa mediana</th><th>peor anio</th><th>drawdown max</th></tr></thead>
+        cualquiera de los runs. El alfa (en gris) es informativo.</p>
+        <table><thead><tr><th>escenario</th><th>rank-IC medio</th><th>% cohortes IC&gt;0</th>
+        <th>beat rate</th><th class='muted'>alfa anualiz. (info)</th></tr></thead>
         <tbody>{rows}</tbody></table>
     """
 
@@ -676,6 +675,7 @@ th { background: #f5f5f5; }
 .card { flex: 1; border: 1px solid #ddd; padding: 1em; text-align: center; border-radius: 6px; }
 .metric { font-size: 2em; font-weight: bold; }
 tr.winner td { background: #d4edda; font-weight: bold; }
+.muted, td.muted, th.muted { color: #888; }
 </style>
 """
 
