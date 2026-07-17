@@ -70,6 +70,7 @@ FINGERPRINT_FIELDS: dict[str, tuple[str, ...]] = {
         "run_scope", "data_start_date", "end_date", "benchmark_ticker",
         "snapshot_day", "snapshot_step_months", "max_price_age_days",
         "target_horizon_months", "neutralize_by_sector", "neutralize_min_group",
+        "fundamental_momentum", "market_regime_feature",
     ),
     "agents": (
         "run_scope", "data_start_date", "end_date", "benchmark_ticker",

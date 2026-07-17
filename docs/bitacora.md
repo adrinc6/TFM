@@ -195,3 +195,43 @@ su huella, así que winsor y rank colapsaban al mismo `run_dir` y se sobrescrib�
 (la huella ahora incluye `label_transform`, `label_winsor_pct`, `min_training_rows`,
 `min_rank_ic_cross_section`). Lección: la huella de un run debe cubrir **todo** parámetro que
 altere el resultado, o dos experimentos distintos se pisan en silencio.
+
+---
+
+## B3 — Momentum y descomposición de fundamentales
+
+**Hipótesis (la más fundamentada económicamente).** El nivel de un ratio dice poco; su
+**tendencia** dice más. Y un P/E que cae por beneficios crecientes (empresa mejorando) no es lo
+mismo que uno que cae por precio hundido (posible trampa de valor). Añadir la tendencia de los
+fundamentales (ΔROE, Δmárgenes… respecto a la publicación anterior de la misma empresa) y la
+descomposición del cambio de valoración en su componente-precio y su componente-fundamental
+debería aportar señal nueva y subir el rank-IC.
+
+**Qué se probó.** Parámetro `fundamental_momentum`. Point-in-time por construcción: el delta se
+calcula solo cuando cambia el `fundamental_period` (nueva publicación) y se mantiene constante
+entre publicaciones (no cae a cero: entre trimestres no hay información nueva). Descomposición
+del P/E vía Δlog(precio) − Δlog(EPS), con el EPS implícito de `precio / (P/E)`. Se añaden 7
+factores (5 tendencias a quality, 2 componentes a value), sobre la base B2 (`label_transform=
+rank`). Verificado sin lookahead con test dedicado (mutar el futuro no cambia el pasado).
+
+**Resultado medido (full, vs base rank +0.0011 / 0.534):**
+
+| config | rank-IC medio | frac cohortes IC>0 |
+|---|---|---|
+| rank (base B2) | +0.0011 | 0.534 |
+| rank + B3 | **−0.0046** | **0.513** |
+
+**Empeora.** Confirmado que las 14 features B3 estaban en el modelo (vía coeficientes).
+
+**Interpretación.** La hipótesis económica es sólida pero los datos la rechazan. Dos causas
+probables: (1) cobertura limitada — la descomposición del P/E necesita P/E>0 en dos
+publicaciones consecutivas y el P/E solo cubre 78 % del panel, así que el factor llega muy
+poblado de NA e imputado a la mediana, lo que mete ruido; (2) con Ridge lineal y una etiqueta
+casi aleatoria, **añadir más features no crea señal, añade dimensiones donde sobreajustar** —
+cada feature ruidosa resta grados de libertad efectivos y degrada el orden OOS.
+
+**Decisión.** **Se descarta B3.** El código queda desactivado por defecto
+(`fundamental_momentum=False`); es una idea correcta y su fracaso es un resultado del TFM. El
+patrón se repite (B1 y B3, las dos palancas que añaden features, empeoran; B2, que limpia la
+etiqueta, ayuda un poco): **el cuello de botella no es la falta de features, es que la relación
+factor→retorno es débil y el modelo lineal ya la exprime.**

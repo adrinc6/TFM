@@ -71,7 +71,24 @@ def build_agent_scores(settings: Settings) -> pd.DataFrame:
     return wide
 
 
+def _agent_features(frame: pd.DataFrame, settings: Settings) -> dict[str, list[str]]:
+    """Features por agente. Con B3 activo, quality recibe la tendencia de fundamentales y value
+    la descomposicion precio/fundamental — pero solo las columnas que existan en el frame.
+    """
+    features = {agent: list(columns) for agent, columns in AGENT_FEATURES.items()}
+    if settings.fundamental_momentum:
+        from module.features import MOMENTUM_FACTORS_QUALITY, MOMENTUM_FACTORS_VALUE
+        features["quality"] += [c for c in MOMENTUM_FACTORS_QUALITY if c in frame.columns]
+        features["value"] += [c for c in MOMENTUM_FACTORS_VALUE if c in frame.columns]
+    if settings.market_regime_feature:
+        from module.features import REGIME_INTERACTION_FACTORS
+        # El regimen afecta sobre todo a momentum; sus interacciones van a ese agente.
+        features["momentum"] += [c for c in REGIME_INTERACTION_FACTORS if c in frame.columns]
+    return features
+
+
 def _walk_forward_scores(frame: pd.DataFrame, settings: Settings) -> tuple[pd.DataFrame, pd.DataFrame]:
+    agent_features = _agent_features(frame, settings)
     anchor = _execution_anchor(settings)
     retrain_dates = sorted(
         frame.loc[
@@ -98,7 +115,7 @@ def _walk_forward_scores(frame: pd.DataFrame, settings: Settings) -> tuple[pd.Da
             & (frame["snapshot_ts"].lt(next_date) if next_date is not None else True)
             & frame["is_price_fresh"].fillna(False)
         ]
-        for agent, columns in AGENT_FEATURES.items():
+        for agent, columns in agent_features.items():
             train = training.dropna(subset=["forward_excess_return_3m"])
             if len(train) < settings.min_training_rows:
                 log.warning("[%s %s] filas insuficientes: %s", agent, retrain_date.date(), len(train))
@@ -210,6 +227,8 @@ def _run_id(settings: Settings, feature_path: Path, target_path: Path) -> str:
         "min_rank_ic_cross_section": settings.min_rank_ic_cross_section,
         "label_transform": settings.label_transform,
         "label_winsor_pct": settings.label_winsor_pct,
+        "fundamental_momentum": settings.fundamental_momentum,
+        "market_regime_feature": settings.market_regime_feature,
         "features": sha256_file(feature_path),
         "targets": sha256_file(target_path),
     }

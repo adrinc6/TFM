@@ -85,6 +85,14 @@ MIN_RANK_IC_CROSS_SECTION = 10
 # el orden alinea la perdida con el rank-IC. Ver docs/bitacora.md (B2).
 LABEL_TRANSFORM = "rank"
 LABEL_WINSOR_PCT = 0.02   # recorta el 2 % de cada cola (solo si LABEL_TRANSFORM="winsor")
+# B3: anadir features de tendencia de fundamentales (cambio del ratio respecto a la publicacion
+# anterior de la misma empresa) y descomposicion del cambio de valoracion en su parte de precio
+# y su parte fundamental. Todo point-in-time. Ver docs/bitacora.md (B3).
+FUNDAMENTAL_MOMENTUM = False
+# B5: anadir el regimen de mercado (bull/bear, detectado SOLO con datos pasados del SP500) como
+# feature, junto con interacciones factor x regimen, para que el modelo aprenda a ponderar
+# distinto en cada regimen. Ver docs/bitacora.md (B5).
+MARKET_REGIME_FEATURE = False
 
 # Parametros de cartera (Fase 4). Todos con valores por defecto conservadores.
 # La logica que sigue: expulsa a los que se hunden, protege del ruido con umbral de ventaja,
@@ -136,6 +144,8 @@ class Settings:
     min_rank_ic_cross_section: int = MIN_RANK_IC_CROSS_SECTION
     label_transform: str = LABEL_TRANSFORM
     label_winsor_pct: float = LABEL_WINSOR_PCT
+    fundamental_momentum: bool = FUNDAMENTAL_MOMENTUM
+    market_regime_feature: bool = MARKET_REGIME_FEATURE
     target_min: int = TARGET_MIN
     target_max: int = TARGET_MAX
     entry_min_percentile: float = ENTRY_MIN_PERCENTILE

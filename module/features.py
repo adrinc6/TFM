@@ -62,6 +62,104 @@ def build_features(settings: Settings) -> pd.DataFrame:
     return features
 
 
+# Fundamentales cuya TENDENCIA (cambio respecto a la publicacion anterior) se anade como
+# feature. "mejora" = el fundamental sube respecto a su valor anterior de la misma empresa.
+MOMENTUM_SOURCES = ("roe", "roic", "net_margin", "operating_margin", "eps_growth_yoy")
+
+# Factores B3 que se suman a los agentes cuando fundamental_momentum esta activo.
+MOMENTUM_FACTORS_QUALITY = tuple(f"factor_mom_{name}" for name in MOMENTUM_SOURCES)
+MOMENTUM_FACTORS_VALUE = ("factor_pe_fundamental_component", "factor_pe_price_component")
+
+
+def _add_fundamental_momentum(frame: pd.DataFrame) -> pd.DataFrame:
+    """Anade features de tendencia de fundamentales y descomposicion del cambio de P/E.
+
+    Point-in-time por construccion: para cada empresa se compara el fundamental del periodo
+    actual con el de su PUBLICACION anterior (detectada por cambio de `fundamental_period`),
+    no con el trimestre de calendario. Entre publicaciones el valor se mantiene constante, asi
+    que el delta solo cambia cuando de verdad hay informacion nueva — nunca usa el futuro.
+
+    Descomposicion del P/E: como P/E = precio / EPS, el cambio de la valoracion se separa en
+    su componente-precio (Dlog precio) y su componente-fundamental (-Dlog EPS). "Barato porque
+    la empresa mejora" (componente fundamental positivo) y "barato porque el precio se hunde"
+    (componente precio negativo) pasan a ser dos senales distintas.
+    """
+    import numpy as np
+
+    frame = frame.sort_values(["ticker", "snapshot_date"]).copy()
+
+    # EPS implicito de las columnas ya PIT: EPS = precio / (P/E). Solo donde ambos existen.
+    pe = pd.to_numeric(frame["pe"], errors="coerce")
+    price = pd.to_numeric(frame["price"], errors="coerce")
+    frame["_eps_implied"] = (price / pe).where(pe.gt(0) & price.gt(0))
+
+    # Delta del fundamental respecto a la publicacion anterior de la MISMA empresa.
+    # Nos quedamos con una fila por (ticker, fundamental_period) para no repetir el delta.
+    is_new_publication = (
+        frame["fundamental_period"] != frame.groupby("ticker")["fundamental_period"].shift()
+    )
+
+    def _delta_vs_previous_publication(values: pd.Series) -> pd.Series:
+        """Cambio del valor entre la publicacion actual y la anterior, constante entre
+        publicaciones.
+
+        Entre publicaciones NO hay informacion nueva, asi que el delta se MANTIENE (no cae a
+        cero: eso el modelo lo leeria como "el fundamental dejo de mejorar" cuando solo es que
+        aun no ha publicado el siguiente trimestre). Se calcula solo en las filas de nueva
+        publicacion (donde el shift agrupado por ticker da la publicacion inmediatamente
+        anterior, sin contar las repeticiones) y despues se propaga con ffill.
+        """
+        published_value = values.where(is_new_publication)
+        # shift SOLO entre publicaciones reales: compactamos a esas filas, hacemos shift, y
+        # reindexamos de vuelta. Asi la "anterior" es la publicacion previa, no la fila previa.
+        pub_only = published_value.dropna()
+        prev_pub = pub_only.groupby(frame.loc[pub_only.index, "ticker"]).shift()
+        previous_value = prev_pub.reindex(frame.index)
+        delta = published_value - previous_value
+        return delta.groupby(frame["ticker"]).ffill()
+
+    for source in MOMENTUM_SOURCES:
+        values = pd.to_numeric(frame[source], errors="coerce")
+        frame[f"mom_{source}"] = _delta_vs_previous_publication(values)
+
+    # Descomposicion del cambio de P/E: Dlog(P/E) = Dlog(precio) - Dlog(EPS), cada componente
+    # entre la publicacion actual y la anterior, constante entre publicaciones.
+    frame["pe_fundamental_component"] = _delta_vs_previous_publication(np.log(frame["_eps_implied"]))
+    frame["pe_price_component"] = _delta_vs_previous_publication(np.log(price))
+
+    frame.drop(columns=["_eps_implied"], inplace=True)
+    return frame
+
+
+# B5: factores de interaccion regimen x factor que se anaden a los agentes.
+REGIME_INTERACTION_FACTORS = (
+    "factor_regime_bull",                       # el propio regimen (igual para todos ese dia)
+    "factor_momentum_x_bull",                   # momentum pesa distinto en bull
+    "factor_quality_x_bear",                    # calidad/defensa pesa distinto en bear
+)
+
+
+def _add_regime_features(frame: pd.DataFrame) -> None:
+    """Anade el regimen de mercado y dos interacciones. Sin lookahead: el regimen se lee del
+    retorno a 12 meses del benchmark HASTA la fecha del snapshot (dato pasado, ya PIT).
+
+    - regime_bull = 1 si el SP500 subio en los ultimos 12 meses, 0 si no.
+    - momentum_x_bull: rank de momentum relativo * bull (momentum importa mas en alcista).
+    - quality_x_bear: rank de calidad * (1-bull) (defensa importa mas en bajista).
+    El modelo Ridge aprende por si mismo el peso de cada interaccion; no imponemos la direccion.
+    """
+    bench_12m = pd.to_numeric(frame["benchmark_return_12m"], errors="coerce")
+    bull = (bench_12m > 0).astype(float).where(frame["is_price_fresh"])
+    frame["factor_regime_bull"] = bull
+
+    momentum_rank = frame.get("factor_relative_return_12m")
+    quality_rank = frame.get("factor_roe")
+    frame["factor_momentum_x_bull"] = (momentum_rank * bull) if momentum_rank is not None else 0.0
+    frame["factor_quality_x_bear"] = (
+        (quality_rank * (1 - bull)) if quality_rank is not None else 0.0
+    )
+
+
 def _load_sector_map(settings: Settings) -> dict[str, str]:
     """Mapa ticker -> sector desde profiles.parquet, SOLO para agrupar (nunca como senal).
 
@@ -117,6 +215,10 @@ def _build_feature_frame(
         & frame["benchmark_price_age_days"].le(settings.max_price_age_days)
     )
 
+    # B3: tendencia de fundamentales y descomposicion precio/fundamental (point-in-time).
+    if settings.fundamental_momentum:
+        frame = _add_fundamental_momentum(frame)
+
     # Grupo de neutralizacion: sector si B1 esta activo, si no un unico grupo global.
     sector_by_ticker = sector_by_ticker or {}
     frame["_group"] = (
@@ -139,6 +241,22 @@ def _build_feature_frame(
             values = values.where(values.gt(0))
         values = values.where(frame["is_price_fresh"])
         frame[factor] = _cross_section_rank(frame, values, ascending=ascending, min_group=min_group)
+
+    # B3: rankear las features de tendencia y descomposicion (mayor = mejor en todas: fundamental
+    # que sube, y componente-fundamental positivo = barato por mejora del negocio, no por precio).
+    if settings.fundamental_momentum:
+        b3_sources = [f"mom_{name}" for name in MOMENTUM_SOURCES] + [
+            "pe_fundamental_component", "pe_price_component"
+        ]
+        for source in b3_sources:
+            values = pd.to_numeric(frame[source], errors="coerce").where(frame["is_price_fresh"])
+            frame[f"factor_{source}"] = _cross_section_rank(
+                frame, values, ascending=True, min_group=min_group
+            )
+
+    # B5: regimen de mercado (bull/bear) + interacciones factor x regimen.
+    if settings.market_regime_feature:
+        _add_regime_features(frame)
 
     frame.drop(columns=["_group"], inplace=True)
     frame.sort_values(["snapshot_date", "ticker"], inplace=True, ignore_index=True)
