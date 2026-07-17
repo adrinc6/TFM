@@ -43,6 +43,17 @@ PESOS_PRESETS = {
     "solo_alpha": {_Q: 0.0, _T: 0.0, _A: 1.0},
 }
 
+# Tilts intermedios del prior (Q/T/A): trazan el trade-off estabilidad↔alpha entre equal y full-calidad.
+PESOS_TILTS = [(0.30, 0.35, 0.35), (0.60, 0.25, 0.15), (0.70, 0.20, 0.10)]
+
+# Interacción acotada ventana × horizonte (a cadencia trimestral): el horizonte 12 y todas las
+# ventanas ya están en el núcleo, así que aquí solo se cruzan un par de ventanas con horizontes no-12.
+INTERACCION_VENTANAS = [4, 8]
+INTERACCION_HORIZONTES = [6, 24]
+
+# Costes (bps de transacción / slippage) para robustez económica. Reutilizan el scoring del baseline.
+COSTES = [("realistas", 10.0, 20.0), ("extremos", 20.0, 40.0)]
+
 _CADENCIA_NOMBRE = {"Q": "trim", "A": "anual", "M": "mensual"}
 
 
@@ -82,12 +93,43 @@ def pesos(nombre: str, preset: dict) -> Scenario:
     )
 
 
+def pesos_tilt(q: float, t: float, a: float) -> Scenario:
+    return Scenario(
+        name=f"pesos_{q:.2f}_{t:.2f}_{a:.2f}".replace(".", ""),
+        why=f"Prior calidad/timing/alpha = {q}/{t}/{a}. Punto intermedio del trade-off estabilidad↔alpha.",
+        overrides={"ml.AGENT_PRIOR_WEIGHTS": {_Q: q, _T: t, _A: a}},
+        block="pesos_ablacion",
+    )
+
+
+def interaccion(anios: int, meses: int) -> Scenario:
+    return Scenario(
+        name=f"v{anios}a_h{meses}m",
+        why=f"Interacción ventana {anios}a × horizonte {meses}m (cadencia trimestral): capta efectos "
+            "conjuntos que el barrido de un eje a la vez no ve.",
+        overrides={**_ventana(anios), "settings.walk_forward_train_frequency": "Q",
+                   "settings.walk_forward_label_horizon_months": meses},
+        block="interaccion",
+    )
+
+
+def costes(nombre: str, transaccion: float, slippage: float) -> Scenario:
+    return Scenario(
+        name=f"costes_{nombre}",
+        why=f"Costes {transaccion:.0f}/{slippage:.0f} bps. ¿Sobrevive la utilidad? Reutiliza el scoring del baseline.",
+        overrides={"settings.transaction_cost_bps": transaccion, "settings.slippage_bps": slippage},
+        block="estabilidad",
+    )
+
+
 def build_grid(
     ventanas: list[int] = VENTANAS_ANIOS,
     cadencias: list[str] = CADENCIAS,
     horizontes: list[int] = HORIZONTES_MESES,
     pesos_presets: dict[str, dict] = PESOS_PRESETS,
     incluir_ablacion_meta: bool = True,
+    incluir_interaccion: bool = True,
+    incluir_costes: bool = True,
 ) -> list[Scenario]:
     """Construye la lista de escenarios: baseline + núcleo (ventana × cadencia) + OFAT de horizonte y
     de pesos/ablations. El runner añade y deduplica el baseline igualmente, pero se incluye aquí para
@@ -100,14 +142,35 @@ def build_grid(
         scenarios.append(ventana_cadencia(anios, cadencia))
     scenarios.extend(horizonte(m) for m in horizontes)
     scenarios.extend(pesos(nombre, preset) for nombre, preset in pesos_presets.items())
+    if pesos_presets:  # el sweep fino de tilts acompaña a los presets de composición
+        scenarios.extend(pesos_tilt(*tilt) for tilt in PESOS_TILTS)
+    if incluir_interaccion:
+        scenarios.extend(interaccion(anios, meses)
+                         for anios, meses in product(INTERACCION_VENTANAS, INTERACCION_HORIZONTES))
+    if incluir_costes:
+        scenarios.extend(costes(nombre, tx, sl) for nombre, tx, sl in COSTES)
     if incluir_ablacion_meta:
-        scenarios.append(Scenario(
-            name="sin_meta_aprendido",
-            why="Fija los pesos al prior sin reaprenderlos por trimestre (los agentes siguen "
-                "puntuando walk-forward). Si el rank-IC OOS apenas baja, el meta-agente no aporta.",
-            overrides={"ml.LEARN_META_WEIGHTS": False},
-            block="pesos_ablacion",
-        ))
+        scenarios.extend([
+            Scenario(
+                name="sin_meta_aprendido",
+                why="Fija los pesos al prior sin reaprenderlos por trimestre (los agentes siguen "
+                    "puntuando walk-forward). Si el rank-IC OOS apenas baja, el meta-agente no aporta.",
+                overrides={"ml.LEARN_META_WEIGHTS": False},
+                block="pesos_ablacion",
+            ),
+            Scenario(
+                name="sin_shrinkage",
+                why="META_WEIGHT_FLOOR=0: sin anclaje al prior debe reaparecer el colapso a un único agente.",
+                overrides={"ml.META_WEIGHT_FLOOR": 0.0},
+                block="pesos_ablacion",
+            ),
+            Scenario(
+                name="sin_consistencia",
+                why="CONSISTENCY_LAMBDA=0: sin penalizar la varianza entre sub-folds. ¿Sube la dispersión del rank-IC?",
+                overrides={"ml.CONSISTENCY_LAMBDA": 0.0},
+                block="pesos_ablacion",
+            ),
+        ])
     return scenarios
 
 
@@ -115,7 +178,7 @@ def subrejilla() -> list[Scenario]:
     """Barrido reducido para validar end-to-end (rápido, ideal con DEV_MODE): dos ventanas, ambas
     cadencias, sin variaciones de horizonte ni pesos."""
     return build_grid(ventanas=[4, 8], cadencias=["Q", "A"], horizontes=[], pesos_presets={},
-                      incluir_ablacion_meta=False)
+                      incluir_ablacion_meta=False, incluir_interaccion=False, incluir_costes=False)
 
 
 SCENARIOS = build_grid()
