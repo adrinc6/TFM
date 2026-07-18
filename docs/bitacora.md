@@ -206,3 +206,37 @@ aditiva y sin tocar el modelo, `results_store.publish_artifacts` precalcula `lea
 cambia: es solo la capa de presentacion y analisis. Pero separar el frontend en archivos reales
 hace el sistema mas facil de revisar y extender, y unifica consola e informes bajo una sola
 estetica. Los 92 tests siguen en verde tras el cambio.
+
+---
+
+## 7 — study y full_study convergen en un ciclo completo con TODAS las variables
+
+**Sintoma.** Habia dos orquestadores desiguales. `full_study` hacia el ciclo completo (Fase 1 →
+Fase 2 → afinado → run final → perfiles → robustez → era reservada) pero solo barria un catalogo
+fijo y reducido (5 ejes de modelo + 7 artefactos): dejaba fuera `execution_lag_days`,
+`execution_quarter`, `objective`, `meta_type` y los hiperparametros finos en Fase 1. `execute_study`
+barria las variables marcadas por el usuario pero se paraba en Fase 2 —y si el usuario marcaba una
+variable de cartera, la barria reentrenando el modelo inutilmente.
+
+**Que se hizo.** Un unico nucleo `run_optimization` que ambos flujos invocan; solo cambia que
+variables barren. Las variables se separan por CUANDO actuan (frontera autoritativa ya existente en
+`FINGERPRINT_FIELDS`): las de MODELO (mueven el rank-IC) se barren en Fase 1/2 y se eligen por
+rank-IC OOS; las de CARTERA (no mueven el rank-IC) se optimizan al final re-backtesteando el
+finalista sin reentrenar, por criterio economico (`information_ratio`). `full_study` pasa a barrer
+TODO (derivado de `escenarios/variables.py`, antes solo en la UI). Fase 2 evoluciona a greedy
+incremental con top-2 por eje (~2·N runs, nunca 2^N). `execute_study` deja de pararse en Fase 2 y
+hace el ciclo entero.
+
+**Dos matices de metodo del usuario, incorporados.** (1) `execution_lag_days` es de MODELO, no de
+cartera: un lag de 15 dias cambia que fundamentales son observables en cada snapshot (aprovecha
+antes la publicacion de resultados) y por tanto cambia el dataset de entrenamiento. (2) Interaccion
+`execution_quarter` × `fundamental_step_months`: el trimestre de arranque solo importa cuando el
+reentreno es semestral o anual (con reentreno trimestral/mensual se diluye); por eso, si la cadencia
+ganadora no es trimestral, la Fase 2 re-explora los trimestres sobre esa combinacion.
+
+**Por que preserva la honestidad.** La seleccion del MODELO sigue siendo por rank-IC OOS y la era
+reservada 2025-2026 nunca interviene. El criterio economico solo decide parametros de CARTERA, que
+por construccion no alteran el aprendizaje (no estan en el fingerprint de `agents`), asi que el
+rank-IC no puede discriminarlos y el criterio economico es el unico que tiene sentido ahi.
+`decision.json` cierra con `best_config`: mejor modelo + mejor gestion de cartera + perfil que mas
+renta. 100 tests en verde (92 + 8 nuevos del ciclo unificado).

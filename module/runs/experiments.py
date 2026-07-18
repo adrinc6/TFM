@@ -119,6 +119,26 @@ FINGERPRINT_FIELDS: dict[str, tuple[str, ...]] = {
 }
 
 
+# Frontera autoritativa modelo/cartera derivada del fingerprint: un campo es "de modelo" si
+# entra en el entrenamiento de agentes (mueve el rank-IC); es "de cartera" si solo interviene en
+# el backtest (no reentrena, no cambia el aprendizaje). El orquestador de estudios usa esta
+# separación para barrer los ejes de modelo en Fase 1/2 y los de cartera al final por re-backtest.
+MODEL_FIELDS: frozenset[str] = frozenset(FINGERPRINT_FIELDS["agents"])
+PORTFOLIO_FIELDS: frozenset[str] = frozenset(FINGERPRINT_FIELDS["backtest"]) - MODEL_FIELDS
+
+
+def split_variables(
+    variables: Mapping[str, list[Any]],
+) -> tuple[dict[str, list[Any]], dict[str, list[Any]]]:
+    """Reparte un dict {eje: [valores]} en variables de modelo y de cartera.
+
+    Los ejes que no pertenecen a ninguna de las dos familias (no barribles) se descartan.
+    """
+    model_vars = {axis: values for axis, values in variables.items() if axis in MODEL_FIELDS}
+    portfolio_vars = {axis: values for axis, values in variables.items() if axis in PORTFOLIO_FIELDS}
+    return model_vars, portfolio_vars
+
+
 def stage_fingerprint(stage: str, settings: Settings) -> str:
     """SHA-256 de los campos de Settings relevantes para la etapa."""
     if stage not in FINGERPRINT_FIELDS:

@@ -19,8 +19,9 @@ from module.evaluation.backtest import run_backtest_from_run_dir
 from module.evaluation.profiles import PROFILE_NAMES
 from module.evaluation.robustness import leave_one_year_out
 from module.evaluation.stats import block_bootstrap_ci
-from module.runs.experiments import ScenarioSpec
+from module.runs.experiments import split_variables
 from module.runs.results_store import ResultsStore, execution_hash
+from escenarios.variables import STUDY_OPTIONS
 from module.runs.recycle import cache_dir, publish as publish_recycle, restore as restore_recycle, stage_key
 from module.common.utils import setup_logging, write_json, write_parquet
 
@@ -58,8 +59,14 @@ def execute_run(
     grid_definition: Mapping[str, Any] | None = None,
     store: ResultsStore | None = None,
     force_rerun: bool = False,
+    agent_dir: Path | None = None,
 ) -> str:
-    """Ejecuta etapas existentes y publica una copia inmutable de sus artefactos."""
+    """Ejecuta etapas existentes y publica una copia inmutable de sus artefactos.
+
+    ``agent_dir`` fija el run de agentes exacto sobre el que backtestear (modo ``backtest``); sin
+    él se usa el más reciente. Lo usan la fase de perfiles y la de cartera para re-backtestear
+    sobre el finalista concreto sin reentrenar.
+    """
     store = store or ResultsStore()
     stages = stages_for_mode(mode)
     effective = replace(settings, run_mode=mode)
@@ -83,8 +90,10 @@ def execute_run(
     setup_logging(run_dir / "logs" / "execution.log")
     store.set_status(run_dir, "running")
     # El modo backtest aislado conserva el comportamiento CLI; en un pipeline completo esta
-    # referencia se reemplaza exactamente por la salida de la etapa agents del propio run.
-    agent_dir: Path | None = _latest_agent_run(effective.processed_output_dir) if mode == "backtest" else None
+    # referencia se reemplaza exactamente por la salida de la etapa agents del propio run. Si el
+    # llamante fija un agent_dir explícito (fase de cartera/perfiles sobre el finalista), se usa ese.
+    if mode == "backtest":
+        agent_dir = agent_dir or _latest_agent_run(effective.processed_output_dir)
     try:
         for stage in stages:
             log.info("Run %s: iniciando %s", run_id, stage)
@@ -112,39 +121,148 @@ def execute_study(
     mode: str = "full",
     store: ResultsStore | None = None,
 ) -> str:
-    """Ejecuta un study dirigido: Fase 1 aislada y Fase 2 de combinaciones controladas.
+    """Study completo: mismo ciclo que la optimización oficial, limitado a las variables marcadas.
 
-    No usa producto cartesiano. Esto evita miles de ejecuciones y mantiene interpretable el
-    efecto de cada eje antes de combinar únicamente los ganadores.
+    Las variables del usuario se reparten en ejes de modelo (barridos en Fase 1/2 por rank-IC) y
+    ejes de cartera (optimizados al final por re-backtest). ``mode`` se ignora: el ciclo siempre
+    entrena y backtestea.
+    """
+    model_vars, portfolio_vars = split_variables(variables)
+    payload = {
+        "name": str(study_payload.get("name", "study")), "kind": str(study_payload.get("kind", "exploratory")),
+        "description": str(study_payload.get("description", "")), "tags": list(study_payload.get("tags", [])),
+        "variables": dict(variables), "strategy": "unified_full_cycle",
+        "selection_metric": "rank_ic_oos", "selection_until_year": 2024, "reserved_years": [2025, 2026],
+    }
+    return run_optimization(settings, model_vars=model_vars, portfolio_vars=portfolio_vars,
+                            payload=payload, store=store)
+
+
+def execute_official_optimization(settings: Settings, store: ResultsStore | None = None) -> str:
+    """Optimización oficial: ciclo completo barriendo TODAS las variables barribles.
+
+    Barrido derivado de ``STUDY_OPTIONS`` (todos los ejes de modelo en Fase 1/2 y todos los de
+    cartera al final). Reemplaza al catálogo fijo reducido de ``escenarios/fase1_ejes.py``.
+    """
+    variables = {axis: list(values) for axis, values in STUDY_OPTIONS.items()}
+    model_vars, portfolio_vars = split_variables(variables)
+    payload = {
+        "name": "optimization-official", "kind": "optimization",
+        "description": "Optimización oficial: barrido completo de modelo (Fase 1/2), afinado, cartera y validación reservada.",
+        "tags": ["official", "optimization"], "strategy": "unified_full_cycle",
+        "selection_metric": "rank_ic_oos", "selection_until_year": 2024, "reserved_years": [2025, 2026],
+    }
+    return run_optimization(settings, model_vars=model_vars, portfolio_vars=portfolio_vars,
+                            payload=payload, store=store)
+
+
+def execute_official_phase1(settings: Settings, store: ResultsStore | None = None) -> str:
+    """Alias de compatibilidad: la acción oficial ejecuta el ciclo completo unificado."""
+    return execute_official_optimization(settings, store)
+
+
+def run_optimization(
+    settings: Settings,
+    *,
+    model_vars: Mapping[str, list[Any]],
+    portfolio_vars: Mapping[str, list[Any]],
+    payload: Mapping[str, Any],
+    store: ResultsStore | None = None,
+) -> str:
+    """Ciclo completo unificado que comparten study y optimización oficial.
+
+    Fase 1 (ejes de modelo aislados) → Fase 2 (greedy top-2, sin cartesiano) → afinado de
+    hiperparámetros → run final → fase de cartera (re-backtest por criterio económico) → 8
+    perfiles → robustez → validación reservada. La selección de modelo es siempre por rank-IC OOS;
+    los ejes de cartera se eligen por métrica económica porque no alteran el aprendizaje.
     """
     store = store or ResultsStore()
-    study_id, study_dir = store.create_study({**dict(study_payload), "variables": dict(variables),
-                                               "strategy": "two_phase_directed"})
-    phase1_specs = _isolated_specs(settings, variables)
+    study_id, study_dir = store.create_study(dict(payload))
+    name = str(payload.get("name", "study"))
+    description = str(payload.get("description", ""))
+    tags = list(payload.get("tags", []))
+
+    # --- Fase 1: cada eje de modelo aislado sobre el baseline ---
     phase1_rows: list[dict[str, Any]] = []
-    for spec in phase1_specs:
-        candidate = replace(settings, **spec["overrides"])
+    for spec in _isolated_specs(settings, model_vars):
         run_id = execute_run(
-            candidate, mode=mode, run_kind="scenario", study_id=study_id,
-            label=f"{study_payload.get('name', 'study')} · Fase 1 · {spec['name']}",
-            description=str(study_payload.get("description", "")),
-            tags=study_payload.get("tags", ()), grid_definition={"phase": 1, **spec}, store=store,
+            replace(settings, **spec["overrides"]), mode="full", run_kind="scenario", study_id=study_id,
+            label=f"{name} · Fase 1 · {spec['name']}", description=description, tags=tags,
+            grid_definition={"phase": 1, **spec}, store=store,
         )
         store.add_to_study(study_id, run_id)
         phase1_rows.append({"phase": 1, "scenario": spec["name"], "axis": spec.get("axis"),
                             "overrides": spec["overrides"], "run_id": run_id,
                             **spec["overrides"], **_summary_for_run(store, run_id)})
     phase1 = pd.DataFrame(phase1_rows)
-    phase2_specs, decision = _directed_phase2(phase1, settings, variables)
-    phase2_rows = _execute_official_specs(phase2_specs, settings, store, study_id, phase=2,
-                                          label_prefix=str(study_payload.get("name", "Study")),
-                                          description=str(study_payload.get("description", "")),
-                                          tags=study_payload.get("tags", ()))
-    comparison = pd.concat([phase1, pd.DataFrame(phase2_rows)], ignore_index=True, sort=False)
+
+    # --- Fase 2: greedy incremental con top-2 por eje (sin producto cartesiano) ---
+    phase2_rows, model_overrides, phase1_decision = _greedy_phase2(
+        phase1, model_vars, settings, store, study_id, name=name, description=description, tags=tags)
+    phase2 = pd.DataFrame(phase2_rows)
+
+    # --- Fase 3: afinado de hiperparámetros sobre el ganador de modelo ---
+    hyper_specs = _hyperparameter_specs(model_overrides)
+    hyper_rows = _execute_official_specs(hyper_specs, settings, store, study_id, phase=3,
+                                         label_prefix=name, description=description, tags=tags)
+    hyper = pd.DataFrame(hyper_rows)
+    chosen_hyper = _stable_best(hyper)
+    final_model_overrides = dict(chosen_hyper.get("overrides", {})) if chosen_hyper else dict(model_overrides)
+
+    # --- Run final del modelo ganador ---
+    final_settings = replace(settings, **final_model_overrides)
+    final_id = execute_run(final_settings, mode="full", run_kind="optimization_final", study_id=study_id,
+                           label=f"{name} · finalista", description=description,
+                           tags=[*tags, "final"], grid_definition={"phase": "final", "overrides": final_model_overrides}, store=store)
+    store.add_to_study(study_id, final_id)
+    final_agent_dir = _latest_agent_run(final_settings.processed_output_dir)
+
+    # --- Fase de cartera: re-backtest sobre el finalista, por criterio económico ---
+    portfolio_overrides, portfolio_trace = _portfolio_phase(
+        final_settings, portfolio_vars, store, study_id, agent_dir=final_agent_dir,
+        name=name, description=description, tags=tags)
+    portfolio_settings = replace(final_settings, **portfolio_overrides)
+    if portfolio_overrides:
+        portfolio_final_id = execute_run(
+            portfolio_settings, mode="backtest", run_kind="optimization_final", study_id=study_id,
+            label=f"{name} · finalista + cartera", description=description, tags=[*tags, "final", "portfolio"],
+            grid_definition={"phase": "portfolio_final", "overrides": portfolio_overrides},
+            store=store, agent_dir=final_agent_dir)
+        store.add_to_study(study_id, portfolio_final_id)
+    else:
+        portfolio_final_id = final_id
+
+    # --- 8 perfiles sobre el finalista de cartera (runs hijo, sin reentrenar) ---
+    profile_run_ids: dict[str, str] = {}
+    for profile in PROFILE_NAMES:
+        profile_id = execute_run(
+            replace(portfolio_settings, profile=profile), mode="backtest", run_kind="scenario", study_id=study_id,
+            label=f"{name} · finalista · perfil {profile}",
+            description="Backtest del perfil sobre el finalista seleccionado.",
+            tags=[*tags, "final", "profile"],
+            grid_definition={"phase": "profiles", "profile": profile, "parent_run_id": portfolio_final_id},
+            store=store, agent_dir=final_agent_dir)
+        store.add_to_study(study_id, profile_id)
+        profile_run_ids[profile] = profile_id
+
+    # --- Robustez, validación reservada y decisión final ---
+    final_summary = _summary_for_run(store, portfolio_final_id)
+    reserved = _reserved_validation(store, final_id)
+    robustness = _final_robustness(store, final_id)
+    best_config = _best_config_summary(final_model_overrides, portfolio_overrides,
+                                       profile_run_ids, store)
+    comparison = pd.concat([phase1, phase2, hyper], ignore_index=True, sort=False)
     write_parquet(comparison, study_dir / "comparison_data.parquet")
-    phase2_best = _stable_best(pd.DataFrame(phase2_rows))
-    write_json({"strategy": "two_phase_directed", "criterion": "mean_rank_ic", "phase1": decision,
-                "phase2_winner": phase2_best}, study_dir / "decision.json")
+    write_json({
+        "strategy": "unified_full_cycle", "selection_metric": "rank_ic_oos",
+        "phase1": phase1_decision, "model_winner": {"overrides": final_model_overrides,
+                                                    "summary": _summary_for_run(store, final_id)},
+        "phase_portfolio": portfolio_trace, "portfolio_overrides": portfolio_overrides,
+        "final_run_id": portfolio_final_id, "model_final_run_id": final_id,
+        "final_settings_overrides": {**final_model_overrides, **portfolio_overrides},
+        "final_summary": final_summary, "profile_run_ids": profile_run_ids,
+        "reserved_validation": reserved, "robustness": robustness, "best_config": best_config,
+    }, study_dir / "decision.json")
     manifest = json.loads((study_dir / "study_manifest.json").read_text(encoding="utf-8"))
     manifest["status"] = "succeeded"
     write_json(manifest, study_dir / "study_manifest.json")
@@ -164,114 +282,151 @@ def _isolated_specs(settings: Settings, variables: Mapping[str, list[Any]]) -> l
     return specs
 
 
-def _directed_phase2(
-    phase1: pd.DataFrame, settings: Settings, variables: Mapping[str, list[Any]],
-) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    """Combina mejores niveles y prueba segundos niveles uno a uno, sin cartesiano."""
-    selected: dict[str, Any] = {}
+def _greedy_phase2(
+    phase1: pd.DataFrame, model_vars: Mapping[str, list[Any]], settings: Settings,
+    store: ResultsStore, study_id: str, *, name: str, description: str, tags: list[str],
+) -> tuple[list[dict[str, Any]], dict[str, Any], dict[str, Any]]:
+    """Fase 2 greedy con top-2 por eje, sin producto cartesiano.
+
+    Parte del mejor nivel de cada eje (combinado). Recorre los ejes ordenados por su impacto en
+    Fase 1 y en cada uno prueba su 1º y 2º mejor sobre la combinación en curso, fijando el que sube
+    el rank-IC. Caso especial: si el ganador de ``fundamental_step_months`` no es trimestral,
+    re-explora ``execution_quarter`` sobre la combinación (el trimestre de arranque solo importa con
+    reentreno anual/semestral). Explora el 2º mejor de cada eje con ~2·N runs, no 2^N.
+    """
+    baseline_row = phase1.loc[phase1["scenario"] == "baseline"]
+    baseline_ic = float(baseline_row["mean_rank_ic"].iloc[0]) if not baseline_row.empty and "mean_rank_ic" in baseline_row else float("-inf")
+
+    # Mejores dos niveles de cada eje y ranking de ejes por impacto (mejora sobre baseline).
+    axis_options: dict[str, list[dict[str, Any]]] = {}
+    axis_impact: dict[str, float] = {}
     decision: dict[str, Any] = {"axes": {}}
-    for axis in variables:
-        candidates = phase1.loc[(phase1["axis"] == axis) | (phase1["scenario"] == "baseline")].copy()
+    for axis in model_vars:
+        candidates = phase1.loc[phase1["axis"] == axis]
         best = _stable_best(candidates)
         if not best:
             continue
-        selected.update(dict(best.get("overrides") or {}))
         second = _second_stable(candidates.to_dict("records"), str(best["scenario"]))
-        decision["axes"][axis] = {"chosen": best["scenario"], "overrides": best.get("overrides", {}),
+        axis_options[axis] = [best] + ([second] if second else [])
+        axis_impact[axis] = float(best.get("mean_rank_ic", float("-inf"))) - baseline_ic
+        decision["axes"][axis] = {"chosen": best.get("scenario"), "overrides": dict(best.get("overrides") or {}),
                                    "second": second}
-    specs = [{"name": "combined_best", "overrides": dict(selected)}]
-    for axis, data in decision["axes"].items():
-        if not data.get("second"):
-            continue
-        variant = dict(selected)
-        for key in data["overrides"]:
-            variant.pop(key, None)
-        variant.update(data["second"]["overrides"])
-        specs.append({"name": f"{axis}_second", "overrides": variant})
-    return specs, decision
 
+    # Combinación inicial: el mejor nivel de cada eje.
+    selected: dict[str, Any] = {}
+    for options in axis_options.values():
+        selected.update(dict(options[0].get("overrides") or {}))
 
-def official_phase1_specs() -> list[ScenarioSpec]:
-    """Catalogo oficial conservado: Fase 1 aislada, no una rejilla libre."""
-    from escenarios.fase1_ejes import SCENARIOS
-    return list(SCENARIOS)
+    rows: list[dict[str, Any]] = []
+    best_ic = float("-inf")
 
-
-def execute_official_optimization(settings: Settings, store: ResultsStore | None = None) -> str:
-    """Ejecuta las fases oficiales sin usar carpetas de resultados heredadas.
-
-    Fase 1 aísla ejes; Fase 2 combina únicamente ganadores estables y sus alternativas;
-    después afina un conjunto pequeño de hiperparámetros y valida el finalista en 2025-2026.
-    """
-    specs = official_phase1_specs()
-    store = store or ResultsStore()
-    payload = {
-        "name": "optimization-official", "kind": "optimization",
-        "description": "Optimización oficial: Fase 1 aislada, Fase 2 dirigida, afinado y validación reservada.",
-        "tags": ["official", "optimization"], "selection_metric": "rank_ic_oos",
-        "selection_until_year": 2024, "reserved_years": [2025, 2026],
-    }
-    study_id, study_dir = store.create_study(payload)
-    phase1_rows: list[dict[str, Any]] = []
-    for spec in specs:
-        candidate = spec.apply_to(settings)
-        run_id = execute_run(candidate, mode="full", run_kind="scenario", study_id=study_id,
-                             label=f"Fase 1 · {spec.name}", description=payload["description"],
-                             tags=payload["tags"], grid_definition={"official_scenario": spec.name,
-                                                                       "overrides": dict(spec.overrides)}, store=store)
+    def evaluate(overrides: dict[str, Any], label: str) -> float:
+        nonlocal rows
+        run_id = execute_run(replace(settings, **overrides), mode="full", run_kind="scenario", study_id=study_id,
+                             label=f"{name} · Fase 2 · {label}", description=description, tags=[*tags, "phase2"],
+                             grid_definition={"phase": 2, "overrides": overrides}, store=store)
         store.add_to_study(study_id, run_id)
-        phase1_rows.append({"phase": 1, "scenario": spec.name, **dict(spec.overrides),
-                            **_summary_for_run(store, run_id), "run_id": run_id})
-    phase1 = pd.DataFrame(phase1_rows)
-    phase2_specs, phase1_decision = _phase2_from_phase1(phase1)
-    phase2_rows = _execute_official_specs(phase2_specs, settings, store, study_id, phase=2)
-    phase2 = pd.DataFrame(phase2_rows)
-    chosen_phase2 = _stable_best(phase2)
-    chosen_overrides = dict(chosen_phase2.get("overrides", {})) if chosen_phase2 else {}
-    hyper_specs = _hyperparameter_specs(chosen_overrides)
-    hyper_rows = _execute_official_specs(hyper_specs, settings, store, study_id, phase=3)
-    hyper = pd.DataFrame(hyper_rows)
-    chosen_hyper = _stable_best(hyper)
-    final_overrides = dict(chosen_hyper.get("overrides", {})) if chosen_hyper else chosen_overrides
-    final_settings = replace(settings, **final_overrides)
-    final_id = execute_run(final_settings, mode="full", run_kind="optimization_final", study_id=study_id,
-                           label="Optimization · finalista", description=payload["description"],
-                           tags=["official", "final"], grid_definition={"phase": "final", "overrides": final_overrides}, store=store)
-    store.add_to_study(study_id, final_id)
-    # Cada perfil es un backtest trazable sobre las predicciones del finalista. Se guarda como
-    # run hijo y nunca se reconstruye ad hoc desde la interfaz.
-    profile_run_ids: dict[str, str] = {}
-    for profile in PROFILE_NAMES:
-        profile_settings = replace(final_settings, profile=profile)
-        profile_id = execute_run(profile_settings, mode="backtest", run_kind="scenario", study_id=study_id,
-                                 label=f"Optimization · finalista · perfil {profile}",
-                                 description="Backtest del perfil sobre el finalista seleccionado.",
-                                 tags=["official", "final", "profile"],
-                                 grid_definition={"phase": "profiles", "profile": profile,
-                                                  "parent_run_id": final_id}, store=store)
-        store.add_to_study(study_id, profile_id)
-        profile_run_ids[profile] = profile_id
-    final_summary = _summary_for_run(store, final_id)
-    reserved = _reserved_validation(store, final_id)
-    robustness = _final_robustness(store, final_id)
-    comparison = pd.concat([phase1, phase2, hyper], ignore_index=True, sort=False)
-    write_parquet(comparison, study_dir / "comparison_data.parquet")
-    write_json({
-        "selection_metric": "rank_ic_oos", "phase1": phase1_decision,
-        "phase2_winner": chosen_phase2, "hyperparameter_winner": chosen_hyper,
-        "final_run_id": final_id, "final_settings_overrides": final_overrides,
-        "final_summary": final_summary, "profile_run_ids": profile_run_ids,
-        "reserved_validation": reserved, "robustness": robustness,
-    }, study_dir / "decision.json")
-    manifest = json.loads((study_dir / "study_manifest.json").read_text(encoding="utf-8"))
-    manifest["status"] = "succeeded"
-    write_json(manifest, study_dir / "study_manifest.json")
-    return study_id
+        summary = _summary_for_run(store, run_id)
+        rows.append({"phase": 2, "scenario": label, "overrides": dict(overrides), **overrides, **summary, "run_id": run_id})
+        return float(summary.get("mean_rank_ic", float("-inf")))
+
+    best_ic = evaluate(selected, "combined_best")
+
+    # Greedy: para cada eje (más impactante primero), probar su 2º mejor sobre la combinación.
+    for axis in sorted(axis_impact, key=axis_impact.get, reverse=True):
+        options = axis_options[axis]
+        if len(options) < 2:
+            continue
+        trial = dict(selected)
+        for key in dict(options[0].get("overrides") or {}):
+            trial.pop(key, None)
+        trial.update(dict(options[1].get("overrides") or {}))
+        ic = evaluate(trial, f"{axis}_second")
+        if ic > best_ic:
+            best_ic, selected = ic, trial
+
+    # Caso especial trimestre × cadencia: si la cadencia ganadora no es trimestral, re-explorar quarter.
+    cadence = selected.get("fundamental_step_months", getattr(settings, "fundamental_step_months"))
+    if cadence != 3 and "execution_quarter" in STUDY_OPTIONS:
+        for quarter in STUDY_OPTIONS["execution_quarter"]:
+            if quarter == selected.get("execution_quarter", getattr(settings, "execution_quarter")):
+                continue
+            trial = {**selected, "execution_quarter": quarter}
+            ic = evaluate(trial, f"quarter_{quarter}_with_cadence_{cadence}")
+            if ic > best_ic:
+                best_ic, selected = ic, trial
+        decision["quarter_reexplored_for_cadence"] = cadence
+
+    return rows, selected, decision
 
 
-def execute_official_phase1(settings: Settings, store: ResultsStore | None = None) -> str:
-    """Alias de compatibilidad: la acción oficial ejecuta ahora el flujo completo."""
-    return execute_official_optimization(settings, store)
+def _portfolio_phase(
+    final_settings: Settings, portfolio_vars: Mapping[str, list[Any]], store: ResultsStore,
+    study_id: str, *, agent_dir: Path | None, name: str, description: str, tags: list[str],
+    criterion: str = "information_ratio",
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Optimiza los ejes de cartera sobre el finalista, re-backtesteando sin reentrenar.
+
+    Greedy por eje: para cada variable de cartera prueba sus valores (re-backtest sobre el mismo
+    ``agent_dir``) y fija el que maximiza ``criterion`` (métrica económica del backtest_summary,
+    p.ej. information_ratio). El rank-IC no discrimina aquí porque estos ejes no cambian el
+    aprendizaje. El perfil de inversor no se barre: se reporta con los 8 perfiles al final.
+    """
+    selected: dict[str, Any] = {}
+    trace: dict[str, Any] = {"criterion": criterion, "axes": {}}
+    for axis, values in portfolio_vars.items():
+        if axis == "profile":  # el perfil se cubre con los 8 runs de perfil, no se barre aquí
+            continue
+        current = selected.get(axis, getattr(final_settings, axis))
+        best_value, best_score, best_run = current, float("-inf"), None
+        axis_results: list[dict[str, Any]] = []
+        for value in values:
+            trial = {**selected, axis: value}
+            # Algunas combinaciones violan las restricciones de Settings (p.ej.
+            # max_weight_per_position * target_min < 1); se omiten sin abortar la fase.
+            try:
+                candidate_settings = replace(final_settings, **trial)
+            except ValueError as exc:
+                axis_results.append({"value": value, "skipped": str(exc)})
+                continue
+            run_id = execute_run(
+                candidate_settings, mode="backtest", run_kind="scenario", study_id=study_id,
+                label=f"{name} · Cartera · {axis}={value}", description=description,
+                tags=[*tags, "portfolio"], grid_definition={"phase": "portfolio", "axis": axis, "value": value},
+                store=store, agent_dir=agent_dir)
+            store.add_to_study(study_id, run_id)
+            summary = _summary_for_run(store, run_id)
+            score = _economic_score(summary, criterion)
+            axis_results.append({"value": value, criterion: score, "run_id": run_id})
+            if score > best_score:
+                best_value, best_score, best_run = value, score, run_id
+        selected[axis] = best_value
+        trace["axes"][axis] = {"chosen": best_value, "score": best_score, "run_id": best_run,
+                                "candidates": axis_results}
+    return selected, trace
+
+
+def _economic_score(summary: Mapping[str, Any], criterion: str) -> float:
+    """Métrica económica para elegir un eje de cartera; drawdown se maximiza como negativo."""
+    value = summary.get(criterion)
+    if value is None:
+        return float("-inf")
+    return -float(value) if criterion == "max_drawdown" else float(value)
+
+
+def _best_config_summary(
+    model_overrides: Mapping[str, Any], portfolio_overrides: Mapping[str, Any],
+    profile_run_ids: Mapping[str, str], store: ResultsStore,
+) -> dict[str, Any]:
+    """Resumen legible: mejor modelo, mejor gestión de cartera y perfil que más renta."""
+    best_profile, best_cagr = None, float("-inf")
+    for profile, run_id in profile_run_ids.items():
+        summary = _summary_for_run(store, run_id)
+        cagr = summary.get("cagr_portfolio")
+        if cagr is not None and float(cagr) > best_cagr:
+            best_profile, best_cagr = profile, float(cagr)
+    return {"model": dict(model_overrides), "portfolio": dict(portfolio_overrides),
+            "best_profile": best_profile, "best_profile_cagr": None if best_profile is None else best_cagr}
 
 
 def _execute_official_specs(
@@ -306,41 +461,6 @@ def _stable_best(frame: pd.DataFrame) -> dict[str, Any] | None:
     ranked = ranked.sort_values(["mean_rank_ic", "rank_ic_positive_fraction", "rank_ic_std"],
                                 ascending=[False, False, True])
     return ranked.iloc[0].to_dict()
-
-
-def _phase2_from_phase1(phase1: pd.DataFrame) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    """Compone Fase 2 sin producto cartesiano: ganador conjunto y segundos controlados."""
-    from escenarios.fase1_ejes import ARTIFACTS, AXES
-    by_name = {str(row["scenario"]): row for row in phase1.to_dict("records")}
-    baseline = by_name.get("baseline", {})
-    selected: dict[str, Any] = {}
-    decision: dict[str, Any] = {"axes": {}, "artifacts": []}
-    for axis, levels in AXES.items():
-        candidates = []
-        for level, overrides in levels.items():
-            row = by_name.get(level)
-            if row:
-                candidates.append({"name": level, "overrides": overrides, **row})
-        best = _stable_best(pd.DataFrame(candidates))
-        if best:
-            selected.update(dict(best["overrides"]))
-            decision["axes"][axis] = {"chosen": best["name"], "overrides": best["overrides"],
-                                        "second": _second_stable(candidates, best["name"])}
-    for name, overrides in ARTIFACTS.items():
-        row = by_name.get(f"artifact_{name}")
-        if row and row.get("mean_rank_ic", float("-inf")) > baseline.get("mean_rank_ic", float("inf")):
-            selected.update(overrides)
-            decision["artifacts"].append(name)
-    specs = [{"name": "combined_best", "overrides": dict(selected)}]
-    for axis, data in decision["axes"].items():
-        second = data.get("second")
-        if second:
-            variant = dict(selected)
-            for key in data["overrides"]:
-                variant.pop(key, None)
-            variant.update(second["overrides"])
-            specs.append({"name": f"{axis}_second", "overrides": variant})
-    return specs, decision
 
 
 def _second_stable(candidates: list[dict[str, Any]], winner: str) -> dict[str, Any] | None:

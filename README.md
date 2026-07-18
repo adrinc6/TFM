@@ -35,8 +35,9 @@ servida como archivos reales desde `app/` (raíz del proyecto) por el servidor `
 de Chart.js). Tiene dos vistas:
 
 - **Consola**: lanzar un **Experimental** (configuración libre y trazable), crear un **Study**
-  (rejilla de combinaciones dirigida) y revisar la **Optimization** oficial, con todos los
-  parámetros, presets y selects guiados por los valores admitidos.
+  (ciclo completo sobre las variables que marques) y revisar la **Optimization** oficial (ciclo
+  completo sobre todas), con todos los parámetros, presets y selects guiados por los valores
+  admitidos.
 - **Resultados**: dos listas separadas, una de **estudios** y otra de **runs**. Al seleccionar
   un estudio se analiza el estudio (fases, decisión y comparativa de sus runs); al seleccionar
   un run se analiza el run con pestañas de resumen, rendimiento, aprendizaje, cartera, trades,
@@ -54,13 +55,17 @@ Con `data/raw` ya descargado, un único comando ejecuta el estudio completo sin 
 $env:RUN_MODE = "full_study"; $env:RUN_SCOPE = "full"; python main.py
 ```
 
-Hace, en dos fases y sin decisiones humanas: **Fase 1** barre cada eje del sistema aislado (ventana
-de entrenamiento, horizonte de etiqueta, ancla, profundidad, cadencia y los 7 artefactos) y
-**decide automáticamente** el mejor nivel de cada eje + qué artefactos ayudan (por significancia);
-**Fase 2** combina los ganadores; luego afina hiperparámetros → configuración final → run
-optimizado → 8 perfiles de inversor → tests de robustez/placebo → **validación en la era reservada
-2025-2026** (que no interviene en la selección, para no sobreajustar por explorar mucho) → informes
-HTML.
+Hace, sin decisiones humanas, el **ciclo completo unificado** (`study` y `full_study` comparten
+orquestador; `full_study` barre **todas** las variables, un `study` las que marques): **Fase 1**
+aísla cada eje de **modelo** (ventana, horizonte, ancla, profundidad, cadencia, `lag_days`,
+`objective`, `meta_type`, hiperparámetros y los 7 artefactos) por rank-IC OOS; **Fase 2** combina
+los mejores con una búsqueda greedy top-2 (sin producto cartesiano); afina hiperparámetros →
+configuración final de modelo → **fase de cartera** (optimiza tamaño, percentiles, rotación y costes
+re-backtesteando el finalista sin reentrenar, por criterio económico) → 8 perfiles de inversor →
+robustez → **validación en la era reservada 2025-2026** (que no interviene en la selección). La
+decisión final resume el mejor modelo + la mejor gestión de cartera + el perfil que más renta. La
+selección del modelo es siempre por rank-IC; el criterio económico solo decide parámetros de cartera
+(que no cambian el aprendizaje).
 
 Los resultados se organizan de forma inmutable por `runs/` y `studies/`: cada study conserva su
 manifiesto, definición y lista de runs; cada run guarda configuración, estado, artefactos de
@@ -97,7 +102,7 @@ rendimiento de cartera se muestra como consecuencia y no como selector de config
 | `backtest` | Simula la cartera (con guarda anti-artefactos y perfil de inversor) y calcula métricas. |
 | `report` | Genera el informe HTML estático (autocontenido, estética oscura) del último run. La consola es la vía principal de análisis. |
 | `experiments` | Barrido de artefactos (`escenarios/rejilla_base.py`) + decisión automática. |
-| `full_study` | **Todo de principio a fin en 2 fases** con era reservada (ver arriba). |
+| `full_study` | **Ciclo completo unificado** barriendo todas las variables (modelo en Fase 1/2, cartera al final) con era reservada (ver arriba). |
 
 ## Arquitectura de datos (point-in-time)
 

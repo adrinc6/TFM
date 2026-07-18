@@ -124,43 +124,54 @@ registra, para que la rentabilidad reportada sea honesta.
 
 ---
 
-## 5. Barrido en dos fases y selección automática de TODO
+## 5. Ciclo unificado de optimización (study = full_study)
 
-El estudio es un **barrido de ablations dirigidas** (no producto cartesiano, que sobreajustaría
-por selección), organizado en **dos fases** para aislar efectos sin disparar el número de
-ejecuciones. La decisión es **automática, sin intervención humana**, y optimiza **todos los ejes
-del sistema**, no solo los artefactos (`module/runs/experiments.py`).
+`study` y `full_study` comparten un único orquestador (`run_optimization` en
+`module/runs/execution.py`). La diferencia es solo **qué variables se barren**: `full_study` barre
+**todas** las barribles (derivadas de `escenarios/variables.py`); un `study` barre las que el
+usuario marque. En ambos casos se ejecuta el **ciclo completo**, y la decisión es **automática, sin
+intervención humana**.
 
-### 5.1 Fase 1 — cada eje aislado (`escenarios/fase1_ejes.py`)
-Sobre un baseline común (ancla 2016, ventana 10 años, horizonte 3 meses, profundidad 4, cadencia
-trimestral, sin artefactos), se mueve **un solo eje por escenario** para que su rank-IC mida el
-efecto de esa única cosa. Ejes barridos:
+Las variables se separan por **cuándo actúan en el pipeline** (frontera autoritativa en
+`FINGERPRINT_FIELDS`, `module/runs/experiments.py`):
+- **Ejes de MODELO** (cambian el rank-IC): ventana, horizonte, ancla, profundidad, cadencia,
+  `execution_lag_days`, `execution_quarter`, `objective`, `meta_type`, hiperparámetros LightGBM y
+  los 7 artefactos. Se barren en **Fase 1/2**, seleccionando por rank-IC OOS.
+- **Ejes de CARTERA** (no cambian el rank-IC): `target_min/max`, percentiles, rotación,
+  `max_weight`, comisiones, slippage. Se optimizan **al final** por criterio económico
+  (re-backtest sin reentrenar).
 
-- **Ventana de entrenamiento**: 5 / 6 / 7 / 8 / 10 / 12 años.
-- **Horizonte de etiqueta**: 1 / 3 / 6 / 12 meses (cambia *qué* se predice, no un hiperparámetro).
-- **Ancla de evaluación**: 2016 / 2018 / 2020.
-- **Profundidad LightGBM**: 3 / 4 / 5 / 6.
-- **Cadencia de reentreno**: trimestral / semestral / anual.
-- **Artefactos**: los 7, uno a uno.
+### 5.1 Fase 1 — cada eje de modelo aislado
+Sobre un baseline común se mueve **un solo eje por escenario** para que su rank-IC mida el efecto
+de esa única cosa. `execution_lag_days` entra aquí porque un lag de 15 días cambia qué fundamentales
+son observables en cada snapshot (aprovecha antes la publicación) → cambia el dataset → cambia el
+aprendizaje. Se elige, por eje, el nivel más estable (mayor rank-IC medio del meta_final; desempate
+por fracción de cohortes positivas y menor varianza).
 
-`decide_best_config` elige, para cada eje con niveles, el **nivel más estable** (mayor rank-IC
-medio del meta_final; desempate por fracción de cohortes positivas y luego por menor varianza), y
-**acepta** cada artefacto si su diferencia pareada por fecha vs baseline es positiva en media y en
-más de la mitad de las fechas. La configuración propuesta combina el mejor nivel de cada eje + los
-artefactos aceptados. Se registra en `phase1_decision.json`.
-
-### 5.2 Fase 2 — combinaciones dirigidas de los ganadores
-No se combinan todos los niveles (sería producto cartesiano). Se prueban solo: la configuración
-propuesta por la Fase 1 (`phase2_best`), y por cada eje una variante que sustituye su nivel elegido
-por el **segundo mejor**, para comprobar si el ganador aislado se sostiene al combinarse. Se elige
-la combinación más estable con el mismo criterio.
+### 5.2 Fase 2 — combinación greedy con top-2 por eje (`_greedy_phase2`)
+No es producto cartesiano (2^N, inviable con muchos ejes). Se parte del mejor nivel de cada eje
+combinado, se recorren los ejes por su impacto en Fase 1, y en cada eje se prueba su **1º y 2º
+mejor** sobre la combinación en curso, fijando el que sube el rank-IC (~2·N runs). **Caso especial
+trimestre × cadencia**: el trimestre de arranque (`execution_quarter`) solo importa cuando el
+reentreno no es trimestral; si la cadencia ganadora es semestral o anual, se re-explora
+`execution_quarter` sobre la combinación.
 
 ### 5.3 Afinado de hiperparámetros
 Sobre el ganador de la Fase 2 se prueban variantes finas de LightGBM (learning rate, nº de árboles,
 mínimo de muestras por hoja). Rejilla deliberadamente pequeña por el número limitado de eras
-independientes. El resultado es la **configuración final del estudio**.
+independientes. El resultado es la **configuración final de modelo**, que se entrena en el run final.
 
-### 5.4 Control de overfitting por selección: era reservada
+### 5.4 Fase de cartera (`_portfolio_phase`)
+Sobre el finalista **ya entrenado**, se optimizan los ejes de cartera **re-backtesteando sin
+reentrenar** (`mode="backtest"` sobre el mismo `agent_dir`). Como estos ejes no mueven el rank-IC,
+el criterio es **económico** (`information_ratio` por defecto, medido en la era OOS hasta 2024; la
+reserva 2025-2026 no interviene): greedy por eje, fijando el mejor valor. Las combinaciones que
+violan restricciones de `Settings` (p.ej. `max_weight · target_min < 1`) se omiten. El perfil de
+inversor no se barre aquí: se reporta con los 8 perfiles como runs hijo del finalista (§6). La
+decisión final (`decision.json`) incluye `best_config`: mejor modelo + mejor gestión de cartera +
+perfil que más renta.
+
+### 5.5 Control de overfitting por selección: era reservada
 Mirar muchos escenarios sube el riesgo de que el máximo sea **suerte**. Por eso la selección
 (Fases 1 y 2 y afinado) usa **solo** cohortes hasta **2024** (`SELECTION_UNTIL_YEAR`); **2025-2026
 se reservan** y no intervienen en ninguna elección. Al final se mide el rank-IC del finalista en
