@@ -52,7 +52,8 @@ JOBS = JobManager()
 STORE = ResultsStore()
 
 # Carpeta del frontend (archivos reales servidos como estáticos en / y /app/*).
-APP_ROOT = (Path(__file__).parent / "app").resolve()
+# Vive en la raíz del proyecto, junto a module/, results/ y docs/.
+APP_ROOT = (PROJECT_ROOT / "app").resolve()
 
 # Valores guiados para studies. Un study no acepta JSON arbitrario: solo combina opciones
 # metodológicamente admitidas; Experimental sigue permitiendo ajustar valores individuales.
@@ -564,7 +565,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.wfile.write(content)
 
     def _static(self, relative: str) -> None:
-        """Sirve un archivo del frontend bajo module/ui/app/ con guardia de path-traversal."""
+        """Sirve un archivo del frontend bajo app/ (raíz) con guardia de path-traversal."""
         candidate = (APP_ROOT / relative).resolve()
         try:
             candidate.relative_to(APP_ROOT)

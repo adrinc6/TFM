@@ -30,7 +30,7 @@ python main.py
 ```
 
 La consola es una aplicación web de una sola página con estética oscura (negros y grises),
-servida como archivos reales desde `module/ui/app/` por el servidor `http.server` de
+servida como archivos reales desde `app/` (raíz del proyecto) por el servidor `http.server` de
 `module/ui/dashboard.py` (sin dependencias externas ni CDN; los gráficos usan una copia local
 de Chart.js). Tiene dos vistas:
 

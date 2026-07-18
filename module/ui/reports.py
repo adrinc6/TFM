@@ -24,6 +24,8 @@ from pathlib import Path
 import matplotlib
 import pandas as pd
 
+from environment import PROJECT_ROOT
+
 matplotlib.use("Agg")   # sin display, para que corra en cabeceras sin GUI (CI, servidores)
 import matplotlib.pyplot as plt   # noqa: E402
 
@@ -775,9 +777,9 @@ document.querySelectorAll('[data-src]').forEach(container => {
 </script>
 """
 
-# El estilo oscuro vive en module/ui/app/report/report.css (misma paleta que la app) y se
+# El estilo oscuro vive en app/report/report.css (misma paleta que la app) y se
 # inyecta inline para que el informe siga siendo autocontenido (se abre sin servidor).
-_REPORT_CSS_PATH = Path(__file__).parent / "app" / "report" / "report.css"
+_REPORT_CSS_PATH = PROJECT_ROOT / "app" / "report" / "report.css"
 
 
 def _load_style() -> str:

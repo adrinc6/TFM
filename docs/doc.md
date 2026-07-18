@@ -249,11 +249,12 @@ Requiere `data/raw` ya descargado (la descarga es un paso aparte, `RUN_MODE=down
 
 La implementación sigue seis dominios: `module/data/` (datos e ingestión), `module/modeling/`
 (features y agentes), `module/evaluation/` (cartera y validación), `module/runs/` (orquestación,
-caché y resultados), `module/ui/` (Research Console con frontend en `module/ui/app/` e informes
-estáticos en `module/ui/reports.py`) y `module/common/` (utilidades).
+caché y resultados), `module/ui/` (Research Console: servidor/API en `dashboard.py` e informes
+estáticos en `reports.py`) y `module/common/` (utilidades). El frontend vive en `app/`, en la
+raíz del proyecto (junto a `module/`, `results/` y `docs/`).
 - **Ver resultados**: ejecutar `python main.py` sin `RUN_MODE` y abrir la Research Console en
   `http://127.0.0.1:8765`. Es una aplicación web oscura (negros y grises) servida como archivos
-  reales desde `module/ui/app/` (Chart.js embebido localmente, sin CDN). Su vista de Resultados
+  reales desde `app/` (Chart.js embebido localmente, sin CDN). Su vista de Resultados
   tiene listas separadas de **estudios** y **runs**: al elegir un estudio se analiza el estudio
   y al elegir un run se analizan resumen, rendimiento, aprendizaje, cartera, trades, explorador
   de stocks y ficha por ticker, con tablas y gráficos.

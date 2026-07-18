@@ -18,7 +18,7 @@
 | Robustez / placebo | Implementado. Permutación, Monte Carlo, bootstrap, leave-one-year-out. |
 | Comando de principio a fin | Implementado. `RUN_MODE=full_study`. |
 | Consola local + registro de runs | Implementado. Entrada local desde `python main.py`, manifiestos versionados, hash y registro global. |
-| Dashboard de resultados | Implementado. Research Console web (frontend en `module/ui/app/`, estética oscura, Chart.js local) con listas separadas de estudios y runs y análisis por lectura directa de artefactos; informes estáticos reescritos en `module/ui/reports.py` con la misma estética. |
+| Dashboard de resultados | Implementado. Research Console web (frontend en `app/` a nivel raíz, estética oscura, Chart.js local) servida por `module/ui/dashboard.py`, con listas separadas de estudios y runs y análisis por lectura directa de artefactos; informes estáticos en `module/ui/reports.py` con la misma estética. |
 | **Estudio final (resultados)** | **Reejecutándose** con el orquestador de dos fases + era reservada. Cifras pendientes; se documentarán en `docs/informe_final.md` y `docs/doc.md` §8 al terminar. |
 | **Redacción del TFM en LaTeX** | **En curso** (fase de cierre; estructura en `latex/plan_tfm.md`). Caps 1-5 y 8 redactados; 6-7-9 a la espera de resultados. |
 

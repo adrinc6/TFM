@@ -187,9 +187,10 @@ dos fases; esta entrada registra la decision de metodo, que es previa a los resu
 dos paletas distintas (consola azul oscura, informes claros) y los graficos dibujados a mano con
 SVG/canvas. Anadir funcionalidad de analisis (mas graficos, cargar CSV/Parquet) era caro y fragil.
 
-**Que se hizo.** Se movio todo el frontend a archivos reales bajo `module/ui/app/`
-(`index.html`, `css/`, `js/` por vista) servidos como estaticos por el `http.server` de
-`module/ui/dashboard.py`, que queda como backend puro: su API JSON se conserva intacta y se
+**Que se hizo.** Se movio todo el frontend a archivos reales bajo `app/`, en la raiz del
+proyecto (junto a `module/`, `results/` y `docs/`), con `index.html`, `css/` y `js/` por vista,
+servidos como estaticos por el `http.server` de `module/ui/dashboard.py` (que resuelve la carpeta
+`app/` desde `PROJECT_ROOT`). El backend queda puro: su API JSON se conserva intacta y se
 anaden `/api/study/<id>` y `/api/meta_weights`. Estetica oscura unica (negros y grises, sin azul),
 centralizada en tokens CSS. Los graficos pasan a **Chart.js embebido localmente** (sin CDN, sin
 dependencia Python nueva). La vista de Resultados separa **estudios** y **runs**: al elegir un
