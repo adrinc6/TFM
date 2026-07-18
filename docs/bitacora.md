@@ -111,3 +111,40 @@ estadística— qué artefactos ayudan al aprendizaje. El objetivo sigue siendo 
 
 *(Las entradas de los artefactos y el estudio de ablations se añaden a continuación conforme se
 prueban, cada una con su número de rank-IC antes/después.)*
+
+---
+
+## 5 — Estudio final automatizado (2016-2026): ML sin señal, factores con rentabilidad
+
+**Que se hizo.** Con el sistema consolidado (LightGBM + meta rank_ic, ancla 2016, artefactos
+activables), se lanzo el estudio completo de principio a fin con un comando (`RUN_MODE=full_study`):
+barrido de ablations → decision automatica de artefactos por significancia → run final → 8 perfiles
+de inversor → tests de robustez/placebo. Sin intervencion humana.
+
+**Decision automatica de artefactos.** De los 7 artefactos, el barrido acepto **solo la
+neutralizacion por sector** (rank-IC del meta_final 0.0036 → 0.0094, mejor en el 59 % de las
+fechas). Los otros seis (momentum de fundamentales, regimen bull/bear, regimen ampliado, momentum
+de precio, medias moviles, calidad/crecimiento derivados) **empeoran o no aportan**. Curiosamente,
+la neutralizacion por sector —que con el modelo lineal y ancla 2000 EMPEORABA (ver historia
+previa)— ahora ayuda: con LightGBM y mas cobertura (2016+, sectores mejor poblados) la
+reorganizacion dentro de sector si limpia ruido. Patron consistente: anadir features no crea
+señal; solo reorganizar el ranking aporta algo marginal.
+
+**Aprendizaje: no significativo.** El sistema final alcanza rank-IC **+0.0036**, con IC bootstrap
+**[−0.019, +0.024]** (cruza cero). El **placebo** (permutacion de etiquetas) da p-valor **0.20**:
+el modelo real no supera al azar. Leave-one-year-out: oscila entre +0.0008 y +0.0085, ninguno lo
+sostiene solo, todos ≈0. **El ML no aprende a ordenar de forma estadisticamente significativa.**
+
+**Rentabilidad: los perfiles de estilo baten al SPY (limpio).** Con la guarda anti-artefactos
+activa (sin el +953 % corrupto de 2010), en 2016-2026: quality +4.5 %/año, value +4.4 %,
+conservative +4.4 %, garp +3.7 % (bate al SPY el 64 % de los años, drawdown 41 %). El perfil
+**balanced —el que sigue el meta-score del ML puro— es el PEOR** (−1.5 % vs SPY, drawdown 48 %).
+
+**Hallazgo central del TFM.** Los dos planos son opuestos y coherentes: como el ML no ordena bien
+(rank-IC ≈ 0), seguir su ranking puro no bate al mercado; pero inclinar la cartera hacia calidad y
+valor captura **primas de factor clasicas** que si existen. **El valor del sistema no esta en su
+aprendizaje automatico —que no lo hay— sino en explotar de forma disciplinada primas de factor
+conocidas, y en haberlo demostrado con honestidad** (placebo, bootstrap, estabilidad, guarda
+anti-artefactos). Un resultado matizado, medido y defendible: ni un exito de IA que no existe, ni
+un fracaso, sino una separacion limpia entre lo que el sistema aprende (poco) y lo que rinde (los
+factores). Ver docs/informe_final.md y results/escenarios/study_summary.json.

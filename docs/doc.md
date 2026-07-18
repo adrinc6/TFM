@@ -170,12 +170,72 @@ Sobre la configuración final se ejecutan tests que demuestran que el resultado 
 
 ---
 
-## 8. Resultados
+## 8. Resultados (estudio full, ancla 2016-2026)
 
-*(Esta sección se rellena con los números del estudio full — ver `results/escenarios/study_summary.json`
-y el informe presentable. Contiene: qué artefactos aceptó el barrido y su efecto en el rank-IC; el
-rank-IC final del meta_final con su intervalo de confianza; el resultado de los tests de placebo;
-la comparación de los perfiles de inversor; y el CAGR cartera vs SPY limpio de artefactos.)*
+El resultado es **matizado y en dos planos opuestos**, que es lo que hace este TFM interesante y
+honesto: el modelo de IA **no aprende** de forma significativa, pero una cartera con sesgo de
+estilo defendible **sí bate al mercado** de forma consistente y limpia.
+
+### 8.1 El aprendizaje (rank-IC) no es significativo
+
+El barrido de ablations aceptó automáticamente **un solo artefacto**: la neutralización por
+sector (rank-IC del meta_final 0.0036 → 0.0094, mejor que el baseline en el 59 % de las fechas).
+Los otros seis empeoran o no aportan:
+
+| artefacto | rank-IC con él | Δ vs baseline | ¿aceptado? |
+|---|---|---|---|
+| **neutralize_by_sector** | **+0.0094** | +0.0057 | **sí** |
+| quality_growth_derived | +0.0041 | +0.0005 | no (mejor solo en 44 %) |
+| regime_bull_bear | −0.0003 | −0.0039 | no |
+| moving_averages | −0.0009 | −0.0045 | no |
+| price_momentum_multi | −0.0009 | −0.0045 | no |
+| regime_extended | −0.0021 | −0.0056 | no |
+| fundamental_momentum | −0.0024 | −0.0060 | no |
+
+Confirma un patrón consistente en todo el proyecto: **añadir features no crea señal**; solo la
+reorganización del ranking dentro de sector aporta algo marginal.
+
+**El sistema final (con sector) alcanza un rank-IC de +0.0036**, y NO es distinguible del azar:
+- Intervalo de confianza por bootstrap: **[−0.019, +0.024]** (cruza cero).
+- **Test de placebo** (permutación de etiquetas): con retornos barajados el rank-IC colapsa a
+  −0.0009 (correcto, no hay fuga), pero el **p-valor es 0.20** — 1 de cada 5 permutaciones
+  aleatorias iguala o supera al modelo real. **El aprendizaje no supera al azar.**
+- Leave-one-year-out: el rank-IC oscila entre +0.0008 y +0.0085 quitando cada año; ninguno lo
+  sostiene en solitario, pero todos son ≈ 0.
+
+**Conclusión del plano de aprendizaje**: con datos gratuitos, universo del S&P 500 y factores
+GARP+momentum, el modelo LightGBM **no aprende a ordenar acciones de forma estadísticamente
+significativa**. Es el resultado honesto, medido con rigor (placebo + bootstrap + estabilidad).
+
+### 8.2 La rentabilidad: los perfiles de estilo sí baten al SPY (limpio)
+
+Con la guarda anti-artefactos activa (sin el +953 % corrupto de estudios previos), varios perfiles
+de inversor baten al SPY de forma consistente en 2016-2026:
+
+| perfil | CAGR | vs SPY (anual) | años que baten | drawdown máx |
+|---|---|---|---|---|
+| quality | 20.7 % | **+4.5 %** | 45 % | 35 % |
+| value | 20.6 % | +4.4 % | 55 % | 30 % |
+| conservative | 20.6 % | +4.4 % | 55 % | 32 % |
+| garp | 19.9 % | +3.7 % | **64 %** | 41 % |
+| contrarian | 18.1 % | +1.9 % | 55 % | 38 % |
+| momentum | 15.6 % | −0.6 % | 45 % | 34 % |
+| aggressive | 14.9 % | −1.3 % | 55 % | 33 % |
+| **balanced** (el meta ML puro) | 14.7 % | **−1.5 %** | 36 % | 48 % |
+
+### 8.3 La lectura clave
+
+El perfil **balanced —el que confía en el meta-score del ML— es el peor** (−1.5 % vs SPY, drawdown
+48 %). Los que ganan son los que imponen un **sesgo de estilo humano** (quality, value, GARP)
+entre las candidatas. Esto es coherente con los dos planos: como el ML no ordena bien (rank-IC
+≈ 0), seguir su ranking puro no bate al mercado; pero inclinar la cartera hacia **calidad y valor**
+captura las **primas de factor clásicas**, que sí existen. GARP bate al SPY el 64 % de los años.
+
+**En una frase**: el aprendizaje automático no aporta señal, pero la estructura de factores con un
+sesgo de estilo defendible (calidad/valor/GARP) sí bate al mercado de forma consistente y limpia.
+El valor del sistema no está en su ML, sino en explotar de forma disciplinada primas de factor
+conocidas —y en haberlo **demostrado con honestidad**, separando lo que aprende (poco) de lo que
+rinde (los factores).
 
 ---
 
