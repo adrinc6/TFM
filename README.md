@@ -28,17 +28,30 @@ Con `data/raw` ya descargado, un único comando ejecuta el estudio completo sin 
 $env:RUN_MODE = "full_study"; $env:RUN_SCOPE = "full"; python main.py
 ```
 
-Hace: barrido de ablations → **decisión automática** de qué artefactos ayudan (por significancia)
-→ configuración final → run optimizado → 8 perfiles de inversor → tests de robustez/placebo →
-informes HTML. Produce `results/escenarios/study_summary.json` y `comparison.html`.
+Hace, en dos fases y sin decisiones humanas: **Fase 1** barre cada eje del sistema aislado (ventana
+de entrenamiento, horizonte de etiqueta, ancla, profundidad, cadencia y los 7 artefactos) y
+**decide automáticamente** el mejor nivel de cada eje + qué artefactos ayudan (por significancia);
+**Fase 2** combina los ganadores; luego afina hiperparámetros → configuración final → run
+optimizado → 8 perfiles de inversor → tests de robustez/placebo → **validación en la era reservada
+2025-2026** (que no interviene en la selección, para no sobreajustar por explorar mucho) → informes
+HTML.
+
+Todo queda ordenado **por fases** dentro de `results/` (ver `results/README.md`):
+`fase1_ejes/`, `fase2_combinaciones/`, `hiperparametros/` (cada una con su `comparison.html`),
+`final/` (el run ganador con su `report.html` completo y CSVs), más `study_summary.json` y
+`conclusiones.md` en la raíz.
 
 ## Ver los informes
 
-Algunas pestañas cargan CSVs grandes por `fetch`, que requieren un servidor local:
+Los HTML son completos: **resumen, rentabilidad por año, gráficos de equity y drawdown, aprendizaje
+(rank-IC en el tiempo por agente), ranking total ordenado por agentes, cobertura y posiciones**. Las
+tablas grandes (ranking por agentes, histórico de rank-IC, posiciones, órdenes) se cargan desde CSV
+por `fetch`, lo que requiere un servidor local:
 
 ```bash
 python servir_html.py
-# abre http://localhost:8000/results/escenarios/comparison.html
+# el informe final:    http://localhost:8000/results/final/report.html
+# comparativa Fase 1:  http://localhost:8000/results/fase1_ejes/comparison.html
 ```
 
 ## Etapas sueltas
@@ -54,8 +67,8 @@ python servir_html.py
 | `agents` | Entrena los 3 agentes LightGBM walk-forward y el meta-agente. |
 | `backtest` | Simula la cartera (con guarda anti-artefactos y perfil de inversor) y calcula métricas. |
 | `report` | Genera el `report.html` del último run. |
-| `experiments` | Barrido de ablations + decisión automática de artefactos. |
-| `full_study` | **Todo de principio a fin** (ver arriba). |
+| `experiments` | Barrido de artefactos (`escenarios/rejilla_base.py`) + decisión automática. |
+| `full_study` | **Todo de principio a fin en 2 fases** con era reservada (ver arriba). |
 
 ## Arquitectura de datos (point-in-time)
 

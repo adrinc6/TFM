@@ -8,10 +8,15 @@ se enlaza al artefacto compartido en vez de regenerarlo.
 Los escenarios se definen en Python (`escenarios/*.py`), no YAML/JSON, para poder incluir
 listas, condicionales y calculos derivados.
 
-La decision automatica (`decide_accepted_artifacts`) compara cada artefacto contra el baseline
-por el rank-IC del meta_final con significancia (diferencia pareada + fraccion de fechas mejor):
-un artefacto se ACEPTA solo si mejora el rank-IC de forma estable. La configuracion final =
-baseline + artefactos aceptados + mejores hiperparametros/ventana/cadencia. Sin intervencion humana.
+La decision automatica optimiza TODOS los ejes, no solo los artefactos:
+- `decide_accepted_artifacts`: acepta un artefacto si mejora el rank-IC del meta_final de forma
+  estable (diferencia pareada vs baseline positiva en media y en mas de la mitad de las fechas).
+- `decide_best_config`: ademas, para cada eje con niveles (ventana, horizonte, ancla, profundidad,
+  cadencia) elige el nivel mas estable, y compone la config final combinandolo con los artefactos.
+
+`run_full_study` orquesta el estudio en dos fases (Fase 1 aisla cada eje; Fase 2 combina los
+ganadores) + afinado de hiperparametros, reservando 2025-2026 de la seleccion para validar al
+finalista fuera del periodo de busqueda. Sin intervencion humana.
 """
 
 from __future__ import annotations
@@ -37,7 +42,15 @@ from module.utils import read_parquet, write_json
 
 log = logging.getLogger(__name__)
 
-RESULTS_DIR = PROJECT_ROOT / "results" / "escenarios"
+RESULTS_ROOT = PROJECT_ROOT / "results"
+RESULTS_DIR = RESULTS_ROOT / "escenarios"   # barrido de artefactos suelto (RUN_MODE=experiments)
+
+# Subcarpetas del estudio full, una por fase (RUN_MODE=full_study). Cada una contiene los
+# escenarios de esa fase + su comparison.html; el resumen y las conclusiones van en la raiz.
+PHASE1_DIR = RESULTS_ROOT / "fase1_ejes"
+PHASE2_DIR = RESULTS_ROOT / "fase2_combinaciones"
+HYPERPARAM_DIR = RESULTS_ROOT / "hiperparametros"
+FINAL_DIR = RESULTS_ROOT / "final"
 
 
 # -------- ScenarioSpec ------------------------------------------------------------
@@ -155,20 +168,26 @@ def select_winner(summary: pd.DataFrame) -> tuple[str, pd.DataFrame]:
 # -------- ScenarioRunner ---------------------------------------------------------
 
 
-def run_scenarios(grid_path: Path, base_settings: Settings) -> Path:
+def run_scenarios(grid_path: Path, base_settings: Settings, results_dir: Path = RESULTS_DIR) -> Path:
     """Carga la rejilla desde un `.py`, ejecuta cada escenario y produce comparison.html."""
     grid_path = Path(grid_path)
     specs = _load_grid(grid_path)
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     log.info("Barrido: %s escenarios en %s", len(specs), grid_path)
+    return run_scenario_specs(specs, base_settings, results_dir)
 
+
+def run_scenario_specs(
+    specs: list[ScenarioSpec], base_settings: Settings, results_dir: Path = RESULTS_DIR
+) -> Path:
+    """Ejecuta una lista de escenarios ya construidos en `results_dir` (una carpeta por fase)."""
+    results_dir.mkdir(parents=True, exist_ok=True)
     shared_artifacts: dict[str, dict[str, Any]] = {"dataset": {}, "features": {}, "agents": {}}
     for spec in specs:
-        _run_single_scenario(spec, base_settings, shared_artifacts)
+        _run_single_scenario(spec, base_settings, shared_artifacts, results_dir)
 
-    build_comparison_report(RESULTS_DIR)
-    log.info("Barrido completado: %s", RESULTS_DIR / "comparison.html")
-    return RESULTS_DIR
+    build_comparison_report(results_dir)
+    log.info("Barrido completado: %s", results_dir / "comparison.html")
+    return results_dir
 
 
 def _load_grid(grid_path: Path) -> list[ScenarioSpec]:
@@ -187,8 +206,9 @@ def _run_single_scenario(
     spec: ScenarioSpec,
     base_settings: Settings,
     shared_artifacts: dict[str, dict[str, Any]],
+    results_dir: Path = RESULTS_DIR,
 ) -> None:
-    scenario_dir = RESULTS_DIR / spec.name
+    scenario_dir = results_dir / spec.name
     scenario_dir.mkdir(parents=True, exist_ok=True)
     settings = spec.apply_to(base_settings)
 
@@ -381,8 +401,21 @@ def _write_scenario_config(
 # -------- Entry point ------------------------------------------------------------
 
 
-def _meta_final_ic(scenario_dir: Path) -> "pd.Series | None":
-    """rank-IC del meta_final por fecha de un escenario, o None si no hay diagnostico utilizable."""
+# Era reservada: las cohortes con prediction_date en estos anios NO entran en la seleccion.
+# Se reservan para validar al finalista fuera del periodo de busqueda (control de overfitting
+# por seleccion: al mirar muchos escenarios, el maximo puede ser suerte; la era reservada mide
+# si la señal aguanta donde nunca se optimizo). Ver docs/doc.md.
+SELECTION_UNTIL_YEAR = 2024
+RESERVED_ERA_YEARS = (2025, 2026)
+
+
+def _meta_final_ic(scenario_dir: Path, until_year: int | None = None) -> "pd.Series | None":
+    """rank-IC del meta_final por fecha de un escenario, o None si no hay diagnostico utilizable.
+
+    Si `until_year` no es None, solo se devuelven cohortes con prediction_date en ese anio o antes
+    (para la seleccion, que reserva los anios posteriores). No reentrena ni mira al futuro: solo
+    filtra que cohortes ya calculadas se miran.
+    """
     from module.report import _pick_run_dir   # import diferido: report depende de matplotlib
     run_dir = _pick_run_dir(scenario_dir)
     if run_dir is None:
@@ -391,24 +424,30 @@ def _meta_final_ic(scenario_dir: Path) -> "pd.Series | None":
     if not diag_path.exists():
         return None
     diag = pd.read_parquet(diag_path)
-    meta = diag.loc[diag["agent"] == "meta_final"]
+    meta = diag.loc[diag["agent"] == "meta_final"].copy()
+    meta = meta.set_index(pd.to_datetime(meta["prediction_date"])).sort_index()
+    if until_year is not None:
+        meta = meta.loc[meta.index.year <= until_year]
     if len(meta) < 5:
         return None
-    return meta.set_index(pd.to_datetime(meta["prediction_date"]))["rank_ic"].sort_index()
+    return meta["rank_ic"]
 
 
-def decide_accepted_artifacts(scenarios_root: Path, artifacts: dict[str, dict]) -> dict:
+def decide_accepted_artifacts(
+    scenarios_root: Path, artifacts: dict[str, dict], until_year: int | None = None
+) -> dict:
     """Decide automaticamente que artefactos aceptar y compone la configuracion final.
 
     Un artefacto se ACEPTA si su rank-IC del meta_final mejora al baseline de forma estable:
     la diferencia pareada por fecha (artefacto - baseline) es positiva en media Y en mas de la
     mitad de las fechas. Se registra el detalle para trazabilidad. La config final combina los
-    overrides de todos los aceptados. Sin intervencion humana.
+    overrides de todos los aceptados. `until_year` reserva anios posteriores de la seleccion.
+    Sin intervencion humana.
     """
     from module.stats import block_bootstrap_ci, paired_difference_ci
 
     scenarios_root = Path(scenarios_root)
-    baseline_ic = _meta_final_ic(scenarios_root / "baseline")
+    baseline_ic = _meta_final_ic(scenarios_root / "baseline", until_year=until_year)
     decisions: list[dict] = []
     accepted_overrides: dict = {}
 
@@ -417,7 +456,7 @@ def decide_accepted_artifacts(scenarios_root: Path, artifacts: dict[str, dict]) 
 
     base_ci = block_bootstrap_ci(baseline_ic.reset_index(drop=True))
     for name, overrides in artifacts.items():
-        art_ic = _meta_final_ic(scenarios_root / f"artifact_{name}")
+        art_ic = _meta_final_ic(scenarios_root / f"artifact_{name}", until_year=until_year)
         if art_ic is None:
             decisions.append({"artifact": name, "accepted": False, "reason": "sin evaluar"})
             continue
@@ -445,6 +484,82 @@ def decide_accepted_artifacts(scenarios_root: Path, artifacts: dict[str, dict]) 
     }
 
 
+def _axis_level_stats(ic: "pd.Series") -> dict:
+    """Resumen de estabilidad de un nivel de eje: media, fraccion positiva y varianza del rank-IC."""
+    values = ic.dropna()
+    return {
+        "mean_rank_ic": float(values.mean()),
+        "positive_fraction": float((values > 0).mean()),
+        "variance": float(values.var(ddof=1)) if len(values) > 1 else 0.0,
+        "n_cohorts": int(len(values)),
+    }
+
+
+def _best_level(levels: dict[str, dict]) -> str | None:
+    """Elige el nivel mas estable: mayor rank-IC medio, desempate por fraccion positiva y
+    luego por menor varianza. `levels` mapea nombre de nivel -> estadisticas (_axis_level_stats)."""
+    evaluable = {name: s for name, s in levels.items() if s.get("n_cohorts", 0) >= 5}
+    if not evaluable:
+        return None
+    return max(
+        evaluable,
+        key=lambda name: (
+            evaluable[name]["mean_rank_ic"],
+            evaluable[name]["positive_fraction"],
+            -evaluable[name]["variance"],
+        ),
+    )
+
+
+def decide_best_config(
+    scenarios_root: Path,
+    artifacts: dict[str, dict],
+    axes: dict[str, dict[str, dict]],
+    until_year: int | None = SELECTION_UNTIL_YEAR,
+) -> dict:
+    """Decide la configuracion final optimizando TODOS los ejes, no solo los artefactos.
+
+    - `artifacts`: {nombre -> overrides}. Se aceptan por diferencia pareada vs baseline (estable).
+    - `axes`: {eje -> {escenario -> overrides}}. Para cada eje se elige el NIVEL con mejor rank-IC
+      del meta_final estable (mayor media, desempate por fraccion positiva y menor varianza). El
+      nivel del eje que coincida con el baseline se incluye como opcion por su propio escenario.
+    - `until_year`: la seleccion solo mira cohortes hasta ese anio (reserva las posteriores para
+      validar al finalista). None = usar todas.
+
+    La config final combina el mejor nivel de cada eje + los artefactos aceptados. Sin humano.
+    """
+    scenarios_root = Path(scenarios_root)
+    artifact_decision = decide_accepted_artifacts(scenarios_root, artifacts, until_year=until_year)
+
+    axis_choices: dict[str, dict] = {}
+    config_final: dict = dict(artifact_decision.get("config_final", {}))
+    for axis_name, level_specs in axes.items():
+        level_stats: dict[str, dict] = {}
+        for scenario_name, overrides in level_specs.items():
+            ic = _meta_final_ic(scenarios_root / scenario_name, until_year=until_year)
+            if ic is None:
+                continue
+            stats = _axis_level_stats(ic)
+            stats["overrides"] = dict(overrides)
+            level_stats[scenario_name] = stats
+        chosen = _best_level(level_stats)
+        axis_choices[axis_name] = {
+            "chosen": chosen,
+            "levels": {k: {kk: vv for kk, vv in v.items() if kk != "overrides"}
+                       for k, v in level_stats.items()},
+        }
+        if chosen is not None:
+            config_final.update(level_stats[chosen]["overrides"])
+
+    return {
+        "baseline_rank_ic": artifact_decision.get("baseline_rank_ic"),
+        "artifact_decision": artifact_decision,
+        "axis_choices": axis_choices,
+        "config_final": config_final,
+        "selection_until_year": until_year,
+    }
+
+
 def run_experiments_from_settings(settings: Settings) -> dict:
     """Handler para RUN_MODE=experiments. Ejecuta el barrido de ablations, decide automaticamente
     que artefactos aceptar, y escribe la decision en results/escenarios/artifact_decision.json."""
@@ -465,21 +580,128 @@ def run_experiments_from_settings(settings: Settings) -> dict:
     return decision
 
 
+# Afinado de hiperparametros: variantes de LightGBM que se prueban sobre el ganador de Fase 2.
+# Cada una mueve un solo hiperparametro respecto al ganador; se elige la mas estable (mismo
+# criterio que los ejes). Rejilla deliberadamente pequeña por el numero limitado de eras.
+HYPERPARAM_VARIANTS: dict[str, dict] = {
+    "lr_003": {"lgbm_learning_rate": 0.03},
+    "lr_010": {"lgbm_learning_rate": 0.10},
+    "trees_400": {"lgbm_n_estimators": 400},
+    "leaf_20": {"lgbm_min_child_samples": 20},
+    "leaf_100": {"lgbm_min_child_samples": 100},
+}
+
+
+def _phase2_specs(axis_choices: dict[str, dict], artifact_overrides: dict) -> list[ScenarioSpec]:
+    """Combinaciones dirigidas de los ganadores de Fase 1 (no producto cartesiano completo).
+
+    - La combinacion base: mejor nivel de cada eje + artefactos aceptados (la config que
+      `decide_best_config` ya propone), como escenario `phase2_best`.
+    - Por cada eje, una variante que sustituye su nivel elegido por el 2º mejor (para comprobar
+      si el ganador aislado se sostiene al combinarse con el resto).
+    - Si hay 2+ artefactos aceptados, una variante que los activa juntos.
+    """
+    base_overrides: dict = {}
+    for choice in axis_choices.values():
+        chosen = choice.get("chosen")
+        if chosen and chosen != "baseline":
+            base_overrides.update(_axis_override_of(choice, chosen))
+    base_overrides.update(artifact_overrides)
+
+    specs = [ScenarioSpec(name="phase2_best", overrides=dict(base_overrides))]
+
+    for axis_name, choice in axis_choices.items():
+        second = _second_best_level(choice)
+        if second is None:
+            continue
+        variant = dict(base_overrides)
+        # quita el override del nivel elegido de este eje y pon el del 2º mejor
+        for key in _axis_override_of(choice, choice.get("chosen")).keys():
+            variant.pop(key, None)
+        variant.update(_axis_override_of(choice, second))
+        specs.append(ScenarioSpec(name=f"phase2_{axis_name}_2nd", overrides=variant))
+
+    return specs
+
+
+def _axis_override_of(choice: dict, level_name: str | None) -> dict:
+    """Los overrides asociados a un nivel de eje (se recuperan del stats guardado; baseline = {})."""
+    if not level_name:
+        return {}
+    return dict(choice.get("overrides_by_level", {}).get(level_name, {}))
+
+
+def _second_best_level(choice: dict) -> str | None:
+    """El 2º nivel mas estable de un eje (excluye el elegido), o None si no hay otro evaluable."""
+    levels = choice.get("levels", {})
+    chosen = choice.get("chosen")
+    candidates = {n: s for n, s in levels.items()
+                  if n != chosen and s.get("n_cohorts", 0) >= 5}
+    if not candidates:
+        return None
+    return max(candidates, key=lambda n: (candidates[n]["mean_rank_ic"],
+                                          candidates[n]["positive_fraction"],
+                                          -candidates[n]["variance"]))
+
+
 def run_full_study(settings: Settings) -> None:
     """Estudio completo de principio a fin, sin decisiones humanas (RUN_MODE=full_study).
 
-    1. Barrido de ablations -> decision automatica de artefactos.
-    2. Config final = baseline + artefactos aceptados. Run final con esa config.
-    3. Perfiles de inversor sobre la señal final (misma señal, distinta cartera).
-    4. Tests de robustez/placebo sobre la config final.
-    5. HTML de comparacion (ya generado por el barrido) + resumen del estudio.
+    Fase 1: barrido de ejes aislados -> `decide_best_config` (reservando 2025-2026) elige el mejor
+            nivel de cada eje (ventana, horizonte, ancla, profundidad, cadencia) + artefactos.
+    Fase 2: combinaciones dirigidas de los ganadores -> se elige la mas estable.
+    Afinado: hiperparametros finos sobre el ganador de Fase 2.
+    Final:   run con la config ganadora + 8 perfiles + robustez/placebo, y VALIDACION en la era
+             reservada 2025-2026 (que no intervino en ninguna eleccion).
     """
     from module.profiles import PROFILE_NAMES
 
-    log.info("=== ESTUDIO COMPLETO: barrido de ablations ===")
-    decision = run_experiments_from_settings(settings)
-    accepted = decision.get("config_final", {})
-    log.info("Config final (artefactos aceptados): %s", accepted or "ninguno (solo baseline)")
+    grid_path = PROJECT_ROOT / "escenarios" / "fase1_ejes.py"
+    if not grid_path.exists():
+        raise RuntimeError(f"No hay rejilla de Fase 1 en {grid_path}.")
+    grid_module = _import_module_from_path(grid_path)
+    artifacts = getattr(grid_module, "ARTIFACTS", {})
+    axes = getattr(grid_module, "AXES", {})
+
+    log.info("=== FASE 1: barrido de ejes aislados -> %s ===", PHASE1_DIR)
+    run_scenarios(grid_path, settings, PHASE1_DIR)
+    decision = decide_best_config(PHASE1_DIR, artifacts, axes, until_year=SELECTION_UNTIL_YEAR)
+    _attach_axis_overrides(decision["axis_choices"], axes)
+    write_json(decision, PHASE1_DIR / "phase1_decision.json")
+    log.info("Fase 1 -> config propuesta: %s", decision["config_final"])
+
+    log.info("=== FASE 2: combinaciones dirigidas de los ganadores -> %s ===", PHASE2_DIR)
+    artifact_overrides = decision["artifact_decision"].get("config_final", {})
+    phase2 = _phase2_specs(decision["axis_choices"], artifact_overrides)
+    run_scenario_specs(phase2, settings, PHASE2_DIR)
+    phase2_levels = {s.name: _meta_final_ic(PHASE2_DIR / s.name, until_year=SELECTION_UNTIL_YEAR)
+                     for s in phase2}
+    phase2_stats = {name: _axis_level_stats(ic) for name, ic in phase2_levels.items() if ic is not None}
+    phase2_winner = _best_level(phase2_stats) or "phase2_best"
+    winner_overrides = next(s.overrides for s in phase2 if s.name == phase2_winner)
+    write_json({"winner": phase2_winner,
+                "ranking": {k: round(v["mean_rank_ic"], 5) for k, v in sorted(
+                    phase2_stats.items(), key=lambda kv: kv[1]["mean_rank_ic"], reverse=True)}},
+               PHASE2_DIR / "phase2_decision.json")
+    log.info("Fase 2 -> ganador: %s (%s)", phase2_winner, dict(winner_overrides))
+
+    log.info("=== AFINADO DE HIPERPARAMETROS sobre el ganador de Fase 2 -> %s ===", HYPERPARAM_DIR)
+    hp_specs = [ScenarioSpec(name=f"hp_{k}", overrides={**winner_overrides, **ov})
+                for k, ov in HYPERPARAM_VARIANTS.items()]
+    hp_specs.insert(0, ScenarioSpec(name="hp_base", overrides=dict(winner_overrides)))
+    run_scenario_specs(hp_specs, settings, HYPERPARAM_DIR)
+    hp_stats = {}
+    for s in hp_specs:
+        ic = _meta_final_ic(HYPERPARAM_DIR / s.name, until_year=SELECTION_UNTIL_YEAR)
+        if ic is not None:
+            hp_stats[s.name] = _axis_level_stats(ic)
+    hp_winner = _best_level(hp_stats) or "hp_base"
+    accepted = dict(next(s.overrides for s in hp_specs if s.name == hp_winner))
+    write_json({"winner": hp_winner,
+                "ranking": {k: round(v["mean_rank_ic"], 5) for k, v in sorted(
+                    hp_stats.items(), key=lambda kv: kv[1]["mean_rank_ic"], reverse=True)}},
+               HYPERPARAM_DIR / "hyperparam_decision.json")
+    log.info("Config final del estudio: %s", accepted)
 
     final_settings = replace(settings, **accepted)
     processed = final_settings.processed_output_dir
@@ -504,24 +726,190 @@ def run_full_study(settings: Settings) -> None:
     write_json(profile_results, processed / "profile_results.json")
 
     # El informe del run final se genera ANTES de la robustez (que crea/borra runs placebo y
-    # podria dejar el directorio en un estado transitorio).
+    # podria dejar el directorio en un estado transitorio). Se copia a results/final/.
     build_run_report(run_dir)
+    _publish_final_run(run_dir, FINAL_DIR)
 
     log.info("=== ROBUSTEZ / PLACEBO ===")
     robustness = _run_robustness(final_settings, processed, run_dir, diagnostics)
     write_json(robustness, processed / "robustness.json")
+    write_json(robustness, FINAL_DIR / "robustness.json")
+    write_json(profile_results, FINAL_DIR / "profile_results.json")
+
+    # Validacion en la era reservada 2025-2026: rank-IC del finalista donde NUNCA se optimizo.
+    reserved = _reserved_era_validation(diagnostics)
+
     meta_ic = diagnostics.loc[diagnostics["agent"] == "meta_final", "rank_ic"]
     study_summary = {
         "config_final": accepted,
-        "artifact_decision": decision,
+        "phase1_decision": decision,
+        "phase2_winner": phase2_winner,
+        "phase2_ranking": {k: round(v["mean_rank_ic"], 5) for k, v in sorted(
+            phase2_stats.items(), key=lambda kv: kv[1]["mean_rank_ic"], reverse=True)},
+        "hyperparam_winner": hp_winner,
         "final_rank_ic": float(meta_ic.mean()) if not meta_ic.empty else None,
+        "reserved_era_validation": reserved,
         "profiles": {p: {"cagr_portfolio": r.get("cagr_portfolio"), "cagr_difference": r.get("cagr_difference"),
                          "beat_rate": r.get("beat_rate"), "max_drawdown": r.get("max_drawdown")}
                      for p, r in profile_results.items()},
         "robustness": robustness,
     }
-    write_json(study_summary, RESULTS_DIR / "study_summary.json")
-    log.info("=== ESTUDIO COMPLETO TERMINADO -> %s ===", RESULTS_DIR / "study_summary.json")
+    write_json(study_summary, RESULTS_ROOT / "study_summary.json")
+    _write_results_index(study_summary)
+    _write_conclusions(study_summary)
+    log.info("=== ESTUDIO COMPLETO TERMINADO -> %s ===", RESULTS_ROOT / "study_summary.json")
+
+
+def _publish_final_run(run_dir: Path, final_dir: Path) -> None:
+    """Copia los artefactos del run ganador (HTML + CSVs + parquets + json) a results/final/."""
+    final_dir.mkdir(parents=True, exist_ok=True)
+    for pattern in ("*.html", "*.csv", "*.parquet", "*.json", "*.png"):
+        for src in run_dir.glob(pattern):
+            shutil.copy2(src, final_dir / src.name)
+
+
+def _write_results_index(summary: dict) -> None:
+    """Escribe results/README.md: mapa de que hay en cada carpeta y como leerlo."""
+    reserved = summary.get("reserved_era_validation", {})
+    text = f"""# Resultados del estudio (ordenados por fases)
+
+Todo el estudio `RUN_MODE=full_study` queda aqui, una carpeta por fase. Para abrir los HTML con
+sus tablas grandes (se cargan desde CSV via `fetch`) hace falta un servidor local:
+
+```bash
+python servir_html.py
+# luego abrir las rutas de abajo con http://localhost:8000/...
+```
+
+## Mapa de carpetas
+
+| Carpeta | Que contiene | HTML |
+|---|---|---|
+| `fase1_ejes/` | Un escenario por nivel de cada eje (ventana, horizonte, ancla, profundidad, cadencia) + los 7 artefactos aislados. `phase1_decision.json` = mejor nivel de cada eje. | `fase1_ejes/comparison.html` |
+| `fase2_combinaciones/` | Combinaciones dirigidas de los ganadores de Fase 1. `phase2_decision.json` = ganador. | `fase2_combinaciones/comparison.html` |
+| `hiperparametros/` | Afinado fino de LightGBM sobre el ganador de Fase 2. `hyperparam_decision.json` = ganador. | `hiperparametros/comparison.html` |
+| `final/` | Run con la configuracion final ganadora: informe completo (resumen, rentabilidad por año, aprendizaje, ranking por agentes), CSVs y parquets. | `final/report.html` |
+
+## Ficheros clave en la raiz
+
+- `study_summary.json` — resumen maquina-legible de todo el estudio (config final, ganadores por
+  fase, rank-IC, perfiles, robustez, validacion reservada).
+- `conclusiones.md` — lectura en prosa de que aprendio el sistema y que no.
+
+## Cifras de un vistazo
+
+- **Configuracion final elegida**: `{summary.get('config_final') or 'baseline (sin cambios)'}`
+- **rank-IC del meta_final (finalista)**: {_fmt(summary.get('final_rank_ic'))}
+- **Ganador Fase 2**: {summary.get('phase2_winner')} · **hiperparametros**: {summary.get('hyperparam_winner')}
+- **Validacion era reservada 2025-2026**: rank-IC {_fmt(reserved.get('rank_ic_mean'))} en
+  {reserved.get('n_cohorts')} cohortes (vs {_fmt(reserved.get('rank_ic_selection_period'))} en el
+  periodo de seleccion). La era reservada NO intervino en ninguna eleccion.
+
+La seleccion se hace por **aprendizaje (rank-IC) y estabilidad**, nunca por rentabilidad. La
+rentabilidad por perfil se reporta como consecuencia en `final/` y en `conclusiones.md`.
+"""
+    (RESULTS_ROOT / "README.md").write_text(text, encoding="utf-8")
+
+
+def _write_conclusions(summary: dict) -> None:
+    """Escribe results/conclusiones.md: la lectura honesta del estudio con las cifras reales."""
+    reserved = summary.get("reserved_era_validation", {})
+    final_ic = summary.get("final_rank_ic")
+    robustness = summary.get("robustness", {})
+    permutation = robustness.get("label_permutation", {})
+    p_value = permutation.get("p_value")
+
+    profiles = summary.get("profiles", {})
+    rows = "\n".join(
+        f"| {name} | {_pct(p.get('cagr_portfolio'))} | {_pct(p.get('cagr_difference'))} | "
+        f"{_pct(p.get('beat_rate'))} | {_pct(p.get('max_drawdown'))} |"
+        for name, p in sorted(profiles.items(),
+                              key=lambda kv: (kv[1].get('cagr_difference') or -9), reverse=True)
+    )
+
+    ic_reserved = reserved.get("rank_ic_mean")
+    holds = (ic_reserved is not None and final_ic is not None and ic_reserved > 0
+             and (p_value is not None and p_value < 0.05))
+    veredicto = (
+        "El finalista mantiene rank-IC positivo en la era reservada Y pasa el placebo: hay indicio "
+        "de señal real, no solo suerte de haber explorado mucho."
+        if holds else
+        "El finalista NO sostiene señal significativa fuera del periodo de busqueda (o no pasa el "
+        "placebo): la mejor configuracion no supera de forma fiable al azar. Es un resultado "
+        "negativo honesto, ahora respaldado por una exploracion mucho mas amplia."
+    )
+
+    text = f"""# Conclusiones del estudio completo
+
+Generado automaticamente por `RUN_MODE=full_study`. Todas las cifras salen de `study_summary.json`.
+
+## 1. Que se eligio y como
+
+El estudio optimiza **todos los ejes** (ventana, horizonte, ancla, profundidad, cadencia,
+artefactos) en dos fases, y **reserva 2025-2026** de la seleccion para validar al finalista donde
+nunca se optimizo. Configuracion final:
+
+- **config**: `{summary.get('config_final') or 'baseline (sin cambios)'}`
+- **ganador Fase 2**: {summary.get('phase2_winner')}
+- **ganador hiperparametros**: {summary.get('hyperparam_winner')}
+
+## 2. Aprendizaje (rank-IC del meta_final)
+
+- rank-IC del finalista (todo el periodo): **{_fmt(final_ic)}**
+- placebo (permutacion de etiquetas): p-valor **{_fmt(p_value)}**
+- era reservada 2025-2026: rank-IC **{_fmt(ic_reserved)}** en {reserved.get('n_cohorts')} cohortes
+  (periodo de seleccion: {_fmt(reserved.get('rank_ic_selection_period'))})
+
+**Veredicto de aprendizaje.** {veredicto}
+
+## 3. Rentabilidad por perfil de inversor (consecuencia, no criterio)
+
+| perfil | CAGR | vs SPY | años que baten | drawdown |
+|---|---|---|---|---|
+{rows}
+
+## 4. Lectura
+
+La seleccion se hace por aprendizaje y estabilidad, no por rentabilidad: con rank-IC debil,
+cualquier rentabilidad alta es ruido afortunado. Los perfiles con sesgo de estilo (calidad, valor,
+GARP) suelen batir al SPY porque capturan **primas de factor clasicas**, mientras que el perfil
+`balanced` (que sigue el meta-score del ML puro) mide el valor real del aprendizaje. La honestidad
+del resultado descansa en el placebo, el bootstrap y la **era reservada**: solo se declara señal si
+el finalista aguanta donde nunca se optimizo.
+"""
+    (RESULTS_ROOT / "conclusiones.md").write_text(text, encoding="utf-8")
+
+
+def _fmt(value) -> str:
+    return f"{value:+.4f}" if isinstance(value, (int, float)) else "n/d"
+
+
+def _pct(value) -> str:
+    return f"{value * 100:+.1f} %" if isinstance(value, (int, float)) else "n/d"
+
+
+def _attach_axis_overrides(axis_choices: dict[str, dict], axes: dict[str, dict[str, dict]]) -> None:
+    """Adjunta a cada eje el mapa nivel->overrides (lo necesita la Fase 2 para reconstruir configs)."""
+    for axis_name, choice in axis_choices.items():
+        choice["overrides_by_level"] = {name: dict(ov) for name, ov in axes.get(axis_name, {}).items()}
+
+
+def _reserved_era_validation(diagnostics: pd.DataFrame) -> dict:
+    """rank-IC del finalista en los anios reservados (2025-2026), que no intervinieron en ninguna
+    eleccion. Si aguanta aqui, la señal no es solo suerte de haber mirado muchos escenarios."""
+    meta = diagnostics.loc[diagnostics["agent"] == "meta_final"].copy()
+    if meta.empty:
+        return {"n_cohorts": 0, "rank_ic_mean": None, "reserved_years": list(RESERVED_ERA_YEARS)}
+    meta["year"] = pd.to_datetime(meta["prediction_date"]).dt.year
+    reserved = meta.loc[meta["year"].isin(RESERVED_ERA_YEARS)]
+    selection = meta.loc[~meta["year"].isin(RESERVED_ERA_YEARS)]
+    return {
+        "reserved_years": list(RESERVED_ERA_YEARS),
+        "n_cohorts": int(len(reserved)),
+        "rank_ic_mean": float(reserved["rank_ic"].mean()) if not reserved.empty else None,
+        "rank_ic_positive_fraction": float((reserved["rank_ic"] > 0).mean()) if not reserved.empty else None,
+        "rank_ic_selection_period": float(selection["rank_ic"].mean()) if not selection.empty else None,
+    }
 
 
 def _ensure_base_artifacts(settings: Settings, processed: Path) -> None:

@@ -123,17 +123,49 @@ registra, para que la rentabilidad reportada sea honesta.
 
 ---
 
-## 5. Barrido de ablations y selección automática
+## 5. Barrido en dos fases y selección automática de TODO
 
 El estudio es un **barrido de ablations dirigidas** (no producto cartesiano, que sobreajustaría
-por selección): baseline vs baseline + cada artefacto aislado, más hiperparámetros, cadencia y
-ventana de entrenamiento (`escenarios/rejilla_base.py`).
+por selección), organizado en **dos fases** para aislar efectos sin disparar el número de
+ejecuciones. La decisión es **automática, sin intervención humana**, y optimiza **todos los ejes
+del sistema**, no solo los artefactos (`module/experiments.py`).
 
-**Decisión automática, sin intervención humana** (`decide_accepted_artifacts`): un artefacto se
-**acepta** si su rank-IC del meta_final mejora al baseline de forma **estable** —diferencia pareada
-por fecha positiva en media y en más de la mitad de las fechas—. La **configuración final** =
-baseline + artefactos aceptados + mejores hiperparámetros. Se registra en `artifact_decision.json`
-qué entró, qué no, y por qué.
+### 5.1 Fase 1 — cada eje aislado (`escenarios/fase1_ejes.py`)
+Sobre un baseline común (ancla 2016, ventana 10 años, horizonte 3 meses, profundidad 4, cadencia
+trimestral, sin artefactos), se mueve **un solo eje por escenario** para que su rank-IC mida el
+efecto de esa única cosa. Ejes barridos:
+
+- **Ventana de entrenamiento**: 5 / 6 / 7 / 8 / 10 / 12 años.
+- **Horizonte de etiqueta**: 1 / 3 / 6 / 12 meses (cambia *qué* se predice, no un hiperparámetro).
+- **Ancla de evaluación**: 2016 / 2018 / 2020.
+- **Profundidad LightGBM**: 3 / 4 / 5 / 6.
+- **Cadencia de reentreno**: trimestral / semestral / anual.
+- **Artefactos**: los 7, uno a uno.
+
+`decide_best_config` elige, para cada eje con niveles, el **nivel más estable** (mayor rank-IC
+medio del meta_final; desempate por fracción de cohortes positivas y luego por menor varianza), y
+**acepta** cada artefacto si su diferencia pareada por fecha vs baseline es positiva en media y en
+más de la mitad de las fechas. La configuración propuesta combina el mejor nivel de cada eje + los
+artefactos aceptados. Se registra en `phase1_decision.json`.
+
+### 5.2 Fase 2 — combinaciones dirigidas de los ganadores
+No se combinan todos los niveles (sería producto cartesiano). Se prueban solo: la configuración
+propuesta por la Fase 1 (`phase2_best`), y por cada eje una variante que sustituye su nivel elegido
+por el **segundo mejor**, para comprobar si el ganador aislado se sostiene al combinarse. Se elige
+la combinación más estable con el mismo criterio.
+
+### 5.3 Afinado de hiperparámetros
+Sobre el ganador de la Fase 2 se prueban variantes finas de LightGBM (learning rate, nº de árboles,
+mínimo de muestras por hoja). Rejilla deliberadamente pequeña por el número limitado de eras
+independientes. El resultado es la **configuración final del estudio**.
+
+### 5.4 Control de overfitting por selección: era reservada
+Mirar muchos escenarios sube el riesgo de que el máximo sea **suerte**. Por eso la selección
+(Fases 1 y 2 y afinado) usa **solo** cohortes hasta **2024** (`SELECTION_UNTIL_YEAR`); **2025-2026
+se reservan** y no intervienen en ninguna elección. Al final se mide el rank-IC del finalista en
+esa era reservada (`reserved_era_validation` en `study_summary.json`): si aguanta ahí, la señal no
+es solo un artefacto de haber explorado mucho. Es un filtro *point-in-time* sobre cohortes ya
+calculadas — no reentrena ni mira al futuro.
 
 La reutilización por huella SHA-256 evita recomputar etapas compartidas entre escenarios.
 
@@ -245,12 +277,18 @@ Requiere `data/raw` ya descargado (la descarga es un paso aparte, `RUN_MODE=down
 
 - **Estudio completo de principio a fin** (recomendado):
   `RUN_MODE=full_study RUN_SCOPE=full python main.py`
-  Ejecuta barrido de ablations → decisión automática → run final optimizado → perfiles → robustez
-  → informes HTML. Sin decisiones humanas.
-- **Etapas sueltas**: `dataset`, `features`, `agents`, `backtest`, `report`, `experiments`.
+  Ejecuta Fase 1 (ejes aislados) → decisión automática del mejor nivel de cada eje + artefactos →
+  Fase 2 (combinaciones dirigidas) → afinado de hiperparámetros → run final optimizado → perfiles →
+  robustez → **validación en la era reservada 2025-2026** → informes HTML. Sin decisiones humanas.
+- **Etapas sueltas**: `dataset`, `features`, `agents`, `backtest`, `report`, `experiments`
+  (`experiments` corre solo el barrido de artefactos de `escenarios/rejilla_base.py`).
+- **Resultados ordenados por fases** en `results/` (ver `results/README.md`): `fase1_ejes/`,
+  `fase2_combinaciones/`, `hiperparametros/` (cada una con su `comparison.html`) y `final/` (el run
+  ganador con `report.html`), más `study_summary.json` y `conclusiones.md` en la raíz.
 - **Ver los informes**: `python servir_html.py` y abrir
-  `http://localhost:8000/results/escenarios/comparison.html` (un servidor local hace falta porque
-  algunas pestañas cargan CSVs grandes por `fetch`).
+  `http://localhost:8000/results/final/report.html` (informe completo: resumen, rentabilidad por
+  año, aprendizaje, ranking por agentes, cartera) o los `comparison.html` de cada fase. El servidor
+  local hace falta porque las tablas grandes se cargan desde CSV por `fetch`.
 
 ---
 

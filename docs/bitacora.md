@@ -148,3 +148,39 @@ conocidas, y en haberlo demostrado con honestidad** (placebo, bootstrap, estabil
 anti-artefactos). Un resultado matizado, medido y defendible: ni un exito de IA que no existe, ni
 un fracaso, sino una separacion limpia entre lo que el sistema aprende (poco) y lo que rinde (los
 factores). Ver docs/informe_final.md y results/escenarios/study_summary.json.
+
+---
+
+## 6 — El orquestador solo optimizaba artefactos: barrido en dos fases y era reservada
+
+**Observacion.** Al revisar el estudio 5 aparecio un fallo de metodo, no de datos: la decision
+automatica (`decide_accepted_artifacts`) solo evaluaba los artefactos on/off y componia la config
+final con ellos, pero **ignoraba la ventana, la profundidad y la cadencia** aunque el barrido ya
+las probaba. Consecuencia real: se eligio `baseline+sector` (rank-IC del meta_final +0.0036) cuando
+el propio barrido tenia `train_8y` en **+0.0129** y `depth_6` en +0.0076. Se estaba tirando señal
+que ya estaba medida.
+
+**Hipotesis.** Si el sistema debe elegir "lo mejor" sin intervencion humana, la decision tiene que
+cubrir **todos los ejes** (ventana, horizonte de etiqueta, ancla, profundidad, cadencia, artefactos),
+no solo un subconjunto. Y al ampliar la exploracion (mas ejes y mas niveles) sube el riesgo opuesto:
+**overfitting por seleccion** —con muchos escenarios, el maximo puede ser suerte—.
+
+**Que se hizo.** (1) `decide_best_config` generaliza la decision: para cada eje con niveles elige el
+**mas estable** (mayor rank-IC medio del meta_final; desempate por fraccion positiva y menor
+varianza) y sigue aceptando artefactos por diferencia pareada. (2) El barrido pasa a **dos fases**:
+Fase 1 aisla cada eje (ventanas 5-12 años, horizontes 1/3/6/12 meses, anclas 2016/2018/2020,
+profundidad 3-6, cadencia) y Fase 2 combina solo los ganadores (no producto cartesiano), con un
+afinado final de hiperparametros. (3) Contra el overfitting por seleccion, la eleccion usa **solo
+cohortes hasta 2024** y **reserva 2025-2026** para validar al finalista donde nunca se optimizo
+(`reserved_era_validation`). Es un filtro point-in-time sobre cohortes ya calculadas: no reentrena
+ni mira al futuro.
+
+**Por que importa para la honestidad.** Ampliar el barrido sube el rank-IC que se puede *encontrar*,
+pero un maximo mayor no es necesariamente señal: podria ser el mejor de muchos intentos. La era
+reservada y el placebo son el contrapeso —solo se declara "señal" si el finalista es significativo
+**y** aguanta fuera del periodo de busqueda—. Si no lo hace (lo mas probable segun el historial), el
+hallazgo honesto sigue siendo que el ML no aprende de forma fiable, ahora respaldado por una
+exploracion mucho mas amplia, lo que **refuerza** la conclusion en vez de debilitarla.
+
+*(Los numeros del estudio con el orquestador nuevo se anaden aqui al re-ejecutar el full con las
+dos fases; esta entrada registra la decision de metodo, que es previa a los resultados.)*

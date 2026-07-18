@@ -13,7 +13,7 @@
 | Features + artefactos activables | Implementado. Factores base + 7 artefactos (`module/artifacts.py`). |
 | Agentes LightGBM + meta-agente | Implementado. 3 agentes, objetivo `rank_regression`, walk-forward. |
 | Cartera + backtest | Implementado. 8-12 posiciones, guarda anti-artefactos, perfiles de inversor. |
-| Barrido de ablations + decisión automática | Implementado. Acepta artefactos por significancia. |
+| Barrido en 2 fases + decisión automática de todos los ejes | Implementado. Fase 1 aísla cada eje (ventana, horizonte, ancla, profundidad, cadencia, artefactos); Fase 2 combina ganadores; afina hiperparámetros. Selección con era reservada 2025-2026. |
 | Perfiles de inversor | Implementado. 8 estilos (`module/profiles.py`). |
 | Robustez / placebo | Implementado. Permutación, Monte Carlo, bootstrap, leave-one-year-out. |
 | Comando de principio a fin | Implementado. `RUN_MODE=full_study`. |

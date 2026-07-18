@@ -1,9 +1,9 @@
 """Informes HTML autocontenidos. Dos productos:
 
-  1. `build_run_report(run_dir)` — HTML por run con 6 hojas (Resumen, Rendimiento,
-     Aprendizaje, Cartera, Cobertura, Posiciones). Los graficos van embebidos como PNG
-     base64. Las tablas grandes se sirven como CSVs al lado, cargados por `fetch` en JS
-     minimo.
+  1. `build_run_report(run_dir)` — HTML por run con 7 hojas (Resumen, Rendimiento,
+     Aprendizaje, Ranking, Cartera, Cobertura, Posiciones). Los graficos van embebidos como
+     PNG base64. Las tablas grandes (ranking completo por agentes, historico de rank-IC,
+     posiciones, ordenes) se sirven como CSVs al lado, cargados por `fetch` en JS minimo.
   2. `build_comparison_report(scenarios_root)` — HTML del barrido con 5 hojas y ranking
      por metrica compuesta de estabilidad (rango medio de beat_rate, median_alpha,
      worst_year_alpha, max_drawdown).
@@ -48,10 +48,14 @@ def build_run_report(run_dir: Path) -> Path:
     _dump_csv(positions, run_dir / "positions_history.csv")
     _dump_csv(orders, run_dir / "orders_history.csv")
     _dump_csv(scores, run_dir / "ranking_by_snapshot.csv")
+    _dump_csv(_ranking_by_agents(scores), run_dir / "ranking_by_agents.csv")
+    _dump_csv(diagnostics, run_dir / "rank_ic_diagnostics.csv")
+    _dump_csv(annual, run_dir / "annual_metrics.csv")
 
     resumen_body = _section_resumen(summary, annual, equity)
     rendimiento_body = _section_rendimiento(equity, annual)
     aprendizaje_body = _section_aprendizaje(diagnostics, weights)
+    ranking_body = _section_ranking_agentes(scores)
     cartera_body = _section_cartera(positions, orders)
     cobertura_body = _section_cobertura(run_dir)
     posiciones_body = _section_posiciones(positions, orders, equity)
@@ -60,6 +64,7 @@ def build_run_report(run_dir: Path) -> Path:
         "resumen": resumen_body,
         "rendimiento": rendimiento_body,
         "aprendizaje": aprendizaje_body,
+        "ranking": ranking_body,
         "cartera": cartera_body,
         "cobertura": cobertura_body,
         "posiciones": posiciones_body,
@@ -120,26 +125,89 @@ def _section_rendimiento(equity: pd.DataFrame, annual: pd.DataFrame) -> str:
 
 
 def _section_aprendizaje(diagnostics: pd.DataFrame, weights: pd.DataFrame) -> str:
-    diag = "<p>Sin diagnosticos de rank-IC.</p>"
-    if not diagnostics.empty:
-        rows = [f"<tr><td>{r['agent']}</td><td>{r['prediction_date']}</td>"
-                f"<td>{r['rank_ic']:.3f}</td><td>{r['observations']}</td></tr>"
-                for r in diagnostics.head(30).to_dict("records")]
-        diag = (
-            "<table><thead><tr><th>agente</th><th>fecha</th>"
-            "<th>rank-IC</th><th>observaciones</th></tr></thead>"
-            f"<tbody>{''.join(rows)}</tbody></table>"
-        )
+    if diagnostics.empty:
+        return "<p>Sin diagnosticos de rank-IC.</p>"
 
+    # Resumen por agente: rank-IC medio, fraccion positiva, ICIR (media/desv) y nº de cohortes.
+    per_agent_rows = []
+    for agent, group in diagnostics.groupby("agent"):
+        ic = group["rank_ic"].astype(float)
+        icir = (ic.mean() / ic.std(ddof=1)) if len(ic) > 1 and ic.std(ddof=1) > 0 else 0.0
+        cls = "pos" if ic.mean() > 0 else "neg"
+        per_agent_rows.append(
+            f"<tr><td>{agent}</td><td class='{cls}'>{ic.mean():.4f}</td>"
+            f"<td>{(ic > 0).mean()*100:.0f}%</td><td>{icir:.2f}</td><td>{len(ic)}</td></tr>"
+        )
+    per_agent = (
+        "<table><thead><tr><th>agente</th><th>rank-IC medio</th><th>% cohortes IC&gt;0</th>"
+        "<th>ICIR</th><th># cohortes</th></tr></thead>"
+        f"<tbody>{''.join(per_agent_rows)}</tbody></table>"
+    )
+
+    ic_chart = _plot_rank_ic_over_time(diagnostics)
     weight_chart = _plot_meta_weights_over_time(weights) if not weights.empty else ""
 
     return f"""
-        <p>Evidencia de que los agentes ordenan activos fuera de muestra.
-        El rank-IC se reporta por agente y por era, separado del alfa.</p>
-        <h3>Rank-IC por agente y por revision</h3>
-        {diag}
+        <p>Evidencia de si los agentes ordenan activos <strong>fuera de muestra</strong>. El
+        rank-IC (correlacion de Spearman entre el ranking predicho y el retorno realizado) se
+        reporta por agente y por revision, separado del alfa. El <code>meta_final</code> es el
+        score que opera la cartera: es sobre el que se mide el aprendizaje del sistema.</p>
+        <h3>Resumen por agente (todas las cohortes)</h3>
+        {per_agent}
+        <h3>Rank-IC del meta_final a lo largo del tiempo</h3>
+        {ic_chart}
         <h3>Evolucion de pesos del meta-agente</h3>
         {weight_chart}
+        <h3>Historico completo de rank-IC (por agente y fecha)</h3>
+        <p><em>Servido desde <code>rank_ic_diagnostics.csv</code> (carga bajo demanda).</em></p>
+        <div id="rankic-detalle" data-src="rank_ic_diagnostics.csv"></div>
+    """
+
+
+def _ranking_by_agents(scores: pd.DataFrame) -> pd.DataFrame:
+    """Ranking completo ticker x fecha con el score y rango de cada agente + el meta, ordenado."""
+    if scores.empty:
+        return pd.DataFrame()
+    cols = [c for c in ["snapshot_date", "ticker", "quality_rank", "momentum_rank",
+                        "value_rank", "meta_rank", "meta_score", "quality", "momentum", "value"]
+            if c in scores.columns]
+    frame = scores[cols].copy()
+    return frame.sort_values(["snapshot_date", "meta_rank"], ascending=[True, False])
+
+
+def _section_ranking_agentes(scores: pd.DataFrame) -> str:
+    """Tabla del ranking de la ultima revision ordenado por el meta, con el rango de cada agente,
+    para ver por que cada accion esta arriba. El historico completo va servido desde CSV."""
+    if scores.empty or "meta_rank" not in scores.columns:
+        return "<p>Sin scores de agentes.</p>"
+    latest_date = scores["snapshot_date"].max()
+    latest = (scores.loc[scores["snapshot_date"] == latest_date]
+              .sort_values("meta_rank", ascending=False).head(40))
+
+    def _pct(v):
+        return f"{float(v)*100:.0f}" if pd.notna(v) else "-"
+
+    rows = "".join(
+        f"<tr><td>{i+1}</td><td>{r['ticker']}</td>"
+        f"<td><strong>{_pct(r.get('meta_rank'))}</strong></td>"
+        f"<td>{_pct(r.get('quality_rank'))}</td>"
+        f"<td>{_pct(r.get('momentum_rank'))}</td>"
+        f"<td>{_pct(r.get('value_rank'))}</td></tr>"
+        for i, r in enumerate(latest.to_dict("records"))
+    )
+    return f"""
+        <p>El ranking de cada revision, ordenado por el <code>meta_rank</code>, con el
+        <strong>percentil de cada agente</strong> (calidad, momentum, valor) al lado: asi se ve
+        <em>por que</em> cada accion esta arriba (que agente la empuja). Los percentiles van de
+        0 (peor) a 100 (mejor) dentro de la seccion transversal de esa fecha.</p>
+        <h3>Ranking de la ultima revision ({latest_date}) — top 40</h3>
+        <table><thead><tr><th>#</th><th>ticker</th><th>meta</th>
+        <th>calidad</th><th>momentum</th><th>valor</th></tr></thead>
+        <tbody>{rows}</tbody></table>
+        <h3>Ranking completo (todas las fechas, ordenado por meta)</h3>
+        <p><em>Servido desde <code>ranking_by_agents.csv</code> — el ranking total ticker x fecha
+        con score y rango de cada agente (carga bajo demanda con <code>fetch</code>).</em></p>
+        <div id="ranking-agentes-detalle" data-src="ranking_by_agents.csv"></div>
     """
 
 
@@ -551,6 +619,24 @@ def _plot_drawdown_series(equity: pd.DataFrame) -> str:
     return _figure_to_img(figure)
 
 
+def _plot_rank_ic_over_time(diagnostics: pd.DataFrame) -> str:
+    meta = diagnostics.loc[diagnostics["agent"] == "meta_final"].copy()
+    if meta.empty:
+        return "<p>Sin cohortes de meta_final.</p>"
+    meta["prediction_date"] = pd.to_datetime(meta["prediction_date"])
+    meta = meta.sort_values("prediction_date")
+    figure, axes = plt.subplots(figsize=(8, 3))
+    colors = ["#16a34a" if v > 0 else "#dc2626" for v in meta["rank_ic"]]
+    axes.bar(meta["prediction_date"], meta["rank_ic"], width=60, color=colors, alpha=0.5)
+    rolling = meta["rank_ic"].rolling(4, min_periods=1).mean()
+    axes.plot(meta["prediction_date"], rolling, color="#0f172a", linewidth=1.5, label="media movil (4)")
+    axes.axhline(0, color="black", linewidth=0.6)
+    axes.axhline(float(meta["rank_ic"].mean()), color="#2f6df6", linestyle="--", linewidth=1,
+                 label=f"media global {meta['rank_ic'].mean():.4f}")
+    axes.set_ylabel("rank-IC"); axes.legend(fontsize=8); axes.grid(alpha=0.3, axis="y")
+    return _figure_to_img(figure)
+
+
 def _plot_meta_weights_over_time(weights: pd.DataFrame) -> str:
     figure, axes = plt.subplots(figsize=(8, 3))
     for agent, group in weights.groupby("agent"):
@@ -641,23 +727,33 @@ document.querySelectorAll('.tab-link').forEach(link => {
     link.classList.add('active');
   });
 });
+const MAX_ROWS = 500;   // tope de filas renderizadas por tabla (el CSV completo esta al lado)
 document.querySelectorAll('[data-src]').forEach(container => {
   fetch(container.dataset.src)
-    .then(response => response.text())
+    .then(response => { if (!response.ok) throw new Error('http ' + response.status); return response.text(); })
     .then(csv => {
       const rows = csv.split('\\n').filter(line => line);
-      if (!rows.length) return;
+      if (!rows.length) { container.innerHTML = '<p><em>Sin datos.</em></p>'; return; }
+      const total = rows.length - 1;
+      const shown = Math.min(rows.length, MAX_ROWS + 1);
       const table = document.createElement('table');
-      table.innerHTML = rows.map((row, index) => {
+      table.innerHTML = rows.slice(0, shown).map((row, index) => {
         const cells = row.split(',');
         const tag = index === 0 ? 'th' : 'td';
         return '<tr>' + cells.map(cell => `<${tag}>${cell}</${tag}>`).join('') + '</tr>';
       }).join('');
+      if (total > MAX_ROWS) {
+        const note = document.createElement('p');
+        note.className = 'muted';
+        note.textContent = 'Mostrando ' + MAX_ROWS + ' de ' + total + ' filas. El fichero completo es ' +
+          container.dataset.src + '.';
+        container.appendChild(note);
+      }
       container.appendChild(table);
     })
     .catch(error => {
       container.innerHTML = '<p><em>No se pudo cargar ' + container.dataset.src +
-        ' (requiere servidor local o navegador con acceso a ficheros locales).</em></p>';
+        ' (requiere servidor local: <code>python servir_html.py</code>).</em></p>';
     });
 });
 </script>

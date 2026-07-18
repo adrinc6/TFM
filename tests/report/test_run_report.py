@@ -13,6 +13,7 @@ REQUIRED_SECTIONS = (
     'id="tab-resumen"',
     'id="tab-rendimiento"',
     'id="tab-aprendizaje"',
+    'id="tab-ranking"',
     'id="tab-cartera"',
     'id="tab-cobertura"',
     'id="tab-posiciones"',
@@ -20,7 +21,7 @@ REQUIRED_SECTIONS = (
 
 
 def test_run_report_generates_html_and_sidecar_csvs(minimal_run_dir: Path) -> None:
-    """El HTML se genera con las 6 secciones y los CSVs esperados aparecen al lado."""
+    """El HTML se genera con las 7 secciones y los CSVs esperados aparecen al lado."""
     build_run_report(minimal_run_dir)
 
     html_path = minimal_run_dir / "report.html"
@@ -34,6 +35,9 @@ def test_run_report_generates_html_and_sidecar_csvs(minimal_run_dir: Path) -> No
         "positions_history.csv",
         "orders_history.csv",
         "ranking_by_snapshot.csv",
+        "ranking_by_agents.csv",
+        "rank_ic_diagnostics.csv",
+        "annual_metrics.csv",
     ):
         assert (minimal_run_dir / csv_name).exists(), f"falta el CSV {csv_name}"
 
