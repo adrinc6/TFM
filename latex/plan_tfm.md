@@ -2,16 +2,16 @@
 
 > Documento vivo. Fija el índice completo del TFM y las convenciones de escritura **antes** de
 > redactar ningún capítulo. Complementa a `docs/doc.md` (el plan maestro del sistema) y a
-> `docs/plan_fases.md` (el detalle ejecutable por fase de implementación): aquí se decide cómo
-> se **cuenta** el proyecto, no cómo se construye. Se actualiza cada vez que se cierra un
-> capítulo o cambia una decisión de estructura.
+> `docs/bitacora.md` (el porqué de cada decisión): aquí se decide cómo se **cuenta** el
+> proyecto, no cómo se construye. Se actualiza cada vez que se cierra un capítulo o cambia
+> una decisión de estructura.
 
 ## Cómo se trabaja este plan
 
 1. El autor pide un capítulo o una sección concreta.
 2. Antes de escribir, se relee este plan, los capítulos `.tex` ya redactados (para mantener
    terminología y notación consistentes) y el estado real del proyecto en ese momento —
-   `docs/plan_fases.md`, el código, los tests, y los resultados de las fases ya cerradas.
+   `docs/doc.md`, el código, los tests, y los resultados de las fases ya cerradas.
 3. Un capítulo solo se escribe con datos y resultados que existen. Si una fase que el capítulo
    necesita todavía no se ha implementado, el capítulo se deja marcado como pendiente o se
    escribe su esqueleto metodológico sin resultados, nunca con cifras inventadas.
@@ -91,8 +91,8 @@ evidencia elegido frente a solo reportar rentabilidad.
 
 ### 3. Datos y universo de inversión
 
-Fuentes (Finnhub, Yahoo, SEC EDGAR) y por qué cada una — ver `docs/plan_fases.md` (Fase 0,
-"Hallazgos verificados"). Universo dinámico por fecha desde la composición histórica real del
+Fuentes (Finnhub, Yahoo, SEC EDGAR) y por qué cada una — ver `docs/doc.md`. Universo dinámico
+por fecha desde la composición histórica real del
 S&P 500 (`module/data/universe.py`): qué sesgo elimina (inclusión anticipada) y cuál quedaría
 igualmente si se usara un índice actual. Guarda de reciclaje de ticker, con los casos reales
 (`CPQ`, `MOB`) como ilustración. Sesgo de supervivencia **medido** por año, no solo declarado

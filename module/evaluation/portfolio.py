@@ -1,7 +1,7 @@
 """Motor de decisiones de cartera: dado el estado actual y los scores de una fecha,
 produce las ordenes que llevan al estado siguiente.
 
-La logica sigue las reglas acordadas en `docs/plan_fases.md` (Fase 4):
+La logica sigue las reglas de cartera descritas en `docs/doc.md`:
 
   1. Expulsion: un tenente cuyo percentil baja por debajo de `min_hold_percentile` sale.
   2. Ventaja: un candidato solo desplaza a un tenente si le supera por al menos

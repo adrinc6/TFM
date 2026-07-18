@@ -349,7 +349,7 @@ def _label_dates(settings: Settings) -> dict[str, str]:
 
     `SNAPSHOT_DAY` es uno de los parámetros que barre la Fase 6: si la cobertura de etiquetas
     dependiese de su valor, la rejilla compararía escenarios con distinta cantidad de datos.
-    Ver `docs/plan_fases.md` (Hallazgo 2).
+    Ver `docs/bitacora.md`.
     """
     grid = [date.date().isoformat() for date in snapshot_dates(settings)]
     step = settings.target_horizon_months // settings.snapshot_step_months
