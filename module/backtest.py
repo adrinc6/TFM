@@ -98,10 +98,14 @@ def run_backtest(
     positions_rows: list[dict] = []
     orders_rows: list[dict] = []
     equity_rows: list[dict] = []
+    corrupt_log: list[dict] = []
     previous_position_prices: dict[str, float] = {}
 
     for index, snapshot_date in enumerate(snapshots):
-        gross_return = _mark_to_market(state.holdings, previous_position_prices, price_index, snapshot_date)
+        gross_return = _mark_to_market(
+            state.holdings, previous_position_prices, price_index, snapshot_date,
+            settings.max_monthly_position_return, corrupt_log,
+        )
         portfolio_value_pre_orders = portfolio_value * (1 + gross_return)
 
         current_benchmark_price = benchmark_index.get(snapshot_date, previous_benchmark_price)
@@ -162,6 +166,9 @@ def run_backtest(
     equity = pd.DataFrame(equity_rows)
     annual_metrics = _annual_metrics(equity)
     summary = _summary(equity, annual_metrics, settings, diagnostics)
+    summary["corrupt_returns_neutralized"] = len(corrupt_log)
+    if corrupt_log:
+        log.warning("Guarda anti-artefactos: %s retornos corruptos neutralizados", len(corrupt_log))
 
     return BacktestResult(
         positions=positions, orders=orders, equity=equity,
@@ -185,8 +192,16 @@ def _mark_to_market(
     previous_prices: dict[str, float],
     price_index: dict[str, dict[str, float]],
     snapshot_date: str,
+    max_return: float,
+    corrupt_log: list[dict] | None = None,
 ) -> float:
-    """Retorno bruto (sin costes) de las posiciones desde el snapshot anterior."""
+    """Retorno bruto (sin costes) de las posiciones desde el snapshot anterior.
+
+    Guarda anti-artefactos: un retorno mensual de una posicion mayor que `max_return` (p.ej. +200 %)
+    es imposible para una accion normal y se trata como dato corrupto (split mal ajustado, ticker
+    reciclado, precio erroneo). Se NEUTRALIZA (esa posicion aporta 0 ese mes) y se registra, para
+    que un artefacto de datos no infle el rendimiento. Ver bitacora: el caso de julio 2010 (+953 %).
+    """
     if not holdings or not previous_prices:
         return 0.0
     current = price_index.get(snapshot_date, {})
@@ -196,7 +211,15 @@ def _mark_to_market(
         new_price = current.get(ticker)
         if old_price is None or new_price is None or old_price <= 0:
             continue
-        total_return += weight * (new_price / old_price - 1)
+        position_return = new_price / old_price - 1
+        if abs(position_return) > max_return:
+            if corrupt_log is not None:
+                corrupt_log.append({
+                    "snapshot_date": snapshot_date, "ticker": ticker,
+                    "position_return": position_return, "old_price": old_price, "new_price": new_price,
+                })
+            continue   # neutralizado: dato corrupto, no cuenta
+        total_return += weight * position_return
     return total_return
 
 

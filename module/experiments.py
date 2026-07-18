@@ -8,8 +8,10 @@ se enlaza al artefacto compartido en vez de regenerarlo.
 Los escenarios se definen en Python (`escenarios/*.py`), no YAML/JSON, para poder incluir
 listas, condicionales y calculos derivados.
 
-La seleccion final se hace por rango medio de cuatro dimensiones anuales (beat_rate,
-median_alpha, worst_year_alpha, max_drawdown). Menor rango medio -> mas estable.
+La decision automatica (`decide_accepted_artifacts`) compara cada artefacto contra el baseline
+por el rank-IC del meta_final con significancia (diferencia pareada + fraccion de fechas mejor):
+un artefacto se ACEPTA solo si mejora el rank-IC de forma estable. La configuracion final =
+baseline + artefactos aceptados + mejores hiperparametros/ventana/cadencia. Sin intervencion humana.
 """
 
 from __future__ import annotations
@@ -379,9 +381,91 @@ def _write_scenario_config(
 # -------- Entry point ------------------------------------------------------------
 
 
+def _meta_final_ic(scenario_dir: Path) -> "pd.Series | None":
+    """rank-IC del meta_final por fecha de un escenario, o None si no hay diagnostico utilizable."""
+    from module.report import _pick_run_dir   # import diferido: report depende de matplotlib
+    run_dir = _pick_run_dir(scenario_dir)
+    if run_dir is None:
+        return None
+    diag_path = run_dir / "rank_ic_diagnostics.parquet"
+    if not diag_path.exists():
+        return None
+    diag = pd.read_parquet(diag_path)
+    meta = diag.loc[diag["agent"] == "meta_final"]
+    if len(meta) < 5:
+        return None
+    return meta.set_index(pd.to_datetime(meta["prediction_date"]))["rank_ic"].sort_index()
+
+
+def decide_accepted_artifacts(scenarios_root: Path, artifacts: dict[str, dict]) -> dict:
+    """Decide automaticamente que artefactos aceptar y compone la configuracion final.
+
+    Un artefacto se ACEPTA si su rank-IC del meta_final mejora al baseline de forma estable:
+    la diferencia pareada por fecha (artefacto - baseline) es positiva en media Y en mas de la
+    mitad de las fechas. Se registra el detalle para trazabilidad. La config final combina los
+    overrides de todos los aceptados. Sin intervencion humana.
+    """
+    from module.stats import block_bootstrap_ci, paired_difference_ci
+
+    scenarios_root = Path(scenarios_root)
+    baseline_ic = _meta_final_ic(scenarios_root / "baseline")
+    decisions: list[dict] = []
+    accepted_overrides: dict = {}
+
+    if baseline_ic is None:
+        return {"error": "sin baseline evaluable", "accepted": [], "config_final": {}}
+
+    base_ci = block_bootstrap_ci(baseline_ic.reset_index(drop=True))
+    for name, overrides in artifacts.items():
+        art_ic = _meta_final_ic(scenarios_root / f"artifact_{name}")
+        if art_ic is None:
+            decisions.append({"artifact": name, "accepted": False, "reason": "sin evaluar"})
+            continue
+        diff = paired_difference_ci(art_ic, baseline_ic)
+        art_ci = block_bootstrap_ci(art_ic.reset_index(drop=True))
+        accepted = diff["mean_diff"] > 0 and diff["fraction_a_better"] > 0.5
+        decisions.append({
+            "artifact": name,
+            "accepted": bool(accepted),
+            "rank_ic_baseline": round(base_ci["mean"], 5),
+            "rank_ic_with_artifact": round(art_ci["mean"], 5),
+            "mean_diff": round(diff["mean_diff"], 5),
+            "fraction_better": round(diff["fraction_a_better"], 3),
+            "diff_distinguishable_from_zero": diff["distinguishable_from_zero"],
+        })
+        if accepted:
+            accepted_overrides.update(overrides)
+
+    return {
+        "baseline_rank_ic": round(base_ci["mean"], 5),
+        "baseline_ci": [round(base_ci["ci_low"], 5), round(base_ci["ci_high"], 5)],
+        "decisions": decisions,
+        "accepted": [d["artifact"] for d in decisions if d["accepted"]],
+        "config_final": accepted_overrides,
+    }
+
+
 def run_experiments_from_settings(settings: Settings) -> None:
-    """Handler para RUN_MODE=experiments. Usa `escenarios/rejilla_base.py` por defecto."""
+    """Handler para RUN_MODE=experiments. Ejecuta el barrido de ablations, decide automaticamente
+    que artefactos aceptar, y escribe la decision en results/escenarios/artifact_decision.json."""
     grid_path = PROJECT_ROOT / "escenarios" / "rejilla_base.py"
     if not grid_path.exists():
         raise RuntimeError(f"No hay rejilla en {grid_path}.")
     run_scenarios(grid_path, settings)
+
+    # Decision automatica de artefactos (lee ARTIFACTS de la rejilla).
+    grid_module = _import_module_from_path(grid_path)
+    artifacts = getattr(grid_module, "ARTIFACTS", {})
+    if artifacts:
+        decision = decide_accepted_artifacts(RESULTS_DIR, artifacts)
+        (RESULTS_DIR / "artifact_decision.json").write_text(
+            json.dumps(decision, indent=2), encoding="utf-8"
+        )
+        log.info("Artefactos aceptados: %s", decision.get("accepted"))
+
+
+def _import_module_from_path(path: Path):
+    spec = importlib.util.spec_from_file_location("_grid_module_decide", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module

@@ -38,3 +38,18 @@ def test_cagr_not_inflated_by_horizon() -> None:
     })
     cagr_pf, _, _ = _economic_metrics(equity)
     assert abs(cagr_pf - 0.10) < 0.005, f"CAGR deberia ser ~10%, es {cagr_pf}"
+
+
+def test_price_guard_neutralizes_impossible_returns() -> None:
+    """Guarda anti-artefactos: un salto de precio imposible no infla el equity."""
+    from module.backtest import _mark_to_market
+    log = []
+    # +1000 % en un mes (dato corrupto) -> neutralizado, la posicion aporta 0.
+    corrupt = _mark_to_market({"AAA": 1.0}, {"AAA": 100.0}, {"d": {"AAA": 1100.0}},
+                              "d", max_return=2.0, corrupt_log=log)
+    assert corrupt == 0.0
+    assert len(log) == 1 and log[0]["ticker"] == "AAA"
+    # Un retorno grande pero posible (+80 %) SI cuenta.
+    ok = _mark_to_market({"AAA": 1.0}, {"AAA": 100.0}, {"d": {"AAA": 180.0}},
+                         "d", max_return=2.0, corrupt_log=[])
+    assert abs(ok - 0.80) < 1e-9
