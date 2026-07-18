@@ -288,3 +288,91 @@ supervivencia, factores GARP+momentum lineales y un modelo Ridge, **el sistema n
 ordenar activos fuera de muestra de forma útil.** El techo de este enfoque está en rank-IC ≈ 0.
 Para obtener señal real haría falta un cambio de planteamiento (ver informe de conclusiones):
 otro objetivo, otro universo, o capturar no-linealidades — no seguir puliendo esta vía.
+
+---
+
+## Camino C — LightGBM orientado a ranking (correcciones metodológicas + Etapa A)
+
+**Corrección previa imprescindible.** El diagnóstico de rank-IC solo cubría los 3 agentes, pero
+la cartera opera el `meta_score`. Se corrigió para diagnosticar el **meta_final** (el score
+negociable) y el equiponderado. Al medir bien, el rank-IC del meta_final del Ridge de control
+sube a +0.0065 (antes reportábamos +0.0015 por promediar agentes). También se sustituyó el alfa
+compuesto por **CAGR real** y se añadió significancia (bootstrap por bloques + diferencia
+pareada), porque sin ella no se puede distinguir señal de ruido con tan pocas eras.
+
+**Etapa A — motor × objetivo (full, meta rank_ic, mismas features/ventana/cartera).**
+rank-IC del meta_final:
+
+| modelo | rank-IC | IC bootstrap | frac cohortes>0 | ¿distinto de 0? |
+|---|---|---|---|---|
+| **lightgbm / rank_regression** | **+0.0117** | [-0.0014, +0.0261] | 56.8 % | no |
+| ridge / regression (control) | +0.0065 | [-0.0145, +0.0279] | 53.3 % | no |
+| lightgbm / quartile | +0.0059 | [-0.0080, +0.0202] | 53.3 % | no |
+| lightgbm / ranking (lambdarank) | +0.0009 | [-0.0180, +0.0218] | 51.7 % | no |
+
+Diferencia pareada LightGBM(rank_regression) − Ridge por fecha: +0.0052, IC [-0.0115, +0.0211],
+mejor en 55 % de las fechas, **no distinguible de cero**.
+
+**Diagnóstico temporal (idea del autor).** El rank-IC del meta_final por año oscila (2001 +0.075,
+2004 +0.068, 2015 +0.062, 2023 +0.054 frente a años negativos), sin tendencia monótona. Pero por
+ventana de inicio, concentrarse en años recientes **mejora**:
+
+| desde | rank-IC | frac>0 | nº cohortes |
+|---|---|---|---|
+| 2000 | +0.0117 | 56.8 % | 315 |
+| 2010 | +0.0096 | 58.2 % | 196 |
+| **2014** | **+0.0178** | **63.5 %** | 148 |
+| 2016 | +0.0158 | 64.5 % | 124 |
+
+Coherente con la mayor cobertura reciente (246 empresas/cohorte en 2000 → 492 en 2025).
+
+**Decisión (Puerta 1, pasada con reservas).** LightGBM+rank_regression es el mejor en las cuatro
+vistas (agregado, fracción positiva, ventanas recientes) y casi dobla el rank-IC de Ridge, pero
+la mejora **no es estadísticamente robusta** (los IC cruzan cero por el bajo número de eras). Se
+avanza a las Etapas B (regularización) y la elección de período, porque la señal es débil pero
+direccionalmente consistente y el período reciente la refuerza. Se mantiene la honestidad: si
+tras B/C la señal sigue sin distinguirse de cero, la conclusión será que la mejora es real pero
+demasiado débil para ser económicamente fiable — un resultado matizado, no un éxito rotundo.
+El **lambdarank se descarta** (el peor); el objetivo principal es `rank_regression`.
+
+**Etapa B (regularización).** Barrido de profundidad/nº árboles/min_child sobre
+lightgbm+rank_regression. Global gana depth 5 (+0.0127) por poco sobre depth 4 (+0.0117); pero
+en el período reciente (2014+) gana **depth 4** con claridad: rank-IC +0.0178, frac 63.5 % (depth
+5 cae a +0.0135 en reciente → indicio de sobreajuste con más profundidad). Se congela **depth 4,
+n_estimators 200, min_child_samples 50**.
+
+**Sensibilidad a semillas (4 semillas).** rank-IC del meta_final entre +0.0088 y +0.0117 (media
+~+0.0105), todas positivas, frac 53.7-56.8 %. La señal débil es **robusta a la semilla**, no un
+artefacto — es tranquilizador, aunque la magnitud sigue siendo pequeña.
+
+**Etapa C + Puerta 2 (meta).** Sobre el ganador, comparación de combinaciones: meta_final por
+rank-IC +0.0117 vs equiponderado +0.0054 vs mejor agente (value) +0.0104. **La ponderación por
+rank-IC bate claramente al equiponderado**: la combinación aporta valor. Se conserva el meta
+`rank_ic`; NO se implementa el stacker (el simple ya gana y añadir un modelo extra dispararía el
+overfitting con pocas eras, justo lo que el plan evita).
+
+**Puerta 3 (período).** El diagnóstico temporal favorece los años recientes: desde 2014 el
+rank-IC del meta_final es +0.0178 (frac 63.5 %, 148 cohortes, ≥10 años evaluables) frente a
++0.0117 desde 2000 (frac 56.8 %). Coherente con la mayor cobertura reciente. Se elige **2014 como
+período principal**, reportando también desde 2000. Se declara expresamente como **selección
+temporal basada en cobertura y diagnóstico**: la mejora reciente es gradual (no depende de un
+solo año) pero su intervalo de confianza sigue cruzando cero por el menor número de cohortes.
+
+**Etapa D (cartera) + run final.** Señal congelada (lightgbm/rank_regression/depth4/meta
+rank_ic), backtest 2000-2026 con 3 variantes de cartera. CAGR cartera ~18.5 % vs SPY 8.4 %
+(+10 %/año aparente). **Pero es un artefacto**: julio 2010 registró un retorno mensual de
+**+953 %** (año 2010: +1277 %), físicamente imposible → dato corrupto de una posición (split mal
+ajustado / ticker reciclado / precio erróneo). Sin ese año, la **alfa mediana anual es −0.2 %** y
+la cartera bate al SPY solo **13/27 años (48 %)**, con drawdown del 72 %. Coherente con el
+rank-IC ≈ 0: el sistema no ordena mejor que el azar; el CAGR alto es concentración + artefacto +
+suerte, no habilidad.
+
+**Conclusión del Camino C.** LightGBM+rank_regression mejora a Ridge de forma consistente y
+robusta a la semilla (rank-IC casi el doble, +0.0117 vs +0.0065; +0.0178 desde 2014), y la
+corrección de medir el meta_final mostró que la combinación de agentes aporta. Es un avance
+metodológico real, pero el rank-IC sigue en ~0.01, **indistinguible de cero**: no hay señal
+económicamente fiable. El rendimiento espectacular es un espejismo de datos. **Resultado del TFM
+(honesto y publicable): ni el modelo lineal ni el no lineal aprenden a ordenar activos del S&P 500
+de forma estable con datos gratuitos; y el caso demuestra por qué NO se debe juzgar un sistema por
+su rentabilidad acumulada —el rank-IC no se dejó engañar por el artefacto de 2010, el CAGR sí.**
+Ver `docs/informe_final_camino_c.md`.

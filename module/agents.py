@@ -356,6 +356,7 @@ def _manifest(
             "lgbm_max_depth": settings.lgbm_max_depth,
             "lgbm_learning_rate": settings.lgbm_learning_rate,
             "lgbm_min_child_samples": settings.lgbm_min_child_samples,
+            "random_seed": settings.random_seed,
             "meta_type": settings.meta_type,
             "ridge_alpha": settings.ridge_alpha,
             "meta_ic_lookback_quarters": settings.meta_ic_lookback_quarters,
