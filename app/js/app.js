@@ -65,20 +65,52 @@
   }
   global.TFM.loadStudies = loadStudies;
 
+  // --- Pantalla de carga y errores de arranque ---
+  function bootStep(text) {
+    const node = el("boot-step");
+    if (node) node.textContent = text;
+  }
+  function bootDone() {
+    const boot = el("boot");
+    if (boot) boot.classList.add("hidden");
+  }
+  function bootFail(context, error) {
+    bootDone();
+    const box = el("boot-error");
+    if (!box) return;
+    box.classList.remove("hidden");
+    const msg = global.TFM && global.TFM.escapeHtml ? global.TFM.escapeHtml(error && error.message || String(error)) : String(error);
+    box.innerHTML =
+      `<h3>No se pudo cargar la consola</h3>` +
+      `<div>Fallo al <strong>${context}</strong>: <code>${msg}</code></div>` +
+      `<div class="hint">Comprueba que el servidor está en marcha: ejecuta <code>python main.py</code> ` +
+      `(sin RUN_MODE) y abre <code>http://127.0.0.1:8765</code>. No abras el archivo HTML directamente.</div>`;
+  }
+
   // --- Init ---
   async function init() {
     document.querySelectorAll("nav.app-nav button").forEach((b) => {
       b.onclick = () => showView(b.dataset.view);
     });
     try {
+      bootStep("cargando configuración…");
       await loadDefaults();
+      bootStep("cargando runs y estudios…");
+      await loadJobsAndRuns();
+      bootDone();
+      showView("console");
+      setInterval(loadJobsAndRuns, 2500);
     } catch (e) {
-      el("console").innerHTML = `<div class="notice">No se pudieron cargar los valores por defecto: ${global.TFM.escapeHtml(e.message)}</div>`;
+      bootFail("contactar con el servidor", e);
     }
-    await loadJobsAndRuns();
-    showView("console");
-    setInterval(loadJobsAndRuns, 2500);
   }
+
+  // Red de seguridad: cualquier error no capturado deja de dar pantalla negra.
+  global.addEventListener("error", (event) => {
+    if (el("boot") && !el("boot").classList.contains("hidden")) {
+      bootFail("iniciar la interfaz", event.error || event.message);
+    }
+  });
 
   document.addEventListener("DOMContentLoaded", init);
 })(window);

@@ -21,6 +21,16 @@
   </header>
 
   <main class="app-main">
+    <!-- Pantalla de carga: visible desde el primer instante hasta que el JS termina de arrancar -->
+    <div id="boot" class="boot">
+      <div class="boot-spinner"></div>
+      <div class="boot-text">Cargando consola…</div>
+      <div id="boot-step" class="boot-step">iniciando</div>
+    </div>
+
+    <!-- Banner de error de arranque: solo aparece si algo falla -->
+    <div id="boot-error" class="boot-error hidden"></div>
+
     <!-- Vista Consola: lanzar Experimental / Study / Optimization -->
     <section id="console" class="view active"></section>
 
