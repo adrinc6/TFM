@@ -75,9 +75,12 @@ def run_backtest(
 ) -> BacktestResult:
     """Simula la cartera fecha a fecha. Pura funcion: no escribe nada al disco.
 
-    `diagnostics` son los rank-IC OOS por agente y cohorte (de la Fase 3). Si se pasan,
-    el summary incluye las senales de aprendizaje que usa la seleccion de la Fase 6.
+    `diagnostics` son los rank-IC OOS por agente y cohorte. Si se pasan, el summary incluye las
+    senales de aprendizaje que usa la seleccion. El `settings.profile` reordena la seleccion por
+    estilo de inversor (ver module.profiles) sin reentrenar: mismas señales, distinta cartera.
     """
+    from module.profiles import apply_profile
+    scores = apply_profile(scores, settings.profile)
     scores = scores.sort_values("snapshot_date").copy()
     price_index = _price_lookup(prices)
     benchmark_index = _benchmark_lookup(benchmark)
