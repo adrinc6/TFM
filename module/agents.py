@@ -87,14 +87,30 @@ def _agent_features(frame: pd.DataFrame, settings: Settings) -> dict[str, list[s
     la descomposicion precio/fundamental — pero solo las columnas que existan en el frame.
     """
     features = {agent: list(columns) for agent, columns in AGENT_FEATURES.items()}
+
+    def add(agent: str, factor_columns) -> None:
+        features[agent] += [c for c in factor_columns if c in frame.columns]
+
     if settings.fundamental_momentum:
         from module.features import MOMENTUM_FACTORS_QUALITY, MOMENTUM_FACTORS_VALUE
-        features["quality"] += [c for c in MOMENTUM_FACTORS_QUALITY if c in frame.columns]
-        features["value"] += [c for c in MOMENTUM_FACTORS_VALUE if c in frame.columns]
+        add("quality", MOMENTUM_FACTORS_QUALITY)
+        add("value", MOMENTUM_FACTORS_VALUE)
     if settings.market_regime_feature:
         from module.features import REGIME_INTERACTION_FACTORS
-        # El regimen afecta sobre todo a momentum; sus interacciones van a ese agente.
-        features["momentum"] += [c for c in REGIME_INTERACTION_FACTORS if c in frame.columns]
+        add("momentum", REGIME_INTERACTION_FACTORS)
+    # Artefactos nuevos: cada bloque alimenta a su agente natural (por su factor_<source>).
+    if settings.price_momentum_multi:
+        from module.artifacts import PRICE_MOMENTUM_SOURCES
+        add("momentum", [f"factor_{s}" for s in PRICE_MOMENTUM_SOURCES])
+    if settings.moving_averages:
+        from module.artifacts import MOVING_AVERAGE_SOURCES
+        add("momentum", [f"factor_{s}" for s in MOVING_AVERAGE_SOURCES])
+    if settings.regime_extended:
+        from module.artifacts import REGIME_EXTENDED_SOURCES
+        add("momentum", [f"factor_{s}" for s in REGIME_EXTENDED_SOURCES])
+    if settings.quality_growth_derived:
+        from module.artifacts import QUALITY_GROWTH_SOURCES
+        add("quality", [f"factor_{s}" for s in QUALITY_GROWTH_SOURCES])
     return features
 
 

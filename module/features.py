@@ -44,7 +44,7 @@ def build_features(settings: Settings) -> pd.DataFrame:
         )
 
     sector_by_ticker = _load_sector_map(settings) if settings.neutralize_by_sector else {}
-    features = _build_feature_frame(panel, benchmark, settings, sector_by_ticker)
+    features = _build_feature_frame(panel, benchmark, settings, sector_by_ticker, asset_prices)
     targets = _build_targets(features, asset_prices, benchmark, settings)
     baselines = build_baseline_scores(features)
 
@@ -160,6 +160,16 @@ def _add_regime_features(frame: pd.DataFrame) -> None:
     )
 
 
+def _price_series(asset_prices: pd.DataFrame | None) -> dict[str, tuple[list, list]]:
+    """{ticker: (fechas ordenadas, precios)} de la serie mensual PIT, para las medias moviles."""
+    if asset_prices is None or asset_prices.empty:
+        return {}
+    result: dict[str, tuple[list, list]] = {}
+    for ticker, group in asset_prices.sort_values("snapshot_date").groupby("ticker", sort=False):
+        result[ticker] = (list(group["snapshot_date"]), list(group["price"]))
+    return result
+
+
 def _load_sector_map(settings: Settings) -> dict[str, str]:
     """Mapa ticker -> sector desde profiles.parquet, SOLO para agrupar (nunca como senal).
 
@@ -185,6 +195,7 @@ def _build_feature_frame(
     benchmark: pd.DataFrame,
     settings: Settings,
     sector_by_ticker: dict[str, str] | None = None,
+    asset_prices: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     required_panel = {"ticker", "snapshot_date", "in_sp500", "price_age_days", "price_return_3m"}
     required_benchmark = {"snapshot_date", "price_age_days", "price_return_3m"}
@@ -215,9 +226,21 @@ def _build_feature_frame(
         & frame["benchmark_price_age_days"].le(settings.max_price_age_days)
     )
 
-    # B3: tendencia de fundamentales y descomposicion precio/fundamental (point-in-time).
+    # Artefactos activables que anaden columnas crudas (se rankean a factores mas abajo).
     if settings.fundamental_momentum:
         frame = _add_fundamental_momentum(frame)
+    if settings.price_momentum_multi:
+        from module.artifacts import add_price_momentum_multi
+        add_price_momentum_multi(frame)
+    if settings.moving_averages:
+        from module.artifacts import add_moving_averages
+        add_moving_averages(frame, _price_series(asset_prices))
+    if settings.regime_extended:
+        from module.artifacts import add_regime_extended
+        add_regime_extended(frame, benchmark)
+    if settings.quality_growth_derived:
+        from module.artifacts import add_quality_growth_derived
+        add_quality_growth_derived(frame)
 
     # Grupo de neutralizacion: sector si B1 esta activo, si no un unico grupo global.
     sector_by_ticker = sector_by_ticker or {}
@@ -253,6 +276,26 @@ def _build_feature_frame(
             frame[f"factor_{source}"] = _cross_section_rank(
                 frame, values, ascending=True, min_group=min_group
             )
+
+    # Rankear a factores las columnas crudas de los artefactos nuevos (mayor = mejor en todas).
+    artifact_sources: list[str] = []
+    if settings.price_momentum_multi:
+        from module.artifacts import PRICE_MOMENTUM_SOURCES
+        artifact_sources += list(PRICE_MOMENTUM_SOURCES)
+    if settings.moving_averages:
+        from module.artifacts import MOVING_AVERAGE_SOURCES
+        artifact_sources += list(MOVING_AVERAGE_SOURCES)
+    if settings.regime_extended:
+        from module.artifacts import REGIME_EXTENDED_SOURCES
+        artifact_sources += list(REGIME_EXTENDED_SOURCES)
+    if settings.quality_growth_derived:
+        from module.artifacts import QUALITY_GROWTH_SOURCES
+        artifact_sources += list(QUALITY_GROWTH_SOURCES)
+    for source in artifact_sources:
+        values = pd.to_numeric(frame[source], errors="coerce").where(frame["is_price_fresh"])
+        frame[f"factor_{source}"] = _cross_section_rank(
+            frame, values, ascending=True, min_group=min_group
+        )
 
     # B5: regimen de mercado (bull/bear) + interacciones factor x regimen.
     if settings.market_regime_feature:
