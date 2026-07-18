@@ -69,7 +69,7 @@ y los capítulos la reutilizan sin redefinirla.
 | 4 | Diseño metodológico: point-in-time y ausencia de lookahead | Fases 0-1 | **Borrador escrito** |
 | 5 | Agentes especializados y meta-agente | Fases 2-3 | **Borrador escrito** |
 | 6 | Diseño experimental: cartera, backtest y rejilla de escenarios | Fases 4-6 | Esqueleto (método sin cifras; a la espera de la reejecución) |
-| 7 | Resultados | Fases 4-6 | Esqueleto (bloqueado; a la espera de la reejecución) |
+| 7 | Resultados | Fases 4-6 | **Redactado** con las cifras del estudio cerrado (rank-IC OOS, robustez, CAGR por perfil). Falta el placebo por permutación de etiquetas. |
 | 8 | Limitaciones y amenazas a la validez | Todas | **Borrador escrito** (se cierra con los resultados) |
 | 9 | Conclusiones y trabajo futuro | Todas | Esqueleto (bloqueado; necesita resultados) |
 

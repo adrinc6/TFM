@@ -205,28 +205,30 @@ Sobre la configuración final se ejecutan tests que demuestran que el resultado 
 
 ## 8. Resultados
 
-> **Estado: pendiente.** El estudio se está **reejecutando** con el orquestador de dos fases
-> (barrido de cada eje aislado → decisión automática de todos los ejes + artefactos → combinaciones
-> dirigidas → afinado de hiperparámetros → run final → perfiles → robustez) y **validación en la
-> era reservada 2025-2026** (§5.4). Hasta que esa ejecución termine, esta sección no recoge cifras
-> finales: hacerlo con los números de un run anterior sería incoherente con el criterio de
-> honestidad del proyecto.
+> **Estado: cerrado.** Cifras del estudio
+> `results/studies/20260718--optimization-official--bef48ddfc41f--r02/`. El detalle completo con
+> tablas está en [informe_final.md](informe_final.md).
 
-Cuando la ejecución cierre, esta sección reportará, en dos planos separados y sin mezclarlos:
+La configuración final (elegida por rank-IC OOS hasta 2024, no por rentabilidad): ventana de 12
+años, ancla 2014, horizonte 3 meses, `max_depth`=6, `learning_rate`=0.10, neutralización por sector
+y `quality_growth_derived`. Resultado en dos planos separados:
 
-- **Aprendizaje (rank-IC OOS del `meta_final`)**: valor puntual, intervalo de confianza por
-  bootstrap por bloques, p-valor del placebo (permutación de etiquetas) y estabilidad
-  leave-one-year-out, además del rank-IC del finalista en la era reservada 2025-2026. Es la
-  respuesta a la pregunta de investigación (§1): *¿aprende el sistema a ordenar acciones de forma
-  estable y significativa fuera de muestra?*
-- **Rentabilidad como consecuencia**: CAGR real de la cartera frente al SPY, beat rate, drawdown y
-  turnover, por perfil de inversor (§6), con la guarda anti-artefactos activa (§4.3) para que las
-  cifras sean honestas. Nunca se usa como selector de configuración (§2).
+- **Aprendizaje (rank-IC OOS del `meta_final`)**: **+0.0158** de media, 56.5 % de cohortes
+  positivas. Estable: bootstrap por bloques con IC 95 % **[0.0053, 0.0265]** (no cruza cero),
+  leave-one-year-out entre 0.013 y 0.018, y **+0.0426 en la era reservada 2025-2026** (nunca
+  optimizada). La respuesta a la pregunta de investigación (§1) es **sí: el sistema aprende una
+  señal débil pero real y estable fuera de muestra**. *(Pendiente: el placebo por permutación de
+  etiquetas quedó sin ejecutar de forma aislada en esta corrida.)*
+- **Rentabilidad como consecuencia** (por perfil de inversor, §6, guarda anti-artefactos activa,
+  §4.3): frente al SPY (CAGR 13.92 %), **solo el perfil `quality` bate al índice** (16.94 %, alfa
+  +1.70 %, drawdown 23.4 %). El resto queda por debajo (CAGR entre 8.8 % y 12.4 %). Nunca se usó
+  como selector de configuración (§2).
 
-El diseño no presupone el signo del resultado: **un rank-IC no distinguible del azar es un
-entregable válido** (§1). Lo que sí se garantiza por método es que cualquier cifra que aparezca
-aquí sea trazable al manifiesto y la comparación de `results/studies/<study_id>/` y reproducible
-con un comando (§9, §11).
+**Lectura conjunta**: el sistema aprende (señal OOS positiva, robusta y que aguanta en la era
+reservada), pero aprender no equivale a batir al mercado ---salvo el sesgo hacia calidad, las
+carteras no superan al índice. Es un resultado negativo bien medido en lo económico y positivo en
+lo metodológico. Todas las cifras son trazables al manifiesto y la comparación de
+`results/studies/<study_id>/` y reproducibles con un comando (§9, §11).
 
 ---
 

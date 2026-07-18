@@ -1,26 +1,83 @@
 \chapter{Resultados}
 \label{cap:resultados}
 
-% ESQUELETO. Capítulo bloqueado hasta que termine la reejecución del estudio (RUN_MODE=full_study,
-% ver docs/doc.md §8). No se incluyen cifras: hacerlo con números de un run anterior sería
-% incoherente con el criterio de honestidad del proyecto. Todas las cifras procederán de
-% results/studies/<study_id>/ y serán reproducibles con un comando.
+Este capítulo presenta el resultado del estudio en dos planos separados, coherente con el criterio
+de honestidad del proyecto: primero \textbf{qué aprende} el sistema (rank-IC fuera de muestra) y
+después \textbf{qué renta} (rentabilidad por perfil de inversor). La configuración final se eligió
+por aprendizaje y estabilidad ---rank-IC OOS sobre cohortes hasta 2024---, nunca por rentabilidad.
+Todas las cifras proceden de \texttt{results/studies/} \texttt{20260718--optimization-official--bef48ddfc41f--r02/}
+y son reproducibles con \texttt{RUN\_MODE=full\_study}.
+
+La configuración seleccionada por el barrido dirigido combina una ventana de entrenamiento de
+12~años, ancla de ejecución en 2014, horizonte de etiqueta de 3~meses, profundidad
+\texttt{max\_depth}=6, tasa de aprendizaje $0{,}10$ y los artefactos de neutralización por sector y
+\texttt{quality\_growth\_derived}.
 
 \section{Aprendizaje: \texorpdfstring{\rankic}{rank-IC} fuera de muestra}
-% Valor puntual del rank-IC del meta_final, intervalo de confianza por bootstrap por bloques,
-% p-valor del placebo (permutación de etiquetas), estabilidad leave-one-year-out y rank-IC del
-% finalista en la era reservada 2025-2026. Respuesta directa a la pregunta de investigación.
+
+La respuesta directa a la pregunta de investigación es afirmativa pero matizada: el sistema
+\textbf{aprende a ordenar acciones fuera de muestra con una señal débil, pero real y
+estadísticamente estable}. El rank-IC medio del \texttt{meta\_final} es $+0{,}0158$, con un
+$56{,}5\,\%$ de cohortes con rank-IC positivo y desviación típica $0{,}0566$.
+
+Esa señal resiste los tres contrastes de estabilidad:
+
+\begin{itemize}
+  \item \textbf{Bootstrap por bloques} (147 cohortes, bloque de 4): intervalo de confianza al
+  $95\,\%$ de $[\,0{,}0053,\ 0{,}0265\,]$, que \emph{no} cruza cero.
+  \item \textbf{Leave-one-year-out}: al excluir cualquier año, el rank-IC permanece entre $0{,}013$
+  y $0{,}018$; ningún año concreto sostiene el resultado por sí solo.
+  \item \textbf{Era reservada 2025--2026} (donde el sistema nunca se optimizó): rank-IC
+  $+0{,}0426$ sobre 16 cohortes ---la señal sobrevive fuera del periodo de búsqueda, que es el
+  contraste más exigente contra el sobreajuste por selección.
+\end{itemize}
 
 \section{Robustez y placebo}
-% Permutación de etiquetas, carteras aleatorias (Monte Carlo), bootstrap por bloques,
-% leave-one-year-out. module/evaluation/robustness.py.
+
+El bootstrap por bloques y el leave-one-year-out, descritos arriba, confirman que la señal no
+depende de un tramo temporal concreto (\texttt{module/evaluation/robustness.py}). El \textbf{placebo
+por permutación de etiquetas} queda pendiente de una ejecución aislada en esta corrida
+(\texttt{label\_permutation}: 0~permutaciones); es el contraste que falta para reportar un p-valor
+del placebo y se completará en la versión definitiva. El resto de la validación de robustez sí se
+ejecutó y es consistente con una señal real de magnitud pequeña.
 
 \section{Rentabilidad como consecuencia}
-% CAGR real de la cartera vs SPY, beat rate, drawdown y turnover, por perfil de inversor, con la
-% guarda anti-artefactos activa. Nunca como selector de configuración.
+
+Todos los perfiles parten del mismo modelo ---de ahí que compartan el rank-IC $0{,}0158$---; solo
+cambia la construcción de la cartera. Con la guarda anti-artefactos activa y frente al SPY
+(CAGR $13{,}92\,\%$), los resultados por perfil son:
+
+\begin{table}[htbp]
+  \centering
+  \begin{tabular}{lrrrrr}
+    \toprule
+    Perfil & CAGR & Dif.\ SPY & Alfa medio & Beat rate & Max DD \\
+    \midrule
+    \textbf{quality} & \textbf{16{,}94\,\%} & \textbf{$+3{,}02$} & \textbf{$+1{,}70\,\%$} & $46{,}2\,\%$ & $23{,}44\,\%$ \\
+    contrarian       & $12{,}44\,\%$ & $-1{,}49$ & $-1{,}07\,\%$ & $46{,}2\,\%$ & $32{,}02\,\%$ \\
+    balanced         & $12{,}12\,\%$ & $-1{,}81$ & $-3{,}04\,\%$ & $30{,}8\,\%$ & $24{,}05\,\%$ \\
+    conservative     & $11{,}99\,\%$ & $-1{,}93$ & $-1{,}57\,\%$ & $38{,}5\,\%$ & $32{,}01\,\%$ \\
+    garp             & $9{,}74\,\%$  & $-4{,}19$ & $-3{,}90\,\%$ & $38{,}5\,\%$ & $32{,}85\,\%$ \\
+    aggressive       & $9{,}49\,\%$  & $-4{,}44$ & $-5{,}33\,\%$ & $30{,}8\,\%$ & $29{,}11\,\%$ \\
+    momentum         & $9{,}47\,\%$  & $-4{,}46$ & $-5{,}25\,\%$ & $38{,}5\,\%$ & $29{,}03\,\%$ \\
+    value            & $8{,}78\,\%$  & $-5{,}15$ & $-3{,}92\,\%$ & $46{,}2\,\%$ & $42{,}15\,\%$ \\
+    \bottomrule
+  \end{tabular}
+  \caption{CAGR y métricas de riesgo por perfil de inversor frente al SPY (CAGR $13{,}92\,\%$).
+  La columna «Dif.\ SPY» está en puntos porcentuales anuales.}
+  \label{tab:perfiles}
+\end{table}
+
+El perfil \texttt{quality} es \textbf{el único que bate al índice} ($+3{,}02$~pp/año, alfa positivo
+y el menor \emph{drawdown}). El resto queda por debajo del SPY: la señal aprendida no basta, en
+general, para superar al índice una vez pasada por la construcción de cartera y los costes.
 
 \section{Lectura conjunta de los dos planos}
-% Interpretación separando lo que el sistema aprende de lo que rinde.
 
-\medskip
-\noindent\emph{(Capítulo bloqueado: a la espera de los resultados de la ejecución en curso.)}
+Los dos planos no se contradicen; se complementan y \textbf{refuerzan} la conclusión del trabajo.
+Por un lado, el sistema \emph{aprende}: el rank-IC fuera de muestra es positivo, estable, robusto y
+aguanta en la era reservada, así que no es azar. Por otro, \emph{aprender no equivale a batir al
+mercado}: salvo el sesgo hacia calidad, las carteras no superan al SPY, porque la señal es real pero
+económicamente marginal tras la cartera y los costes. Es un resultado negativo bien medido en lo
+económico y positivo en lo metodológico ---separa con nitidez lo que el modelo aprende de lo que
+rinde, que era el objetivo de este TFM.
