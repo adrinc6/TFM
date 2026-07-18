@@ -1,0 +1,50 @@
+/* Paleta oscura del TFM: negros y grises, sin azul de marca. Todo el color vive aquí para
+   poder ajustarlo en un solo sitio; el resto de hojas y los gráficos leen estas variables. */
+:root {
+  /* Fondos y superficies */
+  --bg: #0a0a0b;
+  --surface: #141416;
+  --surface2: #1c1c1f;
+  --surface3: #232327;
+  --line: #2a2a2e;
+  --line-strong: #3a3a40;
+
+  /* Texto */
+  --ink: #ececee;
+  --ink-soft: #c4c4ca;
+  --muted: #9a9aa2;
+  --faint: #6b6b73;
+
+  /* Acento neutro grafito (activos/primarios); nunca azul */
+  --accent: #e5e5e7;
+  --accent-bg: #26262b;
+  --accent-bg-hover: #303036;
+
+  /* Semánticos, conservados por legibilidad */
+  --pos: #4ade80;
+  --pos-soft: #1e3a2a;
+  --neg: #f87171;
+  --neg-soft: #3a1e1e;
+  --warn: #d6a95a;
+  --warn-soft: #342c17;
+
+  /* Series de gráficos: gama de grises + verde/rojo semántico (sin azul) */
+  --series-1: #d4d4d8;
+  --series-2: #8a8a92;
+  --series-3: #5c5c64;
+  --series-4: #d6a95a;
+  --series-pos: #4ade80;
+  --series-neg: #f87171;
+
+  /* Tipografía y forma */
+  --font: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+
+  /* Espaciado base */
+  --gap: 16px;
+  --gap-sm: 10px;
+  --pad: 18px;
+}

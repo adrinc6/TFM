@@ -49,12 +49,13 @@ azar.
 
 ```
 descarga → dataset point-in-time → features (+ artefactos) → agentes LightGBM → meta-agente
-        → cartera (+ perfil de inversor) → backtest → informe HTML
-                                                     + barrido de ablations → decisión → run final
+        → cartera (+ perfil de inversor) → backtest → run inmutable → consola de resultados
+                                                     + studies / optimización oficial → decisión
 ```
 
-Cada etapa se ejecuta por separado (`RUN_MODE`) o encadenada. El comando de principio a fin es
-`RUN_MODE=full_study` (ver §9).
+Cada etapa se ejecuta por separado (`RUN_MODE`) o encadenada. Sin `RUN_MODE`, `python main.py`
+abre la consola local. Cada ejecución nueva se identifica con fecha y hash, y guarda su manifiesto
+en `results/runs/`; los studies agrupan escenarios comparables en `results/studies/`.
 
 ### 3.1 Datos y universo (point-in-time)
 - **Universo dinámico** del S&P 500 por fecha (composición histórica real, no la actual): una
@@ -99,7 +100,7 @@ CAGR real cartera vs SPY, beat rate, drawdown, turnover.
 
 Un **artefacto** es un bloque de features/contexto que se activa o desactiva por un flag. Todos
 son **point-in-time** (verificados con tests de no-lookahead). El barrido los prueba de uno en
-uno como *ablations* para medir cuáles suben el rank-IC. Catálogo en `module/artifacts.py`:
+uno como *ablations* para medir cuáles suben el rank-IC. Catálogo en `module/modeling/artifacts.py`:
 
 | Artefacto | Qué añade |
 |---|---|
@@ -128,7 +129,7 @@ registra, para que la rentabilidad reportada sea honesta.
 El estudio es un **barrido de ablations dirigidas** (no producto cartesiano, que sobreajustaría
 por selección), organizado en **dos fases** para aislar efectos sin disparar el número de
 ejecuciones. La decisión es **automática, sin intervención humana**, y optimiza **todos los ejes
-del sistema**, no solo los artefactos (`module/experiments.py`).
+del sistema**, no solo los artefactos (`module/runs/experiments.py`).
 
 ### 5.1 Fase 1 — cada eje aislado (`escenarios/fase1_ejes.py`)
 Sobre un baseline común (ancla 2016, ventana 10 años, horizonte 3 meses, profundidad 4, cadencia
@@ -176,7 +177,7 @@ La reutilización por huella SHA-256 evita recomputar etapas compartidas entre e
 El sistema explica *por qué* cada acción está arriba: cada agente aporta su rango (calidad,
 momentum, valor). Sobre eso se construyen **perfiles de inversor** que, entre las **buenas**
 acciones del meta (percentil alto), reordenan según estilo — no siempre cogen el top-N puro
-(`module/profiles.py`):
+(`module/evaluation/profiles.py`):
 
 `balanced` (referencia), `conservative` (calidad + estabilidad), `aggressive` (momentum),
 `value` (barato y bueno), `quality` (mejor negocio), `momentum` (fuerza relativa), `garp`
@@ -190,84 +191,42 @@ trade-off rentabilidad/riesgo de cada estilo usando el mismo modelo.
 ## 7. Robustez / placebo (credibilidad)
 
 Sobre la configuración final se ejecutan tests que demuestran que el resultado no es suerte
-(`module/robustness.py`):
+(`module/evaluation/robustness.py`):
 
 - **Permutación de etiquetas** (placebo): se reentrena con los retornos futuros barajados; el
   rank-IC debe **colapsar a ~0**. Si no colapsa, hay fuga de información (también detecta leakage).
 - **Carteras aleatorias (Monte Carlo)**: la cartera del modelo se compara con ~1000 aleatorias del
   mismo tamaño; su percentil dice si su rendimiento es distinguible del azar.
-- **Bootstrap por bloques** del rank-IC (`module/stats.py`): intervalo de confianza que respeta el
+- **Bootstrap por bloques** del rank-IC (`module/evaluation/stats.py`): intervalo de confianza que respeta el
   solapamiento temporal.
 - **Leave-one-year-out**: se quita cada año para ver si el resultado depende de uno o dos.
 
 ---
 
-## 8. Resultados (estudio full, ancla 2016-2026)
+## 8. Resultados
 
-El resultado es **matizado y en dos planos opuestos**, que es lo que hace este TFM interesante y
-honesto: el modelo de IA **no aprende** de forma significativa, pero una cartera con sesgo de
-estilo defendible **sí bate al mercado** de forma consistente y limpia.
+> **Estado: pendiente.** El estudio se está **reejecutando** con el orquestador de dos fases
+> (barrido de cada eje aislado → decisión automática de todos los ejes + artefactos → combinaciones
+> dirigidas → afinado de hiperparámetros → run final → perfiles → robustez) y **validación en la
+> era reservada 2025-2026** (§5.4). Hasta que esa ejecución termine, esta sección no recoge cifras
+> finales: hacerlo con los números de un run anterior sería incoherente con el criterio de
+> honestidad del proyecto.
 
-### 8.1 El aprendizaje (rank-IC) no es significativo
+Cuando la ejecución cierre, esta sección reportará, en dos planos separados y sin mezclarlos:
 
-El barrido de ablations aceptó automáticamente **un solo artefacto**: la neutralización por
-sector (rank-IC del meta_final 0.0036 → 0.0094, mejor que el baseline en el 59 % de las fechas).
-Los otros seis empeoran o no aportan:
+- **Aprendizaje (rank-IC OOS del `meta_final`)**: valor puntual, intervalo de confianza por
+  bootstrap por bloques, p-valor del placebo (permutación de etiquetas) y estabilidad
+  leave-one-year-out, además del rank-IC del finalista en la era reservada 2025-2026. Es la
+  respuesta a la pregunta de investigación (§1): *¿aprende el sistema a ordenar acciones de forma
+  estable y significativa fuera de muestra?*
+- **Rentabilidad como consecuencia**: CAGR real de la cartera frente al SPY, beat rate, drawdown y
+  turnover, por perfil de inversor (§6), con la guarda anti-artefactos activa (§4.3) para que las
+  cifras sean honestas. Nunca se usa como selector de configuración (§2).
 
-| artefacto | rank-IC con él | Δ vs baseline | ¿aceptado? |
-|---|---|---|---|
-| **neutralize_by_sector** | **+0.0094** | +0.0057 | **sí** |
-| quality_growth_derived | +0.0041 | +0.0005 | no (mejor solo en 44 %) |
-| regime_bull_bear | −0.0003 | −0.0039 | no |
-| moving_averages | −0.0009 | −0.0045 | no |
-| price_momentum_multi | −0.0009 | −0.0045 | no |
-| regime_extended | −0.0021 | −0.0056 | no |
-| fundamental_momentum | −0.0024 | −0.0060 | no |
-
-Confirma un patrón consistente en todo el proyecto: **añadir features no crea señal**; solo la
-reorganización del ranking dentro de sector aporta algo marginal.
-
-**El sistema final (con sector) alcanza un rank-IC de +0.0036**, y NO es distinguible del azar:
-- Intervalo de confianza por bootstrap: **[−0.019, +0.024]** (cruza cero).
-- **Test de placebo** (permutación de etiquetas): con retornos barajados el rank-IC colapsa a
-  −0.0009 (correcto, no hay fuga), pero el **p-valor es 0.20** — 1 de cada 5 permutaciones
-  aleatorias iguala o supera al modelo real. **El aprendizaje no supera al azar.**
-- Leave-one-year-out: el rank-IC oscila entre +0.0008 y +0.0085 quitando cada año; ninguno lo
-  sostiene en solitario, pero todos son ≈ 0.
-
-**Conclusión del plano de aprendizaje**: con datos gratuitos, universo del S&P 500 y factores
-GARP+momentum, el modelo LightGBM **no aprende a ordenar acciones de forma estadísticamente
-significativa**. Es el resultado honesto, medido con rigor (placebo + bootstrap + estabilidad).
-
-### 8.2 La rentabilidad: los perfiles de estilo sí baten al SPY (limpio)
-
-Con la guarda anti-artefactos activa (sin el +953 % corrupto de estudios previos), varios perfiles
-de inversor baten al SPY de forma consistente en 2016-2026:
-
-| perfil | CAGR | vs SPY (anual) | años que baten | drawdown máx |
-|---|---|---|---|---|
-| quality | 20.7 % | **+4.5 %** | 45 % | 35 % |
-| value | 20.6 % | +4.4 % | 55 % | 30 % |
-| conservative | 20.6 % | +4.4 % | 55 % | 32 % |
-| garp | 19.9 % | +3.7 % | **64 %** | 41 % |
-| contrarian | 18.1 % | +1.9 % | 55 % | 38 % |
-| momentum | 15.6 % | −0.6 % | 45 % | 34 % |
-| aggressive | 14.9 % | −1.3 % | 55 % | 33 % |
-| **balanced** (el meta ML puro) | 14.7 % | **−1.5 %** | 36 % | 48 % |
-
-### 8.3 La lectura clave
-
-El perfil **balanced —el que confía en el meta-score del ML— es el peor** (−1.5 % vs SPY, drawdown
-48 %). Los que ganan son los que imponen un **sesgo de estilo humano** (quality, value, GARP)
-entre las candidatas. Esto es coherente con los dos planos: como el ML no ordena bien (rank-IC
-≈ 0), seguir su ranking puro no bate al mercado; pero inclinar la cartera hacia **calidad y valor**
-captura las **primas de factor clásicas**, que sí existen. GARP bate al SPY el 64 % de los años.
-
-**En una frase**: el aprendizaje automático no aporta señal, pero la estructura de factores con un
-sesgo de estilo defendible (calidad/valor/GARP) sí bate al mercado de forma consistente y limpia.
-El valor del sistema no está en su ML, sino en explotar de forma disciplinada primas de factor
-conocidas —y en haberlo **demostrado con honestidad**, separando lo que aprende (poco) de lo que
-rinde (los factores).
+El diseño no presupone el signo del resultado: **un rank-IC no distinguible del azar es un
+entregable válido** (§1). Lo que sí se garantiza por método es que cualquier cifra que aparezca
+aquí sea trazable al manifiesto y la comparación de `results/studies/<study_id>/` y reproducible
+con un comando (§9, §11).
 
 ---
 
@@ -282,13 +241,22 @@ Requiere `data/raw` ya descargado (la descarga es un paso aparte, `RUN_MODE=down
   robustez → **validación en la era reservada 2025-2026** → informes HTML. Sin decisiones humanas.
 - **Etapas sueltas**: `dataset`, `features`, `agents`, `backtest`, `report`, `experiments`
   (`experiments` corre solo el barrido de artefactos de `escenarios/rejilla_base.py`).
-- **Resultados ordenados por fases** en `results/` (ver `results/README.md`): `fase1_ejes/`,
-  `fase2_combinaciones/`, `hiperparametros/` (cada una con su `comparison.html`) y `final/` (el run
-  ganador con `report.html`), más `study_summary.json` y `conclusiones.md` en la raíz.
-- **Ver los informes**: `python servir_html.py` y abrir
-  `http://localhost:8000/results/final/report.html` (informe completo: resumen, rentabilidad por
-  año, aprendizaje, ranking por agentes, cartera) o los `comparison.html` de cada fase. El servidor
-  local hace falta porque las tablas grandes se cargan desde CSV por `fetch`.
+- **Resultados inmutables**: `results/runs/<id>/` contiene los artefactos de cada ejecución y
+  `results/studies/<id>/` su manifiesto, comparación y lista de runs. La Research Console los
+  consulta directamente, sin depender del directorio mutable `data/processed/`.
+
+### 9.1 Organización del código
+
+La implementación sigue seis dominios: `module/data/` (datos e ingestión), `module/modeling/`
+(features y agentes), `module/evaluation/` (cartera y validación), `module/runs/` (orquestación,
+caché y resultados), `module/ui/` (Research Console con frontend en `module/ui/app/` e informes
+estáticos en `module/ui/reports.py`) y `module/common/` (utilidades).
+- **Ver resultados**: ejecutar `python main.py` sin `RUN_MODE` y abrir la Research Console en
+  `http://127.0.0.1:8765`. Es una aplicación web oscura (negros y grises) servida como archivos
+  reales desde `module/ui/app/` (Chart.js embebido localmente, sin CDN). Su vista de Resultados
+  tiene listas separadas de **estudios** y **runs**: al elegir un estudio se analiza el estudio
+  y al elegir un run se analizan resumen, rendimiento, aprendizaje, cartera, trades, explorador
+  de stocks y ficha por ticker, con tablas y gráficos.
 
 ---
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from module.profiles import PROFILE_NAMES, apply_profile
+from module.evaluation.profiles import PROFILE_NAMES, apply_profile
 
 
 def _scores() -> pd.DataFrame:

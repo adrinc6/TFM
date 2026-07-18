@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from module.artifacts import (
+from module.modeling.artifacts import (
     add_moving_averages,
     add_price_momentum_multi,
     add_quality_growth_derived,

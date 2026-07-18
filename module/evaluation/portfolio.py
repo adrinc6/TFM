@@ -32,6 +32,7 @@ class PortfolioState:
 
     holdings: dict[str, float] = field(default_factory=dict)   # ticker -> peso (0..1)
     entry_dates: dict[str, str] = field(default_factory=dict)  # ticker -> snapshot_date de entrada
+    entry_prices: dict[str, float] = field(default_factory=dict)  # ticker -> precio PIT de entrada
     months_held: dict[str, int] = field(default_factory=dict)
 
     @classmethod
@@ -43,11 +44,13 @@ class PortfolioState:
         cls,
         holdings: dict[str, float],
         entry_dates: dict[str, str] | None = None,
+        entry_prices: dict[str, float] | None = None,
     ) -> "PortfolioState":
         entry_dates = entry_dates or {ticker: "1900-01-01" for ticker in holdings}
         return cls(
             holdings=dict(holdings),
             entry_dates=dict(entry_dates),
+            entry_prices=dict(entry_prices or {}),
             months_held={ticker: 0 for ticker in holdings},
         )
 
@@ -58,21 +61,27 @@ class PortfolioState:
         new_holdings = dict(self.holdings)
         new_entry_dates = dict(self.entry_dates)
         new_months_held = {ticker: months + 1 for ticker, months in self.months_held.items()}
+        new_entry_prices = dict(self.entry_prices)
 
         for order in orders:
             ticker = order["ticker"]
             if order["side"] == "sell":
                 new_holdings.pop(ticker, None)
                 new_entry_dates.pop(ticker, None)
+                new_entry_prices.pop(ticker, None)
                 new_months_held.pop(ticker, None)
             elif order["side"] == "buy":
                 new_holdings[ticker] = order["weight_after"]
                 if ticker not in new_entry_dates:
                     new_entry_dates[ticker] = order.get("snapshot_date", "")
                     new_months_held[ticker] = 0
+                    price = order.get("price", prices.get(ticker))
+                    if price is not None:
+                        new_entry_prices[ticker] = float(price)
         return PortfolioState(
             holdings=new_holdings,
             entry_dates=new_entry_dates,
+            entry_prices=new_entry_prices,
             months_held=new_months_held,
         )
 

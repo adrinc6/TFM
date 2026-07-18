@@ -7,8 +7,8 @@ from dataclasses import replace
 import numpy as np
 import pandas as pd
 
-from module.agents import _prepare_training, build_agent_scores
-from module.experiments import stage_fingerprint
+from module.modeling.agents import _prepare_training, build_agent_scores
+from module.runs.experiments import stage_fingerprint
 
 
 def _train_frame() -> pd.DataFrame:

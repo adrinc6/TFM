@@ -13,7 +13,7 @@ orquestador (`module.experiments.decide_accepted_artifacts`) marca automaticamen
 mejoran el rank-IC de forma estable y compone la configuracion final. Ver docs/doc.md.
 """
 
-from module.experiments import ScenarioSpec
+from module.runs.experiments import ScenarioSpec
 
 
 # Los artefactos que se prueban de uno en uno (flag de Settings + nombre legible).

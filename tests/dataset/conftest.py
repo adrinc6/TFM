@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 import environment
-import module.universe as universe
+import module.data.universe as universe
 from environment import Settings
 
 

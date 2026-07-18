@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from module.experiments import decide_accepted_artifacts
+from module.runs.experiments import decide_accepted_artifacts
 
 
 def _write_scenario_diag(root: Path, name: str, rank_ics: list[float]) -> None:

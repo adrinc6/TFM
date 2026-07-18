@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from module.report import build_comparison_report
+from module.ui.reports import build_comparison_report
 
 
 COMPARISON_SECTIONS = (

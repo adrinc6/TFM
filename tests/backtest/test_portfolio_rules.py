@@ -12,7 +12,7 @@ from dataclasses import replace
 import pandas as pd
 import pytest
 
-from module.portfolio import PortfolioState, decide_orders
+from module.evaluation.portfolio import PortfolioState, decide_orders
 
 
 def _scores_row(ticker: str, meta_rank: float, snapshot_date: str = "2000-01-15") -> dict:

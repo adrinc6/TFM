@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from module.robustness import label_permutation_test, leave_one_year_out, random_portfolio_test
+from module.evaluation.robustness import label_permutation_test, leave_one_year_out, random_portfolio_test
 
 
 def _diag(rank_ics: list[float], years: list[int]) -> pd.DataFrame:

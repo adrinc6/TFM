@@ -16,10 +16,10 @@ import pandas as pd
 import pytest
 
 import environment
-import module.universe as universe
+import module.data.universe as universe
 from environment import Settings
-from module.dataset import build_point_in_time_dataset
-from module.features import build_features
+from module.data.dataset import build_point_in_time_dataset
+from module.modeling.features import build_features
 
 
 def test_every_fresh_row_before_the_horizon_gets_a_target(feature_settings) -> None:

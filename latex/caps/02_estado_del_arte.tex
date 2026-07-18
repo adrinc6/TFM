@@ -1,0 +1,93 @@
+\chapter{Estado del arte}
+\label{cap:estado_arte}
+
+Este capítulo sitúa el trabajo en dos tradiciones que dialogan a lo largo de la memoria: la del
+\emph{factor investing}, que aporta el listón de comparación y una explicación económica de qué
+mueve los retornos, y la del \emph{aprendizaje automático aplicado a los mercados}, que aporta la
+herramienta y, con ella, un catálogo de patologías metodológicas que este proyecto se propone
+evitar. El capítulo termina justificando por qué se adopta el \rankic{} fuera de muestra, y no la
+rentabilidad, como criterio de evidencia.
+
+\section{Primas de factor como listón de comparación}
+
+La idea de que el retorno esperado de una acción se explica por su exposición a un conjunto
+reducido de \emph{factores} sistemáticos es uno de los resultados mejor establecidos de las
+finanzas empíricas. El modelo de tres factores de \textcite{fama1993common} amplió el CAPM
+clásico añadiendo al factor de mercado un factor de \emph{tamaño} ---las empresas pequeñas
+tienden a rendir más que las grandes, un patrón ya documentado por \textcite{banz1981relationship}---
+y un factor de \emph{valor}, capturado por el cociente entre valor contable y valor de mercado
+\parencite{fama1992cross}. A esa base se sumó el factor de \emph{momentum}: las acciones que han
+subido en los últimos meses tienden a seguir subiendo en el corto plazo
+\parencite{jegadeesh1993returns}, un efecto que \textcite{carhart1997persistence} incorporó como
+cuarto factor. Más recientemente, la literatura ha consolidado un factor de \emph{calidad}
+---empresas rentables, estables y poco apalancadas--- como fuente de prima diferenciada
+\parencite{asness2013quality}.
+
+Estos factores son relevantes para el presente trabajo por dos motivos. Primero, definen el
+\textbf{listón}: cualquier sistema de selección de acciones debe compararse con lo que se obtendría
+explotando de forma mecánica estas primas conocidas, no solo con el índice. Segundo, agrupan de
+forma natural los estilos de inversión ---calidad, valor, momentum y sus combinaciones, como la
+estrategia \emph{growth at a reasonable price} o GARP--- que este proyecto encapsula en agentes
+especializados (capítulo~\ref{cap:agentes}) y en perfiles de inversor
+(capítulo~\ref{cap:diseno_experimental}).
+
+\section{Aprendizaje automático aplicado a la selección de activos}
+
+La disponibilidad de datos y de métodos no lineales ha impulsado una línea de investigación que
+sustituye el modelo lineal de factores por algoritmos de aprendizaje automático capaces de captar
+interacciones entre variables. El trabajo de referencia de \textcite{gu2020empirical} compara de
+forma sistemática un amplio abanico de métodos ---desde regresiones penalizadas hasta árboles con
+\emph{gradient boosting} y redes neuronales--- para predecir retornos en el corte transversal, y
+documenta que los métodos no lineales, en particular los basados en árboles, tienden a superar a
+los lineales cuando la relación entre factores y retorno no es aditiva. Entre esos métodos, el
+\emph{gradient boosting} sobre árboles de decisión ---y su implementación eficiente LightGBM
+\parencite{ke2017lightgbm}--- se ha popularizado por su capacidad de modelar interacciones con un
+coste computacional moderado, razón por la que este proyecto lo adopta como modelo de sus agentes
+(capítulo~\ref{cap:agentes}).
+
+Ahora bien, la potencia de estos métodos convive con una fragilidad conocida: cuanto más flexible
+es el modelo, más fácil es que ajuste ruido en lugar de señal, sobre todo cuando el número de
+periodos verdaderamente independientes es pequeño. Esa tensión motiva la atención metodológica que
+vertebra el resto del capítulo.
+
+\section{Patologías metodológicas recurrentes}
+
+La literatura crítica ha identificado un conjunto de errores que inflan sistemáticamente el
+rendimiento aparente de una estrategia y que, si no se controlan, hacen irreproducibles los
+resultados. Tres son especialmente relevantes para este trabajo:
+
+\begin{itemize}
+  \item \textbf{Sesgo de anticipación} (\emph{lookahead bias}). Usar en una fecha información que
+  en realidad no era observable ese día ---por ejemplo, un dato fundamental antes de que la empresa
+  lo publicara, o la composición actual de un índice para decidir en el pasado--- introduce una
+  ventaja irreal. Es el sesgo que el diseño \emph{point-in-time} del capítulo~\ref{cap:metodologia}
+  ataca de raíz.
+
+  \item \textbf{Sesgo de supervivencia} (\emph{survivorship bias}). Estudiar solo las empresas que
+  han sobrevivido hasta hoy sobreestima el rendimiento, porque excluye a las que quebraron o fueron
+  excluidas del índice \parencite{brown1992survivorship}. Este proyecto lo mide por año en lugar de
+  limitarse a declararlo (capítulo~\ref{cap:datos}).
+
+  \item \textbf{Sobreajuste por selección} (\emph{backtest overfitting}). Probar muchas
+  configuraciones y quedarse con la mejor produce, casi con seguridad, un resultado atractivo aunque
+  no exista señal alguna: el máximo de muchos intentos aleatorios es alto por construcción.
+  \textcite{lopezdeprado2014pseudo} formalizan cómo un número suficiente de pruebas garantiza un
+  \emph{backtest} espectacular sin capacidad predictiva real, y \textcite{harvey2016cross}
+  documentan cómo la multiplicidad de contrastes ha poblado la literatura de factores que no
+  replican. La respuesta metodológica ---validación cruzada respetuosa con el tiempo, reserva de un
+  periodo que no interviene en ninguna decisión y contrastes de significancia--- se recoge en
+  \textcite{lopezdeprado2018advances} y se aplica en el capítulo~\ref{cap:diseno_experimental}.
+\end{itemize}
+
+\section{Por qué el \texorpdfstring{\rankic}{rank-IC} fuera de muestra como criterio de evidencia}
+
+De las patologías anteriores se desprende la decisión de evidencia de este TFM. Reportar
+únicamente la rentabilidad de un \emph{backtest} es frágil frente a las tres: un artefacto de datos,
+una empresa desaparecida o una configuración afortunada pueden producir una curva de rentabilidad
+convincente sin que el modelo haya aprendido nada. Por eso se adopta como métrica principal el
+\rankic{} \emph{fuera de muestra}, que pregunta directamente si el modelo ordena bien los activos,
+y se le exige superar dos filtros: significancia estadística mediante remuestreo por bloques ---que
+respeta el solapamiento temporal de las cohortes--- y estabilidad a lo largo de distintos periodos.
+La rentabilidad se conserva, pero como \emph{consecuencia} a reportar tras depurar artefactos, nunca
+como criterio de selección. Esta postura ---separar lo que el sistema \emph{aprende} de lo que
+\emph{rinde}--- es la que articula los capítulos de método y resultados que siguen.

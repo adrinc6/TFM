@@ -7,17 +7,19 @@ separa los artefactos de desarrollo de los resultados completos.
 from __future__ import annotations
 
 import logging
+import os
 from collections.abc import Callable
 
 from environment import Settings, ensure_directories
-from module.agents import build_agent_scores
-from module.backtest import run_backtest_from_run_dir
-from module.dataset import build_point_in_time_dataset
-from module.experiments import run_experiments_from_settings, run_full_study
-from module.features import build_features
-from module.ingest.pipeline import download_raw_data
-from module.report import build_report_from_settings
-from module.utils import setup_logging
+from module.data.dataset import build_point_in_time_dataset
+from module.data.ingest.pipeline import download_raw_data
+from module.modeling.agents import build_agent_scores
+from module.modeling.features import build_features
+from module.evaluation.backtest import run_backtest_from_run_dir
+from module.runs.experiments import run_experiments_from_settings
+from module.runs.execution import execute_official_optimization
+from module.ui.reports import build_report_from_settings
+from module.common.utils import setup_logging
 
 
 log = logging.getLogger(__name__)
@@ -33,7 +35,7 @@ STAGE_HANDLERS: dict[str, Callable[[Settings], None]] = {
     "backtest": run_backtest_from_run_dir,
     "report": build_report_from_settings,
     "experiments": run_experiments_from_settings,
-    "full_study": run_full_study,
+    "full_study": execute_official_optimization,
 }
 
 
@@ -50,6 +52,12 @@ def stages_for_run(run_mode: str) -> tuple[str, ...]:
 
 
 def main() -> None:
+    # Sin RUN_MODE explicito, la entrada principal es la consola local. El comportamiento
+    # historico de CLI se conserva intacto cuando el usuario fija RUN_MODE.
+    if "RUN_MODE" not in os.environ:
+        from module.ui.dashboard import serve
+        serve()
+        return
     settings = Settings()
     ensure_directories(settings)
     setup_logging()

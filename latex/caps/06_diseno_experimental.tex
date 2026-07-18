@@ -1,0 +1,37 @@
+\chapter{Diseño experimental: cartera, \emph{backtest} y rejilla de escenarios}
+\label{cap:diseno_experimental}
+
+% ESQUELETO. El desarrollo de este capítulo se redacta cuando cierre la reejecución del estudio
+% (ver docs/doc.md §5-§6 y docs/bitacora.md entradas 5-6). Se dejan aquí los apartados del método,
+% sin cifras, para fijar la estructura y para que el documento compile con todos los \input.
+
+\section{Construcción de la cartera}
+% Selección top-N flexible (8-12 posiciones, peso máximo por posición), reglas de rotación
+% (umbral de ventaja, expulsión por caída, sin tenencia mínima). module/evaluation/portfolio.py.
+
+\section{\emph{Backtest} con costes y guarda anti-artefactos}
+% Simulación con comisión y slippage; guarda anti-artefactos que neutraliza retornos mensuales
+% imposibles de una posición como datos corruptos (evitó el +953% espurio de 2010, ver
+% docs/bitacora.md). Métricas: rank-IC del meta_final, CAGR real vs SPY, beat rate, drawdown,
+% turnover. module/evaluation/backtest.py.
+
+\section{Perfiles de inversor}
+% Ocho estilos que, entre las buenas acciones del meta, reordenan según estilo (conservative,
+% aggressive, value, quality, momentum, garp, contrarian, balanced). Explicabilidad como
+% funcionalidad. module/evaluation/profiles.py.
+
+\section{Rejilla de escenarios en dos fases}
+% Fase 1: cada eje aislado (ventana de entrenamiento, horizonte de etiqueta, ancla, profundidad,
+% cadencia y los 7 artefactos). Decisión automática del mejor nivel de cada eje + artefactos
+% aceptados por significancia. Fase 2: combinaciones dirigidas de los ganadores + afinado de
+% hiperparámetros. module/runs/experiments.py, escenarios/fase1_ejes.py.
+
+\section{Control del sobreajuste por selección: era reservada}
+% La selección usa solo cohortes hasta 2024; 2025-2026 se reservan y no intervienen en ninguna
+% elección. El finalista se valida en esa era reservada (reserved_era_validation). Contrapeso al
+% backtest overfitting descrito en el capítulo del estado del arte.
+
+\medskip
+\noindent\emph{(Capítulo pendiente de desarrollo: a la espera de que termine la reejecución del
+estudio. Los apartados anteriores fijan el método; su redacción y las cifras asociadas se
+incorporarán entonces.)}

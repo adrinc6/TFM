@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from module.experiments import select_winner
+from module.runs.experiments import select_winner
 
 
 def test_learner_beats_high_alpha_scenario() -> None:

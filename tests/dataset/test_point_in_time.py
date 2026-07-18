@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from module.dataset import build_point_in_time_dataset
+from module.data.dataset import build_point_in_time_dataset
 
 
 def _row(panel, ticker: str, date: str):

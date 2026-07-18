@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from module.backtest import _economic_metrics
+from module.evaluation.backtest import _economic_metrics
 
 
 def test_cagr_matches_manual_case() -> None:
@@ -42,7 +42,7 @@ def test_cagr_not_inflated_by_horizon() -> None:
 
 def test_price_guard_neutralizes_impossible_returns() -> None:
     """Guarda anti-artefactos: un salto de precio imposible no infla el equity."""
-    from module.backtest import _mark_to_market
+    from module.evaluation.backtest import _mark_to_market
     log = []
     # +1000 % en un mes (dato corrupto) -> neutralizado, la posicion aporta 0.
     corrupt = _mark_to_market({"AAA": 1.0}, {"AAA": 100.0}, {"d": {"AAA": 1100.0}},

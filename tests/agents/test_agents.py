@@ -4,7 +4,7 @@ import json
 
 import pandas as pd
 
-from module.agents import build_agent_scores
+from module.modeling.agents import build_agent_scores
 
 
 def test_agents_start_at_anchor_with_expanding_history_and_score_monthly(agent_settings) -> None:

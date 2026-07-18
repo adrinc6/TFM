@@ -1,0 +1,79 @@
+% =====================================================================
+% TFM — Sistema de IA aplicado a la selección de acciones
+% Documento maestro. Pensado para compilar con XeLaTeX en Overleaf:
+%   Menu > Settings > Compiler: XeLaTeX ; Main document: main.tex
+% XeLaTeX es UTF-8 nativo (NO se usa inputenc) y gestiona las fuentes con
+% fontspec. La bibliografía es autor-año con biblatex + biber.
+%
+% Estructura y convenciones: ver latex/plan_tfm.md.
+% Cada capítulo es un fichero en caps/ que se incorpora con \input al final.
+% =====================================================================
+\documentclass[11pt,a4paper]{report}
+
+% --- Fuentes e idioma (XeLaTeX) --------------------------------------
+% Con XeLaTeX NO se cargan inputenc ni fontenc: el motor ya lee UTF-8 y
+% fontspec selecciona una fuente OpenType con acentos, eñes y símbolos.
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}   % fuente estándar de LaTeX, disponible en Overleaf
+\usepackage[spanish,es-tabla,es-noquoting]{babel}
+
+% --- Geometría y tipografía ------------------------------------------
+\usepackage[a4paper,margin=2.5cm]{geometry}
+
+% --- Matemáticas y notación ------------------------------------------
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+% --- Figuras y tablas ------------------------------------------------
+\usepackage{graphicx}
+\graphicspath{{figuras/}}          % las figuras del pipeline se referencian por nombre
+\usepackage{booktabs}
+
+% --- Enlaces y citas -------------------------------------------------
+\usepackage{csquotes}
+% Bibliografía autor-año (ligera y rápida). Se eligió el estilo 'authoryear'
+% en vez de 'apa' porque este último (paquete biblatex-apa) es pesado y en el
+% plan gratuito de Overleaf ralentiza mucho la compilación. Sigue siendo
+% autor-año, coherente con las citas \textcite/\parencite del texto.
+\usepackage[style=authoryear,backend=biber,natbib=true]{biblatex}
+\addbibresource{referencias.bib}
+
+\usepackage[hidelinks]{hyperref}   % enlaces internos sin recuadros de color
+
+% --- Notación compartida (se fija una vez, se reutiliza sin redefinir) -
+% Fecha de snapshot (día en que se genera una señal).
+\newcommand{\tsnap}{t}
+% Fecha real de publicación de un fundamental (SEC EDGAR filingDate).
+\newcommand{\tfiled}{t_{\text{filed}}}
+% Horizonte de la etiqueta de retorno futuro (en meses).
+\newcommand{\hlabel}{h}
+% Coeficiente de información por rango (rank-IC).
+\newcommand{\rankic}{\text{rank-IC}}
+
+% --- Metadatos -------------------------------------------------------
+% Portada provisional. Sustituir por la portada oficial del máster cuando
+% se decida (queda pendiente en latex/plan_tfm.md).
+\title{Aprendizaje automático aplicado a la selección de acciones:\\
+       medición honesta del aprendizaje fuera de muestra}
+\author{Adrián Núñez}
+\date{\today}
+
+% =====================================================================
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\input{caps/01_introduccion}
+\input{caps/02_estado_del_arte}
+\input{caps/03_datos_y_universo}
+\input{caps/04_diseno_metodologico}
+\input{caps/05_agentes_y_meta_agente}
+\input{caps/06_diseno_experimental}
+\input{caps/07_resultados}
+\input{caps/08_limitaciones}
+\input{caps/09_conclusiones}
+
+\printbibliography[heading=bibintoc]
+
+\end{document}

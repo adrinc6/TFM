@@ -25,8 +25,8 @@ import pandas as pd
 from lightgbm import LGBMClassifier, LGBMRanker, LGBMRegressor
 
 from environment import Settings
-from module.meta import AGENT_NAMES, combine_agent_scores
-from module.utils import read_parquet, sha256_file, write_json, write_parquet
+from module.modeling.meta import AGENT_NAMES, combine_agent_scores
+from module.common.utils import read_parquet, sha256_file, write_json, write_parquet
 
 log = logging.getLogger(__name__)
 
@@ -64,7 +64,7 @@ def build_agent_scores(settings: Settings) -> pd.DataFrame:
     frame["label_end_ts"] = pd.to_datetime(frame["label_end_date"])
     frame["is_quarterly"] = frame["review_type"].eq("fundamental_quarterly")
 
-    predictions, coefficients = _walk_forward_scores(frame, settings)
+    predictions, coefficients, local_attribution = _walk_forward_scores(frame, settings)
     if predictions.empty:
         raise RuntimeError(
             "No se pudieron entrenar agentes con la historia disponible. "
@@ -77,6 +77,7 @@ def build_agent_scores(settings: Settings) -> pd.DataFrame:
     write_parquet(weights, run_dir / "meta_weights.parquet")
     write_parquet(diagnostics, run_dir / "rank_ic_diagnostics.parquet")
     write_parquet(coefficients, run_dir / "model_feature_attribution.parquet")
+    write_parquet(local_attribution, run_dir / "agent_local_attribution.parquet")
     write_json(_manifest(settings, feature_path, target_path, predictions, run_dir), run_dir / "manifest.json")
     log.info("Agentes: rows=%s runs=%s output=%s", len(wide), wide["snapshot_date"].nunique(), run_dir)
     return wide
@@ -92,29 +93,31 @@ def _agent_features(frame: pd.DataFrame, settings: Settings) -> dict[str, list[s
         features[agent] += [c for c in factor_columns if c in frame.columns]
 
     if settings.fundamental_momentum:
-        from module.features import MOMENTUM_FACTORS_QUALITY, MOMENTUM_FACTORS_VALUE
+        from module.modeling.features import MOMENTUM_FACTORS_QUALITY, MOMENTUM_FACTORS_VALUE
         add("quality", MOMENTUM_FACTORS_QUALITY)
         add("value", MOMENTUM_FACTORS_VALUE)
     if settings.market_regime_feature:
-        from module.features import REGIME_INTERACTION_FACTORS
+        from module.modeling.features import REGIME_INTERACTION_FACTORS
         add("momentum", REGIME_INTERACTION_FACTORS)
     # Artefactos nuevos: cada bloque alimenta a su agente natural (por su factor_<source>).
     if settings.price_momentum_multi:
-        from module.artifacts import PRICE_MOMENTUM_SOURCES
+        from module.modeling.artifacts import PRICE_MOMENTUM_SOURCES
         add("momentum", [f"factor_{s}" for s in PRICE_MOMENTUM_SOURCES])
     if settings.moving_averages:
-        from module.artifacts import MOVING_AVERAGE_SOURCES
+        from module.modeling.artifacts import MOVING_AVERAGE_SOURCES
         add("momentum", [f"factor_{s}" for s in MOVING_AVERAGE_SOURCES])
     if settings.regime_extended:
-        from module.artifacts import REGIME_EXTENDED_SOURCES
+        from module.modeling.artifacts import REGIME_EXTENDED_SOURCES
         add("momentum", [f"factor_{s}" for s in REGIME_EXTENDED_SOURCES])
     if settings.quality_growth_derived:
-        from module.artifacts import QUALITY_GROWTH_SOURCES
+        from module.modeling.artifacts import QUALITY_GROWTH_SOURCES
         add("quality", [f"factor_{s}" for s in QUALITY_GROWTH_SOURCES])
     return features
 
 
-def _walk_forward_scores(frame: pd.DataFrame, settings: Settings) -> tuple[pd.DataFrame, pd.DataFrame]:
+def _walk_forward_scores(
+    frame: pd.DataFrame, settings: Settings
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     agent_features = _agent_features(frame, settings)
     anchor = _execution_anchor(settings)
     retrain_dates = sorted(
@@ -124,6 +127,7 @@ def _walk_forward_scores(frame: pd.DataFrame, settings: Settings) -> tuple[pd.Da
     )
     rows: list[dict] = []
     coefficients: list[dict] = []
+    local_attribution: list[dict] = []
     for index, retrain_date in enumerate(retrain_dates):
         next_date = retrain_dates[index + 1] if index + 1 < len(retrain_dates) else None
         training_start = max(
@@ -168,7 +172,10 @@ def _walk_forward_scores(frame: pd.DataFrame, settings: Settings) -> tuple[pd.Da
                     }
                 )
             coefficients.extend(_importance_rows(model, agent, retrain_date, len(train), settings))
-    return pd.DataFrame(rows), pd.DataFrame(coefficients)
+            local_attribution.extend(
+                _local_contribution_rows(model, scoring, columns, agent, retrain_date)
+            )
+    return pd.DataFrame(rows), pd.DataFrame(coefficients), pd.DataFrame(local_attribution)
 
 
 def _prepare_training(train: pd.DataFrame, settings: Settings) -> tuple[pd.DataFrame, pd.Series]:
@@ -249,6 +256,47 @@ def _importance_rows(model, agent: str, retrain_date: pd.Timestamp, rows: int, s
         }
         for name, value in zip(names, values, strict=True)
     ]
+
+
+def _local_contribution_rows(
+    model, scoring: pd.DataFrame, columns: list[str], agent: str, retrain_date: pd.Timestamp
+) -> list[dict]:
+    """Devuelve las cinco contribuciones locales más relevantes por predicción.
+
+    LightGBM entrega contribuciones aditivas mediante ``pred_contrib``. Para clasificadores
+    están expresadas en margen log-odds; para regresión/ranking, en unidades del score. Se
+    guarda la base por separado para que la UI no confunda una contribución con un score final.
+    """
+    if scoring.empty:
+        return []
+    contributions = np.asarray(model.booster_.predict(scoring[columns], pred_contrib=True))
+    expected = len(columns) + 1
+    if contributions.ndim != 2 or contributions.shape != (len(scoring), expected):
+        log.warning("Contribuciones locales no disponibles para %s (%s).", agent, contributions.shape)
+        return []
+    rows: list[dict] = []
+    for observation, vector in zip(scoring.itertuples(index=False), contributions, strict=True):
+        base_value = float(vector[-1])
+        strongest = sorted(range(len(columns)), key=lambda index: abs(float(vector[index])), reverse=True)[:5]
+        for position, index in enumerate(strongest, start=1):
+            contribution = float(vector[index])
+            feature = columns[index]
+            value = getattr(observation, feature)
+            rows.append(
+                {
+                    "ticker": observation.ticker,
+                    "snapshot_date": observation.snapshot_date,
+                    "model_retrain_date": retrain_date.date().isoformat(),
+                    "agent": agent,
+                    "feature": feature,
+                    "factor_value": None if pd.isna(value) else float(value),
+                    "local_contribution": contribution,
+                    "direction": "positive" if contribution > 0 else "negative" if contribution < 0 else "neutral",
+                    "importance_rank": position,
+                    "base_value": base_value,
+                }
+            )
+    return rows
 
 
 def _wide_scores(predictions: pd.DataFrame, meta: pd.DataFrame) -> pd.DataFrame:

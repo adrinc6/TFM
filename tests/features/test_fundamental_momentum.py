@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from module.features import _add_fundamental_momentum
+from module.modeling.features import _add_fundamental_momentum
 
 
 def _panel() -> pd.DataFrame:

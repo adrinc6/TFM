@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TFM · Consola de investigación</title>
+  <link rel="stylesheet" href="/app/css/tokens.css">
+  <link rel="stylesheet" href="/app/css/layout.css">
+  <link rel="stylesheet" href="/app/css/components.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-mark"></span>
+      TFM <small>Research Console</small>
+    </div>
+    <nav class="app-nav">
+      <button class="active" data-view="console">Consola</button>
+      <button data-view="results">Resultados</button>
+    </nav>
+  </header>
+
+  <main class="app-main">
+    <!-- Vista Consola: lanzar Experimental / Study / Optimization -->
+    <section id="console" class="view active"></section>
+
+    <!-- Vista Resultados: listas de estudios y runs + panel de detalle -->
+    <section id="results" class="view"></section>
+  </main>
+
+  <!-- Librería de gráficos embebida localmente (sin CDN) -->
+  <script src="/app/js/vendor/chart.min.js"></script>
+
+  <!-- Núcleo -->
+  <script src="/app/js/api.js"></script>
+  <script src="/app/js/charts.js"></script>
+
+  <!-- Vistas -->
+  <script src="/app/js/views/console.js"></script>
+  <script src="/app/js/views/results.js"></script>
+  <script src="/app/js/views/study.js"></script>
+  <script src="/app/js/views/run.js"></script>
+  <script src="/app/js/views/performance.js"></script>
+  <script src="/app/js/views/learning.js"></script>
+  <script src="/app/js/views/portfolio.js"></script>
+  <script src="/app/js/views/stocks.js"></script>
+  <script src="/app/js/views/ticker.js"></script>
+
+  <!-- Arranque y router -->
+  <script src="/app/js/app.js"></script>
+</body>
+</html>

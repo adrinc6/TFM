@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from module.features import build_features
+from module.modeling.features import build_features
 
 
 def test_features_are_point_in_time_and_targets_are_separate(feature_settings) -> None:

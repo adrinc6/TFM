@@ -239,7 +239,7 @@ class Settings:
     @property
     def tickers(self) -> list[str]:
         """Universo histórico completo o muestra de desarrollo más el benchmark."""
-        from module.universe import historical_universe
+        from module.data.universe import historical_universe
 
         base = DEV_TICKERS if self.dev_mode else sorted(historical_universe())
         return list(dict.fromkeys([*base, self.benchmark_ticker]))

@@ -33,12 +33,12 @@ from typing import Any, Mapping
 import pandas as pd
 
 from environment import PROJECT_ROOT, Settings
-from module.agents import build_agent_scores
-from module.backtest import run_backtest
-from module.dataset import build_point_in_time_dataset
-from module.features import build_features
-from module.report import build_comparison_report, build_run_report
-from module.utils import read_parquet, write_json
+from module.data.dataset import build_point_in_time_dataset
+from module.modeling.agents import build_agent_scores
+from module.modeling.features import build_features
+from module.evaluation.backtest import run_backtest
+from module.ui.reports import build_comparison_report, build_run_report
+from module.common.utils import read_parquet, write_json
 
 log = logging.getLogger(__name__)
 
@@ -339,7 +339,7 @@ def _run_stage_backtest(settings: Settings, processed: Path, run_dir: Path) -> N
     diagnostics = pd.read_parquet(diagnostics_path) if diagnostics_path.exists() else None
     result = run_backtest(scores, asset_prices, benchmark, settings, diagnostics)
 
-    from module.utils import write_parquet
+    from module.common.utils import write_parquet
     write_parquet(result.positions, run_dir / "positions.parquet")
     write_parquet(result.orders, run_dir / "orders.parquet")
     write_parquet(result.equity, run_dir / "equity.parquet")
@@ -416,7 +416,7 @@ def _meta_final_ic(scenario_dir: Path, until_year: int | None = None) -> "pd.Ser
     (para la seleccion, que reserva los anios posteriores). No reentrena ni mira al futuro: solo
     filtra que cohortes ya calculadas se miran.
     """
-    from module.report import _pick_run_dir   # import diferido: report depende de matplotlib
+    from module.ui.reports import _pick_run_dir   # import diferido: reports depende de matplotlib
     run_dir = _pick_run_dir(scenario_dir)
     if run_dir is None:
         return None
@@ -444,7 +444,7 @@ def decide_accepted_artifacts(
     overrides de todos los aceptados. `until_year` reserva anios posteriores de la seleccion.
     Sin intervencion humana.
     """
-    from module.stats import block_bootstrap_ci, paired_difference_ci
+    from module.evaluation.stats import block_bootstrap_ci, paired_difference_ci
 
     scenarios_root = Path(scenarios_root)
     baseline_ic = _meta_final_ic(scenarios_root / "baseline", until_year=until_year)
@@ -654,7 +654,7 @@ def run_full_study(settings: Settings) -> None:
     Final:   run con la config ganadora + 8 perfiles + robustez/placebo, y VALIDACION en la era
              reservada 2025-2026 (que no intervino en ninguna eleccion).
     """
-    from module.profiles import PROFILE_NAMES
+    from module.evaluation.profiles import PROFILE_NAMES
 
     grid_path = PROJECT_ROOT / "escenarios" / "fase1_ejes.py"
     if not grid_path.exists():
@@ -926,14 +926,14 @@ def _latest_agents_run(processed: Path) -> Path:
 
 def _run_id_dir(settings: Settings, processed: Path) -> Path:
     """Directorio exacto del run de agentes de `settings` (por su huella, no por 'el ultimo')."""
-    from module.agents import _run_id
+    from module.modeling.agents import _run_id
     feat = processed / "features_point_in_time.parquet"
     targ = processed / "targets_forward_3m.parquet"
     return processed / "agents" / _run_id(settings, feat, targ)
 
 
 def _write_backtest_outputs(result, run_dir: Path) -> None:
-    from module.utils import write_parquet
+    from module.common.utils import write_parquet
     write_parquet(result.positions, run_dir / "positions.parquet")
     write_parquet(result.orders, run_dir / "orders.parquet")
     write_parquet(result.equity, run_dir / "equity.parquet")
@@ -943,7 +943,7 @@ def _write_backtest_outputs(result, run_dir: Path) -> None:
 
 def _run_robustness(settings: Settings, processed: Path, run_dir: Path, diagnostics) -> dict:
     """Ejecuta los tests de robustez sobre la config final."""
-    from module.robustness import label_permutation_test, leave_one_year_out
+    from module.evaluation.robustness import label_permutation_test, leave_one_year_out
 
     # Permutacion de etiquetas: reentrenar N veces con retornos futuros barajados.
     permuted_ic = []

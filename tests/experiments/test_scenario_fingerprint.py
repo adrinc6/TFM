@@ -6,7 +6,7 @@ from __future__ import annotations
 from dataclasses import replace
 
 from environment import Settings
-from module.experiments import stage_fingerprint
+from module.runs.experiments import stage_fingerprint
 
 
 def test_same_settings_yield_same_fingerprint() -> None:

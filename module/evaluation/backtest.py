@@ -22,8 +22,8 @@ import numpy as np
 import pandas as pd
 
 from environment import Settings
-from module.portfolio import PortfolioState, decide_orders
-from module.utils import read_parquet, write_json, write_parquet
+from module.evaluation.portfolio import PortfolioState, decide_orders
+from module.common.utils import read_parquet, write_json, write_parquet
 
 log = logging.getLogger(__name__)
 
@@ -37,18 +37,26 @@ class BacktestResult:
     summary: dict = field(default_factory=dict)
 
 
-def run_backtest_from_run_dir(settings: Settings) -> BacktestResult:
-    """Wrapper que localiza el ultimo run_dir de agentes y lanza el backtest."""
+def run_backtest_from_run_dir(settings: Settings, agent_run_dir: Path | None = None) -> BacktestResult:
+    """Lanza el backtest para el directorio exacto de agentes de un escenario.
+
+    El fallback por fecha de modificación sólo sirve al modo CLI ``backtest`` aislado. La
+    orquestación de runs debe transportar ``agent_run_dir`` desde su propia etapa de agentes.
+    """
     processed = settings.processed_output_dir
-    agents_root = processed / "agents"
-    if not agents_root.exists():
-        raise RuntimeError(
-            f"No hay run_dir de agentes en {agents_root}. Ejecuta primero RUN_MODE='agents'."
-        )
-    run_dirs = sorted([path for path in agents_root.iterdir() if path.is_dir()])
-    if not run_dirs:
-        raise RuntimeError(f"No hay ningun run de agentes en {agents_root}.")
-    run_dir = run_dirs[-1]
+    if agent_run_dir is None:
+        agents_root = processed / "agents"
+        run_dirs = sorted(
+            [path for path in agents_root.iterdir() if path.is_dir()], key=lambda path: path.stat().st_mtime
+        ) if agents_root.exists() else []
+        if not run_dirs:
+            raise RuntimeError(f"No hay run_dir de agentes en {agents_root}. Ejecuta primero RUN_MODE='agents'.")
+        run_dir = run_dirs[-1]
+        log.warning("Backtest aislado: se usa el agente más reciente %s.", run_dir.name)
+    else:
+        run_dir = Path(agent_run_dir)
+        if not (run_dir / "agent_scores.parquet").exists():
+            raise FileNotFoundError(f"El agente del escenario no contiene scores: {run_dir}")
 
     scores = read_parquet(run_dir / "agent_scores.parquet", "RUN_MODE='agents'")
     asset_prices = read_parquet(
@@ -79,7 +87,7 @@ def run_backtest(
     senales de aprendizaje que usa la seleccion. El `settings.profile` reordena la seleccion por
     estilo de inversor (ver module.profiles) sin reentrenar: mismas señales, distinta cartera.
     """
-    from module.profiles import apply_profile
+    from module.evaluation.profiles import apply_profile
     scores = apply_profile(scores, settings.profile)
     scores = scores.sort_values("snapshot_date").copy()
     price_index = _price_lookup(prices)
@@ -123,7 +131,7 @@ def run_backtest(
         portfolio_value_post_orders = portfolio_value_pre_orders * (1 - cost_drag)
         portfolio_return = portfolio_value_post_orders / portfolio_value - 1 if index > 0 else 0.0
 
-        state = state.apply(priced_orders, {})
+        state = state.apply(priced_orders, price_index.get(snapshot_date, {}))
         turnover = sum(abs(order["weight_after"] - order["weight_before"])
                        for order in priced_orders if order["weight_before"] is not None
                        and order["weight_after"] is not None)
@@ -141,6 +149,8 @@ def run_backtest(
                     "ticker": ticker,
                     "weight": weight,
                     "entry_date": entry_date,
+                    "entry_price": state.entry_prices.get(ticker),
+                    "valuation_price": price_index.get(snapshot_date, {}).get(ticker),
                     "months_held": state.months_held.get(ticker, 0),
                     "current_percentile": float(_percentile_of(ticker, scores_at_date)),
                 }

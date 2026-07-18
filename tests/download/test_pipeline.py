@@ -6,7 +6,7 @@ import pytest
 import environment
 import main
 from environment import Settings
-from module.ingest import pipeline
+from module.data.ingest import pipeline
 
 
 class FakeYahooClient:

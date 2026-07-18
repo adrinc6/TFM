@@ -20,7 +20,33 @@ pip install -r requirements.txt
 Clave de Finnhub en `.env` (`FINNHUB_API_KEY=...`), solo para la descarga. `EDGAR_USER_AGENT` es
 opcional (identifica las solicitudes a la SEC).
 
-## El comando de principio a fin
+## Consola local y CLI
+
+Sin `RUN_MODE` definido, la entrada principal abre una consola local:
+
+```powershell
+python main.py
+# http://127.0.0.1:8765
+```
+
+La consola es una aplicación web de una sola página con estética oscura (negros y grises),
+servida como archivos reales desde `module/ui/app/` por el servidor `http.server` de
+`module/ui/dashboard.py` (sin dependencias externas ni CDN; los gráficos usan una copia local
+de Chart.js). Tiene dos vistas:
+
+- **Consola**: lanzar un **Experimental** (configuración libre y trazable), crear un **Study**
+  (rejilla de combinaciones dirigida) y revisar la **Optimization** oficial, con todos los
+  parámetros, presets y selects guiados por los valores admitidos.
+- **Resultados**: dos listas separadas, una de **estudios** y otra de **runs**. Al seleccionar
+  un estudio se analiza el estudio (fases, decisión y comparativa de sus runs); al seleccionar
+  un run se analiza el run con pestañas de resumen, rendimiento, aprendizaje, cartera, trades,
+  explorador de stocks (con crecimientos) y ficha por ticker, con tablas y gráficos.
+
+Cada resultado nuevo queda registrado bajo `results/runs/<YYYYMMDD--hash>/` con manifiesto,
+configuración efectiva, artefactos y trazabilidad. Los studies agrupan sus runs en
+`results/studies/` y se indexan en `results/registry.jsonl`.
+
+Cuando se define `RUN_MODE`, se conserva el flujo CLI:
 
 Con `data/raw` ya descargado, un único comando ejecuta el estudio completo sin decisiones humanas:
 
@@ -36,23 +62,26 @@ optimizado → 8 perfiles de inversor → tests de robustez/placebo → **valida
 2025-2026** (que no interviene en la selección, para no sobreajustar por explorar mucho) → informes
 HTML.
 
-Todo queda ordenado **por fases** dentro de `results/` (ver `results/README.md`):
-`fase1_ejes/`, `fase2_combinaciones/`, `hiperparametros/` (cada una con su `comparison.html`),
-`final/` (el run ganador con su `report.html` completo y CSVs), más `study_summary.json` y
-`conclusiones.md` en la raíz.
+Los resultados se organizan de forma inmutable por `runs/` y `studies/`: cada study conserva su
+manifiesto, definición y lista de runs; cada run guarda configuración, estado, artefactos de
+agentes, backtest, cartera, CSVs y panel de stocks reproducible.
 
-## Ver los informes
+## Organización del código
 
-Los HTML son completos: **resumen, rentabilidad por año, gráficos de equity y drawdown, aprendizaje
-(rank-IC en el tiempo por agente), ranking total ordenado por agentes, cobertura y posiciones**. Las
-tablas grandes (ranking por agentes, histórico de rank-IC, posiciones, órdenes) se cargan desde CSV
-por `fetch`, lo que requiere un servidor local:
+`module/` se divide por responsabilidad para que la navegación del proyecto sea directa:
 
-```bash
-python servir_html.py
-# el informe final:    http://localhost:8000/results/final/report.html
-# comparativa Fase 1:  http://localhost:8000/results/fase1_ejes/comparison.html
-```
+- `data/`: universo, dataset point-in-time, baselines e ingestión de Finnhub/Yahoo/EDGAR.
+- `modeling/`: features, artefactos activables, agentes LightGBM y meta-agente.
+- `evaluation/`: cartera, backtest, perfiles, robustez y estadística.
+- `runs/`: ejecución de runs/studies, caché y almacenamiento inmutable de resultados.
+- `ui/`: Research Console (`dashboard.py` + frontend en `app/`) e informes estáticos (`reports.py`).
+- `common/`: utilidades transversales.
+
+## Resultados
+
+La consola muestra los manifiestos, métricas, rankings, carteras, órdenes y evolución por ticker
+desde los Parquet y CSV del run seleccionado. El rank-IC OOS es el criterio de aprendizaje; el
+rendimiento de cartera se muestra como consecuencia y no como selector de configuraciones.
 
 ## Etapas sueltas
 
@@ -66,7 +95,7 @@ python servir_html.py
 | `features` | Factores GARP/momentum + artefactos activos + etiquetas futuras separadas. |
 | `agents` | Entrena los 3 agentes LightGBM walk-forward y el meta-agente. |
 | `backtest` | Simula la cartera (con guarda anti-artefactos y perfil de inversor) y calcula métricas. |
-| `report` | Genera el `report.html` del último run. |
+| `report` | Genera el informe HTML estático (autocontenido, estética oscura) del último run. La consola es la vía principal de análisis. |
 | `experiments` | Barrido de artefactos (`escenarios/rejilla_base.py`) + decisión automática. |
 | `full_study` | **Todo de principio a fin en 2 fases** con era reservada (ver arriba). |
 
@@ -85,7 +114,7 @@ python servir_html.py
   transversal del retorno). Walk-forward estricto (solo etiquetas ya realizadas).
 - **Meta-agente** por rank-IC reciente; el `meta_score` es lo que opera la cartera y sobre lo que
   se mide el rank-IC.
-- **Artefactos activables** (`module/artifacts.py`): momentum de fundamentales, régimen bull/bear,
+- **Artefactos activables** (`module/modeling/artifacts.py`): momentum de fundamentales, régimen bull/bear,
   neutralización por sector, momentum de precio multi-horizonte, medias móviles, régimen
   ampliado, calidad/crecimiento derivados. El barrido decide cuáles entran.
 
@@ -94,10 +123,10 @@ python servir_html.py
 - **Cartera** 8-12 posiciones, peso máx 15 %, rotación con umbral de ventaja y expulsión.
   **Guarda anti-artefactos**: neutraliza retornos mensuales imposibles (>200 %) como datos
   corruptos.
-- **Perfiles de inversor** (`module/profiles.py`): entre las buenas del meta, cada perfil
+- **Perfiles de inversor** (`module/evaluation/profiles.py`): entre las buenas del meta, cada perfil
   (conservador, agresivo, value, calidad, momentum, GARP, contrarian, balanceado) reordena según
   estilo. Explicabilidad como funcionalidad.
-- **Robustez** (`module/robustness.py`): permutación de etiquetas (placebo), carteras aleatorias
+- **Robustez** (`module/evaluation/robustness.py`): permutación de etiquetas (placebo), carteras aleatorias
   (Monte Carlo), bootstrap por bloques, leave-one-year-out. Demuestran que el resultado no es
   suerte.
 

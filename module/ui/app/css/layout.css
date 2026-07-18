@@ -1,0 +1,126 @@
+/* Estructura general: header pegajoso, navegación, rejillas, tarjetas y tablas. */
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+body { overflow-x: hidden; }
+
+/* --- Cabecera y navegación --- */
+header.app-header {
+  height: 66px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  border-bottom: 1px solid var(--line);
+  background: #0d0d0f;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.brand {
+  font-weight: 750;
+  font-size: 17px;
+  letter-spacing: 0.2px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand .brand-mark {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #3a3a40, #17171a);
+  border: 1px solid var(--line-strong);
+}
+.brand small { color: var(--muted); font-weight: 500; font-size: 12px; }
+
+nav.app-nav { display: flex; gap: 8px; }
+nav.app-nav button {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  padding: 9px 15px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+nav.app-nav button:hover { background: var(--surface2); color: var(--ink); }
+nav.app-nav button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0a0a0b;
+}
+
+/* --- Contenedor principal y vistas --- */
+main.app-main {
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 26px;
+}
+.view { display: none; }
+.view.active { display: block; animation: fade 0.18s ease; }
+@keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* --- Rejillas --- */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--gap);
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 18px;
+  margin-top: 18px;
+}
+.grid.results-grid { grid-template-columns: 0.9fr 1.6fr; }
+.grid.split-even { grid-template-columns: 1fr 1fr; }
+
+/* --- Tarjetas y paneles --- */
+.card, .panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--pad);
+}
+.card h3, .panel h3 { margin: 0 0 8px; font-size: 15px; }
+.panel > h3:first-child { margin-top: 0; }
+.card p { color: var(--muted); margin: 6px 0; }
+
+/* --- Tablas --- */
+.table-wrap { overflow-x: auto; }
+table.data {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+table.data th, table.data td {
+  text-align: left;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+  white-space: nowrap;
+}
+table.data th { color: var(--muted); font-weight: 600; position: sticky; top: 0; background: var(--surface); }
+table.data tr.click { cursor: pointer; }
+table.data tr.click:hover { background: var(--surface2); }
+.scroll { overflow: auto; max-height: 580px; }
+
+@media (max-width: 900px) {
+  .grid, .grid.results-grid, .grid.split-even { grid-template-columns: 1fr; }
+  main.app-main { padding: 16px; }
+  header.app-header { padding: 0 16px; }
+}

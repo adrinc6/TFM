@@ -7,7 +7,7 @@ from dataclasses import replace
 import pandas as pd
 import pytest
 
-from module.backtest import run_backtest
+from module.evaluation.backtest import run_backtest
 
 
 def test_mutating_future_scores_does_not_change_past_positions(

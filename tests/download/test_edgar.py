@@ -1,4 +1,4 @@
-from module.ingest.edgar import EdgarClient, _cik_from_atom, _extract_periodic_reports
+from module.data.ingest.edgar import EdgarClient, _cik_from_atom, _extract_periodic_reports
 
 
 def test_extract_periodic_reports_ignores_non_periodic_and_incomplete_rows() -> None:

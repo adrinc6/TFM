@@ -27,6 +27,22 @@ import pandas as pd
 matplotlib.use("Agg")   # sin display, para que corra en cabeceras sin GUI (CI, servidores)
 import matplotlib.pyplot as plt   # noqa: E402
 
+# Tema oscuro de las figuras, a juego con la paleta de la app (negros y grises, sin azul).
+_DARK_BG = "#141416"
+_DARK_INK = "#ececee"
+_DARK_MUTED = "#9a9aa2"
+_DARK_LINE = "#2a2a2e"
+_SERIES_1 = "#d4d4d8"
+_SERIES_2 = "#8a8a92"
+_POS = "#4ade80"
+_NEG = "#f87171"
+plt.rcParams.update({
+    "figure.facecolor": _DARK_BG, "axes.facecolor": _DARK_BG, "savefig.facecolor": _DARK_BG,
+    "axes.edgecolor": _DARK_LINE, "axes.labelcolor": _DARK_INK, "text.color": _DARK_INK,
+    "xtick.color": _DARK_MUTED, "ytick.color": _DARK_MUTED, "grid.color": _DARK_LINE,
+    "axes.grid": True, "legend.facecolor": _DARK_BG, "legend.edgecolor": _DARK_LINE,
+})
+
 log = logging.getLogger(__name__)
 
 
@@ -354,7 +370,7 @@ def build_comparison_report(scenarios_root: Path) -> Path:
     Sin eras: un unico ranking global sobre todos los anios disponibles. La seleccion usa
     senales de aprendizaje (rank-IC) y consistencia, NUNCA alfa. Ver `select_winner`.
     """
-    from module.experiments import SELECTION_DIMENSIONS, select_winner
+    from module.runs.experiments import SELECTION_DIMENSIONS, select_winner
 
     scenarios_root = Path(scenarios_root)
     scenario_dirs = sorted(
@@ -593,17 +609,17 @@ def _comparison_all_runs_section(summary: pd.DataFrame, scenario_dirs: list[Path
 
 def _plot_equity_curve(equity: pd.DataFrame) -> str:
     figure, axes = plt.subplots(figsize=(8, 3))
-    axes.plot(pd.to_datetime(equity["snapshot_date"]), equity["portfolio_value"], label="cartera")
-    axes.plot(pd.to_datetime(equity["snapshot_date"]), equity["benchmark_value"], label="SPY")
+    axes.plot(pd.to_datetime(equity["snapshot_date"]), equity["portfolio_value"], label="cartera", color=_SERIES_1)
+    axes.plot(pd.to_datetime(equity["snapshot_date"]), equity["benchmark_value"], label="SPY", color=_SERIES_2, linestyle="--")
     axes.set_ylabel("valor (base 100)"); axes.legend(); axes.grid(alpha=0.3)
     return _figure_to_img(figure)
 
 
 def _plot_annual_alpha_bars(annual: pd.DataFrame) -> str:
     figure, axes = plt.subplots(figsize=(8, 3))
-    colors = ["#2ca02c" if alpha > 0 else "#d62728" for alpha in annual["alpha"]]
+    colors = [_POS if alpha > 0 else _NEG for alpha in annual["alpha"]]
     axes.bar(annual["year"].astype(str), annual["alpha"] * 100, color=colors)
-    axes.axhline(0, color="black", linewidth=0.5)
+    axes.axhline(0, color=_DARK_MUTED, linewidth=0.5)
     axes.set_ylabel("alfa (%)"); axes.grid(alpha=0.3, axis="y")
     return _figure_to_img(figure)
 
@@ -614,7 +630,7 @@ def _plot_drawdown_series(equity: pd.DataFrame) -> str:
     drawdown = 1 - equity_series / np.maximum.accumulate(equity_series)
     figure, axes = plt.subplots(figsize=(8, 3))
     axes.fill_between(pd.to_datetime(equity["snapshot_date"]), -drawdown * 100, 0,
-                       color="#d62728", alpha=0.4)
+                       color=_NEG, alpha=0.4)
     axes.set_ylabel("drawdown (%)"); axes.grid(alpha=0.3)
     return _figure_to_img(figure)
 
@@ -626,12 +642,12 @@ def _plot_rank_ic_over_time(diagnostics: pd.DataFrame) -> str:
     meta["prediction_date"] = pd.to_datetime(meta["prediction_date"])
     meta = meta.sort_values("prediction_date")
     figure, axes = plt.subplots(figsize=(8, 3))
-    colors = ["#16a34a" if v > 0 else "#dc2626" for v in meta["rank_ic"]]
+    colors = [_POS if v > 0 else _NEG for v in meta["rank_ic"]]
     axes.bar(meta["prediction_date"], meta["rank_ic"], width=60, color=colors, alpha=0.5)
     rolling = meta["rank_ic"].rolling(4, min_periods=1).mean()
-    axes.plot(meta["prediction_date"], rolling, color="#0f172a", linewidth=1.5, label="media movil (4)")
-    axes.axhline(0, color="black", linewidth=0.6)
-    axes.axhline(float(meta["rank_ic"].mean()), color="#2f6df6", linestyle="--", linewidth=1,
+    axes.plot(meta["prediction_date"], rolling, color=_SERIES_1, linewidth=1.5, label="media movil (4)")
+    axes.axhline(0, color=_DARK_MUTED, linewidth=0.6)
+    axes.axhline(float(meta["rank_ic"].mean()), color=_SERIES_2, linestyle="--", linewidth=1,
                  label=f"media global {meta['rank_ic'].mean():.4f}")
     axes.set_ylabel("rank-IC"); axes.legend(fontsize=8); axes.grid(alpha=0.3, axis="y")
     return _figure_to_img(figure)
@@ -759,51 +775,17 @@ document.querySelectorAll('[data-src]').forEach(container => {
 </script>
 """
 
-_STYLE = """
-<style>
-:root {
-  --bg: #f7f8fa; --card: #fff; --ink: #1a2233; --muted: #7a8699; --line: #e3e8ef;
-  --accent: #2f6df6; --green: #16a34a; --red: #dc2626; --head: #0f172a;
-}
-* { box-sizing: border-box; }
-body { font-family: -apple-system, "Segoe UI", system-ui, sans-serif; background: var(--bg);
-  color: var(--ink); max-width: 1180px; margin: 0 auto; padding: 2em 1.2em 4em; line-height: 1.5; }
-h1 { font-size: 1.7em; color: var(--head); margin: 0 0 .2em; letter-spacing: -.01em; }
-h1 + .subtitle { color: var(--muted); margin: 0 0 1.4em; font-size: .95em; }
-h3 { color: var(--head); margin: 1.6em 0 .6em; font-size: 1.12em; }
-p { margin: .6em 0; }
-nav.tabs { display: flex; flex-wrap: wrap; gap: .3em; border-bottom: 2px solid var(--line);
-  margin: 1.2em 0 1.6em; }
-.tab-link { text-decoration: none; color: var(--muted); padding: .55em 1em; border-radius: 8px 8px 0 0;
-  font-weight: 600; font-size: .95em; transition: all .12s; }
-.tab-link:hover { color: var(--ink); background: #eef1f6; }
-.tab-link.active { color: var(--accent); border-bottom: 3px solid var(--accent);
-  margin-bottom: -2px; background: var(--card); }
-.tab { display: none; animation: fade .2s ease; }
-.tab.active { display: block; }
-@keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; } }
-table { border-collapse: collapse; margin: 1em 0; width: 100%; font-size: .93em;
-  background: var(--card); border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(15,23,42,.06); }
-th, td { padding: .6em .9em; text-align: left; border-bottom: 1px solid var(--line); }
-th { background: #f0f3f8; color: var(--head); font-weight: 600; font-size: .88em;
-  text-transform: uppercase; letter-spacing: .03em; }
-tr:last-child td { border-bottom: none; }
-tbody tr:hover { background: #f9fbfd; }
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1em; margin: 1.2em 0; }
-.card { background: var(--card); border: 1px solid var(--line); padding: 1.1em 1em; text-align: center;
-  border-radius: 12px; box-shadow: 0 1px 3px rgba(15,23,42,.05); }
-.card .metric { font-size: 1.9em; font-weight: 700; color: var(--head); line-height: 1.1; }
-.card > div:last-child { color: var(--muted); font-size: .82em; margin-top: .3em; }
-tr.winner td { background: #e7f6ed; font-weight: 600; }
-.muted, td.muted, th.muted { color: var(--muted); }
-img { max-width: 100%; height: auto; border-radius: 8px; margin: .5em 0; }
-code { background: #eef1f6; padding: .12em .4em; border-radius: 4px; font-size: .9em; }
-ul { margin: .6em 0; padding-left: 1.3em; }
-li { margin: .25em 0; }
-a { color: var(--accent); }
-.pos { color: var(--green); font-weight: 600; }
-.neg { color: var(--red); font-weight: 600; }
-</style>"""
+# El estilo oscuro vive en module/ui/app/report/report.css (misma paleta que la app) y se
+# inyecta inline para que el informe siga siendo autocontenido (se abre sin servidor).
+_REPORT_CSS_PATH = Path(__file__).parent / "app" / "report" / "report.css"
+
+
+def _load_style() -> str:
+    css = _REPORT_CSS_PATH.read_text(encoding="utf-8")
+    return f"<style>\n{css}\n</style>"
+
+
+_STYLE = _load_style()
 
 
 def _render_run_html(sections: dict[str, str]) -> str:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-import module.universe as universe
+import module.data.universe as universe
 
 
 @pytest.fixture(autouse=True)

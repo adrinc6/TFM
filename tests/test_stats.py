@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from module.stats import (
+from module.evaluation.stats import (
     block_bootstrap_ci,
     paired_difference_ci,
     rank_ic_by_year,

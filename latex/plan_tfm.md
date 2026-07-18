@@ -26,14 +26,14 @@
 |---|---|
 | Plantilla | Estructura académica libre, no hay plantilla obligatoria del máster. |
 | Idioma | Español. |
-| Motor LaTeX | `pdflatex` estándar, sin paquetes exóticos — debe compilar en Overleaf sin configuración especial. |
-| Granularidad | Capitulado clásico (~10 capítulos, ver índice). |
-| Referencias | BibTeX, un único `referencias.bib` compartido por todos los capítulos. |
-| Figuras/tablas | Generadas por el pipeline (Fase 5, `module/report.py`, y exports ad-hoc), no dibujadas a mano. Se referencian por ruta desde `latex/figuras/`. |
+| Motor LaTeX | **XeLaTeX** + `biber`. UTF-8 nativo (sin `inputenc`), fuentes con `fontspec`. En Overleaf: Menu > Compiler: XeLaTeX. |
+| Granularidad | Capitulado clásico (9 capítulos, ver índice). |
+| Referencias | **Autor-año** con `biblatex` (`style=authoryear`, `backend=biber`), un único `referencias.bib`. Se evita el estilo `apa` (paquete `biblatex-apa`) por ser pesado y lento en el plan gratuito de Overleaf. |
+| Figuras/tablas | Generadas por el pipeline (Research Console, `module/ui/report.py` y exports de runs), no dibujadas a mano. Se referencian por ruta desde `latex/figuras/`. |
+| Compilación | Subir `latex/` a Overleaf y seleccionar **XeLaTeX** como compilador. |
 
-**Pendiente de acordar cuando se llegue ahí** (no bloquea el arranque): estilo de citación
-exacto (APA vs. numérico), si se usa una portada de plantilla de la universidad más adelante,
-estructura de anexos.
+**Pendiente de acordar cuando se llegue ahí** (no bloquea): portada oficial de la universidad
+(hay una provisional en `main.tex`) y estructura de anexos.
 
 ## Estructura de carpetas dentro de `latex/`
 
@@ -55,22 +55,23 @@ latex/
   figuras/              # imágenes/tablas exportadas, referenciadas desde los capítulos
 ```
 
-`main.tex` se crea junto con el primer capítulo que se escriba, no antes — así se decide su
-preámbulo (paquetes, geometría, portada) con al menos un capítulo real que probar.
+El preámbulo de `main.tex` fija los paquetes, la geometría, la bibliografía APA (`biblatex`) y la
+notación compartida (`\tsnap`, `\tfiled`, `\hlabel`, `\rankic`). La notación se define ahí una vez
+y los capítulos la reutilizan sin redefinirla.
 
 ## Índice de capítulos
 
 | # | Capítulo | Depende de (fase del proyecto) | Estado |
 |---|---|---|---|
-| 1 | Introducción y motivación | — (puede escribirse ya) | Pendiente |
-| 2 | Estado del arte | — (puede escribirse ya) | Pendiente |
-| 3 | Datos y universo de inversión | Fase 0 | Pendiente |
-| 4 | Diseño metodológico: point-in-time y ausencia de lookahead | Fases 0-1 | Pendiente |
-| 5 | Agentes especializados y meta-agente | Fases 2-3 | Pendiente |
-| 6 | Diseño experimental: cartera, backtest y rejilla de escenarios | Fases 4-6 | Bloqueado (fases sin implementar) |
-| 7 | Resultados | Fases 4-6 | Bloqueado (fases sin implementar) |
-| 8 | Limitaciones y amenazas a la validez | Todas | Pendiente (esqueleto ya escribible; se completa al final) |
-| 9 | Conclusiones y trabajo futuro | Todas | Bloqueado (necesita resultados) |
+| 1 | Introducción y motivación | — | **Borrador escrito** |
+| 2 | Estado del arte | — | **Borrador escrito** (refs APA sembradas en `referencias.bib`, verificar DOIs) |
+| 3 | Datos y universo de inversión | Fase 0 | **Borrador escrito** |
+| 4 | Diseño metodológico: point-in-time y ausencia de lookahead | Fases 0-1 | **Borrador escrito** |
+| 5 | Agentes especializados y meta-agente | Fases 2-3 | **Borrador escrito** |
+| 6 | Diseño experimental: cartera, backtest y rejilla de escenarios | Fases 4-6 | Esqueleto (método sin cifras; a la espera de la reejecución) |
+| 7 | Resultados | Fases 4-6 | Esqueleto (bloqueado; a la espera de la reejecución) |
+| 8 | Limitaciones y amenazas a la validez | Todas | **Borrador escrito** (se cierra con los resultados) |
+| 9 | Conclusiones y trabajo futuro | Todas | Esqueleto (bloqueado; necesita resultados) |
 
 ### 1. Introducción y motivación
 
@@ -92,7 +93,7 @@ evidencia elegido frente a solo reportar rentabilidad.
 
 Fuentes (Finnhub, Yahoo, SEC EDGAR) y por qué cada una — ver `docs/plan_fases.md` (Fase 0,
 "Hallazgos verificados"). Universo dinámico por fecha desde la composición histórica real del
-S&P 500 (`module/universe.py`): qué sesgo elimina (inclusión anticipada) y cuál quedaría
+S&P 500 (`module/data/universe.py`): qué sesgo elimina (inclusión anticipada) y cuál quedaría
 igualmente si se usara un índice actual. Guarda de reciclaje de ticker, con los casos reales
 (`CPQ`, `MOB`) como ilustración. Sesgo de supervivencia **medido** por año, no solo declarado
 (`universe_coverage.json`).
@@ -103,7 +104,7 @@ La regla central del proyecto (año + trimestre + `lag_days` como margen de ejec
 como retardo aplicado al dato) y por qué el diseño alternativo —un retardo fijo por
 fundamental— es metodológicamente incorrecto, con los contraejemplos reales que lo
 demostraron (AT&T 133 días, un 10-K de AAPL 88 días). Algoritmo de observabilidad
-(`module/dataset.py`): fecha de publicación real vía SEC EDGAR frente a fecha de cierre fiscal.
+(`module/data/dataset.py`): fecha de publicación real vía SEC EDGAR frente a fecha de cierre fiscal.
 Qué se prohíbe explícitamente (`payload.metric`, columnas de `profiles.parquet`, `sector`) y
 por qué. Estrategia de tests de fuga temporal como parte del método, no como añadido.
 

@@ -1,0 +1,90 @@
+\chapter{Introducción y motivación}
+\label{cap:introduccion}
+
+\section{Motivación: la bolsa como banco de pruebas del aprendizaje}
+
+Este Trabajo Fin de Máster se inscribe en el ámbito de la Inteligencia Artificial y el
+aprendizaje automático. Su objeto de estudio \emph{no} es ganar dinero ni batir a un índice
+bursátil, sino algo más fundamental para la disciplina: \textbf{comprender cómo aprende un
+sistema de aprendizaje automático} en un entorno adverso, y evaluar ese aprendizaje con rigor.
+
+La bolsa se elige como \emph{banco de pruebas}, no como fin. Es un entorno especialmente exigente
+para un algoritmo de aprendizaje: los datos son ruidosos, la relación entre las variables y el
+resultado es débil, el proceso generador no es estacionario ---cambia con los regímenes de
+mercado--- y, sin embargo, ofrece una métrica de éxito externa, clara y difícil de discutir
+(la rentabilidad frente a un índice de referencia). Esa combinación de dificultad y de criterio
+objetivo lo convierte en un escenario ideal para preguntarse no \emph{si} un modelo produce un
+número atractivo, sino \emph{si de verdad ha aprendido algo} que generalice fuera de los datos
+con los que se entrenó.
+
+El mérito académico del trabajo reside, por tanto, en el \textbf{método}, no en una cifra de
+rentabilidad aislada. Una cartera rentable puede serlo por suerte, por un sesgo de datos o por
+un único acierto afortunado; un método capaz de distinguir el aprendizaje real del azar es lo
+que aporta valor transferible a otros problemas de aprendizaje automático sobre datos escasos y
+ruidosos.
+
+\section{Pregunta de investigación}
+
+El trabajo se organiza en torno a una única pregunta, formulada de modo que su respuesta pueda
+ser afirmativa o negativa sin que ninguna de las dos invalide el proyecto:
+
+\begin{quote}
+\emph{¿Aprende el sistema a ordenar acciones por su retorno futuro, de forma estable y fuera de
+muestra, y ese aprendizaje se traduce en utilidad económica neta de costes?}
+\end{quote}
+
+La pregunta separa deliberadamente dos planos que la literatura aplicada tiende a confundir: el
+\textbf{aprendizaje} (¿el modelo ordena bien los activos según su comportamiento futuro?) y la
+\textbf{utilidad económica} (¿esa ordenación, llevada a una cartera con costes reales, produce
+rentabilidad?). Un sistema puede rendir sin haber aprendido ---capturando primas de factor
+conocidas o beneficiándose de un artefacto--- y puede aprender débilmente sin que ello baste
+para batir al mercado tras costes. Distinguir ambos planos es el hilo conductor del TFM.
+
+\section{Métrica principal: medir el aprendizaje, no la rentabilidad}
+
+La métrica central del trabajo es el \textbf{coeficiente de información por rango fuera de
+muestra} (\emph{rank-IC out-of-sample}): la correlación de Spearman, en cada corte transversal
+de fechas, entre el orden de activos que predice el modelo y el orden que realmente ocurrió. Se
+calcula sobre la señal final que opera la cartera, no sobre componentes intermedios.
+
+La elección del \rankic{} frente a la rentabilidad no es accesoria, es metodológica. Cuando la
+señal es débil, la rentabilidad de una cartera concentrada la puede dominar un puñado de aciertos
+afortunados o incluso un solo dato corrupto; durante el desarrollo de este proyecto se documentó
+un caso real en el que una rentabilidad anual aparente del orden del 18\,\% procedía casi por
+completo de un único retorno mensual imposible (un precio corrupto), no de capacidad predictiva
+alguna. El \rankic{} mide si el modelo \emph{ordena bien}, que es exactamente lo que la pregunta
+de investigación interroga; la rentabilidad se reporta como \emph{consecuencia}, y solo después
+de haber depurado esa clase de artefactos. Para juzgar la significancia del \rankic{} no basta su
+valor puntual: se acompaña de intervalos de confianza por remuestreo por bloques temporales
+---porque las cohortes no son independientes--- y de contrastes de robustez y placebo que separan
+la señal del azar (véase el capítulo~\ref{cap:agentes} y el capítulo~\ref{cap:diseno_experimental}).
+
+\section{Un resultado negativo bien medido es un entregable válido}
+
+De lo anterior se deriva un principio que gobierna todo el trabajo: \textbf{un resultado negativo
+bien medido es tan válido como una cartera rentable}. Si el sistema no aprende a ordenar activos
+de forma significativa fuera de muestra, decirlo con evidencia ---intervalos de confianza,
+placebo, estabilidad temporal--- es un hallazgo legítimo y útil, porque delimita hasta dónde
+llega un enfoque de aprendizaje automático sobre datos públicos y factores conocidos. Elegir la
+mejor semilla aleatoria, confundir suerte con aprendizaje u ocultar un artefacto de datos
+invalidaría el trabajo con independencia de lo atractivo que resultase el número final.
+
+De ahí los cuatro principios que se exigen a cada decisión del proyecto: que sea
+\textbf{académica} (justificada por método, no por resultado), \textbf{reproducible} (todo el
+estudio se regenera con un comando y cada ejecución guarda su manifiesto), \textbf{explicable}
+(se puede decir por qué cada acción está donde está) y \textbf{honesta} (los sesgos y las
+limitaciones se miden y se muestran, no se esconden).
+
+\section{Estructura del documento}
+
+El resto de la memoria se organiza como sigue. El capítulo~\ref{cap:estado_arte} revisa el
+estado del arte: las primas de factor clásicas que sirven de listón y las patologías
+metodológicas recurrentes del aprendizaje automático aplicado a los mercados. El
+capítulo~\ref{cap:datos} describe los datos y el universo de inversión, con especial atención al
+sesgo de supervivencia medido. El capítulo~\ref{cap:metodologia} desarrolla el núcleo
+metodológico del proyecto: la construcción \emph{point-in-time} y la ausencia de \emph{lookahead
+bias}. El capítulo~\ref{cap:agentes} presenta los agentes especializados, el modelo de
+aprendizaje y el meta-agente. El capítulo~\ref{cap:diseno_experimental} detalla el diseño
+experimental (cartera, \emph{backtest} y rejilla de escenarios), el capítulo~\ref{cap:resultados}
+recoge los resultados y el capítulo~\ref{cap:limitaciones} las limitaciones y amenazas a la
+validez. El capítulo~\ref{cap:conclusiones} cierra con las conclusiones y el trabajo futuro.

@@ -1,4 +1,4 @@
-from module.universe import (
+from module.data.universe import (
     annual_membership_dates,
     is_recycled_ticker,
     members_at,

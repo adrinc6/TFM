@@ -7,9 +7,9 @@ import logging
 import pandas as pd
 
 from environment import Settings
-from module.baselines import build_baseline_scores
-from module.dataset import snapshot_dates
-from module.utils import read_parquet, write_json, write_parquet
+from module.data.baselines import build_baseline_scores
+from module.data.dataset import snapshot_dates
+from module.common.utils import read_parquet, write_json, write_parquet
 
 log = logging.getLogger(__name__)
 
@@ -230,16 +230,16 @@ def _build_feature_frame(
     if settings.fundamental_momentum:
         frame = _add_fundamental_momentum(frame)
     if settings.price_momentum_multi:
-        from module.artifacts import add_price_momentum_multi
+        from module.modeling.artifacts import add_price_momentum_multi
         add_price_momentum_multi(frame)
     if settings.moving_averages:
-        from module.artifacts import add_moving_averages
+        from module.modeling.artifacts import add_moving_averages
         add_moving_averages(frame, _price_series(asset_prices))
     if settings.regime_extended:
-        from module.artifacts import add_regime_extended
+        from module.modeling.artifacts import add_regime_extended
         add_regime_extended(frame, benchmark)
     if settings.quality_growth_derived:
-        from module.artifacts import add_quality_growth_derived
+        from module.modeling.artifacts import add_quality_growth_derived
         add_quality_growth_derived(frame)
 
     # Grupo de neutralizacion: sector si B1 esta activo, si no un unico grupo global.
@@ -280,16 +280,16 @@ def _build_feature_frame(
     # Rankear a factores las columnas crudas de los artefactos nuevos (mayor = mejor en todas).
     artifact_sources: list[str] = []
     if settings.price_momentum_multi:
-        from module.artifacts import PRICE_MOMENTUM_SOURCES
+        from module.modeling.artifacts import PRICE_MOMENTUM_SOURCES
         artifact_sources += list(PRICE_MOMENTUM_SOURCES)
     if settings.moving_averages:
-        from module.artifacts import MOVING_AVERAGE_SOURCES
+        from module.modeling.artifacts import MOVING_AVERAGE_SOURCES
         artifact_sources += list(MOVING_AVERAGE_SOURCES)
     if settings.regime_extended:
-        from module.artifacts import REGIME_EXTENDED_SOURCES
+        from module.modeling.artifacts import REGIME_EXTENDED_SOURCES
         artifact_sources += list(REGIME_EXTENDED_SOURCES)
     if settings.quality_growth_derived:
-        from module.artifacts import QUALITY_GROWTH_SOURCES
+        from module.modeling.artifacts import QUALITY_GROWTH_SOURCES
         artifact_sources += list(QUALITY_GROWTH_SOURCES)
     for source in artifact_sources:
         values = pd.to_numeric(frame[source], errors="coerce").where(frame["is_price_fresh"])

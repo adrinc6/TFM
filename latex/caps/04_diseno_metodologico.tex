@@ -1,0 +1,92 @@
+\chapter{Diseño metodológico: \emph{point-in-time} y ausencia de \emph{lookahead}}
+\label{cap:metodologia}
+
+Si el capítulo anterior argumentaba que el rigor empieza en la base de datos, este desarrolla el
+mecanismo concreto que lo garantiza: la construcción \emph{point-in-time}. La regla que gobierna
+todo el sistema es sencilla de enunciar y difícil de respetar sin descuido: \textbf{una señal
+fechada un día solo puede usar información observable ese día}. El capítulo formaliza la regla,
+muestra por qué la aproximación ingenua ---aplicar un retardo fijo--- la incumple, describe el
+algoritmo de observabilidad y explica por qué los contrastes de fuga temporal se escriben antes que
+el código, no después.
+
+\section{Notación}
+\label{sec:notacion}
+
+Se fija aquí la notación que el resto de la memoria reutiliza sin volver a definir:
+
+\begin{itemize}
+  \item \(\tsnap\): la \textbf{fecha de \emph{snapshot}}, el día en que se genera una señal y se
+  reconstruye lo que era observable hasta ese instante.
+  \item \(\tfiled\): la \textbf{fecha real de publicación} de un dato fundamental, tal como la
+  registra SEC EDGAR (\texttt{filingDate}).
+  \item \(\hlabel\): el \textbf{horizonte de la etiqueta}, el número de meses hacia el futuro sobre
+  el que se mide el retorno que el modelo intenta ordenar.
+\end{itemize}
+
+La regla \emph{point-in-time} se escribe entonces como una condición de observabilidad: un
+fundamental con fecha de publicación \(\tfiled\) solo puede intervenir en una señal de fecha
+\(\tsnap\) si \(\tfiled \le \tsnap\). La etiqueta asociada a esa señal se realiza en
+\(\tsnap + \hlabel\) y, por construcción, es información del futuro que nunca entra en el
+entrenamiento hasta que se ha realizado (capítulo~\ref{cap:agentes}).
+
+\section{Por qué el retardo fijo es incorrecto}
+
+La tentación natural al no disponer de la fecha de publicación es aproximarla: suponer que todo
+informe es público, pongamos, 45 días después de su cierre fiscal, y aplicar ese retardo constante
+a todas las empresas. El enfoque es cómodo pero \textbf{metodológicamente incorrecto}, y el proyecto
+lo descartó tras contrastarlo con las fechas reales de EDGAR.
+
+El motivo es que el retardo real de publicación es muy variable entre empresas y entre informes. En
+los datos del proyecto se documentaron casos en los que una compañía tardó \textbf{133 días} en
+publicar (AT\&T) y un informe anual (10-K) de Apple tardó \textbf{88 días}. Un retardo fijo de 45
+días trataría esos datos como públicos semanas antes de que lo fueran realmente, inyectando
+\emph{lookahead bias} justo en las empresas que más tardan ---precisamente aquellas cuya demora
+puede correlacionar con dificultades que el modelo no debería anticipar---. La conclusión fue
+inequívoca: cualquier retardo fijo introduce fuga, y la única forma correcta de saber cuándo un dato
+era observable es usar la fecha en que de verdad se publicó.
+
+\section{El papel de \texttt{lag\_days}: margen de ejecución, no observabilidad}
+
+Una consecuencia importante de lo anterior es una \textbf{redefinición} de un parámetro del sistema.
+El parámetro \texttt{lag\_days} deja de significar ``retardo con el que un dato se vuelve
+observable'' ---esa función la cumple ahora \(\tfiled\)--- y pasa a significar únicamente el
+\textbf{margen de ejecución}: el número de días que simula el desfase entre que se dispondría de la
+información y el día en que realmente se lanzaría el \emph{pipeline} para operar. Es una holgura
+operativa, conservadora, que se suma a la observabilidad real; no la sustituye ni la aproxima.
+
+\section{Algoritmo de observabilidad}
+
+La construcción del panel \emph{point-in-time} (\texttt{module/data/dataset.py}) recorre las fechas de
+\emph{snapshot} y, en cada una, reconstruye lo observable: para cada empresa perteneciente al índice
+en esa fecha (capítulo~\ref{cap:datos}), toma su \textbf{último informe realmente publicado},
+esto es, el informe con mayor \(\tfiled\) que cumpla \(\tfiled \le \tsnap\). El resultado es un panel
+indexado por \((\text{ticker}, \tsnap)\) en el que cada fila contiene solo información que existía en
+ese instante. No hay relleno hacia atrás de datos que aún no se habían publicado, ni se mezclan
+magnitudes de periodicidades distintas en un mismo corte.
+
+\section{Tres fugas silenciosas y por qué los tests van primero}
+
+Durante la auditoría del \emph{pipeline} aparecieron tres defectos que no rompían ninguna prueba
+existente pero producían números sutilmente falsos. Se documentan porque ilustran que, en un
+proyecto cuyo eje es la ausencia de \emph{lookahead}, el peligro no son los errores ruidosos sino
+los silenciosos:
+
+\begin{itemize}
+  \item \textbf{Crecimiento interanual por posición.} El cálculo del crecimiento interanual
+  comparaba ``cuatro trimestres atrás'' contando por posición en la serie; cuando faltaba un
+  trimestre ---algo frecuente--- comparaba contra una fecha arbitraria. Un caso real producía un
+  crecimiento falso del orden del \(+71\,\%\) al comparar contra un dato de quince meses antes.
+
+  \item \textbf{Etiquetas perdidas con el día de \emph{snapshot} desplazado.} La fecha de la
+  etiqueta se derivaba por aritmética de calendario, que trata los fines de mes de forma distinta a
+  la rejilla de fechas; con el día 31 se perdía cerca del 40\,\% de las etiquetas.
+
+  \item \textbf{Mezcla de magnitudes anuales y trimestrales.} Un margen anual y el de su cuarto
+  trimestre comparten fecha de cierre; un \emph{fallback} mal planteado confundía magnitudes de 12 y
+  de 3 meses en el mismo corte.
+\end{itemize}
+
+Los tres se corrigieron acompañados de \textbf{tests de regresión} que fallan contra el código
+anterior. La lección metodológica ---que este proyecto adopta como norma--- es que los contrastes
+de fuga temporal y de separación entre entrenamiento y evaluación se escriben \textbf{antes} que la
+funcionalidad que verifican: son la primera línea de defensa del resultado, no un añadido posterior.

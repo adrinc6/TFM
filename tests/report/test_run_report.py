@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from module.report import build_run_report
+from module.ui.reports import build_run_report
 
 
 REQUIRED_SECTIONS = (

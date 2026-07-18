@@ -10,7 +10,7 @@ trimestral, sin artefactos):
 
   - Ventana de entrenamiento: 5 / 6 / 7 / 8 / 10 / 12 anios.
   - Horizonte de etiqueta:    1 / 3 / 6 / 12 meses  (cambia QUE se predice).
-  - Ancla de evaluacion:      2016 / 2018 / 2020.
+  - Ancla de evaluacion:      2012 / 2014 / 2016 / 2018 / 2020.
   - Profundidad LightGBM:     3 / 4 / 5 / 6.
   - Cadencia de reentreno:    trimestral / semestral / anual.
   - Artefactos:               los 7, uno a uno.
@@ -22,7 +22,7 @@ Los valores baseline de cada eje (train_10y, horizon_3m, ancla_2016, depth_4, ca
 apuntan al MISMO escenario `baseline` para que el orquestador pueda elegir "quedarse como esta".
 """
 
-from module.experiments import ScenarioSpec
+from module.runs.experiments import ScenarioSpec
 
 
 # --- Artefactos (uno a uno, sobre el baseline) ---------------------------------------------
@@ -55,6 +55,8 @@ AXES: dict[str, dict[str, dict]] = {
         "horizon_12m": {"target_horizon_months": 12},
     },
     "execution_year": {
+        "anchor_2012": {"execution_year": 2012},
+        "anchor_2014": {"execution_year": 2014},
         "baseline": {},                                  # ancla 2016 (default)
         "anchor_2018": {"execution_year": 2018},
         "anchor_2020": {"execution_year": 2020},

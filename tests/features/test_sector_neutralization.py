@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from module.features import _cross_section_rank
+from module.modeling.features import _cross_section_rank
 
 
 def _frame(groups: list[str]) -> pd.DataFrame:
