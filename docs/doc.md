@@ -1,330 +1,217 @@
-# Plan maestro del TFM — Sistema multi-agente de IA aplicado a la bolsa
+# Documentación del sistema — TFM: IA aplicada a la selección de acciones
 
-> Este documento es la **guía única** del proyecto. Describe qué se quiere
-> conseguir, con qué metodología y con qué arquitectura, y sirve de hoja de ruta
-> para reconstruir el sistema desde el reinicio en limpio. Ahora mismo el
-> repositorio solo contiene la **descarga de datos**; todo lo demás descrito aquí
-> está por construir. Es un documento vivo: se actualiza cuando cambie el diseño.
+> Guía única del proyecto: qué se quiere conseguir, con qué metodología, con qué arquitectura, y
+> qué se ha encontrado. Es la materia prima del TFM (la redacción en LaTeX es la fase de cierre).
+> Documento vivo: se actualiza cuando cambia el diseño o aparecen resultados.
 
 ---
 
 ## 1. Propósito y tesis
 
-Este es un Trabajo Fin de Máster sobre **Inteligencia Artificial y Machine
-Learning**. El objetivo principal **no** es ganar dinero ni batir a un índice: es
-**estudiar cómo aprende un sistema de IA**, evaluar ese aprendizaje con rigor y
-comprobar si puede tener **utilidad económica**.
+Trabajo Fin de Máster sobre **Inteligencia Artificial y Machine Learning**. El objetivo principal
+**no** es ganar dinero ni batir a un índice: es **estudiar cómo aprende un sistema de IA**,
+evaluar ese aprendizaje con rigor y comprobar si puede tener **utilidad económica**.
 
-La bolsa es el **banco de pruebas**, no el fin. Se elige porque ofrece un entorno
-difícil, ruidoso, no estacionario y con una métrica de éxito clara (batir al
-S&P 500), pero el mérito académico está en el **método**, no en un número de
-rentabilidad aislado.
+La bolsa es el **banco de pruebas**, no el fin. Se elige porque ofrece un entorno difícil,
+ruidoso, no estacionario y con una métrica de éxito clara (batir al S&P 500), pero el mérito
+académico está en el **método**, no en un número de rentabilidad aislado.
 
-De ahí una consecuencia importante para todo el proyecto: **un resultado negativo
-bien medido es un entregable válido**. Si el sistema no aprende a ordenar activos
-fuera de muestra, o si su alfa no viene de donde creíamos, decirlo con claridad y
-con evidencia es tan valioso como una cartera rentable. La deshonestidad
-metodológica (ocultar limitaciones, elegir la mejor semilla, confundir suerte con
-aprendizaje) invalidaría el trabajo.
+Consecuencia central: **un resultado negativo bien medido es un entregable válido**. Si el sistema
+no aprende a ordenar activos fuera de muestra, decirlo con evidencia es tan valioso como una
+cartera rentable. Elegir la mejor semilla, confundir suerte con aprendizaje u ocultar un artefacto
+de datos invalidaría el trabajo. Principios: **académico, reproducible, explicable y honesto**.
 
-Principios rectores: **académico, reproducible, explicable y honesto**.
+**La pregunta de investigación**: *¿aprende el sistema a ordenar acciones por su retorno futuro,
+de forma estable y fuera de muestra, y ese aprendizaje se traduce en utilidad económica neta?*
 
-## 2. Pregunta de investigación
+---
 
-> **¿Aprende el sistema a ordenar activos fuera de muestra de forma estable a lo
-> largo de muchas eras, y es ese aprendizaje útil?**
+## 2. Métrica de éxito: el aprendizaje, no la rentabilidad
 
-Se descompone en dos afirmaciones que el proyecto mantiene **separadas a
-propósito**, porque no son lo mismo:
+La métrica principal es el **rank-IC out-of-sample**: la correlación de Spearman, en cada corte
+transversal, entre el orden que predice el modelo y el orden que de verdad ocurrió. Se calcula
+sobre el **meta-score final** (el que opera la cartera), no sobre agentes individuales.
 
-1. **¿El ML rankea?** ¿La ordenación que produce el modelo tiene poder predictivo
-   fuera de muestra (p.ej. rank-IC positivo y estable por eras)?
-2. **¿Hay alfa útil?** ¿Una cartera construida con esas señales bate al benchmark
-   de forma neta (tras costes) y estable?
+Por qué el rank-IC y no la rentabilidad: con una señal débil, la rentabilidad de una cartera
+concentrada la puede dominar un puñado de aciertos afortunados o —como se observó— **un único
+artefacto de datos**. El rank-IC mide si el modelo *ordena bien*, que es lo que de verdad se
+pregunta. La rentabilidad se reporta como **consecuencia**, con CAGR real (nunca acumulados
+compuestos que inflan y que domina un solo año), y solo tras limpiar artefactos.
 
-Puede haber alfa sin que el modelo rankee bien (por asimetrías ganador/perdedor,
-por unos pocos aciertos grandes) y puede haber buen ranking sin alfa neto (si el
-turnover se come la ventaja). El proyecto mide y reporta ambas cosas por separado.
+Referencia de escala: en la industria un factor se considera útil a partir de rank-IC ~0.03-0.05
+sostenido. Se acompaña de **significancia estadística** (bootstrap por bloques temporales, porque
+las cohortes no son independientes) y de **tests de robustez/placebo** para distinguir señal de
+azar.
 
-## 3. Principios metodológicos (rigen todo el diseño)
+---
 
-Estos principios son **innegociables** y condicionan cada etapa:
+## 3. Arquitectura del sistema (flujo de datos)
 
-1. **Sin lookahead ni fuga de información.** Una señal fechada en el día *t* solo
-   puede usar datos **observables** en *t*. Los fundamentales no existen para el
-   modelo hasta su fecha real de publicación (o hasta un retardo conservador).
-2. **Point-in-time.** El dataset reconstruye, para cada fecha, exactamente lo que
-   se sabía entonces: precios hasta *t*, último fundamental ya publicado, sin
-   revisiones posteriores.
-3. **Separación temporal train/eval.** Entrenar y evaluar nunca se solapan en el
-   tiempo. El walk-forward reentrena solo con historia anterior a cada punto.
-4. **Medición fuera de muestra.** La rentabilidad in-sample no es evidencia. Se
-   reportan métricas OOS (rank-IC por era, resultados de la cartera en el periodo
-   evaluado).
-5. **Baselines y resultados negativos visibles.** Se comparan siempre contra
-   baselines simples (comprar el índice, momentum puro, GARP determinista). Si un
-   baseline gana, se dice.
-6. **Sesgo de supervivencia y muestra pequeña como limitaciones explícitas.** El
-   universo es una lista estática de grandes capitalizaciones actuales; el número
-   de eras independientes es reducido. Nunca se ocultan; se cuantifican y se
-   discuten.
-
-## 4. Estrategia de inversión
-
-El sistema persigue una o varias de estas familias de estrategia, y su
-**combinación** es una de las variables a estudiar:
-
-- **GARP (Growth At a Reasonable Price).** Comprar calidad y crecimiento sin
-  pagar de más. Señales típicas: crecimiento de ventas/beneficios, ROE/ROIC,
-  márgenes, deuda razonable, múltiplos (P/E, P/B, EV/FCF) no excesivos. Combina
-  valor y calidad: penaliza lo caro y lo frágil.
-- **Momentum.** Comprar lo que sube y evitar lo que cae. Señales: rentabilidad
-  relativa a distintos horizontes (p.ej. 3/6/12 meses), fuerza frente al índice.
-  En el trabajo previo el momentum puro resultó un baseline difícil de batir: es
-  un competidor serio, no un adorno.
-- **Combinación GARP + momentum.** Fundamentales para *qué* comprar (calidad a
-  precio razonable) y momentum para *cuándo* (timing). La hipótesis es que se
-  complementan; comprobarlo es parte del objeto de estudio.
-
-La estrategia concreta (qué señales, qué pesos, qué umbrales) es una **decisión
-metodológica** y no se fija a la ligera: cambiarla requiere aprobación explícita
-(ver `CLAUDE.md`).
-
-## 5. Diseño multi-agente
-
-El corazón de IA/ML es un conjunto de **agentes especializados** más un
-**meta-agente** que aprende a combinarlos:
-
-- **Agentes especializados**, cada uno experto en una dimensión, por ejemplo:
-  - *Calidad*: fundamentales de solidez (ROE/ROIC, márgenes, deuda).
-  - *Timing / momentum*: señales de precio y fuerza relativa.
-  - *Valor / alpha*: baratura ajustada a calidad, potencial de revalorización.
-  Cada agente produce una **ordenación** (score) del universo en cada fecha.
-- **Meta-agente**: aprende cómo **ponderar** a los agentes según su fiabilidad
-  fuera de muestra (p.ej. por su rank-IC parcial reciente), en lugar de fijar los
-  pesos a mano. Así el sistema puede fiarse más del agente que está funcionando y
-  menos del que no.
-
-El esquema debe ser **editable**: añadir, quitar o reponderar agentes tiene que
-ser sencillo, porque los *ablations* (quitar un agente y ver qué pasa) son una de
-las variables del barrido de escenarios. La elección de modelos, etiquetas,
-objetivos y pesos requiere aprobación explícita.
-
-## 6. Autonomía y walk-forward
-
-El sistema debe poder **entrenarse y evaluarse solo** sobre toda la historia:
-
-- **Datos desde el año 2000.** Se descarga historia larga para poder simular
-  desde entonces (aunque la cartera opere en una ventana más corta).
-- **Fecha ancla.** La simulación arranca en una fecha derivada de un **trimestre**
-  configurable **más un retardo de publicación** de fundamentales. Ejemplo: arrancar
-  en 2010Q1 + 45 días ≈ 15-feb-2010 garantiza que ya están publicados los
-  resultados del trimestre anterior de todas las empresas, que es cuando cambian
-  de verdad los ratios. Este retardo corrige el lookahead sutil de tratar un
-  fundamental como conocido el mismo día del cierre del periodo.
-- **Entrenar vs. revisar (separado a propósito):**
-  - *Entrenar* (reajustar el modelo) solo tiene sentido cuando hay
-    **fundamentales nuevos**: cadencia trimestral o anual. Reentrenar mensualmente
-    no aporta (mismos fundamentales tres meses seguidos) y se descarta.
-  - *Revisar* la cartera es **mensual**: se re-precia y se decide con el modelo ya
-    entrenado, sin reentrenar.
-- **Walk-forward rodante.** En cada punto de reentrenamiento se usa solo la
-  historia disponible **hasta esa fecha** (una ventana móvil de los últimos N
-  años), nunca datos futuros. El modelo se mantiene siempre entrenado con datos
-  recientes, adaptándose a los cambios de régimen.
-
-## 7. Barrido de escenarios (rejilla)
-
-Para no depender de una sola configuración arbitraria, el sistema genera y evalúa
-**muchos escenarios de forma sistemática**, cubriendo las variables relevantes.
-Ejes previstos del barrido (a confirmar y ampliar):
-
-- **Ventana de entrenamiento** (cuántos años de historia usa cada reentrenamiento).
-- **Cadencia de reentrenamiento** (trimestral vs. anual).
-- **Horizonte de la etiqueta** (a cuántos meses se define el objetivo a predecir).
-- **Tamaño de cartera** (cuántas posiciones: breadth top-N).
-- **Ablations de agentes y esquemas de pesos** (quitar agentes, fijar vs. aprender
-  pesos).
-
-Cada escenario ejecuta el pipeline completo reutilizando lo que se pueda (etapas
-comunes, scoring cacheado) para que el barrido sea viable en tiempo. El resultado
-es una tabla comparable de escenarios con sus métricas.
-
-## 8. Selección del sistema final (lo importante)
-
-El sistema final **no se elige por la mayor alfa**. Elegir el escenario con más
-rentabilidad sobre el S&P 500 sería *overfitting por selección*: casi siempre el
-ganador aparente es el más afortunado, no el más robusto.
-
-La selección se hace **solo por aprendizaje y estabilidad, nunca por alfa**. La
-pregunta del proyecto es si el sistema *aprende a ordenar activos fuera de muestra*;
-si el aprendizaje (rank-IC) es débil, cualquier rentabilidad observada es en buena
-parte suerte de composición, y elegir por ella sería seleccionar ruido.
-
-La métrica de selección es el **rango medio de cuatro dimensiones**, ninguna de las
-cuales es magnitud de rentabilidad:
-
-- **rank-IC medio** fuera de muestra (evidencia de aprendizaje).
-- **fracción de cohortes con rank-IC positivo** (estabilidad del aprendizaje entre
-  eras: que no sea un pico afortunado).
-- **beat rate**: fracción de años que baten al benchmark (frecuencia de acierto, no
-  cuánto).
-- **máximo drawdown** (riesgo).
-
-El **alfa se reporta como consecuencia**, junto a los resultados, pero **no
-interviene** en qué configuración se elige. La comparación es un **único ranking
-global** sobre todos los años disponibles, sin separar en eras: se prefiere una
-lectura honesta de la consistencia año a año antes que dividir la muestra (ya
-pequeña) o quedarse con lo que mejor funcionó en un tramo. Si el rank-IC del ganador
-es cercano a cero, la conclusión —válida— es que el sistema no aprende de forma
-estable, y se dice con claridad.
-
-## 9. Cartera y backtest
-
-Sobre las señales del sistema se construye y simula una cartera realista:
-
-- **Construcción de cartera**: selección de las mejores posiciones (watchlist →
-  cartera), con tamaño de cartera configurable.
-- **Sizing**: cómo se reparte el capital entre posiciones.
-- **Rotación**: cuándo se sustituye una posición por otra mejor (umbrales de
-  ventaja de score/convicción, coste de oportunidad, periodo mínimo de tenencia),
-  controlando el turnover.
-- **Costes**: comisiones de transacción y slippage, para medir alfa **neto**.
-- **Simulación frente a benchmark** (S&P 500 / SPY) y **métricas**: rentabilidad,
-  alfa, information ratio, tracking error, drawdown, t-stat de la alfa, además de
-  las métricas de aprendizaje (rank-IC por era y por agente).
-
-## 10. Visualización e informes HTML
-
-El proyecto genera **informes HTML navegables** para ver y comparar resultados
-sin tener que leer código o CSVs:
-
-- Informe de un run: resumen ejecutivo, rendimiento, cartera, **evidencia de
-  aprendizaje**, posiciones, metodología y depuración.
-- Informe del barrido de escenarios: comparación de todos los escenarios para
-  entender qué variables importan y sostener la selección del sistema final.
-
-Los informes deben ser autocontenidos y honestos: muestran también los baselines
-y los resultados negativos.
-
-## 11. Editabilidad
-
-El proyecto debe ser **fácil de modificar y experimentar**:
-
-- Toda la configuración vive en `environment.py` (fechas, universo, tamaños,
-  cadencias, umbrales), sin duplicados escondidos en el código.
-- Añadir una variable al barrido, un agente nuevo o un baseline debe ser una
-  operación acotada y local.
-- Estilo de código sencillo, lineal y explicable (ver `CLAUDE.md`): se prima la
-  claridad para poder revisar y justificar cada decisión en la memoria del TFM.
-
-## 12. Datos
-
-**Fuentes** (ya implementadas en la descarga, `module/ingest/`):
-
-- **Finnhub** (`finnhub.io/api/v1`, requiere `FINNHUB_API_KEY`):
-  - Perfil de empresa (nombre, sector, capitalización).
-  - Fundamentales calculados y series (`/stock/metric`: P/E, P/B, ROE, ROIC,
-    márgenes, crecimiento…).
-  - Noticias por empresa (descargadas, aún sin procesar).
-- **SEC EDGAR** (`data.sec.gov`, sin clave): fechas reales de presentación de los
-  formularios 10-Q y 10-K. Es la fuente de `report_dates.parquet`; no se usa
-  un retardo fijo ni el endpoint equivalente de Finnhub. Los CIK ambiguos por
-  reutilización de ticker se validan con el buscador SEC.
-- **Yahoo Finance** (API v8 de charts, sin clave): OHLCV diario, cierre ajustado,
-  dividendos y splits. No se usa `yfinance`; se llama la API directamente.
-
-**Universo**: composición histórica dinámica del S&P 500 desde el CSV de
-componentes. En cada fecha se consideran solo las empresas que pertenecían al
-índice entonces; el benchmark es SPY.
-
-**Salidas de la descarga** (en `data/raw/`, no versionadas):
-
-- Cache JSON por ticker: `data/raw/json/<fuente>/<ticker>/<dataset>.json`.
-- Parquet agregados: `profiles.parquet`, `finnhub_metrics.parquet`,
-  `prices.parquet`, `news.parquet`, `report_dates.parquet`.
-- Metadatos: `download_coverage.json`, `download_failures.csv`,
-  `universe_coverage.json`.
-
-## 13. Estado actual vs. arquitectura objetivo
-
-### Ejecución por etapas
-
-La entrada única usa dos parámetros independientes: `RUN_MODE` selecciona la
-etapa y `RUN_SCOPE` el alcance de los datos. `download` adquiere datos crudos;
-las etapas disponibles son `dataset`, `features` y `agents`; `backtest`, `report`
-y `experiments` siguen pendientes. `full` ejecuta en orden todas las etapas que ya estén
-implementadas. Una etapa solicitada antes de existir falla explícitamente.
-
-`RUN_SCOPE=dev` guarda agregados bajo `data/raw/dev/` y paneles bajo
-`data/processed/dev/`; `RUN_SCOPE=full` usa las rutas sin ese subdirectorio.
-Por tanto una verificación de desarrollo no sobrescribe una descarga completa.
-
-**Lo que existe hoy** (tras el reinicio en limpio):
-
-- `environment.py`: configuración, `RUN_MODE` y `RUN_SCOPE`.
-- `main.py`: entrada única que selecciona una etapa o el flujo completo.
-- `module/ingest/`: clientes HTTP de Finnhub, Yahoo y EDGAR, y `download_raw_data`.
-- `module/dataset.py`: panel mensual, precio de activos y benchmark point-in-time.
-- `module/features.py` y `module/baselines.py`: factores observables, baselines y etiquetas separadas.
-- `module/agents.py` y `module/meta.py`: Ridge walk-forward, meta-pesos y rank-IC OOS.
-- `module/utils.py`: utilidades de logging y escritura de archivos.
-
-**Arquitectura objetivo por etapas** (a reconstruir sobre la descarga):
-
-```text
-download → dataset → features → ml (agentes) → selección → cartera → backtest → informe
-                                        │
-                              experimentos (rejilla) → agregación → selección del sistema final
+```
+descarga → dataset point-in-time → features (+ artefactos) → agentes LightGBM → meta-agente
+        → cartera (+ perfil de inversor) → backtest → informe HTML
+                                                     + barrido de ablations → decisión → run final
 ```
 
-- `download` (hecho): adquisición de datos crudos.
-- `dataset` (hecho): panel point-in-time (ticker × fecha) con observabilidad por fecha de
-  publicación; prevención de lookahead.
-- `features` (hecho): variables GARP/momentum, baselines deterministas y etiquetas futuras separadas.
-- `ml` (hecho): agentes especializados + meta-agente, entrenamiento walk-forward,
-  combinación de señales y diagnóstico de aprendizaje.
-- `selección`: watchlist a partir de los scores.
-- `cartera` + `backtest`: construcción, sizing, rotación, costes, simulación y
-  métricas frente al benchmark.
-- `informe`: viewer HTML de un run.
-- `experimentos`: barrido de escenarios, agregación y selección del sistema final
-  por estabilidad multi-era.
+Cada etapa se ejecuta por separado (`RUN_MODE`) o encadenada. El comando de principio a fin es
+`RUN_MODE=full_study` (ver §9).
 
-## 14. Limitaciones explícitas
+### 3.1 Datos y universo (point-in-time)
+- **Universo dinámico** del S&P 500 por fecha (composición histórica real, no la actual): una
+  señal en 2016 solo ve las empresas que estaban en el índice en 2016. Elimina el sesgo de
+  inclusión anticipada.
+- **Fechas de publicación reales** de SEC EDGAR (`filingDate`): un fundamental solo es observable
+  el día en que se publicó, no el día del cierre fiscal. Evita el lookahead.
+- **Sesgo de supervivencia medido por año** (no solo declarado): los quebrados no tienen datos en
+  fuentes gratuitas; la cobertura pasa de ~50 % en 2000 a ~92 % en 2024. Por eso el sistema se
+  centra en **2016+** (más cobertura, menos sesgo).
 
-Se mantienen visibles y se discuten en la memoria:
+### 3.2 Dataset point-in-time
+Panel `(ticker, snapshot_date)` que reconstruye lo observable en cada fecha: de cada empresa, su
+último informe *realmente publicado*. Sin relleno hacia atrás, sin mezclar magnitudes.
 
-- **Sesgo de supervivencia**: universo estático de líderes actuales aplicado hacia
-  atrás; excluye deslistados/adquiridos e incluye OPVs recientes.
-- **Muestra pequeña**: pocas eras verdaderamente independientes; los intervalos de
-  confianza sobre la estabilidad son anchos.
-- **Disociación alfa/ranking**: que haya alfa no demuestra que el ML rankee, y
-  viceversa; el proyecto las reporta por separado.
-- **Datos y cobertura**: dependencia de la cobertura de las APIs gratuitas
-  (algunos fundamentales o fechas de publicación pueden faltar).
+### 3.3 Features y artefactos
+Factores base (GARP: calidad, crecimiento, valoración; momentum relativo), todos rankeados en el
+corte transversal. Encima, un **sistema de artefactos activables** (§4).
 
-## 15. Roadmap de reconstrucción por fases
+### 3.4 Agentes LightGBM
+Tres agentes especializados (**calidad, momentum, valor**), cada uno un modelo **LightGBM**
+(árboles con gradient boosting, que captura interacciones no lineales que un modelo lineal
+promedia a cero). Objetivo `rank_regression`: regresión sobre el percentil transversal del
+retorno futuro, alineado con el rank-IC. Entrenamiento **walk-forward**: en cada reentreno solo se
+usa historia anterior con etiqueta ya realizada (`label_end_date <= fecha_de_reentreno`).
 
-Orden recomendado para reconstruir sobre la descarga existente. Cada fase se
-diseña y aprueba antes de implementarla (ver reglas en `CLAUDE.md`), y añade sus
-propios tests (empezando por leakage y separación temporal):
+### 3.5 Meta-agente
+Combina los tres agentes en el `meta_score`. Por defecto pondera por el **rank-IC reciente** de
+cada agente (`meta_type=rank_ic`), que se midió superior al equiponderado. El `meta_rank` (el
+percentil del meta_score) es lo que consume la cartera.
 
-1. **Dataset point-in-time**: panel ticker × fecha con observabilidad por fecha de
-   publicación. Tests de leakage antes que nada.
-2. **Features y baselines**: variables GARP y momentum + baselines deterministas
-   (momentum puro, GARP determinista) contra los que comparar siempre.
-3. **Agentes ML + meta-agente**: entrenamiento walk-forward, scoring, diagnóstico
-   de aprendizaje (rank-IC OOS por era y por agente).
-4. **Cartera y backtest**: selección, sizing, rotación, costes y métricas frente
-   al benchmark.
-5. **Informe HTML**: viewer de un run con la evidencia de aprendizaje.
-6. **Experimentos (rejilla) + selección del sistema final**: barrido de
-   escenarios, agregación por estabilidad y protocolo dev/confirmación.
-7. **Redacción del TFM en LaTeX**: el documento entregable, escrito capítulo a
-   capítulo sobre los resultados ya producidos por las fases 1-6. Plan de
-   estructura en `latex/plan_tfm.md`.
+### 3.6 Cartera y backtest
+Selección top-N flexible (**8-12 posiciones** por defecto, peso máx 15 %) con reglas de rotación
+(umbral de ventaja, expulsión por caída, sin tenencia mínima). Backtest con costes (5 pb comisión
++ 10 pb slippage) y **guarda anti-artefactos**: un retorno mensual imposible de una posición
+(>200 %) se trata como dato corrupto y se neutraliza (§4.3). Métricas: rank-IC del meta_final,
+CAGR real cartera vs SPY, beat rate, drawdown, turnover.
 
-Cada fase mantiene el flujo de datos limpio de entrada a salida y respeta los
-principios metodológicos de la sección 3. El detalle ejecutable de cada fase
-—ficheros, decisiones y tests— vive en `docs/plan_fases.md`.
+---
+
+## 4. Sistema de artefactos activables
+
+Un **artefacto** es un bloque de features/contexto que se activa o desactiva por un flag. Todos
+son **point-in-time** (verificados con tests de no-lookahead). El barrido los prueba de uno en
+uno como *ablations* para medir cuáles suben el rank-IC. Catálogo en `module/artifacts.py`:
+
+| Artefacto | Qué añade |
+|---|---|
+| `neutralize_by_sector` | Rankea los factores dentro de sector en vez de global. |
+| `fundamental_momentum` | Tendencia de ROE/márgenes + descomposición del cambio de P/E en su parte de precio y su parte fundamental. |
+| `market_regime_feature` | Régimen bull/bear del SP500 (vs su media) + interacciones factor×régimen. |
+| `price_momentum_multi` | Aceleración (r3m−r12m), reversión (−r1m), volatilidad reciente del activo. |
+| `moving_averages` | Precio vs SMA6/SMA12, distancia al máximo de 12m (tendencia individual). |
+| `regime_extended` | Volatilidad y drawdown del SP500 (contexto macro más rico). |
+| `quality_growth_derived` | Tendencia de ROE, estabilidad de márgenes, sorpresa de crecimiento. |
+
+### 4.2 Cadencia como escenario
+El reentreno puede ser **trimestral / semestral / anual** (`fundamental_step_months`), barrido como
+escenario. La revisión de cartera es mensual.
+
+### 4.3 Guarda anti-artefactos (rentabilidad honesta)
+El estudio previo reveló que un CAGR aparente del 18 % se debía casi por completo a un **artefacto
+de datos**: julio de 2010, +953 % en un mes en una posición (precio corrupto). La guarda neutraliza
+cualquier retorno mensual de una posición mayor que `max_monthly_position_return` (200 %) y lo
+registra, para que la rentabilidad reportada sea honesta.
+
+---
+
+## 5. Barrido de ablations y selección automática
+
+El estudio es un **barrido de ablations dirigidas** (no producto cartesiano, que sobreajustaría
+por selección): baseline vs baseline + cada artefacto aislado, más hiperparámetros, cadencia y
+ventana de entrenamiento (`escenarios/rejilla_base.py`).
+
+**Decisión automática, sin intervención humana** (`decide_accepted_artifacts`): un artefacto se
+**acepta** si su rank-IC del meta_final mejora al baseline de forma **estable** —diferencia pareada
+por fecha positiva en media y en más de la mitad de las fechas—. La **configuración final** =
+baseline + artefactos aceptados + mejores hiperparámetros. Se registra en `artifact_decision.json`
+qué entró, qué no, y por qué.
+
+La reutilización por huella SHA-256 evita recomputar etapas compartidas entre escenarios.
+
+---
+
+## 6. Perfiles de inversor (explicabilidad como funcionalidad)
+
+El sistema explica *por qué* cada acción está arriba: cada agente aporta su rango (calidad,
+momentum, valor). Sobre eso se construyen **perfiles de inversor** que, entre las **buenas**
+acciones del meta (percentil alto), reordenan según estilo — no siempre cogen el top-N puro
+(`module/profiles.py`):
+
+`balanced` (referencia), `conservative` (calidad + estabilidad), `aggressive` (momentum),
+`value` (barato y bueno), `quality` (mejor negocio), `momentum` (fuerza relativa), `garp`
+(equilibrio), `contrarian` (bueno pero castigado, apuesta a reversión).
+
+Cada perfil se mide como un backtest (misma señal, distinta cartera): permite comparar el
+trade-off rentabilidad/riesgo de cada estilo usando el mismo modelo.
+
+---
+
+## 7. Robustez / placebo (credibilidad)
+
+Sobre la configuración final se ejecutan tests que demuestran que el resultado no es suerte
+(`module/robustness.py`):
+
+- **Permutación de etiquetas** (placebo): se reentrena con los retornos futuros barajados; el
+  rank-IC debe **colapsar a ~0**. Si no colapsa, hay fuga de información (también detecta leakage).
+- **Carteras aleatorias (Monte Carlo)**: la cartera del modelo se compara con ~1000 aleatorias del
+  mismo tamaño; su percentil dice si su rendimiento es distinguible del azar.
+- **Bootstrap por bloques** del rank-IC (`module/stats.py`): intervalo de confianza que respeta el
+  solapamiento temporal.
+- **Leave-one-year-out**: se quita cada año para ver si el resultado depende de uno o dos.
+
+---
+
+## 8. Resultados
+
+*(Esta sección se rellena con los números del estudio full — ver `results/escenarios/study_summary.json`
+y el informe presentable. Contiene: qué artefactos aceptó el barrido y su efecto en el rank-IC; el
+rank-IC final del meta_final con su intervalo de confianza; el resultado de los tests de placebo;
+la comparación de los perfiles de inversor; y el CAGR cartera vs SPY limpio de artefactos.)*
+
+---
+
+## 9. Cómo ejecutar
+
+Requiere `data/raw` ya descargado (la descarga es un paso aparte, `RUN_MODE=download`).
+
+- **Estudio completo de principio a fin** (recomendado):
+  `RUN_MODE=full_study RUN_SCOPE=full python main.py`
+  Ejecuta barrido de ablations → decisión automática → run final optimizado → perfiles → robustez
+  → informes HTML. Sin decisiones humanas.
+- **Etapas sueltas**: `dataset`, `features`, `agents`, `backtest`, `report`, `experiments`.
+- **Ver los informes**: `python servir_html.py` y abrir
+  `http://localhost:8000/results/escenarios/comparison.html` (un servidor local hace falta porque
+  algunas pestañas cargan CSVs grandes por `fetch`).
+
+---
+
+## 10. Limitaciones (medidas, no estimadas)
+
+1. **Sesgo de supervivencia parcialmente irreducible**: los quebrados no tienen datos gratuitos.
+   Se mitiga centrándose en 2016+ (cobertura ~65-92 %) y se reporta por año.
+2. **Restatements invisibles**: las series de fundamentales son valores actuales; EDGAR fecha
+   *cuándo* se publicó, pero el *valor* podría estar reexpresado. Lookahead residual no eliminable
+   con datos gratuitos.
+3. **Muestra pequeña de eras independientes**: intervalos de confianza anchos; por eso la
+   significancia se mide con bootstrap por bloques y se exige estabilidad temporal.
+4. **Selección temporal declarada**: centrarse en 2016+ es una decisión basada en cobertura y
+   diagnóstico; se reporta también el histórico completo para que el lector vea cuánto cambia.
+
+---
+
+## 11. Reproducibilidad
+
+Todo el estudio es re-ejecutable con un comando. Cada run lleva su `manifest.json` con la
+configuración, la semilla, las versiones y los hashes de los inputs. La **bitácora**
+(`docs/bitacora.md`) registra el porqué de cada decisión y cada resultado —el hilo narrativo del
+desarrollo—. Los tests (`pytest tests/`) cubren la ausencia de lookahead, las reglas de cartera, la
+guarda anti-artefactos, la decisión automática, los perfiles y la robustez.

@@ -1,8 +1,15 @@
-# TFM — Sistema multiagente de IA aplicado a la selección de acciones
+# TFM — Sistema de IA aplicado a la selección de acciones
 
-Trabajo Fin de Máster sobre aprendizaje de un sistema de IA y su evaluación rigurosa en un entorno financiero. La rentabilidad no se interpreta de forma aislada: se mide junto con baselines, evidencia fuera de muestra, limitaciones y sesgos.
+Trabajo Fin de Máster sobre **cómo aprende un sistema de IA** en un entorno financiero y su
+evaluación rigurosa. El objetivo no es batir a un índice sino **medir el aprendizaje** (rank-IC
+fuera de muestra) con honestidad: la rentabilidad se reporta como consecuencia, con
+significancia estadística y tests de robustez, y un resultado negativo bien medido es un
+entregable válido.
 
-El repositorio está en reconstrucción por fases. Implementadas: descarga de datos crudos con universo histórico del S&P 500 y fechas reales de publicación SEC EDGAR (Fase 0), dataset point-in-time (Fase 1), features y baselines (Fase 2), agentes ML + meta-agente (Fase 3), cartera + backtest con alfa neta (Fase 4), informes HTML navegables por run y de barrido (Fase 5) y barrido de escenarios con selección automática por consistencia (Fase 6). El diseño completo está en [docs/doc.md](docs/doc.md) y el estado ejecutable por fases en [docs/plan_fases.md](docs/plan_fases.md). El plan de redacción del TFM en LaTeX (Fase 7, al cierre del proyecto) está en [latex/plan_tfm.md](latex/plan_tfm.md).
+El sistema es un conjunto de **agentes LightGBM** (calidad, momentum, valor) combinados por un
+meta-agente, con un catálogo de **artefactos activables** (bloques de features/contexto) que un
+barrido de ablations activa automáticamente según cuáles mejoran el aprendizaje. Diseño completo
+en [docs/doc.md](docs/doc.md); el porqué de cada decisión en [docs/bitacora.md](docs/bitacora.md).
 
 ## Requisitos
 
@@ -10,118 +17,82 @@ El repositorio está en reconstrucción por fases. Implementadas: descarga de da
 pip install -r requirements.txt
 ```
 
-Configura la clave de Finnhub en `.env`:
+Clave de Finnhub en `.env` (`FINNHUB_API_KEY=...`), solo para la descarga. `EDGAR_USER_AGENT` es
+opcional (identifica las solicitudes a la SEC).
 
-```text
-FINNHUB_API_KEY=tu_clave
-```
+## El comando de principio a fin
 
-`EDGAR_USER_AGENT` es opcional; identifica las solicitudes a la SEC.
-
-## Ejecución por etapas
-
-`RUN_MODE` selecciona la etapa y `RUN_SCOPE` el alcance de los datos. Se pueden establecer temporalmente desde PowerShell:
+Con `data/raw` ya descargado, un único comando ejecuta el estudio completo sin decisiones humanas:
 
 ```powershell
-$env:RUN_MODE = "download"
-$env:RUN_SCOPE = "dev"
-python main.py
+$env:RUN_MODE = "full_study"; $env:RUN_SCOPE = "full"; python main.py
 ```
 
-| `RUN_MODE` | Comportamiento actual o futuro |
-|---|---|
-| `download` | Descarga y consolida datos crudos. |
-| `dataset` | Construye el panel, precios de activos y benchmark point-in-time desde raw. |
-| `features` | Genera factores GARP/momentum, baselines y etiquetas futuras separadas. |
-| `agents` | Entrena agentes Ridge walk-forward y el meta-agente de rank-IC. |
-| `backtest` | Simula la cartera sobre el último `run_dir` de agentes, aplica costes y calcula equity + métricas anuales. |
-| `report` | Genera `report.html` autocontenido en el último `run_dir` de agentes. |
-| `experiments` | Lanza el barrido de escenarios (`escenarios/rejilla_base.py` por defecto) con reutilización por huella. |
-| `full` | Ejecuta `download → dataset → features → agents → backtest → report`. |
+Hace: barrido de ablations → **decisión automática** de qué artefactos ayudan (por significancia)
+→ configuración final → run optimizado → 8 perfiles de inversor → tests de robustez/placebo →
+informes HTML. Produce `results/escenarios/study_summary.json` y `comparison.html`.
 
-| `RUN_SCOPE` | Resultado |
-|---|---|
-| `dev` | Usa una muestra pequeña y guarda los agregados en `data/raw/dev/`. Nunca sobrescribe datos completos. |
-| `full` | Usa todo el universo histórico y guarda los agregados en `data/raw/`. |
+## Ver los informes
 
-Por ejemplo, la descarga completa se solicita explícitamente así:
+Algunas pestañas cargan CSVs grandes por `fetch`, que requieren un servidor local:
 
-```powershell
-$env:RUN_MODE = "download"
-$env:RUN_SCOPE = "full"
-python main.py
+```bash
+python servir_html.py
+# abre http://localhost:8000/results/escenarios/comparison.html
 ```
 
-## Datos producidos por la Fase 0
+## Etapas sueltas
 
-- Caché por fuente en `data/raw/json/`, incluida la caché de respuestas EDGAR.
-  Si el mapa SEC actual es ambiguo por reutilización de ticker, se valida con el
-  buscador SEC antes de aceptar el CIK.
-- Agregados: `profiles.parquet`, `finnhub_metrics.parquet`, `prices.parquet`, `news.parquet` y `report_dates.parquet`.
-- SPY se descarga siempre como benchmark de precios; no requiere CIK, fundamentales ni perfil de empresa.
-- `report_dates.parquet` usa SEC EDGAR y contiene `ticker`, `cik`, `form`, `period` y `filed_date`.
-- Metadatos: `download_coverage.json`, `download_failures.csv` y `universe_coverage.json`.
+`RUN_MODE` selecciona una etapa; `RUN_SCOPE` el alcance (`dev` = muestra pequeña aislada,
+`full` = universo completo).
 
-La cobertura anual mide miembros históricos del índice frente a empresas observables con precio y un fundamental asociado a un informe SEC publicado. Las ejecuciones `dev` marcan su cobertura como no representativa.
+| `RUN_MODE` | Qué hace |
+|---|---|
+| `download` | Descarga y consolida datos crudos (Finnhub, Yahoo, SEC EDGAR). |
+| `dataset` | Panel point-in-time, precios de activos y benchmark. |
+| `features` | Factores GARP/momentum + artefactos activos + etiquetas futuras separadas. |
+| `agents` | Entrena los 3 agentes LightGBM walk-forward y el meta-agente. |
+| `backtest` | Simula la cartera (con guarda anti-artefactos y perfil de inversor) y calcula métricas. |
+| `report` | Genera el `report.html` del último run. |
+| `experiments` | Barrido de ablations + decisión automática de artefactos. |
+| `full_study` | **Todo de principio a fin** (ver arriba). |
 
-## Dataset point-in-time
+## Arquitectura de datos (point-in-time)
 
-`RUN_MODE=dataset` requiere que la descarga del mismo `RUN_SCOPE` haya generado
-`prices.parquet`, `finnhub_metrics.parquet` y `report_dates.parquet`. Produce:
+- **Universo dinámico** del S&P 500 por fecha (composición histórica real): sin sesgo de
+  inclusión anticipada. El sistema se centra en **2016+** (mayor cobertura, menos sesgo de
+  supervivencia).
+- **Fechas de publicación reales** de SEC EDGAR: un fundamental solo es observable cuando se
+  publicó, no en su cierre fiscal. Sin lookahead.
+- **Panel** `(ticker, snapshot_date)` con lo observable en cada fecha; sin relleno hacia atrás.
 
-- `data/processed/panel_point_in_time.parquet` para alcance completo.
-- `data/processed/dev/panel_point_in_time.parquet` para desarrollo.
-- `benchmark_point_in_time.parquet` y `asset_price_point_in_time.parquet` en el mismo directorio procesado.
+## Modelo y aprendizaje
 
-El panel usa solo precios ajustados, series históricas de Finnhub y fechas de presentación SEC. No contiene perfiles actuales, `payload.metric`, noticias ni sector.
+- **3 agentes LightGBM** (calidad, momentum, valor), objetivo `rank_regression` (percentil
+  transversal del retorno). Walk-forward estricto (solo etiquetas ya realizadas).
+- **Meta-agente** por rank-IC reciente; el `meta_score` es lo que opera la cartera y sobre lo que
+  se mide el rank-IC.
+- **Artefactos activables** (`module/artifacts.py`): momentum de fundamentales, régimen bull/bear,
+  neutralización por sector, momentum de precio multi-horizonte, medias móviles, régimen
+  ampliado, calidad/crecimiento derivados. El barrido decide cuáles entran.
 
-## Features y agentes ML
+## Cartera, perfiles y robustez
 
-`RUN_MODE=features` requiere los tres artefactos PIT del mismo alcance y genera
-`features_point_in_time.parquet`, `baseline_scores.parquet` y
-`targets_forward_3m.parquet`. Las etiquetas futuras se mantienen separadas de
-las variables observables. Se excluyen precios con más de siete días de antigüedad.
+- **Cartera** 8-12 posiciones, peso máx 15 %, rotación con umbral de ventaja y expulsión.
+  **Guarda anti-artefactos**: neutraliza retornos mensuales imposibles (>200 %) como datos
+  corruptos.
+- **Perfiles de inversor** (`module/profiles.py`): entre las buenas del meta, cada perfil
+  (conservador, agresivo, value, calidad, momentum, GARP, contrarian, balanceado) reordena según
+  estilo. Explicabilidad como funcionalidad.
+- **Robustez** (`module/robustness.py`): permutación de etiquetas (placebo), carteras aleatorias
+  (Monte Carlo), bootstrap por bloques, leave-one-year-out. Demuestran que el resultado no es
+  suerte.
 
-`RUN_MODE=agents` usa una etiqueta de retorno excesivo de tres meses frente a SPY.
-Arranca en la fecha ancla configurada (por defecto, febrero de 2000), usa toda la
-historia disponible hasta completar ocho años y después una ventana móvil de ocho.
-Sus resultados quedan versionados bajo `data/processed[/dev]/agents/` con scores,
-pesos meta, rank-IC, coeficientes y manifiesto.
+## Tests
 
-## Cartera y backtest
+```bash
+pytest tests/ -q
+```
 
-`RUN_MODE=backtest` toma el último `run_dir` de agentes y simula una cartera con
-alfa **neta de costes**. Las reglas están detalladas en [docs/plan_fases.md](docs/plan_fases.md)
-(Fase 4). En resumen:
-
-- Tamaño flexible entre `TARGET_MIN` = 5 y `TARGET_MAX` = 10 posiciones.
-- Los tenentes se protegen del ruido con un umbral de ventaja (`ROTATION_EDGE_PERCENTILES` = 5)
-  pero salen si su percentil cae por debajo de `MIN_HOLD_PERCENTILE` = 50.
-- Sin regla de tenencia mínima: cada revisión (mensual o trimestral) decide desde cero.
-- Peso proporcional al ranking con tope `MAX_WEIGHT_PER_POSITION` = 20 %.
-- Costes: 5 pb de comisión + 10 pb de slippage sobre el nocional operado.
-
-Genera dentro del `run_dir` de agentes: `positions.parquet`, `orders.parquet`
-(con `reason` legible), `equity.parquet`, `annual_metrics.parquet` y `backtest_summary.json`
-(señales de aprendizaje rank-IC + consistencia + alfa informativa, ver Fase 6).
-
-## Barrido de escenarios y selección automática
-
-`RUN_MODE=experiments` lanza el barrido de `escenarios/rejilla_base.py`. Cada escenario es
-un `ScenarioSpec(name, overrides)` que corre el pipeline completo con sus parámetros. La
-reutilización se decide automáticamente por huella SHA-256 de los inputs de cada etapa:
-los escenarios que solo cambian política de cartera reusan dataset, features y agentes del
-baseline via symlink; solo se regenera lo estrictamente necesario.
-
-Los resultados van a `results/escenarios/<nombre>/`, cada uno con su `report.html` completo.
-Al final, `results/escenarios/comparison.html` presenta el ranking por **aprendizaje y
-estabilidad, nunca por alfa**: rango medio de rank-IC medio OOS, fracción de cohortes con
-rank-IC positivo, beat rate y drawdown máximo. El alfa se reporta como consecuencia pero no
-decide. Es un único ranking global sobre todos los años, sin separación en eras. Ver
-[docs/doc.md](docs/doc.md) §8 para el razonamiento metodológico.
-
-## Bitácora de decisiones
-
-El desarrollo se documenta en [docs/bitacora.md](docs/bitacora.md): un diario cronológico del
-*porqué* de cada decisión (problema, hipótesis, qué se probó, resultado medido, decisión),
-incluidos los caminos descartados. Es la materia prima del capítulo de metodología del TFM.
+Cubren la ausencia de lookahead (point-in-time, artefactos, walk-forward), las reglas de cartera,
+la guarda anti-artefactos, la decisión automática de artefactos, los perfiles y la robustez.
