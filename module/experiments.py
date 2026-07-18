@@ -46,7 +46,7 @@ class ScenarioSpec:
     """Un escenario del barrido: nombre + overrides sobre `environment.Settings`.
 
     Los overrides se pasan por su nombre de campo del dataclass (`target_max`,
-    `ridge_alpha`, `snapshot_day`, etc.), no por el nombre de la constante en
+    `lgbm_max_depth`, `snapshot_day`, etc.), no por el nombre de la constante en
     `environment.py`. La razon: es una API tipada que valida al construir Settings.
     """
 
@@ -70,34 +70,36 @@ FINGERPRINT_FIELDS: dict[str, tuple[str, ...]] = {
         "run_scope", "data_start_date", "end_date", "benchmark_ticker",
         "snapshot_day", "snapshot_step_months", "max_price_age_days",
         "target_horizon_months", "neutralize_by_sector", "neutralize_min_group",
-        "fundamental_momentum", "market_regime_feature",
+        "fundamental_momentum", "market_regime_feature", "price_momentum_multi",
+        "moving_averages", "regime_extended", "quality_growth_derived",
     ),
     "agents": (
         "run_scope", "data_start_date", "end_date", "benchmark_ticker",
         "snapshot_day", "snapshot_step_months", "max_price_age_days",
         "neutralize_by_sector", "neutralize_min_group",
-        "fundamental_momentum", "market_regime_feature",
+        "fundamental_momentum", "market_regime_feature", "price_momentum_multi",
+        "moving_averages", "regime_extended", "quality_growth_derived",
         "target_horizon_months", "execution_year", "execution_quarter",
         "execution_lag_days", "train_lookback_years", "fundamental_step_months",
-        "meta_ic_lookback_quarters", "ridge_alpha", "min_training_rows",
-        "min_rank_ic_cross_section", "label_transform", "label_winsor_pct",
-        "model_type", "objective", "lgbm_n_estimators", "lgbm_max_depth",
+        "meta_ic_lookback_quarters", "min_training_rows", "min_rank_ic_cross_section",
+        "objective", "lgbm_n_estimators", "lgbm_max_depth",
         "lgbm_learning_rate", "lgbm_min_child_samples", "random_seed", "meta_type",
     ),
     "backtest": (
         "run_scope", "data_start_date", "end_date", "benchmark_ticker",
         "snapshot_day", "snapshot_step_months", "max_price_age_days",
         "neutralize_by_sector", "neutralize_min_group",
-        "fundamental_momentum", "market_regime_feature",
+        "fundamental_momentum", "market_regime_feature", "price_momentum_multi",
+        "moving_averages", "regime_extended", "quality_growth_derived",
         "target_horizon_months", "execution_year", "execution_quarter",
         "execution_lag_days", "train_lookback_years", "fundamental_step_months",
-        "meta_ic_lookback_quarters", "ridge_alpha", "min_training_rows",
-        "min_rank_ic_cross_section", "label_transform", "label_winsor_pct",
-        "model_type", "objective", "lgbm_n_estimators", "lgbm_max_depth",
+        "meta_ic_lookback_quarters", "min_training_rows", "min_rank_ic_cross_section",
+        "objective", "lgbm_n_estimators", "lgbm_max_depth",
         "lgbm_learning_rate", "lgbm_min_child_samples", "random_seed", "meta_type",
         "target_min", "target_max", "entry_min_percentile", "min_hold_percentile",
         "rotation_edge_percentiles", "max_weight_per_position",
         "commission_bps", "slippage_bps", "rebalance_drift_tolerance",
+        "max_monthly_position_return", "profile",
     ),
 }
 

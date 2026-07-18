@@ -42,10 +42,10 @@ def test_only_portfolio_change_affects_only_backtest() -> None:
     assert stage_fingerprint("backtest", base) != stage_fingerprint("backtest", changed)
 
 
-def test_ridge_alpha_change_affects_agents_and_backtest_but_not_features() -> None:
-    """RIDGE_ALPHA es del modelo: solo agents (y por dependencia backtest) cambian."""
+def test_lgbm_depth_change_affects_agents_and_backtest_but_not_features() -> None:
+    """Un hiperparametro del modelo: solo agents (y por dependencia backtest) cambian."""
     base = Settings(run_scope="dev", data_start_date="2000-01-01", end_date="2001-01-01")
-    changed = replace(base, ridge_alpha=2.0)
+    changed = replace(base, lgbm_max_depth=6)
 
     assert stage_fingerprint("dataset", base) == stage_fingerprint("dataset", changed)
     assert stage_fingerprint("features", base) == stage_fingerprint("features", changed)

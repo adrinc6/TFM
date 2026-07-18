@@ -58,82 +58,67 @@ FORCE_RAW_DOWNLOAD = False
 
 # Fase 1: el panel se construye para toda la historia disponible. La fecha ancla
 # se usará después para iniciar una simulación o un escenario concreto.
-EXECUTION_YEAR = 2000
+# Fecha ancla: el sistema evalua desde 2016 (mayor cobertura, menos sesgo de supervivencia),
+# entrenando 8-12 anios hacia atras (datos de sobra desde ~2004). Se olvida la ventana desde 2000.
+EXECUTION_YEAR = 2016
 EXECUTION_QUARTER = 1
 EXECUTION_LAG_DAYS = 45
-TRAIN_LOOKBACK_YEARS = 8
-SNAPSHOT_STEP_MONTHS = 1
-FUNDAMENTAL_STEP_MONTHS = 3
+TRAIN_LOOKBACK_YEARS = 10
+SNAPSHOT_STEP_MONTHS = 1           # cadencia de revision de cartera; barrida como escenario
+FUNDAMENTAL_STEP_MONTHS = 3        # cadencia de reentreno; barrida como escenario (3/12/1)
 SNAPSHOT_DAY = 15
 TARGET_HORIZON_MONTHS = 3
 MAX_PRICE_AGE_DAYS = 7
-# B1: neutralizar factores rankeando dentro de sector en vez de sobre todo el universo.
-# El sector viene de profiles.parquet (snapshot actual): se usa SOLO para agrupar, nunca
-# como senal. Con menos de NEUTRALIZE_MIN_GROUP miembros, el grupo cae a ranking global.
-NEUTRALIZE_BY_SECTOR = False
-NEUTRALIZE_MIN_GROUP = 5
 META_IC_LOOKBACK_QUARTERS = 12
-RIDGE_ALPHA = 1.0
 MIN_TRAINING_ROWS = 30
 MIN_RANK_IC_CROSS_SECTION = 10
 
-# Motor de aprendizaje de los agentes: "ridge" (lineal) o "lightgbm" (arboles, no lineal).
-# LightGBM captura interacciones que el lineal promedia a cero. Ver docs/informe_situacion_y_critica.md.
-MODEL_TYPE = "lightgbm"
+# --- Modelo LightGBM ---
 # Objetivo de aprendizaje:
-#   "rank_regression" -> regresion sobre el PERCENTIL transversal del retorno (0..1) dentro de
-#                        cada snapshot. Objetivo principal: alinea el entrenamiento con el rank-IC.
-#   "regression"      -> exceso de retorno crudo (tratado por LABEL_TRANSFORM).
-#   "ranking"         -> LGBMRanker agrupado por snapshot (lambdarank). Solo LightGBM.
-#   "quartile"        -> clasifica cuartil superior vs inferior; ablacion secundaria.
+#   "rank_regression" (principal) -> regresion sobre el PERCENTIL transversal del retorno (0..1)
+#                                    dentro de cada snapshot; alinea el entrenamiento con el rank-IC.
+#   "ranking"  -> LGBMRanker (lambdarank) agrupado por snapshot; optimiza el orden directamente.
+#   "quartile" -> clasifica cuartil superior vs inferior (ablacion).
 OBJECTIVE = "rank_regression"
-# Hiperparametros LightGBM. Defaults conservadores anti-overfitting (arboles poco profundos,
-# muchas muestras minimas por hoja) porque hay pocas eras independientes.
+# Hiperparametros LightGBM. Defaults conservadores (arboles poco profundos, muchas muestras
+# minimas por hoja) por el numero limitado de eras independientes. Barridos como escenario.
 LGBM_N_ESTIMATORS = 200
 LGBM_MAX_DEPTH = 4
 LGBM_LEARNING_RATE = 0.05
 LGBM_MIN_CHILD_SAMPLES = 50
-# Semilla del modelo. Fija en la comparacion principal; se barre para medir sensibilidad del
-# candidato ganador (una senal que solo aparece con una semilla es sospechosa).
+# Semilla del modelo. Fija en la comparacion principal; se barre para medir robustez del ganador.
 RANDOM_SEED = 42
-# Meta-agente: como se combinan los 3 agentes.
+# Meta-agente: como se combinan los 3 agentes (equal | rank_ic | regime).
 #   "equal"   -> promedio equiponderado de los rangos de los agentes
-#   "rank_ic" -> ponderacion por rank-IC reciente de cada agente
+#   "rank_ic" -> ponderacion por rank-IC reciente de cada agente (mejor medido: bate al equal)
 #   "regime"  -> pesos distintos segun regimen bull/bear
-#   "stacker" -> stacker lineal (Ridge) walk-forward sobre scores + contexto de mercado
-# Se empieza por rank_ic; el stacker solo se prueba tras superar la Puerta 1 (ver plan).
 META_TYPE = "rank_ic"
-# B2: tratamiento de la etiqueta de entrenamiento para reducir ruido.
-#   "none"   -> exceso de retorno crudo
-#   "winsor" -> recorta las colas al percentil LABEL_WINSOR_PCT (reduce outliers)
-#   "rank"   -> percentil transversal del retorno futuro (entrena contra el orden, Spearman)
-# El tratamiento se aplica SOLO a la etiqueta de entrenamiento, nunca al scoring.
-# "rank" es el mejor medido (rank-IC -0.0058 -> +0.0011, frac 0.486 -> 0.534): entrenar contra
-# el orden alinea la perdida con el rank-IC. Ver docs/bitacora.md (B2).
-LABEL_TRANSFORM = "rank"
-LABEL_WINSOR_PCT = 0.02   # recorta el 2 % de cada cola (solo si LABEL_TRANSFORM="winsor")
-# B3: anadir features de tendencia de fundamentales (cambio del ratio respecto a la publicacion
-# anterior de la misma empresa) y descomposicion del cambio de valoracion en su parte de precio
-# y su parte fundamental. Todo point-in-time. Ver docs/bitacora.md (B3).
-FUNDAMENTAL_MOMENTUM = False
-# B5: anadir el regimen de mercado (bull/bear, detectado SOLO con datos pasados del SP500) como
-# feature, junto con interacciones factor x regimen, para que el modelo aprenda a ponderar
-# distinto en cada regimen. Mejora marginal (rank-IC +0.0011 -> +0.0015) y ayuda a los agentes
-# fundamentales (quality cruza a positivo); se conserva activo. Ver docs/bitacora.md (B5).
-MARKET_REGIME_FEATURE = True
 
-# Parametros de cartera (Fase 4). Todos con valores por defecto conservadores.
-# La logica que sigue: expulsa a los que se hunden, protege del ruido con umbral de ventaja,
-# no fija tenencia minima. Ver `docs/plan_fases.md` (Fase 4) para el razonamiento completo.
-TARGET_MIN = 5                    # cartera nunca baja de 5 mientras haya candidatos que cumplan
-TARGET_MAX = 10                   # cartera nunca supera 10
+# --- Artefactos activables (bloques de features/contexto que el barrido activa como ablations) ---
+# Cada uno es point-in-time. El barrido mide si suben el rank-IC del meta_final. Ver module/artifacts.py.
+NEUTRALIZE_BY_SECTOR = False       # rankear factores dentro de sector en vez de global
+FUNDAMENTAL_MOMENTUM = False       # tendencia de fundamentales + descomposicion P/E precio vs fundamental
+MARKET_REGIME_FEATURE = False      # regimen bull/bear del SP500 + interacciones factor x regimen
+PRICE_MOMENTUM_MULTI = False       # aceleracion (r3m-r12m), reversion (-r1m), volatilidad reciente
+MOVING_AVERAGES = False            # precio vs SMA200/SMA50, distancia a maximo de 12m
+REGIME_EXTENDED = False            # vol del SP500, drawdown del indice, amplitud
+QUALITY_GROWTH_DERIVED = False     # tendencia de ROE/margenes, estabilidad, sorpresa de crecimiento
+NEUTRALIZE_MIN_GROUP = 5           # tamano minimo de grupo para neutralizar por sector
+
+# --- Cartera ---
+# Por defecto 8-12 posiciones, peso maximo 15 % (minimo implicito ~5 % por el reparto). Barrida.
+TARGET_MIN = 8
+TARGET_MAX = 12
 ENTRY_MIN_PERCENTILE = 80         # solo entran candidatos por encima de este percentil (0..100)
 MIN_HOLD_PERCENTILE = 50          # tenente cae por debajo -> sale, aunque nadie le supere
 ROTATION_EDGE_PERCENTILES = 5     # umbral de ventaja para que un candidato desplace a un tenente
-MAX_WEIGHT_PER_POSITION = 0.20    # tope de peso por posicion; el excedente se reparte
+MAX_WEIGHT_PER_POSITION = 0.15    # tope de peso por posicion; el excedente se reparte
 COMMISSION_BPS = 5                # comision por operacion, en puntos basicos
 SLIPPAGE_BPS = 10                 # slippage por operacion, en puntos basicos
 REBALANCE_DRIFT_TOLERANCE = 1.5   # solo re-sizing si un peso excede MAX_WEIGHT * este factor
+# Guarda anti-artefactos de datos: un retorno mensual de una posicion mayor que esto se trata
+# como dato corrupto (split mal ajustado, ticker reciclado) y se neutraliza, registrandolo.
+MAX_MONTHLY_POSITION_RETURN = 2.0  # +200 % en un mes es imposible para una accion normal
 
 # Se pueden establecer temporalmente desde la consola sin editar este archivo.
 RUN_MODE = os.getenv("RUN_MODE", "download").strip().lower()
@@ -164,13 +149,9 @@ class Settings:
     snapshot_day: int = SNAPSHOT_DAY
     target_horizon_months: int = TARGET_HORIZON_MONTHS
     max_price_age_days: int = MAX_PRICE_AGE_DAYS
-    neutralize_by_sector: bool = NEUTRALIZE_BY_SECTOR
-    neutralize_min_group: int = NEUTRALIZE_MIN_GROUP
     meta_ic_lookback_quarters: int = META_IC_LOOKBACK_QUARTERS
-    ridge_alpha: float = RIDGE_ALPHA
     min_training_rows: int = MIN_TRAINING_ROWS
     min_rank_ic_cross_section: int = MIN_RANK_IC_CROSS_SECTION
-    model_type: str = MODEL_TYPE
     objective: str = OBJECTIVE
     lgbm_n_estimators: int = LGBM_N_ESTIMATORS
     lgbm_max_depth: int = LGBM_MAX_DEPTH
@@ -178,10 +159,16 @@ class Settings:
     lgbm_min_child_samples: int = LGBM_MIN_CHILD_SAMPLES
     random_seed: int = RANDOM_SEED
     meta_type: str = META_TYPE
-    label_transform: str = LABEL_TRANSFORM
-    label_winsor_pct: float = LABEL_WINSOR_PCT
+    # artefactos activables
+    neutralize_by_sector: bool = NEUTRALIZE_BY_SECTOR
+    neutralize_min_group: int = NEUTRALIZE_MIN_GROUP
     fundamental_momentum: bool = FUNDAMENTAL_MOMENTUM
     market_regime_feature: bool = MARKET_REGIME_FEATURE
+    price_momentum_multi: bool = PRICE_MOMENTUM_MULTI
+    moving_averages: bool = MOVING_AVERAGES
+    regime_extended: bool = REGIME_EXTENDED
+    quality_growth_derived: bool = QUALITY_GROWTH_DERIVED
+    # cartera
     target_min: int = TARGET_MIN
     target_max: int = TARGET_MAX
     entry_min_percentile: float = ENTRY_MIN_PERCENTILE
@@ -191,6 +178,8 @@ class Settings:
     commission_bps: float = COMMISSION_BPS
     slippage_bps: float = SLIPPAGE_BPS
     rebalance_drift_tolerance: float = REBALANCE_DRIFT_TOLERANCE
+    max_monthly_position_return: float = MAX_MONTHLY_POSITION_RETURN
+    profile: str = "balanced"   # perfil de inversor para la seleccion de cartera (ver module/profiles.py)
 
     def __post_init__(self) -> None:
         if self.run_mode not in RUN_MODES:
@@ -204,18 +193,13 @@ class Settings:
 
         if self.execution_quarter not in (1, 2, 3, 4):
             raise ValueError("EXECUTION_QUARTER debe estar entre 1 y 4.")
-        if self.model_type not in ("ridge", "lightgbm"):
-            raise ValueError(f"MODEL_TYPE invalido: {self.model_type!r}. Usa 'ridge' o 'lightgbm'.")
-        if self.objective not in ("rank_regression", "regression", "ranking", "quartile"):
+        if self.objective not in ("rank_regression", "ranking", "quartile"):
             raise ValueError(
-                f"OBJECTIVE invalido: {self.objective!r}. Usa 'rank_regression', 'regression', "
-                "'ranking' o 'quartile'."
+                f"OBJECTIVE invalido: {self.objective!r}. Usa 'rank_regression', 'ranking' o 'quartile'."
             )
-        if self.objective == "ranking" and self.model_type != "lightgbm":
-            raise ValueError("OBJECTIVE='ranking' requiere MODEL_TYPE='lightgbm' (LGBMRanker).")
-        if self.meta_type not in ("equal", "rank_ic", "regime", "stacker"):
+        if self.meta_type not in ("equal", "rank_ic", "regime"):
             raise ValueError(
-                f"META_TYPE invalido: {self.meta_type!r}. Usa 'equal', 'rank_ic', 'regime' o 'stacker'."
+                f"META_TYPE invalido: {self.meta_type!r}. Usa 'equal', 'rank_ic' o 'regime'."
             )
         if self.train_lookback_years <= 0 or self.target_horizon_months <= 0:
             raise ValueError("Las ventanas temporales deben ser positivas.")

@@ -243,17 +243,24 @@ def _resize_to_target(
     """Fija el peso final de cada ticker en la cartera objetivo.
 
     Peso proporcional al ranking dentro de la cartera (mejor -> mas peso) con tope
-    `max_weight_per_position`. El excedente se reparte entre los que no tocan tope.
+    `max_weight_per_position`. El excedente se reparte entre los que no tocan tope. Solo se
+    rebalancea a un tenente ya presente si su peso se ha desviado del objetivo mas de
+    `max_weight_per_position * rebalance_drift_tolerance` (evita operar por micro-derivas y su
+    coste). Los tickers que entran o salen siempre generan orden.
     """
     if not target_tickers:
         return []
 
     weights = _compute_weights(target_tickers, settings.max_weight_per_position)
+    drift_threshold = settings.max_weight_per_position * settings.rebalance_drift_tolerance
 
     orders: list[dict[str, Any]] = []
     for ticker, weight in weights.items():
         current_weight = state.holdings.get(ticker, 0.0)
         if abs(current_weight - weight) < 1e-9:
+            continue
+        # Tenente ya presente cuya deriva es pequena: no se rebalancea (ahorra coste).
+        if current_weight > 0 and abs(current_weight - weight) < drift_threshold:
             continue
         orders.append(
             {

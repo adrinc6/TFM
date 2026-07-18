@@ -23,7 +23,7 @@ def _train_frame() -> pd.DataFrame:
 def test_rank_regression_label_is_cross_sectional_percentile() -> None:
     """rank_regression: la etiqueta es el percentil del retorno dentro de cada snapshot."""
     from environment import Settings
-    settings = Settings(run_scope="dev", objective="rank_regression", model_type="lightgbm")
+    settings = Settings(run_scope="dev", objective="rank_regression")
     train, label = _prepare_training(_train_frame(), settings)
     assert len(train) == 40                       # no descarta filas
     assert label.between(0, 1).all()              # percentiles en [0,1]
@@ -33,7 +33,7 @@ def test_rank_regression_label_is_cross_sectional_percentile() -> None:
 def test_quartile_excludes_middle_from_training() -> None:
     """quartile (ablacion): entrena solo con extremos; el centro se excluye del train."""
     from environment import Settings
-    settings = Settings(run_scope="dev", objective="quartile", model_type="lightgbm")
+    settings = Settings(run_scope="dev", objective="quartile")
     train, label = _prepare_training(_train_frame(), settings)
     assert len(train) < 40                         # el centro se cae
     assert set(label.unique()) <= {0, 1}           # binaria
@@ -52,19 +52,11 @@ def test_meta_final_is_diagnosed(agent_settings) -> None:
 
 
 def test_seed_and_objective_change_fingerprint() -> None:
-    """Cambiar semilla, motor u objetivo cambia la huella del run (reproducibilidad)."""
+    """Cambiar semilla, objetivo o hiperparametros cambia la huella del run (reproducibilidad)."""
     from environment import Settings
     base = Settings(run_scope="dev")
-    for field, value in (("random_seed", 7), ("objective", "regression"), ("model_type", "ridge")):
+    for field, value in (("random_seed", 7), ("objective", "quartile"), ("lgbm_max_depth", 6)):
         changed = replace(base, **{field: value})
         assert stage_fingerprint("agents", base) != stage_fingerprint("agents", changed), (
             f"{field} deberia cambiar la huella de agents"
         )
-
-
-def test_ridge_still_works(agent_settings) -> None:
-    """El motor Ridge en modo regresion sigue produciendo scores (compatibilidad)."""
-    ridge_settings = replace(agent_settings, model_type="ridge", objective="regression", meta_type="rank_ic")
-    scores = build_agent_scores(ridge_settings)
-    assert not scores.empty
-    assert "meta_score" in scores.columns

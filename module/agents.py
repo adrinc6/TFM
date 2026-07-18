@@ -1,14 +1,16 @@
-"""Agentes especializados (Ridge o LightGBM) con entrenamiento walk-forward trimestral.
+"""Agentes especializados LightGBM con entrenamiento walk-forward.
 
-Cada agente aprende, en cada retrain, a ordenar las acciones por su retorno futuro. El motor
-(`model_type`) y el objetivo (`objective`) son configurables:
+Cada agente (calidad, momentum, valor) aprende, en cada retrain, a ordenar las acciones por su
+retorno futuro. LightGBM (arboles con gradient boosting) captura interacciones no lineales entre
+factores y maneja los NA de forma nativa. El objetivo (`objective`) es configurable:
 
-- `model_type="ridge"`: regresion lineal (el enfoque original).
-- `model_type="lightgbm"`: arboles con gradient boosting, captura interacciones no lineales.
-- `objective="regression"`: predice el exceso de retorno (tratado segun `label_transform`).
-- `objective="quartile"`: clasifica el cuartil superior vs el inferior del retorno futuro (los
-  del medio se excluyen del entrenamiento). El score es la probabilidad del cuartil superior,
-  un ranking valido que la cartera y el rank-IC consumen igual que un score de regresion.
+- `rank_regression` (principal): regresion sobre el percentil transversal del retorno, alineada
+  con el rank-IC.
+- `ranking`: LGBMRanker (lambdarank) agrupado por snapshot; optimiza el orden directamente.
+- `quartile`: clasifica cuartil superior vs inferior; el score es la probabilidad del superior.
+
+El score de cada agente se combina en un meta-score (ver `module.meta`), que es lo que la cartera
+opera y sobre lo que se mide el rank-IC final.
 """
 
 from __future__ import annotations
@@ -21,10 +23,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from lightgbm import LGBMClassifier, LGBMRanker, LGBMRegressor
-from sklearn.impute import SimpleImputer
-from sklearn.linear_model import Ridge
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
 
 from environment import Settings
 from module.meta import AGENT_NAMES, combine_agent_scores
@@ -161,115 +159,70 @@ def _prepare_training(train: pd.DataFrame, settings: Settings) -> tuple[pd.DataF
     """Devuelve (filas de entrenamiento, etiqueta) segun el objetivo.
 
     - "rank_regression" (principal): etiqueta = percentil transversal del retorno (0..1) dentro de
-      cada snapshot. Regresion normal, pero alineada con el rank-IC. Todas las filas.
-    - "ranking": etiqueta = grados enteros de relevancia por snapshot (para LGBMRanker). Todas.
-    - "regression": exceso de retorno crudo tratado por `label_transform`. Todas.
+      cada snapshot. Regresion alineada con el rank-IC. Todas las filas.
+    - "ranking": etiqueta = grados enteros de relevancia (deciles) por snapshot, para LGBMRanker.
     - "quartile" (ablacion): clasificacion binaria del cuartil superior (1) vs inferior (0) del
       retorno DENTRO de cada snapshot; el centro se EXCLUYE del entrenamiento pero se puntua entero.
     """
     returns = train["forward_excess_return_3m"].astype(float)
+    percentile = returns.groupby(train["snapshot_date"]).rank(method="average", pct=True)
     if settings.objective == "rank_regression":
-        return train, returns.groupby(train["snapshot_date"]).rank(method="average", pct=True)
+        return train, percentile
     if settings.objective == "ranking":
-        # LGBMRanker necesita etiquetas de relevancia enteras (0..K). Usamos deciles por snapshot.
-        deciles = returns.groupby(train["snapshot_date"]).rank(method="average", pct=True)
-        return train, (deciles * 9).round().astype(int)
+        # LGBMRanker necesita etiquetas de relevancia enteras (0..9): deciles por snapshot.
+        return train, (percentile * 9).round().astype(int)
     if settings.objective == "quartile":
-        quartile = returns.groupby(train["snapshot_date"]).rank(method="average", pct=True)
-        top = quartile >= 0.75
-        bottom = quartile <= 0.25
-        mask = top | bottom
+        top = percentile >= 0.75
+        mask = top | (percentile <= 0.25)
         return train.loc[mask], top.loc[mask].astype(int)
-    return train, _transform_label(train, "forward_excess_return_3m", settings)
+    raise ValueError(f"OBJECTIVE desconocido: {settings.objective!r}")
 
 
-def _transform_label(train: pd.DataFrame, column: str, settings: Settings) -> pd.Series:
-    """Tratamiento de la etiqueta de REGRESION (B2). Solo sobre `train`, nunca scoring.
-
-    - "none": exceso de retorno crudo.
-    - "winsor": recorta las colas al percentil `label_winsor_pct` (los outliers no dominan).
-    - "rank": percentil transversal del retorno futuro. Entrena contra el orden, que es lo que
-      mide el rank-IC.
-    """
-    values = train[column].astype(float)
-    transform = settings.label_transform
-    if transform == "winsor":
-        lower = values.quantile(settings.label_winsor_pct)
-        upper = values.quantile(1 - settings.label_winsor_pct)
-        return values.clip(lower, upper)
-    if transform == "rank":
-        return values.groupby(train["snapshot_date"]).rank(method="average", pct=True)
-    return values
-
-
-def _build_model(settings: Settings) -> Pipeline:
-    """Pipeline del agente segun motor y objetivo.
-
-    LightGBM no necesita escalado (los arboles son invariantes a transformaciones monotonas) y
-    maneja los NA de forma nativa, asi que va sin imputer ni scaler. Ridge si los necesita.
-    """
-    if settings.model_type == "lightgbm":
-        common = dict(
-            n_estimators=settings.lgbm_n_estimators,
-            max_depth=settings.lgbm_max_depth,
-            learning_rate=settings.lgbm_learning_rate,
-            min_child_samples=settings.lgbm_min_child_samples,
-            subsample=0.8,
-            colsample_bytree=0.8,
-            random_state=settings.random_seed,
-            n_jobs=1,
-            verbose=-1,
-        )
-        if settings.objective == "quartile":
-            estimator = LGBMClassifier(**common)
-        elif settings.objective == "ranking":
-            estimator = LGBMRanker(objective="lambdarank", **common)
-        else:
-            estimator = LGBMRegressor(**common)
-        return Pipeline([("model", estimator)])
-    # Ridge (lineal): imputa, escala y regresa. La clasificacion con Ridge no aplica.
-    return Pipeline(
-        [
-            ("imputer", SimpleImputer(strategy="median", add_indicator=True)),
-            ("scaler", StandardScaler()),
-            ("ridge", Ridge(alpha=settings.ridge_alpha)),
-        ]
+def _build_model(settings: Settings):
+    """Estimador LightGBM segun el objetivo. Los arboles manejan NA de forma nativa y son
+    invariantes a transformaciones monotonas, asi que no necesitan imputer ni scaler."""
+    common = dict(
+        n_estimators=settings.lgbm_n_estimators,
+        max_depth=settings.lgbm_max_depth,
+        learning_rate=settings.lgbm_learning_rate,
+        min_child_samples=settings.lgbm_min_child_samples,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        random_state=settings.random_seed,
+        n_jobs=1,
+        verbose=-1,
     )
+    if settings.objective == "quartile":
+        return LGBMClassifier(**common)
+    if settings.objective == "ranking":
+        return LGBMRanker(objective="lambdarank", **common)
+    return LGBMRegressor(**common)
 
 
-def _fit_model(
-    model: Pipeline, train: pd.DataFrame, columns: list[str], target: pd.Series, settings: Settings
-) -> None:
+def _fit_model(model, train: pd.DataFrame, columns: list[str], target: pd.Series, settings: Settings) -> None:
     """Ajusta el modelo. El LGBMRanker necesita `group` = nº de filas por snapshot, y que las
-    filas esten agrupadas (contiguas) por snapshot; el resto de modelos se ajustan directo.
+    filas esten agrupadas (contiguas) por snapshot; el resto de objetivos se ajustan directo.
     """
     if settings.objective == "ranking":
         order = train.sort_values("snapshot_date").index
         ordered = train.loc[order]
         group = ordered.groupby("snapshot_date", sort=True).size().to_numpy()
-        model.named_steps["model"].fit(ordered[columns], target.loc[order], group=group)
+        model.fit(ordered[columns], target.loc[order], group=group)
     else:
         model.fit(train[columns], target)
 
 
-def _score(model: Pipeline, features: pd.DataFrame, settings: Settings) -> np.ndarray:
+def _score(model, features: pd.DataFrame, settings: Settings) -> np.ndarray:
     """Score por fila. Probabilidad del cuartil superior en clasificacion; el valor en el resto."""
-    if settings.objective == "quartile" and settings.model_type == "lightgbm":
+    if settings.objective == "quartile":
         return model.predict_proba(features)[:, 1]
     return model.predict(features)
 
 
-def _importance_rows(
-    model: Pipeline, agent: str, retrain_date: pd.Timestamp, rows: int, settings: Settings
-) -> list[dict]:
-    """Trazabilidad del modelo: coeficientes (Ridge) o importancias de features (LightGBM)."""
-    if settings.model_type == "lightgbm":
-        estimator = model.named_steps["model"]
-        names = estimator.feature_name_
-        values = estimator.feature_importances_
-    else:
-        names = model[:-1].get_feature_names_out()
-        values = model.named_steps["ridge"].coef_
+def _importance_rows(model, agent: str, retrain_date: pd.Timestamp, rows: int, settings: Settings) -> list[dict]:
+    """Importancias de features del agente LightGBM (trazabilidad y explicabilidad)."""
+    names = model.feature_name_
+    values = model.feature_importances_
     return [
         {
             "agent": agent,
@@ -314,15 +267,11 @@ def _run_id(settings: Settings, feature_path: Path, target_path: Path) -> str:
         "anchor": [settings.execution_year, settings.execution_quarter, settings.execution_lag_days],
         "lookback_years": settings.train_lookback_years,
         "target_horizon_months": settings.target_horizon_months,
-        "ridge_alpha": settings.ridge_alpha,
         "meta_ic_lookback_quarters": settings.meta_ic_lookback_quarters,
         "min_training_rows": settings.min_training_rows,
         "min_rank_ic_cross_section": settings.min_rank_ic_cross_section,
-        "label_transform": settings.label_transform,
-        "label_winsor_pct": settings.label_winsor_pct,
         "fundamental_momentum": settings.fundamental_momentum,
         "market_regime_feature": settings.market_regime_feature,
-        "model_type": settings.model_type,
         "objective": settings.objective,
         "lgbm": [settings.lgbm_n_estimators, settings.lgbm_max_depth,
                  settings.lgbm_learning_rate, settings.lgbm_min_child_samples],
@@ -332,13 +281,13 @@ def _run_id(settings: Settings, feature_path: Path, target_path: Path) -> str:
         "targets": sha256_file(target_path),
     }
     encoded = json.dumps(config, sort_keys=True).encode("utf-8")
-    return f"{settings.model_type}-{hashlib.sha256(encoded).hexdigest()[:12]}"
+    return f"lgbm-{hashlib.sha256(encoded).hexdigest()[:12]}"
 
 
 def _manifest(
     settings: Settings, feature_path: Path, target_path: Path, predictions: pd.DataFrame, run_dir: Path
 ) -> dict:
-    import sklearn
+    import lightgbm
 
     return {
         "run_scope": settings.run_scope,
@@ -350,7 +299,6 @@ def _manifest(
             "execution_lag_days": settings.execution_lag_days,
             "train_lookback_years": settings.train_lookback_years,
             "target_horizon_months": settings.target_horizon_months,
-            "model_type": settings.model_type,
             "objective": settings.objective,
             "lgbm_n_estimators": settings.lgbm_n_estimators,
             "lgbm_max_depth": settings.lgbm_max_depth,
@@ -358,15 +306,12 @@ def _manifest(
             "lgbm_min_child_samples": settings.lgbm_min_child_samples,
             "random_seed": settings.random_seed,
             "meta_type": settings.meta_type,
-            "ridge_alpha": settings.ridge_alpha,
             "meta_ic_lookback_quarters": settings.meta_ic_lookback_quarters,
-            "label_transform": settings.label_transform,
-            "label_winsor_pct": settings.label_winsor_pct,
             "fundamental_momentum": settings.fundamental_momentum,
             "market_regime_feature": settings.market_regime_feature,
             "missing_policy": "median_train_only_with_indicator",
         },
-        "versions": {"scikit_learn": sklearn.__version__},
+        "versions": {"lightgbm": lightgbm.__version__},
         "predictions": len(predictions),
     }
 

@@ -146,7 +146,7 @@ def _add_regime_features(frame: pd.DataFrame) -> None:
     - regime_bull = 1 si el SP500 subio en los ultimos 12 meses, 0 si no.
     - momentum_x_bull: rank de momentum relativo * bull (momentum importa mas en alcista).
     - quality_x_bear: rank de calidad * (1-bull) (defensa importa mas en bajista).
-    El modelo Ridge aprende por si mismo el peso de cada interaccion; no imponemos la direccion.
+    El modelo aprende por si mismo el peso de cada interaccion; no imponemos la direccion.
     """
     bench_12m = pd.to_numeric(frame["benchmark_return_12m"], errors="coerce")
     bull = (bench_12m > 0).astype(float).where(frame["is_price_fresh"])

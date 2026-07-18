@@ -8,7 +8,7 @@ intervalos de confianza artificialmente estrechos.
 Dos herramientas:
 - `block_bootstrap_ci`: intervalo de confianza del rank-IC medio de una serie de cohortes.
 - `paired_difference_ci`: intervalo de confianza de la diferencia pareada de rank-IC por fecha
-  entre dos modelos (p. ej. LightGBM menos Ridge), para decidir si la mejora es real o ruido.
+  entre dos modelos o configuraciones, para decidir si la mejora es real o ruido.
 """
 
 from __future__ import annotations

@@ -24,10 +24,11 @@ def test_holder_kept_when_candidate_advantage_below_threshold(portfolio_settings
     """Tenente en percentil 60 no rota si el mejor candidato fuera está en 62 (diff < 5)."""
     settings = replace(
         portfolio_settings,
-        target_min=5, target_max=5,               # cartera llena, sin huecos
+        target_min=5, target_max=5, max_weight_per_position=0.25,  # cartera llena, sin huecos
         min_hold_percentile=50,                    # el tenente esta por encima
         rotation_edge_percentiles=5,
         entry_min_percentile=60,
+        rebalance_drift_tolerance=10.0,            # no rebalancear por micro-derivas en el test
     )
     state = PortfolioState.from_holdings(
         {"AAA": 0.2, "BBB": 0.2, "CCC": 0.2, "DDD": 0.2, "GGG": 0.2},
@@ -48,10 +49,11 @@ def test_holder_below_min_percentile_is_dropped_even_without_replacement(portfol
     """Un tenente que cae al percentil 40 sale, aunque nadie tenga la ventaja para rellenar."""
     settings = replace(
         portfolio_settings,
-        target_min=5, target_max=5,
+        target_min=5, target_max=5, max_weight_per_position=0.25,
         min_hold_percentile=50,
         rotation_edge_percentiles=5,
         entry_min_percentile=80,           # nadie fuera lo cumple -> el hueco queda
+        rebalance_drift_tolerance=10.0,
     )
     state = PortfolioState.from_holdings(
         {"AAA": 0.2, "BBB": 0.2, "CCC": 0.2, "DDD": 0.2, "GGG": 0.2},
@@ -75,7 +77,7 @@ def test_ticker_can_reenter_after_leaving(portfolio_settings) -> None:
     """Ida y vuelta: un ticker con score 90 -> 40 -> 88 entra, sale, y vuelve a entrar."""
     settings = replace(
         portfolio_settings,
-        target_min=5, target_max=5,
+        target_min=5, target_max=5, max_weight_per_position=0.25,
         min_hold_percentile=50,
         rotation_edge_percentiles=5,
         entry_min_percentile=80,

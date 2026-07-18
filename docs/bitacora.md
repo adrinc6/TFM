@@ -2,9 +2,9 @@
 
 > Diario cronológico del desarrollo. Registra **el porqué** de cada decisión, no solo el qué:
 > qué problema apareció, qué hipótesis se manejó, qué se probó, qué resultado se **midió** y qué
-> se decidió. Es la materia prima del capítulo de metodología y la defensa del trabajo: un TFM
-> sobre aprendizaje se juzga tanto por lo que descubre como por cómo razona sus decisiones,
-> incluidos los caminos que se descartaron y por qué.
+> se decidió. Es la materia prima del capítulo de metodología del TFM: un trabajo sobre
+> aprendizaje se juzga tanto por lo que descubre como por cómo razona sus decisiones, incluidos
+> los caminos que se descartaron y por qué.
 >
 > Formato de cada entrada: **problema/observación · hipótesis · qué se probó · resultado
 > medido · decisión**. Las entradas se añaden *cuando ocurren*, no al final.
@@ -14,365 +14,100 @@
 ## 1 — La fecha de publicación no puede aproximarse con un retardo fijo
 
 **Observación.** Un fundamental fechado por su cierre fiscal no es observable ese día: la
-empresa lo publica semanas después. El primer diseño aplicaba un retardo fijo (p. ej. 45 días)
-a todos los fundamentales para aproximar cuándo eran públicos.
+empresa lo publica semanas después. Aplicar un retardo fijo (p. ej. 45 días) a todos los
+fundamentales para aproximar cuándo son públicos es incorrecto.
 
-**Hipótesis.** Un retardo fijo daría una aproximación "suficientemente buena" y homogénea.
+**Qué se probó y midió.** Se contrastó el retardo fijo contra las fechas reales de presentación
+en SEC EDGAR. El retardo real es muy variable: AT&T llegó a tardar **133 días** y un 10-K de
+Apple **88 días**. Cualquier retardo fijo introduce lookahead en las empresas que tardan más.
 
-**Qué se probó.** Se contrastó el retardo fijo contra las fechas reales de presentación en
-SEC EDGAR. Se buscaron casos extremos.
-
-**Resultado medido.** El retardo real es muy variable: AT&T llegó a tardar **133 días** en
-presentar, y un 10-K de Apple **88 días**. Cualquier retardo fijo introduce lookahead en las
-empresas que tardan más (se les asigna como "conocido" algo que aún no lo era) y retrasa
-artificialmente a las que publican rápido.
-
-**Decisión.** Se descarta el retardo fijo. Se usa la **fecha real de presentación** (`filingDate`
-de SEC EDGAR, disponible desde 1993, gratuita y oficial). El parámetro `lag_days` deja de ser
-una regla de observabilidad y pasa a significar solo el **margen de ejecución**: simula el día
-en que se habría lanzado el pipeline, no cuándo un dato concreto se hizo público.
+**Decisión.** Se usa la **fecha real de presentación** (`filingDate` de SEC EDGAR, gratuita,
+desde 1993). `lag_days` deja de ser una regla de observabilidad y pasa a significar solo el
+**margen de ejecución** (simula el día en que se habría lanzado el pipeline).
 
 ---
 
-## 2 — Tres fugas silenciosas encontradas en revisión del pipeline point-in-time
+## 2 — Tres fugas silenciosas del pipeline point-in-time
 
-**Observación.** Al auditar las Fases 1-3 (ya implementadas) aparecieron tres defectos que no
-rompían ningún test pero producían números sutilmente falsos.
+**Observación.** Al auditar el pipeline aparecieron tres defectos que no rompían tests pero
+producían números sutilmente falsos.
 
 **Qué se probó y midió.**
-- **Crecimiento interanual por índice posicional.** El cálculo tomaba "cuatro trimestres atrás"
-  contando posiciones en la serie; si faltaba un trimestre (frecuente, la cobertura de Finnhub
-  es irregular), comparaba contra una fecha arbitraria y lo etiquetaba igual como interanual. Un
-  caso real comparaba contra 15 meses atrás dando un "+71 %" falso.
-- **Targets perdidos con `SNAPSHOT_DAY ≠ 15`.** La fecha de la etiqueta se derivaba por
-  aritmética de calendario, que clampa los fines de mes distinto a la rejilla de snapshots. Con
-  `SNAPSHOT_DAY = 31` se evaporaba el **40 %** de las etiquetas sin ningún error.
-- **Mezcla anual/trimestral en márgenes.** Un margen anual y su Q4 comparten fecha de cierre;
-  el fallback confundía magnitudes de 12 meses con las de 3 dentro del mismo corte transversal.
+- **Crecimiento interanual por índice posicional**: contaba "cuatro trimestres atrás" por
+  posición; si faltaba un trimestre (frecuente), comparaba contra una fecha arbitraria. Un caso
+  real daba un "+71 %" falso comparando contra 15 meses atrás.
+- **Targets perdidos con `SNAPSHOT_DAY ≠ 15`**: la fecha de etiqueta se derivaba por aritmética
+  de calendario, que clampa los fines de mes distinto a la rejilla. Con día 31 se perdía el 40 %.
+- **Mezcla anual/trimestral en márgenes**: un margen anual y su Q4 comparten cierre; el fallback
+  confundía magnitudes de 12 y 3 meses en el mismo corte.
 
-**Decisión.** Los tres se corrigieron con **tests de regresión** que fallan contra el código
-anterior: emparejar el interanual por fecha (±45 días), tomar la fecha de etiqueta de la propia
-rejilla, y leer los márgenes no-TTM solo del bloque trimestral. Lección metodológica: en un
-proyecto cuyo eje es la ausencia de lookahead, los tests de fuga van **antes** que el código.
+**Decisión.** Los tres corregidos con **tests de regresión** que fallan contra el código
+anterior. Lección: en un proyecto cuyo eje es la ausencia de lookahead, los tests de fuga van
+**antes** que el código.
 
 ---
 
-## 3 — El alfa acumulado a 25 años no es una métrica útil
+## 3 — Del enfoque lineal a LightGBM (síntesis del camino recorrido)
 
-**Observación.** El primer barrido reportaba `total_alpha` como `equity_final/equity_inicial −
-1`. Sobre 25 años esto daba cifras absurdas (cientos de miles de %, hasta 1.4·10⁹ en un
-escenario).
+**Punto de partida.** El sistema inicial usaba agentes lineales (regresión sobre factores
+GARP+momentum) que predecían el exceso de retorno. Se midió con rigor (walk-forward
+point-in-time, rank-IC fuera de muestra) y se probaron múltiples mejoras sobre esa base:
+neutralización por sector, tratamiento de la etiqueta, momentum y descomposición de
+fundamentales, régimen de mercado.
 
-**Hipótesis.** El acumulado compuesto premia desproporcionadamente un único año excepcional y
-crece sin control con el horizonte, así que no permite comparar configuraciones de forma justa.
+**Resultado medido.** El rank-IC OOS del enfoque lineal se mantuvo **cercano a cero** en todas
+las variantes (el mejor apenas +0.001-0.002). Diagnóstico: un modelo lineal **promedia a cero**
+las interacciones entre factores, y añadir features no crea señal donde no la hay —solo añade
+sitios donde sobreajustar. Se concluyó que el techo del enfoque lineal estaba en rank-IC ≈ 0.
 
-**Decisión.** Se sustituye por la **alfa anualizada geométrica** (media compuesta del exceso
-anual), interpretable como "X % al año", más la alfa mediana anual y el peor año. El acumulado
-bruto desaparece de la vista principal por engañoso.
+**Decisiones metodológicas que se conservan de esa etapa** (son del sistema, no del modelo
+lineal):
+- **La selección NO se hace por rentabilidad, sino por aprendizaje (rank-IC) y estabilidad.** Con
+  rank-IC ≈ 0, cualquier rentabilidad es ruido afortunado; elegir por ella sería seleccionar
+  ruido. La rentabilidad se reporta como consecuencia.
+- **La métrica de rentabilidad es CAGR real / anualizada**, nunca el acumulado compuesto (que
+  daba cifras absurdas y lo dominaba un solo año).
+- **La métrica de aprendizaje se mide sobre el `meta_final`** (el score que opera la cartera),
+  no sobre el promedio de los agentes individuales.
 
----
-
-## 4 — La selección del sistema no debe hacerse por alfa
-
-**Observación.** La métrica de selección de escenarios incluía dos dimensiones de alfa
-(mediana y peor año). Para un TFM cuya pregunta central es *si el sistema aprende a ordenar
-activos fuera de muestra*, seleccionar por rentabilidad es poco defendible.
-
-**Hipótesis.** Si el aprendizaje real (rank-IC) es débil, cualquier alfa observado es en buena
-parte suerte de composición de cartera y de qué años tocaron; elegir por alfa sería
-**seleccionar ruido**.
-
-**Decisión.** La selección pasa a basarse **solo en aprendizaje y estabilidad**: rank-IC medio
-OOS, fracción de cohortes con rank-IC positivo, beat rate (frecuencia, no magnitud) y drawdown
-(riesgo). **El alfa se reporta como consecuencia, nunca decide.** Además se elimina la
-separación en eras: un único ranking global sobre todos los años (decisión del autor, que
-prefería no partir la muestra ni por eras ni por años).
+**Decisión.** Se adopta **LightGBM** (árboles con gradient boosting), que captura las
+interacciones no lineales que el modelo lineal no representa, con objetivo alineado al ranking
+(`rank_regression`: regresión sobre el percentil transversal del retorno). Es el punto de
+partida del sistema actual.
 
 ---
 
-## 5 — Hallazgo central: el rank-IC fuera de muestra es ~0
+## 4 — LightGBM mejora al lineal, pero la señal sigue siendo débil
 
-**Observación.** Con la métrica ya centrada en aprendizaje, se midió el rank-IC OOS del
-escenario base.
+**Qué se probó.** Comparación LightGBM vs lineal con el mismo objetivo, barrido de
+hiperparámetros, sensibilidad a la semilla, y comparación del meta ponderado vs equiponderado.
 
-**Resultado medido.** Media global del rank-IC **−0.006**; solo el **48.6 %** de las cohortes
-tienen rank-IC positivo (lo esperable del azar es 50 %). Por agente: momentum −0.007, quality
-−0.021, value +0.011. Por década, el signo oscila alrededor de cero sin ninguna época de
-aprendizaje sostenido (`value` tuvo +0.077 en 2000-2004 y se desvaneció después).
+**Resultado medido (full, ancla 2000).**
+- LightGBM+rank_regression: rank-IC del meta_final **+0.0117** (56.8 % de cohortes positivas),
+  frente a +0.0065 del lineal — **casi el doble**, y robusto a la semilla (+0.0088 a +0.0117 en
+  4 semillas).
+- El meta ponderado por rank-IC (+0.0117) **bate al equiponderado** (+0.0054): la combinación de
+  agentes aporta.
+- **Diagnóstico temporal**: el rank-IC mejora en años recientes — desde 2014, +0.0178 (63.5 %
+  de cohortes positivas), coherente con la mayor cobertura de datos (246 empresas/cohorte en
+  2000 → 492 en 2025).
 
-**Interpretación.** Con datos gratuitos, universo reducido y factores GARP+momentum lineales,
-el sistema **no ordena activos mejor que el azar de forma estable**. Esto no es un fallo del
-código —el pipeline es correcto y está probado— sino un **resultado del propio TFM**.
+**Pero**: +0.0117 sigue siendo, a efectos prácticos, **cero** (la industria considera útil un
+factor a partir de ~0.03-0.05), y la mejora **no es estadísticamente distinguible de cero** (el
+bootstrap por bloques cruza cero).
 
-**Decisión.** Antes de dar el resultado por definitivo, se intenta subir el rank-IC con
-palancas baratas y bien medidas (neutralización por sector/tamaño, etiqueta menos ruidosa,
-momentum y descomposición de fundamentales, régimen de mercado). Cada palanca se acepta **solo
-si sube el rank-IC OOS** en el walk-forward completo. Si tras agotarlas el rank-IC sigue ≈0,
-ese es el resultado, y se reporta con honestidad en lugar de maquillarlo con alfa.
+**Y el rendimiento aparente era un espejismo.** Un backtest de 2000-2026 daba CAGR ~18 %/año,
+pero se debía **casi por completo a un artefacto de datos**: julio de 2010 registró un retorno
+mensual de **+953 %** en una posición (precio corrupto — split mal ajustado o ticker reciclado).
+Sin ese año, la alfa mediana anual era **−0.2 %** y la cartera batía al SPY solo 13 de 27 años.
+El rank-IC ≈ 0 **no se dejó engañar por el artefacto; el CAGR sí** — la demostración de por qué
+el aprendizaje, y no la rentabilidad, es la métrica honesta.
 
-**Baseline de referencia (full, 680 tickers, 942 cohortes):** rank-IC medio **−0.0058**,
-fracción de cohortes positivas **0.486**. Por agente: momentum −0.007, quality −0.021, value
-+0.011. Este es el número contra el que se compara cada palanca.
+**Decisión.** Consolidar el sistema en LightGBM y convertirlo en una **base modular** con
+"artefactos" activables (bloques de features/contexto), centrada en los años recientes (2016+,
+más cobertura), con una **guarda anti-artefactos** en el backtest para que la rentabilidad sea
+honesta, y un barrido de **ablations** que decide automáticamente —por significancia
+estadística— qué artefactos ayudan al aprendizaje. El objetivo sigue siendo el rank-IC.
 
----
-
-## B1 — Neutralización por sector
-
-**Hipótesis.** El ranking transversal de cada factor es global, así que un factor de calidad
-puede estar midiendo "sector con ROE estructuralmente alto" en vez de "empresa mejor que sus
-comparables". Rankear **dentro de sector** debería quitar ese ruido sistemático y dejar solo la
-señal relativa, que es la que predice retorno relativo.
-
-**Qué se probó.** Se añade `neutralize_by_sector` (parámetro): cada factor se rankea dentro de
-`(fecha, sector)` en vez de `(fecha)`. El sector viene de `profiles.parquet` (snapshot actual
-de Finnhub) y se usa **solo para agrupar, nunca como señal** — lookahead residual menor y
-documentado. Guarda de tamaño: con menos de `neutralize_min_group` (5) miembros útiles, el
-grupo cae a ranking global, porque en los años 2000 muchos sectores tienen 1-2 tickers (27 de
-44 sectores tienen <5 miembros en 2000) y un grupo diminuto da un percentil degenerado.
-
-**Resultado medido (full).** **Empeora**, no mejora:
-
-| | baseline | B1 (sector) |
-|---|---|---|
-| rank-IC medio | −0.0058 | **−0.0083** |
-| frac cohortes IC>0 | 0.486 | **0.467** |
-| value (agente menos malo) | +0.0107 | +0.0034 |
-
-Todos los agentes bajan.
-
-**Interpretación.** La hipótesis era razonable pero los datos la rechazan. La causa más
-probable es el tamaño de los grupos: solo 242 de 492 tickers del índice en 2000 tienen perfil,
-y 27 de 44 sectores tienen menos de 5 miembros. Neutralizar en grupos diminutos añade ruido —
-el poco orden transversal que había se reparte en subgrupos donde el ranking es casi aleatorio.
-La neutralización por sector es una técnica de carteras grandes y bien pobladas; con este
-universo reducido y sesgado por supervivencia, hace daño.
-
-**Decisión.** **Se descarta B1.** El código queda en el repositorio desactivado por defecto
-(`neutralize_by_sector=False`) porque es una opción legítima y el propio experimento —que no
-funcione— es un resultado documentable del TFM, pero no se usa. Diagnóstico complementario
-(B4): la correlación de Spearman entre agentes es quality↔value 0.51, momentum casi ortogonal
-(0.15). Momentum aporta la señal más independiente; quality y value se solapan. Sugiere que la
-mejora, si llega, vendrá de **mejorar la señal de cada agente** (etiqueta, features), no de
-neutralizar ni de añadir agentes redundantes.
-
----
-
-## B2 — Etiqueta menos ruidosa
-
-**Hipótesis.** El exceso de retorno a 3 meses es muy ruidoso; unos pocos outliers dominan la
-regresión Ridge y degradan el orden aprendido. Tratar la etiqueta (recortar colas, alargar
-horizonte, o entrenar contra el rango en vez del valor) debería subir el rank-IC.
-
-**Qué se probó.** Parámetro `label_transform` aplicado **solo a la etiqueta de entrenamiento**
-(nunca al scoring): `winsor` (recorta el 2 % de cada cola), `rank` (percentil transversal del
-retorno futuro dentro de cada snapshot), y horizonte 6m con etiqueta cruda y con rank.
-
-**Resultado medido (full, baseline 3m/none = −0.0058, frac 0.486):**
-
-| horizonte | etiqueta | rank-IC medio | frac cohortes IC>0 |
-|---|---|---|---|
-| 3m | none | −0.0058 | 0.486 |
-| 3m | winsor | −0.0021 | 0.511 |
-| **3m** | **rank** | **+0.0011** | **0.534** |
-| 6m | none | −0.0162 | 0.459 |
-| 6m | rank | −0.0137 | 0.481 |
-
-**Interpretación.** Entrenar contra el **rango** del retorno (no su magnitud) es lo que más
-ayuda: cruza el rank-IC a positivo y sube la fracción de cohortes ganadoras a 53.4 % (deja de
-ser azar puro). Es coherente: el objetivo real es ordenar, y entrenar contra el orden alinea
-la pérdida con la métrica. El **horizonte 6m empeora** de forma clara y contraintuitiva —
-menos cohortes independientes, más solapamiento temporal y la relación factor→retorno se
-diluye más de lo que se limpia. Winsor ayuda algo, menos que rank.
-
-**Decisión.** Se adopta **`label_transform="rank"` a 3 meses** como nueva base. Es una mejora
-real pero pequeña: +0.0011 sigue siendo un rank-IC ≈ 0, **no una señal explotable**. Se
-mantiene el horizonte de 3 meses. Aviso honesto: tratar mejor la etiqueta no crea señal donde
-no la hay; solo deja de destruir la poca que existe. La palanca con potencial de aportar
-información nueva es B3 (tendencia de fundamentales) y B5 (régimen).
-
-**Bug encontrado por el camino.** El `_run_id` de `agents.py` no incluía `label_transform` en
-su huella, así que winsor y rank colapsaban al mismo `run_dir` y se sobrescribían. Arreglado
-(la huella ahora incluye `label_transform`, `label_winsor_pct`, `min_training_rows`,
-`min_rank_ic_cross_section`). Lección: la huella de un run debe cubrir **todo** parámetro que
-altere el resultado, o dos experimentos distintos se pisan en silencio.
-
----
-
-## B3 — Momentum y descomposición de fundamentales
-
-**Hipótesis (la más fundamentada económicamente).** El nivel de un ratio dice poco; su
-**tendencia** dice más. Y un P/E que cae por beneficios crecientes (empresa mejorando) no es lo
-mismo que uno que cae por precio hundido (posible trampa de valor). Añadir la tendencia de los
-fundamentales (ΔROE, Δmárgenes… respecto a la publicación anterior de la misma empresa) y la
-descomposición del cambio de valoración en su componente-precio y su componente-fundamental
-debería aportar señal nueva y subir el rank-IC.
-
-**Qué se probó.** Parámetro `fundamental_momentum`. Point-in-time por construcción: el delta se
-calcula solo cuando cambia el `fundamental_period` (nueva publicación) y se mantiene constante
-entre publicaciones (no cae a cero: entre trimestres no hay información nueva). Descomposición
-del P/E vía Δlog(precio) − Δlog(EPS), con el EPS implícito de `precio / (P/E)`. Se añaden 7
-factores (5 tendencias a quality, 2 componentes a value), sobre la base B2 (`label_transform=
-rank`). Verificado sin lookahead con test dedicado (mutar el futuro no cambia el pasado).
-
-**Resultado medido (full, vs base rank +0.0011 / 0.534):**
-
-| config | rank-IC medio | frac cohortes IC>0 |
-|---|---|---|
-| rank (base B2) | +0.0011 | 0.534 |
-| rank + B3 | **−0.0046** | **0.513** |
-
-**Empeora.** Confirmado que las 14 features B3 estaban en el modelo (vía coeficientes).
-
-**Interpretación.** La hipótesis económica es sólida pero los datos la rechazan. Dos causas
-probables: (1) cobertura limitada — la descomposición del P/E necesita P/E>0 en dos
-publicaciones consecutivas y el P/E solo cubre 78 % del panel, así que el factor llega muy
-poblado de NA e imputado a la mediana, lo que mete ruido; (2) con Ridge lineal y una etiqueta
-casi aleatoria, **añadir más features no crea señal, añade dimensiones donde sobreajustar** —
-cada feature ruidosa resta grados de libertad efectivos y degrada el orden OOS.
-
-**Decisión.** **Se descarta B3.** El código queda desactivado por defecto
-(`fundamental_momentum=False`); es una idea correcta y su fracaso es un resultado del TFM. El
-patrón se repite (B1 y B3, las dos palancas que añaden features, empeoran; B2, que limpia la
-etiqueta, ayuda un poco): **el cuello de botella no es la falta de features, es que la relación
-factor→retorno es débil y el modelo lineal ya la exprime.**
-
----
-
-## B5 — Régimen de mercado (bull/bear)
-
-**Hipótesis.** Lo que predice el retorno en un mercado alcista no es lo mismo que en uno
-bajista. Si el sistema sabe en qué régimen está (detectado solo con datos pasados del SP500) y
-se le dan interacciones factor×régimen, el modelo puede aprender a ponderar distinto en cada
-uno — más momentum en bull, más calidad/defensa en bear.
-
-**Qué se probó.** Parámetro `market_regime_feature`. Régimen = SP500 con retorno a 12 meses
-positivo (bull) o no (bear), leído del benchmark hasta la fecha del snapshot (sin lookahead).
-Se añaden tres features al agente momentum: el régimen, `momentum × bull` y `quality × bear`.
-Sobre la base B2 (`label_transform=rank`).
-
-**Resultado medido (full, vs base rank +0.0011 / 0.534):**
-
-| config | rank-IC medio | frac cohortes IC>0 | IR del IC |
-|---|---|---|---|
-| rank (base B2) | +0.0011 | 0.534 | +0.012 |
-| rank + B5 | **+0.0015** | **0.536** | +0.012 |
-
-**Es la mejor configuración**, por muy poco. Detalle por agente relevante: con el régimen,
-**quality cruza a positivo** (+0.0035, antes −0.021) y value sube a +0.0125; a momentum le va
-algo peor. El régimen ayuda a los agentes fundamentales.
-
-**Decisión.** Mejora marginal (+0.0011 → +0.0015), dentro del ruido. Se **conserva** porque no
-hace daño, tiene fundamento y ayuda a los fundamentales, pero **no resuelve el problema**:
-+0.0015 sigue siendo un rank-IC ≈ 0.
-
----
-
-## Cierre de la Parte B — veredicto
-
-| palanca | rank-IC | frac IC>0 | decisión |
-|---|---|---|---|
-| baseline (none) | −0.0058 | 0.486 | referencia |
-| B1 neutralización sector | −0.0083 | 0.467 | descartada (empeora) |
-| B2 etiqueta rank | +0.0011 | 0.534 | **adoptada** |
-| B3 momentum fundamentales | −0.0046 | 0.513 | descartada (empeora) |
-| B5 régimen (sobre B2) | +0.0015 | 0.536 | conservada (marginal) |
-
-**Lo mejor que se consigue tras todas las palancas: rank-IC +0.0015, fracción de cohortes
-ganadoras 53.6 %.** Se ha pasado de "peor que el azar" a "empatado con el azar más un pelo".
-**No es una señal explotable.** Las dos palancas que añaden información (sector, momentum de
-fundamentales) empeoran; solo las que reordenan/limpian lo que ya hay (etiqueta rank, régimen)
-ayudan, y muy poco.
-
-**Conclusión metodológica.** Con datos gratuitos, universo del S&P 500 sesgado por
-supervivencia, factores GARP+momentum lineales y un modelo Ridge, **el sistema no aprende a
-ordenar activos fuera de muestra de forma útil.** El techo de este enfoque está en rank-IC ≈ 0.
-Para obtener señal real haría falta un cambio de planteamiento (ver informe de conclusiones):
-otro objetivo, otro universo, o capturar no-linealidades — no seguir puliendo esta vía.
-
----
-
-## Camino C — LightGBM orientado a ranking (correcciones metodológicas + Etapa A)
-
-**Corrección previa imprescindible.** El diagnóstico de rank-IC solo cubría los 3 agentes, pero
-la cartera opera el `meta_score`. Se corrigió para diagnosticar el **meta_final** (el score
-negociable) y el equiponderado. Al medir bien, el rank-IC del meta_final del Ridge de control
-sube a +0.0065 (antes reportábamos +0.0015 por promediar agentes). También se sustituyó el alfa
-compuesto por **CAGR real** y se añadió significancia (bootstrap por bloques + diferencia
-pareada), porque sin ella no se puede distinguir señal de ruido con tan pocas eras.
-
-**Etapa A — motor × objetivo (full, meta rank_ic, mismas features/ventana/cartera).**
-rank-IC del meta_final:
-
-| modelo | rank-IC | IC bootstrap | frac cohortes>0 | ¿distinto de 0? |
-|---|---|---|---|---|
-| **lightgbm / rank_regression** | **+0.0117** | [-0.0014, +0.0261] | 56.8 % | no |
-| ridge / regression (control) | +0.0065 | [-0.0145, +0.0279] | 53.3 % | no |
-| lightgbm / quartile | +0.0059 | [-0.0080, +0.0202] | 53.3 % | no |
-| lightgbm / ranking (lambdarank) | +0.0009 | [-0.0180, +0.0218] | 51.7 % | no |
-
-Diferencia pareada LightGBM(rank_regression) − Ridge por fecha: +0.0052, IC [-0.0115, +0.0211],
-mejor en 55 % de las fechas, **no distinguible de cero**.
-
-**Diagnóstico temporal (idea del autor).** El rank-IC del meta_final por año oscila (2001 +0.075,
-2004 +0.068, 2015 +0.062, 2023 +0.054 frente a años negativos), sin tendencia monótona. Pero por
-ventana de inicio, concentrarse en años recientes **mejora**:
-
-| desde | rank-IC | frac>0 | nº cohortes |
-|---|---|---|---|
-| 2000 | +0.0117 | 56.8 % | 315 |
-| 2010 | +0.0096 | 58.2 % | 196 |
-| **2014** | **+0.0178** | **63.5 %** | 148 |
-| 2016 | +0.0158 | 64.5 % | 124 |
-
-Coherente con la mayor cobertura reciente (246 empresas/cohorte en 2000 → 492 en 2025).
-
-**Decisión (Puerta 1, pasada con reservas).** LightGBM+rank_regression es el mejor en las cuatro
-vistas (agregado, fracción positiva, ventanas recientes) y casi dobla el rank-IC de Ridge, pero
-la mejora **no es estadísticamente robusta** (los IC cruzan cero por el bajo número de eras). Se
-avanza a las Etapas B (regularización) y la elección de período, porque la señal es débil pero
-direccionalmente consistente y el período reciente la refuerza. Se mantiene la honestidad: si
-tras B/C la señal sigue sin distinguirse de cero, la conclusión será que la mejora es real pero
-demasiado débil para ser económicamente fiable — un resultado matizado, no un éxito rotundo.
-El **lambdarank se descarta** (el peor); el objetivo principal es `rank_regression`.
-
-**Etapa B (regularización).** Barrido de profundidad/nº árboles/min_child sobre
-lightgbm+rank_regression. Global gana depth 5 (+0.0127) por poco sobre depth 4 (+0.0117); pero
-en el período reciente (2014+) gana **depth 4** con claridad: rank-IC +0.0178, frac 63.5 % (depth
-5 cae a +0.0135 en reciente → indicio de sobreajuste con más profundidad). Se congela **depth 4,
-n_estimators 200, min_child_samples 50**.
-
-**Sensibilidad a semillas (4 semillas).** rank-IC del meta_final entre +0.0088 y +0.0117 (media
-~+0.0105), todas positivas, frac 53.7-56.8 %. La señal débil es **robusta a la semilla**, no un
-artefacto — es tranquilizador, aunque la magnitud sigue siendo pequeña.
-
-**Etapa C + Puerta 2 (meta).** Sobre el ganador, comparación de combinaciones: meta_final por
-rank-IC +0.0117 vs equiponderado +0.0054 vs mejor agente (value) +0.0104. **La ponderación por
-rank-IC bate claramente al equiponderado**: la combinación aporta valor. Se conserva el meta
-`rank_ic`; NO se implementa el stacker (el simple ya gana y añadir un modelo extra dispararía el
-overfitting con pocas eras, justo lo que el plan evita).
-
-**Puerta 3 (período).** El diagnóstico temporal favorece los años recientes: desde 2014 el
-rank-IC del meta_final es +0.0178 (frac 63.5 %, 148 cohortes, ≥10 años evaluables) frente a
-+0.0117 desde 2000 (frac 56.8 %). Coherente con la mayor cobertura reciente. Se elige **2014 como
-período principal**, reportando también desde 2000. Se declara expresamente como **selección
-temporal basada en cobertura y diagnóstico**: la mejora reciente es gradual (no depende de un
-solo año) pero su intervalo de confianza sigue cruzando cero por el menor número de cohortes.
-
-**Etapa D (cartera) + run final.** Señal congelada (lightgbm/rank_regression/depth4/meta
-rank_ic), backtest 2000-2026 con 3 variantes de cartera. CAGR cartera ~18.5 % vs SPY 8.4 %
-(+10 %/año aparente). **Pero es un artefacto**: julio 2010 registró un retorno mensual de
-**+953 %** (año 2010: +1277 %), físicamente imposible → dato corrupto de una posición (split mal
-ajustado / ticker reciclado / precio erróneo). Sin ese año, la **alfa mediana anual es −0.2 %** y
-la cartera bate al SPY solo **13/27 años (48 %)**, con drawdown del 72 %. Coherente con el
-rank-IC ≈ 0: el sistema no ordena mejor que el azar; el CAGR alto es concentración + artefacto +
-suerte, no habilidad.
-
-**Conclusión del Camino C.** LightGBM+rank_regression mejora a Ridge de forma consistente y
-robusta a la semilla (rank-IC casi el doble, +0.0117 vs +0.0065; +0.0178 desde 2014), y la
-corrección de medir el meta_final mostró que la combinación de agentes aporta. Es un avance
-metodológico real, pero el rank-IC sigue en ~0.01, **indistinguible de cero**: no hay señal
-económicamente fiable. El rendimiento espectacular es un espejismo de datos. **Resultado del TFM
-(honesto y publicable): ni el modelo lineal ni el no lineal aprenden a ordenar activos del S&P 500
-de forma estable con datos gratuitos; y el caso demuestra por qué NO se debe juzgar un sistema por
-su rentabilidad acumulada —el rank-IC no se dejó engañar por el artefacto de 2010, el CAGR sí.**
-Ver `docs/informe_final_camino_c.md`.
+*(Las entradas de los artefactos y el estudio de ablations se añaden a continuación conforme se
+prueban, cada una con su número de rank-IC antes/después.)*
