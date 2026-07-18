@@ -13,7 +13,7 @@ from environment import Settings, ensure_directories
 from module.agents import build_agent_scores
 from module.backtest import run_backtest_from_run_dir
 from module.dataset import build_point_in_time_dataset
-from module.experiments import run_experiments_from_settings
+from module.experiments import run_experiments_from_settings, run_full_study
 from module.features import build_features
 from module.ingest.pipeline import download_raw_data
 from module.report import build_report_from_settings
@@ -22,8 +22,8 @@ from module.utils import setup_logging
 
 log = logging.getLogger(__name__)
 
-# Las fases futuras se registrarán aquí al implementar su handler. ``full`` ejecuta
-# únicamente las etapas registradas, siempre en este orden fijo.
+# `full_study` es el comando de principio a fin (barrido de ablations -> decision automatica de
+# artefactos -> run final optimizado -> perfiles -> robustez -> HTML), sin decisiones humanas.
 STAGE_ORDER = ("download", "dataset", "features", "agents", "backtest", "report")
 STAGE_HANDLERS: dict[str, Callable[[Settings], None]] = {
     "download": download_raw_data,
@@ -33,6 +33,7 @@ STAGE_HANDLERS: dict[str, Callable[[Settings], None]] = {
     "backtest": run_backtest_from_run_dir,
     "report": build_report_from_settings,
     "experiments": run_experiments_from_settings,
+    "full_study": run_full_study,
 }
 
 

@@ -31,6 +31,7 @@ RUN_MODES = (
     "backtest",
     "report",
     "experiments",
+    "full_study",
     "full",
 )
 RUN_SCOPES = ("dev", "full")

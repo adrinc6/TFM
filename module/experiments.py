@@ -445,7 +445,7 @@ def decide_accepted_artifacts(scenarios_root: Path, artifacts: dict[str, dict]) 
     }
 
 
-def run_experiments_from_settings(settings: Settings) -> None:
+def run_experiments_from_settings(settings: Settings) -> dict:
     """Handler para RUN_MODE=experiments. Ejecuta el barrido de ablations, decide automaticamente
     que artefactos aceptar, y escribe la decision en results/escenarios/artifact_decision.json."""
     grid_path = PROJECT_ROOT / "escenarios" / "rejilla_base.py"
@@ -453,15 +453,136 @@ def run_experiments_from_settings(settings: Settings) -> None:
         raise RuntimeError(f"No hay rejilla en {grid_path}.")
     run_scenarios(grid_path, settings)
 
-    # Decision automatica de artefactos (lee ARTIFACTS de la rejilla).
     grid_module = _import_module_from_path(grid_path)
     artifacts = getattr(grid_module, "ARTIFACTS", {})
+    decision: dict = {}
     if artifacts:
         decision = decide_accepted_artifacts(RESULTS_DIR, artifacts)
         (RESULTS_DIR / "artifact_decision.json").write_text(
             json.dumps(decision, indent=2), encoding="utf-8"
         )
         log.info("Artefactos aceptados: %s", decision.get("accepted"))
+    return decision
+
+
+def run_full_study(settings: Settings) -> None:
+    """Estudio completo de principio a fin, sin decisiones humanas (RUN_MODE=full_study).
+
+    1. Barrido de ablations -> decision automatica de artefactos.
+    2. Config final = baseline + artefactos aceptados. Run final con esa config.
+    3. Perfiles de inversor sobre la señal final (misma señal, distinta cartera).
+    4. Tests de robustez/placebo sobre la config final.
+    5. HTML de comparacion (ya generado por el barrido) + resumen del estudio.
+    """
+    from module.profiles import PROFILE_NAMES
+
+    log.info("=== ESTUDIO COMPLETO: barrido de ablations ===")
+    decision = run_experiments_from_settings(settings)
+    accepted = decision.get("config_final", {})
+    log.info("Config final (artefactos aceptados): %s", accepted or "ninguno (solo baseline)")
+
+    final_settings = replace(settings, **accepted)
+    processed = final_settings.processed_output_dir
+
+    log.info("=== RUN FINAL con la configuracion optima ===")
+    _ensure_base_artifacts(final_settings, processed)
+    build_agent_scores(final_settings)
+    run_dir = _run_id_dir(final_settings, processed)
+
+    scores = read_parquet(run_dir / "agent_scores.parquet", "agents")
+    prices = read_parquet(processed / "asset_price_point_in_time.parquet", "dataset")
+    benchmark = read_parquet(processed / "benchmark_point_in_time.parquet", "dataset")
+    diagnostics = pd.read_parquet(run_dir / "rank_ic_diagnostics.parquet")
+
+    log.info("=== PERFILES DE INVERSOR ===")
+    profile_results = {}
+    for profile in PROFILE_NAMES:
+        result = run_backtest(scores, prices, benchmark, replace(final_settings, profile=profile), diagnostics)
+        profile_results[profile] = result.summary
+        if profile == "balanced":
+            _write_backtest_outputs(result, run_dir)   # el balanceado es el sistema base
+    write_json(profile_results, processed / "profile_results.json")
+
+    # El informe del run final se genera ANTES de la robustez (que crea/borra runs placebo y
+    # podria dejar el directorio en un estado transitorio).
+    build_run_report(run_dir)
+
+    log.info("=== ROBUSTEZ / PLACEBO ===")
+    robustness = _run_robustness(final_settings, processed, run_dir, diagnostics)
+    write_json(robustness, processed / "robustness.json")
+    meta_ic = diagnostics.loc[diagnostics["agent"] == "meta_final", "rank_ic"]
+    study_summary = {
+        "config_final": accepted,
+        "artifact_decision": decision,
+        "final_rank_ic": float(meta_ic.mean()) if not meta_ic.empty else None,
+        "profiles": {p: {"cagr_portfolio": r.get("cagr_portfolio"), "cagr_difference": r.get("cagr_difference"),
+                         "beat_rate": r.get("beat_rate"), "max_drawdown": r.get("max_drawdown")}
+                     for p, r in profile_results.items()},
+        "robustness": robustness,
+    }
+    write_json(study_summary, RESULTS_DIR / "study_summary.json")
+    log.info("=== ESTUDIO COMPLETO TERMINADO -> %s ===", RESULTS_DIR / "study_summary.json")
+
+
+def _ensure_base_artifacts(settings: Settings, processed: Path) -> None:
+    """Genera dataset+features en `processed` si faltan (para el run final)."""
+    if not (processed / "features_point_in_time.parquet").exists():
+        build_point_in_time_dataset(settings)
+        build_features(settings)
+
+
+def _latest_agents_run(processed: Path) -> Path:
+    agents_root = processed / "agents"
+    return sorted(path for path in agents_root.iterdir() if path.is_dir())[-1]
+
+
+def _run_id_dir(settings: Settings, processed: Path) -> Path:
+    """Directorio exacto del run de agentes de `settings` (por su huella, no por 'el ultimo')."""
+    from module.agents import _run_id
+    feat = processed / "features_point_in_time.parquet"
+    targ = processed / "targets_forward_3m.parquet"
+    return processed / "agents" / _run_id(settings, feat, targ)
+
+
+def _write_backtest_outputs(result, run_dir: Path) -> None:
+    from module.utils import write_parquet
+    write_parquet(result.positions, run_dir / "positions.parquet")
+    write_parquet(result.orders, run_dir / "orders.parquet")
+    write_parquet(result.equity, run_dir / "equity.parquet")
+    write_parquet(result.annual_metrics, run_dir / "annual_metrics.parquet")
+    write_json(result.summary, run_dir / "backtest_summary.json")
+
+
+def _run_robustness(settings: Settings, processed: Path, run_dir: Path, diagnostics) -> dict:
+    """Ejecuta los tests de robustez sobre la config final."""
+    from module.robustness import label_permutation_test, leave_one_year_out
+
+    # Permutacion de etiquetas: reentrenar N veces con retornos futuros barajados.
+    permuted_ic = []
+    targets_path = processed / "targets_forward_3m.parquet"
+    if targets_path.exists():
+        import numpy as np
+        rng = np.random.default_rng(0)
+        base_targets = pd.read_parquet(targets_path)
+        for i in range(5):   # 5 permutaciones (cada reentreno es costoso)
+            shuffled = base_targets.copy()
+            shuffled["forward_excess_return_3m"] = rng.permutation(
+                shuffled["forward_excess_return_3m"].to_numpy()
+            )
+            shuffled.to_parquet(processed / "targets_forward_3m.parquet", index=False)
+            try:
+                build_agent_scores(replace(settings, random_seed=1000 + i))
+                perm_run = _latest_agents_run(processed)
+                perm_diag = pd.read_parquet(perm_run / "rank_ic_diagnostics.parquet")
+                permuted_ic.append(float(perm_diag.loc[perm_diag["agent"] == "meta_final", "rank_ic"].mean()))
+                shutil.rmtree(perm_run, ignore_errors=True)   # no dejar runs placebo
+            except Exception as exc:   # noqa: BLE001
+                log.warning("permutacion %s fallo: %s", i, exc)
+        base_targets.to_parquet(processed / "targets_forward_3m.parquet", index=False)   # restaurar
+
+    permutation = label_permutation_test(diagnostics, permuted_ic) if permuted_ic else {}
+    loyo = leave_one_year_out(diagnostics).to_dict("records")
+    return {"label_permutation": permutation, "leave_one_year_out": loyo}
 
 
 def _import_module_from_path(path: Path):
