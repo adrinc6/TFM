@@ -88,5 +88,7 @@
     return `<div class="table-wrap scroll"><table class="data"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
   }
 
-  global.TFM = { api, qs, fmt, pct, signClass, escapeHtml, palette, el, table };
+  // `views` se inicializa aquí (api.js carga antes que las vistas) para que cada vista pueda
+  // registrarse con `TFM.views.<nombre> = {...}` sin depender del orden de <script>.
+  global.TFM = { api, qs, fmt, pct, signClass, escapeHtml, palette, el, table, views: {} };
 })(window);
