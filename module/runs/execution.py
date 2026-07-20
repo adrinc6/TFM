@@ -21,7 +21,7 @@ from module.evaluation.robustness import leave_one_year_out
 from module.evaluation.stats import block_bootstrap_ci
 from module.runs.experiments import split_variables
 from module.runs.results_store import ResultsStore, execution_hash
-from escenarios.variables import STUDY_OPTIONS
+from escenarios.variables import COST_STRESS_CASES, STUDY_OPTIONS
 from module.runs.recycle import cache_dir, publish as publish_recycle, restore as restore_recycle, stage_key
 from module.common.utils import setup_logging, write_json, write_parquet
 
@@ -132,7 +132,9 @@ def execute_study(
     include_robustness = bool(study_payload.get("include_robustness", False))
     payload = {
         "name": str(study_payload.get("name", "study")), "kind": str(study_payload.get("kind", "exploratory")),
-        "description": str(study_payload.get("description", "")), "tags": list(study_payload.get("tags", [])),
+        "description": str(study_payload.get("description", "")),
+        "hypothesis": str(study_payload.get("hypothesis", "")).strip(),
+        "tags": list(study_payload.get("tags", [])),
         "variables": dict(variables), "strategy": "unified_full_cycle",
         "selection_metric": "rank_ic_oos", "selection_until_year": 2024, "reserved_years": [2025, 2026],
     }
@@ -140,7 +142,10 @@ def execute_study(
                             payload=payload, store=store, include_full_robustness=include_robustness)
 
 
-def execute_official_optimization(settings: Settings, store: ResultsStore | None = None) -> str:
+def execute_official_optimization(
+    settings: Settings, store: ResultsStore | None = None, *, name: str = "optimization-official",
+    hypothesis: str = "",
+) -> str:
     """Optimización oficial: ciclo completo barriendo TODAS las variables barribles.
 
     Barrido derivado de ``STUDY_OPTIONS`` (todos los ejes de modelo en Fase 1/2 y todos los de
@@ -149,11 +154,14 @@ def execute_official_optimization(settings: Settings, store: ResultsStore | None
     variables = {axis: list(values) for axis, values in STUDY_OPTIONS.items()}
     model_vars, portfolio_vars = split_variables(variables)
     payload = {
-        "name": "optimization-official", "kind": "optimization",
+        "name": name.strip() or "optimization-official", "kind": "optimization",
         "description": "Optimización oficial: barrido completo de modelo (Fase 1/2), afinado, cartera y validación reservada.",
         "tags": ["official", "optimization"], "strategy": "unified_full_cycle",
         "selection_metric": "rank_ic_oos", "selection_until_year": 2024, "reserved_years": [2025, 2026],
     }
+    payload["hypothesis"] = hypothesis.strip()
+    if hypothesis.strip():
+        payload["description"] = hypothesis.strip()
     # La optimización oficial SIEMPRE ejecuta la robustez completa (placebo + carteras aleatorias):
     # es el estudio que sostiene la credibilidad del TFM.
     return run_optimization(settings, model_vars=model_vars, portfolio_vars=portfolio_vars,
@@ -245,6 +253,14 @@ def run_optimization(
     else:
         portfolio_final_id = final_id
 
+    # Costs are stress assumptions, never a criterion that can be optimised away.
+    # Every predefined pair is reported on the selected model/portfolio, but none
+    # can alter ``portfolio_overrides`` or the recommended configuration.
+    cost_stress_rows = _cost_stress_phase(
+        portfolio_settings, store, study_id, agent_dir=final_agent_dir,
+        name=name, description=description, tags=tags,
+    )
+
     # --- Fase final = 8 perfiles de inversor sobre la cartera óptima. Es la SALIDA del study:
     #     un run por perfil, todos sobre el modelo y la cartera ya optimizados. ---
     profile_run_ids: dict[str, str] = {}
@@ -275,15 +291,17 @@ def run_optimization(
     recommended = _recommended_profile(profile_run_ids, store)
     # Comparativa completa: todas las fases (modelo 1/2/3 + cartera + perfiles) para la app.
     comparison = pd.concat(
-        [phase1, phase2, hyper, pd.DataFrame(portfolio_rows), pd.DataFrame(profile_rows)],
+        [phase1, phase2, hyper, pd.DataFrame(portfolio_rows), pd.DataFrame(cost_stress_rows), pd.DataFrame(profile_rows)],
         ignore_index=True, sort=False)
     write_parquet(comparison, study_dir / "comparison_data.parquet")
     write_json({
         "strategy": "unified_full_cycle", "selection_metric": "rank_ic_oos",
+        "hypothesis": str(payload.get("hypothesis", "")),
         "phase1": phase1_decision, "model_winner": {"overrides": final_model_overrides,
                                                     "summary": _summary_for_run(store, final_id)},
         "phase_portfolio": portfolio_trace, "portfolio_overrides": portfolio_overrides,
         "final_run_id": portfolio_final_id, "model_final_run_id": final_id,
+        "cost_stress": cost_stress_rows,
         "final_settings_overrides": {**final_model_overrides, **portfolio_overrides},
         "final_summary": final_summary,
         # Salida final del study: un run por perfil sobre el modelo+cartera óptimos.
@@ -301,13 +319,28 @@ def run_optimization(
 def _isolated_specs(settings: Settings, variables: Mapping[str, list[Any]]) -> list[dict[str, Any]]:
     """Baseline + una modificación cada vez para atribuir su efecto a un eje."""
     specs = [{"name": "baseline", "axis": None, "overrides": {}}]
+    selection_axes = {
+        "feature_selection_min_coverage", "feature_selection_lookback_quarters",
+        "feature_selection_min_permutation_importance", "feature_selection_min_positive_fraction",
+        "feature_selection_max_features_per_agent",
+    }
     for axis, values in variables.items():
+        if axis in selection_axes:
+            continue
         baseline = getattr(settings, axis)
         for value in values:
             if value == baseline:
                 continue
             safe_name = str(value).replace(" ", "_").replace(".", "_")
             specs.append({"name": f"{axis}_{safe_name}", "axis": axis, "overrides": {axis: value}})
+    for mode in ("oos_stability_prune", "block_gated"):
+        for axis in selection_axes:
+            for value in variables.get(axis, []):
+                if value == getattr(settings, axis):
+                    continue
+                safe_name = str(value).replace(" ", "_").replace(".", "_")
+                specs.append({"name": f"{mode}_{axis}_{safe_name}", "axis": axis,
+                              "overrides": {"feature_weighting_mode": mode, axis: value}})
     return specs
 
 
@@ -323,6 +356,8 @@ def _greedy_phase2(
     """
     baseline_row = phase1.loc[phase1["scenario"] == "baseline"]
     baseline_ic = float(baseline_row["mean_rank_ic"].iloc[0]) if not baseline_row.empty and "mean_rank_ic" in baseline_row else float("-inf")
+    baseline_positive = (float(baseline_row["rank_ic_positive_fraction"].iloc[0])
+                         if not baseline_row.empty and "rank_ic_positive_fraction" in baseline_row else 0.0)
 
     # Mejores dos niveles de cada eje y ranking de ejes por impacto (mejora sobre baseline).
     axis_options: dict[str, list[dict[str, Any]]] = {}
@@ -333,10 +368,17 @@ def _greedy_phase2(
         best = _stable_best(candidates)
         if not best:
             continue
+        best_ic = float(best.get("mean_rank_ic", float("-inf")))
+        best_positive = float(best.get("rank_ic_positive_fraction", 0.0))
+        if best_ic <= baseline_ic or best_positive < baseline_positive:
+            decision["axes"][axis] = {"chosen": "baseline", "accepted": False,
+                                       "reason": "no mejora estable frente al baseline"}
+            continue
         second = _second_stable(candidates.to_dict("records"), str(best["scenario"]))
         axis_options[axis] = [best] + ([second] if second else [])
-        axis_impact[axis] = float(best.get("mean_rank_ic", float("-inf"))) - baseline_ic
-        decision["axes"][axis] = {"chosen": best.get("scenario"), "overrides": dict(best.get("overrides") or {}),
+        axis_impact[axis] = best_ic - baseline_ic
+        decision["axes"][axis] = {"chosen": best.get("scenario"), "accepted": True,
+                                   "overrides": dict(best.get("overrides") or {}),
                                    "second": second}
 
     # Combinación inicial: el mejor nivel de cada eje.
@@ -434,6 +476,27 @@ def _economic_score(summary: Mapping[str, Any], criterion: str) -> float:
     if value is None:
         return float("-inf")
     return -float(value) if criterion == "max_drawdown" else float(value)
+
+
+def _cost_stress_phase(
+    settings: Settings, store: ResultsStore, study_id: str, *, agent_dir: Path | None,
+    name: str, description: str, tags: list[str],
+) -> list[dict[str, Any]]:
+    """Report all cost assumptions without selecting the cheapest one."""
+    rows: list[dict[str, Any]] = []
+    for case in COST_STRESS_CASES:
+        overrides = dict(case["overrides"])
+        run_id = execute_run(
+            replace(settings, **overrides), mode="backtest", run_kind="stress", study_id=study_id,
+            label=f"{name} · estrés de costes · {case['name']}", description=description,
+            tags=[*tags, "cost_stress"],
+            grid_definition={"phase": "4b_cost_stress", "overrides": overrides}, store=store,
+            agent_dir=agent_dir,
+        )
+        store.add_to_study(study_id, run_id)
+        rows.append({"phase": "4b_cost_stress", "scenario": case["name"], "axis": "cost_stress",
+                     "overrides": overrides, "run_id": run_id, **overrides, **_summary_for_run(store, run_id)})
+    return rows
 
 
 def _safe_scenario_run(
@@ -719,7 +782,6 @@ def _cached_agent_dir(processed: Path, key: str) -> Path:
 def _cache_contract(stage: str, processed: Path, *, agent_dir: Path | None = None):
     """Define inputs, outputs y destino por etapa; es la frontera de reutilización."""
     if stage == "dataset":
-        raw = processed.parent / "raw" if processed.name == "dev" else processed.parent / "raw"
         # La fuente real se obtiene del Settings en el handler; los nombres son estables en data/raw.
         from environment import RAW_DIR, DEV_RAW_DIR
         source = DEV_RAW_DIR if processed.name == "dev" else RAW_DIR
@@ -744,9 +806,47 @@ def _cache_contract(stage: str, processed: Path, *, agent_dir: Path | None = Non
     raise ValueError(f"Etapa no cacheable: {stage}")
 
 
+# Los artefactos de un run son inmutables una vez escritos, así que su resumen se calcula una
+# sola vez por (runs_root, run_id) y se reutiliza. Sin esto se releen backtest_summary.json y
+# rank_ic_diagnostics.parquet varias veces por run (Fase 1/2, perfiles, recomendado, best_config).
+_SUMMARY_CACHE: dict[tuple[str, str], dict[str, Any]] = {}
+
+
 def _summary_for_run(store: ResultsStore, run_id: str) -> dict[str, Any]:
+    cache_key = (str(store.runs_root), run_id)
+    cached = _SUMMARY_CACHE.get(cache_key)
+    if cached is not None:
+        return dict(cached)
+    result = _compute_summary_for_run(store, run_id)
+    _SUMMARY_CACHE[cache_key] = result
+    return dict(result)
+
+
+def _compute_summary_for_run(store: ResultsStore, run_id: str) -> dict[str, Any]:
     path = store.runs_root / run_id / "artifacts" / "backtest_summary.json"
-    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    summary = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    # Model selection is strictly frozen at the end of 2024.  The 2025-26
+    # diagnostics remain available for the final reserved validation only.
+    diagnostics_path = store.runs_root / run_id / "artifacts" / "rank_ic_diagnostics.parquet"
+    if not diagnostics_path.exists():
+        return summary
+    diagnostics = pd.read_parquet(diagnostics_path)
+    if "agent" in diagnostics:
+        diagnostics = diagnostics.loc[diagnostics["agent"] == "meta_final"]
+    if diagnostics.empty:
+        return summary
+    dates = pd.to_datetime(diagnostics["prediction_date"])
+    values = pd.to_numeric(diagnostics.loc[dates.dt.year <= 2024, "rank_ic"], errors="coerce").dropna()
+    if values.empty:
+        return summary
+    summary.update({
+        "mean_rank_ic": float(values.mean()),
+        "rank_ic_positive_fraction": float((values > 0).mean()),
+        "rank_ic_std": float(values.std(ddof=1)) if len(values) > 1 else 0.0,
+        "rank_ic_selection_until_year": 2024,
+        "rank_ic_selection_cohorts": int(len(values)),
+    })
+    return summary
 
 
 def _write_csv_exports(artifacts: Path) -> None:

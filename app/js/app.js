@@ -9,6 +9,9 @@
     defaults: {},
     groups: {},
     studyOptions: {},
+    studyOptionGroups: {},
+    fullStudyFixedSettings: {},
+    fullStudyStressSettings: {},
     presets: {},
     profileLabels: {},
     runs: [],
@@ -37,6 +40,9 @@
     state.defaults = data.settings || {};
     state.groups = data.groups || {};
     state.studyOptions = data.study_options || {};
+    state.studyOptionGroups = data.study_option_groups || {};
+    state.fullStudyFixedSettings = data.full_study_fixed_settings || {};
+    state.fullStudyStressSettings = data.full_study_stress_settings || {};
     state.presets = data.experiment_presets || {};
     state.profileLabels = data.profile_labels || {};
   }

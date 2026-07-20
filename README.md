@@ -1,145 +1,78 @@
-# TFM — Sistema de IA aplicado a la selección de acciones
+# TFM — laboratorio ML point-in-time para selección de acciones
 
-Trabajo Fin de Máster sobre **cómo aprende un sistema de IA** en un entorno financiero y su
-evaluación rigurosa. El objetivo no es batir a un índice sino **medir el aprendizaje** (rank-IC
-fuera de muestra) con honestidad: la rentabilidad se reporta como consecuencia, con
-significancia estadística y tests de robustez, y un resultado negativo bien medido es un
-entregable válido.
+Este repositorio implementa un laboratorio reproducible para estudiar señales financieras fuera de muestra. El objetivo principal es medir la capacidad de ordenación del modelo mediante Rank-IC; la rentabilidad de cartera es una consecuencia y nunca el criterio para elegir el modelo.
 
-El sistema es un conjunto de **agentes LightGBM** (calidad, momentum, valor) combinados por un
-meta-agente, con un catálogo de **artefactos activables** (bloques de features/contexto) que un
-barrido de ablations activa automáticamente según cuáles mejoran el aprendizaje. Diseño completo
-en [docs/doc.md](docs/doc.md); el porqué de cada decisión en [docs/bitacora.md](docs/bitacora.md).
+La documentación metodológica completa está en [docs/doc.md](docs/doc.md). El estado y las decisiones históricas se registran en [docs/bitacora.md](docs/bitacora.md).
 
-## Requisitos
-
-```bash
-pip install -r requirements.txt
-```
-
-Clave de Finnhub en `.env` (`FINNHUB_API_KEY=...`), solo para la descarga. `EDGAR_USER_AGENT` es
-opcional (identifica las solicitudes a la SEC).
-
-## Consola local y CLI
-
-Sin `RUN_MODE` definido, la entrada principal abre una consola local:
+## Inicio rápido
 
 ```powershell
+python -m pip install -r requirements.txt
 python main.py
-# http://127.0.0.1:8765
 ```
 
-La consola es una aplicación web de una sola página con estética oscura (negros y grises),
-servida como archivos reales desde `app/` (raíz del proyecto) por el servidor `http.server` de
-`module/ui/dashboard.py` (sin dependencias externas ni CDN; los gráficos usan una copia local
-de Chart.js). Tiene dos vistas:
+Sin `RUN_MODE`, el proyecto abre la Research Console en `http://127.0.0.1:8765`.
 
-- **Consola**: lanzar un **Experimental** (configuración libre y trazable), crear un **Study**
-  (ciclo completo sobre las variables que marques) y revisar la **Optimization** oficial (ciclo
-  completo sobre todas), con todos los parámetros, presets y selects guiados por los valores
-  admitidos.
-- **Resultados**: dos listas separadas, una de **estudios** y otra de **runs**. Al seleccionar
-  un estudio se analiza el estudio (fases, decisión y comparativa de sus runs); al seleccionar
-  un run se analiza el run con pestañas de resumen, rendimiento, aprendizaje, cartera, trades,
-  explorador de stocks (con crecimientos) y ficha por ticker, con tablas y gráficos.
+Para descargar datos se necesita `FINNHUB_API_KEY` en `.env`. Las fuentes activas son precios OHLCV y series históricas de Finnhub; el sistema no declara conectores externos sin datos históricos point-in-time verificados.
 
-Cada resultado nuevo queda registrado bajo `results/runs/<YYYYMMDD--hash>/` con manifiesto,
-configuración efectiva, artefactos y trazabilidad. Los studies agrupan sus runs en
-`results/studies/` y se indexan en `results/registry.jsonl`.
+## Full study oficial
 
-Cuando se define `RUN_MODE`, se conserva el flujo CLI:
-
-Con `data/raw` ya descargado, un único comando ejecuta el estudio completo sin decisiones humanas:
+Con datos ya descargados:
 
 ```powershell
-$env:RUN_MODE = "full_study"; $env:RUN_SCOPE = "full"; python main.py
+$env:RUN_MODE = "full_study"
+$env:RUN_SCOPE = "full"
+python -u main.py
 ```
 
-Hace, sin decisiones humanas, el **ciclo completo unificado** (`study` y `full_study` comparten
-orquestador; `full_study` barre **todas** las variables, un `study` las que marques): **Fase 1**
-aísla cada eje de **modelo** (ventana, horizonte, ancla, profundidad, cadencia, `lag_days`,
-`objective`, `meta_type`, hiperparámetros y los 7 artefactos) por rank-IC OOS; **Fase 2** combina
-los mejores con una búsqueda greedy top-2 (sin producto cartesiano); afina hiperparámetros →
-configuración final de modelo → **fase de cartera** (optimiza tamaño, percentiles, rotación y costes
-re-backtesteando el finalista sin reentrenar, por criterio económico) → 8 perfiles de inversor →
-robustez → **validación en la era reservada 2025-2026** (que no interviene en la selección). La
-decisión final resume el mejor modelo + la mejor gestión de cartera + el perfil que más renta. La
-selección del modelo es siempre por rank-IC; el criterio económico solo decide parámetros de cartera
-(que no cambian el aprendizaje).
+También puede lanzarse desde **Full study → Revisar y lanzar** en la consola. Esa pantalla permite escribir nombre e hipótesis y muestra, sin posibilidad de editar:
 
-Los resultados se organizan de forma inmutable por `runs/` y `studies/`: cada study conserva su
-manifiesto, definición y lista de runs; cada run guarda configuración, estado, artefactos de
-agentes, backtest, cartera, CSVs y panel de stocks reproducible.
+- todos los ejes que el estudio barre;
+- parámetros metodológicos fijos;
+- escenarios de estrés de costes.
 
-## Organización del código
+El ciclo es dirigido, no un producto cartesiano: ablaciones aisladas de modelo, combinación greedy de candidatos aceptados, afinado, configuración de cartera, perfiles, estrés de costes, robustez y validación reservada.
 
-`module/` se divide por responsabilidad para que la navegación del proyecto sea directa:
+La selección del modelo usa solo cohortes con fecha de predicción hasta **2024**. Los años **2025–2026** quedan reservados para una única validación final. Las comisiones, el slippage y la semilla no se optimizan: se reportan como estrés y robustez.
 
-- `data/`: universo, dataset point-in-time, baselines e ingestión de Finnhub/Yahoo/EDGAR.
-- `modeling/`: features, artefactos activables, agentes LightGBM y meta-agente.
-- `evaluation/`: cartera, backtest, perfiles, robustez y estadística.
-- `runs/`: ejecución de runs/studies, caché y almacenamiento inmutable de resultados.
-- `ui/`: Research Console (`dashboard.py` + frontend en `app/`) e informes estáticos (`reports.py`).
-- `common/`: utilidades transversales.
+## Arquitectura
 
-## Resultados
+```text
+datos crudos PIT → dataset → factores/bloques → agentes → meta-agente → cartera/backtest → estudio OOS
+```
 
-La consola muestra los manifiestos, métricas, rankings, carteras, órdenes y evolución por ticker
-desde los Parquet y CSV del run seleccionado. El rank-IC OOS es el criterio de aprendizaje; el
-rendimiento de cartera se muestra como consecuencia y no como selector de configuraciones.
+- `module/data/`: descarga, universo histórico y panel point-in-time.
+- `module/modeling/`: catálogo de factores, features, agentes y meta-agente.
+- `module/evaluation/`: cartera, backtest, perfiles y robustez.
+- `module/runs/`: runs, studies, caché y resultados inmutables.
+- `module/ui/` y `app/`: Research Console e informes.
 
-## Etapas sueltas
+## Modelo
 
-`RUN_MODE` selecciona una etapa; `RUN_SCOPE` el alcance (`dev` = muestra pequeña aislada,
-`full` = universo completo).
+El catálogo actual contiene bloques de calidad, eficiencia, fortaleza financiera, valoración, caja, crecimiento, estabilidad, momentum, tendencia, riesgo y liquidez. Cinco agentes configurables —`quality`, `value`, `growth`, `momentum` y `risk`— usan LightGBM, Elastic Net y CatBoost. El meta-agente admite combinación equiponderada, por Rank-IC, por régimen o stacking OOS.
 
-| `RUN_MODE` | Qué hace |
+Cada bloque, agente y familia puede medirse mediante ablación. La poda OOS, la importancia de permutación temporal y el gating de bloques solo usan etiquetas que ya han cerrado antes del reentrenamiento.
+
+## Etapas
+
+| `RUN_MODE` | Acción |
 |---|---|
-| `download` | Descarga y consolida datos crudos (Finnhub, Yahoo, SEC EDGAR). |
-| `dataset` | Panel point-in-time, precios de activos y benchmark. |
-| `features` | Factores GARP/momentum + artefactos activos + etiquetas futuras separadas. |
-| `agents` | Entrena los 3 agentes LightGBM walk-forward y el meta-agente. |
-| `backtest` | Simula la cartera (con guarda anti-artefactos y perfil de inversor) y calcula métricas. |
-| `report` | Genera el informe HTML estático (autocontenido, estética oscura) del último run. La consola es la vía principal de análisis. |
-| `experiments` | Barrido de artefactos (`escenarios/rejilla_base.py`) + decisión automática. |
-| `full_study` | **Ciclo completo unificado** barriendo todas las variables (modelo en Fase 1/2, cartera al final) con era reservada (ver arriba). |
+| `download` | Descarga y consolida datos crudos. |
+| `dataset` | Construye panel point-in-time y precios. |
+| `features` | Construye factores y etiquetas futuras separadas. |
+| `agents` | Entrena agentes walk-forward y meta-agente. |
+| `backtest` | Simula cartera y métricas económicas. |
+| `report` | Genera informe HTML del último run. |
+| `experiments` | Ejecuta experimentos configurados. |
+| `full_study` | Ejecuta el ciclo oficial completo. |
 
-## Arquitectura de datos (point-in-time)
+## Resultados y pruebas
 
-- **Universo dinámico** del S&P 500 por fecha (composición histórica real): sin sesgo de
-  inclusión anticipada. El sistema se centra en **2016+** (mayor cobertura, menos sesgo de
-  supervivencia).
-- **Fechas de publicación reales** de SEC EDGAR: un fundamental solo es observable cuando se
-  publicó, no en su cierre fiscal. Sin lookahead.
-- **Panel** `(ticker, snapshot_date)` con lo observable en cada fecha; sin relleno hacia atrás.
+Los runs se guardan en `results/runs/`; los studies, en `results/studies/`; y el registro inmutable está en `results/registry.jsonl`. Cada resultado conserva configuración, manifiesto, artefactos, diagnósticos y exportaciones CSV.
 
-## Modelo y aprendizaje
-
-- **3 agentes LightGBM** (calidad, momentum, valor), objetivo `rank_regression` (percentil
-  transversal del retorno). Walk-forward estricto (solo etiquetas ya realizadas).
-- **Meta-agente** por rank-IC reciente; el `meta_score` es lo que opera la cartera y sobre lo que
-  se mide el rank-IC.
-- **Artefactos activables** (`module/modeling/artifacts.py`): momentum de fundamentales, régimen bull/bear,
-  neutralización por sector, momentum de precio multi-horizonte, medias móviles, régimen
-  ampliado, calidad/crecimiento derivados. El barrido decide cuáles entran.
-
-## Cartera, perfiles y robustez
-
-- **Cartera** 8-12 posiciones, peso máx 15 %, rotación con umbral de ventaja y expulsión.
-  **Guarda anti-artefactos**: neutraliza retornos mensuales imposibles (>200 %) como datos
-  corruptos.
-- **Perfiles de inversor** (`module/evaluation/profiles.py`): entre las buenas del meta, cada perfil
-  (conservador, agresivo, value, calidad, momentum, GARP, contrarian, balanceado) reordena según
-  estilo. Explicabilidad como funcionalidad.
-- **Robustez** (`module/evaluation/robustness.py`): permutación de etiquetas (placebo), carteras aleatorias
-  (Monte Carlo), bootstrap por bloques, leave-one-year-out. Demuestran que el resultado no es
-  suerte.
-
-## Tests
-
-```bash
-pytest tests/ -q
+```powershell
+python -m pytest tests/ -q
+python -m ruff check .
 ```
 
-Cubren la ausencia de lookahead (point-in-time, artefactos, walk-forward), las reglas de cartera,
-la guarda anti-artefactos, la decisión automática de artefactos, los perfiles y la robustez.
+Los resultados históricos no sustituyen a un nuevo full study cuando cambia la metodología. Consulta `docs/informe_final.md` para el estado de evidencia vigente.

@@ -7,12 +7,23 @@
   const S = () => global.TFM.state;
 
   const labelFor = (name) => name.replaceAll("_", " ");
+  const isCompound = (value) => Array.isArray(value) || (value && typeof value === "object");
+  const encodedValue = (value) => isCompound(value) ? JSON.stringify(value) : String(value);
+  const displayValue = (value) => Array.isArray(value) ? value.join(" + ") : String(value);
+  function decodeValue(raw, compound) {
+    if (compound) return JSON.parse(raw);
+    return raw === "true" ? true : raw === "false" ? false : Number.isNaN(Number(raw)) ? raw : Number(raw);
+  }
 
   // --- Controles reutilizables ---
   function parameterControl(key, value) {
     const options = S().studyOptions[key] || [value];
     const opts = options
-      .map((o) => `<option value="${escapeHtml(o)}" ${String(o) === String(value) ? "selected" : ""}>${escapeHtml(o)}</option>`)
+      .map((o) => {
+        const compound = isCompound(o);
+        const selected = JSON.stringify(o) === JSON.stringify(value);
+        return `<option value="${escapeHtml(encodedValue(o))}" data-json="${compound}" ${selected ? "selected" : ""}>${escapeHtml(displayValue(o))}</option>`;
+      })
       .join("");
     return `<label class="field">${labelFor(key)}<select data-setting="${key}">${opts}</select></label>`;
   }
@@ -35,18 +46,29 @@
     return `<label class="field">${title}<select data-preset="${kind}" onchange="TFM.views.console.applyPreset('${kind}', this.value)"><option value="">Seleccionar…</option>${items}</select></label>`;
   }
 
-  function studyControls() {
-    return Object.entries(S().studyOptions)
-      .map(([name, values]) => {
+  function studyControls(lockedFullStudy = false) {
+    const rendered = new Set();
+    const group = (title, names) => {
+      const entries = names.filter((name) => S().studyOptions[name]);
+      if (!entries.length) return "";
+      entries.forEach((name) => rendered.add(name));
+      const body = entries.map((name) => {
+        const values = S().studyOptions[name];
         const choices = values
-          .map(
-            (value, index) =>
-              `<label class="choice"><input type="checkbox" data-study="${name}" value="${escapeHtml(value)}" ${index === 0 ? "checked" : ""}>${escapeHtml(value)}</label>`
-          )
+          .map((value, index) => {
+            const compound = isCompound(value);
+            const checked = lockedFullStudy || index === 0;
+            const locked = lockedFullStudy ? "disabled" : "";
+            return `<label class="choice"><input type="checkbox" data-study="${name}" value="${escapeHtml(encodedValue(value))}" data-json="${compound}" ${checked ? "checked" : ""} ${locked}>${escapeHtml(displayValue(value))}</label>`;
+          })
           .join("");
         return `<div class="study-variable"><strong>${labelFor(name)}</strong><div class="choices">${choices}</div></div>`;
-      })
-      .join("");
+      }).join("");
+      return `<details class="parameter-group" open><summary>${escapeHtml(title)}</summary><div class="study-groups">${body}</div></details>`;
+    };
+    const groups = Object.entries(S().studyOptionGroups || {}).map(([title, names]) => group(title, names)).join("");
+    const rest = Object.keys(S().studyOptions).filter((name) => !rendered.has(name));
+    return groups + group("Otras variables", rest);
   }
 
   // --- Formularios ---
@@ -91,10 +113,40 @@
       <div class="actions"><button class="button primary" onclick="TFM.views.console.launchStudy()">Previsualizar y ejecutar</button></div>`;
   }
 
+  function fixedStudySettings() {
+    const entries = Object.entries(S().fullStudyFixedSettings || {});
+    if (!entries.length) return "";
+    return `<details class="parameter-group" open><summary>Parámetros fijos y visibles</summary><div class="study-groups">${entries.map(([key, value]) =>
+      `<div class="study-variable"><strong>${escapeHtml(labelFor(key))}</strong><label class="choice"><input type="checkbox" checked disabled>Fijo: ${escapeHtml(displayValue(value))}</label></div>`
+    ).join("")}</div></details>`;
+  }
+
+  function stressStudySettings() {
+    const entries = Object.entries(S().fullStudyStressSettings || {});
+    if (!entries.length) return "";
+    return `<details class="parameter-group" open><summary>Escenarios de estrés, no optimizables</summary><div class="study-groups">${entries.map(([key, value]) =>
+      `<div class="study-variable"><strong>${escapeHtml(labelFor(key))}</strong><label class="choice"><input type="checkbox" checked disabled>Se informan todos: ${escapeHtml(displayValue(value))}</label></div>`
+    ).join("")}</div></details>`;
+  }
+
+  function fullStudyForm() {
+    return `<h3>Full study oficial</h3>
+      <div class="formgrid">
+        <label class="field">Nombre del estudio<input id="full-study-name" value="optimization-official"></label>
+        <label class="field">Hipótesis<textarea id="full-study-hypothesis" placeholder="Ej.: Los bloques de calidad, crecimiento y riesgo mejoran el Rank-IC OOS frente al baseline."></textarea></label>
+      </div>
+      <p class="notice">Transparencia total: todas las variables barribles están marcadas y bloqueadas. Se ejecutarán todos sus valores permitidos; no se puede desmarcar ninguno en un full study.</p>
+      <section class="parameter-group"><h4>Variables que se modifican</h4>${studyControls(true)}</section>
+      <section class="parameter-group"><h4>Variables que no se modifican</h4>${fixedStudySettings()}</section>
+      <section class="parameter-group"><h4>Costes de ejecución</h4>${stressStudySettings()}</section>
+      <div class="actions"><button class="button primary" onclick="TFM.views.console.launchOptimization()">Lanzar full study oficial</button>
+      <button class="button" onclick="TFM.views.console.showForm('full-study')">Restablecer vista</button></div>`;
+  }
+
   function showForm(type) {
     const form = el("console-form");
     form.classList.remove("hidden");
-    form.innerHTML = type === "experimental" ? experimentalForm() : studyForm();
+    form.innerHTML = type === "experimental" ? experimentalForm() : type === "full-study" ? fullStudyForm() : studyForm();
     if (type === "study") updateStudyCount();
   }
 
@@ -109,7 +161,10 @@
 
   function collectSettings() {
     const settings = { ...S().defaults };
-    document.querySelectorAll("[data-setting]").forEach((i) => (settings[i.dataset.setting] = i.value));
+    document.querySelectorAll("[data-setting]").forEach((i) => {
+      const option = i.options && i.options[i.selectedIndex];
+      settings[i.dataset.setting] = option && option.dataset.json === "true" ? JSON.parse(i.value) : i.value;
+    });
     return settings;
   }
 
@@ -120,7 +175,7 @@
       if (!input.checked) return;
       const key = input.dataset.study;
       const raw = input.value;
-      const value = raw === "true" ? true : raw === "false" ? false : Number.isNaN(Number(raw)) ? raw : Number(raw);
+      const value = decodeValue(raw, input.dataset.json === "true");
       (variables[key] ??= []).push(value);
     });
     return variables;
@@ -146,7 +201,7 @@
       return;
     }
     const n = directedCount(variables);
-    node.textContent = `Diseño dirigido: Fase 1 tendrá ${n.phase1} runs aislados; Fase 2 tendrá hasta ${n.phase2} combinaciones dirigidas. Máximo total: ${n.total}, nunca un producto cartesiano.`;
+    node.textContent = `Diseño dirigido (solo fases 1–2): ${n.phase1} runs aislados y hasta ${n.phase2} combinaciones. Después se ejecutan afinado, cartera, perfiles y validación; no es un máximo total ni un producto cartesiano.`;
   }
 
   // --- Lanzadores ---
@@ -168,7 +223,7 @@
       const variables = selectedStudyVariables();
       if (!Object.keys(variables).length) throw new Error("Selecciona al menos una variable.");
       const n = directedCount(variables);
-      if (!confirm(`Se ejecutarán como máximo ${n.total} runs: Fase 1 aislada y Fase 2 dirigida. ¿Continuar?`)) return;
+      if (!confirm(`Fases 1–2: aproximadamente ${n.total} runs. Después se añaden afinado, cartera, perfiles y validación. ¿Continuar?`)) return;
       const job = await api("/api/study", {
         settings: S().defaults,
         mode: el("study-mode").value,
@@ -183,7 +238,13 @@
   async function launchOptimization() {
     if (!confirm("La optimization oficial ejecutará Fase 1, Fase 2 dirigida, afinado y validación reservada. ¿Continuar?")) return;
     try {
-      const job = await api("/api/optimization", { settings: S().defaults });
+      const job = await api("/api/optimization", {
+        settings: S().defaults,
+        study: {
+          name: el("full-study-name")?.value || "optimization-official",
+          hypothesis: el("full-study-hypothesis")?.value || "",
+        },
+      });
       notify(`Optimization ${job.job_id} iniciada.`);
       global.TFM.loadJobsAndRuns();
     } catch (e) { notify(e.message, true); }
@@ -226,9 +287,9 @@
           <button class="button primary" onclick="TFM.views.console.showForm('study')">Crear study</button>
         </article>
         <article class="card">
-          <h3>Optimization</h3>
-          <p>Fase 1 aislada, Fase 2 dirigida, afinado y validación reservada.</p>
-          <button class="button primary" onclick="TFM.views.console.launchOptimization()">Lanzar optimization</button>
+          <h3>Full study</h3>
+          <p>Todos los ejes, fases dirigidas, afinado y validación reservada.</p>
+          <button class="button primary" onclick="TFM.views.console.showForm('full-study')">Revisar y lanzar</button>
         </article>
       </div>
       <div id="console-notice" class="notice hidden"></div>

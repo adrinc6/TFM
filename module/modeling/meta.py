@@ -23,9 +23,10 @@ import numpy as np
 import pandas as pd
 
 from environment import Settings
+from module.modeling.catalog import AGENT_NAMES as CATALOG_AGENT_NAMES
 
+# API histórica: los tests y configuraciones antiguas siguen refiriéndose a estos tres.
 AGENT_NAMES = ("quality", "momentum", "value")
-
 
 def combine_agent_scores(
     scores: pd.DataFrame, targets: pd.DataFrame, settings: Settings,
@@ -50,6 +51,7 @@ def combine_agent_scores(
     meta_scores: list[dict] = []
     weights: list[dict] = []
 
+    all_agents = tuple(dict.fromkeys([*CATALOG_AGENT_NAMES, *scores["agent"].dropna().unique().tolist()]))
     for date in sorted(labelled["snapshot_ts"].dropna().unique()):
         date_frame = labelled.loc[labelled["snapshot_ts"] == date].copy()
         available_agents = set(date_frame["agent"].unique())
@@ -57,7 +59,7 @@ def combine_agent_scores(
         bull = regime_bull_by_date.get(date_iso)
         agent_weights, evidence = _weights_as_of(labelled, date, available_agents, settings, bull=bull)
         learned = any(item.get("mean_rank_ic", 0) > 0 for item in evidence.values())
-        for agent in AGENT_NAMES:
+        for agent in all_agents:
             weights.append(
                 {
                     "snapshot_date": pd.Timestamp(date).date().isoformat(),
@@ -71,22 +73,29 @@ def combine_agent_scores(
 
         pivot = date_frame.pivot(index="ticker", columns="agent", values="score")
         ranks = pivot.rank(method="average", pct=True)
-        usable = [agent for agent in AGENT_NAMES if agent in ranks.columns and agent_weights.get(agent, 0) > 0]
+        usable = [agent for agent in all_agents if agent in ranks.columns and agent_weights.get(agent, 0) > 0]
         if not usable:
-            usable = [agent for agent in AGENT_NAMES if agent in ranks.columns]
+            usable = [agent for agent in all_agents if agent in ranks.columns]
             equal = 1 / len(usable) if usable else 0
             agent_weights = {agent: equal for agent in usable}
-        for ticker, row in ranks.iterrows():
-            present = [agent for agent in usable if pd.notna(row.get(agent))]
-            if not present:
-                meta_score = np.nan
-            else:
-                denominator = sum(agent_weights[agent] for agent in present)
-                meta_score = sum(row[agent] * agent_weights[agent] for agent in present) / denominator
+        # Media ponderada de rangos por ticker, vectorizada: para cada fila el meta-score es
+        # sum(w_a * rank_a) / sum(w_a) sobre los agentes usables presentes (no NaN); si no hay
+        # ninguno presente, NaN. Equivale al bucle fila-a-fila anterior pero en una operacion.
+        date_iso = pd.Timestamp(date).date().isoformat()
+        if usable:
+            weight_vector = pd.Series({agent: agent_weights[agent] for agent in usable})
+            usable_ranks = ranks[usable]
+            present_mask = usable_ranks.notna()
+            numerator = usable_ranks.mul(weight_vector, axis=1).sum(axis=1, min_count=1)
+            denominator = present_mask.mul(weight_vector, axis=1).sum(axis=1)
+            meta_series = numerator.div(denominator.where(denominator > 0))
+        else:
+            meta_series = pd.Series(np.nan, index=ranks.index)
+        for ticker, meta_score in meta_series.items():
             meta_scores.append(
                 {
                     "ticker": ticker,
-                    "snapshot_date": pd.Timestamp(date).date().isoformat(),
+                    "snapshot_date": date_iso,
                     "meta_score": meta_score,
                 }
             )
@@ -178,7 +187,7 @@ def _weights_as_of(
     ]
     evidence: dict[str, dict[str, float | int]] = {}
     positive: dict[str, float] = {}
-    for agent in AGENT_NAMES:
+    for agent in tuple(dict.fromkeys([*CATALOG_AGENT_NAMES, *available_agents])):
         if agent not in available_agents:
             continue
         agent_history = history.loc[history["agent"] == agent]
@@ -197,6 +206,16 @@ def _weights_as_of(
     if settings.meta_type == "equal":
         return ({agent: equal for agent in available_agents}, evidence)
 
+    if settings.meta_type == "stacked_oos":
+        weights = _stacked_oos_weights(history, available_agents, settings)
+        if weights is not None:
+            for agent, weight in weights.items():
+                evidence.setdefault(agent, {})["stacked_weight"] = weight
+            return weights, evidence
+        # Until enough *closed* cohorts exist, the fallback is intentionally
+        # deterministic.  It never fits on the cohort being scored.
+        return ({agent: equal for agent in available_agents}, evidence)
+
     total = sum(positive.values())
     if total <= 0:  # sin señal positiva reciente: equiponderado (fallback común a todos los modos)
         return ({agent: equal for agent in available_agents}, evidence)
@@ -211,6 +230,45 @@ def _weights_as_of(
             weights = {agent: w / renorm for agent, w in weights.items()}
 
     return weights, evidence
+
+
+def _stacked_oos_weights(
+    history: pd.DataFrame, available_agents: set[str], settings: Settings
+) -> dict[str, float] | None:
+    """Fit a non-negative Ridge stacker only on already closed OOS agent scores.
+
+    Each row is a historical ticker/snapshot.  Scores are converted to cross-sectional
+    ranks and the realised return is also ranked within its snapshot, so the stacker
+    learns the same ordering task evaluated by Rank-IC.  It is refit at every date
+    from ``history`` only; the current cohort and any unfinished label are excluded
+    by the caller.
+    """
+    agents = sorted(available_agents)
+    if len(agents) < 2 or history.empty:
+        return None
+    wide = history.pivot_table(index=["ticker", "snapshot_date"], columns="agent", values="score", aggfunc="last")
+    labels = history.groupby(["ticker", "snapshot_date"], as_index=True)["forward_excess_return_3m"].first()
+    wide = wide.reindex(columns=agents).join(labels.rename("target"), how="inner").dropna(subset=["target"])
+    if wide.shape[0] < max(40, len(agents) * 12) or wide[agents].notna().sum().min() < 20:
+        return None
+    dates = wide.index.get_level_values("snapshot_date")
+    ranked = wide[agents].groupby(dates).rank(method="average", pct=True)
+    target = wide["target"].groupby(dates).rank(method="average", pct=True)
+    try:
+        from sklearn.impute import SimpleImputer
+        from sklearn.linear_model import Ridge
+        from sklearn.pipeline import make_pipeline
+        from sklearn.preprocessing import StandardScaler
+
+        model = make_pipeline(SimpleImputer(strategy="median"), StandardScaler(), Ridge(alpha=8.0, positive=True))
+        model.fit(ranked, target)
+        coefficients = np.maximum(np.asarray(model[-1].coef_, dtype=float), 0.0)
+    except Exception:
+        return None
+    total = float(coefficients.sum())
+    if not np.isfinite(total) or total <= 1e-12:
+        return None
+    return {agent: float(value / total) for agent, value in zip(agents, coefficients, strict=True)}
 
 
 _DIAG_COLUMNS = ["agent", "prediction_date", "label_end_date", "observations", "rank_ic", "is_quarterly"]
@@ -250,6 +308,8 @@ def _diagnostics_for_score(frame: pd.DataFrame, settings: Settings, name: str) -
 def _rank_ic(cohort: pd.DataFrame, minimum: int) -> float | None:
     usable = cohort[["score", "forward_excess_return_3m"]].dropna()
     if len(usable) < minimum:
+        return None
+    if usable["score"].nunique() < 2 or usable["forward_excess_return_3m"].nunique() < 2:
         return None
     value = usable["score"].corr(usable["forward_excess_return_3m"], method="spearman")
     return float(value) if pd.notna(value) else None

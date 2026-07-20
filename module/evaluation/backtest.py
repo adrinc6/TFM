@@ -97,6 +97,12 @@ def run_backtest(
     if not snapshots:
         raise ValueError("No hay snapshots en los scores del backtest.")
 
+    # Agrupar una vez por fecha en lugar de filtrar con máscara booleana dentro del bucle
+    # (O(N) por snapshot → O(N) total). El groupby conserva el orden de filas dentro de cada
+    # grupo sobre el frame ya ordenado, así que decide_orders recibe exactamente lo mismo.
+    scores_by_date = {date: group for date, group in scores.groupby("snapshot_date", sort=False)}
+    empty_scores = scores.iloc[0:0]
+
     state = PortfolioState.empty()
     initial_value = 100.0
     portfolio_value = initial_value
@@ -123,7 +129,7 @@ def run_backtest(
         benchmark_return = current_benchmark_price / previous_benchmark_price - 1 if index > 0 else 0.0
         benchmark_value *= 1 + benchmark_return
 
-        scores_at_date = scores.loc[scores["snapshot_date"] == snapshot_date]
+        scores_at_date = scores_by_date.get(snapshot_date, empty_scores)
         raw_orders = decide_orders(state, scores_at_date, settings)
         priced_orders, cost_drag = _price_orders(raw_orders, price_index, snapshot_date,
                                                   state.holdings, settings)

@@ -62,6 +62,5 @@ def agent_settings(monkeypatch, tmp_path) -> Settings:
         data_start_date="1996-01-01",
         end_date="2001-12-15",
         execution_year=2000,
-        min_training_rows=20,
         min_rank_ic_cross_section=5,
     )

@@ -10,7 +10,6 @@ import pandas as pd
 from module.runs.experiments import (
     RESERVED_ERA_YEARS,
     SELECTION_UNTIL_YEAR,
-    _best_level,
     _meta_final_ic,
     _phase2_specs,
     _reserved_era_validation,

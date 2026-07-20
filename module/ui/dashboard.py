@@ -7,7 +7,7 @@ import math
 import mimetypes
 import threading
 import traceback
-from dataclasses import asdict, fields, replace
+from dataclasses import asdict, fields
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -15,7 +15,8 @@ from urllib.parse import parse_qs, urlparse
 
 import pandas as pd
 
-from environment import PROJECT_ROOT, Settings
+from environment import (MAX_PRICE_AGE_DAYS, MIN_TRAINING_ROWS, NEUTRALIZE_MIN_GROUP,
+                         PROJECT_ROOT, RECENCY_HALFLIFE_YEARS, Settings)
 from module.runs.execution import execute_official_optimization, execute_run, execute_study
 from module.runs.results_store import RESULTS_ROOT, ResultsStore, list_registry
 
@@ -59,15 +60,40 @@ APP_ROOT = (PROJECT_ROOT / "app").resolve()
 # Valores guiados para studies. Un study no acepta JSON arbitrario: solo combina opciones
 # metodológicamente admitidas; Experimental sigue permitiendo ajustar valores individuales.
 SETTINGS_GROUPS = {
-    "Periodo y entrenamiento": ["execution_year", "execution_quarter", "execution_lag_days", "train_lookback_years", "snapshot_step_months", "fundamental_step_months", "snapshot_day", "target_horizon_months", "max_price_age_days", "meta_ic_lookback_quarters"],
+    "Periodo y entrenamiento": ["execution_year", "execution_quarter", "execution_lag_days", "train_lookback_years", "snapshot_step_months", "fundamental_step_months", "snapshot_day", "target_horizon_months", "meta_ic_lookback_quarters"],
     "Modelo LightGBM": ["objective", "lgbm_n_estimators", "lgbm_max_depth", "lgbm_learning_rate", "lgbm_min_child_samples", "random_seed", "meta_type", "recency_weighting"],
-    "Artefactos": ["neutralize_by_sector", "neutralize_min_group", "fundamental_momentum", "market_regime_feature", "price_momentum_multi", "moving_averages", "regime_extended", "quality_growth_derived"],
+    "Artefactos": ["neutralize_by_sector", "fundamental_momentum", "market_regime_feature", "price_momentum_multi", "moving_averages", "regime_extended", "quality_growth_derived"],
+    "Laboratorio ML": ["enabled_feature_blocks", "enabled_agents", "enabled_model_families", "intra_agent_ensemble_mode", "feature_weighting_mode", "feature_selection_min_coverage", "feature_selection_lookback_quarters", "feature_selection_min_permutation_importance", "feature_selection_min_positive_fraction", "feature_selection_max_features_per_agent", "metric_winsorization_percentile", "risk_feature_windows", "technical_feature_windows"],
     "Cartera y perfil": ["target_min", "target_max", "entry_min_percentile", "min_hold_percentile", "rotation_edge_percentiles", "max_weight_per_position", "commission_bps", "slippage_bps", "rebalance_drift_tolerance", "max_monthly_position_return", "profile"],
 }
 
 # Catálogo de valores admitidos por variable: fuente única en escenarios/variables.py, compartida
 # con el orquestador de estudios (que deriva de aquí el barrido completo del full_study).
-from escenarios.variables import STUDY_OPTIONS
+from escenarios.variables import COST_STRESS_CASES, STUDY_OPTIONS
+
+# Orden y semántica de las variables que la vista Study puede barrer. Mantiene el diccionario
+# ejecutable separado de la presentación y evita una lista plana de decenas de controles.
+STUDY_OPTION_GROUPS = {
+    "Datos y calendario": ["execution_lag_days", "train_lookback_years", "snapshot_step_months",
+                             "fundamental_step_months", "target_horizon_months", "random_seed"],
+    "Modelo base": ["objective", "lgbm_n_estimators", "lgbm_max_depth", "lgbm_learning_rate",
+                      "lgbm_min_child_samples", "recency_weighting"],
+    "Meta-agente": ["meta_type", "meta_ic_lookback_quarters", "min_rank_ic_cross_section"],
+    "Factores y bloques": ["neutralize_by_sector", "fundamental_momentum", "market_regime_feature",
+                             "price_momentum_multi", "moving_averages", "regime_extended",
+                             "quality_growth_derived", "enabled_feature_blocks",
+                             "metric_winsorization_percentile", "risk_feature_windows",
+                             "technical_feature_windows"],
+    "Agentes y modelos": ["enabled_agents", "enabled_model_families", "intra_agent_ensemble_mode",
+                            "feature_weighting_mode"],
+    "Selección de factores": ["feature_selection_min_coverage", "feature_selection_lookback_quarters",
+                               "feature_selection_min_permutation_importance",
+                               "feature_selection_min_positive_fraction",
+                               "feature_selection_max_features_per_agent"],
+    "Cartera y perfil": ["target_min", "target_max", "entry_min_percentile", "min_hold_percentile",
+                          "rotation_edge_percentiles", "max_weight_per_position", "commission_bps",
+                          "slippage_bps", "profile"],
+}
 
 EXPERIMENT_PRESETS = {
     "training": [
@@ -94,6 +120,29 @@ PROFILE_LABELS = {
     "aggressive": "Agresivo · momentum", "value": "Value · valoración y calidad",
     "quality": "Calidad · negocio estable", "momentum": "Momentum · fuerza relativa",
     "garp": "GARP · valor, calidad y momentum", "contrarian": "Contrarian · reversión controlada",
+}
+
+# Audit trail shown before an official full study.  These are deliberately fixed
+# integrity constants rather than optimisation axes.
+FULL_STUDY_FIXED_SETTINGS = {
+    "data_start_date": Settings().data_start_date,
+    "end_date": Settings().end_date,
+    "benchmark_ticker": Settings().benchmark_ticker,
+    "execution_year": Settings().execution_year,
+    "execution_quarter": Settings().execution_quarter,
+    "snapshot_day": Settings().snapshot_day,
+    "run_scope": Settings().run_scope,
+    "max_price_age_days": MAX_PRICE_AGE_DAYS,
+    "min_training_rows": MIN_TRAINING_ROWS,
+    "recency_halflife_years": RECENCY_HALFLIFE_YEARS,
+    "neutralize_min_group": NEUTRALIZE_MIN_GROUP,
+    "rebalance_drift_tolerance": Settings().rebalance_drift_tolerance,
+    "max_monthly_position_return": Settings().max_monthly_position_return,
+    "random_seed": Settings().random_seed,
+}
+FULL_STUDY_STRESS_SETTINGS = {
+    "commission_bps": sorted({case["overrides"]["commission_bps"] for case in COST_STRESS_CASES}),
+    "slippage_bps": sorted({case["overrides"]["slippage_bps"] for case in COST_STRESS_CASES}),
 }
 
 # Contrato del explorador: son variables existentes en el panel PIT y, salvo los retornos de
@@ -193,15 +242,20 @@ def _settings_from_payload(payload: dict) -> Settings:
     for name, value in payload.get("settings", {}).items():
         if name not in allowed:
             continue
-        if name in STUDY_OPTIONS and value not in STUDY_OPTIONS[name] and str(value) not in {str(v) for v in STUDY_OPTIONS[name]}:
-            raise ValueError(f"Valor no permitido para {name}: {value!r}.")
         original = defaults[name]
+        normalized = tuple(value) if isinstance(original, tuple) and isinstance(value, list) else value
+        if name in STUDY_OPTIONS and normalized not in STUDY_OPTIONS[name]:
+            raise ValueError(f"Valor no permitido para {name}: {value!r}.")
         if isinstance(original, bool):
             defaults[name] = bool(value) if not isinstance(value, str) else value.lower() in {"1", "true", "si", "sí"}
         elif isinstance(original, int) and not isinstance(original, bool):
             defaults[name] = int(value)
         elif isinstance(original, float):
             defaults[name] = float(value)
+        elif isinstance(original, tuple):
+            if not isinstance(value, (list, tuple)):
+                raise ValueError(f"{name} debe recibirse como una lista de valores.")
+            defaults[name] = normalized
         else:
             defaults[name] = value
     return Settings(**defaults)
@@ -252,6 +306,9 @@ class DashboardHandler(BaseHTTPRequestHandler):
         if parsed.path == "/api/defaults":
             return _json(self, {"settings": asdict(Settings()), "groups": SETTINGS_GROUPS,
                                 "study_options": STUDY_OPTIONS, "experiment_presets": EXPERIMENT_PRESETS,
+                                "study_option_groups": STUDY_OPTION_GROUPS,
+                                "full_study_fixed_settings": FULL_STUDY_FIXED_SETTINGS,
+                                "full_study_stress_settings": FULL_STUDY_STRESS_SETTINGS,
                                 "profile_labels": PROFILE_LABELS})
         if parsed.path == "/api/runs":
             return _json(self, {"runs": list(reversed(list_registry())), "jobs": JOBS.all()})
@@ -325,7 +382,13 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 return _json(self, {"job_id": job}, 202)
             if self.path == "/api/optimization":
                 settings = _settings_from_payload(payload)
-                job = JOBS.submit("optimization", lambda: execute_official_optimization(settings))
+                study = payload.get("study", {})
+                if not isinstance(study, dict):
+                    raise ValueError("Los metadatos del full study deben ser un objeto.")
+                job = JOBS.submit("optimization", lambda: execute_official_optimization(
+                    settings, name=str(study.get("name", "optimization-official")),
+                    hypothesis=str(study.get("hypothesis", "")),
+                ))
                 return _json(self, {"job_id": job}, 202)
             return _json(self, {"error": "Ruta no disponible."}, 404)
         except (ValueError, TypeError) as exc:
@@ -526,10 +589,14 @@ class DashboardHandler(BaseHTTPRequestHandler):
                              if {"agent", "importance_rank"}.issubset(attribution.columns) else [])
         importance_rows = (importance.sort_values(["agent", "coefficient"], ascending=[True, False]).to_dict("records")
                            if {"agent", "coefficient"}.issubset(importance.columns) else [])
+        diagnostics_path = artifacts / "feature_diagnostics.parquet"
+        diagnostics = pd.read_parquet(diagnostics_path) if diagnostics_path.exists() else pd.DataFrame()
+        diagnostics_rows = (diagnostics.sort_values("model_importance_mean", ascending=False).to_dict("records")
+                            if "model_importance_mean" in diagnostics else [])
         _json(self, {"ticker": ticker, "snapshot_date": date, "scores": scores.to_dict("records"),
                      "selected_scores": scores.loc[scores["snapshot_date"].astype(str) == date].to_dict("records"),
                      "contributions": contribution_rows, "weights": weights.to_dict("records"),
-                     "global_importance": importance_rows})
+                     "global_importance": importance_rows, "feature_diagnostics": diagnostics_rows})
 
     def _learning(self, run_id: str) -> None:
         artifacts = _safe_run(run_id) / "artifacts"

@@ -26,7 +26,7 @@ import importlib.util
 import json
 import logging
 import shutil
-from dataclasses import asdict, dataclass, field, replace
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -69,7 +69,13 @@ class ScenarioSpec:
     overrides: Mapping[str, Any] = field(default_factory=dict)
 
     def apply_to(self, base: Settings) -> Settings:
-        return replace(base, **dict(self.overrides))
+        normalized = dict(self.overrides)
+        # La consola JSON representa tuplas como arrays; Settings usa tuplas para que las
+        # configuraciones sean inmutables y sus fingerprints no dependan del transporte.
+        for name, value in list(normalized.items()):
+            if isinstance(getattr(base, name, None), tuple) and isinstance(value, list):
+                normalized[name] = tuple(value)
+        return replace(base, **normalized)
 
 
 # -------- Huellas por etapa ------------------------------------------------------
@@ -83,36 +89,47 @@ FINGERPRINT_FIELDS: dict[str, tuple[str, ...]] = {
     ),
     "features": (
         "run_scope", "data_start_date", "end_date", "benchmark_ticker",
-        "snapshot_day", "snapshot_step_months", "max_price_age_days",
-        "target_horizon_months", "neutralize_by_sector", "neutralize_min_group",
+        "snapshot_day", "snapshot_step_months", "target_horizon_months", "neutralize_by_sector",
         "fundamental_momentum", "market_regime_feature", "price_momentum_multi",
         "moving_averages", "regime_extended", "quality_growth_derived",
+        "enabled_feature_blocks", "metric_winsorization_percentile", "risk_feature_windows",
+        "technical_feature_windows",
     ),
     "agents": (
         "run_scope", "data_start_date", "end_date", "benchmark_ticker",
-        "snapshot_day", "snapshot_step_months", "max_price_age_days",
-        "neutralize_by_sector", "neutralize_min_group",
+        "snapshot_day", "snapshot_step_months", "neutralize_by_sector",
         "fundamental_momentum", "market_regime_feature", "price_momentum_multi",
         "moving_averages", "regime_extended", "quality_growth_derived",
         "target_horizon_months", "execution_year", "execution_quarter",
         "execution_lag_days", "train_lookback_years", "fundamental_step_months",
-        "meta_ic_lookback_quarters", "min_training_rows", "min_rank_ic_cross_section",
+        "meta_ic_lookback_quarters", "min_rank_ic_cross_section",
         "objective", "lgbm_n_estimators", "lgbm_max_depth",
         "lgbm_learning_rate", "lgbm_min_child_samples", "random_seed", "meta_type",
-        "recency_weighting", "recency_halflife_years",
+        "recency_weighting",
+        "enabled_feature_blocks", "enabled_agents", "enabled_model_families",
+        "intra_agent_ensemble_mode", "feature_weighting_mode",
+        "feature_selection_min_coverage", "feature_selection_lookback_quarters",
+        "feature_selection_min_permutation_importance", "feature_selection_min_positive_fraction",
+        "feature_selection_max_features_per_agent", "metric_winsorization_percentile",
+        "risk_feature_windows", "technical_feature_windows",
     ),
     "backtest": (
         "run_scope", "data_start_date", "end_date", "benchmark_ticker",
-        "snapshot_day", "snapshot_step_months", "max_price_age_days",
-        "neutralize_by_sector", "neutralize_min_group",
+        "snapshot_day", "snapshot_step_months", "neutralize_by_sector",
         "fundamental_momentum", "market_regime_feature", "price_momentum_multi",
         "moving_averages", "regime_extended", "quality_growth_derived",
         "target_horizon_months", "execution_year", "execution_quarter",
         "execution_lag_days", "train_lookback_years", "fundamental_step_months",
-        "meta_ic_lookback_quarters", "min_training_rows", "min_rank_ic_cross_section",
+        "meta_ic_lookback_quarters", "min_rank_ic_cross_section",
         "objective", "lgbm_n_estimators", "lgbm_max_depth",
         "lgbm_learning_rate", "lgbm_min_child_samples", "random_seed", "meta_type",
-        "recency_weighting", "recency_halflife_years",
+        "recency_weighting",
+        "enabled_feature_blocks", "enabled_agents", "enabled_model_families",
+        "intra_agent_ensemble_mode", "feature_weighting_mode",
+        "feature_selection_min_coverage", "feature_selection_lookback_quarters",
+        "feature_selection_min_permutation_importance", "feature_selection_min_positive_fraction",
+        "feature_selection_max_features_per_agent", "metric_winsorization_percentile",
+        "risk_feature_windows", "technical_feature_windows",
         "target_min", "target_max", "entry_min_percentile", "min_hold_percentile",
         "rotation_edge_percentiles", "max_weight_per_position",
         "commission_bps", "slippage_bps", "rebalance_drift_tolerance",
@@ -295,13 +312,9 @@ def _run_single_scenario(
 
 
 def _run_stage_dataset(settings: Settings, processed: Path) -> None:
-    original = settings.processed_output_dir
-    _patched = replace(settings)  # noqa: F841
     # `build_point_in_time_dataset` escribe en settings.processed_output_dir; para redirigir a
     # `processed` del escenario sin tocar el modulo, redirigimos temporalmente via monkey-patch
     # de directorio: es la forma menos invasiva sin refactor.
-    from module import dataset as dataset_module
-
     class _RedirectedSettings:
         def __init__(self, base, target):
             self._base = base

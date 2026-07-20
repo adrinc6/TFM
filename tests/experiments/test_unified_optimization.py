@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import pandas as pd
-import pytest
 
 from module.runs import execution
 from module.runs.experiments import MODEL_FIELDS, PORTFOLIO_FIELDS, split_variables

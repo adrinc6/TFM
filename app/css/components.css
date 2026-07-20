@@ -26,6 +26,17 @@
   gap: 12px;
 }
 label.field { display: grid; gap: 5px; color: var(--muted); font-size: 12px; }
+.field.checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+}
+.field.checkbox input {
+  width: auto;
+  margin: 2px 0 0;
+  flex: 0 0 auto;
+}
 input, select, textarea {
   width: 100%;
   padding: 9px 10px;

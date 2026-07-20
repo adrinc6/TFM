@@ -104,6 +104,26 @@ RANDOM_SEED = 42
 #   "regime"  -> pesos distintos segun regimen bull/bear
 META_TYPE = "rank_ic"
 
+# --- Laboratorio de factores/ML -------------------------------------------------
+# Tuplas (no listas) para que Settings siga siendo inmutable y serializable en huellas.
+ENABLED_FEATURE_BLOCKS = (
+    "quality_core", "quality_efficiency", "financial_strength", "value_core", "value_cashflow",
+    "growth_acceleration", "fundamental_stability", "momentum_core", "momentum_trend",
+    "price_risk", "market_liquidity",
+)
+ENABLED_AGENTS = ("quality", "value", "growth", "momentum", "risk")
+ENABLED_MODEL_FAMILIES = ("lightgbm", "elastic_net", "catboost")
+INTRA_AGENT_ENSEMBLE_MODE = "rank_ic_weighted"
+FEATURE_WEIGHTING_MODE = "diagnostic_only"
+FEATURE_SELECTION_MIN_COVERAGE = 0.55
+FEATURE_SELECTION_LOOKBACK_QUARTERS = 12
+FEATURE_SELECTION_MIN_PERMUTATION_IMPORTANCE = 0.0
+FEATURE_SELECTION_MIN_POSITIVE_FRACTION = 0.50
+FEATURE_SELECTION_MAX_FEATURES_PER_AGENT = 0  # 0 = sin límite
+METRIC_WINSORIZATION_PERCENTILE = 0.01
+RISK_FEATURE_WINDOWS = (63, 126, 252)
+TECHNICAL_FEATURE_WINDOWS = (21, 63, 252)
+
 # --- Artefactos activables (bloques de features/contexto que el barrido activa como ablations) ---
 # Cada uno es point-in-time. El barrido mide si suben el rank-IC del meta_final. Ver module/artifacts.py.
 NEUTRALIZE_BY_SECTOR = False       # rankear factores dentro de sector en vez de global
@@ -158,22 +178,35 @@ class Settings:
     fundamental_step_months: int = FUNDAMENTAL_STEP_MONTHS
     snapshot_day: int = SNAPSHOT_DAY
     target_horizon_months: int = TARGET_HORIZON_MONTHS
-    max_price_age_days: int = MAX_PRICE_AGE_DAYS
     meta_ic_lookback_quarters: int = META_IC_LOOKBACK_QUARTERS
-    min_training_rows: int = MIN_TRAINING_ROWS
     min_rank_ic_cross_section: int = MIN_RANK_IC_CROSS_SECTION
     objective: str = OBJECTIVE
     lgbm_n_estimators: int = LGBM_N_ESTIMATORS
     lgbm_max_depth: int = LGBM_MAX_DEPTH
     lgbm_learning_rate: float = LGBM_LEARNING_RATE
     lgbm_min_child_samples: int = LGBM_MIN_CHILD_SAMPLES
+    # Hilos de LightGBM por fit. -1 = todos los núcleos. No afecta a los resultados (LightGBM es
+    # determinista con hilos), solo a la velocidad. Los escenarios corren en serie, así que cada
+    # fit puede aprovechar toda la máquina sin sobre-suscribir.
+    lgbm_n_jobs: int = -1
     random_seed: int = RANDOM_SEED
     meta_type: str = META_TYPE
     recency_weighting: str = RECENCY_WEIGHTING
-    recency_halflife_years: float = RECENCY_HALFLIFE_YEARS
+    enabled_feature_blocks: tuple[str, ...] = ENABLED_FEATURE_BLOCKS
+    enabled_agents: tuple[str, ...] = ENABLED_AGENTS
+    enabled_model_families: tuple[str, ...] = ENABLED_MODEL_FAMILIES
+    intra_agent_ensemble_mode: str = INTRA_AGENT_ENSEMBLE_MODE
+    feature_weighting_mode: str = FEATURE_WEIGHTING_MODE
+    feature_selection_min_coverage: float = FEATURE_SELECTION_MIN_COVERAGE
+    feature_selection_lookback_quarters: int = FEATURE_SELECTION_LOOKBACK_QUARTERS
+    feature_selection_min_permutation_importance: float = FEATURE_SELECTION_MIN_PERMUTATION_IMPORTANCE
+    feature_selection_min_positive_fraction: float = FEATURE_SELECTION_MIN_POSITIVE_FRACTION
+    feature_selection_max_features_per_agent: int = FEATURE_SELECTION_MAX_FEATURES_PER_AGENT
+    metric_winsorization_percentile: float = METRIC_WINSORIZATION_PERCENTILE
+    risk_feature_windows: tuple[int, ...] = RISK_FEATURE_WINDOWS
+    technical_feature_windows: tuple[int, ...] = TECHNICAL_FEATURE_WINDOWS
     # artefactos activables
     neutralize_by_sector: bool = NEUTRALIZE_BY_SECTOR
-    neutralize_min_group: int = NEUTRALIZE_MIN_GROUP
     fundamental_momentum: bool = FUNDAMENTAL_MOMENTUM
     market_regime_feature: bool = MARKET_REGIME_FEATURE
     price_momentum_multi: bool = PRICE_MOMENTUM_MULTI
@@ -209,7 +242,7 @@ class Settings:
             raise ValueError(
                 f"OBJECTIVE invalido: {self.objective!r}. Usa 'rank_regression', 'ranking' o 'quartile'."
             )
-        if self.meta_type not in ("equal", "rank_ic", "regime"):
+        if self.meta_type not in ("equal", "rank_ic", "regime", "stacked_oos"):
             raise ValueError(
                 f"META_TYPE invalido: {self.meta_type!r}. Usa 'equal', 'rank_ic' o 'regime'."
             )
@@ -218,6 +251,17 @@ class Settings:
                 f"RECENCY_WEIGHTING invalido: {self.recency_weighting!r}. "
                 "Usa 'off', 'linear' o 'exponential'."
             )
+        if self.feature_weighting_mode not in ("model_native", "diagnostic_only", "oos_stability_prune",
+                                               "regularized_linear_ensemble", "block_gated"):
+            raise ValueError("FEATURE_WEIGHTING_MODE no reconocido.")
+        if self.intra_agent_ensemble_mode not in ("single", "equal_rank", "rank_ic_weighted"):
+            raise ValueError("INTRA_AGENT_ENSEMBLE_MODE no reconocido.")
+        if not self.enabled_agents:
+            raise ValueError("ENABLED_AGENTS no puede estar vacío.")
+        if not 0 <= self.feature_selection_min_coverage <= 1:
+            raise ValueError("FEATURE_SELECTION_MIN_COVERAGE debe estar en [0, 1].")
+        if not 0 <= self.metric_winsorization_percentile < 0.5:
+            raise ValueError("METRIC_WINSORIZATION_PERCENTILE debe estar en [0, 0.5).")
         if self.train_lookback_years <= 0 or self.target_horizon_months <= 0:
             raise ValueError("Las ventanas temporales deben ser positivas.")
         if not 1 <= self.target_min <= self.target_max:
@@ -234,8 +278,6 @@ class Settings:
             raise ValueError(
                 "MAX_WEIGHT_PER_POSITION * TARGET_MIN < 1: la cartera minima no puede llegar al 100 %."
             )
-        if self.max_price_age_days < 0:
-            raise ValueError("MAX_PRICE_AGE_DAYS no puede ser negativo.")
 
     @property
     def dev_mode(self) -> bool:

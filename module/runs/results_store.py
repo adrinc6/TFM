@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import platform
 import shutil
 import subprocess
@@ -23,6 +22,7 @@ import pandas as pd
 
 from environment import PROJECT_ROOT, Settings
 from module.common.utils import sha256_file, write_json, write_parquet
+from module.runs.code_fingerprint import combined_code_fingerprint
 
 
 RESULTS_ROOT = PROJECT_ROOT / "results"
@@ -58,7 +58,7 @@ def config_hash(
         "intent": dict(intent or {}),
         "grid_definition": dict(grid_definition or {}),
         "inputs": dict(inputs or {}),
-        "git_revision": git_revision(),
+        "code_fingerprint": combined_code_fingerprint(),
         "python": platform.python_version(),
     }
     return hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
@@ -183,7 +183,7 @@ class ResultsStore:
             "backtest_summary.json", "agent_scores.parquet", "meta_weights.parquet",
             "rank_ic_diagnostics.parquet", "annual_metrics.parquet", "positions.parquet",
             "orders.parquet", "equity.parquet", "model_feature_attribution.parquet",
-            "agent_local_attribution.parquet",
+            "agent_local_attribution.parquet", "feature_diagnostics.parquet", "feature_catalog.json",
             "profile_results.json", "robustness.json", "manifest.json",
         )
         published: list[str] = []
@@ -324,15 +324,23 @@ class ResultsStore:
         write_json(data, path)
 
     def find_completed_execution(self, reusable_digest: str) -> str | None:
-        """Devuelve un run terminado con mismos datos, código y configuración efectiva."""
+        """Devuelve un run terminado con mismos datos, código y configuración efectiva.
+
+        El ``execution_hash`` ya está indexado en cada línea de ``registry.jsonl``, así que se
+        resuelve por escaneo del índice sin reabrir cada ``run_manifest.json`` (O(runs) lecturas
+        de disco → una sola lectura del índice). Solo se cae al manifiesto para entradas antiguas
+        que no traigan el hash indexado (compatibilidad hacia atrás).
+        """
         for entry in reversed(list_registry(self.root)):
             if entry.get("status") != "succeeded":
                 continue
-            manifest_path = self.runs_root / str(entry["run_id"]) / "run_manifest.json"
-            if not manifest_path.exists():
-                continue
-            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-            if manifest.get("execution_hash") == reusable_digest:
+            digest = entry.get("execution_hash")
+            if digest is None:
+                manifest_path = self.runs_root / str(entry["run_id"]) / "run_manifest.json"
+                if not manifest_path.exists():
+                    continue
+                digest = json.loads(manifest_path.read_text(encoding="utf-8")).get("execution_hash")
+            if digest == reusable_digest:
                 return str(entry["run_id"])
         return None
 

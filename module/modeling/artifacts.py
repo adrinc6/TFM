@@ -102,6 +102,81 @@ def add_regime_extended(frame: pd.DataFrame, benchmark: pd.DataFrame) -> None:
 # ---- Calidad / crecimiento derivados -------------------------------------------------------
 QUALITY_GROWTH_SOURCES = ("qg_roe_trend", "qg_margin_stability", "qg_growth_surprise")
 
+# Técnicos diarios calculados de OHLCV histórico, siempre hasta la fecha de snapshot.
+MARKET_RISK_SOURCES = (
+    "momentum_12_1", "realized_vol_63d", "realized_vol_126d", "downside_vol_63d", "beta_252d",
+    "drawdown_252d", "max_drawdown_252d", "range_21d", "range_63d", "volume_relative",
+    "volume_volatility", "amihud_illiquidity", "gap_21d",
+)
+
+
+def add_market_risk_liquidity(
+    frame: pd.DataFrame, prices: pd.DataFrame | None, benchmark_ticker: str,
+    risk_windows: tuple[int, ...] = (63, 126, 252), technical_windows: tuple[int, ...] = (21, 63, 252),
+) -> None:
+    """Añade factores técnicos diarios con ``merge_asof`` por ticker, sin mirar al futuro."""
+    if prices is None or prices.empty or not {"ticker", "date", "adj_close"} <= set(prices):
+        for name in MARKET_RISK_SOURCES:
+            frame[name] = np.nan
+        return
+    raw = prices.copy()
+    risk_short, risk_long, beta_window = (list(risk_windows) + [63, 126, 252])[:3]
+    tech_short, tech_medium, tech_long = (list(technical_windows) + [21, 63, 252])[:3]
+    raw["date"] = pd.to_datetime(raw["date"], errors="coerce")
+    for column in ("adj_close", "open", "high", "low", "volume"):
+        raw[column] = pd.to_numeric(raw.get(column), errors="coerce")
+    raw = raw.dropna(subset=["ticker", "date", "adj_close"]).sort_values(["ticker", "date"])
+    benchmark = raw.loc[raw["ticker"] == benchmark_ticker, ["date", "adj_close"]].rename(
+        columns={"adj_close": "benchmark_close"}).sort_values("date")
+    daily: list[pd.DataFrame] = []
+    for ticker, group in raw.groupby("ticker", sort=False):
+        if ticker == benchmark_ticker:
+            continue
+        g = group.copy().sort_values("date")
+        g["ret"] = g["adj_close"].pct_change()
+        g["momentum_12_1"] = g["adj_close"].shift(tech_short) / g["adj_close"].shift(tech_long) - 1
+        g["realized_vol_63d"] = g["ret"].rolling(risk_short, min_periods=max(15, risk_short // 3)).std() * np.sqrt(252)
+        g["realized_vol_126d"] = g["ret"].rolling(risk_long, min_periods=max(15, risk_long // 3)).std() * np.sqrt(252)
+        g["downside_vol_63d"] = g["ret"].where(g["ret"] < 0).rolling(risk_short, min_periods=15).std() * np.sqrt(252)
+        peak = g["adj_close"].rolling(beta_window, min_periods=tech_short).max()
+        g["drawdown_252d"] = g["adj_close"] / peak - 1
+        g["max_drawdown_252d"] = g["drawdown_252d"].rolling(beta_window, min_periods=tech_short).min()
+        intraday = (g["high"] - g["low"]) / g["adj_close"]
+        g["range_21d"] = intraday.rolling(tech_short, min_periods=max(5, tech_short // 3)).mean()
+        g["range_63d"] = intraday.rolling(tech_medium, min_periods=max(5, tech_medium // 3)).mean()
+        g["volume_relative"] = g["volume"].rolling(tech_short, min_periods=5).mean() / g["volume"].rolling(tech_long, min_periods=tech_short).mean() - 1
+        g["volume_volatility"] = np.log(g["volume"].where(g["volume"] > 0)).rolling(tech_medium, min_periods=15).std()
+        g["amihud_illiquidity"] = (g["ret"].abs() / (g["adj_close"] * g["volume"])).rolling(tech_short, min_periods=5).mean()
+        g["gap_21d"] = (g["open"] / g["adj_close"].shift() - 1).abs().rolling(tech_short, min_periods=5).mean()
+        g["beta_252d"] = np.nan  # se rellena tras sincronizar la serie del benchmark.
+        daily.append(g[["ticker", "date", *MARKET_RISK_SOURCES]])
+    if not daily:
+        for name in MARKET_RISK_SOURCES:
+            frame[name] = np.nan
+        return
+    tech = pd.concat(daily, ignore_index=True).sort_values(["date", "ticker"])
+    snapshots = frame[["ticker", "snapshot_date"]].copy()
+    snapshots["_row"] = np.arange(len(snapshots))
+    snapshots["snapshot_date"] = pd.to_datetime(snapshots["snapshot_date"])
+    merged = pd.merge_asof(snapshots.sort_values(["snapshot_date", "ticker"]), tech,
+                           left_on="snapshot_date", right_on="date", by="ticker", direction="backward")
+    merged = merged.sort_values("_row")
+    for name in MARKET_RISK_SOURCES:
+        frame[name] = merged[name].to_numpy()
+    # Beta necesita retornos de acción y benchmark sincronizados; se calcula tras el merge diario.
+    beta_rows = []
+    for ticker, group in raw.loc[raw["ticker"] != benchmark_ticker].groupby("ticker", sort=False):
+        g = pd.merge_asof(group[["date", "adj_close"]].sort_values("date"), benchmark,
+                          on="date", direction="backward").dropna()
+        returns = pd.DataFrame({"asset": g["adj_close"].pct_change(), "benchmark": g["benchmark_close"].pct_change()})
+        beta = returns["asset"].rolling(beta_window, min_periods=risk_short).cov(returns["benchmark"]) / returns["benchmark"].rolling(beta_window, min_periods=risk_short).var()
+        beta_rows.append(pd.DataFrame({"ticker": ticker, "date": g["date"], "beta_252d": beta}))
+    if beta_rows:
+        beta = pd.concat(beta_rows).sort_values(["date", "ticker"])
+        beta_join = pd.merge_asof(snapshots.sort_values(["snapshot_date", "ticker"]), beta,
+                                  left_on="snapshot_date", right_on="date", by="ticker", direction="backward")
+        frame["beta_252d"] = beta_join.sort_values("_row")["beta_252d"].to_numpy()
+
 
 def add_quality_growth_derived(frame: pd.DataFrame) -> None:
     """Tendencia y estabilidad de los fundamentales, point-in-time por ticker.

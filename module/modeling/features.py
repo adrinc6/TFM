@@ -6,7 +6,7 @@ import logging
 
 import pandas as pd
 
-from environment import Settings
+from environment import MAX_PRICE_AGE_DAYS, NEUTRALIZE_MIN_GROUP, Settings
 from module.data.baselines import build_baseline_scores
 from module.data.dataset import snapshot_dates
 from module.common.utils import read_parquet, write_json, write_parquet
@@ -20,14 +20,33 @@ FACTOR_SOURCES = {
     "operating_margin": ("factor_operating_margin", True, False),
     "gross_margin": ("factor_gross_margin", True, False),
     "fcf_margin": ("factor_fcf_margin", True, False),
+    "roa": ("factor_roa", True, False),
+    "rotc": ("factor_rotc", True, False),
+    "pretax_margin": ("factor_pretax_margin", True, False),
+    "asset_turnover": ("factor_asset_turnover", True, False),
+    "inventory_turnover": ("factor_inventory_turnover", True, False),
+    "receivables_turnover": ("factor_receivables_turnover", True, False),
+    "sga_to_sales": ("factor_sga_to_sales", False, False),
     "debt_equity": ("factor_debt_equity", False, False),
+    "debt_assets": ("factor_debt_assets", False, False),
+    "debt_capital": ("factor_debt_capital", False, False),
+    "long_debt_equity": ("factor_long_debt_equity", False, False),
+    "long_debt_assets": ("factor_long_debt_assets", False, False),
+    "long_debt_capital": ("factor_long_debt_capital", False, False),
+    "net_debt_equity": ("factor_net_debt_equity", False, False),
+    "net_debt_capital": ("factor_net_debt_capital", False, False),
     "current_ratio": ("factor_current_ratio", True, False),
+    "quick_ratio": ("factor_quick_ratio", True, False),
+    "cash_ratio": ("factor_cash_ratio", True, False),
     "eps_growth_yoy": ("factor_eps_growth_yoy", True, False),
     "sales_per_share_growth_yoy": ("factor_sales_per_share_growth_yoy", True, False),
     "pe": ("factor_pe", False, True),
     "pb": ("factor_pb", False, True),
     "ps": ("factor_ps", False, True),
     "ev_ebitda": ("factor_ev_ebitda", False, True),
+    "ev_revenue": ("factor_ev_revenue", False, True),
+    "pfcf": ("factor_pfcf", False, True),
+    "ptbv": ("factor_ptbv", False, True),
 }
 
 
@@ -37,6 +56,8 @@ def build_features(settings: Settings) -> pd.DataFrame:
     panel = read_parquet(output_dir / "panel_point_in_time.parquet", "RUN_MODE='dataset'")
     benchmark = read_parquet(output_dir / "benchmark_point_in_time.parquet", "RUN_MODE='dataset'")
     asset_prices = read_parquet(output_dir / "asset_price_point_in_time.parquet", "RUN_MODE='dataset'")
+    raw_prices_path = settings.raw_output_dir / "prices.parquet"
+    raw_prices = pd.read_parquet(raw_prices_path) if raw_prices_path.exists() else None
     if benchmark.empty:
         raise RuntimeError(
             f"El benchmark {settings.benchmark_ticker} no tiene precios PIT. "
@@ -44,7 +65,7 @@ def build_features(settings: Settings) -> pd.DataFrame:
         )
 
     sector_by_ticker = _load_sector_map(settings) if settings.neutralize_by_sector else {}
-    features = _build_feature_frame(panel, benchmark, settings, sector_by_ticker, asset_prices)
+    features = _build_feature_frame(panel, benchmark, settings, sector_by_ticker, asset_prices, raw_prices)
     targets = _build_targets(features, asset_prices, benchmark, settings)
     baselines = build_baseline_scores(features)
 
@@ -69,6 +90,43 @@ MOMENTUM_SOURCES = ("roe", "roic", "net_margin", "operating_margin", "eps_growth
 # Factores B3 que se suman a los agentes cuando fundamental_momentum esta activo.
 MOMENTUM_FACTORS_QUALITY = tuple(f"factor_mom_{name}" for name in MOMENTUM_SOURCES)
 MOMENTUM_FACTORS_VALUE = ("factor_pe_fundamental_component", "factor_pe_price_component")
+
+DERIVED_GROWTH_SOURCES = (
+    "earnings_yield", "fcf_yield", "cash_conversion", "eps_growth_acceleration",
+    "sales_growth_acceleration", "ebitda_growth_acceleration", "fcf_growth_acceleration",
+    "roe_trend", "roic_trend", "margin_stability", "roe_stability",
+)
+
+
+def _add_extended_fundamentals(frame: pd.DataFrame) -> pd.DataFrame:
+    """Factores derivados de publicaciones ya visibles; no consulta ni adelanta datos."""
+    frame = frame.sort_values(["ticker", "snapshot_date"]).copy()
+    for ratio, target in (("pe", "earnings_yield"), ("pfcf", "fcf_yield")):
+        values = pd.to_numeric(frame[ratio], errors="coerce") if ratio in frame else pd.Series(float("nan"), index=frame.index)
+        frame[target] = (1.0 / values).where(values.gt(0))
+    eps = pd.to_numeric(frame["eps"], errors="coerce") if "eps" in frame else pd.Series(float("nan"), index=frame.index)
+    fcf = pd.to_numeric(frame["fcf_per_share"], errors="coerce") if "fcf_per_share" in frame else pd.Series(float("nan"), index=frame.index)
+    frame["cash_conversion"] = (fcf / eps).where(eps.gt(0))
+    by_ticker = frame.groupby("ticker", sort=False)
+    growth_pairs = (
+        ("eps_growth_yoy", "eps_growth_acceleration"),
+        ("sales_per_share_growth_yoy", "sales_growth_acceleration"),
+        ("ebitda_growth_yoy", "ebitda_growth_acceleration"),
+        ("fcf_per_share_growth_yoy", "fcf_growth_acceleration"),
+    )
+    for source, target in growth_pairs:
+        frame[target] = by_ticker[source].diff() if source in frame else float("nan")
+    for source, target in (("roe", "roe_trend"), ("roic", "roic_trend")):
+        values = pd.to_numeric(frame[source], errors="coerce") if source in frame else pd.Series(float("nan"), index=frame.index)
+        past = values.groupby(frame["ticker"]).transform(lambda s: s.shift().rolling(4, min_periods=2).mean())
+        frame[target] = values - past
+    roe = pd.to_numeric(frame["roe"], errors="coerce") if "roe" in frame else pd.Series(float("nan"), index=frame.index)
+    margin = pd.to_numeric(frame["net_margin"], errors="coerce") if "net_margin" in frame else pd.Series(float("nan"), index=frame.index)
+    frame["roe_stability"] = -roe.groupby(frame["ticker"]).transform(
+        lambda s: s.shift().rolling(4, min_periods=2).std())
+    frame["margin_stability"] = -margin.groupby(frame["ticker"]).transform(
+        lambda s: s.shift().rolling(4, min_periods=2).std())
+    return frame
 
 
 def _add_fundamental_momentum(frame: pd.DataFrame) -> pd.DataFrame:
@@ -196,6 +254,7 @@ def _build_feature_frame(
     settings: Settings,
     sector_by_ticker: dict[str, str] | None = None,
     asset_prices: pd.DataFrame | None = None,
+    raw_prices: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     required_panel = {"ticker", "snapshot_date", "in_sp500", "price_age_days", "price_return_3m"}
     required_benchmark = {"snapshot_date", "price_age_days", "price_return_3m"}
@@ -216,19 +275,21 @@ def _build_feature_frame(
         }
     )
     frame = panel.merge(bench, on="snapshot_date", how="left", validate="many_to_one")
+    frame.attrs["metric_winsorization_percentile"] = settings.metric_winsorization_percentile
     frame["price_age_days"] = pd.to_numeric(frame["price_age_days"], errors="coerce")
     frame["benchmark_price_age_days"] = pd.to_numeric(
         frame["benchmark_price_age_days"], errors="coerce"
     )
     frame["is_price_fresh"] = (
         frame["in_sp500"].fillna(False).astype(bool)
-        & frame["price_age_days"].le(settings.max_price_age_days)
-        & frame["benchmark_price_age_days"].le(settings.max_price_age_days)
+        & frame["price_age_days"].le(MAX_PRICE_AGE_DAYS)
+        & frame["benchmark_price_age_days"].le(MAX_PRICE_AGE_DAYS)
     )
 
     # Artefactos activables que anaden columnas crudas (se rankean a factores mas abajo).
     if settings.fundamental_momentum:
         frame = _add_fundamental_momentum(frame)
+    frame = _add_extended_fundamentals(frame)
     if settings.price_momentum_multi:
         from module.modeling.artifacts import add_price_momentum_multi
         add_price_momentum_multi(frame)
@@ -241,13 +302,17 @@ def _build_feature_frame(
     if settings.quality_growth_derived:
         from module.modeling.artifacts import add_quality_growth_derived
         add_quality_growth_derived(frame)
+    if "price_risk" in settings.enabled_feature_blocks or "market_liquidity" in settings.enabled_feature_blocks:
+        from module.modeling.artifacts import add_market_risk_liquidity, MARKET_RISK_SOURCES
+        add_market_risk_liquidity(frame, raw_prices, settings.benchmark_ticker,
+                                  tuple(settings.risk_feature_windows), tuple(settings.technical_feature_windows))
 
     # Grupo de neutralizacion: sector si B1 esta activo, si no un unico grupo global.
     sector_by_ticker = sector_by_ticker or {}
     frame["_group"] = (
         frame["ticker"].map(sector_by_ticker).fillna("N/A") if sector_by_ticker else "ALL"
     )
-    min_group = settings.neutralize_min_group if settings.neutralize_by_sector else 0
+    min_group = NEUTRALIZE_MIN_GROUP if settings.neutralize_by_sector else 0
 
     for horizon in (3, 6, 12):
         stock = pd.to_numeric(frame[f"price_return_{horizon}m"], errors="coerce")
@@ -259,11 +324,20 @@ def _build_feature_frame(
         )
 
     for source, (factor, ascending, positive_only) in FACTOR_SOURCES.items():
+        if source not in frame:
+            frame[factor] = float("nan")
+            continue
         values = pd.to_numeric(frame[source], errors="coerce")
         if positive_only:
             values = values.where(values.gt(0))
         values = values.where(frame["is_price_fresh"])
         frame[factor] = _cross_section_rank(frame, values, ascending=ascending, min_group=min_group)
+
+    # Derivados extendidos: todos mayor=mejor tras sus transformaciones económicas.
+    for source in DERIVED_GROWTH_SOURCES:
+        values = (pd.to_numeric(frame[source], errors="coerce") if source in frame
+                  else pd.Series(float("nan"), index=frame.index)).where(frame["is_price_fresh"])
+        frame[f"factor_{source}"] = _cross_section_rank(frame, values, ascending=True, min_group=min_group)
 
     # B3: rankear las features de tendencia y descomposicion (mayor = mejor en todas: fundamental
     # que sube, y componente-fundamental positivo = barato por mejora del negocio, no por precio).
@@ -291,10 +365,18 @@ def _build_feature_frame(
     if settings.quality_growth_derived:
         from module.modeling.artifacts import QUALITY_GROWTH_SOURCES
         artifact_sources += list(QUALITY_GROWTH_SOURCES)
+    if "price_risk" in settings.enabled_feature_blocks or "market_liquidity" in settings.enabled_feature_blocks:
+        from module.modeling.artifacts import MARKET_RISK_SOURCES
+        artifact_sources += list(MARKET_RISK_SOURCES)
     for source in artifact_sources:
         values = pd.to_numeric(frame[source], errors="coerce").where(frame["is_price_fresh"])
+        lower_is_better = source in {
+            "realized_vol_63d", "realized_vol_126d", "downside_vol_63d", "beta_252d",
+            "drawdown_252d", "max_drawdown_252d", "range_21d", "range_63d",
+            "volume_volatility", "amihud_illiquidity", "gap_21d",
+        }
         frame[f"factor_{source}"] = _cross_section_rank(
-            frame, values, ascending=True, min_group=min_group
+            frame, values, ascending=not lower_is_better, min_group=min_group
         )
 
     # B5: regimen de mercado (bull/bear) + interacciones factor x regimen.
@@ -316,6 +398,16 @@ def _cross_section_rank(
     cae a ranking por fecha global para los grupos con menos de `min_group` miembros validos,
     porque un grupo diminuto da un percentil degenerado (un grupo de 1 siempre da 0.5).
     """
+    # Clip extremes independently within each snapshot before ranking.  It is
+    # deliberately done before sector neutralisation, so the same economically
+    # implausible outlier cannot dominate either global or sector ranks.  The
+    # percentile is carried on the frame by the feature builder, keeping the
+    # public helper signature compatible with existing callers/tests.
+    winsor = float(frame.attrs.get("metric_winsorization_percentile", 0.0))
+    if winsor > 0:
+        values = values.groupby(frame["snapshot_date"]).transform(
+            lambda series: series.clip(lower=series.quantile(winsor), upper=series.quantile(1 - winsor))
+        )
     if min_group <= 0:
         ranked = values.groupby(frame["snapshot_date"]).rank(
             method="average", pct=True, ascending=ascending
@@ -395,8 +487,8 @@ def _build_targets(
     )
     valid = (
         target["is_price_fresh"].fillna(False)
-        & target["future_price_age_days"].le(settings.max_price_age_days)
-        & target["future_benchmark_age_days"].le(settings.max_price_age_days)
+        & target["future_price_age_days"].le(MAX_PRICE_AGE_DAYS)
+        & target["future_benchmark_age_days"].le(MAX_PRICE_AGE_DAYS)
         & pd.to_numeric(target["price"], errors="coerce").gt(0)
         & pd.to_numeric(target["benchmark_price"], errors="coerce").gt(0)
     )
@@ -433,7 +525,7 @@ def _coverage(features: pd.DataFrame, baselines: pd.DataFrame, settings: Setting
     factor_columns.extend(["factor_relative_return_3m", "factor_relative_return_6m", "factor_relative_return_12m"])
     return {
         "run_scope": settings.run_scope,
-        "max_price_age_days": settings.max_price_age_days,
+        "max_price_age_days": MAX_PRICE_AGE_DAYS,
         "rows": len(features),
         "fresh_rows": int(features["is_price_fresh"].sum()),
         "factor_rows": {column: int(features[column].notna().sum()) for column in factor_columns},
