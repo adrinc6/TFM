@@ -12,9 +12,9 @@
 
   async function render(container, runId) {
     container.innerHTML = `
-      <div id="learn-chart"></div>
-      <h4>Aprendizaje por agente</h4><div id="learn-summary"></div>
-      <div id="learn-weights"></div>`;
+      <details><summary>Rank-IC por cohorte en el tiempo</summary><div id="learn-chart"></div></details>
+      <details><summary>Aprendizaje por agente</summary><div id="learn-summary"></div></details>
+      <details><summary>Evolución de pesos del meta-agente</summary><div id="learn-weights"></div></details>`;
     let data;
     try { data = await api("/api/learning?run_id=" + encodeURIComponent(runId)); }
     catch (e) { container.innerHTML = `<div class="notice">${escapeHtml(e.message)}</div>`; return; }

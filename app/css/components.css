@@ -102,6 +102,61 @@ details pre {
 .metric-label { color: var(--muted); font-size: 12px; margin-top: 2px; }
 .positive { color: var(--pos); }
 .negative { color: var(--neg); }
+
+/* Cabeceras de tabla ordenables + indicador de dirección */
+table.data th.sortable { cursor: pointer; user-select: none; }
+table.data th.sortable:hover { color: var(--ink-soft); }
+table.data th.sort-asc::after { content: " ▲"; font-size: 9px; color: var(--muted); }
+table.data th.sort-desc::after { content: " ▼"; font-size: 9px; color: var(--muted); }
+
+/* Marcador de ayuda (tooltip) junto a una etiqueta de métrica */
+.hint-dot {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 13px; height: 13px; border-radius: 50%; font-size: 9px; font-weight: 700;
+  background: var(--surface3); color: var(--muted); cursor: help; vertical-align: middle;
+}
+[title] { cursor: help; }
+table.data th[title] { cursor: pointer; }
+
+/* Buscador de tabla */
+.table-search {
+  margin: 0 0 8px; padding: 7px 10px; width: 100%; max-width: 280px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 8px; color: var(--ink);
+}
+
+/* Comparativa de runs de un study por fases: barra de rank-IC + tarjetitas de métricas */
+.phase-list { display: flex; flex-direction: column; gap: 8px; padding: 6px 0; }
+.phase-row {
+  display: flex; align-items: center; gap: 14px; padding: 8px 10px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--surface);
+}
+.phase-row.click { cursor: pointer; }
+.phase-row.click:hover { border-color: var(--line-strong); background: var(--surface2); }
+.bar-track {
+  position: relative; flex: 1 1 auto; min-width: 120px; height: 26px;
+  background: var(--surface2); border-radius: 6px; overflow: hidden;
+}
+.bar-fill { position: absolute; top: 0; left: 0; height: 100%; border-radius: 6px; }
+.bar-fill.bar-pos { background: var(--series-4); }
+.bar-fill.bar-neg { background: var(--series-neg); }
+.bar-value {
+  position: absolute; left: 8px; right: 8px; top: 50%; transform: translateY(-50%);
+  font-size: 11.5px; font-weight: 600; color: var(--ink); text-shadow: 0 0 4px rgba(0,0,0,0.6);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mini-cards { display: flex; gap: 8px; flex: 0 0 auto; }
+.mini-card {
+  min-width: 82px; padding: 5px 8px; border-radius: 6px; background: var(--surface2);
+  border: 1px solid var(--line); text-align: center;
+}
+.mini-value { font-size: 14px; font-weight: 700; }
+.mini-value.positive { color: var(--pos); }
+.mini-value.negative { color: var(--neg); }
+.mini-label { font-size: 10px; color: var(--muted); margin-top: 1px; }
+@media (max-width: 640px) {
+  .phase-row { flex-direction: column; align-items: stretch; }
+  .mini-cards { justify-content: space-between; }
+}
 .hidden { display: none !important; }
 
 /* --- Pestañas de análisis --- */
@@ -142,6 +197,15 @@ details pre {
 
 .list-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .list-header .count { color: var(--faint); font-size: 12px; }
+
+/* Barra superior de las tablas grandes de Resultados */
+.list-toolbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  margin-bottom: 16px; flex-wrap: wrap;
+}
+.list-toolbar .count { color: var(--faint); font-size: 12px; display: block; margin-top: 2px; }
+.toolbar-actions { display: flex; gap: 10px; align-items: center; }
+.toolbar-actions input { min-width: 220px; }
 
 .empty { color: var(--muted); padding: 20px; text-align: center; }
 

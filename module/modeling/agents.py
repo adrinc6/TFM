@@ -70,7 +70,9 @@ def build_agent_scores(settings: Settings) -> pd.DataFrame:
             "No se pudieron entrenar agentes con la historia disponible. "
             "Revisa la cobertura de features, etiquetas y el mínimo de filas de entrenamiento."
         )
-    meta_scores, weights, diagnostics = combine_agent_scores(predictions, targets, settings)
+    regime_bull_by_date = _regime_bull_by_date(output_dir) if settings.meta_type == "regime" else None
+    meta_scores, weights, diagnostics = combine_agent_scores(
+        predictions, targets, settings, regime_bull_by_date=regime_bull_by_date)
     wide = _wide_scores(predictions, meta_scores)
 
     write_parquet(wide, run_dir / "agent_scores.parquet")
@@ -81,6 +83,21 @@ def build_agent_scores(settings: Settings) -> pd.DataFrame:
     write_json(_manifest(settings, feature_path, target_path, predictions, run_dir), run_dir / "manifest.json")
     log.info("Agentes: rows=%s runs=%s output=%s", len(wide), wide["snapshot_date"].nunique(), run_dir)
     return wide
+
+
+def _regime_bull_by_date(output_dir: Path) -> dict[str, bool]:
+    """Régimen bull/bear por snapshot: True si el benchmark subió a 12m hasta esa fecha.
+
+    Point-in-time: usa `price_return_12m` del benchmark, que solo mira el pasado. Lo consume el
+    meta_type="regime" para inclinar los pesos de los agentes. Si falta el benchmark, devuelve
+    vacío y el modo regime recae en rank_ic.
+    """
+    path = output_dir / "benchmark_point_in_time.parquet"
+    if not path.exists():
+        return {}
+    bench = pd.read_parquet(path)
+    ret12 = pd.to_numeric(bench["price_return_12m"], errors="coerce")
+    return {str(date): bool(value > 0) for date, value in zip(bench["snapshot_date"], ret12) if pd.notna(value)}
 
 
 def _agent_features(frame: pd.DataFrame, settings: Settings) -> dict[str, list[str]]:
@@ -222,17 +239,42 @@ def _build_model(settings: Settings):
     return LGBMRegressor(**common)
 
 
+def _recency_weights(train: pd.DataFrame, settings: Settings) -> pd.Series | None:
+    """Peso por fila según la antigüedad de su snapshot dentro de la ventana de entrenamiento.
+
+    Da más peso a los años recientes. Devuelve None cuando `recency_weighting == "off"` (todas las
+    filas pesan igual, comportamiento por defecto). La antigüedad se mide en años respecto al
+    snapshot más reciente de la ventana:
+      - "linear":      peso = (span_años + 1) - antigüedad_años  (reciente pesa más, mínimo ~1).
+      - "exponential": peso = 0.5 ** (antigüedad_años / half_life).
+    """
+    if settings.recency_weighting == "off":
+        return None
+    dates = pd.to_datetime(train["snapshot_date"])
+    age_years = (dates.max() - dates) / pd.Timedelta(days=365.25)
+    if settings.recency_weighting == "linear":
+        span = float(age_years.max())
+        weights = (span + 1.0) - age_years
+    else:  # exponential
+        weights = 0.5 ** (age_years / settings.recency_halflife_years)
+    return weights.clip(lower=1e-6)
+
+
 def _fit_model(model, train: pd.DataFrame, columns: list[str], target: pd.Series, settings: Settings) -> None:
     """Ajusta el modelo. El LGBMRanker necesita `group` = nº de filas por snapshot, y que las
     filas esten agrupadas (contiguas) por snapshot; el resto de objetivos se ajustan directo.
+    Con `recency_weighting` activo se pasa `sample_weight` (mayor peso a lo reciente).
     """
+    weights = _recency_weights(train, settings)
     if settings.objective == "ranking":
         order = train.sort_values("snapshot_date").index
         ordered = train.loc[order]
         group = ordered.groupby("snapshot_date", sort=True).size().to_numpy()
-        model.fit(ordered[columns], target.loc[order], group=group)
+        sample_weight = weights.loc[order].to_numpy() if weights is not None else None
+        model.fit(ordered[columns], target.loc[order], group=group, sample_weight=sample_weight)
     else:
-        model.fit(train[columns], target)
+        sample_weight = weights.to_numpy() if weights is not None else None
+        model.fit(train[columns], target, sample_weight=sample_weight)
 
 
 def _score(model, features: pd.DataFrame, settings: Settings) -> np.ndarray:

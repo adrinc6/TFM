@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import mimetypes
 import threading
 import traceback
@@ -59,7 +60,7 @@ APP_ROOT = (PROJECT_ROOT / "app").resolve()
 # metodológicamente admitidas; Experimental sigue permitiendo ajustar valores individuales.
 SETTINGS_GROUPS = {
     "Periodo y entrenamiento": ["execution_year", "execution_quarter", "execution_lag_days", "train_lookback_years", "snapshot_step_months", "fundamental_step_months", "snapshot_day", "target_horizon_months", "max_price_age_days", "meta_ic_lookback_quarters"],
-    "Modelo LightGBM": ["objective", "lgbm_n_estimators", "lgbm_max_depth", "lgbm_learning_rate", "lgbm_min_child_samples", "random_seed", "meta_type"],
+    "Modelo LightGBM": ["objective", "lgbm_n_estimators", "lgbm_max_depth", "lgbm_learning_rate", "lgbm_min_child_samples", "random_seed", "meta_type", "recency_weighting"],
     "Artefactos": ["neutralize_by_sector", "neutralize_min_group", "fundamental_momentum", "market_regime_feature", "price_momentum_multi", "moving_averages", "regime_extended", "quality_growth_derived"],
     "Cartera y perfil": ["target_min", "target_max", "entry_min_percentile", "min_hold_percentile", "rotation_edge_percentiles", "max_weight_per_position", "commission_bps", "slippage_bps", "rebalance_drift_tolerance", "max_monthly_position_return", "profile"],
 }
@@ -70,10 +71,10 @@ from escenarios.variables import STUDY_OPTIONS
 
 EXPERIMENT_PRESETS = {
     "training": [
-        {"id": "baseline", "label": "Baseline 2016 · 10 años · 3 meses", "overrides": {"execution_year": 2016, "train_lookback_years": 10, "target_horizon_months": 3, "fundamental_step_months": 3}},
-        {"id": "early", "label": "Era temprana 2012 · 10 años · 3 meses", "overrides": {"execution_year": 2012, "train_lookback_years": 10, "target_horizon_months": 3, "fundamental_step_months": 3}},
-        {"id": "medium", "label": "Ventana media 2016 · 8 años · 3 meses", "overrides": {"execution_year": 2016, "train_lookback_years": 8, "target_horizon_months": 3, "fundamental_step_months": 3}},
-        {"id": "long", "label": "Ventana larga 2016 · 12 años · 6 meses", "overrides": {"execution_year": 2016, "train_lookback_years": 12, "target_horizon_months": 6, "fundamental_step_months": 6}},
+        {"id": "baseline", "label": "Baseline 2015 · 8 años · reentreno 3m · horizonte 6m", "overrides": {"train_lookback_years": 8, "target_horizon_months": 6, "fundamental_step_months": 3}},
+        {"id": "short", "label": "Ventana corta 2015 · 4 años · horizonte 6m", "overrides": {"train_lookback_years": 4, "target_horizon_months": 6, "fundamental_step_months": 3}},
+        {"id": "long", "label": "Ventana larga 2015 · 12 años · horizonte 6m", "overrides": {"train_lookback_years": 12, "target_horizon_months": 6, "fundamental_step_months": 6}},
+        {"id": "recency", "label": "Baseline + pesos de recencia (exponencial)", "overrides": {"train_lookback_years": 8, "target_horizon_months": 6, "recency_weighting": "exponential"}},
     ],
     "portfolio": [
         {"id": "compact", "label": "Concentrada · 5–8 posiciones · peso máx. 20 %", "overrides": {"target_min": 5, "target_max": 8, "max_weight_per_position": 0.20, "entry_min_percentile": 85, "min_hold_percentile": 55, "rotation_edge_percentiles": 8}},
@@ -206,8 +207,24 @@ def _settings_from_payload(payload: dict) -> Settings:
     return Settings(**defaults)
 
 
+def _sanitize_json(value):
+    """Sustituye NaN/Infinity por None de forma recursiva.
+
+    `json.dumps` los escribe como tokens literales (`NaN`, `Infinity`), que son JSON inválido y
+    `JSON.parse` del navegador rechaza (rompía p. ej. la vista Cartera, con NaN en el lifecycle).
+    Se sanean aquí, en el punto central, para cubrir todos los endpoints.
+    """
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if isinstance(value, dict):
+        return {key: _sanitize_json(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_sanitize_json(item) for item in value]
+    return value
+
+
 def _json(handler: BaseHTTPRequestHandler, payload, status: int = 200) -> None:
-    data = json.dumps(payload, ensure_ascii=False, default=str).encode("utf-8")
+    data = json.dumps(_sanitize_json(payload), ensure_ascii=False, default=str).encode("utf-8")
     handler.send_response(status)
     handler.send_header("Content-Type", "application/json; charset=utf-8")
     handler.send_header("Content-Length", str(len(data)))
@@ -273,7 +290,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
             return self._table(query.get("run_id", [""])[0], "agent_scores.parquet", query)
         if parsed.path == "/api/portfolio":
             query = parse_qs(parsed.query)
-            return self._table(query.get("run_id", [""])[0], "position_lifecycle.parquet", query)
+            return self._portfolio(query.get("run_id", [""])[0], query)
         if parsed.path == "/api/learning":
             query = parse_qs(parsed.query)
             return self._learning(query.get("run_id", [""])[0])
@@ -322,6 +339,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
         payload = json.loads(manifest.read_text(encoding="utf-8"))
         summary = run_dir / "artifacts" / "backtest_summary.json"
         payload["summary"] = json.loads(summary.read_text(encoding="utf-8")) if summary.exists() else {}
+        # Robustez multi-era (bootstrap por bloques + leave-one-year-out): evidencia de primer nivel
+        # sobre el aprendizaje. Solo existe en el finalista de un study.
+        robustness = run_dir / "artifacts" / "robustness.json"
+        payload["robustness"] = json.loads(robustness.read_text(encoding="utf-8")) if robustness.exists() else {}
         payload["artifacts"] = [str(p.relative_to(run_dir / "artifacts")).replace("\\", "/")
                                 for p in (run_dir / "artifacts").rglob("*") if p.is_file()]
         _json(self, payload)
@@ -342,9 +363,19 @@ class DashboardHandler(BaseHTTPRequestHandler):
         decision = json.loads(decision_path.read_text(encoding="utf-8")) if decision_path.exists() else {}
         # Runs miembros: se toman del registro por study_id (no hace falta abrir cada manifest).
         members = [entry for entry in list_registry() if entry.get("study_id") == study_id]
+        # Comparativa por fases: comparison_data.parquet ya lleva la columna `phase` y las métricas
+        # por escenario; se expone para que la app agrupe la comparativa por fase.
+        comparison_path = directory / "comparison_data.parquet"
+        comparison = (pd.read_parquet(comparison_path).to_dict("records")
+                      if comparison_path.exists() else [])
+        # Los estudios que se publicaron antes de que la comparativa incluyera las fases
+        # económicas pueden tener 1--3 en el parquet aunque su decisión sí conserva los
+        # runs de cartera y perfiles. Los reconstruimos para que la consola muestre el ciclo
+        # completo sin alterar los resultados inmutables del estudio.
+        comparison = _complete_phase_comparison(comparison, decision)
         return _json(self, {"manifest": manifest, "run_ids": run_ids.get("run_ids", []),
                             "reused_run_ids": run_ids.get("reused_run_ids", []),
-                            "decision": decision, "runs": members})
+                            "decision": decision, "runs": members, "comparison": comparison})
 
     def _table(self, run_id: str, name: str, query: dict[str, list[str]]) -> None:
         path = _safe_run(run_id) / "artifacts" / name
@@ -374,6 +405,9 @@ class DashboardHandler(BaseHTTPRequestHandler):
             positions = positions.loc[positions["ticker"].astype(str).str.upper() == ticker.upper()]
         if not orders.empty:
             orders = orders.loc[orders["ticker"].astype(str).str.upper() == ticker.upper()]
+            # P&L realizado en las ventas (mismo cálculo que la vista de trades): sin esto el
+            # historial de la acción mostraba las ventas sin su ganancia.
+            orders = self._attach_realized_pnl(artifacts, orders)
         prices = pd.read_parquet(prices_path) if prices_path.exists() else pd.DataFrame()
         if not prices.empty:
             prices = prices.loc[prices["ticker"].astype(str).str.upper() == ticker.upper()]
@@ -396,7 +430,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
         scores_path = _safe_run(run_id) / "artifacts" / "agent_scores.parquet"
         scores = pd.read_parquet(scores_path) if scores_path.exists() else pd.DataFrame()
         dates = pd.to_datetime(scores.get("snapshot_date", pd.Series(dtype="datetime64[ns]")), errors="coerce").dropna()
-        _json(self, {"compatible": True, "tickers": values[:100], "total": len(values),
+        # Con búsqueda se devuelven todas las coincidencias (se puede buscar cualquier acción del
+        # universo); sin filtro se limita el listado para el datalist inicial.
+        shown = values if needle else values[:400]
+        _json(self, {"compatible": True, "tickers": shown, "total": len(values),
                      "metrics": STOCK_METRICS,
                      "oos_start": dates.min().date().isoformat() if not dates.empty else None,
                      "oos_end": dates.max().date().isoformat() if not dates.empty else None})
@@ -520,20 +557,145 @@ class DashboardHandler(BaseHTTPRequestHandler):
         annual = pd.read_parquet(artifacts / "annual_metrics.parquet") if (artifacts / "annual_metrics.parquet").exists() else pd.DataFrame()
         _json(self, {"equity": equity.to_dict("records"), "annual": annual.to_dict("records")})
 
+    def _portfolio(self, run_id: str, query: dict[str, list[str]]) -> None:
+        """Composición de una fecha y desenlace posterior de sus posiciones.
+
+        No usa el límite genérico de tablas: el selector necesita todas las fechas, pero cada
+        respuesta solo devuelve las posiciones de una composición.
+        """
+        artifacts = _safe_run(run_id) / "artifacts"
+        lifecycle_path = artifacts / "position_lifecycle.parquet"
+        orders_path = artifacts / "orders.parquet"
+        if not lifecycle_path.exists():
+            return _json(self, {"dates": [], "selected_date": None, "is_latest": True, "rows": []})
+        lifecycle = pd.read_parquet(lifecycle_path).copy()
+        if lifecycle.empty or "snapshot_date" not in lifecycle:
+            return _json(self, {"dates": [], "selected_date": None, "is_latest": True, "rows": []})
+        lifecycle["snapshot_date"] = pd.to_datetime(lifecycle["snapshot_date"], errors="coerce")
+        lifecycle["entry_date"] = pd.to_datetime(lifecycle["entry_date"], errors="coerce")
+        lifecycle = lifecycle.dropna(subset=["snapshot_date"])
+        lifecycle["ticker_key"] = lifecycle["ticker"].astype(str).str.upper()
+        dates = sorted(lifecycle["snapshot_date"].dt.strftime("%Y-%m-%d").unique().tolist())
+        requested = query.get("date", [""])[0]
+        selected_date = requested if requested in dates else (dates[-1] if dates else None)
+        if not selected_date:
+            return _json(self, {"dates": [], "selected_date": None, "is_latest": True, "rows": []})
+        selected_at = pd.Timestamp(selected_date)
+        selected = lifecycle.loc[lifecycle["snapshot_date"] == selected_at].copy()
+        orders = pd.read_parquet(orders_path).copy() if orders_path.exists() else pd.DataFrame()
+        if not orders.empty:
+            orders["snapshot_date"] = pd.to_datetime(orders["snapshot_date"], errors="coerce")
+            orders["ticker_key"] = orders["ticker"].astype(str).str.upper()
+        buys = orders.loc[orders.get("side", pd.Series(dtype=str)) == "buy"] if not orders.empty else pd.DataFrame()
+        rows: list[dict] = []
+        for position in selected.sort_values("weight", ascending=False).to_dict("records"):
+            ticker = position["ticker_key"]
+            entry_at = pd.Timestamp(position["entry_date"]) if pd.notna(position.get("entry_date")) else selected_at
+            reason = None
+            if not buys.empty:
+                matches = buys.loc[(buys["ticker_key"] == ticker) & (buys["snapshot_date"] == entry_at)]
+                if not matches.empty:
+                    reason = matches.iloc[-1].get("reason")
+            exit_order = pd.DataFrame()
+            if not orders.empty:
+                weight_after = (pd.to_numeric(orders["weight_after"], errors="coerce").fillna(0)
+                                if "weight_after" in orders else pd.Series(0.0, index=orders.index))
+                exits = orders.loc[(orders["ticker_key"] == ticker) & (orders["side"] == "sell")
+                                   & (orders["snapshot_date"] > selected_at)
+                                   & (weight_after <= 1e-12)]
+                exit_order = exits.sort_values("snapshot_date").head(1)
+            if not exit_order.empty:
+                exit_at = exit_order.iloc[0]["snapshot_date"]
+                final_price = exit_order.iloc[0].get("price")
+                months_held = max(0, round((exit_at - entry_at).days / 30.4375))
+            else:
+                exit_at, final_price = None, None
+                same_position = lifecycle.loc[(lifecycle["ticker_key"] == ticker)
+                                              & (lifecycle["entry_date"] == entry_at)
+                                              & (lifecycle["snapshot_date"] >= selected_at)].sort_values("snapshot_date")
+                if not same_position.empty:
+                    last_state = same_position.iloc[-1]
+                    final_price = last_state.get("valuation_price")
+                    months_held = last_state.get("months_held")
+                else:
+                    months_held = position.get("months_held")
+            entry_price = position.get("entry_price")
+            pnl = None
+            if pd.notna(entry_price) and pd.notna(final_price) and float(entry_price) != 0:
+                pnl = (float(final_price) / float(entry_price) - 1) * 100
+            rows.append({
+                "snapshot_date": selected_date, "ticker": position.get("ticker"),
+                "entry_date": entry_at.strftime("%Y-%m-%d"),
+                "entry_price": entry_price, "reason": reason, "weight": position.get("weight"),
+                "months_held": months_held,
+                "exit_date": exit_at.strftime("%Y-%m-%d") if exit_at is not None else None,
+                "final_price": final_price, "pnl_pct": pnl,
+            })
+        _json(self, {"dates": dates, "selected_date": selected_date,
+                     "is_latest": selected_date == dates[-1], "rows": rows})
+
     def _trades(self, run_id: str, query: dict[str, list[str]]) -> None:
         artifacts = _safe_run(run_id) / "artifacts"
         path = artifacts / "orders.parquet"
         if not path.exists():
-            return _json(self, {"rows": [], "summary": {}})
+            return _json(self, {"rows": [], "summary": {}, "years": []})
         frame = pd.read_parquet(path)
+        frame["snapshot_date"] = pd.to_datetime(frame["snapshot_date"], errors="coerce")
+        # P&L realizado por venta: cada venta se empareja con el precio de entrada de esa posición
+        # (de position_lifecycle). Retorno = precio_venta / precio_entrada - 1.
+        frame = self._attach_realized_pnl(artifacts, frame)
+        years = sorted({int(d.year) for d in frame["snapshot_date"].dropna()})
+
+        # --- Filtros: año, rango de fechas, ticker ---
+        year = query.get("year", [""])[0]
+        if year:
+            frame = frame.loc[frame["snapshot_date"].dt.year == int(year)]
+        start = query.get("start", [""])[0]
+        end = query.get("end", [""])[0]
+        if start:
+            frame = frame.loc[frame["snapshot_date"] >= pd.Timestamp(start)]
+        if end:
+            frame = frame.loc[frame["snapshot_date"] <= pd.Timestamp(end)]
         ticker = query.get("ticker", [""])[0].upper()
         if ticker:
             frame = frame.loc[frame["ticker"].astype(str).str.upper().str.contains(ticker, na=False)]
-        summary = {"orders": int(len(frame)), "buys": int((frame["side"] == "buy").sum()),
-                   "sells": int((frame["side"] == "sell").sum()),
-                   "commission": float(frame.get("commission", pd.Series(dtype=float)).sum()),
-                   "slippage": float(frame.get("slippage", pd.Series(dtype=float)).sum())}
-        _json(self, {"rows": frame.head(2000).to_dict("records"), "summary": summary})
+
+        sells = frame.loc[frame["side"] == "sell"]
+        realized = pd.to_numeric(sells.get("realized_return_pct", pd.Series(dtype=float)), errors="coerce").dropna()
+        summary = {
+            "orders": int(len(frame)), "buys": int((frame["side"] == "buy").sum()),
+            "sells": int(len(sells)),
+            "commission": float(frame.get("commission", pd.Series(dtype=float)).sum()),
+            "slippage": float(frame.get("slippage", pd.Series(dtype=float)).sum()),
+            "sells_with_gain": int((realized > 0).sum()), "sells_with_loss": int((realized < 0).sum()),
+            "avg_realized_return_pct": float(realized.mean()) if not realized.empty else None,
+            "total_gain_pct": float(realized[realized > 0].sum()) if not realized.empty else 0.0,
+            "total_loss_pct": float(realized[realized < 0].sum()) if not realized.empty else 0.0,
+        }
+        _json(self, {"rows": frame.head(2000).to_dict("records"), "summary": summary, "years": years})
+
+    @staticmethod
+    def _attach_realized_pnl(artifacts: Path, orders: pd.DataFrame) -> pd.DataFrame:
+        """Añade realized_return_pct a las ventas usando el precio de entrada del lifecycle."""
+        lifecycle_path = artifacts / "position_lifecycle.parquet"
+        orders = orders.copy()
+        orders["realized_return_pct"] = None
+        if not lifecycle_path.exists() or "price" not in orders:
+            return orders
+        lifecycle = pd.read_parquet(lifecycle_path)
+        if "entry_price" not in lifecycle or lifecycle.empty:
+            return orders
+        # Precio de entrada más reciente por ticker (una posición se mantiene hasta que se vende).
+        entries = lifecycle.dropna(subset=["entry_price"]).sort_values("snapshot_date").drop_duplicates("ticker", keep="last")
+        entry_by_ticker = {str(t).upper(): p for t, p in zip(entries["ticker"], entries["entry_price"])}
+        sell_mask = orders["side"] == "sell"
+        for idx in orders.loc[sell_mask].index:
+            ticker = str(orders.at[idx, "ticker"]).upper()
+            entry = entry_by_ticker.get(ticker)
+            price = orders.at[idx, "price"]
+            if entry and pd.notna(price) and float(entry) > 0:
+                orders.at[idx, "realized_return_pct"] = (float(price) / float(entry) - 1.0) * 100.0
+        return orders
 
     def _artifact(self, relative: str) -> None:
         candidate = (RESULTS_ROOT / relative).resolve()
@@ -577,8 +739,40 @@ def _safe_run(run_id: str) -> Path:
     return candidate
 
 
+def _complete_phase_comparison(comparison: list[dict], decision: dict) -> list[dict]:
+    """Añade Fase 4 y 5 a comparativas históricas cuando están en ``decision.json``."""
+    present = {(str(row.get("phase")), str(row.get("run_id")))
+               for row in comparison if row.get("run_id")}
+    additions: list[dict] = []
+
+    portfolio = decision.get("phase_portfolio", {}).get("axes", {})
+    for axis, detail in portfolio.items():
+        for candidate in detail.get("candidates", []):
+            run_id = candidate.get("run_id")
+            value = candidate.get("value")
+            key = ("4_cartera", str(run_id))
+            if run_id and key not in present:
+                additions.append(_comparison_row(str(run_id), "4_cartera", f"{axis}={value}", axis, {axis: value}))
+                present.add(key)
+
+    for profile, run_id in decision.get("profile_run_ids", {}).items():
+        key = ("5_perfiles", str(run_id))
+        if run_id and key not in present:
+            additions.append(_comparison_row(str(run_id), "5_perfiles", str(profile), "profile", {"profile": profile}))
+            present.add(key)
+    return [*comparison, *additions]
+
+
+def _comparison_row(run_id: str, phase: str, scenario: str, axis: str, overrides: dict) -> dict:
+    """Construye una fila de comparativa desde el resumen publicado de un run."""
+    artifacts = _safe_run(run_id) / "artifacts"
+    summary_path = artifacts / "backtest_summary.json"
+    summary = json.loads(summary_path.read_text(encoding="utf-8")) if summary_path.exists() else {}
+    return {"phase": phase, "scenario": scenario, "axis": axis, "overrides": overrides,
+            "run_id": run_id, **summary}
+
+
 def serve(host: str = "127.0.0.1", port: int = 8765) -> None:
     server = ThreadingHTTPServer((host, port), DashboardHandler)
     print(f"Consola TFM disponible en http://{host}:{port}")
     server.serve_forever()
-

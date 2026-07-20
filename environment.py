@@ -59,20 +59,29 @@ FORCE_RAW_DOWNLOAD = False
 
 # Fase 1: el panel se construye para toda la historia disponible. La fecha ancla
 # se usará después para iniciar una simulación o un escenario concreto.
-# Fecha ancla: el sistema evalua desde 2016 (mayor cobertura, menos sesgo de supervivencia),
-# entrenando 8-12 anios hacia atras (datos de sobra desde ~2004). Se olvida la ventana desde 2000.
-EXECUTION_YEAR = 2016
+# Fecha ancla FIJA: el sistema evalua la simulación OOS desde 2015-Q1 (~10 años de OOS hasta hoy
+# con 2025-26 reservados), entrenando 8 años hacia atras. El año/trimestre ancla NO se barren en
+# el study (son fijos); sí se barre el retardo de publicación (execution_lag_days).
+EXECUTION_YEAR = 2015
 EXECUTION_QUARTER = 1
 EXECUTION_LAG_DAYS = 45
-TRAIN_LOOKBACK_YEARS = 10
+TRAIN_LOOKBACK_YEARS = 8
 SNAPSHOT_STEP_MONTHS = 1           # cadencia de revision de cartera; barrida como escenario
 FUNDAMENTAL_STEP_MONTHS = 3        # cadencia de reentreno; barrida como escenario (3/12/1)
 SNAPSHOT_DAY = 15
-TARGET_HORIZON_MONTHS = 3
+TARGET_HORIZON_MONTHS = 6
 MAX_PRICE_AGE_DAYS = 7
 META_IC_LOOKBACK_QUARTERS = 12
 MIN_TRAINING_ROWS = 30
 MIN_RANK_IC_CROSS_SECTION = 10
+
+# Pesos de recencia en el entrenamiento: da más peso a los años recientes de la ventana.
+#   "off"         -> todas las filas pesan igual (comportamiento por defecto).
+#   "linear"      -> el año más reciente pesa más, decreciendo linealmente hacia el más antiguo.
+#   "exponential" -> decaimiento exponencial con vida media RECENCY_HALFLIFE_YEARS.
+# Barrida como escenario para medir si priorizar lo reciente mejora el rank-IC.
+RECENCY_WEIGHTING = "off"
+RECENCY_HALFLIFE_YEARS = 3.0       # vida media (años) del decaimiento exponencial; fija
 
 # --- Modelo LightGBM ---
 # Objetivo de aprendizaje:
@@ -160,6 +169,8 @@ class Settings:
     lgbm_min_child_samples: int = LGBM_MIN_CHILD_SAMPLES
     random_seed: int = RANDOM_SEED
     meta_type: str = META_TYPE
+    recency_weighting: str = RECENCY_WEIGHTING
+    recency_halflife_years: float = RECENCY_HALFLIFE_YEARS
     # artefactos activables
     neutralize_by_sector: bool = NEUTRALIZE_BY_SECTOR
     neutralize_min_group: int = NEUTRALIZE_MIN_GROUP
@@ -201,6 +212,11 @@ class Settings:
         if self.meta_type not in ("equal", "rank_ic", "regime"):
             raise ValueError(
                 f"META_TYPE invalido: {self.meta_type!r}. Usa 'equal', 'rank_ic' o 'regime'."
+            )
+        if self.recency_weighting not in ("off", "linear", "exponential"):
+            raise ValueError(
+                f"RECENCY_WEIGHTING invalido: {self.recency_weighting!r}. "
+                "Usa 'off', 'linear' o 'exponential'."
             )
         if self.train_lookback_years <= 0 or self.target_horizon_months <= 0:
             raise ValueError("Las ventanas temporales deben ser positivas.")

@@ -13,13 +13,22 @@ from __future__ import annotations
 
 
 STUDY_OPTIONS: dict[str, list] = {
-    "execution_year": [2012, 2014, 2016, 2018, 2020], "execution_quarter": [1, 2, 3, 4],
-    "execution_lag_days": [15, 30, 45, 60], "train_lookback_years": [5, 6, 7, 8, 10, 12],
+    # El ancla temporal (execution_year=2015, execution_quarter=1) es FIJA y no se barre: así todos
+    # los escenarios comparten el mismo periodo OOS (2015→hoy) y 2025-26 reservados. Sí se barre el
+    # retardo de publicación de fundamentales (execution_lag_days).
+    "execution_lag_days": [15, 30, 45, 60], "train_lookback_years": [2, 4, 6, 8, 10, 12],
     "snapshot_step_months": [1, 3], "fundamental_step_months": [3, 6, 12],
     "target_horizon_months": [1, 3, 6, 12], "objective": ["rank_regression", "ranking", "quartile"],
-    "lgbm_n_estimators": [100, 200, 400], "lgbm_max_depth": [3, 4, 5, 6],
-    "lgbm_learning_rate": [0.03, 0.05, 0.10], "lgbm_min_child_samples": [20, 50, 100],
+    "lgbm_n_estimators": [100, 200, 400], "lgbm_max_depth": [3, 4, 5, 6, 8],
+    "lgbm_learning_rate": [0.02, 0.03, 0.05, 0.10], "lgbm_min_child_samples": [20, 50, 100],
+    # meta_type ya no es un flag inerte: equal/rank_ic/regime combinan los agentes de forma
+    # distinta (ver module/modeling/meta.py). meta_ic_lookback_quarters y min_rank_ic_cross_section
+    # afinan cómo el meta lee el rank-IC reciente; recency_halflife_years solo actúa con
+    # recency_weighting="exponential". Todos son ejes de MODELO (mueven el rank-IC).
     "meta_type": ["equal", "rank_ic", "regime"],
+    "meta_ic_lookback_quarters": [8, 12, 16], "min_rank_ic_cross_section": [8, 10, 12],
+    "recency_halflife_years": [2.0, 3.0, 5.0],
+    "recency_weighting": ["off", "linear", "exponential"],
     "neutralize_by_sector": [False, True], "fundamental_momentum": [False, True],
     "market_regime_feature": [False, True], "price_momentum_multi": [False, True],
     "moving_averages": [False, True], "regime_extended": [False, True],

@@ -134,12 +134,16 @@ intervención humana**.
 
 Las variables se separan por **cuándo actúan en el pipeline** (frontera autoritativa en
 `FINGERPRINT_FIELDS`, `module/runs/experiments.py`):
-- **Ejes de MODELO** (cambian el rank-IC): ventana, horizonte, ancla, profundidad, cadencia,
-  `execution_lag_days`, `execution_quarter`, `objective`, `meta_type`, hiperparámetros LightGBM y
-  los 7 artefactos. Se barren en **Fase 1/2**, seleccionando por rank-IC OOS.
+- **Ancla temporal FIJA**: `execution_year = 2015` y `execution_quarter = 1` **no se barren**. Así
+  todos los escenarios comparten el mismo periodo OOS (2015→hoy, con 2025-2026 reservados) y la
+  comparación de rank-IC es limpia. El **retardo de publicación** `execution_lag_days` sí es variable.
+- **Ejes de MODELO** (cambian el rank-IC): ventana (`train_lookback_years`), horizonte, cadencia,
+  `execution_lag_days`, `objective`, `meta_type`, `recency_weighting` (pesos de recencia:
+  `off`/`linear`/`exponential`), hiperparámetros LightGBM y los 7 artefactos. Se barren en
+  **Fase 1/2**, seleccionando por rank-IC OOS.
 - **Ejes de CARTERA** (no cambian el rank-IC): `target_min/max`, percentiles, rotación,
-  `max_weight`, comisiones, slippage. Se optimizan **al final** por criterio económico
-  (re-backtest sin reentrenar).
+  `max_weight`, comisiones, slippage. Se optimizan en una **fase de cartera** por criterio económico
+  (Information Ratio, re-backtest sin reentrenar).
 
 ### 5.1 Fase 1 — cada eje de modelo aislado
 Sobre un baseline común se mueve **un solo eje por escenario** para que su rank-IC mida el efecto
@@ -151,10 +155,7 @@ por fracción de cohortes positivas y menor varianza).
 ### 5.2 Fase 2 — combinación greedy con top-2 por eje (`_greedy_phase2`)
 No es producto cartesiano (2^N, inviable con muchos ejes). Se parte del mejor nivel de cada eje
 combinado, se recorren los ejes por su impacto en Fase 1, y en cada eje se prueba su **1º y 2º
-mejor** sobre la combinación en curso, fijando el que sube el rank-IC (~2·N runs). **Caso especial
-trimestre × cadencia**: el trimestre de arranque (`execution_quarter`) solo importa cuando el
-reentreno no es trimestral; si la cadencia ganadora es semestral o anual, se re-explora
-`execution_quarter` sobre la combinación.
+mejor** sobre la combinación en curso, fijando el que sube el rank-IC (~2·N runs).
 
 ### 5.3 Afinado de hiperparámetros
 Sobre el ganador de la Fase 2 se prueban variantes finas de LightGBM (learning rate, nº de árboles,
@@ -162,14 +163,20 @@ mínimo de muestras por hoja). Rejilla deliberadamente pequeña por el número l
 independientes. El resultado es la **configuración final de modelo**, que se entrena en el run final.
 
 ### 5.4 Fase de cartera (`_portfolio_phase`)
-Sobre el finalista **ya entrenado**, se optimizan los ejes de cartera **re-backtesteando sin
-reentrenar** (`mode="backtest"` sobre el mismo `agent_dir`). Como estos ejes no mueven el rank-IC,
-el criterio es **económico** (`information_ratio` por defecto, medido en la era OOS hasta 2024; la
-reserva 2025-2026 no interviene): greedy por eje, fijando el mejor valor. Las combinaciones que
-violan restricciones de `Settings` (p.ej. `max_weight · target_min < 1`) se omiten. El perfil de
-inversor no se barre aquí: se reporta con los 8 perfiles como runs hijo del finalista (§6). La
-decisión final (`decision.json`) incluye `best_config`: mejor modelo + mejor gestión de cartera +
-perfil que más renta.
+Sobre el finalista de modelo **ya entrenado**, se optimizan **todos** los ejes de cartera
+**re-backtesteando sin reentrenar** (`mode="backtest"` sobre el mismo `agent_dir`). Como estos ejes
+no mueven el rank-IC, el criterio es **económico**: **Information Ratio** (rentabilidad ajustada al
+riesgo), greedy por eje, fijando el mejor valor. Las combinaciones que violan restricciones de
+`Settings` (p.ej. `max_weight · target_min < 1`) se omiten. Estos runs se etiquetan como fase
+`cartera` y entran en `comparison_data.parquet`. Salida: la **cartera base óptima**.
+
+### 5.4.b Fase final — perfiles de inversor (la salida del study)
+Sobre el modelo y la cartera ya optimizados se aplican los **8 perfiles de inversor**
+(`PROFILE_NAMES`) como backtests sin reentrenar (fase `perfiles`). **El resultado final del study
+son estos 8 runs**, uno por perfil, todos sobre la configuración óptima. La decisión
+(`decision.json`) incluye `final_profile_run_ids` (la salida), `recommended_profile` (el perfil de
+mayor **Information Ratio**) y `best_config` (mejor modelo + mejor gestión de cartera + perfil
+recomendado).
 
 ### 5.5 Control de overfitting por selección: era reservada
 Mirar muchos escenarios sube el riesgo de que el máximo sea **suerte**. Por eso la selección
@@ -216,30 +223,45 @@ Sobre la configuración final se ejecutan tests que demuestran que el resultado 
 
 ## 8. Resultados
 
-> **Estado: cerrado.** Cifras del estudio
-> `results/studies/20260718--optimization-official--bef48ddfc41f--r02/`. El detalle completo con
-> tablas está en [informe_final.md](informe_final.md).
+> **Estado: cerrado, con una pieza de robustez aún pendiente.** Cifras del estudio
+> `results/studies/20260719--optimization-official--acb6c310dfb8/` (sustituye al estudio
+> `20260718--...--bef48ddfc41f--r02`, citado en versiones anteriores de este documento). El
+> detalle completo con tablas está en [informe_final.md](informe_final.md).
 
 La configuración final (elegida por rank-IC OOS hasta 2024, no por rentabilidad): ventana de 12
-años, ancla 2014, horizonte 3 meses, `max_depth`=6, `learning_rate`=0.10, neutralización por sector
-y `quality_growth_derived`. Resultado en dos planos separados:
+años, horizonte 3 meses, `objective`=quartile, `max_depth`=6, `learning_rate`=0.10, `meta_type`=equal,
+`recency_weighting`=linear, y siete artefactos activos (neutralización por sector, momentum
+fundamental, régimen de mercado, momentum de precio multi-horizonte, medias móviles, régimen
+extendido, `quality_growth_derived`). Resultado en dos planos separados:
 
-- **Aprendizaje (rank-IC OOS del `meta_final`)**: **+0.0158** de media, 56.5 % de cohortes
-  positivas. Estable: bootstrap por bloques con IC 95 % **[0.0053, 0.0265]** (no cruza cero),
-  leave-one-year-out entre 0.013 y 0.018, y **+0.0426 en la era reservada 2025-2026** (nunca
-  optimizada). La respuesta a la pregunta de investigación (§1) es **sí: el sistema aprende una
-  señal débil pero real y estable fuera de muestra**. *(Pendiente: el placebo por permutación de
-  etiquetas quedó sin ejecutar de forma aislada en esta corrida.)*
+- **Aprendizaje (rank-IC OOS del `meta_final`)**: **+0.0118** de media, 60 % de cohortes positivas.
+  Bootstrap por bloques con IC 95 % **[-0.0113, 0.0340]** — **cruza cero** (45 cohortes, bloque 4).
+  Leave-one-year-out entre 0.0079 y 0.0183 (ningún año domina) y **+0.0210 en la era reservada
+  2025-2026** (6 cohortes, nunca optimizada). El **placebo por permutación de etiquetas sigue sin
+  ejecutarse** (`n_permutations=0`), igual que en el estudio anterior. Comparado con el estudio
+  previo (rank-IC +0.0158, IC bootstrap sin cruzar cero), esta repetición da una señal **más débil y
+  con evidencia estadística más ambigua**, no más sólida. La respuesta a la pregunta de
+  investigación (§1) sigue siendo *tentativamente* sí, pero con menos margen que antes: el
+  contraste más exigente (bootstrap) ya no es concluyente, y sin el placebo por permutación no se
+  puede descartar formalmente que parte de la señal sea artefacto del proceso de búsqueda.
 - **Rentabilidad como consecuencia** (por perfil de inversor, §6, guarda anti-artefactos activa,
-  §4.3): frente al SPY (CAGR 13.92 %), **solo el perfil `quality` bate al índice** (16.94 %, alfa
-  +1.70 %, drawdown 23.4 %). El resto queda por debajo (CAGR entre 8.8 % y 12.4 %). Nunca se usó
-  como selector de configuración (§2).
+  §4.3): frente al SPY (CAGR 13.86 %), **5 de 8 perfiles baten al índice** (`aggressive` +2.80 pp,
+  `contrarian` +2.48 pp, `momentum` +1.90 pp, `balanced` +1.25 pp, `quality` +0.46 pp); solo
+  `conservative`, `value` y `garp` quedan por debajo. El perfil recomendado por Information Ratio es
+  **`aggressive`** (IR 0.153, alfa medio +1.88 %, drawdown 25.2 %). Esta mejora frente al estudio
+  anterior (donde solo 1 de 8 perfiles ganaba) se explica sobre todo por parámetros de cartera y
+  costes más favorables (menos posiciones, mayor peso máximo, comisión y slippage más bajos), **no**
+  por una señal de aprendizaje más fuerte. Nunca se usó la rentabilidad como selector de
+  configuración de modelo (§2).
 
-**Lectura conjunta**: el sistema aprende (señal OOS positiva, robusta y que aguanta en la era
-reservada), pero aprender no equivale a batir al mercado ---salvo el sesgo hacia calidad, las
-carteras no superan al índice. Es un resultado negativo bien medido en lo económico y positivo en
-lo metodológico. Todas las cifras son trazables al manifiesto y la comparación de
-`results/studies/<study_id>/` y reproducibles con un comando (§9, §11).
+**Lectura conjunta**: es un resultado **mixto**, no una mejora limpia respecto al cierre anterior.
+El aprendizaje (lo que de verdad responde a la pregunta de investigación) es igual o algo más débil
+que antes, con una pieza de robustez —el placebo por permutación— todavía sin ejecutar tras dos
+estudios oficiales consecutivos. La rentabilidad mejora, pero por construcción de cartera y costes,
+no por mejor predicción. Todas las cifras son trazables al manifiesto y la comparación de
+`results/studies/<study_id>/` y reproducibles con un comando (§9, §11). Ver conclusiones y
+recomendación completas en el mensaje de cierre de este análisis (resumen crítico entregado al
+usuario tras este estudio).
 
 ---
 

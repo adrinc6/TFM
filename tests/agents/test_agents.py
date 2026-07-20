@@ -3,8 +3,36 @@ from __future__ import annotations
 import json
 
 import pandas as pd
+import pytest
 
-from module.modeling.agents import build_agent_scores
+from environment import Settings
+from module.modeling.agents import _recency_weights, build_agent_scores
+
+
+def _train_four_years() -> pd.DataFrame:
+    dates = pd.date_range("2011-01-15", "2015-01-15", freq="3MS").astype(str)
+    return pd.DataFrame({"snapshot_date": dates})
+
+
+def test_recency_off_returns_none() -> None:
+    assert _recency_weights(_train_four_years(), Settings(recency_weighting="off")) is None
+
+
+def test_recency_linear_weights_increase_towards_recent() -> None:
+    weights = _recency_weights(_train_four_years(), Settings(recency_weighting="linear"))
+    assert weights.iloc[-1] > weights.iloc[0]          # lo reciente pesa más
+    assert (weights >= 1.0 - 1e-6).all()               # el más antiguo pesa ~1
+
+
+def test_recency_exponential_respects_halflife() -> None:
+    train = _train_four_years()
+    weights = _recency_weights(train, Settings(recency_weighting="exponential"))
+    dates = pd.to_datetime(train["snapshot_date"])
+    age_years = (dates.max() - dates) / pd.Timedelta(days=365.25)
+    # A una vida media (3 años) de antigüedad, el peso debe ser ~0.5 del más reciente (=1.0).
+    idx = (age_years - 3.0).abs().idxmin()
+    assert weights.iloc[-1] == pytest.approx(1.0)
+    assert weights.loc[idx] == pytest.approx(0.5, abs=0.03)
 
 
 def test_agents_start_at_anchor_with_expanding_history_and_score_monthly(agent_settings) -> None:

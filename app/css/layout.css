@@ -114,10 +114,12 @@ table.data th, table.data td {
   vertical-align: top;
   white-space: nowrap;
 }
-table.data th { color: var(--muted); font-weight: 600; position: sticky; top: 0; background: var(--surface); }
+table.data th { color: var(--muted); font-weight: 600; background: var(--surface); }
 table.data tr.click { cursor: pointer; }
 table.data tr.click:hover { background: var(--surface2); }
-.scroll { overflow: auto; max-height: 580px; }
+/* Antes limitaba la altura con scroll interno; ahora las tablas se muestran enteras y usan el
+   scroll general de la página. Se conserva solo el desbordamiento horizontal para tablas anchas. */
+.scroll { overflow-x: auto; }
 
 @media (max-width: 900px) {
   .grid, .grid.results-grid, .grid.split-even { grid-template-columns: 1fr; }

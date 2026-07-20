@@ -97,29 +97,6 @@ def test_greedy_phase2_is_not_cartesian(monkeypatch) -> None:
     assert "axes" in decision
 
 
-def test_greedy_phase2_reexplores_quarter_when_cadence_not_quarterly(monkeypatch) -> None:
-    """Si la cadencia ganadora es anual, se re-explora execution_quarter sobre la combinación."""
-    from environment import Settings
-    settings = Settings()  # baseline fundamental_step_months=3, execution_quarter=1
-    phase1 = pd.DataFrame([
-        {"phase": 1, "scenario": "baseline", "axis": None, "overrides": {}, "mean_rank_ic": 0.010,
-         "rank_ic_positive_fraction": 0.5, "rank_ic_std": 0.05},
-        {"phase": 1, "scenario": "cadence_anual", "axis": "fundamental_step_months",
-         "overrides": {"fundamental_step_months": 12}, "mean_rank_ic": 0.030,
-         "rank_ic_positive_fraction": 0.7, "rank_ic_std": 0.04},
-    ])
-    model_vars = {"fundamental_step_months": [12]}
-    calls = _run_counter(monkeypatch, [{"mean_rank_ic": 0.03}] * 20)
-
-    rows, selected, decision = execution._greedy_phase2(
-        phase1, model_vars, settings, _FakeStore(), "sid", name="t", description="", tags=[])
-
-    # combined_best (cadence=12) + re-exploración de los trimestres != 1 (Q2,Q3,Q4) = 1 + 3 = 4
-    assert decision.get("quarter_reexplored_for_cadence") == 12
-    quarter_runs = [r for r in rows if "quarter" in r["scenario"]]
-    assert len(quarter_runs) == 3, f"esperaba 3 runs de quarter, hubo {len(quarter_runs)}"
-
-
 # --- Fase de cartera: criterio económico ----------------------------------------------------
 
 def test_economic_score_prefers_higher_ir_and_lower_drawdown() -> None:
@@ -154,12 +131,67 @@ def test_portfolio_phase_selects_best_by_information_ratio(monkeypatch) -> None:
     monkeypatch.setattr(execution, "_summary_for_run", fake_summary)
 
     portfolio_vars = {"target_min": [8, 10], "commission_bps": [0, 10]}
-    selected, trace = execution._portfolio_phase(
+    selected, trace, _rows = execution._portfolio_phase(
         settings, portfolio_vars, _FakeStore(), "sid", agent_dir=None, name="t", description="", tags=[])
 
     assert selected == {"target_min": 10, "commission_bps": 0}
     assert all(m == "backtest" for m in modes_seen), "la fase de cartera no debe reentrenar"
     assert trace["axes"]["target_min"]["chosen"] == 10
+
+
+# --- Regresión: `phase` debe ser string en todas las fases (evita crash de pyarrow) ----------
+
+def test_all_comparison_phases_are_strings_and_concat_writes_parquet(tmp_path) -> None:
+    """`comparison_data.parquet` mezclaba `phase` int (fases 1/2/3) con string (cartera/perfiles):
+    pandas infiere un dtype numerico para la columna y pyarrow revienta al escribir los valores
+    string ("Could not convert 'cartera' ... to int64"). Fases 4 y 5 (antes "cartera"/"perfiles")
+    deben quedar como string, igual que las fases 1/2/3, para que el concat + write_parquet no
+    falle nunca, sea cual sea el orden de filas."""
+    from module.common.utils import write_parquet
+
+    phase1 = pd.DataFrame([{"phase": "1", "scenario": "baseline", "mean_rank_ic": 0.01, "run_id": "r1"}])
+    phase2 = pd.DataFrame([{"phase": "2", "scenario": "combined_best", "mean_rank_ic": 0.02, "run_id": "r2"}])
+    hyper = pd.DataFrame([{"phase": "3", "scenario": "hyper_a", "mean_rank_ic": 0.02, "run_id": "r3"}])
+    cartera = pd.DataFrame([{"phase": "4_cartera", "scenario": "target_min=10", "mean_rank_ic": 0.02, "run_id": "r4"}])
+    perfiles = pd.DataFrame([{"phase": "5_perfiles", "scenario": "balanced", "mean_rank_ic": 0.02, "run_id": "r5"}])
+
+    comparison = pd.concat([phase1, phase2, hyper, cartera, perfiles], ignore_index=True, sort=False)
+    assert comparison["phase"].apply(type).eq(str).all()
+
+    out = tmp_path / "comparison_data.parquet"
+    write_parquet(comparison, out)  # no debe lanzar ArrowInvalid
+    assert set(pd.read_parquet(out)["phase"]) == {"1", "2", "3", "4_cartera", "5_perfiles"}
+
+
+def test_safe_scenario_run_skips_on_failure(monkeypatch) -> None:
+    """Un escenario que falla al entrenar se salta y se registra, sin propagar la excepción."""
+    from environment import Settings
+    settings = Settings()
+    skipped = []
+
+    def boom(*_a, **_k):
+        raise RuntimeError("No se pudieron entrenar agentes con la historia disponible.")
+
+    monkeypatch.setattr(execution, "execute_run", boom)
+    run_id = execution._safe_scenario_run(
+        _FakeStore(), settings, study_id="sid", label="x", description="", tags=[],
+        grid_definition={"overrides": {"train_lookback_years": 2}}, skipped=skipped, scenario="train_2")
+
+    assert run_id is None
+    assert len(skipped) == 1 and skipped[0]["scenario"] == "train_2"
+    assert "entrenar" in skipped[0]["error"]
+
+
+def test_safe_scenario_run_returns_id_on_success(monkeypatch) -> None:
+    from environment import Settings
+    settings = Settings()
+    skipped = []
+    monkeypatch.setattr(execution, "execute_run", lambda *_a, **_k: "run-ok")
+    run_id = execution._safe_scenario_run(
+        _FakeStore(), settings, study_id="sid", label="x", description="", tags=[],
+        grid_definition={"overrides": {}}, skipped=skipped, scenario="baseline")
+    assert run_id == "run-ok"
+    assert skipped == []
 
 
 def test_portfolio_phase_skips_profile_axis(monkeypatch) -> None:
@@ -171,7 +203,7 @@ def test_portfolio_phase_skips_profile_axis(monkeypatch) -> None:
         raise AssertionError("no debería ejecutarse ningún run para el eje profile")
 
     monkeypatch.setattr(execution, "execute_run", fake_execute_run)
-    selected, trace = execution._portfolio_phase(
+    selected, trace, _rows = execution._portfolio_phase(
         settings, {"profile": ["balanced", "quality"]}, _FakeStore(), "sid",
         agent_dir=None, name="t", description="", tags=[])
     assert selected == {}

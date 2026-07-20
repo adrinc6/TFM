@@ -125,9 +125,11 @@ def execute_study(
 
     Las variables del usuario se reparten en ejes de modelo (barridos en Fase 1/2 por rank-IC) y
     ejes de cartera (optimizados al final por re-backtest). ``mode`` se ignora: el ciclo siempre
-    entrena y backtestea.
+    entrena y backtestea. La robustez completa (placebo por permutación + carteras aleatorias) solo
+    se ejecuta si el usuario la marca (``study.include_robustness``); si no, solo bootstrap + LOYO.
     """
     model_vars, portfolio_vars = split_variables(variables)
+    include_robustness = bool(study_payload.get("include_robustness", False))
     payload = {
         "name": str(study_payload.get("name", "study")), "kind": str(study_payload.get("kind", "exploratory")),
         "description": str(study_payload.get("description", "")), "tags": list(study_payload.get("tags", [])),
@@ -135,7 +137,7 @@ def execute_study(
         "selection_metric": "rank_ic_oos", "selection_until_year": 2024, "reserved_years": [2025, 2026],
     }
     return run_optimization(settings, model_vars=model_vars, portfolio_vars=portfolio_vars,
-                            payload=payload, store=store)
+                            payload=payload, store=store, include_full_robustness=include_robustness)
 
 
 def execute_official_optimization(settings: Settings, store: ResultsStore | None = None) -> str:
@@ -152,8 +154,10 @@ def execute_official_optimization(settings: Settings, store: ResultsStore | None
         "tags": ["official", "optimization"], "strategy": "unified_full_cycle",
         "selection_metric": "rank_ic_oos", "selection_until_year": 2024, "reserved_years": [2025, 2026],
     }
+    # La optimización oficial SIEMPRE ejecuta la robustez completa (placebo + carteras aleatorias):
+    # es el estudio que sostiene la credibilidad del TFM.
     return run_optimization(settings, model_vars=model_vars, portfolio_vars=portfolio_vars,
-                            payload=payload, store=store)
+                            payload=payload, store=store, include_full_robustness=True)
 
 
 def execute_official_phase1(settings: Settings, store: ResultsStore | None = None) -> str:
@@ -168,6 +172,7 @@ def run_optimization(
     portfolio_vars: Mapping[str, list[Any]],
     payload: Mapping[str, Any],
     store: ResultsStore | None = None,
+    include_full_robustness: bool = False,
 ) -> str:
     """Ciclo completo unificado que comparten study y optimización oficial.
 
@@ -183,18 +188,26 @@ def run_optimization(
     tags = list(payload.get("tags", []))
 
     # --- Fase 1: cada eje de modelo aislado sobre el baseline ---
+    # Un escenario que no entrena (p.ej. ventana muy corta o cadencia que deja pocas filas) se
+    # salta y se registra, sin abortar el estudio: con un barrido amplio es esperable que algunas
+    # combinaciones extremas no sean viables.
     phase1_rows: list[dict[str, Any]] = []
+    skipped: list[dict[str, Any]] = []
     for spec in _isolated_specs(settings, model_vars):
-        run_id = execute_run(
-            replace(settings, **spec["overrides"]), mode="full", run_kind="scenario", study_id=study_id,
+        run_id = _safe_scenario_run(
+            store, replace(settings, **spec["overrides"]), study_id=study_id,
             label=f"{name} · Fase 1 · {spec['name']}", description=description, tags=tags,
-            grid_definition={"phase": 1, **spec}, store=store,
-        )
-        store.add_to_study(study_id, run_id)
-        phase1_rows.append({"phase": 1, "scenario": spec["name"], "axis": spec.get("axis"),
+            grid_definition={"phase": "1", **spec}, skipped=skipped, scenario=spec["name"])
+        if run_id is None:
+            continue
+        phase1_rows.append({"phase": "1", "scenario": spec["name"], "axis": spec.get("axis"),
                             "overrides": spec["overrides"], "run_id": run_id,
                             **spec["overrides"], **_summary_for_run(store, run_id)})
     phase1 = pd.DataFrame(phase1_rows)
+    if phase1.empty:
+        raise RuntimeError(
+            "Ningún escenario de Fase 1 fue viable (todos fallaron al entrenar). "
+            f"Escenarios omitidos: {len(skipped)}. Revisa los valores barridos en STUDY_OPTIONS.")
 
     # --- Fase 2: greedy incremental con top-2 por eje (sin producto cartesiano) ---
     phase2_rows, model_overrides, phase1_decision = _greedy_phase2(
@@ -203,7 +216,7 @@ def run_optimization(
 
     # --- Fase 3: afinado de hiperparámetros sobre el ganador de modelo ---
     hyper_specs = _hyperparameter_specs(model_overrides)
-    hyper_rows = _execute_official_specs(hyper_specs, settings, store, study_id, phase=3,
+    hyper_rows = _execute_official_specs(hyper_specs, settings, store, study_id, phase="3",
                                          label_prefix=name, description=description, tags=tags)
     hyper = pd.DataFrame(hyper_rows)
     chosen_hyper = _stable_best(hyper)
@@ -217,8 +230,8 @@ def run_optimization(
     store.add_to_study(study_id, final_id)
     final_agent_dir = _latest_agent_run(final_settings.processed_output_dir)
 
-    # --- Fase de cartera: re-backtest sobre el finalista, por criterio económico ---
-    portfolio_overrides, portfolio_trace = _portfolio_phase(
+    # --- Fase de cartera: greedy por todos los ejes de cartera, por Information Ratio ---
+    portfolio_overrides, portfolio_trace, portfolio_rows = _portfolio_phase(
         final_settings, portfolio_vars, store, study_id, agent_dir=final_agent_dir,
         name=name, description=description, tags=tags)
     portfolio_settings = replace(final_settings, **portfolio_overrides)
@@ -226,32 +239,44 @@ def run_optimization(
         portfolio_final_id = execute_run(
             portfolio_settings, mode="backtest", run_kind="optimization_final", study_id=study_id,
             label=f"{name} · finalista + cartera", description=description, tags=[*tags, "final", "portfolio"],
-            grid_definition={"phase": "portfolio_final", "overrides": portfolio_overrides},
+            grid_definition={"phase": "4_cartera", "overrides": portfolio_overrides},
             store=store, agent_dir=final_agent_dir)
         store.add_to_study(study_id, portfolio_final_id)
     else:
         portfolio_final_id = final_id
 
-    # --- 8 perfiles sobre el finalista de cartera (runs hijo, sin reentrenar) ---
+    # --- Fase final = 8 perfiles de inversor sobre la cartera óptima. Es la SALIDA del study:
+    #     un run por perfil, todos sobre el modelo y la cartera ya optimizados. ---
     profile_run_ids: dict[str, str] = {}
+    profile_rows: list[dict[str, Any]] = []
     for profile in PROFILE_NAMES:
         profile_id = execute_run(
             replace(portfolio_settings, profile=profile), mode="backtest", run_kind="scenario", study_id=study_id,
-            label=f"{name} · finalista · perfil {profile}",
-            description="Backtest del perfil sobre el finalista seleccionado.",
+            label=f"{name} · perfil {profile}",
+            description="Perfil de inversor sobre el modelo y la cartera optimizados (resultado final).",
             tags=[*tags, "final", "profile"],
-            grid_definition={"phase": "profiles", "profile": profile, "parent_run_id": portfolio_final_id},
+            grid_definition={"phase": "5_perfiles", "profile": profile, "parent_run_id": portfolio_final_id},
             store=store, agent_dir=final_agent_dir)
         store.add_to_study(study_id, profile_id)
         profile_run_ids[profile] = profile_id
+        profile_rows.append({"phase": "5_perfiles", "scenario": profile, "axis": "profile",
+                             "overrides": {"profile": profile}, "run_id": profile_id,
+                             **_summary_for_run(store, profile_id)})
 
     # --- Robustez, validación reservada y decisión final ---
     final_summary = _summary_for_run(store, portfolio_final_id)
     reserved = _reserved_validation(store, final_id)
-    robustness = _final_robustness(store, final_id)
+    robustness = _final_robustness(
+        store, final_id, portfolio_final_id=portfolio_final_id, final_settings=final_settings,
+        include_full=include_full_robustness)
     best_config = _best_config_summary(final_model_overrides, portfolio_overrides,
                                        profile_run_ids, store)
-    comparison = pd.concat([phase1, phase2, hyper], ignore_index=True, sort=False)
+    # Perfil recomendado por Information Ratio (rentabilidad ajustada al riesgo), no por CAGR puro.
+    recommended = _recommended_profile(profile_run_ids, store)
+    # Comparativa completa: todas las fases (modelo 1/2/3 + cartera + perfiles) para la app.
+    comparison = pd.concat(
+        [phase1, phase2, hyper, pd.DataFrame(portfolio_rows), pd.DataFrame(profile_rows)],
+        ignore_index=True, sort=False)
     write_parquet(comparison, study_dir / "comparison_data.parquet")
     write_json({
         "strategy": "unified_full_cycle", "selection_metric": "rank_ic_oos",
@@ -260,8 +285,12 @@ def run_optimization(
         "phase_portfolio": portfolio_trace, "portfolio_overrides": portfolio_overrides,
         "final_run_id": portfolio_final_id, "model_final_run_id": final_id,
         "final_settings_overrides": {**final_model_overrides, **portfolio_overrides},
-        "final_summary": final_summary, "profile_run_ids": profile_run_ids,
+        "final_summary": final_summary,
+        # Salida final del study: un run por perfil sobre el modelo+cartera óptimos.
+        "final_profile_run_ids": profile_run_ids, "profile_run_ids": profile_run_ids,
+        "recommended_profile": recommended,
         "reserved_validation": reserved, "robustness": robustness, "best_config": best_config,
+        "skipped_scenarios": skipped,
     }, study_dir / "decision.json")
     manifest = json.loads((study_dir / "study_manifest.json").read_text(encoding="utf-8"))
     manifest["status"] = "succeeded"
@@ -290,9 +319,7 @@ def _greedy_phase2(
 
     Parte del mejor nivel de cada eje (combinado). Recorre los ejes ordenados por su impacto en
     Fase 1 y en cada uno prueba su 1º y 2º mejor sobre la combinación en curso, fijando el que sube
-    el rank-IC. Caso especial: si el ganador de ``fundamental_step_months`` no es trimestral,
-    re-explora ``execution_quarter`` sobre la combinación (el trimestre de arranque solo importa con
-    reentreno anual/semestral). Explora el 2º mejor de cada eje con ~2·N runs, no 2^N.
+    el rank-IC. Explora el 2º mejor de cada eje con ~2·N runs, no 2^N.
     """
     baseline_row = phase1.loc[phase1["scenario"] == "baseline"]
     baseline_ic = float(baseline_row["mean_rank_ic"].iloc[0]) if not baseline_row.empty and "mean_rank_ic" in baseline_row else float("-inf")
@@ -320,14 +347,18 @@ def _greedy_phase2(
     rows: list[dict[str, Any]] = []
     best_ic = float("-inf")
 
+    skipped: list[dict[str, Any]] = []
+
     def evaluate(overrides: dict[str, Any], label: str) -> float:
         nonlocal rows
-        run_id = execute_run(replace(settings, **overrides), mode="full", run_kind="scenario", study_id=study_id,
-                             label=f"{name} · Fase 2 · {label}", description=description, tags=[*tags, "phase2"],
-                             grid_definition={"phase": 2, "overrides": overrides}, store=store)
-        store.add_to_study(study_id, run_id)
+        run_id = _safe_scenario_run(
+            store, replace(settings, **overrides), study_id=study_id,
+            label=f"{name} · Fase 2 · {label}", description=description, tags=[*tags, "phase2"],
+            grid_definition={"phase": "2", "overrides": overrides}, skipped=skipped, scenario=label)
+        if run_id is None:
+            return float("-inf")
         summary = _summary_for_run(store, run_id)
-        rows.append({"phase": 2, "scenario": label, "overrides": dict(overrides), **overrides, **summary, "run_id": run_id})
+        rows.append({"phase": "2", "scenario": label, "overrides": dict(overrides), **overrides, **summary, "run_id": run_id})
         return float(summary.get("mean_rank_ic", float("-inf")))
 
     best_ic = evaluate(selected, "combined_best")
@@ -344,18 +375,6 @@ def _greedy_phase2(
         ic = evaluate(trial, f"{axis}_second")
         if ic > best_ic:
             best_ic, selected = ic, trial
-
-    # Caso especial trimestre × cadencia: si la cadencia ganadora no es trimestral, re-explorar quarter.
-    cadence = selected.get("fundamental_step_months", getattr(settings, "fundamental_step_months"))
-    if cadence != 3 and "execution_quarter" in STUDY_OPTIONS:
-        for quarter in STUDY_OPTIONS["execution_quarter"]:
-            if quarter == selected.get("execution_quarter", getattr(settings, "execution_quarter")):
-                continue
-            trial = {**selected, "execution_quarter": quarter}
-            ic = evaluate(trial, f"quarter_{quarter}_with_cadence_{cadence}")
-            if ic > best_ic:
-                best_ic, selected = ic, trial
-        decision["quarter_reexplored_for_cadence"] = cadence
 
     return rows, selected, decision
 
@@ -374,6 +393,7 @@ def _portfolio_phase(
     """
     selected: dict[str, Any] = {}
     trace: dict[str, Any] = {"criterion": criterion, "axes": {}}
+    comparison_rows: list[dict[str, Any]] = []
     for axis, values in portfolio_vars.items():
         if axis == "profile":  # el perfil se cubre con los 8 runs de perfil, no se barre aquí
             continue
@@ -392,18 +412,20 @@ def _portfolio_phase(
             run_id = execute_run(
                 candidate_settings, mode="backtest", run_kind="scenario", study_id=study_id,
                 label=f"{name} · Cartera · {axis}={value}", description=description,
-                tags=[*tags, "portfolio"], grid_definition={"phase": "portfolio", "axis": axis, "value": value},
+                tags=[*tags, "portfolio"], grid_definition={"phase": "4_cartera", "axis": axis, "value": value},
                 store=store, agent_dir=agent_dir)
             store.add_to_study(study_id, run_id)
             summary = _summary_for_run(store, run_id)
             score = _economic_score(summary, criterion)
             axis_results.append({"value": value, criterion: score, "run_id": run_id})
+            comparison_rows.append({"phase": "4_cartera", "scenario": f"{axis}={value}", "axis": axis,
+                                    "overrides": {axis: value}, "run_id": run_id, **summary})
             if score > best_score:
                 best_value, best_score, best_run = value, score, run_id
         selected[axis] = best_value
         trace["axes"][axis] = {"chosen": best_value, "score": best_score, "run_id": best_run,
                                 "candidates": axis_results}
-    return selected, trace
+    return selected, trace, comparison_rows
 
 
 def _economic_score(summary: Mapping[str, Any], criterion: str) -> float:
@@ -414,35 +436,71 @@ def _economic_score(summary: Mapping[str, Any], criterion: str) -> float:
     return -float(value) if criterion == "max_drawdown" else float(value)
 
 
+def _safe_scenario_run(
+    store: ResultsStore, settings: Settings, *, study_id: str, label: str, description: str,
+    tags: list[str], grid_definition: Mapping[str, Any], skipped: list[dict[str, Any]],
+    scenario: str, mode: str = "full", agent_dir: Path | None = None,
+) -> str | None:
+    """Ejecuta un escenario del barrido tolerando fallos: si no entrena, se salta y se registra.
+
+    Devuelve el run_id si tuvo éxito, o None si el escenario no fue viable (p.ej. sin filas de
+    entrenamiento suficientes). Así un escenario extremo no aborta el estudio completo.
+    """
+    try:
+        run_id = execute_run(settings, mode=mode, run_kind="scenario", study_id=study_id,
+                             label=label, description=description, tags=tags,
+                             grid_definition=grid_definition, store=store, agent_dir=agent_dir)
+        store.add_to_study(study_id, run_id)
+        return run_id
+    except Exception as exc:  # noqa: BLE001 — el barrido debe continuar aunque un escenario falle
+        log.warning("Escenario omitido (%s): %s", scenario, exc)
+        skipped.append({"scenario": scenario, "error": str(exc), "overrides": dict(grid_definition.get("overrides", {}))})
+        return None
+
+
+def _recommended_profile(profile_run_ids: Mapping[str, str], store: ResultsStore) -> dict[str, Any]:
+    """Perfil recomendado entre los 8 finales, por Information Ratio (rentabilidad ajustada al
+    riesgo). Se prefiere al CAGR puro porque no premia asumir más riesgo por más rentabilidad."""
+    best_profile, best_ir, best_run = None, float("-inf"), None
+    for profile, run_id in profile_run_ids.items():
+        ir = _summary_for_run(store, run_id).get("information_ratio")
+        if ir is not None and float(ir) > best_ir:
+            best_profile, best_ir, best_run = profile, float(ir), run_id
+    return {"profile": best_profile, "information_ratio": None if best_profile is None else best_ir,
+            "run_id": best_run}
+
+
 def _best_config_summary(
     model_overrides: Mapping[str, Any], portfolio_overrides: Mapping[str, Any],
     profile_run_ids: Mapping[str, str], store: ResultsStore,
 ) -> dict[str, Any]:
-    """Resumen legible: mejor modelo, mejor gestión de cartera y perfil que más renta."""
-    best_profile, best_cagr = None, float("-inf")
+    """Resumen legible: mejor modelo, mejor gestión de cartera y perfil recomendado por Info Ratio."""
+    best_profile, best_ir = None, float("-inf")
     for profile, run_id in profile_run_ids.items():
-        summary = _summary_for_run(store, run_id)
-        cagr = summary.get("cagr_portfolio")
-        if cagr is not None and float(cagr) > best_cagr:
-            best_profile, best_cagr = profile, float(cagr)
+        ir = _summary_for_run(store, run_id).get("information_ratio")
+        if ir is not None and float(ir) > best_ir:
+            best_profile, best_ir = profile, float(ir)
     return {"model": dict(model_overrides), "portfolio": dict(portfolio_overrides),
-            "best_profile": best_profile, "best_profile_cagr": None if best_profile is None else best_cagr}
+            "best_profile": best_profile,
+            "best_profile_information_ratio": None if best_profile is None else best_ir}
 
 
 def _execute_official_specs(
-    specs: list[dict[str, Any]], settings: Settings, store: ResultsStore, study_id: str, *, phase: int,
+    specs: list[dict[str, Any]], settings: Settings, store: ResultsStore, study_id: str, *, phase: str,
     label_prefix: str = "Optimization", description: str = "Escenario dirigido del catálogo oficial.",
     tags: Iterable[str] = ("official",),
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
+    skipped: list[dict[str, Any]] = []
     for spec in specs:
         overrides = dict(spec["overrides"])
-        run_id = execute_run(replace(settings, **overrides), mode="full", run_kind="scenario", study_id=study_id,
-                             label=f"{label_prefix} · Fase {phase} · {spec['name']}",
-                             description=description,
-                             tags=[*tags, f"phase{phase}"],
-                             grid_definition={"phase": phase, "overrides": overrides}, store=store)
-        store.add_to_study(study_id, run_id)
+        run_id = _safe_scenario_run(
+            store, replace(settings, **overrides), study_id=study_id,
+            label=f"{label_prefix} · Fase {phase} · {spec['name']}", description=description,
+            tags=[*tags, f"phase{phase}"], grid_definition={"phase": phase, "overrides": overrides},
+            skipped=skipped, scenario=spec["name"])
+        if run_id is None:
+            continue
         rows.append({"phase": phase, "scenario": spec["name"], "overrides": overrides,
                      **overrides, **_summary_for_run(store, run_id), "run_id": run_id})
     return rows
@@ -494,9 +552,17 @@ def _reserved_validation(store: ResultsStore, run_id: str) -> dict[str, Any]:
             "rank_ic_mean": float(reserved["rank_ic"].mean()) if not reserved.empty else None}
 
 
-def _final_robustness(store: ResultsStore, run_id: str) -> dict[str, Any]:
-    """Diagnósticos no destructivos sobre el finalista publicado."""
+def _final_robustness(
+    store: ResultsStore, run_id: str, *, portfolio_final_id: str | None = None,
+    final_settings: Settings | None = None, include_full: bool = False,
+) -> dict[str, Any]:
+    """Diagnósticos sobre el finalista publicado.
 
+    Siempre calcula bootstrap por bloques + leave-one-year-out (baratos, no reentrenan). Con
+    ``include_full`` añade la robustez cara que reentrena/simula: el placebo por permutación de
+    etiquetas (¿colapsa el rank-IC con retornos barajados? = la señal no es artefacto ni fuga) y
+    el test de carteras aleatorias (¿la cartera bate al azar de escoger acciones?).
+    """
     path = store.runs_root / run_id / "artifacts" / "rank_ic_diagnostics.parquet"
     if not path.exists():
         return {}
@@ -506,10 +572,102 @@ def _final_robustness(store: ResultsStore, run_id: str) -> dict[str, Any]:
         return {}
     bootstrap = block_bootstrap_ci(meta.sort_values("prediction_date").set_index("prediction_date")["rank_ic"])
     loyo = leave_one_year_out(diagnostics).to_dict("records")
+
+    if include_full and final_settings is not None:
+        label_permutation = _label_permutation(final_settings, diagnostics)
+        random_portfolio = _random_portfolio(store, portfolio_final_id, final_settings)
+    else:
+        label_permutation = {"status": "no solicitada (robustez completa desactivada)", "n_permutations": 0}
+        random_portfolio = {"status": "no solicitada (robustez completa desactivada)"}
+
     payload = {"block_bootstrap": bootstrap, "leave_one_year_out": loyo,
-               "label_permutation": {"status": "pendiente de ejecución aislada", "n_permutations": 0}}
+               "label_permutation": label_permutation, "random_portfolio": random_portfolio}
     write_json(payload, store.runs_root / run_id / "artifacts" / "robustness.json")
     return payload
+
+
+def _label_permutation(final_settings: Settings, diagnostics: pd.DataFrame, n_permutations: int = 5) -> dict[str, Any]:
+    """Placebo: reentrena el finalista con los retornos futuros BARAJADOS y mide su rank-IC.
+
+    Si el sistema aprende de verdad, el rank-IC del meta_final debe COLAPSAR a ~0 con etiquetas
+    aleatorias; si no colapsa, hay fuga o el resultado real es artefacto. Se permutan los targets,
+    se reentrena (semilla distinta cada vez), se recoge el rank-IC del meta_final, y se restauran
+    los targets originales. Los runs placebo se eliminan para no ensuciar el processed dir.
+    """
+    from module.evaluation.robustness import label_permutation_test
+    import numpy as np
+
+    processed = final_settings.processed_output_dir
+    targets_path = processed / "targets_forward_3m.parquet"
+    if not targets_path.exists():
+        return {"status": "sin targets para permutar", "n_permutations": 0}
+
+    base_targets = pd.read_parquet(targets_path)
+    permuted_ic: list[float] = []
+    rng = np.random.default_rng(0)
+    try:
+        for i in range(n_permutations):
+            shuffled = base_targets.copy()
+            shuffled["forward_excess_return_3m"] = rng.permutation(
+                shuffled["forward_excess_return_3m"].to_numpy())
+            shuffled.to_parquet(targets_path, index=False)
+            try:
+                build_agent_scores(replace(final_settings, random_seed=1000 + i))
+                perm_run = _latest_agent_run(processed)
+                perm_diag = pd.read_parquet(perm_run / "rank_ic_diagnostics.parquet")
+                permuted_ic.append(float(
+                    perm_diag.loc[perm_diag["agent"] == "meta_final", "rank_ic"].mean()))
+                import shutil
+                shutil.rmtree(perm_run, ignore_errors=True)  # no dejar runs placebo
+            except Exception as exc:  # noqa: BLE001 — una permutación fallida no aborta el placebo
+                log.warning("Permutación %s falló: %s", i, exc)
+    finally:
+        base_targets.to_parquet(targets_path, index=False)  # restaurar siempre los targets reales
+
+    if not permuted_ic:
+        return {"status": "ninguna permutación entrenó", "n_permutations": 0}
+    return label_permutation_test(diagnostics, permuted_ic)
+
+
+def _random_portfolio(store: ResultsStore, portfolio_final_id: str | None, final_settings: Settings) -> dict[str, Any]:
+    """Compara el CAGR anual de la cartera del finalista contra carteras aleatorias del mismo tamaño.
+
+    Si el finalista está en la cola alta de la distribución aleatoria (percentil > 0.95), su
+    rendimiento no se explica por el azar de escoger acciones. Usa los retornos anuales realizados
+    de la cartera (`annual_metrics.parquet`) y el pool de retornos anuales de los activos del panel
+    de precios PIT del mismo año.
+    """
+    from module.evaluation.robustness import random_portfolio_test
+    import numpy as np
+
+    if portfolio_final_id is None:
+        return {"status": "sin cartera final"}
+    annual_path = store.runs_root / portfolio_final_id / "artifacts" / "annual_metrics.parquet"
+    prices_path = final_settings.processed_output_dir / "asset_price_point_in_time.parquet"
+    if not annual_path.exists() or not prices_path.exists():
+        return {"status": "faltan annual_metrics o precios PIT"}
+
+    annual = pd.read_parquet(annual_path)
+    model_annual = pd.Series(annual["portfolio_return"].to_numpy(),
+                             index=pd.to_numeric(annual["year"]).astype(int))
+
+    # Pool de retornos anuales por año desde la serie mensual PIT: cambio dic→dic por ticker.
+    prices = pd.read_parquet(prices_path).copy()
+    prices["year"] = pd.to_datetime(prices["snapshot_date"]).dt.year
+    yearly_last = prices.sort_values("snapshot_date").groupby(["ticker", "year"])["price"].last()
+    returns_by_year: dict[int, np.ndarray] = {}
+    for ticker, per_year in yearly_last.groupby(level=0):
+        series = per_year.droplevel(0).sort_index()
+        annual_return = series.pct_change()
+        for year, value in annual_return.dropna().items():
+            returns_by_year.setdefault(int(year), []).append(float(value))
+    returns_by_year = {year: np.asarray(values) for year, values in returns_by_year.items()
+                       if len(values) > 0}
+    if not returns_by_year:
+        return {"status": "sin pool de retornos por año"}
+
+    portfolio_size = int(getattr(final_settings, "target_max", 10))
+    return random_portfolio_test(model_annual, returns_by_year, portfolio_size, n_simulations=1000)
 
 
 def _latest_agent_run(processed: Path) -> Path | None:

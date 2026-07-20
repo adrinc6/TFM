@@ -85,6 +85,7 @@
         <label class="field">Modo<select id="study-mode"><option>full</option><option>agents</option></select></label>
         <label class="field">Hipótesis<textarea id="study-description"></textarea></label>
       </div>
+      <label class="field checkbox"><input type="checkbox" id="study-robustness"> Incluir robustez completa (placebo por permutación + carteras aleatorias; reentrena el finalista, más lento)</label>
       <section class="parameter-group"><h4>Variables y valores a combinar</h4>${studyControls()}</section>
       <div id="study-count" class="notice"></div>
       <div class="actions"><button class="button primary" onclick="TFM.views.console.launchStudy()">Previsualizar y ejecutar</button></div>`;
@@ -172,7 +173,7 @@
         settings: S().defaults,
         mode: el("study-mode").value,
         variables,
-        study: { name: el("study-name").value, kind: el("study-kind").value, description: el("study-description").value },
+        study: { name: el("study-name").value, kind: el("study-kind").value, description: el("study-description").value, include_robustness: el("study-robustness").checked },
       });
       notify(`Study ${job.job_id} iniciado.`);
       global.TFM.loadJobsAndRuns();

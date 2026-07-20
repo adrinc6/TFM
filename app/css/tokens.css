@@ -36,6 +36,15 @@
   --series-pos: #4ade80;
   --series-neg: #f87171;
 
+  /* Paleta categórica sobria (4 hues) para gráficos con varias entidades por IDENTIDAD:
+     líneas por agente (calidad/momentum/valor/meta), historia de puntuaciones. Validada
+     CVD-safe sobre el fondo oscuro (sin par verde-rojo confundible; ΔE normal ≥ 15, CVD ≥ 8).
+     Orden FIJO: se asignan por identidad, nunca se ciclan como matices generados. */
+  --cat-1: #c99b46;  /* oro       */
+  --cat-2: #2fa892;  /* teal      */
+  --cat-3: #c96a52;  /* terracota */
+  --cat-4: #a86bbf;  /* malva     */
+
   /* Tipografía y forma */
   --font: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;

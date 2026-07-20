@@ -56,6 +56,7 @@ de entrada a salida y no resuelvas un problema en una capa ajena.
 5. Tratar el tamaño reducido de muestra y el sesgo de supervivencia como
    limitaciones explícitas, nunca como detalles que se puedan ocultar.
 6. Siempre que te pida un plan debes mostrarmelo entero y hasta que no te diga que lo implementes no cambies nada, solo planea.
+7. No hacer siempre commit y push, solo si te lo pido.
 
 ## Cambios que requieren aprobación previa
 

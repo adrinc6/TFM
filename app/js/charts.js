@@ -52,6 +52,31 @@
     }
   }
 
+  // Sustituye un único gráfico sin borrar los de otras secciones de la vista.
+  function clearContainer(container) {
+    for (let i = registry.length - 1; i >= 0; i -= 1) {
+      const chart = registry[i];
+      if (!container.contains(chart.canvas)) continue;
+      registry.splice(i, 1);
+      try { chart.destroy(); } catch (e) { /* noop */ }
+    }
+    container.replaceChildren();
+  }
+
+  // Redibuja todos los gráficos vivos. Necesario tras desplegar un <details> que los contenía
+  // cerrado: dentro de un details cerrado el canvas mide 0 y Chart.js lo renderiza en blanco.
+  function resizeAll() {
+    for (const chart of registry) {
+      try { chart.resize(); } catch (e) { /* noop */ }
+    }
+  }
+
+  // Color de un agente individual: grises de la paleta de series (el meta se pinta aparte en oro).
+  const AGENT_GRAYS = ["--series-1", "--series-2", "--series-3"];
+  function agentColor(i) {
+    return getComputedStyle(document.documentElement).getPropertyValue(AGENT_GRAYS[i % AGENT_GRAYS.length]).trim();
+  }
+
   const gridScale = (opts = {}) => ({
     grid: { color: P.line, drawBorder: false },
     ticks: { color: P.muted, ...(opts.ticks || {}) },
@@ -101,15 +126,16 @@
     if (!rows.length) return;
     const agents = [...new Set(rows.map((r) => r.agent))];
     const dates = [...new Set(rows.map((r) => String(r.prediction_date).slice(0, 10)))].sort();
-    const colors = P.series();
     const datasets = agents.map((agent, i) => {
       const byDate = new Map(rows.filter((r) => r.agent === agent).map((r) => [String(r.prediction_date).slice(0, 10), r.rank_ic]));
+      const meta = agent === "meta_final";
       return {
         label: agent,
         data: dates.map((d) => (byDate.has(d) ? byDate.get(d) : null)),
-        borderColor: colors[i % colors.length],
+        // El meta destaca en oro y trazo grueso; los agentes individuales en gris.
+        borderColor: meta ? P.accent : agentColor(i),
         backgroundColor: "transparent",
-        borderWidth: agent === "meta_final" ? 2.5 : 1.5,
+        borderWidth: meta ? 2.8 : 1.5,
         pointRadius: 0,
         tension: 0.1,
         spanGaps: true,
@@ -131,15 +157,16 @@
     if (!rows.length) return;
     const agents = [...new Set(rows.map((r) => r.agent))];
     const dates = [...new Set(rows.map((r) => String(r.snapshot_date).slice(0, 10)))].sort();
-    const colors = P.series();
+    const colors = P.categorical();
     const datasets = agents.map((agent, i) => {
       const byDate = new Map(rows.filter((r) => r.agent === agent).map((r) => [String(r.snapshot_date).slice(0, 10), r.weight]));
       return {
         label: agent,
         data: dates.map((d) => (byDate.has(d) ? byDate.get(d) : null)),
+        // Cada agente es una identidad distinta: paleta categórica en orden fijo.
         borderColor: colors[i % colors.length],
         backgroundColor: "transparent",
-        borderWidth: 1.8,
+        borderWidth: 2,
         pointRadius: 0,
         tension: 0.1,
         spanGaps: true,
@@ -158,16 +185,22 @@
     if (!rows.length) return;
     // Usa la última fecha disponible
     const lastDate = rows.map((r) => String(r.snapshot_date)).sort().slice(-1)[0];
-    const latest = rows.filter((r) => String(r.snapshot_date) === lastDate);
+    const latest = rows.filter((r) => String(r.snapshot_date) === lastDate)
+      .sort((a, b) => (b.weight || 0) - (a.weight || 0));
     if (!latest.length) return;
-    const grays = ["#d4d4d8", "#b4b4bc", "#9a9aa2", "#7c7c84", "#64646c", "#4e4e56", "#3a3a40", "#2c2c32"];
+    // Las mayores posiciones reciben un color de la paleta categórica (identidad); el resto,
+    // grises decrecientes para no inventar matices más allá de los validados. Anillo de superficie
+    // entre porciones (separador de 2px) para que se distingan aunque compartan gama.
+    const cat = P.categorical();
+    const grays = ["#8a8a92", "#6f6f77", "#5c5c64", "#4a4a51", "#3a3a40", "#2c2c32"];
+    const sliceColor = (i) => (i < cat.length ? cat[i] : grays[(i - cat.length) % grays.length]);
     make(container, `Composición de cartera · ${String(lastDate).slice(0, 10)}`, {
       type: "doughnut",
       data: {
         labels: latest.map((r) => r.ticker),
-        datasets: [{ data: latest.map((r) => r.weight * 100), backgroundColor: latest.map((_, i) => grays[i % grays.length]), borderColor: P.surface, borderWidth: 1 }],
+        datasets: [{ data: latest.map((r) => r.weight * 100), backgroundColor: latest.map((_, i) => sliceColor(i)), borderColor: P.surface, borderWidth: 2 }],
       },
-      options: { plugins: { legend: { position: "right" } } },
+      options: { plugins: { legend: { position: "right" }, tooltip: { callbacks: { label: (c) => `${c.label}: ${c.parsed.toFixed(1)} %` } } } },
     }, 300);
   }
 
@@ -233,22 +266,40 @@
     });
   }
 
-  // --- Comparativa de runs de un estudio (barras horizontales por rank-IC) ---
-  function studyComparison(container, rows, valueKey, title) {
-    const list = (rows || []).filter((r) => typeof r[valueKey] === "number");
+  // --- Histórico de puntuaciones de una acción por agente (calidad/momentum/valor/meta) ---
+  // `rows`: filas de agent_scores del ticker (una por snapshot) con columnas quality/momentum/
+  // value/meta_score. Cada agente es una serie con identidad → paleta categórica.
+  function stockScoreHistory(container, rows) {
+    const list = (rows || []).slice().sort((a, b) => String(a.snapshot_date).localeCompare(String(b.snapshot_date)));
     if (!list.length) return;
-    make(container, title || "Comparativa de runs", {
-      type: "bar",
-      data: {
-        labels: list.map((r) => r.label || r.run_id),
-        datasets: [{ label: valueKey, data: list.map((r) => r[valueKey]), backgroundColor: list.map((r) => (r[valueKey] >= 0 ? P.series()[0] : P.neg)) }],
+    const labels = list.map((r) => String(r.snapshot_date).slice(0, 10));
+    const cat = P.categorical();
+    const fields = [
+      ["quality", "Calidad"], ["momentum", "Momentum"], ["value", "Valor"], ["meta_score", "Meta"],
+    ].filter(([key]) => list.some((r) => typeof r[key] === "number" && Number.isFinite(r[key])));
+    const datasets = fields.map(([key, label], i) => ({
+      label,
+      data: list.map((r) => (typeof r[key] === "number" ? r[key] : null)),
+      borderColor: cat[i % cat.length],
+      backgroundColor: "transparent",
+      borderWidth: key === "meta_score" ? 2.6 : 1.6,
+      pointRadius: 0,
+      tension: 0.1,
+      spanGaps: true,
+    }));
+    make(container, "Histórico de puntuaciones por agente", {
+      type: "line",
+      data: { labels, datasets },
+      options: {
+        interaction: { mode: "index", intersect: false },
+        scales: { x: gridScale({ ticks: { maxTicksLimit: 8 } }), y: gridScale() },
+        plugins: { legend: { display: true } },
       },
-      options: { indexAxis: "y", scales: { x: gridScale(), y: gridScale() }, plugins: { legend: { display: false } } },
-    }, Math.max(180, list.length * 28));
+    });
   }
 
   global.TFMCharts = {
-    clear, equityChart, alphaBars, rankIcOverTime, metaWeights,
-    portfolioComposition, stockHistory, tickerPrice, studyComparison,
+    clear, clearContainer, resizeAll, equityChart, alphaBars, rankIcOverTime, metaWeights,
+    portfolioComposition, stockHistory, tickerPrice, stockScoreHistory,
   };
 })(window);

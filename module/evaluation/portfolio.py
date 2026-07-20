@@ -117,7 +117,46 @@ def decide_orders(
     target = _target_state(state, drop_orders + fill_orders + rotation_orders, percentile_by_ticker)
     resize_orders = _resize_to_target(state, target, settings, snapshot_date)
 
-    return drop_orders + fill_orders + rotation_orders + resize_orders
+    return _merge_intents_with_sizing(
+        drop_orders + fill_orders + rotation_orders, resize_orders
+    )
+
+
+# Motivos de "intención de entrada": marcan que un ticker debe entrar, pero su peso real lo fija
+# el sizing (`rebalance`). Se escriben con weight_after=None y no deben quedar como órdenes sueltas.
+_ENTRY_INTENT_REASONS = frozenset({"initial_fill", "hole_filled_after_drop", "edge_over_worst"})
+
+
+def _merge_intents_with_sizing(
+    decision_orders: list[dict[str, Any]], resize_orders: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Colapsa cada intención de ENTRADA con su orden de sizing del mismo ticker en UNA sola orden.
+
+    Antes se escribían dos filas el mismo día por cada ticker que entraba: la intención
+    (`hole_filled_after_drop`/`initial_fill`/`edge_over_worst`, con peso 0→0 al no resolverse su
+    weight_after) y el `rebalance` real (0→peso). La primera no tiene efecto en equity ni costes
+    (notional 0), pero ensuciaba el log de operaciones y lo duplicaba. Aquí se funden en una única
+    orden real que conserva el MOTIVO de entrada (por qué entró) y el peso final del sizing. Las
+    ventas y los rebalances de tenentes ya presentes se mantienen tal cual.
+    """
+    resize_by_ticker = {order["ticker"]: order for order in resize_orders}
+    merged: list[dict[str, Any]] = []
+    consumed_resizes: set[str] = set()
+    for order in decision_orders:
+        if order.get("reason") in _ENTRY_INTENT_REASONS:
+            sizing = resize_by_ticker.get(order["ticker"])
+            if sizing is not None:
+                # Orden real: peso del sizing, motivo de la intención (más informativo).
+                merged.append({**sizing, "reason": order["reason"]})
+                consumed_resizes.add(order["ticker"])
+            # Si no hay sizing asociado, la intención era un placeholder 0→0: se descarta.
+            continue
+        merged.append(order)
+    # Rebalances que no correspondían a una entrada (tenentes ya presentes) se conservan.
+    for order in resize_orders:
+        if order["ticker"] not in consumed_resizes:
+            merged.append(order)
+    return merged
 
 
 def _apply_expulsion(

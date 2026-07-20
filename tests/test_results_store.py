@@ -18,7 +18,8 @@ def test_canonical_json_is_order_independent():
 def test_hash_changes_when_effective_setting_changes():
     settings = Settings(run_mode="agents", run_scope="dev")
     common = {"run_kind": "experimental", "mode": "agents", "stages": ["agents"]}
-    assert config_hash(settings, **common) != config_hash(replace(settings, train_lookback_years=8), **common)
+    # Se usa un valor distinto del default (8) para asegurar que el cambio altera el hash.
+    assert config_hash(settings, **common) != config_hash(replace(settings, train_lookback_years=6), **common)
 
 
 def test_execution_hash_ignores_presentation_intent():

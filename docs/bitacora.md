@@ -240,3 +240,32 @@ por construccion no alteran el aprendizaje (no estan en el fingerprint de `agent
 rank-IC no puede discriminarlos y el criterio economico es el unico que tiene sentido ahi.
 `decision.json` cierra con `best_config`: mejor modelo + mejor gestion de cartera + perfil que mas
 renta. 100 tests en verde (92 + 8 nuevos del ciclo unificado).
+
+---
+
+## N — Repetición del `full_study` oficial (2026-07-19): señal más débil, más perfiles ganan
+
+**Observación.** Se relanzó `full_study` con `run_optimization` (el núcleo unificado descrito
+arriba) para cerrar la pieza pendiente del estudio anterior (`20260718--...--bef48ddfc41f--r02`):
+el placebo por permutación de etiquetas. El nuevo estudio es
+`20260719--optimization-official--acb6c310dfb8`.
+
+**Qué se midió.** El rank-IC OOS del modelo ganador bajó de +0.0158 a +0.0118, y el intervalo de
+bootstrap por bloques pasó de **no cruzar cero** ([0.0053, 0.0265]) a **cruzar cero**
+([-0.0113, 0.0340], sobre solo 45 cohortes frente a 147 antes). El leave-one-year-out y la era
+reservada 2025-2026 (+0.0210) siguen siendo consistentes con una señal real y estable, pero el
+contraste más exigente (bootstrap) ya no es concluyente. El placebo por permutación **sigue sin
+ejecutarse** (`n_permutations=0`) — la pieza que se quería cerrar con esta repetición sigue
+pendiente.
+
+En el plano de rentabilidad, 5 de 8 perfiles baten ahora al SPY (antes solo `quality`), con
+`aggressive` como recomendado (IR 0.153). Esta mejora viene de la fase de cartera (menos
+posiciones, mayor peso máximo por posición, menor comisión y slippage), no de una señal de
+aprendizaje más fuerte.
+
+**Decisión.** Se documenta como resultado **mixto**, no como mejora: el eje que importa
+(aprendizaje) no mejoró, y la pieza de robustez pendiente sigue sin resolverse tras dos estudios
+oficiales. `docs/doc.md` §8 y `docs/informe_final.md` se actualizan con las cifras de este estudio.
+Queda abierta la decisión de si ejecutar el placebo por permutación de forma aislada antes de dar
+por definitivamente cerrado el proyecto, o si aceptar el resultado actual (con la limitación
+explícita) como cierre del TFM.

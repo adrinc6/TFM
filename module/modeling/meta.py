@@ -2,14 +2,19 @@
 
 Tres formas de ponderar (`meta_type`), de menos a más ambiciosa:
 
+- "equal": peso fijo 1/3 para cada agente. Ignora el rank-IC reciente; es la política de
+  combinación elegida, no un respaldo por falta de señal. Sirve de referencia: mide cuánto
+  aporta ponderar frente a promediar sin criterio.
 - "rank_ic": pesos proporcionales al rank-IC OOS reciente de cada agente (el original).
-- "regime": pesos condicionados al régimen de mercado (bull/bear), detectado sin lookahead.
-- "ml": un modelo ligero que aprende walk-forward a ponderar los agentes según el contexto de
-  mercado. Con salvaguarda: si en OOS no bate a "rank_ic", no se usa (se documenta en la
-  bitácora; la selección de escenarios ya elige por rank-IC, así que un meta peor no gana).
+- "regime": parte de los pesos "rank_ic" y los inclina según el régimen de mercado (bull/bear)
+  detectado sin lookahead (retorno a 12m del benchmark hasta la fecha): en mercado alcista
+  realza `momentum`, en bajista realza `quality`. Renormaliza. La dirección de la inclinación
+  refleja el consenso de estilo (momentum funciona en tendencias alcistas, calidad defiende en
+  caídas); el tamaño del sesgo es fijo y modesto para no imponer una señal fuerte a mano.
 
 La combinación en sí (rankear los scores de cada agente y promediarlos con esos pesos) es común
-a las tres; solo cambia de dónde salen los pesos por fecha.
+a las tres; solo cambia de dónde salen los pesos por fecha. El régimen se pasa por fecha a
+`_weights_as_of`; sin serie de régimen disponible, "regime" recae en "rank_ic".
 """
 
 from __future__ import annotations
@@ -23,9 +28,16 @@ AGENT_NAMES = ("quality", "momentum", "value")
 
 
 def combine_agent_scores(
-    scores: pd.DataFrame, targets: pd.DataFrame, settings: Settings
+    scores: pd.DataFrame, targets: pd.DataFrame, settings: Settings,
+    regime_bull_by_date: dict[str, bool] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Devuelve scores meta, pesos secuenciales y diagnósticos OOS finales."""
+    """Devuelve scores meta, pesos secuenciales y diagnósticos OOS finales.
+
+    ``regime_bull_by_date`` mapea cada snapshot_date (ISO) a True si el mercado está alcista
+    (retorno a 12m del benchmark > 0 a esa fecha, ya point-in-time). Solo lo usa
+    ``meta_type="regime"``; si es None, "regime" se comporta como "rank_ic".
+    """
+    regime_bull_by_date = regime_bull_by_date or {}
     labelled = scores.merge(
         targets[["ticker", "snapshot_date", "label_end_date", "target_available", "forward_excess_return_3m"]],
         on=["ticker", "snapshot_date"],
@@ -41,7 +53,9 @@ def combine_agent_scores(
     for date in sorted(labelled["snapshot_ts"].dropna().unique()):
         date_frame = labelled.loc[labelled["snapshot_ts"] == date].copy()
         available_agents = set(date_frame["agent"].unique())
-        agent_weights, evidence = _weights_as_of(labelled, date, available_agents, settings)
+        date_iso = pd.Timestamp(date).date().isoformat()
+        bull = regime_bull_by_date.get(date_iso)
+        agent_weights, evidence = _weights_as_of(labelled, date, available_agents, settings, bull=bull)
         learned = any(item.get("mean_rank_ic", 0) > 0 for item in evidence.values())
         for agent in AGENT_NAMES:
             weights.append(
@@ -134,12 +148,28 @@ def _equal_weight_diagnostics(labelled: pd.DataFrame, settings: Settings) -> pd.
     return _diagnostics_for_score(equal, settings, "meta_equal_weight")
 
 
+# Sesgo modesto y fijo del modo "regime": en bull se multiplica el peso de momentum por
+# (1+REGIME_TILT) y el de quality por (1-REGIME_TILT); en bear, al revés. Se renormaliza
+# después. Un tilt pequeño inclina sin imponer una señal fuerte hecha a mano.
+REGIME_TILT = 0.30
+
+
 def _weights_as_of(
     labelled: pd.DataFrame,
     date: pd.Timestamp,
     available_agents: set[str],
     settings: Settings,
+    bull: bool | None = None,
 ) -> tuple[dict[str, float], dict[str, dict[str, float | int]]]:
+    """Pesos de los agentes a una fecha, según `settings.meta_type`.
+
+    Siempre calcula el rank-IC reciente de cada agente (evidencia para trazabilidad y para el
+    modo rank_ic/regime). El modo elige cómo se convierte esa evidencia en pesos:
+    - "equal": 1/N fijo, ignora el rank-IC reciente.
+    - "rank_ic": pesos ∝ max(rank-IC reciente, 0).
+    - "regime": pesos rank_ic inclinados por el régimen (bull/bear) recibido en `bull`.
+    Cualquier modo cae a equiponderado si no hay señal positiva (fallback).
+    """
     history = labelled.loc[
         (labelled["snapshot_ts"] < date)
         & labelled["is_quarterly"].fillna(False)
@@ -161,11 +191,26 @@ def _weights_as_of(
         mean_ic = float(np.mean(recent)) if recent else 0.0
         evidence[agent] = {"mean_rank_ic": mean_ic, "realized_cohorts": len(recent)}
         positive[agent] = max(mean_ic, 0.0)
-    total = sum(positive.values())
-    if total > 0:
-        return {agent: value / total for agent, value in positive.items()}, evidence
+
     equal = 1 / len(available_agents) if available_agents else 0.0
-    return ({agent: equal for agent in available_agents}, evidence)
+
+    if settings.meta_type == "equal":
+        return ({agent: equal for agent in available_agents}, evidence)
+
+    total = sum(positive.values())
+    if total <= 0:  # sin señal positiva reciente: equiponderado (fallback común a todos los modos)
+        return ({agent: equal for agent in available_agents}, evidence)
+    weights = {agent: value / total for agent, value in positive.items()}
+
+    if settings.meta_type == "regime" and bull is not None:
+        tilt = {"momentum": 1 + REGIME_TILT, "quality": 1 - REGIME_TILT} if bull else \
+               {"momentum": 1 - REGIME_TILT, "quality": 1 + REGIME_TILT}
+        weights = {agent: w * tilt.get(agent, 1.0) for agent, w in weights.items()}
+        renorm = sum(weights.values())
+        if renorm > 0:
+            weights = {agent: w / renorm for agent, w in weights.items()}
+
+    return weights, evidence
 
 
 _DIAG_COLUMNS = ["agent", "prediction_date", "label_end_date", "observations", "rank_ic", "is_quarterly"]
