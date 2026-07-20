@@ -2,19 +2,29 @@ from __future__ import annotations
 
 import pandas as pd
 
-from module.data.dataset import build_point_in_time_dataset
+from module.data.dataset import build_point_in_time_dataset, snapshot_dates
 
 
 def _row(panel, ticker: str, date: str):
     return panel.loc[(panel["ticker"] == ticker) & (panel["snapshot_date"] == date)].iloc[0]
 
 
+def _snapshot_after(settings, after: str) -> str:
+    """Primer snapshot de la rejilla en/tras `after` (la rejilla cae en fin_de_mes + lag)."""
+    grid = snapshot_dates(settings)
+    return next(d.date().isoformat() for d in grid if d >= pd.Timestamp(after))
+
+
 def test_panel_uses_each_company_last_published_fundamental(dataset_settings) -> None:
     panel = build_point_in_time_dataset(dataset_settings)
 
-    aaa_february = _row(panel, "AAA", "2000-02-15")
-    bbb_february = _row(panel, "BBB", "2000-02-15")
-    bbb_march = _row(panel, "BBB", "2000-03-15")
+    # Snapshot tras el 10-K de AAA (filed 2000-02-01) pero antes del 10-K de BBB (filed 2000-03-10),
+    # y otro tras el 10-K de BBB.
+    feb = _snapshot_after(dataset_settings, "2000-02-05")
+    mar = _snapshot_after(dataset_settings, "2000-03-11")
+    aaa_february = _row(panel, "AAA", feb)
+    bbb_february = _row(panel, "BBB", feb)
+    bbb_march = _row(panel, "BBB", mar)
 
     assert aaa_february["fundamental_period"] == "1999-12-31"
     assert bbb_february["fundamental_period"] == "1999-09-30"
@@ -27,8 +37,12 @@ def test_panel_uses_each_company_last_published_fundamental(dataset_settings) ->
 
 def test_fundamentals_remain_frozen_until_next_filing_and_ignore_metric_snapshot(dataset_settings) -> None:
     panel = build_point_in_time_dataset(dataset_settings)
-    aaa_february = _row(panel, "AAA", "2000-02-15")
-    aaa_march = _row(panel, "AAA", "2000-03-15")
+    # Dos snapshots consecutivos tras el 10-K de AAA (filed 2000-02-01) y antes de su siguiente
+    # presentación (10-Q de 2000-03-31, filed 2000-04-10): el fundamental debe quedar congelado.
+    feb = _snapshot_after(dataset_settings, "2000-02-05")
+    mar = _snapshot_after(dataset_settings, "2000-03-11")
+    aaa_february = _row(panel, "AAA", feb)
+    aaa_march = _row(panel, "AAA", mar)
 
     assert aaa_february["roe"] == aaa_march["roe"] == 0.5
     assert aaa_february["roe"] != 999.0

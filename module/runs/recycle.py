@@ -23,7 +23,7 @@ from module.common.utils import sha256_file, write_json
 RECYCLE_ROOT = DATA_DIR / "recycle"
 
 STAGE_FIELDS: dict[str, tuple[str, ...]] = {
-    "dataset": ("run_scope", "data_start_date", "end_date", "benchmark_ticker", "snapshot_day", "snapshot_step_months"),
+    "dataset": ("run_scope", "data_start_date", "end_date", "benchmark_ticker", "execution_lag_days", "snapshot_step_months"),
     "features": ("run_scope", "target_horizon_months", "neutralize_by_sector", "fundamental_momentum", "market_regime_feature", "price_momentum_multi", "moving_averages", "regime_extended", "quality_growth_derived", "enabled_feature_blocks", "metric_winsorization_percentile", "risk_feature_windows", "technical_feature_windows"),
     "agents": ("execution_year", "execution_quarter", "execution_lag_days", "train_lookback_years", "fundamental_step_months", "meta_ic_lookback_quarters", "min_rank_ic_cross_section", "objective", "lgbm_n_estimators", "lgbm_max_depth", "lgbm_learning_rate", "lgbm_min_child_samples", "random_seed", "meta_type", "enabled_agents", "enabled_model_families", "intra_agent_ensemble_mode", "feature_weighting_mode", "feature_selection_min_coverage", "feature_selection_lookback_quarters", "feature_selection_min_permutation_importance", "feature_selection_min_positive_fraction", "feature_selection_max_features_per_agent", "enabled_feature_blocks", "metric_winsorization_percentile", "risk_feature_windows", "technical_feature_windows"),
     "backtest": ("target_min", "target_max", "entry_min_percentile", "min_hold_percentile", "rotation_edge_percentiles", "max_weight_per_position", "commission_bps", "slippage_bps", "rebalance_drift_tolerance", "max_monthly_position_return", "profile"),

@@ -21,7 +21,7 @@ from module.evaluation.robustness import leave_one_year_out
 from module.evaluation.stats import block_bootstrap_ci
 from module.runs.experiments import split_variables
 from module.runs.results_store import ResultsStore, execution_hash
-from escenarios.variables import COST_STRESS_CASES, STUDY_OPTIONS
+from module.scenarios.variables import COST_STRESS_CASES, FULL_STUDY_OPTIONS
 from module.runs.recycle import cache_dir, publish as publish_recycle, restore as restore_recycle, stage_key
 from module.common.utils import setup_logging, write_json, write_parquet
 
@@ -148,10 +148,11 @@ def execute_official_optimization(
 ) -> str:
     """Optimización oficial: ciclo completo barriendo TODAS las variables barribles.
 
-    Barrido derivado de ``STUDY_OPTIONS`` (todos los ejes de modelo en Fase 1/2 y todos los de
-    cartera al final). Reemplaza al catálogo fijo reducido de ``escenarios/fase1_ejes.py``.
+    Barrido derivado de ``FULL_STUDY_OPTIONS`` (barrido inteligente: todos los ejes de modelo en
+    Fase 1/2 y todos los de cartera al final, con la densidad de niveles recortada donde el
+    solapamiento es evidente). El ``study`` manual, en cambio, conserva ``STUDY_OPTIONS`` completo.
     """
-    variables = {axis: list(values) for axis, values in STUDY_OPTIONS.items()}
+    variables = {axis: list(values) for axis, values in FULL_STUDY_OPTIONS.items()}
     model_vars, portfolio_vars = split_variables(variables)
     payload = {
         "name": name.strip() or "optimization-official", "kind": "optimization",
@@ -439,11 +440,13 @@ def _portfolio_phase(
     for axis, values in portfolio_vars.items():
         if axis == "profile":  # el perfil se cubre con los 8 runs de perfil, no se barre aquí
             continue
-        current = selected.get(axis, getattr(final_settings, axis))
-        best_value, best_score, best_run = current, float("-inf"), None
+        best_overrides, best_value, best_score, best_run = None, None, float("-inf"), None
         axis_results: list[dict[str, Any]] = []
         for value in values:
-            trial = {**selected, axis: value}
+            # Un eje COMPUESTO (p.ej. target_band) trae un dict que expande a varios campos de
+            # Settings a la vez; un eje simple trae un escalar que se asigna a su propio campo.
+            overrides = dict(value) if isinstance(value, Mapping) else {axis: value}
+            trial = {**selected, **overrides}
             # Algunas combinaciones violan las restricciones de Settings (p.ej.
             # max_weight_per_position * target_min < 1); se omiten sin abortar la fase.
             try:
@@ -461,10 +464,11 @@ def _portfolio_phase(
             score = _economic_score(summary, criterion)
             axis_results.append({"value": value, criterion: score, "run_id": run_id})
             comparison_rows.append({"phase": "4_cartera", "scenario": f"{axis}={value}", "axis": axis,
-                                    "overrides": {axis: value}, "run_id": run_id, **summary})
+                                    "overrides": dict(overrides), "run_id": run_id, **summary})
             if score > best_score:
-                best_value, best_score, best_run = value, score, run_id
-        selected[axis] = best_value
+                best_overrides, best_value, best_score, best_run = overrides, value, score, run_id
+        if best_overrides is not None:
+            selected.update(best_overrides)  # expande el eje (simple o compuesto) sobre la selección
         trace["axes"][axis] = {"chosen": best_value, "score": best_score, "run_id": best_run,
                                 "candidates": axis_results}
     return selected, trace, comparison_rows

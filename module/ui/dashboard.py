@@ -60,16 +60,16 @@ APP_ROOT = (PROJECT_ROOT / "app").resolve()
 # Valores guiados para studies. Un study no acepta JSON arbitrario: solo combina opciones
 # metodológicamente admitidas; Experimental sigue permitiendo ajustar valores individuales.
 SETTINGS_GROUPS = {
-    "Periodo y entrenamiento": ["execution_year", "execution_quarter", "execution_lag_days", "train_lookback_years", "snapshot_step_months", "fundamental_step_months", "snapshot_day", "target_horizon_months", "meta_ic_lookback_quarters"],
+    "Periodo y entrenamiento": ["execution_year", "execution_quarter", "execution_lag_days", "train_lookback_years", "snapshot_step_months", "fundamental_step_months", "target_horizon_months", "meta_ic_lookback_quarters"],
     "Modelo LightGBM": ["objective", "lgbm_n_estimators", "lgbm_max_depth", "lgbm_learning_rate", "lgbm_min_child_samples", "random_seed", "meta_type", "recency_weighting"],
     "Artefactos": ["neutralize_by_sector", "fundamental_momentum", "market_regime_feature", "price_momentum_multi", "moving_averages", "regime_extended", "quality_growth_derived"],
     "Laboratorio ML": ["enabled_feature_blocks", "enabled_agents", "enabled_model_families", "intra_agent_ensemble_mode", "feature_weighting_mode", "feature_selection_min_coverage", "feature_selection_lookback_quarters", "feature_selection_min_permutation_importance", "feature_selection_min_positive_fraction", "feature_selection_max_features_per_agent", "metric_winsorization_percentile", "risk_feature_windows", "technical_feature_windows"],
     "Cartera y perfil": ["target_min", "target_max", "entry_min_percentile", "min_hold_percentile", "rotation_edge_percentiles", "max_weight_per_position", "commission_bps", "slippage_bps", "rebalance_drift_tolerance", "max_monthly_position_return", "profile"],
 }
 
-# Catálogo de valores admitidos por variable: fuente única en escenarios/variables.py, compartida
+# Catálogo de valores admitidos por variable: fuente única en module/scenarios/variables.py, compartida
 # con el orquestador de estudios (que deriva de aquí el barrido completo del full_study).
-from escenarios.variables import COST_STRESS_CASES, STUDY_OPTIONS
+from module.scenarios.variables import COST_STRESS_CASES, STUDY_OPTIONS
 
 # Orden y semántica de las variables que la vista Study puede barrer. Mantiene el diccionario
 # ejecutable separado de la presentación y evita una lista plana de decenas de controles.
@@ -130,7 +130,6 @@ FULL_STUDY_FIXED_SETTINGS = {
     "benchmark_ticker": Settings().benchmark_ticker,
     "execution_year": Settings().execution_year,
     "execution_quarter": Settings().execution_quarter,
-    "snapshot_day": Settings().snapshot_day,
     "run_scope": Settings().run_scope,
     "max_price_age_days": MAX_PRICE_AGE_DAYS,
     "min_training_rows": MIN_TRAINING_ROWS,

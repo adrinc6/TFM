@@ -16,13 +16,13 @@ def test_same_settings_yield_same_fingerprint() -> None:
         assert stage_fingerprint(stage, a) == stage_fingerprint(stage, b)
 
 
-def test_snapshot_day_change_affects_dataset_and_downstream() -> None:
-    """SNAPSHOT_DAY afecta al dataset (rejilla de snapshots), luego a todo."""
+def test_execution_lag_days_change_affects_dataset_and_downstream() -> None:
+    """execution_lag_days define el día de observación de la rejilla -> afecta al dataset y a todo."""
     base = Settings(run_scope="dev", data_start_date="2000-01-01", end_date="2001-01-01")
-    changed = replace(base, snapshot_day=31)
+    changed = replace(base, execution_lag_days=60)
     for stage in ("dataset", "features", "agents", "backtest"):
         assert stage_fingerprint(stage, base) != stage_fingerprint(stage, changed), (
-            f"SNAPSHOT_DAY deberia afectar a la huella de {stage}"
+            f"execution_lag_days deberia afectar a la huella de {stage}"
         )
 
 

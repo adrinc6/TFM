@@ -38,6 +38,55 @@ def test_portfolio_fields_do_not_overlap_model() -> None:
     assert {"target_min", "target_max", "commission_bps", "slippage_bps", "profile"} <= PORTFOLIO_FIELDS
 
 
+# --- Barrido inteligente del full_study -----------------------------------------------------
+
+def test_full_study_sweep_keeps_all_axes_but_trims_density() -> None:
+    """El full_study conserva todos los ejes de modelo (no elimina ninguno 'por si acaso') y recorta
+    la densidad de niveles donde el solapamiento es evidente. En cartera, target_min/target_max/
+    max_weight se fusionan en el eje compuesto target_band."""
+    from module.scenarios.variables import FULL_STUDY_OPTIONS, STUDY_OPTIONS
+
+    fused = {"target_min", "target_max", "max_weight_per_position"}
+    # Todos los ejes del study manual siguen presentes salvo los tres fusionados en target_band.
+    assert set(STUDY_OPTIONS) - fused <= set(FULL_STUDY_OPTIONS)
+    assert "target_band" in FULL_STUDY_OPTIONS
+    assert not (fused & set(FULL_STUDY_OPTIONS)), "los ejes fusionados no deben barrerse sueltos"
+    # Los ejes simples conservados son subconjunto (o igual) de los valores del study manual.
+    for axis, values in FULL_STUDY_OPTIONS.items():
+        if axis == "target_band":
+            continue
+        assert set(values) <= set(STUDY_OPTIONS[axis]), f"{axis} introduce valores nuevos no admitidos"
+    # Al menos los ejes densos y suaves están recortados.
+    assert len(FULL_STUDY_OPTIONS["train_lookback_years"]) < len(STUDY_OPTIONS["train_lookback_years"])
+    assert len(FULL_STUDY_OPTIONS["lgbm_max_depth"]) < len(STUDY_OPTIONS["lgbm_max_depth"])
+
+
+def test_target_band_is_a_valid_composite_portfolio_axis() -> None:
+    """target_band expande a (target_min, target_max, max_weight) coherentes y válidos."""
+    from dataclasses import replace
+
+    from environment import Settings
+    from module.runs.experiments import PORTFOLIO_FIELDS, split_variables
+    from module.scenarios.variables import FULL_STUDY_OPTIONS, TARGET_BANDS
+
+    assert "target_band" in PORTFOLIO_FIELDS
+    _, portfolio_vars = split_variables(FULL_STUDY_OPTIONS)
+    assert "target_band" in portfolio_vars
+    assert [(b["target_min"], b["target_max"]) for b in TARGET_BANDS] == [(5, 8), (8, 12), (12, 15)]
+    # Cada banda cumple las restricciones de Settings (incluida max_weight * target_min >= 1).
+    for band in TARGET_BANDS:
+        replace(Settings(), **band)
+
+
+def test_full_study_sweep_has_no_snapshot_day() -> None:
+    """snapshot_day se eliminó: la rejilla la define execution_lag_days (fin_de_periodo + lag)."""
+    from module.scenarios.variables import FULL_STUDY_OPTIONS, STUDY_OPTIONS
+
+    assert "snapshot_day" not in STUDY_OPTIONS
+    assert "snapshot_day" not in FULL_STUDY_OPTIONS
+    assert "execution_lag_days" in FULL_STUDY_OPTIONS
+
+
 # --- Fase 2 greedy: sin producto cartesiano -------------------------------------------------
 
 class _FakeStore:

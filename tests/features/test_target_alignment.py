@@ -2,12 +2,11 @@
 
 La fecha de etiqueta se obtiene tomando, en la propia rejilla de snapshots
 (`module.dataset.snapshot_dates`), la que está N posiciones más adelante — no sumando meses por
-calendario. La rejilla clampa los fines de mes con `min(snapshot_day, days_in_month)`, y una
-suma de calendario (`snapshot + DateOffset(months=horizon)`) clampa con otra regla distinta:
-con `SNAPSHOT_DAY = 31` no coincidían, el `merge` de la etiqueta no encontraba pareja y el
-target se degradaba a NaN sin ningún error, perdiendo ~40 % del entrenamiento en silencio.
-Emparejar por posición en la rejilla hace que la fecha de etiqueta exista por construcción,
-sea cual sea `SNAPSHOT_DAY` — uno de los parámetros que la Fase 6 va a barrer.
+calendario. La rejilla coloca cada snapshot en `fin_de_mes + execution_lag_days`; una suma de
+calendario (`snapshot + DateOffset(months=horizon)`) clampa con otra regla distinta y no
+coincidiría, dejando el `merge` de la etiqueta sin pareja y degradando el target a NaN en
+silencio. Emparejar por posición en la rejilla hace que la fecha de etiqueta exista por
+construcción, sea cual sea el retardo de observación.
 """
 
 from __future__ import annotations
@@ -57,18 +56,20 @@ def non_default_snapshot_day_settings(monkeypatch, tmp_path) -> Settings:
     monkeypatch.setattr(universe, "SP500_COMPONENTS_CSV", components)
     universe._snapshots.cache_clear()
 
+    # Precios diarios: la rejilla cae en fin_de_mes + execution_lag_days (aquí 60d), así que hace
+    # falta precio fresco cualquier día, no solo a fin de mes.
     price_rows = []
     for ticker, base in (("AAA", 10.0), ("BBB", 20.0), ("SPY", 100.0)):
-        for index, date in enumerate(pd.date_range("1999-01-31", "2001-06-30", freq="ME")):
+        for index, date in enumerate(pd.date_range("1999-01-01", "2001-06-30", freq="D")):
             price_rows.append(
                 {
                     "ticker": ticker,
                     "date": date.date().isoformat(),
-                    "open": base + index,
-                    "high": base + index,
-                    "low": base + index,
-                    "close": base + index,
-                    "adj_close": base + index,
+                    "open": base + index / 30.0,
+                    "high": base + index / 30.0,
+                    "low": base + index / 30.0,
+                    "close": base + index / 30.0,
+                    "adj_close": base + index / 30.0,
                     "volume": 1000,
                 }
             )
@@ -94,17 +95,17 @@ def non_default_snapshot_day_settings(monkeypatch, tmp_path) -> Settings:
     ).to_parquet(raw_dir / "report_dates.parquet", index=False)
 
     yield Settings(
-        run_scope="dev", data_start_date="1999-01-01", end_date="2001-06-30", snapshot_day=31
+        run_scope="dev", data_start_date="1999-01-01", end_date="2001-06-30", execution_lag_days=60
     )
     universe._snapshots.cache_clear()
 
 
 def test_non_default_snapshot_day_does_not_lose_targets(non_default_snapshot_day_settings) -> None:
-    """Extremo a extremo (`dataset` -> `features`) con `SNAPSHOT_DAY = 31`.
+    """Extremo a extremo (`dataset` -> `features`) con un retardo grande (execution_lag_days=60).
 
-    Antes del arreglo del Hallazgo 2, este caso perdía ~40 % de los targets sin ningún error:
-    la fecha de etiqueta se calculaba sumando meses por calendario y no coincidía con la
-    rejilla de snapshots, que clampa los fines de mes de otra forma.
+    La rejilla coloca cada snapshot en `fin_de_mes + lag`; la fecha de etiqueta se toma por
+    posición en la propia rejilla, no sumando meses por calendario. Este caso protege contra que
+    un lag no trivial vuelva a desalinear el emparejado y pierda targets en silencio.
     """
     settings = non_default_snapshot_day_settings
     build_point_in_time_dataset(settings)

@@ -432,16 +432,16 @@ def _cross_section_rank(
 def _label_dates(settings: Settings) -> dict[str, str]:
     """Fecha de etiqueta de cada snapshot: el que está N posiciones más adelante en la rejilla.
 
-    La fecha NO se deriva sumando meses. La rejilla clampa los fines de mes con
-    `min(snapshot_day, days_in_month)` y `DateOffset` lo hace con otra regla distinta, así que
-    con `SNAPSHOT_DAY = 31` había snapshots cuya etiqueta caía en un día inexistente: el merge
-    no encontraba pareja y el target se degradaba a NaN sin ningún error, perdiendo ~40 % del
-    entrenamiento en silencio. Tomando la rejilla como única fuente de verdad, la fecha de
-    etiqueta existe por construcción, sea cual sea `SNAPSHOT_DAY`.
+    La fecha NO se deriva sumando meses. La rejilla coloca cada snapshot en
+    `fin_de_mes + execution_lag_days` y `DateOffset` clampa con otra regla distinta, así que una
+    suma de calendario podía dejar la etiqueta en un día que no existe en la rejilla: el merge no
+    encontraba pareja y el target se degradaba a NaN sin ningún error, perdiendo entrenamiento en
+    silencio. Tomando la rejilla como única fuente de verdad, la fecha de etiqueta existe por
+    construcción, sea cual sea el retardo de observación.
 
-    `SNAPSHOT_DAY` es uno de los parámetros que barre la Fase 6: si la cobertura de etiquetas
-    dependiese de su valor, la rejilla compararía escenarios con distinta cantidad de datos.
-    Ver `docs/bitacora.md`.
+    `execution_lag_days` (que define el día de observación) es uno de los ejes que barre el
+    estudio: si la cobertura de etiquetas dependiese de su valor, la rejilla compararía
+    escenarios con distinta cantidad de datos. Ver `docs/bitacora.md`.
     """
     grid = [date.date().isoformat() for date in snapshot_dates(settings)]
     step = settings.target_horizon_months // settings.snapshot_step_months

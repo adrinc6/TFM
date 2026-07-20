@@ -9,7 +9,13 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from module.data.dataset import build_point_in_time_dataset
+from module.data.dataset import build_point_in_time_dataset, snapshot_dates
+
+
+def _snapshot_after(settings, after: str) -> str:
+    """Primer snapshot de la rejilla en/tras `after` (cae en fin_de_mes + execution_lag_days)."""
+    grid = snapshot_dates(settings)
+    return next(d.date().isoformat() for d in grid if d >= pd.Timestamp(after))
 
 
 FULL_HISTORY = [
@@ -51,8 +57,9 @@ def test_yoy_growth_is_na_when_the_prior_year_quarter_is_missing(dataset_setting
         dataset_settings, eps_periods=[p for p in FULL_HISTORY if p != "1998-12-31"]
     )
     panel = build_point_in_time_dataset(dataset_settings)
+    snapshot = _snapshot_after(dataset_settings, "2000-02-05")
     row = panel.loc[
-        (panel["ticker"] == "AAA") & (panel["snapshot_date"] == "2000-02-15")
+        (panel["ticker"] == "AAA") & (panel["snapshot_date"] == snapshot)
     ].iloc[0]
 
     assert row["fundamental_period"] == "1999-12-31"
@@ -72,8 +79,9 @@ def test_yoy_growth_survives_a_gap_that_shifts_positions(dataset_settings) -> No
         dataset_settings, eps_periods=[p for p in FULL_HISTORY if p != "1999-03-31"]
     )
     panel = build_point_in_time_dataset(dataset_settings)
+    snapshot = _snapshot_after(dataset_settings, "2000-02-05")
     row = panel.loc[
-        (panel["ticker"] == "AAA") & (panel["snapshot_date"] == "2000-02-15")
+        (panel["ticker"] == "AAA") & (panel["snapshot_date"] == snapshot)
     ].iloc[0]
 
     # eps: 1998-12-31 -> 8.0 (indice 7), 1999-12-31 -> 11.0 (indice 10 tras quitar uno).
@@ -102,8 +110,9 @@ def test_non_ttm_margins_do_not_fall_back_to_annual(annual_only_margin_settings)
     AAA aportaría un margen de doce meses donde BBB aporta uno de tres.
     """
     panel = build_point_in_time_dataset(annual_only_margin_settings)
+    snapshot = _snapshot_after(annual_only_margin_settings, "2000-02-05")
     row = panel.loc[
-        (panel["ticker"] == "AAA") & (panel["snapshot_date"] == "2000-02-15")
+        (panel["ticker"] == "AAA") & (panel["snapshot_date"] == snapshot)
     ].iloc[0]
 
     assert pd.isna(row["net_margin"])

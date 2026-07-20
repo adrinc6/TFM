@@ -57,19 +57,21 @@ def dataset_settings(monkeypatch, tmp_path) -> Settings:
     monkeypatch.setattr(universe, "SP500_COMPONENTS_CSV", components)
     universe._snapshots.cache_clear()
 
+    # Precios diarios: así hay precio fresco en cualquier fecha de la rejilla (que ahora cae en
+    # fin_de_mes + execution_lag_days, no en un día de mes fijo). El valor crece de forma
+    # monótona con el tiempo para conservar el orden que comprueban los tests.
     price_rows = []
     for ticker, base in (("AAA", 10.0), ("BBB", 20.0), ("SPY", 100.0)):
-        for index, date in enumerate(pd.date_range("1999-01-15", "2000-04-15", freq="MS")):
-            snapshot = date.replace(day=15)
+        for index, date in enumerate(pd.date_range("1999-01-01", "2000-04-15", freq="D")):
             price_rows.append(
                 {
                     "ticker": ticker,
-                    "date": snapshot.date().isoformat(),
-                    "open": base + index,
-                    "high": base + index,
-                    "low": base + index,
-                    "close": base + index,
-                    "adj_close": base + index,
+                    "date": date.date().isoformat(),
+                    "open": base + index / 30.0,
+                    "high": base + index / 30.0,
+                    "low": base + index / 30.0,
+                    "close": base + index / 30.0,
+                    "adj_close": base + index / 30.0,
                     "volume": 1000,
                 }
             )

@@ -85,3 +85,50 @@ STUDY_OPTIONS: dict[str, list] = {
     "max_weight_per_position": [0.10, 0.15, 0.20], "profile": ["balanced", "conservative", "aggressive",
                                              "value", "quality", "momentum", "garp", "contrarian"],
 }
+
+
+# --- Barrido inteligente del full_study -------------------------------------------------------
+# El `study` manual conserva TODOS los valores de `STUDY_OPTIONS` (exploración libre en la UI).
+# El `full_study` (optimización oficial) es automático y encadena decenas de reentrenos caros
+# (~fechas × agentes × familias por escenario), así que debe barrer solo lo que puede mover el
+# rank-IC OOS, con la densidad justa. `FULL_STUDY_OPTIONS` = `STUDY_OPTIONS` con la densidad
+# recortada en los ejes cuya curva es suave y cuyos niveles contiguos rara vez cambian el ganador.
+#
+# Criterio de recorte (documentado en docs/bitacora.md):
+#   - Niveles contiguos indistinguibles: se conservan extremos + centro (2-3 niveles).
+#   - La Fase 3 (afinado de hiperparámetros) ya reafina lr / n_estimators / min_child_samples
+#     sobre el ganador, así que la Fase 1 no necesita densidad en esos ejes.
+#   - No se elimina ningún eje "por si acaso no aporta": eso lo decide el propio estudio midiendo
+#     su contribución incremental. Solo se baja densidad donde el solapamiento es evidente.
+# `snapshot_day` ya no existe (la rejilla la define execution_lag_days: fin_de_periodo + lag).
+FULL_STUDY_LEVEL_OVERRIDES: dict[str, list] = {
+    "train_lookback_years": [4, 8, 12],      # de 6 niveles a 3: curva ventana-vs-IC suave
+    "lgbm_max_depth": [3, 5, 8],             # de 5 a 3: profundidades contiguas ~idénticas; Fase 3 reafina
+    "lgbm_learning_rate": [0.02, 0.05, 0.10],  # de 4 a 3: 0.02≈0.03; Fase 3 reafina lr
+    "lgbm_n_estimators": [100, 400],          # de 3 a 2: Fase 3 reafina n_estimators
+    "target_horizon_months": [3, 6, 12],      # de 4 a 3: horizonte 1m casi no da señal fundamental
+    "target_min": [8, 10, 12],                # eje de cartera; niveles contiguos apenas mueven el IR
+    "target_max": [8, 10, 12],                # idem
+}
+
+# Bandas de tamaño de cartera (target_min, target_max) probadas como PAREJAS acopladas, no como
+# dos ejes sueltos: así cada combinación es coherente y se evita el producto cruzado con parejas
+# inválidas (min>max). Cada banda fija además el max_weight_per_position mínimo válido para su
+# target_min (restricción de Settings: max_weight * target_min >= 1), de modo que la cartera puede
+# llegar al 100%. Es un eje COMPUESTO: su valor es un dict de overrides que la fase de cartera
+# expande de golpe. Se elige por Information Ratio como el resto de ejes de cartera.
+TARGET_BANDS: list[dict] = [
+    {"target_min": 5, "target_max": 8, "max_weight_per_position": 0.20},
+    {"target_min": 8, "target_max": 12, "max_weight_per_position": 0.15},
+    {"target_min": 12, "target_max": 15, "max_weight_per_position": 0.10},
+]
+
+FULL_STUDY_OPTIONS: dict[str, list] = {
+    axis: FULL_STUDY_LEVEL_OVERRIDES.get(axis, list(values))
+    for axis, values in STUDY_OPTIONS.items()
+}
+# El full_study barre el tamaño de cartera como 3 bandas acopladas en vez de target_min/target_max/
+# max_weight sueltos. El `study` manual conserva esos tres ejes independientes en STUDY_OPTIONS.
+for _axis in ("target_min", "target_max", "max_weight_per_position"):
+    FULL_STUDY_OPTIONS.pop(_axis, None)
+FULL_STUDY_OPTIONS["target_band"] = TARGET_BANDS

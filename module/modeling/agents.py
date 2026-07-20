@@ -202,9 +202,12 @@ def _walk_forward_scores(
             & (frame["snapshot_ts"].lt(next_date) if next_date is not None else True)
             & frame["is_price_fresh"].fillna(False)
         ]
+        # `train`/`target`/`weights` no dependen del agente (solo de retrain_date): se preparan una
+        # vez por fecha, no una vez por (fecha × agente × familia). Resultado idéntico, menos trabajo.
+        train = training.dropna(subset=["forward_excess_return_3m"])
+        train, target = _prepare_training(train, settings)
+        recency = _recency_weights(train, settings)
         for agent, columns in agent_features.items():
-            train = training.dropna(subset=["forward_excess_return_3m"])
-            train, target = _prepare_training(train, settings)
             columns = _selected_feature_columns(train, columns, settings, agent=agent)
             if len(train) < MIN_TRAINING_ROWS:
                 log.warning("[%s %s] filas insuficientes: %s", agent, retrain_date.date(), len(train))
@@ -215,7 +218,7 @@ def _walk_forward_scores(
             families: list[str] = []
             fitted: list[tuple[str, object]] = []
             for family, model in _build_models(settings):
-                _fit_model(model, train, columns, target, settings, family)
+                _fit_model(model, train, columns, target, settings, family, weights=recency)
                 model_scores.append(_score(model, scoring[columns], settings, family))
                 families.append(family)
                 fitted.append((family, model))
@@ -451,8 +454,11 @@ def _build_models(settings: Settings) -> list[tuple[str, object]]:
             except ImportError:
                 log.warning("catboost no está instalado; se omite del ensemble.")
                 continue
+            # thread_count comparte semántica con lgbm_n_jobs (-1 = todos los núcleos): así el
+            # multihilo es coherente entre familias y controlable desde un único setting. Determinista.
             common_catboost = dict(iterations=settings.lgbm_n_estimators, depth=settings.lgbm_max_depth,
                                    learning_rate=settings.lgbm_learning_rate, random_seed=settings.random_seed,
+                                   thread_count=settings.lgbm_n_jobs,
                                    verbose=False, allow_writing_files=False)
             if settings.objective == "quartile":
                 models.append((family, CatBoostClassifier(loss_function="Logloss", **common_catboost)))
@@ -487,12 +493,17 @@ def _recency_weights(train: pd.DataFrame, settings: Settings) -> pd.Series | Non
 
 
 def _fit_model(model, train: pd.DataFrame, columns: list[str], target: pd.Series, settings: Settings,
-               family: str = "lightgbm") -> None:
+               family: str = "lightgbm", weights: pd.Series | None = None) -> None:
     """Ajusta el modelo. El LGBMRanker necesita `group` = nº de filas por snapshot, y que las
     filas esten agrupadas (contiguas) por snapshot; el resto de objetivos se ajustan directo.
     Con `recency_weighting` activo se pasa `sample_weight` (mayor peso a lo reciente).
+
+    `weights` (peso por recencia) se calcula una vez por retrain_date y se pasa aquí; solo depende
+    de `train["snapshot_date"]`, no del agente ni de la familia. Si no se pasa, se calcula aquí
+    (mismo resultado) para no romper llamadas externas.
     """
-    weights = _recency_weights(train, settings)
+    if weights is None:
+        weights = _recency_weights(train, settings)
     if family == "lightgbm" and settings.objective == "ranking":
         order = train.sort_values("snapshot_date").index
         ordered = train.loc[order]

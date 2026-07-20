@@ -68,7 +68,6 @@ EXECUTION_LAG_DAYS = 45
 TRAIN_LOOKBACK_YEARS = 8
 SNAPSHOT_STEP_MONTHS = 1           # cadencia de revision de cartera; barrida como escenario
 FUNDAMENTAL_STEP_MONTHS = 3        # cadencia de reentreno; barrida como escenario (3/12/1)
-SNAPSHOT_DAY = 15
 TARGET_HORIZON_MONTHS = 6
 MAX_PRICE_AGE_DAYS = 7
 META_IC_LOOKBACK_QUARTERS = 12
@@ -176,7 +175,6 @@ class Settings:
     train_lookback_years: int = TRAIN_LOOKBACK_YEARS
     snapshot_step_months: int = SNAPSHOT_STEP_MONTHS
     fundamental_step_months: int = FUNDAMENTAL_STEP_MONTHS
-    snapshot_day: int = SNAPSHOT_DAY
     target_horizon_months: int = TARGET_HORIZON_MONTHS
     meta_ic_lookback_quarters: int = META_IC_LOOKBACK_QUARTERS
     min_rank_ic_cross_section: int = MIN_RANK_IC_CROSS_SECTION

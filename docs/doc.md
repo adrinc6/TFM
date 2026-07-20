@@ -136,7 +136,7 @@ Los artefactos de diagnóstico incluyen cobertura, Rank-IC univariante, importan
 
 ### 9.1 Ejes barribles
 
-`escenarios/variables.py` es la única fuente de opciones permitidas. Agrupa calendario, entrenamiento, objetivo, LightGBM, meta-agente, recencia, artefactos, bloques, agentes, familias, ensembles, selección, ventanas técnicas y cartera.
+`module/scenarios/variables.py` es la única fuente de opciones permitidas. Agrupa calendario, entrenamiento, objetivo, LightGBM, meta-agente, recencia, artefactos, bloques, agentes, familias, ensembles, selección, ventanas técnicas y cartera.
 
 No se hace producto cartesiano. Un full study ejecuta aproximadamente un centenar de escenarios de modelo aislados, combinaciones greedy, afinado, construcción de cartera, nueve stresses de coste y ocho perfiles. El número exacto depende de reutilización de caché y escenarios no viables.
 
@@ -214,20 +214,22 @@ Los studies anteriores se conservan para auditoría histórica, pero no deben us
 
 ## 14. Anexo de configuración: contrato exacto del full study
 
-Esta sección evita que la memoria confunda una opción disponible en una ejecución manual con una opción que se busca automáticamente. El contrato ejecutable está en `escenarios/variables.py`: la tabla siguiente lo reproduce de forma legible a fecha de esta versión. La columna *baseline* es el valor de `Settings()`; no implica que sea el ganador del estudio.
+Esta sección evita que la memoria confunda una opción disponible en una ejecución manual con una opción que se busca automáticamente. El contrato ejecutable está en `module/scenarios/variables.py`: la tabla siguiente lo reproduce de forma legible a fecha de esta versión. La columna *baseline* es el valor de `Settings()`; no implica que sea el ganador del estudio.
 
 ### 14.1 Ejes de datos, calendario y etiqueta
 
 | Variable | Qué modifica | Baseline | Valores que explora el full study |
 |---|---|---:|---|
-| `execution_lag_days` | Días de margen para que un fundamental se considere publicado antes del snapshot. | 45 | 15, 30, 45, 60 |
-| `train_lookback_years` | Años de historia inmediatamente anterior que ve cada reentreno. | 8 | 2, 4, 6, 8, 10, 12 |
-| `snapshot_step_months` | Frecuencia con que se crean snapshots y se reentrena. | 1 | 1, 3 |
+| `execution_lag_days` | **Define el día de observación de cada snapshot**: la rejilla cae en `fin_de_periodo + execution_lag_days` (retardo de publicación tras el cierre del periodo). Barrerlo produce rejillas distintas. | 45 | 15, 30, 45, 60 |
+| `train_lookback_years` | Años de historia inmediatamente anterior que ve cada reentreno. | 8 | 4, 8, 12 |
+| `snapshot_step_months` | Frecuencia con que se crean snapshots y se reentrena (mes vs. trimestre). | 1 | 1, 3 |
 | `fundamental_step_months` | Cadencia con que se actualiza la capa fundamental del panel. | 3 | 3, 6, 12 |
-| `target_horizon_months` | Meses de retorno futuro que forman la etiqueta. | 6 | 1, 3, 6, 12 |
+| `target_horizon_months` | Meses de retorno futuro que forman la etiqueta. | 6 | 3, 6, 12 |
 | `objective` | Forma de aprender la etiqueta: regresión de percentil, ranking por grupo o extremos. | `rank_regression` | `rank_regression`, `ranking`, `quartile` |
 
-No se barre `execution_year`, `execution_quarter` ni `snapshot_day`: desplazarlos sería buscar una fecha de inicio o un día de mes favorable. El ancla permanece en 2015-Q1 y día 15 para que todo escenario tenga la misma oportunidad temporal.
+**Calendario de snapshots.** La rejilla ya no usa un día del mes fijo (`snapshot_day` fue eliminado). Cada snapshot cae en el **fin de su periodo más `execution_lag_days`**: cerrado un mes o trimestre, los fundamentales tardan unos días en estar disponibles y la rejilla observa justo entonces. Así el retardo de publicación gobierna cuándo se miran los datos, y `execution_lag_days` pasa a ser un eje con efecto real (antes solo desplazaba el ancla y no cambiaba ningún resultado). El point-in-time sigue garantizado: en cada snapshot solo se leen fundamentales con `filed_date` anterior.
+
+No se barre `execution_year` ni `execution_quarter`: desplazarlos sería buscar una fecha de inicio favorable. El ancla permanece en 2015-Q1 para que todo escenario comparta el mismo periodo OOS (2015→hoy, con 2025-26 reservados).
 
 ### 14.2 Ejes de LightGBM, combinación y recencia
 
@@ -284,13 +286,13 @@ La neutralización no convierte al sector en una señal: elimina parcialmente di
 
 | Variable | Qué modifica | Baseline | Valores que explora el full study |
 |---|---|---:|---|
-| `target_min` | Número mínimo de posiciones que se intenta mantener. | 8 | 6, 8, 10, 12 |
-| `target_max` | Número máximo de posiciones. | 12 | 8, 10, 12, 15 |
+| `target_band` | Tamaño de cartera como **banda acoplada** (min, max) con su peso máximo válido. | 8–12 / 0,15 | **5–8 / 0,20**, **8–12 / 0,15**, **12–15 / 0,10** |
 | `entry_min_percentile` | Percentil mínimo de score exigido para abrir una posición. | 80 | 70, 80, 90 |
 | `min_hold_percentile` | Percentil mínimo para conservar una posición ya abierta. | 50 | 40, 50, 60 |
 | `rotation_edge_percentiles` | Ventaja de score exigida a una nueva acción para sustituir otra. | 5 | 3, 5, 10 |
-| `max_weight_per_position` | Peso máximo de cada acción. | 0,15 | 0,10; 0,15; 0,20 |
 | `profile` | Reordenación económica de la misma señal para un estilo de cartera. | `balanced` | `balanced`, `conservative`, `aggressive`, `value`, `quality`, `momentum`, `garp`, `contrarian` |
+
+**Banda de tamaño de cartera.** En el full study, `target_min`, `target_max` y `max_weight_per_position` no se barren sueltos sino como un **eje compuesto `target_band`** de tres combinaciones coherentes: 5–8 posiciones (peso máx. 20 %), 8–12 (15 %) y 12–15 (10 %). Cada banda fija el peso máximo mínimo válido para su tamaño (restricción: `max_weight × target_min ≥ 1`, para que la cartera pueda llegar al 100 %), evitando así combinaciones inválidas y el producto cruzado con parejas `min>max`. El `study` manual sí conserva los tres ejes por separado para exploración libre.
 
 Estos ejes se ejecutan una vez que se ha elegido la especificación predictiva. Se comparan por propiedades de cartera, principalmente Information Ratio, pero no se retropropagan para declarar ganador un modelo con peor Rank-IC.
 
@@ -363,7 +365,7 @@ El repositorio no es un único script. Las fronteras entre carpetas son delibera
 | `module/ui/dashboard.py` | Servidor HTTP local, API JSON, jobs y lectura segura de resultados. | App estática y ResultsStore. | Consola en `127.0.0.1:8765`. |
 | `module/ui/reports.py` | Informes HTML de un run y comparativos de escenarios. | Artefactos publicados. | HTML auto-contenido con gráficos. |
 | `app/` | Interfaz estática: navegación, formularios, tablas, gráficos y vistas. | API local JSON. | Research Console en navegador. |
-| `escenarios/` | Catálogo de valores permitidos y rejillas de experimentos dirigidos. | Código Python declarativo. | Opciones visibles y definición de escenarios. |
+| `module/scenarios/` | Catálogo de valores permitidos y rejillas de experimentos dirigidos. | Código Python declarativo. | Opciones visibles y definición de escenarios. |
 | `tests/` | Pruebas de contratos de datos, PIT, modelos, cartera, runs, informes y UI de datos. | Fixtures sintéticos. | Protección contra regresiones. |
 | `docs/` | Especificación técnica, bitácora e informe de resultados. | Código y resultados auditables. | Fuente narrativa del TFM. |
 | `latex/` | Documento final de la memoria. | Evidencia validada y documentación. | PDF/entregable académico. |
@@ -388,7 +390,7 @@ El fichero `.env` se carga sin depender de paquetes adicionales. `FINNHUB_API_KE
 
 `Settings` es un `dataclass(frozen=True)`: las etapas reciben una configuración explícita y no deben mutarla. Valida modo, alcance, objetivo, meta-model, listas no vacías de agentes, límites de percentiles, ventanas positivas y la factibilidad de la cartera mínima (`target_min × max_weight_per_position >= 1`).
 
-El estudio, la consola y el orquestador comparten `escenarios/variables.py` como fuente de valores admitidos. La API transforma listas JSON recibidas para bloques, agentes, familias y ventanas en tuplas antes de validar, para que una selección compuesta de la consola tenga exactamente la misma semántica que una configuración Python.
+El estudio, la consola y el orquestador comparten `module/scenarios/variables.py` como fuente de valores admitidos. La API transforma listas JSON recibidas para bloques, agentes, familias y ventanas en tuplas antes de validar, para que una selección compuesta de la consola tenga exactamente la misma semántica que una configuración Python.
 
 ## 18. Adquisición de datos, universo y controles previos
 
@@ -554,7 +556,7 @@ Además del orquestador oficial, `experiments.py`, `rejilla_base.py` y `fase1_ej
 
 El coste dominante de un study es el walk-forward: cada run reentrena `fechas_de_reentreno × agentes × familias` modelos, y un study encadena decenas de runs. Las optimizaciones aplicadas persiguen **reducir tiempo de pared sin alterar la metodología ni los resultados numéricos**: toda mejora aquí produce, por construcción, exactamente los mismos números que antes; ninguna cambia hipótesis, datos, etiquetas, modelos ni cartera (§2, regla de cambio explícito). Se verifican con un oráculo numérico (dataset sintético → `build_agent_scores` → diff exacto de `agent_scores`, `rank_ic_diagnostics` y `meta_weights`) además de la suite y `ruff`.
 
-- **Huella de código por etapa (`module/runs/code_fingerprint.py`).** La clave de caché y el `execution_hash` ya no dependen de la revisión Git global, sino de una huella acotada al código que ejecuta cada etapa. Se calcula como el sha256 de la *clausura transitiva de imports de primera parte* (`module.*`, `escenarios.*`, `environment`) a partir del módulo de entrada de la etapa; es auto-mantenible (añadir una dependencia la incorpora sola) y exacta (si cambia el código de una etapa, cambia su clave; si no, se reutiliza el artefacto idéntico). Efecto: en desarrollo iterativo, editar el meta deja de invalidar la caché de dataset/features. Un test (`tests/test_code_fingerprint.py`) fija esta propiedad de aislamiento.
+- **Huella de código por etapa (`module/runs/code_fingerprint.py`).** La clave de caché y el `execution_hash` ya no dependen de la revisión Git global, sino de una huella acotada al código que ejecuta cada etapa. Se calcula como el sha256 de la *clausura transitiva de imports de primera parte* (`module.*` y `environment`) a partir del módulo de entrada de la etapa; `module.scenarios` queda incluido por pertenecer a `module.*`. Es auto-mantenible (añadir una dependencia la incorpora sola) y exacta (si cambia el código de una etapa, cambia su clave; si no, se reutiliza el artefacto idéntico). Efecto: en desarrollo iterativo, editar el meta deja de invalidar la caché de dataset/features. Un test (`tests/test_code_fingerprint.py`) fija esta propiedad de aislamiento.
 - **Restauración de caché por hardlink.** `recycle.restore` enlaza los artefactos inmutables en lugar de copiarlos, con copia de reserva si el FS no lo soporta.
 - **`lgbm_n_jobs` configurable (por defecto `-1`, todos los núcleos).** Sustituye al `n_jobs=1` fijo. LightGBM es determinista con hilos, así que solo cambia la velocidad, no el resultado; como los escenarios corren en serie, cada fit puede usar toda la máquina sin sobre-suscribir. No entra en la clave de caché de la etapa (cambiar los hilos no invalida artefactos).
 - **Vectorización de puntos calientes en pandas.** `combine_agent_scores` calcula la media ponderada de rangos por fecha con álgebra vectorizada en vez de iterar fila a fila; el backtest agrupa los scores por snapshot una sola vez en lugar de filtrar con máscara booleana dentro del bucle. Ambos reproducen exactamente la salida previa (mismo manejo de NaN y orden de operaciones).

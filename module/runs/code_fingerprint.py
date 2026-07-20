@@ -6,7 +6,7 @@ realmente ejecuta cada etapa, la reutilización sigue siendo exacta (si cambia e
 etapa, cambia su clave; si no, se reutiliza el artefacto idéntico) sin recomputar de más.
 
 La huella se calcula como el sha256 del contenido de la clausura transitiva de imports locales
-(``module.*``, ``escenarios.*`` y ``environment``) a partir del módulo de entrada de la etapa.
+(``module.*`` y ``environment``) a partir del módulo de entrada de la etapa.
 Es autosuficiente: añadir una dependencia nueva a una etapa la incorpora automáticamente, sin
 mantener a mano listas frágiles de ficheros.
 """
@@ -32,7 +32,7 @@ STAGE_ENTRY_MODULES: dict[str, str] = {
 # Prefijos de paquetes de primera parte cuyo código forma parte de la huella. Todo lo demás
 # (stdlib, pandas, numpy, sklearn, lightgbm...) queda fuera: sus versiones se fijan por
 # requirements y no forman parte del código del repositorio.
-_FIRST_PARTY_PREFIXES = ("module.", "escenarios.", "environment")
+_FIRST_PARTY_PREFIXES = ("module.", "environment")
 
 
 def _module_to_path(module_name: str) -> Path | None:

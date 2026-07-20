@@ -5,13 +5,19 @@ import pytest
 
 import environment
 from environment import Settings
+from module.data.dataset import snapshot_dates
 
 
 @pytest.fixture
 def feature_settings(monkeypatch, tmp_path) -> Settings:
     processed = tmp_path / "processed" / "dev"
     monkeypatch.setattr(environment, "DEV_PROCESSED_DIR", processed)
-    dates = pd.date_range("2000-01-15", "2000-08-15", freq="MS") + pd.Timedelta(days=14)
+    # El panel se genera en las fechas reales de la rejilla (fin_de_mes + execution_lag_days), que
+    # es la misma fuente que usa build_features para emparejar etiquetas. Así el test no depende de
+    # un día de mes fijo.
+    # Rango amplio para que, con horizonte de 6 meses, existan filas con etiqueta (>6 snapshots).
+    settings = Settings(run_scope="dev", data_start_date="1999-06-01", end_date="2000-08-31")
+    dates = snapshot_dates(settings)
     tickers = ("AAA", "BBB", "CCC")
     panel_rows = []
     asset_rows = []
@@ -23,7 +29,7 @@ def feature_settings(monkeypatch, tmp_path) -> Settings:
                 {
                     "ticker": ticker,
                     "snapshot_date": date_text,
-                    "review_type": "fundamental_quarterly" if date.month in (2, 5, 8, 11) else "price_monthly",
+                    "review_type": "fundamental_quarterly" if date_index % 3 == 1 else "price_monthly",
                     "in_sp500": True,
                     "price": price,
                     "price_as_of_date": date_text,
@@ -76,4 +82,4 @@ def feature_settings(monkeypatch, tmp_path) -> Settings:
     pd.DataFrame(panel_rows).to_parquet(processed / "panel_point_in_time.parquet", index=False)
     pd.DataFrame(asset_rows).to_parquet(processed / "asset_price_point_in_time.parquet", index=False)
     benchmark.to_parquet(processed / "benchmark_point_in_time.parquet", index=False)
-    return Settings(run_scope="dev", data_start_date="2000-01-01", end_date="2000-08-15")
+    return settings

@@ -5,7 +5,7 @@ con overrides sobre `environment.Settings`. La reutilizacion se decide por huell
 los inputs relevantes de cada etapa: si dos escenarios tienen la misma huella para una etapa,
 se enlaza al artefacto compartido en vez de regenerarlo.
 
-Los escenarios se definen en Python (`escenarios/*.py`), no YAML/JSON, para poder incluir
+Los escenarios se definen en Python (`module/scenarios/*.py`), no YAML/JSON, para poder incluir
 listas, condicionales y calculos derivados.
 
 La decision automatica optimiza TODOS los ejes, no solo los artefactos:
@@ -61,7 +61,7 @@ class ScenarioSpec:
     """Un escenario del barrido: nombre + overrides sobre `environment.Settings`.
 
     Los overrides se pasan por su nombre de campo del dataclass (`target_max`,
-    `lgbm_max_depth`, `snapshot_day`, etc.), no por el nombre de la constante en
+    `lgbm_max_depth`, `execution_lag_days`, etc.), no por el nombre de la constante en
     `environment.py`. La razon: es una API tipada que valida al construir Settings.
     """
 
@@ -85,11 +85,11 @@ class ScenarioSpec:
 FINGERPRINT_FIELDS: dict[str, tuple[str, ...]] = {
     "dataset": (
         "run_scope", "data_start_date", "end_date", "benchmark_ticker",
-        "snapshot_day", "snapshot_step_months",
+        "execution_lag_days", "snapshot_step_months",
     ),
     "features": (
         "run_scope", "data_start_date", "end_date", "benchmark_ticker",
-        "snapshot_day", "snapshot_step_months", "target_horizon_months", "neutralize_by_sector",
+        "execution_lag_days", "snapshot_step_months", "target_horizon_months", "neutralize_by_sector",
         "fundamental_momentum", "market_regime_feature", "price_momentum_multi",
         "moving_averages", "regime_extended", "quality_growth_derived",
         "enabled_feature_blocks", "metric_winsorization_percentile", "risk_feature_windows",
@@ -97,7 +97,7 @@ FINGERPRINT_FIELDS: dict[str, tuple[str, ...]] = {
     ),
     "agents": (
         "run_scope", "data_start_date", "end_date", "benchmark_ticker",
-        "snapshot_day", "snapshot_step_months", "neutralize_by_sector",
+        "snapshot_step_months", "neutralize_by_sector",
         "fundamental_momentum", "market_regime_feature", "price_momentum_multi",
         "moving_averages", "regime_extended", "quality_growth_derived",
         "target_horizon_months", "execution_year", "execution_quarter",
@@ -115,7 +115,7 @@ FINGERPRINT_FIELDS: dict[str, tuple[str, ...]] = {
     ),
     "backtest": (
         "run_scope", "data_start_date", "end_date", "benchmark_ticker",
-        "snapshot_day", "snapshot_step_months", "neutralize_by_sector",
+        "snapshot_step_months", "neutralize_by_sector",
         "fundamental_momentum", "market_regime_feature", "price_momentum_multi",
         "moving_averages", "regime_extended", "quality_growth_derived",
         "target_horizon_months", "execution_year", "execution_quarter",
@@ -143,7 +143,13 @@ FINGERPRINT_FIELDS: dict[str, tuple[str, ...]] = {
 # el backtest (no reentrena, no cambia el aprendizaje). El orquestador de estudios usa esta
 # separación para barrer los ejes de modelo en Fase 1/2 y los de cartera al final por re-backtest.
 MODEL_FIELDS: frozenset[str] = frozenset(FINGERPRINT_FIELDS["agents"])
-PORTFOLIO_FIELDS: frozenset[str] = frozenset(FINGERPRINT_FIELDS["backtest"]) - MODEL_FIELDS
+# `target_band` es un eje de cartera COMPUESTO (su valor es un dict que expande a target_min/
+# target_max/max_weight_per_position juntos). No es un campo de Settings, pero se barre en la fase
+# de cartera, así que se reconoce aquí explícitamente. Ver module/scenarios/variables.py.
+COMPOSITE_PORTFOLIO_AXES: frozenset[str] = frozenset({"target_band"})
+PORTFOLIO_FIELDS: frozenset[str] = (
+    frozenset(FINGERPRINT_FIELDS["backtest"]) - MODEL_FIELDS | COMPOSITE_PORTFOLIO_AXES
+)
 
 
 def split_variables(
@@ -598,7 +604,7 @@ def decide_best_config(
 def run_experiments_from_settings(settings: Settings) -> dict:
     """Handler para RUN_MODE=experiments. Ejecuta el barrido de ablations, decide automaticamente
     que artefactos aceptar, y escribe la decision en results/escenarios/artifact_decision.json."""
-    grid_path = PROJECT_ROOT / "escenarios" / "rejilla_base.py"
+    grid_path = PROJECT_ROOT / "module" / "scenarios" / "rejilla_base.py"
     if not grid_path.exists():
         raise RuntimeError(f"No hay rejilla en {grid_path}.")
     run_scenarios(grid_path, settings)
@@ -691,7 +697,7 @@ def run_full_study(settings: Settings) -> None:
     """
     from module.evaluation.profiles import PROFILE_NAMES
 
-    grid_path = PROJECT_ROOT / "escenarios" / "fase1_ejes.py"
+    grid_path = PROJECT_ROOT / "module" / "scenarios" / "fase1_ejes.py"
     if not grid_path.exists():
         raise RuntimeError(f"No hay rejilla de Fase 1 en {grid_path}.")
     grid_module = _import_module_from_path(grid_path)
