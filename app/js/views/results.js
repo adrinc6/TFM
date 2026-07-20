@@ -82,7 +82,7 @@
         <div><h3 style="margin:0">${title}</h3><span class="count">${count} en total</span></div>
         <div class="toolbar-actions">
           <input id="results-filter" placeholder="Buscar…" value="${escapeHtml(filter)}" oninput="TFM.views.results.setFilter(this.value)">
-          <button class="button" onclick="TFM.views.results.toggle()">${toggleLabel}</button>
+          <button class="button results-toggle" onclick="TFM.views.results.toggle()">${toggleLabel}</button>
         </div>
       </div>
       <div id="results-table">${mode === "studies" ? studiesTable() : runsTable()}</div>`;
@@ -99,6 +99,7 @@
     container.innerHTML = `
       <div class="list-toolbar">
         <button class="button ghost" onclick="TFM.views.results.renderList()">◂ Volver a la lista</button>
+        ${kind === "study" ? '<span id="study-live-actions"></span>' : ""}
       </div>
       <section class="panel" id="results-detail"></section>`;
     const target = el("results-detail");

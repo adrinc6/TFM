@@ -138,6 +138,11 @@ Los artefactos de diagnóstico incluyen cobertura, Rank-IC univariante, importan
 
 `module/scenarios/variables.py` es la única fuente de opciones permitidas. Agrupa calendario, entrenamiento, objetivo, LightGBM, meta-agente, recencia, artefactos, bloques, agentes, familias, ensembles, selección, ventanas técnicas y cartera.
 
+El contrato se presenta igual en `study` y `full_study`: mismas variables, valores y fases. Un
+study manual selecciona subconjuntos; el full study activa todos. Los controles adicionales de
+Experimental no se convierten por ello en ejes científicos. Costes son estrés y perfiles son
+salidas de Fase 5.
+
 No se hace producto cartesiano. Un full study ejecuta aproximadamente un centenar de escenarios de modelo aislados, combinaciones greedy, afinado, construcción de cartera, nueve stresses de coste y ocho perfiles. El número exacto depende de reutilización de caché y escenarios no viables.
 
 ### 9.2 Condicionalidad
@@ -154,7 +159,7 @@ Un eje entra en la combinación greedy únicamente si su mejor candidato supera 
 
 ### 9.5 Cartera, perfiles y costes
 
-Tras fijar modelo y meta-score, la fase de cartera ajusta tamaño, percentiles, rotación y peso máximo por Information Ratio. No altera las predicciones, por lo que no tiene sentido seleccionarla por Rank-IC.
+Tras fijar modelo y meta-score, la fase de cartera ajusta el tamaño fijo, el percentil de mantenimiento y la ventaja de rotación por Information Ratio. Los pesos se derivan del `meta_rank` con una relación máxima 2:1 entre la primera y la última posición. No altera las predicciones, por lo que no tiene sentido seleccionarla por Rank-IC.
 
 Comisión y slippage ya no se incluyen como ejes optimizables. Se generan las nueve combinaciones de 0/5/10 bps de comisión y 5/10/20 bps de slippage como `cost_stress`. La conclusión debe ser robusta a costes plausibles, no depender del caso más barato.
 
@@ -235,10 +240,10 @@ No se barre `execution_year` ni `execution_quarter`: desplazarlos sería buscar 
 
 | Variable | Qué modifica | Baseline | Valores que explora el full study |
 |---|---|---:|---|
-| `lgbm_n_estimators` | Número máximo de árboles; más árboles permiten más detalle, pero también más ajuste. | 200 | 100, 200, 400 |
-| `lgbm_max_depth` | Complejidad máxima de cada árbol. | 4 | 3, 4, 5, 6, 8 |
-| `lgbm_learning_rate` | Tamaño de cada actualización del modelo. | 0,05 | 0,02; 0,03; 0,05; 0,10 |
-| `lgbm_min_child_samples` | Observaciones mínimas para dividir una hoja; controla regularización. | 50 | 20, 50, 100 |
+| `lgbm_n_estimators` | Número máximo de árboles; afinado greedy en Fase 3. | 200 | 100, 200, 400 |
+| `lgbm_max_depth` | Complejidad máxima; afinado greedy en Fase 3. | 4 | 3, 4, 5, 6, 8 |
+| `lgbm_learning_rate` | Tamaño de actualización; afinado greedy en Fase 3. | 0,05 | 0,02; 0,03; 0,05; 0,10 |
+| `lgbm_min_child_samples` | Regularización por hoja; afinado greedy en Fase 3. | 50 | 20, 50, 100 |
 | `meta_type` | Regla que mezcla los scores de los agentes. | `rank_ic` | `equal`, `rank_ic`, `regime`, `stacked_oos` |
 | `meta_ic_lookback_quarters` | Trimestres OOS cerrados usados para estimar pesos de Rank-IC. | 12 | 8, 12, 16 |
 | `min_rank_ic_cross_section` | Mínimo de empresas válidas para computar un Rank-IC de cohorte. | 10 | 8, 10, 12 |
@@ -286,15 +291,14 @@ La neutralización no convierte al sector en una señal: elimina parcialmente di
 
 | Variable | Qué modifica | Baseline | Valores que explora el full study |
 |---|---|---:|---|
-| `target_band` | Tamaño de cartera como **banda acoplada** (min, max) con su peso máximo válido. | 8–12 / 0,15 | **5–8 / 0,20**, **8–12 / 0,15**, **12–15 / 0,10** |
-| `entry_min_percentile` | Percentil mínimo de score exigido para abrir una posición. | 80 | 70, 80, 90 |
-| `min_hold_percentile` | Percentil mínimo para conservar una posición ya abierta. | 50 | 40, 50, 60 |
-| `rotation_edge_percentiles` | Ventaja de score exigida a una nueva acción para sustituir otra. | 5 | 3, 5, 10 |
-| `profile` | Reordenación económica de la misma señal para un estilo de cartera. | `balanced` | `balanced`, `conservative`, `aggressive`, `value`, `quality`, `momentum`, `garp`, `contrarian` |
+| `target_size` | Número fijo de posiciones top-N. | 8 | 5, 8, 10, 12, 15 |
+| `min_hold_percentile` | Percentil que una posición debe superar para conservarse. | 80 | 60, 70, 80, 85 |
+| `rotation_edge_percentiles` | Ventaja de percentil exigida a una candidata para sustituir la peor tenencia. | 10 | 5, 10, 15 |
+| `profile` | Salidas paralelas de estilo; no se optimiza un ganador. | `balanced` (meta puro) | `balanced`, `conservative`, `aggressive`, `value`, `quality`, `momentum`, `garp`, `contrarian` |
 
-**Banda de tamaño de cartera.** En el full study, `target_min`, `target_max` y `max_weight_per_position` no se barren sueltos sino como un **eje compuesto `target_band`** de tres combinaciones coherentes: 5–8 posiciones (peso máx. 20 %), 8–12 (15 %) y 12–15 (10 %). Cada banda fija el peso máximo mínimo válido para su tamaño (restricción: `max_weight × target_min ≥ 1`, para que la cartera pueda llegar al 100 %), evitando así combinaciones inválidas y el producto cruzado con parejas `min>max`. El `study` manual sí conserva los tres ejes por separado para exploración libre.
+**Tamaño fijo y pesos.** El full study barre `target_size` como eje simple. En cada snapshot se seleccionan las N acciones mejor situadas en `meta_rank`; los pesos son proporcionales a ese ranking efectivo, se limitan a una relación máxima 2:1 y se normalizan al 100 %.
 
-Estos ejes se ejecutan una vez que se ha elegido la especificación predictiva. Se comparan por propiedades de cartera, principalmente Information Ratio, pero no se retropropagan para declarar ganador un modelo con peor Rank-IC.
+Estos ejes se ejecutan una vez elegida la especificación predictiva. Se comparan por Information Ratio calculado solo hasta 2024, con desempates de riesgo y estabilidad, y no se retropropagan al modelo. Los perfiles se ejecutan después y no participan en la elección.
 
 ### 14.6 Constantes y pruebas de robustez que no optimiza el estudio
 
@@ -303,7 +307,6 @@ Estos ejes se ejecutan una vez que se ha elegido la especificación predictiva. 
 | Rango de datos | 1990-01-01 a 2026-07-15 | Define el dataset disponible, no una hipótesis de modelo. |
 | Benchmark | `SPY` | Cambiarlo alteraría la definición de etiqueta y la comparabilidad. |
 | Inicio y trimestre OOS | 2015-Q1 | Ancla común de todos los escenarios. |
-| Día de snapshot | 15 | Evita optimizar un día concreto de mes. |
 | `max_price_age_days` | 7 | Control de frescura de datos. |
 | `min_training_rows` | 30 | Salvaguarda para no entrenar modelos inviables. |
 | `recency_halflife_years` | 3 | Convención estable para reducir grados de libertad. |
@@ -360,7 +363,7 @@ El repositorio no es un único script. Las fronteras entre carpetas son delibera
 | `module/evaluation/stats.py` y `robustness.py` | Intervalos, ICIR, bootstrap, LOYO, placebo y cartera aleatoria. | Diagnósticos y retornos. | Evidencia de estabilidad y azar. |
 | `module/runs/execution.py` | Ejecución controlada de runs y full study oficial. | `Settings`, store, caché y opciones. | Runs publicados, decisión y exportaciones. |
 | `module/runs/experiments.py` | Escenarios manuales, fingerprints y ciclo histórico de experimentos. | Rejillas de escenarios. | Escenarios, elección y conclusiones de experimentos. |
-| `module/runs/recycle.py` | Caché de etapas intermedias por huella. | Inputs y settings de una etapa. | Restauración/publicación en `data/recycle`. |
+| `module/runs/recycle.py` | Caché de etapas intermedias por huella, incluida la sub-etapa `agents_fit` por familia de modelo. | Inputs y settings de una etapa (más la familia en `agents_fit`). | Restauración/publicación en `data/recycle`. |
 | `module/runs/results_store.py` | Registro inmutable de runs y studies. | Artefactos ya calculados. | Manifiestos, hashes y `registry.jsonl`. |
 | `module/ui/dashboard.py` | Servidor HTTP local, API JSON, jobs y lectura segura de resultados. | App estática y ResultsStore. | Consola en `127.0.0.1:8765`. |
 | `module/ui/reports.py` | Informes HTML de un run y comparativos de escenarios. | Artefactos publicados. | HTML auto-contenido con gráficos. |
@@ -388,7 +391,7 @@ El fichero `.env` se carga sin depender de paquetes adicionales. `FINNHUB_API_KE
 
 ### 17.2 Objeto `Settings` y validaciones
 
-`Settings` es un `dataclass(frozen=True)`: las etapas reciben una configuración explícita y no deben mutarla. Valida modo, alcance, objetivo, meta-model, listas no vacías de agentes, límites de percentiles, ventanas positivas y la factibilidad de la cartera mínima (`target_min × max_weight_per_position >= 1`).
+`Settings` es un `dataclass(frozen=True)`: las etapas reciben una configuración explícita y no deben mutarla. Valida modo, alcance, objetivo, meta-model, listas no vacías de agentes, límites de percentiles, ventanas positivas y que el tamaño fijo de cartera sea positivo.
 
 El estudio, la consola y el orquestador comparten `module/scenarios/variables.py` como fuente de valores admitidos. La API transforma listas JSON recibidas para bloques, agentes, familias y ventanas en tuplas antes de validar, para que una selección compuesta de la consola tenga exactamente la misma semántica que una configuración Python.
 
@@ -518,9 +521,9 @@ La regla de selección del study usa la media de Rank-IC de `meta_final` hasta 2
 `portfolio.py` modela una cartera con estado. En cada snapshot:
 
 1. Expulsa posiciones que ya no cumplen la regla de mantenimiento.
-2. Mantiene o llena plazas hasta `target_min`/`target_max` con candidatos por encima de `entry_min_percentile`.
-3. Solo rota una posición si el candidato supera por `rotation_edge_percentiles` al tenedor.
-4. Calcula pesos respetando `max_weight_per_position` y redimensiona cuando el drift supera `rebalance_drift_tolerance`.
+2. Completa siempre `target_size` con las mejores acciones por `meta_rank`.
+3. Vende obligatoriamente si una tenencia queda en o por debajo de `min_hold_percentile`; fuera de ese caso rota tantas posiciones como permita una ventaja de al menos `rotation_edge_percentiles`.
+4. Calcula pesos proporcionales al `meta_rank`, con una relación máxima 2:1, y los normaliza al 100 %.
 
 Esto separa el ranking predictivo de la mecánica de trading. El perfil se aplica antes de estas reglas y sólo reordena acciones ya buenas según el meta-score. Los perfiles disponibles, sus pesos y el umbral común de bondad del 60 % están definidos explícitamente en `profiles.py`; no reentrenan ni consultan información futura.
 
@@ -550,11 +553,11 @@ Un study vive en `results/studies/<study_id>/` y contiene `study_manifest.json` 
 
 El full study usa ejes de `STUDY_OPTIONS`, no un producto cartesiano. Ejecuta baseline, variaciones aisladas, ablaciones de bloque/agente/familia, combinaciones dirigidas de candidatos aceptados, afinado de hiperparámetros, fase de cartera, perfiles, nueve costes, robustez y reserva. Los parámetros de selección de factores se combinan con una política que los consuma, no como barridos inertes.
 
-Además del orquestador oficial, `experiments.py`, `rejilla_base.py` y `fase1_ejes.py` mantienen el mecanismo de escenarios explícitos para experimentos dirigidos/manuales. Sus fingerprints separan variables que afectan datos, features, modelo o cartera, de modo que sólo se recalcula lo necesario. Los resultados de este mecanismo histórico son útiles para explorar, pero la decisión oficial vigente la produce `execution.py` con corte de selección en 2024.
+Además del orquestador oficial, `experiments.py`, `ablaciones.py` y `ejes.py` mantienen el mecanismo de escenarios explícitos para experimentos dirigidos/manuales. Sus fingerprints separan variables que afectan datos, features, modelo o cartera, de modo que sólo se recalcula lo necesario. Los resultados de este mecanismo histórico son útiles para explorar, pero la decisión oficial vigente la produce `execution.py` con corte de selección en 2024.
 
 ### 24.4 Rendimiento, configurabilidad y buenas prácticas de optimización
 
-El coste dominante de un study es el walk-forward: cada run reentrena `fechas_de_reentreno × agentes × familias` modelos, y un study encadena decenas de runs. Las optimizaciones aplicadas persiguen **reducir tiempo de pared sin alterar la metodología ni los resultados numéricos**: toda mejora aquí produce, por construcción, exactamente los mismos números que antes; ninguna cambia hipótesis, datos, etiquetas, modelos ni cartera (§2, regla de cambio explícito). Se verifican con un oráculo numérico (dataset sintético → `build_agent_scores` → diff exacto de `agent_scores`, `rank_ic_diagnostics` y `meta_weights`) además de la suite y `ruff`.
+El coste dominante de un study es el walk-forward: cada run reentrena `fechas_de_reentreno × agentes × familias` modelos, y un study encadena decenas de runs. Las optimizaciones reducen tiempo de pared sin alterar universo PIT, etiquetas, fronteras temporales ni reglas de selección. Se admiten diferencias numéricas pequeñas y reproducibles derivadas del paralelismo, siempre dentro de tolerancias explícitas y sin cambiar conclusiones. Se verifican con un oráculo numérico, la suite y `ruff`.
 
 - **Huella de código por etapa (`module/runs/code_fingerprint.py`).** La clave de caché y el `execution_hash` ya no dependen de la revisión Git global, sino de una huella acotada al código que ejecuta cada etapa. Se calcula como el sha256 de la *clausura transitiva de imports de primera parte* (`module.*` y `environment`) a partir del módulo de entrada de la etapa; `module.scenarios` queda incluido por pertenecer a `module.*`. Es auto-mantenible (añadir una dependencia la incorpora sola) y exacta (si cambia el código de una etapa, cambia su clave; si no, se reutiliza el artefacto idéntico). Efecto: en desarrollo iterativo, editar el meta deja de invalidar la caché de dataset/features. Un test (`tests/test_code_fingerprint.py`) fija esta propiedad de aislamiento.
 - **Restauración de caché por hardlink.** `recycle.restore` enlaza los artefactos inmutables en lugar de copiarlos, con copia de reserva si el FS no lo soporta.
@@ -562,7 +565,58 @@ El coste dominante de un study es el walk-forward: cada run reentrena `fechas_de
 - **Vectorización de puntos calientes en pandas.** `combine_agent_scores` calcula la media ponderada de rangos por fecha con álgebra vectorizada en vez de iterar fila a fila; el backtest agrupa los scores por snapshot una sola vez en lugar de filtrar con máscara booleana dentro del bucle. Ambos reproducen exactamente la salida previa (mismo manejo de NaN y orden de operaciones).
 - **Menos relecturas de disco.** `_summary_for_run` memoiza el resumen por run (los artefactos de un run son inmutables una vez escritos), evitando releer `backtest_summary.json` y `rank_ic_diagnostics.parquet` varias veces por run.
 
-Principio general: una palanca de rendimiento solo se acepta si es **numéricamente idéntica** (o, si toca la metodología, requiere instrucción explícita y validación temporal); las que sí cambiarían resultados —tocar el bucle de reentreno, cachear fits entre escenarios o paralelizar escenarios por procesos— quedan fuera hasta que se autoricen expresamente.
+Principio general: una palanca de rendimiento solo se acepta si conserva contratos PIT/OOS y produce resultados reproducibles dentro de tolerancia. El paralelismo se limita para evitar sobresuscripción y cada escenario trabaja en un workspace privado. No se comparten modelos ajustados entre configuraciones distintas.
+
+### 24.5 Caché v2, aislamiento y reanudación
+
+La clave de cada etapa incluye su configuración efectiva, hashes de entradas, huella de código,
+versión de esquema y versión de Python. El manifiesto conserva tamaño y SHA-256 de cada fichero;
+si falta uno o no coincide, la entrada completa se rechaza. Un bloqueo single-flight evita que
+dos procesos publiquen simultáneamente la misma transformación.
+
+Los backtests de Fases 4–5 copian el agente padre exacto a un workspace del run. No consultan el
+directorio de agentes «más reciente». El placebo recibe un target permutado privado y no modifica
+`targets_forward_3m.parquet`. Los manifiestos guardan fase, escenario y tiempos por etapa; un
+study incompleto se puede reanudar y deduplica únicamente ejecuciones con estado `succeeded`.
+
+La Fase 3 afina greedy profundidad, árboles, learning rate y tamaño mínimo de hoja. Después se
+ejecutan semillas 7, 42 y 2026 como validación de estabilidad, sin seleccionar la más favorable.
+La Fase 4 recalcula sus métricas solo hasta 2024; 2025–2026 permanece reservado hasta congelar la
+cartera. En Fase 5 `balanced` conserva `meta_rank` y los ocho perfiles se reportan sin ganador.
+
+### 24.6 Planificación paralela y observabilidad
+
+La Fase 1 analiza antes de ejecutar las firmas de materialización de dataset, features y agentes.
+Programa tandas de hasta cuatro procesos y solo junta escenarios cuyas etapas aún no materializadas
+sean independientes. Cada worker tiene workspace y log propios, tres hilos de modelo y publicación
+atómica; tras materializar una firma, los escenarios posteriores restauran caché en vez de repetirla.
+La consola agrega los logs de todos los runs activos, etiquetados por run, y muestra una ventana
+compacta desplazable. Las fases greedy conservan orden secuencial; cartera y perfiles usan el
+artefacto exacto del modelo finalista y no vuelven a entrenar agentes.
+
+### 24.7 Reciclaje por familia de modelo dentro de la etapa de agentes
+
+La etapa de agentes concentra ~90 % del tiempo de un run: es el reentreno walk-forward
+`fechas × agentes × familias`, del orden de varios cientos de `fit` de LightGBM, CatBoost y
+ElasticNet. Ese coste se descompone internamente en dos claves de reutilización distintas:
+
+- **`agents_fit`**, el ajuste walk-forward de **una sola familia** sobre todos los pares
+  snapshot × agente. Su clave incluye la familia concreta y los campos que afectan al ajuste
+  (ancla de ejecución, ventana de entrenamiento, cadencia de reentreno, hiperparámetros del árbol,
+  semilla, recencia, objetivo, selección de features), pero **no** `meta_type`,
+  `meta_ic_lookback_quarters`, `intra_agent_ensemble_mode` ni las demás familias. Cada familia
+  publica sus scores, importancias y contribuciones locales como una entrada content-addressed.
+- **`agents`**, la combinación posterior (ensemble intra-agente por rangos y meta-agente). Es
+  barata y su identidad la determinan los hashes de las salidas `agents_fit` reutilizadas más los
+  campos de meta.
+
+Consecuencia práctica en un barrido: cambiar el meta (`meta_type`, `meta_ic_lookback_quarters`,
+`min_rank_ic_cross_section`) reutiliza intactos todos los ajustes y solo rehace la combinación;
+una ablación de familia (por ejemplo quitar CatBoost) reutiliza las familias restantes. La
+recombinación reproduce exactamente el ensemble intra-agente previo —mismo orden de familias, mismo
+promedio de rangos— de modo que los resultados numéricos son idénticos; el reciclaje solo evita
+recalcular ajustes ya realizados. La clave `agents_fit` reutiliza la huella de código del módulo
+de agentes.
 
 ## 25. Research Console, API local e informes HTML
 

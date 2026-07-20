@@ -1,6 +1,6 @@
-"""Rejilla Fase 1 — cada eje del sistema aislado sobre un baseline comun.
+"""Ejes del sistema aislados sobre un baseline comun (consumido por la Fase 1 del orquestador).
 
-Filosofia (igual que antes, pero ampliada): NO producto cartesiano. En la Fase 1 se AISLA el
+Filosofia (igual que antes, pero ampliada): NO producto cartesiano. Se AISLA el
 efecto de cada eje moviendo solo ese eje y dejando el resto fijo en el baseline. Asi el rank-IC
 del meta_final de cada escenario mide el efecto de UNA cosa. La Fase 2 (generada despues) combina
 los mejores niveles de cada eje.

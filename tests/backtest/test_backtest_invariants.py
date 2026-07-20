@@ -20,11 +20,9 @@ def test_mutating_future_scores_does_not_change_past_positions(
     """
     settings = replace(
         portfolio_settings,
-        target_min=3, target_max=5,
+        target_size=5,
         min_hold_percentile=50,
         rotation_edge_percentiles=5,
-        entry_min_percentile=70,
-        max_weight_per_position=0.4,
         commission_bps=5,
         slippage_bps=10,
     )
@@ -62,11 +60,9 @@ def test_equity_delta_matches_positions_return_minus_costs(
     """
     settings = replace(
         portfolio_settings,
-        target_min=3, target_max=5,
+        target_size=5,
         min_hold_percentile=50,
         rotation_edge_percentiles=5,
-        entry_min_percentile=70,
-        max_weight_per_position=0.4,
         commission_bps=5,
         slippage_bps=10,
     )

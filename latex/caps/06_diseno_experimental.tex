@@ -6,7 +6,8 @@
 % sin cifras, para fijar la estructura y para que el documento compile con todos los \input.
 
 \section{Construcción de la cartera}
-% Selección top-N flexible (8-12 posiciones, peso máximo por posición), reglas de rotación
+% Selección top-N fija (5, 8, 10, 12 o 15 posiciones), salida por percentil,
+% rotación por ventaja y pesos proporcionales al meta-rank con límite 2:1.
 % (umbral de ventaja, expulsión por caída, sin tenencia mínima). module/evaluation/portfolio.py.
 
 \section{\emph{Backtest} con costes y guarda anti-artefactos}
@@ -24,7 +25,7 @@
 % Fase 1: cada eje aislado (ventana de entrenamiento, horizonte de etiqueta, ancla, profundidad,
 % cadencia y los 7 artefactos). Decisión automática del mejor nivel de cada eje + artefactos
 % aceptados por significancia. Fase 2: combinaciones dirigidas de los ganadores + afinado de
-% hiperparámetros. module/runs/experiments.py, escenarios/fase1_ejes.py.
+% hiperparámetros. module/runs/experiments.py, module/scenarios/ejes.py.
 
 \section{Control del sobreajuste por selección: era reservada}
 % La selección usa solo cohortes hasta 2024; 2025-2026 se reservan y no intervienen en ninguna

@@ -18,6 +18,8 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import shutil
+import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -28,6 +30,8 @@ from environment import MIN_TRAINING_ROWS, RECENCY_HALFLIFE_YEARS, Settings
 from module.modeling.meta import combine_agent_scores
 from module.modeling.catalog import AGENT_NAMES, catalog_by_agent
 from module.common.utils import read_parquet, sha256_file, write_json, write_parquet
+from module.runs.recycle import cache_lock, stage_key
+from module.runs.recycle import publish as publish_recycle, restore as restore_recycle
 
 log = logging.getLogger(__name__)
 
@@ -39,21 +43,33 @@ AGENT_FEATURES = {
 }
 
 
-def build_agent_scores(settings: Settings) -> pd.DataFrame:
-    """Entrena agentes sin futuro y combina sus scores mediante meta rank-IC."""
-    output_dir = settings.processed_output_dir
+def build_agent_scores(
+    settings: Settings,
+    *,
+    target_path_override: Path | None = None,
+    run_root: Path | None = None,
+    input_dir_override: Path | None = None,
+) -> pd.DataFrame:
+    """Entrena agentes sin futuro y combina sus scores mediante meta rank-IC.
+
+    ``target_path_override`` y ``run_root`` permiten ejecutar placebos en un workspace privado.
+    El flujo normal no los necesita y conserva exactamente las rutas históricas.
+    """
+    output_dir = input_dir_override or settings.processed_output_dir
     feature_path = output_dir / "features_point_in_time.parquet"
-    target_path = output_dir / "targets_forward_3m.parquet"
+    target_path = target_path_override or (output_dir / "targets_forward_3m.parquet")
     features = read_parquet(feature_path, "RUN_MODE='features'")
     targets = read_parquet(target_path, "RUN_MODE='features'")
     _validate_inputs(features, targets)
-    run_dir = output_dir / "agents" / _run_id(settings, feature_path, target_path)
+    agents_root = run_root or (output_dir / "agents")
+    run_dir = agents_root / _run_id(settings, feature_path, target_path)
     frame = features.merge(targets, on=["ticker", "snapshot_date"], how="left", validate="one_to_one")
     frame["snapshot_ts"] = pd.to_datetime(frame["snapshot_date"])
     frame["label_end_ts"] = pd.to_datetime(frame["label_end_date"])
     frame["is_quarterly"] = frame["review_type"].eq("fundamental_quarterly")
 
-    predictions, coefficients, local_attribution = _walk_forward_scores(frame, settings)
+    predictions, coefficients, local_attribution = _walk_forward_scores_cached(
+        frame, settings, feature_path, target_path)
     if predictions.empty:
         raise RuntimeError(
             "No se pudieron entrenar agentes con la historia disponible. "
@@ -170,18 +186,97 @@ def _agent_features(frame: pd.DataFrame, settings: Settings) -> dict[str, list[s
             for agent, columns in features.items() if any(column in frame.columns for column in columns)}
 
 
-def _walk_forward_scores(
-    frame: pd.DataFrame, settings: Settings
+def _fit_family_cached(
+    frame: pd.DataFrame, settings: Settings, family: str, feature_path: Path, target_path: Path
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    agent_features = _agent_features(frame, settings)
+    """Obtiene los scores de una familia desde ``data/recycle`` o los computa y publica.
+
+    La clave ``agents_fit`` incluye la familia y los inputs (features/targets); es independiente del
+    meta y de las demás familias, de modo que ablaciones de familia y barridos de meta reutilizan
+    este cómputo caro intacto.
+    """
+    inputs = [feature_path, target_path]
+    key = stage_key("agents_fit", settings, inputs, extra={"family": family})
+    names = ("scores.parquet", "coefficients.parquet", "local_attribution.parquet")
+
+    def _load() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame] | None:
+        destination = Path(tempfile.mkdtemp(prefix=f"agents_fit-{family}-restore-"))
+        try:
+            if restore_recycle("agents_fit", key, destination):
+                log.info("Reciclaje agents_fit[%s]: restaurada clave %s", family, key[:12])
+                return tuple(pd.read_parquet(destination / name) for name in names)  # type: ignore[return-value]
+            return None
+        finally:
+            shutil.rmtree(destination, ignore_errors=True)
+
+    loaded = _load()
+    if loaded is not None:
+        return loaded
+    with cache_lock("agents_fit", key):
+        loaded = _load()
+        if loaded is not None:
+            return loaded
+        scores, coefficients, local_attribution = fit_family_scores(frame, settings, family)
+        temp = Path(tempfile.mkdtemp(prefix=f"agents_fit-{family}-"))
+        try:
+            for name, data in zip(names, (scores, coefficients, local_attribution), strict=True):
+                write_parquet(data, temp / name)
+            publish_recycle("agents_fit", key, [temp / name for name in names], settings)
+        finally:
+            shutil.rmtree(temp, ignore_errors=True)
+        log.info("Reciclaje agents_fit[%s]: publicada clave %s", family, key[:12])
+    return scores, coefficients, local_attribution
+
+
+def _walk_forward_scores_cached(
+    frame: pd.DataFrame, settings: Settings, feature_path: Path, target_path: Path
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Como :func:`_walk_forward_scores` pero cada familia se restaura/publica por separado."""
+    families = _fit_families(settings)
+    per_family: dict[str, pd.DataFrame] = {}
+    coeff_frames: list[pd.DataFrame] = []
+    attrib_frames: list[pd.DataFrame] = []
+    for family in families:
+        scores, coefficients, local_attribution = _fit_family_cached(
+            frame, settings, family, feature_path, target_path)
+        per_family[family] = scores
+        coeff_frames.append(coefficients)
+        attrib_frames.append(local_attribution)
+    if not families or all(per_family[family].empty for family in families):
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+    predictions = _combine_family_scores(per_family, families, frame, settings)
+    return (predictions,
+            pd.concat(coeff_frames, ignore_index=True) if coeff_frames else pd.DataFrame(),
+            pd.concat(attrib_frames, ignore_index=True) if attrib_frames else pd.DataFrame())
+
+
+def _retrain_schedule(frame: pd.DataFrame, settings: Settings) -> list[pd.Timestamp]:
     anchor = _execution_anchor(settings)
-    retrain_dates = sorted(
+    return sorted(
         frame.loc[
             frame["is_quarterly"] & frame["snapshot_ts"].ge(anchor), "snapshot_ts"
         ].drop_duplicates()
     )
+
+
+FAMILY_FIT_COLUMNS = ["ticker", "snapshot_date", "model_retrain_date", "agent",
+                      "score", "is_quarterly", "training_start_date", "training_end_date", "training_rows"]
+
+
+def fit_family_scores(
+    frame: pd.DataFrame, settings: Settings, family: str
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Fit walk-forward de UNA familia de modelo sobre todos los (snapshot × agente).
+
+    Es la parte cara y cacheable: no depende de ``meta_type``/``meta_ic_lookback_quarters`` ni del
+    ``intra_agent_ensemble_mode`` (eso es combinación posterior). Devuelve, para esta familia:
+      - ``scores``: score por fila de scoring (columnas :data:`FAMILY_FIT_COLUMNS`),
+      - ``coefficients``: importancias de features,
+      - ``local_attribution``: contribuciones locales (solo lightgbm; vacío en el resto).
+    """
+    agent_features = _agent_features(frame, settings)
+    retrain_dates = _retrain_schedule(frame, settings)
     rows: list[dict] = []
-    model_history: list[dict] = []
     coefficients: list[dict] = []
     local_attribution: list[dict] = []
     for index, retrain_date in enumerate(retrain_dates):
@@ -214,29 +309,12 @@ def _walk_forward_scores(
                 continue
             if scoring.empty:
                 continue
-            model_scores: list[np.ndarray] = []
-            families: list[str] = []
-            fitted: list[tuple[str, object]] = []
-            for family, model in _build_models(settings):
-                _fit_model(model, train, columns, target, settings, family, weights=recency)
-                model_scores.append(_score(model, scoring[columns], settings, family))
-                families.append(family)
-                fitted.append((family, model))
-            if not model_scores:
+            model = _build_family_model(settings, family)
+            if model is None:
                 continue
-            score_frame = pd.DataFrame(np.column_stack(model_scores))
-            if settings.intra_agent_ensemble_mode == "single":
-                values = score_frame.iloc[:, 0].to_numpy()
-            else:
-                # Promediar rangos conserva la semántica transversal del meta-agente y hace
-                # comparables scores de árboles y modelos lineales.
-                ranks = score_frame.rank(method="average", pct=True)
-                if settings.intra_agent_ensemble_mode == "rank_ic_weighted":
-                    family_weights = _model_rank_ic_weights(model_history, frame, agent, families, retrain_date, settings)
-                    values = ranks.mul([family_weights[family] for family in families], axis=1).sum(axis=1).to_numpy()
-                else:
-                    values = ranks.mean(axis=1).to_numpy()
-            for row, score in zip(scoring.itertuples(index=False), values, strict=True):
+            _fit_model(model, train, columns, target, settings, family, weights=recency)
+            family_scores = _score(model, scoring[columns], settings, family)
+            for row, score in zip(scoring.itertuples(index=False), family_scores, strict=True):
                 rows.append(
                     {
                         "ticker": row.ticker,
@@ -250,15 +328,80 @@ def _walk_forward_scores(
                         "training_rows": len(train),
                     }
                 )
-            for family, model in fitted:
-                coefficients.extend(_importance_rows(model, agent, retrain_date, len(train), settings, family))
-                if family == "lightgbm":
-                    local_attribution.extend(_local_contribution_rows(model, scoring, columns, agent, retrain_date))
-            for family, family_scores in zip(families, model_scores, strict=True):
-                for row, score in zip(scoring.itertuples(index=False), family_scores, strict=True):
-                    model_history.append({"ticker": row.ticker, "snapshot_date": row.snapshot_date,
-                                          "agent": agent, "family": family, "score": float(score)})
-    return pd.DataFrame(rows), pd.DataFrame(coefficients), pd.DataFrame(local_attribution)
+            coefficients.extend(_importance_rows(model, agent, retrain_date, len(train), settings, family))
+            if family == "lightgbm":
+                local_attribution.extend(_local_contribution_rows(model, scoring, columns, agent, retrain_date))
+    scores = pd.DataFrame(rows, columns=FAMILY_FIT_COLUMNS)
+    return scores, pd.DataFrame(coefficients), pd.DataFrame(local_attribution)
+
+
+def _combine_family_scores(
+    family_scores: dict[str, pd.DataFrame], families: list[str], frame: pd.DataFrame, settings: Settings
+) -> pd.DataFrame:
+    """Recombina los scores por familia en el ``predictions`` largo (uno por fila×agente).
+
+    Reproduce exactamente la semántica del ensemble intra-agente previo: ``single`` toma la primera
+    familia; el resto promedia rangos transversales (``rank_ic_weighted`` pondera por rank-IC OOS).
+    El orden de familias es el de ``families`` (== ``enabled_model_families``), idéntico al bucle
+    monolítico anterior, garantizando resultados bit-a-bit.
+    """
+    identifiers = ["ticker", "snapshot_date", "model_retrain_date", "agent",
+                   "is_quarterly", "training_start_date", "training_end_date", "training_rows"]
+    # Historia OOS para pesos rank_ic_weighted: predicciones ya etiquetadas por (agente, familia).
+    model_history = [
+        {"ticker": r.ticker, "snapshot_date": r.snapshot_date, "agent": r.agent,
+         "family": family, "score": r.score}
+        for family in families
+        for r in family_scores[family].itertuples(index=False)
+    ]
+    # Todas las familias comparten exactamente el mismo conjunto y orden de filas (mismo bucle
+    # snapshot×agente×scoring), así que se alinean por posición.
+    base = family_scores[families[0]].reset_index(drop=True)
+    score_matrix = np.column_stack([family_scores[family]["score"].to_numpy() for family in families])
+    values = np.empty(len(base), dtype=float)
+    if settings.intra_agent_ensemble_mode == "single":
+        values = score_matrix[:, 0].astype(float)
+    else:
+        # El ensemble por rangos es transversal DENTRO de cada (agente, retrain_date), igual que el
+        # bucle monolítico que rankeaba el score_frame de un solo (snapshot×agente) — cuyo bloque
+        # de scoring es exactamente el conjunto de filas de ese (agente, retrain_date).
+        for (agent, retrain_date), block in base.groupby(["agent", "model_retrain_date"], sort=False):
+            positions = block.index.to_numpy()
+            ranks = pd.DataFrame(score_matrix[positions]).rank(method="average", pct=True)
+            if settings.intra_agent_ensemble_mode == "rank_ic_weighted":
+                weights = _model_rank_ic_weights(model_history, frame, agent, families,
+                                                  pd.Timestamp(retrain_date), settings)
+                combined = ranks.mul([weights[family] for family in families], axis=1).sum(axis=1)
+            else:
+                combined = ranks.mean(axis=1)
+            values[positions] = combined.to_numpy()
+    result = base[identifiers].copy()
+    result["score"] = values
+    return result
+
+
+def _walk_forward_scores(
+    frame: pd.DataFrame, settings: Settings
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Compat: entrena todas las familias en memoria y las combina (sin caché por familia).
+
+    ``build_agent_scores`` usa la ruta cacheada; esta función conserva el contrato para llamadas
+    directas y pruebas.
+    """
+    families = list(settings.enabled_model_families)
+    if settings.feature_weighting_mode == "regularized_linear_ensemble" and "elastic_net" not in families:
+        families.append("elastic_net")
+    per_family: dict[str, pd.DataFrame] = {}
+    coeff_frames: list[pd.DataFrame] = []
+    attrib_frames: list[pd.DataFrame] = []
+    for family in families:
+        scores, coefficients, local_attribution = fit_family_scores(frame, settings, family)
+        per_family[family] = scores
+        coeff_frames.append(coefficients)
+        attrib_frames.append(local_attribution)
+    predictions = _combine_family_scores(per_family, families, frame, settings)
+    return (predictions, pd.concat(coeff_frames, ignore_index=True) if coeff_frames else pd.DataFrame(),
+            pd.concat(attrib_frames, ignore_index=True) if attrib_frames else pd.DataFrame())
 
 
 def _model_rank_ic_weights(
@@ -412,7 +555,27 @@ def _prepare_training(train: pd.DataFrame, settings: Settings) -> tuple[pd.DataF
     raise ValueError(f"OBJECTIVE desconocido: {settings.objective!r}")
 
 
-def _build_models(settings: Settings) -> list[tuple[str, object]]:
+def _fit_families(settings: Settings) -> list[str]:
+    """Familias que se ajustan de verdad, en orden estable (== bucle histórico).
+
+    ``regularized_linear_ensemble`` inyecta una referencia lineal en cada ensemble aunque el
+    usuario haya elegido solo árboles; se añade al final para conservar el orden previo.
+    """
+    families = list(settings.enabled_model_families)
+    if settings.feature_weighting_mode == "regularized_linear_ensemble" and "elastic_net" not in families:
+        families.append("elastic_net")
+    return families
+
+
+def _build_family_model(settings: Settings, family: str) -> object | None:
+    """Construye el estimador de UNA familia. ``None`` si la familia no está disponible (catboost)."""
+    for name, model in _build_models(settings, families=[family]):
+        if name == family:
+            return model
+    return None
+
+
+def _build_models(settings: Settings, families: list[str] | None = None) -> list[tuple[str, object]]:
     """Estimador LightGBM segun el objetivo. Los arboles manejan NA de forma nativa y son
     invariantes a transformaciones monotonas, asi que no necesitan imputer ni scaler."""
     common = dict(
@@ -427,11 +590,7 @@ def _build_models(settings: Settings) -> list[tuple[str, object]]:
         verbose=-1,
     )
     models: list[tuple[str, object]] = []
-    families = list(settings.enabled_model_families)
-    # This mode is meaningful even when the user selected only tree families:
-    # inject one regularised linear reference into every active agent ensemble.
-    if settings.feature_weighting_mode == "regularized_linear_ensemble" and "elastic_net" not in families:
-        families.append("elastic_net")
+    families = list(families) if families is not None else _fit_families(settings)
     for family in families:
         if family == "lightgbm":
             if settings.objective == "quartile":

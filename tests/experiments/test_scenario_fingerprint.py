@@ -33,7 +33,7 @@ def test_only_portfolio_change_affects_only_backtest() -> None:
     ver con los resultados que hay sin reentrenar'.
     """
     base = Settings(run_scope="dev", data_start_date="2000-01-01", end_date="2001-01-01")
-    changed = replace(base, target_max=15, target_min=8)
+    changed = replace(base, target_size=15)
 
     for stage in ("dataset", "features", "agents"):
         assert stage_fingerprint(stage, base) == stage_fingerprint(stage, changed), (

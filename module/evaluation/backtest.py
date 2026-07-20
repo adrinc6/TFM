@@ -130,14 +130,14 @@ def run_backtest(
         benchmark_value *= 1 + benchmark_return
 
         scores_at_date = scores_by_date.get(snapshot_date, empty_scores)
-        raw_orders = decide_orders(state, scores_at_date, settings)
+        raw_orders, target_weights = decide_orders(state, scores_at_date, settings)
         priced_orders, cost_drag = _price_orders(raw_orders, price_index, snapshot_date,
                                                   state.holdings, settings)
 
         portfolio_value_post_orders = portfolio_value_pre_orders * (1 - cost_drag)
         portfolio_return = portfolio_value_post_orders / portfolio_value - 1 if index > 0 else 0.0
 
-        state = state.apply(priced_orders, price_index.get(snapshot_date, {}))
+        state = state.apply(priced_orders, price_index.get(snapshot_date, {}), target_weights)
         turnover = sum(abs(order["weight_after"] - order["weight_before"])
                        for order in priced_orders if order["weight_before"] is not None
                        and order["weight_after"] is not None)
@@ -388,12 +388,9 @@ def _summary(
         # --- parametros del run ---
         "commission_bps": settings.commission_bps,
         "slippage_bps": settings.slippage_bps,
-        "target_min": settings.target_min,
-        "target_max": settings.target_max,
-        "entry_min_percentile": settings.entry_min_percentile,
+        "target_size": settings.target_size,
         "min_hold_percentile": settings.min_hold_percentile,
         "rotation_edge_percentiles": settings.rotation_edge_percentiles,
-        "max_weight_per_position": settings.max_weight_per_position,
     }
 
 

@@ -51,7 +51,7 @@ def _load_dotenv(path: Path) -> None:
 _load_dotenv(PROJECT_ROOT / ".env")
 
 # Ventana temporal descargada: permite entrenar hacia atrás desde el año 2000.
-DATA_START_DATE = "1990-01-01"
+DATA_START_DATE = "2003-01-01"
 DATA_END_DATE = "2026-07-15"
 DEV_TICKERS = ["AAPL", "MSFT", "NVDA", "JPM", "XOM"]
 BENCHMARK_TICKER = "SPY"
@@ -135,16 +135,13 @@ QUALITY_GROWTH_DERIVED = False     # tendencia de ROE/margenes, estabilidad, sor
 NEUTRALIZE_MIN_GROUP = 5           # tamano minimo de grupo para neutralizar por sector
 
 # --- Cartera ---
-# Por defecto 8-12 posiciones, peso maximo 15 % (minimo implicito ~5 % por el reparto). Barrida.
-TARGET_MIN = 8
-TARGET_MAX = 12
-ENTRY_MIN_PERCENTILE = 80         # solo entran candidatos por encima de este percentil (0..100)
-MIN_HOLD_PERCENTILE = 50          # tenente cae por debajo -> sale, aunque nadie le supere
-ROTATION_EDGE_PERCENTILES = 5     # umbral de ventaja para que un candidato desplace a un tenente
-MAX_WEIGHT_PER_POSITION = 0.15    # tope de peso por posicion; el excedente se reparte
+# Cartera fija: el top-N del meta-rank entra y permanece mientras conserve calidad relativa.
+TARGET_SIZE = 8
+MIN_HOLD_PERCENTILE = 80          # percentil <= este umbral -> venta obligatoria
+ROTATION_EDGE_PERCENTILES = 10    # ventaja mínima para que un candidato desplace a un tenente
 COMMISSION_BPS = 5                # comision por operacion, en puntos basicos
 SLIPPAGE_BPS = 10                 # slippage por operacion, en puntos basicos
-REBALANCE_DRIFT_TOLERANCE = 1.5   # solo re-sizing si un peso excede MAX_WEIGHT * este factor
+REBALANCE_DRIFT_TOLERANCE = 1.5   # diferencia mínima de peso, en puntos porcentuales, para operar
 # Guarda anti-artefactos de datos: un retorno mensual de una posicion mayor que esto se trata
 # como dato corrupto (split mal ajustado, ticker reciclado) y se neutraliza, registrandolo.
 MAX_MONTHLY_POSITION_RETURN = 2.0  # +200 % en un mes es imposible para una accion normal
@@ -212,17 +209,17 @@ class Settings:
     regime_extended: bool = REGIME_EXTENDED
     quality_growth_derived: bool = QUALITY_GROWTH_DERIVED
     # cartera
-    target_min: int = TARGET_MIN
-    target_max: int = TARGET_MAX
-    entry_min_percentile: float = ENTRY_MIN_PERCENTILE
+    target_size: int = TARGET_SIZE
     min_hold_percentile: float = MIN_HOLD_PERCENTILE
     rotation_edge_percentiles: float = ROTATION_EDGE_PERCENTILES
-    max_weight_per_position: float = MAX_WEIGHT_PER_POSITION
     commission_bps: float = COMMISSION_BPS
     slippage_bps: float = SLIPPAGE_BPS
     rebalance_drift_tolerance: float = REBALANCE_DRIFT_TOLERANCE
     max_monthly_position_return: float = MAX_MONTHLY_POSITION_RETURN
     profile: str = "balanced"   # perfil de inversor para la seleccion de cartera (ver module/profiles.py)
+    # Ruta privada de ejecución. No es una variable científica ni se incluye en fingerprints;
+    # el orquestador la asigna después de crear el run.
+    workspace_dir: Path | None = None
 
     def __post_init__(self) -> None:
         if self.run_mode not in RUN_MODES:
@@ -262,20 +259,11 @@ class Settings:
             raise ValueError("METRIC_WINSORIZATION_PERCENTILE debe estar en [0, 0.5).")
         if self.train_lookback_years <= 0 or self.target_horizon_months <= 0:
             raise ValueError("Las ventanas temporales deben ser positivas.")
-        if not 1 <= self.target_min <= self.target_max:
-            raise ValueError("TARGET_MIN y TARGET_MAX deben cumplir 1 <= min <= max.")
-        for name, value in (
-            ("entry_min_percentile", self.entry_min_percentile),
-            ("min_hold_percentile", self.min_hold_percentile),
-        ):
+        if self.target_size < 1:
+            raise ValueError("TARGET_SIZE debe ser positivo.")
+        for name, value in (("min_hold_percentile", self.min_hold_percentile),):
             if not 0 <= value <= 100:
                 raise ValueError(f"{name} debe estar en [0, 100], recibido {value!r}.")
-        if not 0 < self.max_weight_per_position <= 1:
-            raise ValueError("MAX_WEIGHT_PER_POSITION debe estar en (0, 1].")
-        if self.max_weight_per_position * self.target_min < 0.999:
-            raise ValueError(
-                "MAX_WEIGHT_PER_POSITION * TARGET_MIN < 1: la cartera minima no puede llegar al 100 %."
-            )
 
     @property
     def dev_mode(self) -> bool:
@@ -290,6 +278,8 @@ class Settings:
     @property
     def processed_output_dir(self) -> Path:
         """Directorio de artefactos procesados, aislado por alcance."""
+        if self.workspace_dir is not None:
+            return Path(self.workspace_dir)
         return DEV_PROCESSED_DIR if self.dev_mode else PROCESSED_DIR
 
     @property

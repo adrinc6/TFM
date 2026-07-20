@@ -103,9 +103,8 @@ def minimal_run_dir(tmp_path) -> Path:
         "information_ratio": 0.5,
         # parametros del run
         "commission_bps": 5, "slippage_bps": 10,
-        "target_min": 5, "target_max": 10,
-        "entry_min_percentile": 80, "min_hold_percentile": 50,
-        "rotation_edge_percentiles": 5, "max_weight_per_position": 0.20,
+        "target_size": 8, "min_hold_percentile": 80,
+        "rotation_edge_percentiles": 10,
     }
     (run_dir / "backtest_summary.json").write_text(json.dumps(summary), encoding="utf-8")
 

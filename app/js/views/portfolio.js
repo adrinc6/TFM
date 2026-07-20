@@ -7,9 +7,10 @@
   let tradeCtx = { runId: null, years: [] };
   let compositionCtx = { runId: null, dates: [] };
 
-  // Composición actual: posiciones de la última fecha, con el motivo de entrada (de la orden de
-  // compra que abrió cada posición) junto a precio de compra, peso, precio actual y P&L latente.
-  function compositionTable(rows, selectedDate, isLatest) {
+  // Composición a cierre de la fecha elegida: posiciones ABIERTAS ese día (las vendidas ese día no
+  // aparecen; las compradas sí), con motivo de entrada, precio de compra, peso, precio en la fecha
+  // y P&L latente contra el último snapshot PIT disponible. No hay fecha de venta: son posiciones abiertas.
+  function compositionTable(rows, selectedDate, isLatest, movements) {
     if (!rows.length) return `<p class="muted">Este run no registró posiciones en la cartera.</p>`;
     const body = rows.map((p) => {
       const pnl = p.pnl_pct;
@@ -26,12 +27,34 @@
         <td class="${rc}">${typeof pnl === "number" && Number.isFinite(pnl) ? `${fmt(pnl, 2)} %` : "—"}</td>
       </tr>`;
     }).join("");
-    return `<p class="muted">${isLatest ? "Última fecha disponible" : "Composición histórica"}: ${escapeHtml(selectedDate)}</p>
+    return `<p class="muted">${isLatest ? "Última fecha disponible" : "Composición histórica"}: ${escapeHtml(selectedDate)}
+      · ${rows.length} posiciones</p>
       <div class="table-wrap"><table class="data"><thead><tr>
         <th class="sortable" data-key="ticker">Ticker</th><th>Fecha de compra</th><th class="sortable" data-key="entry">Precio de compra</th>
         <th>Motivo</th><th class="sortable" data-key="weight">Peso</th>
-        <th>Tiempo mantenido</th><th>Fecha de venta</th><th class="sortable" data-key="cur">Precio en fecha</th><th class="sortable" data-key="pnl">P&L</th>
-      </tr></thead><tbody>${body}</tbody></table></div>`;
+        <th>Tiempo mantenido</th><th>Fecha de venta</th><th class="sortable" data-key="cur">Precio de valoración</th><th class="sortable" data-key="pnl">P&L</th>
+      </tr></thead><tbody>${body}</tbody></table></div>
+      ${movementsTable(movements, selectedDate)}`;
+  }
+
+  // Movimientos de la fecha seleccionada: compras (entradas) y ventas (salidas) ejecutadas ese día.
+  function movementsTable(movements, selectedDate) {
+    const rows = movements || [];
+    if (!rows.length) return `<p class="muted" style="margin-top:12px">Sin movimientos el ${escapeHtml(selectedDate)}.</p>`;
+    const body = rows.map((m) => {
+      const isSell = m.side === "sell";
+      return `<tr>
+        <td>${escapeHtml(String(m.ticker || ""))}</td>
+        <td class="${isSell ? "negative" : "positive"}">${isSell ? "Venta" : "Compra"}</td>
+        <td>${escapeHtml(m.reason || "—")}</td>
+        <td>${fmt(Number(m.price), 2)}</td>
+        <td>${pct(m.weight_before, 1)} → ${pct(m.weight_after, 1)}</td>
+      </tr>`;
+    }).join("");
+    return `<details style="margin-top:14px"><summary>Movimientos del ${escapeHtml(selectedDate)} (${rows.length})</summary>
+      <div class="table-wrap"><table class="data"><thead><tr>
+        <th>Ticker</th><th>Operación</th><th>Motivo</th><th>Precio</th><th>Peso antes → después</th>
+      </tr></thead><tbody>${body}</tbody></table></div></details>`;
   }
 
   async function refreshComposition() {
@@ -43,7 +66,7 @@
       el("pf-current").innerHTML = `<div class="notice">${escapeHtml(e.message)}</div>`;
       return;
     }
-    el("pf-current").innerHTML = compositionTable(data.rows || [], data.selected_date, data.is_latest);
+    el("pf-current").innerHTML = compositionTable(data.rows || [], data.selected_date, data.is_latest, data.movements);
     global.TFMCharts.clearContainer(el("pf-chart"));
     global.TFMCharts.portfolioComposition(el("pf-chart"), data.rows);
   }
@@ -54,7 +77,7 @@
     target.innerHTML = `<p class="muted">Cargando composición…</p>`;
     try {
       const data = await api("/api/portfolio?" + global.TFM.qs({ run_id: compositionCtx.runId, date }));
-      target.innerHTML = compositionTable(data.rows || [], data.selected_date, data.is_latest);
+      target.innerHTML = compositionTable(data.rows || [], data.selected_date, data.is_latest, data.movements);
       target.dataset.loaded = "true";
     } catch (e) {
       target.innerHTML = `<div class="notice">${escapeHtml(e.message)}</div>`;
@@ -64,7 +87,7 @@
   function historicalCompositions(dates) {
     const historicDates = dates.slice(0, -1);
     if (!historicDates.length) return "";
-    return `<details><summary>Composiciones históricas (${historicDates.length})</summary>
+    return `<details data-keep-closed><summary>Composiciones históricas (${historicDates.length})</summary>
       <p class="muted">De más reciente a más antigua. Abre una fecha para cargar sus posiciones y su desenlace posterior.</p>
       ${historicDates.slice().reverse().map((date, index) => {
         const targetId = `pf-history-${index}`;
@@ -90,7 +113,7 @@
     const select = el("pf-date");
     select.innerHTML = compositionCtx.dates.slice().reverse().map((date) => `<option value="${date}">${date}</option>`).join("");
     if (data.selected_date) select.value = data.selected_date;
-    el("pf-current").innerHTML = compositionTable(data.rows || [], data.selected_date, data.is_latest);
+    el("pf-current").innerHTML = compositionTable(data.rows || [], data.selected_date, data.is_latest, data.movements);
     global.TFMCharts.clearContainer(el("pf-chart"));
     global.TFMCharts.portfolioComposition(el("pf-chart"), data.rows);
     el("pf-history").innerHTML = historicalCompositions(compositionCtx.dates);
@@ -131,10 +154,14 @@
     try { data = await api("/api/trades?" + query()); }
     catch (e) { el("tr-summary").innerHTML = `<div class="notice">${escapeHtml(e.message)}</div>`; return; }
 
-    // Rellena el desplegable de años la primera vez.
+    // Rellena el desplegable de años y los límites/valores por defecto de fecha la primera vez.
     if (data.years && data.years.length && el("tr-year") && el("tr-year").options.length <= 1) {
       el("tr-year").innerHTML = `<option value="">Todos</option>` +
         data.years.map((y) => `<option value="${y}">${y}</option>`).join("");
+      // Por defecto, el filtro de fechas cubre todo el rango disponible (min..max) y lo acota.
+      const start = el("tr-start"), end = el("tr-end");
+      if (start && data.date_min) { start.min = data.date_min; start.max = data.date_max; if (!start.value) start.value = data.date_min; }
+      if (end && data.date_max) { end.min = data.date_min; end.max = data.date_max; if (!end.value) end.value = data.date_max; }
     }
 
     const s = data.summary || {};
@@ -195,7 +222,11 @@
     loadHistoricalComposition,
     reloadTrades: loadTrades,
     clearTrades() {
-      ["tr-year", "tr-start", "tr-end", "tr-ticker"].forEach((id) => { if (el(id)) el(id).value = ""; });
+      // Limpiar = volver al rango completo: año/ticker vacíos y fechas a sus límites min/max.
+      ["tr-year", "tr-ticker"].forEach((id) => { if (el(id)) el(id).value = ""; });
+      const start = el("tr-start"), end = el("tr-end");
+      if (start) start.value = start.min || "";
+      if (end) end.value = end.max || "";
       loadTrades();
     },
   };

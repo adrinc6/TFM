@@ -8,9 +8,13 @@ artefactos para runs, studies y optimizaciones posteriores sin relajar el diseñ
 from __future__ import annotations
 
 import hashlib
+import json
 import os
+import platform
 import shutil
 import tempfile
+import time
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterable
 
@@ -21,29 +25,75 @@ from module.common.utils import sha256_file, write_json
 
 
 RECYCLE_ROOT = DATA_DIR / "recycle"
+CACHE_SCHEMA_VERSION = 2
 
+# La etapa cara "agents" se descompone internamente en dos claves de reutilización distintas:
+#   - "agents_fit": el fit walk-forward de UNA familia de modelo (lightgbm/catboost/elastic_net).
+#     Es lo caro (~90% del tiempo). Su clave incluye la familia concreta (vía ``extra`` en
+#     ``stage_key``) y NO depende de ``meta_type``/``meta_ic_lookback_quarters``/
+#     ``min_rank_ic_cross_section`` ni de ``intra_agent_ensemble_mode``: cambiar el meta o quitar/
+#     añadir OTRA familia reutiliza estos scores intactos.
+#   - "agents": la combinación barata (ensemble intra-agente + meta), cuya identidad la aportan los
+#     hashes de las salidas ``agents_fit`` (vía ``inputs``) más los campos meta de abajo.
 STAGE_FIELDS: dict[str, tuple[str, ...]] = {
     "dataset": ("run_scope", "data_start_date", "end_date", "benchmark_ticker", "execution_lag_days", "snapshot_step_months"),
     "features": ("run_scope", "target_horizon_months", "neutralize_by_sector", "fundamental_momentum", "market_regime_feature", "price_momentum_multi", "moving_averages", "regime_extended", "quality_growth_derived", "enabled_feature_blocks", "metric_winsorization_percentile", "risk_feature_windows", "technical_feature_windows"),
-    "agents": ("execution_year", "execution_quarter", "execution_lag_days", "train_lookback_years", "fundamental_step_months", "meta_ic_lookback_quarters", "min_rank_ic_cross_section", "objective", "lgbm_n_estimators", "lgbm_max_depth", "lgbm_learning_rate", "lgbm_min_child_samples", "random_seed", "meta_type", "enabled_agents", "enabled_model_families", "intra_agent_ensemble_mode", "feature_weighting_mode", "feature_selection_min_coverage", "feature_selection_lookback_quarters", "feature_selection_min_permutation_importance", "feature_selection_min_positive_fraction", "feature_selection_max_features_per_agent", "enabled_feature_blocks", "metric_winsorization_percentile", "risk_feature_windows", "technical_feature_windows"),
-    "backtest": ("target_min", "target_max", "entry_min_percentile", "min_hold_percentile", "rotation_edge_percentiles", "max_weight_per_position", "commission_bps", "slippage_bps", "rebalance_drift_tolerance", "max_monthly_position_return", "profile"),
+    "agents_fit": ("execution_year", "execution_quarter", "execution_lag_days", "train_lookback_years", "fundamental_step_months", "min_rank_ic_cross_section", "objective", "lgbm_n_estimators", "lgbm_max_depth", "lgbm_learning_rate", "lgbm_min_child_samples", "random_seed", "recency_weighting", "enabled_agents", "feature_weighting_mode", "feature_selection_min_coverage", "feature_selection_lookback_quarters", "feature_selection_min_permutation_importance", "feature_selection_min_positive_fraction", "feature_selection_max_features_per_agent", "enabled_feature_blocks", "metric_winsorization_percentile", "risk_feature_windows", "technical_feature_windows"),
+    "agents": ("execution_year", "execution_quarter", "execution_lag_days", "train_lookback_years", "fundamental_step_months", "meta_ic_lookback_quarters", "min_rank_ic_cross_section", "objective", "lgbm_n_estimators", "lgbm_max_depth", "lgbm_learning_rate", "lgbm_min_child_samples", "random_seed", "meta_type", "recency_weighting", "enabled_agents", "enabled_model_families", "intra_agent_ensemble_mode", "feature_weighting_mode", "feature_selection_min_coverage", "feature_selection_lookback_quarters", "feature_selection_min_permutation_importance", "feature_selection_min_positive_fraction", "feature_selection_max_features_per_agent", "enabled_feature_blocks", "metric_winsorization_percentile", "risk_feature_windows", "technical_feature_windows"),
+    "backtest": ("target_size", "min_hold_percentile", "rotation_edge_percentiles", "commission_bps", "slippage_bps", "rebalance_drift_tolerance", "max_monthly_position_return", "profile"),
 }
 
+# La huella de código de una sub-etapa reutiliza la del módulo de agentes (mismo fichero fuente).
+_CODE_FINGERPRINT_ALIAS = {"agents_fit": "agents"}
 
-def stage_key(stage: str, settings: Settings, inputs: Iterable[Path]) -> str:
+
+def stage_key(stage: str, settings: Settings, inputs: Iterable[Path],
+              extra: dict[str, object] | None = None) -> str:
     if stage not in STAGE_FIELDS:
         raise ValueError(f"Etapa de reciclaje desconocida: {stage}")
     payload = {
+        "schema_version": CACHE_SCHEMA_VERSION,
         "stage": stage,
         "settings": {name: getattr(settings, name) for name in STAGE_FIELDS[stage]},
         "inputs": {path.name: sha256_file(path) for path in inputs if path.exists()},
-        "code_fingerprint": stage_code_fingerprint(stage),
+        "code_fingerprint": stage_code_fingerprint(_CODE_FINGERPRINT_ALIAS.get(stage, stage)),
+        "python": platform.python_version(),
     }
+    if extra:
+        payload["extra"] = extra
     return hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
 
 
 def cache_dir(stage: str, key: str) -> Path:
     return RECYCLE_ROOT / stage / key
+
+
+@contextmanager
+def cache_lock(stage: str, key: str, timeout_seconds: float = 86_400):
+    """Single-flight entre procesos para una transformación content-addressed."""
+    lock = RECYCLE_ROOT / stage / ".locks" / f"{key}.lock"
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    deadline = time.monotonic() + timeout_seconds
+    while True:
+        try:
+            descriptor = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            os.write(descriptor, str(os.getpid()).encode("ascii"))
+            os.close(descriptor)
+            break
+        except FileExistsError:
+            try:
+                owner = int(lock.read_text(encoding="utf-8").strip())
+                os.kill(owner, 0)
+            except (OSError, ValueError):
+                lock.unlink(missing_ok=True)
+                continue
+            if time.monotonic() >= deadline:
+                raise TimeoutError(f"Timeout esperando caché {stage}:{key[:12]} (PID {owner}).")
+            time.sleep(0.25)
+    try:
+        yield
+    finally:
+        lock.unlink(missing_ok=True)
 
 
 def _link_or_copy(source: Path, target: Path) -> None:
@@ -75,15 +125,30 @@ def _restore_tree(source: Path, target: Path) -> None:
 
 
 def restore(stage: str, key: str, destination: Path) -> bool:
-    """Restaura una entrada completa por hardlink (fallback a copia); no muta la caché."""
+    """Restaura una entrada validada; una caché parcial o corrupta nunca se reutiliza."""
     source = cache_dir(stage, key)
     manifest = source / "manifest.json"
     if not manifest.exists():
         return False
-    for item in source.iterdir():
-        if item.name == "manifest.json":
-            continue
-        _restore_tree(item, destination / item.name)
+    try:
+        metadata = json.loads(manifest.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    if metadata.get("schema_version") != CACHE_SCHEMA_VERSION or metadata.get("key") != key:
+        return False
+    artifacts = metadata.get("artifacts")
+    if not isinstance(artifacts, dict):
+        return False
+    validated: list[tuple[Path, Path]] = []
+    for relative, expected in artifacts.items():
+        item = source / relative
+        if not isinstance(expected, dict) or not item.is_file():
+            return False
+        if item.stat().st_size != expected.get("size") or sha256_file(item) != expected.get("sha256"):
+            return False
+        validated.append((item, destination / relative))
+    for item, target in validated:
+        _link_or_copy(item, target)
     return True
 
 
@@ -95,17 +160,22 @@ def publish(stage: str, key: str, source_items: Iterable[Path], settings: Settin
     final.parent.mkdir(parents=True, exist_ok=True)
     temp = Path(tempfile.mkdtemp(prefix=f".{key[:12]}-", dir=final.parent))
     try:
-        artifacts: list[str] = []
+        artifacts: dict[str, dict[str, int | str]] = {}
         for item in source_items:
             if not item.exists():
                 continue
             target = temp / item.name
             if item.is_dir():
                 shutil.copytree(item, target)
+                for child in target.rglob("*"):
+                    if child.is_file():
+                        relative = child.relative_to(temp).as_posix()
+                        artifacts[relative] = {"size": child.stat().st_size, "sha256": sha256_file(child)}
             else:
                 shutil.copy2(item, target)
-            artifacts.append(item.name)
-        write_json({"stage": stage, "key": key, "git_revision": git_revision(),
+                artifacts[item.name] = {"size": target.stat().st_size, "sha256": sha256_file(target)}
+        write_json({"schema_version": CACHE_SCHEMA_VERSION, "stage": stage, "key": key,
+                    "git_revision": git_revision(), "python": platform.python_version(),
                     "settings": {name: getattr(settings, name) for name in STAGE_FIELDS[stage]},
                     "artifacts": artifacts}, temp / "manifest.json")
         try:

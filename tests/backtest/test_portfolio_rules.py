@@ -1,9 +1,4 @@
-"""Reglas de decisión de cartera. Se prueban aisladas del simulador (`backtest.py`).
-
-Contrato: `decide_orders(state, scores_at_date, settings)` devuelve la lista de órdenes
-que llevan la cartera al estado siguiente, siguiendo las reglas del plan (expulsión,
-ventaja, tamaño flexible 5-10, sizing con tope).
-"""
+"""Reglas críticas de la cartera fija: tamaño, umbral de salida, rotación y pesos."""
 
 from __future__ import annotations
 
@@ -15,145 +10,60 @@ import pytest
 from module.evaluation.portfolio import PortfolioState, decide_orders
 
 
-def _scores_row(ticker: str, meta_rank: float, snapshot_date: str = "2000-01-15") -> dict:
-    return {"ticker": ticker, "snapshot_date": snapshot_date, "meta_score": meta_rank,
-            "meta_rank": meta_rank, "is_quarterly": True}
+def _row(ticker: str, rank: float, date: str = "2000-01-15") -> dict:
+    return {"ticker": ticker, "snapshot_date": date, "meta_score": rank,
+            "meta_rank": rank, "is_quarterly": True}
 
 
-def test_holder_kept_when_candidate_advantage_below_threshold(portfolio_settings) -> None:
-    """Tenente en percentil 60 no rota si el mejor candidato fuera está en 62 (diff < 5)."""
-    settings = replace(
-        portfolio_settings,
-        target_min=5, target_max=5, max_weight_per_position=0.25,  # cartera llena, sin huecos
-        min_hold_percentile=50,                    # el tenente esta por encima
-        rotation_edge_percentiles=5,
-        entry_min_percentile=60,
-        rebalance_drift_tolerance=10.0,            # no rebalancear por micro-derivas en el test
-    )
-    state = PortfolioState.from_holdings(
-        {"AAA": 0.2, "BBB": 0.2, "CCC": 0.2, "DDD": 0.2, "GGG": 0.2},
-    )
+def test_fixed_size_weights_sum_to_one_and_respect_two_to_one(portfolio_settings) -> None:
+    settings = replace(portfolio_settings, target_size=5, min_hold_percentile=80)
+    scores = pd.DataFrame([_row(f"T{i}", 1 - i * 0.01) for i in range(8)])
+    orders, weights = decide_orders(PortfolioState.empty(), scores, settings)
+
+    buys = [order for order in orders if order["side"] == "buy"]
+    assert len(buys) == 5
+    assert len(weights) == 5
+    assert sum(weights.values()) == pytest.approx(1.0)
+    assert max(weights.values()) <= 2 * min(weights.values()) + 1e-12
+
+
+def test_holder_at_or_below_maintenance_threshold_is_sold(portfolio_settings) -> None:
+    settings = replace(portfolio_settings, target_size=3, min_hold_percentile=80)
+    state = PortfolioState.from_holdings({"AAA": 1 / 3, "BBB": 1 / 3, "CCC": 1 / 3})
     scores = pd.DataFrame([
-        _scores_row("AAA", 0.90), _scores_row("BBB", 0.80), _scores_row("CCC", 0.75),
-        _scores_row("DDD", 0.65), _scores_row("GGG", 0.60),     # peor tenente en 60
-        _scores_row("EEE", 0.62),                                # candidato fuera con solo +2
-        _scores_row("FFF", 0.50),
+        _row("AAA", 0.80), _row("BBB", 0.90), _row("CCC", 0.85), _row("DDD", 0.95),
     ])
-    orders = decide_orders(state, scores, settings)
+    orders, weights = decide_orders(state, scores, settings)
 
-    # Nadie sale (todos por encima del 50), nadie entra (ventaja < 5).
-    assert orders == []
+    assert any(order["ticker"] == "AAA" and order["side"] == "sell"
+               and order["reason"] == "dropped_below_min" for order in orders)
+    assert "DDD" in weights and len(weights) == 3
 
 
-def test_holder_below_min_percentile_is_dropped_even_without_replacement(portfolio_settings) -> None:
-    """Un tenente que cae al percentil 40 sale, aunque nadie tenga la ventaja para rellenar."""
-    settings = replace(
-        portfolio_settings,
-        target_min=5, target_max=5, max_weight_per_position=0.25,
-        min_hold_percentile=50,
-        rotation_edge_percentiles=5,
-        entry_min_percentile=80,           # nadie fuera lo cumple -> el hueco queda
-        rebalance_drift_tolerance=10.0,
-    )
-    state = PortfolioState.from_holdings(
-        {"AAA": 0.2, "BBB": 0.2, "CCC": 0.2, "DDD": 0.2, "GGG": 0.2},
-    )
+def test_multiple_rotations_require_configured_edge(portfolio_settings) -> None:
+    settings = replace(portfolio_settings, target_size=3, min_hold_percentile=60,
+                       rotation_edge_percentiles=10)
+    state = PortfolioState.from_holdings({"AAA": 1 / 3, "BBB": 1 / 3, "CCC": 1 / 3})
     scores = pd.DataFrame([
-        _scores_row("AAA", 0.90), _scores_row("BBB", 0.80), _scores_row("CCC", 0.75),
-        _scores_row("DDD", 0.65),
-        _scores_row("GGG", 0.40),                                # se hunde
-        _scores_row("EEE", 0.55), _scores_row("FFF", 0.50),      # nadie llega a 0.80
+        _row("AAA", 0.92), _row("BBB", 0.80), _row("CCC", 0.75),
+        _row("DDD", 0.95), _row("EEE", 0.91),
     ])
-    orders = decide_orders(state, scores, settings)
+    orders, weights = decide_orders(state, scores, settings)
 
     sells = [order for order in orders if order["side"] == "sell"]
     buys = [order for order in orders if order["side"] == "buy"]
-    assert len(sells) == 1 and sells[0]["ticker"] == "GGG"
-    assert sells[0]["reason"] == "dropped_below_min"
-    assert buys == []
+    assert {order["ticker"] for order in sells} == {"BBB", "CCC"}
+    assert {order["ticker"] for order in buys} == {"DDD", "EEE"}
+    assert len(weights) == 3 and sum(weights.values()) == pytest.approx(1.0)
 
 
-def test_ticker_can_reenter_after_leaving(portfolio_settings) -> None:
-    """Ida y vuelta: un ticker con score 90 -> 40 -> 88 entra, sale, y vuelve a entrar."""
-    settings = replace(
-        portfolio_settings,
-        target_min=5, target_max=5, max_weight_per_position=0.25,
-        min_hold_percentile=50,
-        rotation_edge_percentiles=5,
-        entry_min_percentile=80,
-    )
-    # Snapshot 1: entra
-    state = PortfolioState.empty()
-    scores_1 = pd.DataFrame([
-        _scores_row("AAA", 0.90, "2000-01-15"), _scores_row("BBB", 0.85, "2000-01-15"),
-        _scores_row("CCC", 0.83, "2000-01-15"), _scores_row("DDD", 0.82, "2000-01-15"),
-        _scores_row("EEE", 0.81, "2000-01-15"),
-    ])
-    orders_1 = decide_orders(state, scores_1, settings)
-    assert any(order["ticker"] == "AAA" and order["side"] == "buy" for order in orders_1)
-
-    # Snapshot 2: AAA se hunde a 0.40 -> sale
-    state = state.apply(orders_1, prices={"AAA": 100, "BBB": 101, "CCC": 102, "DDD": 103, "EEE": 104})
-    scores_2 = pd.DataFrame([
-        _scores_row("AAA", 0.40, "2000-02-15"),                     # se cae
-        _scores_row("BBB", 0.85, "2000-02-15"), _scores_row("CCC", 0.83, "2000-02-15"),
-        _scores_row("DDD", 0.82, "2000-02-15"), _scores_row("EEE", 0.81, "2000-02-15"),
-    ])
-    orders_2 = decide_orders(state, scores_2, settings)
-    assert any(order["ticker"] == "AAA" and order["side"] == "sell"
-               and order["reason"] == "dropped_below_min" for order in orders_2)
-
-    # Snapshot 3: AAA vuelve a 0.88 con hueco disponible -> entra
-    state = state.apply(orders_2, prices={"AAA": 100, "BBB": 102, "CCC": 103, "DDD": 104, "EEE": 105})
-    scores_3 = pd.DataFrame([
-        _scores_row("AAA", 0.88, "2000-03-15"),                     # vuelve
-        _scores_row("BBB", 0.85, "2000-03-15"), _scores_row("CCC", 0.83, "2000-03-15"),
-        _scores_row("DDD", 0.82, "2000-03-15"), _scores_row("EEE", 0.81, "2000-03-15"),
-    ])
-    orders_3 = decide_orders(state, scores_3, settings)
-    assert any(order["ticker"] == "AAA" and order["side"] == "buy" for order in orders_3)
-
-
-def test_sizing_respects_max_weight_and_sums_to_one(portfolio_settings) -> None:
-    """Cuatro posiciones 95/85/80/78 con MAX_WEIGHT=30 %: la mejor recibe 30 %, resto se reparte."""
-    settings = replace(
-        portfolio_settings,
-        target_min=4, target_max=4,
-        max_weight_per_position=0.30,
-        entry_min_percentile=70,
-    )
-    state = PortfolioState.empty()
+def test_small_advantage_does_not_rotate(portfolio_settings) -> None:
+    settings = replace(portfolio_settings, target_size=3, min_hold_percentile=60,
+                       rotation_edge_percentiles=10)
+    state = PortfolioState.from_holdings({"AAA": 1 / 3, "BBB": 1 / 3, "CCC": 1 / 3})
     scores = pd.DataFrame([
-        _scores_row("AAA", 0.95), _scores_row("BBB", 0.85),
-        _scores_row("CCC", 0.80), _scores_row("DDD", 0.78),
-        _scores_row("EEE", 0.40),                                    # no entra
+        _row("AAA", 0.92), _row("BBB", 0.85), _row("CCC", 0.80), _row("DDD", 0.89),
     ])
-    orders = decide_orders(state, scores, settings)
-    buys = [order for order in orders if order["side"] == "buy"]
-
-    weights = {order["ticker"]: order["weight_after"] for order in buys}
-    assert set(weights) == {"AAA", "BBB", "CCC", "DDD"}
-    assert weights["AAA"] == pytest.approx(0.30)                     # tope activo
-    assert all(w <= 0.30 + 1e-9 for w in weights.values())
-    assert sum(weights.values()) == pytest.approx(1.0, abs=1e-6)     # capital invertido = 100 %
-
-
-def test_portfolio_size_flexes_when_few_candidates_qualify(portfolio_settings) -> None:
-    """Si solo 6 candidatos superan ENTRY_MIN_PERCENTILE=80, la cartera es de 6, no de 10."""
-    settings = replace(
-        portfolio_settings,
-        target_min=5, target_max=10,
-        max_weight_per_position=0.25,
-        entry_min_percentile=80,
-    )
-    state = PortfolioState.empty()
-    scores = pd.DataFrame([
-        _scores_row("AAA", 0.95), _scores_row("BBB", 0.92), _scores_row("CCC", 0.90),
-        _scores_row("DDD", 0.85), _scores_row("EEE", 0.83), _scores_row("FFF", 0.81),
-        _scores_row("GGG", 0.75),                                    # bajo 80: fuera
-        _scores_row("HHH", 0.70), _scores_row("III", 0.50), _scores_row("JJJ", 0.30),
-    ])
-    orders = decide_orders(state, scores, settings)
-    buys = [order for order in orders if order["side"] == "buy"]
-
-    assert {order["ticker"] for order in buys} == {"AAA", "BBB", "CCC", "DDD", "EEE", "FFF"}
+    orders, _ = decide_orders(state, scores, settings)
+    assert not any(order["side"] == "sell" for order in orders)
+    assert not any(order["ticker"] == "DDD" for order in orders)

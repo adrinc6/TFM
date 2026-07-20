@@ -33,7 +33,39 @@ También puede lanzarse desde **Full study → Revisar y lanzar** en la consola.
 
 El ciclo es dirigido, no un producto cartesiano: ablaciones aisladas de modelo, combinación greedy de candidatos aceptados, afinado, configuración de cartera, perfiles, estrés de costes, robustez y validación reservada.
 
+Las Fases 1–2 optimizan también calendario, `execution_lag_days`, cadencias y horizonte. Los
+hiperparámetros de capacidad (`n_estimators`, `learning_rate` y `min_child_samples`) se reservan
+para un afinado greedy en Fase 3. La cartera se elige con datos hasta 2024 sobre el artefacto
+exacto del modelo ganador; 2025–2026 no interviene en esa elección.
+
+`study` y `full_study` comparten exactamente el mismo catálogo y la misma asignación de fases.
+El primero permite seleccionar subconjuntos; el segundo ejecuta todos los valores admitidos.
+
+La cartera opera el `meta_rank` con tamaños fijos de 5, 8, 10, 12 o 15 posiciones (8 por
+defecto). Una tenencia se vende si no supera su percentil de mantenimiento; los reemplazos
+ordinarios requieren una ventaja de ranking. Los pesos se calculan a partir del `meta_rank` y se
+normalizan al 100 %, con un máximo de dos veces el peso de la posición menor.
+
+Los ocho perfiles se publican como resultados paralelos. `balanced` conserva el ranking puro de
+`meta_final` y actúa como referencia; no se elige retrospectivamente un «mejor perfil».
+
 La selección del modelo usa solo cohortes con fecha de predicción hasta **2024**. Los años **2025–2026** quedan reservados para una única validación final. Las comisiones, el slippage y la semilla no se optimizan: se reportan como estrés y robustez.
+
+## Rendimiento, aislamiento y operación
+
+Cada run se publica en un workspace privado y conserva manifiesto, hashes de entradas, huella de
+código y telemetría. La caché es por etapa: dataset, features, agentes y backtest solo se
+restauran cuando su configuración efectiva y sus entradas coinciden; un run interrumpido nunca se
+trata como completo.
+
+La Fase 1 planifica tandas de hasta cuatro escenarios. Antes de lanzarlos separa las dependencias
+de dataset, features y agentes para no duplicar una materialización mientras otro worker la está
+construyendo. Cada worker usa tres hilos de modelo; el baseline puede compartir tanda con
+escenarios realmente independientes. Las fases greedy siguen siendo secuenciales por diseño.
+
+La consola del study muestra los logs agregados de todos los runs activos, etiquetados por run, y
+puede sustituir temporalmente la comparativa. Las líneas visibles se limitan a unas veinte, con
+scroll para el historial reciente.
 
 ## Arquitectura
 
@@ -69,6 +101,10 @@ Cada bloque, agente y familia puede medirse mediante ablación. La poda OOS, la 
 ## Resultados y pruebas
 
 Los runs se guardan en `results/runs/`; los studies, en `results/studies/`; y el registro inmutable está en `results/registry.jsonl`. Cada resultado conserva configuración, manifiesto, artefactos, diagnósticos y exportaciones CSV.
+
+La caché de etapas es content-addressed y versionada. Antes de reutilizar un artefacto valida su
+tamaño y SHA-256; los backtests usan workspaces privados y los studies interrumpidos pueden
+reanudarse desde la consola reutilizando únicamente runs completos.
 
 ```powershell
 python -m pytest tests/ -q

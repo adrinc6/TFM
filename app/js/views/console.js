@@ -9,7 +9,16 @@
   const labelFor = (name) => name.replaceAll("_", " ");
   const isCompound = (value) => Array.isArray(value) || (value && typeof value === "object");
   const encodedValue = (value) => isCompound(value) ? JSON.stringify(value) : String(value);
-  const displayValue = (value) => Array.isArray(value) ? value.join(" + ") : String(value);
+  function displayValue(value) {
+    if (Array.isArray(value)) return value.map(displayValue).join(" + ");
+    if (value && typeof value === "object") {
+      if ("target_size" in value) {
+        return `${value.target_size} posiciones · pesos por meta-rank (máx. 2:1)`;
+      }
+      return Object.entries(value).map(([key, item]) => `${labelFor(key)}: ${displayValue(item)}`).join(" · ");
+    }
+    return String(value);
+  }
   function decodeValue(raw, compound) {
     if (compound) return JSON.parse(raw);
     return raw === "true" ? true : raw === "false" ? false : Number.isNaN(Number(raw)) ? raw : Number(raw);
@@ -17,7 +26,7 @@
 
   // --- Controles reutilizables ---
   function parameterControl(key, value) {
-    const options = S().studyOptions[key] || [value];
+    const options = S().settingsOptions[key] || [value];
     const opts = options
       .map((o) => {
         const compound = isCompound(o);
@@ -46,14 +55,15 @@
     return `<label class="field">${title}<select data-preset="${kind}" onchange="TFM.views.console.applyPreset('${kind}', this.value)"><option value="">Seleccionar…</option>${items}</select></label>`;
   }
 
-  function studyControls(lockedFullStudy = false) {
+  function studyControls(lockedFullStudy = false, optionSource = null) {
+    const source = optionSource || S().studyOptions;
     const rendered = new Set();
     const group = (title, names) => {
-      const entries = names.filter((name) => S().studyOptions[name]);
+      const entries = names.filter((name) => source[name]);
       if (!entries.length) return "";
       entries.forEach((name) => rendered.add(name));
       const body = entries.map((name) => {
-        const values = S().studyOptions[name];
+        const values = source[name];
         const choices = values
           .map((value, index) => {
             const compound = isCompound(value);
@@ -64,16 +74,16 @@
           .join("");
         return `<div class="study-variable"><strong>${labelFor(name)}</strong><div class="choices">${choices}</div></div>`;
       }).join("");
-      return `<details class="parameter-group" open><summary>${escapeHtml(title)}</summary><div class="study-groups">${body}</div></details>`;
+      return `<details class="parameter-group"><summary>${escapeHtml(title)}</summary><div class="study-groups">${body}</div></details>`;
     };
     const groups = Object.entries(S().studyOptionGroups || {}).map(([title, names]) => group(title, names)).join("");
-    const rest = Object.keys(S().studyOptions).filter((name) => !rendered.has(name));
+    const rest = Object.keys(source).filter((name) => !rendered.has(name));
     return groups + group("Otras variables", rest);
   }
 
   // --- Formularios ---
   function experimentalForm() {
-    const profiles = (S().studyOptions.profile || [])
+    const profiles = (S().settingsOptions.profile || [])
       .map((p) => `<option value="${escapeHtml(p)}">${escapeHtml(S().profileLabels[p] || p)}</option>`)
       .join("");
     return `<h3>Run experimental</h3>
@@ -108,7 +118,11 @@
         <label class="field">Hipótesis<textarea id="study-description"></textarea></label>
       </div>
       <label class="field checkbox"><input type="checkbox" id="study-robustness"> Incluir robustez completa (placebo por permutación + carteras aleatorias; reentrena el finalista, más lento)</label>
-      <section class="parameter-group"><h4>Variables y valores a combinar</h4>${studyControls()}</section>
+      <section class="parameter-group"><h4>Fases 1–2 · Datos, factores y modelo</h4>${studyControls(false, S().studyModelOptions)}</section>
+      <section class="parameter-group"><h4>Fase 3 · Afinado de hiperparámetros</h4>${studyControls(false, S().studyPhase3Options)}</section>
+      <section class="parameter-group"><h4>Fase 4 · Construcción de cartera</h4>${studyControls(false, S().studyPortfolioOptions)}</section>
+      ${profileStudySettings()}
+      ${stressStudySettings()}
       <div id="study-count" class="notice"></div>
       <div class="actions"><button class="button primary" onclick="TFM.views.console.launchStudy()">Previsualizar y ejecutar</button></div>`;
   }
@@ -116,7 +130,7 @@
   function fixedStudySettings() {
     const entries = Object.entries(S().fullStudyFixedSettings || {});
     if (!entries.length) return "";
-    return `<details class="parameter-group" open><summary>Parámetros fijos y visibles</summary><div class="study-groups">${entries.map(([key, value]) =>
+    return `<details class="parameter-group"><summary>Parámetros fijos y visibles</summary><div class="study-groups">${entries.map(([key, value]) =>
       `<div class="study-variable"><strong>${escapeHtml(labelFor(key))}</strong><label class="choice"><input type="checkbox" checked disabled>Fijo: ${escapeHtml(displayValue(value))}</label></div>`
     ).join("")}</div></details>`;
   }
@@ -124,9 +138,17 @@
   function stressStudySettings() {
     const entries = Object.entries(S().fullStudyStressSettings || {});
     if (!entries.length) return "";
-    return `<details class="parameter-group" open><summary>Escenarios de estrés, no optimizables</summary><div class="study-groups">${entries.map(([key, value]) =>
+    return `<details class="parameter-group"><summary>Escenarios de estrés, no optimizables</summary><div class="study-groups">${entries.map(([key, value]) =>
       `<div class="study-variable"><strong>${escapeHtml(labelFor(key))}</strong><label class="choice"><input type="checkbox" checked disabled>Se informan todos: ${escapeHtml(displayValue(value))}</label></div>`
     ).join("")}</div></details>`;
+  }
+
+  function profileStudySettings() {
+    const profiles = S().fullStudyProfiles || [];
+    return `<details class="parameter-group"><summary>Fase 5 · Resultados por perfil, sin ganador</summary>
+      <div class="study-groups">${profiles.map((profile) =>
+        `<div class="study-variable"><strong>${escapeHtml(profile)}</strong><label class="choice"><input type="checkbox" checked disabled>${escapeHtml(S().profileLabels[profile] || profile)}</label></div>`
+      ).join("")}</div></details>`;
   }
 
   function fullStudyForm() {
@@ -136,7 +158,10 @@
         <label class="field">Hipótesis<textarea id="full-study-hypothesis" placeholder="Ej.: Los bloques de calidad, crecimiento y riesgo mejoran el Rank-IC OOS frente al baseline."></textarea></label>
       </div>
       <p class="notice">Transparencia total: todas las variables barribles están marcadas y bloqueadas. Se ejecutarán todos sus valores permitidos; no se puede desmarcar ninguno en un full study.</p>
-      <section class="parameter-group"><h4>Variables que se modifican</h4>${studyControls(true)}</section>
+      <section class="parameter-group"><h4>Fases 1–2 · Datos, factores y modelo</h4>${studyControls(true, S().fullStudyModelOptions)}</section>
+      <section class="parameter-group"><h4>Fase 3 · Afinado greedy, sin producto cartesiano</h4>${studyControls(true, S().fullStudyPhase3Options)}</section>
+      <section class="parameter-group"><h4>Fase 4 · Construcción de cartera sobre el modelo congelado</h4>${studyControls(true, S().fullStudyPortfolioOptions)}</section>
+      ${profileStudySettings()}
       <section class="parameter-group"><h4>Variables que no se modifican</h4>${fixedStudySettings()}</section>
       <section class="parameter-group"><h4>Costes de ejecución</h4>${stressStudySettings()}</section>
       <div class="actions"><button class="button primary" onclick="TFM.views.console.launchOptimization()">Lanzar full study oficial</button>

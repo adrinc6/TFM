@@ -45,6 +45,41 @@
     return chart;
   }
 
+  // Líneas verticales de operaciones sobre un chart de eje x categórico (fechas): verde=compra,
+  // rojo=venta. `orders` son las órdenes del ticker; se dibujan en la fecha (label) de cada una.
+  function tradeLinesPlugin(orders, labels) {
+    const buyDates = new Set();
+    const sellDates = new Set();
+    (orders || []).forEach((o) => {
+      const key = String(o.snapshot_date).slice(0, 10);
+      (o.side === "sell" ? sellDates : buyDates).add(key);
+    });
+    return {
+      id: "tradeLines",
+      afterDatasetsDraw(chart) {
+        const xAxis = chart.scales.x;
+        const area = chart.chartArea;
+        if (!xAxis || !area) return;
+        const ctx = chart.ctx;
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        (labels || []).forEach((label, index) => {
+          const key = String(label).slice(0, 10);
+          const isBuy = buyDates.has(key), isSell = sellDates.has(key);
+          if (!isBuy && !isSell) return;
+          const x = xAxis.getPixelForValue(index);
+          ctx.beginPath();
+          ctx.strokeStyle = isSell ? P.neg : P.pos;   // una venta el mismo día tiñe de rojo
+          ctx.setLineDash([4, 3]);
+          ctx.moveTo(x, area.top);
+          ctx.lineTo(x, area.bottom);
+          ctx.stroke();
+        });
+        ctx.restore();
+      },
+    };
+  }
+
   // Destruye los gráficos previos (evita fugas al recargar una vista)
   function clear() {
     while (registry.length) {
@@ -205,7 +240,7 @@
   }
 
   // --- Historia de un ratio de stock vs media S&P 500 e índice de precio ---
-  function stockHistory(container, history) {
+  function stockHistory(container, history, orders) {
     const points = (history && history.points) || [];
     if (!points.length) return;
     const labels = points.map((p) => p.snapshot_date);
@@ -235,6 +270,7 @@
       type: "line",
       data: { labels, datasets },
       options: { interaction: { mode: "index", intersect: false }, scales, plugins: { legend: { display: true } } },
+      plugins: [tradeLinesPlugin(orders, labels)],
     }, 320);
   }
 
@@ -269,7 +305,7 @@
   // --- Histórico de puntuaciones de una acción por agente (calidad/momentum/valor/meta) ---
   // `rows`: filas de agent_scores del ticker (una por snapshot) con columnas quality/momentum/
   // value/meta_score. Cada agente es una serie con identidad → paleta categórica.
-  function stockScoreHistory(container, rows) {
+  function stockScoreHistory(container, rows, orders) {
     const list = (rows || []).slice().sort((a, b) => String(a.snapshot_date).localeCompare(String(b.snapshot_date)));
     if (!list.length) return;
     const labels = list.map((r) => String(r.snapshot_date).slice(0, 10));
@@ -295,6 +331,7 @@
         scales: { x: gridScale({ ticks: { maxTicksLimit: 8 } }), y: gridScale() },
         plugins: { legend: { display: true } },
       },
+      plugins: [tradeLinesPlugin(orders, labels)],
     });
   }
 

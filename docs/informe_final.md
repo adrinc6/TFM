@@ -22,6 +22,11 @@ El sistema parte de datos fundamentales y OHLCV point-in-time. Las features se a
 
 La selección del modelo se hace exclusivamente con Rank-IC OOS de `meta_final` hasta 2024. El backtest no elige el modelo. Después de fijarlo, la fase de cartera puede elegir construcción por Information Ratio; costes de ejecución se reportan en nueve stresses y no se usan como variable de optimización.
 
+La selección de cartera también queda cortada al final de 2024. Solo después de congelar modelo,
+hiperparámetros y cartera se consulta 2025–2026. Los ocho perfiles son salidas paralelas;
+`balanced` conserva el ranking puro de `meta_final` y ninguno se declara ganador por rentabilidad
+histórica.
+
 El informe debe especificar si el finalista utiliza poda, gating, ensemble o stacking, y debe indicar los fallbacks activados cuando no había suficiente historia OOS.
 
 ## 3. Tabla de configuración final
@@ -34,7 +39,7 @@ Completar desde `decision.json`, `study_manifest.json` y manifiestos del run fin
 | Modelos | objetivo y familias |  | Ablación y estabilidad. |
 | Meta | tipo, lookback y pesos |  | Diagnósticos de agentes/meta. |
 | Factores | bloques, agentes, modo de selección |  | Ablaciones y cobertura. |
-| Cartera | tamaño, percentiles, rotación y peso |  | Fase de cartera, Information Ratio. |
+| Cartera | tamaño fijo, mantenimiento, rotación y pesos 2:1 |  | Fase de cartera, Information Ratio. |
 | Costes | comisión y slippage base |  | Supuesto base; no criterio de selección. |
 
 No deben publicarse como “ganadores” semilla, comisión o slippage. Si apareciesen en `overrides` de selección, el study corresponde a un protocolo antiguo y debe etiquetarse como histórico.
@@ -88,7 +93,7 @@ Una ablación negativa es un resultado útil: indica que el componente no aporta
 | Alfa anual medio |  |  |  |
 | Beat rate |  |  |  |
 
-Los ocho perfiles usan el mismo modelo seleccionado. El perfil recomendado se elige por Information Ratio entre ellos, pero no modifica la evidencia de aprendizaje. La mejora económica que desaparece con costes plausibles debe describirse como frágil.
+Los ocho perfiles usan el mismo modelo seleccionado y se reportan en paralelo. `balanced` es la referencia de meta-score puro; no se elige retrospectivamente un perfil ganador. La mejora económica que desaparece con costes plausibles debe describirse como frágil.
 
 ## 8. Limitaciones obligatorias
 

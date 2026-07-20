@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import math
 import mimetypes
+import os
 import threading
 import traceback
 from dataclasses import asdict, fields
@@ -18,7 +19,10 @@ import pandas as pd
 from environment import (MAX_PRICE_AGE_DAYS, MIN_TRAINING_ROWS, NEUTRALIZE_MIN_GROUP,
                          PROJECT_ROOT, RECENCY_HALFLIFE_YEARS, Settings)
 from module.runs.execution import execute_official_optimization, execute_run, execute_study
+from module.runs.experiments import PORTFOLIO_STRESS_FIELDS, split_variables
 from module.runs.results_store import RESULTS_ROOT, ResultsStore, list_registry
+from module.scenarios.variables import (COST_STRESS_CASES, EXPERIMENT_OPTIONS, FULL_STUDY_OPTIONS,
+                                        FULL_STUDY_PHASE3_OPTIONS, STUDY_OPTIONS)
 
 
 class JobManager:
@@ -49,9 +53,31 @@ class JobManager:
         with self._lock:
             return list(self._jobs.values())
 
+    def has_active_study(self) -> bool:
+        with self._lock:
+            return any(job["name"] in {"study", "optimization"}
+                       and job["status"] in {"queued", "running"} for job in self._jobs.values())
+
 
 JOBS = JobManager()
 STORE = ResultsStore()
+
+
+def _tail_lines(path: Path, limit: int = 220, max_bytes: int = 96_000) -> list[str]:
+    """Lee el final de un log activo sin cargar el archivo completo en memoria."""
+    try:
+        with path.open("rb") as handle:
+            size = os.fstat(handle.fileno()).st_size
+            handle.seek(max(0, size - max_bytes))
+            text = handle.read().decode("utf-8", errors="replace")
+    except OSError:
+        return []
+    # Si se empezó a mitad de una línea, esa primera porción no representa una entrada completa.
+    lines = text.splitlines()
+    if size > max_bytes and lines:
+        lines = lines[1:]
+    return lines[-limit:]
+
 
 # Carpeta del frontend (archivos reales servidos como estáticos en / y /app/*).
 # Vive en la raíz del proyecto, junto a module/, results/ y docs/.
@@ -64,13 +90,11 @@ SETTINGS_GROUPS = {
     "Modelo LightGBM": ["objective", "lgbm_n_estimators", "lgbm_max_depth", "lgbm_learning_rate", "lgbm_min_child_samples", "random_seed", "meta_type", "recency_weighting"],
     "Artefactos": ["neutralize_by_sector", "fundamental_momentum", "market_regime_feature", "price_momentum_multi", "moving_averages", "regime_extended", "quality_growth_derived"],
     "Laboratorio ML": ["enabled_feature_blocks", "enabled_agents", "enabled_model_families", "intra_agent_ensemble_mode", "feature_weighting_mode", "feature_selection_min_coverage", "feature_selection_lookback_quarters", "feature_selection_min_permutation_importance", "feature_selection_min_positive_fraction", "feature_selection_max_features_per_agent", "metric_winsorization_percentile", "risk_feature_windows", "technical_feature_windows"],
-    "Cartera y perfil": ["target_min", "target_max", "entry_min_percentile", "min_hold_percentile", "rotation_edge_percentiles", "max_weight_per_position", "commission_bps", "slippage_bps", "rebalance_drift_tolerance", "max_monthly_position_return", "profile"],
+    "Cartera y perfil": ["target_size", "min_hold_percentile", "rotation_edge_percentiles", "commission_bps", "slippage_bps", "rebalance_drift_tolerance", "max_monthly_position_return", "profile"],
 }
 
 # Catálogo de valores admitidos por variable: fuente única en module/scenarios/variables.py, compartida
 # con el orquestador de estudios (que deriva de aquí el barrido completo del full_study).
-from module.scenarios.variables import COST_STRESS_CASES, STUDY_OPTIONS
-
 # Orden y semántica de las variables que la vista Study puede barrer. Mantiene el diccionario
 # ejecutable separado de la presentación y evita una lista plana de decenas de controles.
 STUDY_OPTION_GROUPS = {
@@ -90,8 +114,7 @@ STUDY_OPTION_GROUPS = {
                                "feature_selection_min_permutation_importance",
                                "feature_selection_min_positive_fraction",
                                "feature_selection_max_features_per_agent"],
-    "Cartera y perfil": ["target_min", "target_max", "entry_min_percentile", "min_hold_percentile",
-                          "rotation_edge_percentiles", "max_weight_per_position", "commission_bps",
+    "Cartera y perfil": ["target_size", "min_hold_percentile", "rotation_edge_percentiles", "commission_bps",
                           "slippage_bps", "profile"],
 }
 
@@ -103,9 +126,9 @@ EXPERIMENT_PRESETS = {
         {"id": "recency", "label": "Baseline + pesos de recencia (exponencial)", "overrides": {"train_lookback_years": 8, "target_horizon_months": 6, "recency_weighting": "exponential"}},
     ],
     "portfolio": [
-        {"id": "compact", "label": "Concentrada · 5–8 posiciones · peso máx. 20 %", "overrides": {"target_min": 5, "target_max": 8, "max_weight_per_position": 0.20, "entry_min_percentile": 85, "min_hold_percentile": 55, "rotation_edge_percentiles": 8}},
-        {"id": "balanced", "label": "Equilibrada · 8–12 posiciones · peso máx. 15 %", "overrides": {"target_min": 8, "target_max": 12, "max_weight_per_position": 0.15, "entry_min_percentile": 80, "min_hold_percentile": 50, "rotation_edge_percentiles": 5}},
-        {"id": "diversified", "label": "Diversificada · 12–15 posiciones · peso máx. 10 %", "overrides": {"target_min": 12, "target_max": 15, "max_weight_per_position": 0.10, "entry_min_percentile": 75, "min_hold_percentile": 45, "rotation_edge_percentiles": 3}},
+        {"id": "compact", "label": "Concentrada · 5 posiciones · pesos por meta-rank (máx. 2:1)", "overrides": {"target_size": 5, "min_hold_percentile": 85, "rotation_edge_percentiles": 10}},
+        {"id": "balanced", "label": "Equilibrada · 8 posiciones · pesos por meta-rank (máx. 2:1)", "overrides": {"target_size": 8, "min_hold_percentile": 80, "rotation_edge_percentiles": 10}},
+        {"id": "diversified", "label": "Diversificada · 15 posiciones · pesos por meta-rank (máx. 2:1)", "overrides": {"target_size": 15, "min_hold_percentile": 70, "rotation_edge_percentiles": 10}},
     ],
     "features": [
         {"id": "base", "label": "Base · sin artefactos", "overrides": {"neutralize_by_sector": False, "fundamental_momentum": False, "market_regime_feature": False, "price_momentum_multi": False, "moving_averages": False, "regime_extended": False, "quality_growth_derived": False}},
@@ -142,7 +165,12 @@ FULL_STUDY_FIXED_SETTINGS = {
 FULL_STUDY_STRESS_SETTINGS = {
     "commission_bps": sorted({case["overrides"]["commission_bps"] for case in COST_STRESS_CASES}),
     "slippage_bps": sorted({case["overrides"]["slippage_bps"] for case in COST_STRESS_CASES}),
+    # Reglas de cartera mecánicas: se estresan (se reportan), no se optimizan. Ver
+    # experiments.PORTFOLIO_STRESS_FIELDS y execution._portfolio_stress_phase.
+    **{axis: list(FULL_STUDY_OPTIONS[axis])
+       for axis in PORTFOLIO_STRESS_FIELDS if axis in FULL_STUDY_OPTIONS},
 }
+FULL_STUDY_MODEL_OPTIONS, FULL_STUDY_PORTFOLIO_OPTIONS = split_variables(FULL_STUDY_OPTIONS)
 
 # Contrato del explorador: son variables existentes en el panel PIT y, salvo los retornos de
 # momentum, ratios fundamentales que ya informan la construcción de features/agentes.
@@ -305,6 +333,14 @@ class DashboardHandler(BaseHTTPRequestHandler):
         if parsed.path == "/api/defaults":
             return _json(self, {"settings": asdict(Settings()), "groups": SETTINGS_GROUPS,
                                 "study_options": STUDY_OPTIONS, "experiment_presets": EXPERIMENT_PRESETS,
+                                "settings_options": EXPERIMENT_OPTIONS,
+                                "study_model_options": FULL_STUDY_MODEL_OPTIONS,
+                                "study_portfolio_options": FULL_STUDY_PORTFOLIO_OPTIONS,
+                                "study_phase3_options": FULL_STUDY_PHASE3_OPTIONS,
+                                "full_study_model_options": FULL_STUDY_MODEL_OPTIONS,
+                                "full_study_portfolio_options": FULL_STUDY_PORTFOLIO_OPTIONS,
+                                "full_study_phase3_options": FULL_STUDY_PHASE3_OPTIONS,
+                                "full_study_profiles": list(PROFILE_LABELS),
                                 "study_option_groups": STUDY_OPTION_GROUPS,
                                 "full_study_fixed_settings": FULL_STUDY_FIXED_SETTINGS,
                                 "full_study_stress_settings": FULL_STUDY_STRESS_SETTINGS,
@@ -319,6 +355,9 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     if manifest.exists():
                         studies.append(json.loads(manifest.read_text(encoding="utf-8")))
             return _json(self, {"studies": studies})
+        if parsed.path.startswith("/api/study/") and parsed.path.endswith("/live-log"):
+            study_id = parsed.path.removeprefix("/api/study/").removesuffix("/live-log").rstrip("/")
+            return self._study_live_log(study_id)
         if parsed.path.startswith("/api/study/"):
             return self._study_detail(parsed.path.removeprefix("/api/study/"))
         if parsed.path.startswith("/api/run/"):
@@ -334,7 +373,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
             return self._stocks(query.get("run_id", [""])[0], query.get("query", [""])[0])
         if parsed.path == "/api/stock/summary":
             query = parse_qs(parsed.query)
-            return self._stock_summary(query.get("run_id", [""])[0], query.get("ticker", [""])[0])
+            return self._stock_summary(query.get("run_id", [""])[0], query.get("ticker", [""])[0],
+                                       query.get("date", [""])[0])
         if parsed.path == "/api/stock/history":
             query = parse_qs(parsed.query)
             return self._stock_history(query)
@@ -372,6 +412,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 ))
                 return _json(self, {"job_id": job}, 202)
             if self.path == "/api/study":
+                if JOBS.has_active_study():
+                    return _json(self, {"error": "Ya hay un study activo en esta consola."}, 409)
                 settings = _settings_from_payload(payload)
                 variables = payload.get("variables", {})
                 if not isinstance(variables, dict) or not all(isinstance(v, list) and v for v in variables.values()):
@@ -380,6 +422,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
                                                                     variables=variables, mode=str(payload.get("mode", "full"))))
                 return _json(self, {"job_id": job}, 202)
             if self.path == "/api/optimization":
+                if JOBS.has_active_study():
+                    return _json(self, {"error": "Ya hay un full study activo en esta consola."}, 409)
                 settings = _settings_from_payload(payload)
                 study = payload.get("study", {})
                 if not isinstance(study, dict):
@@ -387,6 +431,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 job = JOBS.submit("optimization", lambda: execute_official_optimization(
                     settings, name=str(study.get("name", "optimization-official")),
                     hypothesis=str(study.get("hypothesis", "")),
+                    resume_study_id=(str(study.get("resume_study_id"))
+                                     if study.get("resume_study_id") else None),
                 ))
                 return _json(self, {"job_id": job}, 202)
             return _json(self, {"error": "Ruta no disponible."}, 404)
@@ -435,9 +481,86 @@ class DashboardHandler(BaseHTTPRequestHandler):
         # runs de cartera y perfiles. Los reconstruimos para que la consola muestre el ciclo
         # completo sin alterar los resultados inmutables del estudio.
         comparison = _complete_phase_comparison(comparison, decision)
+        # Enriquecer cada run miembro con su bloque `execution` (tiempos por etapa, fuente
+        # reciclado/computado y telemetría). El registro es compacto y no lo lleva; se lee del
+        # run_manifest.json sin modificar ningún artefacto inmutable.
+        for member in members:
+            rel = member.get("path")
+            if not rel:
+                continue
+            run_manifest = (STORE.root / rel / "run_manifest.json")
+            if run_manifest.exists():
+                try:
+                    payload = json.loads(run_manifest.read_text(encoding="utf-8"))
+                except (OSError, json.JSONDecodeError):
+                    continue
+                member["execution"] = payload.get("execution", {})
+                member["intent_label"] = payload.get("intent", {}).get("label")
         return _json(self, {"manifest": manifest, "run_ids": run_ids.get("run_ids", []),
                             "reused_run_ids": run_ids.get("reused_run_ids", []),
                             "decision": decision, "runs": members, "comparison": comparison})
+
+    def _study_live_log(self, study_id: str) -> None:
+        """Entrega una cola de log de solo lectura para un study en ejecución.
+
+        El run actual aún no figura necesariamente en ``run_ids.json``: se publica allí al
+        terminar. Por eso se localiza por el ``study_id`` inmutable de su manifiesto, sin escribir
+        ni modificar ningún artefacto del proceso que está trabajando.
+        """
+        directory = (STORE.studies_root / study_id).resolve()
+        try:
+            directory.relative_to(STORE.studies_root.resolve())
+        except ValueError:
+            return _json(self, {"error": "Estudio invalido."}, 404)
+        manifest_path = directory / "study_manifest.json"
+        if not manifest_path.exists():
+            return _json(self, {"error": "Estudio no encontrado."}, 404)
+
+        study_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        candidates: list[tuple[float, dict, Path]] = []
+        if STORE.runs_root.exists():
+            for run_dir in STORE.runs_root.iterdir():
+                run_manifest = run_dir / "run_manifest.json"
+                if not run_manifest.exists():
+                    continue
+                try:
+                    payload = json.loads(run_manifest.read_text(encoding="utf-8"))
+                except (OSError, json.JSONDecodeError):
+                    continue
+                if payload.get("intent", {}).get("study_id") != study_id:
+                    continue
+                if payload.get("status") not in {"queued", "running"}:
+                    continue
+                candidates.append((run_manifest.stat().st_mtime, payload, run_dir))
+
+        # Cada worker escribe su propio log. La consola del study los fusiona aquí, sin crear un
+        # fichero compartido ni introducir contención entre procesos.
+        active_runs: list[dict] = []
+        merged: list[tuple[str, str]] = []
+        for _mtime, active, run_dir in candidates:
+            run_id = str(active.get("run_id", run_dir.name))
+            active_runs.append({
+                "run_id": run_id, "status": active.get("status"),
+                "label": active.get("intent", {}).get("label"),
+                "started_at_utc": active.get("started_at_utc"),
+                "stages": active.get("execution", {}).get("stages", []),
+                "stage_timings_seconds": active.get("execution", {}).get("stage_timings_seconds", {}),
+                "telemetry": active.get("execution", {}).get("telemetry", {}),
+            })
+            for line in _tail_lines(run_dir / "logs" / "execution.log", limit=80):
+                # El formato de logging empieza por YYYY-MM-DD HH:MM:SS, por lo que ordenar el
+                # texto conserva el orden temporal de las entradas de todos los workers.
+                merged.append((line[:19], f"[{run_id[-12:]}] {line}"))
+        merged.sort(key=lambda item: item[0])
+        lines = [line for _timestamp, line in merged[-240:]]
+        return _json(self, {
+            "study_id": study_id,
+            "study_status": study_manifest.get("status"),
+            "current_phase": study_manifest.get("current_phase"),
+            "current_scenario": study_manifest.get("current_scenario"),
+            "active_runs": active_runs,
+            "lines": lines,
+        })
 
     def _table(self, run_id: str, name: str, query: dict[str, list[str]]) -> None:
         path = _safe_run(run_id) / "artifacts" / name
@@ -495,12 +618,17 @@ class DashboardHandler(BaseHTTPRequestHandler):
         # Con búsqueda se devuelven todas las coincidencias (se puede buscar cualquier acción del
         # universo); sin filtro se limita el listado para el datalist inicial.
         shown = values if needle else values[:400]
+        # Rango completo del panel PIT (más ancho que el OOS de scores): sirve de min/max para el
+        # rango manual de fechas en la app.
+        panel_dates = pd.to_datetime(panel.get("snapshot_date", pd.Series(dtype="datetime64[ns]")), errors="coerce").dropna()
         _json(self, {"compatible": True, "tickers": shown, "total": len(values),
                      "metrics": STOCK_METRICS,
                      "oos_start": dates.min().date().isoformat() if not dates.empty else None,
-                     "oos_end": dates.max().date().isoformat() if not dates.empty else None})
+                     "oos_end": dates.max().date().isoformat() if not dates.empty else None,
+                     "full_start": panel_dates.min().date().isoformat() if not panel_dates.empty else None,
+                     "full_end": panel_dates.max().date().isoformat() if not panel_dates.empty else None})
 
-    def _stock_summary(self, run_id: str, ticker: str) -> None:
+    def _stock_summary(self, run_id: str, ticker: str, date: str = "") -> None:
         panel = self._stock_panel(run_id)
         if panel is None:
             return _json(self, {"compatible": False, "message": "Este run no conserva datos inmutables de stocks."}, 409)
@@ -514,8 +642,21 @@ class DashboardHandler(BaseHTTPRequestHandler):
         if panel.empty:
             return _json(self, {"compatible": True, "found": False, "ticker": ticker}, 404)
         panel["snapshot_date"] = pd.to_datetime(panel["snapshot_date"])
-        latest_score = scores.sort_values("snapshot_date").tail(1)
-        snapshot = pd.Timestamp(latest_score.iloc[0]["snapshot_date"]) if not latest_score.empty else panel["snapshot_date"].max()
+        if not scores.empty:
+            scores["snapshot_date"] = pd.to_datetime(scores["snapshot_date"], errors="coerce")
+        # `date` (opcional, modo Resumen): fija el snapshot al de esa fecha o el inmediatamente
+        # anterior. Sin él, se usa la última fecha con score (comportamiento por defecto).
+        requested = pd.to_datetime(date, errors="coerce") if date else None
+        if requested is not None and pd.notna(requested):
+            score_slice = scores.loc[scores["snapshot_date"] <= requested] if not scores.empty else scores
+            latest_score = score_slice.sort_values("snapshot_date").tail(1)
+            snapshot = (pd.Timestamp(latest_score.iloc[0]["snapshot_date"]) if not latest_score.empty
+                        else panel.loc[panel["snapshot_date"] <= requested, "snapshot_date"].max())
+            if pd.isna(snapshot):
+                snapshot = panel["snapshot_date"].min()
+        else:
+            latest_score = scores.sort_values("snapshot_date").tail(1)
+            snapshot = pd.Timestamp(latest_score.iloc[0]["snapshot_date"]) if not latest_score.empty else panel["snapshot_date"].max()
         row = panel.loc[panel["snapshot_date"] == snapshot].tail(1)
         if row.empty:
             row = panel.loc[panel["snapshot_date"] <= snapshot].tail(1)
@@ -648,11 +789,29 @@ class DashboardHandler(BaseHTTPRequestHandler):
             return _json(self, {"dates": [], "selected_date": None, "is_latest": True, "rows": []})
         selected_at = pd.Timestamp(selected_date)
         selected = lifecycle.loc[lifecycle["snapshot_date"] == selected_at].copy()
+        prices_path = artifacts / "asset_price_point_in_time.parquet"
+        prices = pd.read_parquet(prices_path).copy() if prices_path.exists() else pd.DataFrame()
+        latest_market_price: dict[str, float] = {}
+        latest_market_date = None
+        if not prices.empty and {"ticker", "snapshot_date", "price"}.issubset(prices.columns):
+            prices["snapshot_date"] = pd.to_datetime(prices["snapshot_date"], errors="coerce")
+            prices = prices.dropna(subset=["snapshot_date", "price"])
+            if not prices.empty:
+                latest_market_date = prices["snapshot_date"].max()
+                latest = (prices.loc[prices["snapshot_date"] <= latest_market_date]
+                           .sort_values("snapshot_date")
+                           .drop_duplicates("ticker", keep="last"))
+                latest_market_price = {str(row.ticker).upper(): float(row.price)
+                                       for row in latest.itertuples(index=False)}
         orders = pd.read_parquet(orders_path).copy() if orders_path.exists() else pd.DataFrame()
         if not orders.empty:
             orders["snapshot_date"] = pd.to_datetime(orders["snapshot_date"], errors="coerce")
             orders["ticker_key"] = orders["ticker"].astype(str).str.upper()
         buys = orders.loc[orders.get("side", pd.Series(dtype=str)) == "buy"] if not orders.empty else pd.DataFrame()
+        # Precio de mercado del día seleccionado por ticker (para valorar las posiciones abiertas).
+        # `selected` son las posiciones VIGENTES a cierre de ese día: las vendidas ese día ya no están
+        # (el lifecycle guarda holdings tras órdenes) y las compradas ese día sí. Es la foto que se pide.
+        price_on_date = {str(t).upper(): p for t, p in zip(selected["ticker"], selected.get("valuation_price", pd.Series(dtype=float)))}
         rows: list[dict] = []
         for position in selected.sort_values("weight", ascending=False).to_dict("records"):
             ticker = position["ticker_key"]
@@ -662,30 +821,30 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 matches = buys.loc[(buys["ticker_key"] == ticker) & (buys["snapshot_date"] == entry_at)]
                 if not matches.empty:
                     reason = matches.iloc[-1].get("reason")
-            exit_order = pd.DataFrame()
+            entry_price = position.get("entry_price")
+            # Desenlace futuro: la primera venta de este ticker POSTERIOR a la fecha vista que cierra
+            # la posición (weight_after≈0). Si existe, la fila muestra su fecha y el P&L hasta esa
+            # venta. Si no, la posición sigue abierta: fecha de venta vacía y P&L latente al último
+            # precio PIT disponible. (La posición ya se abrió antes o en la fecha vista, así que no se
+            # empareja con una venta anterior.)
+            exit_at, final_price = None, None
             if not orders.empty:
                 weight_after = (pd.to_numeric(orders["weight_after"], errors="coerce").fillna(0)
                                 if "weight_after" in orders else pd.Series(0.0, index=orders.index))
                 exits = orders.loc[(orders["ticker_key"] == ticker) & (orders["side"] == "sell")
-                                   & (orders["snapshot_date"] > selected_at)
-                                   & (weight_after <= 1e-12)]
+                                   & (orders["snapshot_date"] > selected_at) & (weight_after <= 1e-12)]
                 exit_order = exits.sort_values("snapshot_date").head(1)
-            if not exit_order.empty:
-                exit_at = exit_order.iloc[0]["snapshot_date"]
-                final_price = exit_order.iloc[0].get("price")
-                months_held = max(0, round((exit_at - entry_at).days / 30.4375))
-            else:
-                exit_at, final_price = None, None
-                same_position = lifecycle.loc[(lifecycle["ticker_key"] == ticker)
-                                              & (lifecycle["entry_date"] == entry_at)
-                                              & (lifecycle["snapshot_date"] >= selected_at)].sort_values("snapshot_date")
-                if not same_position.empty:
-                    last_state = same_position.iloc[-1]
-                    final_price = last_state.get("valuation_price")
-                    months_held = last_state.get("months_held")
-                else:
-                    months_held = position.get("months_held")
-            entry_price = position.get("entry_price")
+                if not exit_order.empty:
+                    exit_at = exit_order.iloc[0]["snapshot_date"]
+                    final_price = exit_order.iloc[0].get("price")
+            if exit_at is None:
+                # Sigue abierta: se valora a la última fecha disponible del run, no a la composición
+                # histórica elegida. El fallback mantiene compatibilidad con runs antiguos sin PIT.
+                final_price = latest_market_price.get(ticker)
+                if final_price is None or pd.isna(final_price):
+                    final_price = position.get("valuation_price")
+                if final_price is None or pd.isna(final_price):
+                    final_price = entry_price if entry_at == selected_at else price_on_date.get(ticker)
             pnl = None
             if pd.notna(entry_price) and pd.notna(final_price) and float(entry_price) != 0:
                 pnl = (float(final_price) / float(entry_price) - 1) * 100
@@ -693,12 +852,24 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 "snapshot_date": selected_date, "ticker": position.get("ticker"),
                 "entry_date": entry_at.strftime("%Y-%m-%d"),
                 "entry_price": entry_price, "reason": reason, "weight": position.get("weight"),
-                "months_held": months_held,
+                "months_held": position.get("months_held"),
                 "exit_date": exit_at.strftime("%Y-%m-%d") if exit_at is not None else None,
                 "final_price": final_price, "pnl_pct": pnl,
+                "valuation_date": (latest_market_date.strftime("%Y-%m-%d")
+                                   if exit_at is None and latest_market_date is not None else None),
             })
+        # Movimientos del día: compras y ventas ejecutadas exactamente en la fecha seleccionada.
+        movements: list[dict] = []
+        if not orders.empty:
+            day_orders = orders.loc[orders["snapshot_date"] == selected_at]
+            for order in day_orders.sort_values("side").to_dict("records"):
+                movements.append({
+                    "ticker": order.get("ticker"), "side": order.get("side"),
+                    "reason": order.get("reason"), "price": order.get("price"),
+                    "weight_before": order.get("weight_before"), "weight_after": order.get("weight_after"),
+                })
         _json(self, {"dates": dates, "selected_date": selected_date,
-                     "is_latest": selected_date == dates[-1], "rows": rows})
+                     "is_latest": selected_date == dates[-1], "rows": rows, "movements": movements})
 
     def _trades(self, run_id: str, query: dict[str, list[str]]) -> None:
         artifacts = _safe_run(run_id) / "artifacts"
@@ -710,7 +881,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
         # P&L realizado por venta: cada venta se empareja con el precio de entrada de esa posición
         # (de position_lifecycle). Retorno = precio_venta / precio_entrada - 1.
         frame = self._attach_realized_pnl(artifacts, frame)
-        years = sorted({int(d.year) for d in frame["snapshot_date"].dropna()})
+        valid_dates = frame["snapshot_date"].dropna()
+        years = sorted({int(d.year) for d in valid_dates})
+        date_min = valid_dates.min().date().isoformat() if not valid_dates.empty else None
+        date_max = valid_dates.max().date().isoformat() if not valid_dates.empty else None
 
         # --- Filtros: año, rango de fechas, ticker ---
         year = query.get("year", [""])[0]
@@ -738,29 +912,40 @@ class DashboardHandler(BaseHTTPRequestHandler):
             "total_gain_pct": float(realized[realized > 0].sum()) if not realized.empty else 0.0,
             "total_loss_pct": float(realized[realized < 0].sum()) if not realized.empty else 0.0,
         }
-        _json(self, {"rows": frame.head(2000).to_dict("records"), "summary": summary, "years": years})
+        _json(self, {"rows": frame.head(2000).to_dict("records"), "summary": summary, "years": years,
+                     "date_min": date_min, "date_max": date_max})
 
     @staticmethod
     def _attach_realized_pnl(artifacts: Path, orders: pd.DataFrame) -> pd.DataFrame:
-        """Añade realized_return_pct a las ventas usando el precio de entrada del lifecycle."""
-        lifecycle_path = artifacts / "position_lifecycle.parquet"
+        """Añade realized_return_pct a cada venta emparejándola con SU compra de apertura.
+
+        Cada venta cierra la posición abierta por la ÚLTIMA compra anterior del mismo ticker
+        (round-trip cronológico). El error previo tomaba el último precio de entrada del ticker en
+        todo el histórico y lo aplicaba a todas sus ventas: una venta de 2017 se comparaba con una
+        entrada de 2023 y salía un P&L absurdo (p.ej. −86 % vendiendo con ganancia). Aquí el precio
+        de entrada sale de las propias órdenes (`orders.parquet` ya trae `price` y `side`), sin
+        depender del lifecycle.
+        """
         orders = orders.copy()
         orders["realized_return_pct"] = None
-        if not lifecycle_path.exists() or "price" not in orders:
+        if "price" not in orders or orders.empty:
             return orders
-        lifecycle = pd.read_parquet(lifecycle_path)
-        if "entry_price" not in lifecycle or lifecycle.empty:
-            return orders
-        # Precio de entrada más reciente por ticker (una posición se mantiene hasta que se vende).
-        entries = lifecycle.dropna(subset=["entry_price"]).sort_values("snapshot_date").drop_duplicates("ticker", keep="last")
-        entry_by_ticker = {str(t).upper(): p for t, p in zip(entries["ticker"], entries["entry_price"])}
-        sell_mask = orders["side"] == "sell"
-        for idx in orders.loc[sell_mask].index:
+        orders["snapshot_date"] = pd.to_datetime(orders["snapshot_date"], errors="coerce")
+        chronological = orders.sort_values("snapshot_date", kind="stable")
+        # Por ticker, se recorre en orden: cada compra fija el precio de entrada vigente y cada
+        # venta se empareja con esa entrada (y la consume, por si el ticker vuelve a entrar).
+        open_entry: dict[str, float] = {}
+        for idx in chronological.index:
             ticker = str(orders.at[idx, "ticker"]).upper()
-            entry = entry_by_ticker.get(ticker)
+            side = orders.at[idx, "side"]
             price = orders.at[idx, "price"]
-            if entry and pd.notna(price) and float(entry) > 0:
-                orders.at[idx, "realized_return_pct"] = (float(price) / float(entry) - 1.0) * 100.0
+            if side == "buy" and pd.notna(price):
+                open_entry[ticker] = float(price)
+            elif side == "sell":
+                entry = open_entry.get(ticker)
+                if entry and pd.notna(price) and float(entry) > 0:
+                    orders.at[idx, "realized_return_pct"] = (float(price) / float(entry) - 1.0) * 100.0
+                open_entry.pop(ticker, None)
         return orders
 
     def _artifact(self, relative: str) -> None:

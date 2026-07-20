@@ -9,10 +9,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import platform
 import shutil
 import subprocess
 import sys
+import time
+from contextlib import contextmanager
 from dataclasses import asdict, is_dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -30,6 +33,32 @@ RUNS_ROOT = RESULTS_ROOT / "runs"
 STUDIES_ROOT = RESULTS_ROOT / "studies"
 REGISTRY_PATH = RESULTS_ROOT / "registry.jsonl"
 SCHEMA_VERSION = 1
+
+
+@contextmanager
+def _exclusive_file_lock(lock: Path, timeout: float = 30):
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            descriptor = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            os.write(descriptor, str(os.getpid()).encode("ascii"))
+            os.close(descriptor)
+            break
+        except FileExistsError:
+            try:
+                owner = int(lock.read_text(encoding="utf-8").strip())
+                os.kill(owner, 0)
+            except (OSError, ValueError):
+                lock.unlink(missing_ok=True)
+                continue
+            if time.monotonic() >= deadline:
+                raise TimeoutError(f"No se pudo adquirir el bloqueo {lock.name}.")
+            time.sleep(0.05)
+    try:
+        yield
+    finally:
+        lock.unlink(missing_ok=True)
 
 
 def canonical_json(value: Any) -> str:
@@ -68,7 +97,12 @@ def execution_hash(
     settings: Settings, *, run_kind: str, mode: str, stages: Iterable[str], inputs: Mapping[str, str]
 ) -> str:
     """Identidad de cálculo reutilizable, sin etiqueta ni study de origen."""
-    return config_hash(settings, run_kind=run_kind, mode=mode, stages=stages, intent={}, inputs=inputs)
+    # ``run_kind`` describe el papel del resultado (scenario/final/stress), no el cálculo. Se
+    # conserva en la firma pública por compatibilidad, pero se normaliza para poder promover un
+    # ganador ya calculado sin reentrenarlo.
+    _ = run_kind
+    return config_hash(settings, run_kind="calculation", mode=mode, stages=stages,
+                       intent={}, inputs=inputs)
 
 
 def git_revision() -> str | None:
@@ -175,6 +209,25 @@ class ResultsStore:
         write_json(manifest, path)
         write_json({"status": status, "updated_at_utc": now, "error": error}, run_dir / "status.json")
 
+    def record_stage_timing(self, run_dir: Path, stage: str, seconds: float,
+                            source: str | None = None) -> None:
+        path = run_dir / "run_manifest.json"
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+        execution = manifest.setdefault("execution", {})
+        execution.setdefault("stage_timings_seconds", {})[stage] = round(seconds, 3)
+        if source is not None:
+            # "computed" (recalculada) vs "recycled" (restaurada de data/recycle): permite a la app
+            # mostrar el coste real de cada etapa distinguiéndolo del reciclado.
+            execution.setdefault("stage_source", {})[stage] = source
+        write_json(manifest, path)
+
+    def record_telemetry(self, run_dir: Path, telemetry: Mapping[str, Any]) -> None:
+        """Persiste telemetría observada sin formar parte de la identidad del cálculo."""
+        path = run_dir / "run_manifest.json"
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+        manifest.setdefault("execution", {})["telemetry"] = dict(telemetry)
+        write_json(manifest, path)
+
     def publish_artifacts(self, run_dir: Path, source_dir: Path) -> dict[str, Any]:
         """Copia los artefactos relevantes de un run de agentes a la carpeta inmutable."""
         source_dir = Path(source_dir)
@@ -195,15 +248,23 @@ class ResultsStore:
         # Los precios PIT son necesarios para reproducir en el dashboard la trayectoria de un
         # ticker y sus compras/ventas; se copian desde el processed asociado al run de agentes.
         price_source = source_dir.parent.parent / "asset_price_point_in_time.parquet"
+        if not price_source.exists():
+            price_source = source_dir / "asset_price_point_in_time.parquet"
         if price_source.exists():
             shutil.copy2(price_source, target / "asset_price_point_in_time.parquet")
             published.append("asset_price_point_in_time.parquet")
         panel_source = source_dir.parent.parent / "panel_point_in_time.parquet"
+        if not panel_source.exists():
+            panel_source = source_dir / "stock_panel.parquet"
         if panel_source.exists():
             # El panel completo conserva ratios, precios y fechas de disponibilidad sin depender
             # de la carpeta mutable data/processed al consultar resultados antiguos.
             shutil.copy2(panel_source, target / "stock_panel.parquet")
             published.append("stock_panel.parquet")
+        targets_source = source_dir.parent.parent / "targets_forward_3m.parquet"
+        if targets_source.exists():
+            shutil.copy2(targets_source, target / "targets_forward_3m.parquet")
+            published.append("targets_forward_3m.parquet")
         for name in ("ranking_by_snapshot.csv", "ranking_by_agents.csv", "positions_history.csv",
                      "orders_history.csv", "annual_metrics.csv"):
             source = source_dir / name
@@ -295,8 +356,32 @@ class ResultsStore:
             "path": str(run_dir.resolve().relative_to(self.root.resolve())).replace("\\", "/"),
             "summary": dict(summary),
         }
-        with self.registry_path.open("a", encoding="utf-8") as handle:
-            handle.write(canonical_json(entry) + "\n")
+        lock = self.registry_path.with_suffix(".lock")
+        lock.parent.mkdir(parents=True, exist_ok=True)
+        deadline = time.monotonic() + 30
+        while True:
+            try:
+                descriptor = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                os.write(descriptor, str(os.getpid()).encode("ascii"))
+                os.close(descriptor)
+                break
+            except FileExistsError:
+                try:
+                    owner = int(lock.read_text(encoding="utf-8").strip())
+                    os.kill(owner, 0)
+                except (OSError, ValueError):
+                    lock.unlink(missing_ok=True)
+                    continue
+                if time.monotonic() >= deadline:
+                    raise TimeoutError("No se pudo bloquear el registro de runs.")
+                time.sleep(0.05)
+        try:
+            with self.registry_path.open("a", encoding="utf-8", newline="\n") as handle:
+                handle.write(canonical_json(entry) + "\n")
+                handle.flush()
+                os.fsync(handle.fileno())
+        finally:
+            lock.unlink(missing_ok=True)
 
     def create_study(self, payload: Mapping[str, Any]) -> tuple[str, Path]:
         label = str(payload.get("name") or "study").strip().lower().replace(" ", "-")
@@ -314,14 +399,39 @@ class ResultsStore:
         write_json({"run_ids": []}, path / "run_ids.json")
         return path.name, path
 
+    def resume_study(self, study_id: str) -> tuple[str, Path]:
+        """Abre un study incompleto; los runs ya terminados se deduplican por execution_hash."""
+        path = (self.studies_root / study_id).resolve()
+        try:
+            path.relative_to(self.studies_root.resolve())
+        except ValueError as exc:
+            raise ValueError("Study fuera del registro de resultados.") from exc
+        manifest_path = path / "study_manifest.json"
+        if not manifest_path.exists():
+            raise FileNotFoundError(f"No existe el study {study_id}.")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        if manifest.get("status") == "succeeded":
+            raise ValueError("Un study completado no se puede reanudar.")
+        self.update_study_status(path.name, "running")
+        return path.name, path
+
+    def update_study_status(self, study_id: str, status: str, **extra: Any) -> None:
+        path = self.studies_root / study_id / "study_manifest.json"
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+        manifest.update(extra)
+        manifest["status"] = status
+        manifest["updated_at_utc"] = datetime.now(UTC).isoformat()
+        write_json(manifest, path)
+
     def add_to_study(self, study_id: str, run_id: str, *, reused: bool = False) -> None:
         path = self.studies_root / study_id / "run_ids.json"
-        data = json.loads(path.read_text(encoding="utf-8"))
-        if run_id not in data["run_ids"]:
-            data["run_ids"].append(run_id)
-        if reused:
-            data.setdefault("reused_run_ids", []).append(run_id)
-        write_json(data, path)
+        with _exclusive_file_lock(path.with_suffix(".lock")):
+            data = json.loads(path.read_text(encoding="utf-8"))
+            if run_id not in data["run_ids"]:
+                data["run_ids"].append(run_id)
+            if reused and run_id not in data.setdefault("reused_run_ids", []):
+                data["reused_run_ids"].append(run_id)
+            write_json(data, path)
 
     def find_completed_execution(self, reusable_digest: str) -> str | None:
         """Devuelve un run terminado con mismos datos, código y configuración efectiva.

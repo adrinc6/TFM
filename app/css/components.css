@@ -217,6 +217,7 @@ table.data th[title] { cursor: pointer; }
 .list-toolbar .count { color: var(--faint); font-size: 12px; display: block; margin-top: 2px; }
 .toolbar-actions { display: flex; gap: 10px; align-items: center; }
 .toolbar-actions input { min-width: 220px; }
+.results-toggle { white-space: nowrap; font-size: 13px; }
 
 .empty { color: var(--muted); padding: 20px; text-align: center; }
 

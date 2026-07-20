@@ -18,12 +18,16 @@
     ["ratios", "Estudio de ratios"],
   ];
 
+  // "Resumen" es el primer valor y el que carga por defecto al entrar en modo ratios. Fuera de ese
+  // modo el selector se deshabilita y se vacía; al volver a ratios se restablece a "Resumen".
   function metricOptions(groups) {
-    return Object.entries(groups || {})
+    const resumen = `<option value="__summary__">Resumen</option>`;
+    const rest = Object.entries(groups || {})
       .map(([group, items]) =>
         `<optgroup label="${escapeHtml(group)}">${items.map((it) => `<option value="${escapeHtml(it[0])}">${escapeHtml(it[1])}</option>`).join("")}</optgroup>`
       )
       .join("");
+    return resumen + rest;
   }
 
   async function render(container, runId) {
@@ -40,6 +44,8 @@
     }
     ctx.oosStart = meta.oos_start || "";
     ctx.oosEnd = meta.oos_end || "";
+    ctx.fullStart = meta.full_start || meta.oos_start || "";
+    ctx.fullEnd = meta.full_end || meta.oos_end || "";
     ctx.metrics = meta.metrics;
     container.innerHTML = `
       <section class="parameter-group"><h4>Explorador de stocks</h4>
@@ -50,16 +56,15 @@
           <label class="field">Modo<select id="stk-mode" onchange="TFM.views.stocks.setMode()">
             ${MODES.map(([id, label]) => `<option value="${id}">${label}</option>`).join("")}
           </select></label>
-          <label class="field">Ratio<select id="stk-metric" disabled onchange="TFM.views.stocks.load()">${metricOptions(meta.metrics)}</select></label>
+          <label class="field">Ratio<select id="stk-metric" disabled onchange="TFM.views.stocks.setMetric()">${metricOptions(meta.metrics)}</select></label>
         </div>
         <div id="stk-range-row" class="formgrid" style="display:none">
-          <label class="field">Rango<select id="stk-range" onchange="TFM.views.stocks.setRange()">
-            <option value="oos">Periodo OOS del run</option>
-            <option value="full">Histórico completo del run</option>
-            <option value="custom">Rango manual</option>
-          </select></label>
-          <label class="field">Inicio<input id="stk-start" type="date" value="${escapeHtml(ctx.oosStart)}"></label>
-          <label class="field">Fin<input id="stk-end" type="date" value="${escapeHtml(ctx.oosEnd)}"></label>
+          <label class="field" id="stk-start-field">Inicio<input id="stk-start" type="date"
+            min="${escapeHtml(ctx.fullStart)}" max="${escapeHtml(ctx.fullEnd)}" value="${escapeHtml(ctx.oosStart)}"></label>
+          <label class="field">Fin<input id="stk-end" type="date" onchange="TFM.views.stocks.onEndDate()"
+            min="${escapeHtml(ctx.fullStart)}" max="${escapeHtml(ctx.fullEnd)}" value="${escapeHtml(ctx.oosEnd)}"></label>
+          <label class="field" id="stk-recalc-field" style="align-self:end">
+            <span>&nbsp;</span><button class="button" onclick="TFM.views.stocks.load()">Recalcular</button></label>
         </div>
       </section>
       <div id="stk-output" class="muted">Busca y selecciona una acción.</div>`;
@@ -84,20 +89,51 @@
 
   function setMode() {
     ctx.mode = el("stk-mode").value;
-    // El selector de ratio solo se activa en el modo de estudio de ratios.
     const metric = el("stk-metric");
-    if (metric) metric.disabled = ctx.mode !== "ratios";
-    // El rango de fechas solo aplica al estudio de ratios (historia del ratio).
+    // El selector de ratio solo se activa en modo ratios; fuera de él se vacía. Al entrar en modo
+    // ratios se restablece a "Resumen" (valor por defecto que se carga automáticamente).
+    if (metric) {
+      metric.disabled = ctx.mode !== "ratios";
+      metric.value = ctx.mode === "ratios" ? "__summary__" : "";
+    }
     const rangeRow = el("stk-range-row");
     if (rangeRow) rangeRow.style.display = ctx.mode === "ratios" ? "" : "none";
+    syncRangeFields();
+    // En ratios se carga ya (por defecto, el Resumen); en el resto, también.
     if (ctx.ticker) load();
   }
 
-  function setRange() {
-    const mode = el("stk-range").value;
-    if (mode === "oos") { el("stk-start").value = ctx.oosStart || ""; el("stk-end").value = ctx.oosEnd || ""; }
-    if (mode === "full") { el("stk-start").value = ""; el("stk-end").value = ""; }
-    load();
+  // Al elegir un ratio (incluido "Resumen") se recolocan los campos y se recalcula al instante.
+  function setMetric() {
+    syncRangeFields();
+    if (ctx.ticker && el("stk-metric").value) load();
+  }
+
+  // Cambiar la fecha Fin en modo Resumen recalcula el resumen al instante (Fin = el snapshot).
+  function onEndDate() {
+    if (el("stk-metric").value === "__summary__" && ctx.ticker) load();
+  }
+
+  // Marca un campo de fecha como bloqueado (readonly + gris) o editable.
+  function lockField(input, locked) {
+    if (!input) return;
+    input.readOnly = locked;
+    input.style.opacity = locked ? "0.5" : "";
+    input.style.cursor = locked ? "not-allowed" : "";
+  }
+
+  // Campos de fecha en modo ratios (sin selector de rango): Inicio y Fin con defaults del OOS.
+  //  - Resumen: Inicio BLOQUEADO (solo cuenta Fin, que es el snapshot); Fin editable.
+  //  - Ratio concreto: Inicio y Fin editables (definen el rango del gráfico).
+  // En ambos casos el botón Recalcular aplica los cambios.
+  function syncRangeFields() {
+    const start = el("stk-start"), end = el("stk-end");
+    if (!start || !end) return;
+    if (!start.value) start.value = ctx.oosStart || ctx.fullStart || "";
+    if (!end.value) end.value = ctx.oosEnd || ctx.fullEnd || "";
+    const isSummary = el("stk-metric") && el("stk-metric").value === "__summary__";
+    lockField(start, isSummary);   // Inicio bloqueado solo en Resumen
+    lockField(end, false);         // Fin siempre editable
   }
 
   // --- Modo Cartera: si la acción está/estuvo en cartera, cuándo entró/salió y su P&L ---
@@ -179,18 +215,19 @@
   }
 
   async function loadPuntuaciones(out) {
-    const [summary, agents] = await Promise.all([
+    const [summary, agents, ticker_data] = await Promise.all([
       api(`/api/stock/summary?run_id=${encodeURIComponent(ctx.runId)}&ticker=${encodeURIComponent(ctx.ticker)}`),
       api(`/api/stock/agents?run_id=${encodeURIComponent(ctx.runId)}&ticker=${encodeURIComponent(ctx.ticker)}`),
+      api(`/api/ticker?run_id=${encodeURIComponent(ctx.runId)}&ticker=${encodeURIComponent(ctx.ticker)}`),
     ]);
     if (summary.found === false) { out.innerHTML = `<div class="notice">Sin datos para ${escapeHtml(ctx.ticker)} en este run.</div>`; return; }
     out.innerHTML =
       `<h4>Puntuaciones actuales de ${escapeHtml(ctx.ticker)} <small class="muted">snapshot ${escapeHtml(summary.snapshot_date)}</small></h4>` +
       scoreCards(summary.scores) +
-      `<details><summary>Histórico de puntuaciones</summary><div id="stk-scores"></div></details>` +
+      `<details><summary>Histórico de puntuaciones <small class="muted">(línea verde = compra, roja = venta)</small></summary><div id="stk-scores"></div></details>` +
       `<div id="stk-agents"></div>`;
     global.TFMCharts.clear();
-    global.TFMCharts.stockScoreHistory(el("stk-scores"), agents.scores);
+    global.TFMCharts.stockScoreHistory(el("stk-scores"), agents.scores, ticker_data.orders);
     el("stk-agents").innerHTML = agentsBlock(agents);
   }
 
@@ -204,18 +241,31 @@
 
   async function loadRatios(out) {
     const metric = el("stk-metric").value;
+    if (!metric) { out.innerHTML = `<p class="muted">Elige un ratio para analizar ${escapeHtml(ctx.ticker)}.</p>`; return; }
+    // Resumen: una sola fecha (Fin). Muestra la tabla de ratios de ese snapshot, sin gráfico.
+    if (metric === "__summary__") {
+      const date = el("stk-end").value;
+      const summary = await api(`/api/stock/summary?run_id=${encodeURIComponent(ctx.runId)}&ticker=${encodeURIComponent(ctx.ticker)}&date=${date}`);
+      if (summary.found === false) { out.innerHTML = `<div class="notice">Sin datos para ${escapeHtml(ctx.ticker)} en este run.</div>`; return; }
+      out.innerHTML =
+        `<h4>Resumen de ratios de ${escapeHtml(ctx.ticker)} <small class="muted">snapshot ${escapeHtml(summary.snapshot_date || date)}</small></h4>` +
+        ratiosTable(summary);
+      global.TFMCharts.clear();
+      return;
+    }
+    // Ratio concreto: SOLO el gráfico de la historia del ratio (con líneas de compra/venta). No se
+    // muestra la tabla de percentiles. Al ser lo único, se presenta directo, sin desplegable.
     const start = el("stk-start").value;
     const end = el("stk-end").value;
-    const [summary, history] = await Promise.all([
-      api(`/api/stock/summary?run_id=${encodeURIComponent(ctx.runId)}&ticker=${encodeURIComponent(ctx.ticker)}`),
+    const [history, ticker_data] = await Promise.all([
       api(`/api/stock/history?run_id=${encodeURIComponent(ctx.runId)}&ticker=${encodeURIComponent(ctx.ticker)}&metric=${encodeURIComponent(metric)}&start=${start}&end=${end}`),
+      api(`/api/ticker?run_id=${encodeURIComponent(ctx.runId)}&ticker=${encodeURIComponent(ctx.ticker)}`),
     ]);
-    if (summary.found === false) { out.innerHTML = `<div class="notice">Sin datos para ${escapeHtml(ctx.ticker)} en este run.</div>`; return; }
     out.innerHTML =
-      `<details><summary>Ratios de ${escapeHtml(ctx.ticker)} · percentil en el universo del snapshot</summary>${ratiosTable(summary)}</details>` +
-      `<details><summary>Historia de ${escapeHtml(history.metric_label || metric)}</summary><div id="stk-chart"></div></details>`;
+      `<h4>Historia de ${escapeHtml(history.metric_label || metric)} · ${escapeHtml(ctx.ticker)}
+        <small class="muted">(línea verde = compra, roja = venta)</small></h4><div id="stk-chart"></div>`;
     global.TFMCharts.clear();
-    global.TFMCharts.stockHistory(el("stk-chart"), history);
+    global.TFMCharts.stockHistory(el("stk-chart"), history, ticker_data.orders);
   }
 
   async function load() {
@@ -231,5 +281,5 @@
     }
   }
 
-  global.TFM.views.stocks = { render, search, selectTicker, setMode, setRange, load };
+  global.TFM.views.stocks = { render, search, selectTicker, setMode, setMetric, onEndDate, load };
 })(window);

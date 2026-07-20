@@ -35,6 +35,36 @@ def test_permutation_flags_no_signal() -> None:
     assert not out["signal_above_chance"]
 
 
+def test_label_permutation_never_mutates_real_targets(tmp_path, monkeypatch) -> None:
+    import environment
+    from environment import Settings
+    from module.common.utils import sha256_file
+    from module.runs import execution
+
+    processed = tmp_path / "processed"
+    processed.mkdir()
+    monkeypatch.setattr(environment, "DEV_PROCESSED_DIR", processed)
+    targets = processed / "targets_forward_3m.parquet"
+    pd.DataFrame({"forward_excess_return_3m": [0.1, 0.2, -0.1]}).to_parquet(targets, index=False)
+    before_hash = sha256_file(targets)
+    before_mtime = targets.stat().st_mtime_ns
+
+    def fake_build(_settings, *, target_path_override, run_root, input_dir_override=None):
+        assert target_path_override != targets
+        run = run_root / "placebo"
+        run.mkdir(parents=True)
+        pd.DataFrame({"agent": ["meta_final"], "rank_ic": [0.0]}).to_parquet(
+            run / "rank_ic_diagnostics.parquet", index=False)
+        return pd.DataFrame()
+
+    monkeypatch.setattr(execution, "build_agent_scores", fake_build)
+    diagnostics = pd.DataFrame({"agent": ["meta_final"], "rank_ic": [0.1]})
+    execution._label_permutation(Settings(run_scope="dev"), diagnostics, n_permutations=2)
+
+    assert sha256_file(targets) == before_hash
+    assert targets.stat().st_mtime_ns == before_mtime
+
+
 def test_random_portfolio_percentile() -> None:
     """Una cartera que siempre elige los mejores queda en la cola alta de las aleatorias."""
     years = [2016, 2017, 2018]

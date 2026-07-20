@@ -28,6 +28,16 @@ def test_execution_hash_ignores_presentation_intent():
     assert execution_hash(settings, **common) == execution_hash(settings, **common)
 
 
+def test_execution_hash_ignores_run_role_but_not_mode():
+    settings = Settings(run_mode="agents", run_scope="dev")
+    base = execution_hash(settings, run_kind="scenario", mode="agents", stages=["agents"], inputs={})
+    promoted = execution_hash(settings, run_kind="optimization_final", mode="agents",
+                              stages=["agents"], inputs={})
+    other_mode = execution_hash(settings, run_kind="scenario", mode="full", stages=["agents"], inputs={})
+    assert base == promoted
+    assert base != other_mode
+
+
 def test_run_directory_uses_day_and_repetition_suffix(tmp_path):
     store = ResultsStore(tmp_path / "results")
     settings = Settings(run_mode="agents", run_scope="dev")
@@ -63,6 +73,27 @@ def test_recycle_key_and_restore_are_deterministic(tmp_path, monkeypatch):
     destination = tmp_path / "destination"
     assert restore("dataset", key, destination)
     assert (destination / "source.parquet").read_bytes() == b"artefacto"
+
+
+def test_agent_recycle_key_includes_recency_weighting(tmp_path):
+    source = tmp_path / "features.parquet"
+    source.write_bytes(b"features")
+    off = Settings(run_mode="agents", run_scope="dev", recency_weighting="off")
+    weighted = replace(off, recency_weighting="exponential")
+    assert stage_key("agents", off, [source]) != stage_key("agents", weighted, [source])
+
+
+def test_recycle_rejects_corrupted_artifact(tmp_path, monkeypatch):
+    import module.runs.recycle as recycle
+
+    monkeypatch.setattr(recycle, "RECYCLE_ROOT", tmp_path / "recycle")
+    settings = Settings(run_mode="dataset", run_scope="dev")
+    source = tmp_path / "source.parquet"
+    source.write_bytes(b"original")
+    key = stage_key("dataset", settings, [source])
+    cached = publish("dataset", key, [source], settings)
+    (cached / source.name).write_bytes(b"corrupto")
+    assert not restore("dataset", key, tmp_path / "destination")
 
 
 def test_publish_artifacts_copies_immutable_stock_panel_and_local_attribution(tmp_path):

@@ -103,8 +103,24 @@ La decisión (instrucción explícita del usuario, cambia resultados) fue redise
 
 El `study` manual conserva todos los valores de cada eje (exploración libre en la consola). El `full_study` automático encadena ~un centenar de reentrenos caros, así que su barrido (`FULL_STUDY_OPTIONS`) recorta la densidad de niveles donde la curva es suave y los niveles contiguos rara vez cambian el ganador (p. ej. `train_lookback_years` 6→3, `lgbm_max_depth` 5→3), apoyándose en que la fase de afinado de hiperparámetros ya reafina lr/n_estimators/min_child_samples sobre el ganador. No se elimina ningún **eje** "por si no aporta": eso lo decide el propio estudio midiendo su contribución incremental; solo se baja densidad donde el solapamiento es evidente.
 
-Además, el tamaño de cartera se prueba como **bandas acopladas** (`target_band`: 5–8, 8–12, 12–15), no como `target_min`/`target_max`/`max_weight` sueltos. Cada banda fija el peso máximo mínimo válido para su tamaño, de modo que las tres son coherentes y comparables y se evita el producto cruzado con parejas inválidas.
+La construcción de cartera se simplificó después a tamaños fijos (`target_size`: 5, 8, 10, 12 y 15). La cartera compra el top-N del `meta_rank`, expulsa una tenencia que no supera el percentil de mantenimiento y rota solo con ventaja suficiente. Los pesos dependen del ranking efectivo, pero ninguna posición puede pesar más del doble que la menor.
 
 ## Aceleración del walk-forward por multihilo, no por procesos
 
 El cuello de botella es la etapa de agentes (reentreno `fechas × agentes × familias`). Se aceleró manteniendo **resultados idénticos** (oráculo): (1) `train`/`target`/pesos de recencia se preparan una vez por fecha de reentreno en vez de una vez por agente/familia —eran invariantes al agente—; (2) CatBoost recibe `thread_count` ligado al mismo setting que LightGBM, de modo que ambas familias usan todos los núcleos. Se descartó paralelizar escenarios por procesos: el portátil tiene poca RAM libre y varios procesos causarían swap; además las fechas de reentreno no son independientes en el modo por defecto (`rank_ic_weighted` usa predicciones de fechas previas). CatBoost y LightGBM son deterministas frente al número de hilos (verificado con diferencia exacta 0.0), así que el multihilo acelera sin cambiar resultados.
+
+
+## 2026-07-21 — Reciclaje por familia dentro de la etapa de agentes
+
+La etapa de agentes (el ~90% del tiempo de un run: reentreno `fechas × agentes × familias`) se
+descompone internamente en dos claves de caché. `agents_fit` guarda el ajuste walk-forward de una
+sola familia de modelo y no depende del meta ni de las demás familias; `agents` combina esos
+ajustes (ensemble intra-agente y meta-agente) y solo su clave incluye `meta_type`,
+`meta_ic_lookback_quarters` e `intra_agent_ensemble_mode`. Un barrido que solo cambia el meta
+reutiliza intactos todos los ajustes, y una ablación de familia reutiliza las familias restantes,
+sin recalcular nada del centenar largo de `fit`.
+
+La recombinación reproduce exactamente el ensemble intra-agente previo (mismo orden de familias,
+mismo promedio de rangos), de modo que los resultados numéricos son idénticos: el cambio solo
+evita recomputar ajustes ya realizados. Verificado con igualdad bit-a-bit de las predicciones y
+con el reciclaje efectivo al cambiar el meta y al ablacionar una familia; la suite completa pasa.

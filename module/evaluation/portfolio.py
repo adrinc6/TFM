@@ -3,13 +3,11 @@ produce las ordenes que llevan al estado siguiente.
 
 La logica sigue las reglas de cartera descritas en `docs/doc.md`:
 
-  1. Expulsion: un tenente cuyo percentil baja por debajo de `min_hold_percentile` sale.
+  1. Expulsion: un tenente cuyo percentil queda en o por debajo de `min_hold_percentile` sale.
   2. Ventaja: un candidato solo desplaza a un tenente si le supera por al menos
      `rotation_edge_percentiles` percentiles.
-  3. Tamano flexible: la cartera intenta llegar a `target_max`, sin bajar de `target_min`,
-     rellenando con candidatos que superen `entry_min_percentile`.
-  4. Sizing: peso proporcional al percentil con tope `max_weight_per_position`; el excedente
-     se reparte proporcionalmente entre los que no tocan el tope.
+  3. Tamano fijo: la cartera siempre completa `target_size` con el top-N del meta-rank.
+  4. Sizing: peso proporcional al meta-rank, con una relacion maxima 2:1 entre el mayor y menor.
 
 No hay tenencia minima: cada revision (mensual o trimestral) decide desde cero. Los scores
 cambian entre revisiones mensuales porque incluyen precio (P/E, momentum, etc.), aunque los
@@ -54,9 +52,16 @@ class PortfolioState:
             months_held={ticker: 0 for ticker in holdings},
         )
 
-    def apply(self, orders: list[dict[str, Any]], prices: dict[str, float]) -> "PortfolioState":
+    def apply(self, orders: list[dict[str, Any]], prices: dict[str, float],
+              target_weights: dict[str, float] | None = None) -> "PortfolioState":
         """Devuelve un nuevo estado tras ejecutar las ordenes. `prices` es informacional
         (para trazar `entry_price` fuera del state), no se usa aqui — el peso ya viene fijado.
+
+        `target_weights` es el peso objetivo NORMALIZADO (suma 1) de cada tenente superviviente. Se
+        aplica a TODOS los tenentes, no solo a los que generaron orden: un tenente cuya deriva es
+        pequena no se opera (ahorra coste) pero su peso vigente se refresca al objetivo para que la
+        cartera siga sumando 1. Sin esto los pesos derivan por encima del 100 % (apalancamiento
+        ficticio en el mark-to-market). Ver `_resize_to_target`.
         """
         new_holdings = dict(self.holdings)
         new_entry_dates = dict(self.entry_dates)
@@ -78,6 +83,12 @@ class PortfolioState:
                     price = order.get("price", prices.get(ticker))
                     if price is not None:
                         new_entry_prices[ticker] = float(price)
+        # Refresca el peso vigente de cada tenente al objetivo normalizado (bookkeeping, sin coste):
+        # asi la cartera suma 1 aunque una posicion no se haya rebalanceado por micro-deriva.
+        if target_weights is not None:
+            for ticker in list(new_holdings):
+                if ticker in target_weights:
+                    new_holdings[ticker] = target_weights[ticker]
         return PortfolioState(
             holdings=new_holdings,
             entry_dates=new_entry_dates,
@@ -90,14 +101,17 @@ def decide_orders(
     state: PortfolioState,
     scores_at_date: pd.DataFrame,
     settings: Settings,
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], dict[str, float]]:
     """Ordenes que llevan `state` al estado siguiente segun los scores.
 
     `scores_at_date` es el corte transversal de una unica fecha. Debe traer al menos
     `ticker`, `meta_rank` (percentil 0..1, tal como lo produce Fase 3) y `snapshot_date`.
+
+    Devuelve `(ordenes, pesos_objetivo)`: `pesos_objetivo` (suma 1) permite al backtest refrescar el
+    peso vigente de todos los tenentes, no solo de los que generan orden.
     """
     if scores_at_date.empty:
-        return []
+        return [], {}
 
     snapshot_date = scores_at_date["snapshot_date"].iloc[0]
     frame = scores_at_date.copy()
@@ -107,19 +121,20 @@ def decide_orders(
     percentile_by_ticker = dict(zip(frame["ticker"], frame["percentile_100"]))
 
     survivors, drop_orders = _apply_expulsion(state, percentile_by_ticker, settings, snapshot_date)
-    survivors_after_fill, fill_orders = _fill_slots(
-        survivors, percentile_by_ticker, frame, settings, snapshot_date
-    )
+    survivors_after_fill, fill_orders = _fill_slots(survivors, frame, settings, snapshot_date)
     rotation_orders = _apply_rotation(
         survivors_after_fill, percentile_by_ticker, frame, settings, snapshot_date
     )
 
     target = _target_state(state, drop_orders + fill_orders + rotation_orders, percentile_by_ticker)
-    resize_orders = _resize_to_target(state, target, settings, snapshot_date)
+    resize_orders, target_weights = _resize_to_target(
+        state, target, percentile_by_ticker, settings, snapshot_date
+    )
 
-    return _merge_intents_with_sizing(
+    merged = _merge_intents_with_sizing(
         drop_orders + fill_orders + rotation_orders, resize_orders
     )
+    return merged, target_weights
 
 
 # Motivos de "intención de entrada": marcan que un ticker debe entrar, pero su peso real lo fija
@@ -169,7 +184,7 @@ def _apply_expulsion(
     orders: list[dict[str, Any]] = []
     for ticker in list(state.holdings):
         percentile = percentile_by_ticker.get(ticker)
-        if percentile is None or percentile < settings.min_hold_percentile:
+        if percentile is None or percentile <= settings.min_hold_percentile:
             orders.append(
                 {
                     "snapshot_date": snapshot_date,
@@ -186,21 +201,19 @@ def _apply_expulsion(
 
 def _fill_slots(
     survivors: set[str],
-    percentile_by_ticker: dict[str, float],
     ranked: pd.DataFrame,
     settings: Settings,
     snapshot_date: str,
 ) -> tuple[set[str], list[dict[str, Any]]]:
-    """Rellena huecos hasta `target_max` con candidatos por encima de `entry_min_percentile`."""
+    """Rellena huecos hasta el tamaño fijo con las mejores candidatas disponibles."""
     orders: list[dict[str, Any]] = []
     result = set(survivors)
     candidates = [
         ticker
         for ticker in ranked["ticker"]
         if ticker not in result
-        and percentile_by_ticker[ticker] >= settings.entry_min_percentile
     ]
-    slots_available = settings.target_max - len(result)
+    slots_available = settings.target_size - len(result)
     for ticker in candidates[:slots_available]:
         reason = "initial_fill" if not survivors else "hole_filled_after_drop"
         orders.append(
@@ -225,7 +238,7 @@ def _apply_rotation(
     snapshot_date: str,
 ) -> list[dict[str, Any]]:
     """Un candidato fuera desplaza al peor tenente si le supera por rotation_edge_percentiles."""
-    if len(current) < settings.target_max:
+    if len(current) < settings.target_size:
         return []
     orders: list[dict[str, Any]] = []
     working = set(current)
@@ -234,7 +247,6 @@ def _apply_rotation(
             ticker
             for ticker in ranked["ticker"]
             if ticker not in working
-            and percentile_by_ticker[ticker] >= settings.entry_min_percentile
         ]
         if not outsiders:
             break
@@ -285,22 +297,25 @@ def _target_state(
 def _resize_to_target(
     state: PortfolioState,
     target_tickers: list[str],
+    percentile_by_ticker: dict[str, float],
     settings: Settings,
     snapshot_date: str,
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], dict[str, float]]:
     """Fija el peso final de cada ticker en la cartera objetivo.
 
-    Peso proporcional al ranking dentro de la cartera (mejor -> mas peso) con tope
-    `max_weight_per_position`. El excedente se reparte entre los que no tocan tope. Solo se
-    rebalancea a un tenente ya presente si su peso se ha desviado del objetivo mas de
-    `max_weight_per_position * rebalance_drift_tolerance` (evita operar por micro-derivas y su
-    coste). Los tickers que entran o salen siempre generan orden.
+    Peso proporcional al meta-rank con una relación máxima 2:1 entre el mayor y menor. Solo se
+    rebalancea a un tenente ya presente si se desvía del objetivo más que la tolerancia en puntos
+    porcentuales; las entradas y salidas siempre generan orden.
+
+    Devuelve `(ordenes, pesos_objetivo)`. `pesos_objetivo` es el mapa NORMALIZADO (suma 1) de todos
+    los tenentes objetivo; el estado lo aplica a todos (tambien a los no rebalanceados por
+    micro-deriva) para que la cartera vigente siga sumando 1.
     """
     if not target_tickers:
-        return []
+        return [], {}
 
-    weights = _compute_weights(target_tickers, settings.max_weight_per_position)
-    drift_threshold = settings.max_weight_per_position * settings.rebalance_drift_tolerance
+    weights = _compute_weights(target_tickers, percentile_by_ticker)
+    drift_threshold = settings.rebalance_drift_tolerance / 100
 
     orders: list[dict[str, Any]] = []
     for ticker, weight in weights.items():
@@ -320,38 +335,25 @@ def _resize_to_target(
                 "weight_after": weight,
             }
         )
-    return orders
+    return orders, weights
 
 
-def _compute_weights(target_tickers: list[str], max_weight: float) -> dict[str, float]:
-    """Pesos proporcionales al ranking (1er, 2do, 3er, ...) con tope y reparto del excedente.
+def _compute_weights(
+    target_tickers: list[str], percentile_by_ticker: dict[str, float],
+) -> dict[str, float]:
+    """Pesos proporcionales al meta-rank y con relación máxima 2:1.
 
-    Como base uso una rampa lineal decreciente: el mejor tiene peso relativo N, el segundo
-    N-1, ..., el ultimo 1. Es determinista, no depende de la escala del score.
+    El ranking efectivo (incluido el perfil) es la única señal de tamaño. Al recortar los scores
+    superiores a dos veces el menor score elegible, la normalización conserva el orden y garantiza
+    que ninguna posición pese más del doble que la menor.
     """
-    n = len(target_tickers)
-    raw = {ticker: (n - index) for index, ticker in enumerate(target_tickers)}
-    total = sum(raw.values())
-    weights = {ticker: value / total for ticker, value in raw.items()}
-
-    # Iterativo: recorta al tope y redistribuye el excedente hasta que nadie exceda.
-    while True:
-        capped = {ticker: min(weight, max_weight) for ticker, weight in weights.items()}
-        excess = 1.0 - sum(capped.values())
-        if excess <= 1e-9:
-            weights = capped
-            break
-        room_holders = [ticker for ticker, weight in capped.items() if weight < max_weight - 1e-12]
-        if not room_holders:
-            # Todos al tope y aun sobra: no se puede llegar al 100 %. Queda como cash.
-            weights = capped
-            break
-        distributable = sum(weights[ticker] for ticker in room_holders)
-        if distributable <= 0:
-            weights = capped
-            break
-        for ticker in room_holders:
-            capped[ticker] += excess * (weights[ticker] / distributable)
-        weights = capped
-        # Puede que la redistribucion haya empujado a alguien por encima del tope: se vuelve a iterar.
-    return weights
+    raw = {ticker: max(0.0, float(percentile_by_ticker.get(ticker, 0.0)))
+           for ticker in target_tickers}
+    positive = [value for value in raw.values() if value > 0]
+    if not positive:
+        return {ticker: 1 / len(target_tickers) for ticker in target_tickers}
+    floor = min(positive)
+    capped = {ticker: min(value if value > 0 else floor, 2 * floor)
+              for ticker, value in raw.items()}
+    total = sum(capped.values())
+    return {ticker: value / total for ticker, value in capped.items()}

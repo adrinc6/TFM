@@ -54,7 +54,7 @@ STUDY_OPTIONS: dict[str, list] = {
     "fundamental_momentum": [False, True],
     "market_regime_feature": [False, True], "price_momentum_multi": [False, True],
     "moving_averages": [False, True], "regime_extended": [False, True],
-    "quality_growth_derived": [False, True], "target_min": [6, 8, 10, 12],
+    "quality_growth_derived": [False, True], "target_size": [5, 8, 10, 12, 15],
     # Ablaciones del laboratorio: el catálogo sigue completo, pero cada escenario prueba la
     # contribución de bloques, agentes y familias de modelos de forma aislada.
     "enabled_feature_blocks": [
@@ -80,55 +80,37 @@ STUDY_OPTIONS: dict[str, list] = {
     "metric_winsorization_percentile": [0.0, 0.01, 0.025],
     "risk_feature_windows": [(63, 126, 252), (21, 63, 126), (63, 252)],
     "technical_feature_windows": [(21, 63, 252), (10, 21, 63), (21, 126, 252)],
-    "target_max": [8, 10, 12, 15], "entry_min_percentile": [70, 80, 90],
-    "min_hold_percentile": [40, 50, 60], "rotation_edge_percentiles": [3, 5, 10],
-    "max_weight_per_position": [0.10, 0.15, 0.20], "profile": ["balanced", "conservative", "aggressive",
+    "min_hold_percentile": [60, 70, 80, 85], "rotation_edge_percentiles": [5, 10, 15],
+    "profile": ["balanced", "conservative", "aggressive",
                                              "value", "quality", "momentum", "garp", "contrarian"],
 }
 
+# Experimental conserva el catálogo amplio de ajustes individuales. Study y full_study comparten
+# en cambio exactamente el mismo contrato científico y la misma asignación de fases.
+EXPERIMENT_OPTIONS: dict[str, list] = {axis: list(values) for axis, values in STUDY_OPTIONS.items()}
+EXPERIMENT_OPTIONS["commission_bps"] = [0, 5, 10]
+EXPERIMENT_OPTIONS["slippage_bps"] = [5, 10, 20]
+STUDY_OPTIONS["target_horizon_months"] = [3, 6, 12]
+for _axis in ("commission_bps", "slippage_bps", "profile"):
+    STUDY_OPTIONS.pop(_axis, None)
 
-# --- Barrido inteligente del full_study -------------------------------------------------------
-# El `study` manual conserva TODOS los valores de `STUDY_OPTIONS` (exploración libre en la UI).
-# El `full_study` (optimización oficial) es automático y encadena decenas de reentrenos caros
-# (~fechas × agentes × familias por escenario), así que debe barrer solo lo que puede mover el
-# rank-IC OOS, con la densidad justa. `FULL_STUDY_OPTIONS` = `STUDY_OPTIONS` con la densidad
-# recortada en los ejes cuya curva es suave y cuyos niveles contiguos rara vez cambian el ganador.
-#
-# Criterio de recorte (documentado en docs/bitacora.md):
-#   - Niveles contiguos indistinguibles: se conservan extremos + centro (2-3 niveles).
-#   - La Fase 3 (afinado de hiperparámetros) ya reafina lr / n_estimators / min_child_samples
-#     sobre el ganador, así que la Fase 1 no necesita densidad en esos ejes.
-#   - No se elimina ningún eje "por si acaso no aporta": eso lo decide el propio estudio midiendo
-#     su contribución incremental. Solo se baja densidad donde el solapamiento es evidente.
-# `snapshot_day` ya no existe (la rejilla la define execution_lag_days: fin_de_periodo + lag).
-FULL_STUDY_LEVEL_OVERRIDES: dict[str, list] = {
-    "train_lookback_years": [4, 8, 12],      # de 6 niveles a 3: curva ventana-vs-IC suave
-    "lgbm_max_depth": [3, 5, 8],             # de 5 a 3: profundidades contiguas ~idénticas; Fase 3 reafina
-    "lgbm_learning_rate": [0.02, 0.05, 0.10],  # de 4 a 3: 0.02≈0.03; Fase 3 reafina lr
-    "lgbm_n_estimators": [100, 400],          # de 3 a 2: Fase 3 reafina n_estimators
-    "target_horizon_months": [3, 6, 12],      # de 4 a 3: horizonte 1m casi no da señal fundamental
-    "target_min": [8, 10, 12],                # eje de cartera; niveles contiguos apenas mueven el IR
-    "target_max": [8, 10, 12],                # idem
-}
 
-# Bandas de tamaño de cartera (target_min, target_max) probadas como PAREJAS acopladas, no como
-# dos ejes sueltos: así cada combinación es coherente y se evita el producto cruzado con parejas
-# inválidas (min>max). Cada banda fija además el max_weight_per_position mínimo válido para su
-# target_min (restricción de Settings: max_weight * target_min >= 1), de modo que la cartera puede
-# llegar al 100%. Es un eje COMPUESTO: su valor es un dict de overrides que la fase de cartera
-# expande de golpe. Se elige por Information Ratio como el resto de ejes de cartera.
-TARGET_BANDS: list[dict] = [
-    {"target_min": 5, "target_max": 8, "max_weight_per_position": 0.20},
-    {"target_min": 8, "target_max": 12, "max_weight_per_position": 0.15},
-    {"target_min": 12, "target_max": 15, "max_weight_per_position": 0.10},
-]
+# --- Contrato común study/full_study -----------------------------------------------------------
+# Ambos comparten ejes, valores y fases. El study manual permite elegir subconjuntos; el full_study
+# ejecuta el catálogo completo. Los hiperparámetros de Fase 3 se retiran de Fases 1–2, no del
+# catálogo científico. `snapshot_day` no existe: la rejilla la define execution_lag_days.
+FULL_STUDY_LEVEL_OVERRIDES: dict[str, list] = {}
 
 FULL_STUDY_OPTIONS: dict[str, list] = {
     axis: FULL_STUDY_LEVEL_OVERRIDES.get(axis, list(values))
     for axis, values in STUDY_OPTIONS.items()
 }
-# El full_study barre el tamaño de cartera como 3 bandas acopladas en vez de target_min/target_max/
-# max_weight sueltos. El `study` manual conserva esos tres ejes independientes en STUDY_OPTIONS.
-for _axis in ("target_min", "target_max", "max_weight_per_position"):
+# Estos ejes se afinan exclusivamente en Fase 3 para no duplicar reentrenos en Fase 1.
+FULL_STUDY_PHASE3_OPTIONS: dict[str, list] = {
+    axis: list(STUDY_OPTIONS[axis])
+    for axis in ("lgbm_max_depth", "lgbm_n_estimators", "lgbm_learning_rate",
+                 "lgbm_min_child_samples")
+}
+for _axis in ("lgbm_max_depth", "lgbm_n_estimators", "lgbm_learning_rate", "lgbm_min_child_samples"):
     FULL_STUDY_OPTIONS.pop(_axis, None)
-FULL_STUDY_OPTIONS["target_band"] = TARGET_BANDS
+# El eje de cartera es idéntico en study y full_study.

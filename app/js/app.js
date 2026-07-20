@@ -9,6 +9,14 @@
     defaults: {},
     groups: {},
     studyOptions: {},
+    settingsOptions: {},
+    studyModelOptions: {},
+    studyPortfolioOptions: {},
+    studyPhase3Options: {},
+    fullStudyModelOptions: {},
+    fullStudyPortfolioOptions: {},
+    fullStudyPhase3Options: {},
+    fullStudyProfiles: [],
     studyOptionGroups: {},
     fullStudyFixedSettings: {},
     fullStudyStressSettings: {},
@@ -34,12 +42,66 @@
   }
   global.TFM.showView = showView;
 
+  // --- Regla global de desplegables (<details>) ---------------------------------------------
+  // Un <details> se abre por defecto SOLO si es el único de nivel superior en todo su panel de
+  // vista (no hay nada que elegir). Si el panel tiene varios, se pliegan todos (el usuario decide
+  // cuál abrir). El recuento es por PANEL (`.view`), no por contenedor inmediato: dos secciones
+  // hermanas con un <details> cada una siguen siendo "varios" y se pliegan. Los <details> anidados
+  // dentro de otro no cuentan (los gestiona su padre). `open` explícito en el HTML se respeta.
+  function applyDetailsRule(node) {
+    // Localiza el panel de vista que contiene el cambio y reevalúa TODOS sus <details> de nivel
+    // superior de una vez. Se recalcula en cada pasada (no se memoiza): así, cuando una carga async
+    // añade un segundo <details> al panel, el primero —abierto cuando era el único— se vuelve a
+    // plegar. No se toca lo que el usuario haya abierto/cerrado a mano (data-user).
+    const panel = (node.closest && node.closest(".view")) || node.ownerDocument.querySelector(".view.active") || document.body;
+    const all = Array.from(panel.querySelectorAll("details"));
+    const topLevel = all.filter((d) => !d.parentElement || !d.parentElement.closest("details"));
+    topLevel.forEach((d) => {
+      if (d.hasAttribute("data-keep-closed")) return;     // opt-out: nunca auto-abrir (queda plegado)
+      if (d.dataset.user === "1") return;                 // toggle manual del usuario: respetar
+      if (d.dataset.authorOpen === undefined) {
+        d.dataset.authorOpen = d.hasAttribute("open") ? "1" : "0";  // recuerda la intención del HTML
+        // Solo un toggle NO provocado por nosotros marca "decisión del usuario".
+        d.addEventListener("toggle", () => { if (d.dataset.prog !== "1") d.dataset.user = "1"; });
+      }
+      if (d.dataset.authorOpen === "1") return;           // `open` explícito del autor: respetar
+      const target = topLevel.length === 1;               // único en el panel → abierto; varios → plegado
+      if (d.open !== target) {
+        // `prog` marca que el cambio es nuestro; el evento `toggle` es asíncrono, así que se limpia
+        // en el siguiente microtask (después de que el listener lo haya visto).
+        d.dataset.prog = "1";
+        d.open = target;
+        Promise.resolve().then(() => { delete d.dataset.prog; });
+      }
+    });
+  }
+  // Reaplica la regla ante cualquier contenido nuevo (render de vistas, cargas async, sub-vistas).
+  const detailsObserver = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+      for (const node of m.addedNodes) {
+        if (node.nodeType === 1 && (node.querySelector?.("details") || node.matches?.("details"))) {
+          applyDetailsRule(node);
+        }
+      }
+    }
+  });
+  detailsObserver.observe(document.body, { childList: true, subtree: true });
+  global.TFM.applyDetailsRule = applyDetailsRule;
+
   // --- Carga de datos base ---
   async function loadDefaults() {
     const data = await api("/api/defaults");
     state.defaults = data.settings || {};
     state.groups = data.groups || {};
     state.studyOptions = data.study_options || {};
+    state.settingsOptions = data.settings_options || {};
+    state.studyModelOptions = data.study_model_options || {};
+    state.studyPortfolioOptions = data.study_portfolio_options || {};
+    state.studyPhase3Options = data.study_phase3_options || {};
+    state.fullStudyModelOptions = data.full_study_model_options || {};
+    state.fullStudyPortfolioOptions = data.full_study_portfolio_options || {};
+    state.fullStudyPhase3Options = data.full_study_phase3_options || {};
+    state.fullStudyProfiles = data.full_study_profiles || [];
     state.studyOptionGroups = data.study_option_groups || {};
     state.fullStudyFixedSettings = data.full_study_fixed_settings || {};
     state.fullStudyStressSettings = data.full_study_stress_settings || {};

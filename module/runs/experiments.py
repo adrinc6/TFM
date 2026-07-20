@@ -60,7 +60,7 @@ FINAL_DIR = RESULTS_ROOT / "final"
 class ScenarioSpec:
     """Un escenario del barrido: nombre + overrides sobre `environment.Settings`.
 
-    Los overrides se pasan por su nombre de campo del dataclass (`target_max`,
+    Los overrides se pasan por su nombre de campo del dataclass (`target_size`,
     `lgbm_max_depth`, `execution_lag_days`, etc.), no por el nombre de la constante en
     `environment.py`. La razon: es una API tipada que valida al construir Settings.
     """
@@ -130,8 +130,7 @@ FINGERPRINT_FIELDS: dict[str, tuple[str, ...]] = {
         "feature_selection_min_permutation_importance", "feature_selection_min_positive_fraction",
         "feature_selection_max_features_per_agent", "metric_winsorization_percentile",
         "risk_feature_windows", "technical_feature_windows",
-        "target_min", "target_max", "entry_min_percentile", "min_hold_percentile",
-        "rotation_edge_percentiles", "max_weight_per_position",
+        "target_size", "min_hold_percentile", "rotation_edge_percentiles",
         "commission_bps", "slippage_bps", "rebalance_drift_tolerance",
         "max_monthly_position_return", "profile",
     ),
@@ -143,25 +142,37 @@ FINGERPRINT_FIELDS: dict[str, tuple[str, ...]] = {
 # el backtest (no reentrena, no cambia el aprendizaje). El orquestador de estudios usa esta
 # separación para barrer los ejes de modelo en Fase 1/2 y los de cartera al final por re-backtest.
 MODEL_FIELDS: frozenset[str] = frozenset(FINGERPRINT_FIELDS["agents"])
-# `target_band` es un eje de cartera COMPUESTO (su valor es un dict que expande a target_min/
-# target_max/max_weight_per_position juntos). No es un campo de Settings, pero se barre en la fase
-# de cartera, así que se reconoce aquí explícitamente. Ver module/scenarios/variables.py.
-COMPOSITE_PORTFOLIO_AXES: frozenset[str] = frozenset({"target_band"})
-PORTFOLIO_FIELDS: frozenset[str] = (
-    frozenset(FINGERPRINT_FIELDS["backtest"]) - MODEL_FIELDS | COMPOSITE_PORTFOLIO_AXES
-)
+PORTFOLIO_FIELDS: frozenset[str] = frozenset(FINGERPRINT_FIELDS["backtest"]) - MODEL_FIELDS
+
+# Reglas de cartera MECÁNICAS (fricción y disciplina de rotación, no señal predictiva ni mandato
+# de diversificación). Como los costes, se ESTRESAN (se reportan todos los valores) pero NUNCA se
+# eligen: seleccionar el umbral de rebalanceo/expulsión/rotación que maximiza la rentabilidad sería
+# elegir fricción favorable, el mismo sesgo que prohíbe elegir costes bajos. `target_size` NO entra
+# aquí: es un mandato de diversificación real y sí se optimiza por Information Ratio. Ver
+# `execution._portfolio_stress_phase` y docs/doc.md (ejes mecánicos vs. optimizables).
+PORTFOLIO_STRESS_FIELDS: frozenset[str] = frozenset({
+    "rebalance_drift_tolerance", "min_hold_percentile", "rotation_edge_percentiles",
+})
 
 
 def split_variables(
     variables: Mapping[str, list[Any]],
 ) -> tuple[dict[str, list[Any]], dict[str, list[Any]]]:
-    """Reparte un dict {eje: [valores]} en variables de modelo y de cartera.
+    """Reparte un dict {eje: [valores]} en variables de modelo y de cartera OPTIMIZABLE.
 
-    Los ejes que no pertenecen a ninguna de las dos familias (no barribles) se descartan.
+    Los ejes de cartera mecánicos (`PORTFOLIO_STRESS_FIELDS`) NO se devuelven aquí: no se optimizan,
+    se estresan aparte con `stress_variables`. Los ejes que no pertenecen a ninguna familia
+    barrible se descartan.
     """
     model_vars = {axis: values for axis, values in variables.items() if axis in MODEL_FIELDS}
-    portfolio_vars = {axis: values for axis, values in variables.items() if axis in PORTFOLIO_FIELDS}
+    portfolio_vars = {axis: values for axis, values in variables.items()
+                      if axis in PORTFOLIO_FIELDS and axis not in PORTFOLIO_STRESS_FIELDS}
     return model_vars, portfolio_vars
+
+
+def stress_variables(variables: Mapping[str, list[Any]]) -> dict[str, list[Any]]:
+    """Extrae los ejes de cartera mecánicos que se estresan (se reportan) pero no se optimizan."""
+    return {axis: values for axis, values in variables.items() if axis in PORTFOLIO_STRESS_FIELDS}
 
 
 def stage_fingerprint(stage: str, settings: Settings) -> str:
@@ -604,7 +615,7 @@ def decide_best_config(
 def run_experiments_from_settings(settings: Settings) -> dict:
     """Handler para RUN_MODE=experiments. Ejecuta el barrido de ablations, decide automaticamente
     que artefactos aceptar, y escribe la decision en results/escenarios/artifact_decision.json."""
-    grid_path = PROJECT_ROOT / "module" / "scenarios" / "rejilla_base.py"
+    grid_path = PROJECT_ROOT / "module" / "scenarios" / "ablaciones.py"
     if not grid_path.exists():
         raise RuntimeError(f"No hay rejilla en {grid_path}.")
     run_scenarios(grid_path, settings)
@@ -697,7 +708,7 @@ def run_full_study(settings: Settings) -> None:
     """
     from module.evaluation.profiles import PROFILE_NAMES
 
-    grid_path = PROJECT_ROOT / "module" / "scenarios" / "fase1_ejes.py"
+    grid_path = PROJECT_ROOT / "module" / "scenarios" / "ejes.py"
     if not grid_path.exists():
         raise RuntimeError(f"No hay rejilla de Fase 1 en {grid_path}.")
     grid_module = _import_module_from_path(grid_path)
