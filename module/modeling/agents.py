@@ -182,7 +182,9 @@ def _agent_features(frame: pd.DataFrame, settings: Settings) -> dict[str, list[s
         from module.modeling.artifacts import QUALITY_GROWTH_SOURCES
         add("quality", [f"factor_{s}" for s in QUALITY_GROWTH_SOURCES])
     # LightGBM no acepta una matriz sin columnas; el filtro además permite fixtures antiguos.
-    return {agent: [column for column in columns if column in frame.columns]
+    # Se deduplica preservando el orden: un artefacto (p. ej. moving_averages) puede reañadir un
+    # factor que el catálogo base ya asignó al mismo agente, y una columna repetida rompe el fit.
+    return {agent: list(dict.fromkeys(column for column in columns if column in frame.columns))
             for agent, columns in features.items() if any(column in frame.columns for column in columns)}
 
 
@@ -701,6 +703,12 @@ def _importance_rows(model, agent: str, retrain_date: pd.Timestamp, rows: int, s
         # Pipeline SimpleImputer -> StandardScaler -> ElasticNet.
         estimator = model.steps[-1][1]
         names, values = model.feature_names_in_, np.abs(estimator.coef_)
+    # CatBoostRanker (YetiRank) no expone importancias sin dataset de referencia y devuelve un
+    # escalar None (0-d). Las importancias son solo trazabilidad, no afectan al score ni al
+    # rank-IC: cuando falten, se omiten en vez de abortar el escenario.
+    values = np.atleast_1d(np.asarray(values))
+    if names is None or values.dtype == object or values.shape != (len(names),):
+        return []
     return [
         {
             "agent": agent,

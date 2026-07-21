@@ -6,6 +6,7 @@ import json
 import math
 import mimetypes
 import os
+import socket
 import threading
 import traceback
 from dataclasses import asdict, fields
@@ -18,6 +19,7 @@ import pandas as pd
 
 from environment import (MAX_PRICE_AGE_DAYS, MIN_TRAINING_ROWS, NEUTRALIZE_MIN_GROUP,
                          PROJECT_ROOT, RECENCY_HALFLIFE_YEARS, Settings)
+from module.common.utils import pid_alive
 from module.runs.execution import execute_official_optimization, execute_run, execute_study
 from module.runs.experiments import PORTFOLIO_STRESS_FIELDS, split_variables
 from module.runs.results_store import RESULTS_ROOT, ResultsStore, list_registry
@@ -61,6 +63,30 @@ class JobManager:
 
 JOBS = JobManager()
 STORE = ResultsStore()
+
+
+def _reconcile_study_status(manifest: dict) -> dict:
+    """Corrige un study 'running' cuyo proceso dueño ya no vive (kill/crash).
+
+    El status del study no se auto-corrige: si el proceso muere de golpe nunca escribe un estado
+    terminal y queda 'running' para siempre. Aquí, solo en la MISMA máquina que lo lanzó y solo si
+    su ``owner_pid`` ya no existe, lo pasamos a 'interrupted' y lo persistimos para que el botón de
+    reanudar aparezca activo. Nunca tocamos studies vivos ni lanzados en otro host.
+    """
+    if manifest.get("status") != "running":
+        return manifest
+    pid = manifest.get("owner_pid")
+    host = manifest.get("owner_host")
+    if not isinstance(pid, int) or host != socket.gethostname():
+        return manifest  # sin identidad fiable o de otra máquina: no tocar
+    if pid_alive(pid):
+        return manifest
+    study_id = manifest.get("study_id")
+    if study_id:
+        STORE.update_study_status(study_id, "interrupted")
+        manifest = json.loads(
+            (STORE.studies_root / study_id / "study_manifest.json").read_text(encoding="utf-8"))
+    return manifest
 
 
 def _tail_lines(path: Path, limit: int = 220, max_bytes: int = 96_000) -> list[str]:
@@ -171,6 +197,8 @@ FULL_STUDY_STRESS_SETTINGS = {
        for axis in PORTFOLIO_STRESS_FIELDS if axis in FULL_STUDY_OPTIONS},
 }
 FULL_STUDY_MODEL_OPTIONS, FULL_STUDY_PORTFOLIO_OPTIONS = split_variables(FULL_STUDY_OPTIONS)
+# Límite defensivo del modo cartesiano: cada combinación entrena y backtestea un run completo.
+CARTESIAN_STUDY_LIMIT = 500
 
 # Contrato del explorador: son variables existentes en el panel PIT y, salvo los retornos de
 # momentum, ratios fundamentales que ya informan la construcción de features/agentes.
@@ -353,7 +381,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 for directory in sorted(STORE.studies_root.iterdir(), reverse=True):
                     manifest = directory / "study_manifest.json"
                     if manifest.exists():
-                        studies.append(json.loads(manifest.read_text(encoding="utf-8")))
+                        studies.append(_reconcile_study_status(
+                            json.loads(manifest.read_text(encoding="utf-8"))))
             return _json(self, {"studies": studies})
         if parsed.path.startswith("/api/study/") and parsed.path.endswith("/live-log"):
             study_id = parsed.path.removeprefix("/api/study/").removesuffix("/live-log").rstrip("/")
@@ -418,8 +447,22 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 variables = payload.get("variables", {})
                 if not isinstance(variables, dict) or not all(isinstance(v, list) and v for v in variables.values()):
                     return _json(self, {"error": "Cada variable del study debe tener una lista de valores."}, 400)
-                job = JOBS.submit("study", lambda: execute_study(settings, study_payload=payload.get("study", {}),
-                                                                    variables=variables, mode=str(payload.get("mode", "full"))))
+                search_mode = str(payload.get("search_mode", "directed"))
+                if search_mode not in ("directed", "cartesian"):
+                    return _json(self, {"error": "search_mode debe ser 'directed' o 'cartesian'."}, 400)
+                if search_mode == "cartesian":
+                    model_vars, _ = split_variables(variables)
+                    combinations = 1
+                    for values in model_vars.values():
+                        combinations *= len(values)
+                    if combinations > CARTESIAN_STUDY_LIMIT:
+                        return _json(self, {"error": (
+                            f"El producto cartesiano de las variables de modelo marcadas tiene "
+                            f"{combinations} combinaciones, por encima del límite de "
+                            f"{CARTESIAN_STUDY_LIMIT}. Reduce variables o valores marcados.")}, 400)
+                job = JOBS.submit("study", lambda: execute_study(
+                    settings, study_payload=payload.get("study", {}), variables=variables,
+                    search_mode=search_mode))
                 return _json(self, {"job_id": job}, 202)
             if self.path == "/api/optimization":
                 if JOBS.has_active_study():
@@ -464,7 +507,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
         manifest_path = directory / "study_manifest.json"
         if not manifest_path.exists():
             return _json(self, {"error": "Estudio no encontrado."}, 404)
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest = _reconcile_study_status(json.loads(manifest_path.read_text(encoding="utf-8")))
         run_ids_path = directory / "run_ids.json"
         run_ids = json.loads(run_ids_path.read_text(encoding="utf-8")) if run_ids_path.exists() else {}
         decision_path = directory / "decision.json"
@@ -722,8 +765,12 @@ class DashboardHandler(BaseHTTPRequestHandler):
             weights = weights.loc[weights["snapshot_date"].astype(str) == date]
         importance_path = artifacts / "model_feature_attribution.parquet"
         importance = pd.read_parquet(importance_path) if importance_path.exists() else pd.DataFrame()
-        if not scores.empty and not importance.empty:
-            retrain = str(scores.loc[scores["snapshot_date"].astype(str) == date, "model_retrain_date"].iloc[0])
+        # `date` puede no coincidir con ningún snapshot con score (fecha suelta vía URL manual, etc.).
+        # En ese caso el slice queda vacío: no se hace .iloc[0] (evita IndexError) y se deja la
+        # importancia global sin filtrar por retrain en vez de reventar el servidor.
+        date_scores = scores.loc[scores["snapshot_date"].astype(str) == date] if not scores.empty else scores
+        if not date_scores.empty and not importance.empty:
+            retrain = str(date_scores["model_retrain_date"].iloc[0])
             importance = importance.loc[importance["model_retrain_date"].astype(str) == retrain]
         contribution_rows = (attribution.sort_values(["agent", "importance_rank"]).to_dict("records")
                              if {"agent", "importance_rank"}.issubset(attribution.columns) else [])
@@ -733,8 +780,13 @@ class DashboardHandler(BaseHTTPRequestHandler):
         diagnostics = pd.read_parquet(diagnostics_path) if diagnostics_path.exists() else pd.DataFrame()
         diagnostics_rows = (diagnostics.sort_values("model_importance_mean", ascending=False).to_dict("records")
                             if "model_importance_mean" in diagnostics else [])
+        # Snapshots disponibles del ticker (ISO, orden ascendente): el frontend puebla con ellos el
+        # select de fecha en modo Puntuaciones, de modo que solo se puedan pedir fechas válidas.
+        snapshot_dates = (sorted(scores["snapshot_date"].astype(str).unique().tolist())
+                          if not scores.empty else [])
         _json(self, {"ticker": ticker, "snapshot_date": date, "scores": scores.to_dict("records"),
-                     "selected_scores": scores.loc[scores["snapshot_date"].astype(str) == date].to_dict("records"),
+                     "snapshot_dates": snapshot_dates,
+                     "selected_scores": date_scores.to_dict("records"),
                      "contributions": contribution_rows, "weights": weights.to_dict("records"),
                      "global_importance": importance_rows, "feature_diagnostics": diagnostics_rows})
 

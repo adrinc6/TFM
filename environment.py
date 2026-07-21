@@ -141,7 +141,8 @@ MIN_HOLD_PERCENTILE = 80          # percentil <= este umbral -> venta obligatori
 ROTATION_EDGE_PERCENTILES = 10    # ventaja mínima para que un candidato desplace a un tenente
 COMMISSION_BPS = 5                # comision por operacion, en puntos basicos
 SLIPPAGE_BPS = 10                 # slippage por operacion, en puntos basicos
-REBALANCE_DRIFT_TOLERANCE = 1.5   # diferencia mínima de peso, en puntos porcentuales, para operar
+REBALANCE_DRIFT_TOLERANCE = 0.25  # fracción mínima de cambio RELATIVO a la posición para rebalancear
+                                  # (0.25 = 25 %); por debajo, el tenente se "congela" y no opera
 # Guarda anti-artefactos de datos: un retorno mensual de una posicion mayor que esto se trata
 # como dato corrupto (split mal ajustado, ticker reciclado) y se neutraliza, registrandolo.
 MAX_MONTHLY_POSITION_RETURN = 2.0  # +200 % en un mes es imposible para una accion normal
@@ -264,6 +265,10 @@ class Settings:
         for name, value in (("min_hold_percentile", self.min_hold_percentile),):
             if not 0 <= value <= 100:
                 raise ValueError(f"{name} debe estar en [0, 100], recibido {value!r}.")
+        if self.rebalance_drift_tolerance < 0:
+            raise ValueError(
+                "REBALANCE_DRIFT_TOLERANCE es una fracción relativa (0.25 = 25 %) y debe ser >= 0."
+            )
 
     @property
     def dev_mode(self) -> bool:

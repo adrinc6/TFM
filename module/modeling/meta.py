@@ -5,7 +5,10 @@ Tres formas de ponderar (`meta_type`), de menos a más ambiciosa:
 - "equal": peso fijo 1/3 para cada agente. Ignora el rank-IC reciente; es la política de
   combinación elegida, no un respaldo por falta de señal. Sirve de referencia: mide cuánto
   aporta ponderar frente a promediar sin criterio.
-- "rank_ic": pesos proporcionales al rank-IC OOS reciente de cada agente (el original).
+- "rank_ic": pesos proporcionales al rank-IC OOS reciente de cada agente (el original). Tras el
+  reparto se aplica un clamp por agente a [AGENT_WEIGHT_MIN, AGENT_WEIGHT_MAX] (10-50 %): mínimo
+  universal (nadie baja de 10 %, aunque su rank-IC sea negativo) y tope 50 %, para que el meta
+  siempre haga algo de caso a todos y no colapse sobre un agente.
 - "regime": parte de los pesos "rank_ic" y los inclina según el régimen de mercado (bull/bear)
   detectado sin lookahead (retorno a 12m del benchmark hasta la fecha): en mercado alcista
   realza `momentum`, en bajista realza `quality`. Renormaliza. La dirección de la inclinación
@@ -162,6 +165,50 @@ def _equal_weight_diagnostics(labelled: pd.DataFrame, settings: Settings) -> pd.
 # después. Un tilt pequeño inclina sin imponer una señal fuerte hecha a mano.
 REGIME_TILT = 0.30
 
+# Clamp de peso por agente (modos rank_ic y regime): el meta nunca ignora del todo a un agente ni
+# deja que uno domine. Mínimo UNIVERSAL (todo agente disponible recibe al menos AGENT_WEIGHT_MIN,
+# aunque su rank-IC reciente sea negativo) para garantizar diversificación; máximo AGENT_WEIGHT_MAX.
+# Con 5 agentes el rango es siempre factible (5·0.10 ≤ 1 ≤ 5·0.50). No aplica a `equal` (ya es 1/N)
+# ni a `stacked_oos` (modelo aprendido cuya lógica es no forzar pesos a mano).
+AGENT_WEIGHT_MIN = 0.10
+AGENT_WEIGHT_MAX = 0.50
+
+
+def _clamp_agent_weights(weights: dict[str, float]) -> dict[str, float]:
+    """Ajusta los pesos a [AGENT_WEIGHT_MIN, AGENT_WEIGHT_MAX] conservando la suma 1.
+
+    Una sola pasada iterativa: recorta a los límites y redistribuye el exceso/defecto SOLO entre los
+    agentes aún libres (los que no están fijados en un límite), en proporción a su peso, hasta que la
+    suma vuelve a 1. Si el rango no fuese factible (p. ej. demasiados agentes para el mínimo), cae a
+    equiponderación. El resultado es independiente del orden de los agentes.
+    """
+    agents = list(weights)
+    n = len(agents)
+    if n == 0:
+        return {}
+    if n * AGENT_WEIGHT_MIN > 1 + 1e-9 or n * AGENT_WEIGHT_MAX < 1 - 1e-9:
+        return {agent: 1 / n for agent in agents}  # rango no factible: equiponderado
+    w = {agent: max(float(weights[agent]), 0.0) for agent in agents}
+    total = sum(w.values())
+    w = {agent: (value / total if total > 0 else 1 / n) for agent, value in w.items()}
+    for _ in range(100):
+        w = {agent: min(max(value, AGENT_WEIGHT_MIN), AGENT_WEIGHT_MAX) for agent, value in w.items()}
+        deficit = 1.0 - sum(w.values())
+        if abs(deficit) < 1e-12:
+            break
+        # Agentes que aún pueden absorber el ajuste: si falta peso (deficit>0) los que no topan en el
+        # máximo; si sobra (deficit<0) los que no topan en el mínimo. Se reparte a partes iguales
+        # entre ellos (no proporcional: al estar en un límite el proporcional no convergería).
+        if deficit > 0:
+            movable = [agent for agent, value in w.items() if value < AGENT_WEIGHT_MAX - 1e-12]
+        else:
+            movable = [agent for agent, value in w.items() if value > AGENT_WEIGHT_MIN + 1e-12]
+        if not movable:
+            break
+        share = deficit / len(movable)
+        w = {agent: (value + share if agent in movable else value) for agent, value in w.items()}
+    return w
+
 
 def _weights_as_of(
     labelled: pd.DataFrame,
@@ -229,6 +276,9 @@ def _weights_as_of(
         if renorm > 0:
             weights = {agent: w / renorm for agent, w in weights.items()}
 
+    # Clamp al final (tras el tilt de régimen, para no volver a salirse de rango): garantiza el mínimo
+    # universal por agente y el tope, sin que el meta ignore del todo a nadie ni deje que uno domine.
+    weights = _clamp_agent_weights(weights)
     return weights, evidence
 
 

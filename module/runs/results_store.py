@@ -24,7 +24,7 @@ from typing import Any, Iterable, Mapping
 import pandas as pd
 
 from environment import PROJECT_ROOT, Settings
-from module.common.utils import sha256_file, write_json, write_parquet
+from module.common.utils import pid_alive, sha256_file, write_json, write_parquet
 from module.runs.code_fingerprint import combined_code_fingerprint
 
 
@@ -33,6 +33,24 @@ RUNS_ROOT = RESULTS_ROOT / "runs"
 STUDIES_ROOT = RESULTS_ROOT / "studies"
 REGISTRY_PATH = RESULTS_ROOT / "registry.jsonl"
 SCHEMA_VERSION = 1
+
+
+def _release_lock(lock: Path, timeout: float = 5.0) -> None:
+    """Borra el fichero de bloqueo tolerando la contención de Windows.
+
+    En Windows un ``unlink`` puede fallar con WinError 32 si otro proceso aún tiene un handle
+    abierto sobre el fichero (p. ej. lo está leyendo para comprobar el PID dueño). Es transitorio:
+    se reintenta unos instantes en vez de propagar y perder el escenario.
+    """
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            lock.unlink(missing_ok=True)
+            return
+        except PermissionError:
+            if time.monotonic() >= deadline:
+                return  # mejor dejar un lock huérfano (se auto-limpia) que abortar el escenario
+            time.sleep(0.05)
 
 
 @contextmanager
@@ -46,19 +64,32 @@ def _exclusive_file_lock(lock: Path, timeout: float = 30):
             os.close(descriptor)
             break
         except FileExistsError:
+            # Lock ocupado: si el dueño murió, lo reclamamos; si vive, esperamos hasta el timeout.
             try:
                 owner = int(lock.read_text(encoding="utf-8").strip())
-                os.kill(owner, 0)
-            except (OSError, ValueError):
-                lock.unlink(missing_ok=True)
+            except ValueError:
+                _release_lock(lock)
                 continue
+            except PermissionError:
+                owner = None  # WinError 32 al leer: otro proceso lo tiene abierto → sigue vivo
+            except OSError:
+                _release_lock(lock)
+                continue
+            if owner is not None and not pid_alive(owner):
+                _release_lock(lock)
+                continue
+            if time.monotonic() >= deadline:
+                raise TimeoutError(f"No se pudo adquirir el bloqueo {lock.name}.")
+            time.sleep(0.05)
+        except PermissionError:
+            # WinError 32 al crear: contención transitoria de Windows, no un lock lógico. Reintentar.
             if time.monotonic() >= deadline:
                 raise TimeoutError(f"No se pudo adquirir el bloqueo {lock.name}.")
             time.sleep(0.05)
     try:
         yield
     finally:
-        lock.unlink(missing_ok=True)
+        _release_lock(lock)
 
 
 def canonical_json(value: Any) -> str:
@@ -210,7 +241,7 @@ class ResultsStore:
         write_json({"status": status, "updated_at_utc": now, "error": error}, run_dir / "status.json")
 
     def record_stage_timing(self, run_dir: Path, stage: str, seconds: float,
-                            source: str | None = None) -> None:
+                            source: str | None = None, stage_key: str | None = None) -> None:
         path = run_dir / "run_manifest.json"
         manifest = json.loads(path.read_text(encoding="utf-8"))
         execution = manifest.setdefault("execution", {})
@@ -219,6 +250,11 @@ class ResultsStore:
             # "computed" (recalculada) vs "recycled" (restaurada de data/recycle): permite a la app
             # mostrar el coste real de cada etapa distinguiéndolo del reciclado.
             execution.setdefault("stage_source", {})[stage] = source
+        if stage_key is not None:
+            # Clave de reciclado de esta etapa (settings acotados + inputs + codigo de la propia
+            # etapa): depende solo de lo que afecta a esta etapa, no del resto del pipeline. Permite
+            # auditar por que una etapa se reciclo o no sin recalcular nada.
+            execution.setdefault("stage_keys", {})[stage] = stage_key
         write_json(manifest, path)
 
     def record_telemetry(self, run_dir: Path, telemetry: Mapping[str, Any]) -> None:

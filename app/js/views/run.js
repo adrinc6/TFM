@@ -17,13 +17,19 @@
 
   // `format`: "num" (decimales crudos, p. ej. rank-IC) o "pct" (×100 con " %"). `signed` colorea.
   // `hintKey` añade un tooltip explicativo de la métrica.
-  function metricCard(value, label, { decimals = 2, format = "num", signed = false, hintKey = "" } = {}) {
-    const cls = signed && typeof value === "number" ? (value >= 0 ? " pos" : " neg") : "";
+  function metricCard(value, label, { decimals = 2, format = "num", signed = false, hintKey = "", compareTo, compareLabel = "benchmark" } = {}) {
+    let cls = "";
+    if (signed && typeof value === "number") cls = value >= 0 ? " pos" : " neg";
+    else if (typeof compareTo === "number" && typeof value === "number") cls = value <= compareTo ? " pos" : " neg";
     const shown = format === "pct" ? pct(value, decimals) : fmt(value, decimals);
     const hint = global.TFM.metricHint(hintKey);
+    const compareShown = format === "pct" ? `${(compareTo * 100).toFixed(decimals)}%` : fmt(compareTo, decimals);
+    const compareTxt = typeof compareTo === "number"
+      ? ` - (${escapeHtml(compareLabel)} ${compareShown})`
+      : "";
     const labelHtml = hint
-      ? `<span title="${escapeHtml(hint)}">${escapeHtml(label)} <span class="hint-dot">?</span></span>`
-      : escapeHtml(label);
+      ? `<span title="${escapeHtml(hint)}">${escapeHtml(label)}${compareTxt} <span class="hint-dot">?</span></span>`
+      : `${escapeHtml(label)}${compareTxt}`;
     return `<div class="card"><div class="metric${cls}">${shown}</div><div class="metric-label">${labelHtml}</div></div>`;
   }
 
@@ -91,7 +97,7 @@
       <div class="cards">
         ${metricCard(s.mean_rank_ic, "rank-IC medio (OOS)", { decimals: 2, hintKey: "rank_ic" })}
         ${metricCard(s.cagr_difference, "CAGR vs benchmark", { format: "pct", decimals: 2, signed: true, hintKey: "cagr_difference" })}
-        ${metricCard(s.max_drawdown, "Max drawdown", { format: "pct", decimals: 2, signed: true, hintKey: "max_drawdown" })}
+        ${metricCard(s.max_drawdown, "Max drawdown", { format: "pct", decimals: 2, hintKey: "max_drawdown", compareTo: s.max_drawdown_benchmark, compareLabel: "benchmark" })}
         ${metricCard(s.beat_rate, "% años que baten SPY", { format: "pct", decimals: 1, hintKey: "beat_rate" })}
       </div>
       ${intent.description ? `<p class="muted" style="margin-top:12px">${escapeHtml(intent.description)}</p>` : ""}

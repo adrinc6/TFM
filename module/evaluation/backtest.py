@@ -358,6 +358,10 @@ def _summary(
     drawdown_series = 1 - equity_series / np.maximum.accumulate(equity_series)
     max_drawdown_total = float(drawdown_series.max()) if len(drawdown_series) else 0.0
 
+    benchmark_series = equity["benchmark_value"].to_numpy()
+    benchmark_drawdown_series = 1 - benchmark_series / np.maximum.accumulate(benchmark_series)
+    max_drawdown_benchmark = float(benchmark_drawdown_series.max()) if len(benchmark_drawdown_series) else 0.0
+
     beat_rate = float((annual["alpha"] > 0).mean()) if not annual.empty else 0.0
     median_alpha = float(annual["alpha"].median()) if not annual.empty else 0.0
     worst_year_alpha = float(annual["alpha"].min()) if not annual.empty else 0.0
@@ -375,6 +379,7 @@ def _summary(
         # --- consistencia y riesgo ---
         "beat_rate": beat_rate,
         "max_drawdown": max_drawdown_total,
+        "max_drawdown_benchmark": max_drawdown_benchmark,
         # --- rendimiento economico (CAGR estandar, no acumulados inflados) ---
         "cagr_portfolio": cagr_portfolio,
         "cagr_benchmark": cagr_benchmark,

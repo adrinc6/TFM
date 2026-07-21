@@ -57,13 +57,14 @@ STUDY_OPTIONS: dict[str, list] = {
     "quality_growth_derived": [False, True], "target_size": [5, 8, 10, 12, 15],
     # Ablaciones del laboratorio: el catálogo sigue completo, pero cada escenario prueba la
     # contribución de bloques, agentes y familias de modelos de forma aislada.
+    # Ablación homogénea: SOLO el catálogo completo y el completo-menos-cada-uno. No hay un
+    # subconjunto "histórico" privilegiado: todos los bloques/agentes se tratan por igual, y la
+    # diferencia frente al full mide la contribución incremental de lo retirado.
     "enabled_feature_blocks": [
-        ("quality_core", "value_core", "momentum_core"),
         *BLOCK_ABLATIONS,
         FULL_FEATURE_BLOCKS,
     ],
     "enabled_agents": [
-        ("quality", "value", "momentum"),
         *AGENT_ABLATIONS,
         FULL_AGENTS,
     ],

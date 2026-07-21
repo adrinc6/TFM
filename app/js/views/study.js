@@ -27,19 +27,33 @@
     }
   }
 
-  function installLiveActions(studyId, canResume, manifest) {
+  function installLiveActions(studyId, canResume, manifest, decision) {
     const actions = document.getElementById("study-live-actions");
     if (!actions) return;
+    // El botón de reanudar se muestra SIEMPRE (mismo formato que los demás); solo se habilita
+    // cuando el study terminó de forma anómala (failed/interrupted/cancelled). En cualquier otro
+    // estado se ve deshabilitado con un motivo, en vez de desaparecer.
+    const resumeTitle = canResume
+      ? "Verifica y reutiliza los runs completos; repite los incompletos y continúa el ciclo."
+      : "Solo disponible si el estudio quedó interrumpido, fallido o cancelado.";
     actions.innerHTML = `<button class="button ghost" id="toggle-study-live-log">▣ Ver consola</button>
-      ${canResume ? '<button class="primary" id="resume-full-study">Reanudar full study</button>' : ""}`;
+      <button class="button ghost" id="toggle-robustez">◔ Robustez</button>
+      <button class="button primary" id="resume-full-study"${canResume ? "" : " disabled"} title="${escapeHtml(resumeTitle)}">Reanudar full study</button>`;
     const toggle = document.getElementById("toggle-study-live-log");
+    const robToggle = document.getElementById("toggle-robustez");
+    const consolePanel = () => document.getElementById("study-live-log");
+    const robPanel = () => document.getElementById("study-robustez-panel");
+    const results = () => document.getElementById("study-results-content");
+
+    // Los tres estados (resultados / consola / robustez) son mutuamente excluyentes.
     toggle.addEventListener("click", () => {
-      const panel = document.getElementById("study-live-log");
-      const results = document.getElementById("study-results-content");
+      const panel = consolePanel();
       const visible = !panel.hidden;
       panel.hidden = visible;
-      results.hidden = !visible;
+      robPanel().hidden = true;
+      results().hidden = !visible;
       toggle.textContent = visible ? "▣ Ver consola" : "▣ Ocultar consola";
+      robToggle.textContent = "◔ Robustez";
       stopLiveLog();
       if (!visible) {
         refreshLiveLog(studyId);
@@ -48,6 +62,126 @@
         }
       }
     });
+
+    robToggle.addEventListener("click", () => {
+      const panel = robPanel();
+      const visible = !panel.hidden;
+      if (!visible) panel.innerHTML = robustezPanel(decision);
+      panel.hidden = visible;
+      consolePanel().hidden = true;
+      results().hidden = !visible;
+      robToggle.textContent = visible ? "◔ Robustez" : "◔ Ocultar robustez";
+      toggle.textContent = "▣ Ver consola";
+      stopLiveLog();
+    });
+  }
+
+  // Panel de robustez del estudio: consolida placebo, bootstrap por bloques, leave-one-year-out,
+  // random-portfolio y los estreses de costes y de cartera. Todo viene de decision.json; ninguno
+  // de estos resultados selecciona configuración: son evidencia y estrés, se reportan tal cual.
+  function robustezPanel(decision) {
+    const d = decision || {};
+    const rob = d.robustness || {};
+    const parts = [];
+
+    const lp = rob.label_permutation;
+    if (lp) {
+      let body;
+      if (lp.status) {
+        body = `<p class="muted">${escapeHtml(String(lp.status))}</p>`;
+      } else {
+        const above = !!lp.signal_above_chance;
+        body = global.TFM.metricGrid([
+          { value: fmt(lp.rank_ic_real, 3), label: "rank-IC real", hintKey: "rank_ic" },
+          { value: `${fmt(lp.placebo_mean, 3)} ± ${fmt(lp.placebo_std, 3)}`, label: "placebo (media ± sd)" },
+          { value: fmt(lp.p_value, 3), label: "p-valor", cls: above ? "pos" : "neg" },
+          { value: String(lp.n_permutations ?? "—"), label: "permutaciones" },
+        ]) + `<p class="muted" style="margin-top:8px">Placebo: se reentrena el finalista con los retornos
+          futuros barajados. Si el rank-IC real supera al placebo con p-valor bajo, la señal
+          <strong>${above ? "está por encima del azar" : "no se distingue del azar"}</strong>.</p>`;
+      }
+      parts.push(`<details open><summary>Placebo (permutación de etiquetas)</summary>${body}</details>`);
+    }
+
+    const boot = rob.block_bootstrap;
+    const loyo = rob.leave_one_year_out || [];
+    if (boot || loyo.length) {
+      let body = "";
+      if (boot) {
+        const crossesZero = boot.ci_low <= 0 && boot.ci_high >= 0;
+        body += global.TFM.metricGrid([
+          { value: fmt(boot.mean, 3), label: "rank-IC medio", hintKey: "rank_ic" },
+          { value: `[${fmt(boot.ci_low, 3)}, ${fmt(boot.ci_high, 3)}]`, label: "IC 95 % (bootstrap por bloques)",
+            cls: crossesZero ? "neg" : "pos" },
+          { value: String(boot.n_cohorts ?? "—"), label: "cohortes" },
+          { value: String(boot.block_size ?? "—"), label: "tamaño de bloque" },
+        ]);
+        if (crossesZero) {
+          body += `<p class="muted" style="margin-top:8px">El intervalo de confianza cruza el cero: la señal es
+            <strong>estadísticamente indistinguible de cero</strong> (no hay evidencia robusta de aprendizaje).</p>`;
+        }
+      }
+      if (loyo.length) {
+        const negatives = loyo.filter((r) => (r.rank_ic_without_it ?? 0) < 0).length;
+        body += `<p class="muted" style="margin-top:8px">Leave-one-year-out: el rank-IC es negativo al excluir
+          ${negatives} de ${loyo.length} años (mide si el resultado depende de un solo año).</p>` +
+          table(loyo, { columns: ["excluded_year", "rank_ic_without_it", "delta_vs_full", "n_cohorts"],
+            labels: { excluded_year: "Año excluido", rank_ic_without_it: "rank-IC sin él", delta_vs_full: "Δ vs total", n_cohorts: "Cohortes" },
+            decimals: 4, sortable: true });
+      }
+      parts.push(`<details open><summary>Robustez multi-era (bootstrap + leave-one-year-out)</summary>${body}</details>`);
+    }
+
+    const rp = rob.random_portfolio;
+    if (rp) {
+      let body;
+      if (rp.status) {
+        body = `<p class="muted">${escapeHtml(String(rp.status))}</p>`;
+      } else {
+        const beats = !!rp.beats_random_convincingly;
+        body = global.TFM.metricGrid([
+          { value: pct(rp.model_cagr, 2), label: "CAGR del modelo", hintKey: "cagr" },
+          { value: pct(rp.random_cagr_mean, 2), label: "CAGR aleatorio (media)" },
+          { value: pct(rp.random_cagr_p95, 2), label: "CAGR aleatorio (p95)" },
+          { value: fmt(rp.model_percentile, 3), label: "percentil del modelo", cls: beats ? "pos" : "neg" },
+          { value: String(rp.n_simulations ?? "—"), label: "simulaciones" },
+        ]) + `<p class="muted" style="margin-top:8px">Compara la cartera del finalista contra carteras aleatorias
+          del mismo tamaño. El modelo <strong>${beats ? "bate al azar de forma convincente" : "no bate al azar de forma convincente"}</strong>
+          (percentil > 0.95).</p>`;
+      }
+      parts.push(`<details open><summary>Carteras aleatorias (random-portfolio)</summary>${body}</details>`);
+    }
+
+    const econCols = ["cagr_difference", "information_ratio", "beat_rate", "max_drawdown"];
+    const econLabels = { cagr_difference: "CAGR vs bench", information_ratio: "Info Ratio",
+      beat_rate: "bate SPY", max_drawdown: "Max drawdown" };
+
+    const cost = d.cost_stress || [];
+    if (cost.length) {
+      const cols = ["commission_bps", "slippage_bps", ...econCols];
+      parts.push(`<details><summary>Estrés de costes · ${cost.length} escenarios</summary>
+        <p class="muted" style="margin-top:8px">Cada par comisión × slippage se reporta sobre el finalista; los costes
+          se <strong>estresan, no se optimizan</strong>: ninguno altera la configuración recomendada.</p>
+        ${table(cost, { columns: cols,
+          labels: { commission_bps: "Comisión (bps)", slippage_bps: "Slippage (bps)", ...econLabels },
+          decimals: 3, sortable: true })}</details>`);
+    }
+
+    const port = d.portfolio_stress || [];
+    if (port.length) {
+      const cols = ["axis", "scenario", ...econCols];
+      parts.push(`<details><summary>Estrés de reglas de cartera · ${port.length} escenarios</summary>
+        <p class="muted" style="margin-top:8px">Ejes mecánicos (drift, expulsión, rotación) barridos aislados sobre el
+          finalista; se <strong>estresan, no se seleccionan</strong>.</p>
+        ${table(port, { columns: cols,
+          labels: { axis: "Eje", scenario: "Escenario", ...econLabels },
+          decimals: 3, sortable: true })}</details>`);
+    }
+
+    if (!parts.length) return `<p class="muted">Este estudio no incluyó pruebas de robustez.</p>`;
+    return `<h4 style="margin-top:4px">Robustez, placebo y estrés</h4>
+      <p class="muted">Evidencia sobre si el modelo aprende de verdad y se sostiene bajo costes y reglas de cartera
+        distintas. Nada de esto selecciona configuración.</p>${parts.join("")}`;
   }
 
   function decisionBlock(decision) {
@@ -242,6 +376,7 @@
         <span id="study-live-log-status" class="muted" style="margin-left:8px">Conectando…</span>
         <pre id="study-live-log-output" class="mono" style="height:26em; overflow:auto; margin:10px 0 0; white-space:pre-wrap">Esperando…</pre>
       </section>
+      <section id="study-robustez-panel" class="panel" hidden style="margin-top:12px"></section>
       <div id="study-results-content">
         ${decisionBlock(data.decision)}
         <h4 style="margin-top:18px">Comparativa por fases</h4>
@@ -249,7 +384,7 @@
         <div id="study-phases">${phaseComparison(data.comparison)}</div>
         ${performanceBlock(runs)}
       </div>`;
-    installLiveActions(studyId, resumable, m);
+    installLiveActions(studyId, resumable, m, data.decision);
     const resume = document.getElementById("resume-full-study");
     if (resume) resume.addEventListener("click", async () => {
       if (!confirm("Se verificarán y reutilizarán los runs completos; los incompletos se repetirán. ¿Continuar?")) return;
@@ -259,7 +394,7 @@
           study: { name: m.name || "optimization-official", hypothesis: m.hypothesis || "", resume_study_id: studyId },
         });
         resume.disabled = true;
-        resume.textContent = `Reanudación ${job.job_id} iniciada`;
+        resume.textContent = `Reanudación iniciada`;
       } catch (error) {
         alert(error.message);
       }

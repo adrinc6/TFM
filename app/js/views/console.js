@@ -110,11 +110,15 @@
 
   function studyForm() {
     return `<h3>Nuevo study</h3>
-      <p class="muted">Selecciona únicamente las variables y valores permitidos. La consola calculará el diseño dirigido antes de ejecutar.</p>
+      <p class="muted">Selecciona únicamente las variables y valores permitidos. La consola calculará el diseño antes de ejecutar.</p>
       <div class="formgrid">
         <label class="field">Nombre<input id="study-name" value="study-exploratorio"></label>
-        <label class="field">Tipo<select id="study-kind"><option value="exploratory">Exploratorio</option><option value="ablation">Ablation</option><option value="custom_optimization">Optimización personalizada</option></select></label>
-        <label class="field">Modo<select id="study-mode"><option>full</option><option>agents</option></select></label>
+        <label class="field">Búsqueda de modelo
+          <select id="study-search-mode" onchange="TFM.views.console.updateStudyCount()">
+            <option value="directed">Dirigida (ejes aislados + greedy, como full study)</option>
+            <option value="cartesian">Producto cartesiano (todas las combinaciones marcadas)</option>
+          </select>
+        </label>
         <label class="field">Hipótesis<textarea id="study-description"></textarea></label>
       </div>
       <label class="field checkbox"><input type="checkbox" id="study-robustness"> Incluir robustez completa (placebo por permutación + carteras aleatorias; reentrena el finalista, más lento)</label>
@@ -123,6 +127,7 @@
       <section class="parameter-group"><h4>Fase 4 · Construcción de cartera</h4>${studyControls(false, S().studyPortfolioOptions)}</section>
       ${profileStudySettings()}
       ${stressStudySettings()}
+      <div id="study-fixed-container">${unselectedStudyAxesSettings()}</div>
       <div id="study-count" class="notice"></div>
       <div class="actions"><button class="button primary" onclick="TFM.views.console.launchStudy()">Previsualizar y ejecutar</button></div>`;
   }
@@ -131,6 +136,20 @@
     const entries = Object.entries(S().fullStudyFixedSettings || {});
     if (!entries.length) return "";
     return `<details class="parameter-group"><summary>Parámetros fijos y visibles</summary><div class="study-groups">${entries.map(([key, value]) =>
+      `<div class="study-variable"><strong>${escapeHtml(labelFor(key))}</strong><label class="choice"><input type="checkbox" checked disabled>Fijo: ${escapeHtml(displayValue(value))}</label></div>`
+    ).join("")}</div></details>`;
+  }
+
+  // Variables barribles del catálogo que el usuario NO marcó en study: se muestran de solo
+  // lectura con su valor por defecto, igual que "Parámetros fijos" en full study.
+  function unselectedStudyAxesSettings() {
+    const source = S().studyOptions || {};
+    const selected = new Set(Object.keys(selectedStudyVariables()));
+    const entries = Object.keys(source)
+      .filter((name) => !selected.has(name))
+      .map((name) => [name, S().defaults[name]]);
+    if (!entries.length) return "";
+    return `<details class="parameter-group"><summary>Otras variables del catálogo, no barridas (fijas al valor por defecto)</summary><div class="study-groups">${entries.map(([key, value]) =>
       `<div class="study-variable"><strong>${escapeHtml(labelFor(key))}</strong><label class="choice"><input type="checkbox" checked disabled>Fijo: ${escapeHtml(displayValue(value))}</label></div>`
     ).join("")}</div></details>`;
   }
@@ -217,12 +236,31 @@
     return { phase1, phase2: 1 + axes, total: phase1 + 1 + axes };
   }
 
+  function cartesianCount(variables) {
+    const modelKeys = new Set(Object.keys(S().studyModelOptions || {}));
+    let combinations = 1;
+    Object.entries(variables).forEach(([key, values]) => {
+      if (modelKeys.has(key)) combinations *= values.length;
+    });
+    return combinations;
+  }
+
+  function searchMode() {
+    return el("study-search-mode")?.value || "directed";
+  }
+
   function updateStudyCount() {
     const node = el("study-count");
     if (!node) return;
     const variables = selectedStudyVariables();
     if (!Object.keys(variables).length) {
       node.textContent = "Selecciona al menos una variable.";
+      return;
+    }
+    if (searchMode() === "cartesian") {
+      const combinations = cartesianCount(variables);
+      const warn = combinations > 500 ? " ⚠️ Por encima del límite (500): el servidor rechazará el envío." : "";
+      node.textContent = `Producto cartesiano (Fases 1–2): ${combinations} combinaciones de las variables de modelo marcadas. Después se ejecutan afinado, cartera, perfiles y validación igual que en el modo dirigido.${warn}`;
       return;
     }
     const n = directedCount(variables);
@@ -247,13 +285,16 @@
     try {
       const variables = selectedStudyVariables();
       if (!Object.keys(variables).length) throw new Error("Selecciona al menos una variable.");
-      const n = directedCount(variables);
-      if (!confirm(`Fases 1–2: aproximadamente ${n.total} runs. Después se añaden afinado, cartera, perfiles y validación. ¿Continuar?`)) return;
+      const mode = searchMode();
+      const confirmMsg = mode === "cartesian"
+        ? `Producto cartesiano: ${cartesianCount(variables)} combinaciones de modelo. Después se añaden afinado, cartera, perfiles y validación. ¿Continuar?`
+        : `Fases 1–2: aproximadamente ${directedCount(variables).total} runs. Después se añaden afinado, cartera, perfiles y validación. ¿Continuar?`;
+      if (!confirm(confirmMsg)) return;
       const job = await api("/api/study", {
         settings: S().defaults,
-        mode: el("study-mode").value,
         variables,
-        study: { name: el("study-name").value, kind: el("study-kind").value, description: el("study-description").value, include_robustness: el("study-robustness").checked },
+        search_mode: mode,
+        study: { name: el("study-name").value, description: el("study-description").value, include_robustness: el("study-robustness").checked },
       });
       notify(`Study ${job.job_id} iniciado.`);
       global.TFM.loadJobsAndRuns();
@@ -327,9 +368,13 @@
           <p class="notice">Las ejecuciones <em>experimentales</em> y los studies exploratorios no eligen una configuración oficial.</p>
         </section>
       </div>`;
-    // Recalcula el diseño dirigido al marcar/desmarcar variables
+    // Recalcula el diseño y los fijos al marcar/desmarcar variables del study
     container.addEventListener("change", (event) => {
-      if (event.target.matches("[data-study]")) updateStudyCount();
+      if (event.target.matches("[data-study]")) {
+        updateStudyCount();
+        const fixedContainer = el("study-fixed-container");
+        if (fixedContainer) fixedContainer.innerHTML = unselectedStudyAxesSettings();
+      }
     });
     refreshJobs();
   }

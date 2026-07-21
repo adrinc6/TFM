@@ -25,6 +25,7 @@ Hay cinco agentes (`quality`, `value`, `growth`, `momentum`, `risk`), tres famil
 3. No elegir semillas ni costes favorables: son robustez y estrés, respectivamente.
 4. Conservar resultados negativos, ablaciones y manifiestos para reproducibilidad.
 5. Cualquier cambio de hipótesis, datos, etiquetas, modelos o cartera requiere instrucción explícita del usuario.
+6. Actualizar siempre la documentación relativa a los cambios aplicados.
 
 ## Desarrollo
 

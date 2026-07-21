@@ -102,6 +102,13 @@
     categorical() {
       return [cssVar("--cat-1"), cssVar("--cat-2"), cssVar("--cat-3"), cssVar("--cat-4")];
     },
+    // Variante de 5 para gráficas con los 5 agentes. NO es categorical()+cat-5 en su orden natural:
+    // el azul (cat-5) choca con el malva (cat-4) si quedan adyacentes, así que este orden los separa
+    // (teal, oro, malva, terracota, azul). Validado CVD-safe sobre el fondo oscuro (ΔE normal ≥ 15,
+    // CVD ≥ 8). Se usa aparte para no repintar el resto de gráficas que dependen de categorical().
+    categorical5() {
+      return [cssVar("--cat-2"), cssVar("--cat-1"), cssVar("--cat-4"), cssVar("--cat-3"), cssVar("--cat-5")];
+    },
     get accent() { return cssVar("--series-4"); },
   };
 

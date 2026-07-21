@@ -80,6 +80,13 @@ main.app-main {
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: var(--gap);
 }
+/* Tarjetas de puntuación (5 agentes + Meta): compactas, para que las 6 quepan en una fila y se
+   adapten al ancho disponible sin que Meta caiga a otra línea. */
+.score-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--gap);
+}
 .grid {
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;
@@ -99,6 +106,15 @@ main.app-main {
 .card h3, .panel h3 { margin: 0 0 8px; font-size: 15px; }
 .panel > h3:first-child { margin-top: 0; }
 .card p { color: var(--muted); margin: 6px 0; }
+
+/* Detalle por agente: tarjetas a lo ANCHO, una sobre otra (no en rejilla). Cada una ocupa todo el
+   ancho disponible y su tabla se ve completa. */
+.agent-cards { display: flex; flex-direction: column; gap: var(--gap); }
+.agent-card { width: 100%; padding: calc(var(--pad) * 1.15); }
+.agent-card > summary { cursor: pointer; font-size: 15px; padding: 2px 0; }
+.agent-card[open] > summary { margin-bottom: 8px; }
+.agent-card .table-wrap { margin-top: 6px; }
+.agent-card table.data { width: 100%; }
 
 /* --- Tablas --- */
 .table-wrap { overflow-x: auto; }

@@ -147,11 +147,17 @@
         labels: rows.map((r) => r.year),
         datasets: [{
           label: "Alfa",
-          data: rows.map((r) => r.alpha),
+          data: rows.map((r) => r.alpha * 100),
           backgroundColor: rows.map((r) => (r.alpha >= 0 ? P.pos : P.neg)),
         }],
       },
-      options: { scales: { x: gridScale(), y: gridScale() }, plugins: { legend: { display: false } } },
+      options: {
+        scales: { x: gridScale(), y: gridScale({ ticks: { callback: (v) => `${v}%` } }) },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: (c) => `${c.parsed.y.toFixed(2)}%` } },
+        },
+      },
     });
   }
 
@@ -161,17 +167,21 @@
     if (!rows.length) return;
     const agents = [...new Set(rows.map((r) => r.agent))];
     const dates = [...new Set(rows.map((r) => String(r.prediction_date).slice(0, 10)))].sort();
-    const datasets = agents.map((agent, i) => {
+    // Cada agente (salvo meta_final) recibe un color categórico MUY distinto (categorical5, CVD-safe)
+    // para que las líneas no se confundan; el meta destaca aparte en tinta primaria y trazo grueso.
+    const cat = P.categorical5();
+    const agentIndex = new Map(agents.filter((a) => a !== "meta_final").map((a, i) => [a, i]));
+    const datasets = agents.map((agent) => {
       const byDate = new Map(rows.filter((r) => r.agent === agent).map((r) => [String(r.prediction_date).slice(0, 10), r.rank_ic]));
       const meta = agent === "meta_final";
       return {
         label: agent,
         data: dates.map((d) => (byDate.has(d) ? byDate.get(d) : null)),
-        // El meta destaca en oro y trazo grueso; los agentes individuales en gris.
-        borderColor: meta ? P.accent : agentColor(i),
+        borderColor: meta ? P.ink : cat[agentIndex.get(agent) % cat.length],
         backgroundColor: "transparent",
-        borderWidth: meta ? 2.8 : 1.5,
+        borderWidth: meta ? 2.8 : 1.6,
         pointRadius: 0,
+        pointHoverRadius: 4,
         tension: 0.1,
         spanGaps: true,
       };
@@ -180,8 +190,12 @@
       type: "line",
       data: { labels: dates, datasets },
       options: {
+        interaction: { mode: "index", intersect: false },
         scales: { x: gridScale({ ticks: { maxTicksLimit: 8 } }), y: gridScale() },
-        plugins: { legend: { display: true } },
+        plugins: {
+          legend: { display: true },
+          tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${c.parsed.y == null ? "—" : c.parsed.y.toFixed(3)}` } },
+        },
       },
     });
   }
@@ -192,7 +206,8 @@
     if (!rows.length) return;
     const agents = [...new Set(rows.map((r) => r.agent))];
     const dates = [...new Set(rows.map((r) => String(r.snapshot_date).slice(0, 10)))].sort();
-    const colors = P.categorical();
+    // Hasta 5 agentes: paleta de 5 con el azul separado del malva (categorical5). Con más, se cicla.
+    const colors = P.categorical5();
     const datasets = agents.map((agent, i) => {
       const byDate = new Map(rows.filter((r) => r.agent === agent).map((r) => [String(r.snapshot_date).slice(0, 10), r.weight]));
       return {
@@ -203,6 +218,7 @@
         backgroundColor: "transparent",
         borderWidth: 2,
         pointRadius: 0,
+        pointHoverRadius: 4,     // el punto aparece al pasar el ratón para leer el valor exacto
         tension: 0.1,
         spanGaps: true,
       };
@@ -210,7 +226,20 @@
     make(container, "Pesos del meta-agente en el tiempo", {
       type: "line",
       data: { labels: dates, datasets },
-      options: { scales: { x: gridScale({ ticks: { maxTicksLimit: 8 } }), y: gridScale() }, plugins: { legend: { display: true } } },
+      options: {
+        // Crosshair por fecha: al situarse en un punto el tooltip lista el peso de cada agente.
+        interaction: { mode: "index", intersect: false },
+        scales: { x: gridScale({ ticks: { maxTicksLimit: 8 } }), y: gridScale() },
+        plugins: {
+          legend: { display: true },
+          tooltip: {
+            callbacks: {
+              label: (c) => `${c.dataset.label}: ${(c.parsed.y * 100).toFixed(1)} %`,
+            },
+            itemSort: (a, b) => b.parsed.y - a.parsed.y,   // mayor peso arriba en el tooltip
+          },
+        },
+      },
     });
   }
 
@@ -302,24 +331,30 @@
     });
   }
 
-  // --- Histórico de puntuaciones de una acción por agente (calidad/momentum/valor/meta) ---
-  // `rows`: filas de agent_scores del ticker (una por snapshot) con columnas quality/momentum/
-  // value/meta_score. Cada agente es una serie con identidad → paleta categórica.
+  // --- Histórico de puntuaciones de una acción por agente (los 5 agentes + meta) ---
+  // `rows`: filas de agent_scores del ticker (una por snapshot) con columnas quality/value/growth/
+  // momentum/risk y meta_score. Los 5 agentes son identidades (paleta de 5); meta es la combinación,
+  // se dibuja aparte en tinta primaria y más gruesa para distinguirse de los agentes.
   function stockScoreHistory(container, rows, orders) {
     const list = (rows || []).slice().sort((a, b) => String(a.snapshot_date).localeCompare(String(b.snapshot_date)));
     if (!list.length) return;
     const labels = list.map((r) => String(r.snapshot_date).slice(0, 10));
-    const cat = P.categorical();
-    const fields = [
-      ["quality", "Calidad"], ["momentum", "Momentum"], ["value", "Valor"], ["meta_score", "Meta"],
+    const cat = P.categorical5();
+    // Los 5 agentes en orden fijo (identidad estable); meta va al final con estilo propio.
+    const agentFields = [
+      ["quality", "Calidad"], ["value", "Valor"], ["growth", "Crecimiento"],
+      ["momentum", "Momentum"], ["risk", "Riesgo"],
     ].filter(([key]) => list.some((r) => typeof r[key] === "number" && Number.isFinite(r[key])));
+    const fields = [...agentFields, ["meta_score", "Meta"]];
     const datasets = fields.map(([key, label], i) => ({
       label,
       data: list.map((r) => (typeof r[key] === "number" ? r[key] : null)),
-      borderColor: cat[i % cat.length],
+      // meta no es un agente: tinta primaria (no un color categórico) y línea más gruesa.
+      borderColor: key === "meta_score" ? P.ink : cat[i % cat.length],
       backgroundColor: "transparent",
       borderWidth: key === "meta_score" ? 2.6 : 1.6,
       pointRadius: 0,
+      pointHoverRadius: 4,
       tension: 0.1,
       spanGaps: true,
     }));

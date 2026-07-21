@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import itertools
 import json
 import logging
 import os
 import shutil
+import socket
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from contextlib import contextmanager
@@ -29,7 +31,7 @@ from module.runs.results_store import ResultsStore, canonical_json, execution_ha
 from module.scenarios.variables import COST_STRESS_CASES, FULL_STUDY_OPTIONS, FULL_STUDY_PHASE3_OPTIONS
 from module.runs.recycle import (cache_dir, cache_lock, publish as publish_recycle,
                                  restore as restore_recycle, stage_key, STAGE_FIELDS)
-from module.common.utils import setup_logging, write_json, write_parquet
+from module.common.utils import pid_alive, setup_logging, write_json, write_parquet
 
 log = logging.getLogger(__name__)
 
@@ -224,9 +226,9 @@ def execute_run(
         for stage in stages:
             log.info("Run %s: iniciando %s", run_id, stage)
             started = time.perf_counter()
-            output, recycled = _run_cached_stage(stage, runtime, agent_dir=agent_dir)
+            output, recycled, key = _run_cached_stage(stage, runtime, agent_dir=agent_dir)
             store.record_stage_timing(run_dir, stage, time.perf_counter() - started,
-                                      source="recycled" if recycled else "computed")
+                                      source="recycled" if recycled else "computed", stage_key=key)
             if stage == "agents":
                 agent_dir = output
         source = agent_dir or (_latest_agent_run(runtime.processed_output_dir) if mode == "backtest" else None)
@@ -252,15 +254,19 @@ def execute_study(
     *,
     study_payload: Mapping[str, Any],
     variables: Mapping[str, list[Any]],
-    mode: str = "full",
     store: ResultsStore | None = None,
+    search_mode: str = "directed",
 ) -> str:
     """Study completo: mismo ciclo que la optimización oficial, limitado a las variables marcadas.
 
     Las variables del usuario se reparten en ejes de modelo (barridos en Fase 1/2 por rank-IC) y
-    ejes de cartera (optimizados al final por re-backtest). ``mode`` se ignora: el ciclo siempre
-    entrena y backtestea. La robustez completa (placebo por permutación + carteras aleatorias) solo
-    se ejecuta si el usuario la marca (``study.include_robustness``); si no, solo bootstrap + LOYO.
+    ejes de cartera (optimizados al final por re-backtest). El ciclo siempre entrena y backtestea.
+    La robustez completa (placebo por permutación + carteras aleatorias) solo se ejecuta si el
+    usuario la marca (``study.include_robustness``); si no, solo bootstrap + LOYO.
+
+    ``search_mode``: ``"directed"`` (por defecto) es la optimización dirigida tipo full_study
+    (ejes aislados + greedy top-2). ``"cartesian"`` prueba todas las combinaciones de las variables
+    de modelo marcadas por el usuario, sin asumir independencia entre ejes.
     """
     phase3_vars = {axis: list(values) for axis, values in variables.items()
                    if axis in FULL_STUDY_PHASE3_OPTIONS}
@@ -274,13 +280,13 @@ def execute_study(
         "description": str(study_payload.get("description", "")),
         "hypothesis": str(study_payload.get("hypothesis", "")).strip(),
         "tags": list(study_payload.get("tags", [])),
-        "variables": dict(variables), "strategy": "unified_full_cycle",
+        "variables": dict(variables), "strategy": "unified_full_cycle", "search_mode": search_mode,
         "selection_metric": "rank_ic_oos", "selection_until_year": 2024, "reserved_years": [2025, 2026],
     }
     return run_optimization(settings, model_vars=model_vars, portfolio_vars=portfolio_vars,
                             stress_vars=stress_vars, payload=payload, store=store,
                             include_full_robustness=include_robustness,
-                            hyperparameter_options=phase3_vars)
+                            hyperparameter_options=phase3_vars, search_mode=search_mode)
 
 
 def execute_official_optimization(
@@ -321,11 +327,12 @@ def _full_study_lock(store: ResultsStore):
     if lock_path.exists():
         try:
             owner = int(lock_path.read_text(encoding="utf-8").strip())
-            os.kill(owner, 0)
         except (OSError, ValueError):
-            lock_path.unlink(missing_ok=True)
+            lock_path.unlink(missing_ok=True)  # lock ilegible: huérfano, se reclama
         else:
-            raise RuntimeError(f"Ya hay un full study activo (PID {owner}).")
+            if pid_alive(owner):
+                raise RuntimeError(f"Ya hay un full study activo (PID {owner}).")
+            lock_path.unlink(missing_ok=True)  # el dueño murió: lock huérfano, se reclama
     descriptor = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
     try:
         os.write(descriptor, str(os.getpid()).encode("ascii"))
@@ -348,6 +355,7 @@ def run_optimization(
     include_full_robustness: bool = False,
     resume_study_id: str | None = None,
     hyperparameter_options: Mapping[str, list[Any]] | None = None,
+    search_mode: str = "directed",
 ) -> str:
     """Ciclo completo unificado que comparten study y optimización oficial.
 
@@ -355,51 +363,95 @@ def run_optimization(
     hiperparámetros → run final → fase de cartera (re-backtest por criterio económico) → 8
     perfiles → robustez → validación reservada. La selección de modelo es siempre por rank-IC OOS;
     los ejes de cartera se eligen por métrica económica porque no alteran el aprendizaje.
+
+    ``search_mode="cartesian"`` sustituye únicamente Fase 1+2 por el producto cartesiano completo
+    de ``model_vars`` (todas las combinaciones, no solo ejes aislados); afinado de hiperparámetros,
+    cartera y perfiles siguen siendo greedy exactamente igual que en modo ``"directed"``.
     """
+    if search_mode not in ("directed", "cartesian"):
+        raise ValueError(f"search_mode desconocido: {search_mode!r}")
     store = store or ResultsStore()
     # Todas las alternativas del study deben usar la misma ventana temporal. Se toma el máximo
     # lookback solicitado antes de materializar el dataset: evita construir desde 1990 cuando el
     # primer entrenamiento posible es 2003 (2015 menos 12 años), sin recortar ninguna cohorte.
     settings = _with_study_data_start(settings, model_vars)
     payload = {**payload, "effective_data_start_date": settings.data_start_date}
+    # Identidad del proceso dueño: permite al dashboard detectar un study "running" cuyo proceso
+    # murió (kill/crash) y reportarlo como interrumpido, ya que el status no se auto-corrige.
+    owner = {"owner_pid": os.getpid(), "owner_host": socket.gethostname()}
     if resume_study_id:
         study_id, study_dir = store.resume_study(resume_study_id)
+        store.update_study_status(study_id, "running", **owner)
     else:
         study_id, study_dir = store.create_study(dict(payload))
-        store.update_study_status(study_id, "running", current_phase="1", completed_scenarios=0)
+        store.update_study_status(study_id, "running", current_phase="1", completed_scenarios=0, **owner)
     name = str(payload.get("name", "study"))
     description = str(payload.get("description", ""))
     tags = list(payload.get("tags", []))
 
-    # --- Fase 1: cada eje de modelo aislado sobre el baseline ---
-    # Un escenario que no entrena (p.ej. ventana muy corta o cadencia que deja pocas filas) se
-    # salta y se registra, sin abortar el estudio: con un barrido amplio es esperable que algunas
-    # combinaciones extremas no sean viables.
-    phase1_rows: list[dict[str, Any]] = []
-    phase1_specs = _isolated_specs(settings, model_vars)
-    phase1_results, skipped = _parallel_phase1_specs(
-        phase1_specs, settings, store, study_id, name, description, tags,
-    )
-    for spec, run_id in phase1_results:
-        if run_id is None:
-            continue
-        phase1_rows.append({"phase": "1", "scenario": spec["name"], "axis": spec.get("axis"),
-                            "overrides": spec["overrides"], "run_id": run_id,
-                            **spec["overrides"], **_summary_for_run(store, run_id)})
-    phase1 = pd.DataFrame(phase1_rows)
-    if phase1.empty:
-        raise RuntimeError(
-            "Ningún escenario de Fase 1 fue viable (todos fallaron al entrenar). "
-            f"Escenarios omitidos: {len(skipped)}. Revisa los valores barridos en STUDY_OPTIONS.")
-    store.update_study_status(study_id, "running", current_phase="2", completed_scenarios=len(phase1_rows))
-    log.info("Fase 1 completada: %d válidos, %d omitidos. Iniciando Fase 2 greedy.", len(phase1_rows), len(skipped))
+    if search_mode == "cartesian":
+        # --- Modo cartesiano: todas las combinaciones de las variables de modelo marcadas ---
+        # Sustituye Fase 1 (aislado) + Fase 2 (greedy) por un único barrido exhaustivo. Sin
+        # abstracciones de fase intermedias: se reporta como "phase": "cartesian" y el ganador se
+        # elige por la misma clave de estabilidad que usa el resto del study.
+        cartesian_specs = _cartesian_specs(settings, model_vars)
+        cartesian_rows: list[dict[str, Any]] = []
+        skipped: list[dict[str, Any]] = []
+        for spec in cartesian_specs:
+            run_id = _safe_scenario_run(
+                store, replace(settings, **spec["overrides"]), study_id=study_id,
+                label=f"{name} · Cartesiano · {spec['name']}", description=description,
+                tags=[*tags, "cartesian"], grid_definition={"phase": "cartesian", "overrides": spec["overrides"]},
+                skipped=skipped, scenario=spec["name"])
+            if run_id is None:
+                continue
+            cartesian_rows.append({"phase": "cartesian", "scenario": spec["name"], "axis": None,
+                                   "overrides": spec["overrides"], "run_id": run_id,
+                                   **spec["overrides"], **_summary_for_run(store, run_id)})
+        phase1 = pd.DataFrame(cartesian_rows)
+        if phase1.empty:
+            raise RuntimeError(
+                "Ningún escenario del producto cartesiano fue viable (todos fallaron al entrenar). "
+                f"Escenarios omitidos: {len(skipped)}. Revisa los valores barridos.")
+        best = _stable_best(phase1)
+        model_overrides = dict(best.get("overrides") or {}) if best else {}
+        phase1_decision = {"mode": "cartesian", "chosen": best.get("scenario") if best else None,
+                           "overrides": model_overrides}
+        phase2 = pd.DataFrame([])
+        store.update_study_status(study_id, "running", current_phase="3",
+                                  completed_scenarios=len(cartesian_rows))
+        log.info("Barrido cartesiano completado: %d válidos, %d omitidos. Iniciando Fase 3.",
+                 len(cartesian_rows), len(skipped))
+    else:
+        # --- Fase 1: cada eje de modelo aislado sobre el baseline ---
+        # Un escenario que no entrena (p.ej. ventana muy corta o cadencia que deja pocas filas) se
+        # salta y se registra, sin abortar el estudio: con un barrido amplio es esperable que algunas
+        # combinaciones extremas no sean viables.
+        phase1_rows: list[dict[str, Any]] = []
+        phase1_specs = _isolated_specs(settings, model_vars)
+        phase1_results, skipped = _parallel_phase1_specs(
+            phase1_specs, settings, store, study_id, name, description, tags,
+        )
+        for spec, run_id in phase1_results:
+            if run_id is None:
+                continue
+            phase1_rows.append({"phase": "1", "scenario": spec["name"], "axis": spec.get("axis"),
+                                "overrides": spec["overrides"], "run_id": run_id,
+                                **spec["overrides"], **_summary_for_run(store, run_id)})
+        phase1 = pd.DataFrame(phase1_rows)
+        if phase1.empty:
+            raise RuntimeError(
+                "Ningún escenario de Fase 1 fue viable (todos fallaron al entrenar). "
+                f"Escenarios omitidos: {len(skipped)}. Revisa los valores barridos en STUDY_OPTIONS.")
+        store.update_study_status(study_id, "running", current_phase="2", completed_scenarios=len(phase1_rows))
+        log.info("Fase 1 completada: %d válidos, %d omitidos. Iniciando Fase 2 greedy.", len(phase1_rows), len(skipped))
 
-    # --- Fase 2: greedy incremental con top-2 por eje (sin producto cartesiano) ---
-    phase2_rows, model_overrides, phase1_decision = _greedy_phase2(
-        phase1, model_vars, settings, store, study_id, name=name, description=description, tags=tags)
-    phase2 = pd.DataFrame(phase2_rows)
-    store.update_study_status(study_id, "running", current_phase="3")
-    log.info("Fase 2 completada: %d evaluaciones. Iniciando Fase 3.", len(phase2_rows))
+        # --- Fase 2: greedy incremental con top-2 por eje (sin producto cartesiano) ---
+        phase2_rows, model_overrides, phase1_decision = _greedy_phase2(
+            phase1, model_vars, settings, store, study_id, name=name, description=description, tags=tags)
+        phase2 = pd.DataFrame(phase2_rows)
+        store.update_study_status(study_id, "running", current_phase="3")
+        log.info("Fase 2 completada: %d evaluaciones. Iniciando Fase 3.", len(phase2_rows))
 
     # --- Fase 3: afinado de hiperparámetros sobre el ganador de modelo ---
     hyper_rows, final_model_overrides = _hyperparameter_phase(
@@ -556,6 +608,27 @@ def _isolated_specs(settings: Settings, variables: Mapping[str, list[Any]]) -> l
                 safe_name = str(value).replace(" ", "_").replace(".", "_")
                 specs.append({"name": f"{mode}_{axis}_{safe_name}", "axis": axis,
                               "overrides": {"feature_weighting_mode": mode, axis: value}})
+    return specs
+
+
+def _cartesian_specs(settings: Settings, variables: Mapping[str, list[Any]]) -> list[dict[str, Any]]:
+    """Producto cartesiano completo de las variables de modelo marcadas por el usuario.
+
+    A diferencia de ``_isolated_specs`` (un eje distinto del baseline cada vez), aquí cada
+    combinación de valores se prueba junto al resto, sin asumir que los ejes son independientes.
+    El coste crece con el producto de tamaños: el llamante es responsable de acotar el número de
+    variables/valores marcados antes de invocarlo.
+    """
+    if not variables:
+        return [{"name": "baseline", "overrides": {}}]
+    axes = list(variables)
+    value_lists = [list(variables[axis]) for axis in axes]
+    specs: list[dict[str, Any]] = []
+    for combo in itertools.product(*value_lists):
+        overrides = dict(zip(axes, combo))
+        safe_name = "_".join(f"{axis}_{str(value).replace(' ', '_').replace('.', '_')}"
+                             for axis, value in overrides.items())
+        specs.append({"name": safe_name, "overrides": overrides})
     return specs
 
 
@@ -1116,25 +1189,27 @@ def _run_input_paths(settings: Settings) -> dict[str, Path]:
     return {name: raw / name for name in ("finnhub_metrics.parquet", "prices.parquet", "profiles.parquet", "report_dates.parquet")}
 
 
-def _run_cached_stage(stage: str, settings: Settings, *, agent_dir: Path | None = None) -> tuple[Path | None, bool]:
+def _run_cached_stage(stage: str, settings: Settings, *, agent_dir: Path | None = None) -> tuple[Path | None, bool, str | None]:
     """Ejecuta una etapa o restaura la misma transformación desde ``data/recycle``.
 
-    Devuelve ``(salida, reciclada)``: ``reciclada`` es True si la etapa se restauró de la caché en
-    lugar de recalcularse, para que la app pueda distinguir el coste real del reciclado.
+    Devuelve ``(salida, reciclada, clave)``: ``reciclada`` es True si la etapa se restauró de la
+    caché en lugar de recalcularse, para que la app pueda distinguir el coste real del reciclado;
+    ``clave`` es la ``stage_key`` usada, para dejar constancia en el manifest de qué identidad de
+    reciclado tuvo esta etapa (solo depende de settings/inputs/código de esa etapa).
     """
     processed = settings.processed_output_dir
     if stage == "download":
         STAGE_HANDLERS[stage](settings)
-        return None, False
+        return None, False, None
     inputs, outputs, destination = _cache_contract(stage, processed, agent_dir=agent_dir, settings=settings)
     key = stage_key(stage, settings, inputs)
     if restore_recycle(stage, key, destination):
         log.info("Reciclaje %s: restaurada clave %s", stage, key[:12])
-        return (_cached_agent_dir(processed, key) if stage == "agents" else agent_dir), True
+        return (_cached_agent_dir(processed, key) if stage == "agents" else agent_dir), True, key
     with cache_lock(stage, key):
         if restore_recycle(stage, key, destination):
             log.info("Reciclaje %s: restaurada tras espera %s", stage, key[:12])
-            return (_cached_agent_dir(processed, key) if stage == "agents" else agent_dir), True
+            return (_cached_agent_dir(processed, key) if stage == "agents" else agent_dir), True, key
         if stage == "backtest":
             if agent_dir is None:
                 raise RuntimeError("No se puede ejecutar backtest sin el agente exacto del escenario.")
@@ -1143,7 +1218,7 @@ def _run_cached_stage(stage: str, settings: Settings, *, agent_dir: Path | None 
             STAGE_HANDLERS[stage](settings)
         publish_recycle(stage, key, outputs(), settings)
     log.info("Reciclaje %s: publicada clave %s", stage, key[:12])
-    return (_latest_agent_run(processed) if stage == "agents" else agent_dir), False
+    return (_latest_agent_run(processed) if stage == "agents" else agent_dir), False, key
 
 
 def _cached_agent_dir(processed: Path, key: str) -> Path:

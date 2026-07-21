@@ -33,7 +33,7 @@ def test_mechanical_portfolio_rules_are_stressed_not_optimized() -> None:
     """drift/expulsión/rotación son reglas de fricción: se estresan, no se optimizan por IR."""
     variables = {
         "target_size": [5, 10],                    # cartera optimizable
-        "rebalance_drift_tolerance": [1.0, 2.5],   # cartera mecánica -> estrés
+        "rebalance_drift_tolerance": [0.20, 0.35],  # cartera mecánica -> estrés
         "min_hold_percentile": [60, 80],           # cartera mecánica -> estrés
         "rotation_edge_percentiles": [5, 15],      # cartera mecánica -> estrés
     }
@@ -92,6 +92,25 @@ def test_full_study_sweep_has_no_snapshot_day() -> None:
     assert "snapshot_day" not in STUDY_OPTIONS
     assert "snapshot_day" not in FULL_STUDY_OPTIONS
     assert "execution_lag_days" in FULL_STUDY_OPTIONS
+
+
+def test_ablation_lists_are_homogeneous_no_privileged_subset() -> None:
+    """Las ablaciones de bloques/agentes son solo el completo-menos-cada-uno y el completo: no hay un
+    subconjunto 'histórico' privilegiado (todos se tratan por igual)."""
+    from module.scenarios.variables import (AGENT_ABLATIONS, BLOCK_ABLATIONS, FULL_AGENTS,
+                                             FULL_FEATURE_BLOCKS, STUDY_OPTIONS)
+
+    for axis, full, ablations in (
+        ("enabled_feature_blocks", FULL_FEATURE_BLOCKS, BLOCK_ABLATIONS),
+        ("enabled_agents", FULL_AGENTS, AGENT_ABLATIONS),
+    ):
+        options = STUDY_OPTIONS[axis]
+        assert options == [*ablations, full]
+        # Cada ablación retira exactamente un elemento del completo; ninguna es un subconjunto suelto.
+        for ablation in ablations:
+            assert len(set(full) - set(ablation)) == 1
+        # No queda ningún subconjunto que no derive del completo (p. ej. el viejo trío de 3).
+        assert all(set(option) <= set(full) for option in options)
 
 
 def test_experimental_keeps_controls_that_study_does_not_optimize() -> None:

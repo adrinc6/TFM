@@ -85,7 +85,7 @@ Antes del ranking transversal, `metric_winsorization_percentile` puede recortar 
 
 La razón para separar agentes no es afirmar que los estilos sean independientes, sino convertir hipótesis económicas en componentes medibles. Una métrica puede alimentar más de un agente si la relación es defendible; la ablación posterior revela si esa redundancia aporta o no.
 
-El sistema prueba: catálogo completo, conjunto histórico de tres agentes y catálogo completo menos cada agente. Al retirar un agente se preservan los demás, por lo que la diferencia frente al baseline estima contribución incremental.
+El sistema prueba: catálogo completo y catálogo completo menos cada agente (sin subconjuntos privilegiados). Al retirar un agente se preservan los demás, por lo que la diferencia frente al baseline estima contribución incremental.
 
 ## 6. Familias de modelos, objetivos y ensembles
 
@@ -115,6 +115,8 @@ El meta-agente transforma scores de agentes a rangos por snapshot y los combina.
 - `rank_ic`: pesos proporcionales al Rank-IC positivo reciente de cada agente.
 - `regime`: parte de `rank_ic` y aplica una inclinación moderada de momentum/calidad según retorno previo de SPY.
 - `stacked_oos`: Ridge no negativa sobre scores OOS cerrados; requiere historia y recae en pesos iguales si no la hay.
+
+En `rank_ic` y `regime` se aplica al final un límite por agente de **10 %–50 %** con renormalización: mínimo universal (ningún agente baja del 10 %, aunque su Rank-IC reciente sea negativo) y tope 50 %. Así el meta siempre hace algo de caso a todos los agentes y no colapsa sobre uno solo. `equal` (ya 1/N) y `stacked_oos` (modelo aprendido) no se recortan.
 
 La decisión de introducir fallback explícito evita que un modo sofisticado invente pesos cuando no existe una muestra temporal suficiente para estimarlos.
 
@@ -159,7 +161,7 @@ Un eje entra en la combinación greedy únicamente si su mejor candidato supera 
 
 ### 9.5 Cartera, perfiles y costes
 
-Tras fijar modelo y meta-score, la fase de cartera ajusta el tamaño fijo, el percentil de mantenimiento y la ventaja de rotación por Information Ratio. Los pesos se derivan del `meta_rank` con una relación máxima 2:1 entre la primera y la última posición. No altera las predicciones, por lo que no tiene sentido seleccionarla por Rank-IC.
+Tras fijar modelo y meta-score, la fase de cartera ajusta el tamaño fijo, el percentil de mantenimiento y la ventaja de rotación por Information Ratio. Los pesos siguen una escala lineal min-max **dentro de la cartera** sobre el `meta_score` crudo: el mejor de los seleccionados pesa el doble que el peor, lineal en medio. Se usa el `meta_score` y no el percentil global (`meta_rank`), porque los seleccionados son siempre el top-N y su percentil se apiña en 0,97–1,00, lo que aplanaría los pesos a ~1/N; el `meta_score` sí ordena a los seleccionados entre sí. No altera las predicciones, por lo que no tiene sentido seleccionarla por Rank-IC.
 
 Comisión y slippage ya no se incluyen como ejes optimizables. Se generan las nueve combinaciones de 0/5/10 bps de comisión y 5/10/20 bps de slippage como `cost_stress`. La conclusión debe ser robusta a costes plausibles, no depender del caso más barato.
 
@@ -255,8 +257,8 @@ No se barre `execution_year` ni `execution_quarter`: desplazarlos sería buscar 
 
 | Variable | Qué modifica | Baseline | Valores que explora el full study |
 |---|---|---|---|
-| `enabled_feature_blocks` | Conjunto de bloques que llega a los agentes. | Los 11 bloques | Trío histórico (`quality_core`, `value_core`, `momentum_core`); catálogo completo; y catálogo completo menos uno de los 11 bloques en cada ablación. |
-| `enabled_agents` | Agentes que entregan score al meta-agente. | Los 5 agentes | Trío histórico (`quality`, `value`, `momentum`); los 5; y los 5 menos un agente en cada ablación. |
+| `enabled_feature_blocks` | Conjunto de bloques que llega a los agentes. | Los 11 bloques | Catálogo completo; y catálogo completo menos uno de los 11 bloques en cada ablación (sin subconjuntos privilegiados). |
+| `enabled_agents` | Agentes que entregan score al meta-agente. | Los 5 agentes | Los 5 agentes; y los 5 menos un agente en cada ablación (sin subconjuntos privilegiados). |
 | `enabled_model_families` | Familias disponibles dentro de cada agente. | LightGBM + Elastic Net + CatBoost | Solo LightGBM; LightGBM + Elastic Net; las tres familias. |
 | `intra_agent_ensemble_mode` | Cómo se combinan familias dentro de un agente. | `rank_ic_weighted` | `single`, `equal_rank`, `rank_ic_weighted` |
 | `feature_weighting_mode` | Política de uso o poda de variables. | `diagnostic_only` | `model_native`, `diagnostic_only`, `oos_stability_prune`, `regularized_linear_ensemble`, `block_gated` |
@@ -269,7 +271,7 @@ No se barre `execution_year` ni `execution_quarter`: desplazarlos sería buscar 
 
 Los parámetros cuyo nombre empieza por `feature_selection_` son **condicionales**: no se ejecutan como cambios aislados con `diagnostic_only`, pues entonces no tendrían efecto. El orquestador los liga a `oos_stability_prune` y a `block_gated`. De este modo cada run representa una hipótesis efectiva y no una variación nominal sin efecto en las predicciones.
 
-Los once bloques completos son: `quality_core`, `quality_efficiency`, `financial_strength`, `value_core`, `value_cashflow`, `growth_acceleration`, `fundamental_stability`, `momentum_core`, `momentum_trend`, `price_risk` y `market_liquidity`. Los cinco agentes son `quality`, `value`, `growth`, `momentum` y `risk`. La ablación de un bloque o agente significa retirarlo manteniendo todo el resto, no probarlo en solitario; esa diferencia es la que permite interpretar contribución incremental.
+Los once bloques completos son: `quality_core`, `quality_efficiency`, `financial_strength`, `value_core`, `value_cashflow`, `growth_acceleration`, `fundamental_stability`, `momentum_core`, `momentum_trend`, `price_risk` y `market_liquidity`. Los cinco agentes son `quality`, `value`, `growth`, `momentum` y `risk`, y cada bloque pertenece a un solo agente (partición disjunta). La ablación de un bloque o agente significa retirarlo manteniendo todo el resto, no probarlo en solitario; esa diferencia es la que permite interpretar contribución incremental.
 
 ### 14.4 Artefactos y ventanas técnicas
 
@@ -296,7 +298,7 @@ La neutralización no convierte al sector en una señal: elimina parcialmente di
 | `rotation_edge_percentiles` | Ventaja de percentil exigida a una candidata para sustituir la peor tenencia. | 10 | 5, 10, 15 |
 | `profile` | Salidas paralelas de estilo; no se optimiza un ganador. | `balanced` (meta puro) | `balanced`, `conservative`, `aggressive`, `value`, `quality`, `momentum`, `garp`, `contrarian` |
 
-**Tamaño fijo y pesos.** El full study barre `target_size` como eje simple. En cada snapshot se seleccionan las N acciones mejor situadas en `meta_rank`; los pesos son proporcionales a ese ranking efectivo, se limitan a una relación máxima 2:1 y se normalizan al 100 %.
+**Tamaño fijo y pesos.** El full study barre `target_size` como eje simple. En cada snapshot se seleccionan las N acciones mejor situadas en `meta_rank`; los pesos siguen una escala lineal min-max dentro de la cartera sobre el `meta_score` crudo (el mejor de los seleccionados pesa el doble que el peor) y se normalizan al 100 %. Se usa el `meta_score` porque el percentil global se apiña en el top y aplanaría los pesos. El rebalanceo es real: una posición solo se reajusta si su peso objetivo difiere del actual en al menos `rebalance_drift_tolerance` (25 % relativo); por debajo se congela y el presupuesto se reparte entre las que sí se mueven conservando las relaciones del target global.
 
 Estos ejes se ejecutan una vez elegida la especificación predictiva. Se comparan por Information Ratio calculado solo hasta 2024, con desempates de riesgo y estabilidad, y no se retropropagan al modelo. Los perfiles se ejecutan después y no participan en la elección.
 
@@ -312,7 +314,7 @@ Estos ejes se ejecutan una vez elegida la especificación predictiva. Se compara
 | `recency_halflife_years` | 3 | Convención estable para reducir grados de libertad. |
 | `neutralize_min_group` | 5 | Previene neutralizaciones degeneradas. |
 | `random_seed` | 42 | Fija reproducibilidad; no se busca la semilla más favorable. |
-| `rebalance_drift_tolerance` | 1,5 | Regla mecánica de rebalanceo, no señal predictiva. |
+| `rebalance_drift_tolerance` | 0,25 | Fracción mínima de cambio relativo a la posición para rebalancear (25 %); regla mecánica de rebalanceo, no señal predictiva. Por debajo, la posición se congela y no opera. |
 | `max_monthly_position_return` | 2,0 (+200 %) | Filtro de integridad frente a anomalías extremas de datos. |
 | `commission_bps` y `slippage_bps` | Caso base 5 y 10 bps | No son ejes de optimización. Se someten a los nueve pares 0/5/10 bps de comisión × 5/10/20 bps de slippage. |
 
@@ -488,7 +490,7 @@ Antes de ajustar, los factores se convierten a numéricos, se imputan cuando la 
 
 ### 21.2 Agentes y familias de modelo
 
-El catálogo construye las columnas efectivas de cada agente. `quality` recibe calidad, eficiencia, fortaleza, crecimiento y estabilidad; `value`, valoración y yields; `growth`, calidad, crecimiento y estabilidad; `momentum`, momentum, tendencia y parte de riesgo; `risk`, riesgo y liquidez. Una feature compartida es intencional y medible mediante ablación, no una lista duplicada oculta.
+El catálogo construye las columnas efectivas de cada agente, y **cada feature pertenece a un solo agente** (agentes ortogonales, sin doble contabilidad). `quality` recibe rentabilidad, eficiencia y fortaleza financiera; `value`, valoración y yields; `growth`, aceleración de crecimiento y tendencia/estabilidad de mejora; `momentum`, momentum y tendencia de precio; `risk`, volatilidad/drawdown y liquidez. Antes varias features se asignaban a dos agentes (p. ej. `quality_core` a quality y growth), lo que correlacionaba sus señales (quality~growth 0,78; momentum~risk 0,57) y hacía que el meta colapsara sobre un bloque; separarlas elimina esa redundancia en origen.
 
 | Familia | Preproceso y ajuste | Salida |
 |---|---|---|
@@ -508,7 +510,7 @@ Los principales artefactos de esta etapa son `agent_scores.parquet`, `rank_ic_di
 
 ## 22. Meta-agente, diagnóstico de señal y métricas estadísticas
 
-El meta-agente rankea la salida de cada agente dentro de cada snapshot y crea `meta_rank`. `equal` asigna pesos iguales; `rank_ic` los estima de IC positivos previos; `regime` inclina moderadamente los pesos de calidad/momentum según el retorno anterior de SPY; `stacked_oos` ajusta Ridge no negativa sobre scores OOS con etiqueta cerrada. Todos registran pesos por fecha y, cuando falta evidencia suficiente, usan un fallback explícito.
+El meta-agente rankea la salida de cada agente dentro de cada snapshot y crea `meta_rank`. `equal` asigna pesos iguales; `rank_ic` los estima de IC positivos previos; `regime` inclina moderadamente los pesos de calidad/momentum según el retorno anterior de SPY; `stacked_oos` ajusta Ridge no negativa sobre scores OOS con etiqueta cerrada. En `rank_ic` y `regime`, tras el reparto se limita cada peso a 10 %–50 % con renormalización (mínimo universal por agente y tope 50 %), de modo que el meta no ignore del todo a ningún agente ni deje que uno domine; `equal` y `stacked_oos` no se recortan. Todos registran pesos por fecha y, cuando falta evidencia suficiente, usan un fallback explícito.
 
 `rank_ic_diagnostics.parquet` contiene la correlación de Spearman entre score y retorno futuro por agente y cohorte. Si score o target es constante, no se calcula correlación: se registra ausencia, con lo que se evita tanto un IC indefinido como el warning de pandas/Scipy. A partir de la serie de IC se calculan media, fracción positiva, desviación, ICIR, resúmenes por año, bootstrap por bloques y diferencias pareadas cuando corresponde.
 
@@ -523,7 +525,8 @@ La regla de selección del study usa la media de Rank-IC de `meta_final` hasta 2
 1. Expulsa posiciones que ya no cumplen la regla de mantenimiento.
 2. Completa siempre `target_size` con las mejores acciones por `meta_rank`.
 3. Vende obligatoriamente si una tenencia queda en o por debajo de `min_hold_percentile`; fuera de ese caso rota tantas posiciones como permita una ventaja de al menos `rotation_edge_percentiles`.
-4. Calcula pesos proporcionales al `meta_rank`, con una relación máxima 2:1, y los normaliza al 100 %.
+4. Calcula pesos con una escala lineal min-max dentro de la cartera sobre el `meta_score` crudo (el mejor de los seleccionados pesa el doble que el peor) y los normaliza al 100 %.
+5. Rebalancea solo las posiciones cuyo peso objetivo cambia al menos `rebalance_drift_tolerance` (25 % relativo a la posición); las demás se congelan y el presupuesto liberado se reparte entre las que se mueven conservando las relaciones del target global.
 
 Esto separa el ranking predictivo de la mecánica de trading. El perfil se aplica antes de estas reglas y sólo reordena acciones ya buenas según el meta-score. Los perfiles disponibles, sus pesos y el umbral común de bondad del 60 % están definidos explícitamente en `profiles.py`; no reentrenan ni consultan información futura.
 

@@ -21,6 +21,7 @@ def setup_logging(log_path: Path | None = None) -> None:
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        datefmt="%H:%M:%S",
         handlers=handlers,
         force=True,
     )
@@ -56,6 +57,17 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def pid_alive(pid: int) -> bool:
+    """True si el proceso ``pid`` sigue vivo en esta máquina.
+
+    Se usa para detectar locks huérfanos (su proceso dueño murió). En Windows ``os.kill(pid, 0)``
+    es inconsistente (lanza SystemError/WinError 87 para PIDs muertos), así que se delega en
+    ``psutil.pid_exists``, fiable en todas las plataformas.
+    """
+    import psutil
+    return psutil.pid_exists(pid)
 
 
 def write_json(payload: dict[str, Any], path: Path) -> None:

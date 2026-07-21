@@ -7,6 +7,22 @@ import pytest
 
 from environment import Settings
 from module.modeling.agents import _recency_weights, build_agent_scores
+from module.modeling.catalog import AGENT_NAMES, FEATURE_CATALOG
+
+
+def test_each_feature_belongs_to_exactly_one_agent() -> None:
+    """Los agentes son ortogonales: cada factor pertenece a UN solo agente (sin doble contabilidad
+    que introdujera correlación entre agentes). Ver module/modeling/catalog.py."""
+    by_agent: dict[str, set[str]] = {agent: set() for agent in AGENT_NAMES}
+    for spec in FEATURE_CATALOG:
+        assert len(spec.agents) == 1, f"{spec.name} pertenece a {spec.agents}; debe ser un solo agente"
+        by_agent[spec.agents[0]].add(spec.name)
+    # Ningún agente vacío y la unión cubre todo el catálogo, sin solapes.
+    for agent, features in by_agent.items():
+        assert features, f"el agente {agent} se quedó sin features"
+    union = set().union(*by_agent.values())
+    assert union == {spec.name for spec in FEATURE_CATALOG}
+    assert sum(len(f) for f in by_agent.values()) == len(union)  # disjunto
 
 
 def _train_four_years() -> pd.DataFrame:

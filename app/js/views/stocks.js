@@ -14,7 +14,7 @@
 
   const MODES = [
     ["cartera", "Cartera"],
-    ["puntuaciones", "Puntuaciones"],
+    ["puntuaciones", "Puntuaciones Agentes"],
     ["ratios", "Estudio de ratios"],
   ];
 
@@ -56,7 +56,13 @@
           <label class="field">Modo<select id="stk-mode" onchange="TFM.views.stocks.setMode()">
             ${MODES.map(([id, label]) => `<option value="${id}">${label}</option>`).join("")}
           </select></label>
-          <label class="field">Ratio<select id="stk-metric" disabled onchange="TFM.views.stocks.setMetric()">${metricOptions(meta.metrics)}</select></label>
+          <!-- Tercer control: cambia según el modo. En Cartera queda vacío (se conserva el hueco);
+               en Puntuaciones es el select de snapshot; en Ratios es el select de Ratio. -->
+          <label class="field" id="stk-third-field">
+            <span id="stk-third-label">Ratio</span>
+            <select id="stk-metric" disabled onchange="TFM.views.stocks.setMetric()">${metricOptions(meta.metrics)}</select>
+            <select id="stk-snapshot" style="display:none" onchange="TFM.views.stocks.onSnapshot()"></select>
+          </label>
         </div>
         <div id="stk-range-row" class="formgrid" style="display:none">
           <label class="field" id="stk-start-field">Inicio<input id="stk-start" type="date"
@@ -68,6 +74,7 @@
         </div>
       </section>
       <div id="stk-output" class="muted">Busca y selecciona una acción.</div>`;
+    syncThirdControl();   // el modo inicial es cartera: oculta el select de Ratio (deja el hueco)
     search();
   }
 
@@ -87,15 +94,27 @@
     load();
   }
 
+  // Ajusta el tercer control de la fila superior según el modo:
+  //  - cartera: nada (hueco vacío, la celda se conserva);
+  //  - puntuaciones: select de snapshot ("Puntuaciones Agentes");
+  //  - ratios: select de Ratio (Resumen + ratios).
+  function syncThirdControl() {
+    const label = el("stk-third-label"), metric = el("stk-metric"), snap = el("stk-snapshot");
+    if (!metric || !snap) return;
+    const isRatios = ctx.mode === "ratios";
+    const isPunt = ctx.mode === "puntuaciones";
+    metric.style.display = isRatios ? "" : "none";
+    metric.disabled = !isRatios;
+    metric.value = isRatios ? "__summary__" : "";
+    snap.style.display = isPunt ? "" : "none";
+    if (label) label.textContent = isRatios ? "Ratio" : (isPunt ? "Puntuaciones Agentes" : " ");
+  }
+
   function setMode() {
     ctx.mode = el("stk-mode").value;
-    const metric = el("stk-metric");
-    // El selector de ratio solo se activa en modo ratios; fuera de él se vacía. Al entrar en modo
-    // ratios se restablece a "Resumen" (valor por defecto que se carga automáticamente).
-    if (metric) {
-      metric.disabled = ctx.mode !== "ratios";
-      metric.value = ctx.mode === "ratios" ? "__summary__" : "";
-    }
+    syncThirdControl();
+    // La fila de fechas (Inicio/Fin/Recalcular) es SOLO del estudio de ratios. En puntuaciones el
+    // snapshot lo da el select de arriba; en cartera no hay fechas.
     const rangeRow = el("stk-range-row");
     if (rangeRow) rangeRow.style.display = ctx.mode === "ratios" ? "" : "none";
     syncRangeFields();
@@ -109,9 +128,15 @@
     if (ctx.ticker && el("stk-metric").value) load();
   }
 
-  // Cambiar la fecha Fin en modo Resumen recalcula el resumen al instante (Fin = el snapshot).
+  // Cambiar la fecha Fin recalcula al instante en el Resumen de ratios (Fin = el snapshot).
   function onEndDate() {
-    if (el("stk-metric").value === "__summary__" && ctx.ticker) load();
+    if (!ctx.ticker) return;
+    if (el("stk-metric").value === "__summary__") load();
+  }
+
+  // Cambiar el snapshot en modo Puntuaciones recarga las puntuaciones y porqués de esa fecha.
+  function onSnapshot() {
+    if (ctx.ticker && ctx.mode === "puntuaciones") load();
   }
 
   // Marca un campo de fecha como bloqueado (readonly + gris) o editable.
@@ -132,7 +157,7 @@
     if (!start.value) start.value = ctx.oosStart || ctx.fullStart || "";
     if (!end.value) end.value = ctx.oosEnd || ctx.fullEnd || "";
     const isSummary = el("stk-metric") && el("stk-metric").value === "__summary__";
-    lockField(start, isSummary);   // Inicio bloqueado solo en Resumen
+    lockField(start, isSummary);   // Inicio bloqueado solo en el Resumen de ratios
     lockField(end, false);         // Fin siempre editable
   }
 
@@ -183,12 +208,18 @@
     const row = (label, value, rank) =>
       `<div class="card"><div class="metric">${fmt(value, 3)}</div>
         <div class="metric-label">${label} · percentil ${rank == null ? "—" : pct(rank, 1)}</div></div>`;
-    return `<div class="cards">
-      ${row("Calidad", s.quality, s.quality_rank)}
-      ${row("Momentum", s.momentum, s.momentum_rank)}
-      ${row("Valor", s.value, s.value_rank)}
-      ${row("Meta", s.meta_score, s.meta_rank)}
-    </div>`;
+    // Los 5 agentes (los que haya en el score) + Meta. Cada tarjeta solo si el valor existe.
+    const cards = [
+      ["Calidad", s.quality, s.quality_rank],
+      ["Valor", s.value, s.value_rank],
+      ["Crecimiento", s.growth, s.growth_rank],
+      ["Momentum", s.momentum, s.momentum_rank],
+      ["Riesgo", s.risk, s.risk_rank],
+    ].filter(([, value]) => typeof value === "number" && Number.isFinite(value))
+      .map(([label, value, rank]) => row(label, value, rank));
+    // Meta va siempre al final (es la combinación, no un agente).
+    cards.push(row("Meta", s.meta_score, s.meta_rank));
+    return `<div class="cards score-cards">${cards.join("")}</div>`;
   }
 
   function agentExplain(rows) {
@@ -197,33 +228,110 @@
     return `El agente favorece por ${pos || "ninguna contribución positiva destacada"}${neg ? `; penaliza por ${neg}` : ""}.`;
   }
 
+  // Nombres legibles de los agentes (mismo orden que las tarjetas de puntuación).
+  const AGENT_LABELS = { quality: "Calidad", value: "Valor", growth: "Crecimiento",
+                         momentum: "Momentum", risk: "Riesgo" };
+
+  // Tabla-resumen MUY compacta de los pesos del meta en esta fecha: qué peso da a cada agente y por
+  // qué (su rank-IC reciente). Es lo primero que se ve; el detalle por agente va debajo, plegado.
+  function metaWeightsSummary(weights) {
+    const rows = (weights || []).filter((w) => w.agent in AGENT_LABELS)
+      .sort((x, y) => (y.weight || 0) - (x.weight || 0));
+    if (!rows.length) return `<p class="muted">Sin pesos del meta-agente para esta fecha.</p>`;
+    const body = rows.map((w) => {
+      const status = w.weight_status === "fallback_equal" ? "equiponderado (sin señal)" : "aprendido";
+      return `<tr><td>${escapeHtml(AGENT_LABELS[w.agent] || w.agent)}</td>
+        <td>${pct(w.weight, 1)}</td>
+        <td>${w.mean_rank_ic == null ? "—" : fmt(w.mean_rank_ic, 3)}</td>
+        <td class="muted">${status}</td></tr>`;
+    }).join("");
+    return `<div class="table-wrap"><table class="data"><thead><tr>
+      <th>Agente</th><th>Peso meta</th><th>Rank-IC reciente</th><th>Estado</th>
+      </tr></thead><tbody>${body}</tbody></table></div>`;
+  }
+
+  // Una tarjeta PLEGADA por agente, a lo ANCHO (una sobre otra). En la cabecera, las cifras clave del
+  // agente para esta acción/fecha (puntuación, percentil y peso en el meta); dentro, la explicación y
+  // las 5 variables de MAYOR IMPACTO (positivo o negativo) en la puntuación de ESTA acción y fecha
+  // (contribuciones locales de LightGBM, no la importancia global del modelo).
+  function agentDetailCard(agent, rows, weight, score) {
+    const label = AGENT_LABELS[agent] || agent;
+    const chips = [];
+    if (score && typeof score.value === "number") chips.push(`puntuación ${fmt(score.value, 3)}`);
+    if (score && typeof score.rank === "number") chips.push(`percentil ${pct(score.rank, 1)}`);
+    if (weight != null) chips.push(`peso meta ${pct(weight, 1)}`);
+    const head = chips.length ? ` <small class="muted">· ${chips.join(" · ")}</small>` : "";
+    // Top-5 por impacto local (ya vienen así del pipeline), ordenadas por rango de importancia.
+    const ordered = rows.slice().sort((x, y) => (x.importance_rank || 1e9) - (y.importance_rank || 1e9));
+    const t = table(ordered.map((r) => ({
+      "#": r.importance_rank,
+      variable: r.feature.replace("factor_", ""),
+      valor: r.factor_value,
+      contribución: r.local_contribution,
+      dirección: r.direction === "positive" ? "favorece" : (r.direction === "negative" ? "penaliza" : r.direction),
+    })), { decimals: 4, sortable: true, sortDateDesc: false });
+    return `<details class="card agent-card"><summary><strong>${escapeHtml(label)}</strong>${head}</summary>
+      <p>${escapeHtml(agentExplain(rows))}</p>
+      <p class="muted">Las 5 variables de mayor impacto (positivo o negativo) en la puntuación de esta acción en este snapshot.</p>${t}</details>`;
+  }
+
   function agentsBlock(a) {
     const groups = {};
     (a.contributions || []).forEach((c) => (groups[c.agent] ??= []).push(c));
-    const cards = Object.entries(groups).map(([agent, rows]) => {
-      const t = table(rows.map((r) => ({
-        variable: r.feature.replace("factor_", ""),
-        valor_factor: r.factor_value,
-        contribucion: r.local_contribution,
-        direccion: r.direction,
-      })), { decimals: 4 });
-      return `<article class="card"><h3>${escapeHtml(agent)}</h3><p>${escapeHtml(agentExplain(rows))}</p>${t}</article>`;
-    }).join("") || `<p class="muted">Sin contribuciones locales para este run/fecha.</p>`;
-    return `<details><summary>Por qué puntúan los agentes</summary><div class="cards">${cards}</div>
-      <h4>Pesos del meta-agente</h4>${table(a.weights || [], { decimals: 4 })}
+    const weightByAgent = {};
+    (a.weights || []).forEach((w) => (weightByAgent[w.agent] = w.weight));
+    // Puntuación y percentil de cada agente para esta acción/fecha (de la fila de scores seleccionada).
+    const s = (a.selected_scores && a.selected_scores[0]) || {};
+    const scoreOf = (agent) => ({ value: s[agent], rank: s[`${agent}_rank`] });
+    // Orden estable de agentes (el de AGENT_LABELS), solo los que tienen contribuciones.
+    const order = Object.keys(AGENT_LABELS).filter((agent) => groups[agent]);
+    const cards = order.map((agent) =>
+      agentDetailCard(agent, groups[agent], weightByAgent[agent], scoreOf(agent))).join("")
+      || `<p class="muted">Sin contribuciones locales para este run/fecha.</p>`;
+    return `<details><summary>Por qué puntúan los agentes</summary>
+      <h4>Resumen: pesos del meta-agente en esta fecha</h4>
+      ${metaWeightsSummary(a.weights)}
+      <h4>Detalle por agente</h4>
+      <div class="agent-cards">${cards}</div>
       <details><summary>Importancia global del modelo de esta fecha</summary>${table(a.global_importance || [], { decimals: 4 })}</details></details>`;
   }
 
+  // Puebla el select de snapshot con las fechas disponibles del ticker, conservando la selección si
+  // sigue existiendo; si no, deja la última (la más reciente).
+  function fillSnapshotSelect(dates) {
+    const snap = el("stk-snapshot");
+    if (!snap) return "";
+    const list = dates || [];
+    const previous = snap.value;
+    snap.innerHTML = list.map((d) => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join("");
+    const chosen = list.includes(previous) ? previous : (list.length ? list[list.length - 1] : "");
+    snap.value = chosen;
+    return chosen;
+  }
+
   async function loadPuntuaciones(out) {
-    const [summary, agents, ticker_data] = await Promise.all([
-      api(`/api/stock/summary?run_id=${encodeURIComponent(ctx.runId)}&ticker=${encodeURIComponent(ctx.ticker)}`),
-      api(`/api/stock/agents?run_id=${encodeURIComponent(ctx.runId)}&ticker=${encodeURIComponent(ctx.ticker)}`),
+    // El snapshot lo fija el select de arriba (solo contiene fechas válidas). El endpoint de agentes
+    // exige la fecha EXACTA; al venir del select nunca es inválida, así que no hay IndexError.
+    const chosen = (el("stk-snapshot") && el("stk-snapshot").value) || "";
+    const snapParam = chosen ? `&snapshot_date=${encodeURIComponent(chosen)}` : "";
+    const [agents, ticker_data] = await Promise.all([
+      api(`/api/stock/agents?run_id=${encodeURIComponent(ctx.runId)}&ticker=${encodeURIComponent(ctx.ticker)}${snapParam}`),
       api(`/api/ticker?run_id=${encodeURIComponent(ctx.runId)}&ticker=${encodeURIComponent(ctx.ticker)}`),
     ]);
-    if (summary.found === false) { out.innerHTML = `<div class="notice">Sin datos para ${escapeHtml(ctx.ticker)} en este run.</div>`; return; }
+    // Poblar el select con los snapshots del ticker (primera carga o cambio de ticker) y quedarnos
+    // con el snapshot efectivamente mostrado.
+    const shown = fillSnapshotSelect(agents.snapshot_dates) || agents.snapshot_date || "";
+    // Puntuaciones de ese snapshot: la fila seleccionada del propio endpoint de agentes (evita una
+    // segunda llamada y garantiza que corresponden a la MISMA fecha que los porqués).
+    const scoreRow = (agents.selected_scores && agents.selected_scores[0])
+      || (agents.scores && agents.scores.find((r) => String(r.snapshot_date).slice(0, 10) === shown))
+      || {};
+    if (!agents.scores || !agents.scores.length) {
+      out.innerHTML = `<div class="notice">Sin datos para ${escapeHtml(ctx.ticker)} en este run.</div>`; return;
+    }
     out.innerHTML =
-      `<h4>Puntuaciones actuales de ${escapeHtml(ctx.ticker)} <small class="muted">snapshot ${escapeHtml(summary.snapshot_date)}</small></h4>` +
-      scoreCards(summary.scores) +
+      `<h4>Puntuaciones de ${escapeHtml(ctx.ticker)} <small class="muted">snapshot ${escapeHtml(shown)}</small></h4>` +
+      scoreCards(scoreRow) +
       `<details><summary>Histórico de puntuaciones <small class="muted">(línea verde = compra, roja = venta)</small></summary><div id="stk-scores"></div></details>` +
       `<div id="stk-agents"></div>`;
     global.TFMCharts.clear();
@@ -281,5 +389,5 @@
     }
   }
 
-  global.TFM.views.stocks = { render, search, selectTicker, setMode, setMetric, onEndDate, load };
+  global.TFM.views.stocks = { render, search, selectTicker, setMode, setMetric, onEndDate, onSnapshot, load };
 })(window);

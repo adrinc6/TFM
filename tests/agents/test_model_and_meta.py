@@ -43,6 +43,28 @@ def test_quartile_excludes_middle_from_training() -> None:
     assert 0.4 < len(train) / 40 < 0.6
 
 
+def test_catboost_ranker_importances_do_not_crash() -> None:
+    """CatBoostRanker (YetiRank) devuelve feature_importances_ = None (0-d array); _importance_rows
+    debe omitirlas sin lanzar 'iteration over a 0-d array' en vez de abortar el escenario ranking."""
+    from environment import Settings
+    from module.modeling.agents import (_build_family_model, _fit_model, _importance_rows,
+                                         _prepare_training)
+
+    settings = Settings(run_scope="dev", objective="ranking")
+    frame = _train_frame().assign(ticker=[f"T{i}" for i in range(len(_train_frame()))],
+                                  f0=np.random.default_rng(1).normal(size=40),
+                                  f1=np.random.default_rng(2).normal(size=40))
+    model = _build_family_model(settings, "catboost")
+    if model is None:
+        pytest.skip("catboost no instalado")
+    columns = ["f0", "f1"]
+    train, target = _prepare_training(frame, settings)
+    _fit_model(model, train, columns, target, settings, "catboost")
+    rows = _importance_rows(model, "momentum", pd.Timestamp("2000-01-15"), len(train), settings,
+                            "catboost")
+    assert rows == []  # importancias no disponibles: se omiten, no se aborta
+
+
 def test_meta_final_is_diagnosed(agent_settings) -> None:
     """El diagnostico incluye el meta_final (lo que opera la cartera), no solo los agentes."""
     build_agent_scores(agent_settings)
@@ -128,7 +150,22 @@ def test_meta_type_regime_tilts_over_rank_ic_without_lookahead() -> None:
     fija el régimen explícitamente: no hay forma de que la señal mire al futuro.
     """
     from environment import Settings
-    labelled = _labelled_with_agent_signal()
+    # Señal donde los tres agentes predicen algo (momentum el que más, pero sin saturar el tope del
+    # clamp), para que el tilt de régimen sea observable y no quede enmascarado por el cap del 50 %.
+    rng = np.random.default_rng(1)
+    rows = []
+    for date_ in pd.date_range("2010-03-15", periods=8, freq="3MS"):
+        for i in range(30):
+            future = rng.normal()
+            scores = {"momentum": future * 0.5 + rng.normal(scale=0.8),
+                      "quality": future * 0.4 + rng.normal(scale=0.9),
+                      "value": future * 0.35 + rng.normal(scale=0.95)}
+            for agent, score in scores.items():
+                rows.append({"ticker": f"T{i}", "snapshot_date": date_.date().isoformat(),
+                             "snapshot_ts": date_, "label_end_ts": date_ + pd.DateOffset(months=3),
+                             "is_quarterly": True, "target_available": True,
+                             "agent": agent, "score": score, "forward_excess_return_3m": future})
+    labelled = pd.DataFrame(rows)
     date = pd.Timestamp("2011-06-15")
     settings = Settings(run_scope="dev", meta_type="regime")
     base, _ = _weights_as_of(labelled, date, set(AGENT_NAMES),
@@ -153,3 +190,32 @@ def test_meta_type_regime_without_signal_falls_back_to_rank_ic() -> None:
                                 Settings(run_scope="dev", meta_type="rank_ic"))
     for agent in AGENT_NAMES:
         assert regime[agent] == pytest.approx(rank_ic[agent])
+
+
+def test_rank_ic_clamps_every_agent_between_min_and_max() -> None:
+    """rank_ic: aunque un agente domine el rank-IC, ningún peso sale de [0.10, 0.50] y suma 1.
+
+    La señal fuerte (momentum) satura al tope; los de ruido no bajan del mínimo universal, así que el
+    meta nunca ignora del todo a nadie ni deja que uno acapare.
+    """
+    from environment import Settings
+    from module.modeling.meta import AGENT_WEIGHT_MAX, AGENT_WEIGHT_MIN
+    labelled = _labelled_with_agent_signal()   # momentum predice; quality/value ruido
+    date = pd.Timestamp("2011-06-15")
+    weights, _ = _weights_as_of(labelled, date, set(AGENT_NAMES),
+                                Settings(run_scope="dev", meta_type="rank_ic"))
+    assert sum(weights.values()) == pytest.approx(1.0)
+    for agent, weight in weights.items():
+        assert AGENT_WEIGHT_MIN - 1e-9 <= weight <= AGENT_WEIGHT_MAX + 1e-9
+    assert weights["momentum"] == pytest.approx(AGENT_WEIGHT_MAX)  # el dominante topa en 50 %
+
+
+def test_equal_mode_is_not_clamped() -> None:
+    """El clamp solo afecta a rank_ic/regime: equal sigue dando 1/N exacto (1/3 con 3 agentes)."""
+    from environment import Settings
+    labelled = _labelled_with_agent_signal()
+    date = pd.Timestamp("2011-06-15")
+    weights, _ = _weights_as_of(labelled, date, set(AGENT_NAMES),
+                                Settings(run_scope="dev", meta_type="equal"))
+    for agent in AGENT_NAMES:
+        assert weights[agent] == pytest.approx(1 / 3)

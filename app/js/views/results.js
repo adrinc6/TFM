@@ -57,7 +57,7 @@
         <td>${escapeHtml(r.run_kind || "—")}</td>
         <td class="${(s.mean_rank_ic || 0) >= 0 ? "positive" : "negative"}">${fmt(s.mean_rank_ic)}</td>
         <td class="${(s.cagr_difference || 0) >= 0 ? "positive" : "negative"}">${pct(s.cagr_difference)}</td>
-        <td class="negative">${pct(s.max_drawdown)}</td>
+        <td class="${typeof s.max_drawdown_benchmark === "number" ? (s.max_drawdown <= s.max_drawdown_benchmark ? "positive" : "negative") : ""}">${pct(s.max_drawdown)}</td>
         <td>${escapeHtml(String(r.created_at_utc || "").slice(0, 10))}</td>
         <td>${escapeHtml(r.status || "—")}</td>
       </tr>`;
