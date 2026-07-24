@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from environment import Settings
-from module.modeling.meta import AGENT_NAMES, _weights_as_of
+from module.modeling.meta import _weights_as_of
 
 
 def test_meta_type_rank_ic_favours_the_predictive_agent() -> None:
@@ -22,11 +22,11 @@ def test_meta_type_rank_ic_favours_the_predictive_agent() -> None:
                     "ticker": f"T{index}", "snapshot_date": date.date().isoformat(),
                     "snapshot_ts": date, "label_end_ts": date + pd.DateOffset(months=3),
                     "is_quarterly": True, "target_available": True, "agent": agent,
-                    "score": score, "forward_excess_return_3m": future,
+                    "score": score, "forward_excess_return": future,
                 })
 
     weights, _ = _weights_as_of(
-        pd.DataFrame(rows), pd.Timestamp("2011-06-15"), set(AGENT_NAMES),
+        pd.DataFrame(rows), pd.Timestamp("2011-06-15"), {"quality", "momentum", "value"},
         Settings(run_scope="dev", meta_type="rank_ic"),
     )
 

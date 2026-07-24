@@ -17,11 +17,11 @@ def test_agents_start_at_anchor_with_expanding_history_and_score_monthly(agent_s
 
 def test_future_label_change_does_not_rewrite_past_predictions(agent_settings) -> None:
     first = build_agent_scores(agent_settings)
-    target_path = agent_settings.processed_output_dir / "targets_forward_3m.parquet"
+    target_path = agent_settings.processed_output_dir / "targets_forward.parquet"
     targets = pd.read_parquet(target_path)
     future = targets["snapshot_date"] == "2001-06-15"
-    targets.loc[future, "forward_excess_return_3m"] = (
-        targets.loc[future, "forward_excess_return_3m"] * 1.5 + 0.1
+    targets.loc[future, "forward_excess_return"] = (
+        targets.loc[future, "forward_excess_return"] * 1.5 + 0.1
     )
     targets.to_parquet(target_path, index=False)
 

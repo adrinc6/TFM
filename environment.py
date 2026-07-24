@@ -69,6 +69,11 @@ FUNDAMENTAL_STEP_MONTHS = 3        # cadencia de reentreno; barrida como escenar
 TARGET_HORIZON_MONTHS = 6
 MAX_PRICE_AGE_DAYS = 7
 META_IC_LOOKBACK_QUARTERS = 12
+META_HISTORY_MODE = "expanding"
+META_HISTORY_QUARTERS = 16
+META_DECAY_HALF_LIFE_QUARTERS = 8.0
+META_WEIGHT_CAP = 1.0
+META_EQUAL_SHRINKAGE = 0.0
 MIN_TRAINING_ROWS = 30
 MIN_RANK_IC_CROSS_SECTION = 10
 
@@ -149,6 +154,19 @@ PRICE_ONLY_STRICTNESS_MULTIPLIER = 1.0
 # como dato corrupto (split mal ajustado, ticker reciclado) y se neutraliza, registrandolo.
 MAX_MONTHLY_POSITION_RETURN = 2.0  # +200 % en un mes es imposible para una accion normal
 
+# Traducción señal -> cartera. Los defaults preservan el comportamiento histórico para que los
+# runs manuales antiguos sigan siendo reproducibles; el protocolo oficial fija explícitamente sus
+# alternativas confirmatorias.
+PORTFOLIO_POLICY = "legacy_monthly"
+VINTAGE_COUNT = 4
+HOLDING_MONTHS = 12
+SIZING_MODE = "legacy_linear"
+ACTIVE_OVERLAY_MODE = "full"
+FIXED_ACTIVE_FRACTION = 0.50
+SIGNAL_HEALTH_LOOKBACK_QUARTERS = 12
+COST_HURDLE_MULTIPLIER = 0.0
+VINTAGE_CALENDAR_OFFSET_MONTHS = 0
+
 # Se pueden establecer temporalmente desde la consola sin editar este archivo.
 RUN_MODE = os.getenv("RUN_MODE", "download").strip().lower()
 RUN_SCOPE = os.getenv("RUN_SCOPE", "full").strip().lower()
@@ -189,6 +207,11 @@ class Settings:
     lgbm_n_jobs: int = -1
     random_seed: int = RANDOM_SEED
     meta_type: str = META_TYPE
+    meta_history_mode: str = META_HISTORY_MODE
+    meta_history_quarters: int = META_HISTORY_QUARTERS
+    meta_decay_half_life_quarters: float = META_DECAY_HALF_LIFE_QUARTERS
+    meta_weight_cap: float = META_WEIGHT_CAP
+    meta_equal_shrinkage: float = META_EQUAL_SHRINKAGE
     recency_weighting: str = RECENCY_WEIGHTING
     enabled_feature_blocks: tuple[str, ...] = ENABLED_FEATURE_BLOCKS
     enabled_agents: tuple[str, ...] = ENABLED_AGENTS
@@ -221,14 +244,26 @@ class Settings:
     price_only_strictness_multiplier: float = PRICE_ONLY_STRICTNESS_MULTIPLIER
     max_monthly_position_return: float = MAX_MONTHLY_POSITION_RETURN
     profile: str = "balanced"   # perfil de inversor para la seleccion de cartera (ver module/profiles.py)
+    portfolio_policy: str = PORTFOLIO_POLICY
+    vintage_count: int = VINTAGE_COUNT
+    holding_months: int = HOLDING_MONTHS
+    sizing_mode: str = SIZING_MODE
+    active_overlay_mode: str = ACTIVE_OVERLAY_MODE
+    fixed_active_fraction: float = FIXED_ACTIVE_FRACTION
+    signal_health_lookback_quarters: int = SIGNAL_HEALTH_LOOKBACK_QUARTERS
+    cost_hurdle_multiplier: float = COST_HURDLE_MULTIPLIER
+    vintage_calendar_offset_months: int = VINTAGE_CALENDAR_OFFSET_MONTHS
     # Versión manual del código de cada etapa cacheada: entra en la clave de reciclado
     # (module/runs/recycle.py STAGE_FIELDS) en vez de un hash automático del código. Súbela a mano
     # tras un cambio real de lógica en esa etapa para invalidar su caché; un cambio de logging o
     # de comentario no requiere tocarla.
     dataset_code_version: int = 1
     features_code_version: int = 1
-    agents_code_version: int = 1
-    backtest_code_version: int = 1
+    # El fit de las familias y la combinación meta tienen versiones separadas: cambiar la
+    # combinación no debe invalidar los fits LightGBM ya calculados.
+    agents_fit_code_version: int = 1
+    agents_code_version: int = 2
+    backtest_code_version: int = 2
     # Ruta privada de ejecución. No es una variable científica ni se incluye en fingerprints;
     # el orquestador la asigna después de crear el run.
     workspace_dir: Path | None = None
@@ -253,6 +288,16 @@ class Settings:
             raise ValueError(
                 f"META_TYPE invalido: {self.meta_type!r}. Usa 'equal', 'rank_ic' o 'regime'."
             )
+        if self.meta_history_mode not in ("expanding", "rolling", "exponential"):
+            raise ValueError("META_HISTORY_MODE debe ser 'expanding', 'rolling' o 'exponential'.")
+        if self.meta_history_quarters < 1:
+            raise ValueError("META_HISTORY_QUARTERS debe ser positivo.")
+        if self.meta_decay_half_life_quarters <= 0:
+            raise ValueError("META_DECAY_HALF_LIFE_QUARTERS debe ser positivo.")
+        if not 0 < self.meta_weight_cap <= 1:
+            raise ValueError("META_WEIGHT_CAP debe estar en (0, 1].")
+        if not 0 <= self.meta_equal_shrinkage <= 1:
+            raise ValueError("META_EQUAL_SHRINKAGE debe estar en [0, 1].")
         if self.recency_weighting not in ("off", "linear", "exponential"):
             raise ValueError(
                 f"RECENCY_WEIGHTING invalido: {self.recency_weighting!r}. "
@@ -273,6 +318,24 @@ class Settings:
             raise ValueError("Las ventanas temporales deben ser positivas.")
         if self.target_size < 1:
             raise ValueError("TARGET_SIZE debe ser positivo.")
+        if self.portfolio_policy not in ("legacy_monthly", "quarterly_top_n", "staggered_vintages"):
+            raise ValueError("PORTFOLIO_POLICY no reconocido.")
+        if self.vintage_count < 1 or self.holding_months < 1:
+            raise ValueError("VINTAGE_COUNT y HOLDING_MONTHS deben ser positivos.")
+        if self.portfolio_policy == "staggered_vintages" and self.target_size % self.vintage_count:
+            raise ValueError("TARGET_SIZE debe ser divisible por VINTAGE_COUNT en staggered_vintages.")
+        if self.sizing_mode not in ("equal", "legacy_linear", "calibrated_alpha"):
+            raise ValueError("SIZING_MODE no reconocido.")
+        if self.active_overlay_mode not in ("full", "fixed", "binary", "continuous"):
+            raise ValueError("ACTIVE_OVERLAY_MODE no reconocido.")
+        if not 0 <= self.fixed_active_fraction <= 1:
+            raise ValueError("FIXED_ACTIVE_FRACTION debe estar en [0, 1].")
+        if self.signal_health_lookback_quarters < 1:
+            raise ValueError("SIGNAL_HEALTH_LOOKBACK_QUARTERS debe ser positivo.")
+        if self.cost_hurdle_multiplier < 0:
+            raise ValueError("COST_HURDLE_MULTIPLIER debe ser >= 0.")
+        if self.vintage_calendar_offset_months not in (0, 1, 2):
+            raise ValueError("VINTAGE_CALENDAR_OFFSET_MONTHS debe ser 0, 1 o 2.")
         for name, value in (("min_hold_percentile", self.min_hold_percentile),):
             if not 0 <= value <= 100:
                 raise ValueError(f"{name} debe estar en [0, 100], recibido {value!r}.")

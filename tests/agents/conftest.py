@@ -51,12 +51,12 @@ def agent_settings(monkeypatch, tmp_path) -> Settings:
                     "snapshot_date": date_text,
                     "label_end_date": label_end.date().isoformat() if available else None,
                     "target_available": available,
-                    "forward_excess_return_3m": base + date_index / 10000 if available else None,
+                    "forward_excess_return": base + date_index / 10000 if available else None,
                 }
             )
     processed.mkdir(parents=True)
     pd.DataFrame(feature_rows).to_parquet(processed / "features_point_in_time.parquet", index=False)
-    pd.DataFrame(target_rows).to_parquet(processed / "targets_forward_3m.parquet", index=False)
+    pd.DataFrame(target_rows).to_parquet(processed / "targets_forward.parquet", index=False)
     return Settings(
         run_scope="dev",
         data_start_date="1996-01-01",

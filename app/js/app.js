@@ -13,13 +13,12 @@
     studyModelOptions: {},
     studyPortfolioOptions: {},
     studyPhase3Options: {},
-    fullStudyModelOptions: {},
-    fullStudyPortfolioOptions: {},
-    fullStudyPhase3Options: {},
-    fullStudyProfiles: [],
+    profileCatalog: [],
     studyOptionGroups: {},
-    fullStudyFixedSettings: {},
-    fullStudyStressSettings: {},
+    officialFixedSettings: {},
+    manualStressOptions: {},
+    officialStudyProtocol: {},
+    officialEvaluationBudget: {},
     presets: {},
     profileLabels: {},
     runs: [],
@@ -98,13 +97,12 @@
     state.studyModelOptions = data.study_model_options || {};
     state.studyPortfolioOptions = data.study_portfolio_options || {};
     state.studyPhase3Options = data.study_phase3_options || {};
-    state.fullStudyModelOptions = data.full_study_model_options || {};
-    state.fullStudyPortfolioOptions = data.full_study_portfolio_options || {};
-    state.fullStudyPhase3Options = data.full_study_phase3_options || {};
-    state.fullStudyProfiles = data.full_study_profiles || [];
+    state.profileCatalog = data.profile_catalog || [];
     state.studyOptionGroups = data.study_option_groups || {};
-    state.fullStudyFixedSettings = data.full_study_fixed_settings || {};
-    state.fullStudyStressSettings = data.full_study_stress_settings || {};
+    state.officialFixedSettings = data.official_fixed_settings || {};
+    state.manualStressOptions = data.manual_stress_options || {};
+    state.officialStudyProtocol = data.official_study_protocol || {};
+    state.officialEvaluationBudget = data.official_evaluation_budget || {};
     state.agentCatalog = data.agent_catalog || [];
     state.featureBlockCatalog = data.feature_block_catalog || [];
     state.modelFamilyCatalog = data.model_family_catalog || [];

@@ -26,6 +26,7 @@ import pandas as pd
 
 from environment import PROJECT_ROOT, Settings
 from module.common.utils import pid_alive, sha256_file, write_json, write_parquet
+from module.modeling.targets import TARGET_ARTIFACT_NAME, target_artifact_path
 
 
 RESULTS_ROOT = PROJECT_ROOT / "results"
@@ -261,52 +262,105 @@ class ResultsStore:
         manifest.setdefault("execution", {})["telemetry"] = dict(telemetry)
         write_json(manifest, path)
 
-    def publish_artifacts(self, run_dir: Path, source_dir: Path) -> dict[str, Any]:
+    def publish_artifacts(
+        self, run_dir: Path, source_dir: Path, *, retention_policy: str = "evidence_final",
+        parent_run_id: str | None = None,
+    ) -> dict[str, Any]:
         """Copia los artefactos relevantes de un run de agentes a la carpeta inmutable."""
         source_dir = Path(source_dir)
         target = run_dir / "artifacts"
-        wanted = (
-            "backtest_summary.json", "agent_scores.parquet", "meta_weights.parquet",
-            "rank_ic_diagnostics.parquet", "annual_metrics.parquet", "positions.parquet",
-            "orders.parquet", "equity.parquet", "model_feature_attribution.parquet",
-            "agent_local_attribution.parquet", "feature_diagnostics.parquet", "feature_catalog.json",
-            "profile_results.json", "robustness.json", "manifest.json",
+        common = (
+            "backtest_summary.json", "rank_ic_diagnostics.parquet", "meta_weights.parquet",
+            "rank_tail_diagnostics.parquet", "annual_metrics.parquet", "manifest.json",
         )
+        if retention_policy == "compact_candidate":
+            wanted = common
+        elif retention_policy == "compact_backtest":
+            wanted = (
+                *common, "positions.parquet", "orders.parquet", "equity.parquet",
+                "vintage_positions.parquet", "active_exposure.parquet",
+            )
+        elif retention_policy == "evidence_final":
+            wanted = (
+                *common, "agent_scores.parquet", "meta_weights.parquet", "positions.parquet",
+                "orders.parquet", "equity.parquet", "model_feature_attribution.parquet",
+                "agent_local_attribution.parquet", "feature_diagnostics.parquet",
+                "feature_catalog.json", "profile_results.json", "robustness.json",
+                "signal_calibration.parquet", "signal_health.parquet",
+                "vintage_positions.parquet", "active_exposure.parquet", "manifest.json",
+            )
+        else:
+            raise ValueError(f"Política de retención desconocida: {retention_policy!r}")
         published: list[str] = []
         for name in wanted:
             source = source_dir / name
             if source.exists():
                 shutil.copy2(source, target / name)
                 published.append(name)
-        # Los precios PIT son necesarios para reproducir en el dashboard la trayectoria de un
+        # Los inputs pesados se materializan una sola vez, únicamente en el run final de evidencia.
+        if retention_policy == "evidence_final":
+            # Los precios PIT son necesarios para reproducir en el dashboard la trayectoria de un
         # ticker y sus compras/ventas; se copian desde el processed asociado al run de agentes.
-        price_source = source_dir.parent.parent / "asset_price_point_in_time.parquet"
-        if not price_source.exists():
-            price_source = source_dir / "asset_price_point_in_time.parquet"
-        if price_source.exists():
-            shutil.copy2(price_source, target / "asset_price_point_in_time.parquet")
-            published.append("asset_price_point_in_time.parquet")
-        panel_source = source_dir.parent.parent / "panel_point_in_time.parquet"
-        if not panel_source.exists():
-            panel_source = source_dir / "stock_panel.parquet"
-        if panel_source.exists():
-            # El panel completo conserva ratios, precios y fechas de disponibilidad sin depender
-            # de la carpeta mutable data/processed al consultar resultados antiguos.
-            shutil.copy2(panel_source, target / "stock_panel.parquet")
-            published.append("stock_panel.parquet")
-        targets_source = source_dir.parent.parent / "targets_forward_3m.parquet"
-        if targets_source.exists():
-            shutil.copy2(targets_source, target / "targets_forward_3m.parquet")
-            published.append("targets_forward_3m.parquet")
+            price_source = source_dir.parent.parent / "asset_price_point_in_time.parquet"
+            if not price_source.exists():
+                price_source = source_dir / "asset_price_point_in_time.parquet"
+            if price_source.exists():
+                shutil.copy2(price_source, target / "asset_price_point_in_time.parquet")
+                published.append("asset_price_point_in_time.parquet")
+            panel_source = source_dir.parent.parent / "panel_point_in_time.parquet"
+            if not panel_source.exists():
+                panel_source = source_dir / "stock_panel.parquet"
+            if panel_source.exists():
+                shutil.copy2(panel_source, target / "stock_panel.parquet")
+                published.append("stock_panel.parquet")
+            targets_source = target_artifact_path(source_dir.parent.parent)
+            if targets_source.exists():
+                shutil.copy2(targets_source, target / TARGET_ARTIFACT_NAME)
+                published.append(TARGET_ARTIFACT_NAME)
+            benchmark_source = source_dir.parent.parent / "benchmark_point_in_time.parquet"
+            if not benchmark_source.exists():
+                benchmark_source = source_dir / "benchmark_point_in_time.parquet"
+            if benchmark_source.exists():
+                shutil.copy2(benchmark_source, target / "benchmark_point_in_time.parquet")
+                published.append("benchmark_point_in_time.parquet")
+        if parent_run_id:
+            parent_manifest_path = self.runs_root / parent_run_id / "run_manifest.json"
+            parent_reference: dict[str, Any] = {"parent_run_id": parent_run_id}
+            if parent_manifest_path.exists():
+                parent_manifest = json.loads(parent_manifest_path.read_text(encoding="utf-8"))
+                parent_reference.update({
+                    "parent_execution_hash": parent_manifest.get("execution_hash"),
+                    "parent_config_hash": parent_manifest.get("config_hash"),
+                    "parent_stage_keys": parent_manifest.get("execution", {}).get(
+                        "stage_keys", {}
+                    ),
+                })
+            write_json(parent_reference, target / "parent_run.json")
+            published.append("parent_run.json")
         self._materialize_lifecycle(target)
         self._materialize_learning_summary(target)
         if (target / "backtest_summary.json").exists():
             summary = json.loads((target / "backtest_summary.json").read_text(encoding="utf-8"))
         else:
             summary = {}
+        size_limit = {
+            "compact_candidate": 5 * 1024**2,
+            "compact_backtest": 10 * 1024**2,
+            "evidence_final": 250 * 1024**2,
+        }[retention_policy]
+        persisted_bytes = sum(path.stat().st_size for path in target.rglob("*") if path.is_file())
+        if persisted_bytes > size_limit:
+            raise RuntimeError(
+                f"Retención {retention_policy} excede su límite: "
+                f"{persisted_bytes} > {size_limit} bytes."
+            )
         path = run_dir / "run_manifest.json"
         manifest = json.loads(path.read_text(encoding="utf-8"))
-        manifest["outputs"] = {"artifacts": published, "summary": summary}
+        manifest["outputs"] = {
+            "artifacts": published, "summary": summary,
+            "retention_policy": retention_policy, "parent_run_id": parent_run_id,
+            "persisted_bytes": persisted_bytes, "size_limit_bytes": size_limit,
+        }
         write_json(manifest, path)
         return summary
 

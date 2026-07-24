@@ -3,8 +3,9 @@
    perfiles, diseño dirigido) y solo mejora su presentación. */
 (function (global) {
   "use strict";
-  const { api, el, escapeHtml, state } = global.TFM;
+  const { api, el, escapeHtml } = global.TFM;
   const S = () => global.TFM.state;
+  let officialPreflight = null;
 
   const labelFor = (name) => name.replaceAll("_", " ");
   const isCompound = (value) => Array.isArray(value) || (value && typeof value === "object");
@@ -183,7 +184,7 @@
         <label class="field">Nombre<input id="study-name" value="study-exploratorio"></label>
         <label class="field">Búsqueda de modelo
           <select id="study-search-mode" onchange="TFM.views.console.updateStudyCount()">
-            <option value="directed">Dirigida (ejes aislados + greedy, como full study)</option>
+            <option value="directed">Dirigida (ejes aislados + greedy exploratorio)</option>
             <option value="cartesian">Producto cartesiano (todas las combinaciones marcadas)</option>
           </select>
         </label>
@@ -198,19 +199,11 @@
       <div class="actions"><button class="button primary" onclick="TFM.views.console.launchStudy()">Previsualizar y ejecutar</button></div>`;
   }
 
-  function fixedStudySettings() {
-    const entries = Object.entries(S().fullStudyFixedSettings || {});
+  function officialFixedSettingsMarkup() {
+    const entries = Object.entries(S().officialFixedSettings || {});
     if (!entries.length) return "";
     return `<details class="parameter-group"><summary>Parámetros fijos y visibles</summary><div class="study-groups">${entries.map(([key, value]) =>
       `<div class="study-variable"><strong>${escapeHtml(labelFor(key))}</strong><label class="choice"><input type="checkbox" checked disabled>Fijo: ${escapeHtml(displayValue(value))}</label></div>`
-    ).join("")}</div></details>`;
-  }
-
-  function stressStudySettings() {
-    const entries = Object.entries(S().fullStudyStressSettings || {});
-    if (!entries.length) return "";
-    return `<details class="parameter-group"><summary>Escenarios de estrés, no optimizables</summary><div class="study-groups">${entries.map(([key, value]) =>
-      `<div class="study-variable"><strong>${escapeHtml(labelFor(key))}</strong><label class="choice"><input type="checkbox" checked disabled>Se informan todos: ${escapeHtml(displayValue(value))}</label></div>`
     ).join("")}</div></details>`;
   }
 
@@ -219,7 +212,7 @@
   function robustnessComponentsSettings() {
     const components = S().robustnessComponents || [];
     if (!components.length) return "";
-    const stress = S().fullStudyStressSettings || {};
+    const stress = S().manualStressOptions || {};
     const costAxes = ["commission_bps", "slippage_bps"];
     const detailFor = (key) => {
       if (key === "cost_stress") {
@@ -246,33 +239,97 @@
       <div class="study-groups">${rows}</div></details>`;
   }
 
-  function profileStudySettings(locked = false) {
-    const profiles = S().fullStudyProfiles || [];
-    // Study manual: el usuario elige qué perfiles ejecutar; por defecto solo el de referencia
-    // (`balanced`). Full study: los ocho, bloqueados.
+  function profileStudySettings() {
+    const profiles = S().profileCatalog || [];
+    // En el study manual el usuario elige los diagnósticos; balanced queda marcado por defecto.
     const choices = profiles.map((profile) => {
-      const checked = locked || profile === "balanced";
-      return `<label class="choice"><input type="checkbox" data-study="profile" value="${escapeHtml(profile)}" data-json="false" ${checked ? "checked" : ""} ${locked ? "disabled" : ""}>${escapeHtml(S().profileLabels[profile] || profile)}</label>`;
+      const checked = profile === "balanced";
+      return `<label class="choice"><input type="checkbox" data-study="profile" value="${escapeHtml(profile)}" data-json="false" ${checked ? "checked" : ""}>${escapeHtml(S().profileLabels[profile] || profile)}</label>`;
     }).join("");
     return `<details class="parameter-group"><summary>Fase 5 · Perfiles de inversor a ejecutar (salidas, sin ganador)</summary>
       <div class="study-variable"><strong>profile</strong><div class="choices">${choices}</div></div></details>`;
   }
 
   function fullStudyForm() {
+    const budget = S().officialEvaluationBudget || {};
+    const protocol = S().officialStudyProtocol || {};
+    const groups = budget.groups || {};
+    const estimatedFits = protocol.estimated_expensive_fits ?? 10;
+    const maxFits = budget.max_expensive_fits ?? 10;
+    const maxGiB = ((budget.max_incremental_bytes || 5 * 1024 ** 3) / 1024 ** 3).toFixed(0);
     return `<h3>Full study oficial</h3>
       <div class="formgrid">
         <label class="field">Nombre del estudio<input id="full-study-name" value="optimization-official"></label>
-        <label class="field">Hipótesis<textarea id="full-study-hypothesis" placeholder="Ej.: Los bloques de calidad, crecimiento y riesgo mejoran el Rank-IC OOS frente al baseline."></textarea></label>
+        <label class="field">Hipótesis<textarea id="full-study-hypothesis" placeholder="Ej.: La adaptación del meta y una cartera por vintages convierten la señal en alfa neto sin degradar el Rank-IC."></textarea></label>
       </div>
-      <p class="notice">Transparencia total: todas las variables barribles están marcadas y bloqueadas. Se ejecutarán todos sus valores permitidos; no se puede desmarcar ninguno en un full study.</p>
-      <section class="parameter-group"><h4>Fases 1–2 · Datos, factores y modelo</h4>${studyControls(true, S().fullStudyModelOptions)}</section>
-      <section class="parameter-group"><h4>Fase 3 · Afinado greedy, sin producto cartesiano</h4>${studyControls(true, S().fullStudyPhase3Options)}</section>
-      <section class="parameter-group"><h4>Fase 4 · Construcción de cartera sobre el modelo congelado</h4>${studyControls(true, S().fullStudyPortfolioOptions)}</section>
-      ${profileStudySettings(true)}
-      <section class="parameter-group"><h4>Variables que no se modifican</h4>${fixedStudySettings()}</section>
-      <section class="parameter-group"><h4>Costes de ejecución</h4>${stressStudySettings()}</section>
-      <div class="actions"><button class="button primary" onclick="TFM.views.console.launchOptimization()">Lanzar full study oficial</button>
+      <p class="notice">Protocolo confirmatorio cerrado: no expande el catálogo manual ni usa 2025–2026 para seleccionar. Si no hay mejora robusta, conserva el incumbent y declara <code>no_improvement</code>.</p>
+      <section class="parameter-group"><h4>Presupuesto determinista</h4>
+        <div class="metric-grid cards-5">
+          <div class="card"><div class="metric">${budget.total ?? 48}</div><div class="metric-label">evaluaciones</div></div>
+          <div class="card"><div class="metric">${estimatedFits}/${maxFits}</div><div class="metric-label">fits caros estimados / máximo</div></div>
+          <div class="card"><div class="metric">${groups.signal_challengers ?? 12}</div><div class="metric-label">challengers de señal</div></div>
+          <div class="card"><div class="metric">${groups.portfolio_translation ?? 12}</div><div class="metric-label">políticas de cartera</div></div>
+          <div class="card"><div class="metric">&lt; ${maxGiB} GiB</div><div class="metric-label">incremento de disco</div></div>
+        </div>
+      </section>
+      <section class="parameter-group"><h4>Desglose fijo</h4>
+        <p class="muted">12 señal · 2 semillas · 12 cartera · 8 perfiles · 6 stresses económicos · 5 placebos con reentrenamiento · 1 permutación inferencial · 1 test de carteras aleatorias · 1 bootstrap/exclusión de eras.</p>
+        <p class="muted">La traducción de señal se decide secuencialmente: estructura → sizing → exposición activa → hurdle de costes. Los perfiles y stresses solo informan; nunca alteran el ganador.</p>
+      </section>
+      <section id="official-preflight" class="parameter-group"><h4>Preflight operativo</h4><p class="muted">Comprobando caché, tiempo y espacio antes de habilitar el lanzamiento…</p></section>
+      <section class="parameter-group"><h4>Variables que no se modifican</h4>${officialFixedSettingsMarkup()}</section>
+      <div class="actions"><button id="launch-official-study" class="button primary" disabled onclick="TFM.views.console.launchOptimization()">Lanzar full study oficial</button>
       <button class="button" onclick="TFM.views.console.showForm('full-study')">Restablecer vista</button></div>`;
+  }
+
+  function humanBytes(bytes) {
+    if (typeof bytes !== "number" || !Number.isFinite(bytes)) return "sin estimación";
+    return `${(bytes / 1024 ** 3).toFixed(2)} GiB`;
+  }
+
+  function humanDuration(seconds) {
+    if (typeof seconds !== "number" || !Number.isFinite(seconds)) return "sin telemetría histórica";
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.ceil((seconds % 3600) / 60);
+    return hours ? `${hours} h ${minutes} min` : `${minutes} min`;
+  }
+
+  async function loadOfficialPreflight() {
+    const node = el("official-preflight");
+    const launch = el("launch-official-study");
+    if (!node || !launch) return false;
+    launch.disabled = true;
+    officialPreflight = null;
+    try {
+      const response = await api("/api/official/preflight", { settings: S().defaults });
+      const preflight = response.preflight || response;
+      const fit = preflight.fit_budget || {};
+      const time = preflight.time || {};
+      const storage = preflight.storage || {};
+      const evaluations = preflight.evaluation_budget || {};
+      officialPreflight = preflight;
+      node.innerHTML = `<h4>Preflight operativo superado</h4>
+        <div class="metric-grid cards-5">
+          <div class="card"><div class="metric">${evaluations.total ?? 48}</div><div class="metric-label">evaluaciones validadas</div></div>
+          <div class="card"><div class="metric">${fit.estimated_new ?? "—"}/${fit.maximum ?? 10}</div><div class="metric-label">fits caros estimados / máximo</div></div>
+          <div class="card"><div class="metric">${fit.recycled_signal_scenarios ?? "—"}</div><div class="metric-label">escenarios de señal reciclados</div></div>
+          <div class="card"><div class="metric">${escapeHtml(humanDuration(time.estimated_new_fit_wall_seconds))}</div><div class="metric-label">tiempo de fits estimado</div></div>
+          <div class="card"><div class="metric">${escapeHtml(humanBytes(storage.estimated_incremental_bytes))}</div><div class="metric-label">disco incremental estimado</div></div>
+        </div>
+        <p class="muted">Inputs disponibles · presupuesto dentro de límites · ${time.historical_runs_sampled ?? 0} runs históricos usados para estimar tiempo. El servidor repetirá estas validaciones justo antes de crear el study.</p>`;
+      launch.disabled = false;
+      return true;
+    } catch (error) {
+      node.innerHTML = `<h4>Preflight bloqueado</h4><p class="notice">${escapeHtml(error.message)}</p>
+        <button class="button" onclick="TFM.views.console.retryOfficialPreflight()">Reintentar comprobación</button>`;
+      return false;
+    }
+  }
+
+  function retryOfficialPreflight() {
+    const node = el("official-preflight");
+    if (node) node.innerHTML = `<h4>Preflight operativo</h4><p class="muted">Repitiendo comprobaciones…</p>`;
+    return loadOfficialPreflight();
   }
 
   function showForm(type) {
@@ -280,6 +337,7 @@
     form.classList.remove("hidden");
     form.innerHTML = type === "experimental" ? experimentalForm() : type === "full-study" ? fullStudyForm() : studyForm();
     if (type === "study") updateStudyCount();
+    if (type === "full-study") loadOfficialPreflight();
   }
 
   // --- Presets y recogida de settings ---
@@ -343,7 +401,7 @@
     const modelKeys = new Set(Object.keys(S().studyModelOptions || {}));
     const phase3Keys = new Set(Object.keys(S().studyPhase3Options || {}));
     const portfolioKeys = new Set(Object.keys(S().studyPortfolioOptions || {}));
-    const stressKeys = new Set(Object.keys(S().fullStudyStressSettings || {}));
+    const stressKeys = new Set(Object.keys(S().manualStressOptions || {}));
     const b = { model: 0, phase3: 0, portfolio: 0, stress: 0, profiles: 0 };
     Object.entries(variables).forEach(([key, values]) => {
       let extra;
@@ -387,12 +445,12 @@
     if (searchMode() === "cartesian") {
       const combinations = cartesianCount(variables);
       const warn = combinations > 500 ? " ⚠️ Por encima del límite (500): el servidor rechazará el envío." : "";
-      node.textContent = `Fases 1–2 (cartesiano): ${combinations} combinaciones de modelo. Fase 3 afinado: +${b.phase3} runs. Fase 4 cartera: +${b.portfolio} runs. ${stressText}Fase 5 perfiles: ${profiles} runs. ${robText}Más el finalista y la validación reservada.${warn}`;
+      node.textContent = `Fases 1–2 (cartesiano): ${combinations} combinaciones de modelo. Fase 3 afinado: +${b.phase3} runs. Fase 4 cartera: +${b.portfolio} runs. ${stressText}Fase 5 perfiles: ${profiles} runs. ${robText}Más el finalista y el diagnóstico 2025–2026 como estrés conocido.${warn}`;
       return;
     }
     // Dirigido: baseline (1) + un run por cada valor no-baseline de modelo, luego greedy top-2.
     const model = 1 + b.model;
-    node.textContent = `Fases 1–2 (dirigido): ${model} runs de modelo (baseline + ${b.model} variantes aisladas) y greedy. Fase 3 afinado: +${b.phase3} runs. Fase 4 cartera: +${b.portfolio} runs. ${stressText}Fase 5 perfiles: ${profiles} runs. ${robText}Más el finalista y la validación reservada.`;
+    node.textContent = `Fases 1–2 (dirigido): ${model} runs de modelo (baseline + ${b.model} variantes aisladas) y greedy. Fase 3 afinado: +${b.phase3} runs. Fase 4 cartera: +${b.portfolio} runs. ${stressText}Fase 5 perfiles: ${profiles} runs. ${robText}Más el finalista y el diagnóstico 2025–2026 como estrés conocido.`;
   }
 
   // --- Lanzadores ---
@@ -416,7 +474,7 @@
       const mode = searchMode();
       const b = phaseBreakdown(variables);
       const modelRuns = mode === "cartesian" ? cartesianCount(variables) : 1 + b.model;
-      const confirmMsg = `Fases 1–2: ${modelRuns} runs de modelo. Fase 3: +${b.phase3}. Fase 4: +${b.portfolio}. Fase 5 perfiles: ${b.profiles}. Más finalista, robustez marcada y validación reservada. ¿Continuar?`;
+      const confirmMsg = `Fases 1–2: ${modelRuns} runs de modelo. Fase 3: +${b.phase3}. Fase 4: +${b.portfolio}. Fase 5 perfiles: ${b.profiles}. Más finalista, robustez marcada y diagnóstico 2025–2026 no seleccionable. ¿Continuar?`;
       if (!confirm(confirmMsg)) return;
       const robustnessComponents = Array.from(
         document.querySelectorAll("[data-robustness]:checked"), (i) => i.dataset.robustness);
@@ -436,7 +494,13 @@
   }
 
   async function launchOptimization() {
-    if (!confirm("La optimization oficial ejecutará Fase 1, Fase 2 dirigida, afinado y validación reservada. ¿Continuar?")) return;
+    const budget = S().officialEvaluationBudget || {};
+    const maxFits = budget.max_expensive_fits ?? 10;
+    if (!officialPreflight && !(await loadOfficialPreflight())) {
+      notify("El full study no puede arrancar hasta superar el preflight.", true);
+      return;
+    }
+    if (!confirm(`Se ejecutarán exactamente ${budget.total ?? 48} evaluaciones, con un máximo duro de ${maxFits} fits caros y 2025–2026 fuera de toda selección. ¿Continuar?`)) return;
     try {
       const job = await api("/api/optimization", {
         settings: S().defaults,
@@ -445,7 +509,7 @@
           hypothesis: el("full-study-hypothesis")?.value || "",
         },
       });
-      notify(`Optimization ${job.job_id} iniciada.`);
+      notify(`Full study oficial ${job.job_id} iniciado.`);
       global.TFM.loadJobsAndRuns();
     } catch (e) { notify(e.message, true); }
   }
@@ -488,7 +552,7 @@
         </article>
         <article class="card">
           <h3>Full study</h3>
-          <p>Todos los ejes, fases dirigidas, afinado y validación reservada.</p>
+          <p>48 evaluaciones confirmatorias: señal, cartera, perfiles, stresses y robustez sin seleccionar con 2025–2026.</p>
           <button class="button primary" onclick="TFM.views.console.showForm('full-study')">Revisar y lanzar</button>
         </article>
       </div>
@@ -513,6 +577,6 @@
 
   global.TFM.views.console = {
     render, refreshJobs, showForm, applyPreset, launchExperimental,
-    launchStudy, launchOptimization, updateStudyCount,
+    launchStudy, launchOptimization, updateStudyCount, retryOfficialPreflight,
   };
 })(window);

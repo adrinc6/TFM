@@ -89,3 +89,27 @@ def test_equity_delta_matches_positions_return_minus_costs(
         )
         # Y que gross_return - drag reconstruye lo mismo (evita que costes esten mal contados)
         assert row["portfolio_return"] == pytest.approx(gross_return + cost_drag, abs=1e-9)
+
+
+def test_initial_cost_and_accounting_identity_are_auditable(
+    portfolio_settings, synthetic_scores, synthetic_prices, synthetic_benchmark
+) -> None:
+    settings = replace(
+        portfolio_settings, target_size=5, commission_bps=5, slippage_bps=10,
+    )
+    result = run_backtest(synthetic_scores, synthetic_prices, synthetic_benchmark, settings)
+
+    first = result.equity.sort_values("snapshot_date").iloc[0]
+    assert first["portfolio_value"] < first["period_start_portfolio_value"]
+    assert first["cost_drag"] > 0
+    assert first["accounting_error"] == pytest.approx(0.0, abs=1e-10)
+    assert first["portfolio_value"] == pytest.approx(
+        first["positions_value"] + first["benchmark_core_value"] + first["cash"],
+        abs=1e-10,
+    )
+    assert (result.equity["cash"] >= -1e-10).all()
+    assert result.equity["total_weight"].tolist() == pytest.approx(
+        [1.0] * len(result.equity)
+    )
+    assert {"units", "market_value", "entry_cost"}.issubset(result.positions.columns)
+    assert {"notional", "commission_amount", "slippage_amount"}.issubset(result.orders.columns)

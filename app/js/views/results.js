@@ -27,13 +27,24 @@
     if (!rows.length) return `<tr><td colspan="6" class="empty">Sin estudios.</td></tr>`;
     return rows.map((s) => {
       const d = studyMetrics(s.study_id);
+      const official = s.protocol_version === 2;
+      const decision = s.decision_summary || {};
+      const selectedIc = official ? decision.signal_rank_ic : d.best_rank_ic;
+      const progress = `${s.completed_evaluations ?? 0}/${s.evaluation_budget?.total ?? 48}`;
+      const metric = official && ["queued", "running"].includes(String(s.status || ""))
+        ? progress : fmt(selectedIc);
+      const metricClass = typeof selectedIc === "number"
+        ? (selectedIc >= 0 ? "positive" : "negative") : "";
+      const note = official && decision.verdict
+        ? `${decision.verdict} · señal: ${decision.signal_winner || "—"} · cartera: ${decision.portfolio_winner || "—"}`
+        : (s.description || "").slice(0, 80);
       return `<tr class="click" onclick="TFM.views.results.openStudy('${escapeHtml(s.study_id)}')">
         <td><strong>${escapeHtml(s.name || s.study_id)}</strong><br><small class="muted mono">${escapeHtml(s.study_id)}</small></td>
         <td>${escapeHtml(s.kind || "—")}</td>
         <td>${escapeHtml(s.status || "—")}</td>
         <td>${d.n_runs || "—"}</td>
-        <td class="${(d.best_rank_ic || 0) >= 0 ? "positive" : "negative"}">${fmt(d.best_rank_ic)}</td>
-        <td>${escapeHtml((s.description || "").slice(0, 80))}</td>
+        <td class="${metricClass}">${metric}</td>
+        <td>${escapeHtml(note)}</td>
       </tr>`;
     }).join("");
   }
@@ -41,7 +52,7 @@
   function studiesTable() {
     return `<div class="table-wrap scroll" style="max-height:none">
       <table class="data"><thead><tr>
-        <th>Estudio</th><th>Tipo</th><th>Estado</th><th>Runs</th><th>Mejor rank-IC</th><th>Notas</th>
+        <th>Estudio</th><th>Tipo</th><th>Estado</th><th>Runs</th><th>Rank-IC seleccionado / progreso</th><th>Veredicto / notas</th>
       </tr></thead><tbody>${studyRows()}</tbody></table></div>`;
   }
 

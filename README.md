@@ -25,31 +25,33 @@ $env:RUN_SCOPE = "full"
 python -u main.py
 ```
 
-También puede lanzarse desde **Full study → Revisar y lanzar** en la consola. Esa pantalla permite escribir nombre e hipótesis y muestra, sin posibilidad de editar:
+También puede lanzarse desde **Full study → Revisar y lanzar** en la consola. El protocolo oficial
+es confirmatorio y cerrado: ejecuta exactamente **48 evaluaciones**, aborta antes de crear el study
+si proyecta más de 10 walk-forwards caros o 5 GiB incrementales, y no expande dinámicamente el
+catálogo manual.
 
-- todos los ejes que el estudio barre;
-- parámetros metodológicos fijos;
-- escenarios de estrés de costes.
+El presupuesto se reparte en 12 challengers de señal, 2 semillas confirmatorias, 12 políticas de
+cartera, 8 perfiles, 6 stresses económicos y 8 evaluaciones estadísticas. Los diez primeros
+challengers del meta reutilizan los mismos fits. En caché fría se presupuestan de forma
+conservadora 10 fits caros —incumbent, variantes de lookback/recencia, semillas y placebos—; si
+el incumbent ya está reciclado, el consumo real será menor.
 
-El ciclo es dirigido, no un producto cartesiano: ablaciones aisladas de modelo, combinación greedy de candidatos aceptados, afinado, configuración de cartera, perfiles, estrés de costes, robustez y validación reservada.
+La selección histórica usa tres eras —2015–2018, 2019–2021 y 2022–2024—. Los años 2025–2026 son
+un estrés histórico conocido y se muestran separados con la marca `known_stress_not_selection`;
+nunca deciden el ganador.
 
-Las Fases 1–2 optimizan también calendario, `execution_lag_days`, cadencias y horizonte. Los
-hiperparámetros de capacidad (`n_estimators`, `learning_rate` y `min_child_samples`) se reservan
-para un afinado greedy en Fase 3. La cartera se elige con datos hasta 2024 sobre el artefacto
-exacto del modelo ganador; 2025–2026 no interviene en esa elección.
+`study` conserva el catálogo amplio para exploración manual. `full_study` usa
+`OFFICIAL_STUDY_PROTOCOL`, con challengers y políticas pre-registrados; ambos modos ya no tienen
+que compartir todos los ejes.
 
-`study` y `full_study` comparten exactamente el mismo catálogo y la misma asignación de fases.
-El primero permite seleccionar subconjuntos; el segundo ejecuta todos los valores admitidos.
+La cartera oficial compara el legacy corregido con rebalanceo trimestral y cuatro vintages
+trimestrales mantenidos 12 meses. Puede asignar el presupuesto entre un satélite de acciones y un
+núcleo SPY, con sizing equiponderado, legacy o alfa calibrado point-in-time. La selección maximiza
+Information Ratio neto por era bajo gates de alfa, turnover y costes.
 
-La cartera opera el `meta_rank` con tamaños fijos de 5, 8, 10, 12 o 15 posiciones (8 por
-defecto). Una tenencia se vende si no supera su percentil de mantenimiento; los reemplazos
-ordinarios requieren una ventaja de ranking. Los pesos se calculan a partir del `meta_rank` y se
-normalizan al 100 %, con un máximo de dos veces el peso de la posición menor.
-
-Los ocho perfiles se publican como resultados paralelos. `balanced` conserva el ranking puro de
-`meta_final` y actúa como referencia; no se elige retrospectivamente un «mejor perfil».
-
-La selección del modelo usa solo cohortes con fecha de predicción hasta **2024**. Los años **2025–2026** quedan reservados para una única validación final. Las comisiones, el slippage y la semilla no se optimizan: se reportan como estrés y robustez.
+Los ocho perfiles se publican como diagnósticos paralelos, con la misma trayectoria de exposición
+activa y sizing equal. Ningún perfil puede modificar `best_config`. Si ninguna alternativa supera
+los criterios predefinidos, se conserva el incumbent y el veredicto es `no_improvement`.
 
 ## Rendimiento, aislamiento y operación
 
@@ -58,10 +60,13 @@ código y telemetría. La caché es por etapa: dataset, features, agentes y back
 restauran cuando su configuración efectiva y sus entradas coinciden; un run interrumpido nunca se
 trata como completo.
 
-La Fase 1 planifica tandas de hasta cuatro escenarios. Antes de lanzarlos separa las dependencias
-de dataset, features y agentes para no duplicar una materialización mientras otro worker la está
-construyendo. Cada worker usa tres hilos de modelo; el baseline puede compartir tanda con
-escenarios realmente independientes. Las fases greedy siguen siendo secuenciales por diseño.
+El preflight informa claves únicas de dataset, features, fits y agentes, tiempo estimado desde la
+telemetría y almacenamiento máximo. La traducción de cartera es deliberadamente secuencial por
+familias —estructura, sizing, overlay y hurdle— para evitar un cartesiano sin hipótesis económica.
+En el dashboard el botón permanece deshabilitado hasta superar ese preflight. Durante la ejecución
+se muestran fase, escenario y progreso sobre 48; al terminar, la vista presenta ganadores,
+rechazos, resultados por era, stress 2025–2026, perfiles, robustez, almacenamiento y todos los
+artefactos del study para descarga.
 
 La consola del study muestra los logs agregados de todos los runs activos, etiquetados por run, y
 puede sustituir temporalmente la comparativa. Las líneas visibles se limitan a unas veinte, con

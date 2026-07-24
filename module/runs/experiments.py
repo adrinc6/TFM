@@ -91,7 +91,9 @@ FINGERPRINT_FIELDS: dict[str, tuple[str, ...]] = {
         "moving_averages", "regime_extended", "quality_growth_derived",
         "target_horizon_months", "execution_year", "execution_quarter",
         "execution_lag_days", "train_lookback_years", "fundamental_step_months",
-        "meta_ic_lookback_quarters", "min_rank_ic_cross_section",
+        "meta_ic_lookback_quarters", "meta_history_mode", "meta_history_quarters",
+        "meta_decay_half_life_quarters", "meta_weight_cap", "meta_equal_shrinkage",
+        "min_rank_ic_cross_section",
         "objective", "lgbm_n_estimators", "lgbm_max_depth",
         "lgbm_learning_rate", "lgbm_min_child_samples", "random_seed", "meta_type",
         "recency_weighting",
@@ -109,7 +111,9 @@ FINGERPRINT_FIELDS: dict[str, tuple[str, ...]] = {
         "moving_averages", "regime_extended", "quality_growth_derived",
         "target_horizon_months", "execution_year", "execution_quarter",
         "execution_lag_days", "train_lookback_years", "fundamental_step_months",
-        "meta_ic_lookback_quarters", "min_rank_ic_cross_section",
+        "meta_ic_lookback_quarters", "meta_history_mode", "meta_history_quarters",
+        "meta_decay_half_life_quarters", "meta_weight_cap", "meta_equal_shrinkage",
+        "min_rank_ic_cross_section",
         "objective", "lgbm_n_estimators", "lgbm_max_depth",
         "lgbm_learning_rate", "lgbm_min_child_samples", "random_seed", "meta_type",
         "recency_weighting",
@@ -122,6 +126,9 @@ FINGERPRINT_FIELDS: dict[str, tuple[str, ...]] = {
         "target_size", "min_hold_percentile", "rotation_edge_percentiles",
         "commission_bps", "slippage_bps", "rebalance_drift_tolerance",
         "price_only_strictness_multiplier",
+        "portfolio_policy", "vintage_count", "holding_months", "sizing_mode",
+        "active_overlay_mode", "fixed_active_fraction", "signal_health_lookback_quarters",
+        "cost_hurdle_multiplier", "vintage_calendar_offset_months",
         "max_monthly_position_return", "profile",
     ),
 }
@@ -401,7 +408,7 @@ def _link_processed(source: Path, target: Path) -> None:
 
 
 def _link_features(source: Path, target: Path) -> None:
-    for name in ("features_point_in_time.parquet", "targets_forward_3m.parquet",
+    for name in ("features_point_in_time.parquet", "targets_forward.parquet",
                  "baseline_scores.parquet"):
         source_file = source / name
         if source_file.exists():

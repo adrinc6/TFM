@@ -38,13 +38,17 @@ def label_permutation_test(
     permuted = permuted[np.isfinite(permuted)]
     if len(permuted) == 0:
         return {"rank_ic_real": float(real), "placebo_mean": 0.0, "p_value": 1.0, "n_permutations": 0}
-    p_value = float((permuted >= real).mean())
+    # Corrección add-one: con un número finito de permutaciones el p-valor nunca puede ser cero.
+    # Con tres placebos el mínimo inferencial es 1/4, no 0.
+    exceedances = int((permuted >= real).sum())
+    p_value = float((exceedances + 1) / (len(permuted) + 1))
     return {
         "rank_ic_real": float(real),
         "placebo_mean": float(permuted.mean()),
         "placebo_std": float(permuted.std()),
         "p_value": p_value,
         "n_permutations": int(len(permuted)),
+        "add_one_correction": True,
         "signal_above_chance": bool(p_value < 0.05),
     }
 

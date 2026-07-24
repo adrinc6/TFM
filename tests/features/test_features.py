@@ -8,11 +8,13 @@ from module.modeling.features import build_features
 
 def test_features_are_point_in_time_and_targets_are_separate(feature_settings) -> None:
     features = build_features(feature_settings)
-    targets = pd.read_parquet(feature_settings.processed_output_dir / "targets_forward_3m.parquet")
+    targets = pd.read_parquet(feature_settings.processed_output_dir / "targets_forward.parquet")
     baselines = pd.read_parquet(feature_settings.processed_output_dir / "baseline_scores.parquet")
 
     last_snapshot = snapshot_dates(feature_settings)[-1].date().isoformat()
     assert "forward_excess_return_3m" not in features.columns
+    assert "forward_excess_return_3m" not in targets.columns
+    assert "forward_excess_return" in targets.columns
     assert {"factor_roe", "factor_pe", "factor_relative_return_3m"} <= set(features.columns)
     assert targets["target_available"].any()
     assert not targets.loc[targets["snapshot_date"] == last_snapshot, "target_available"].any()

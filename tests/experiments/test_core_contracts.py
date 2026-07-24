@@ -7,7 +7,10 @@ import pandas as pd
 import main
 from environment import Settings
 from module.runs.experiments import select_winner, split_variables, stage_fingerprint, stress_variables
-from module.scenarios.variables import FULL_STUDY_OPTIONS, FULL_STUDY_PHASE3_OPTIONS
+from module.scenarios.variables import (
+    MANUAL_STUDY_MODEL_AND_PORTFOLIO_OPTIONS, MANUAL_STUDY_OPTIONS,
+    MANUAL_STUDY_PHASE3_OPTIONS, OFFICIAL_SIGNAL_CHALLENGERS, official_evaluation_budget,
+)
 
 
 def test_only_portfolio_change_affects_only_backtest() -> None:
@@ -50,7 +53,10 @@ def test_mechanical_portfolio_rules_are_stressed_not_optimized() -> None:
     assert stress_variables(variables) == {"min_hold_percentile": [70, 80]}
 
 
-def test_study_and_full_study_share_the_same_catalogue_by_phase() -> None:
-    assert "lgbm_max_depth" not in FULL_STUDY_OPTIONS
-    assert "lgbm_max_depth" in FULL_STUDY_PHASE3_OPTIONS
-    assert "target_size" in FULL_STUDY_OPTIONS
+def test_manual_catalogue_remains_available_but_official_protocol_is_closed() -> None:
+    assert "lgbm_max_depth" not in MANUAL_STUDY_MODEL_AND_PORTFOLIO_OPTIONS
+    assert "lgbm_max_depth" in MANUAL_STUDY_PHASE3_OPTIONS
+    assert "target_size" in MANUAL_STUDY_OPTIONS
+    assert len(OFFICIAL_SIGNAL_CHALLENGERS) == 12
+    assert official_evaluation_budget()["total"] == 48
+    assert official_evaluation_budget()["max_expensive_fits"] == 10

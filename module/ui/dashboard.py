@@ -23,10 +23,14 @@ from module.common.utils import pid_alive
 from module.runs.execution import (ROBUSTNESS_COMPONENTS, execute_official_optimization,
                                    execute_run, execute_study)
 from module.runs.experiments import PORTFOLIO_STRESS_FIELDS, split_variables
+from module.runs.official_protocol import official_preflight
 from module.runs.results_store import RESULTS_ROOT, ResultsStore, list_registry
 from module.scenarios.variables import (COST_STRESS_CASES, EXPERIMENT_OPTIONS, FULL_AGENTS,
-                                        FULL_FEATURE_BLOCKS, FULL_STUDY_OPTIONS,
-                                        FULL_STUDY_PHASE3_OPTIONS, STUDY_OPTIONS)
+                                        FULL_FEATURE_BLOCKS,
+                                        MANUAL_STUDY_MODEL_AND_PORTFOLIO_OPTIONS,
+                                        MANUAL_STUDY_PHASE3_OPTIONS,
+                                        OFFICIAL_SIGNAL_CHALLENGERS, OFFICIAL_STUDY_PROTOCOL,
+                                        STUDY_OPTIONS, official_evaluation_budget)
 
 
 class JobManager:
@@ -174,9 +178,16 @@ PROFILE_LABELS = {
     "defensive": "Defensivo · baja volatilidad y calidad", "garp": "GARP · crecimiento a precio razonable",
 }
 
-# Audit trail shown before an official full study.  These are deliberately fixed
-# integrity constants rather than optimisation axes.
-FULL_STUDY_FIXED_SETTINGS = {
+_OFFICIAL_SIGNAL_OVERRIDES = [
+    dict(candidate["overrides"]) for candidate in OFFICIAL_SIGNAL_CHALLENGERS
+]
+_OFFICIAL_COMMON_OVERRIDES = {
+    key: value for key, value in _OFFICIAL_SIGNAL_OVERRIDES[0].items()
+    if all(candidate.get(key) == value for candidate in _OFFICIAL_SIGNAL_OVERRIDES[1:])
+}
+
+# Audit trail shown before an official full study. These values are fixed in every challenger.
+OFFICIAL_FIXED_SETTINGS = {
     "data_start_date": Settings().data_start_date,
     "end_date": Settings().end_date,
     "benchmark_ticker": Settings().benchmark_ticker,
@@ -187,19 +198,20 @@ FULL_STUDY_FIXED_SETTINGS = {
     "min_training_rows": MIN_TRAINING_ROWS,
     "recency_halflife_years": RECENCY_HALFLIFE_YEARS,
     "neutralize_min_group": NEUTRALIZE_MIN_GROUP,
-    "rebalance_drift_tolerance": Settings().rebalance_drift_tolerance,
-    "max_monthly_position_return": Settings().max_monthly_position_return,
-    "random_seed": Settings().random_seed,
+    **_OFFICIAL_COMMON_OVERRIDES,
 }
-FULL_STUDY_STRESS_SETTINGS = {
+MANUAL_STRESS_OPTIONS = {
     "commission_bps": sorted({case["overrides"]["commission_bps"] for case in COST_STRESS_CASES}),
     "slippage_bps": sorted({case["overrides"]["slippage_bps"] for case in COST_STRESS_CASES}),
     # Reglas de cartera mecánicas: se estresan (se reportan), no se optimizan. Ver
     # experiments.PORTFOLIO_STRESS_FIELDS y execution._portfolio_stress_phase.
-    **{axis: list(FULL_STUDY_OPTIONS[axis])
-       for axis in PORTFOLIO_STRESS_FIELDS if axis in FULL_STUDY_OPTIONS},
+    **{axis: list(MANUAL_STUDY_MODEL_AND_PORTFOLIO_OPTIONS[axis])
+       for axis in PORTFOLIO_STRESS_FIELDS
+       if axis in MANUAL_STUDY_MODEL_AND_PORTFOLIO_OPTIONS},
 }
-FULL_STUDY_MODEL_OPTIONS, FULL_STUDY_PORTFOLIO_OPTIONS = split_variables(FULL_STUDY_OPTIONS)
+MANUAL_MODEL_OPTIONS, MANUAL_PORTFOLIO_OPTIONS = split_variables(
+    MANUAL_STUDY_MODEL_AND_PORTFOLIO_OPTIONS
+)
 # Límite defensivo del modo cartesiano: cada combinación entrena y backtestea un run completo.
 CARTESIAN_STUDY_LIMIT = 500
 
@@ -402,16 +414,15 @@ class DashboardHandler(BaseHTTPRequestHandler):
             return _json(self, {"settings": asdict(Settings()), "groups": SETTINGS_GROUPS,
                                 "study_options": STUDY_OPTIONS, "experiment_presets": EXPERIMENT_PRESETS,
                                 "settings_options": EXPERIMENT_OPTIONS,
-                                "study_model_options": FULL_STUDY_MODEL_OPTIONS,
-                                "study_portfolio_options": FULL_STUDY_PORTFOLIO_OPTIONS,
-                                "study_phase3_options": FULL_STUDY_PHASE3_OPTIONS,
-                                "full_study_model_options": FULL_STUDY_MODEL_OPTIONS,
-                                "full_study_portfolio_options": FULL_STUDY_PORTFOLIO_OPTIONS,
-                                "full_study_phase3_options": FULL_STUDY_PHASE3_OPTIONS,
-                                "full_study_profiles": list(PROFILE_LABELS),
+                                "study_model_options": MANUAL_MODEL_OPTIONS,
+                                "study_portfolio_options": MANUAL_PORTFOLIO_OPTIONS,
+                                "study_phase3_options": MANUAL_STUDY_PHASE3_OPTIONS,
+                                "profile_catalog": list(PROFILE_LABELS),
                                 "study_option_groups": STUDY_OPTION_GROUPS,
-                                "full_study_fixed_settings": FULL_STUDY_FIXED_SETTINGS,
-                                "full_study_stress_settings": FULL_STUDY_STRESS_SETTINGS,
+                                "official_fixed_settings": OFFICIAL_FIXED_SETTINGS,
+                                "manual_stress_options": MANUAL_STRESS_OPTIONS,
+                                "official_study_protocol": OFFICIAL_STUDY_PROTOCOL,
+                                "official_evaluation_budget": official_evaluation_budget(),
                                 # Catálogos atómicos: la UI del study deja elegir el conjunto base
                                 # de agentes/bloques/familias sobre el que se aplica la ablación,
                                 # en vez de ofrecer combinaciones pre-calculadas.
@@ -432,8 +443,29 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 for directory in sorted(STORE.studies_root.iterdir(), reverse=True):
                     manifest = directory / "study_manifest.json"
                     if manifest.exists():
-                        studies.append(_reconcile_study_status(
-                            json.loads(manifest.read_text(encoding="utf-8"))))
+                        item = _reconcile_study_status(
+                            json.loads(manifest.read_text(encoding="utf-8"))
+                        )
+                        decision_path = directory / "decision.json"
+                        if decision_path.exists():
+                            try:
+                                decision = json.loads(decision_path.read_text(encoding="utf-8"))
+                            except (OSError, json.JSONDecodeError):
+                                decision = {}
+                            if decision.get("schema_version") == 2:
+                                item["decision_summary"] = {
+                                    "verdict": decision.get("verdict"),
+                                    "signal_winner": decision.get("signal_winner", {}).get(
+                                        "scenario"
+                                    ),
+                                    "signal_rank_ic": decision.get("signal_winner", {}).get(
+                                        "mean_rank_ic"
+                                    ),
+                                    "portfolio_winner": decision.get(
+                                        "portfolio_winner", {}
+                                    ).get("scenario"),
+                                }
+                        studies.append(item)
             return _json(self, {"studies": studies})
         if parsed.path.startswith("/api/study/") and parsed.path.endswith("/live-log"):
             study_id = parsed.path.removeprefix("/api/study/").removesuffix("/live-log").rstrip("/")
@@ -522,6 +554,12 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     settings, study_payload=payload.get("study", {}), variables=variables,
                     search_mode=search_mode))
                 return _json(self, {"job_id": job}, 202)
+            if self.path == "/api/official/preflight":
+                try:
+                    preflight = official_preflight(_settings_from_payload(payload), STORE)
+                except (FileNotFoundError, RuntimeError, ValueError) as exc:
+                    return _json(self, {"error": str(exc)}, 400)
+                return _json(self, {"preflight": preflight})
             if self.path == "/api/optimization":
                 if JOBS.has_active_study():
                     return _json(self, {"error": "Ya hay un full study activo en esta consola."}, 409)
@@ -590,7 +628,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
         # económicas pueden tener 1--3 en el parquet aunque su decisión sí conserva los
         # runs de cartera y perfiles. Los reconstruimos para que la consola muestre el ciclo
         # completo sin alterar los resultados inmutables del estudio.
-        comparison = _complete_phase_comparison(comparison, decision)
+        if decision.get("schema_version") != 2:
+            comparison = _complete_historical_phase_comparison(comparison, decision)
         # Enriquecer cada run miembro con su bloque `execution` (tiempos por etapa, fuente
         # reciclado/computado y telemetría). El registro es compacto y no lo lleva; se lee del
         # run_manifest.json sin modificar ningún artefacto inmutable.
@@ -606,9 +645,14 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     continue
                 member["execution"] = payload.get("execution", {})
                 member["intent_label"] = payload.get("intent", {}).get("label")
+        study_artifacts = [
+            str(path.relative_to(directory)).replace("\\", "/")
+            for path in directory.rglob("*") if path.is_file()
+        ]
         return _json(self, {"manifest": manifest, "run_ids": run_ids.get("run_ids", []),
                             "reused_run_ids": run_ids.get("reused_run_ids", []),
-                            "decision": decision, "runs": members, "comparison": comparison})
+                            "decision": decision, "runs": members, "comparison": comparison,
+                            "artifacts": study_artifacts})
 
     def _study_live_log(self, study_id: str) -> None:
         """Entrega una cola de log de solo lectura para un study en ejecución.
@@ -668,12 +712,14 @@ class DashboardHandler(BaseHTTPRequestHandler):
             "study_status": study_manifest.get("status"),
             "current_phase": study_manifest.get("current_phase"),
             "current_scenario": study_manifest.get("current_scenario"),
+            "completed_evaluations": study_manifest.get("completed_evaluations"),
+            "evaluation_budget": study_manifest.get("evaluation_budget"),
             "active_runs": active_runs,
             "lines": lines,
         })
 
     def _table(self, run_id: str, name: str, query: dict[str, list[str]]) -> None:
-        path = _safe_run(run_id) / "artifacts" / name
+        path = _artifact_path(run_id, name)
         if not path.exists():
             return _json(self, {"columns": [], "rows": [], "total": 0})
         frame = pd.read_parquet(path)
@@ -691,7 +737,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
     def _ranking_snapshots(self, run_id: str) -> None:
         """Lista los snapshots disponibles en agent_scores.parquet para poblar el selector."""
-        path = _safe_run(run_id) / "artifacts" / "agent_scores.parquet"
+        path = _artifact_path(run_id, "agent_scores.parquet")
         if not path.exists():
             return _json(self, {"available": False, "snapshots": [],
                                 "message": "Este run no conserva el ranking de agentes. Relánzalo para explorarlo."})
@@ -701,14 +747,14 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
     def _ticker(self, run_id: str, ticker: str) -> None:
         artifacts = _safe_run(run_id) / "artifacts"
-        scores_path = artifacts / "agent_scores.parquet"
+        scores_path = _artifact_path(run_id, "agent_scores.parquet")
         if not scores_path.exists() or not ticker:
             return _json(self, {"scores": [], "positions": [], "orders": []})
         scores_all = pd.read_parquet(scores_path)
         oos_start = pd.to_datetime(scores_all.get("snapshot_date"), errors="coerce").min()
         scores = scores_all.loc[scores_all["ticker"].astype(str).str.upper() == ticker.upper()]
         positions_path, orders_path = artifacts / "position_lifecycle.parquet", artifacts / "orders.parquet"
-        prices_path = artifacts / "asset_price_point_in_time.parquet"
+        prices_path = _artifact_path(run_id, "asset_price_point_in_time.parquet")
         positions = pd.read_parquet(positions_path) if positions_path.exists() else pd.DataFrame()
         orders = pd.read_parquet(orders_path) if orders_path.exists() else pd.DataFrame()
         if not positions.empty:
@@ -729,7 +775,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
                      "orders": orders.to_dict("records"), "prices": prices.to_dict("records")})
 
     def _stock_panel(self, run_id: str) -> pd.DataFrame | None:
-        path = _safe_run(run_id) / "artifacts" / "stock_panel.parquet"
+        path = _artifact_path(run_id, "stock_panel.parquet")
         return pd.read_parquet(path) if path.exists() else None
 
     def _stocks(self, run_id: str, query: str) -> None:
@@ -741,7 +787,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
         needle = query.strip().upper()
         if needle:
             values = [ticker for ticker in values if needle in ticker]
-        scores_path = _safe_run(run_id) / "artifacts" / "agent_scores.parquet"
+        scores_path = _artifact_path(run_id, "agent_scores.parquet")
         scores = pd.read_parquet(scores_path) if scores_path.exists() else pd.DataFrame()
         dates = pd.to_datetime(scores.get("snapshot_date", pd.Series(dtype="datetime64[ns]")), errors="coerce").dropna()
         # Con búsqueda se devuelven todas las coincidencias (se puede buscar cualquier acción del
@@ -764,7 +810,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
         ticker = ticker.strip().upper()
         if not ticker:
             return _json(self, {"error": "Selecciona un ticker."}, 400)
-        scores_path = _safe_run(run_id) / "artifacts" / "agent_scores.parquet"
+        scores_path = _artifact_path(run_id, "agent_scores.parquet")
         scores = pd.read_parquet(scores_path) if scores_path.exists() else pd.DataFrame()
         scores = scores.loc[scores.get("ticker", pd.Series(dtype=str)).astype(str).str.upper() == ticker].copy()
         panel = panel.loc[panel["ticker"].astype(str).str.upper() == ticker].copy()
@@ -790,7 +836,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
         if row.empty:
             row = panel.loc[panel["snapshot_date"] <= snapshot].tail(1)
         latest = row.iloc[0]
-        universe = pd.read_parquet(_safe_run(run_id) / "artifacts" / "stock_panel.parquet")
+        universe = pd.read_parquet(_artifact_path(run_id, "stock_panel.parquet"))
         universe["snapshot_date"] = pd.to_datetime(universe["snapshot_date"])
         universe = universe.loc[universe["snapshot_date"] == latest.snapshot_date]
         ratios = []
@@ -833,23 +879,22 @@ class DashboardHandler(BaseHTTPRequestHandler):
     def _stock_agents(self, query: dict[str, list[str]]) -> None:
         run_id = query.get("run_id", [""])[0]
         ticker = query.get("ticker", [""])[0].strip().upper()
-        artifacts = _safe_run(run_id) / "artifacts"
-        scores_path = artifacts / "agent_scores.parquet"
+        scores_path = _artifact_path(run_id, "agent_scores.parquet")
         if not scores_path.exists() or not ticker:
             return _json(self, {"scores": [], "contributions": [], "weights": [], "global_importance": []})
         scores = pd.read_parquet(scores_path)
         scores = scores.loc[scores["ticker"].astype(str).str.upper() == ticker].sort_values("snapshot_date")
         date = query.get("snapshot_date", [""])[0] or (str(scores.iloc[-1]["snapshot_date"]) if not scores.empty else "")
-        attribution_path = artifacts / "agent_local_attribution.parquet"
+        attribution_path = _artifact_path(run_id, "agent_local_attribution.parquet")
         attribution = pd.read_parquet(attribution_path) if attribution_path.exists() else pd.DataFrame()
         if not attribution.empty:
             attribution = attribution.loc[(attribution["ticker"].astype(str).str.upper() == ticker)
                                           & (attribution["snapshot_date"].astype(str) == date)]
-        weights_path = artifacts / "meta_weights.parquet"
+        weights_path = _artifact_path(run_id, "meta_weights.parquet")
         weights = pd.read_parquet(weights_path) if weights_path.exists() else pd.DataFrame()
         if not weights.empty:
             weights = weights.loc[weights["snapshot_date"].astype(str) == date]
-        importance_path = artifacts / "model_feature_attribution.parquet"
+        importance_path = _artifact_path(run_id, "model_feature_attribution.parquet")
         importance = pd.read_parquet(importance_path) if importance_path.exists() else pd.DataFrame()
         # `date` puede no coincidir con ningún snapshot con score (fecha suelta vía URL manual, etc.).
         # En ese caso el slice queda vacío: no se hace .iloc[0] (evita IndexError) y se deja la
@@ -862,7 +907,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
                              if {"agent", "importance_rank"}.issubset(attribution.columns) else [])
         importance_rows = (importance.sort_values(["agent", "coefficient"], ascending=[True, False]).to_dict("records")
                            if {"agent", "coefficient"}.issubset(importance.columns) else [])
-        diagnostics_path = artifacts / "feature_diagnostics.parquet"
+        diagnostics_path = _artifact_path(run_id, "feature_diagnostics.parquet")
         diagnostics = pd.read_parquet(diagnostics_path) if diagnostics_path.exists() else pd.DataFrame()
         diagnostics_rows = (diagnostics.sort_values("model_importance_mean", ascending=False).to_dict("records")
                             if "model_importance_mean" in diagnostics else [])
@@ -878,7 +923,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
     def _learning(self, run_id: str) -> None:
         artifacts = _safe_run(run_id) / "artifacts"
-        path = artifacts / "rank_ic_diagnostics.parquet"
+        path = _artifact_path(run_id, "rank_ic_diagnostics.parquet")
         if not path.exists():
             return _json(self, {"summary": [], "series": []})
         frame = pd.read_parquet(path)
@@ -1162,7 +1207,30 @@ def _safe_run(run_id: str) -> Path:
     return candidate
 
 
-def _complete_phase_comparison(comparison: list[dict], decision: dict) -> list[dict]:
+def _artifact_path(run_id: str, name: str, _visited: set[str] | None = None) -> Path:
+    """Resuelve un artefacto compacto siguiendo su referencia inmutable al run padre."""
+    visited = set() if _visited is None else _visited
+    if run_id in visited:
+        return _safe_run(run_id) / "artifacts" / name
+    visited.add(run_id)
+    artifacts = _safe_run(run_id) / "artifacts"
+    local = artifacts / name
+    if local.exists():
+        return local
+    reference = artifacts / "parent_run.json"
+    if not reference.exists():
+        return local
+    try:
+        payload = json.loads(reference.read_text(encoding="utf-8"))
+        parent = str(payload.get("parent_run_id") or payload.get("run_id") or "")
+    except (OSError, json.JSONDecodeError):
+        return local
+    if not parent:
+        return local
+    return _artifact_path(parent, name, visited)
+
+
+def _complete_historical_phase_comparison(comparison: list[dict], decision: dict) -> list[dict]:
     """Añade Fase 4 y 5 a comparativas históricas cuando están en ``decision.json``."""
     present = {(str(row.get("phase")), str(row.get("run_id")))
                for row in comparison if row.get("run_id")}
@@ -1180,7 +1248,8 @@ def _complete_phase_comparison(comparison: list[dict], decision: dict) -> list[d
 
     for profile, run_id in decision.get("profile_run_ids", {}).items():
         key = ("5_perfiles", str(run_id))
-        if run_id and key not in present:
+        modern_key = ("profiles", str(run_id))
+        if run_id and key not in present and modern_key not in present:
             additions.append(_comparison_row(str(run_id), "5_perfiles", str(profile), "profile", {"profile": profile}))
             present.add(key)
     return [*comparison, *additions]

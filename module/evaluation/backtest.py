@@ -22,7 +22,9 @@ import numpy as np
 import pandas as pd
 
 from environment import Settings
-from module.evaluation.portfolio import PortfolioState, decide_orders
+from module.evaluation.portfolio import (
+    PortfolioState, VintageBook, active_fraction, policy_target,
+)
 from module.common.utils import read_parquet, write_json, write_parquet
 
 log = logging.getLogger(__name__)
@@ -35,6 +37,8 @@ class BacktestResult:
     equity: pd.DataFrame
     annual_metrics: pd.DataFrame
     summary: dict = field(default_factory=dict)
+    vintage_positions: pd.DataFrame = field(default_factory=pd.DataFrame)
+    active_exposure: pd.DataFrame = field(default_factory=pd.DataFrame)
 
 
 def _stage_input(run_dir: Path, processed: Path, name: str) -> Path:
@@ -117,9 +121,11 @@ def run_backtest(
     empty_scores = scores.iloc[0:0]
 
     state = PortfolioState.empty()
+    vintages = VintageBook()
     initial_value = 100.0
     portfolio_value = initial_value
     benchmark_value = initial_value
+    previous_active_fraction = 0.0
 
     previous_benchmark_price = benchmark_index.get(snapshots[0])
     if previous_benchmark_price is None:
@@ -128,29 +134,140 @@ def run_backtest(
     positions_rows: list[dict] = []
     orders_rows: list[dict] = []
     equity_rows: list[dict] = []
+    vintage_rows: list[dict] = []
+    active_rows: list[dict] = []
     corrupt_log: list[dict] = []
     previous_position_prices: dict[str, float] = {}
 
     for index, snapshot_date in enumerate(snapshots):
-        gross_return = _mark_to_market(
+        stock_sleeve_return, drifted_holdings = _mark_to_market_and_drift(
             state.holdings, previous_position_prices, price_index, snapshot_date,
             settings.max_monthly_position_return, corrupt_log,
         )
-        portfolio_value_pre_orders = portfolio_value * (1 + gross_return)
+        state = PortfolioState(
+            holdings=drifted_holdings,
+            entry_dates=dict(state.entry_dates),
+            entry_prices=dict(state.entry_prices),
+            units=dict(state.units),
+            entry_costs=dict(state.entry_costs),
+            cash=state.cash,
+            costs_paid=state.costs_paid,
+        )
 
         current_benchmark_price = benchmark_index.get(snapshot_date, previous_benchmark_price)
         benchmark_return = current_benchmark_price / previous_benchmark_price - 1 if index > 0 else 0.0
         benchmark_value *= 1 + benchmark_return
+        gross_return = (
+            previous_active_fraction * stock_sleeve_return
+            + (1.0 - previous_active_fraction) * benchmark_return
+        )
+        portfolio_value_pre_orders = portfolio_value * (1 + gross_return)
 
         scores_at_date = scores_by_date.get(snapshot_date, empty_scores)
-        raw_orders, target_weights = decide_orders(state, scores_at_date, settings)
-        priced_orders, cost_drag = _price_orders(raw_orders, price_index, snapshot_date,
-                                                  state.holdings, settings)
+        target_weights, filled_fraction, vintage_detail = policy_target(
+            state, scores_at_date, settings, vintages,
+        )
+        requested_active = active_fraction(scores_at_date, settings)
+        if target_weights is None:
+            target_weights = dict(state.holdings)
+            filled_fraction = 1.0
+        # Un target sin precio PIT negociable no se compra. Su presupuesto queda en SPY y el guard
+        # se registra; nunca se inventa una ejecución a precio nulo.
+        current_prices = price_index.get(snapshot_date, {})
+        unavailable = [
+            ticker for ticker, weight in target_weights.items()
+            if weight > 0 and (
+                ticker not in current_prices or not np.isfinite(current_prices[ticker])
+                or current_prices[ticker] <= 0
+            )
+        ]
+        if unavailable:
+            for ticker in unavailable:
+                corrupt_log.append({
+                    "snapshot_date": snapshot_date,
+                    "ticker": ticker,
+                    "reason": "target_without_tradable_price_routed_to_spy",
+                })
+            target_weights = {
+                ticker: weight for ticker, weight in target_weights.items()
+                if ticker not in unavailable
+            }
+        target_sum = sum(target_weights.values())
+        if target_sum > 0:
+            normalized_target = {ticker: weight / target_sum for ticker, weight in target_weights.items()}
+        else:
+            normalized_target = {}
+        # ``target_sum`` ya incorpora tanto vintages aún vacíos como presupuesto no asignado por
+        # calibración/hurdle. Multiplicar otra vez por ``filled_fraction`` penalizaría al cuadrado
+        # el arranque de una cartera escalonada.
+        desired_active = requested_active * min(target_sum, 1.0)
+        before_total = {
+            ticker: previous_active_fraction * weight for ticker, weight in state.holdings.items()
+        }
+        after_total = {ticker: desired_active * weight for ticker, weight in normalized_target.items()}
+        raw_orders = _orders_from_total_weights(
+            before_total, after_total, snapshot_date,
+            reason="policy_rebalance" if index else "initial_fill",
+        )
+        spy_before = 1.0 - previous_active_fraction
+        spy_after = 1.0 - desired_active
+        if abs(spy_after - spy_before) > 1e-12:
+            raw_orders.append({
+                "snapshot_date": snapshot_date,
+                "ticker": settings.benchmark_ticker,
+                "side": "buy" if spy_after > spy_before else "sell",
+                "reason": "benchmark_sleeve",
+                "weight_before": spy_before,
+                "weight_after": spy_after,
+            })
+        priced_orders, cost_drag = _price_orders(
+            raw_orders, price_index, snapshot_date, before_total, settings,
+            benchmark_price=current_benchmark_price,
+            portfolio_value=portfolio_value_pre_orders,
+            fallback_prices=previous_position_prices,
+        )
 
         portfolio_value_post_orders = portfolio_value_pre_orders * (1 - cost_drag)
-        portfolio_return = portfolio_value_post_orders / portfolio_value - 1 if index > 0 else 0.0
+        portfolio_return = portfolio_value_post_orders / portfolio_value - 1
 
-        state = state.apply(priced_orders, price_index.get(snapshot_date, {}), target_weights)
+        old_entries = dict(state.entry_dates)
+        old_prices = dict(state.entry_prices)
+        old_entry_costs = dict(state.entry_costs)
+        commission_by_ticker = {
+            order["ticker"]: float(order.get("commission_amount", 0.0))
+            + float(order.get("slippage_amount", 0.0))
+            for order in priced_orders if order["side"] == "buy"
+        }
+        position_values = {
+            ticker: portfolio_value_post_orders * after_total[ticker]
+            for ticker in normalized_target
+        }
+        units = {
+            ticker: position_values[ticker] / current_prices[ticker]
+            for ticker in normalized_target
+        }
+        benchmark_core_value = portfolio_value_post_orders * (1.0 - desired_active)
+        cash = portfolio_value_post_orders - sum(position_values.values()) - benchmark_core_value
+        period_cost_amount = portfolio_value_pre_orders * cost_drag
+        state = PortfolioState(
+            holdings=normalized_target,
+            entry_dates={
+                ticker: old_entries.get(ticker, snapshot_date) for ticker in normalized_target
+            },
+            entry_prices={
+                ticker: old_prices.get(
+                    ticker, price_index.get(snapshot_date, {}).get(ticker, float("nan"))
+                )
+                for ticker in normalized_target
+            },
+            units=units,
+            entry_costs={
+                ticker: old_entry_costs.get(ticker, commission_by_ticker.get(ticker, 0.0))
+                for ticker in normalized_target
+            },
+            cash=cash,
+            costs_paid=state.costs_paid + period_cost_amount,
+        )
         turnover = sum(abs(order["weight_after"] - order["weight_before"])
                        for order in priced_orders if order["weight_before"] is not None
                        and order["weight_after"] is not None)
@@ -160,7 +277,8 @@ def run_backtest(
             for ticker in state.holdings
         }
 
-        for ticker, weight in state.holdings.items():
+        for ticker, sleeve_weight in state.holdings.items():
+            weight = desired_active * sleeve_weight
             entry_date = state.entry_dates.get(ticker, snapshot_date)
             positions_rows.append(
                 {
@@ -170,6 +288,9 @@ def run_backtest(
                     "entry_date": entry_date,
                     "entry_price": state.entry_prices.get(ticker),
                     "valuation_price": price_index.get(snapshot_date, {}).get(ticker),
+                    "units": state.units.get(ticker),
+                    "market_value": position_values.get(ticker),
+                    "entry_cost": state.entry_costs.get(ticker, 0.0),
                     "months_held": _months_between(entry_date, snapshot_date),
                     "current_percentile": float(_percentile_of(ticker, scores_at_date)),
                 }
@@ -177,21 +298,46 @@ def run_backtest(
 
         for order in priced_orders:
             orders_rows.append(order)
+        vintage_rows.extend(vintage_detail)
+        active_rows.append({
+            "snapshot_date": snapshot_date,
+            "requested_active_fraction": requested_active,
+            "effective_active_fraction": desired_active,
+            "benchmark_fraction": 1.0 - desired_active,
+            "filled_vintage_fraction": filled_fraction,
+        })
 
         equity_rows.append(
             {
                 "snapshot_date": snapshot_date,
+                "period_start_portfolio_value": portfolio_value,
+                "period_start_benchmark_value": benchmark_value / (1 + benchmark_return)
+                if 1 + benchmark_return != 0 else benchmark_value,
                 "portfolio_value": portfolio_value_post_orders,
                 "benchmark_value": benchmark_value,
                 "portfolio_return": portfolio_return,
                 "benchmark_return": benchmark_return,
                 "excess_return": portfolio_return - benchmark_return,
                 "turnover_pct": turnover,
+                "gross_return": gross_return,
+                "cost_drag": cost_drag,
+                "stock_sleeve_return": stock_sleeve_return,
+                "active_fraction": desired_active,
+                "positions_value": sum(position_values.values()),
+                "benchmark_core_value": benchmark_core_value,
+                "cash": cash,
+                "total_weight": desired_active + (1.0 - desired_active),
+                "accounting_error": (
+                    portfolio_value_post_orders
+                    - sum(position_values.values()) - benchmark_core_value - cash
+                ),
+                "cumulative_costs": state.costs_paid,
             }
         )
 
         portfolio_value = portfolio_value_post_orders
         previous_benchmark_price = current_benchmark_price
+        previous_active_fraction = desired_active
 
     positions = pd.DataFrame(positions_rows)
     orders = pd.DataFrame(orders_rows)
@@ -199,13 +345,73 @@ def run_backtest(
     annual_metrics = _annual_metrics(equity)
     summary = _summary(equity, annual_metrics, settings, diagnostics)
     summary["corrupt_returns_neutralized"] = len(corrupt_log)
+    summary["annualized_turnover"] = float(equity["turnover_pct"].mean() * 12) if not equity.empty else 0.0
+    summary["mean_active_fraction"] = float(equity["active_fraction"].mean()) if not equity.empty else 0.0
+    summary["portfolio_policy"] = settings.portfolio_policy
+    summary["sizing_mode"] = settings.sizing_mode
+    summary["active_overlay_mode"] = settings.active_overlay_mode
     if corrupt_log:
         log.warning("Guarda anti-artefactos: %s retornos corruptos neutralizados", len(corrupt_log))
 
     return BacktestResult(
         positions=positions, orders=orders, equity=equity,
         annual_metrics=annual_metrics, summary=summary,
+        vintage_positions=pd.DataFrame(vintage_rows),
+        active_exposure=pd.DataFrame(active_rows),
     )
+
+
+def _mark_to_market_and_drift(
+    holdings: dict[str, float],
+    previous_prices: dict[str, float],
+    price_index: dict[str, dict[str, float]],
+    snapshot_date: str,
+    max_return: float,
+    corrupt_log: list[dict] | None = None,
+) -> tuple[float, dict[str, float]]:
+    """Retorno del sleeve y pesos realmente derivados tras valorar las posiciones."""
+    if not holdings:
+        return 0.0, {}
+    current = price_index.get(snapshot_date, {})
+    grown: dict[str, float] = {}
+    for ticker, weight in holdings.items():
+        old_price = previous_prices.get(ticker)
+        new_price = current.get(ticker)
+        position_return = 0.0
+        if old_price is not None and new_price is not None and old_price > 0:
+            candidate = new_price / old_price - 1
+            if abs(candidate) <= max_return:
+                position_return = candidate
+            elif corrupt_log is not None:
+                corrupt_log.append({
+                    "snapshot_date": snapshot_date, "ticker": ticker,
+                    "position_return": candidate, "old_price": old_price, "new_price": new_price,
+                })
+        grown[ticker] = weight * (1.0 + position_return)
+    gross = sum(grown.values()) - sum(holdings.values())
+    total = sum(grown.values())
+    drifted = {ticker: value / total for ticker, value in grown.items()} if total > 0 else {}
+    return float(gross), drifted
+
+
+def _orders_from_total_weights(
+    before: dict[str, float], after: dict[str, float], snapshot_date: str, *, reason: str,
+) -> list[dict]:
+    orders: list[dict] = []
+    for ticker in sorted(set(before) | set(after)):
+        old = float(before.get(ticker, 0.0))
+        new = float(after.get(ticker, 0.0))
+        if abs(new - old) <= 1e-12:
+            continue
+        orders.append({
+            "snapshot_date": snapshot_date,
+            "ticker": ticker,
+            "side": "buy" if new > old else "sell",
+            "reason": reason,
+            "weight_before": old,
+            "weight_after": new,
+        })
+    return orders
 
 
 def _price_lookup(prices: pd.DataFrame) -> dict[str, dict[str, float]]:
@@ -261,17 +467,26 @@ def _price_orders(
     snapshot_date: str,
     current_holdings: dict[str, float],
     settings: Settings,
+    benchmark_price: float | None = None,
+    portfolio_value: float = 1.0,
+    fallback_prices: dict[str, float] | None = None,
 ) -> tuple[list[dict], float]:
     """Anade precio y costes a cada orden y calcula el drag de cash sobre el portfolio."""
     commission_rate = settings.commission_bps / 10_000
     slippage_rate = settings.slippage_bps / 10_000
     current_prices = price_index.get(snapshot_date, {})
     priced: list[dict] = []
-    total_notional_cost = 0.0
+    total_cost_amount = 0.0
+    fallback_prices = fallback_prices or {}
 
     for order in raw_orders:
         ticker = order["ticker"]
-        price = current_prices.get(ticker)
+        price = benchmark_price if ticker == settings.benchmark_ticker else current_prices.get(ticker)
+        price_guard = None
+        if price is None and order["side"] == "sell":
+            price = fallback_prices.get(ticker)
+            if price is not None:
+                price_guard = "stale_last_available_for_forced_exit"
         weight_before = order.get("weight_before")
         weight_after = order.get("weight_after")
         if weight_before is None:
@@ -280,8 +495,9 @@ def _price_orders(
             weight_after = 0.0 if order["side"] == "sell" else current_holdings.get(ticker, 0.0)
 
         notional_change = abs((weight_after or 0.0) - (weight_before or 0.0))
-        commission = notional_change * commission_rate
-        slippage = notional_change * slippage_rate
+        notional = notional_change * portfolio_value
+        commission = notional * commission_rate
+        slippage = notional * slippage_rate
 
         priced.append(
             {
@@ -289,12 +505,16 @@ def _price_orders(
                 "price": price,
                 "weight_before": weight_before,
                 "weight_after": weight_after,
+                "notional": notional,
                 "commission": commission,
                 "slippage": slippage,
+                "commission_amount": commission,
+                "slippage_amount": slippage,
+                "price_guard": price_guard,
             }
         )
-        total_notional_cost += commission + slippage
-    return priced, total_notional_cost
+        total_cost_amount += commission + slippage
+    return priced, total_cost_amount / portfolio_value if portfolio_value > 0 else 0.0
 
 
 def _months_between(entry_date: str, snapshot_date: str) -> int:
@@ -323,9 +543,11 @@ def _annual_metrics(equity: pd.DataFrame) -> pd.DataFrame:
     frame["year"] = frame["date"].dt.year
     rows: list[dict] = []
     for year, group in frame.groupby("year"):
-        first_pv = group["portfolio_value"].iloc[0]
+        first_pv = group["period_start_portfolio_value"].iloc[0] \
+            if "period_start_portfolio_value" in group else group["portfolio_value"].iloc[0]
         last_pv = group["portfolio_value"].iloc[-1]
-        first_bv = group["benchmark_value"].iloc[0]
+        first_bv = group["period_start_benchmark_value"].iloc[0] \
+            if "period_start_benchmark_value" in group else group["benchmark_value"].iloc[0]
         last_bv = group["benchmark_value"].iloc[-1]
         portfolio_return = last_pv / first_pv - 1 if first_pv > 0 else 0.0
         benchmark_return = last_bv / first_bv - 1 if first_bv > 0 else 0.0
@@ -435,8 +657,12 @@ def _economic_metrics(equity: pd.DataFrame) -> tuple[float, float, float]:
 
     pv = equity["portfolio_value"].to_numpy()
     bv = equity["benchmark_value"].to_numpy()
-    cagr_portfolio = float((pv[-1] / pv[0]) ** (1 / years) - 1) if pv[0] > 0 else 0.0
-    cagr_benchmark = float((bv[-1] / bv[0]) ** (1 / years) - 1) if bv[0] > 0 else 0.0
+    initial_pv = float(equity["period_start_portfolio_value"].iloc[0]) \
+        if "period_start_portfolio_value" in equity else float(pv[0])
+    initial_bv = float(equity["period_start_benchmark_value"].iloc[0]) \
+        if "period_start_benchmark_value" in equity else float(bv[0])
+    cagr_portfolio = float((pv[-1] / initial_pv) ** (1 / years) - 1) if initial_pv > 0 else 0.0
+    cagr_benchmark = float((bv[-1] / initial_bv) ** (1 / years) - 1) if initial_bv > 0 else 0.0
 
     pr = pd.to_numeric(equity["portfolio_return"], errors="coerce").fillna(0).to_numpy()
     br = pd.to_numeric(equity["benchmark_return"], errors="coerce").fillna(0).to_numpy()
@@ -477,6 +703,10 @@ def _write_outputs(result: BacktestResult, run_dir: Path, settings: Settings) ->
     write_parquet(result.orders, run_dir / "orders.parquet")
     write_parquet(result.equity, run_dir / "equity.parquet")
     write_parquet(result.annual_metrics, run_dir / "annual_metrics.parquet")
+    if not result.vintage_positions.empty:
+        write_parquet(result.vintage_positions, run_dir / "vintage_positions.parquet")
+    if not result.active_exposure.empty:
+        write_parquet(result.active_exposure, run_dir / "active_exposure.parquet")
     write_json(result.summary, run_dir / "backtest_summary.json")
 
     manifest_path = run_dir / "manifest.json"

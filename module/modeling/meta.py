@@ -1,23 +1,9 @@
-"""Combinación temporal de los agentes en un meta-score.
+"""Combinación point-in-time de agentes en un meta-score.
 
-Tres formas de ponderar (`meta_type`), de menos a más ambiciosa:
-
-- "equal": peso fijo 1/3 para cada agente. Ignora el rank-IC reciente; es la política de
-  combinación elegida, no un respaldo por falta de señal. Sirve de referencia: mide cuánto
-  aporta ponderar frente a promediar sin criterio.
-- "rank_ic": pesos proporcionales al rank-IC OOS reciente de cada agente (el original). Tras el
-  reparto se aplica un clamp por agente a [AGENT_WEIGHT_MIN, AGENT_WEIGHT_MAX] (10-50 %): mínimo
-  universal (nadie baja de 10 %, aunque su rank-IC sea negativo) y tope 50 %, para que el meta
-  siempre haga algo de caso a todos y no colapse sobre un agente.
-- "regime": parte de los pesos "rank_ic" y los inclina según el régimen de mercado (bull/bear)
-  detectado sin lookahead (retorno a 12m del benchmark hasta la fecha): en mercado alcista
-  realza `momentum`, en bajista realza `quality`. Renormaliza. La dirección de la inclinación
-  refleja el consenso de estilo (momentum funciona en tendencias alcistas, calidad defiende en
-  caídas); el tamaño del sesgo es fijo y modesto para no imponer una señal fuerte a mano.
-
-La combinación en sí (rankear los scores de cada agente y promediarlos con esos pesos) es común
-a las tres; solo cambia de dónde salen los pesos por fecha. El régimen se pasa por fecha a
-`_weights_as_of`; sin serie de régimen disponible, "regime" recae en "rank_ic".
+Admite equiponderación, ponderación por Rank-IC, régimen y stacking OOS. El stacking puede usar
+historia expanding, rolling o exponencial de cohortes trimestrales ya cerradas, con cap y
+contracción hacia equiponderación. Ningún peso puede usar una etiqueta cuyo ``label_end_date`` sea
+posterior a la fecha de decisión.
 """
 
 from __future__ import annotations
@@ -27,9 +13,7 @@ import pandas as pd
 
 from environment import Settings
 from module.modeling.catalog import AGENT_NAMES as CATALOG_AGENT_NAMES
-
-# API histórica: los tests y configuraciones antiguas siguen refiriéndose a estos tres.
-AGENT_NAMES = ("quality", "momentum", "value")
+from module.modeling.targets import normalize_target_columns
 
 def combine_agent_scores(
     scores: pd.DataFrame, targets: pd.DataFrame, settings: Settings,
@@ -42,8 +26,9 @@ def combine_agent_scores(
     ``meta_type="regime"``; si es None, "regime" se comporta como "rank_ic".
     """
     regime_bull_by_date = regime_bull_by_date or {}
+    targets = normalize_target_columns(targets)
     labelled = scores.merge(
-        targets[["ticker", "snapshot_date", "label_end_date", "target_available", "forward_excess_return_3m"]],
+        targets[["ticker", "snapshot_date", "label_end_date", "target_available", "forward_excess_return"]],
         on=["ticker", "snapshot_date"],
         how="left",
         validate="many_to_one",
@@ -131,7 +116,7 @@ def _meta_diagnostics(
     labels = (
         labelled.loc[labelled["target_available"].fillna(False)]
         .drop_duplicates(["ticker", "snapshot_date"])[
-            ["ticker", "snapshot_date", "label_end_date", "forward_excess_return_3m", "is_quarterly"]
+            ["ticker", "snapshot_date", "label_end_date", "forward_excess_return", "is_quarterly"]
         ]
     )
     merged = meta.merge(labels, on=["ticker", "snapshot_date"], how="inner")
@@ -152,7 +137,7 @@ def _equal_weight_diagnostics(labelled: pd.DataFrame, settings: Settings) -> pd.
         .agg(
             score=("agent_rank", "mean"),
             label_end_date=("label_end_date", "max"),
-            forward_excess_return_3m=("forward_excess_return_3m", "first"),
+            forward_excess_return=("forward_excess_return", "first"),
             is_quarterly=("is_quarterly", "first"),
         )
         .reset_index()
@@ -226,18 +211,20 @@ def _weights_as_of(
     - "regime": pesos rank_ic inclinados por el régimen (bull/bear) recibido en `bull`.
     Cualquier modo cae a equiponderado si no hay señal positiva (fallback).
     """
-    history = labelled.loc[
+    closed_history = labelled.loc[
         (labelled["snapshot_ts"] < date)
-        & labelled["is_quarterly"].fillna(False)
         & labelled["target_available"].fillna(False)
         & labelled["label_end_ts"].le(date)
-    ]
+    ].copy()
+    quarterly_history = closed_history.loc[
+        closed_history["is_quarterly"].fillna(False)
+    ].copy()
     evidence: dict[str, dict[str, float | int]] = {}
     positive: dict[str, float] = {}
     for agent in tuple(dict.fromkeys([*CATALOG_AGENT_NAMES, *available_agents])):
         if agent not in available_agents:
             continue
-        agent_history = history.loc[history["agent"] == agent]
+        agent_history = quarterly_history.loc[quarterly_history["agent"] == agent]
         cohort_ics: list[float] = []
         for _, cohort in agent_history.groupby("snapshot_date", sort=True):
             value = _rank_ic(cohort, settings.min_rank_ic_cross_section)
@@ -254,7 +241,12 @@ def _weights_as_of(
         return ({agent: equal for agent in available_agents}, evidence)
 
     if settings.meta_type == "stacked_oos":
-        weights = _stacked_oos_weights(history, available_agents, settings)
+        # El incumbent expanding preserva exactamente la semántica histórica (todos los snapshots).
+        # Los modos confirmatorios rolling/exponential trabajan solo con cohortes trimestrales
+        # cerradas y con una ventana cuyo nombre y unidad son reales.
+        stack_history = closed_history if settings.meta_history_mode == "expanding" else quarterly_history
+        stack_history = _meta_history_window(stack_history, settings)
+        weights = _stacked_oos_weights(stack_history, available_agents, settings)
         if weights is not None:
             for agent, weight in weights.items():
                 evidence.setdefault(agent, {})["stacked_weight"] = weight
@@ -282,6 +274,15 @@ def _weights_as_of(
     return weights, evidence
 
 
+def _meta_history_window(history: pd.DataFrame, settings: Settings) -> pd.DataFrame:
+    """Aplica la ventana temporal del stacker sin admitir cohortes aún abiertas."""
+    if history.empty or settings.meta_history_mode == "expanding":
+        return history
+    dates = sorted(pd.to_datetime(history["snapshot_date"]).dropna().unique())
+    keep = dates[-settings.meta_history_quarters :]
+    return history.loc[pd.to_datetime(history["snapshot_date"]).isin(keep)].copy()
+
+
 def _stacked_oos_weights(
     history: pd.DataFrame, available_agents: set[str], settings: Settings
 ) -> dict[str, float] | None:
@@ -297,7 +298,7 @@ def _stacked_oos_weights(
     if len(agents) < 2 or history.empty:
         return None
     wide = history.pivot_table(index=["ticker", "snapshot_date"], columns="agent", values="score", aggfunc="last")
-    labels = history.groupby(["ticker", "snapshot_date"], as_index=True)["forward_excess_return_3m"].first()
+    labels = history.groupby(["ticker", "snapshot_date"], as_index=True)["forward_excess_return"].first()
     wide = wide.reindex(columns=agents).join(labels.rename("target"), how="inner").dropna(subset=["target"])
     if wide.shape[0] < max(40, len(agents) * 12) or wide[agents].notna().sum().min() < 20:
         return None
@@ -311,14 +312,62 @@ def _stacked_oos_weights(
         from sklearn.preprocessing import StandardScaler
 
         model = make_pipeline(SimpleImputer(strategy="median"), StandardScaler(), Ridge(alpha=8.0, positive=True))
-        model.fit(ranked, target)
+        if settings.meta_history_mode == "exponential":
+            ordered_dates = sorted(pd.Series(dates).dropna().unique())
+            age = {value: len(ordered_dates) - 1 - index for index, value in enumerate(ordered_dates)}
+            half_life = float(settings.meta_decay_half_life_quarters)
+            sample_weight = np.asarray([0.5 ** (age[value] / half_life) for value in dates], dtype=float)
+            model.fit(ranked, target, ridge__sample_weight=sample_weight)
+        else:
+            model.fit(ranked, target)
         coefficients = np.maximum(np.asarray(model[-1].coef_, dtype=float), 0.0)
     except Exception:
         return None
     total = float(coefficients.sum())
     if not np.isfinite(total) or total <= 1e-12:
         return None
-    return {agent: float(value / total) for agent, value in zip(agents, coefficients, strict=True)}
+    learned = {agent: float(value / total) for agent, value in zip(agents, coefficients, strict=True)}
+    return _constrain_stacked_weights(learned, settings)
+
+
+def _constrain_stacked_weights(weights: dict[str, float], settings: Settings) -> dict[str, float]:
+    """Contrae hacia equal y aplica un cap factible conservando suma uno."""
+    if not weights:
+        return {}
+    agents = sorted(weights)
+    equal = 1.0 / len(agents)
+    shrink = float(settings.meta_equal_shrinkage)
+    constrained = {
+        agent: (1.0 - shrink) * max(float(weights.get(agent, 0.0)), 0.0) + shrink * equal
+        for agent in agents
+    }
+    cap = float(settings.meta_weight_cap)
+    if cap >= 1.0:
+        total = sum(constrained.values())
+        return {agent: value / total for agent, value in constrained.items()}
+    if cap * len(agents) < 1.0 - 1e-12:
+        return {agent: equal for agent in agents}
+    # Proyección iterativa al simplex con límite superior. Redistribuye solo entre pesos libres.
+    result = dict(constrained)
+    for _ in range(100):
+        total = sum(result.values())
+        if total <= 0:
+            return {agent: equal for agent in agents}
+        result = {agent: value / total for agent, value in result.items()}
+        capped = {agent for agent, value in result.items() if value > cap}
+        if not capped:
+            break
+        excess = sum(result[agent] - cap for agent in capped)
+        for agent in capped:
+            result[agent] = cap
+        free = [agent for agent in agents if agent not in capped]
+        free_total = sum(result[agent] for agent in free)
+        if not free:
+            return {agent: equal for agent in agents}
+        for agent in free:
+            result[agent] += excess * (result[agent] / free_total if free_total > 0 else 1 / len(free))
+    total = sum(result.values())
+    return {agent: value / total for agent, value in result.items()}
 
 
 _DIAG_COLUMNS = ["agent", "prediction_date", "label_end_date", "observations", "rank_ic", "is_quarterly"]
@@ -347,7 +396,7 @@ def _diagnostics_for_score(frame: pd.DataFrame, settings: Settings, name: str) -
                 "agent": name,
                 "prediction_date": date,
                 "label_end_date": pd.to_datetime(cohort["label_end_date"]).max().date().isoformat(),
-                "observations": int(cohort[["score", "forward_excess_return_3m"]].dropna().shape[0]),
+                "observations": int(cohort[["score", "forward_excess_return"]].dropna().shape[0]),
                 "rank_ic": value,
                 "is_quarterly": bool(cohort["is_quarterly"].iloc[0]),
             }
@@ -356,10 +405,10 @@ def _diagnostics_for_score(frame: pd.DataFrame, settings: Settings, name: str) -
 
 
 def _rank_ic(cohort: pd.DataFrame, minimum: int) -> float | None:
-    usable = cohort[["score", "forward_excess_return_3m"]].dropna()
+    usable = cohort[["score", "forward_excess_return"]].dropna()
     if len(usable) < minimum:
         return None
-    if usable["score"].nunique() < 2 or usable["forward_excess_return_3m"].nunique() < 2:
+    if usable["score"].nunique() < 2 or usable["forward_excess_return"].nunique() < 2:
         return None
-    value = usable["score"].corr(usable["forward_excess_return_3m"], method="spearman")
+    value = usable["score"].corr(usable["forward_excess_return"], method="spearman")
     return float(value) if pd.notna(value) else None

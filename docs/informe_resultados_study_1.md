@@ -1,12 +1,19 @@
 # Informe de resultados del study oficial
 
+> **Nota de vigencia metodológica.** Este documento es la evidencia histórica del study 1 y no se
+> ha reescrito con resultados del protocolo v2. Sus 2025–2026 ya fueron observados y ahora se
+> clasifican como `known_stress_not_selection`, no como holdout. El placebo antiguo de tres
+> permutaciones que reportó `p = 0` no constituye un p-valor válido; el protocolo v2 exige 9.999
+> permutaciones con corrección add-one. La configuración ganadora se conserva como incumbent.
+
 **Study:** `optimization-official` · `20260724--optimization-official--4dfea2986540`
 **Fecha de ejecución:** 2026-07-24 · **Estado:** `succeeded` · **Escenarios completados:** 104 (167 runs)
-**Estrategia:** `unified_full_cycle` · **Métrica de selección:** Rank-IC OOS (hasta 2024) · **Reserva final:** 2025–2026
+**Estrategia histórica:** `unified_full_cycle` · **Métrica de selección:** Rank-IC OOS (hasta 2024) ·
+**Tratamiento actual de 2025–2026:** `known_stress_not_selection`
 
-Este informe analiza el barrido completo ejecutado bajo el protocolo vigente: selección de modelo (Fases 1–3),
-run final, optimización y estrés de cartera (Fase 4), perfiles de inversor (Fase 5), robustez y validación en
-la reserva ciega. Sigue el principio del proyecto: **el Rank-IC fuera de muestra es el criterio; la rentabilidad
+Este informe analiza el barrido completo ejecutado bajo el protocolo entonces vigente: selección de modelo
+(Fases 1–3), run final, cartera (Fase 4), perfiles (Fase 5) y robustez. Sigue el principio del proyecto:
+**el Rank-IC fuera de muestra es el criterio; la rentabilidad
 y los perfiles son comprobaciones económicas posteriores, no criterios de selección**. Los resultados negativos
 se conservan y se reportan tal cual.
 
@@ -15,13 +22,15 @@ se conservan y se reportan tal cual.
 ## 1. Resumen ejecutivo
 
 El study seleccionó una configuración parsimoniosa (un solo modelo LightGBM poco profundo, meta-agente apilado,
-poda estricta de features, horizonte de etiqueta a 12 meses) y la validó con un protocolo honesto de reserva.
+poda estricta de features, horizonte de etiqueta a 12 meses). Su tramo 2025–2026 sirve hoy como estrés
+histórico conocido, no como validación ciega.
 
 **Veredicto:** la señal es **estadísticamente real dentro del periodo de selección (2015–2024)** pero
-**no se confirma en la reserva estricta 2025–2026**, y su traducción a rentabilidad es **marginal**.
+**se degrada en el estrés conocido 2025–2026**, y su traducción a rentabilidad es **marginal**.
 
 - Rank-IC OOS del finalista (selección ≤2024, 117 cohortes): **0.0944**, con 72.6 % de cohortes con IC>0.
-- Test de placebo (permutación de etiquetas): **p = 0.0** → el sistema aprende, no es fuga de datos ni azar.
+- Test de placebo histórico: el real superó cinco valores placebo, pero con solo tres
+  permutaciones efectivas el **`p = 0.0` reportado no es inferencialmente válido**.
 - Bootstrap por bloques: IC 95 % **[0.050, 0.131]** → el Rank-IC no cruza cero, es significativo.
 - **Reserva 2025–2026: Rank-IC medio −0.0095** (negativo). El alfa anual se vuelve negativo en 2024 (−7.8 %),
   2025 (−11.9 %) y 2026 parcial (−10.2 %).
@@ -83,17 +92,17 @@ implementación en `module/runs/execution.py`):
 5. **Fase 4 — cartera.** Optimiza `target_size` por **Information Ratio** re-backtesteando sin reentrenar;
    luego **4b estrés de costes** y **4c estrés de reglas mecánicas**.
 6. **Fase 5 — perfiles de inversor.** Reporta 8 perfiles sobre el modelo+cartera óptimos (no se optimizan).
-7. **Cierre — robustez y validación reservada.**
+7. **Cierre — robustez y estrés histórico 2025–2026.**
 
 **Criterio de selección.** El modelo se elige **siempre por Rank-IC OOS y estabilidad, nunca por rentabilidad**
 (desempate: `mean_rank_ic` ↓ → `rank_ic_positive_fraction` ↓ → `rank_ic_std` ↑ → nº cohortes ↓). El Information
 Ratio solo interviene para elegir la **cartera** (Fase 4), porque esos ejes no reentrenan el modelo.
 
-**Congelación temporal.** La selección solo mira cohortes con fecha de predicción **hasta 2024**. Los años
-**2025–2026 son una reserva ciega** que no interviene en ninguna decisión; sirven para medir el **sesgo de
-selección** (al comparar 104 escenarios, parte del máximo puede ser suerte) evaluando al finalista donde nunca
-se optimizó. La reserva no significa "no entrenar" esos años: el walk-forward avanza con normalidad; solo se
-apartan a la hora de **decidir** qué configuración es la buena.
+**Separación temporal.** La selección solo mira cohortes con fecha de predicción **hasta 2024**. Los años
+**2025–2026 no intervienen en ninguna decisión**, pero ya fueron observados y hoy son un estrés histórico
+conocido. Sirven para describir el **sesgo de selección** (al comparar 104 escenarios, parte del máximo puede ser
+suerte). Separarlos no significa "no entrenar" esos años: el walk-forward avanza con normalidad; solo se apartan
+a la hora de **decidir** qué configuración es la buena.
 
 ---
 
@@ -271,13 +280,13 @@ Rentabilidad del finalista (cartera `balanced`, run `20260724--35794c6ff34f`):
 | 2022 | −6.03 % | −12.06 % | +6.03 % | Sí | 12.4 % | 0.07 |
 | 2023 | 28.35 % | 18.94 % | +9.41 % | Sí | 7.6 % | 0.20 |
 | 2024 | 13.45 % | 21.27 % | −7.82 % | No | 5.4 % | −0.37 |
-| **2025** *(reserva)* | 3.62 % | 15.50 % | **−11.88 %** | No | 8.1 % | −0.23 |
-| **2026** *(reserva, parcial)* | −2.88 % | 7.33 % | **−10.21 %** | No | 7.9 % | −0.74 |
+| **2025** *(estrés conocido)* | 3.62 % | 15.50 % | **−11.88 %** | No | 8.1 % | −0.23 |
+| **2026** *(estrés conocido, parcial)* | −2.88 % | 7.33 % | **−10.21 %** | No | 7.9 % | −0.74 |
 
 **La historia clave está en la última columna de años.** El sistema es fuerte en 2017–2023 (con un 2021
-excepcional, +21 pp de alfa) y luego **gira negativo justo en 2024 y en toda la reserva 2025–2026**. La
+excepcional, +21 pp de alfa) y luego **gira negativo justo en 2024 y en todo 2025–2026**. La
 degradación no es una anomalía puntual: son tres años consecutivos de alfa negativo, y coinciden con el tramo
-que no se usó para seleccionar. Es exactamente lo que la reserva existe para revelar.
+que no se usó para seleccionar.
 
 ### 8.1 Gráficos disponibles
 
@@ -300,7 +309,7 @@ Cuatro pruebas independientes (artefacto `robustness.json` del run `20260724--1e
 
 | Prueba | Resultado | Interpretación |
 |---|---|---|
-| **Placebo** (permutación de etiquetas) | Real 0.0894 vs placebo 0.0018 ± 0.0050; **p = 0.0** | La señal **colapsa** al barajar los retornos futuros → el modelo aprende de verdad, no hay fuga de datos. *(Matiz: solo 3 permutaciones; potencia limitada.)* |
+| **Placebo** (permutación de etiquetas) | Real 0.0894 vs placebo 0.0018 ± 0.0050; el antiguo **p = 0.0 no es válido** | Resultado descriptivo compatible con señal, pero tres permutaciones no permiten inferencia ni descartar fuga por sí solas. |
 | **Bootstrap por bloques** | Media 0.0894; **IC 95 % [0.050, 0.131]** (123 cohortes, bloque 4) | El Rank-IC **no cruza cero** → es estadísticamente significativo. |
 | **Leave-one-year-out** | Rank-IC ∈ **[0.073, 0.104]** quitando cualquier año | **Ningún año explica el resultado**; la señal es difusa en el tiempo, no dependiente de un ejercicio concreto. |
 | **Random-portfolio** | Modelo CAGR 11.85 % → **percentil 18** (aleatorias: media 18.7 %, p95 47.1 %); `beats_random_convincingly = False` | La **rentabilidad no supera de forma convincente al azar**. *(Matiz: las carteras aleatorias comparten el universo del modelo, que en este periodo fue muy alcista; discutir sesgo de universo.)* |
@@ -312,18 +321,18 @@ pero el margen es demasiado pequeño para batir económicamente a una selección
 
 ---
 
-## 10. Validación en la reserva 2025–2026
+## 10. Estrés histórico conocido 2025–2026
 
-Es el punto crítico del study. El finalista, congelado tras seleccionar solo con datos ≤2024, se evalúa por
-primera vez en la reserva ciega:
+Es el punto crítico del study histórico. El finalista se había congelado tras seleccionar solo con datos ≤2024;
+el tramo ya fue observado y no puede presentarse hoy como holdout:
 
-| Métrica | Selección (≤2024) | Reserva (2025–2026) |
+| Métrica | Selección (≤2024) | Estrés conocido (2025–2026) |
 |---|---:|---:|
 | Rank-IC medio | +0.0944 | **−0.0095** |
 | Cohortes | 117 | 6 |
 | Alfa anual | positivo (media +2.6 % en 2017–2023) | negativo (−11.9 % / −10.2 %) |
 
-**El Rank-IC OOS histórico no se sostiene en la reserva final.** Pasa de claramente positivo a ligeramente
+**El Rank-IC OOS histórico no se sostiene en 2025–2026.** Pasa de claramente positivo a ligeramente
 negativo, y el alfa acompaña. Esto puede deberse a:
 
 1. **Cambio de régimen de mercado** — que la relación entre los factores value/quality y el retorno futuro se
@@ -331,30 +340,29 @@ negativo, y el alfa acompaña. Esto puede deberse a:
 2. **Decaimiento de factores** — los factores que sostienen la señal (value, calidad rentable) pasaron por un
    periodo desfavorable, coherente con que growth/momentum ya destruían alfa en la Fase 5.
 3. **Sesgo de selección residual** — pese a la robustez interna, parte del Rank-IC de 2015–2024 podría estar
-   sobreajustado al periodo de búsqueda; la reserva es precisamente el test que lo expone.
+   sobreajustado al periodo de búsqueda; el deterioro posterior es compatible con ese riesgo.
 
-No es posible distinguir estas causas con la evidencia actual (solo 6 cohortes de reserva). Pero el mensaje es
-inequívoco: **con esta configuración, hoy no habría base para confiar la cartera al modelo.** La reserva ha
-cumplido su función — proteger del despliegue de un sistema que lleva fallando desde 2024.
+No es posible distinguir estas causas con la evidencia actual (solo seis cohortes en ese tramo). Pero el mensaje
+es inequívoco: **con esta configuración, hoy no habría base para confiar la cartera al modelo.**
 
 ---
 
 ## 11. Conclusiones
 
-1. **Metodológicamente, el study es sólido y honesto.** Separa selección de validación, congela la reserva, mide
-   robustez con placebo/bootstrap/LOYO/random-portfolio, estresa costes y reglas de cartera sin optimizarlas, y
-   conserva la evidencia negativa. El protocolo cumple lo que exige un TFM reproducible.
+1. **Metodológicamente, el study es reproducible pero ya no es confirmatorio.** Conserva configuración,
+   artefactos y evidencia negativa, pero sus 104 escenarios, su placebo insuficiente y el hecho de haber
+   observado 2025–2026 impiden usarlo como validación final. Su función vigente es incumbent y diagnóstico.
 
-2. **La señal de ordenación (Rank-IC) es real dentro de 2015–2024.** Placebo (p=0), bootstrap (IC95 % sin cruzar
-   cero) y LOYO (estable a quitar cualquier año) lo confirman. No es fuga de datos ni azar.
+2. **La señal de ordenación (Rank-IC) es positiva dentro de 2015–2024.** Bootstrap (IC95 % sin cruzar cero) y
+   LOYO estable aportan evidencia; el antiguo `p=0` no es válido y no permite descartar fuga por sí solo.
 
 3. **Pero el valor económico es marginal y no generaliza.** El alfa medio es de +1 pp anual con un IR ≈ 0.02, la
    rentabilidad no supera al azar de forma convincente, y **la señal se degrada a partir de 2024**, cayendo a
-   Rank-IC negativo en la reserva 2025–2026. La configuración parsimoniosa gana precisamente porque la señal es
+   Rank-IC negativo en el estrés conocido 2025–2026. La configuración parsimoniosa gana precisamente porque la señal es
    débil: no hay margen para complejidad.
 
 4. **¿Estable? No como estrategia; sí como pipeline.** El sistema **no es estable en el sentido de mantener su
-   ventaja fuera de muestra** — se rompe justo en el tramo de validación. Lo que sí es estable y reproducible es
+   ventaja fuera de muestra** — se rompe justo en el tramo posterior. Lo que sí es estable y reproducible es
    el **proceso**: config robusta a semillas e hiperparámetros, resultados consistentes entre runs, y un veredicto
    que no depende de elecciones favorables. El resultado principal del TFM es, legítimamente, **parcialmente
    negativo**: se construyó un sistema honesto capaz de detectar su propia limitación.
@@ -384,13 +392,12 @@ explícita del usuario (regla del repositorio).
    que alguna ayude específicamente en el tramo 2024+; convendría estudiarlas condicionadas al régimen, dejando
    constancia de que en el periodo histórico completo no mejoran.
 
-5. **Ampliar universo y profundidad temporal de datos** si es viable, para tener más cohortes de reserva (hoy
-   solo 6) y un veredicto fuera de muestra menos ruidoso.
+5. **Ampliar universo y profundidad temporal de datos** si es viable, para disponer de más cohortes y un
+   veredicto fuera de muestra menos ruidoso.
 
-6. **Distinguir explícitamente validación y operativa en la memoria.** Documentar que la reserva es un test de
-   generalización de *una sola vez*, y que la puesta en producción (entrenar hasta hoy, reformar la cartera cada
-   mes) es un flujo distinto que solo debe activarse una vez el sistema supere la validación fuera de muestra —
-   cosa que, con esta configuración, todavía no ocurre.
+6. **Distinguir explícitamente selección, estrés conocido y operativa en la memoria.** La puesta en producción
+   (entrenar hasta hoy y reformar la cartera) es un flujo distinto que solo debe activarse cuando el protocolo
+   confirmatorio v2 aporte evidencia robusta; con esta configuración histórica todavía no ocurre.
 
 ---
 

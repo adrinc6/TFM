@@ -70,7 +70,7 @@ def build_features(settings: Settings) -> pd.DataFrame:
     baselines = build_baseline_scores(features)
 
     write_parquet(features, output_dir / "features_point_in_time.parquet")
-    write_parquet(targets, output_dir / "targets_forward_3m.parquet")
+    write_parquet(targets, output_dir / "targets_forward.parquet")
     write_parquet(baselines, output_dir / "baseline_scores.parquet")
     write_json(_coverage(features, baselines, settings), output_dir / "features_coverage.json")
     log.info(
@@ -494,9 +494,9 @@ def _build_targets(
     )
     stock_return = target["future_price"] / target["price"] - 1
     benchmark_return = target["future_benchmark_price"] / target["benchmark_price"] - 1
-    target["forward_return_3m"] = stock_return.where(valid)
-    target["forward_benchmark_return_3m"] = benchmark_return.where(valid)
-    target["forward_excess_return_3m"] = (stock_return - benchmark_return).where(valid)
+    target["forward_return"] = stock_return.where(valid)
+    target["forward_benchmark_return"] = benchmark_return.where(valid)
+    target["forward_excess_return"] = (stock_return - benchmark_return).where(valid)
     label_dates = pd.concat(
         [
             pd.to_datetime(target["future_price_as_of_date"]),
@@ -505,7 +505,7 @@ def _build_targets(
         axis=1,
     ).max(axis=1)
     target["label_end_date"] = label_dates.dt.date.astype("string")
-    target["target_available"] = valid & target["forward_excess_return_3m"].notna()
+    target["target_available"] = valid & target["forward_excess_return"].notna()
     return target[
         [
             "ticker",
@@ -513,9 +513,9 @@ def _build_targets(
             "future_snapshot_date",
             "label_end_date",
             "target_available",
-            "forward_return_3m",
-            "forward_benchmark_return_3m",
-            "forward_excess_return_3m",
+            "forward_return",
+            "forward_benchmark_return",
+            "forward_excess_return",
         ]
     ]
 

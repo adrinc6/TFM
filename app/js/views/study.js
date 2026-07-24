@@ -1,5 +1,4 @@
-/* Detalle de un estudio: resumen (hipótesis, métrica de selección, años reservados),
-   decisión por fase y comparativa de sus runs. Enlaza a cada run miembro. */
+/* Detalle de un estudio: progreso, decisión confirmatoria, evidencia y runs miembros. */
 (function (global) {
   "use strict";
   const { api, escapeHtml, fmt, pct, table } = global.TFM;
@@ -18,8 +17,14 @@
       const live = await api("/api/study/" + encodeURIComponent(studyId) + "/live-log");
       const runs = live.active_runs || [];
       status.textContent = runs.length
-        ? `${runs.length} run${runs.length === 1 ? "" : "s"} activo${runs.length === 1 ? "" : "s"}${live.current_phase ? " · fase " + live.current_phase : ""}`
+        ? `${runs.length} run${runs.length === 1 ? "" : "s"} activo${runs.length === 1 ? "" : "s"}${live.current_phase ? " · fase " + live.current_phase : ""}${live.current_scenario ? " · " + live.current_scenario : ""}`
         : "No hay runs activos asociados a este study.";
+      const progress = document.getElementById("study-evaluation-progress");
+      const phase = document.getElementById("study-current-phase");
+      if (progress && live.completed_evaluations !== undefined) {
+        progress.textContent = `${live.completed_evaluations}/${live.evaluation_budget?.total ?? 48}`;
+      }
+      if (phase && live.current_phase) phase.textContent = live.current_phase;
       output.textContent = (live.lines || []).join("\n") || "Esperando la primera línea de ejecución…";
       output.scrollTop = output.scrollHeight;
     } catch (error) {
@@ -33,8 +38,9 @@
     // Un ÚNICO botón que alterna según el estado: si el study está vivo (queued/running) es
     // "Parar" (rojo, dura e inmediata: mata el proceso y borra el run a medias); si no, es
     // "Reanudar", habilitado solo cuando terminó de forma anómala (failed/interrupted/cancelled).
+    const official = manifest.protocol_version === 2 || manifest.kind === "optimization";
     const canStop = ["queued", "running"].includes(String(manifest.status || ""));
-    const actionButton = canStop
+    const actionButton = !official ? "" : canStop
       ? `<button class="button danger" id="stop-full-study" title="${escapeHtml("Detiene el full study al instante: mata el proceso (y el dashboard) y elimina el run en curso. Queda reanudable.")}">Parar full study</button>`
       : `<button class="button primary" id="resume-full-study"${canResume ? "" : " disabled"} title="${escapeHtml(canResume ? "Verifica y reutiliza los runs completos; repite los incompletos y continúa el ciclo." : "Solo disponible si el estudio quedó interrumpido, fallido o cancelado.")}">Reanudar full study</button>`;
     actions.innerHTML = `<button class="button ghost" id="toggle-study-live-log">▣ Ver consola</button>
@@ -127,6 +133,48 @@
     const d = decision || {};
     const rob = d.robustness || {};
     const parts = [];
+
+    const inferential = rob.score_label_permutation;
+    if (inferential) {
+      parts.push(`<details><summary>Permutación inferencial de scores y etiquetas</summary>
+        ${global.TFM.metricGrid([
+          { value: fmt(inferential.rank_ic_real, 3), label: "rank-IC real", hintKey: "rank_ic" },
+          { value: fmt(inferential.null_mean, 3), label: "media del nulo" },
+          { value: fmt(inferential.p_value, 4), label: "p-valor add-one",
+            cls: inferential.signal_above_chance ? "pos" : "neg" },
+          { value: String(inferential.n_permutations ?? "—"), label: "permutaciones" },
+        ])}</details>`);
+    }
+    const randomPit = rob.random_portfolios;
+    if (randomPit && randomPit.unconditional_percentile !== undefined) {
+      parts.push(`<details><summary>Carteras aleatorias point-in-time</summary>
+        ${global.TFM.metricGrid([
+          { value: fmt(randomPit.unconditional_percentile, 3), label: "percentil incondicional" },
+          { value: fmt(randomPit.risk_matched_percentile, 3), label: "percentil emparejado por riesgo" },
+          { value: randomPit.beats_random_convincingly ? "sí" : "no", label: "bate ambos nulos al p95",
+            cls: randomPit.beats_random_convincingly ? "pos" : "neg" },
+          { value: String(randomPit.n_simulations ?? "—"), label: "simulaciones por nulo" },
+        ])}</details>`);
+    }
+    const modernBootstrap = rob.bootstrap_and_era_exclusion;
+    if (modernBootstrap) {
+      const ci = modernBootstrap.ci_95 || {};
+      parts.push(`<details><summary>Bootstrap móvil y exclusión de eras</summary>
+        ${global.TFM.metricGrid([
+          { value: `[${fmt(ci.ci_low, 3)}, ${fmt(ci.ci_high, 3)}]`, label: "IC 95 % rank-IC" },
+          { value: String(modernBootstrap.block_size ?? "—"), label: "bloque mensual" },
+          { value: String((modernBootstrap.eras || []).length), label: "eras de selección" },
+        ])}
+        ${table(modernBootstrap.eras || [], { columns: ["era", "mean_rank_ic", "top_decile_minus_universe"],
+          labels: { era: "Era", mean_rank_ic: "Rank-IC", top_decile_minus_universe: "Top decil − universo" },
+          decimals: 4, sortable: true })}</details>`);
+    }
+    const retraining = rob.retraining_placebo;
+    if (retraining) {
+      parts.push(`<details><summary>Placebos con reentrenamiento ligero</summary>
+        <p class="muted">Test descriptivo de fuga; cinco reentrenamientos no se interpretan como un p-valor.</p>
+        <pre>${escapeHtml(JSON.stringify(retraining, null, 2))}</pre></details>`);
+    }
 
     const lp = rob.label_permutation;
     if (lp) {
@@ -228,11 +276,12 @@
         distintas. Nada de esto selecciona configuración.</p>${parts.join("")}`;
   }
 
-  // Panel de perfiles del estudio: compara los 8 runs de la fase 5_perfiles (uno por perfil de
-  // inversor), todos sobre el mismo modelo y cartera ya optimizados. El perfil se reporta,
+  // Panel de perfiles del estudio: compara los ocho diagnósticos sobre el mismo modelo y la misma
+  // estructura temporal. El perfil se reporta,
   // no se selecciona: no hay "ganador" aquí, solo comparación.
   async function perfilesPanel(comparison) {
-    const rows = (comparison || []).filter((r) => r && r.run_id && String(r.phase) === "5_perfiles");
+    const rows = (comparison || []).filter((r) => r && r.run_id &&
+      ["5_perfiles", "profiles"].includes(String(r.phase)));
     if (!rows.length) return `<p class="muted">Este estudio todavía no tiene runs de perfiles de inversor.</p>`;
     const sorted = rows.slice().sort((a, b) => String(a.scenario || "").localeCompare(String(b.scenario || "")));
 
@@ -287,7 +336,7 @@
     const compareBoxId = "study-perfiles-compare";
 
     return `<h4 style="margin-top:4px">Perfiles de inversor</h4>
-      <p class="muted">Los ${sorted.length} perfiles se ejecutan sobre el mismo modelo y cartera ya optimizados;
+      <p class="muted">Los ${sorted.length} perfiles se ejecutan sobre el mismo modelo, estructura y trayectoria de exposición;
         se <strong>reportan, no se seleccionan</strong>. Comparación directa entre ellos.</p>
       <details><summary>Comparativa de métricas</summary>
         <div class="table-wrap" style="margin-top:8px">${summaryTable}</div></details>
@@ -341,9 +390,150 @@
     target.innerHTML = `<table class="data"><thead>${head}</thead><tbody>${body}</tbody></table>`;
   }
 
+  function bytes(value) {
+    if (typeof value !== "number" || !Number.isFinite(value)) return "—";
+    if (value >= 1024 ** 3) return `${(value / 1024 ** 3).toFixed(2)} GiB`;
+    return `${(value / 1024 ** 2).toFixed(1)} MiB`;
+  }
+
+  function rejectionText(row) {
+    const reasons = row.rejection_reasons || [];
+    return reasons.length ? reasons.join(", ") : "elegible";
+  }
+
+  function eraRows(winner, layer) {
+    return (winner?.era_metrics || []).map((row) => ({ layer, ...row }));
+  }
+
+  function modernDecisionBlock(decision) {
+    const signal = decision.signal_winner || {};
+    const portfolio = decision.portfolio_winner || {};
+    const storage = decision.storage || {};
+    const fits = decision.fit_consumption || {};
+    const known = decision.known_stress_2025_2026 || {};
+    const signalRows = (decision.signal_candidates || []).map((row) => ({
+      scenario: row.scenario,
+      winner: row.scenario === signal.scenario,
+      eligible: !!row.eligible,
+      mean_rank_ic: row.mean_rank_ic,
+      top_decile_minus_universe: row.top_decile_minus_universe,
+      meta_weight_turnover: row.meta_weight_turnover,
+      holm_adjusted_p: row.holm_adjusted_p,
+      decision: rejectionText(row),
+    }));
+    const portfolioRows = (decision.portfolio_candidates || []).map((row) => ({
+      family: row.family,
+      scenario: row.scenario,
+      winner: row.scenario === portfolio.scenario,
+      eligible: !!row.eligible,
+      information_ratio: row.information_ratio,
+      mean_annual_alpha: row.mean_annual_alpha,
+      annualized_turnover: row.annualized_turnover,
+      high_cost_information_ratio: row.high_cost_information_ratio,
+      decision: rejectionText(row),
+    }));
+    const eraComparison = [
+      ...eraRows(signal, "Señal"),
+      ...eraRows(portfolio, "Cartera"),
+    ];
+    return `<section class="panel" style="margin-top:12px">
+      <h4>Decisión confirmatoria</h4>
+      ${global.TFM.metricGrid([
+        { value: decision.verdict || "—", label: "veredicto" },
+        { value: signal.scenario || "—", label: "ganador de señal" },
+        { value: portfolio.scenario || "—", label: "ganador de cartera" },
+        { value: `${decision.evaluation_consumed ?? "—"}/${decision.evaluation_budget?.total ?? 48}`, label: "evaluaciones" },
+        { value: String(fits.maximum_new_expensive_fits ?? decision.fit_budget?.maximum ?? "—"), label: "máximo de fits caros nuevos" },
+      ], "cards-5")}
+      <p class="muted">El veredicto solo puede ser <code>improved</code>, <code>non_inferior_simpler</code> o <code>no_improvement</code>. Los perfiles, stresses y 2025–2026 no intervienen en la selección.</p>
+      <details open><summary>Resultados de los ganadores por era</summary>
+        ${table(eraComparison, {
+          columns: ["layer", "era", "mean_rank_ic", "top_decile_minus_universe", "information_ratio", "annualized_alpha", "annualized_turnover"],
+          labels: { layer: "Capa", era: "Era", mean_rank_ic: "Rank-IC", top_decile_minus_universe: "Top decil − universo",
+            information_ratio: "IR neto", annualized_alpha: "Alfa anual", annualized_turnover: "Turnover anual" },
+          decimals: 4, sortable: true,
+        })}</details>
+      <details><summary>Selección de señal · ${signalRows.length} configuraciones</summary>
+        ${table(signalRows, {
+          columns: ["scenario", "winner", "eligible", "mean_rank_ic", "top_decile_minus_universe", "meta_weight_turnover", "holm_adjusted_p", "decision"],
+          labels: { scenario: "Escenario", winner: "Ganador", eligible: "Elegible", mean_rank_ic: "Rank-IC",
+            top_decile_minus_universe: "Top decil − universo", meta_weight_turnover: "Rotación pesos meta",
+            holm_adjusted_p: "p Holm", decision: "Decisión / rechazo" },
+          decimals: 4, sortable: true,
+        })}</details>
+      <details><summary>Traducción a cartera · ${portfolioRows.length} políticas</summary>
+        ${table(portfolioRows, {
+          columns: ["family", "scenario", "winner", "eligible", "information_ratio", "mean_annual_alpha", "annualized_turnover", "high_cost_information_ratio", "decision"],
+          labels: { family: "Familia", scenario: "Política", winner: "Ganadora", eligible: "Elegible",
+            information_ratio: "IR neto", mean_annual_alpha: "Alfa anual", annualized_turnover: "Turnover anual",
+            high_cost_information_ratio: "IR a coste alto", decision: "Decisión / rechazo" },
+          decimals: 4, sortable: true,
+        })}</details>
+      <details><summary>2025–2026 · estrés histórico conocido, no selección</summary>
+        ${global.TFM.metricGrid([
+          { value: known.status || "known_stress_not_selection", label: "tratamiento" },
+          { value: fmt(known.rank_ic_mean, 4), label: "Rank-IC medio" },
+          { value: String(known.cohorts ?? "—"), label: "cohortes" },
+        ])}
+        ${table(known.annual || [], { empty: "No hay métricas anuales disponibles para 2025–2026." })}</details>
+      <details><summary>Uso de almacenamiento y reutilización</summary>
+        ${global.TFM.metricGrid([
+          { value: bytes(storage.total_persisted_bytes), label: "persistido total" },
+          { value: bytes(storage.final_evidence_bytes), label: "final de evidencia" },
+          { value: bytes(storage.estimated_duplicate_bytes_avoided), label: "duplicados evitados" },
+          { value: String(storage.compact_runs ?? "—"), label: "runs compactos" },
+          { value: storage.within_limit ? "sí" : "no", label: "dentro del límite de 5 GiB",
+            cls: storage.within_limit ? "pos" : "neg" },
+        ], "cards-5")}</details>
+      <details><summary>Decisión completa (JSON auditable)</summary><pre>${escapeHtml(JSON.stringify(decision, null, 2))}</pre></details>
+    </section>`;
+  }
+
   function decisionBlock(decision) {
     if (!decision || !Object.keys(decision).length) return "";
+    if (decision.schema_version === 2) return modernDecisionBlock(decision);
     return `<details style="margin-top:12px"><summary>Decisión por fase</summary><pre>${escapeHtml(JSON.stringify(decision, null, 2))}</pre></details>`;
+  }
+
+  function artifactBlock(studyId, artifacts) {
+    const files = (artifacts || []).filter((name) => !name.endsWith(".lock"));
+    if (!files.length) return "";
+    const rows = files.map((name) => {
+      const href = "/artifacts/" + ["studies", studyId, ...name.split("/")]
+        .map((part) => encodeURIComponent(part)).join("/");
+      return `<li><a href="${href}" download>${escapeHtml(name)}</a></li>`;
+    }).join("");
+    return `<details data-keep-closed style="margin-top:18px"><summary>Artefactos del study · ${files.length} archivos</summary>
+      <p class="muted">Manifiestos y evidencia publicados por el protocolo. Los Parquet se descargan sin duplicar inputs pesados.</p>
+      <ul>${rows}</ul></details>`;
+  }
+
+  function selectorCards(manifest, decision, runs) {
+    const modern = decision?.schema_version === 2 || manifest.protocol_version === 2;
+    if (!modern) {
+      const stressYears = manifest.known_stress_years || manifest.reserved_years || "—";
+      const stressLabel = manifest.known_stress_years
+        ? "Estrés conocido · no selección" : "Años reservados (study histórico)";
+      return `<div class="cards" style="margin-top:12px">
+        <div class="card"><div class="metric" style="font-size:18px">${escapeHtml(manifest.selection_metric || "rank-IC")}</div><div class="metric-label">Métrica de selección</div></div>
+        <div class="card"><div class="metric" style="font-size:18px">${escapeHtml(String(manifest.selection_until_year || "—"))}</div><div class="metric-label">Selección hasta año</div></div>
+        <div class="card"><div class="metric" style="font-size:18px">${escapeHtml(JSON.stringify(stressYears))}</div><div class="metric-label">${stressLabel}</div></div>
+        <div class="card"><div class="metric">${runs.length}</div><div class="metric-label">Runs del estudio</div></div>
+        <div class="card"><div class="metric" style="font-size:18px">${escapeHtml(String(manifest.current_phase || "—"))}</div><div class="metric-label">Fase/checkpoint actual</div></div>
+      </div>`;
+    }
+    const budget = manifest.evaluation_budget || decision.evaluation_budget || {};
+    const completed = manifest.completed_evaluations ?? decision.evaluation_consumed ?? 0;
+    const fitBudget = manifest.fit_budget || decision.fit_budget || {};
+    const eras = (manifest.selection_eras || [[2015, 2018], [2019, 2021], [2022, 2024]])
+      .map((era) => `${era[0]}–${era[1]}`).join(" · ");
+    return `<div class="cards cards-5" style="margin-top:12px">
+      <div class="card"><div class="metric" style="font-size:16px">${escapeHtml(eras)}</div><div class="metric-label">Eras usadas para seleccionar</div></div>
+      <div class="card"><div class="metric" style="font-size:16px">2025–2026</div><div class="metric-label">Estrés conocido · nunca selección</div></div>
+      <div class="card"><div id="study-evaluation-progress" class="metric">${completed}/${budget.total ?? 48}</div><div class="metric-label">Evaluaciones completadas</div></div>
+      <div class="card"><div class="metric">${fitBudget.estimated_new ?? "—"}/${fitBudget.maximum ?? 10}</div><div class="metric-label">Fits caros estimados / máximo</div></div>
+      <div class="card"><div id="study-current-phase" class="metric" style="font-size:16px">${escapeHtml(String(manifest.current_phase || "—"))}</div><div class="metric-label">Fase actual</div></div>
+    </div>`;
   }
 
   // Etiquetas legibles de cada fase del ciclo del study.
@@ -355,6 +545,15 @@
     "4_cartera": "Fase 4 · Cartera",
     "4b_cost_stress": "Estrés de costes · no seleccionable",
     "5_perfiles": "Fase 5 · Inversores",
+    "signal_challengers": "Señal · 12 challengers pre-registrados",
+    "seed_confirmation": "Señal · confirmación con semillas",
+    "portfolio_translation": "Cartera · traducción secuencial a alfa",
+    "profiles": "Perfiles · informativos",
+    "economic_stress": "Estrés económico · no seleccionable",
+    "retraining_placebos": "Robustez · placebos con reentrenamiento",
+    "score_label_permutation": "Robustez · permutación inferencial",
+    "pit_random_portfolios": "Robustez · carteras aleatorias PIT",
+    "bootstrap_and_era_exclusion": "Robustez · bootstrap y exclusión de eras",
   };
 
   // Comparativa por fases: una sección por fase; dentro, una fila por run con barra proporcional
@@ -363,9 +562,16 @@
   function phaseComparison(comparison) {
     const rows = (comparison || []).filter((r) => r && r.run_id);
     if (!rows.length) return `<p class="muted">Este estudio no tiene comparativa por fases.</p>`;
-    const maxAbs = Math.max(...rows.map((r) => Math.abs(Number(r.mean_rank_ic) || 0)), 1e-9);
+    const primaryMetric = (row) => Number.isFinite(Number(row.mean_rank_ic))
+      ? Number(row.mean_rank_ic) : Number(row.information_ratio) || 0;
+    const maxAbs = Math.max(...rows.map((r) => Math.abs(primaryMetric(r))), 1e-9);
     // Agrupar por fase respetando el orden natural del ciclo.
-    const order = ["1", "2", "3", "3b_seed_stability", "4_cartera", "4b_cost_stress", "5_perfiles"];
+    const order = [
+      "signal_challengers", "seed_confirmation", "portfolio_translation", "profiles",
+      "economic_stress", "score_label_permutation", "pit_random_portfolios",
+      "bootstrap_and_era_exclusion", "retraining_placebos",
+      "1", "2", "3", "3b_seed_stability", "4_cartera", "4b_cost_stress", "5_perfiles",
+    ];
     const groups = {};
     for (const r of rows) {
       const key = String(r.phase);
@@ -398,21 +604,25 @@
   }
 
   function barRow(r, maxAbs) {
-    const ic = Number(r.mean_rank_ic) || 0;
-    const widthPct = Math.min(100, (Math.abs(ic) / maxAbs) * 100);
-    const barCls = ic >= 0 ? "bar-pos" : "bar-neg";
+    const hasSignal = Number.isFinite(Number(r.mean_rank_ic));
+    const primary = hasSignal ? Number(r.mean_rank_ic) : Number(r.information_ratio) || 0;
+    const widthPct = Math.min(100, (Math.abs(primary) / maxAbs) * 100);
+    const barCls = primary >= 0 ? "bar-pos" : "bar-neg";
     const card = (value, label, cls) =>
       `<div class="mini-card"><div class="mini-value ${cls || ""}">${value}</div><div class="mini-label">${label}</div></div>`;
-    const cagrCls = (Number(r.cagr_difference) || 0) >= 0 ? "positive" : "negative";
+    const alpha = r.mean_annual_alpha ?? r.cagr_difference;
+    const cagrCls = (Number(alpha) || 0) >= 0 ? "positive" : "negative";
     const onClick = r.run_id ? ` onclick="TFM.views.results.openRun('${escapeHtml(r.run_id)}')"` : "";
+    const cards = hasSignal
+      ? `${card(fmt(r.top_decile_minus_universe, 4), "top decil − universo")}
+         ${card(r.eligible === undefined ? "—" : (r.eligible ? "sí" : "no"), "elegible")}`
+      : `${card(pct(alpha, 2), "alfa neto", cagrCls)}
+         ${card(fmt(r.information_ratio, 2), "Info Ratio")}
+         ${card(pct(r.annualized_turnover, 0), "turnover anual")}`;
     return `<div class="phase-row click"${onClick}>
       <div class="bar-track"><div class="bar-fill ${barCls}" style="width:${widthPct.toFixed(1)}%"></div>
-        <span class="bar-value">${escapeHtml(scenarioLabel(r))} · rank-IC ${fmt(ic, 3)}</span></div>
-      <div class="mini-cards">
-        ${card(pct(r.cagr_difference, 2), "CAGR vs bench", cagrCls)}
-        ${card(fmt(r.information_ratio, 2), "Info Ratio")}
-        ${card(pct(r.beat_rate, 0), "bate SPY")}
-      </div>
+        <span class="bar-value">${escapeHtml(scenarioLabel(r))} · ${hasSignal ? "rank-IC" : "IR"} ${fmt(primary, 3)}</span></div>
+      <div class="mini-cards">${cards}</div>
     </div>`;
   }
 
@@ -521,13 +731,7 @@
       <p class="muted mono">${escapeHtml(studyId)} · <span class="tag">${escapeHtml(m.kind || "")}</span> <span class="tag">${escapeHtml(m.status || "")}</span></p>
       ${m.description ? `<p class="muted">${escapeHtml(m.description)}</p>` : ""}
       <div id="study-selector-cards">
-        <div class="cards" style="margin-top:12px">
-          <div class="card"><div class="metric" style="font-size:18px">${escapeHtml(m.selection_metric || "rank-IC")}</div><div class="metric-label">Métrica de selección</div></div>
-          <div class="card"><div class="metric" style="font-size:18px">${escapeHtml(String(m.selection_until_year || "—"))}</div><div class="metric-label">Selección hasta año</div></div>
-          <div class="card"><div class="metric" style="font-size:18px">${escapeHtml(JSON.stringify(m.reserved_years || "—"))}</div><div class="metric-label">Años reservados</div></div>
-          <div class="card"><div class="metric">${runs.length}</div><div class="metric-label">Runs del estudio</div></div>
-          <div class="card"><div class="metric" style="font-size:18px">${escapeHtml(String(m.current_phase || "—"))}</div><div class="metric-label">Fase/checkpoint actual</div></div>
-        </div>
+        ${selectorCards(m, data.decision, runs)}
         ${m.current_scenario ? `<p class="muted">Escenario actual: <code>${escapeHtml(m.current_scenario)}</code></p>` : ""}
       </div>
       <section id="study-live-log" class="notice" hidden style="margin-top:12px">
@@ -540,8 +744,9 @@
       <div id="study-results-content">
         ${decisionBlock(data.decision)}
         <h4 style="margin-top:18px">Comparativa por fases</h4>
-        <p class="muted">Barra proporcional al rank-IC; a la derecha, CAGR vs benchmark, Information Ratio y % de años que bate al SPY de cada run.</p>
+        <p class="muted">En señal se comparan Rank-IC y spread de cola; en cartera se muestran alfa neto, Information Ratio y turnover. Los perfiles y stresses aparecen separados y no seleccionan.</p>
         <div id="study-phases">${phaseComparison(data.comparison)}</div>
+        ${artifactBlock(studyId, data.artifacts)}
         ${performanceBlock(runs)}
       </div>`;
     installLiveActions(studyId, resumable, m, data.decision, data.comparison);
@@ -567,6 +772,7 @@
     if (resume) resume.addEventListener("click", async () => {
       if (!confirm("Se verificarán y reutilizarán los runs completos; los incompletos se repetirán. ¿Continuar?")) return;
       try {
+        await api("/api/official/preflight", { settings: global.TFM.state.defaults });
         const job = await api("/api/optimization", {
           settings: global.TFM.state.defaults,
           study: { name: m.name || "optimization-official", hypothesis: m.hypothesis || "", resume_study_id: studyId },

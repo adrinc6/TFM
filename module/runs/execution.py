@@ -23,13 +23,16 @@ from module.data.dataset import build_point_in_time_dataset
 from module.data.ingest.pipeline import download_raw_data
 from module.modeling.agents import build_agent_scores
 from module.modeling.features import build_features
+from module.modeling.targets import (
+    TARGET_ARTIFACT_NAME, normalize_target_columns, target_artifact_path,
+)
 from module.evaluation.backtest import run_backtest_from_run_dir
 from module.evaluation.profiles import PROFILE_NAMES
 from module.evaluation.robustness import leave_one_year_out
 from module.evaluation.stats import block_bootstrap_ci
 from module.runs.experiments import split_variables, stress_variables
 from module.runs.results_store import ResultsStore, canonical_json, execution_hash
-from module.scenarios.variables import COST_STRESS_CASES, FULL_STUDY_OPTIONS, FULL_STUDY_PHASE3_OPTIONS
+from module.scenarios.variables import COST_STRESS_CASES, MANUAL_STUDY_PHASE3_OPTIONS
 from module.runs.recycle import (cache_dir, cache_lock, publish as publish_recycle,
                                  restore as restore_recycle, stage_key, STAGE_FIELDS)
 from module.common.utils import pid_alive, setup_logging, write_json, write_parquet
@@ -56,20 +59,11 @@ ALL_ROBUSTNESS_COMPONENTS: frozenset[str] = frozenset(ROBUSTNESS_COMPONENTS)
 
 
 def _resolve_robustness_components(
-    components: Iterable[str] | None, *, include_full_robustness: bool
+    components: Iterable[str] | None,
 ) -> frozenset[str]:
-    """Traduce la selección del usuario (o la falta de ella) al conjunto efectivo de componentes.
-
-    - Si `components` viene dado (study manual con selección explícita), se respeta tal cual,
-      filtrando nombres desconocidos.
-    - Si es None (optimización oficial o llamadas antiguas), se deriva del flag histórico
-      `include_full_robustness`: True -> todos; False -> solo los baratos que no reentrenan
-      (bootstrap + LOYO), que era el comportamiento por defecto del study.
-    """
+    """Valida la selección manual; sin selección explícita usa los diagnósticos baratos."""
     if components is not None:
         return frozenset(c for c in components if c in ALL_ROBUSTNESS_COMPONENTS)
-    if include_full_robustness:
-        return ALL_ROBUSTNESS_COMPONENTS
     return frozenset({"cost_stress", "portfolio_stress", "block_bootstrap", "leave_one_year_out"})
 
 STAGE_HANDLERS = {
@@ -254,6 +248,7 @@ def execute_run(
     store: ResultsStore | None = None,
     force_rerun: bool = False,
     agent_dir: Path | None = None,
+    retention_policy: str = "evidence_final",
 ) -> str:
     """Ejecuta etapas existentes y publica una copia inmutable de sus artefactos.
 
@@ -270,6 +265,9 @@ def execute_run(
         if agent_dir is None:
             raise RuntimeError("No hay un artefacto de agentes para el backtest.")
         agent_dir = Path(agent_dir)
+    parent_agent_run_id = (
+        agent_dir.parent.name if mode == "backtest" and agent_dir.name == "artifacts" else None
+    )
     input_paths = _run_input_paths(effective)
     if mode == "backtest":
         input_paths["agent_scores"] = agent_dir / "agent_scores.parquet"
@@ -312,11 +310,17 @@ def execute_run(
         source = agent_dir or (_latest_agent_run(runtime.processed_output_dir) if mode == "backtest" else None)
         summary: dict[str, Any] = {}
         if source is not None:
-            summary = store.publish_artifacts(run_dir, source)
+            summary = store.publish_artifacts(
+                run_dir, source, retention_policy=retention_policy,
+                parent_run_id=parent_agent_run_id,
+            )
         wall_seconds = time.perf_counter() - run_started
         cpu_seconds = time.process_time() - cpu_started
         _record_run_telemetry(store, run_dir, wall_seconds, cpu_seconds, effective.lgbm_n_jobs)
         store.complete(run_dir, summary)
+        # El cálculo reproducible vive en data/recycle y los resultados publicados. Conservar el
+        # workspace duplicaba features/panel/scores en cada escenario.
+        shutil.rmtree(run_dir / "workspace", ignore_errors=True)
         return run_id
     except Exception as exc:
         _record_run_telemetry(store, run_dir, time.perf_counter() - run_started,
@@ -334,19 +338,19 @@ def execute_study(
     store: ResultsStore | None = None,
     search_mode: str = "directed",
 ) -> str:
-    """Study completo: mismo ciclo que la optimización oficial, limitado a las variables marcadas.
+    """Study exploratorio manual, limitado a las variables marcadas por el usuario.
 
     Las variables del usuario se reparten en ejes de modelo (barridos en Fase 1/2 por rank-IC) y
     ejes de cartera (optimizados al final por re-backtest). El ciclo siempre entrena y backtestea.
     La robustez completa (placebo por permutación + carteras aleatorias) solo se ejecuta si el
     usuario la marca (``study.include_robustness``); si no, solo bootstrap + LOYO.
 
-    ``search_mode``: ``"directed"`` (por defecto) es la optimización dirigida tipo full_study
+    ``search_mode``: ``"directed"`` (por defecto) usa ejes aislados y greedy top-2
     (ejes aislados + greedy top-2). ``"cartesian"`` prueba todas las combinaciones de las variables
     de modelo marcadas por el usuario, sin asumir independencia entre ejes.
     """
     phase3_vars = {axis: list(values) for axis, values in variables.items()
-                   if axis in FULL_STUDY_PHASE3_OPTIONS}
+                   if axis in MANUAL_STUDY_PHASE3_OPTIONS}
     # `profile` no es eje de modelo ni de cartera optimizable: son las salidas de Fase 5. Se extrae
     # antes del split para no tratarlo como eje de cartera. Si no se marca ninguno, se ejecutan todos.
     selected_profiles = [p for p in variables.get("profile", []) if p in PROFILE_NAMES] or None
@@ -354,57 +358,40 @@ def execute_study(
                              if axis not in phase3_vars and axis != "profile"}
     model_vars, portfolio_vars = split_variables(phase12_and_portfolio)
     stress_vars = stress_variables(phase12_and_portfolio)
-    # Selección granular de componentes de robustez/estrés. Si el payload no la trae, se cae al flag
-    # histórico `include_robustness` (compatibilidad): True -> todos, False -> solo los baratos.
-    if "robustness_components" in study_payload:
-        robustness_components = _resolve_robustness_components(
-            study_payload.get("robustness_components") or [], include_full_robustness=False)
-    else:
-        robustness_components = _resolve_robustness_components(
-            None, include_full_robustness=bool(study_payload.get("include_robustness", False)))
+    robustness_components = _resolve_robustness_components(
+        study_payload.get("robustness_components")
+        if "robustness_components" in study_payload else None
+    )
     payload = {
         "name": str(study_payload.get("name", "study")), "kind": str(study_payload.get("kind", "exploratory")),
         "description": str(study_payload.get("description", "")),
         "hypothesis": str(study_payload.get("hypothesis", "")).strip(),
         "tags": list(study_payload.get("tags", [])),
-        "variables": dict(variables), "strategy": "unified_full_cycle", "search_mode": search_mode,
-        "selection_metric": "rank_ic_oos", "selection_until_year": 2024, "reserved_years": [2025, 2026],
+        "variables": dict(variables), "strategy": "manual_exploratory_cycle", "search_mode": search_mode,
+        "selection_metric": "rank_ic_oos", "selection_until_year": 2024,
+        "known_stress_years": [2025, 2026],
     }
     payload["robustness_components"] = sorted(robustness_components)
-    return run_optimization(settings, model_vars=model_vars, portfolio_vars=portfolio_vars,
-                            stress_vars=stress_vars, payload=payload, store=store,
-                            robustness_components=robustness_components, profiles=selected_profiles,
-                            hyperparameter_options=phase3_vars, search_mode=search_mode)
+    return run_manual_study(
+        settings, model_vars=model_vars, portfolio_vars=portfolio_vars,
+        stress_vars=stress_vars, payload=payload, store=store,
+        robustness_components=robustness_components, profiles=selected_profiles,
+        hyperparameter_options=phase3_vars, search_mode=search_mode,
+    )
 
 
 def execute_official_optimization(
     settings: Settings, store: ResultsStore | None = None, *, name: str = "optimization-official",
     hypothesis: str = "", resume_study_id: str | None = None,
 ) -> str:
-    """Optimización oficial: ciclo completo barriendo TODAS las variables barribles.
-
-    Barrido derivado del mismo contrato que usa ``study``: el manual permite subconjuntos y el
-    oficial ejecuta todos los ejes/valores, respetando su asignación a Fases 1–2, 3 y 4.
-    """
+    """Protocolo oficial confirmatorio y acotado a 48 evaluaciones."""
     actual_store = store or ResultsStore()
-    variables = {axis: list(values) for axis, values in FULL_STUDY_OPTIONS.items()}
-    model_vars, portfolio_vars = split_variables(variables)
-    stress_vars = stress_variables(variables)
-    payload = {
-        "name": name.strip() or "optimization-official", "kind": "optimization",
-        "description": "Optimización oficial: barrido completo de modelo (Fase 1/2), afinado, cartera y validación reservada.",
-        "tags": ["official", "optimization"], "strategy": "unified_full_cycle",
-        "selection_metric": "rank_ic_oos", "selection_until_year": 2024, "reserved_years": [2025, 2026],
-    }
-    payload["hypothesis"] = hypothesis.strip()
-    if hypothesis.strip():
-        payload["description"] = hypothesis.strip()
-    # La optimización oficial SIEMPRE ejecuta la robustez completa (placebo + carteras aleatorias):
-    # es el estudio que sostiene la credibilidad del TFM.
+    from module.runs.official_protocol import run_official_protocol
     with _full_study_lock(actual_store):
-        return run_optimization(settings, model_vars=model_vars, portfolio_vars=portfolio_vars,
-                                stress_vars=stress_vars, payload=payload, store=actual_store,
-                                include_full_robustness=True, resume_study_id=resume_study_id)
+        return run_official_protocol(
+            settings, actual_store, name=name, hypothesis=hypothesis,
+            resume_study_id=resume_study_id,
+        )
 
 
 @contextmanager
@@ -432,7 +419,7 @@ def _full_study_lock(store: ResultsStore):
         lock_path.unlink(missing_ok=True)
 
 
-def run_optimization(
+def run_manual_study(
     settings: Settings,
     *,
     model_vars: Mapping[str, list[Any]],
@@ -440,18 +427,17 @@ def run_optimization(
     stress_vars: Mapping[str, list[Any]] | None = None,
     payload: Mapping[str, Any],
     store: ResultsStore | None = None,
-    include_full_robustness: bool = False,
     robustness_components: Iterable[str] | None = None,
     profiles: Iterable[str] | None = None,
     resume_study_id: str | None = None,
     hyperparameter_options: Mapping[str, list[Any]] | None = None,
     search_mode: str = "directed",
 ) -> str:
-    """Ciclo completo unificado que comparten study y optimización oficial.
+    """Ciclo exploratorio del study manual; no es el protocolo oficial.
 
     Fase 1 (ejes de modelo aislados) → Fase 2 (greedy top-2, sin cartesiano) → afinado de
     hiperparámetros → run final → fase de cartera (re-backtest por criterio económico) → 8
-    perfiles → robustez → validación reservada. La selección de modelo es siempre por rank-IC OOS;
+        perfiles → robustez → estrés histórico conocido. La selección de modelo es siempre por rank-IC OOS;
     los ejes de cartera se eligen por métrica económica porque no alteran el aprendizaje.
 
     ``search_mode="cartesian"`` sustituye únicamente Fase 1+2 por el producto cartesiano completo
@@ -460,8 +446,7 @@ def run_optimization(
     """
     if search_mode not in ("directed", "cartesian"):
         raise ValueError(f"search_mode desconocido: {search_mode!r}")
-    active_robustness = _resolve_robustness_components(
-        robustness_components, include_full_robustness=include_full_robustness)
+    active_robustness = _resolve_robustness_components(robustness_components)
     active_profiles = [p for p in (profiles or PROFILE_NAMES) if p in PROFILE_NAMES] or list(PROFILE_NAMES)
     store = store or ResultsStore()
     # Todas las alternativas del study deben usar la misma ventana temporal. Se toma el máximo
@@ -625,13 +610,13 @@ def run_optimization(
                              "overrides": {"profile": profile}, "run_id": profile_id,
                              **_summary_for_run(store, profile_id)})
 
-    # --- Robustez, validación reservada y decisión final ---
+    # --- Robustez, estrés histórico conocido y decisión final ---
     final_summary = _summary_for_run(store, portfolio_final_id)
-    reserved = _reserved_validation(store, final_id)
+    known_stress = _known_stress_validation(store, final_id)
     robustness = _final_robustness(
         store, final_id, portfolio_final_id=portfolio_final_id, final_settings=final_settings,
         components=active_robustness)
-    store.update_study_status(study_id, "running", current_phase="robustness_and_reserved")
+    store.update_study_status(study_id, "running", current_phase="robustness_and_known_stress")
     best_config = _best_config_summary(final_model_overrides, portfolio_overrides,
                                        profile_run_ids, store)
     # Comparativa completa: todas las fases (modelo 1/2/3 + cartera + perfiles) para la app.
@@ -642,7 +627,7 @@ def run_optimization(
         ignore_index=True, sort=False)
     write_parquet(comparison, study_dir / "comparison_data.parquet")
     write_json({
-        "strategy": "unified_full_cycle", "selection_metric": "rank_ic_oos",
+        "strategy": "manual_exploratory_cycle", "selection_metric": "rank_ic_oos",
         "hypothesis": str(payload.get("hypothesis", "")),
         "phase1": phase1_decision, "model_winner": {"overrides": final_model_overrides,
                                                     "summary": _summary_for_run(store, final_id)},
@@ -657,7 +642,8 @@ def run_optimization(
         "final_profile_run_ids": profile_run_ids, "profile_run_ids": profile_run_ids,
         "profile_reference": "balanced",
         "profile_selection_policy": "reported_not_optimized",
-        "reserved_validation": reserved, "robustness": robustness, "best_config": best_config,
+        "known_stress_2025_2026": known_stress,
+        "robustness": robustness, "best_config": best_config,
         "skipped_scenarios": skipped,
     }, study_dir / "decision.json")
     store.update_study_status(study_id, "succeeded", current_phase="complete")
@@ -1060,7 +1046,7 @@ def _hyperparameter_phase(
     selected = dict(base)
     rows: list[dict[str, Any]] = []
     skipped: list[dict[str, Any]] = []
-    search = FULL_STUDY_PHASE3_OPTIONS if options is None else options
+    search = MANUAL_STUDY_PHASE3_OPTIONS if options is None else options
     for axis, values in search.items():
         specs = [{"name": f"{axis}_{str(value).replace('.', '_')}",
                  "overrides": {**selected, axis: value}, "axis": axis, "value": value}
@@ -1110,17 +1096,19 @@ def _seed_stability_phase(
     return rows
 
 
-def _reserved_validation(store: ResultsStore, run_id: str) -> dict[str, Any]:
+def _known_stress_validation(store: ResultsStore, run_id: str) -> dict[str, Any]:
     path = store.runs_root / run_id / "artifacts" / "rank_ic_diagnostics.parquet"
     if not path.exists():
-        return {"reserved_years": [2025, 2026], "n_cohorts": 0, "rank_ic_mean": None}
+        return {"status": "known_stress_not_selection", "years": [2025, 2026],
+                "n_cohorts": 0, "rank_ic_mean": None}
     frame = pd.read_parquet(path)
     if "agent" in frame:
         frame = frame.loc[frame["agent"] == "meta_final"].copy()
     frame["year"] = pd.to_datetime(frame["prediction_date"]).dt.year
-    reserved = frame.loc[frame["year"].isin([2025, 2026])]
-    return {"reserved_years": [2025, 2026], "n_cohorts": int(len(reserved)),
-            "rank_ic_mean": float(reserved["rank_ic"].mean()) if not reserved.empty else None}
+    known = frame.loc[frame["year"].isin([2025, 2026])]
+    return {"status": "known_stress_not_selection", "years": [2025, 2026],
+            "n_cohorts": int(len(known)),
+            "rank_ic_mean": float(known["rank_ic"].mean()) if not known.empty else None}
 
 
 def _final_robustness(
@@ -1162,7 +1150,7 @@ def _final_robustness(
         if "label_permutation" in requested and final_settings is not None:
             return _label_permutation(
                 final_settings, diagnostics,
-                targets_path=store.runs_root / run_id / "artifacts" / "targets_forward_3m.parquet",
+                targets_path=target_artifact_path(store.runs_root / run_id / "artifacts"),
                 input_dir=store.runs_root / run_id / "workspace" / "processed",
             )
         return {**not_requested, "n_permutations": 0}
@@ -1204,7 +1192,7 @@ def _label_permutation(
     import numpy as np
 
     processed = final_settings.processed_output_dir
-    targets_path = targets_path or (processed / "targets_forward_3m.parquet")
+    targets_path = targets_path or target_artifact_path(processed)
     if not targets_path.exists():
         return {"status": "sin targets para permutar", "n_permutations": 0}
 
@@ -1213,14 +1201,14 @@ def _label_permutation(
     placebo_estimators = min(getattr(final_settings, "lgbm_n_estimators", 200), 100)
     placebo_base = replace(final_settings, lgbm_n_estimators=placebo_estimators)
 
-    base_targets = pd.read_parquet(targets_path)
+    base_targets = normalize_target_columns(pd.read_parquet(targets_path))
     rng = np.random.default_rng(0)
     import tempfile
 
     def _one_permutation(i: int, workspace: Path) -> float | None:
         shuffled = base_targets.copy()
-        shuffled["forward_excess_return_3m"] = rng.permutation(
-            shuffled["forward_excess_return_3m"].to_numpy())
+        shuffled["forward_excess_return"] = rng.permutation(
+            shuffled["forward_excess_return"].to_numpy())
         shuffled_path = workspace / f"targets-permutation-{i}.parquet"
         write_parquet(shuffled, shuffled_path)
         try:
@@ -1307,7 +1295,9 @@ def _prepare_agent_workspace(source: Path, run_dir: Path) -> Path:
     optional = (
         "rank_ic_diagnostics.parquet", "meta_weights.parquet", "model_feature_attribution.parquet",
         "agent_local_attribution.parquet", "feature_diagnostics.parquet", "feature_catalog.json",
-        "manifest.json", "asset_price_point_in_time.parquet", "stock_panel.parquet",
+        "rank_tail_diagnostics.parquet", "signal_health.parquet", "signal_calibration.parquet",
+        "manifest.json", "asset_price_point_in_time.parquet", "benchmark_point_in_time.parquet",
+        "stock_panel.parquet",
     )
     for name in (*required, *optional):
         item = source / name
@@ -1392,10 +1382,11 @@ def _cache_contract(
         return inputs, lambda: [processed / name for name in names], processed
     if stage == "features":
         inputs = [processed / name for name in ("panel_point_in_time.parquet", "asset_price_point_in_time.parquet", "benchmark_point_in_time.parquet")]
-        names = ("features_point_in_time.parquet", "targets_forward_3m.parquet", "baseline_scores.parquet", "features_coverage.json")
+        names = ("features_point_in_time.parquet", TARGET_ARTIFACT_NAME,
+                 "baseline_scores.parquet", "features_coverage.json")
         return inputs, lambda: [processed / name for name in names], processed
     if stage == "agents":
-        inputs = [processed / "features_point_in_time.parquet", processed / "targets_forward_3m.parquet"]
+        inputs = [processed / "features_point_in_time.parquet", target_artifact_path(processed)]
         root = processed / "agents"
         return inputs, lambda: [_latest_agent_run(processed)] if _latest_agent_run(processed) else [], root
     if stage == "backtest":
@@ -1410,7 +1401,10 @@ def _cache_contract(
         inputs = [agent / "agent_scores.parquet",
                   _panel("asset_price_point_in_time.parquet"),
                   _panel("benchmark_point_in_time.parquet")]
-        names = ("positions.parquet", "orders.parquet", "equity.parquet", "annual_metrics.parquet", "backtest_summary.json")
+        names = (
+            "positions.parquet", "orders.parquet", "equity.parquet", "annual_metrics.parquet",
+            "vintage_positions.parquet", "active_exposure.parquet", "backtest_summary.json",
+        )
         return inputs, lambda: [agent / name for name in names], agent
     raise ValueError(f"Etapa no cacheable: {stage}")
 
@@ -1456,4 +1450,3 @@ def _compute_summary_for_run(store: ResultsStore, run_id: str) -> dict[str, Any]
         "rank_ic_selection_cohorts": int(len(values)),
     })
     return summary
-

@@ -37,11 +37,15 @@ from environment import Settings
 
 @dataclass
 class PortfolioState:
-    """Composicion actual de la cartera. Solo pesos; los precios los gestiona el backtest."""
+    """Estado auditable: pesos derivados, unidades, efectivo, costes y precios de entrada."""
 
     holdings: dict[str, float] = field(default_factory=dict)   # ticker -> peso (0..1)
     entry_dates: dict[str, str] = field(default_factory=dict)  # ticker -> snapshot_date de entrada
     entry_prices: dict[str, float] = field(default_factory=dict)  # ticker -> precio PIT de entrada
+    units: dict[str, float] = field(default_factory=dict)
+    entry_costs: dict[str, float] = field(default_factory=dict)
+    cash: float = 0.0
+    costs_paid: float = 0.0
 
     @classmethod
     def empty(cls) -> "PortfolioState":
@@ -49,18 +53,17 @@ class PortfolioState:
 
     def apply(self, orders: list[dict[str, Any]], prices: dict[str, float],
               target_weights: dict[str, float] | None = None) -> "PortfolioState":
-        """Devuelve un nuevo estado tras ejecutar las ordenes. `prices` es informacional
-        (para trazar `entry_price` fuera del state), no se usa aqui — el peso ya viene fijado.
+        """Devuelve el estado tras ejecutar órdenes; nunca reajusta gratis un peso sin orden.
 
-        `target_weights` es el peso objetivo NORMALIZADO (suma 1) de cada tenente superviviente. Se
-        aplica a TODOS los tenentes, no solo a los que generaron orden: un tenente cuya deriva es
-        pequena no se opera (ahorra coste) pero su peso vigente se refresca al objetivo para que la
-        cartera siga sumando 1. Sin esto los pesos derivan por encima del 100 % (apalancamiento
-        ficticio en el mark-to-market). Ver `_resize_to_target`.
+        ``target_weights`` se acepta solo por compatibilidad de firma. Los pesos efectivos de las
+        posiciones no mencionadas permanecen como estaban; el backtest los deriva mediante
+        mark-to-market y genera órdenes explícitas cuando necesita llevarlos a otro target.
         """
         new_holdings = dict(self.holdings)
         new_entry_dates = dict(self.entry_dates)
         new_entry_prices = dict(self.entry_prices)
+        new_units = dict(self.units)
+        new_entry_costs = dict(self.entry_costs)
 
         for order in orders:
             ticker = order["ticker"]
@@ -68,6 +71,8 @@ class PortfolioState:
                 new_holdings.pop(ticker, None)
                 new_entry_dates.pop(ticker, None)
                 new_entry_prices.pop(ticker, None)
+                new_units.pop(ticker, None)
+                new_entry_costs.pop(ticker, None)
             elif order["side"] == "buy":
                 new_holdings[ticker] = order["weight_after"]
                 if ticker not in new_entry_dates:
@@ -75,17 +80,154 @@ class PortfolioState:
                     price = order.get("price", prices.get(ticker))
                     if price is not None:
                         new_entry_prices[ticker] = float(price)
-        # Refresca el peso vigente de cada tenente al objetivo normalizado (bookkeeping, sin coste):
-        # asi la cartera suma 1 aunque una posicion no se haya rebalanceado por micro-deriva.
-        if target_weights is not None:
-            for ticker in list(new_holdings):
-                if ticker in target_weights:
-                    new_holdings[ticker] = target_weights[ticker]
         return PortfolioState(
             holdings=new_holdings,
             entry_dates=new_entry_dates,
             entry_prices=new_entry_prices,
+            units=new_units,
+            entry_costs=new_entry_costs,
+            cash=self.cash,
+            costs_paid=self.costs_paid,
         )
+
+
+@dataclass
+class VintageBook:
+    """Lotes trimestrales independientes; los duplicados se agregan solo al operar."""
+
+    slots: dict[int, dict[str, float]] = field(default_factory=dict)
+    opened_at: dict[int, str] = field(default_factory=dict)
+
+    def aggregate(self, vintage_count: int) -> dict[str, float]:
+        result: dict[str, float] = {}
+        for slot_weights in self.slots.values():
+            for ticker, weight in slot_weights.items():
+                result[ticker] = result.get(ticker, 0.0) + weight / vintage_count
+        return result
+
+    def rows(self, snapshot_date: str, holding_months: int = 12) -> list[dict[str, object]]:
+        return [
+            {
+                "snapshot_date": snapshot_date,
+                "vintage_id": int(slot),
+                "vintage_open_date": self.opened_at.get(slot),
+                "scheduled_exit_date": (
+                    pd.Timestamp(self.opened_at[slot]) + pd.DateOffset(months=holding_months)
+                ).date().isoformat() if slot in self.opened_at else None,
+                "ticker": ticker,
+                "vintage_weight": float(weight),
+            }
+            for slot, weights in sorted(self.slots.items())
+            for ticker, weight in weights.items()
+        ]
+
+
+def active_fraction(scores_at_date: pd.DataFrame, settings: Settings) -> float:
+    """Fracción activa causal materializada por la etapa de agentes."""
+    mode = settings.active_overlay_mode
+    if mode == "full":
+        return 1.0
+    if mode == "fixed":
+        return float(settings.fixed_active_fraction)
+    column = "binary_active_fraction" if mode == "binary" else "continuous_active_fraction"
+    if settings.signal_health_lookback_quarters == 8 and f"{column}_8q" in scores_at_date:
+        column = f"{column}_8q"
+    if column not in scores_at_date or scores_at_date[column].dropna().empty:
+        return 0.5 if mode == "continuous" else 0.0
+    return float(min(max(scores_at_date[column].dropna().iloc[0], 0.0), 1.0))
+
+
+def policy_target(
+    state: PortfolioState,
+    scores_at_date: pd.DataFrame,
+    settings: Settings,
+    vintage_book: VintageBook,
+) -> tuple[dict[str, float] | None, float, list[dict[str, object]]]:
+    """Target de la política como pesos dentro del sleeve activo.
+
+    Devuelve ``(pesos, fracción_de_vintages_rellena, detalle_vintages)``. ``pesos=None`` significa
+    mantener la cartera derivada sin operar en este snapshot.
+    """
+    if scores_at_date.empty:
+        return None, 1.0, []
+    date = str(scores_at_date["snapshot_date"].iloc[0])
+    policy = settings.portfolio_policy
+    if policy == "legacy_monthly":
+        _, weights = decide_orders(state, scores_at_date, settings)
+        return weights, 1.0, []
+    is_quarterly = bool(scores_at_date.get("is_quarterly", pd.Series([True])).iloc[0])
+    offset = settings.vintage_calendar_offset_months
+    if offset == 0 and not is_quarterly:
+        return None, 1.0, vintage_book.rows(date, settings.holding_months)
+    if offset:
+        month = pd.Timestamp(date).month
+        if (month - 1 - offset) % 3:
+            return None, 1.0, vintage_book.rows(date, settings.holding_months)
+
+    if policy == "quarterly_top_n":
+        selected = _select_tickers(scores_at_date, settings.target_size)
+        return _basket_weights(selected, scores_at_date, settings), 1.0, []
+
+    ordinal = pd.Timestamp(date).year * 4 + pd.Timestamp(date).quarter - 1
+    slot = int((ordinal - offset) % settings.vintage_count)
+    per_vintage = settings.target_size // settings.vintage_count
+    selected = _select_tickers(scores_at_date, per_vintage)
+    vintage_book.slots[slot] = _basket_weights(selected, scores_at_date, settings)
+    vintage_book.opened_at[slot] = date
+    filled_fraction = len(vintage_book.slots) / settings.vintage_count
+    return (
+        vintage_book.aggregate(settings.vintage_count),
+        filled_fraction,
+        vintage_book.rows(date, settings.holding_months),
+    )
+
+
+def _select_tickers(scores: pd.DataFrame, count: int) -> list[str]:
+    frame = scores.dropna(subset=["meta_rank"]).sort_values("meta_rank", ascending=False)
+    return frame["ticker"].drop_duplicates().head(count).astype(str).tolist()
+
+
+def _basket_weights(
+    tickers: list[str], scores: pd.DataFrame, settings: Settings,
+) -> dict[str, float]:
+    if not tickers:
+        return {}
+    if settings.sizing_mode == "equal":
+        return {ticker: 1.0 / len(tickers) for ticker in tickers}
+    indexed = scores.drop_duplicates("ticker").set_index("ticker")
+    if settings.sizing_mode == "legacy_linear":
+        signal = pd.to_numeric(indexed.get("meta_score"), errors="coerce").to_dict()
+        return _compute_weights(tickers, signal)
+
+    round_trip = 2.0 * (settings.commission_bps + settings.slippage_bps) / 10_000
+    hurdle = settings.cost_hurdle_multiplier * round_trip
+    raw = {
+        ticker: max(float(indexed.at[ticker, "expected_excess_return"]) - hurdle, 0.0)
+        if "expected_excess_return" in indexed and pd.notna(indexed.at[ticker, "expected_excess_return"])
+        else 0.0
+        for ticker in tickers
+    }
+    if sum(raw.values()) <= 0:
+        return {}
+    total = sum(raw.values())
+    weights = {ticker: value / total for ticker, value in raw.items()}
+    cap = 2.0 / len(tickers)
+    # Proyección con cap; el presupuesto que no pueda asignarse queda fuera del diccionario y por
+    # tanto pasa al SPY en el backtest.
+    for _ in range(50):
+        capped = {ticker for ticker, weight in weights.items() if weight > cap}
+        if not capped:
+            break
+        excess = sum(weights[ticker] - cap for ticker in capped)
+        for ticker in capped:
+            weights[ticker] = cap
+        free = [ticker for ticker in tickers if ticker not in capped and raw[ticker] > 0]
+        if not free:
+            break
+        free_total = sum(weights[ticker] for ticker in free)
+        for ticker in free:
+            weights[ticker] += excess * weights[ticker] / free_total
+    return weights
 
 
 def decide_orders(

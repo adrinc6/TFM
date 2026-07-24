@@ -43,7 +43,11 @@ Se eliminaron flags de SEC adicional, dividendos/recompras, estimaciones, short 
 
 El panel `panel_point_in_time.parquet` contiene una observación por `(ticker, snapshot_date)`. Los fundamentales se mantienen constantes entre publicaciones, pero nunca se rellenan hacia atrás. Los precios se marcan frescos solo dentro del umbral metodológico fijo de siete días.
 
-Las etiquetas se guardan por separado en `targets_forward_3m.parquet`, aunque el nombre histórico de la columna se conserva por compatibilidad. El horizonte real usado por una configuración está en `target_horizon_months` y en su manifiesto. Separar panel y target evita que una etapa de features consuma accidentalmente información futura.
+Las etiquetas nuevas se guardan por separado en `targets_forward.parquet`, con columnas neutrales
+`forward_return`, `forward_benchmark_return` y `forward_excess_return`. El horizonte real está en
+`target_horizon_months` y en el manifiesto. El lector puede abrir artefactos históricos con nombre
+`targets_forward_3m.parquet`, pero ninguna ejecución nueva vuelve a publicarlo. Separar panel y
+target evita que una etapa de features consuma accidentalmente información futura.
 
 ### 3.3 Controles de calidad
 
@@ -136,46 +140,76 @@ Los artefactos de diagnóstico incluyen cobertura, Rank-IC univariante, importan
 
 ## 9. Diseño del full study
 
-### 9.1 Ejes barribles
+### 9.1 Contratos manual y oficial
 
-`module/scenarios/variables.py` es la única fuente de opciones permitidas. Agrupa calendario, entrenamiento, objetivo, LightGBM, meta-agente, recencia, artefactos, bloques, agentes, familias, ensembles, selección, ventanas técnicas y cartera.
+`MANUAL_STUDY_OPTIONS` conserva el catálogo amplio para investigación libre. El full study oficial
+no recorre ese catálogo: `OFFICIAL_STUDY_PROTOCOL` contiene una lista cerrada de 12 challengers de
+señal y una secuencia cerrada de 12 políticas de cartera. `official_evaluation_budget()` devuelve
+la contabilidad verificable: 48 evaluaciones, máximo 50, máximo 10 walk-forwards caros y máximo
+5 GiB incrementales. El orquestador aborta en el preflight antes de crear el study si incumple un
+límite o no puede reconstruir el incumbent desde inputs/caché.
 
-El contrato se presenta igual en `study` y `full_study`: mismas variables, valores y fases. Un
-study manual selecciona subconjuntos; el full study activa todos. Los controles adicionales de
-Experimental no se convierten por ello en ejes científicos. Costes son estrés y perfiles son
-salidas de Fase 5.
+El presupuesto exacto es: 12 señal, 2 semillas, 12 cartera, 8 perfiles, 6 stresses económicos,
+5 placebos con reentrenamiento, 1 permutación inferencial, 1 test de carteras aleatorias PIT y
+1 bootstrap con exclusión de eras. No se ejecutan barridos completos, greedy genérico,
+reafinado plano de LightGBM ni cartesianos de costes.
 
-En el study manual, los ejes de conjunto (`enabled_agents`, `enabled_feature_blocks`,
-`enabled_model_families`) se configuran eligiendo los elementos base, y el runner aplica sobre esa
-selección la misma ablación *full-minus-one* que usa el full study sobre su conjunto fijo (ver
-`scenarios.variables.build_ablations`). La fase de robustez y estrés es opcional y granular: el
-usuario marca uno a uno los componentes que quiere ejecutar —estrés de costes, estrés de reglas de
-cartera (incluye `price_only_strictness_multiplier`), bootstrap por bloques, leave-one-year-out,
-placebo por permutación y carteras aleatorias—; los no marcados no se ejecutan. El full study
-oficial, en cambio, conserva el conjunto fijo de agentes/bloques/familias y ejecuta siempre todos
-los componentes de robustez: es el estudio que sostiene la credibilidad del TFM.
+### 9.2 Selección temporal y señal
 
-No se hace producto cartesiano. Un full study ejecuta aproximadamente un centenar de escenarios de modelo aislados, combinaciones greedy, afinado, construcción de cartera, nueve stresses de coste y ocho perfiles. El número exacto depende de reutilización de caché y escenarios no viables.
+La selección usa tres eras: 2015–2018, 2019–2021 y 2022–2024. Los años 2025–2026 ya se observaron,
+por lo que se conservan únicamente como `known_stress_not_selection`. Ningún selector recibe sus
+filas.
 
-### 9.2 Condicionalidad
+El incumbent congela el modelo ganador del study 1. Diez alternativas cambian solo la combinación
+meta y reutilizan los mismos fits; dos alternativas cambian lookback o ponderación de recencia.
+El meta admite historia `expanding`, `rolling` o `exponential`, donde un trimestre es una cohorte
+marcada `is_quarterly=True` y solo se usa si `label_end_date <= fecha_actual`. Cap y shrinkage se
+aplican a pesos normalizados y, sin evidencia cerrada suficiente, se vuelve a equiponderación.
 
-Los umbrales de cobertura, historia, fracción positiva, permutación y máximo de features no se prueban solos, porque con `diagnostic_only` no cambiarían el modelo. Se prueban ligados a `oos_stability_prune` y `block_gated`. Esta decisión reduce falsos descubrimientos aparentes y elimina ejecuciones inertes.
+Además de Rank-IC, cada cohorte publica top 10, decil superior, spread top−universo,
+top−bottom, fracción positiva, Spearman dentro del top 10, cobertura y concentración/turnover del
+meta. Los agregados ponderan cohortes por igual. Las columnas neutrales son `forward_return`,
+`forward_benchmark_return` y `forward_excess_return`; los lectores mantienen compatibilidad
+transitoria con nombres `_3m`.
 
-### 9.3 Reserva temporal
+### 9.3 Traducción a alfa
 
-La función que resume un run para las fases 1–3 reemplaza el Rank-IC agregado por el calculado hasta 2024. Por tanto, ni `_stable_best`, ni la combinación greedy ni el afinado consultan 2025–2026. Esos años se guardan en `reserved_validation` de `decision.json`.
+El motor mantiene efectivo y posiciones a precios reales, deja derivar los pesos por
+mark-to-market y genera una orden para cada cambio de holdings. Comisión y slippage cargan sobre
+nocional comprado o vendido, incluido el coste inicial. En cada snapshot se valida
+`equity = efectivo + posiciones`, suma de pesos igual a uno, ausencia de apalancamiento y ausencia
+de reajustes gratuitos.
 
-### 9.4 Regla de aceptación inicial
+La estructura principal candidata usa cuatro vintages trimestrales. Cada trimestre expira uno,
+cada lote vive 12 meses y los snapshots mensuales solo valoran/diagnostican. La cartera completa
+combina satélite activo con núcleo SPY. La exposición activa puede ser 100 %, fija al 50 %, binaria
+o continua; los gates usan exclusivamente las últimas cohortes trimestrales cerradas, con
+contracción hacia cero.
 
-Un eje entra en la combinación greedy únicamente si su mejor candidato supera el Rank-IC del baseline y no reduce su fracción de cohortes positivas. Esta no sustituye bootstrap ni leave-one-year-out, que se calculan sobre el finalista, pero evita combinar automáticamente cambios claramente peores.
+El sizing compara `equal`, `legacy_linear` y `calibrated_alpha`. La calibración usa como máximo
+16 trimestres cerrados, semivida ocho, 20 ventiles, prior de ocho cohortes e isotónica creciente.
+Resta el hurdle de costes, trunca alfa negativo, limita cada posición a dos veces el peso equal y
+envía el presupuesto sobrante a SPY.
 
-### 9.5 Cartera, perfiles y costes
+Las 12 políticas se evalúan secuencialmente: cinco estructuras, dos challengers de sizing, tres
+overlays y dos hurdles. Cada familia elige por mediana de Information Ratio neto entre eras,
+turnover y simplicidad, bajo gates de alfa por era, peor era y costes altos. No existe un producto
+cartesiano.
 
-Tras fijar modelo y meta-score, la fase de cartera ajusta el tamaño fijo, el percentil de mantenimiento y la ventaja de rotación por Information Ratio. Los pesos siguen una escala lineal min-max **dentro de la cartera** sobre el `meta_score` crudo: el mejor de los seleccionados pesa el doble que el peor, lineal en medio. Se usa el `meta_score` y no el percentil global (`meta_rank`), porque los seleccionados son siempre el top-N y su percentil se apiña en 0,97–1,00, lo que aplanaría los pesos a ~1/N; el `meta_score` sí ordena a los seleccionados entre sí. No altera las predicciones, por lo que no tiene sentido seleccionarla por Rank-IC.
+### 9.4 Robustez, perfiles y decisión negativa
 
-Comisión y slippage ya no se incluyen como ejes optimizables. Se generan las nueve combinaciones de 0/5/10 bps de comisión y 5/10/20 bps de slippage como `cost_stress`. La conclusión debe ser robusta a costes plausibles, no depender del caso más barato.
+Los ocho perfiles comparten modelo, estructura, costes y trayectoria de exposición de `balanced`;
+usan sizing equal y nunca cambian `best_config`. Los seis stresses económicos tampoco seleccionan.
 
-Los ocho perfiles reordenan la misma señal final; se comparan después de seleccionar modelo y cartera. Un perfil rentable no demuestra por sí mismo mejor aprendizaje.
+La robustez incluye bootstrap móvil de 12 snapshots, exclusión de eras, 9.999 permutaciones dentro
+de cohorte con corrección add-one, cinco placebos con reentrenamiento interpretados solo de forma
+descriptiva y 1.000 carteras aleatorias PIT para cada nulo —incondicional y emparejado por riesgo—.
+El modelo bate convincentemente al azar solo si supera el percentil 95 en ambos.
+
+Si ninguna alternativa cumple los gates predefinidos, la decisión conserva el incumbent y declara
+`no_improvement`. Una alternativa puede declarar `non_inferior_simpler` solo por no inferioridad y
+menor complejidad/variabilidad; `improved` requiere superioridad de señal corregida o mejora
+material de IR de cartera.
 
 ## 10. Parámetros fijos y razones
 
@@ -199,15 +233,21 @@ Limitaciones explícitas:
 - universo restringido al S&P 500 y cobertura histórica imperfecta;
 - múltiples pruebas: una búsqueda amplia aumenta probabilidad de falsos positivos;
 - dependencia serial entre snapshots;
-- muestra limitada de cohortes reservadas 2025–2026;
+- tres eras de selección y un estrés 2025–2026 ya conocido, que no constituye holdout;
 - costes simulados, no ejecución real;
 - CatBoost y Elastic Net comparten algunas decisiones de preprocesamiento con el pipeline, por lo que no sustituyen una validación independiente de implementación.
 
-Un resultado no se considera validado solo por media positiva. Debe combinar mejora frente al baseline, estabilidad, bootstrap, LOYO, reserva temporal y estrés de costes.
+Un resultado no se considera validado solo por media positiva. Debe combinar no inferioridad o
+mejora frente al incumbent, estabilidad por eras, bootstrap pareado, placebos, nulos PIT y estrés
+de costes. El periodo 2025–2026 se informa, pero nunca valida ni selecciona.
 
 ## 12. Artefactos, interfaz y operación
 
-Cada run se guarda en `results/runs/<run_id>/`; cada study, en `results/studies/<study_id>/`. Los ficheros centrales son manifiesto, configuración, diagnósticos de Rank-IC, pesos meta, atribuciones, `backtest_summary.json`, `comparison_data.parquet` y `decision.json`.
+Cada run se guarda en `results/runs/<run_id>/`; cada study, en `results/studies/<study_id>/`. El
+protocolo v2 publica `evaluation_ledger.parquet`, comparativas separadas de señal/cartera/perfiles/
+stresses, `selection_folds.json`, `robustness.json`, `storage_manifest.json` y `decision.json`
+versión 2. El final de evidencia añade diagnósticos de cola, calibración, salud de señal,
+posiciones por vintage y exposición activa.
 
 La pantalla Full study permite indicar **nombre** e **hipótesis**. Ambos se guardan explícitamente en `study_manifest.json`; la hipótesis también se copia a `decision.json` y a la descripción visible de los escenarios.
 
@@ -229,22 +269,38 @@ python -m ruff check .
 
 Los studies anteriores se conservan para auditoría histórica, pero no deben usarse como resultado final si fueron creados antes de separar estrictamente la reserva y los costes.
 
-La primera evidencia cuantitativa completa bajo el protocolo vigente es el study oficial `optimization-official` (`20260724--optimization-official--4dfea2986540`, 104 escenarios, estado `succeeded`). Su lectura detallada está en `docs/informe_resultados_study.md`. Resumen del veredicto:
+La evidencia cuantitativa disponible sigue siendo el study histórico `optimization-official`
+(`20260724--optimization-official--4dfea2986540`, 104 escenarios, estado `succeeded`). Se ejecutó
+antes del protocolo v2 y su lectura detallada está en `docs/informe_resultados_study_1.md`; sirve
+como incumbent y diagnóstico, no como validación del rediseño.
 
 - **Rank-IC OOS del finalista (selección ≤2024): 0.0944**, con 72.6 % de cohortes con IC>0.
-- La señal es **estadísticamente real** dentro del periodo de selección: placebo con `p = 0.0` (colapsa al barajar etiquetas), bootstrap por bloques con IC 95 % `[0.050, 0.131]` (no cruza cero) y leave-one-year-out estable (Rank-IC ∈ `[0.073, 0.104]`).
-- Pero **no se confirma en la reserva ciega 2025–2026**: Rank-IC medio `−0.0095`, con alfa anual negativo en 2024 (−7.8 %), 2025 (−11.9 %) y 2026 parcial (−10.2 %).
+- El antiguo placebo reportó `p = 0.0` con solo tres permutaciones; ese p-valor no es válido y no
+  se reutiliza como evidencia. El protocolo v2 exige 9.999 permutaciones con corrección add-one.
+  El bootstrap histórico sí produjo IC 95 % `[0.050, 0.131]` y LOYO estable
+  (Rank-IC ∈ `[0.073, 0.104]`), sujetos al sesgo de selección ya observado.
+- En el estrés conocido 2025–2026 el Rank-IC medio fue `−0.0095`, con alfa anual negativo en
+  2024 (−7,8 %), 2025 (−11,9 %) y 2026 parcial (−10,2 %). Ese periodo ya no se denomina reserva
+  ciega ni se usa para seleccionar.
 - La rentabilidad **no supera de forma convincente a carteras aleatorias** del mismo tamaño (percentil 18).
 
-Interpretación: existe señal de ordenación transversal real hasta 2024 que **se degrada a partir de 2024**; su traducción a alfa económico es marginal (IR ≈ 0.02). El resultado principal es, legítimamente, **parcialmente negativo**: el mérito está en el pipeline reproducible y honesto que detecta su propia limitación, no en una ventaja económica demostrada. La configuración ganadora (LightGBM único poco profundo, meta `stacked_oos`, poda estricta de features, horizonte de etiqueta 12 m, `execution_lag_days = 60`, `target_size = 10`) es robusta a semillas e hiperparámetros.
+Interpretación del study 1: existe señal de ordenación transversal hasta 2024 que **se degrada a
+partir de 2024**; su traducción a alfa económico es marginal (IR ≈ 0,02). El resultado es
+parcialmente negativo y motivó el protocolo v2. Hasta ejecutar ese protocolo no se afirma que el
+nuevo motor ni la cartera por vintages mejoren el alfa.
 
-## 14. Anexo de configuración: contrato exacto del full study
+## 14. Anexo histórico: catálogo amplio del study manual
 
-Esta sección evita que la memoria confunda una opción disponible en una ejecución manual con una opción que se busca automáticamente. El contrato ejecutable está en `module/scenarios/variables.py`: la tabla siguiente lo reproduce de forma legible a fecha de esta versión. La columna *baseline* es el valor de `Settings()`; no implica que sea el ganador del estudio.
+Las tablas 14.1–14.6 documentan el catálogo exploratorio heredado que continúa disponible mediante
+`MANUAL_STUDY_OPTIONS`. **No describen el full study oficial v2 y sus columnas históricas “Valores
+que explora el full study” deben leerse como “Valores disponibles en el study manual”.** El
+contrato confirmatorio vigente es el de la sección 9 y está materializado en
+`OFFICIAL_STUDY_PROTOCOL`; no vuelve a barrer estos ejes. Se conserva el detalle para poder
+interpretar studies históricos y ejecutar investigación libre sin perder trazabilidad.
 
 ### 14.1 Ejes de datos, calendario y etiqueta
 
-| Variable | Qué modifica | Baseline | Valores que explora el full study |
+| Variable | Qué modifica | Baseline | Valores disponibles en el study manual |
 |---|---|---:|---|
 | `execution_lag_days` | **Define el día de observación de cada snapshot**: la rejilla cae en `fin_de_periodo + execution_lag_days` (retardo de publicación tras el cierre del periodo). Barrerlo produce rejillas distintas. | 45 | 15, 30, 45, 60 |
 | `train_lookback_years` | Años de historia inmediatamente anterior que ve cada reentreno. | 8 | 4, 8, 12 |
@@ -255,11 +311,11 @@ Esta sección evita que la memoria confunda una opción disponible en una ejecuc
 
 **Calendario de snapshots.** La rejilla ya no usa un día del mes fijo (`snapshot_day` fue eliminado). Cada snapshot cae en el **fin de su periodo más `execution_lag_days`**: cerrado un mes o trimestre, los fundamentales tardan unos días en estar disponibles y la rejilla observa justo entonces. Así el retardo de publicación gobierna cuándo se miran los datos, y `execution_lag_days` pasa a ser un eje con efecto real (antes solo desplazaba el ancla y no cambiaba ningún resultado). El point-in-time sigue garantizado: en cada snapshot solo se leen fundamentales con `filed_date` anterior.
 
-No se barre `execution_year` ni `execution_quarter`: desplazarlos sería buscar una fecha de inicio favorable. El ancla permanece en 2015-Q1 para que todo escenario comparta el mismo periodo OOS (2015→hoy, con 2025-26 reservados).
+No se barre `execution_year` ni `execution_quarter`: desplazarlos sería buscar una fecha de inicio favorable. El ancla permanece en 2015-Q1 para que todo escenario comparta el mismo periodo OOS; 2025–2026 se separa como estrés conocido.
 
 ### 14.2 Ejes de LightGBM, combinación y recencia
 
-| Variable | Qué modifica | Baseline | Valores que explora el full study |
+| Variable | Qué modifica | Baseline | Valores disponibles en el study manual |
 |---|---|---:|---|
 | `lgbm_n_estimators` | Número máximo de árboles; afinado greedy en Fase 3. | 200 | 100, 200, 400 |
 | `lgbm_max_depth` | Complejidad máxima; afinado greedy en Fase 3. | 4 | 3, 4, 5, 6, 8 |
@@ -274,7 +330,7 @@ No se barre `execution_year` ni `execution_quarter`: desplazarlos sería buscar 
 
 ### 14.3 Catálogo, agentes, modelos y selección
 
-| Variable | Qué modifica | Baseline | Valores que explora el full study |
+| Variable | Qué modifica | Baseline | Valores disponibles en el study manual |
 |---|---|---|---|
 | `enabled_feature_blocks` | Conjunto de bloques que llega a los agentes. | Los 11 bloques | Catálogo completo; y catálogo completo menos uno de los 11 bloques en cada ablación (sin subconjuntos privilegiados). |
 | `enabled_agents` | Agentes que entregan score al meta-agente. | Los 5 agentes | Los 5 agentes; y los 5 menos un agente en cada ablación (sin subconjuntos privilegiados). |
@@ -294,7 +350,7 @@ Los once bloques completos son: `quality_core`, `quality_efficiency`, `financial
 
 ### 14.4 Artefactos y ventanas técnicas
 
-| Variable | Qué modifica | Baseline | Valores que explora el full study |
+| Variable | Qué modifica | Baseline | Valores disponibles en el study manual |
 |---|---|---|---|
 | `neutralize_by_sector` | Convierte factores a percentiles relativos a su sector cuando hay muestra suficiente. | `false` | `false`, `true` |
 | `fundamental_momentum` | Incluye cambios temporales de fundamentales. | `false` | `false`, `true` |
@@ -310,7 +366,7 @@ La neutralización no convierte al sector en una señal: elimina parcialmente di
 
 ### 14.5 Ejes de construcción de cartera
 
-| Variable | Qué modifica | Baseline | Valores que explora el full study |
+| Variable | Qué modifica | Baseline | Valores disponibles en el study manual |
 |---|---|---:|---|
 | `target_size` | Número fijo de posiciones top-N. | 8 | 5, 8, 10, 12, 15 |
 | `min_hold_percentile` | Percentil que una posición debe superar para conservarse. | 80 | 60, 70, 80, 85 |
@@ -318,7 +374,10 @@ La neutralización no convierte al sector en una señal: elimina parcialmente di
 | `price_only_strictness_multiplier` | Endurece expulsión, rotación y rebalanceo en las revisiones que solo traen precio nuevo (sin fundamentales nuevos). Regla mecánica: se estresa, no se optimiza. | 1,0 | 1,0, 1,5, 2,0, 3,0 |
 | `profile` | Salidas paralelas de estilo; no se optimiza un ganador. | `balanced` (meta puro) | `balanced`, `growth`, `value`, `quality`, `momentum`, `contrarian`, `defensive`, `garp` |
 
-**Tamaño fijo y pesos.** El full study barre `target_size` como eje simple. En cada snapshot se seleccionan las N acciones mejor situadas en `meta_rank`; los pesos siguen una escala lineal min-max dentro de la cartera sobre el `meta_score` crudo (el mejor de los seleccionados pesa el doble que el peor) y se normalizan al 100 %. Se usa el `meta_score` porque el percentil global se apiña en el top y aplanaría los pesos. El rebalanceo es real: una posición solo se reajusta si su peso objetivo difiere del actual en al menos `rebalance_drift_tolerance` (25 % relativo); por debajo se congela y el presupuesto se reparte entre las que sí se mueven conservando las relaciones del target global.
+**Catálogo manual de tamaño y pesos.** El study exploratorio permite barrer `target_size` y reglas
+mecánicas. Estas opciones no forman parte del selector oficial v2. El protocolo oficial ejecuta
+sus cinco estructuras pre-registradas y después compara `equal`, `legacy_linear` y
+`calibrated_alpha` secuencialmente, con contabilidad por órdenes y mark-to-market.
 
 Estos ejes se ejecutan una vez elegida la especificación predictiva. Se comparan por Information Ratio calculado solo hasta 2024, con desempates de riesgo y estabilidad, y no se retropropagan al modelo. Los perfiles se ejecutan después y no participan en la elección.
 
@@ -354,14 +413,17 @@ run_ids.json (runs realmente ejecutados y reutilizados)
         ↓
 artefactos de cada run (predicciones, Rank-IC, pesos, cobertura y cartera)
         ↓
-decision.json (selección hasta 2024 y evaluación reservada 2025–2026)
+decision.json v2 (selección por eras hasta 2024 y estrés conocido 2025–2026)
         ↓
 tablas y figuras de informe_final.md / LaTeX
 ```
 
 El campo `hypothesis` no es decorativo: se persiste explícitamente en el manifiesto y en la decisión, además de integrarse en la descripción visible. Debe expresar una proposición falsable —por ejemplo, que añadir riesgo y liquidez mejora Rank-IC OOS frente al catálogo histórico—, no una expectativa de rentabilidad.
 
-Para convertir resultados a LaTeX se debe copiar la cifra junto con: identificador de study y run, rango de fechas, configuración exacta, número de cohortes, métrica de selección hasta 2024, resultado reservado y resultado de costes. Si alguno de esos elementos falta, la cifra puede servir para exploración, pero no para la conclusión del TFM.
+Para convertir resultados a LaTeX se debe copiar la cifra junto con: identificador de study y run,
+rango de fechas, configuración exacta, número de cohortes, métrica de selección hasta 2024,
+resultado del estrés conocido y resultado de costes. Si alguno falta, la cifra puede servir para
+exploración, pero no para la conclusión del TFM.
 
 ## 16. Mapa completo del repositorio y responsabilidad de cada parte
 
@@ -499,7 +561,10 @@ Los interruptores `fundamental_momentum`, `market_regime_feature`, `price_moment
 
 ### 20.4 Labels
 
-`targets_forward_3m.parquet` es un nombre histórico: contiene el retorno futuro y exceso futuro calculados usando `target_horizon_months` efectivo. Para una observación en `t`, el target utiliza el precio posterior a `t+h`, y guarda `label_end_date`. Las filas sin cierre de etiqueta quedan fuera de entrenamiento/ponderación. El nombre de archivo no debe llevar a afirmar que todo estudio usa tres meses; el manifiesto de cada run es la fuente de horizonte efectivo.
+`targets_forward.parquet` contiene el retorno futuro y exceso futuro calculados usando
+`target_horizon_months` efectivo. Para una observación en `t`, el target utiliza el precio
+posterior a `t+h` y guarda `label_end_date`. Las filas sin cierre de etiqueta quedan fuera de
+entrenamiento/ponderación. El manifiesto de cada run es la fuente del horizonte efectivo.
 
 ## 21. Aprendizaje walk-forward, agentes y explicabilidad
 
@@ -570,7 +635,10 @@ Cada perfil pondera los rangos de los cinco agentes (quality, value, growth, mom
 
 `backtest.py` valora posiciones con los precios PIT, traduce cambios de estado en compras/ventas, aplica comisión y slippage por orden, marca equity y calcula rendimiento de cartera, benchmark y exceso. Guarda posiciones, órdenes, equity por snapshot, métricas anuales y un resumen con CAGR, volatilidad, máximo drawdown, Information Ratio, turnover y métricas de señal.
 
-El filtro `max_monthly_position_return=2.0` neutraliza retornos mensuales superiores a +200 % como probable artefacto. No es una regla de inversión. Comisión y slippage del baseline son 5 y 10 bps; el full study no puede elegir la pareja barata, pues evalúa los nueve escenarios de estrés definidos en la sección 14.
+El filtro `max_monthly_position_return=2.0` neutraliza retornos mensuales superiores a +200 % como
+probable artefacto. No es una regla de inversión. Comisión y slippage base son 5 y 10 bps; el full
+study no elige el escenario más barato: publica cuatro niveles de costes y dos stresses de
+calendario/salud, todos no seleccionables.
 
 Precio y benchmark deben compartir la **misma rejilla** que los scores. Como la rejilla depende de `execution_lag_days` (`fin_de_periodo + execution_lag_days`, §17), un escenario con un retardo distinto produce fechas de snapshot distintas. Por eso el backtest lee `asset_price_point_in_time.parquet` y `benchmark_point_in_time.parquet` **materializados junto al agente del run** (su workspace privado) y solo cae al `data/processed` global en el backtest CLI aislado. Mezclar scores de un retardo con precios de otro dejaría snapshots sin precio de benchmark y abortaría el run. La fase de cartera, que reejecuta el backtest sobre el modelo finalista, hereda de ese modelo tanto el precio como el benchmark para conservar la rejilla.
 
@@ -592,7 +660,12 @@ Un study vive en `results/studies/<study_id>/` y contiene `study_manifest.json` 
 
 ### 24.3 Ciclo del full study oficial
 
-El full study usa ejes de `STUDY_OPTIONS`, no un producto cartesiano. Ejecuta baseline, variaciones aisladas, ablaciones de bloque/agente/familia, combinaciones dirigidas de candidatos aceptados, afinado de hiperparámetros, fase de cartera, perfiles, nueve costes, robustez y reserva. Los parámetros de selección de factores se combinan con una política que los consuma, no como barridos inertes.
+`run_official_protocol` ejecuta una lista inmutable de 48 unidades. Primero compara 12
+configuraciones de señal con datos hasta 2024, promueve desde caché al ganador sin reentrenarlo y
+confirma dos semillas. Después ejecuta 12 políticas de cartera secuenciales, 8 perfiles, 6
+stresses y 8 unidades de robustez. El ledger impide publicar una ejecución incompleta o expandida.
+2025–2026 se consulta una sola vez después de congelar señal y cartera y se etiqueta como estrés
+conocido, no como reserva ciega.
 
 Además del orquestador oficial, `experiments.py`, `ablaciones.py` y `ejes.py` mantienen el mecanismo de escenarios explícitos para experimentos dirigidos/manuales. Sus fingerprints separan variables que afectan datos, features, modelo o cartera, de modo que sólo se recalcula lo necesario. Los resultados de este mecanismo histórico son útiles para explorar, pero la decisión oficial vigente la produce `execution.py` con corte de selección en 2024.
 
@@ -603,7 +676,9 @@ El coste dominante de un study es el walk-forward: cada run reentrena `fechas_de
 - **Versión de código manual por etapa (`environment.Settings.{dataset,features,agents,backtest}_code_version`).** La clave de caché y el `execution_hash` no dependen de ningún hash automático del código: dependen solo de parámetros, huellas de entrada y de estos enteros manuales. Editar logging o comentarios en cualquier módulo nunca invalida la caché por sí solo; tras un cambio real de lógica en una etapa, el usuario sube a mano el `*_code_version` correspondiente para forzar el recálculo. Es una decisión deliberada de control manual, no automática por contenido de fichero.
 - **Restauración de caché por hardlink.** `recycle.restore` enlaza los artefactos inmutables en lugar de copiarlos, con copia de reserva si el FS no lo soporta.
 - **`lgbm_n_jobs` configurable (por defecto `-1`, todos los núcleos; `3` dentro de un worker paralelo de study).** LightGBM es determinista con hilos, así que solo cambia la velocidad, no el resultado. No entra en la clave de caché de la etapa (cambiar los hilos no invalida artefactos).
-- **Cola dinámica de escenarios en Fase 1/2/3 del full study.** `_run_specs_with_queue` en `module/runs/execution.py` mantiene hasta `PARALLEL_SCENARIO_WORKERS` (4) escenarios en vuelo a la vez; en cuanto uno termina, entra el siguiente pendiente sin esperar a los demás (sustituye al patrón de "tandas" que esperaban a los 4 antes de continuar). Prioriza lanzar primero escenarios cuya firma de materialización (dataset/features/agents) no coincida con la de otro ya en vuelo; si ya no quedan, el siguiente escenario espera en `cache_lock` a que la clave compartida se publique y la recicla, sin recalcularla ni chocar al escribir. Fase 2 paraleliza los trials "segunda mejor opción por eje" (todos parten del mismo `selected` fijo); Fase 3 paraleliza el barrido de valores dentro de cada eje. Las fases y, dentro de fase 3, los ejes, siguen siendo estrictamente secuenciales entre sí.
+- **Cola dinámica del study manual.** `_run_specs_with_queue` mantiene hasta cuatro escenarios
+  exploratorios en vuelo. El protocolo oficial v2 es secuencial por familias y se apoya en caché
+  content-addressed para reutilizar fits, evitando concurrencia innecesaria sobre las mismas claves.
 - **Vectorización de puntos calientes en pandas.** `combine_agent_scores` calcula la media ponderada de rangos por fecha con álgebra vectorizada en vez de iterar fila a fila; el backtest agrupa los scores por snapshot una sola vez en lugar de filtrar con máscara booleana dentro del bucle. Ambos reproducen exactamente la salida previa (mismo manejo de NaN y orden de operaciones).
 - **Menos relecturas de disco.** `_summary_for_run` memoiza el resumen por run (los artefactos de un run son inmutables una vez escritos), evitando releer `backtest_summary.json` y `rank_ic_diagnostics.parquet` varias veces por run.
 
@@ -618,23 +693,25 @@ dos procesos publiquen simultáneamente la misma transformación.
 
 Los backtests de Fases 4–5 copian el agente padre exacto a un workspace del run. No consultan el
 directorio de agentes «más reciente». El placebo recibe un target permutado privado y no modifica
-`targets_forward_3m.parquet`. Los manifiestos guardan fase, escenario y tiempos por etapa; un
+`targets_forward.parquet`. Los manifiestos guardan fase, escenario y tiempos por etapa; un
 study incompleto se puede reanudar y deduplica únicamente ejecuciones con estado `succeeded`.
 
-La Fase 3 afina greedy profundidad, árboles, learning rate y tamaño mínimo de hoja. Después se
-ejecutan semillas 7, 42 y 2026 como validación de estabilidad, sin seleccionar la más favorable.
-La Fase 4 recalcula sus métricas solo hasta 2024; 2025–2026 permanece reservado hasta congelar la
-cartera. En Fase 5 `balanced` conserva `meta_rank` y los ocho perfiles se reportan sin ganador.
+La semilla 42 forma parte de los 12 candidatos; 7 y 2026 confirman el ganador sin seleccionar la
+más favorable. La promoción del candidato copia desde la caché los artefactos necesarios y no
+invoca el pipeline. Los perfiles compactos apuntan al run de agentes padre, y reanudar deduplica
+evaluaciones completas mediante `execution_hash`.
 
-### 24.6 Planificación paralela y observabilidad
+### 24.6 Preflight, observabilidad y almacenamiento
 
-La Fase 1 analiza antes de ejecutar las firmas de materialización de dataset, features y agentes.
-Programa tandas de hasta cuatro procesos y solo junta escenarios cuyas etapas aún no materializadas
-sean independientes. Cada worker tiene workspace y log propios, tres hilos de modelo y publicación
-atómica; tras materializar una firma, los escenarios posteriores restauran caché en vez de repetirla.
-La consola agrega los logs de todos los runs activos, etiquetados por run, y muestra una ventana
-compacta desplazable. Las fases greedy conservan orden secuencial; cartera y perfiles usan el
-artefacto exacto del modelo finalista y no vuelven a entrenar agentes.
+Antes de crear el study se calculan presupuesto, claves únicas proyectadas, fits calculados o
+reciclados, tiempo desde telemetría y espacio incremental. La consola presenta ese desglose. Los
+runs usan `compact_candidate`, `compact_backtest` o `evidence_final`; paneles, features, scores y
+atribuciones no se copian en cada backtest. El dashboard sigue referencias `parent_run.json`.
+
+La compactación histórica se ejecuta aparte con
+`python -m module.runs.compaction <study_id>`. Sin `--apply` solo escribe un dry-run. Incluso con
+`--apply` borra únicamente ficheros pesados cuyo SHA-256 coincide con una copia preservada dentro
+del mismo study; nunca limpia por antigüedad ni modifica la caché.
 
 ### 24.7 Reciclaje por familia de modelo dentro de la etapa de agentes
 
@@ -673,9 +750,16 @@ La consola se sirve únicamente en `127.0.0.1:8765`; no hay autenticación remot
 | `GET /api/stocks`, `/api/stock/summary`, `/api/stock/history`, `/api/stock/agents`, `/api/ticker`, `/api/ranking` | Explorador por acción, ratios PIT, scores, atribución, precio y ranking. |
 | `POST /api/experimental` | Lanza un run manual con settings seleccionados. |
 | `POST /api/study` | Lanza un study dirigido definido desde consola. |
+| `POST /api/official/preflight` | Valida inputs, presupuesto, fits, tiempo y disco sin crear runs. |
 | `POST /api/optimization` | Lanza el full study con nombre e hipótesis. |
 
-`app/index.html` y los módulos de `app/js/views/` ofrecen vistas de consola, estudios, resultados, aprendizaje, rendimiento, cartera y acciones. `api.js` centraliza llamadas, formateo, escaping HTML, tablas ordenables y ayudas de métricas; `charts.js` centraliza Chart.js. La pantalla Full study marca todos los ejes barribles y los bloquea para que no puedan desmarcarse; muestra por separado constantes fijas y estrés de costes. Las vistas no recalculan resultados: consumen exclusivamente artefactos publicados.
+`app/index.html` y los módulos de `app/js/views/` ofrecen vistas de consola, estudios, resultados,
+aprendizaje, rendimiento, cartera y acciones. `api.js` centraliza llamadas, formateo, escaping
+HTML, tablas ordenables y ayudas de métricas; `charts.js` centraliza Chart.js. La pantalla Full
+study ejecuta el preflight real antes de habilitar el botón y muestra presupuesto, fits, tiempo y
+disco. El detalle presenta veredicto, ganadores, rechazos, eras, stress conocido, profiles,
+robustez, almacenamiento y artefactos descargables. Las vistas no recalculan resultados:
+consumen exclusivamente artefactos publicados.
 
 `module/ui/reports.py` construye HTML auto-contenido para un run o una comparación de escenarios, con resumen, rendimiento, aprendizaje, agentes, cartera, cobertura, posiciones, tablas y gráficos Matplotlib embebidos. Es una vía de inspección reproducible adicional a la consola, no un motor de selección.
 
@@ -702,7 +786,12 @@ Las dependencias están fijadas por mínimos en `requirements.txt`: pandas/numpy
 
 Este documento refleja el código actual y, por tanto, también sus límites. El proyecto no es un sistema de ejecución real, asesoramiento financiero, predictor causal ni motor NLP. No usa noticias, estimaciones de analistas, short interest, dividendos/recompras ni estados SEC detallados como señal. No dispone de costes de mercado observados por acción, de datos intradía ni de una validación externa a S&P 500.
 
-El uso de modelos ML no elimina riesgo de sobreajuste: hay muchos ejes, dependencia temporal, cobertura imperfecta y una reserva de sólo dos años. El full study reduce grados de libertad con escenarios dirigidos, corte 2024, placebo, LOYO, bootstrap y estrés, pero no convierte una mejora puntual en certeza. La formulación defendible es siempre condicional: *bajo este universo, fuentes, período, configuración y protocolo, la señal mostró —o no mostró— evidencia OOS*.
+El uso de modelos ML no elimina riesgo de sobreajuste: hay dependencia temporal, cobertura
+imperfecta y decisiones ya informadas por estudios anteriores. El full study reduce grados de
+libertad con escenarios pre-registrados, tres eras, placebos, permutación, bootstrap y stresses,
+pero no convierte una mejora puntual en certeza. La formulación defendible es siempre
+condicional: *bajo este universo, fuentes, período, configuración y protocolo, la señal mostró —o
+no mostró— evidencia OOS*.
 
 ## 28. Cómo mantener este documento como fuente maestra
 

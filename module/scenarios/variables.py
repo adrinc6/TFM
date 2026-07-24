@@ -55,7 +55,7 @@ COST_STRESS_CASES = tuple(
 
 STUDY_OPTIONS: dict[str, list] = {
     # El ancla temporal (execution_year=2015, execution_quarter=1) es FIJA y no se barre: así todos
-    # los escenarios comparten el mismo periodo OOS (2015→hoy) y 2025-26 reservados. Sí se barre el
+    # los escenarios comparten el mismo periodo OOS (2015→hoy) y 2025-26 queda como estrés conocido. Sí se barre el
     # retardo de publicación de fundamentales (execution_lag_days).
     "execution_lag_days": [15, 30, 45, 60], "train_lookback_years": [2, 4, 6, 8, 10, 12],
     "snapshot_step_months": [1, 3], "fundamental_step_months": [3, 6, 12],
@@ -110,8 +110,8 @@ STUDY_OPTIONS: dict[str, list] = {
                                              "momentum", "contrarian", "defensive", "garp"],
 }
 
-# Experimental conserva el catálogo amplio de ajustes individuales. Study y full_study comparten
-# en cambio exactamente el mismo contrato científico y la misma asignación de fases.
+# Experimental y study manual conservan el catálogo amplio de ajustes individuales. El full study
+# oficial usa más abajo un protocolo confirmatorio separado.
 EXPERIMENT_OPTIONS: dict[str, list] = {axis: list(values) for axis, values in STUDY_OPTIONS.items()}
 EXPERIMENT_OPTIONS["commission_bps"] = [0, 5, 10]
 EXPERIMENT_OPTIONS["slippage_bps"] = [5, 10, 20]
@@ -120,24 +120,23 @@ for _axis in ("commission_bps", "slippage_bps", "profile"):
     STUDY_OPTIONS.pop(_axis, None)
 
 
-# --- Contrato común study/full_study -----------------------------------------------------------
-# Ambos comparten ejes, valores y fases. El study manual permite elegir subconjuntos; el full_study
-# ejecuta el catálogo completo. Los hiperparámetros de Fase 3 se retiran de Fases 1–2, no del
-# catálogo científico. `snapshot_day` no existe: la rejilla la define execution_lag_days.
-FULL_STUDY_LEVEL_OVERRIDES: dict[str, list] = {}
+# --- Contrato histórico/manual ----------------------------------------------------------------
+# Se conserva para studies exploratorios y compatibilidad con resultados antiguos. `snapshot_day`
+# no existe: la rejilla la define execution_lag_days.
+MANUAL_STUDY_LEVEL_OVERRIDES: dict[str, list] = {}
 
-FULL_STUDY_OPTIONS: dict[str, list] = {
-    axis: FULL_STUDY_LEVEL_OVERRIDES.get(axis, list(values))
+MANUAL_STUDY_MODEL_AND_PORTFOLIO_OPTIONS: dict[str, list] = {
+    axis: MANUAL_STUDY_LEVEL_OVERRIDES.get(axis, list(values))
     for axis, values in STUDY_OPTIONS.items()
 }
 # Estos ejes se afinan exclusivamente en Fase 3 para no duplicar reentrenos en Fase 1.
-FULL_STUDY_PHASE3_OPTIONS: dict[str, list] = {
+MANUAL_STUDY_PHASE3_OPTIONS: dict[str, list] = {
     axis: list(STUDY_OPTIONS[axis])
     for axis in ("lgbm_max_depth", "lgbm_n_estimators", "lgbm_learning_rate",
                  "lgbm_min_child_samples")
 }
 for _axis in ("lgbm_max_depth", "lgbm_n_estimators", "lgbm_learning_rate", "lgbm_min_child_samples"):
-    FULL_STUDY_OPTIONS.pop(_axis, None)
+    MANUAL_STUDY_MODEL_AND_PORTFOLIO_OPTIONS.pop(_axis, None)
 # `enabled_agents` NO se optimiza en el full_study: el finalista conserva siempre los 5 agentes.
 # Motivo metodológico: los perfiles de inversor (fase final) ponderan los rangos de los 5 agentes
 # (`apply_profile`); si el finalista prescinde de uno (p.ej. quality), esa columna desaparece y los
@@ -146,5 +145,170 @@ for _axis in ("lgbm_max_depth", "lgbm_n_estimators", "lgbm_learning_rate", "lgbm
 # incremental de cada agente sigue siendo estudiable como ablación informativa desde la consola
 # Experimental (donde `enabled_agents` sí sigue disponible en STUDY_OPTIONS), no como eje que altera
 # el modelo recomendado.
-FULL_STUDY_OPTIONS.pop("enabled_agents", None)
+MANUAL_STUDY_MODEL_AND_PORTFOLIO_OPTIONS.pop("enabled_agents", None)
 # El eje de cartera es idéntico en study y full_study.
+
+# El catálogo amplio sigue siendo la fuente del study manual. El full study oficial dejó de ser
+# "todo el catálogo": desde study-2 es un protocolo confirmatorio pre-registrado y acotado.
+MANUAL_STUDY_OPTIONS: dict[str, list] = {
+    axis: list(values) for axis, values in STUDY_OPTIONS.items()
+}
+
+INCUMBENT_FEATURE_BLOCKS = (
+    "quality_core", "quality_efficiency", "financial_strength", "value_core", "value_cashflow",
+    "growth_acceleration", "fundamental_stability", "momentum_trend", "price_risk",
+    "market_liquidity",
+)
+
+INCUMBENT_MODEL_OVERRIDES: dict[str, object] = {
+    "execution_lag_days": 60,
+    "train_lookback_years": 12,
+    "target_horizon_months": 12,
+    "meta_type": "stacked_oos",
+    "meta_ic_lookback_quarters": 16,
+    "fundamental_momentum": True,
+    "market_regime_feature": True,
+    "price_momentum_multi": True,
+    "moving_averages": True,
+    "enabled_feature_blocks": INCUMBENT_FEATURE_BLOCKS,
+    "enabled_agents": FULL_AGENTS,
+    "enabled_model_families": ("lightgbm",),
+    "intra_agent_ensemble_mode": "single",
+    "feature_weighting_mode": "oos_stability_prune",
+    "feature_selection_min_coverage": 0.30,
+    "feature_selection_min_positive_fraction": 0.45,
+    "feature_selection_max_features_per_agent": 8,
+    "metric_winsorization_percentile": 0.0,
+    "lgbm_max_depth": 3,
+    "lgbm_n_estimators": 100,
+    "lgbm_learning_rate": 0.05,
+    "lgbm_min_child_samples": 20,
+    "random_seed": 42,
+}
+
+
+def _signal_candidate(name: str, **overrides: object) -> dict[str, object]:
+    return {"name": name, "overrides": {**INCUMBENT_MODEL_OVERRIDES, **overrides}}
+
+
+OFFICIAL_SIGNAL_CHALLENGERS: tuple[dict[str, object], ...] = (
+    _signal_candidate(
+        "incumbent_expanding",
+        meta_history_mode="expanding", meta_history_quarters=16,
+        meta_weight_cap=1.0, meta_equal_shrinkage=0.0,
+    ),
+    _signal_candidate("meta_equal", meta_type="equal"),
+    _signal_candidate("meta_rank_ic_8q", meta_type="rank_ic", meta_ic_lookback_quarters=8),
+    _signal_candidate("meta_rank_ic_16q", meta_type="rank_ic", meta_ic_lookback_quarters=16),
+    _signal_candidate("stacked_rolling_8q", meta_history_mode="rolling", meta_history_quarters=8),
+    _signal_candidate("stacked_rolling_16q", meta_history_mode="rolling", meta_history_quarters=16),
+    _signal_candidate(
+        "stacked_exponential_hl8",
+        meta_history_mode="exponential", meta_history_quarters=16,
+        meta_decay_half_life_quarters=8.0,
+    ),
+    _signal_candidate(
+        "stacked_rolling_16q_cap50", meta_history_mode="rolling",
+        meta_history_quarters=16, meta_weight_cap=0.50,
+    ),
+    _signal_candidate(
+        "stacked_rolling_16q_shrink50", meta_history_mode="rolling",
+        meta_history_quarters=16, meta_equal_shrinkage=0.50,
+    ),
+    _signal_candidate(
+        "stacked_rolling_16q_cap50_shrink50", meta_history_mode="rolling",
+        meta_history_quarters=16, meta_weight_cap=0.50, meta_equal_shrinkage=0.50,
+    ),
+    _signal_candidate(
+        "adaptive_lookback_8y", meta_history_mode="rolling", meta_history_quarters=16,
+        meta_weight_cap=0.50, meta_equal_shrinkage=0.50, train_lookback_years=8,
+    ),
+    _signal_candidate(
+        "adaptive_linear_recency", meta_history_mode="rolling", meta_history_quarters=16,
+        meta_weight_cap=0.50, meta_equal_shrinkage=0.50, recency_weighting="linear",
+    ),
+)
+
+OFFICIAL_PORTFOLIO_STRUCTURES: tuple[dict[str, object], ...] = (
+    {"name": "legacy_monthly_top10", "overrides": {
+        "portfolio_policy": "legacy_monthly", "target_size": 10,
+        "sizing_mode": "legacy_linear", "active_overlay_mode": "full",
+    }},
+    {"name": "quarterly_top10_equal", "overrides": {
+        "portfolio_policy": "quarterly_top_n", "target_size": 10,
+        "sizing_mode": "equal", "active_overlay_mode": "full",
+    }},
+    {"name": "vintages_4x2_equal", "overrides": {
+        "portfolio_policy": "staggered_vintages", "vintage_count": 4,
+        "holding_months": 12, "target_size": 8, "sizing_mode": "equal",
+        "active_overlay_mode": "full",
+    }},
+    {"name": "vintages_4x3_equal", "overrides": {
+        "portfolio_policy": "staggered_vintages", "vintage_count": 4,
+        "holding_months": 12, "target_size": 12, "sizing_mode": "equal",
+        "active_overlay_mode": "full",
+    }},
+    {"name": "vintages_4x4_equal", "overrides": {
+        "portfolio_policy": "staggered_vintages", "vintage_count": 4,
+        "holding_months": 12, "target_size": 16, "sizing_mode": "equal",
+        "active_overlay_mode": "full",
+    }},
+)
+
+OFFICIAL_EVALUATION_BUDGET: dict[str, int] = {
+    "signal_challengers": 12,
+    "seed_confirmation": 2,
+    "portfolio_translation": 12,
+    "profiles": 8,
+    "economic_stress": 6,
+    "retraining_placebos": 5,
+    "score_label_permutation": 1,
+    "pit_random_portfolios": 1,
+    "bootstrap_and_era_exclusion": 1,
+}
+
+OFFICIAL_STUDY_PROTOCOL: dict[str, object] = {
+    "version": 2,
+    "selection_eras": ((2015, 2018), (2019, 2021), (2022, 2024)),
+    "known_stress_years": (2025, 2026),
+    "signal_challengers": OFFICIAL_SIGNAL_CHALLENGERS,
+    "portfolio_structures": OFFICIAL_PORTFOLIO_STRUCTURES,
+    "profiles": ("balanced", "growth", "value", "quality", "momentum", "contrarian",
+                 "defensive", "garp"),
+    "max_evaluations": 50,
+    "max_expensive_fits": 10,
+    "estimated_expensive_fits": 10,
+    "max_incremental_bytes": 5 * 1024**3,
+}
+
+
+def official_evaluation_budget() -> dict[str, object]:
+    """Presupuesto determinista del protocolo oficial; falla si alguien lo expande sin revisarlo."""
+    breakdown = dict(OFFICIAL_EVALUATION_BUDGET)
+    return validate_official_budget(breakdown)
+
+
+def validate_official_budget(
+    breakdown: dict[str, int], *, estimated_expensive_fits: int | None = None,
+    estimated_incremental_bytes: int = 0,
+) -> dict[str, object]:
+    """Valida una proyección antes de crear runs; se expone para tests de integración."""
+    total = sum(breakdown.values())
+    maximum = int(OFFICIAL_STUDY_PROTOCOL["max_evaluations"])
+    if total > maximum:
+        raise ValueError(f"El protocolo oficial supera el máximo de {maximum}: {total}.")
+    expensive = int(
+        OFFICIAL_STUDY_PROTOCOL["estimated_expensive_fits"]
+        if estimated_expensive_fits is None else estimated_expensive_fits
+    )
+    if expensive > int(OFFICIAL_STUDY_PROTOCOL["max_expensive_fits"]):
+        raise ValueError("El protocolo oficial supera el máximo de walk-forwards caros.")
+    if estimated_incremental_bytes > int(OFFICIAL_STUDY_PROTOCOL["max_incremental_bytes"]):
+        raise ValueError("El protocolo oficial supera el máximo de almacenamiento incremental.")
+    if breakdown == OFFICIAL_EVALUATION_BUDGET and total != 48:
+        raise ValueError(f"El protocolo oficial debe contener exactamente 48 evaluaciones, no {total}.")
+    return {"total": total, "maximum": maximum, "max_evaluations": maximum,
+            "breakdown": breakdown, "groups": breakdown,
+            "max_expensive_fits": int(OFFICIAL_STUDY_PROTOCOL["max_expensive_fits"]),
+            "estimated_expensive_fits": expensive,
+            "max_incremental_bytes": int(OFFICIAL_STUDY_PROTOCOL["max_incremental_bytes"])}

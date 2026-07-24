@@ -61,12 +61,13 @@ La revisión de 2026-07-20 encontró cuatro riesgos importantes:
 
 Estas observaciones invalidaban presentar el full study anterior como cierre definitivo, aunque sus runs sigan siendo reproducibles y útiles como contexto histórico.
 
-## Corrección metodológica vigente
+## Corrección metodológica v1 (superada por el protocolo v2)
 
 Se implementaron los siguientes cambios:
 
 - el resumen usado para seleccionar fases de modelo recalcula Rank-IC solo hasta 2024;
-- 2025–2026 se guarda en `reserved_validation` y se consulta al final;
+- 2025–2026 se separaba al final; desde v2 se denomina exclusivamente
+  `known_stress_not_selection`, porque el periodo ya fue observado;
 - una variante solo entra en greedy si supera el baseline y mantiene la fracción de IC positivos;
 - las semillas se reservan para sensibilidad/robustez;
 - los costes pasan a nueve escenarios de estrés que no cambian el ganador;
@@ -79,11 +80,14 @@ No se afirma que estas medidas eliminen todos los falsos positivos. Reducen grad
 
 Se añadió nombre e hipótesis a la pantalla Full study. La hipótesis se persiste explícitamente en `study_manifest.json`, se replica en `decision.json` y sirve de descripción de los runs del study. La razón es que un study sin hipótesis es reproducible técnicamente, pero difícil de defender académicamente: no queda claro qué esperaba validar ni cómo interpretar un resultado negativo.
 
-## Resultados históricos y estado actual
+## Resultados históricos y estado actual en aquel momento
 
 Los studies anteriores a la corrección se conservan en `results/`. No se borran porque permiten reconstruir la evolución del proyecto y demostrar qué cambió. Sin embargo, sus cifras no deben usarse como evidencia final del protocolo vigente, especialmente si el ganador se benefició de costes seleccionados o de años que ahora son reserva.
 
-El siguiente full study completado con esta metodología será el primer candidato a resultado final. Antes de escribir una conclusión cuantitativa deben revisarse: configuración elegida, Rank-IC hasta 2024, validación 2025–2026, bootstrap, LOYO, placebo, cartera aleatoria, estrés de costes y ablaciones.
+Este protocolo quedó sustituido por v2 antes de considerarse evidencia final. El siguiente full
+study válido debe ejecutar exactamente 48 evaluaciones, seleccionar únicamente con las tres eras
+hasta 2024 y presentar 2025–2026 como estrés conocido, junto con bootstrap, placebos,
+permutación inferencial, carteras aleatorias PIT y stresses económicos.
 
 ## Optimización de rendimiento sin cambiar resultados
 
@@ -99,11 +103,17 @@ Al auditar un full study en marcha se detectó que barrer `execution_lag_days` p
 
 La decisión (instrucción explícita del usuario, cambia resultados) fue rediseñar la rejilla: cada snapshot cae ahora en **`fin_de_periodo + execution_lag_days`**. Cerrado un mes o trimestre, los fundamentales tardan unos días en publicarse y la rejilla observa justo entonces. Con esto el retardo de publicación gobierna cuándo se miran los datos y `execution_lag_days` pasa a tener efecto real; `snapshot_day` se eliminó por completo (era una elección arbitraria de calendario). El point-in-time no se debilita: `_fundamentals_at` sigue leyendo solo lo que tiene `filed_date` anterior al snapshot; de hecho el criterio queda más fiel a la operativa real.
 
-## El full study es inteligente; el study manual es exploratorio
+## Contratos separados: protocolo oficial cerrado y study manual exploratorio
 
-El `study` manual conserva todos los valores de cada eje (exploración libre en la consola). El `full_study` automático encadena ~un centenar de reentrenos caros, así que su barrido (`FULL_STUDY_OPTIONS`) recorta la densidad de niveles donde la curva es suave y los niveles contiguos rara vez cambian el ganador (p. ej. `train_lookback_years` 6→3, `lgbm_max_depth` 5→3), apoyándose en que la fase de afinado de hiperparámetros ya reafina lr/n_estimators/min_child_samples sobre el ganador. No se elimina ningún **eje** "por si no aporta": eso lo decide el propio estudio midiendo su contribución incremental; solo se baja densidad donde el solapamiento es evidente.
+El `study` manual conserva `MANUAL_STUDY_OPTIONS` para investigación libre. El full study ya no
+recorta ni comparte ese barrido: ejecuta `OFFICIAL_STUDY_PROTOCOL`, una lista cerrada de 12
+challengers de señal y una secuencia cerrada de 12 políticas de cartera. No hay greedy genérico,
+reafinado plano de LightGBM ni expansión dinámica del catálogo. El presupuesto total es 48 y el
+preflight aborta antes de crear el study si proyecta más de 10 fits caros o 5 GiB.
 
-La construcción de cartera se simplificó después a tamaños fijos (`target_size`: 5, 8, 10, 12 y 15). La cartera compra el top-N del `meta_rank`, expulsa una tenencia que no supera el percentil de mantenimiento y rota solo con ventaja suficiente. Los pesos dependen del ranking efectivo, pero ninguna posición puede pesar más del doble que la menor.
+La cartera oficial compara estructuras mensuales/trimestrales y vintages únicamente como
+challengers pre-registrados. Después decide secuencialmente sizing, overlay SPY y hurdle de costes;
+ningún stress ni perfil puede alterar el ganador.
 
 ## Aceleración del walk-forward por multihilo, no por procesos
 
@@ -128,9 +138,9 @@ con el reciclaje efectivo al cambiar el meta y al ablacionar una familia; la sui
 
 ## 2026-07-24 — Study oficial: resultados y veredicto
 
-Se ejecutó el primer study oficial completo bajo el protocolo vigente (`optimization-official`,
+Se ejecutó el primer study oficial completo bajo el protocolo entonces vigente (`optimization-official`,
 104 escenarios, 167 runs, estado `succeeded`). El análisis detallado está en
-`docs/informe_resultados_study.md`; aquí se conserva el porqué del desenlace.
+`docs/informe_resultados_study_1.md`; aquí se conserva el porqué del desenlace.
 
 El barrido eligió una configuración **parsimoniosa**: un único LightGBM poco profundo (`max_depth 3`,
 100 árboles), meta `stacked_oos`, poda estricta de features (8 por agente), etiqueta a 12 meses,
@@ -140,9 +150,11 @@ features derivadas); la Fase 3 mostró un Rank-IC plano ante los hiperparámetro
 La lección es que **la señal es débil y no admite complejidad**: gana lo simple porque no hay margen.
 
 El veredicto es **honesto y parcialmente negativo**, y se documenta como tal por disciplina del proyecto
-(las configuraciones y periodos perdedores son evidencia). El Rank-IC OOS del finalista es real dentro
-de 2015–2024 —placebo `p = 0`, bootstrap con IC 95 % que no cruza cero, leave-one-year-out estable— pero
-**se degrada a partir de 2024 y cae a Rank-IC negativo (−0.0095) en la reserva ciega 2025–2026**, con
+(las configuraciones y periodos perdedores son evidencia). El Rank-IC OOS fue positivo dentro
+de 2015–2024 —el antiguo placebo `p = 0` con solo tres permutaciones no es un p-valor válido; el
+bootstrap sí dio un IC 95 % que no cruza cero y leave-one-year-out estable— pero
+**se degrada a partir de 2024 y cae a Rank-IC negativo (−0.0095) en 2025–2026**, periodo que hoy
+se clasifica como estrés conocido y no como reserva ciega, con
 alfa anual negativo tres años seguidos. Además, la rentabilidad no supera de forma convincente a carteras
 aleatorias (percentil 18). El sistema ordena activos mejor que el ruido, pero ese margen no se traduce en
 alfa económico y no generaliza fuera del periodo de selección.
@@ -155,3 +167,27 @@ cartera periódicamente) es un flujo distinto que solo debe activarse una vez el
 validación fuera de muestra, cosa que con esta configuración aún no ocurre. La siguiente línea de trabajo
 es diagnosticar la caída 2024–2026 (¿régimen, decaimiento de value/quality, o sesgo residual?) con los
 diagnósticos ya generados, sin reejecutar el study.
+
+## 2026-07-24 — Protocolo confirmatorio v2: de Rank-IC a alfa
+
+La auditoría del study 1 mostró tres problemas de proceso: 167 runs eran demasiado para una
+confirmación, el stacking no aplicaba realmente su ventana trimestral y la cartera mensual
+desalineaba una etiqueta de 12 meses con ~760 % de turnover anual. Además, el motor podía actualizar
+pesos objetivo sin una orden equivalente y cada run copiaba paneles/features/atribuciones pesados.
+
+Se sustituyó el ciclo oficial por un presupuesto determinista de 48 evaluaciones y máximo 10
+walk-forwards caros. El study manual mantiene `MANUAL_STUDY_OPTIONS`; el oficial usa
+`OFFICIAL_STUDY_PROTOCOL` con 12 challengers de señal y 12 políticas de cartera pre-registradas.
+La selección queda limitada a tres eras hasta 2024. Los años 2025–2026 ya observados pasan a estrés
+conocido y nunca vuelven a presentarse como holdout ciego.
+
+El meta rolling/exponencial usa exclusivamente cohortes trimestrales cuya etiqueta ha cerrado, con
+cap y shrinkage opcionales. La cartera incorpora lotes por vintage mantenidos 12 meses, núcleo SPY,
+exposición activa causal y calibración isotónica point-in-time. La contabilidad deriva pesos por
+mark-to-market, carga el coste inicial y exige una orden para todo cambio de holdings.
+
+La publicación distingue candidatos, backtests y evidencia final. Los runs compactos referencian
+al padre por hash/run, el workspace temporal se elimina solo tras publicar y la compactación
+histórica es un comando separado cuyo modo por defecto es `dry-run`. La decisión puede terminar
+explícitamente en `no_improvement`; el protocolo no está autorizado a elegir retrospectivamente la
+alternativa con mayor alfa histórico.

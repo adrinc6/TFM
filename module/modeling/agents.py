@@ -28,6 +28,7 @@ from lightgbm import LGBMClassifier, LGBMRanker, LGBMRegressor
 
 from environment import MIN_TRAINING_ROWS, RECENCY_HALFLIFE_YEARS, Settings
 from module.modeling.meta import combine_agent_scores
+from module.modeling.targets import normalize_target_columns, target_artifact_path
 from module.modeling.catalog import AGENT_NAMES, catalog_by_agent
 from module.common.utils import read_parquet, sha256_file, write_json, write_parquet
 from module.runs.recycle import cache_lock, stage_key
@@ -57,9 +58,9 @@ def build_agent_scores(
     """
     output_dir = input_dir_override or settings.processed_output_dir
     feature_path = output_dir / "features_point_in_time.parquet"
-    target_path = target_path_override or (output_dir / "targets_forward_3m.parquet")
+    target_path = target_path_override or target_artifact_path(output_dir)
     features = read_parquet(feature_path, "RUN_MODE='features'")
-    targets = read_parquet(target_path, "RUN_MODE='features'")
+    targets = normalize_target_columns(read_parquet(target_path, "RUN_MODE='features'"))
     _validate_inputs(features, targets)
     agents_root = run_root or (output_dir / "agents")
     run_dir = agents_root / _run_id(settings, feature_path, target_path)
@@ -68,7 +69,7 @@ def build_agent_scores(
     frame["label_end_ts"] = pd.to_datetime(frame["label_end_date"])
     frame["is_quarterly"] = frame["review_type"].eq("fundamental_quarterly")
 
-    predictions, coefficients, local_attribution = _walk_forward_scores_cached(
+    predictions, coefficients, local_attribution, fit_audit = _walk_forward_scores_cached(
         frame, settings, feature_path, target_path)
     if predictions.empty:
         raise RuntimeError(
@@ -83,12 +84,57 @@ def build_agent_scores(
     write_parquet(wide, run_dir / "agent_scores.parquet")
     write_parquet(weights, run_dir / "meta_weights.parquet")
     write_parquet(diagnostics, run_dir / "rank_ic_diagnostics.parquet")
+    from module.evaluation.signal_diagnostics import (
+        calibrated_alpha_path, rank_tail_diagnostics, signal_health_path,
+    )
+    tail = rank_tail_diagnostics(wide, targets)
+    if not tail.empty and not weights.empty:
+        weight_pivot = weights.pivot_table(
+            index="snapshot_date", columns="agent", values="weight", aggfunc="last",
+        ).fillna(0.0).sort_index()
+        weight_path = pd.DataFrame({
+            "prediction_date": weight_pivot.index.astype(str),
+            "meta_weight_concentration_hhi": (weight_pivot ** 2).sum(axis=1).to_numpy(),
+            "meta_weight_max": weight_pivot.max(axis=1).to_numpy(),
+            "meta_weight_turnover": (
+                weight_pivot.diff().abs().sum(axis=1).fillna(0.0).to_numpy()
+            ),
+        })
+        tail = tail.merge(weight_path, on="prediction_date", how="left", validate="one_to_one")
+    health = signal_health_path(
+        tail, wide["snapshot_date"].drop_duplicates(),
+        lookback_quarters=settings.signal_health_lookback_quarters,
+    )
+    health_8 = signal_health_path(
+        tail, wide["snapshot_date"].drop_duplicates(), lookback_quarters=8,
+    ).rename(columns={
+        "closed_cohorts": "closed_cohorts_8q",
+        "shrunk_rank_ic": "shrunk_rank_ic_8q",
+        "shrunk_tail_spread": "shrunk_tail_spread_8q",
+        "continuous_active_fraction": "continuous_active_fraction_8q",
+        "binary_active_fraction": "binary_active_fraction_8q",
+    })
+    health = health.merge(health_8, on="snapshot_date", how="left", validate="one_to_one")
+    calibration = calibrated_alpha_path(wide, targets)
+    write_parquet(tail, run_dir / "rank_tail_diagnostics.parquet")
+    write_parquet(health, run_dir / "signal_health.parquet")
+    write_parquet(calibration, run_dir / "signal_calibration.parquet")
+    wide = wide.merge(health, on="snapshot_date", how="left", validate="many_to_one")
+    wide = wide.merge(
+        calibration[["ticker", "snapshot_date", "expected_excess_return"]],
+        on=["ticker", "snapshot_date"], how="left", validate="one_to_one",
+    )
+    # Sobrescribir el fichero inicial con las columnas causales que consume la cartera.
+    write_parquet(wide, run_dir / "agent_scores.parquet")
     write_parquet(coefficients, run_dir / "model_feature_attribution.parquet")
     write_parquet(local_attribution, run_dir / "agent_local_attribution.parquet")
     feature_diagnostics = _feature_diagnostics(frame, targets, coefficients, settings)
     write_parquet(feature_diagnostics, run_dir / "feature_diagnostics.parquet")
     write_json(_feature_catalog_payload(settings, feature_diagnostics), run_dir / "feature_catalog.json")
-    write_json(_manifest(settings, feature_path, target_path, predictions, run_dir), run_dir / "manifest.json")
+    write_json(
+        _manifest(settings, feature_path, target_path, predictions, run_dir, fit_audit),
+        run_dir / "manifest.json",
+    )
     log.info("Agentes: rows=%s runs=%s output=%s", len(wide), wide["snapshot_date"].nunique(), run_dir)
     return wide
 
@@ -100,12 +146,12 @@ def _feature_diagnostics(frame: pd.DataFrame, targets: pd.DataFrame, importance:
     El rank-IC univariante se reporta como exploración; las importancias de modelo proceden de
     entrenamientos walk-forward y por tanto no mezclan una etiqueta futura en la predicción.
     """
-    merged = frame.merge(targets[["ticker", "snapshot_date", "forward_excess_return_3m", "target_available"]],
+    merged = frame.merge(targets[["ticker", "snapshot_date", "forward_excess_return", "target_available"]],
                          on=["ticker", "snapshot_date"], how="left", suffixes=("", "_target"))
     rows: list[dict] = []
     for column in sorted(c for c in frame.columns if c.startswith("factor_")):
-        usable = merged.loc[merged["target_available"].fillna(False), [column, "forward_excess_return_3m"]].dropna()
-        rank_ic = _safe_spearman(usable[column], usable["forward_excess_return_3m"]) if len(usable) >= settings.min_rank_ic_cross_section else np.nan
+        usable = merged.loc[merged["target_available"].fillna(False), [column, "forward_excess_return"]].dropna()
+        rank_ic = _safe_spearman(usable[column], usable["forward_excess_return"]) if len(usable) >= settings.min_rank_ic_cross_section else np.nan
         relevant = importance.loc[importance["feature"] == column] if not importance.empty else pd.DataFrame()
         rows.append({
             "feature": column,
@@ -190,7 +236,7 @@ def _agent_features(frame: pd.DataFrame, settings: Settings) -> dict[str, list[s
 
 def _fit_family_cached(
     frame: pd.DataFrame, settings: Settings, family: str, feature_path: Path, target_path: Path
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, dict[str, str]]:
     """Obtiene los scores de una familia desde ``data/recycle`` o los computa y publica.
 
     La clave ``agents_fit`` incluye la familia y los inputs (features/targets); es independiente del
@@ -213,11 +259,11 @@ def _fit_family_cached(
 
     loaded = _load()
     if loaded is not None:
-        return loaded
+        return (*loaded, {"family": family, "key": key, "source": "recycled"})
     with cache_lock("agents_fit", key):
         loaded = _load()
         if loaded is not None:
-            return loaded
+            return (*loaded, {"family": family, "key": key, "source": "recycled"})
         scores, coefficients, local_attribution = fit_family_scores(frame, settings, family)
         temp = Path(tempfile.mkdtemp(prefix=f"agents_fit-{family}-"))
         try:
@@ -227,29 +273,35 @@ def _fit_family_cached(
         finally:
             shutil.rmtree(temp, ignore_errors=True)
         log.info("Reciclaje agents_fit[%s]: publicada clave %s", family, key[:12])
-    return scores, coefficients, local_attribution
+    return (
+        scores, coefficients, local_attribution,
+        {"family": family, "key": key, "source": "computed"},
+    )
 
 
 def _walk_forward_scores_cached(
     frame: pd.DataFrame, settings: Settings, feature_path: Path, target_path: Path
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, list[dict[str, str]]]:
     """Como :func:`_walk_forward_scores` pero cada familia se restaura/publica por separado."""
     families = _fit_families(settings)
     per_family: dict[str, pd.DataFrame] = {}
     coeff_frames: list[pd.DataFrame] = []
     attrib_frames: list[pd.DataFrame] = []
+    fit_audit: list[dict[str, str]] = []
     for family in families:
-        scores, coefficients, local_attribution = _fit_family_cached(
+        scores, coefficients, local_attribution, audit = _fit_family_cached(
             frame, settings, family, feature_path, target_path)
         per_family[family] = scores
         coeff_frames.append(coefficients)
         attrib_frames.append(local_attribution)
+        fit_audit.append(audit)
     if not families or all(per_family[family].empty for family in families):
-        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), fit_audit
     predictions = _combine_family_scores(per_family, families, frame, settings)
     return (predictions,
             pd.concat(coeff_frames, ignore_index=True) if coeff_frames else pd.DataFrame(),
-            pd.concat(attrib_frames, ignore_index=True) if attrib_frames else pd.DataFrame())
+            pd.concat(attrib_frames, ignore_index=True) if attrib_frames else pd.DataFrame(),
+            fit_audit)
 
 
 def _retrain_schedule(frame: pd.DataFrame, settings: Settings) -> list[pd.Timestamp]:
@@ -301,7 +353,7 @@ def fit_family_scores(
         ]
         # `train`/`target`/`weights` no dependen del agente (solo de retrain_date): se preparan una
         # vez por fecha, no una vez por (fecha × agente × familia). Resultado idéntico, menos trabajo.
-        train = training.dropna(subset=["forward_excess_return_3m"])
+        train = training.dropna(subset=["forward_excess_return"])
         train, target = _prepare_training(train, settings)
         recency = _recency_weights(train, settings)
         for agent, columns in agent_features.items():
@@ -394,7 +446,7 @@ def _model_rank_ic_weights(
     history = history.loc[history["agent"].eq(agent)]
     if history.empty:
         return equal
-    labels = frame[["ticker", "snapshot_date", "label_end_ts", "target_available", "forward_excess_return_3m"]].drop_duplicates()
+    labels = frame[["ticker", "snapshot_date", "label_end_ts", "target_available", "forward_excess_return"]].drop_duplicates()
     history = history.merge(labels, on=["ticker", "snapshot_date"], how="left")
     history = history.loc[history["target_available"].fillna(False) & history["label_end_ts"].le(retrain_date)]
     positive: dict[str, float] = {}
@@ -402,9 +454,9 @@ def _model_rank_ic_weights(
         values = []
         family_history = history.loc[history["family"].eq(family)]
         for _, cohort in family_history.groupby("snapshot_date", sort=True):
-            clean = cohort[["score", "forward_excess_return_3m"]].dropna()
+            clean = cohort[["score", "forward_excess_return"]].dropna()
             if len(clean) >= settings.min_rank_ic_cross_section:
-                ic = _safe_spearman(clean["score"], clean["forward_excess_return_3m"])
+                ic = _safe_spearman(clean["score"], clean["forward_excess_return"])
                 if pd.notna(ic):
                     values.append(float(ic))
         recent = values[-settings.meta_ic_lookback_quarters:]
@@ -437,10 +489,10 @@ def _selected_feature_columns(train: pd.DataFrame, columns: list[str], settings:
         if coverage < settings.feature_selection_min_coverage:
             continue
         cohort_ics = []
-        for _, cohort in train[["snapshot_date", column, "forward_excess_return_3m"]].groupby("snapshot_date"):
-            clean = cohort[[column, "forward_excess_return_3m"]].dropna()
+        for _, cohort in train[["snapshot_date", column, "forward_excess_return"]].groupby("snapshot_date"):
+            clean = cohort[[column, "forward_excess_return"]].dropna()
             if len(clean) >= settings.min_rank_ic_cross_section:
-                value = _safe_spearman(clean[column], clean["forward_excess_return_3m"])
+                value = _safe_spearman(clean[column], clean["forward_excess_return"])
                 if pd.notna(value):
                     cohort_ics.append(float(value))
         recent = cohort_ics[-settings.feature_selection_lookback_quarters:]
@@ -493,18 +545,18 @@ def _temporal_permutation_importance(train: pd.DataFrame, columns: list[str], se
         fitting = train.loc[pd.to_datetime(train["snapshot_date"]).lt(date)]
         if len(fitting) < MIN_TRAINING_ROWS or len(validation) < settings.min_rank_ic_cross_section:
             continue
-        target = fitting["forward_excess_return_3m"].groupby(fitting["snapshot_date"]).rank(method="average", pct=True)
+        target = fitting["forward_excess_return"].groupby(fitting["snapshot_date"]).rank(method="average", pct=True)
         model = make_pipeline(SimpleImputer(strategy="median"), StandardScaler(), Ridge(alpha=8.0))
         model.fit(fitting[columns], target)
         base = _safe_spearman(pd.Series(model.predict(validation[columns]), index=validation.index),
-                              validation["forward_excess_return_3m"])
+                              validation["forward_excess_return"])
         if pd.isna(base):
             continue
         for column in columns:
             shuffled = validation[columns].copy()
             shuffled[column] = rng.permutation(shuffled[column].to_numpy())
             altered = _safe_spearman(pd.Series(model.predict(shuffled), index=validation.index),
-                                     validation["forward_excess_return_3m"])
+                                     validation["forward_excess_return"])
             if pd.notna(altered):
                 drops[column].append(float(base - altered))
     return {column: float(np.mean(values)) for column, values in drops.items() if values}
@@ -519,7 +571,7 @@ def _prepare_training(train: pd.DataFrame, settings: Settings) -> tuple[pd.DataF
     - "quartile" (ablacion): clasificacion binaria del cuartil superior (1) vs inferior (0) del
       retorno DENTRO de cada snapshot; el centro se EXCLUYE del entrenamiento pero se puntua entero.
     """
-    returns = train["forward_excess_return_3m"].astype(float)
+    returns = train["forward_excess_return"].astype(float)
     percentile = returns.groupby(train["snapshot_date"]).rank(method="average", pct=True)
     if settings.objective == "rank_regression":
         return train, percentile
@@ -772,6 +824,11 @@ def _run_id(settings: Settings, feature_path: Path, target_path: Path) -> str:
         "lookback_years": settings.train_lookback_years,
         "target_horizon_months": settings.target_horizon_months,
         "meta_ic_lookback_quarters": settings.meta_ic_lookback_quarters,
+        "meta_history": [
+            settings.meta_history_mode, settings.meta_history_quarters,
+            settings.meta_decay_half_life_quarters, settings.meta_weight_cap,
+            settings.meta_equal_shrinkage,
+        ],
         "min_training_rows": MIN_TRAINING_ROWS,
         "min_rank_ic_cross_section": settings.min_rank_ic_cross_section,
         "fundamental_momentum": settings.fundamental_momentum,
@@ -800,7 +857,8 @@ def _run_id(settings: Settings, feature_path: Path, target_path: Path) -> str:
 
 
 def _manifest(
-    settings: Settings, feature_path: Path, target_path: Path, predictions: pd.DataFrame, run_dir: Path
+    settings: Settings, feature_path: Path, target_path: Path, predictions: pd.DataFrame,
+    run_dir: Path, fit_audit: list[dict[str, str]],
 ) -> dict:
     import lightgbm
 
@@ -822,19 +880,25 @@ def _manifest(
             "random_seed": settings.random_seed,
             "meta_type": settings.meta_type,
             "meta_ic_lookback_quarters": settings.meta_ic_lookback_quarters,
+            "meta_history_mode": settings.meta_history_mode,
+            "meta_history_quarters": settings.meta_history_quarters,
+            "meta_decay_half_life_quarters": settings.meta_decay_half_life_quarters,
+            "meta_weight_cap": settings.meta_weight_cap,
+            "meta_equal_shrinkage": settings.meta_equal_shrinkage,
             "fundamental_momentum": settings.fundamental_momentum,
             "market_regime_feature": settings.market_regime_feature,
             "missing_policy": "median_train_only_with_indicator",
         },
         "versions": {"lightgbm": lightgbm.__version__},
         "predictions": len(predictions),
+        "agents_fit": fit_audit,
     }
 
 
 def _validate_inputs(features: pd.DataFrame, targets: pd.DataFrame) -> None:
     required_features = {"ticker", "snapshot_date", "review_type", "is_price_fresh", *sum(AGENT_FEATURES.values(), [])}
-    required_targets = {"ticker", "snapshot_date", "label_end_date", "target_available", "forward_excess_return_3m"}
+    required_targets = {"ticker", "snapshot_date", "label_end_date", "target_available", "forward_excess_return"}
     if missing := required_features - set(features.columns):
         raise ValueError(f"features_point_in_time.parquet no contiene: {sorted(missing)}")
     if missing := required_targets - set(targets.columns):
-        raise ValueError(f"targets_forward_3m.parquet no contiene: {sorted(missing)}")
+        raise ValueError(f"targets_forward.parquet no contiene: {sorted(missing)}")
