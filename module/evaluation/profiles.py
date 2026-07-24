@@ -1,10 +1,11 @@
 """Perfiles de inversor: selección de cartera por estilo, sobre las buenas del modelo.
 
-El sistema explica por que cada accion esta arriba: cada agente (calidad, momentum, valor)
-produce un rango por ticker (`quality_rank`, `momentum_rank`, `value_rank`) y el meta los combina
-(`meta_rank`). Un perfil de inversor NO coge siempre el top-N del meta: dentro de las **buenas**
-acciones (las del percentil alto del `meta_rank`), reordena segun su estilo. Asi se puede medir
-como le habria ido a un inversor conservador, agresivo, value, etc., usando las mismas señales.
+El sistema explica por que cada accion esta arriba: cada agente (quality, value, growth, momentum,
+risk) produce un rango por ticker (`quality_rank`, `value_rank`, `growth_rank`, `momentum_rank`,
+`risk_rank`) y el meta los combina (`meta_rank`). Un perfil de inversor NO coge siempre el top-N del
+meta: dentro de las **buenas** acciones (las del percentil alto del `meta_rank`), reordena segun su
+estilo. Asi se puede medir como le habria ido a un inversor value, growth, momentum, contrarian,
+defensivo, etc., usando las mismas señales.
 
 Cada perfil produce un `meta_rank` alternativo (el `profile_score`) que la cartera consume igual
 que el meta_rank normal. Es una transformacion determinista de los rangos ya existentes: no
@@ -19,25 +20,33 @@ import pandas as pd
 # elegible del perfil. Debajo de esto, el modelo no la recomienda y ningun perfil la elige.
 GOOD_THRESHOLD = 0.60
 
-# Cada perfil pondera los rangos de los agentes. Los pesos suman 1. El score del perfil es la
-# combinacion ponderada, re-rankeada entre las buenas. Todos parten del meta como base de calidad.
+# Cada perfil pondera los rangos de los agentes (quality, value, growth, momentum, risk) y, si
+# quiere, el meta_rank como base. Los pesos pueden ser negativos cuando el estilo apuesta EN CONTRA
+# de un agente (p.ej. el contrarian contra el momentum reciente). El score del perfil es la
+# combinacion ponderada, re-rankeada entre las buenas. Nota sobre risk_rank: en el catalogo los
+# factores de riesgo van en direccion inversa (rank alto = MENOS riesgo), asi que un peso positivo
+# en risk_rank prioriza baja volatilidad y uno negativo tolera/busca volatilidad.
+#
+# El conjunto se diseño para representar arquetipos de inversor reconocibles con solapamiento minimo
+# (correlacion esperada entre carteras baja; momentum y contrarian son polos opuestos por diseño).
 PROFILE_WEIGHTS: dict[str, dict[str, float]] = {
     # El meta puro: referencia (sistema base sin sesgo de estilo).
     "balanced": {"meta_rank": 1.0},
-    # Conservador: calidad y estabilidad por encima de todo; algo de valor, nada de momentum.
-    "conservative": {"quality_rank": 0.6, "value_rank": 0.3, "meta_rank": 0.1},
-    # Agresivo: momentum y crecimiento; busca el que mas sube.
-    "aggressive": {"momentum_rank": 0.7, "meta_rank": 0.3},
-    # Value: barato y bueno (P/E, P/B bajos entre las de calidad).
-    "value": {"value_rank": 0.7, "quality_rank": 0.2, "meta_rank": 0.1},
-    # Calidad pura: solo el mejor negocio (ROE, margenes, poca deuda).
-    "quality": {"quality_rank": 0.8, "meta_rank": 0.2},
-    # Momentum puro: solo fuerza relativa reciente.
-    "momentum": {"momentum_rank": 0.8, "meta_rank": 0.2},
-    # GARP (growth at reasonable price): equilibrio valor + momentum de calidad.
-    "garp": {"value_rank": 0.4, "quality_rank": 0.3, "momentum_rank": 0.3},
-    # Contrarian: buenas del meta pero con momentum reciente BAJO (apuesta a reversion).
-    "contrarian": {"quality_rank": 0.5, "value_rank": 0.3, "momentum_rank": -0.2, "meta_rank": 0.4},
+    # Growth: crecimiento como motor, pero crecimiento DE CALIDAD; momentum confirma la tendencia.
+    "growth": {"growth_rank": 0.60, "quality_rank": 0.25, "momentum_rank": 0.15},
+    # Value: empresas infravaloradas; calidad y riesgo filtran las value traps.
+    "value": {"value_rank": 0.70, "quality_rank": 0.15, "risk_rank": 0.15},
+    # Quality compounder (tipo Buffett): negocios excelentes y duraderos; calidad manda.
+    "quality": {"quality_rank": 0.70, "growth_rank": 0.20, "value_rank": 0.10},
+    # Momentum trader: pura fuerza de precio y acepta la volatilidad que la acompaña (risk negativo).
+    "momentum": {"momentum_rank": 0.75, "risk_rank": -0.25},
+    # Contrarian: compra lo castigado, apuesta EN CONTRA del momentum reciente (peso negativo),
+    # en nombres baratos y vigilando el riesgo para no comprar problemas estructurales.
+    "contrarian": {"momentum_rank": -0.55, "value_rank": 0.30, "risk_rank": 0.15},
+    # Defensivo / low-vol: preservacion de capital; baja volatilidad (risk_rank alto) y calidad.
+    "defensive": {"risk_rank": 0.60, "quality_rank": 0.35, "value_rank": 0.05},
+    # GARP (Growth At a Reasonable Price): crece pero con disciplina de precio (value junto a growth).
+    "garp": {"growth_rank": 0.40, "value_rank": 0.35, "quality_rank": 0.25},
 }
 
 PROFILE_NAMES = tuple(PROFILE_WEIGHTS)
@@ -56,6 +65,17 @@ def apply_profile(scores: pd.DataFrame, profile: str) -> pd.DataFrame:
 
     weights = PROFILE_WEIGHTS[profile]
     frame = scores.copy()
+
+    # Un perfil pondera rangos de agente concretos; si falta la columna de alguno (p.ej. el finalista
+    # se entreno sin el agente `quality`), saltarla en silencio deformaria el estilo sin aviso y el
+    # resultado ya no representaria el arquetipo. Se falla en voz alta: el modelo sobre el que se
+    # evaluan perfiles debe conservar los agentes que esos perfiles usan (el full_study fija los 5).
+    missing = [column for column in weights if column != "meta_rank" and column not in frame.columns]
+    if missing:
+        raise ValueError(
+            f"El perfil '{profile}' necesita los rangos {missing}, ausentes en los scores. "
+            "Evalua los perfiles sobre un modelo con los agentes correspondientes.")
+
     good = pd.to_numeric(frame["meta_rank"], errors="coerce") >= GOOD_THRESHOLD
 
     combined = pd.Series(0.0, index=frame.index)

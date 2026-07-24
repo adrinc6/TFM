@@ -132,6 +132,7 @@ FINGERPRINT_FIELDS: dict[str, tuple[str, ...]] = {
         "risk_feature_windows", "technical_feature_windows",
         "target_size", "min_hold_percentile", "rotation_edge_percentiles",
         "commission_bps", "slippage_bps", "rebalance_drift_tolerance",
+        "price_only_strictness_multiplier",
         "max_monthly_position_return", "profile",
     ),
 }
@@ -152,6 +153,7 @@ PORTFOLIO_FIELDS: frozenset[str] = frozenset(FINGERPRINT_FIELDS["backtest"]) - M
 # `execution._portfolio_stress_phase` y docs/doc.md (ejes mecánicos vs. optimizables).
 PORTFOLIO_STRESS_FIELDS: frozenset[str] = frozenset({
     "rebalance_drift_tolerance", "min_hold_percentile", "rotation_edge_percentiles",
+    "price_only_strictness_multiplier",
 })
 
 

@@ -17,13 +17,15 @@ from urllib.parse import parse_qs, urlparse
 
 import pandas as pd
 
-from environment import (MAX_PRICE_AGE_DAYS, MIN_TRAINING_ROWS, NEUTRALIZE_MIN_GROUP,
-                         PROJECT_ROOT, RECENCY_HALFLIFE_YEARS, Settings)
+from environment import (ENABLED_MODEL_FAMILIES, MAX_PRICE_AGE_DAYS, MIN_TRAINING_ROWS,
+                         NEUTRALIZE_MIN_GROUP, PROJECT_ROOT, RECENCY_HALFLIFE_YEARS, Settings)
 from module.common.utils import pid_alive
-from module.runs.execution import execute_official_optimization, execute_run, execute_study
+from module.runs.execution import (ROBUSTNESS_COMPONENTS, execute_official_optimization,
+                                   execute_run, execute_study)
 from module.runs.experiments import PORTFOLIO_STRESS_FIELDS, split_variables
 from module.runs.results_store import RESULTS_ROOT, ResultsStore, list_registry
-from module.scenarios.variables import (COST_STRESS_CASES, EXPERIMENT_OPTIONS, FULL_STUDY_OPTIONS,
+from module.scenarios.variables import (COST_STRESS_CASES, EXPERIMENT_OPTIONS, FULL_AGENTS,
+                                        FULL_FEATURE_BLOCKS, FULL_STUDY_OPTIONS,
                                         FULL_STUDY_PHASE3_OPTIONS, STUDY_OPTIONS)
 
 
@@ -63,6 +65,7 @@ class JobManager:
 
 JOBS = JobManager()
 STORE = ResultsStore()
+
 
 
 def _reconcile_study_status(manifest: dict) -> dict:
@@ -165,10 +168,10 @@ EXPERIMENT_PRESETS = {
 }
 
 PROFILE_LABELS = {
-    "balanced": "Balanceado · meta-agente puro", "conservative": "Conservador · calidad y valor",
-    "aggressive": "Agresivo · momentum", "value": "Value · valoración y calidad",
-    "quality": "Calidad · negocio estable", "momentum": "Momentum · fuerza relativa",
-    "garp": "GARP · valor, calidad y momentum", "contrarian": "Contrarian · reversión controlada",
+    "balanced": "Balanceado · meta-agente puro", "growth": "Growth · crecimiento de calidad",
+    "value": "Value · valoración y calidad", "quality": "Calidad · negocio estable y duradero",
+    "momentum": "Momentum · fuerza relativa", "contrarian": "Contrarian · contra la tendencia",
+    "defensive": "Defensivo · baja volatilidad y calidad", "garp": "GARP · crecimiento a precio razonable",
 }
 
 # Audit trail shown before an official full study.  These are deliberately fixed
@@ -299,7 +302,14 @@ def _settings_from_payload(payload: dict) -> Settings:
             continue
         original = defaults[name]
         normalized = tuple(value) if isinstance(original, tuple) and isinstance(value, list) else value
-        if name in STUDY_OPTIONS and normalized not in STUDY_OPTIONS[name]:
+        if name in _SET_VALUED_CATALOGS:
+            # Ejes de conjunto: se validan por pertenencia de cada elemento al catálogo atómico,
+            # no por igualdad con las combinaciones de ablación fijas de STUDY_OPTIONS.
+            catalog = _SET_VALUED_CATALOGS[name]
+            unknown = [item for item in normalized if item not in catalog]
+            if unknown:
+                raise ValueError(f"Elementos no permitidos para {name}: {unknown!r}.")
+        elif name in STUDY_OPTIONS and normalized not in STUDY_OPTIONS[name]:
             raise ValueError(f"Valor no permitido para {name}: {value!r}.")
         if isinstance(original, bool):
             defaults[name] = bool(value) if not isinstance(value, str) else value.lower() in {"1", "true", "si", "sí"}
@@ -314,6 +324,48 @@ def _settings_from_payload(payload: dict) -> Settings:
         else:
             defaults[name] = value
     return Settings(**defaults)
+
+
+# Ejes de conjunto: el study recibe la selección atómica del usuario (lista de items sueltos) y la
+# expande a la ablación full-minus-one sobre esa selección, igual que el full study hace con el
+# conjunto fijo. Ver scenarios.variables.build_ablations y CLAUDE.md (ablaciones homogéneas).
+# Artefactos activables: ejes booleanos que la consola presenta como un único grupo de checks
+# (marcar = activar), en vez de un par false/true por cada uno. En experimental, marcado = True;
+# en study, marcar un artefacto significa barrer [False, True] en ese eje.
+ARTIFACT_TOGGLES = ("neutralize_by_sector", "fundamental_momentum", "market_regime_feature",
+                    "price_momentum_multi", "moving_averages", "regime_extended",
+                    "quality_growth_derived")
+
+_SET_VALUED_STUDY_AXES = ("enabled_agents", "enabled_feature_blocks", "enabled_model_families")
+# Catálogo atómico admisible por eje de conjunto, para validar selecciones libres (experimental) y
+# la selección base del study antes de expandirla a ablaciones.
+_SET_VALUED_CATALOGS = {
+    "enabled_agents": frozenset(FULL_AGENTS),
+    "enabled_feature_blocks": frozenset(FULL_FEATURE_BLOCKS),
+    "enabled_model_families": frozenset(ENABLED_MODEL_FAMILIES),
+}
+
+
+def _expand_set_valued_axes(variables: dict) -> dict:
+    """Convierte la selección atómica de agentes/bloques/familias en su ablación.
+
+    El frontend manda estos ejes como una lista PLANA de items (strings). Si en cambio ya llegan
+    como lista de tuplas/listas (compatibilidad con clientes antiguos que mandaban combinaciones
+    pre-calculadas), se dejan tal cual.
+    """
+    from module.scenarios.variables import build_ablations
+
+    result = dict(variables)
+    for axis in _SET_VALUED_STUDY_AXES:
+        values = result.get(axis)
+        if not isinstance(values, list) or not values:
+            continue
+        if all(isinstance(item, str) for item in values):
+            ablations = build_ablations(tuple(values))
+            if not ablations:
+                raise ValueError(f"Selecciona al menos un elemento para {axis}.")
+            result[axis] = [list(combo) for combo in ablations]
+    return result
 
 
 def _sanitize_json(value):
@@ -372,6 +424,17 @@ class DashboardHandler(BaseHTTPRequestHandler):
                                 "study_option_groups": STUDY_OPTION_GROUPS,
                                 "full_study_fixed_settings": FULL_STUDY_FIXED_SETTINGS,
                                 "full_study_stress_settings": FULL_STUDY_STRESS_SETTINGS,
+                                # Catálogos atómicos: la UI del study deja elegir el conjunto base
+                                # de agentes/bloques/familias sobre el que se aplica la ablación,
+                                # en vez de ofrecer combinaciones pre-calculadas.
+                                "agent_catalog": list(FULL_AGENTS),
+                                "feature_block_catalog": list(FULL_FEATURE_BLOCKS),
+                                "model_family_catalog": list(ENABLED_MODEL_FAMILIES),
+                                "artifact_toggles": list(ARTIFACT_TOGGLES),
+                                # Componentes de robustez/estrés seleccionables uno a uno.
+                                "robustness_components": [
+                                    {"key": key, **meta}
+                                    for key, meta in ROBUSTNESS_COMPONENTS.items()],
                                 "profile_labels": PROFILE_LABELS})
         if parsed.path == "/api/runs":
             return _json(self, {"runs": list(reversed(list_registry())), "jobs": JOBS.all()})
@@ -410,12 +473,18 @@ class DashboardHandler(BaseHTTPRequestHandler):
         if parsed.path == "/api/stock/agents":
             query = parse_qs(parsed.query)
             return self._stock_agents(query)
+        if parsed.path == "/api/ranking/snapshots":
+            query = parse_qs(parsed.query)
+            return self._ranking_snapshots(query.get("run_id", [""])[0])
         if parsed.path == "/api/ranking":
             query = parse_qs(parsed.query)
             return self._table(query.get("run_id", [""])[0], "agent_scores.parquet", query)
         if parsed.path == "/api/portfolio":
             query = parse_qs(parsed.query)
             return self._portfolio(query.get("run_id", [""])[0], query)
+        if parsed.path == "/api/portfolio/compare":
+            query = parse_qs(parsed.query)
+            return self._portfolio_compare(query)
         if parsed.path == "/api/learning":
             query = parse_qs(parsed.query)
             return self._learning(query.get("run_id", [""])[0])
@@ -447,6 +516,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 variables = payload.get("variables", {})
                 if not isinstance(variables, dict) or not all(isinstance(v, list) and v for v in variables.values()):
                     return _json(self, {"error": "Cada variable del study debe tener una lista de valores."}, 400)
+                variables = _expand_set_valued_axes(variables)
                 search_mode = str(payload.get("search_mode", "directed"))
                 if search_mode not in ("directed", "cartesian"):
                     return _json(self, {"error": "search_mode debe ser 'directed' o 'cartesian'."}, 400)
@@ -471,6 +541,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 study = payload.get("study", {})
                 if not isinstance(study, dict):
                     raise ValueError("Los metadatos del full study deben ser un objeto.")
+                # El full study corre como hilo dentro del servidor: su log sale por esta misma
+                # consola. Vive mientras viva el servidor (si se cierra la terminal, se detiene).
                 job = JOBS.submit("optimization", lambda: execute_official_optimization(
                     settings, name=str(study.get("name", "optimization-official")),
                     hypothesis=str(study.get("hypothesis", "")),
@@ -478,6 +550,13 @@ class DashboardHandler(BaseHTTPRequestHandler):
                                      if study.get("resume_study_id") else None),
                 ))
                 return _json(self, {"job_id": job}, 202)
+            if self.path.startswith("/api/study/") and self.path.endswith("/stop"):
+                study_id = self.path[len("/api/study/"):-len("/stop")]
+                try:
+                    result = STORE.stop_study(study_id)
+                except (FileNotFoundError, ValueError) as exc:
+                    return _json(self, {"error": str(exc)}, 404)
+                return _json(self, {"stopped": True, **result}, 200)
             return _json(self, {"error": "Ruta no disponible."}, 404)
         except (ValueError, TypeError) as exc:
             return _json(self, {"error": str(exc)}, 400)
@@ -615,16 +694,31 @@ class DashboardHandler(BaseHTTPRequestHandler):
         ticker = query.get("ticker", [""])[0].upper()
         if ticker and "ticker" in frame:
             frame = frame.loc[frame["ticker"].astype(str).str.upper().str.contains(ticker, na=False)]
+        sort_col = query.get("sort", [""])[0]
+        if sort_col and sort_col in frame.columns:
+            ascending = query.get("order", ["desc"])[0].lower() != "desc"
+            frame = frame.sort_values(sort_col, ascending=ascending, kind="stable")
         limit = min(int(query.get("limit", ["500"])[0]), 2000)
         return _json(self, {"columns": list(frame.columns), "rows": frame.head(limit).to_dict("records"), "total": len(frame)})
+
+    def _ranking_snapshots(self, run_id: str) -> None:
+        """Lista los snapshots disponibles en agent_scores.parquet para poblar el selector."""
+        path = _safe_run(run_id) / "artifacts" / "agent_scores.parquet"
+        if not path.exists():
+            return _json(self, {"available": False, "snapshots": [],
+                                "message": "Este run no conserva el ranking de agentes. Relánzalo para explorarlo."})
+        frame = pd.read_parquet(path, columns=["snapshot_date"])
+        snapshots = sorted(frame["snapshot_date"].astype(str).unique().tolist(), reverse=True)
+        return _json(self, {"available": True, "snapshots": snapshots})
 
     def _ticker(self, run_id: str, ticker: str) -> None:
         artifacts = _safe_run(run_id) / "artifacts"
         scores_path = artifacts / "agent_scores.parquet"
         if not scores_path.exists() or not ticker:
             return _json(self, {"scores": [], "positions": [], "orders": []})
-        scores = pd.read_parquet(scores_path)
-        scores = scores.loc[scores["ticker"].astype(str).str.upper() == ticker.upper()]
+        scores_all = pd.read_parquet(scores_path)
+        oos_start = pd.to_datetime(scores_all.get("snapshot_date"), errors="coerce").min()
+        scores = scores_all.loc[scores_all["ticker"].astype(str).str.upper() == ticker.upper()]
         positions_path, orders_path = artifacts / "position_lifecycle.parquet", artifacts / "orders.parquet"
         prices_path = artifacts / "asset_price_point_in_time.parquet"
         positions = pd.read_parquet(positions_path) if positions_path.exists() else pd.DataFrame()
@@ -639,6 +733,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
         prices = pd.read_parquet(prices_path) if prices_path.exists() else pd.DataFrame()
         if not prices.empty:
             prices = prices.loc[prices["ticker"].astype(str).str.upper() == ticker.upper()]
+            # El precio point-in-time y las operaciones se muestran solo desde que la cartera
+            # empieza a evaluarse (inicio OOS), no desde que hay precio disponible para la acción.
+            if pd.notna(oos_start):
+                prices = prices.loc[pd.to_datetime(prices["snapshot_date"], errors="coerce") >= oos_start]
         _json(self, {"scores": scores.to_dict("records"), "positions": positions.to_dict("records"),
                      "orders": orders.to_dict("records"), "prices": prices.to_dict("records")})
 
@@ -922,6 +1020,40 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 })
         _json(self, {"dates": dates, "selected_date": selected_date,
                      "is_latest": selected_date == dates[-1], "rows": rows, "movements": movements})
+
+    def _portfolio_compare(self, query: dict[str, list[str]]) -> None:
+        """Pesos por ticker de varios runs (perfiles) en una fecha común, para comparar carteras.
+
+        Versión ligera de ``_portfolio``: sin P&L ni desenlace futuro, solo ticker+peso por run.
+        """
+        run_ids = [r for r in query.get("run_ids", [""])[0].split(",") if r]
+        requested_date = query.get("date", [""])[0]
+        per_run: dict[str, list[dict]] = {}
+        all_dates: set[str] = set()
+        lifecycles: dict[str, pd.DataFrame] = {}
+        for run_id in run_ids:
+            artifacts = _safe_run(run_id) / "artifacts"
+            lifecycle_path = artifacts / "position_lifecycle.parquet"
+            if not lifecycle_path.exists():
+                continue
+            lifecycle = pd.read_parquet(lifecycle_path).copy()
+            if lifecycle.empty or "snapshot_date" not in lifecycle:
+                continue
+            lifecycle["snapshot_date"] = pd.to_datetime(lifecycle["snapshot_date"], errors="coerce")
+            lifecycle = lifecycle.dropna(subset=["snapshot_date"])
+            if lifecycle.empty:
+                continue
+            lifecycles[run_id] = lifecycle
+            all_dates.update(lifecycle["snapshot_date"].dt.strftime("%Y-%m-%d").unique().tolist())
+        dates = sorted(all_dates)
+        selected_date = requested_date if requested_date in dates else (dates[-1] if dates else None)
+        if selected_date:
+            selected_at = pd.Timestamp(selected_date)
+            for run_id, lifecycle in lifecycles.items():
+                selected = lifecycle.loc[lifecycle["snapshot_date"] == selected_at]
+                per_run[run_id] = [{"ticker": row.ticker, "weight": row.weight}
+                                   for row in selected.sort_values("weight", ascending=False).itertuples(index=False)]
+        _json(self, {"dates": dates, "selected_date": selected_date, "per_run": per_run})
 
     def _trades(self, run_id: str, query: dict[str, list[str]]) -> None:
         artifacts = _safe_run(run_id) / "artifacts"

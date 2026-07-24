@@ -1,8 +1,13 @@
 """Caché persistente y trazable de etapas costosas.
 
 Cada entrada de ``data/recycle`` es inmutable: su clave depende de los parámetros que afectan a
-la etapa, huellas de entrada y revisión de código. Una coincidencia reutiliza los mismos
-artefactos para runs, studies y optimizaciones posteriores sin relajar el diseño PIT.
+la etapa y de las huellas de entrada. Una coincidencia reutiliza los mismos artefactos para runs,
+studies y optimizaciones posteriores sin relajar el diseño PIT.
+
+La clave NO depende automáticamente del contenido del código: un cambio de logging o de comentario
+en un módulo de la etapa no debe invalidar la caché. La invalidación tras un cambio real de lógica
+es responsabilidad manual del usuario, subiendo el campo ``*_code_version`` correspondiente en
+``environment.Settings`` (ver ``STAGE_FIELDS`` más abajo, ya incluye esos campos).
 """
 
 from __future__ import annotations
@@ -20,8 +25,7 @@ from typing import Iterable
 
 from environment import DATA_DIR, Settings
 from module.runs.results_store import canonical_json, git_revision
-from module.runs.code_fingerprint import stage_code_fingerprint
-from module.common.utils import sha256_file, write_json
+from module.common.utils import pid_alive, sha256_file, write_json
 
 
 RECYCLE_ROOT = DATA_DIR / "recycle"
@@ -36,15 +40,12 @@ CACHE_SCHEMA_VERSION = 2
 #   - "agents": la combinación barata (ensemble intra-agente + meta), cuya identidad la aportan los
 #     hashes de las salidas ``agents_fit`` (vía ``inputs``) más los campos meta de abajo.
 STAGE_FIELDS: dict[str, tuple[str, ...]] = {
-    "dataset": ("run_scope", "data_start_date", "end_date", "benchmark_ticker", "execution_lag_days", "snapshot_step_months"),
-    "features": ("run_scope", "target_horizon_months", "neutralize_by_sector", "fundamental_momentum", "market_regime_feature", "price_momentum_multi", "moving_averages", "regime_extended", "quality_growth_derived", "enabled_feature_blocks", "metric_winsorization_percentile", "risk_feature_windows", "technical_feature_windows"),
-    "agents_fit": ("execution_year", "execution_quarter", "execution_lag_days", "train_lookback_years", "fundamental_step_months", "min_rank_ic_cross_section", "objective", "lgbm_n_estimators", "lgbm_max_depth", "lgbm_learning_rate", "lgbm_min_child_samples", "random_seed", "recency_weighting", "enabled_agents", "feature_weighting_mode", "feature_selection_min_coverage", "feature_selection_lookback_quarters", "feature_selection_min_permutation_importance", "feature_selection_min_positive_fraction", "feature_selection_max_features_per_agent", "enabled_feature_blocks", "metric_winsorization_percentile", "risk_feature_windows", "technical_feature_windows"),
-    "agents": ("execution_year", "execution_quarter", "execution_lag_days", "train_lookback_years", "fundamental_step_months", "meta_ic_lookback_quarters", "min_rank_ic_cross_section", "objective", "lgbm_n_estimators", "lgbm_max_depth", "lgbm_learning_rate", "lgbm_min_child_samples", "random_seed", "meta_type", "recency_weighting", "enabled_agents", "enabled_model_families", "intra_agent_ensemble_mode", "feature_weighting_mode", "feature_selection_min_coverage", "feature_selection_lookback_quarters", "feature_selection_min_permutation_importance", "feature_selection_min_positive_fraction", "feature_selection_max_features_per_agent", "enabled_feature_blocks", "metric_winsorization_percentile", "risk_feature_windows", "technical_feature_windows"),
-    "backtest": ("target_size", "min_hold_percentile", "rotation_edge_percentiles", "commission_bps", "slippage_bps", "rebalance_drift_tolerance", "max_monthly_position_return", "profile"),
+    "dataset": ("run_scope", "data_start_date", "end_date", "benchmark_ticker", "execution_lag_days", "snapshot_step_months", "dataset_code_version"),
+    "features": ("run_scope", "target_horizon_months", "neutralize_by_sector", "fundamental_momentum", "market_regime_feature", "price_momentum_multi", "moving_averages", "regime_extended", "quality_growth_derived", "enabled_feature_blocks", "metric_winsorization_percentile", "risk_feature_windows", "technical_feature_windows", "features_code_version"),
+    "agents_fit": ("execution_year", "execution_quarter", "execution_lag_days", "train_lookback_years", "fundamental_step_months", "min_rank_ic_cross_section", "objective", "lgbm_n_estimators", "lgbm_max_depth", "lgbm_learning_rate", "lgbm_min_child_samples", "random_seed", "recency_weighting", "enabled_agents", "feature_weighting_mode", "feature_selection_min_coverage", "feature_selection_lookback_quarters", "feature_selection_min_permutation_importance", "feature_selection_min_positive_fraction", "feature_selection_max_features_per_agent", "enabled_feature_blocks", "metric_winsorization_percentile", "risk_feature_windows", "technical_feature_windows", "agents_code_version"),
+    "agents": ("execution_year", "execution_quarter", "execution_lag_days", "train_lookback_years", "fundamental_step_months", "meta_ic_lookback_quarters", "min_rank_ic_cross_section", "objective", "lgbm_n_estimators", "lgbm_max_depth", "lgbm_learning_rate", "lgbm_min_child_samples", "random_seed", "meta_type", "recency_weighting", "enabled_agents", "enabled_model_families", "intra_agent_ensemble_mode", "feature_weighting_mode", "feature_selection_min_coverage", "feature_selection_lookback_quarters", "feature_selection_min_permutation_importance", "feature_selection_min_positive_fraction", "feature_selection_max_features_per_agent", "enabled_feature_blocks", "metric_winsorization_percentile", "risk_feature_windows", "technical_feature_windows", "agents_code_version"),
+    "backtest": ("target_size", "min_hold_percentile", "rotation_edge_percentiles", "commission_bps", "slippage_bps", "rebalance_drift_tolerance", "max_monthly_position_return", "profile", "backtest_code_version"),
 }
-
-# La huella de código de una sub-etapa reutiliza la del módulo de agentes (mismo fichero fuente).
-_CODE_FINGERPRINT_ALIAS = {"agents_fit": "agents"}
 
 
 def stage_key(stage: str, settings: Settings, inputs: Iterable[Path],
@@ -56,7 +57,6 @@ def stage_key(stage: str, settings: Settings, inputs: Iterable[Path],
         "stage": stage,
         "settings": {name: getattr(settings, name) for name in STAGE_FIELDS[stage]},
         "inputs": {path.name: sha256_file(path) for path in inputs if path.exists()},
-        "code_fingerprint": stage_code_fingerprint(_CODE_FINGERPRINT_ALIAS.get(stage, stage)),
         "python": platform.python_version(),
     }
     if extra:
@@ -81,10 +81,16 @@ def cache_lock(stage: str, key: str, timeout_seconds: float = 86_400):
             os.close(descriptor)
             break
         except FileExistsError:
+            # ``os.kill(pid, 0)`` es inestable en Windows (lanza SystemError para PIDs muertos, no
+            # OSError, y puede corromper el estado C del intérprete matando el worker). Se usa
+            # ``pid_alive`` (psutil), fiable en toda plataforma — el mismo patrón que
+            # ``_full_study_lock``. Un lock ilegible o de un proceso muerto es huérfano y se reclama.
             try:
                 owner = int(lock.read_text(encoding="utf-8").strip())
-                os.kill(owner, 0)
             except (OSError, ValueError):
+                lock.unlink(missing_ok=True)
+                continue
+            if not pid_alive(owner):
                 lock.unlink(missing_ok=True)
                 continue
             if time.monotonic() >= deadline:
@@ -152,6 +158,19 @@ def restore(stage: str, key: str, destination: Path) -> bool:
     return True
 
 
+def _replace_with_retry(temp: Path, final: Path, *, attempts: int = 5, delay: float = 0.5) -> None:
+    """os.replace con reintentos: en Windows, un antivirus o indexador puede retener brevemente
+    un handle sobre el directorio temporal y provocar PermissionError en vez de FileExistsError."""
+    for attempt in range(attempts):
+        try:
+            os.replace(temp, final)
+            return
+        except PermissionError:
+            if attempt == attempts - 1:
+                raise
+            time.sleep(delay)
+
+
 def publish(stage: str, key: str, source_items: Iterable[Path], settings: Settings) -> Path:
     """Publica de forma atómica una entrada si todavía no existe."""
     final = cache_dir(stage, key)
@@ -179,7 +198,7 @@ def publish(stage: str, key: str, source_items: Iterable[Path], settings: Settin
                     "settings": {name: getattr(settings, name) for name in STAGE_FIELDS[stage]},
                     "artifacts": artifacts}, temp / "manifest.json")
         try:
-            os.replace(temp, final)
+            _replace_with_retry(temp, final)
         except FileExistsError:
             shutil.rmtree(temp, ignore_errors=True)
     finally:

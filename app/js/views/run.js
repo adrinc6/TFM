@@ -1,5 +1,5 @@
 /* Detalle de un run: métricas cabecera + pestañas Resumen / Rendimiento / Aprendizaje /
-   Cartera / Trades / Stocks / Ticker. Cada pestaña delega en su vista de análisis. */
+   Cartera / Trades / Stocks / Rankings. Cada pestaña delega en su vista de análisis. */
 (function (global) {
   "use strict";
   const { api, el, escapeHtml, fmt, pct, metricGrid, table } = global.TFM;
@@ -13,6 +13,7 @@
     ["cartera", "Cartera"],
     ["trades", "Trades"],
     ["stocks", "Stocks"],
+    ["rankings", "Rankings"],
   ];
 
   // `format`: "num" (decimales crudos, p. ej. rank-IC) o "pct" (×100 con " %"). `signed` colorea.
@@ -119,6 +120,7 @@
     if (name === "cartera") return views.portfolio.render(body, runId);
     if (name === "trades") return views.portfolio.renderTrades(body, runId);
     if (name === "stocks") return views.stocks.render(body, runId);
+    if (name === "rankings") return views.rankings.render(body, runId);
   }
 
   global.TFM.views.run = { open, tab, settingsCards };

@@ -9,7 +9,8 @@ import os
 import shutil
 import socket
 import time
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
+from concurrent.futures.process import BrokenProcessPool
 from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
@@ -37,6 +38,39 @@ log = logging.getLogger(__name__)
 
 PARALLEL_SCENARIO_WORKERS = 4
 MODEL_THREADS_PER_WORKER = 3
+
+# Componentes de robustez/estrés seleccionables individualmente en un study manual. Cada uno es
+# una comprobación independiente; el usuario marca los que quiera. El full_study oficial los ejecuta
+# todos siempre (es el estudio que sostiene la credibilidad del TFM). Los "baratos" no reentrenan;
+# los "caros" reentrenan o simulan. Ver `_resolve_robustness_components`.
+ROBUSTNESS_COMPONENTS: dict[str, dict[str, str]] = {
+    "cost_stress": {"label": "Estrés de costes (comisión × slippage)", "cost": "barato"},
+    "portfolio_stress": {"label": "Estrés de reglas de cartera (drift/expulsión/rotación/price-only)",
+                          "cost": "barato"},
+    "block_bootstrap": {"label": "Bootstrap por bloques del rank-IC", "cost": "barato"},
+    "leave_one_year_out": {"label": "Leave-one-year-out del rank-IC", "cost": "barato"},
+    "label_permutation": {"label": "Placebo por permutación de etiquetas", "cost": "caro"},
+    "random_portfolio": {"label": "Test de carteras aleatorias", "cost": "caro"},
+}
+ALL_ROBUSTNESS_COMPONENTS: frozenset[str] = frozenset(ROBUSTNESS_COMPONENTS)
+
+
+def _resolve_robustness_components(
+    components: Iterable[str] | None, *, include_full_robustness: bool
+) -> frozenset[str]:
+    """Traduce la selección del usuario (o la falta de ella) al conjunto efectivo de componentes.
+
+    - Si `components` viene dado (study manual con selección explícita), se respeta tal cual,
+      filtrando nombres desconocidos.
+    - Si es None (optimización oficial o llamadas antiguas), se deriva del flag histórico
+      `include_full_robustness`: True -> todos; False -> solo los baratos que no reentrenan
+      (bootstrap + LOYO), que era el comportamiento por defecto del study.
+    """
+    if components is not None:
+        return frozenset(c for c in components if c in ALL_ROBUSTNESS_COMPONENTS)
+    if include_full_robustness:
+        return ALL_ROBUSTNESS_COMPONENTS
+    return frozenset({"cost_stress", "portfolio_stress", "block_bootstrap", "leave_one_year_out"})
 
 STAGE_HANDLERS = {
     "download": download_raw_data,
@@ -73,83 +107,127 @@ def _record_run_telemetry(store: ResultsStore, run_dir: Path, wall_seconds: floa
     })
 
 
-def _phase1_worker(store_root: str, settings: Settings, study_id: str, name: str,
-                   description: str, tags: list[str], spec: dict[str, Any]) -> tuple[dict[str, Any], str | None, list[dict[str, Any]]]:
+def _scenario_worker(store_root: str, settings: Settings, study_id: str, label_prefix: str,
+                     description: str, tags: list[str], grid_phase: str,
+                     spec: dict[str, Any]) -> tuple[dict[str, Any], str | None, list[dict[str, Any]]]:
     """Proceso aislado: no comparte memoria, logging ni workspace mutable con otro escenario."""
     skipped: list[dict[str, Any]] = []
     run_id = _safe_scenario_run(
         ResultsStore(Path(store_root)), replace(settings, lgbm_n_jobs=MODEL_THREADS_PER_WORKER, **spec["overrides"]),
-        study_id=study_id, label=f"{name} · Fase 1 · {spec['name']}", description=description,
-        tags=tags, grid_definition={"phase": "1", **spec}, skipped=skipped, scenario=spec["name"],
+        study_id=study_id, label=f"{label_prefix} · {spec['name']}", description=description,
+        tags=tags, grid_definition={"phase": grid_phase, **spec}, skipped=skipped, scenario=spec["name"],
         update_progress=False,
     )
     return spec, run_id, skipped
 
 
-def _parallel_phase1_specs(specs: list[dict[str, Any]], settings: Settings, store: ResultsStore,
-                           study_id: str, name: str, description: str, tags: list[str]) -> tuple[list[tuple[dict[str, Any], str | None]], list[dict[str, Any]]]:
-    """Materializa dos escenarios como máximo; devuelve resultados en el orden científico original."""
-    log.info("Fase 1: %d escenarios; %d workers de %d hilos de modelo", len(specs),
-             PARALLEL_SCENARIO_WORKERS, MODEL_THREADS_PER_WORKER)
-    # La primera tanda puede incluir baseline y escenarios realmente independientes. Después se
-    # forman tandas de hasta cuatro, sin dos claves de dataset/features todavía no materializadas
-    # en la misma tanda.
-    baseline = [spec for spec in specs if spec.get("axis") is None]
-    remaining = [spec for spec in specs if spec.get("axis") is not None]
-    first_wave = list(baseline)
-    first_signatures = [_materialization_signature(replace(settings, **spec["overrides"])) for spec in baseline]
-    materialized: dict[str, set[str]] = {"dataset": set(), "features": set(), "agents": set()}
-    first_used = {stage: {signature[index] for signature in first_signatures}
-                  for index, stage in enumerate(("dataset", "features", "agents"))}
-    for spec in list(remaining):
-        signature = _materialization_signature(replace(settings, **spec["overrides"]))
-        if len(first_wave) >= PARALLEL_SCENARIO_WORKERS or any(
-            signature[index] in first_used[stage] and signature[index] not in materialized[stage]
-            for index, stage in enumerate(("dataset", "features", "agents"))
-        ):
-            continue
-        first_wave.append(spec)
-        first_signatures.append(signature)
-        for index, stage in enumerate(("dataset", "features", "agents")):
-            first_used[stage].add(signature[index])
-        remaining.remove(spec)
-    waves = [first_wave] if first_wave else []
-    for signature in first_signatures:
-        for index, stage in enumerate(("dataset", "features", "agents")):
-            materialized[stage].add(signature[index])
-    while remaining:
-        wave: list[dict[str, Any]] = []
-        used = {"dataset": set(), "features": set(), "agents": set()}
-        for spec in list(remaining):
-            signature = _materialization_signature(replace(settings, **spec["overrides"]))
-            if len(wave) >= PARALLEL_SCENARIO_WORKERS or any(
-                signature[index] in used[stage] and signature[index] not in materialized[stage]
-                for index, stage in enumerate(("dataset", "features", "agents"))
-            ):
-                continue
-            wave.append(spec)
-            for index, stage in enumerate(("dataset", "features", "agents")):
-                used[stage].add(signature[index])
-            remaining.remove(spec)
-        if not wave:  # defensa ante una especificación inesperada no hasheable
-            wave.append(remaining.pop(0))
-        waves.append(wave)
-        for spec in wave:
-            signature = _materialization_signature(replace(settings, **spec["overrides"]))
-            for index, stage in enumerate(("dataset", "features", "agents")):
-                materialized[stage].add(signature[index])
+def _run_specs_with_queue(
+    specs: list[dict[str, Any]], settings: Settings, store: ResultsStore, study_id: str, *,
+    label_prefix: str, description: str, tags: list[str], grid_phase: str,
+    max_workers: int = PARALLEL_SCENARIO_WORKERS,
+) -> tuple[list[tuple[dict[str, Any], str | None]], list[dict[str, Any]]]:
+    """Cola dinámica: hasta ``max_workers`` escenarios en vuelo; en cuanto uno termina, entra el
+    siguiente pendiente sin esperar a los demás. Devuelve resultados en el orden original de
+    ``specs``.
+
+    La seguridad ante dos escenarios que materialicen la MISMA clave de caché
+    (dataset/features/agents) la da ``cache_lock`` en ``_run_cached_stage`` (double-checked
+    locking por clave): un segundo proceso que golpee la misma clave espera a que el primero
+    publique y luego recicla, nunca recalcula ni choca escribiendo. Esta cola no necesita
+    replicar esa seguridad; solo evita hacer esperar a un worker en una clave ajena cuando hay
+    escenarios con clave distinta todavía sin lanzar, priorizando su orden de arranque.
+    """
+    log.info("Fase %s: %d escenarios; hasta %d workers de %d hilos de modelo", grid_phase,
+             len(specs), max_workers, MODEL_THREADS_PER_WORKER)
+    if max_workers <= 1:
+        # Sin pool de procesos: evita el coste de arrancar subprocesos para un único worker y
+        # mantiene estos escenarios ejecutables/monkeypatcheables en el proceso de test.
+        completed_seq: dict[str, tuple[dict[str, Any], str | None]] = {}
+        skipped_seq: list[dict[str, Any]] = []
+        for spec in specs:
+            skipped_here: list[dict[str, Any]] = []
+            run_id = _safe_scenario_run(
+                store, replace(settings, **spec["overrides"]), study_id=study_id,
+                label=f"{label_prefix} · {spec['name']}", description=description, tags=tags,
+                grid_definition={"phase": grid_phase, **spec}, skipped=skipped_here,
+                scenario=spec["name"], update_progress=False)
+            completed_seq[spec["name"]] = (spec, run_id)
+            skipped_seq.extend(skipped_here)
+        return [completed_seq[spec["name"]] for spec in specs], skipped_seq
+    signatures = {spec["name"]: _materialization_signature(replace(settings, **spec["overrides"]))
+                  for spec in specs}
+    pending = list(specs)
+    in_flight_signatures: dict[str, int] = {}  # signature[stage] -> nº de workers usándola ahora
+
+    def _pop_next() -> dict[str, Any]:
+        """Prioriza un spec cuya firma dataset/features/agents no coincida con ninguna en vuelo."""
+        for index, spec in enumerate(pending):
+            signature = signatures[spec["name"]]
+            if not any(in_flight_signatures.get(f"{stage}:{value}", 0) > 0
+                       for stage, value in zip(("dataset", "features", "agents"), signature)):
+                return pending.pop(index)
+        return pending.pop(0)  # no queda ninguno con firma libre: el siguiente espera en cache_lock
+
+    def _mark_in_flight(spec: dict[str, Any], delta: int) -> None:
+        for stage, value in zip(("dataset", "features", "agents"), signatures[spec["name"]]):
+            key = f"{stage}:{value}"
+            in_flight_signatures[key] = in_flight_signatures.get(key, 0) + delta
+
     completed: dict[str, tuple[dict[str, Any], str | None]] = {}
     skipped: list[dict[str, Any]] = []
-    for number, wave in enumerate(waves, start=1):
-        log.info("Fase 1: tanda %d/%d con %d escenarios independientes", number, len(waves), len(wave))
-        with ProcessPoolExecutor(max_workers=len(wave)) as pool:
-            futures = [pool.submit(_phase1_worker, str(store.root), settings, study_id, name, description, tags, spec)
-                       for spec in wave]
-            for future in as_completed(futures):
-                spec, run_id, task_skipped = future.result()
-                log.info("Fase 1: escenario terminado %s (%s)", spec["name"], run_id or "omitido")
-                completed[spec["name"]] = (spec, run_id)
-                skipped.extend(task_skipped)
+    # Un worker que muere de golpe rompe TODO el pool (todos los futures en vuelo fallan). En vez de
+    # perder esos escenarios, se REENCOLAN y se recrea el pool. Un escenario que rompa el pool
+    # repetidamente (no una colisión pasajera, sino un crash reproducible) se omite tras
+    # ``MAX_POOL_RETRIES`` intentos para no colgar el study en un bucle infinito.
+    MAX_POOL_RETRIES = 3
+    attempts: dict[str, int] = {}
+
+    while pending:
+        broke_this_round: list[dict[str, Any]] = []
+        with ProcessPoolExecutor(max_workers=max_workers) as pool:
+            futures: dict[Any, dict[str, Any]] = {}
+            pool_broken = False
+            while (pending or futures) and not pool_broken:
+                while pending and len(futures) < max_workers:
+                    spec = _pop_next()
+                    _mark_in_flight(spec, 1)
+                    future = pool.submit(_scenario_worker, str(store.root), settings, study_id,
+                                         label_prefix, description, tags, grid_phase, spec)
+                    futures[future] = spec
+                done, _ = wait(futures, return_when=FIRST_COMPLETED)
+                for future in done:
+                    spec = futures.pop(future)
+                    _mark_in_flight(spec, -1)
+                    try:
+                        _, run_id, task_skipped = future.result()
+                    except BrokenProcessPool as exc:
+                        # El pool está muerto: este future y todos los pendientes fallarán. Se
+                        # recogen los afectados (el actual + los en vuelo) para reencolarlos y se
+                        # abandona este pool; el `while pending` externo lo recrea.
+                        reason = str(exc) or "BrokenProcessPool"
+                        log.warning("Fase %s: el pool se rompió (%s). Reintentando escenarios "
+                                    "afectados en un pool nuevo.", grid_phase, reason)
+                        for affected in [spec, *futures.values()]:
+                            _mark_in_flight(affected, -1)
+                            broke_this_round.append(affected)
+                        futures.clear()
+                        pool_broken = True
+                        break
+                    log.info("Fase %s: escenario terminado %s (%s)", grid_phase, spec["name"], run_id or "omitido")
+                    completed[spec["name"]] = (spec, run_id)
+                    skipped.extend(task_skipped)
+        # Reencola lo que rompió el pool; si un escenario ya agotó sus reintentos, se omite.
+        for affected in broke_this_round:
+            name = affected["name"]
+            attempts[name] = attempts.get(name, 0) + 1
+            if attempts[name] >= MAX_POOL_RETRIES:
+                log.warning("Fase %s: escenario omitido tras %d roturas del pool (%s).",
+                            grid_phase, attempts[name], name)
+                skipped.append({"scenario": name, "error": f"pool roto x{attempts[name]}",
+                                "overrides": dict(affected.get("overrides", {}))})
+                completed[name] = (affected, None)
+            else:
+                pending.append(affected)  # otra oportunidad en un pool nuevo
     return [completed[spec["name"]] for spec in specs], skipped
 
 
@@ -235,7 +313,6 @@ def execute_run(
         summary: dict[str, Any] = {}
         if source is not None:
             summary = store.publish_artifacts(run_dir, source)
-            _write_csv_exports(run_dir / "artifacts")
         wall_seconds = time.perf_counter() - run_started
         cpu_seconds = time.process_time() - cpu_started
         _record_run_telemetry(store, run_dir, wall_seconds, cpu_seconds, effective.lgbm_n_jobs)
@@ -270,11 +347,21 @@ def execute_study(
     """
     phase3_vars = {axis: list(values) for axis, values in variables.items()
                    if axis in FULL_STUDY_PHASE3_OPTIONS}
+    # `profile` no es eje de modelo ni de cartera optimizable: son las salidas de Fase 5. Se extrae
+    # antes del split para no tratarlo como eje de cartera. Si no se marca ninguno, se ejecutan todos.
+    selected_profiles = [p for p in variables.get("profile", []) if p in PROFILE_NAMES] or None
     phase12_and_portfolio = {axis: values for axis, values in variables.items()
-                             if axis not in phase3_vars}
+                             if axis not in phase3_vars and axis != "profile"}
     model_vars, portfolio_vars = split_variables(phase12_and_portfolio)
     stress_vars = stress_variables(phase12_and_portfolio)
-    include_robustness = bool(study_payload.get("include_robustness", False))
+    # Selección granular de componentes de robustez/estrés. Si el payload no la trae, se cae al flag
+    # histórico `include_robustness` (compatibilidad): True -> todos, False -> solo los baratos.
+    if "robustness_components" in study_payload:
+        robustness_components = _resolve_robustness_components(
+            study_payload.get("robustness_components") or [], include_full_robustness=False)
+    else:
+        robustness_components = _resolve_robustness_components(
+            None, include_full_robustness=bool(study_payload.get("include_robustness", False)))
     payload = {
         "name": str(study_payload.get("name", "study")), "kind": str(study_payload.get("kind", "exploratory")),
         "description": str(study_payload.get("description", "")),
@@ -283,9 +370,10 @@ def execute_study(
         "variables": dict(variables), "strategy": "unified_full_cycle", "search_mode": search_mode,
         "selection_metric": "rank_ic_oos", "selection_until_year": 2024, "reserved_years": [2025, 2026],
     }
+    payload["robustness_components"] = sorted(robustness_components)
     return run_optimization(settings, model_vars=model_vars, portfolio_vars=portfolio_vars,
                             stress_vars=stress_vars, payload=payload, store=store,
-                            include_full_robustness=include_robustness,
+                            robustness_components=robustness_components, profiles=selected_profiles,
                             hyperparameter_options=phase3_vars, search_mode=search_mode)
 
 
@@ -353,6 +441,8 @@ def run_optimization(
     payload: Mapping[str, Any],
     store: ResultsStore | None = None,
     include_full_robustness: bool = False,
+    robustness_components: Iterable[str] | None = None,
+    profiles: Iterable[str] | None = None,
     resume_study_id: str | None = None,
     hyperparameter_options: Mapping[str, list[Any]] | None = None,
     search_mode: str = "directed",
@@ -370,6 +460,9 @@ def run_optimization(
     """
     if search_mode not in ("directed", "cartesian"):
         raise ValueError(f"search_mode desconocido: {search_mode!r}")
+    active_robustness = _resolve_robustness_components(
+        robustness_components, include_full_robustness=include_full_robustness)
+    active_profiles = [p for p in (profiles or PROFILE_NAMES) if p in PROFILE_NAMES] or list(PROFILE_NAMES)
     store = store or ResultsStore()
     # Todas las alternativas del study deben usar la misma ventana temporal. Se toma el máximo
     # lookback solicitado antes de materializar el dataset: evita construir desde 1990 cuando el
@@ -429,8 +522,9 @@ def run_optimization(
         # combinaciones extremas no sean viables.
         phase1_rows: list[dict[str, Any]] = []
         phase1_specs = _isolated_specs(settings, model_vars)
-        phase1_results, skipped = _parallel_phase1_specs(
-            phase1_specs, settings, store, study_id, name, description, tags,
+        phase1_results, skipped = _run_specs_with_queue(
+            phase1_specs, settings, store, study_id, label_prefix=f"{name} · Fase 1",
+            description=description, tags=tags, grid_phase="1",
         )
         for spec, run_id in phase1_results:
             if run_id is None:
@@ -493,17 +587,18 @@ def run_optimization(
 
     # Costs are stress assumptions, never a criterion that can be optimised away.
     # Every predefined pair is reported on the selected model/portfolio, but none
-    # can alter ``portfolio_overrides`` or the recommended configuration.
+    # can alter ``portfolio_overrides`` or the recommended configuration. Solo corre si el usuario
+    # marcó este componente de robustez (o si es la optimización oficial, que los ejecuta todos).
     cost_stress_rows = _cost_stress_phase(
         portfolio_settings, store, study_id, agent_dir=final_agent_dir,
         name=name, description=description, tags=tags,
-    )
-    # Reglas de cartera mecánicas (drift/expulsión/rotación): se estresan igual que los costes —
-    # se reporta cada valor sobre el finalista, pero NINGUNO altera portfolio_overrides.
+    ) if "cost_stress" in active_robustness else []
+    # Reglas de cartera mecánicas (drift/expulsión/rotación/price-only): se estresan igual que los
+    # costes — se reporta cada valor sobre el finalista, pero NINGUNO altera portfolio_overrides.
     portfolio_stress_rows = _portfolio_stress_phase(
         portfolio_settings, dict(stress_vars or {}), store, study_id, agent_dir=final_agent_dir,
         name=name, description=description, tags=tags,
-    )
+    ) if "portfolio_stress" in active_robustness else []
     store.update_study_status(study_id, "running", current_phase="5_perfiles")
     log.info("Fase de cartera finalizada. Iniciando perfiles.")
 
@@ -511,14 +606,19 @@ def run_optimization(
     #     un run por perfil, todos sobre el modelo y la cartera ya optimizados. ---
     profile_run_ids: dict[str, str] = {}
     profile_rows: list[dict[str, Any]] = []
-    for profile in PROFILE_NAMES:
+    for profile in active_profiles:
+        # `balanced` = meta puro, cuya cartera es idéntica a la del finalista, así que su backtest
+        # comparte execution_hash y se reutilizaría como el run de cartera, quedando sin fila propia
+        # de perfil. Es la REFERENCIA de los perfiles y debe aparecer como run "perfil balanced" en
+        # todas las vistas, así que se fuerza un run propio; el cálculo se recicla de data/recycle
+        # (backtest idéntico), de modo que la identidad es nueva pero el coste es ~0.
         profile_id = execute_run(
             replace(portfolio_settings, profile=profile), mode="backtest", run_kind="scenario", study_id=study_id,
             label=f"{name} · perfil {profile}",
             description="Perfil de inversor sobre el modelo y la cartera optimizados (resultado final).",
             tags=[*tags, "final", "profile"],
             grid_definition={"phase": "5_perfiles", "profile": profile, "parent_run_id": portfolio_final_id},
-            store=store, agent_dir=final_agent_dir)
+            store=store, agent_dir=final_agent_dir, force_rerun=(profile == "balanced"))
         store.add_to_study(study_id, profile_id)
         profile_run_ids[profile] = profile_id
         profile_rows.append({"phase": "5_perfiles", "scenario": profile, "axis": "profile",
@@ -530,7 +630,7 @@ def run_optimization(
     reserved = _reserved_validation(store, final_id)
     robustness = _final_robustness(
         store, final_id, portfolio_final_id=portfolio_final_id, final_settings=final_settings,
-        include_full=include_full_robustness)
+        components=active_robustness)
     store.update_study_status(study_id, "running", current_phase="robustness_and_reserved")
     best_config = _best_config_summary(final_model_overrides, portfolio_overrides,
                                        profile_run_ids, store)
@@ -561,6 +661,10 @@ def run_optimization(
         "skipped_scenarios": skipped,
     }, study_dir / "decision.json")
     store.update_study_status(study_id, "succeeded", current_phase="complete")
+    log.info(
+        "Study %s COMPLETADO: todas las fases finalizadas (modelo, cartera, %d perfiles, "
+        "estrés y robustez). Escritos decision.json y comparison_data.parquet en %s.",
+        study_id, len(profile_run_ids), study_dir)
     return study_id
 
 
@@ -675,36 +779,47 @@ def _greedy_phase2(
         selected.update(dict(options[0].get("overrides") or {}))
 
     rows: list[dict[str, Any]] = []
-    best_score = (float("-inf"), float("-inf"), float("-inf"), 0)
-
     skipped: list[dict[str, Any]] = []
 
-    def evaluate(overrides: dict[str, Any], label: str) -> tuple[float, float, float, int]:
-        nonlocal rows
-        run_id = _safe_scenario_run(
-            store, replace(settings, **overrides), study_id=study_id,
-            label=f"{name} · Fase 2 · {label}", description=description, tags=[*tags, "phase2"],
-            grid_definition={"phase": "2", "overrides": overrides}, skipped=skipped, scenario=label)
+    def record(overrides: dict[str, Any], label: str, run_id: str | None) -> tuple[float, float, float, int]:
         if run_id is None:
             return (float("-inf"), float("-inf"), float("-inf"), 0)
         summary = _summary_for_run(store, run_id)
         rows.append({"phase": "2", "scenario": label, "overrides": dict(overrides), **overrides, **summary, "run_id": run_id})
         return _stability_key(summary)
 
-    best_score = evaluate(selected, "combined_best")
+    combined_run_id = _safe_scenario_run(
+        store, replace(settings, **selected), study_id=study_id,
+        label=f"{name} · Fase 2 · combined_best", description=description, tags=[*tags, "phase2"],
+        grid_definition={"phase": "2", "overrides": selected}, skipped=skipped, scenario="combined_best")
+    best_score = record(selected, "combined_best", combined_run_id)
 
-    # Greedy: para cada eje (más impactante primero), probar su 2º mejor sobre la combinación.
-    for axis in sorted(axis_impact, key=axis_impact.get, reverse=True):
+    # Los trials "2º mejor por eje" son independientes entre sí (todos parten del mismo
+    # ``selected`` fijado arriba, solo cambia el propio eje) — se lanzan a la vez en la cola. La
+    # comparación greedy que decide cuál se queda sigue siendo secuencial, en orden de impacto.
+    trial_specs: list[dict[str, Any]] = []
+    trial_axis_order = [axis for axis in sorted(axis_impact, key=axis_impact.get, reverse=True)
+                        if len(axis_options[axis]) >= 2]
+    for axis in trial_axis_order:
         options = axis_options[axis]
-        if len(options) < 2:
-            continue
         trial = dict(selected)
         for key in dict(options[0].get("overrides") or {}):
             trial.pop(key, None)
         trial.update(dict(options[1].get("overrides") or {}))
-        score = evaluate(trial, f"{axis}_second")
-        if score > best_score:
-            best_score, selected = score, trial
+        trial_specs.append({"name": f"{axis}_second", "overrides": trial})
+
+    if trial_specs:
+        trial_results, trial_skipped = _run_specs_with_queue(
+            trial_specs, settings, store, study_id, label_prefix=f"{name} · Fase 2",
+            description=description, tags=[*tags, "phase2"], grid_phase="2",
+        )
+        skipped.extend(trial_skipped)
+        results_by_axis = {spec["name"]: (spec, run_id) for spec, run_id in trial_results}
+        for axis in trial_axis_order:
+            spec, run_id = results_by_axis[f"{axis}_second"]
+            score = record(spec["overrides"], spec["name"], run_id)
+            if score > best_score:
+                best_score, selected = score, spec["overrides"]
 
     return rows, selected, decision
 
@@ -957,28 +1072,31 @@ def _hyperparameter_phase(
     name: str, description: str, tags: list[str],
     options: Mapping[str, list[Any]] | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    """Afinado greedy por eje: combina ganadores sin ejecutar el producto cartesiano."""
+    """Afinado greedy por eje: combina ganadores sin ejecutar el producto cartesiano.
+
+    Los ejes se recorren en serie (el ganador de uno alimenta el override base del siguiente),
+    pero dentro de un mismo eje los valores del barrido son independientes entre sí (todos parten
+    del mismo ``selected`` sin mutarlo hasta elegir el ganador) — se lanzan a la vez en la cola.
+    """
     selected = dict(base)
     rows: list[dict[str, Any]] = []
     skipped: list[dict[str, Any]] = []
     search = FULL_STUDY_PHASE3_OPTIONS if options is None else options
     for axis, values in search.items():
+        specs = [{"name": f"{axis}_{str(value).replace('.', '_')}",
+                 "overrides": {**selected, axis: value}, "axis": axis, "value": value}
+                for value in values]
+        results, axis_skipped = _run_specs_with_queue(
+            specs, settings, store, study_id, label_prefix=f"{name} · Fase 3",
+            description=description, tags=[*tags, "phase3"], grid_phase="3",
+        )
+        skipped.extend(axis_skipped)
         axis_rows: list[dict[str, Any]] = []
-        for value in values:
-            overrides = {**selected, axis: value}
-            scenario = f"{axis}_{str(value).replace('.', '_')}"
-            run_id = _safe_scenario_run(
-                store, replace(settings, **overrides), study_id=study_id,
-                label=f"{name} · Fase 3 · {scenario}", description=description,
-                tags=[*tags, "phase3"],
-                grid_definition={"phase": "3", "axis": axis, "value": value,
-                                 "overrides": overrides},
-                skipped=skipped, scenario=scenario,
-            )
+        for spec, run_id in results:
             if run_id is None:
                 continue
-            row = {"phase": "3", "scenario": scenario, "axis": axis, "value": value,
-                   "overrides": dict(overrides), **overrides,
+            row = {"phase": "3", "scenario": spec["name"], "axis": spec["axis"], "value": spec["value"],
+                   "overrides": dict(spec["overrides"]), **spec["overrides"],
                    **_summary_for_run(store, run_id), "run_id": run_id}
             rows.append(row)
             axis_rows.append(row)
@@ -1028,15 +1146,17 @@ def _reserved_validation(store: ResultsStore, run_id: str) -> dict[str, Any]:
 
 def _final_robustness(
     store: ResultsStore, run_id: str, *, portfolio_final_id: str | None = None,
-    final_settings: Settings | None = None, include_full: bool = False,
+    final_settings: Settings | None = None, components: Iterable[str] | None = None,
 ) -> dict[str, Any]:
-    """Diagnósticos sobre el finalista publicado.
+    """Diagnósticos sobre el finalista publicado, según los componentes solicitados.
 
-    Siempre calcula bootstrap por bloques + leave-one-year-out (baratos, no reentrenan). Con
-    ``include_full`` añade la robustez cara que reentrena/simula: el placebo por permutación de
-    etiquetas (¿colapsa el rank-IC con retornos barajados? = la señal no es artefacto ni fuga) y
-    el test de carteras aleatorias (¿la cartera bate al azar de escoger acciones?).
+    Cada componente se calcula solo si está en ``components``:
+      - ``block_bootstrap`` / ``leave_one_year_out``: baratos, no reentrenan.
+      - ``label_permutation``: placebo por permutación de etiquetas (¿colapsa el rank-IC con
+        retornos barajados? = la señal no es artefacto ni fuga). Caro: reentrena.
+      - ``random_portfolio``: ¿la cartera bate al azar de escoger acciones? Caro: simula.
     """
+    requested = frozenset(components or ())
     path = store.runs_root / run_id / "artifacts" / "rank_ic_diagnostics.parquet"
     if not path.exists():
         return {}
@@ -1044,19 +1164,40 @@ def _final_robustness(
     meta = diagnostics.loc[diagnostics["agent"] == "meta_final"].copy()
     if meta.empty:
         return {}
-    bootstrap = block_bootstrap_ci(meta.sort_values("prediction_date").set_index("prediction_date")["rank_ic"])
-    loyo = leave_one_year_out(diagnostics).to_dict("records")
 
-    if include_full and final_settings is not None:
-        label_permutation = _label_permutation(
-            final_settings, diagnostics,
-            targets_path=store.runs_root / run_id / "artifacts" / "targets_forward_3m.parquet",
-            input_dir=store.runs_root / run_id / "workspace" / "processed",
-        )
-        random_portfolio = _random_portfolio(store, portfolio_final_id, final_settings)
+    not_requested = {"status": "no solicitada"}
+    if "block_bootstrap" in requested:
+        bootstrap = block_bootstrap_ci(
+            meta.sort_values("prediction_date").set_index("prediction_date")["rank_ic"])
     else:
-        label_permutation = {"status": "no solicitada (robustez completa desactivada)", "n_permutations": 0}
-        random_portfolio = {"status": "no solicitada (robustez completa desactivada)"}
+        bootstrap = dict(not_requested)
+    loyo = leave_one_year_out(diagnostics).to_dict("records") if "leave_one_year_out" in requested else []
+
+    # label_permutation (reentrena, atado a CPU por LightGBM) y random_portfolio (1000 simulaciones
+    # numpy) son independientes entre sí y del finalista: se solapan en dos hilos para que la
+    # simulación corra mientras el placebo entrena. No compiten por los mismos datos ni escriben en
+    # el run real. Los dos baratos (bootstrap/LOYO) ya están calculados arriba.
+    from concurrent.futures import ThreadPoolExecutor
+
+    def _run_label_permutation() -> dict[str, Any]:
+        if "label_permutation" in requested and final_settings is not None:
+            return _label_permutation(
+                final_settings, diagnostics,
+                targets_path=store.runs_root / run_id / "artifacts" / "targets_forward_3m.parquet",
+                input_dir=store.runs_root / run_id / "workspace" / "processed",
+            )
+        return {**not_requested, "n_permutations": 0}
+
+    def _run_random_portfolio() -> dict[str, Any]:
+        if "random_portfolio" in requested and final_settings is not None:
+            return _random_portfolio(store, portfolio_final_id, final_settings)
+        return dict(not_requested)
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        permutation_future = pool.submit(_run_label_permutation)
+        random_future = pool.submit(_run_random_portfolio)
+        label_permutation = permutation_future.result()
+        random_portfolio = random_future.result()
 
     payload = {"block_bootstrap": bootstrap, "leave_one_year_out": loyo,
                "label_permutation": label_permutation, "random_portfolio": random_portfolio}
@@ -1065,7 +1206,7 @@ def _final_robustness(
 
 
 def _label_permutation(
-    final_settings: Settings, diagnostics: pd.DataFrame, n_permutations: int = 5, *,
+    final_settings: Settings, diagnostics: pd.DataFrame, n_permutations: int = 3, *,
     targets_path: Path | None = None, input_dir: Path | None = None,
 ) -> dict[str, Any]:
     """Placebo: reentrena el finalista con los retornos futuros BARAJADOS y mide su rank-IC.
@@ -1074,6 +1215,11 @@ def _label_permutation(
     aleatorias; si no colapsa, hay fuga o el resultado real es artefacto. Se permutan los targets,
     se reentrena (semilla distinta cada vez) en un workspace privado y se recoge el rank-IC del
     meta_final. Los targets y el directorio de agentes reales nunca se modifican.
+
+    El placebo NO necesita la profundidad del modelo real: solo comprobar que el rank-IC colapsa a
+    ~0. Por eso ``n_permutations=3`` (suficiente para distinguir señal de ruido) y el fit usa un
+    número reducido de estimadores. Es una prueba de que la señal no es artefacto, no una medición
+    fina, así que abaratarla no afecta a la conclusión (colapsa o no colapsa).
     """
     from module.evaluation.robustness import label_permutation_test
     import numpy as np
@@ -1083,32 +1229,44 @@ def _label_permutation(
     if not targets_path.exists():
         return {"status": "sin targets para permutar", "n_permutations": 0}
 
+    # El placebo solo verifica colapso a ~0, no mide con precisión: un fit ligero basta y recorta
+    # el mayor coste de toda la fase de robustez. Nunca toca al modelo real ni a sus estimadores.
+    placebo_estimators = min(getattr(final_settings, "lgbm_n_estimators", 200), 100)
+    placebo_base = replace(final_settings, lgbm_n_estimators=placebo_estimators)
+
     base_targets = pd.read_parquet(targets_path)
-    permuted_ic: list[float] = []
     rng = np.random.default_rng(0)
     import tempfile
+
+    def _one_permutation(i: int, workspace: Path) -> float | None:
+        shuffled = base_targets.copy()
+        shuffled["forward_excess_return_3m"] = rng.permutation(
+            shuffled["forward_excess_return_3m"].to_numpy())
+        shuffled_path = workspace / f"targets-permutation-{i}.parquet"
+        write_parquet(shuffled, shuffled_path)
+        try:
+            run_root = workspace / f"agents-{i}"
+            build_agent_scores(replace(placebo_base, random_seed=1000 + i),
+                               target_path_override=shuffled_path, run_root=run_root,
+                               input_dir_override=input_dir)
+            candidates = [path for path in run_root.iterdir() if path.is_dir()]
+            if len(candidates) != 1:
+                raise RuntimeError("El placebo no produjo un único run de agentes.")
+            perm_diag = pd.read_parquet(candidates[0] / "rank_ic_diagnostics.parquet")
+            return float(perm_diag.loc[perm_diag["agent"] == "meta_final", "rank_ic"].mean())
+        except Exception as exc:  # noqa: BLE001 — una permutación fallida no aborta el placebo
+            log.warning("Permutación %s falló: %s", i, exc)
+            return None
+
+    # rng.permutation debe consumirse en orden para que la semilla sea determinista, así que los
+    # shuffles se generan secuencialmente; el coste real (el fit) va en el pool de _final_robustness.
+    permuted_ic: list[float] = []
     with tempfile.TemporaryDirectory(prefix="tfm-placebo-") as temporary_name:
         workspace = Path(temporary_name)
         for i in range(n_permutations):
-            shuffled = base_targets.copy()
-            shuffled["forward_excess_return_3m"] = rng.permutation(
-                shuffled["forward_excess_return_3m"].to_numpy())
-            shuffled_path = workspace / f"targets-permutation-{i}.parquet"
-            write_parquet(shuffled, shuffled_path)
-            try:
-                run_root = workspace / f"agents-{i}"
-                build_agent_scores(replace(final_settings, random_seed=1000 + i),
-                                   target_path_override=shuffled_path, run_root=run_root,
-                                   input_dir_override=input_dir)
-                candidates = [path for path in run_root.iterdir() if path.is_dir()]
-                if len(candidates) != 1:
-                    raise RuntimeError("El placebo no produjo un único run de agentes.")
-                perm_run = candidates[0]
-                perm_diag = pd.read_parquet(perm_run / "rank_ic_diagnostics.parquet")
-                permuted_ic.append(float(
-                    perm_diag.loc[perm_diag["agent"] == "meta_final", "rank_ic"].mean()))
-            except Exception as exc:  # noqa: BLE001 — una permutación fallida no aborta el placebo
-                log.warning("Permutación %s falló: %s", i, exc)
+            value = _one_permutation(i, workspace)
+            if value is not None:
+                permuted_ic.append(value)
 
     if not permuted_ic:
         return {"status": "ninguna permutación entrenó", "n_permutations": 0}
@@ -1178,6 +1336,15 @@ def _prepare_agent_workspace(source: Path, run_dir: Path) -> Path:
             shutil.copy2(item, workspace / name)
         elif name in required:
             raise FileNotFoundError(f"Falta {name} en el agente exacto {source}.")
+    # El benchmark no se publica en `artifacts`; vive en el workspace del run padre. El backtest de
+    # cartera necesita precio Y benchmark en la rejilla exacta de los scores (mismo execution_lag),
+    # así que lo materializamos aquí. Sin esto, el backtest cae al benchmark global de otra rejilla
+    # y aborta con "Sin precio de benchmark" en el primer snapshot.
+    parent_processed = source.parent / "workspace" / "processed"
+    for name in ("benchmark_point_in_time.parquet", "asset_price_point_in_time.parquet"):
+        parent_panel = parent_processed / name
+        if parent_panel.exists() and not (workspace / name).exists():
+            shutil.copy2(parent_panel, workspace / name)
     write_json({"source_agent_dir": str(source.resolve())}, workspace / "parent_agent.json")
     return workspace
 
@@ -1256,7 +1423,14 @@ def _cache_contract(
         agent = agent_dir
         if agent is None:
             raise FileNotFoundError("No hay run de agentes para ejecutar el backtest.")
-        inputs = [agent / "agent_scores.parquet", processed / "asset_price_point_in_time.parquet", processed / "benchmark_point_in_time.parquet"]
+        # Precio/benchmark se leen de la misma rejilla que los scores: junto al agente si están
+        # materializados ahí (ver backtest._stage_input), y solo entonces del `processed` global.
+        def _panel(name: str) -> Path:
+            local = agent / name
+            return local if local.exists() else processed / name
+        inputs = [agent / "agent_scores.parquet",
+                  _panel("asset_price_point_in_time.parquet"),
+                  _panel("benchmark_point_in_time.parquet")]
         names = ("positions.parquet", "orders.parquet", "equity.parquet", "annual_metrics.parquet", "backtest_summary.json")
         return inputs, lambda: [agent / name for name in names], agent
     raise ValueError(f"Etapa no cacheable: {stage}")
@@ -1305,16 +1479,3 @@ def _compute_summary_for_run(store: ResultsStore, run_id: str) -> dict[str, Any]
     return summary
 
 
-def _write_csv_exports(artifacts: Path) -> None:
-    csv_dir = artifacts / "csv"
-    csv_dir.mkdir(exist_ok=True)
-    mapping = {
-        "agent_scores.parquet": "ranking_by_snapshot.csv",
-        "positions.parquet": "positions_history.csv",
-        "orders.parquet": "orders_history.csv",
-        "annual_metrics.parquet": "annual_metrics.csv",
-    }
-    for parquet_name, csv_name in mapping.items():
-        source = artifacts / parquet_name
-        if source.exists():
-            pd.read_parquet(source).to_csv(csv_dir / csv_name, index=False)

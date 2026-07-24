@@ -37,6 +37,15 @@ class BacktestResult:
     summary: dict = field(default_factory=dict)
 
 
+def _stage_input(run_dir: Path, processed: Path, name: str) -> Path:
+    """Prefiere el panel materializado junto al agente del escenario; cae al `processed` global.
+
+    Garantiza que precio/benchmark compartan rejilla con los scores del run (ver run_backtest).
+    """
+    local = run_dir / name
+    return local if local.exists() else processed / name
+
+
 def run_backtest_from_run_dir(settings: Settings, agent_run_dir: Path | None = None) -> BacktestResult:
     """Lanza el backtest para el directorio exacto de agentes de un escenario.
 
@@ -59,11 +68,15 @@ def run_backtest_from_run_dir(settings: Settings, agent_run_dir: Path | None = N
             raise FileNotFoundError(f"El agente del escenario no contiene scores: {run_dir}")
 
     scores = read_parquet(run_dir / "agent_scores.parquet", "RUN_MODE='agents'")
+    # Los paneles de precio y benchmark deben venir de la MISMA rejilla que generó los scores
+    # (fin_de_periodo + execution_lag_days). Cuando el escenario los materializa junto al agente,
+    # se usan esos; el `processed` global solo es fallback para el backtest CLI aislado. Mezclar
+    # scores de un lag con precios de otro deja snapshots sin precio de benchmark y aborta el run.
     asset_prices = read_parquet(
-        processed / "asset_price_point_in_time.parquet", "RUN_MODE='dataset'"
+        _stage_input(run_dir, processed, "asset_price_point_in_time.parquet"), "RUN_MODE='dataset'"
     )
     benchmark = read_parquet(
-        processed / "benchmark_point_in_time.parquet", "RUN_MODE='dataset'"
+        _stage_input(run_dir, processed, "benchmark_point_in_time.parquet"), "RUN_MODE='dataset'"
     )
     diagnostics_path = run_dir / "rank_ic_diagnostics.parquet"
     diagnostics = pd.read_parquet(diagnostics_path) if diagnostics_path.exists() else None
@@ -157,7 +170,7 @@ def run_backtest(
                     "entry_date": entry_date,
                     "entry_price": state.entry_prices.get(ticker),
                     "valuation_price": price_index.get(snapshot_date, {}).get(ticker),
-                    "months_held": state.months_held.get(ticker, 0),
+                    "months_held": _months_between(entry_date, snapshot_date),
                     "current_percentile": float(_percentile_of(ticker, scores_at_date)),
                 }
             )
@@ -282,6 +295,14 @@ def _price_orders(
         )
         total_notional_cost += commission + slippage
     return priced, total_notional_cost
+
+
+def _months_between(entry_date: str, snapshot_date: str) -> int:
+    """Meses de calendario reales entre `entry_date` y `snapshot_date` (no cuenta snapshots:
+    con revisiones trimestrales, 3 snapshots deben contar como 3 meses, no como 3 revisiones)."""
+    entry = pd.Timestamp(entry_date)
+    current = pd.Timestamp(snapshot_date)
+    return max(0, (current.year - entry.year) * 12 + (current.month - entry.month))
 
 
 def _percentile_of(ticker: str, scores_at_date: pd.DataFrame) -> float:

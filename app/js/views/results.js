@@ -53,7 +53,7 @@
     return rows.map((r) => {
       const s = r.summary || {};
       return `<tr class="click" onclick="TFM.views.results.openRun('${escapeHtml(r.run_id)}')">
-        <td><strong>${escapeHtml(r.label || r.run_id)}</strong><br><small class="muted mono">${escapeHtml(r.run_id)}</small></td>
+        <td class="col-run"><strong>${escapeHtml(r.label || r.run_id)}</strong><br><small class="muted mono">${escapeHtml(r.run_id)}</small></td>
         <td>${escapeHtml(r.run_kind || "—")}</td>
         <td class="${(s.mean_rank_ic || 0) >= 0 ? "positive" : "negative"}">${fmt(s.mean_rank_ic)}</td>
         <td class="${(s.cagr_difference || 0) >= 0 ? "positive" : "negative"}">${pct(s.cagr_difference)}</td>
@@ -67,7 +67,7 @@
   function runsTable() {
     return `<div class="table-wrap scroll" style="max-height:none">
       <table class="data"><thead><tr>
-        <th>Run</th><th>Tipo</th><th>rank-IC</th><th>CAGR vs bench</th><th>Max DD</th><th>Fecha</th><th>Estado</th>
+        <th class="col-run">Run</th><th>Tipo</th><th>rank-IC</th><th>CAGR vs bench</th><th>Max DD</th><th>Fecha</th><th>Estado</th>
       </tr></thead><tbody>${runRows()}</tbody></table></div>`;
   }
 

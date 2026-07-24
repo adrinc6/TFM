@@ -197,7 +197,7 @@
 
   // Rejilla de tarjetitas "valor grande + significado pequeño" (config efectiva, resúmenes).
   // Cada item: { value, label, cls?, hint? } — `cls` colorea el valor; `hint` añade tooltip.
-  function metricGrid(items) {
+  function metricGrid(items, gridCls) {
     const cards = (items || [])
       .map((it) => {
         const value = it.value == null || it.value === "" ? "—" : escapeHtml(it.value);
@@ -208,7 +208,7 @@
           `<div class="metric-label"${labelAttr}>${escapeHtml(it.label)}${marker}</div></div>`;
       })
       .join("");
-    return `<div class="cards">${cards}</div>`;
+    return `<div class="cards${gridCls ? " " + gridCls : ""}">${cards}</div>`;
   }
 
   // Ordenación de tablas al clicar cabecera: reordena las filas del DOM de esa <table.data>.

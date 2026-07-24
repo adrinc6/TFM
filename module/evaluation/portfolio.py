@@ -18,6 +18,11 @@ La logica sigue las reglas de cartera descritas en `docs/doc.md`:
 No hay tenencia minima: cada revision (mensual o trimestral) decide desde cero. Los scores
 cambian entre revisiones mensuales porque incluyen precio (P/E, momentum, etc.), aunque los
 fundamentales no se hayan movido.
+
+Por eso las revisiones que NO traen fundamentales nuevos (`is_quarterly=False`, es decir el
+`review_type=price_monthly` del panel) aplican `price_only_strictness_multiplier` sobre los tres
+umbrales de las reglas 1, 2 y 5: sin informacion fundamental nueva, mover la cartera equivale a
+rotar por ruido de precio. Con el multiplicador en 1.0 el comportamiento es el historico.
 """
 
 from __future__ import annotations
@@ -37,7 +42,6 @@ class PortfolioState:
     holdings: dict[str, float] = field(default_factory=dict)   # ticker -> peso (0..1)
     entry_dates: dict[str, str] = field(default_factory=dict)  # ticker -> snapshot_date de entrada
     entry_prices: dict[str, float] = field(default_factory=dict)  # ticker -> precio PIT de entrada
-    months_held: dict[str, int] = field(default_factory=dict)
 
     @classmethod
     def empty(cls) -> "PortfolioState":
@@ -55,7 +59,6 @@ class PortfolioState:
             holdings=dict(holdings),
             entry_dates=dict(entry_dates),
             entry_prices=dict(entry_prices or {}),
-            months_held={ticker: 0 for ticker in holdings},
         )
 
     def apply(self, orders: list[dict[str, Any]], prices: dict[str, float],
@@ -71,7 +74,6 @@ class PortfolioState:
         """
         new_holdings = dict(self.holdings)
         new_entry_dates = dict(self.entry_dates)
-        new_months_held = {ticker: months + 1 for ticker, months in self.months_held.items()}
         new_entry_prices = dict(self.entry_prices)
 
         for order in orders:
@@ -80,12 +82,10 @@ class PortfolioState:
                 new_holdings.pop(ticker, None)
                 new_entry_dates.pop(ticker, None)
                 new_entry_prices.pop(ticker, None)
-                new_months_held.pop(ticker, None)
             elif order["side"] == "buy":
                 new_holdings[ticker] = order["weight_after"]
                 if ticker not in new_entry_dates:
                     new_entry_dates[ticker] = order.get("snapshot_date", "")
-                    new_months_held[ticker] = 0
                     price = order.get("price", prices.get(ticker))
                     if price is not None:
                         new_entry_prices[ticker] = float(price)
@@ -99,7 +99,6 @@ class PortfolioState:
             holdings=new_holdings,
             entry_dates=new_entry_dates,
             entry_prices=new_entry_prices,
-            months_held=new_months_held,
         )
 
 
@@ -112,6 +111,8 @@ def decide_orders(
 
     `scores_at_date` es el corte transversal de una unica fecha. Debe traer al menos
     `ticker`, `meta_rank` (percentil 0..1, tal como lo produce Fase 3) y `snapshot_date`.
+    Si trae `is_quarterly` (lo produce el panel), las revisiones sin fundamentales nuevos
+    endurecen sus umbrales con `price_only_strictness_multiplier`.
 
     Devuelve `(ordenes, pesos_objetivo)`: `pesos_objetivo` (suma 1) permite al backtest refrescar el
     peso vigente de todos los tenentes, no solo de los que generan orden.
@@ -120,6 +121,7 @@ def decide_orders(
         return [], {}
 
     snapshot_date = scores_at_date["snapshot_date"].iloc[0]
+    strictness = _strictness_multiplier(scores_at_date, settings)
     frame = scores_at_date.copy()
     frame["percentile_100"] = pd.to_numeric(frame["meta_rank"], errors="coerce") * 100
     frame = frame.dropna(subset=["percentile_100"]).sort_values("percentile_100", ascending=False)
@@ -137,15 +139,17 @@ def decide_orders(
     if not meta_score_by_ticker:
         meta_score_by_ticker = percentile_by_ticker
 
-    survivors, drop_orders = _apply_expulsion(state, percentile_by_ticker, settings, snapshot_date)
+    survivors, drop_orders = _apply_expulsion(
+        state, percentile_by_ticker, settings, snapshot_date, strictness
+    )
     survivors_after_fill, fill_orders = _fill_slots(survivors, frame, settings, snapshot_date)
     rotation_orders = _apply_rotation(
-        survivors_after_fill, percentile_by_ticker, frame, settings, snapshot_date
+        survivors_after_fill, percentile_by_ticker, frame, settings, snapshot_date, strictness
     )
 
     target = _target_state(state, drop_orders + fill_orders + rotation_orders, percentile_by_ticker)
     resize_orders, target_weights = _resize_to_target(
-        state, target, meta_score_by_ticker, settings, snapshot_date
+        state, target, meta_score_by_ticker, settings, snapshot_date, strictness
     )
 
     merged = _merge_intents_with_sizing(
@@ -191,17 +195,35 @@ def _merge_intents_with_sizing(
     return merged
 
 
+def _strictness_multiplier(scores_at_date: pd.DataFrame, settings: Settings) -> float:
+    """Factor de endurecimiento de la revision: >1 solo si NO trae fundamentales nuevos.
+
+    `is_quarterly` viene del panel (`review_type`). Si falta (datos o tests antiguos) se asume
+    revision con fundamentales -> factor 1.0, es decir el comportamiento historico.
+    """
+    if "is_quarterly" not in scores_at_date.columns:
+        return 1.0
+    is_quarterly = scores_at_date["is_quarterly"].iloc[0]
+    if pd.isna(is_quarterly) or bool(is_quarterly):
+        return 1.0
+    return float(settings.price_only_strictness_multiplier)
+
+
 def _apply_expulsion(
     state: PortfolioState,
     percentile_by_ticker: dict[str, float],
     settings: Settings,
     snapshot_date: str,
+    strictness: float = 1.0,
 ) -> tuple[set[str], list[dict[str, Any]]]:
+    # Sin fundamentales nuevos se exige menos percentil para conservar: expulsar por ruido de
+    # precio rotaria la cartera sin informacion que lo justifique.
+    min_hold = settings.min_hold_percentile / strictness
     survivors = set(state.holdings)
     orders: list[dict[str, Any]] = []
     for ticker in list(state.holdings):
         percentile = percentile_by_ticker.get(ticker)
-        if percentile is None or percentile <= settings.min_hold_percentile:
+        if percentile is None or percentile <= min_hold:
             orders.append(
                 {
                     "snapshot_date": snapshot_date,
@@ -253,10 +275,13 @@ def _apply_rotation(
     ranked: pd.DataFrame,
     settings: Settings,
     snapshot_date: str,
+    strictness: float = 1.0,
 ) -> list[dict[str, Any]]:
     """Un candidato fuera desplaza al peor tenente si le supera por rotation_edge_percentiles."""
     if len(current) < settings.target_size:
         return []
+    # Sin fundamentales nuevos se exige mas ventaja para desplazar a un tenente.
+    rotation_edge = settings.rotation_edge_percentiles * strictness
     orders: list[dict[str, Any]] = []
     working = set(current)
     while True:
@@ -270,7 +295,7 @@ def _apply_rotation(
         best_outsider = outsiders[0]
         worst_holder = min(working, key=lambda ticker: percentile_by_ticker.get(ticker, 0))
         gap = percentile_by_ticker[best_outsider] - percentile_by_ticker[worst_holder]
-        if gap < settings.rotation_edge_percentiles:
+        if gap < rotation_edge:
             break
         orders.append(
             {
@@ -317,6 +342,7 @@ def _resize_to_target(
     meta_score_by_ticker: dict[str, float],
     settings: Settings,
     snapshot_date: str,
+    strictness: float = 1.0,
 ) -> tuple[list[dict[str, Any]], dict[str, float]]:
     """Fija el peso final de cada ticker en la cartera objetivo, gestionando el rebalanceo real.
 
@@ -343,7 +369,8 @@ def _resize_to_target(
         return [], {}
 
     target = _compute_weights(target_tickers, meta_score_by_ticker)
-    min_fraction = settings.rebalance_drift_tolerance
+    # Sin fundamentales nuevos se exige mas deriva para mover un peso: mas posiciones congeladas.
+    min_fraction = settings.rebalance_drift_tolerance * strictness
 
     # Clasificación: contra el target global fijo (una sola pasada, independiente del orden).
     frozen: dict[str, float] = {}

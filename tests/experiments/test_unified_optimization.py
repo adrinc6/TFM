@@ -65,7 +65,12 @@ def test_study_and_full_study_share_the_same_catalogue_by_phase() -> None:
     """Manual permite subconjuntos; full usa todo, pero valores y fases son idénticos."""
     from module.scenarios.variables import FULL_STUDY_OPTIONS, FULL_STUDY_PHASE3_OPTIONS, STUDY_OPTIONS
 
-    assert set(STUDY_OPTIONS) == set(FULL_STUDY_OPTIONS) | set(FULL_STUDY_PHASE3_OPTIONS)
+    # `enabled_agents` se excluye a propósito del full_study: el finalista conserva siempre los 5
+    # agentes para que los perfiles de inversor (que ponderan los rangos de cada agente) sean
+    # comparables. Sigue disponible en STUDY_OPTIONS para ablaciones manuales desde la consola.
+    assert "enabled_agents" in STUDY_OPTIONS
+    assert "enabled_agents" not in FULL_STUDY_OPTIONS
+    assert set(STUDY_OPTIONS) == set(FULL_STUDY_OPTIONS) | set(FULL_STUDY_PHASE3_OPTIONS) | {"enabled_agents"}
     assert FULL_STUDY_OPTIONS["target_size"] == [5, 8, 10, 12, 15]
     assert FULL_STUDY_OPTIONS["min_hold_percentile"] == [60, 70, 80, 85]
     # Cada fase utiliza exactamente los valores del catálogo común.
@@ -161,12 +166,21 @@ def test_study_data_window_uses_the_longest_selected_training_lookback() -> None
 
 class _FakeStore:
     """Store mínimo que solo registra add_to_study; run_dir se ignora en estos tests."""
+    root = "."
+
     def add_to_study(self, *_args, **_kwargs) -> None:
         pass
 
 
 def _run_counter(monkeypatch, summaries_by_overrides):
-    """Sustituye execute_run y _summary_for_run por versiones que no entrenan y cuentan llamadas."""
+    """Sustituye execute_run y _summary_for_run por versiones que no entrenan y cuentan llamadas.
+
+    Los trials independientes de una fase (Fase 2 "segunda opción por eje", Fase 3 barrido por
+    eje) pasan por ``_run_specs_with_queue``, que por defecto usa un pool de procesos reales — el
+    monkeypatch de ``execute_run`` no cruza esa frontera. Forzamos ``max_workers=1`` para que la
+    cola tome su atajo en el propio proceso (ver `_run_specs_with_queue`) y el conteo de llamadas
+    siga siendo determinista en el test.
+    """
     calls = {"n": 0, "overrides": []}
 
     def fake_execute_run(settings, *, mode, run_kind, study_id, label, description, tags,
@@ -180,8 +194,15 @@ def _run_counter(monkeypatch, summaries_by_overrides):
         idx = int(run_id.split("-")[1]) - 1
         return summaries_by_overrides[idx] if idx < len(summaries_by_overrides) else {"mean_rank_ic": 0.0}
 
+    real_queue = execution._run_specs_with_queue
+
+    def fake_queue(*args, **kwargs):
+        kwargs["max_workers"] = 1
+        return real_queue(*args, **kwargs)
+
     monkeypatch.setattr(execution, "execute_run", fake_execute_run)
     monkeypatch.setattr(execution, "_summary_for_run", fake_summary)
+    monkeypatch.setattr(execution, "_run_specs_with_queue", fake_queue)
     return calls
 
 

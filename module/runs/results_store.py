@@ -14,6 +14,7 @@ import platform
 import shutil
 import subprocess
 import sys
+import threading
 import time
 from contextlib import contextmanager
 from dataclasses import asdict, is_dataclass
@@ -25,7 +26,6 @@ import pandas as pd
 
 from environment import PROJECT_ROOT, Settings
 from module.common.utils import pid_alive, sha256_file, write_json, write_parquet
-from module.runs.code_fingerprint import combined_code_fingerprint
 
 
 RESULTS_ROOT = PROJECT_ROOT / "results"
@@ -33,6 +33,11 @@ RUNS_ROOT = RESULTS_ROOT / "runs"
 STUDIES_ROOT = RESULTS_ROOT / "studies"
 REGISTRY_PATH = RESULTS_ROOT / "registry.jsonl"
 SCHEMA_VERSION = 1
+
+# El lock de fichero protege entre procesos, pero dentro de un mismo proceso todos los hilos
+# comparten PID y el esquema PID-vivo no los distingue. Este cerrojo serializa los appends al
+# registro entre los hilos del motor multihilo antes de tocar el lock de fichero.
+_REGISTRY_THREAD_LOCK = threading.Lock()
 
 
 def _release_lock(lock: Path, timeout: float = 5.0) -> None:
@@ -118,7 +123,6 @@ def config_hash(
         "intent": dict(intent or {}),
         "grid_definition": dict(grid_definition or {}),
         "inputs": dict(inputs or {}),
-        "code_fingerprint": combined_code_fingerprint(),
         "python": platform.python_version(),
     }
     return hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
@@ -301,14 +305,6 @@ class ResultsStore:
         if targets_source.exists():
             shutil.copy2(targets_source, target / "targets_forward_3m.parquet")
             published.append("targets_forward_3m.parquet")
-        for name in ("ranking_by_snapshot.csv", "ranking_by_agents.csv", "positions_history.csv",
-                     "orders_history.csv", "annual_metrics.csv"):
-            source = source_dir / name
-            if source.exists():
-                csv_dir = target / "csv"
-                csv_dir.mkdir(exist_ok=True)
-                shutil.copy2(source, csv_dir / name)
-                published.append(f"csv/{name}")
         self._materialize_lifecycle(target)
         self._materialize_learning_summary(target)
         if (target / "backtest_summary.json").exists():
@@ -338,14 +334,14 @@ class ResultsStore:
         entry_map: dict[tuple[str, str], float] = {}
         for row in buy_prices.itertuples(index=False):
             entry_map[(row.ticker, str(row.snapshot_date.date()))] = float(row.price)
-        positions["entry_price"] = [entry_map.get((row.ticker, str(pd.Timestamp(row.entry_date).date())))
-                                    for row in positions.itertuples(index=False)]
-        latest_prices = (orders[["ticker", "snapshot_date", "price"]].dropna().sort_values("snapshot_date")
-                         .drop_duplicates(["ticker", "snapshot_date"], keep="last"))
-        price_by_snapshot = {(row.ticker, row.snapshot_date): float(row.price)
-                             for row in latest_prices.itertuples(index=False)}
-        positions["valuation_price"] = [price_by_snapshot.get((row.ticker, row.snapshot_date))
-                                         for row in positions.itertuples(index=False)]
+        # `positions.parquet` ya trae entry_price/valuation_price por snapshot (precio PIT real,
+        # incluidos los snapshots en que solo se mantiene la posicion sin orden ese dia). Solo se
+        # rellena entry_price si faltase, sin pisar el valuation_price ya correcto por fecha.
+        if "entry_price" not in positions or positions["entry_price"].isna().any():
+            fallback_entry = [entry_map.get((row.ticker, str(pd.Timestamp(row.entry_date).date())))
+                              for row in positions.itertuples(index=False)]
+            positions["entry_price"] = positions.get("entry_price", pd.Series(fallback_entry)).fillna(
+                pd.Series(fallback_entry, index=positions.index))
         positions["unrealized_return_pct"] = ((positions["valuation_price"] / positions["entry_price"] - 1) * 100)
         write_parquet(positions, artifacts / "position_lifecycle.parquet")
 
@@ -393,31 +389,11 @@ class ResultsStore:
             "summary": dict(summary),
         }
         lock = self.registry_path.with_suffix(".lock")
-        lock.parent.mkdir(parents=True, exist_ok=True)
-        deadline = time.monotonic() + 30
-        while True:
-            try:
-                descriptor = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-                os.write(descriptor, str(os.getpid()).encode("ascii"))
-                os.close(descriptor)
-                break
-            except FileExistsError:
-                try:
-                    owner = int(lock.read_text(encoding="utf-8").strip())
-                    os.kill(owner, 0)
-                except (OSError, ValueError):
-                    lock.unlink(missing_ok=True)
-                    continue
-                if time.monotonic() >= deadline:
-                    raise TimeoutError("No se pudo bloquear el registro de runs.")
-                time.sleep(0.05)
-        try:
+        with _REGISTRY_THREAD_LOCK, _exclusive_file_lock(lock):
             with self.registry_path.open("a", encoding="utf-8", newline="\n") as handle:
                 handle.write(canonical_json(entry) + "\n")
                 handle.flush()
                 os.fsync(handle.fileno())
-        finally:
-            lock.unlink(missing_ok=True)
 
     def create_study(self, payload: Mapping[str, Any]) -> tuple[str, Path]:
         label = str(payload.get("name") or "study").strip().lower().replace(" ", "-")
@@ -458,6 +434,74 @@ class ResultsStore:
         manifest["status"] = status
         manifest["updated_at_utc"] = datetime.now(UTC).isoformat()
         write_json(manifest, path)
+
+    def stop_study(self, study_id: str) -> dict[str, Any]:
+        """Parada dura de un study: borra los runs a medias, lo deja ``cancelled`` (reanudable) y
+        mata su proceso — que, al correr como hilo dentro del servidor, ES el servidor.
+
+        El botón "Parar" del dashboard llama aquí. Como el study comparte proceso con el servidor,
+        matarlo tira también el dashboard: hay que relanzar ``python main.py`` después. Por eso el
+        estado terminal, el borrado de runs incompletos y la liberación del lock se hacen ANTES de
+        matar (si no, morirían con el proceso), y el kill se difiere a un hilo para que la respuesta
+        HTTP del ``/stop`` llegue al navegador antes de que el servidor caiga. ``data/recycle`` nunca
+        se toca; los runs en curso quedan incompletos, así que se eliminan y se regeneran al reanudar.
+        """
+        import socket
+        path = (self.studies_root / study_id).resolve()
+        try:
+            path.relative_to(self.studies_root.resolve())
+        except ValueError as exc:
+            raise ValueError("Study fuera del registro de resultados.") from exc
+        manifest_path = path / "study_manifest.json"
+        if not manifest_path.exists():
+            raise FileNotFoundError(f"No existe el study {study_id}.")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+        # 1) Borra los runs a medias del study (incompletos = sin valor, se rehacen al reanudar).
+        removed_runs: list[str] = []
+        if self.runs_root.exists():
+            for run_dir in self.runs_root.iterdir():
+                run_manifest = run_dir / "run_manifest.json"
+                if not run_manifest.exists():
+                    continue
+                try:
+                    payload = json.loads(run_manifest.read_text(encoding="utf-8"))
+                except (OSError, json.JSONDecodeError):
+                    continue
+                if payload.get("intent", {}).get("study_id") != study_id:
+                    continue
+                if payload.get("status") in {"queued", "running"}:
+                    shutil.rmtree(run_dir, ignore_errors=True)
+                    removed_runs.append(run_dir.name)
+
+        # 2) Estado terminal + liberar el lock global, ANTES de matar (si no, mueren con el proceso).
+        self.update_study_status(study_id, "cancelled")
+        lock_path = self.root / "full_study.lock"
+        lock_path.unlink(missing_ok=True)
+
+        # 3) Mata el árbol del proceso (servidor + workers) en un hilo diferido, para que la
+        #    respuesta HTTP salga antes. En daemon-thread, owner_pid es el propio servidor.
+        killed_pid = None
+        pid = manifest.get("owner_pid")
+        host = manifest.get("owner_host")
+        if isinstance(pid, int) and host == socket.gethostname() and pid_alive(pid):
+            killed_pid = pid
+
+            def _kill_tree() -> None:
+                import psutil
+                time.sleep(0.5)  # deja responder al handler HTTP antes de caer
+                try:
+                    parent = psutil.Process(pid)
+                    for proc in parent.children(recursive=True) + [parent]:
+                        try:
+                            proc.kill()
+                        except psutil.NoSuchProcess:
+                            pass
+                except psutil.NoSuchProcess:
+                    pass
+
+            threading.Thread(target=_kill_tree, name=f"stop-study-{study_id}", daemon=True).start()
+        return {"killed_pid": killed_pid, "removed_runs": removed_runs}
 
     def add_to_study(self, study_id: str, run_id: str, *, reused: bool = False) -> None:
         path = self.studies_root / study_id / "run_ids.json"

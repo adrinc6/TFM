@@ -145,6 +145,16 @@ study manual selecciona subconjuntos; el full study activa todos. Los controles 
 Experimental no se convierten por ello en ejes científicos. Costes son estrés y perfiles son
 salidas de Fase 5.
 
+En el study manual, los ejes de conjunto (`enabled_agents`, `enabled_feature_blocks`,
+`enabled_model_families`) se configuran eligiendo los elementos base, y el runner aplica sobre esa
+selección la misma ablación *full-minus-one* que usa el full study sobre su conjunto fijo (ver
+`scenarios.variables.build_ablations`). La fase de robustez y estrés es opcional y granular: el
+usuario marca uno a uno los componentes que quiere ejecutar —estrés de costes, estrés de reglas de
+cartera (incluye `price_only_strictness_multiplier`), bootstrap por bloques, leave-one-year-out,
+placebo por permutación y carteras aleatorias—; los no marcados no se ejecutan. El full study
+oficial, en cambio, conserva el conjunto fijo de agentes/bloques/familias y ejecuta siempre todos
+los componentes de robustez: es el estudio que sostiene la credibilidad del TFM.
+
 No se hace producto cartesiano. Un full study ejecuta aproximadamente un centenar de escenarios de modelo aislados, combinaciones greedy, afinado, construcción de cartera, nueve stresses de coste y ocho perfiles. El número exacto depende de reutilización de caché y escenarios no viables.
 
 ### 9.2 Condicionalidad
@@ -296,7 +306,8 @@ La neutralización no convierte al sector en una señal: elimina parcialmente di
 | `target_size` | Número fijo de posiciones top-N. | 8 | 5, 8, 10, 12, 15 |
 | `min_hold_percentile` | Percentil que una posición debe superar para conservarse. | 80 | 60, 70, 80, 85 |
 | `rotation_edge_percentiles` | Ventaja de percentil exigida a una candidata para sustituir la peor tenencia. | 10 | 5, 10, 15 |
-| `profile` | Salidas paralelas de estilo; no se optimiza un ganador. | `balanced` (meta puro) | `balanced`, `conservative`, `aggressive`, `value`, `quality`, `momentum`, `garp`, `contrarian` |
+| `price_only_strictness_multiplier` | Endurece expulsión, rotación y rebalanceo en las revisiones que solo traen precio nuevo (sin fundamentales nuevos). Regla mecánica: se estresa, no se optimiza. | 1,0 | 1,0, 1,5, 2,0, 3,0 |
+| `profile` | Salidas paralelas de estilo; no se optimiza un ganador. | `balanced` (meta puro) | `balanced`, `growth`, `value`, `quality`, `momentum`, `contrarian`, `defensive`, `garp` |
 
 **Tamaño fijo y pesos.** El full study barre `target_size` como eje simple. En cada snapshot se seleccionan las N acciones mejor situadas en `meta_rank`; los pesos siguen una escala lineal min-max dentro de la cartera sobre el `meta_score` crudo (el mejor de los seleccionados pesa el doble que el peor) y se normalizan al 100 %. Se usa el `meta_score` porque el percentil global se apiña en el top y aplanaría los pesos. El rebalanceo es real: una posición solo se reajusta si su peso objetivo difiere del actual en al menos `rebalance_drift_tolerance` (25 % relativo); por debajo se congela y el presupuesto se reparte entre las que sí se mueven conservando las relaciones del target global.
 
@@ -315,6 +326,7 @@ Estos ejes se ejecutan una vez elegida la especificación predictiva. Se compara
 | `neutralize_min_group` | 5 | Previene neutralizaciones degeneradas. |
 | `random_seed` | 42 | Fija reproducibilidad; no se busca la semilla más favorable. |
 | `rebalance_drift_tolerance` | 0,25 | Fracción mínima de cambio relativo a la posición para rebalancear (25 %); regla mecánica de rebalanceo, no señal predictiva. Por debajo, la posición se congela y no opera. |
+| `price_only_strictness_multiplier` | 1,0 | Con `snapshot_step_months=1` hay revisiones que solo traen precio nuevo (`review_type=price_monthly`, sin fundamentales nuevos). Este factor divide el umbral de expulsión y multiplica los de rotación y rebalanceo en esas revisiones, para no rotar la cartera por ruido de precio. Regla mecánica: se estresa, nunca se elige el valor más rentable. Con 1,0 no hay efecto. |
 | `max_monthly_position_return` | 2,0 (+200 %) | Filtro de integridad frente a anomalías extremas de datos. |
 | `commission_bps` y `slippage_bps` | Caso base 5 y 10 bps | No son ejes de optimización. Se someten a los nueve pares 0/5/10 bps de comisión × 5/10/20 bps de slippage. |
 
@@ -528,13 +540,30 @@ La regla de selección del study usa la media de Rank-IC de `meta_final` hasta 2
 4. Calcula pesos con una escala lineal min-max dentro de la cartera sobre el `meta_score` crudo (el mejor de los seleccionados pesa el doble que el peor) y los normaliza al 100 %.
 5. Rebalancea solo las posiciones cuyo peso objetivo cambia al menos `rebalance_drift_tolerance` (25 % relativo a la posición); las demás se congelan y el presupuesto liberado se reparte entre las que se mueven conservando las relaciones del target global.
 
+En las revisiones que no traen fundamentales nuevos (`review_type=price_monthly`, típicas cuando `snapshot_step_months` es más fino que `fundamental_step_months`), los umbrales de las reglas 1, 3 y 5 se endurecen con `price_only_strictness_multiplier`: sin información fundamental nueva, mover la cartera equivale a rotar por ruido de precio. Con el multiplicador en 1,0 el comportamiento es el mismo en todas las revisiones.
+
 Esto separa el ranking predictivo de la mecánica de trading. El perfil se aplica antes de estas reglas y sólo reordena acciones ya buenas según el meta-score. Los perfiles disponibles, sus pesos y el umbral común de bondad del 60 % están definidos explícitamente en `profiles.py`; no reentrenan ni consultan información futura.
+
+Cada perfil pondera los rangos de los cinco agentes (quality, value, growth, momentum, risk) —y opcionalmente el `meta_rank`— con pesos que pueden ser negativos cuando el estilo apuesta en contra de un agente. En `risk_rank` los factores van en dirección inversa (rango alto = menos riesgo), así que un peso positivo prioriza baja volatilidad y uno negativo la tolera. El conjunto representa arquetipos de inversor reconocibles con solapamiento mínimo entre carteras (momentum y contrarian quedan como polos opuestos por diseño):
+
+| Perfil | Filosofía | Ejes dominantes |
+| --- | --- | --- |
+| `balanced` | Meta puro, sin sesgo de estilo. Referencia del sistema. | `meta_rank` |
+| `growth` | Crecimiento como motor, pero crecimiento de calidad; el momentum confirma la tendencia. | growth, quality, momentum |
+| `value` | Empresas infravaloradas; calidad y riesgo filtran las value traps. | value, quality, risk |
+| `quality` | Compounder tipo Buffett: negocios excelentes y duraderos; la calidad manda. | quality, growth, value |
+| `momentum` | Pura fuerza de precio; acepta la volatilidad que la acompaña. | momentum, −risk |
+| `contrarian` | Compra lo castigado: apuesta contra el momentum reciente en nombres baratos, vigilando el riesgo. | −momentum, value, risk |
+| `defensive` | Preservación de capital: baja volatilidad y calidad por encima de la rentabilidad máxima. | risk, quality, value |
+| `garp` | Growth At a Reasonable Price: crece con disciplina de precio (value junto a growth). | growth, value, quality |
 
 ### 23.2 Simulación y costes
 
 `backtest.py` valora posiciones con los precios PIT, traduce cambios de estado en compras/ventas, aplica comisión y slippage por orden, marca equity y calcula rendimiento de cartera, benchmark y exceso. Guarda posiciones, órdenes, equity por snapshot, métricas anuales y un resumen con CAGR, volatilidad, máximo drawdown, Information Ratio, turnover y métricas de señal.
 
 El filtro `max_monthly_position_return=2.0` neutraliza retornos mensuales superiores a +200 % como probable artefacto. No es una regla de inversión. Comisión y slippage del baseline son 5 y 10 bps; el full study no puede elegir la pareja barata, pues evalúa los nueve escenarios de estrés definidos en la sección 14.
+
+Precio y benchmark deben compartir la **misma rejilla** que los scores. Como la rejilla depende de `execution_lag_days` (`fin_de_periodo + execution_lag_days`, §17), un escenario con un retardo distinto produce fechas de snapshot distintas. Por eso el backtest lee `asset_price_point_in_time.parquet` y `benchmark_point_in_time.parquet` **materializados junto al agente del run** (su workspace privado) y solo cae al `data/processed` global en el backtest CLI aislado. Mezclar scores de un retardo con precios de otro dejaría snapshots sin precio de benchmark y abortaría el run. La fase de cartera, que reejecuta el backtest sobre el modelo finalista, hereda de ese modelo tanto el precio como el benchmark para conservar la rejilla.
 
 ## 24. Ejecución de escenarios, caché, resultados inmutables y estudios
 
@@ -562,9 +591,10 @@ Además del orquestador oficial, `experiments.py`, `ablaciones.py` y `ejes.py` m
 
 El coste dominante de un study es el walk-forward: cada run reentrena `fechas_de_reentreno × agentes × familias` modelos, y un study encadena decenas de runs. Las optimizaciones reducen tiempo de pared sin alterar universo PIT, etiquetas, fronteras temporales ni reglas de selección. Se admiten diferencias numéricas pequeñas y reproducibles derivadas del paralelismo, siempre dentro de tolerancias explícitas y sin cambiar conclusiones. Se verifican con un oráculo numérico, la suite y `ruff`.
 
-- **Huella de código por etapa (`module/runs/code_fingerprint.py`).** La clave de caché y el `execution_hash` ya no dependen de la revisión Git global, sino de una huella acotada al código que ejecuta cada etapa. Se calcula como el sha256 de la *clausura transitiva de imports de primera parte* (`module.*` y `environment`) a partir del módulo de entrada de la etapa; `module.scenarios` queda incluido por pertenecer a `module.*`. Es auto-mantenible (añadir una dependencia la incorpora sola) y exacta (si cambia el código de una etapa, cambia su clave; si no, se reutiliza el artefacto idéntico). Efecto: en desarrollo iterativo, editar el meta deja de invalidar la caché de dataset/features. Un test (`tests/test_code_fingerprint.py`) fija esta propiedad de aislamiento.
+- **Versión de código manual por etapa (`environment.Settings.{dataset,features,agents,backtest}_code_version`).** La clave de caché y el `execution_hash` no dependen de ningún hash automático del código: dependen solo de parámetros, huellas de entrada y de estos enteros manuales. Editar logging o comentarios en cualquier módulo nunca invalida la caché por sí solo; tras un cambio real de lógica en una etapa, el usuario sube a mano el `*_code_version` correspondiente para forzar el recálculo. Es una decisión deliberada de control manual, no automática por contenido de fichero.
 - **Restauración de caché por hardlink.** `recycle.restore` enlaza los artefactos inmutables en lugar de copiarlos, con copia de reserva si el FS no lo soporta.
-- **`lgbm_n_jobs` configurable (por defecto `-1`, todos los núcleos).** Sustituye al `n_jobs=1` fijo. LightGBM es determinista con hilos, así que solo cambia la velocidad, no el resultado; como los escenarios corren en serie, cada fit puede usar toda la máquina sin sobre-suscribir. No entra en la clave de caché de la etapa (cambiar los hilos no invalida artefactos).
+- **`lgbm_n_jobs` configurable (por defecto `-1`, todos los núcleos; `3` dentro de un worker paralelo de study).** LightGBM es determinista con hilos, así que solo cambia la velocidad, no el resultado. No entra en la clave de caché de la etapa (cambiar los hilos no invalida artefactos).
+- **Cola dinámica de escenarios en Fase 1/2/3 del full study.** `_run_specs_with_queue` en `module/runs/execution.py` mantiene hasta `PARALLEL_SCENARIO_WORKERS` (4) escenarios en vuelo a la vez; en cuanto uno termina, entra el siguiente pendiente sin esperar a los demás (sustituye al patrón de "tandas" que esperaban a los 4 antes de continuar). Prioriza lanzar primero escenarios cuya firma de materialización (dataset/features/agents) no coincida con la de otro ya en vuelo; si ya no quedan, el siguiente escenario espera en `cache_lock` a que la clave compartida se publique y la recicla, sin recalcularla ni chocar al escribir. Fase 2 paraleliza los trials "segunda mejor opción por eje" (todos parten del mismo `selected` fijo); Fase 3 paraleliza el barrido de valores dentro de cada eje. Las fases y, dentro de fase 3, los ejes, siguen siendo estrictamente secuenciales entre sí.
 - **Vectorización de puntos calientes en pandas.** `combine_agent_scores` calcula la media ponderada de rangos por fecha con álgebra vectorizada en vez de iterar fila a fila; el backtest agrupa los scores por snapshot una sola vez en lugar de filtrar con máscara booleana dentro del bucle. Ambos reproducen exactamente la salida previa (mismo manejo de NaN y orden de operaciones).
 - **Menos relecturas de disco.** `_summary_for_run` memoiza el resumen por run (los artefactos de un run son inmutables una vez escritos), evitando releer `backtest_summary.json` y `rank_ic_diagnostics.parquet` varias veces por run.
 

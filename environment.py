@@ -143,6 +143,10 @@ COMMISSION_BPS = 5                # comision por operacion, en puntos basicos
 SLIPPAGE_BPS = 10                 # slippage por operacion, en puntos basicos
 REBALANCE_DRIFT_TOLERANCE = 0.25  # fracción mínima de cambio RELATIVO a la posición para rebalancear
                                   # (0.25 = 25 %); por debajo, el tenente se "congela" y no opera
+# Con snapshot_step_months=1 y fundamental_step_months=3 hay revisiones que solo traen precio nuevo,
+# sin fundamentales nuevos. Este factor endurece expulsión, rotación y rebalanceo en esas revisiones
+# para no rotar la cartera por ruido de precio. 1.0 = sin efecto (comportamiento histórico).
+PRICE_ONLY_STRICTNESS_MULTIPLIER = 1.0
 # Guarda anti-artefactos de datos: un retorno mensual de una posicion mayor que esto se trata
 # como dato corrupto (split mal ajustado, ticker reciclado) y se neutraliza, registrandolo.
 MAX_MONTHLY_POSITION_RETURN = 2.0  # +200 % en un mes es imposible para una accion normal
@@ -182,8 +186,8 @@ class Settings:
     lgbm_learning_rate: float = LGBM_LEARNING_RATE
     lgbm_min_child_samples: int = LGBM_MIN_CHILD_SAMPLES
     # Hilos de LightGBM por fit. -1 = todos los núcleos. No afecta a los resultados (LightGBM es
-    # determinista con hilos), solo a la velocidad. Los escenarios corren en serie, así que cada
-    # fit puede aprovechar toda la máquina sin sobre-suscribir.
+    # determinista con hilos), solo a la velocidad. El full study reduce esto a
+    # MODEL_THREADS_PER_WORKER dentro de cada worker paralelo para no sobre-suscribir la máquina.
     lgbm_n_jobs: int = -1
     random_seed: int = RANDOM_SEED
     meta_type: str = META_TYPE
@@ -216,8 +220,17 @@ class Settings:
     commission_bps: float = COMMISSION_BPS
     slippage_bps: float = SLIPPAGE_BPS
     rebalance_drift_tolerance: float = REBALANCE_DRIFT_TOLERANCE
+    price_only_strictness_multiplier: float = PRICE_ONLY_STRICTNESS_MULTIPLIER
     max_monthly_position_return: float = MAX_MONTHLY_POSITION_RETURN
     profile: str = "balanced"   # perfil de inversor para la seleccion de cartera (ver module/profiles.py)
+    # Versión manual del código de cada etapa cacheada: entra en la clave de reciclado
+    # (module/runs/recycle.py STAGE_FIELDS) en vez de un hash automático del código. Súbela a mano
+    # tras un cambio real de lógica en esa etapa para invalidar su caché; un cambio de logging o
+    # de comentario no requiere tocarla.
+    dataset_code_version: int = 1
+    features_code_version: int = 1
+    agents_code_version: int = 1
+    backtest_code_version: int = 1
     # Ruta privada de ejecución. No es una variable científica ni se incluye en fingerprints;
     # el orquestador la asigna después de crear el run.
     workspace_dir: Path | None = None
@@ -268,6 +281,11 @@ class Settings:
         if self.rebalance_drift_tolerance < 0:
             raise ValueError(
                 "REBALANCE_DRIFT_TOLERANCE es una fracción relativa (0.25 = 25 %) y debe ser >= 0."
+            )
+        if self.price_only_strictness_multiplier < 1:
+            raise ValueError(
+                "PRICE_ONLY_STRICTNESS_MULTIPLIER debe ser >= 1: endurece las revisiones sin "
+                "fundamentales nuevos, nunca las relaja."
             )
 
     @property

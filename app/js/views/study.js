@@ -2,7 +2,7 @@
    decisión por fase y comparativa de sus runs. Enlaza a cada run miembro. */
 (function (global) {
   "use strict";
-  const { api, el, escapeHtml, fmt, pct, table } = global.TFM;
+  const { api, escapeHtml, fmt, pct, table } = global.TFM;
   let liveLogTimer = null;
 
   function stopLiveLog() {
@@ -27,33 +27,51 @@
     }
   }
 
-  function installLiveActions(studyId, canResume, manifest, decision) {
+  function installLiveActions(studyId, canResume, manifest, decision, comparison) {
     const actions = document.getElementById("study-live-actions");
     if (!actions) return;
-    // El botón de reanudar se muestra SIEMPRE (mismo formato que los demás); solo se habilita
-    // cuando el study terminó de forma anómala (failed/interrupted/cancelled). En cualquier otro
-    // estado se ve deshabilitado con un motivo, en vez de desaparecer.
-    const resumeTitle = canResume
-      ? "Verifica y reutiliza los runs completos; repite los incompletos y continúa el ciclo."
-      : "Solo disponible si el estudio quedó interrumpido, fallido o cancelado.";
+    // Un ÚNICO botón que alterna según el estado: si el study está vivo (queued/running) es
+    // "Parar" (rojo, dura e inmediata: mata el proceso y borra el run a medias); si no, es
+    // "Reanudar", habilitado solo cuando terminó de forma anómala (failed/interrupted/cancelled).
+    const canStop = ["queued", "running"].includes(String(manifest.status || ""));
+    const actionButton = canStop
+      ? `<button class="button danger" id="stop-full-study" title="${escapeHtml("Detiene el full study al instante: mata el proceso (y el dashboard) y elimina el run en curso. Queda reanudable.")}">Parar full study</button>`
+      : `<button class="button primary" id="resume-full-study"${canResume ? "" : " disabled"} title="${escapeHtml(canResume ? "Verifica y reutiliza los runs completos; repite los incompletos y continúa el ciclo." : "Solo disponible si el estudio quedó interrumpido, fallido o cancelado.")}">Reanudar full study</button>`;
     actions.innerHTML = `<button class="button ghost" id="toggle-study-live-log">▣ Ver consola</button>
       <button class="button ghost" id="toggle-robustez">◔ Robustez</button>
-      <button class="button primary" id="resume-full-study"${canResume ? "" : " disabled"} title="${escapeHtml(resumeTitle)}">Reanudar full study</button>`;
+      <button class="button ghost" id="toggle-perfiles">☰ Perfiles</button>
+      ${actionButton}`;
     const toggle = document.getElementById("toggle-study-live-log");
     const robToggle = document.getElementById("toggle-robustez");
+    const perfToggle = document.getElementById("toggle-perfiles");
     const consolePanel = () => document.getElementById("study-live-log");
     const robPanel = () => document.getElementById("study-robustez-panel");
+    const perfPanel = () => document.getElementById("study-perfiles-panel");
     const results = () => document.getElementById("study-results-content");
+    const selectorCards = () => document.getElementById("study-selector-cards");
+    const viewIndicator = () => document.getElementById("study-view-indicator");
 
-    // Los tres estados (resultados / consola / robustez) son mutuamente excluyentes.
+    // Los cuatro estados (resultados / consola / robustez / perfiles) son mutuamente excluyentes.
+    // Cuando cualquiera de los tres paneles auxiliares está activo, se ocultan las tarjetas de
+    // selección superiores y se muestra un indicador textual de en qué vista se está.
+    const setSelectorVisibility = (label) => {
+      selectorCards().hidden = !!label;
+      const indicator = viewIndicator();
+      indicator.hidden = !label;
+      indicator.textContent = label || "";
+    };
+
     toggle.addEventListener("click", () => {
       const panel = consolePanel();
       const visible = !panel.hidden;
       panel.hidden = visible;
       robPanel().hidden = true;
+      perfPanel().hidden = true;
       results().hidden = !visible;
       toggle.textContent = visible ? "▣ Ver consola" : "▣ Ocultar consola";
       robToggle.textContent = "◔ Robustez";
+      perfToggle.textContent = "☰ Perfiles";
+      setSelectorVisibility(visible ? null : "Consola");
       stopLiveLog();
       if (!visible) {
         refreshLiveLog(studyId);
@@ -69,10 +87,36 @@
       if (!visible) panel.innerHTML = robustezPanel(decision);
       panel.hidden = visible;
       consolePanel().hidden = true;
+      perfPanel().hidden = true;
       results().hidden = !visible;
       robToggle.textContent = visible ? "◔ Robustez" : "◔ Ocultar robustez";
       toggle.textContent = "▣ Ver consola";
+      perfToggle.textContent = "☰ Perfiles";
+      setSelectorVisibility(visible ? null : "Robustez");
       stopLiveLog();
+    });
+
+    perfToggle.addEventListener("click", async () => {
+      const panel = perfPanel();
+      const visible = !panel.hidden;
+      if (!visible) {
+        panel.innerHTML = `<p class="muted">Cargando perfiles…</p>`;
+        panel.hidden = false;
+        consolePanel().hidden = true;
+        robPanel().hidden = true;
+        results().hidden = true;
+        perfToggle.textContent = "☰ Ocultar perfiles";
+        toggle.textContent = "▣ Ver consola";
+        robToggle.textContent = "◔ Robustez";
+        setSelectorVisibility("Perfiles");
+        stopLiveLog();
+        panel.innerHTML = await perfilesPanel(comparison);
+        return;
+      }
+      panel.hidden = true;
+      results().hidden = false;
+      perfToggle.textContent = "☰ Perfiles";
+      setSelectorVisibility(null);
     });
   }
 
@@ -100,7 +144,7 @@
           futuros barajados. Si el rank-IC real supera al placebo con p-valor bajo, la señal
           <strong>${above ? "está por encima del azar" : "no se distingue del azar"}</strong>.</p>`;
       }
-      parts.push(`<details open><summary>Placebo (permutación de etiquetas)</summary>${body}</details>`);
+      parts.push(`<details><summary>Placebo (permutación de etiquetas)</summary>${body}</details>`);
     }
 
     const boot = rob.block_bootstrap;
@@ -129,7 +173,7 @@
             labels: { excluded_year: "Año excluido", rank_ic_without_it: "rank-IC sin él", delta_vs_full: "Δ vs total", n_cohorts: "Cohortes" },
             decimals: 4, sortable: true });
       }
-      parts.push(`<details open><summary>Robustez multi-era (bootstrap + leave-one-year-out)</summary>${body}</details>`);
+      parts.push(`<details><summary>Robustez multi-era (bootstrap + leave-one-year-out)</summary>${body}</details>`);
     }
 
     const rp = rob.random_portfolio;
@@ -145,11 +189,11 @@
           { value: pct(rp.random_cagr_p95, 2), label: "CAGR aleatorio (p95)" },
           { value: fmt(rp.model_percentile, 3), label: "percentil del modelo", cls: beats ? "pos" : "neg" },
           { value: String(rp.n_simulations ?? "—"), label: "simulaciones" },
-        ]) + `<p class="muted" style="margin-top:8px">Compara la cartera del finalista contra carteras aleatorias
+        ], "cards-5") + `<p class="muted" style="margin-top:8px">Compara la cartera del finalista contra carteras aleatorias
           del mismo tamaño. El modelo <strong>${beats ? "bate al azar de forma convincente" : "no bate al azar de forma convincente"}</strong>
           (percentil > 0.95).</p>`;
       }
-      parts.push(`<details open><summary>Carteras aleatorias (random-portfolio)</summary>${body}</details>`);
+      parts.push(`<details><summary>Carteras aleatorias (random-portfolio)</summary>${body}</details>`);
     }
 
     const econCols = ["cagr_difference", "information_ratio", "beat_rate", "max_drawdown"];
@@ -182,6 +226,116 @@
     return `<h4 style="margin-top:4px">Robustez, placebo y estrés</h4>
       <p class="muted">Evidencia sobre si el modelo aprende de verdad y se sostiene bajo costes y reglas de cartera
         distintas. Nada de esto selecciona configuración.</p>${parts.join("")}`;
+  }
+
+  // Panel de perfiles del estudio: compara los 8 runs de la fase 5_perfiles (uno por perfil de
+  // inversor), todos sobre el mismo modelo y cartera ya optimizados. El perfil se reporta,
+  // no se selecciona: no hay "ganador" aquí, solo comparación.
+  async function perfilesPanel(comparison) {
+    const rows = (comparison || []).filter((r) => r && r.run_id && String(r.phase) === "5_perfiles");
+    if (!rows.length) return `<p class="muted">Este estudio todavía no tiene runs de perfiles de inversor.</p>`;
+    const sorted = rows.slice().sort((a, b) => String(a.scenario || "").localeCompare(String(b.scenario || "")));
+
+    // El rank-IC no se muestra aquí: los 8 perfiles comparten el mismo agente/modelo, así que es
+    // idéntico entre filas y no aporta nada a la comparación. En su lugar, rentabilidad anualizada.
+    const summaryCols = ["scenario", "cagr_portfolio", "cagr_difference", "information_ratio", "beat_rate"];
+    const summaryLabels = { scenario: "Perfil", cagr_portfolio: "Rentabilidad anual", cagr_difference: "CAGR vs bench",
+      information_ratio: "Info Ratio", beat_rate: "bate SPY" };
+    const summaryHead = `<tr>${summaryCols.map((c) => `<th>${escapeHtml(summaryLabels[c])}</th>`).join("")}</tr>`;
+    const summaryBody = sorted.map((r) => {
+      const onClick = r.run_id ? ` onclick="TFM.views.results.openRun('${escapeHtml(r.run_id)}')"` : "";
+      const cells = summaryCols.map((c) => {
+        const v = r[c];
+        if (c === "scenario") return `<td>${escapeHtml(String(v || "—"))}</td>`;
+        if (c === "beat_rate") return `<td class="mono">${pct(v, 0)}</td>`;
+        if (c === "cagr_portfolio" || c === "cagr_difference") return `<td class="mono">${pct(v, 2)}</td>`;
+        return `<td class="mono">${fmt(v, 3)}</td>`;
+      }).join("");
+      return `<tr class="click"${onClick}>${cells}</tr>`;
+    }).join("");
+    const summaryTable = `<table class="data"><thead>${summaryHead}</thead><tbody>${summaryBody}</tbody></table>`;
+
+    let annualSection = `<p class="muted">No se pudo cargar la rentabilidad anual por perfil.</p>`;
+    try {
+      const perfData = await Promise.all(sorted.map((r) =>
+        api("/api/performance?run_id=" + encodeURIComponent(r.run_id))
+          .then((d) => ({ profile: r.scenario, annual: d.annual || [] }))
+          .catch(() => ({ profile: r.scenario, annual: [] }))));
+      const years = Array.from(new Set(perfData.flatMap((p) => p.annual.map((a) => a.year)))).sort();
+      if (years.length) {
+        const head = `<tr><th>Año</th>${perfData.map((p) => `<th>${escapeHtml(String(p.profile))}</th>`).join("")}</tr>`;
+        const body = years.map((year) => {
+          const cells = perfData.map((p) => {
+            const row = p.annual.find((a) => a.year === year);
+            const alpha = row ? row.alpha : undefined;
+            const cls = typeof alpha === "number" ? (alpha >= 0 ? "positive" : "negative") : "";
+            return `<td class="mono ${cls}">${pct(alpha, 2)}</td>`;
+          }).join("");
+          return `<tr><td class="mono">${escapeHtml(String(year))}</td>${cells}</tr>`;
+        }).join("");
+        annualSection = `<p class="muted">Alfa (rentabilidad de cartera menos benchmark) por año y perfil.</p>
+          <div class="table-wrap"><table class="data"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+      } else {
+        annualSection = `<p class="muted">Ningún perfil tiene todavía métricas anuales.</p>`;
+      }
+    } catch (error) {
+      annualSection = `<p class="muted">No se pudo cargar la rentabilidad anual por perfil: ${escapeHtml(error.message)}</p>`;
+    }
+
+    const runIds = sorted.map((r) => r.run_id).join(",");
+    const compareBoxId = "study-perfiles-compare";
+
+    return `<h4 style="margin-top:4px">Perfiles de inversor</h4>
+      <p class="muted">Los ${sorted.length} perfiles se ejecutan sobre el mismo modelo y cartera ya optimizados;
+        se <strong>reportan, no se seleccionan</strong>. Comparación directa entre ellos.</p>
+      <details><summary>Comparativa de métricas</summary>
+        <div class="table-wrap" style="margin-top:8px">${summaryTable}</div></details>
+      <details style="margin-top:12px"><summary>Rentabilidad anual (alfa) por perfil</summary>
+        <div style="margin-top:8px">${annualSection}</div></details>
+      <details style="margin-top:12px" id="${compareBoxId}" data-run-ids="${escapeHtml(runIds)}" data-loaded="false"
+        ontoggle="if(this.open &amp;&amp; this.dataset.loaded!=='true'){this.dataset.loaded='true';TFM.views.study.refreshPerfilesCompare();}">
+        <summary>Composición de cartera por snapshot</summary>
+        <div style="margin-top:8px">
+          <label class="field">Fecha<select id="perfiles-compare-date" onchange="TFM.views.study.refreshPerfilesCompare()"></select></label>
+          <div id="perfiles-compare-table" class="table-wrap" style="margin-top:8px"></div>
+        </div>
+      </details>`;
+  }
+
+  async function refreshPerfilesCompare() {
+    const box = document.getElementById("study-perfiles-compare");
+    const select = document.getElementById("perfiles-compare-date");
+    const target = document.getElementById("perfiles-compare-table");
+    if (!box || !select || !target) return;
+    const runIds = (box.dataset.runIds || "").split(",").filter(Boolean);
+    if (!runIds.length) return;
+    let data;
+    try {
+      data = await api("/api/portfolio/compare?" + global.TFM.qs({ run_ids: runIds.join(","), date: select.value }));
+    } catch (error) {
+      target.innerHTML = `<div class="notice">${escapeHtml(error.message)}</div>`;
+      return;
+    }
+    if (!select.options.length) {
+      select.innerHTML = (data.dates || []).slice().reverse().map((d) => `<option value="${d}">${d}</option>`).join("");
+    }
+    if (data.selected_date) select.value = data.selected_date;
+    const perRun = data.per_run || {};
+    const tickers = Array.from(new Set(Object.values(perRun).flatMap((rows) => rows.map((r) => r.ticker)))).sort();
+    if (!tickers.length) {
+      target.innerHTML = `<p class="muted">Sin composición de cartera para esta fecha.</p>`;
+      return;
+    }
+    const runIdList = Object.keys(perRun);
+    const head = `<tr><th>Ticker</th>${runIdList.map((id) => `<th>${escapeHtml(id)}</th>`).join("")}</tr>`;
+    const body = tickers.map((ticker) => {
+      const cells = runIdList.map((id) => {
+        const row = (perRun[id] || []).find((r) => r.ticker === ticker);
+        return `<td class="mono">${row ? pct(row.weight, 1) : "—"}</td>`;
+      }).join("");
+      return `<tr><td>${escapeHtml(ticker)}</td>${cells}</tr>`;
+    }).join("");
+    target.innerHTML = `<table class="data"><thead>${head}</thead><tbody>${body}</tbody></table>`;
   }
 
   function decisionBlock(decision) {
@@ -312,7 +466,7 @@
     const activeStages = PERF_STAGES.filter((st) =>
       withExec.some((r) => (r.execution.stage_timings_seconds || {})[st] !== undefined));
     const rows = withExec.slice().sort((a, b) => runTotalSeconds(b.execution) - runTotalSeconds(a.execution));
-    const head = `<tr><th>Run</th><th>Total</th>${activeStages.map((s) => `<th>${STAGE_LABEL[s] || s}</th>`).join("")
+    const head = `<tr><th class="col-run">Run</th><th>Total</th>${activeStages.map((s) => `<th>${STAGE_LABEL[s] || s}</th>`).join("")
       }<th>CPU</th><th>Núcleos ef.</th><th>Pico RAM</th><th>Hilos</th></tr>`;
     const body = rows.map((r) => {
       const exec = r.execution, tel = exec.telemetry || {};
@@ -322,7 +476,7 @@
         ? `${(tel.rss_bytes_at_finish / 1024 / 1024 / 1024).toFixed(2)} GB` : "—";
       const cores = typeof tel.effective_logical_cores === "number" ? fmt(tel.effective_logical_cores, 2) : "—";
       return `<tr class="click"${onClick}>
-        <td>${label}</td>
+        <td class="col-run">${label}</td>
         <td class="mono"><strong>${fmtSeconds(runTotalSeconds(exec))}</strong></td>
         ${activeStages.map((s) => stageCell(exec, s)).join("")}
         <td class="mono">${fmtSeconds(tel.process_cpu_seconds)}</td>
@@ -360,23 +514,26 @@
     // sus checkpoints. Solo una terminación anómala habilita la reanudación explícita.
     const resumable = ["failed", "interrupted", "cancelled"].includes(String(m.status || ""));
     container.innerHTML = `
-      <h3>${escapeHtml(m.name || studyId)}</h3>
+      <h3>${escapeHtml(m.name || studyId)} <span id="study-view-indicator" class="tag" hidden></span></h3>
       <p class="muted mono">${escapeHtml(studyId)} · <span class="tag">${escapeHtml(m.kind || "")}</span> <span class="tag">${escapeHtml(m.status || "")}</span></p>
       ${m.description ? `<p class="muted">${escapeHtml(m.description)}</p>` : ""}
-      <div class="cards" style="margin-top:12px">
-        <div class="card"><div class="metric" style="font-size:18px">${escapeHtml(m.selection_metric || "rank-IC")}</div><div class="metric-label">Métrica de selección</div></div>
-        <div class="card"><div class="metric" style="font-size:18px">${escapeHtml(String(m.selection_until_year || "—"))}</div><div class="metric-label">Selección hasta año</div></div>
-        <div class="card"><div class="metric" style="font-size:18px">${escapeHtml(JSON.stringify(m.reserved_years || "—"))}</div><div class="metric-label">Años reservados</div></div>
-        <div class="card"><div class="metric">${runs.length}</div><div class="metric-label">Runs del estudio</div></div>
-        <div class="card"><div class="metric" style="font-size:18px">${escapeHtml(String(m.current_phase || "—"))}</div><div class="metric-label">Fase/checkpoint actual</div></div>
+      <div id="study-selector-cards">
+        <div class="cards" style="margin-top:12px">
+          <div class="card"><div class="metric" style="font-size:18px">${escapeHtml(m.selection_metric || "rank-IC")}</div><div class="metric-label">Métrica de selección</div></div>
+          <div class="card"><div class="metric" style="font-size:18px">${escapeHtml(String(m.selection_until_year || "—"))}</div><div class="metric-label">Selección hasta año</div></div>
+          <div class="card"><div class="metric" style="font-size:18px">${escapeHtml(JSON.stringify(m.reserved_years || "—"))}</div><div class="metric-label">Años reservados</div></div>
+          <div class="card"><div class="metric">${runs.length}</div><div class="metric-label">Runs del estudio</div></div>
+          <div class="card"><div class="metric" style="font-size:18px">${escapeHtml(String(m.current_phase || "—"))}</div><div class="metric-label">Fase/checkpoint actual</div></div>
+        </div>
+        ${m.current_scenario ? `<p class="muted">Escenario actual: <code>${escapeHtml(m.current_scenario)}</code></p>` : ""}
       </div>
-      ${m.current_scenario ? `<p class="muted">Escenario actual: <code>${escapeHtml(m.current_scenario)}</code></p>` : ""}
       <section id="study-live-log" class="notice" hidden style="margin-top:12px">
         <strong>Consola de ejecución (solo lectura)</strong>
         <span id="study-live-log-status" class="muted" style="margin-left:8px">Conectando…</span>
         <pre id="study-live-log-output" class="mono" style="height:26em; overflow:auto; margin:10px 0 0; white-space:pre-wrap">Esperando…</pre>
       </section>
       <section id="study-robustez-panel" class="panel" hidden style="margin-top:12px"></section>
+      <section id="study-perfiles-panel" class="panel" hidden style="margin-top:12px"></section>
       <div id="study-results-content">
         ${decisionBlock(data.decision)}
         <h4 style="margin-top:18px">Comparativa por fases</h4>
@@ -384,7 +541,25 @@
         <div id="study-phases">${phaseComparison(data.comparison)}</div>
         ${performanceBlock(runs)}
       </div>`;
-    installLiveActions(studyId, resumable, m, data.decision);
+    installLiveActions(studyId, resumable, m, data.decision, data.comparison);
+    const stop = document.getElementById("stop-full-study");
+    if (stop) stop.addEventListener("click", async () => {
+      // El study corre dentro del servidor, así que pararlo TIRA el dashboard: hay que relanzar
+      // `python main.py`. El estado 'cancelled' y el borrado del run a medias se persisten antes
+      // de matar, de modo que al reabrir el estudio queda reanudable.
+      if (!confirm("Se detendrá el full study AL INSTANTE. Esto cierra también el dashboard (comparte proceso), así que tendrás que volver a arrancar 'python main.py'. El run a medias se elimina y el estudio queda reanudable. ¿Continuar?")) return;
+      stop.disabled = true;
+      stop.textContent = "Parando…";
+      try {
+        await api("/api/study/" + encodeURIComponent(studyId) + "/stop", {});
+        stopLiveLog();
+        container.innerHTML = `<div class="notice">Full study detenido y marcado como cancelado. El dashboard se ha cerrado con el proceso: vuelve a arrancar <code>python main.py</code> y recarga esta página para reanudarlo.</div>`;
+      } catch (error) {
+        alert(error.message);
+        stop.disabled = false;
+        stop.textContent = "Parar full study";
+      }
+    });
     const resume = document.getElementById("resume-full-study");
     if (resume) resume.addEventListener("click", async () => {
       if (!confirm("Se verificarán y reutilizarán los runs completos; los incompletos se repetirán. ¿Continuar?")) return;
@@ -401,5 +576,5 @@
     });
   }
 
-  global.TFM.views.study = { open };
+  global.TFM.views.study = { open, refreshPerfilesCompare };
 })(window);

@@ -26,6 +26,7 @@
 
   // --- Controles reutilizables ---
   function parameterControl(key, value) {
+    if (SET_VALUED_AXES[key]) return settingItemPicker(key, value);
     const options = S().settingsOptions[key] || [value];
     const opts = options
       .map((o) => {
@@ -39,12 +40,16 @@
 
   function groupedInputs() {
     return Object.entries(S().groups)
-      .map(
-        ([title, names]) =>
-          `<section class="parameter-group"><h4>${escapeHtml(title)}</h4><div class="formgrid">${names
-            .map((k) => parameterControl(k, S().defaults[k]))
-            .join("")}</div></section>`
-      )
+      .map(([title, names]) => {
+        // Los artefactos booleanos se colapsan en un único picker de checks al final del grupo.
+        const plain = names.filter((k) => !isArtifactToggle(k));
+        const hasArtifacts = names.some(isArtifactToggle);
+        const controls = plain.map((k) => parameterControl(k, S().defaults[k])).join("");
+        const artifacts = hasArtifacts
+          ? artifactTogglesPicker("data-setting-toggle", (n) => Boolean(S().defaults[n]))
+          : "";
+        return `<section class="parameter-group"><h4>${escapeHtml(title)}</h4><div class="formgrid">${controls}${artifacts}</div></section>`;
+      })
       .join("");
   }
 
@@ -55,6 +60,54 @@
     return `<label class="field">${title}<select data-preset="${kind}" onchange="TFM.views.console.applyPreset('${kind}', this.value)"><option value="">Seleccionar…</option>${items}</select></label>`;
   }
 
+  // Ejes de conjunto: en el study manual se eligen por ITEM atómico (agente/bloque/familia) y el
+  // backend aplica la ablación full-minus-one sobre la selección. En el full study bloqueado se
+  // conservan las combinaciones fijas del catálogo.
+  const SET_VALUED_AXES = {
+    enabled_agents: () => S().agentCatalog,
+    enabled_feature_blocks: () => S().featureBlockCatalog,
+    enabled_model_families: () => S().modelFamilyCatalog,
+  };
+
+  function atomicPicker(name) {
+    const items = (SET_VALUED_AXES[name]() || []);
+    const choices = items
+      .map((item) => `<label class="choice"><input type="checkbox" data-study-item="${name}" value="${escapeHtml(item)}" checked>${escapeHtml(labelFor(item))}</label>`)
+      .join("");
+    return `<div class="study-variable"><strong>${labelFor(name)}</strong>
+      <div class="choices">${choices}</div>
+      <small class="muted">Se prueban el conjunto marcado y sus ablaciones (quitando cada elemento uno a uno).</small></div>`;
+  }
+
+  // Artefactos activables: grupo de booleanos presentado como un único picker de checks (marcar =
+  // activar), en vez de un par false/true por cada uno.
+  const artifactToggles = () => S().artifactToggles || [];
+  const isArtifactToggle = (name) => artifactToggles().includes(name);
+
+  // Choices de artefactos. `attr` distingue el origen (data-setting-toggle en experimental,
+  // data-study-toggle en study); `isOn(name)` decide el estado inicial de cada check.
+  function artifactChoices(attr, isOn) {
+    return artifactToggles()
+      .map((name) => `<label class="choice"><input type="checkbox" ${attr}="${name}" ${isOn(name) ? "checked" : ""}>${escapeHtml(labelFor(name))}</label>`)
+      .join("");
+  }
+
+  // Experimental: cada artefacto marcado => True; desmarcado => False.
+  function artifactTogglesPicker(attr, isOn) {
+    return `<div class="field set-picker"><strong>Artefactos activables</strong><div class="choices">${artifactChoices(attr, isOn)}</div></div>`;
+  }
+
+  // Experimental: un run usa UN conjunto concreto (no barre). Cada elemento es un check; por
+  // defecto todos marcados. Se envía como lista plana de los marcados.
+  function settingItemPicker(key, value) {
+    const items = (SET_VALUED_AXES[key]() || []);
+    const selected = new Set(Array.isArray(value) ? value : items);
+    const choices = items
+      .map((item) => `<label class="choice"><input type="checkbox" data-setting-item="${key}" value="${escapeHtml(item)}" ${selected.has(item) ? "checked" : ""}>${escapeHtml(labelFor(item))}</label>`)
+      .join("");
+    return `<div class="field set-picker"><strong>${labelFor(key)}</strong><div class="choices">${choices}</div></div>`;
+  }
+
   function studyControls(lockedFullStudy = false, optionSource = null) {
     const source = optionSource || S().studyOptions;
     const rendered = new Set();
@@ -62,19 +115,34 @@
       const entries = names.filter((name) => source[name]);
       if (!entries.length) return "";
       entries.forEach((name) => rendered.add(name));
-      const body = entries.map((name) => {
+      // Artefactos activables: en el study manual se colapsan en un único picker (marcar = barrer
+      // [False, True] en ese eje; desmarcar = fijo en False). En full study van con el resto.
+      const artifactEntries = lockedFullStudy ? [] : entries.filter(isArtifactToggle);
+      const artifactsPicker = artifactEntries.length
+        ? `<div class="study-variable"><strong>Artefactos activables</strong>
+             <div class="choices">${artifactChoices("data-study-toggle", () => false)}</div>
+             <small class="muted">Marcar = probar con y sin ese artefacto; sin marcar = fijo en False.</small></div>`
+        : "";
+      const body = entries.filter((name) => !artifactEntries.includes(name)).map((name) => {
+        if (!lockedFullStudy && SET_VALUED_AXES[name]) return atomicPicker(name);
         const values = source[name];
+        const defaultValue = S().defaults[name];
         const choices = values
           .map((value, index) => {
             const compound = isCompound(value);
-            const checked = lockedFullStudy || index === 0;
+            // Por defecto solo el valor baseline queda marcado (un único run esencial); el usuario
+            // añade los valores que quiera barrer. En full study se marca y bloquea todo.
+            const isDefault = defaultValue !== undefined
+              ? JSON.stringify(value) === JSON.stringify(defaultValue)
+              : index === 0;
+            const checked = lockedFullStudy || isDefault;
             const locked = lockedFullStudy ? "disabled" : "";
             return `<label class="choice"><input type="checkbox" data-study="${name}" value="${escapeHtml(encodedValue(value))}" data-json="${compound}" ${checked ? "checked" : ""} ${locked}>${escapeHtml(displayValue(value))}</label>`;
           })
           .join("");
         return `<div class="study-variable"><strong>${labelFor(name)}</strong><div class="choices">${choices}</div></div>`;
       }).join("");
-      return `<details class="parameter-group"><summary>${escapeHtml(title)}</summary><div class="study-groups">${body}</div></details>`;
+      return `<details class="parameter-group"><summary>${escapeHtml(title)}</summary><div class="study-groups">${body}${artifactsPicker}</div></details>`;
     };
     const groups = Object.entries(S().studyOptionGroups || {}).map(([title, names]) => group(title, names)).join("");
     const rest = Object.keys(source).filter((name) => !rendered.has(name));
@@ -111,7 +179,7 @@
   function studyForm() {
     return `<h3>Nuevo study</h3>
       <p class="muted">Selecciona únicamente las variables y valores permitidos. La consola calculará el diseño antes de ejecutar.</p>
-      <div class="formgrid">
+      <div class="formgrid formgrid-3">
         <label class="field">Nombre<input id="study-name" value="study-exploratorio"></label>
         <label class="field">Búsqueda de modelo
           <select id="study-search-mode" onchange="TFM.views.console.updateStudyCount()">
@@ -119,16 +187,14 @@
             <option value="cartesian">Producto cartesiano (todas las combinaciones marcadas)</option>
           </select>
         </label>
-        <label class="field">Hipótesis<textarea id="study-description"></textarea></label>
+        <label class="field">Hipótesis<input id="study-description" placeholder="Opcional"></label>
       </div>
-      <label class="field checkbox"><input type="checkbox" id="study-robustness"> Incluir robustez completa (placebo por permutación + carteras aleatorias; reentrena el finalista, más lento)</label>
+      <div id="study-count" class="notice"></div>
       <section class="parameter-group"><h4>Fases 1–2 · Datos, factores y modelo</h4>${studyControls(false, S().studyModelOptions)}</section>
       <section class="parameter-group"><h4>Fase 3 · Afinado de hiperparámetros</h4>${studyControls(false, S().studyPhase3Options)}</section>
       <section class="parameter-group"><h4>Fase 4 · Construcción de cartera</h4>${studyControls(false, S().studyPortfolioOptions)}</section>
+      ${robustnessComponentsSettings()}
       ${profileStudySettings()}
-      ${stressStudySettings()}
-      <div id="study-fixed-container">${unselectedStudyAxesSettings()}</div>
-      <div id="study-count" class="notice"></div>
       <div class="actions"><button class="button primary" onclick="TFM.views.console.launchStudy()">Previsualizar y ejecutar</button></div>`;
   }
 
@@ -136,20 +202,6 @@
     const entries = Object.entries(S().fullStudyFixedSettings || {});
     if (!entries.length) return "";
     return `<details class="parameter-group"><summary>Parámetros fijos y visibles</summary><div class="study-groups">${entries.map(([key, value]) =>
-      `<div class="study-variable"><strong>${escapeHtml(labelFor(key))}</strong><label class="choice"><input type="checkbox" checked disabled>Fijo: ${escapeHtml(displayValue(value))}</label></div>`
-    ).join("")}</div></details>`;
-  }
-
-  // Variables barribles del catálogo que el usuario NO marcó en study: se muestran de solo
-  // lectura con su valor por defecto, igual que "Parámetros fijos" en full study.
-  function unselectedStudyAxesSettings() {
-    const source = S().studyOptions || {};
-    const selected = new Set(Object.keys(selectedStudyVariables()));
-    const entries = Object.keys(source)
-      .filter((name) => !selected.has(name))
-      .map((name) => [name, S().defaults[name]]);
-    if (!entries.length) return "";
-    return `<details class="parameter-group"><summary>Otras variables del catálogo, no barridas (fijas al valor por defecto)</summary><div class="study-groups">${entries.map(([key, value]) =>
       `<div class="study-variable"><strong>${escapeHtml(labelFor(key))}</strong><label class="choice"><input type="checkbox" checked disabled>Fijo: ${escapeHtml(displayValue(value))}</label></div>`
     ).join("")}</div></details>`;
   }
@@ -162,12 +214,48 @@
     ).join("")}</div></details>`;
   }
 
-  function profileStudySettings() {
+  // Fase de robustez/estrés: cada componente es un checkbox independiente; solo corre lo marcado.
+  // El estrés de cartera y el de costes despliegan además los ejes/valores concretos que se barren.
+  function robustnessComponentsSettings() {
+    const components = S().robustnessComponents || [];
+    if (!components.length) return "";
+    const stress = S().fullStudyStressSettings || {};
+    const costAxes = ["commission_bps", "slippage_bps"];
+    const detailFor = (key) => {
+      if (key === "cost_stress") {
+        return costAxes.filter((a) => stress[a]).map((a) =>
+          `<div class="study-variable"><strong>${labelFor(a)}</strong><label class="choice"><input type="checkbox" checked disabled>Se informan todos: ${escapeHtml(displayValue(stress[a]))}</label></div>`).join("");
+      }
+      if (key === "portfolio_stress") {
+        return Object.keys(stress).filter((a) => !costAxes.includes(a)).map((a) => {
+          const choices = (stress[a] || []).map((value, index) =>
+            `<label class="choice"><input type="checkbox" data-study="${a}" value="${escapeHtml(encodedValue(value))}" data-json="${isCompound(value)}" ${index === 0 ? "checked" : ""}>${escapeHtml(displayValue(value))}</label>`).join("");
+          return `<div class="study-variable"><strong>${labelFor(a)}</strong><div class="choices">${choices}</div></div>`;
+        }).join("");
+      }
+      return "";
+    };
+    const rows = components.map((c) => {
+      const detail = detailFor(c.key);
+      const hint = c.cost === "caro" ? " <span class=\"tag warn\">reentrena / lento</span>" : "";
+      return `<div class="study-variable">
+        <label class="choice"><input type="checkbox" data-robustness="${c.key}"> <strong>${escapeHtml(c.label || c.key)}</strong>${hint}</label>
+        ${detail ? `<div class="study-groups">${detail}</div>` : ""}</div>`;
+    }).join("");
+    return `<details class="parameter-group"><summary>Fase de robustez y estrés (opcional) · marca solo lo que quieras ejecutar</summary>
+      <div class="study-groups">${rows}</div></details>`;
+  }
+
+  function profileStudySettings(locked = false) {
     const profiles = S().fullStudyProfiles || [];
-    return `<details class="parameter-group"><summary>Fase 5 · Resultados por perfil, sin ganador</summary>
-      <div class="study-groups">${profiles.map((profile) =>
-        `<div class="study-variable"><strong>${escapeHtml(profile)}</strong><label class="choice"><input type="checkbox" checked disabled>${escapeHtml(S().profileLabels[profile] || profile)}</label></div>`
-      ).join("")}</div></details>`;
+    // Study manual: el usuario elige qué perfiles ejecutar; por defecto solo el de referencia
+    // (`balanced`). Full study: los ocho, bloqueados.
+    const choices = profiles.map((profile) => {
+      const checked = locked || profile === "balanced";
+      return `<label class="choice"><input type="checkbox" data-study="profile" value="${escapeHtml(profile)}" data-json="false" ${checked ? "checked" : ""} ${locked ? "disabled" : ""}>${escapeHtml(S().profileLabels[profile] || profile)}</label>`;
+    }).join("");
+    return `<details class="parameter-group"><summary>Fase 5 · Perfiles de inversor a ejecutar (salidas, sin ganador)</summary>
+      <div class="study-variable"><strong>profile</strong><div class="choices">${choices}</div></div></details>`;
   }
 
   function fullStudyForm() {
@@ -180,7 +268,7 @@
       <section class="parameter-group"><h4>Fases 1–2 · Datos, factores y modelo</h4>${studyControls(true, S().fullStudyModelOptions)}</section>
       <section class="parameter-group"><h4>Fase 3 · Afinado greedy, sin producto cartesiano</h4>${studyControls(true, S().fullStudyPhase3Options)}</section>
       <section class="parameter-group"><h4>Fase 4 · Construcción de cartera sobre el modelo congelado</h4>${studyControls(true, S().fullStudyPortfolioOptions)}</section>
-      ${profileStudySettings()}
+      ${profileStudySettings(true)}
       <section class="parameter-group"><h4>Variables que no se modifican</h4>${fixedStudySettings()}</section>
       <section class="parameter-group"><h4>Costes de ejecución</h4>${stressStudySettings()}</section>
       <div class="actions"><button class="button primary" onclick="TFM.views.console.launchOptimization()">Lanzar full study oficial</button>
@@ -209,6 +297,18 @@
       const option = i.options && i.options[i.selectedIndex];
       settings[i.dataset.setting] = option && option.dataset.json === "true" ? JSON.parse(i.value) : i.value;
     });
+    // Ejes de conjunto: se envían como la lista plana de elementos marcados. Cada clave presente en
+    // el formulario se reinicia a [] (aunque no haya ninguno marcado), no al valor por defecto.
+    const setValued = {};
+    document.querySelectorAll("[data-setting-item]").forEach((i) => {
+      (setValued[i.dataset.settingItem] ??= []);
+      if (i.checked) setValued[i.dataset.settingItem].push(i.value);
+    });
+    Object.assign(settings, setValued);
+    // Artefactos activables: marcado => True, presente y desmarcado => False.
+    document.querySelectorAll("[data-setting-toggle]").forEach((i) => {
+      settings[i.dataset.settingToggle] = i.checked;
+    });
     return settings;
   }
 
@@ -222,18 +322,40 @@
       const value = decodeValue(raw, input.dataset.json === "true");
       (variables[key] ??= []).push(value);
     });
+    // Ejes de conjunto: se recogen como lista PLANA de items atómicos (strings). El backend los
+    // expande a la ablación full-minus-one antes de barrerlos.
+    document.querySelectorAll("[data-study-item]").forEach((input) => {
+      if (!input.checked) return;
+      (variables[input.dataset.studyItem] ??= []).push(input.value);
+    });
+    // Artefactos: marcar uno significa barrer [False, True] en ese eje; sin marcar queda fijo en su
+    // valor por defecto (False) y no se añade como variable.
+    document.querySelectorAll("[data-study-toggle]").forEach((input) => {
+      if (input.checked) variables[input.dataset.studyToggle] = [false, true];
+    });
     return variables;
   }
 
-  function directedCount(variables) {
-    let phase1 = 1;
-    let axes = 0;
+  // Clasifica cada eje marcado en su fase, contando cuántos VALORES no-baseline aporta (los que
+  // generan un run adicional). Los ejes de conjunto (agentes/bloques/familias) generan una ablación:
+  // sus runs extra = nº de elementos quitables (len - 1).
+  function phaseBreakdown(variables) {
+    const modelKeys = new Set(Object.keys(S().studyModelOptions || {}));
+    const phase3Keys = new Set(Object.keys(S().studyPhase3Options || {}));
+    const portfolioKeys = new Set(Object.keys(S().studyPortfolioOptions || {}));
+    const stressKeys = new Set(Object.keys(S().fullStudyStressSettings || {}));
+    const b = { model: 0, phase3: 0, portfolio: 0, stress: 0, profiles: 0 };
     Object.entries(variables).forEach(([key, values]) => {
-      const changes = values.filter((v) => String(v) !== String(S().defaults[key]));
-      phase1 += changes.length;
-      if (changes.length) axes++;
+      let extra;
+      if (SET_VALUED_AXES[key]) extra = values.length > 1 ? values.length : 0;  // ablación
+      else extra = values.filter((v) => JSON.stringify(v) !== JSON.stringify(S().defaults[key])).length;
+      if (key === "profile") b.profiles = values.length;
+      else if (phase3Keys.has(key)) b.phase3 += extra;
+      else if (stressKeys.has(key)) b.stress += extra;
+      else if (portfolioKeys.has(key)) b.portfolio += extra;
+      else if (modelKeys.has(key)) b.model += extra;
     });
-    return { phase1, phase2: 1 + axes, total: phase1 + 1 + axes };
+    return b;
   }
 
   function cartesianCount(variables) {
@@ -257,14 +379,20 @@
       node.textContent = "Selecciona al menos una variable.";
       return;
     }
+    const b = phaseBreakdown(variables);
+    const profiles = b.profiles || 0;
+    const stressText = b.stress ? `Fase 4b/c estrés: ${b.stress} runs. ` : "";
+    const robustness = Array.from(document.querySelectorAll("[data-robustness]:checked")).length;
+    const robText = robustness ? `Robustez: ${robustness} componente(s). ` : "";
     if (searchMode() === "cartesian") {
       const combinations = cartesianCount(variables);
       const warn = combinations > 500 ? " ⚠️ Por encima del límite (500): el servidor rechazará el envío." : "";
-      node.textContent = `Producto cartesiano (Fases 1–2): ${combinations} combinaciones de las variables de modelo marcadas. Después se ejecutan afinado, cartera, perfiles y validación igual que en el modo dirigido.${warn}`;
+      node.textContent = `Fases 1–2 (cartesiano): ${combinations} combinaciones de modelo. Fase 3 afinado: +${b.phase3} runs. Fase 4 cartera: +${b.portfolio} runs. ${stressText}Fase 5 perfiles: ${profiles} runs. ${robText}Más el finalista y la validación reservada.${warn}`;
       return;
     }
-    const n = directedCount(variables);
-    node.textContent = `Diseño dirigido (solo fases 1–2): ${n.phase1} runs aislados y hasta ${n.phase2} combinaciones. Después se ejecutan afinado, cartera, perfiles y validación; no es un máximo total ni un producto cartesiano.`;
+    // Dirigido: baseline (1) + un run por cada valor no-baseline de modelo, luego greedy top-2.
+    const model = 1 + b.model;
+    node.textContent = `Fases 1–2 (dirigido): ${model} runs de modelo (baseline + ${b.model} variantes aisladas) y greedy. Fase 3 afinado: +${b.phase3} runs. Fase 4 cartera: +${b.portfolio} runs. ${stressText}Fase 5 perfiles: ${profiles} runs. ${robText}Más el finalista y la validación reservada.`;
   }
 
   // --- Lanzadores ---
@@ -286,15 +414,21 @@
       const variables = selectedStudyVariables();
       if (!Object.keys(variables).length) throw new Error("Selecciona al menos una variable.");
       const mode = searchMode();
-      const confirmMsg = mode === "cartesian"
-        ? `Producto cartesiano: ${cartesianCount(variables)} combinaciones de modelo. Después se añaden afinado, cartera, perfiles y validación. ¿Continuar?`
-        : `Fases 1–2: aproximadamente ${directedCount(variables).total} runs. Después se añaden afinado, cartera, perfiles y validación. ¿Continuar?`;
+      const b = phaseBreakdown(variables);
+      const modelRuns = mode === "cartesian" ? cartesianCount(variables) : 1 + b.model;
+      const confirmMsg = `Fases 1–2: ${modelRuns} runs de modelo. Fase 3: +${b.phase3}. Fase 4: +${b.portfolio}. Fase 5 perfiles: ${b.profiles}. Más finalista, robustez marcada y validación reservada. ¿Continuar?`;
       if (!confirm(confirmMsg)) return;
+      const robustnessComponents = Array.from(
+        document.querySelectorAll("[data-robustness]:checked"), (i) => i.dataset.robustness);
       const job = await api("/api/study", {
         settings: S().defaults,
         variables,
         search_mode: mode,
-        study: { name: el("study-name").value, description: el("study-description").value, include_robustness: el("study-robustness").checked },
+        study: {
+          name: el("study-name").value,
+          description: el("study-description").value,
+          robustness_components: robustnessComponents,
+        },
       });
       notify(`Study ${job.job_id} iniciado.`);
       global.TFM.loadJobsAndRuns();
@@ -370,10 +504,8 @@
       </div>`;
     // Recalcula el diseño y los fijos al marcar/desmarcar variables del study
     container.addEventListener("change", (event) => {
-      if (event.target.matches("[data-study]")) {
+      if (event.target.matches("[data-study], [data-study-item], [data-study-toggle], [data-robustness]")) {
         updateStudyCount();
-        const fixedContainer = el("study-fixed-container");
-        if (fixedContainer) fixedContainer.innerHTML = unselectedStudyAxesSettings();
       }
     });
     refreshJobs();

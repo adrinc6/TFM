@@ -105,6 +105,11 @@
     state.studyOptionGroups = data.study_option_groups || {};
     state.fullStudyFixedSettings = data.full_study_fixed_settings || {};
     state.fullStudyStressSettings = data.full_study_stress_settings || {};
+    state.agentCatalog = data.agent_catalog || [];
+    state.featureBlockCatalog = data.feature_block_catalog || [];
+    state.modelFamilyCatalog = data.model_family_catalog || [];
+    state.artifactToggles = data.artifact_toggles || [];
+    state.robustnessComponents = data.robustness_components || [];
     state.presets = data.experiment_presets || {};
     state.profileLabels = data.profile_labels || {};
   }

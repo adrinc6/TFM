@@ -87,6 +87,10 @@ main.app-main {
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: var(--gap);
 }
+/* Rejillas de métricas con 5 tarjetas (p.ej. random-portfolio): las 5 caben en una fila. */
+.cards.cards-5 {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
 .grid {
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;
@@ -129,6 +133,11 @@ table.data th, table.data td {
   border-bottom: 1px solid var(--line);
   vertical-align: top;
   white-space: nowrap;
+}
+table.data th.col-run, table.data td.col-run {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  max-width: 260px;
 }
 table.data th { color: var(--muted); font-weight: 600; background: var(--surface); }
 table.data tr.click { cursor: pointer; }

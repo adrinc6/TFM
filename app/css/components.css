@@ -16,16 +16,19 @@
 .button.primary { background: var(--accent); border-color: var(--accent); color: #0a0a0b; }
 .button.primary:hover { background: #ffffff; }
 .button.ghost { background: transparent; }
+.button.danger { background: #b3261e; border-color: #b3261e; color: #ffffff; }
+.button.danger:hover:not(:disabled) { background: #cf2f26; }
 .button:disabled { opacity: 0.5; cursor: not-allowed; }
 .actions { display: flex; gap: 10px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
 
 /* --- Formularios --- */
 .formgrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 10px;
 }
-label.field { display: grid; gap: 5px; color: var(--muted); font-size: 12px; }
+.formgrid-3 { grid-template-columns: repeat(3, 1fr); }
+label.field { display: grid; gap: 4px; color: var(--muted); font-size: 11px; }
 .field.checkbox {
   display: flex;
   align-items: flex-start;
@@ -39,12 +42,13 @@ label.field { display: grid; gap: 5px; color: var(--muted); font-size: 12px; }
 }
 input, select, textarea {
   width: 100%;
-  padding: 9px 10px;
+  padding: 7px 8px;
   background: #0c0c0e;
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: 6px;
   color: var(--ink);
   font: inherit;
+  font-size: 12px;
 }
 input:focus, select:focus, textarea:focus {
   outline: none;
@@ -73,14 +77,24 @@ textarea { min-height: 72px; resize: vertical; }
 }
 .study-variable:last-child { border-bottom: 0; }
 .study-variable strong { font-weight: 600; }
-.choices { display: flex; flex-wrap: wrap; gap: 7px; }
+/* Selector de conjunto (agentes/bloques/familias): nombre a la izquierda, checks en fila al lado. */
+.set-picker {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.set-picker > strong { flex: 0 0 auto; color: var(--ink-soft); font-weight: 600; }
+.set-picker .choices { flex: 1 1 auto; }
+
+.choices { display: flex; flex-wrap: wrap; gap: 6px; }
 .choice {
-  display: flex; gap: 5px; align-items: center;
-  padding: 5px 8px;
+  display: flex; gap: 4px; align-items: center;
+  padding: 4px 6px;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 5px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 10px;
   cursor: pointer;
 }
 .choice:hover { border-color: var(--line-strong); color: var(--ink-soft); }

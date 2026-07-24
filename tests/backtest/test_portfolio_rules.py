@@ -160,3 +160,86 @@ def test_rebalance_is_independent_of_ticker_order(portfolio_settings) -> None:
     _, weights_forward = decide_orders(state, pd.DataFrame(rows), settings)
     _, weights_reversed = decide_orders(state, pd.DataFrame(list(reversed(rows))), settings)
     assert weights_forward == pytest.approx(weights_reversed)
+
+
+# --- Revisiones sin fundamentales nuevos: price_only_strictness_multiplier ---
+
+
+def _price_only(rows: list[dict]) -> pd.DataFrame:
+    """Mismo corte transversal pero marcado como revisión de solo precio."""
+    return pd.DataFrame([{**row, "is_quarterly": False} for row in rows])
+
+
+def test_price_only_month_keeps_holder_that_would_be_expelled(portfolio_settings) -> None:
+    """Con fundamentales nuevos AAA (percentil 80) cae al umbral y sale; sin ellos, el umbral
+    efectivo baja (80/2 = 40) y AAA se conserva."""
+    rows = [_row("AAA", 0.80), _row("BBB", 0.90), _row("CCC", 0.85), _row("DDD", 0.95)]
+    quarterly = replace(portfolio_settings, target_size=3, min_hold_percentile=80,
+                        price_only_strictness_multiplier=2.0)
+    state = PortfolioState.from_holdings({"AAA": 1 / 3, "BBB": 1 / 3, "CCC": 1 / 3})
+
+    orders_quarterly, _ = decide_orders(state, pd.DataFrame(rows), quarterly)
+    assert any(order["ticker"] == "AAA" and order["reason"] == "dropped_below_min"
+               for order in orders_quarterly)
+
+    orders_price_only, weights = decide_orders(state, _price_only(rows), quarterly)
+    assert not any(order["ticker"] == "AAA" and order["side"] == "sell"
+                   for order in orders_price_only)
+    assert "AAA" in weights
+
+
+def test_price_only_month_requires_more_edge_to_rotate(portfolio_settings) -> None:
+    """La ventaja de DDD sobre CCC (20 puntos) basta con fundamentales nuevos, pero no cuando el
+    multiplicador eleva la exigencia a 10 * 3 = 30 puntos."""
+    rows = [_row("AAA", 0.92), _row("BBB", 0.80), _row("CCC", 0.75), _row("DDD", 0.95)]
+    settings = replace(portfolio_settings, target_size=3, min_hold_percentile=60,
+                       rotation_edge_percentiles=10, price_only_strictness_multiplier=3.0)
+    state = PortfolioState.from_holdings({"AAA": 1 / 3, "BBB": 1 / 3, "CCC": 1 / 3})
+
+    orders_quarterly, _ = decide_orders(state, pd.DataFrame(rows), settings)
+    assert any(order["ticker"] == "DDD" for order in orders_quarterly)
+
+    orders_price_only, _ = decide_orders(state, _price_only(rows), settings)
+    assert not any(order["ticker"] == "DDD" for order in orders_price_only)
+
+
+def test_price_only_month_freezes_weights_that_would_rebalance(portfolio_settings) -> None:
+    """Deriva relativa de ~33 %: supera el umbral base (25 %) pero no el endurecido (25 % * 2)."""
+    # meta_scores iguales -> target 1/3 para los tres. Partiendo de 0.25, la deriva relativa es
+    # (1/3 - 0.25) / 0.25 = 33 % -> se mueve con el umbral base, se congela con el endurecido.
+    rows = [_row("AAA", 0.98), _row("BBB", 0.98), _row("CCC", 0.98)]
+    settings = replace(portfolio_settings, target_size=3, min_hold_percentile=80,
+                       rebalance_drift_tolerance=0.25, price_only_strictness_multiplier=2.0)
+    state = PortfolioState.from_holdings({"AAA": 0.25, "BBB": 0.25, "CCC": 0.50})
+
+    orders_quarterly, _ = decide_orders(state, pd.DataFrame(rows), settings)
+    assert any(order["ticker"] == "AAA" for order in orders_quarterly)
+
+    orders_price_only, weights = decide_orders(state, _price_only(rows), settings)
+    assert orders_price_only == []
+    assert weights["AAA"] == pytest.approx(0.25)
+
+
+def test_multiplier_one_leaves_price_only_months_unchanged(portfolio_settings) -> None:
+    """Con el multiplicador neutro, una revisión de solo precio decide igual que una trimestral."""
+    rows = [_row("AAA", 0.80), _row("BBB", 0.90), _row("CCC", 0.85), _row("DDD", 0.95)]
+    settings = replace(portfolio_settings, target_size=3, min_hold_percentile=80,
+                       price_only_strictness_multiplier=1.0)
+    state = PortfolioState.from_holdings({"AAA": 1 / 3, "BBB": 1 / 3, "CCC": 1 / 3})
+
+    _, weights_quarterly = decide_orders(state, pd.DataFrame(rows), settings)
+    _, weights_price_only = decide_orders(state, _price_only(rows), settings)
+    assert weights_quarterly == pytest.approx(weights_price_only)
+
+
+def test_missing_is_quarterly_column_keeps_historic_behaviour(portfolio_settings) -> None:
+    """Sin la columna (datos antiguos) no se endurece nada, aunque el multiplicador sea alto."""
+    rows = [{k: v for k, v in row.items() if k != "is_quarterly"}
+            for row in [_row("AAA", 0.80), _row("BBB", 0.90), _row("CCC", 0.85)]]
+    settings = replace(portfolio_settings, target_size=3, min_hold_percentile=80,
+                       price_only_strictness_multiplier=3.0)
+    state = PortfolioState.from_holdings({"AAA": 1 / 3, "BBB": 1 / 3, "CCC": 1 / 3})
+
+    orders, _ = decide_orders(state, pd.DataFrame(rows), settings)
+    assert any(order["ticker"] == "AAA" and order["reason"] == "dropped_below_min"
+               for order in orders)

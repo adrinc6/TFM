@@ -61,6 +61,16 @@ def main() -> None:
     settings = Settings()
     ensure_directories(settings)
     setup_logging()
+    # El full study se lanza como proceso propio (desde la app vía subprocess desacoplado, o a mano
+    # con RUN_MODE=full_study) para que sobreviva al cierre del servidor web. Sus metadatos llegan
+    # por entorno para no depender de un servidor vivo que los pase como argumentos.
+    if settings.run_mode == "full_study":
+        log.info("Full study: lanzando optimización oficial como proceso independiente.")
+        resume = os.environ.get("FULL_STUDY_RESUME_ID") or None
+        execute_official_optimization(
+            settings, name=os.environ.get("FULL_STUDY_NAME", "optimization-official"),
+            hypothesis=os.environ.get("FULL_STUDY_HYPOTHESIS", ""), resume_study_id=resume)
+        return
     stages = stages_for_run(settings.run_mode)
     log.info(
         "Ejecución: mode=%s scope=%s stages=%s",
