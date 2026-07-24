@@ -14,10 +14,11 @@ def _periods() -> list[str]:
 
 def _payload(multiplier: float) -> dict:
     periods = _periods()
-    values = lambda start: [
-        {"period": period, "v": multiplier * start * (index + 1)}
-        for index, period in enumerate(periods)
-    ]
+    def values(start: float) -> list[dict]:
+        return [
+            {"period": period, "v": multiplier * start * (index + 1)}
+            for index, period in enumerate(periods)
+        ]
     return {
         "metric": {"roeTTM": 999.0},
         "series": {

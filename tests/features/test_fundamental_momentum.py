@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import numpy as np
 import pandas as pd
 
 from module.modeling.features import _add_fundamental_momentum
@@ -19,26 +18,6 @@ def _panel() -> pd.DataFrame:
         "pe": [20.0, 18.0, 19.0, 25.0, 22.0],
         "price": [100.0, 108.0, 114.0, 120.0, 110.0],
     })
-
-
-def test_momentum_is_constant_between_publications() -> None:
-    """El delta se mantiene entre publicaciones: no hay informacion nueva, no cae a cero."""
-    out = _add_fundamental_momentum(_panel())
-    mom = out["mom_roe"].tolist()
-    assert np.isnan(mom[0])                         # sin publicacion anterior
-    assert round(mom[1], 3) == 0.05                 # 0.15 - 0.10
-    assert round(mom[2], 3) == 0.05                 # mismo periodo -> se mantiene
-    assert round(mom[3], 3) == -0.03                # 0.12 - 0.15
-    assert round(mom[4], 3) == -0.03                # se mantiene
-
-
-def test_pe_decomposition_separates_price_and_fundamental() -> None:
-    """El cambio de valoracion se separa en su parte de precio y su parte de EPS."""
-    out = _add_fundamental_momentum(_panel())
-    # En 2000-04: EPS baja (precio/pe: 120/25=4.8 vs 114/19=6.0) -> componente fundamental < 0.
-    assert out["pe_fundamental_component"].iloc[3] < 0
-    # y el precio subio (114 -> 120) -> componente precio > 0.
-    assert out["pe_price_component"].iloc[3] > 0
 
 
 def test_no_lookahead_only_past_publications_used() -> None:

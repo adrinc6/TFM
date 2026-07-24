@@ -51,7 +51,6 @@ FEATURE_CATALOG: tuple[FeatureSpec, ...] = tuple(
              "market_liquidity", ("risk",), -1, "ohlcv")
 )
 
-FEATURE_BLOCKS = tuple(dict.fromkeys(spec.block for spec in FEATURE_CATALOG))
 AGENT_NAMES = ("quality", "value", "growth", "momentum", "risk")
 
 

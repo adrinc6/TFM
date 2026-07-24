@@ -14,7 +14,6 @@ import pandas as pd
 from environment import (
     EDGAR_USER_AGENT,
     FINNHUB_API_KEY,
-    FORCE_RAW_DOWNLOAD,
     RAW_JSON_DIR,
     Settings,
 )
@@ -33,9 +32,7 @@ def download_raw_data(settings: Settings) -> None:
     """Descarga el universo solicitado y escribe agregados en su alcance aislado."""
     finnhub = FinnhubClient(FINNHUB_API_KEY) if FINNHUB_API_KEY else None
     yahoo = YahooClient()
-    edgar = EdgarClient(
-        EDGAR_USER_AGENT, RAW_JSON_DIR / "edgar", force_download=FORCE_RAW_DOWNLOAD
-    )
+    edgar = EdgarClient(EDGAR_USER_AGENT, RAW_JSON_DIR / "edgar", force_download=False)
     cik_by_ticker = edgar.ticker_to_cik()
     tickers = settings.tickers
     output_dir = settings.raw_output_dir
@@ -45,7 +42,7 @@ def download_raw_data(settings: Settings) -> None:
         "Preparando datos crudos: tickers=%s scope=%s force_download=%s",
         len(tickers),
         settings.run_scope,
-        FORCE_RAW_DOWNLOAD,
+        False,
     )
     profiles: list[dict[str, Any]] = []
     metrics: list[dict[str, Any]] = []
@@ -337,7 +334,7 @@ def _require_rows(rows: list[dict[str, Any]], name: str) -> None:
 
 
 def _cached_json(path: Path, fetcher: Callable[[], Any]) -> Any:
-    if path.exists() and not FORCE_RAW_DOWNLOAD:
+    if path.exists():
         log.info("Usando caché JSON: %s", path)
         return json.loads(path.read_text(encoding="utf-8"))
 

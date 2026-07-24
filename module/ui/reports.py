@@ -613,7 +613,9 @@ def _plot_equity_curve(equity: pd.DataFrame) -> str:
     figure, axes = plt.subplots(figsize=(8, 3))
     axes.plot(pd.to_datetime(equity["snapshot_date"]), equity["portfolio_value"], label="cartera", color=_SERIES_1)
     axes.plot(pd.to_datetime(equity["snapshot_date"]), equity["benchmark_value"], label="SPY", color=_SERIES_2, linestyle="--")
-    axes.set_ylabel("valor (base 100)"); axes.legend(); axes.grid(alpha=0.3)
+    axes.set_ylabel("valor (base 100)")
+    axes.legend()
+    axes.grid(alpha=0.3)
     return _figure_to_img(figure)
 
 
@@ -622,7 +624,8 @@ def _plot_annual_alpha_bars(annual: pd.DataFrame) -> str:
     colors = [_POS if alpha > 0 else _NEG for alpha in annual["alpha"]]
     axes.bar(annual["year"].astype(str), annual["alpha"] * 100, color=colors)
     axes.axhline(0, color=_DARK_MUTED, linewidth=0.5)
-    axes.set_ylabel("alfa (%)"); axes.grid(alpha=0.3, axis="y")
+    axes.set_ylabel("alfa (%)")
+    axes.grid(alpha=0.3, axis="y")
     return _figure_to_img(figure)
 
 
@@ -633,7 +636,8 @@ def _plot_drawdown_series(equity: pd.DataFrame) -> str:
     figure, axes = plt.subplots(figsize=(8, 3))
     axes.fill_between(pd.to_datetime(equity["snapshot_date"]), -drawdown * 100, 0,
                        color=_NEG, alpha=0.4)
-    axes.set_ylabel("drawdown (%)"); axes.grid(alpha=0.3)
+    axes.set_ylabel("drawdown (%)")
+    axes.grid(alpha=0.3)
     return _figure_to_img(figure)
 
 
@@ -651,7 +655,9 @@ def _plot_rank_ic_over_time(diagnostics: pd.DataFrame) -> str:
     axes.axhline(0, color=_DARK_MUTED, linewidth=0.6)
     axes.axhline(float(meta["rank_ic"].mean()), color=_SERIES_2, linestyle="--", linewidth=1,
                  label=f"media global {meta['rank_ic'].mean():.4f}")
-    axes.set_ylabel("rank-IC"); axes.legend(fontsize=8); axes.grid(alpha=0.3, axis="y")
+    axes.set_ylabel("rank-IC")
+    axes.legend(fontsize=8)
+    axes.grid(alpha=0.3, axis="y")
     return _figure_to_img(figure)
 
 
@@ -659,7 +665,9 @@ def _plot_meta_weights_over_time(weights: pd.DataFrame) -> str:
     figure, axes = plt.subplots(figsize=(8, 3))
     for agent, group in weights.groupby("agent"):
         axes.plot(pd.to_datetime(group["snapshot_date"]), group["weight"], label=agent)
-    axes.set_ylabel("peso"); axes.legend(); axes.grid(alpha=0.3)
+    axes.set_ylabel("peso")
+    axes.legend()
+    axes.grid(alpha=0.3)
     return _figure_to_img(figure)
 
 

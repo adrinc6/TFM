@@ -24,7 +24,6 @@ class FinnhubClient:
 		self._last_call = 0.0
 		self.session = requests.Session()
 		self.session.headers.update({"X-Finnhub-Token": api_key})
-		self.last_status_code: int | None = None
 
 	def _get(self, endpoint: str, params: dict | None = None, _attempt: int = 1):
 		params = params or {}
@@ -37,7 +36,6 @@ class FinnhubClient:
 		try:
 			resp = self.session.get(url, params=params, timeout=20)
 			self._last_call = time.time()
-			self.last_status_code = int(resp.status_code)
 
 			if resp.status_code == 429:
 				if _attempt >= self.MAX_429_RETRIES:
@@ -72,17 +70,6 @@ class FinnhubClient:
 		"""
 		return self._get("/stock/metric", {"symbol": symbol, "metric": "all"})
 
-	def financials_as_reported(self, symbol, freq: str = "annual"):
-		"""
-		Raw financial statements as reported to the SEC.
-		Sections 'bs' (Balance Sheet), 'ic' (Income Statement), 'cf' (Cash Flow).
-		freq: 'annual' | 'quarterly'
-		"""
-		return self._get("/stock/financials-reported", {
-			"symbol": symbol,
-			"freq": freq,
-		})
-
 	def company_news(self, symbol, from_date, to_date):
 		"""Noticias recientes (descargadas pero no procesadas por el pipeline)."""
 		return self._get("/company-news", {
@@ -112,7 +99,6 @@ class YahooClient:
 		self.session = requests.Session()
 		self.session.headers.update(self.HEADERS)
 		self._last_call = 0.0
-		self.last_status_code: int | None = None
 
 	def _dt(self, date_str: str) -> int:
 		return int(datetime.strptime(date_str, "%Y-%m-%d").timestamp())
@@ -135,7 +121,6 @@ class YahooClient:
 		try:
 			resp = self.session.get(url, params=params, timeout=20)
 			self._last_call = time.time()
-			self.last_status_code = int(resp.status_code)
 
 			if resp.status_code == 429:
 				if _attempt >= self.MAX_429_RETRIES:

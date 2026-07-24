@@ -1009,27 +1009,6 @@ def _best_config_summary(
             "profile_reference": "balanced", "profiles_reported": list(profile_run_ids)}
 
 
-def _execute_official_specs(
-    specs: list[dict[str, Any]], settings: Settings, store: ResultsStore, study_id: str, *, phase: str,
-    label_prefix: str = "Optimization", description: str = "Escenario dirigido del catálogo oficial.",
-    tags: Iterable[str] = ("official",),
-) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
-    skipped: list[dict[str, Any]] = []
-    for spec in specs:
-        overrides = dict(spec["overrides"])
-        run_id = _safe_scenario_run(
-            store, replace(settings, **overrides), study_id=study_id,
-            label=f"{label_prefix} · Fase {phase} · {spec['name']}", description=description,
-            tags=[*tags, f"phase{phase}"], grid_definition={"phase": phase, "overrides": overrides},
-            skipped=skipped, scenario=spec["name"])
-        if run_id is None:
-            continue
-        rows.append({"phase": phase, "scenario": spec["name"], "overrides": overrides,
-                     **overrides, **_summary_for_run(store, run_id), "run_id": run_id})
-    return rows
-
-
 def _stable_best(frame: pd.DataFrame) -> dict[str, Any] | None:
     if frame.empty or "mean_rank_ic" not in frame:
         return None
@@ -1477,5 +1456,4 @@ def _compute_summary_for_run(store: ResultsStore, run_id: str) -> dict[str, Any]
         "rank_ic_selection_cohorts": int(len(values)),
     })
     return summary
-
 

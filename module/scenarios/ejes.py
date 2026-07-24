@@ -15,7 +15,7 @@ trimestral, sin artefactos):
   - Cadencia de reentreno:    trimestral / semestral / anual.
   - Artefactos:               los 7, uno a uno.
 
-El orquestador (`module.experiments.decide_best_config`) lee `ARTIFACTS` y `AXES` y compone la
+El orquestador (`module.runs.execution`) lee `ARTIFACTS` y `AXES` y compone la
 configuracion final: mejor nivel de cada eje + artefactos aceptados. Ver docs/doc.md.
 
 Los valores baseline de cada eje (train_10y, horizon_3m, ancla_2016, depth_4, cadence_trimestral)

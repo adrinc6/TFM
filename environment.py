@@ -55,8 +55,6 @@ DATA_START_DATE = "2003-01-01"
 DATA_END_DATE = "2026-07-15"
 DEV_TICKERS = ["AAPL", "MSFT", "NVDA", "JPM", "XOM"]
 BENCHMARK_TICKER = "SPY"
-FORCE_RAW_DOWNLOAD = False
-
 # Fase 1: el panel se construye para toda la historia disponible. La fecha ancla
 # se usará después para iniciar una simulación o un escenario concreto.
 # Fecha ancla FIJA: el sistema evalua la simulación OOS desde 2015-Q1 (~10 años de OOS hasta hoy

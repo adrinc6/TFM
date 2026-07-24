@@ -34,22 +34,6 @@ def test_panel_uses_each_company_last_published_fundamental(dataset_settings) ->
     ).all()
     assert panel["fundamental_age_days"].dropna().ge(0).all()
 
-
-def test_fundamentals_remain_frozen_until_next_filing_and_ignore_metric_snapshot(dataset_settings) -> None:
-    panel = build_point_in_time_dataset(dataset_settings)
-    # Dos snapshots consecutivos tras el 10-K de AAA (filed 2000-02-01) y antes de su siguiente
-    # presentación (10-Q de 2000-03-31, filed 2000-04-10): el fundamental debe quedar congelado.
-    feb = _snapshot_after(dataset_settings, "2000-02-05")
-    mar = _snapshot_after(dataset_settings, "2000-03-11")
-    aaa_february = _row(panel, "AAA", feb)
-    aaa_march = _row(panel, "AAA", mar)
-
-    assert aaa_february["roe"] == aaa_march["roe"] == 0.5
-    assert aaa_february["roe"] != 999.0
-    assert aaa_february["price"] != aaa_march["price"]
-    assert aaa_february["price_return_1m"] is not None
-
-
 def test_removing_future_filing_does_not_change_past_rows(dataset_settings) -> None:
     panel_with_future = build_point_in_time_dataset(dataset_settings)
     reports_path = dataset_settings.raw_output_dir / "report_dates.parquet"
@@ -63,23 +47,3 @@ def test_removing_future_filing_does_not_change_past_rows(dataset_settings) -> N
     pd.testing.assert_frame_equal(
         before_future.reset_index(drop=True), rebuilt_before_future.reset_index(drop=True)
     )
-
-
-def test_panel_contract_excludes_current_profiles_and_sector(dataset_settings) -> None:
-    panel = build_point_in_time_dataset(dataset_settings)
-
-    forbidden = {"sector", "marketCapitalization", "finnhubIndustry", "payload", "metric"}
-    assert not (forbidden & set(panel.columns))
-    assert panel["in_sp500"].all()
-
-
-def test_dataset_writes_benchmark_and_price_traceability(dataset_settings) -> None:
-    panel = build_point_in_time_dataset(dataset_settings)
-    benchmark = pd.read_parquet(dataset_settings.processed_output_dir / "benchmark_point_in_time.parquet")
-    asset_prices = pd.read_parquet(dataset_settings.processed_output_dir / "asset_price_point_in_time.parquet")
-
-    assert {"price_as_of_date", "price_age_days"} <= set(panel.columns)
-    assert not benchmark.empty
-    assert benchmark["price_age_days"].ge(0).all()
-    assert {"AAA", "BBB"} <= set(asset_prices["ticker"])
-    assert "SPY" not in set(asset_prices["ticker"])

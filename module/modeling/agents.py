@@ -382,30 +382,6 @@ def _combine_family_scores(
     return result
 
 
-def _walk_forward_scores(
-    frame: pd.DataFrame, settings: Settings
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Compat: entrena todas las familias en memoria y las combina (sin caché por familia).
-
-    ``build_agent_scores`` usa la ruta cacheada; esta función conserva el contrato para llamadas
-    directas y pruebas.
-    """
-    families = list(settings.enabled_model_families)
-    if settings.feature_weighting_mode == "regularized_linear_ensemble" and "elastic_net" not in families:
-        families.append("elastic_net")
-    per_family: dict[str, pd.DataFrame] = {}
-    coeff_frames: list[pd.DataFrame] = []
-    attrib_frames: list[pd.DataFrame] = []
-    for family in families:
-        scores, coefficients, local_attribution = fit_family_scores(frame, settings, family)
-        per_family[family] = scores
-        coeff_frames.append(coefficients)
-        attrib_frames.append(local_attribution)
-    predictions = _combine_family_scores(per_family, families, frame, settings)
-    return (predictions, pd.concat(coeff_frames, ignore_index=True) if coeff_frames else pd.DataFrame(),
-            pd.concat(attrib_frames, ignore_index=True) if attrib_frames else pd.DataFrame())
-
-
 def _model_rank_ic_weights(
     history_rows: list[dict], frame: pd.DataFrame, agent: str, families: list[str],
     retrain_date: pd.Timestamp, settings: Settings,

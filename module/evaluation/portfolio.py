@@ -47,20 +47,6 @@ class PortfolioState:
     def empty(cls) -> "PortfolioState":
         return cls()
 
-    @classmethod
-    def from_holdings(
-        cls,
-        holdings: dict[str, float],
-        entry_dates: dict[str, str] | None = None,
-        entry_prices: dict[str, float] | None = None,
-    ) -> "PortfolioState":
-        entry_dates = entry_dates or {ticker: "1900-01-01" for ticker in holdings}
-        return cls(
-            holdings=dict(holdings),
-            entry_dates=dict(entry_dates),
-            entry_prices=dict(entry_prices or {}),
-        )
-
     def apply(self, orders: list[dict[str, Any]], prices: dict[str, float],
               target_weights: dict[str, float] | None = None) -> "PortfolioState":
         """Devuelve un nuevo estado tras ejecutar las ordenes. `prices` es informacional

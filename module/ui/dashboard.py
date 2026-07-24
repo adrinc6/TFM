@@ -227,18 +227,6 @@ STOCK_COMPANIONS = {
 STOCK_RATIO_COLUMNS = tuple(
     key for group, values in STOCK_METRICS.items() if group != "momentum" for key, _ in values
 )
-STOCK_FACTOR_COLUMNS = {
-    "roe": "factor_roe", "roic": "factor_roic", "net_margin": "factor_net_margin",
-    "operating_margin": "factor_operating_margin", "gross_margin": "factor_gross_margin",
-    "fcf_margin": "factor_fcf_margin", "debt_equity": "factor_debt_equity",
-    "current_ratio": "factor_current_ratio", "eps_growth_yoy": "factor_eps_growth_yoy",
-    "sales_per_share_growth_yoy": "factor_sales_per_share_growth_yoy", "pe": "factor_pe",
-    "pb": "factor_pb", "ps": "factor_ps", "ev_ebitda": "factor_ev_ebitda",
-    "price_return_3m": "factor_relative_return_3m", "price_return_6m": "factor_relative_return_6m",
-    "price_return_12m": "factor_relative_return_12m",
-}
-
-
 def normalize_index(values: list[object]) -> tuple[list[float | None], bool]:
     """Normaliza una serie a base 100 solo cuando la transformación es interpretable."""
     numeric = [float(value) if pd.notna(value) else None for value in values]

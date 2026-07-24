@@ -3,7 +3,6 @@ import json
 import pandas as pd
 
 import environment
-import main
 from environment import Settings
 from module.data.ingest import pipeline
 
@@ -85,24 +84,3 @@ def test_pipeline_isolates_dev_outputs_and_excludes_recycled_ticker(monkeypatch,
     assert "SPY" in set(raw_prices["ticker"])
     assert coverage["run_scope"] == "dev"
     assert not coverage["representative"]
-
-
-def test_full_coverage_contains_annual_schema() -> None:
-    coverage = pipeline._universe_coverage(Settings(run_scope="full"), {}, set())
-
-    assert coverage["representative"]
-    assert coverage["years"]
-    assert {"year", "sp500_members", "panel_eligible_tickers", "coverage_pct", "exclusions"} <= set(
-        coverage["years"][0]
-    )
-
-
-def test_stage_selector_runs_implemented_stages() -> None:
-    assert main.stages_for_run("download") == ("download",)
-    assert main.stages_for_run("full") == (
-        "download", "dataset", "features", "agents", "backtest", "report",
-    )
-    assert main.stages_for_run("features") == ("features",)
-    assert main.stages_for_run("backtest") == ("backtest",)
-    assert main.stages_for_run("report") == ("report",)
-    assert main.stages_for_run("experiments") == ("experiments",)

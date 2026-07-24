@@ -29,9 +29,6 @@ from module.common.utils import pid_alive, sha256_file, write_json, write_parque
 
 
 RESULTS_ROOT = PROJECT_ROOT / "results"
-RUNS_ROOT = RESULTS_ROOT / "runs"
-STUDIES_ROOT = RESULTS_ROOT / "studies"
-REGISTRY_PATH = RESULTS_ROOT / "registry.jsonl"
 SCHEMA_VERSION = 1
 
 # El lock de fichero protege entre procesos, pero dentro de un mismo proceso todos los hilos
@@ -161,10 +158,6 @@ def _run_id(runs_root: Path, full_hash: str) -> str:
         candidate = f"{base}--r{repetition:02d}"
         repetition += 1
     return candidate
-
-
-def _safe_relative(path: Path) -> str:
-    return str(path.resolve().relative_to(RESULTS_ROOT.resolve())).replace("\\", "/")
 
 
 def _input_fingerprints(paths: Mapping[str, Path]) -> dict[str, str]:
