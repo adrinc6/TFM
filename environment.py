@@ -1,12 +1,4 @@
-"""Configuración central y modos de ejecución del proyecto.
-
-Ejemplos en PowerShell:
-    $env:RUN_MODE = "download"; $env:RUN_SCOPE = "dev"; python main.py
-    $env:RUN_MODE = "download"; $env:RUN_SCOPE = "full"; python main.py
-
-``RUN_MODE`` selecciona la etapa que se ejecuta y ``RUN_SCOPE`` el alcance de
-sus datos. Así se puede repetir una etapa sin volver a descargar las anteriores.
-"""
+"""Configuración científica inmutable usada por el runner único."""
 
 from __future__ import annotations
 
@@ -20,20 +12,7 @@ DATA_DIR = PROJECT_ROOT / "data"
 RAW_DIR = DATA_DIR / "raw"
 RAW_JSON_DIR = RAW_DIR / "json"
 DEV_RAW_DIR = RAW_DIR / "dev"
-PROCESSED_DIR = DATA_DIR / "processed"
-DEV_PROCESSED_DIR = PROCESSED_DIR / "dev"
-
-RUN_MODES = (
-    "download",
-    "dataset",
-    "features",
-    "agents",
-    "backtest",
-    "report",
-    "experiments",
-    "full_study",
-    "full",
-)
+PREPARED_DIR = DATA_DIR / "prepared"
 RUN_SCOPES = ("dev", "full")
 
 
@@ -56,7 +35,7 @@ DATA_END_DATE = "2026-07-15"
 DEV_TICKERS = ["AAPL", "MSFT", "NVDA", "JPM", "XOM"]
 BENCHMARK_TICKER = "SPY"
 # Fase 1: el panel se construye para toda la historia disponible. La fecha ancla
-# se usará después para iniciar una simulación o un escenario concreto.
+# se usará después para iniciar la evaluación OOS.
 # Fecha ancla FIJA: el sistema evalua la simulación OOS desde 2015-Q1 (~10 años de OOS hasta hoy
 # con 2025-26 reservados), entrenando 8 años hacia atras. El año/trimestre ancla NO se barren en
 # el study (son fijos); sí se barre el retardo de publicación (execution_lag_days).
@@ -64,8 +43,8 @@ EXECUTION_YEAR = 2015
 EXECUTION_QUARTER = 1
 EXECUTION_LAG_DAYS = 45
 TRAIN_LOOKBACK_YEARS = 8
-SNAPSHOT_STEP_MONTHS = 1           # cadencia de revision de cartera; barrida como escenario
-FUNDAMENTAL_STEP_MONTHS = 3        # cadencia de reentreno; barrida como escenario (3/12/1)
+SNAPSHOT_STEP_MONTHS = 1
+FUNDAMENTAL_STEP_MONTHS = 3
 TARGET_HORIZON_MONTHS = 6
 MAX_PRICE_AGE_DAYS = 7
 META_IC_LOOKBACK_QUARTERS = 12
@@ -81,7 +60,7 @@ MIN_RANK_IC_CROSS_SECTION = 10
 #   "off"         -> todas las filas pesan igual (comportamiento por defecto).
 #   "linear"      -> el año más reciente pesa más, decreciendo linealmente hacia el más antiguo.
 #   "exponential" -> decaimiento exponencial con vida media RECENCY_HALFLIFE_YEARS.
-# Barrida como escenario para medir si priorizar lo reciente mejora el rank-IC.
+# El catálogo permite contrastar si priorizar lo reciente mejora el Rank-IC.
 RECENCY_WEIGHTING = "off"
 RECENCY_HALFLIFE_YEARS = 3.0       # vida media (años) del decaimiento exponencial; fija
 
@@ -90,10 +69,9 @@ RECENCY_HALFLIFE_YEARS = 3.0       # vida media (años) del decaimiento exponenc
 #   "rank_regression" (principal) -> regresion sobre el PERCENTIL transversal del retorno (0..1)
 #                                    dentro de cada snapshot; alinea el entrenamiento con el rank-IC.
 #   "ranking"  -> LGBMRanker (lambdarank) agrupado por snapshot; optimiza el orden directamente.
-#   "quartile" -> clasifica cuartil superior vs inferior (ablacion).
 OBJECTIVE = "rank_regression"
 # Hiperparametros LightGBM. Defaults conservadores (arboles poco profundos, muchas muestras
-# minimas por hoja) por el numero limitado de eras independientes. Barridos como escenario.
+# mínimas por hoja) por el número limitado de eras independientes.
 LGBM_N_ESTIMATORS = 200
 LGBM_MAX_DEPTH = 4
 LGBM_LEARNING_RATE = 0.05
@@ -114,9 +92,8 @@ ENABLED_FEATURE_BLOCKS = (
     "price_risk", "market_liquidity",
 )
 ENABLED_AGENTS = ("quality", "value", "growth", "momentum", "risk")
-ENABLED_MODEL_FAMILIES = ("lightgbm", "elastic_net", "catboost")
-INTRA_AGENT_ENSEMBLE_MODE = "rank_ic_weighted"
-FEATURE_WEIGHTING_MODE = "diagnostic_only"
+ENABLED_MODEL_FAMILIES = ("lightgbm",)
+FEATURE_WEIGHTING_MODE = "model_native"
 FEATURE_SELECTION_MIN_COVERAGE = 0.55
 FEATURE_SELECTION_LOOKBACK_QUARTERS = 12
 FEATURE_SELECTION_MIN_PERMUTATION_IMPORTANCE = 0.0
@@ -126,8 +103,7 @@ METRIC_WINSORIZATION_PERCENTILE = 0.01
 RISK_FEATURE_WINDOWS = (63, 126, 252)
 TECHNICAL_FEATURE_WINDOWS = (21, 63, 252)
 
-# --- Artefactos activables (bloques de features/contexto que el barrido activa como ablations) ---
-# Cada uno es point-in-time. El barrido mide si suben el rank-IC del meta_final. Ver module/artifacts.py.
+# --- Bloques opcionales del catálogo, todos point-in-time ---
 NEUTRALIZE_BY_SECTOR = False       # rankear factores dentro de sector en vez de global
 FUNDAMENTAL_MOMENTUM = False       # tendencia de fundamentales + descomposicion P/E precio vs fundamental
 MARKET_REGIME_FEATURE = False      # regimen bull/bear del SP500 + interacciones factor x regimen
@@ -154,21 +130,10 @@ PRICE_ONLY_STRICTNESS_MULTIPLIER = 1.0
 # como dato corrupto (split mal ajustado, ticker reciclado) y se neutraliza, registrandolo.
 MAX_MONTHLY_POSITION_RETURN = 2.0  # +200 % en un mes es imposible para una accion normal
 
-# Traducción señal -> cartera. Los defaults preservan el comportamiento histórico para que los
-# runs manuales antiguos sigan siendo reproducibles; el protocolo oficial fija explícitamente sus
-# alternativas confirmatorias.
-PORTFOLIO_POLICY = "legacy_monthly"
-VINTAGE_COUNT = 4
-HOLDING_MONTHS = 12
-SIZING_MODE = "legacy_linear"
-ACTIVE_OVERLAY_MODE = "full"
-FIXED_ACTIVE_FRACTION = 0.50
-SIGNAL_HEALTH_LOOKBACK_QUARTERS = 12
-COST_HURDLE_MULTIPLIER = 0.0
-VINTAGE_CALENDAR_OFFSET_MONTHS = 0
+# Traducción señal → cartera. Son defaults internos; el catálogo fija la ejecución real.
+SIZING_MODE = "score_linear"
+META_WEIGHT_MIN = 0.10
 
-# Se pueden establecer temporalmente desde la consola sin editar este archivo.
-RUN_MODE = os.getenv("RUN_MODE", "download").strip().lower()
 RUN_SCOPE = os.getenv("RUN_SCOPE", "full").strip().lower()
 
 FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
@@ -184,7 +149,6 @@ SP500_COMPONENTS_CSV = DATA_DIR / "S&P 500 Historical Components & Changes.csv"
 class Settings:
     data_start_date: str = DATA_START_DATE
     end_date: str = DATA_END_DATE
-    run_mode: str = RUN_MODE
     run_scope: str = RUN_SCOPE
     benchmark_ticker: str = BENCHMARK_TICKER
     execution_year: int = EXECUTION_YEAR
@@ -201,9 +165,7 @@ class Settings:
     lgbm_max_depth: int = LGBM_MAX_DEPTH
     lgbm_learning_rate: float = LGBM_LEARNING_RATE
     lgbm_min_child_samples: int = LGBM_MIN_CHILD_SAMPLES
-    # Hilos de LightGBM por fit. -1 = todos los núcleos. No afecta a los resultados (LightGBM es
-    # determinista con hilos), solo a la velocidad. El full study reduce esto a
-    # MODEL_THREADS_PER_WORKER dentro de cada worker paralelo para no sobre-suscribir la máquina.
+    # Hilos de LightGBM por fit. No altera la definición científica.
     lgbm_n_jobs: int = -1
     random_seed: int = RANDOM_SEED
     meta_type: str = META_TYPE
@@ -216,7 +178,6 @@ class Settings:
     enabled_feature_blocks: tuple[str, ...] = ENABLED_FEATURE_BLOCKS
     enabled_agents: tuple[str, ...] = ENABLED_AGENTS
     enabled_model_families: tuple[str, ...] = ENABLED_MODEL_FAMILIES
-    intra_agent_ensemble_mode: str = INTRA_AGENT_ENSEMBLE_MODE
     feature_weighting_mode: str = FEATURE_WEIGHTING_MODE
     feature_selection_min_coverage: float = FEATURE_SELECTION_MIN_COVERAGE
     feature_selection_lookback_quarters: int = FEATURE_SELECTION_LOOKBACK_QUARTERS
@@ -244,19 +205,9 @@ class Settings:
     price_only_strictness_multiplier: float = PRICE_ONLY_STRICTNESS_MULTIPLIER
     max_monthly_position_return: float = MAX_MONTHLY_POSITION_RETURN
     profile: str = "balanced"   # perfil de inversor para la seleccion de cartera (ver module/profiles.py)
-    portfolio_policy: str = PORTFOLIO_POLICY
-    vintage_count: int = VINTAGE_COUNT
-    holding_months: int = HOLDING_MONTHS
     sizing_mode: str = SIZING_MODE
-    active_overlay_mode: str = ACTIVE_OVERLAY_MODE
-    fixed_active_fraction: float = FIXED_ACTIVE_FRACTION
-    signal_health_lookback_quarters: int = SIGNAL_HEALTH_LOOKBACK_QUARTERS
-    cost_hurdle_multiplier: float = COST_HURDLE_MULTIPLIER
-    vintage_calendar_offset_months: int = VINTAGE_CALENDAR_OFFSET_MONTHS
-    # Versión manual del código de cada etapa cacheada: entra en la clave de reciclado
-    # (module/runs/recycle.py STAGE_FIELDS) en vez de un hash automático del código. Súbela a mano
-    # tras un cambio real de lógica en esa etapa para invalidar su caché; un cambio de logging o
-    # de comentario no requiere tocarla.
+    meta_weight_min: float = META_WEIGHT_MIN
+    # Versiones explícitas para invalidar materializaciones y caché tras cambios científicos.
     dataset_code_version: int = 1
     features_code_version: int = 1
     # El fit de las familias y la combinación meta tienen versiones separadas: cambiar la
@@ -269,10 +220,6 @@ class Settings:
     workspace_dir: Path | None = None
 
     def __post_init__(self) -> None:
-        if self.run_mode not in RUN_MODES:
-            raise ValueError(
-                f"RUN_MODE inválido: {self.run_mode!r}. Valores admitidos: {', '.join(RUN_MODES)}."
-            )
         if self.run_scope not in RUN_SCOPES:
             raise ValueError(
                 f"RUN_SCOPE inválido: {self.run_scope!r}. Valores admitidos: {', '.join(RUN_SCOPES)}."
@@ -280,9 +227,9 @@ class Settings:
 
         if self.execution_quarter not in (1, 2, 3, 4):
             raise ValueError("EXECUTION_QUARTER debe estar entre 1 y 4.")
-        if self.objective not in ("rank_regression", "ranking", "quartile"):
+        if self.objective not in ("rank_regression", "ranking"):
             raise ValueError(
-                f"OBJECTIVE invalido: {self.objective!r}. Usa 'rank_regression', 'ranking' o 'quartile'."
+                f"OBJECTIVE inválido: {self.objective!r}. Usa 'rank_regression' o 'ranking'."
             )
         if self.meta_type not in ("equal", "rank_ic", "regime", "stacked_oos"):
             raise ValueError(
@@ -303,11 +250,8 @@ class Settings:
                 f"RECENCY_WEIGHTING invalido: {self.recency_weighting!r}. "
                 "Usa 'off', 'linear' o 'exponential'."
             )
-        if self.feature_weighting_mode not in ("model_native", "diagnostic_only", "oos_stability_prune",
-                                               "regularized_linear_ensemble", "block_gated"):
+        if self.feature_weighting_mode not in ("model_native", "oos_stability_prune"):
             raise ValueError("FEATURE_WEIGHTING_MODE no reconocido.")
-        if self.intra_agent_ensemble_mode not in ("single", "equal_rank", "rank_ic_weighted"):
-            raise ValueError("INTRA_AGENT_ENSEMBLE_MODE no reconocido.")
         if not self.enabled_agents:
             raise ValueError("ENABLED_AGENTS no puede estar vacío.")
         if not 0 <= self.feature_selection_min_coverage <= 1:
@@ -318,24 +262,10 @@ class Settings:
             raise ValueError("Las ventanas temporales deben ser positivas.")
         if self.target_size < 1:
             raise ValueError("TARGET_SIZE debe ser positivo.")
-        if self.portfolio_policy not in ("legacy_monthly", "quarterly_top_n", "staggered_vintages"):
-            raise ValueError("PORTFOLIO_POLICY no reconocido.")
-        if self.vintage_count < 1 or self.holding_months < 1:
-            raise ValueError("VINTAGE_COUNT y HOLDING_MONTHS deben ser positivos.")
-        if self.portfolio_policy == "staggered_vintages" and self.target_size % self.vintage_count:
-            raise ValueError("TARGET_SIZE debe ser divisible por VINTAGE_COUNT en staggered_vintages.")
-        if self.sizing_mode not in ("equal", "legacy_linear", "calibrated_alpha"):
+        if self.sizing_mode not in ("equal", "score_linear"):
             raise ValueError("SIZING_MODE no reconocido.")
-        if self.active_overlay_mode not in ("full", "fixed", "binary", "continuous"):
-            raise ValueError("ACTIVE_OVERLAY_MODE no reconocido.")
-        if not 0 <= self.fixed_active_fraction <= 1:
-            raise ValueError("FIXED_ACTIVE_FRACTION debe estar en [0, 1].")
-        if self.signal_health_lookback_quarters < 1:
-            raise ValueError("SIGNAL_HEALTH_LOOKBACK_QUARTERS debe ser positivo.")
-        if self.cost_hurdle_multiplier < 0:
-            raise ValueError("COST_HURDLE_MULTIPLIER debe ser >= 0.")
-        if self.vintage_calendar_offset_months not in (0, 1, 2):
-            raise ValueError("VINTAGE_CALENDAR_OFFSET_MONTHS debe ser 0, 1 o 2.")
+        if not 0 <= self.meta_weight_min <= self.meta_weight_cap:
+            raise ValueError("META_WEIGHT_MIN debe estar entre 0 y META_WEIGHT_CAP.")
         for name, value in (("min_hold_percentile", self.min_hold_percentile),):
             if not 0 <= value <= 100:
                 raise ValueError(f"{name} debe estar en [0, 100], recibido {value!r}.")
@@ -364,7 +294,7 @@ class Settings:
         """Directorio de artefactos procesados, aislado por alcance."""
         if self.workspace_dir is not None:
             return Path(self.workspace_dir)
-        return DEV_PROCESSED_DIR if self.dev_mode else PROCESSED_DIR
+        return PREPARED_DIR / ("standalone-dev" if self.dev_mode else "standalone")
 
     @property
     def tickers(self) -> list[str]:
@@ -376,5 +306,5 @@ class Settings:
 
 
 def ensure_directories(settings: Settings) -> None:
-    for path in (RAW_DIR, RAW_JSON_DIR, PROCESSED_DIR, settings.raw_output_dir, settings.processed_output_dir):
+    for path in (RAW_DIR, RAW_JSON_DIR, PREPARED_DIR, settings.raw_output_dir, settings.processed_output_dir):
         path.mkdir(parents=True, exist_ok=True)

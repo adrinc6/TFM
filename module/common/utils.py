@@ -44,8 +44,7 @@ def read_parquet(path: Path, produced_by: str | None = None) -> pd.DataFrame:
     if not path.exists():
         stage = produced_by or "la etapa anterior"
         raise FileNotFoundError(
-            f"No existe el artefacto requerido: {path}. Ejecuta primero {stage} "
-            "con el mismo RUN_SCOPE."
+            f"No existe el artefacto requerido: {path}. Ejecuta primero {stage}."
         )
     return pd.read_parquet(path)
 

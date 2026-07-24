@@ -1,98 +1,38 @@
-# =========================
 # Python
-# =========================
 __pycache__/
 *.py[cod]
-*$py.class
-
-# Entornos virtuales
-venv/
+.pytest_cache/
+.ruff_cache/
 .venv/
-env/
-ENV/
+venv/
 
-# Distribución / build
-build/
-dist/
-*.egg-info/
-
-# =========================
-# Jupyter
-# =========================
-.ipynb_checkpoints/
-
-# =========================
-# VS Code
-# =========================
+# Editor y sistema
 .vscode/
+.DS_Store
+Thumbs.db
 
-# =========================
-# Variables de entorno
-# =========================
+# Secretos
 .env
 .env.*
 
-# =========================
-# Logs
-# =========================
+# Temporales y logs
 *.log
-
-# =========================
-# Archivos temporales
-# =========================
 *.tmp
 *.temp
 *.bak
 
-# =========================
-# Sistemas operativos
-# =========================
-.DS_Store
-Thumbs.db
-
-# =========================
-# Datos y datasets
-# =========================
+# Datos y evidencia local
+data/raw/
+data/prepared/
+data/cache/
+results/
 *.parquet
 *.csv
 *.feather
 *.h5
-*.hdf5
 *.pkl
-*.pickle
-
-processed/
-raw/
-recycle/
-datasets/
-cache/
-tmp/
-
-# =========================
-# Bases de datos locales
-# =========================
-*.db
-*.sqlite
-*.sqlite3
-
-# =========================
-# Modelos de IA
-# =========================
-*.pt
-*.pth
-*.onnx
 *.joblib
 
-# =========================
-# Resultados y salidas
-# =========================
-outputs/
-results/
-artifacts/
-
-# =========================
-# JSON (descomenta si no quieres subir ninguno)
-# =========================
-*.json
-
+# Binarios de informes
 *.png
+*.pdf

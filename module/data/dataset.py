@@ -137,9 +137,9 @@ METRIC_CANDIDATES = {
 def build_point_in_time_dataset(settings: Settings) -> pd.DataFrame:
     """Genera panel, benchmark y precios PIT sin usar información futura."""
     raw_dir = settings.raw_output_dir
-    prices = read_parquet(raw_dir / "prices.parquet", "RUN_MODE='download'")
-    metrics = read_parquet(raw_dir / "finnhub_metrics.parquet", "RUN_MODE='download'")
-    reports = read_parquet(raw_dir / "report_dates.parquet", "RUN_MODE='download'")
+    prices = read_parquet(raw_dir / "prices.parquet", "la ingesta raw")
+    metrics = read_parquet(raw_dir / "finnhub_metrics.parquet", "la ingesta raw")
+    reports = read_parquet(raw_dir / "report_dates.parquet", "la ingesta raw")
 
     price_by_ticker = _price_index(prices)
     series_by_ticker = _series_index(metrics)

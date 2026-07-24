@@ -93,7 +93,7 @@ def combine_agent_scores(
         meta["meta_rank"] = meta.groupby("snapshot_date")["meta_score"].rank(method="average", pct=True)
 
     # Diagnostico del META_FINAL: es el score que de verdad consume la cartera, asi que su rank-IC
-    # es la metrica principal del escenario. Sin esto, se estaria juzgando el sistema por el
+    # es la métrica principal de la evaluación.
     # rank-IC de los agentes individuales, que NO es lo que se opera. Tambien se anade el
     # equiponderado como referencia (que aporta la combinacion frente a promediar sin pesos).
     diagnostics = pd.concat(
@@ -155,11 +155,7 @@ REGIME_TILT = 0.30
 # aunque su rank-IC reciente sea negativo) para garantizar diversificación; máximo AGENT_WEIGHT_MAX.
 # Con 5 agentes el rango es siempre factible (5·0.10 ≤ 1 ≤ 5·0.50). No aplica a `equal` (ya es 1/N)
 # ni a `stacked_oos` (modelo aprendido cuya lógica es no forzar pesos a mano).
-AGENT_WEIGHT_MIN = 0.10
-AGENT_WEIGHT_MAX = 0.50
-
-
-def _clamp_agent_weights(weights: dict[str, float]) -> dict[str, float]:
+def _clamp_agent_weights(weights: dict[str, float], minimum: float, maximum: float) -> dict[str, float]:
     """Ajusta los pesos a [AGENT_WEIGHT_MIN, AGENT_WEIGHT_MAX] conservando la suma 1.
 
     Una sola pasada iterativa: recorta a los límites y redistribuye el exceso/defecto SOLO entre los
@@ -171,13 +167,13 @@ def _clamp_agent_weights(weights: dict[str, float]) -> dict[str, float]:
     n = len(agents)
     if n == 0:
         return {}
-    if n * AGENT_WEIGHT_MIN > 1 + 1e-9 or n * AGENT_WEIGHT_MAX < 1 - 1e-9:
+    if n * minimum > 1 + 1e-9 or n * maximum < 1 - 1e-9:
         return {agent: 1 / n for agent in agents}  # rango no factible: equiponderado
     w = {agent: max(float(weights[agent]), 0.0) for agent in agents}
     total = sum(w.values())
     w = {agent: (value / total if total > 0 else 1 / n) for agent, value in w.items()}
     for _ in range(100):
-        w = {agent: min(max(value, AGENT_WEIGHT_MIN), AGENT_WEIGHT_MAX) for agent, value in w.items()}
+        w = {agent: min(max(value, minimum), maximum) for agent, value in w.items()}
         deficit = 1.0 - sum(w.values())
         if abs(deficit) < 1e-12:
             break
@@ -185,9 +181,9 @@ def _clamp_agent_weights(weights: dict[str, float]) -> dict[str, float]:
         # máximo; si sobra (deficit<0) los que no topan en el mínimo. Se reparte a partes iguales
         # entre ellos (no proporcional: al estar en un límite el proporcional no convergería).
         if deficit > 0:
-            movable = [agent for agent, value in w.items() if value < AGENT_WEIGHT_MAX - 1e-12]
+            movable = [agent for agent, value in w.items() if value < maximum - 1e-12]
         else:
-            movable = [agent for agent, value in w.items() if value > AGENT_WEIGHT_MIN + 1e-12]
+            movable = [agent for agent, value in w.items() if value > minimum + 1e-12]
         if not movable:
             break
         share = deficit / len(movable)
@@ -241,7 +237,7 @@ def _weights_as_of(
         return ({agent: equal for agent in available_agents}, evidence)
 
     if settings.meta_type == "stacked_oos":
-        # El incumbent expanding preserva exactamente la semántica histórica (todos los snapshots).
+        # Expanding utiliza todas las cohortes cerradas disponibles.
         # Los modos confirmatorios rolling/exponential trabajan solo con cohortes trimestrales
         # cerradas y con una ventana cuyo nombre y unidad son reales.
         stack_history = closed_history if settings.meta_history_mode == "expanding" else quarterly_history
@@ -270,7 +266,7 @@ def _weights_as_of(
 
     # Clamp al final (tras el tilt de régimen, para no volver a salirse de rango): garantiza el mínimo
     # universal por agente y el tope, sin que el meta ignore del todo a nadie ni deje que uno domine.
-    weights = _clamp_agent_weights(weights)
+    weights = _clamp_agent_weights(weights, settings.meta_weight_min, settings.meta_weight_cap)
     return weights, evidence
 
 

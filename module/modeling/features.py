@@ -53,15 +53,15 @@ FACTOR_SOURCES = {
 def build_features(settings: Settings) -> pd.DataFrame:
     """Construye factores observables, baselines y targets en artefactos distintos."""
     output_dir = settings.processed_output_dir
-    panel = read_parquet(output_dir / "panel_point_in_time.parquet", "RUN_MODE='dataset'")
-    benchmark = read_parquet(output_dir / "benchmark_point_in_time.parquet", "RUN_MODE='dataset'")
-    asset_prices = read_parquet(output_dir / "asset_price_point_in_time.parquet", "RUN_MODE='dataset'")
+    panel = read_parquet(output_dir / "panel_point_in_time.parquet", "el dataset preparado")
+    benchmark = read_parquet(output_dir / "benchmark_point_in_time.parquet", "el dataset preparado")
+    asset_prices = read_parquet(output_dir / "asset_price_point_in_time.parquet", "el dataset preparado")
     raw_prices_path = settings.raw_output_dir / "prices.parquet"
     raw_prices = pd.read_parquet(raw_prices_path) if raw_prices_path.exists() else None
     if benchmark.empty:
         raise RuntimeError(
             f"El benchmark {settings.benchmark_ticker} no tiene precios PIT. "
-            "Ejecuta RUN_MODE='download' y después RUN_MODE='dataset' con el mismo alcance."
+            "Actualiza los datos raw y vuelve a preparar el dataset."
         )
 
     sector_by_ticker = _load_sector_map(settings) if settings.neutralize_by_sector else {}
@@ -402,7 +402,7 @@ def _cross_section_rank(
     # deliberately done before sector neutralisation, so the same economically
     # implausible outlier cannot dominate either global or sector ranks.  The
     # percentile is carried on the frame by the feature builder, keeping the
-    # public helper signature compatible with existing callers/tests.
+    # Firma estable usada por el constructor de features.
     winsor = float(frame.attrs.get("metric_winsorization_percentile", 0.0))
     if winsor > 0:
         values = values.groupby(frame["snapshot_date"]).transform(
@@ -441,7 +441,7 @@ def _label_dates(settings: Settings) -> dict[str, str]:
 
     `execution_lag_days` (que define el día de observación) es uno de los ejes que barre el
     estudio: si la cobertura de etiquetas dependiese de su valor, la rejilla compararía
-    escenarios con distinta cantidad de datos. Ver `docs/bitacora.md`.
+    configuraciones con distinta cantidad de datos.
     """
     grid = [date.date().isoformat() for date in snapshot_dates(settings)]
     step = settings.target_horizon_months // settings.snapshot_step_months

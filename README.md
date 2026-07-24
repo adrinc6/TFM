@@ -1,119 +1,127 @@
-# TFM — laboratorio ML point-in-time para selección de acciones
+# TFM · Hipótesis de inversión point-in-time
 
-Este repositorio implementa un laboratorio reproducible para estudiar señales financieras fuera de muestra. El objetivo principal es medir la capacidad de ordenación del modelo mediante Rank-IC; la rentabilidad de cartera es una consecuencia y nunca el criterio para elegir el modelo.
+Proyecto local para construir y corroborar hipótesis de inversión de forma trazable.
 
-La documentación metodológica completa está en [docs/doc.md](docs/doc.md). El estado y las decisiones históricas se registran en [docs/bitacora.md](docs/bitacora.md).
+El flujo único es:
 
-## Inicio rápido
+```text
+data/raw → Exploratory Study → hipótesis congelada → Confirmatory Study → evidencia final
+```
+
+No existen escenarios sueltos, grids cartesianos ni rutas de ejecución alternativas.
+
+## Arranque
 
 ```powershell
-python -m pip install -r requirements.txt
 python main.py
 ```
 
-Sin `RUN_MODE`, el proyecto abre la Research Console en `http://127.0.0.1:8765`.
+La aplicación queda disponible en `http://127.0.0.1:8765`.
 
-Para descargar datos se necesita `FINNHUB_API_KEY` en `.env`. Las fuentes activas son precios OHLCV y series históricas de Finnhub; el sistema no declara conectores externos sin datos históricos point-in-time verificados.
-
-## Full study oficial
-
-Con datos ya descargados:
+Requisitos previos:
 
 ```powershell
-$env:RUN_MODE = "full_study"
-$env:RUN_SCOPE = "full"
-python -u main.py
+python -m pip install -r requirements.txt
 ```
 
-También puede lanzarse desde **Full study → Revisar y lanzar** en la consola. El protocolo oficial
-es confirmatorio y cerrado: ejecuta exactamente **48 evaluaciones**, aborta antes de crear el study
-si proyecta más de 10 walk-forwards caros o 5 GiB incrementales, y no expande dinámicamente el
-catálogo manual.
+El terminal debe permanecer abierto mientras se use el dashboard. Para detenerlo, pulsar
+`Ctrl+C`. No se inicia como proceso en segundo plano: al cancelar o cerrar esa terminal, Python se
+detiene también.
 
-El presupuesto se reparte en 12 challengers de señal, 2 semillas confirmatorias, 12 políticas de
-cartera, 8 perfiles, 6 stresses económicos y 8 evaluaciones estadísticas. Los diez primeros
-challengers del meta reutilizan los mismos fits. En caché fría se presupuestan de forma
-conservadora 10 fits caros —incumbent, variantes de lookback/recencia, semillas y placebos—; si
-el incumbent ya está reciclado, el consumo real será menor.
+## Exploratory Study
 
-La selección histórica usa tres eras —2015–2018, 2019–2021 y 2022–2024—. Los años 2025–2026 son
-un estrés histórico conocido y se muestran separados con la marca `known_stress_not_selection`;
-nunca deciden el ganador.
+El usuario decide, exclusivamente desde el catálogo:
 
-`study` conserva el catálogo amplio para exploración manual. `full_study` usa
-`OFFICIAL_STUDY_PROTOCOL`, con challengers y políticas pre-registrados; ambos modos ya no tienen
-que compartir todos los ejes.
+- Qué variables permanecen fijas.
+- Qué variables se optimizan.
+- Qué valores cerrados se comparan.
 
-La cartera oficial compara el legacy corregido con rebalanceo trimestral y cuatro vintages
-trimestrales mantenidos 12 meses. Puede asignar el presupuesto entre un satélite de acciones y un
-núcleo SPY, con sizing equiponderado, legacy o alfa calibrado point-in-time. La selección maximiza
-Information Ratio neto por era bajo gates de alfa, turnover y costes.
+Las variables se procesan secuencialmente en este orden:
 
-Los ocho perfiles se publican como diagnósticos paralelos, con la misma trayectoria de exposición
-activa y sizing equal. Ningún perfil puede modificar `best_config`. Si ninguna alternativa supera
-los criterios predefinidos, se conserva el incumbent y el veredicto es `no_improvement`.
+1. Objetivo temporal.
+2. Representación.
+3. Modelo y agentes.
+4. Meta-agente.
+5. Cartera.
 
-## Rendimiento, aislamiento y operación
+El dashboard muestra el presupuesto exacto antes de lanzar, sin bloquear por número de
+evaluaciones, fits caros o disco estimado. Al terminar se congela una hipótesis inmutable.
 
-Cada run se publica en un workspace privado y conserva manifiesto, hashes de entradas, huella de
-código y telemetría. La caché es por etapa: dataset, features, agentes y backtest solo se
-restauran cuando su configuración efectiva y sus entradas coinciden; un run interrumpido nunca se
-trata como completo.
+La pantalla se abre con la recomendación metodológica cargada:
 
-El preflight informa claves únicas de dataset, features, fits y agentes, tiempo estimado desde la
-telemetría y almacenamiento máximo. La traducción de cartera es deliberadamente secuencial por
-familias —estructura, sizing, overlay y hurdle— para evitar un cartesiano sin hipótesis económica.
-En el dashboard el botón permanece deshabilitado hasta superar ese preflight. Durante la ejecución
-se muestran fase, escenario y progreso sobre 48; al terminar, la vista presenta ganadores,
-rechazos, resultados por era, stress 2025–2026, perfiles, robustez, almacenamiento y todos los
-artefactos del study para descarga.
+- Cadencia de snapshots fija inicialmente en mensual; puede elegirse mensual, trimestral,
+  semestral o anual desde la etapa Temporal.
+- Optimizar horizonte: 6 y 12 meses.
+- Optimizar historia: 8 y 12 años.
+- Optimizar recencia: off y lineal.
+- Optimizar representación: core, fundamental y all.
+- Optimizar meta: equal, rank-IC y stacked rolling.
+- Gestionar una única cartera dinámica: salida por percentil, sustitución con ventaja mínima y rebalanceo con tolerancia.
+- Optimizar sizing: equal y calibrated alpha.
+- Optimizar overlay: 100 %, 50 % y continuo.
+- Mantener fijos controles PIT, agentes activados explícitamente, hiperparámetros finos, perfil
+  balanced y costes base.
 
-La consola del study muestra los logs agregados de todos los runs activos, etiquetados por run, y
-puede sustituir temporalmente la comparativa. Las líneas visibles se limitan a unas veinte, con
-scroll para el historial reciente.
+Esto produce 20 evaluaciones exploratorias, 10 fits caros y 43 evaluaciones para el ciclo completo.
+Los botones «Restaurar recomendación» y «Dejar todo fijo» permiten volver a cualquiera de los dos
+puntos de partida.
 
-## Arquitectura
+### Uso del dashboard
 
-```text
-datos crudos PIT → dataset → factores/bloques → agentes → meta-agente → cartera/backtest → estudio OOS
-```
+1. Revisar la barra de presupuesto y ajustar variables si es necesario.
+2. Pulsar «Lanzar Exploratory».
+3. Abrir «Estudios». En cada variable, aceptar el candidato automático o elegir otro con un motivo
+   cerrado y pulsar «Aceptar y continuar».
+4. Cuando el estado sea `awaiting_freeze`, pulsar «Congelar hipótesis».
+5. Consultar la hipótesis en «Hipótesis» y sus vistas en «Análisis».
+6. Volver a «Nuevo estudio», seleccionar la hipótesis y lanzar Confirmatory.
+7. Seguir el progreso en «Estudios» y revisar el veredicto y el modelo final en «Análisis».
 
-- `module/data/`: descarga, universo histórico y panel point-in-time.
-- `module/modeling/`: catálogo de factores, features, agentes y meta-agente.
-- `module/evaluation/`: cartera, backtest, perfiles y robustez.
-- `module/runs/`: runs, studies, caché y resultados inmutables.
-- `module/ui/` y `app/`: Research Console e informes.
+## Confirmatory Study
 
-## Modelo
+Confirmatory necesita una hipótesis congelada y no acepta overrides científicos. Ejecuta 23
+evaluaciones fijas: semillas, perfiles, costes, calendario, placebos, bootstrap, permutación y
+carteras aleatorias PIT.
 
-El catálogo actual contiene bloques de calidad, eficiencia, fortaleza financiera, valoración, caja, crecimiento, estabilidad, momentum, tendencia, riesgo y liquidez. Cinco agentes configurables —`quality`, `value`, `growth`, `momentum` y `risk`— usan LightGBM, Elastic Net y CatBoost. El meta-agente admite combinación equiponderada, por Rank-IC, por régimen o stacking OOS.
+Los veredictos son:
 
-Cada bloque, agente y familia puede medirse mediante ablación. La poda OOS, la importancia de permutación temporal y el gating de bloques solo usan etiquetas que ya han cerrado antes del reentrenamiento.
+- `confirmed`
+- `signal_only`
+- `non_inferior`
+- `rejected`
 
-## Etapas
+Los años 2025–2026 se calculan después del veredicto como `known_stress_not_selection`.
 
-| `RUN_MODE` | Acción |
-|---|---|
-| `download` | Descarga y consolida datos crudos. |
-| `dataset` | Construye panel point-in-time y precios. |
-| `features` | Construye factores y etiquetas futuras separadas. |
-| `agents` | Entrena agentes walk-forward y meta-agente. |
-| `backtest` | Simula cartera y métricas económicas. |
-| `report` | Genera informe HTML del último run. |
-| `experiments` | Ejecuta experimentos configurados. |
-| `full_study` | Ejecuta el ciclo oficial completo. |
+## Almacenamiento
 
-## Resultados y pruebas
+- `data/raw`: fuentes originales preservadas.
+- `data/prepared/<hash>`: una materialización PIT compartida.
+- `data/cache`: fits y resúmenes por contenido, máximo lógico de 5 GiB.
+- `results/studies`: ledger y decisiones.
+- `results/hypotheses`: hipótesis congeladas.
+- `results/models`: evidencia de modelos confirmados.
 
-Los runs se guardan en `results/runs/`; los studies, en `results/studies/`; y el registro inmutable está en `results/registry.jsonl`. Cada resultado conserva configuración, manifiesto, artefactos, diagnósticos y exportaciones CSV.
+Los candidatos descartados no tienen directorio de artefactos: viven como filas compactas del
+ledger. Solo hipótesis y modelos habilitan las vistas de rentabilidad, aprendizaje, rankings,
+cartera, trades y stocks.
 
-La caché de etapas es content-addressed y versionada. Antes de reutilizar un artefacto valida su
-tamaño y SHA-256; los backtests usan workspaces privados y los studies interrumpidos pueden
-reanudarse desde la consola reutilizando únicamente runs completos.
+## Desarrollo
 
 ```powershell
-python -m pytest tests/ -q
+python -m pytest -q
 python -m ruff check .
+node --check app/js/app.js
 ```
 
-Los resultados históricos no sustituyen a un nuevo full study cuando cambia la metodología. Consulta `docs/informe_final.md` para el estado de evidencia vigente.
+La configuración científica se amplía únicamente en `module/studies/catalog.py`. La API rechaza
+campos desconocidos y valores que no pertenezcan a ese catálogo.
+
+## Documentación
+
+- [Metodología y arquitectura](docs/metodologia.md): referencia profunda del sistema y fuente
+  metodológica para el TFM.
+- [Bitácora](docs/bitacora.md): decisiones, ejecuciones e incidencias en orden cronológico.
+- [Informe de resultados](docs/informe_resultados.md): plantilla auditable que se completará con
+  evidencia del protocolo vigente.
+- [Instrucciones para agentes](AGENTS.md): reglas obligatorias para mantener ciencia, Python,
+  dashboard y documentación coherentes.

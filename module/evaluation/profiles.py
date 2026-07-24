@@ -68,8 +68,8 @@ def apply_profile(scores: pd.DataFrame, profile: str) -> pd.DataFrame:
 
     # Un perfil pondera rangos de agente concretos; si falta la columna de alguno (p.ej. el finalista
     # se entreno sin el agente `quality`), saltarla en silencio deformaria el estilo sin aviso y el
-    # resultado ya no representaria el arquetipo. Se falla en voz alta: el modelo sobre el que se
-    # evaluan perfiles debe conservar los agentes que esos perfiles usan (el full_study fija los 5).
+    # resultado ya no representaría el arquetipo. Se falla en voz alta y Confirmatory lo registra
+    # como diagnóstico no aplicable.
     missing = [column for column in weights if column != "meta_rank" and column not in frame.columns]
     if missing:
         raise ValueError(

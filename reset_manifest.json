@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-07-24",
+  "workspace": "C:\\Users\\PC\\Desktop\\Documents\\TFM",
+  "policy": "Reinicio sin compatibilidad histórica. Se conserva data/raw, el universo histórico, .env y latex.",
+  "targets": [
+    {
+      "path": "results",
+      "resolved_path": "C:\\Users\\PC\\Desktop\\Documents\\TFM\\results",
+      "bytes_before_reset": 23984676091,
+      "reason": "Runs, studies, registros y locks del protocolo eliminado."
+    },
+    {
+      "path": "data\\recycle",
+      "resolved_path": "C:\\Users\\PC\\Desktop\\Documents\\TFM\\data\\recycle",
+      "bytes_before_reset": 9595398036,
+      "reason": "Caché ligada a contratos y huellas legacy."
+    },
+    {
+      "path": "data\\processed",
+      "resolved_path": "C:\\Users\\PC\\Desktop\\Documents\\TFM\\data\\processed",
+      "bytes_before_reset": 1773010087,
+      "reason": "Materializaciones que se regenerarán en data/prepared por hash."
+    },
+    {
+      "path": ".pytest_cache",
+      "resolved_path": "C:\\Users\\PC\\Desktop\\Documents\\TFM\\.pytest_cache",
+      "bytes_before_reset": 20622,
+      "reason": "Caché de la suite eliminada."
+    },
+    {
+      "path": ".ruff_cache",
+      "resolved_path": "C:\\Users\\PC\\Desktop\\Documents\\TFM\\.ruff_cache",
+      "bytes_before_reset": 7394,
+      "reason": "Caché de análisis estático."
+    },
+    {
+      "path": "__pycache__",
+      "resolved_path": "C:\\Users\\PC\\Desktop\\Documents\\TFM\\__pycache__",
+      "bytes_before_reset": 21339,
+      "reason": "Bytecode del runtime anterior."
+    }
+  ],
+  "preserved": [
+    "data\\raw",
+    "data\\S&P 500 Historical Components & Changes.csv",
+    ".env",
+    "latex",
+    ".git"
+  ]
+}

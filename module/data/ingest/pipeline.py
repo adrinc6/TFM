@@ -198,7 +198,7 @@ def download_raw_data(settings: Settings) -> None:
     if not benchmark_rows:
         raise RuntimeError(
             f"No se descargaron precios del benchmark {settings.benchmark_ticker}. "
-            "RUN_MODE='features' requiere su serie OHLCV."
+            "La preparación de features requiere su serie OHLCV."
         )
 
     _require_rows(profiles, "profiles")

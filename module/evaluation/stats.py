@@ -83,13 +83,3 @@ def paired_difference_ci(
         "fraction_a_better": float((diff > 0).mean()),
         "distinguishable_from_zero": bool(boot["ci_low"] > 0 or boot["ci_high"] < 0),
     }
-
-
-def icir(values_by_date: pd.Series) -> float:
-    """Information Coefficient IR: media / desviación del rank-IC. Estabilidad del aprendizaje."""
-    values = values_by_date.dropna()
-    if len(values) < 2:
-        return 0.0
-    std = float(values.std(ddof=1))
-    return float(values.mean() / std) if std > 0 else 0.0
-

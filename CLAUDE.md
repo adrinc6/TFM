@@ -2,43 +2,44 @@
 
 ## Propósito
 
-Este TFM estudia aprendizaje automático financiero de forma reproducible. La evidencia principal es el Rank-IC fuera de muestra; la rentabilidad y los perfiles de cartera son comprobaciones económicas posteriores.
-
-## Arquitectura actual
+Este TFM construye y corrobora hipótesis de inversión con datos point-in-time.
 
 ```text
-download → dataset point-in-time → features/bloques → agentes → meta → backtest → study OOS
+data/raw → Exploratory Study → hipótesis congelada → Confirmatory Study → evidencia final
 ```
 
-- `module/data/`: ingesta, universo histórico y panel PIT.
-- `module/modeling/`: catálogo de factores, features, agentes y meta-agente.
-- `module/evaluation/`: cartera, perfiles y robustez.
-- `module/runs/`: ejecución, caché, manifiestos y studies.
-- `module/ui/` y `app/`: Research Console e informes.
+Antes de realizar cambios, leer `docs/metodologia.md`, `docs/bitacora.md`,
+`docs/informe_resultados.md` y `AGENTS.md`. Son las fuentes de verdad del proyecto y del futuro TFM.
 
-Hay cinco agentes (`quality`, `value`, `growth`, `momentum`, `risk`), tres familias de modelo y un catálogo declarativo de bloques. La fuente técnica y metodológica vigente es `docs/doc.md`.
+## Arquitectura
 
-## Reglas metodológicas
+- `module/data`: ingesta, universo y panel PIT.
+- `module/modeling`: features, agentes y meta-agente.
+- `module/evaluation`: cartera y métricas.
+- `module/studies`: catálogo, runner, exploración y confirmación.
+- `module/storage`: datasets, caché y evidencia.
+- `module/web` y `app`: API y dashboard.
 
-1. No introducir lookahead: datos y etiquetas tienen fechas de disponibilidad separadas.
-2. Seleccionar el modelo solo con Rank-IC OOS hasta 2024; 2025–2026 es reserva final.
-3. No elegir semillas ni costes favorables: son robustez y estrés, respectivamente.
-4. Conservar resultados negativos, ablaciones y manifiestos para reproducibilidad.
-5. Cualquier cambio de hipótesis, datos, etiquetas, modelos o cartera requiere instrucción explícita del usuario.
-6. Actualizar siempre la documentación relativa a los cambios aplicados.
+No se deben crear scenarios, experiments, runs sueltos ni rutas alternativas.
 
-## Desarrollo
+## Reglas
 
-- Mantener UTF-8 y revisar acentos después de editar documentación.
-- No tocar `.env`, secretos ni resultados históricos sin autorización.
-- Preferir código simple, pruebas causales y configuraciones declarativas.
-- Eliminar código realmente inactivo en vez de mantener compatibilidad ficticia.
+1. Todo parámetro científico debe pertenecer al catálogo cerrado.
+2. No introducir lookahead.
+3. 2025–2026 es estrés conocido y no participa en selección.
+4. Confirmatory no modifica una hipótesis congelada.
+5. Los descartados guardan solo resúmenes.
+6. Mantener UTF-8 y evitar mojibake.
+7. Preferir funciones pequeñas y flujos explícitos.
+8. Actualizar metodología, bitácora e informe cuando cambien decisiones o evidencia.
+9. No afirmar resultados financieros sin vincularlos a artefactos reales.
 
 ## Verificación
 
 ```powershell
-python -m pytest tests/ -q
+python -m pytest -q
 python -m ruff check .
+node --check app/js/app.js
 ```
 
-No ejecutar descargas ni un full study largo sin autorización explícita. Para operación y documentación de usuario, consultar `README.md` y `docs/doc.md`.
+No ejecutar un estudio real completo sin autorización explícita.

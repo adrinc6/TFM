@@ -1,9 +1,6 @@
-"""Catálogo de artefactos activables del sistema.
+"""Transformaciones avanzadas seleccionables desde el catálogo cerrado.
 
-Un "artefacto" es un bloque de features/contexto que se puede activar o desactivar por un flag
-de `Settings`. El barrido de ablations los activa uno a uno para medir cuáles suben el rank-IC
-del meta_final. Todos son **point-in-time**: cada feature en la fecha t usa solo datos
-observables en t (sin lookahead), verificado con tests.
+Todas son point-in-time: cada feature en la fecha t usa solo datos observables en t.
 
 Cada artefacto expone una función `add_<nombre>(frame, ...)` que anade sus columnas crudas al
 frame; el ranking a factores y el enganche a los agentes ocurre en `features.py`/`agents.py`.

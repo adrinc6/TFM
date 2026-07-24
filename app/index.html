@@ -2,61 +2,25 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>TFM · Consola de investigación</title>
-  <link rel="stylesheet" href="/app/css/tokens.css">
-  <link rel="stylesheet" href="/app/css/layout.css">
-  <link rel="stylesheet" href="/app/css/components.css">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>TFM · Hipótesis de inversión</title>
+  <link rel="stylesheet" href="/app/style.css">
 </head>
 <body>
-  <header class="app-header">
-    <div class="brand">
-      <span class="brand-mark"></span>
-      TFM <small>Research Console</small>
+  <header>
+    <div>
+      <p class="eyebrow">Investigación point-in-time</p>
+      <h1>Explorar. Congelar. Corroborar.</h1>
     </div>
-    <nav class="app-nav">
-      <button class="active" data-view="console">Inicio</button>
-      <button data-view="results">Resultados</button>
+    <nav id="nav">
+      <button data-view="new" class="active">Nuevo estudio</button>
+      <button data-view="studies">Estudios</button>
+      <button data-view="hypotheses">Hipótesis</button>
+      <button data-view="analysis">Análisis</button>
     </nav>
   </header>
-
-  <main class="app-main">
-    <!-- Pantalla de carga: visible desde el primer instante hasta que el JS termina de arrancar -->
-    <div id="boot" class="boot">
-      <div class="boot-spinner"></div>
-      <div class="boot-text">Cargando consola…</div>
-      <div id="boot-step" class="boot-step">iniciando</div>
-    </div>
-
-    <!-- Banner de error de arranque: solo aparece si algo falla -->
-    <div id="boot-error" class="boot-error hidden"></div>
-
-    <!-- Vista Consola: lanzar Experimental / Study / Optimization -->
-    <section id="console" class="view active"></section>
-
-    <!-- Vista Resultados: listas de estudios y runs + panel de detalle -->
-    <section id="results" class="view"></section>
-  </main>
-
-  <!-- Librería de gráficos embebida localmente (sin CDN) -->
-  <script src="/app/js/vendor/chart.min.js"></script>
-
-  <!-- Núcleo -->
-  <script src="/app/js/api.js"></script>
-  <script src="/app/js/charts.js"></script>
-
-  <!-- Vistas -->
-  <script src="/app/js/views/console.js"></script>
-  <script src="/app/js/views/results.js"></script>
-  <script src="/app/js/views/study.js"></script>
-  <script src="/app/js/views/run.js"></script>
-  <script src="/app/js/views/performance.js"></script>
-  <script src="/app/js/views/learning.js"></script>
-  <script src="/app/js/views/portfolio.js"></script>
-  <script src="/app/js/views/stocks.js"></script>
-  <script src="/app/js/views/rankings.js"></script>
-
-  <!-- Arranque y router -->
+  <main id="app"><p class="muted">Cargando catálogo…</p></main>
+  <div id="toast" role="status"></div>
   <script src="/app/js/app.js"></script>
 </body>
 </html>

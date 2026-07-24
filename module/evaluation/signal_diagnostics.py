@@ -120,47 +120,32 @@ def signal_health_path(
     if history.empty:
         return pd.DataFrame([
             {"snapshot_date": str(date), "closed_cohorts": 0, "shrunk_rank_ic": None,
-             "shrunk_tail_spread": None, "continuous_active_fraction": 0.5,
-             "binary_active_fraction": 0.0}
+             "shrunk_tail_spread": None}
             for date in snapshot_dates
         ])
     history["prediction_ts"] = pd.to_datetime(history["prediction_date"])
     history["label_end_ts"] = pd.to_datetime(history["label_end_date"])
-    if "is_quarterly" in history:
-        quarterly = history.loc[history["is_quarterly"].fillna(False)].sort_values(
-            "prediction_ts"
-        )
-    else:
-        # Compatibilidad con diagnósticos históricos que no materializaban la marca.
-        history["quarter"] = history["prediction_ts"].dt.to_period("Q")
-        quarterly = (
-            history.sort_values("prediction_ts").groupby("quarter", as_index=False).tail(1)
-            .sort_values("prediction_ts")
-        )
+    if "is_quarterly" not in history:
+        raise ValueError("Los diagnósticos deben materializar is_quarterly.")
+    quarterly = history.loc[history["is_quarterly"].fillna(False)].sort_values(
+        "prediction_ts"
+    )
     rows: list[dict[str, object]] = []
     for raw_date in snapshot_dates:
         date = pd.Timestamp(raw_date)
         closed = quarterly.loc[quarterly["label_end_ts"].le(date)].tail(lookback_quarters)
         n = len(closed)
         if n < minimum_cohorts:
-            continuous = 0.5
-            binary = 0.0
             shrunk_ic = shrunk_tail = None
         else:
             factor = n / (n + prior_cohorts)
             shrunk_ic = factor * float(closed["rank_ic"].mean())
             shrunk_tail = factor * float(closed["top_decile_minus_universe"].mean())
-            confidence_ic = float(np.clip(shrunk_ic / 0.05, 0.0, 1.0))
-            confidence_tail = float(np.clip(shrunk_tail / 0.05, 0.0, 1.0))
-            continuous = min(confidence_ic, confidence_tail)
-            binary = 1.0 if shrunk_ic > 0 and shrunk_tail > 0 else 0.0
         rows.append({
             "snapshot_date": str(pd.Timestamp(raw_date).date()),
             "closed_cohorts": int(n),
             "shrunk_rank_ic": shrunk_ic,
             "shrunk_tail_spread": shrunk_tail,
-            "continuous_active_fraction": continuous,
-            "binary_active_fraction": binary,
         })
     return pd.DataFrame(rows)
 
