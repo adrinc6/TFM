@@ -124,3 +124,34 @@ La recombinación reproduce exactamente el ensemble intra-agente previo (mismo o
 mismo promedio de rangos), de modo que los resultados numéricos son idénticos: el cambio solo
 evita recomputar ajustes ya realizados. Verificado con igualdad bit-a-bit de las predicciones y
 con el reciclaje efectivo al cambiar el meta y al ablacionar una familia; la suite completa pasa.
+
+
+## 2026-07-24 — Study oficial: resultados y veredicto
+
+Se ejecutó el primer study oficial completo bajo el protocolo vigente (`optimization-official`,
+104 escenarios, 167 runs, estado `succeeded`). El análisis detallado está en
+`docs/informe_resultados_study.md`; aquí se conserva el porqué del desenlace.
+
+El barrido eligió una configuración **parsimoniosa**: un único LightGBM poco profundo (`max_depth 3`,
+100 árboles), meta `stacked_oos`, poda estricta de features (8 por agente), etiqueta a 12 meses,
+`execution_lag_days = 60` y `target_size = 10`. La Fase 1 rechazó por "no mejora estable" casi toda
+ampliación de complejidad (régimen extendido, neutralización sectorial, ponderación por recencia,
+features derivadas); la Fase 3 mostró un Rank-IC plano ante los hiperparámetros y estable a la semilla.
+La lección es que **la señal es débil y no admite complejidad**: gana lo simple porque no hay margen.
+
+El veredicto es **honesto y parcialmente negativo**, y se documenta como tal por disciplina del proyecto
+(las configuraciones y periodos perdedores son evidencia). El Rank-IC OOS del finalista es real dentro
+de 2015–2024 —placebo `p = 0`, bootstrap con IC 95 % que no cruza cero, leave-one-year-out estable— pero
+**se degrada a partir de 2024 y cae a Rank-IC negativo (−0.0095) en la reserva ciega 2025–2026**, con
+alfa anual negativo tres años seguidos. Además, la rentabilidad no supera de forma convincente a carteras
+aleatorias (percentil 18). El sistema ordena activos mejor que el ruido, pero ese margen no se traduce en
+alfa económico y no generaliza fuera del periodo de selección.
+
+Punto metodológico que motivó el diseño: la reserva 2025–2026 **no es "no entrenar" esos años** —el
+walk-forward avanza con normalidad— sino apartarlos de la *decisión* para medir el sesgo de selección al
+comparar 104 escenarios. Precisamente por existir, la reserva evitó desplegar con confianza injustificada
+un modelo que llevaba fallando desde 2024. La operativa de producción (entrenar hasta hoy y reformar la
+cartera periódicamente) es un flujo distinto que solo debe activarse una vez el sistema supere la
+validación fuera de muestra, cosa que con esta configuración aún no ocurre. La siguiente línea de trabajo
+es diagnosticar la caída 2024–2026 (¿régimen, decaimiento de value/quality, o sesgo residual?) con los
+diagnósticos ya generados, sin reejecutar el study.

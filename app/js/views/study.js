@@ -283,6 +283,7 @@
     }
 
     const runIds = sorted.map((r) => r.run_id).join(",");
+    const runNames = JSON.stringify(Object.fromEntries(sorted.map((r) => [r.run_id, String(r.scenario || r.run_id)])));
     const compareBoxId = "study-perfiles-compare";
 
     return `<h4 style="margin-top:4px">Perfiles de inversor</h4>
@@ -292,7 +293,7 @@
         <div class="table-wrap" style="margin-top:8px">${summaryTable}</div></details>
       <details style="margin-top:12px"><summary>Rentabilidad anual (alfa) por perfil</summary>
         <div style="margin-top:8px">${annualSection}</div></details>
-      <details style="margin-top:12px" id="${compareBoxId}" data-run-ids="${escapeHtml(runIds)}" data-loaded="false"
+      <details style="margin-top:12px" id="${compareBoxId}" data-run-ids="${escapeHtml(runIds)}" data-run-names="${escapeHtml(runNames)}" data-loaded="false"
         ontoggle="if(this.open &amp;&amp; this.dataset.loaded!=='true'){this.dataset.loaded='true';TFM.views.study.refreshPerfilesCompare();}">
         <summary>Composición de cartera por snapshot</summary>
         <div style="margin-top:8px">
@@ -327,7 +328,9 @@
       return;
     }
     const runIdList = Object.keys(perRun);
-    const head = `<tr><th>Ticker</th>${runIdList.map((id) => `<th>${escapeHtml(id)}</th>`).join("")}</tr>`;
+    let runNames = {};
+    try { runNames = JSON.parse(box.dataset.runNames || "{}"); } catch (e) { runNames = {}; }
+    const head = `<tr><th>Ticker</th>${runIdList.map((id) => `<th>${escapeHtml(runNames[id] || id)}</th>`).join("")}</tr>`;
     const body = tickers.map((ticker) => {
       const cells = runIdList.map((id) => {
         const row = (perRun[id] || []).find((r) => r.ticker === ticker);

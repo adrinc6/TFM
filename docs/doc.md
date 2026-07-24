@@ -227,7 +227,16 @@ python -m ruff check .
 
 ## 13. Estado de evidencia
 
-Los studies anteriores se conservan para auditoría histórica, pero no deben usarse como resultado final si fueron creados antes de separar estrictamente la reserva y los costes. El siguiente full study completado bajo este protocolo será la primera evidencia cuantitativa comparable de la versión actual.
+Los studies anteriores se conservan para auditoría histórica, pero no deben usarse como resultado final si fueron creados antes de separar estrictamente la reserva y los costes.
+
+La primera evidencia cuantitativa completa bajo el protocolo vigente es el study oficial `optimization-official` (`20260724--optimization-official--4dfea2986540`, 104 escenarios, estado `succeeded`). Su lectura detallada está en `docs/informe_resultados_study.md`. Resumen del veredicto:
+
+- **Rank-IC OOS del finalista (selección ≤2024): 0.0944**, con 72.6 % de cohortes con IC>0.
+- La señal es **estadísticamente real** dentro del periodo de selección: placebo con `p = 0.0` (colapsa al barajar etiquetas), bootstrap por bloques con IC 95 % `[0.050, 0.131]` (no cruza cero) y leave-one-year-out estable (Rank-IC ∈ `[0.073, 0.104]`).
+- Pero **no se confirma en la reserva ciega 2025–2026**: Rank-IC medio `−0.0095`, con alfa anual negativo en 2024 (−7.8 %), 2025 (−11.9 %) y 2026 parcial (−10.2 %).
+- La rentabilidad **no supera de forma convincente a carteras aleatorias** del mismo tamaño (percentil 18).
+
+Interpretación: existe señal de ordenación transversal real hasta 2024 que **se degrada a partir de 2024**; su traducción a alfa económico es marginal (IR ≈ 0.02). El resultado principal es, legítimamente, **parcialmente negativo**: el mérito está en el pipeline reproducible y honesto que detecta su propia limitación, no en una ventaja económica demostrada. La configuración ganadora (LightGBM único poco profundo, meta `stacked_oos`, poda estricta de features, horizonte de etiqueta 12 m, `execution_lag_days = 60`, `target_size = 10`) es robusta a semillas e hiperparámetros.
 
 ## 14. Anexo de configuración: contrato exacto del full study
 
