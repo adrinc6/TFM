@@ -184,15 +184,12 @@ def pinned_dataset_hashes() -> set[str]:
     results = DATA_DIR.parent / "results"
     if not results.exists():
         return hashes
-    for metadata in (
-        list(results.glob("hypotheses/*/hypothesis.json"))
-        + list(results.glob("models/*/model.json"))
-    ):
+    for metadata in results.glob("studies/*/winner.json"):
         try:
             payload = json.loads(metadata.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             continue
-        value = payload.get("dataset_hash")
+        value = payload.get("summary", {}).get("dataset_hash")
         if isinstance(value, str):
             hashes.add(value)
     return hashes

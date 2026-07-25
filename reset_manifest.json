@@ -1,51 +1,33 @@
 {
-  "schema_version": 1,
-  "created_at": "2026-07-24",
+  "schema_version": 2,
+  "created_at": "2026-07-25T00:00:00+02:00",
   "workspace": "C:\\Users\\PC\\Desktop\\Documents\\TFM",
-  "policy": "Reinicio sin compatibilidad histórica. Se conserva data/raw, el universo histórico, .env y latex.",
+  "policy": "Reset autorizado para implantar una única ruta Model Study sin resultados ni caché anteriores.",
+  "validated": {
+    "all_targets_within_workspace": true,
+    "recursive_patterns_used": false
+  },
   "targets": [
     {
       "path": "results",
       "resolved_path": "C:\\Users\\PC\\Desktop\\Documents\\TFM\\results",
-      "bytes_before_reset": 23984676091,
-      "reason": "Runs, studies, registros y locks del protocolo eliminado."
+      "bytes_before_reset": 6222,
+      "reason": "Estados e índices pertenecientes al protocolo sustituido."
     },
     {
-      "path": "data\\recycle",
-      "resolved_path": "C:\\Users\\PC\\Desktop\\Documents\\TFM\\data\\recycle",
-      "bytes_before_reset": 9595398036,
-      "reason": "Caché ligada a contratos y huellas legacy."
-    },
-    {
-      "path": "data\\processed",
-      "resolved_path": "C:\\Users\\PC\\Desktop\\Documents\\TFM\\data\\processed",
-      "bytes_before_reset": 1773010087,
-      "reason": "Materializaciones que se regenerarán en data/prepared por hash."
-    },
-    {
-      "path": ".pytest_cache",
-      "resolved_path": "C:\\Users\\PC\\Desktop\\Documents\\TFM\\.pytest_cache",
-      "bytes_before_reset": 20622,
-      "reason": "Caché de la suite eliminada."
-    },
-    {
-      "path": ".ruff_cache",
-      "resolved_path": "C:\\Users\\PC\\Desktop\\Documents\\TFM\\.ruff_cache",
-      "bytes_before_reset": 7394,
-      "reason": "Caché de análisis estático."
-    },
-    {
-      "path": "__pycache__",
-      "resolved_path": "C:\\Users\\PC\\Desktop\\Documents\\TFM\\__pycache__",
-      "bytes_before_reset": 21339,
-      "reason": "Bytecode del runtime anterior."
+      "path": "data\\cache",
+      "resolved_path": "C:\\Users\\PC\\Desktop\\Documents\\TFM\\data\\cache",
+      "bytes_before_reset": 13224144,
+      "reason": "Incluye el fit publicado por el Study interrumpido y claves de contratos anteriores."
     }
   ],
   "preserved": [
     "data\\raw",
+    "data\\prepared",
     "data\\S&P 500 Historical Components & Changes.csv",
     ".env",
     "latex",
     ".git"
-  ]
+  ],
+  "recovery": "Los resultados y la caché eliminados no se migran. Los datos raw y prepared permiten reconstruirlos."
 }

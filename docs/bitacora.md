@@ -1,172 +1,65 @@
-# Bitácora de investigación y desarrollo
+# Bitácora
 
-## Cómo utilizar esta bitácora
-
-Este archivo registra decisiones, ejecuciones, incidencias y cambios interpretativos. No es un
-changelog automático. Cada entrada debe permitir responder:
-
-- qué se intentó;
-- por qué;
-- qué cambió;
-- qué evidencia se obtuvo;
-- qué se decidió;
-- qué limitaciones quedan.
-
-Reglas:
-
-1. Añadir entradas en orden cronológico inverso.
-2. No modificar retrospectivamente una decisión sin dejar una nueva entrada.
-3. Vincular todo resultado con sus IDs y hashes.
-4. Diferenciar evidencia sintética, exploratoria, confirmatoria y futura.
-5. No copiar métricas a mano sin identificar el artefacto fuente.
-6. Registrar el commit Git antes de una ejecución que vaya a usarse en el TFM.
-7. Mantener UTF-8 y no introducir mojibake.
-
-## Plantilla de entrada
-
-```markdown
-## AAAA-MM-DD · Título
-
-### Objetivo
-
-### Contexto y decisión previa
-
-### Cambios o ejecución
-
-- Commit:
-- Catálogo:
-- Study:
-- Hipótesis:
-- Modelo:
-- Dataset:
-
-### Evidencia observada
-
-### Interpretación
+## 2026-07-25 · Reconstrucción a Model Study único
 
 ### Decisión
 
-### Incidencias y limitaciones
+Se elimina el protocolo Exploratory → hipótesis → Confirmatory. La unidad científica pasa a ser
+un único Model Study automático. Solo las fases predictivas seleccionan mediante Rank-IC.
 
-### Próximo paso
-```
+### Motivo
 
----
-
-## 2026-07-25 · Auditoría de cierre y preset exploratorio recomendado
-
-### Objetivo
-
-Comprobar que la reconstrucción no dejó rutas legacy y hacer que el dashboard abra con una
-recomendación metodológica útil, no con todas las variables fijas.
-
-### Evidencia observada
-
-- No existen `module/runs`, `module/scenarios`, `module/ui`, `data/processed` ni `data/recycle`.
-- `results/` contiene solo las raíces necesarias `studies`, `hypotheses` y `models`, actualmente
-  vacías.
-- Los módulos científicos conservados tienen consumidores directos en el flujo actual.
-- La configuración inicial anterior era válida, pero equivalía a una sola evaluación exploratoria.
-
-### Decisión
-
-Cargar por defecto ocho ejes optimizables que consumen 20 evaluaciones exploratorias y exactamente
-10 fits caros. Mantener fijos los controles PIT, agentes, hiperparámetros finos y costes. Añadir
-botones para restaurar la recomendación o dejar todo fijo.
-
-### Próximo paso
-
-Ejecutar un smoke study reducido desde el dashboard antes del primer ciclo completo.
-
-### Corrección posterior
-
-Se corrigió la normalización JSON de valores numéricos del catálogo. JavaScript representa `0.0`
-como `0`; el backend ahora transforma únicamente números equivalentes de variables flotantes a su
-objeto canónico del catálogo. La validación sigue rechazando el entero `0` como sustituto de un
-booleano `false`.
-
-### Ampliación posterior
-
-La cadencia de snapshots se incorporó al catálogo temporal con 1, 3, 6 y 12 meses. El dashboard
-explica ahora, por etapa, la pregunta metodológica, las comparaciones elegidas y sus evaluaciones
-incrementales. Las tarjetas métricas de Estudios se muestran en una fila horizontal desplazable.
-
-### Cambio posterior de presupuesto
-
-Se retiraron los límites globales de Exploratory para número de evaluaciones, fits caros y disco
-estimado. El preflight sigue mostrando las estimaciones, pero no bloquea el lanzamiento por ellas.
-Confirmatory conserva sus 23 evaluaciones fijas y el catálogo sigue cerrado.
-
-### Selección posterior de agentes y perfiles
-
-Se eliminaron los presets con semántica de exclusión `without_*`. Los cinco agentes se activan de
-forma positiva e independiente. Se incorporó el perfil de inversor como variable de cartera
-seleccionable; Confirmatory continúa ejecutando los ocho perfiles como diagnósticos sin modificar
-la hipótesis congelada.
-
-### Gestión posterior del dashboard
-
-El dashboard se ejecuta únicamente en primer plano con `python main.py`. Se eliminó el proceso de
-prueba en segundo plano y el servidor cierra explícitamente sus recursos al recibir `Ctrl+C` o al
-cerrarse la terminal que lo contiene.
-
-## 2026-07-25 · Reinicio metodológico y documentación de referencia
-
-### Objetivo
-
-Simplificar el proyecto y convertirlo en un proceso defendible que separe descubrimiento y
-corroboración, reduzca cómputo y almacenamiento y pueda manejarse completamente desde el
-dashboard.
-
-### Contexto y decisión previa
-
-La arquitectura anterior acumulaba scenarios, experiments, estudios manuales y full studies con
-más de 150 runs y decenas de GiB. Esa amplitud hacía difícil identificar qué resultado pertenecía
-a una hipótesis, qué se había usado para seleccionar y qué constituía robustez.
-
-Se decidió no migrar resultados ni protocolos anteriores. Los años 2025–2026, ya observados, se
-clasificaron como estrés conocido y no como holdout.
+El flujo anterior mezclaba entidades, multiplicaba rutas y podía dejar Studies fantasma. El Study
+iniciado el 24 de julio terminó un fit caro pero falló antes del ledger al consultar
+`signal_health_lookback_quarters`, campo ya eliminado. El error solo vivía en memoria y el proceso
+desapareció sin reconciliación.
 
 ### Cambios
 
-- Se eliminó la arquitectura legacy y sus resultados.
-- Se preservaron `data/raw/`, el histórico de componentes y el material académico `latex/`.
-- Se creó el flujo único Exploratory → hipótesis congelada → Confirmatory.
-- Se creó un catálogo científico cerrado y versionado.
-- Se limitó Exploratory a 24 evaluaciones y 10 fits caros.
-- Se fijó Confirmatory en 23 evaluaciones.
-- Se implementó un runner científico único.
-- Se implementó almacenamiento compartido por hashes y evidencia compacta.
-- Se reconstruyeron API y dashboard.
-- Se conservaron las vistas de rentabilidad, aprendizaje, rankings, cartera, trades y stocks.
-- Se creó `reset_manifest.json` como auditoría de la limpieza.
+- Catálogo v2 con variables predictivas y cartera informativa.
+- Tres meta-agentes: equal, rolling free y rolling 10–50 %.
+- Persistencia de Study, runs y eventos antes del cálculo.
+- Worker hijo por Study, heartbeat, cancelación, interrupción y reanudación.
+- API y dashboard reducidos a Inicio y Resultados.
+- Cartera 100 % acciones; SPY solo benchmark.
+- Robustez y ocho perfiles posteriores al ganador.
+- Eliminación de Exploratory, hipótesis, Confirmatory y modelos promovidos.
+- Corrección de la referencia al campo eliminado.
 
-### Evidencia observada
+### Validación final
 
-- 19 tests pasan.
-- Ruff no detecta errores.
-- El JavaScript principal supera `node --check`.
-- Los endpoints HTTP principales responden en una prueba local.
-- No se ha ejecutado todavía un ciclo real completo del protocolo nuevo.
+- Suite crítica: 15 tests superados.
+- Ruff, compilación Python y sintaxis JavaScript superados.
+- Auditoría UTF-8 sin secuencias de mojibake en fuentes.
+- Smoke real corregido: `study-20260725-132255-c49da9ff`, estado `succeeded`.
+- 27 runs físicos finalizados, 53 eventos persistentes y 872.775 bytes de evidencia.
+- Reanudación del Study finalizado: cero runs añadidos y mismos identificadores.
+- Worker finalizado y `worker_pid = null`.
 
-### Interpretación
+### Incidencias descubiertas por los smokes
 
-La evidencia disponible valida contratos de software, no la hipótesis financiera. El proyecto
-queda preparado para generar resultados trazables, pero no existe aún un veredicto científico.
+1. La primera ejecución falló al serializar valores de cartera de tipo texto y número en una
+   columna Parquet. Se normalizaron ambos valores como JSON.
+2. El primer smoke técnicamente exitoso produjo scores constantes: 50 observaciones mínimas por
+   hoja impedían dividir árboles con 65 filas. No se aceptó como validación. El modo dev limita
+   ahora el mínimo a 5; el smoke repetido produjo 23 cohortes y Rank-IC no degenerado.
+3. La lista de Studies fallaba cuando un run aún tenía `result = null`. La consulta trata ahora
+   correctamente los runs creados antes de calcular.
+4. La concentración meta mezclaba la columna de cohortes realizadas con los pesos. Se sustituyó por
+   HHI de pesos por fecha y turnover medio de media norma L1.
+5. Se añadió vigilancia del PID padre: si termina abruptamente el dashboard, el worker se marca
+   `interrupted` y se detiene por sí mismo.
+6. El dashboard pasó de tablas aisladas a visualización analítica: porcentajes en escala humana,
+   equity con ejes y leyenda, evolución multicolor de Rank-IC y pesos, perfiles por año y barras de
+   robustez para semillas, placebos y agentes.
+7. Los ejes de las curvas se calculan ahora por métrica. En particular, los pesos se limitan al
+   intervalo válido 0–100 % y se ajustan al rango observado; cada punto ofrece fecha, serie y valor
+   exacto al situar el cursor. La configuración de cada run se presenta en tarjetas temáticas en
+   lugar de una tabla plana.
+8. La navegación contextual vuelve bajo Resultados. Los gráficos de líneas usan cursor vertical y
+   una leyenda flotante de todas las series en la fecha más cercana, sin puntos visibles. Performance
+   usa años como marcas del eje X, divisores verticales secundarios y ticks enteros en equity.
+   Portfolio y Stocks comparten snapshot; Portfolio integra las órdenes del día y Stocks permite
+   consultar cartera, agentes, parámetros PIT, puntuaciones de factores y evolución temporal.
 
-### Decisión
-
-Usar `docs/metodologia.md` como fuente metodológica del TFM, este archivo como rastro cronológico y
-`docs/informe_resultados.md` como único borrador de resultados empíricos.
-
-### Incidencias y limitaciones
-
-- Los jobs del servidor son en memoria y no sobreviven a un reinicio.
-- La hipótesis no guarda todavía automáticamente el commit Git.
-- El nulo de carteras aleatorias es una aproximación anual simplificada.
-- Falta ejecutar un smoke study real reducido antes del primer estudio completo.
-
-### Próximo paso
-
-Ejecutar el pipeline sintético, registrar commit y catálogo, y después lanzar un Exploratory
-reducido desde el dashboard.
+Las cifras del smoke sirven para validar el flujo, no como evidencia económica o científica del TFM.

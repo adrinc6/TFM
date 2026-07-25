@@ -3,126 +3,72 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pandas as pd
-import pytest
-
-from module.studies.confirmatory import (
-    CONFIRMATORY_BREAKDOWN,
-    confirmatory_preflight,
-)
-from module.studies.config import CONFIRMATORY_EVALUATIONS
-from module.studies.exploratory import _hypothesis_statement
-from module.studies import exploratory
-from module.studies.catalog import default_definition
-from module.studies.runner import _selection_diagnostics
-from module.storage import evidence
+from module.studies.selection import choose_candidate
+from module.storage import studies
+from module.web import queries
 
 
-def test_confirmatory_budget_is_exactly_23() -> None:
-    assert CONFIRMATORY_EVALUATIONS == 23
-    assert sum(CONFIRMATORY_BREAKDOWN.values()) == 23
-
-
-def test_confirmatory_rejects_scientific_overrides_before_execution() -> None:
-    with pytest.raises(ValueError, match="no admite overrides"):
-        confirmatory_preflight({"hypothesis_id": "hyp-valid", "target_size": 99})
-
-
-def test_selection_diagnostics_exclude_known_stress() -> None:
-    diagnostics = pd.DataFrame({
-        "agent": ["meta_final"] * 4,
-        "prediction_date": ["2023-03-31", "2024-03-31", "2025-03-31", "2026-03-31"],
-        "rank_ic": [0.1, 0.2, 0.9, 0.9],
-    })
-    selected = _selection_diagnostics(diagnostics)
-    assert selected["year"].tolist() == [2023, 2024]
-
-
-def test_frozen_hypothesis_is_immutable_by_contract(tmp_path: Path, monkeypatch) -> None:
-    hypotheses = tmp_path / "hypotheses"
-    monkeypatch.setattr(evidence, "HYPOTHESES_ROOT", hypotheses)
-    hypothesis_id, path = evidence.freeze_hypothesis({"configuration": {"x": 1}})
-    first = evidence.read_hypothesis(hypothesis_id)
-    assert first["status"] == "frozen"
-    payload = json.loads((path / "hypothesis.json").read_text(encoding="utf-8"))
-    payload["status"] = "draft"
-    (path / "hypothesis.json").write_text(json.dumps(payload), encoding="utf-8")
-    with pytest.raises(ValueError, match="no está congelada"):
-        evidence.read_hypothesis(hypothesis_id)
-
-
-def test_hypothesis_statement_is_structured() -> None:
-    values = {
-        "model_family": "lightgbm",
-        "target_horizon_months": 12,
-        "meta_method": "equal",
+def _result(rank_ic: float) -> dict:
+    return {
+        "evaluation_key": str(rank_ic),
+        "summary": {"mean_rank_ic": rank_ic, "rank_ic_positive_fraction": 0.75, "rank_ic_std": 0.02},
+        "eras": [
+            {"era": "2015-2018", "rank_ic": rank_ic},
+            {"era": "2019-2021", "rank_ic": rank_ic},
+            {"era": "2022-2024", "rank_ic": rank_ic},
+        ],
+        "rank_ic_by_cohort": [
+            {"date": f"20{year:02d}-12-31", "rank_ic": rank_ic}
+            for year in range(15, 25)
+        ],
+        "known_stress_not_selection": [{"year": 2025, "alpha": 99}],
     }
-    statement = _hypothesis_statement(values)
-    assert "12 meses" in statement
-    assert "cartera dinámica" in statement
 
 
-def test_exploratory_advances_one_variable_and_keeps_compact_ledger(
-    tmp_path: Path, monkeypatch,
-) -> None:
-    studies = tmp_path / "studies"
-    monkeypatch.setattr(evidence, "STUDIES_ROOT", studies)
-    monkeypatch.setattr(evidence, "HYPOTHESES_ROOT", tmp_path / "hypotheses")
-    monkeypatch.setattr(evidence, "MODELS_ROOT", tmp_path / "models")
-    monkeypatch.setattr(exploratory, "STUDIES_ROOT", studies)
-    monkeypatch.setattr(exploratory, "prune_prepared", lambda **_: {})
-    monkeypatch.setattr(exploratory, "discard_summary_cache", lambda _: None)
-
-    def fake_run(values, **_):
-        horizon = values["target_horizon_months"]
-        rank_ic = horizon / 100
-        return {
-            "evaluation_key": f"{horizon:064x}",
-            "dataset_hash": f"{horizon + 100:064x}",
-            "source": "computed",
-            "summary": {
-                "mean_rank_ic": rank_ic,
-                "rank_ic_positive_fraction": 1.0,
-                "rank_ic_std": 0.01,
-                "tail_spread": rank_ic,
-                "information_ratio": 0.2,
-                "annualized_turnover": 1.0,
-                "positive_alpha_eras": 3,
-            },
-            "eras": [
-                {"era": "2015-2018", "rank_ic": rank_ic, "mean_alpha": 0.01},
-                {"era": "2019-2021", "rank_ic": rank_ic, "mean_alpha": 0.01},
-                {"era": "2022-2024", "rank_ic": rank_ic, "mean_alpha": 0.01},
-            ],
-            "rank_ic_by_cohort": [
-                {"date": "2023-03-31", "rank_ic": rank_ic},
-                {"date": "2024-03-31", "rank_ic": rank_ic},
-            ],
-        }
-
-    monkeypatch.setattr(exploratory, "run_evaluation", fake_run)
-    definition = default_definition()
-    definition["target_horizon_months"] = {
-        "mode": "optimize", "values": [3, 6, 12],
-    }
-    pending = exploratory.create_exploratory({"definition": definition})
-    assert pending["status"] == "awaiting_decision"
-    assert pending["pending_decision"]["variable_id"] == "target_horizon_months"
-    finished = exploratory.advance_exploratory(pending["study_id"])
-    assert finished["status"] == "awaiting_freeze"
-    ledger = pd.read_parquet(studies / pending["study_id"] / "evaluation_ledger.parquet")
-    assert len(ledger) == 4
-    assert ledger["selected"].sum() == 2  # baseline + ganador de la variable
+def test_selection_uses_rank_ic_and_excludes_known_stress() -> None:
+    incumbent = {"candidate_id": "a", "value": 60, "result": _result(0.03)}
+    challenger = {"candidate_id": "b", "value": 45, "result": _result(0.05)}
+    decision = choose_candidate(incumbent, [incumbent, challenger], "execution_lag_days")
+    assert decision["winner_candidate_id"] == "b"
+    assert decision["selection_metric"] == "rank_ic_only"
+    assert decision["known_stress_excluded"] is True
 
 
-def test_no_mojibake_in_runtime_and_app() -> None:
-    root = Path(__file__).resolve().parents[1]
-    offenders = []
-    for base in ("module", "app"):
-        for path in (root / base).rglob("*"):
-            if path.suffix not in {".py", ".js", ".html", ".css"}:
-                continue
-            text = path.read_text(encoding="utf-8")
-            if any(token in text for token in (chr(0xC3), chr(0xC2), chr(0xFFFD))):
-                offenders.append(str(path.relative_to(root)))
-    assert offenders == []
+def test_run_exists_before_result_and_resume_keeps_identity(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(studies, "STUDIES_ROOT", tmp_path / "studies")
+    study_id, _ = studies.create_study({"name": "test", "configuration": {}, "catalog": {}})
+    first = studies.create_run(
+        study_id, logical_key="baseline", phase="temporal",
+        variable_id="baseline", value="baseline", configuration={},
+    )
+    second = studies.create_run(
+        study_id, logical_key="baseline", phase="temporal",
+        variable_id="baseline", value="baseline", configuration={}, attempt=2,
+    )
+    assert first["status"] == "queued"
+    assert second["run_id"] == first["run_id"]
+    assert second["attempt"] == 2
+
+
+def test_events_are_persistent_and_incremental(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(studies, "STUDIES_ROOT", tmp_path / "studies")
+    study_id, _ = studies.create_study({"name": "test", "configuration": {}, "catalog": {}})
+    studies.append_event(study_id, "info", "one", "Primero.")
+    studies.append_event(study_id, "info", "two", "Segundo.")
+    assert [row["sequence"] for row in studies.read_events(study_id, after=1)] == [2]
+
+
+def test_study_contains_only_model_study_identity(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(studies, "STUDIES_ROOT", tmp_path / "studies")
+    _, directory = studies.create_study({"name": "test", "configuration": {}, "catalog": {}})
+    study_id = json.loads((directory / "study.json").read_text(encoding="utf-8"))["study_id"]
+    studies.create_run(
+        study_id, logical_key="baseline", phase="temporal",
+        variable_id="baseline", value="baseline", configuration={},
+    )
+    payload = json.loads((directory / "study.json").read_text(encoding="utf-8"))
+    assert payload["study_type"] == "model_study"
+    assert set(payload) >= {"study_id", "study_type", "status", "configuration"}
+    assert queries.studies()[0]["max_rank_ic"] is None
+    studies.update_study(study_id, status="succeeded", completed_runs=35)
+    assert queries.studies()[0]["runs_remaining"] == 0

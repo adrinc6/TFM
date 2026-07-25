@@ -102,7 +102,7 @@ def build_agent_scores(
         tail = tail.merge(weight_path, on="prediction_date", how="left", validate="one_to_one")
     health = signal_health_path(
         tail, wide["snapshot_date"].drop_duplicates(),
-        lookback_quarters=settings.signal_health_lookback_quarters,
+        lookback_quarters=settings.meta_history_quarters,
     )
     health_8 = signal_health_path(
         tail, wide["snapshot_date"].drop_duplicates(), lookback_quarters=8,

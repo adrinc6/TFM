@@ -12,6 +12,22 @@ def test_add_one_placebo_p_value_never_zero() -> None:
     assert result["p_value"] == 1 / 6
 
 
+def test_spy_is_never_a_stock_position() -> None:
+    scores = pd.DataFrame({
+        "ticker": ["AAPL", "MSFT"],
+        "snapshot_date": ["2020-03-31"] * 2,
+        "meta_rank": [0.99, 0.90],
+        "is_quarterly": [True, True],
+    })
+    _, weights = decide_orders(
+        PortfolioState.empty(),
+        scores,
+        Settings(target_size=2, min_hold_percentile=80),
+    )
+    assert "SPY" not in weights
+    assert sum(weights.values()) == 1.0
+
+
 def test_dynamic_portfolio_requires_edge_and_preserves_full_stock_weight() -> None:
     state = PortfolioState(holdings={"A": 0.5, "B": 0.5})
     scores = pd.DataFrame({"ticker": ["A", "B", "C"], "snapshot_date": ["2020-03-31"] * 3, "meta_rank": [0.91, 0.84, 0.92], "meta_score": [0.6, 0.4, 0.7], "is_quarterly": [True] * 3})

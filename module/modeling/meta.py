@@ -337,33 +337,11 @@ def _constrain_stacked_weights(weights: dict[str, float], settings: Settings) ->
         agent: (1.0 - shrink) * max(float(weights.get(agent, 0.0)), 0.0) + shrink * equal
         for agent in agents
     }
-    cap = float(settings.meta_weight_cap)
-    if cap >= 1.0:
-        total = sum(constrained.values())
-        return {agent: value / total for agent, value in constrained.items()}
-    if cap * len(agents) < 1.0 - 1e-12:
-        return {agent: equal for agent in agents}
-    # Proyección iterativa al simplex con límite superior. Redistribuye solo entre pesos libres.
-    result = dict(constrained)
-    for _ in range(100):
-        total = sum(result.values())
-        if total <= 0:
-            return {agent: equal for agent in agents}
-        result = {agent: value / total for agent, value in result.items()}
-        capped = {agent for agent, value in result.items() if value > cap}
-        if not capped:
-            break
-        excess = sum(result[agent] - cap for agent in capped)
-        for agent in capped:
-            result[agent] = cap
-        free = [agent for agent in agents if agent not in capped]
-        free_total = sum(result[agent] for agent in free)
-        if not free:
-            return {agent: equal for agent in agents}
-        for agent in free:
-            result[agent] += excess * (result[agent] / free_total if free_total > 0 else 1 / len(free))
-    total = sum(result.values())
-    return {agent: value / total for agent, value in result.items()}
+    return _clamp_agent_weights(
+        constrained,
+        float(settings.meta_weight_min),
+        float(settings.meta_weight_cap),
+    )
 
 
 _DIAG_COLUMNS = ["agent", "prediction_date", "label_end_date", "observations", "rank_ic", "is_quarterly"]

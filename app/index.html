@@ -3,24 +3,24 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>TFM · Hipótesis de inversión</title>
+  <title>TFM · Model Study</title>
   <link rel="stylesheet" href="/app/style.css">
 </head>
 <body>
   <header>
-    <div>
+    <div class="brand">
       <p class="eyebrow">Investigación point-in-time</p>
-      <h1>Explorar. Congelar. Corroborar.</h1>
+      <h1>Model Study</h1>
+      <p>Optimización predictiva por Rank-IC y evidencia económica posterior.</p>
     </div>
-    <nav id="nav">
-      <button data-view="new" class="active">Nuevo estudio</button>
-      <button data-view="studies">Estudios</button>
-      <button data-view="hypotheses">Hipótesis</button>
-      <button data-view="analysis">Análisis</button>
+    <nav class="main-nav">
+      <button data-view="home" class="active">Inicio</button>
+      <button data-view="results">Resultados</button>
+      <button id="nav-back" class="hidden"></button>
     </nav>
   </header>
-  <main id="app"><p class="muted">Cargando catálogo…</p></main>
-  <div id="toast" role="status"></div>
+  <main id="app"></main>
+  <div id="toast"></div>
   <script src="/app/js/app.js"></script>
 </body>
 </html>

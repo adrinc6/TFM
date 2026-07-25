@@ -1,84 +1,72 @@
-# Instrucciones para agentes
+# Instrucciones obligatorias para agentes
 
-## Propósito del repositorio
+## Propósito
 
-Este proyecto construye y corrobora hipótesis de inversión con datos point-in-time:
+Este repositorio estudia si cinco agentes especializados aprenden una ordenación transversal de
+acciones que se mantenga fuera de muestra. Solo existe este flujo:
 
 ```text
-data/raw → Exploratory Study → hipótesis congelada → Confirmatory Study → evidencia final
+catálogo → Model Study → optimización secuencial por Rank-IC → ganador
+         → robustez, carteras y perfiles informativos → informe
 ```
 
-Antes de modificar ciencia, ejecución, almacenamiento o dashboard, leer completos:
+Antes de cambiar ciencia, ejecución, almacenamiento o dashboard, leer `docs/metodologia.md`,
+`docs/bitacora.md`, `docs/informe_resultados.md` y `README.md`.
 
-1. `docs/metodologia.md`;
-2. `docs/bitacora.md`;
-3. `docs/informe_resultados.md`;
-4. `CLAUDE.md`.
+## Una sola ruta
 
-## Arquitectura obligatoria
+- No crear Exploratory, Hypothesis, Confirmatory, Scenario, Experiment, Full Study ni runs sueltos.
+- No crear una segunda forma de ejecutar la misma ciencia.
+- No mantener aliases, adaptadores, esquemas antiguos, flags deprecated ni compatibilidad legacy.
+- Cuando se sustituya algo, eliminar implementación, imports, API, interfaz, tests y documentación
+  anteriores.
+- Todo archivo y función debe tener un consumidor directo. Si no lo tiene, eliminarlo.
 
-- `module/data`: ingesta, universo y dataset PIT.
-- `module/modeling`: features, agentes, targets y meta.
-- `module/evaluation`: métricas, cartera, backtest y robustez.
-- `module/studies`: catálogo, configuración, runner, Exploratory y Confirmatory.
-- `module/storage`: datasets, caché y evidencia.
-- `module/web` y `app`: API y dashboard.
+## Contrato científico
 
-No crear scenarios, experiments, runs sueltos, study manual, full study ni rutas alternativas.
-Exploratory y Confirmatory deben usar el mismo `run_evaluation`.
+- Todo parámetro científico procede de `module/studies/catalog.py`.
+- Rechazar claves desconocidas, valores libres y combinaciones incompatibles.
+- Solo las fases temporal, representación, modelo y meta pueden modificar el ganador.
+- Seleccionar únicamente mediante Rank-IC robusto y comparaciones pareadas por cohorte.
+- Alfa, IR, rentabilidad, turnover, perfiles, costes y robustez posterior son informativos.
+- 2025–2026 es `known_stress_not_selection` y no puede entrar en ninguna decisión.
+- Toda feature, etiqueta y cohorte del meta debe ser point-in-time y estar cerrada.
+- Los cinco agentes quality, value, growth, momentum y risk permanecen activos.
+- La cartera está invertida en acciones; SPY solo es benchmark.
 
-## Reglas científicas
+## Ejecución y persistencia
 
-1. Todo parámetro científico procede de `module/studies/catalog.py`.
-2. No aceptar inputs científicos libres, claves desconocidas ni JSON arbitrario.
-3. Mantener el orden secuencial: temporal, representación, modelo, meta y cartera.
-4. No introducir lookahead. Toda etiqueta consumida debe estar cerrada.
-5. Usar el universo histórico point-in-time.
-6. 2025–2026 es `known_stress_not_selection` y nunca participa en selección.
-7. Confirmatory no acepta overrides ni modifica una hipótesis congelada.
-8. El perfil base de cartera procede del catálogo; los ocho perfiles repetidos en Confirmatory son
-   diagnósticos y no pueden cambiar la hipótesis ya congelada.
-9. No afirmar mejora, alfa o confirmación sin artefactos reales.
-10. Un test sintético valida software, no evidencia económica.
+- La API crea el Study y el run antes de iniciar cálculo.
+- Cada Study se ejecuta en un worker hijo.
+- Todo progreso relevante se emite a terminal, `events.jsonl` y Consola.
+- Un error debe persistir mensaje y traceback.
+- Cancelar o cerrar el servidor debe terminar sus workers.
+- Reanudar no repite runs finalizados ni duplica el ledger.
+- Un artefacto parcial nunca es caché válida.
+- No copiar datasets preparados dentro de resultados.
 
-## Simplicidad y coherencia
+## Código mantenible
 
-- Preferir funciones pequeñas, dataclasses simples y flujos lineales.
-- No crear abstracciones genéricas sin consumidor actual.
-- No duplicar cálculos científicos entre backend y frontend.
-- El backend es la autoridad del presupuesto y la validación.
-- Si cambia una opción, actualizar catálogo, mapping a `Settings`, dashboard, documentación y test.
-- Si se elimina una ruta, eliminar también imports, API, interfaz, tests y documentación huérfanos.
-- No mantener compatibilidad legacy salvo instrucción explícita del usuario.
-
-## Persistencia
-
-- Preservar `data/raw/`.
-- No copiar datasets dentro de studies.
-- Los descartados viven solo en el ledger compacto.
-- Solo hipótesis y modelos guardan evidencia analítica completa.
-- La caché se elimina por referencias, nunca por antigüedad ciega.
-- No borrar evidencia, raw o hipótesis sin autorización explícita y auditoría del alcance.
-- No introducir `parent_run` ni directorios de runs.
+- Preferir funciones pequeñas, dataclasses y entradas/salidas explícitas.
+- El orquestador no contiene cálculos científicos.
+- El frontend nunca calcula métricas ni lee Parquets.
+- No introducir abstracciones genéricas sin consumidor actual.
+- Mantener los módulos por debajo de unas 500 líneas cuando exista una división natural.
+- Actualizar juntos catálogo, Settings, API, dashboard, documentación y tests.
 
 ## Documentación
 
-Después de un cambio material:
+- Cambios metodológicos: actualizar `docs/metodologia.md`.
+- Decisiones, fallos, correcciones y ejecuciones: añadir entrada en `docs/bitacora.md`.
+- Cifras reales: actualizar `docs/informe_resultados.md` indicando el artefacto de origen.
+- No presentar un test sintético o smoke dev como evidencia económica.
 
-- actualizar `docs/metodologia.md` si cambia el funcionamiento;
-- añadir una entrada a `docs/bitacora.md` si cambia una decisión o se ejecuta un estudio;
-- actualizar `docs/informe_resultados.md` solo con cifras trazables;
-- mantener README y dashboard coherentes con Python.
+## UTF-8
 
-El material del TFM saldrá de estos documentos. Distinguir siempre implementación, validación
-sintética, evidencia exploratoria, evidencia confirmatoria y observación futura.
+Todos los archivos se escriben en UTF-8. Cuidado con acentos y tildes. No introducir texto
+recodificado, fragmentos de mojibake ni caracteres de sustitución.
 
-## Codificación
-
-Todos los archivos se escriben en UTF-8. Cuidado con acentos y tildes: no introducir secuencias de
-mojibake ni caracteres de sustitución. No normalizar texto español a ASCII.
-
-## Validación mínima
+## Validación
 
 Antes de dar por terminado un cambio:
 
@@ -90,11 +78,8 @@ node --check app/js/app.js
 
 Además:
 
-- comprobar el presupuesto si cambia el catálogo;
-- comprobar que Confirmatory sigue sumando exactamente 23;
-- comprobar que frontend y backend muestran las mismas estimaciones de presupuesto;
-- revisar UTF-8 en código, JSON, Markdown e interfaz.
-
-No ejecutar un estudio real completo ni descargar datos sin autorización explícita. Para el
-dashboard, usar `python main.py` en primer plano; no crear procesos Python desvinculados de la
-terminal.
+- comprobar el preflight y el presupuesto;
+- buscar referencias legacy;
+- buscar mojibake;
+- ejecutar el smoke real de cinco tickers si cambia el flujo;
+- confirmar que no queda un worker vivo.

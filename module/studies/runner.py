@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import shutil
 import tempfile
 import time
+import traceback
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -23,6 +25,7 @@ from module.storage.datasets import ensure_prepared
 
 
 SUMMARY_CACHE = DATA_DIR / "cache" / "evaluations"
+log = logging.getLogger(__name__)
 SELECTION_ERAS = ((2015, 2018), (2019, 2021), (2022, 2024))
 KNOWN_STRESS_YEARS = (2025, 2026)
 
@@ -69,15 +72,18 @@ def run_evaluation(
     )
     cached = SUMMARY_CACHE / key / "summary.json"
     if cached.exists() and retain_dir is None:
+        log.info("Evaluación %s: resumen reutilizado de caché", key[:12])
         payload = json.loads(cached.read_text(encoding="utf-8"))
         payload["source"] = "cached"
         return payload
 
     started = time.perf_counter()
+    log.info("Evaluación %s: inicio (perfil=%s, semilla=%s)", key[:12], effective_profile, random_seed)
     base_settings = settings_from_values(
         values, random_seed=random_seed, profile=effective_profile, overrides=overrides,
     )
     dataset_hash, prepared, dataset_reused = ensure_prepared(base_settings)
+    log.info("Evaluación %s: dataset %s (%s)", key[:12], dataset_hash[:12], "reutilizado" if dataset_reused else "creado")
     work = Path(tempfile.mkdtemp(prefix=f"evaluation-{key[:10]}-"))
     try:
         runtime = settings_from_values(
@@ -112,6 +118,7 @@ def run_evaluation(
         enforce_cache_limit(protected={key})
         if retain_dir is not None:
             _retain_evidence(retain_dir, prepared, agent_dir, result, summary)
+        log.info("Evaluación %s: terminada en %.1fs", key[:12], summary["elapsed_seconds"])
         return summary
     finally:
         shutil.rmtree(work, ignore_errors=True)
@@ -121,6 +128,7 @@ def run_profile_evaluation(
     values: Mapping[str, Any], profile: str, evidence_dir: Path, retain_dir: Path | None = None,
 ) -> dict[str, Any]:
     """Backtest de un perfil sobre los scores ya congelados del ganador, sin reentrenar."""
+    log.info("Perfil %s: backtest sobre scores congelados", profile)
     runtime = settings_from_values(values, profile=profile)
     reference = json.loads((evidence_dir / "dataset_reference.json").read_text(encoding="utf-8"))
     prepared = Path(reference["prepared_path"])
@@ -140,6 +148,7 @@ def run_profile_evaluation(
         write_parquet(result.positions, retain_dir / "positions.parquet")
         write_parquet(result.orders, retain_dir / "orders.parquet")
         write_json(summary, retain_dir / "summary.json")
+    log.info("Perfil %s: terminado (IR=%s, alfa=%s)", profile, result.summary.get("information_ratio"), result.summary.get("mean_annual_alpha"))
     return summary
 
 
@@ -207,6 +216,7 @@ def _summary(
         "mean_annual_alpha": _finite(annual["alpha"].mean()),
         "worst_year_alpha": _finite(annual["alpha"].min()),
         "positive_alpha_eras": int(sum((row["mean_alpha"] or 0) > 0 for row in era_rows)),
+        "stress_mean_alpha": _finite(known["alpha"].mean()),
     })
     rank_ic_by_cohort = [
         {"date": str(row.prediction_date), "rank_ic": _finite(row.rank_ic)}
@@ -262,3 +272,383 @@ def _retain_evidence(
         {"dataset_hash": summary["dataset_hash"], "prepared_path": str(prepared)},
         destination / "dataset_reference.json",
     )
+
+
+def execute_model_study(study_id: str) -> dict[str, Any]:
+    """Ejecuta de principio a fin la única ruta científica del proyecto."""
+    from module.evaluation.profiles import PROFILE_NAMES
+    from module.research.robustness import (
+        bootstrap_and_eras, random_portfolios, score_permutation,
+    )
+    from module.studies.catalog import BY_ID
+    from module.studies.config import (
+        diagnostic_portfolio_variables, initial_values, ordered_predictive_variables,
+    )
+    from module.studies.selection import choose_candidate
+    from module.storage.datasets import validate_dataset_reference
+    from module.storage.evidence import write_report, write_winner
+    from module.storage.studies import (
+        append_event, create_run, directory_size, find_run,
+        read_study, safe_study_path, update_run, update_study, write_storage_manifest,
+    )
+
+    study = read_study(study_id)
+    definition = study["configuration"]
+    dev_scope = study.get("run_scope") == "dev"
+    directory = safe_study_path(study_id)
+    evidence = directory / "evidence"
+    evidence.mkdir(exist_ok=True)
+    values = initial_values(definition)
+    if dev_scope:
+        values["target_size"] = 3
+    decisions: list[dict[str, Any]] = []
+    ledger: list[dict[str, Any]] = []
+    from module.storage.studies import list_runs
+    completed = sum(run["status"] == "succeeded" for run in list_runs(study_id))
+
+    def execute(
+        logical_key: str,
+        phase: str,
+        variable_id: str,
+        value: Any,
+        configuration: Mapping[str, Any],
+        *,
+        seed: int = 42,
+        profile: str = "balanced",
+        overrides: Mapping[str, Any] | None = None,
+        retain: Path | None = None,
+        target_override: Path | None = None,
+        target_identity: str = "real",
+    ) -> dict[str, Any]:
+        nonlocal completed
+        previous = find_run(study_id, logical_key)
+        if previous and previous["status"] == "succeeded" and previous.get("result"):
+            append_event(study_id, "info", "run_reused", f"Run reutilizado: {logical_key}", run_id=previous["run_id"])
+            return previous["result"]
+        attempt = int(previous.get("attempt", 0)) + 1 if previous else 1
+        run = create_run(
+            study_id, logical_key=logical_key, phase=phase,
+            variable_id=variable_id, value=value, configuration=configuration,
+            attempt=attempt,
+        )
+        started = time.perf_counter()
+        update_run(study_id, run["run_id"], status="running", stage="evaluation", progress=0.05)
+        update_study(study_id, phase=phase, current_run_id=run["run_id"], heartbeat=_utc_now())
+        append_event(
+            study_id, "info", "run_started",
+            f"Run {run['run_id']} · {phase} · {variable_id}={value}",
+            run_id=run["run_id"], phase=phase, variable_id=variable_id,
+        )
+        try:
+            runtime_overrides = dict(overrides or {})
+            if dev_scope:
+                runtime_overrides.update({
+                    "run_scope": "dev",
+                    "data_start_date": "2016-01-01",
+                    "end_date": "2024-12-31",
+                    "min_rank_ic_cross_section": 3,
+                    "train_lookback_years": min(
+                        int(configuration["train_lookback_years"]), 4,
+                    ),
+                    "lgbm_n_estimators": min(
+                        int(configuration["lgbm_n_estimators"]), 30,
+                    ),
+                    "lgbm_min_child_samples": min(
+                        int(configuration["lgbm_min_child_samples"]), 5,
+                    ),
+                    "lgbm_n_jobs": 1,
+                })
+                runtime_overrides.setdefault("target_size", 3)
+            result = run_evaluation(
+                configuration, random_seed=seed, profile=profile,
+                overrides=runtime_overrides, retain_dir=retain,
+                target_override=target_override, target_identity=target_identity,
+            )
+            elapsed = time.perf_counter() - started
+            bytes_persisted = directory_size(retain) if retain and retain.exists() else 0
+            update_run(
+                study_id, run["run_id"], status="succeeded", stage="completed",
+                progress=1.0, elapsed_seconds=elapsed,
+                bytes_persisted=bytes_persisted, result=result,
+            )
+            completed += 1
+            total = max(int(study.get("budget", {}).get("total_runs", 1)), 1)
+            update_study(
+                study_id, completed_runs=completed,
+                progress=min(0.95, completed / total), heartbeat=_utc_now(),
+            )
+            append_event(
+                study_id, "info", "run_succeeded",
+                f"Run {run['run_id']} terminado en {elapsed:.1f}s",
+                run_id=run["run_id"], source=result.get("source"),
+            )
+            return result
+        except Exception as exc:
+            update_run(
+                study_id, run["run_id"], status="failed", stage="failed",
+                elapsed_seconds=time.perf_counter() - started,
+                error=str(exc), traceback=traceback.format_exc(),
+            )
+            update_study(study_id, status="failed", error=str(exc), traceback=traceback.format_exc())
+            append_event(study_id, "error", "run_failed", f"Run {run['run_id']} falló: {exc}", run_id=run["run_id"])
+            raise
+
+    update_study(study_id, status="running", phase="predictive", progress=0.01)
+    append_event(study_id, "info", "study_started", "Comienza el Model Study.")
+    baseline = execute("predictive:baseline", "temporal", "baseline", "baseline", values)
+    incumbent = {
+        "candidate_id": "predictive:baseline",
+        "value": "baseline",
+        "result": baseline,
+        "configuration": dict(values),
+    }
+    ledger.append(_ledger_row(incumbent, "temporal", "baseline", selected=True))
+
+    for variable_id in ordered_predictive_variables(definition):
+        spec = BY_ID[variable_id]
+        candidates = []
+        for value in definition[variable_id]["values"]:
+            configuration = dict(values)
+            configuration[variable_id] = value
+            logical_key = f"predictive:{variable_id}:{_key_value(value)}"
+            if configuration == incumbent["configuration"]:
+                result = incumbent["result"]
+                candidate_id = incumbent["candidate_id"]
+            else:
+                result = execute(
+                    logical_key, spec.stage, variable_id, value, configuration,
+                )
+                candidate_id = logical_key
+            candidates.append({
+                "candidate_id": candidate_id,
+                "value": value,
+                "result": result,
+                "configuration": configuration,
+            })
+        comparison_incumbent = next(
+            (candidate for candidate in candidates if candidate["configuration"] == incumbent["configuration"]),
+            incumbent,
+        )
+        decision = choose_candidate(comparison_incumbent, candidates, variable_id)
+        winner = next(
+            candidate for candidate in candidates
+            if candidate["candidate_id"] == decision["winner_candidate_id"]
+        )
+        values = dict(winner["configuration"])
+        incumbent = winner
+        decisions.append(decision)
+        for candidate in candidates:
+            ledger.append(_ledger_row(
+                candidate, spec.stage, variable_id,
+                selected=candidate["candidate_id"] == winner["candidate_id"],
+                decision=decision,
+            ))
+        append_event(
+            study_id, "info", "decision",
+            f"{spec.label}: elegido {winner['value']} solo por Rank-IC.",
+            variable_id=variable_id, winner=winner["value"],
+        )
+
+    write_parquet(pd.DataFrame(ledger), directory / "evaluation_ledger.parquet")
+    write_json({"decisions": decisions}, directory / "decisions.json")
+    winner_result = execute(
+        "winner:evidence", "winner", "winner", "final",
+        values, retain=evidence,
+    )
+    winner_run = find_run(study_id, "winner:evidence")
+    winner_payload = {
+        "study_id": study_id,
+        "winner_run_id": winner_run["run_id"] if winner_run else incumbent["candidate_id"],
+        "configuration": values,
+        "selection_metric": "rank_ic_only",
+        "selection_until_year": 2024,
+        "known_stress_role": "known_stress_not_selection",
+        "summary": winner_result,
+    }
+    write_winner(directory / "winner.json", winner_payload)
+
+    append_event(study_id, "info", "post_selection", "Ganador congelado; comienzan diagnósticos informativos.")
+    portfolio_rows = []
+    for variable_id in diagnostic_portfolio_variables(definition):
+        base = values[variable_id]
+        for value in definition[variable_id]["values"]:
+            if value == base:
+                continue
+            override = {variable_id: value}
+            result = execute(
+                f"portfolio:{variable_id}:{_key_value(value)}",
+                "portfolio", variable_id, value, values, overrides=override,
+            )
+            portfolio_rows.append({
+                "variable_id": variable_id,
+                "base_value": json.dumps(base, ensure_ascii=False),
+                "diagnostic_value": json.dumps(value, ensure_ascii=False),
+                **result["summary"],
+            })
+    write_parquet(pd.DataFrame(portfolio_rows), directory / "portfolio_comparison.parquet")
+
+    profile_rows = []
+    profiles_root = evidence / "profiles"
+    for profile in PROFILE_NAMES:
+        logical = f"profile:{profile}"
+        run = create_run(
+            study_id, logical_key=logical, phase="profiles",
+            variable_id="profile", value=profile, configuration=values,
+            attempt=1,
+        ) if not find_run(study_id, logical) else find_run(study_id, logical)
+        if run["status"] == "succeeded" and run.get("result"):
+            result = run["result"]
+        else:
+            update_run(study_id, run["run_id"], status="running", stage="backtest", progress=0.1)
+            append_event(study_id, "info", "profile_started", f"Perfil {profile}.", run_id=run["run_id"])
+            result = run_profile_evaluation(values, profile, evidence, profiles_root / profile)
+            update_run(study_id, run["run_id"], status="succeeded", stage="completed", progress=1.0, result=result)
+            completed += 1
+        profile_rows.append({"profile": profile, **result["summary"]})
+    write_parquet(pd.DataFrame(profile_rows), directory / "profile_comparison.parquet")
+
+    dev = dev_scope
+    iterations = 199 if dev else 9_999
+    bootstrap_iterations = 200 if dev else 2_000
+    random_iterations = 100 if dev else 1_000
+    diagnostics = pd.read_parquet(evidence / "rank_ic_diagnostics.parquet")
+    scores = pd.read_parquet(evidence / "agent_scores.parquet")
+    reference = json.loads((evidence / "dataset_reference.json").read_text(encoding="utf-8"))
+    prepared = validate_dataset_reference(reference["dataset_hash"])
+    targets = pd.read_parquet(prepared / "targets_forward.parquet")
+    robustness = {
+        "scientific_selection_effect": "none",
+        "dev_only_not_scientific": dev,
+        "bootstrap_and_era_exclusion": bootstrap_and_eras(
+            diagnostics, iterations=bootstrap_iterations,
+        ),
+        "permutation": score_permutation(
+            scores, targets, iterations=iterations,
+            minimum_cross_section=3 if dev else 8,
+        ),
+        "random_portfolios": random_portfolios(
+            prepared, evidence, values, simulations=random_iterations,
+        ),
+        "seeds": [],
+        "label_placebos": [],
+        "agent_rank_ic": _agent_summary(diagnostics),
+        "meta_weight_stability": _meta_stability(evidence / "meta_weights.parquet"),
+        "known_stress_not_selection": winner_result.get("known_stress_not_selection", []),
+    }
+    for seed in (7, 2026):
+        result = execute(f"robustness:seed:{seed}", "robustness", "seed", seed, values, seed=seed)
+        robustness["seeds"].append({"seed": seed, "summary": result["summary"]})
+    placebo_count = 2 if dev else 5
+    for seed in range(101, 101 + placebo_count):
+        shuffled = _shuffle_targets(targets, seed)
+        temporary = Path(tempfile.mkdtemp(prefix=f"placebo-{seed}-"))
+        try:
+            target_path = temporary / "targets_forward.parquet"
+            write_parquet(shuffled, target_path)
+            result = execute(
+                f"robustness:placebo:{seed}", "robustness", "label_placebo", seed,
+                values, seed=seed, target_override=target_path,
+                target_identity=f"placebo-{seed}",
+            )
+        finally:
+            shutil.rmtree(temporary, ignore_errors=True)
+        robustness["label_placebos"].append({"seed": seed, "summary": result["summary"]})
+    write_json(robustness, directory / "robustness.json")
+
+    update_study(
+        study_id, status="succeeded", phase="completed", progress=1.0,
+        winner_run_id=winner_payload["winner_run_id"], completed_runs=completed,
+        worker_pid=None, heartbeat=_utc_now(), error=None, traceback=None,
+    )
+    final = {**winner_payload, "status": "succeeded", "robustness": robustness}
+    write_report(directory / "report.md", final)
+    write_storage_manifest(study_id)
+    append_event(study_id, "info", "study_succeeded", "Model Study terminado correctamente.")
+    return final
+
+
+def _ledger_row(
+    candidate: Mapping[str, Any],
+    phase: str,
+    variable_id: str,
+    *,
+    selected: bool,
+    decision: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    result = candidate["result"]
+    return {
+        "logical_key": candidate["candidate_id"],
+        "phase": phase,
+        "variable_id": variable_id,
+        "candidate_value": json.dumps(candidate["value"], ensure_ascii=False),
+        "selected": selected,
+        "selection_metric": "rank_ic_only",
+        "mean_rank_ic": result["summary"].get("mean_rank_ic"),
+        "positive_fraction": result["summary"].get("rank_ic_positive_fraction"),
+        "rank_ic_std": result["summary"].get("rank_ic_std"),
+        "eras": json.dumps(result.get("eras", []), ensure_ascii=False),
+        "reason": next(
+            (
+                row["reason"] for row in (decision or {}).get("candidates", [])
+                if row["candidate_id"] == candidate["candidate_id"]
+            ),
+            "Baseline inicial.",
+        ),
+        "source": result.get("source"),
+        "elapsed_seconds": result.get("elapsed_seconds"),
+    }
+
+
+def _shuffle_targets(targets: pd.DataFrame, seed: int) -> pd.DataFrame:
+    rng = np.random.default_rng(seed)
+    frame = targets.copy()
+    columns = ["forward_return", "forward_benchmark_return", "forward_excess_return"]
+    for _, indices in frame.groupby("snapshot_date").groups.items():
+        positions = np.asarray(list(indices))
+        frame.loc[positions, columns] = frame.loc[positions, columns].to_numpy()[
+            rng.permutation(len(positions))
+        ]
+    return frame
+
+
+def _agent_summary(diagnostics: pd.DataFrame) -> list[dict[str, Any]]:
+    return [
+        {
+            "agent": str(agent),
+            "mean_rank_ic": _finite(group["rank_ic"].mean()),
+            "positive_fraction": _finite((group["rank_ic"] > 0).mean()),
+            "observations": int(group["rank_ic"].notna().sum()),
+        }
+        for agent, group in diagnostics.groupby("agent")
+    ]
+
+
+def _meta_stability(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {"available": False}
+    frame = pd.read_parquet(path)
+    if frame.empty or not {"snapshot_date", "agent", "weight"}.issubset(frame.columns):
+        return {"available": False}
+    weights = (
+        frame.pivot(index="snapshot_date", columns="agent", values="weight")
+        .fillna(0.0)
+        .sort_index()
+    )
+    turnover = weights.diff().abs().sum(axis=1).iloc[1:] / 2.0
+    return {
+        "available": True,
+        "rows": int(len(frame)),
+        "mean_concentration": _finite((weights ** 2).sum(axis=1).mean()),
+        "mean_turnover": _finite(turnover.mean()) if not turnover.empty else 0.0,
+    }
+
+
+def _key_value(value: Any) -> str:
+    return hashlib.sha256(
+        json.dumps(value, ensure_ascii=False, sort_keys=True).encode("utf-8")
+    ).hexdigest()[:12]
+
+
+def _utc_now() -> str:
+    from module.storage.studies import utc_now
+    return utc_now()
