@@ -1,4 +1,4 @@
-"""Transformaciones avanzadas seleccionables desde el catálogo cerrado.
+"""Transformaciones de factores calculadas siempre, fuera del catálogo cerrado de studies.
 
 Todas son point-in-time: cada feature en la fecha t usa solo datos observables en t.
 
@@ -6,11 +6,10 @@ Cada artefacto expone una función `add_<nombre>(frame, ...)` que anade sus colu
 frame; el ranking a factores y el enganche a los agentes ocurre en `features.py`/`agents.py`.
 
 Artefactos existentes (definidos en features.py por historia): momentum de fundamentales,
-regimen bull/bear, neutralizacion por sector. Artefactos nuevos (aqui):
+regimen bull/bear, neutralizacion por sector. Artefactos de este módulo:
 - momentum de precio multi-horizonte
 - medias moviles / tendencia del activo
-- regimen de mercado ampliado
-- calidad/crecimiento derivados
+- riesgo y liquidez técnicos diarios
 """
 
 from __future__ import annotations
@@ -74,31 +73,7 @@ def add_moving_averages(frame: pd.DataFrame, price_series: dict[str, tuple[list,
         frame[col] = merged[col].to_numpy()
 
 
-# ---- Regimen de mercado ampliado -----------------------------------------------------------
-# El regimen es el mismo para todos los tickers de un snapshot; las columnas se anaden por fila.
-REGIME_EXTENDED_SOURCES = ("regime_sp500_vol", "regime_sp500_drawdown")
-
-
-def add_regime_extended(frame: pd.DataFrame, benchmark: pd.DataFrame) -> None:
-    """Volatilidad y drawdown del SP500 (contexto macro), sin lookahead.
-
-    Se calcula de la serie del benchmark hasta cada snapshot: la volatilidad de los retornos
-    recientes y el drawdown del indice desde su maximo. Se mapea a cada fila por fecha.
-    """
-    bench = benchmark.sort_values("snapshot_date").copy()
-    ret = pd.to_numeric(bench["price"], errors="coerce").pct_change()
-    bench["regime_sp500_vol"] = ret.rolling(6, min_periods=2).std()
-    running_max = pd.to_numeric(bench["price"], errors="coerce").cummax()
-    bench["regime_sp500_drawdown"] = pd.to_numeric(bench["price"], errors="coerce") / running_max - 1
-    lookup_vol = dict(zip(bench["snapshot_date"], bench["regime_sp500_vol"]))
-    lookup_dd = dict(zip(bench["snapshot_date"], bench["regime_sp500_drawdown"]))
-    frame["regime_sp500_vol"] = frame["snapshot_date"].map(lookup_vol)
-    frame["regime_sp500_drawdown"] = frame["snapshot_date"].map(lookup_dd)
-
-
-# ---- Calidad / crecimiento derivados -------------------------------------------------------
-QUALITY_GROWTH_SOURCES = ("qg_roe_trend", "qg_margin_stability", "qg_growth_surprise")
-
+# ---- Riesgo y liquidez técnicos ------------------------------------------------------------
 # Técnicos diarios calculados de OHLCV histórico, siempre hasta la fecha de snapshot.
 MARKET_RISK_SOURCES = (
     "momentum_12_1", "realized_vol_63d", "realized_vol_126d", "downside_vol_63d", "beta_252d",
@@ -173,28 +148,3 @@ def add_market_risk_liquidity(
         beta_join = pd.merge_asof(snapshots.sort_values(["snapshot_date", "ticker"]), beta,
                                   left_on="snapshot_date", right_on="date", by="ticker", direction="backward")
         frame["beta_252d"] = beta_join.sort_values("_row")["beta_252d"].to_numpy()
-
-
-def add_quality_growth_derived(frame: pd.DataFrame) -> None:
-    """Tendencia y estabilidad de los fundamentales, point-in-time por ticker.
-
-    Se calcula sobre la secuencia de valores que la empresa fue publicando (el panel ya trae el
-    fundamental observable en cada snapshot), comparando cada fila con el pasado del MISMO ticker:
-    - roe_trend: cambio del ROE frente a su media de los ultimos 4 snapshots (mejora sostenida).
-    - margin_stability: -desviacion del net_margin en los ultimos 4 (menos volatil = mas calidad).
-    - growth_surprise: eps_growth_yoy actual frente a su media reciente (acelera o desacelera).
-
-    Se asume que `frame` viene ordenado por (ticker, snapshot_date), como sale del panel PIT.
-    Los `rolling` usan `shift()` para no incluir el valor actual (solo pasado del mismo ticker).
-    """
-    ticker = frame["ticker"]
-    for col, src in (("qg_roe_trend", "roe"), ("qg_growth_surprise", "eps_growth_yoy")):
-        values = pd.to_numeric(frame[src], errors="coerce")
-        past_mean = values.groupby(ticker).transform(
-            lambda s: s.shift().rolling(4, min_periods=2).mean()
-        )
-        frame[col] = values - past_mean
-    margin = pd.to_numeric(frame["net_margin"], errors="coerce")
-    frame["qg_margin_stability"] = -margin.groupby(ticker).transform(
-        lambda s: s.shift().rolling(4, min_periods=2).std()
-    )

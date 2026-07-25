@@ -115,8 +115,6 @@ class Handler(BaseHTTPRequestHandler):
         study_id = parts[0]
         if len(parts) == 1:
             return self._send(queries.study_detail(study_id))
-        if parts[1] == "runs" and len(parts) == 2:
-            return self._send(queries.runs(study_id))
         if parts[1] == "runs" and len(parts) == 3:
             return self._send(queries.run_detail(study_id, parts[2]))
         if parts[1] == "events" and len(parts) == 2:

@@ -290,18 +290,9 @@ def _build_feature_frame(
     if settings.fundamental_momentum:
         frame = _add_fundamental_momentum(frame)
     frame = _add_extended_fundamentals(frame)
-    if settings.price_momentum_multi:
-        from module.modeling.artifacts import add_price_momentum_multi
-        add_price_momentum_multi(frame)
-    if settings.moving_averages:
-        from module.modeling.artifacts import add_moving_averages
-        add_moving_averages(frame, _price_series(asset_prices))
-    if settings.regime_extended:
-        from module.modeling.artifacts import add_regime_extended
-        add_regime_extended(frame, benchmark)
-    if settings.quality_growth_derived:
-        from module.modeling.artifacts import add_quality_growth_derived
-        add_quality_growth_derived(frame)
+    from module.modeling.artifacts import add_moving_averages, add_price_momentum_multi
+    add_price_momentum_multi(frame)
+    add_moving_averages(frame, _price_series(asset_prices))
     if "price_risk" in settings.enabled_feature_blocks or "market_liquidity" in settings.enabled_feature_blocks:
         from module.modeling.artifacts import add_market_risk_liquidity, MARKET_RISK_SOURCES
         add_market_risk_liquidity(frame, raw_prices, settings.benchmark_ticker,
@@ -351,20 +342,9 @@ def _build_feature_frame(
                 frame, values, ascending=True, min_group=min_group
             )
 
-    # Rankear a factores las columnas crudas de los artefactos nuevos (mayor = mejor en todas).
-    artifact_sources: list[str] = []
-    if settings.price_momentum_multi:
-        from module.modeling.artifacts import PRICE_MOMENTUM_SOURCES
-        artifact_sources += list(PRICE_MOMENTUM_SOURCES)
-    if settings.moving_averages:
-        from module.modeling.artifacts import MOVING_AVERAGE_SOURCES
-        artifact_sources += list(MOVING_AVERAGE_SOURCES)
-    if settings.regime_extended:
-        from module.modeling.artifacts import REGIME_EXTENDED_SOURCES
-        artifact_sources += list(REGIME_EXTENDED_SOURCES)
-    if settings.quality_growth_derived:
-        from module.modeling.artifacts import QUALITY_GROWTH_SOURCES
-        artifact_sources += list(QUALITY_GROWTH_SOURCES)
+    # Rankear a factores las columnas crudas de los artefactos siempre calculados (mayor = mejor en todas).
+    from module.modeling.artifacts import MOVING_AVERAGE_SOURCES, PRICE_MOMENTUM_SOURCES
+    artifact_sources: list[str] = [*PRICE_MOMENTUM_SOURCES, *MOVING_AVERAGE_SOURCES]
     if "price_risk" in settings.enabled_feature_blocks or "market_liquidity" in settings.enabled_feature_blocks:
         from module.modeling.artifacts import MARKET_RISK_SOURCES
         artifact_sources += list(MARKET_RISK_SOURCES)

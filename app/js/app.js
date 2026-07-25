@@ -189,6 +189,7 @@
         <button data-study-view="robustness" class="${state.section === "robustness" ? "active" : ""}">Robustez</button>
         <button data-study-view="profiles" class="${state.section === "profiles" ? "active" : ""}">Perfiles</button>
         ${active ? '<button id="pause-study">Pausar</button>' : ""}
+        ${active ? '<button id="cancel-study">Cancelar</button>' : ""}
         ${resumable ? '<button id="resume-study">Reanudar</button>' : ""}
         <button id="refresh-study">Actualizar</button>
       </div></section><section id="study-content"></section>`;
@@ -198,6 +199,7 @@
       renderStudyPage();
     });
     if (document.getElementById("pause-study")) document.getElementById("pause-study").onclick = () => studyAction("pause");
+    if (document.getElementById("cancel-study")) document.getElementById("cancel-study").onclick = () => studyAction("cancel");
     if (document.getElementById("resume-study")) document.getElementById("resume-study").onclick = () => studyAction("resume");
     await renderStudyContent(study);
   }
@@ -453,7 +455,7 @@
     if (!rows.length) return "<p class='muted'>Todavía no hay runs.</p>";
     const columns = ["phase", "variable", "value", "status", "progress", "rank_ic", "alpha_anual", "alpha_estres", "elapsed_seconds", "source", "error"];
     return `<table class="runs-table"><thead><tr>${columns.map(key => `<th>${esc(key)}</th>`).join("")}<th></th></tr></thead><tbody>${rows.map(row =>
-      `<tr class="${row.run_id === state.selectedRun ? "selected-row" : ""}">${columns.map(key => `<td class="${tone(row[key], key)}">${esc(fmt(row[key], key))}</td>`).join("")}
+      `<tr class="${row.run_id === state.selectedRun ? "selected-row" : ""}">${columns.map(key => `<td class="${tone(row[key], key)}">${esc(display(row[key], key))}</td>`).join("")}
       <td><button data-run="${esc(row.run_id)}">Ver run</button></td></tr>`).join("")}</tbody></table>`;
   }
   function duration(milliseconds) {

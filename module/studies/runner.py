@@ -19,6 +19,7 @@ from environment import DATA_DIR
 from module.common.utils import write_json, write_parquet
 from module.evaluation.backtest import BacktestResult, run_backtest
 from module.modeling.agents import build_agent_scores
+from module.studies.catalog import SELECTION_ERAS
 from module.studies.config import settings_from_values
 from module.storage.cache import canonical_json, enforce_cache_limit
 from module.storage.datasets import ensure_prepared
@@ -26,14 +27,7 @@ from module.storage.datasets import ensure_prepared
 
 SUMMARY_CACHE = DATA_DIR / "cache" / "evaluations"
 log = logging.getLogger(__name__)
-SELECTION_ERAS = ((2015, 2018), (2019, 2021), (2022, 2024))
 KNOWN_STRESS_YEARS = (2025, 2026)
-
-
-def discard_summary_cache(keys: list[str]) -> None:
-    for key in keys:
-        if key and all(char in "0123456789abcdef" for char in key):
-            shutil.rmtree(SUMMARY_CACHE / key, ignore_errors=True)
 
 
 def evaluation_key(
@@ -277,9 +271,6 @@ def _retain_evidence(
 def execute_model_study(study_id: str) -> dict[str, Any]:
     """Ejecuta de principio a fin la única ruta científica del proyecto."""
     from module.evaluation.profiles import PROFILE_NAMES
-    from module.research.robustness import (
-        bootstrap_and_eras, random_portfolios, score_permutation,
-    )
     from module.studies.catalog import BY_ID
     from module.studies.config import (
         diagnostic_portfolio_variables, initial_values, ordered_predictive_variables,
@@ -508,33 +499,14 @@ def execute_model_study(study_id: str) -> dict[str, Any]:
     write_parquet(pd.DataFrame(profile_rows), directory / "profile_comparison.parquet")
 
     dev = dev_scope
-    iterations = 199 if dev else 9_999
-    bootstrap_iterations = 200 if dev else 2_000
-    random_iterations = 100 if dev else 1_000
     diagnostics = pd.read_parquet(evidence / "rank_ic_diagnostics.parquet")
     scores = pd.read_parquet(evidence / "agent_scores.parquet")
     reference = json.loads((evidence / "dataset_reference.json").read_text(encoding="utf-8"))
     prepared = validate_dataset_reference(reference["dataset_hash"])
     targets = pd.read_parquet(prepared / "targets_forward.parquet")
-    robustness = {
-        "scientific_selection_effect": "none",
-        "dev_only_not_scientific": dev,
-        "bootstrap_and_era_exclusion": bootstrap_and_eras(
-            diagnostics, iterations=bootstrap_iterations,
-        ),
-        "permutation": score_permutation(
-            scores, targets, iterations=iterations,
-            minimum_cross_section=3 if dev else 8,
-        ),
-        "random_portfolios": random_portfolios(
-            prepared, evidence, values, simulations=random_iterations,
-        ),
-        "seeds": [],
-        "label_placebos": [],
-        "agent_rank_ic": _agent_summary(diagnostics),
-        "meta_weight_stability": _meta_stability(evidence / "meta_weights.parquet"),
-        "known_stress_not_selection": winner_result.get("known_stress_not_selection", []),
-    }
+    robustness = _robustness_base(
+        diagnostics, scores, targets, prepared, evidence, values, winner_result, dev=dev,
+    )
     for seed in (7, 2026):
         result = execute(f"robustness:seed:{seed}", "robustness", "seed", seed, values, seed=seed)
         robustness["seeds"].append({"seed": seed, "summary": result["summary"]})
@@ -609,6 +581,44 @@ def _shuffle_targets(targets: pd.DataFrame, seed: int) -> pd.DataFrame:
             rng.permutation(len(positions))
         ]
     return frame
+
+
+def _robustness_base(
+    diagnostics: pd.DataFrame,
+    scores: pd.DataFrame,
+    targets: pd.DataFrame,
+    prepared: Path,
+    evidence: Path,
+    values: Mapping[str, Any],
+    winner_result: Mapping[str, Any],
+    *,
+    dev: bool,
+) -> dict[str, Any]:
+    """Construye el bloque de robustez sin seeds ni placebos (esos requieren reentrenar)."""
+    from module.research.robustness import bootstrap_and_eras, random_portfolios, score_permutation
+
+    iterations = 199 if dev else 9_999
+    bootstrap_iterations = 200 if dev else 2_000
+    random_iterations = 100 if dev else 1_000
+    return {
+        "scientific_selection_effect": "none",
+        "dev_only_not_scientific": dev,
+        "bootstrap_and_era_exclusion": bootstrap_and_eras(
+            diagnostics, iterations=bootstrap_iterations,
+        ),
+        "permutation": score_permutation(
+            scores, targets, iterations=iterations,
+            minimum_cross_section=3 if dev else 8,
+        ),
+        "random_portfolios": random_portfolios(
+            prepared, evidence, values, simulations=random_iterations,
+        ),
+        "seeds": [],
+        "label_placebos": [],
+        "agent_rank_ic": _agent_summary(diagnostics),
+        "meta_weight_stability": _meta_stability(evidence / "meta_weights.parquet"),
+        "known_stress_not_selection": winner_result.get("known_stress_not_selection", []),
+    }
 
 
 def _agent_summary(diagnostics: pd.DataFrame) -> list[dict[str, Any]]:

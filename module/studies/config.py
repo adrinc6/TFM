@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -197,7 +196,6 @@ def settings_from_values(
         "lgbm_learning_rate": float(values["lgbm_learning_rate"]),
         "lgbm_min_child_samples": int(values["lgbm_min_child_samples"]),
         "meta_type": "equal" if method == "equal" else "stacked_oos",
-        "meta_history_mode": "rolling",
         "meta_ic_lookback_quarters": int(values["meta_history_quarters"]),
         "meta_history_quarters": int(values["meta_history_quarters"]),
         "meta_weight_min": 0.10 if method == "stacked_rolling_bounded" else 0.0,
@@ -217,9 +215,3 @@ def settings_from_values(
     }
     fields.update(dict(overrides or {}))
     return Settings(**fields)
-
-
-def settings_payload(values: Mapping[str, Any]) -> dict[str, Any]:
-    payload = asdict(settings_from_values(values))
-    payload["workspace_dir"] = None
-    return payload

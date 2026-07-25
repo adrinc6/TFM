@@ -11,9 +11,6 @@ import pandas as pd
 from module.modeling.targets import normalize_target_columns
 
 
-SELECTION_ERAS = ((2015, 2018), (2019, 2021), (2022, 2024))
-
-
 def rank_tail_diagnostics(scores: pd.DataFrame, targets: pd.DataFrame) -> pd.DataFrame:
     """Métricas por cohorte con el mismo peso estadístico para cada fecha."""
     target_frame = normalize_target_columns(targets)
@@ -57,52 +54,6 @@ def rank_tail_diagnostics(scores: pd.DataFrame, targets: pd.DataFrame) -> pd.Dat
             "top_minus_bottom": top_decile_mean - float(bottom_decile["forward_excess_return"].mean()),
             "top_10_within_spearman": float(within_top) if pd.notna(within_top) else None,
             "top_10_coverage": float(len(top_n) / len(usable)),
-        })
-    return pd.DataFrame(rows)
-
-
-def summarize_tail(diagnostics: pd.DataFrame, *, until_year: int = 2024) -> dict[str, float | int | None]:
-    """Resumen cohort-weighted; nunca permite que el tamaño transversal dé más peso a una fecha."""
-    if diagnostics.empty:
-        return {"tail_cohorts": 0}
-    frame = diagnostics.copy()
-    years = pd.to_datetime(frame["prediction_date"]).dt.year
-    frame = frame.loc[years <= until_year]
-    if frame.empty:
-        return {"tail_cohorts": 0}
-    spread = pd.to_numeric(frame["top_decile_minus_universe"], errors="coerce").dropna()
-    return {
-        "tail_cohorts": int(len(frame)),
-        "top_10_excess_mean": _mean(frame, "top_10_excess_mean"),
-        "top_decile_excess_mean": _mean(frame, "top_decile_excess_mean"),
-        "top_decile_minus_universe": float(spread.mean()) if not spread.empty else None,
-        "top_decile_positive_fraction": float((spread > 0).mean()) if not spread.empty else None,
-        "top_minus_bottom": _mean(frame, "top_minus_bottom"),
-        "top_10_within_spearman": _mean(frame, "top_10_within_spearman"),
-    }
-
-
-def era_summary(
-    diagnostics: pd.DataFrame, eras: Iterable[tuple[int, int]] = SELECTION_ERAS,
-) -> pd.DataFrame:
-    """Rank-IC y cola por eras de selección predefinidas."""
-    if diagnostics.empty:
-        return pd.DataFrame()
-    frame = diagnostics.copy()
-    frame["year"] = pd.to_datetime(frame["prediction_date"]).dt.year
-    rows: list[dict[str, object]] = []
-    for start, end in eras:
-        era = frame.loc[frame["year"].between(start, end)]
-        rows.append({
-            "era": f"{start}-{end}",
-            "start_year": start,
-            "end_year": end,
-            "cohorts": int(len(era)),
-            "mean_rank_ic": _mean(era, "rank_ic"),
-            "rank_ic_positive_fraction": _positive_fraction(era, "rank_ic"),
-            "top_decile_minus_universe": _mean(era, "top_decile_minus_universe"),
-            "top_decile_positive_fraction": _positive_fraction(
-                era, "top_decile_minus_universe"),
         })
     return pd.DataFrame(rows)
 
@@ -224,65 +175,3 @@ def calibrated_alpha_path(
         rows.append(part)
     return pd.concat(rows, ignore_index=True) if rows else pd.DataFrame()
 
-
-def moving_block_bootstrap_delta(
-    incumbent: pd.Series, challenger: pd.Series, *, block_size: int = 12,
-    confidence: float = 0.90, iterations: int = 2000, seed: int = 42,
-) -> dict[str, float | int | None]:
-    """Intervalo pareado sobre cohortes solapadas."""
-    paired = pd.concat(
-        [pd.to_numeric(incumbent, errors="coerce").rename("incumbent"),
-         pd.to_numeric(challenger, errors="coerce").rename("challenger")],
-        axis=1,
-    ).dropna()
-    delta = (paired["challenger"] - paired["incumbent"]).to_numpy(dtype=float)
-    n = len(delta)
-    if n == 0:
-        return {
-            "n": 0, "mean_delta": None, "ci_low": None, "ci_high": None,
-            "p_superiority": None,
-        }
-    block_size = max(1, min(int(block_size), n))
-    rng = np.random.default_rng(seed)
-    samples = np.empty(iterations, dtype=float)
-    max_start = max(1, n - block_size + 1)
-    blocks_needed = int(math.ceil(n / block_size))
-    for index in range(iterations):
-        starts = rng.integers(0, max_start, size=blocks_needed)
-        sample = np.concatenate([delta[start:start + block_size] for start in starts])[:n]
-        samples[index] = sample.mean()
-    alpha = (1.0 - confidence) / 2.0
-    return {
-        "n": n,
-        "mean_delta": float(delta.mean()),
-        "ci_low": float(np.quantile(samples, alpha)),
-        "ci_high": float(np.quantile(samples, 1.0 - alpha)),
-        "p_superiority": float((np.count_nonzero(samples <= 0) + 1) / (iterations + 1)),
-    }
-
-
-def holm_adjust(p_values: Iterable[float]) -> list[float]:
-    """Ajuste de Holm conservando el orden de entrada."""
-    values = [float(np.clip(value, 0.0, 1.0)) for value in p_values]
-    order = sorted(range(len(values)), key=values.__getitem__)
-    adjusted = [1.0] * len(values)
-    running = 0.0
-    total = len(values)
-    for rank, index in enumerate(order):
-        running = max(running, (total - rank) * values[index])
-        adjusted[index] = min(running, 1.0)
-    return adjusted
-
-
-def _mean(frame: pd.DataFrame, column: str) -> float | None:
-    if column not in frame:
-        return None
-    values = pd.to_numeric(frame[column], errors="coerce").dropna()
-    return float(values.mean()) if not values.empty else None
-
-
-def _positive_fraction(frame: pd.DataFrame, column: str) -> float | None:
-    if column not in frame:
-        return None
-    values = pd.to_numeric(frame[column], errors="coerce").dropna()
-    return float((values > 0).mean()) if not values.empty else None

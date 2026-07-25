@@ -7,13 +7,12 @@ import json
 from dataclasses import asdict, dataclass
 from typing import Any
 
+from module.evaluation.profiles import PROFILE_NAMES
+
 
 CATALOG_VERSION = 2
 AGENT_NAMES = ("quality", "value", "growth", "momentum", "risk")
-PROFILE_NAMES = (
-    "balanced", "growth", "value", "quality",
-    "momentum", "contrarian", "defensive", "garp",
-)
+SELECTION_ERAS = ((2015, 2018), (2019, 2021), (2022, 2024))
 PREDICTIVE_STAGES = ("temporal", "representation", "model", "meta")
 STAGE_ORDER = (*PREDICTIVE_STAGES, "portfolio")
 STAGE_DETAILS = {

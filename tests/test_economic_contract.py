@@ -4,11 +4,21 @@ import pandas as pd
 
 from environment import Settings
 from module.evaluation.portfolio import PortfolioState, decide_orders
-from module.evaluation.robustness import label_permutation_test
+from module.research.robustness import score_permutation
 
 
 def test_add_one_placebo_p_value_never_zero() -> None:
-    result = label_permutation_test(pd.DataFrame({"agent": ["meta_final"], "rank_ic": [1.0]}), [0.0] * 5)
+    tickers = [f"T{i}" for i in range(8)]
+    scores = pd.DataFrame({
+        "ticker": tickers, "snapshot_date": ["2020-03-31"] * 8,
+        "meta_rank": [i / 7 for i in range(8)],
+    })
+    targets = pd.DataFrame({
+        "ticker": tickers, "snapshot_date": ["2020-03-31"] * 8,
+        "forward_excess_return": [i / 7 for i in range(8)], "target_available": [True] * 8,
+    })
+    result = score_permutation(scores, targets, iterations=5, minimum_cross_section=8)
+    assert result["observed_mean_rank_ic"] == 1.0
     assert result["p_value"] == 1 / 6
 
 

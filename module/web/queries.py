@@ -52,10 +52,6 @@ def study_detail(study_id: str) -> dict[str, Any]:
     return payload
 
 
-def runs(study_id: str) -> list[dict[str, Any]]:
-    return list_runs(study_id)
-
-
 def run_detail(study_id: str, run_id: str) -> dict[str, Any]:
     return read_run(study_id, run_id)
 

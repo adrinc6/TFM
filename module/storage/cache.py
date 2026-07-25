@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from environment import DATA_DIR, PROJECT_ROOT, Settings
-from module.common.utils import pid_alive, sha256_file, write_json
+from module.common.utils import link_or_copy, pid_alive, sha256_file, write_json
 
 
 CACHE_ROOT = DATA_DIR / "cache"
@@ -96,15 +96,6 @@ def cache_lock(stage: str, key: str, timeout_seconds: float = 86_400):
         lock.unlink(missing_ok=True)
 
 
-def _link_or_copy(source: Path, target: Path) -> None:
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.unlink(missing_ok=True)
-    try:
-        os.link(source, target)
-    except OSError:
-        shutil.copy2(source, target)
-
-
 def restore(stage: str, key: str, destination: Path) -> bool:
     source = cache_dir(stage, key)
     manifest = source / "manifest.json"
@@ -131,7 +122,7 @@ def restore(stage: str, key: str, destination: Path) -> bool:
             return False
         validated.append((item, destination / relative))
     for item, target in validated:
-        _link_or_copy(item, target)
+        link_or_copy(item, target)
     return True
 
 
@@ -201,11 +192,11 @@ def pinned_keys() -> set[str]:
     return keys
 
 
-def enforce_cache_limit(*, protected: set[str] | None = None) -> dict[str, int]:
+def enforce_cache_limit(*, protected: set[str] | None = None) -> None:
     """Elimina solo entradas sin referencias hasta respetar el máximo."""
     protected = set(protected or ()) | pinned_keys()
     if not CACHE_ROOT.exists():
-        return cache_usage()
+        return
     entries = [
         directory
         for stage in CACHE_ROOT.iterdir() if stage.is_dir()
@@ -231,15 +222,3 @@ def enforce_cache_limit(*, protected: set[str] | None = None) -> dict[str, int]:
         raise RuntimeError(
             "La caché referenciada supera 5 GiB; no se eliminó evidencia para ocultarlo."
         )
-    return cache_usage()
-
-
-def cache_usage() -> dict[str, int]:
-    files = [path for path in CACHE_ROOT.rglob("*") if path.is_file()] if CACHE_ROOT.exists() else []
-    return {
-        "bytes": sum(path.stat().st_size for path in files),
-        "entries": sum(
-            1 for path in CACHE_ROOT.glob("*/*/manifest.json")
-        ) if CACHE_ROOT.exists() else 0,
-        "limit_bytes": CACHE_LIMIT_BYTES,
-    }

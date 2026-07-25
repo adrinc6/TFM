@@ -6,13 +6,11 @@ import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any, Mapping
 from uuid import uuid4
 
-import pandas as pd
-
 from environment import PROJECT_ROOT
-from module.common.utils import write_json, write_parquet
+from module.common.utils import write_json
 
 
 RESULTS_ROOT = PROJECT_ROOT / "results"
@@ -167,19 +165,6 @@ def list_runs(study_id: str) -> list[dict[str, Any]]:
 
 def find_run(study_id: str, logical_key: str) -> dict[str, Any] | None:
     return next((run for run in list_runs(study_id) if run["logical_key"] == logical_key), None)
-
-
-def append_ledger(study_id: str, rows: Iterable[Mapping[str, Any]]) -> pd.DataFrame:
-    path = safe_study_path(study_id) / "evaluation_ledger.parquet"
-    current = pd.read_parquet(path) if path.exists() else pd.DataFrame()
-    incoming = pd.DataFrame(list(rows))
-    if incoming.empty:
-        return current
-    combined = pd.concat([current, incoming], ignore_index=True)
-    if "logical_key" in combined:
-        combined = combined.drop_duplicates("logical_key", keep="last")
-    write_parquet(combined, path)
-    return combined
 
 
 def append_event(

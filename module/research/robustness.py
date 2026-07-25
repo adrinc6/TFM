@@ -8,9 +8,7 @@ import numpy as np
 import pandas as pd
 
 from module.evaluation.stats import block_bootstrap_ci
-
-
-SELECTION_ERAS = ((2015, 2018), (2019, 2021), (2022, 2024))
+from module.studies.catalog import SELECTION_ERAS
 
 
 def bootstrap_and_eras(diagnostics: pd.DataFrame, *, iterations: int = 2_000) -> dict[str, Any]:

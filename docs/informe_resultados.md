@@ -31,6 +31,13 @@ Identidad:
 - 27 runs físicos, todos `succeeded`; 53 eventos persistidos.
 - Evidencia total del Study: 872.775 bytes.
 
+**Limitación conocida de este smoke:** se ejecutó antes de la limpieza del 2026-07-25 que activó
+de forma incondicional los factores de momentum multi-horizonte y medias móviles
+(`mom_acceleration`, `mom_reversal_1m`, `ma_price_vs_sma6`, `ma_price_vs_sma12`,
+`ma_distance_to_high12`), ya declarados en el catálogo de factores pero antes inalcanzables desde
+cualquier Study real (ver `docs/bitacora.md`). Las cifras de este smoke no incluyen esas columnas.
+Un nuevo Full Study las incluirá.
+
 El ganador conservó horizonte 12 meses, lag PIT de 60 días y meta rolling acotado 10–50 %. Su
 Rank-IC medio fue 0,0335 sobre 23 cohortes, con 56,5 % positivas. Ningún challenger fue elegible:
 todos incumplieron el suelo de Rank-IC de al menos una era. El horizonte de seis meses alcanzó

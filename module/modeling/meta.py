@@ -1,9 +1,8 @@
 """Combinación point-in-time de agentes en un meta-score.
 
-Admite equiponderación, ponderación por Rank-IC, régimen y stacking OOS. El stacking puede usar
-historia expanding, rolling o exponencial de cohortes trimestrales ya cerradas, con cap y
-contracción hacia equiponderación. Ningún peso puede usar una etiqueta cuyo ``label_end_date`` sea
-posterior a la fecha de decisión.
+Admite equiponderación y stacking OOS (Ridge no negativo, causal, con cap y contracción hacia
+equiponderación) sobre cohortes trimestrales ya cerradas. Ningún peso puede usar una etiqueta cuyo
+``label_end_date`` sea posterior a la fecha de decisión.
 """
 
 from __future__ import annotations
@@ -17,15 +16,8 @@ from module.modeling.targets import normalize_target_columns
 
 def combine_agent_scores(
     scores: pd.DataFrame, targets: pd.DataFrame, settings: Settings,
-    regime_bull_by_date: dict[str, bool] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Devuelve scores meta, pesos secuenciales y diagnósticos OOS finales.
-
-    ``regime_bull_by_date`` mapea cada snapshot_date (ISO) a True si el mercado está alcista
-    (retorno a 12m del benchmark > 0 a esa fecha, ya point-in-time). Solo lo usa
-    ``meta_type="regime"``; si es None, "regime" se comporta como "rank_ic".
-    """
-    regime_bull_by_date = regime_bull_by_date or {}
+    """Devuelve scores meta, pesos secuenciales y diagnósticos OOS finales."""
     targets = normalize_target_columns(targets)
     labelled = scores.merge(
         targets[["ticker", "snapshot_date", "label_end_date", "target_available", "forward_excess_return"]],
@@ -43,9 +35,7 @@ def combine_agent_scores(
     for date in sorted(labelled["snapshot_ts"].dropna().unique()):
         date_frame = labelled.loc[labelled["snapshot_ts"] == date].copy()
         available_agents = set(date_frame["agent"].unique())
-        date_iso = pd.Timestamp(date).date().isoformat()
-        bull = regime_bull_by_date.get(date_iso)
-        agent_weights, evidence = _weights_as_of(labelled, date, available_agents, settings, bull=bull)
+        agent_weights, evidence = _weights_as_of(labelled, date, available_agents, settings)
         learned = any(item.get("mean_rank_ic", 0) > 0 for item in evidence.values())
         for agent in all_agents:
             weights.append(
@@ -145,16 +135,11 @@ def _equal_weight_diagnostics(labelled: pd.DataFrame, settings: Settings) -> pd.
     return _diagnostics_for_score(equal, settings, "meta_equal_weight")
 
 
-# Sesgo modesto y fijo del modo "regime": en bull se multiplica el peso de momentum por
-# (1+REGIME_TILT) y el de quality por (1-REGIME_TILT); en bear, al revés. Se renormaliza
-# después. Un tilt pequeño inclina sin imponer una señal fuerte hecha a mano.
-REGIME_TILT = 0.30
-
-# Clamp de peso por agente (modos rank_ic y regime): el meta nunca ignora del todo a un agente ni
-# deja que uno domine. Mínimo UNIVERSAL (todo agente disponible recibe al menos AGENT_WEIGHT_MIN,
-# aunque su rank-IC reciente sea negativo) para garantizar diversificación; máximo AGENT_WEIGHT_MAX.
-# Con 5 agentes el rango es siempre factible (5·0.10 ≤ 1 ≤ 5·0.50). No aplica a `equal` (ya es 1/N)
-# ni a `stacked_oos` (modelo aprendido cuya lógica es no forzar pesos a mano).
+# Clamp de peso por agente tras la contracción del stacker (ver `_constrain_stacked_weights`):
+# el meta nunca ignora del todo a un agente ni deja que uno domine. Mínimo UNIVERSAL (todo agente
+# disponible recibe al menos meta_weight_min, aunque su rank-IC reciente sea negativo) para
+# garantizar diversificación; máximo meta_weight_cap. Con 5 agentes el rango es siempre factible
+# (5·0.10 ≤ 1 ≤ 5·0.50). No aplica a `equal` (ya es 1/N).
 def _clamp_agent_weights(weights: dict[str, float], minimum: float, maximum: float) -> dict[str, float]:
     """Ajusta los pesos a [AGENT_WEIGHT_MIN, AGENT_WEIGHT_MAX] conservando la suma 1.
 
@@ -196,16 +181,14 @@ def _weights_as_of(
     date: pd.Timestamp,
     available_agents: set[str],
     settings: Settings,
-    bull: bool | None = None,
 ) -> tuple[dict[str, float], dict[str, dict[str, float | int]]]:
     """Pesos de los agentes a una fecha, según `settings.meta_type`.
 
-    Siempre calcula el rank-IC reciente de cada agente (evidencia para trazabilidad y para el
-    modo rank_ic/regime). El modo elige cómo se convierte esa evidencia en pesos:
+    Siempre calcula el rank-IC reciente de cada agente (evidencia para trazabilidad). El modo
+    elige cómo se convierte esa evidencia en pesos:
     - "equal": 1/N fijo, ignora el rank-IC reciente.
-    - "rank_ic": pesos ∝ max(rank-IC reciente, 0).
-    - "regime": pesos rank_ic inclinados por el régimen (bull/bear) recibido en `bull`.
-    Cualquier modo cae a equiponderado si no hay señal positiva (fallback).
+    - "stacked_oos": Ridge no negativo causal sobre cohortes ya cerradas.
+    Sin evidencia suficiente para el stacker, cae a equiponderado.
     """
     closed_history = labelled.loc[
         (labelled["snapshot_ts"] < date)
@@ -216,7 +199,6 @@ def _weights_as_of(
         closed_history["is_quarterly"].fillna(False)
     ].copy()
     evidence: dict[str, dict[str, float | int]] = {}
-    positive: dict[str, float] = {}
     for agent in tuple(dict.fromkeys([*CATALOG_AGENT_NAMES, *available_agents])):
         if agent not in available_agents:
             continue
@@ -229,50 +211,27 @@ def _weights_as_of(
         recent = cohort_ics[-settings.meta_ic_lookback_quarters :]
         mean_ic = float(np.mean(recent)) if recent else 0.0
         evidence[agent] = {"mean_rank_ic": mean_ic, "realized_cohorts": len(recent)}
-        positive[agent] = max(mean_ic, 0.0)
 
     equal = 1 / len(available_agents) if available_agents else 0.0
 
     if settings.meta_type == "equal":
         return ({agent: equal for agent in available_agents}, evidence)
 
-    if settings.meta_type == "stacked_oos":
-        # Expanding utiliza todas las cohortes cerradas disponibles.
-        # Los modos confirmatorios rolling/exponential trabajan solo con cohortes trimestrales
-        # cerradas y con una ventana cuyo nombre y unidad son reales.
-        stack_history = closed_history if settings.meta_history_mode == "expanding" else quarterly_history
-        stack_history = _meta_history_window(stack_history, settings)
-        weights = _stacked_oos_weights(stack_history, available_agents, settings)
-        if weights is not None:
-            for agent, weight in weights.items():
-                evidence.setdefault(agent, {})["stacked_weight"] = weight
-            return weights, evidence
-        # Until enough *closed* cohorts exist, the fallback is intentionally
-        # deterministic.  It never fits on the cohort being scored.
-        return ({agent: equal for agent in available_agents}, evidence)
-
-    total = sum(positive.values())
-    if total <= 0:  # sin señal positiva reciente: equiponderado (fallback común a todos los modos)
-        return ({agent: equal for agent in available_agents}, evidence)
-    weights = {agent: value / total for agent, value in positive.items()}
-
-    if settings.meta_type == "regime" and bull is not None:
-        tilt = {"momentum": 1 + REGIME_TILT, "quality": 1 - REGIME_TILT} if bull else \
-               {"momentum": 1 - REGIME_TILT, "quality": 1 + REGIME_TILT}
-        weights = {agent: w * tilt.get(agent, 1.0) for agent, w in weights.items()}
-        renorm = sum(weights.values())
-        if renorm > 0:
-            weights = {agent: w / renorm for agent, w in weights.items()}
-
-    # Clamp al final (tras el tilt de régimen, para no volver a salirse de rango): garantiza el mínimo
-    # universal por agente y el tope, sin que el meta ignore del todo a nadie ni deje que uno domine.
-    weights = _clamp_agent_weights(weights, settings.meta_weight_min, settings.meta_weight_cap)
-    return weights, evidence
+    # "stacked_oos": solo usa cohortes trimestrales cerradas y una ventana rolling causal.
+    stack_history = _meta_history_window(quarterly_history, settings)
+    weights = _stacked_oos_weights(stack_history, available_agents, settings)
+    if weights is not None:
+        for agent, weight in weights.items():
+            evidence.setdefault(agent, {})["stacked_weight"] = weight
+        return weights, evidence
+    # Until enough *closed* cohorts exist, the fallback is intentionally
+    # deterministic.  It never fits on the cohort being scored.
+    return ({agent: equal for agent in available_agents}, evidence)
 
 
 def _meta_history_window(history: pd.DataFrame, settings: Settings) -> pd.DataFrame:
-    """Aplica la ventana temporal del stacker sin admitir cohortes aún abiertas."""
-    if history.empty or settings.meta_history_mode == "expanding":
+    """Recorta la historia a la ventana rolling causal del stacker."""
+    if history.empty:
         return history
     dates = sorted(pd.to_datetime(history["snapshot_date"]).dropna().unique())
     keep = dates[-settings.meta_history_quarters :]
@@ -308,14 +267,7 @@ def _stacked_oos_weights(
         from sklearn.preprocessing import StandardScaler
 
         model = make_pipeline(SimpleImputer(strategy="median"), StandardScaler(), Ridge(alpha=8.0, positive=True))
-        if settings.meta_history_mode == "exponential":
-            ordered_dates = sorted(pd.Series(dates).dropna().unique())
-            age = {value: len(ordered_dates) - 1 - index for index, value in enumerate(ordered_dates)}
-            half_life = float(settings.meta_decay_half_life_quarters)
-            sample_weight = np.asarray([0.5 ** (age[value] / half_life) for value in dates], dtype=float)
-            model.fit(ranked, target, ridge__sample_weight=sample_weight)
-        else:
-            model.fit(ranked, target)
+        model.fit(ranked, target)
         coefficients = np.maximum(np.asarray(model[-1].coef_, dtype=float), 0.0)
     except Exception:
         return None

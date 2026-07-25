@@ -35,13 +35,6 @@ from module.storage.cache import publish as publish_cache, restore as restore_ca
 
 log = logging.getLogger(__name__)
 
-AGENT_FEATURES = {
-    "quality": ["factor_roe", "factor_roic", "factor_net_margin", "factor_operating_margin",
-                "factor_gross_margin", "factor_fcf_margin", "factor_debt_equity", "factor_current_ratio"],
-    "momentum": ["factor_relative_return_3m", "factor_relative_return_6m", "factor_relative_return_12m"],
-    "value": ["factor_pe", "factor_pb", "factor_ps", "factor_ev_ebitda"],
-}
-
 
 def build_agent_scores(
     settings: Settings,
@@ -75,14 +68,32 @@ def build_agent_scores(
             "No se pudieron entrenar agentes con la historia disponible. "
             "Revisa la cobertura de features, etiquetas y el mínimo de filas de entrenamiento."
         )
-    regime_bull_by_date = _regime_bull_by_date(output_dir) if settings.meta_type == "regime" else None
-    meta_scores, weights, diagnostics = combine_agent_scores(
-        predictions, targets, settings, regime_bull_by_date=regime_bull_by_date)
+    meta_scores, weights, diagnostics = combine_agent_scores(predictions, targets, settings)
     wide = _wide_scores(predictions, meta_scores)
 
     write_parquet(wide, run_dir / "agent_scores.parquet")
     write_parquet(weights, run_dir / "meta_weights.parquet")
     write_parquet(diagnostics, run_dir / "rank_ic_diagnostics.parquet")
+    wide = _write_diagnostics(wide, weights, targets, settings, run_dir)
+    # Sobrescribir el fichero inicial con diagnósticos causales del modelo.
+    write_parquet(wide, run_dir / "agent_scores.parquet")
+    write_parquet(coefficients, run_dir / "model_feature_attribution.parquet")
+    write_parquet(local_attribution, run_dir / "agent_local_attribution.parquet")
+    feature_diagnostics = _feature_diagnostics(frame, targets, coefficients, settings)
+    write_parquet(feature_diagnostics, run_dir / "feature_diagnostics.parquet")
+    write_json(_feature_catalog_payload(settings, feature_diagnostics), run_dir / "feature_catalog.json")
+    write_json(
+        _manifest(settings, feature_path, target_path, predictions, run_dir, fit_audit),
+        run_dir / "manifest.json",
+    )
+    log.info("Agentes: rows=%s runs=%s output=%s", len(wide), wide["snapshot_date"].nunique(), run_dir)
+    return wide
+
+
+def _write_diagnostics(
+    wide: pd.DataFrame, weights: pd.DataFrame, targets: pd.DataFrame, settings: Settings, run_dir: Path,
+) -> pd.DataFrame:
+    """Calcula y persiste cola operada, salud de la señal y calibración; devuelve `wide` enriquecido."""
     from module.evaluation.signal_diagnostics import (
         calibrated_alpha_path, rank_tail_diagnostics, signal_health_path,
     )
@@ -117,23 +128,10 @@ def build_agent_scores(
     write_parquet(health, run_dir / "signal_health.parquet")
     write_parquet(calibration, run_dir / "signal_calibration.parquet")
     wide = wide.merge(health, on="snapshot_date", how="left", validate="many_to_one")
-    wide = wide.merge(
+    return wide.merge(
         calibration[["ticker", "snapshot_date", "expected_excess_return"]],
         on=["ticker", "snapshot_date"], how="left", validate="one_to_one",
     )
-    # Sobrescribir el fichero inicial con diagnósticos causales del modelo.
-    write_parquet(wide, run_dir / "agent_scores.parquet")
-    write_parquet(coefficients, run_dir / "model_feature_attribution.parquet")
-    write_parquet(local_attribution, run_dir / "agent_local_attribution.parquet")
-    feature_diagnostics = _feature_diagnostics(frame, targets, coefficients, settings)
-    write_parquet(feature_diagnostics, run_dir / "feature_diagnostics.parquet")
-    write_json(_feature_catalog_payload(settings, feature_diagnostics), run_dir / "feature_catalog.json")
-    write_json(
-        _manifest(settings, feature_path, target_path, predictions, run_dir, fit_audit),
-        run_dir / "manifest.json",
-    )
-    log.info("Agentes: rows=%s runs=%s output=%s", len(wide), wide["snapshot_date"].nunique(), run_dir)
-    return wide
 
 
 def _feature_diagnostics(frame: pd.DataFrame, targets: pd.DataFrame, importance: pd.DataFrame,
@@ -174,21 +172,6 @@ def _feature_catalog_payload(settings: Settings, diagnostics: pd.DataFrame) -> d
     }
 
 
-def _regime_bull_by_date(output_dir: Path) -> dict[str, bool]:
-    """Régimen bull/bear por snapshot: True si el benchmark subió a 12m hasta esa fecha.
-
-    Point-in-time: usa `price_return_12m` del benchmark, que solo mira el pasado. Lo consume el
-    meta_type="regime" para inclinar los pesos de los agentes. Si falta el benchmark, devuelve
-    vacío y el modo regime recae en rank_ic.
-    """
-    path = output_dir / "benchmark_point_in_time.parquet"
-    if not path.exists():
-        return {}
-    bench = pd.read_parquet(path)
-    ret12 = pd.to_numeric(bench["price_return_12m"], errors="coerce")
-    return {str(date): bool(value > 0) for date, value in zip(bench["snapshot_date"], ret12) if pd.notna(value)}
-
-
 def _agent_features(frame: pd.DataFrame, settings: Settings) -> dict[str, list[str]]:
     """Features por agente. Con B3 activo, quality recibe la tendencia de fundamentales y value
     la descomposicion precio/fundamental — pero solo las columnas que existan en el frame.
@@ -211,19 +194,10 @@ def _agent_features(frame: pd.DataFrame, settings: Settings) -> dict[str, list[s
     if settings.market_regime_feature:
         from module.modeling.features import REGIME_INTERACTION_FACTORS
         add("momentum", REGIME_INTERACTION_FACTORS)
-    # Artefactos nuevos: cada bloque alimenta a su agente natural (por su factor_<source>).
-    if settings.price_momentum_multi:
-        from module.modeling.artifacts import PRICE_MOMENTUM_SOURCES
-        add("momentum", [f"factor_{s}" for s in PRICE_MOMENTUM_SOURCES])
-    if settings.moving_averages:
-        from module.modeling.artifacts import MOVING_AVERAGE_SOURCES
-        add("momentum", [f"factor_{s}" for s in MOVING_AVERAGE_SOURCES])
-    if settings.regime_extended:
-        from module.modeling.artifacts import REGIME_EXTENDED_SOURCES
-        add("momentum", [f"factor_{s}" for s in REGIME_EXTENDED_SOURCES])
-    if settings.quality_growth_derived:
-        from module.modeling.artifacts import QUALITY_GROWTH_SOURCES
-        add("quality", [f"factor_{s}" for s in QUALITY_GROWTH_SOURCES])
+    # Momentum de precio multi-horizonte y medias móviles: siempre calculados (ver artifacts.py).
+    from module.modeling.artifacts import MOVING_AVERAGE_SOURCES, PRICE_MOMENTUM_SOURCES
+    add("momentum", [f"factor_{s}" for s in PRICE_MOMENTUM_SOURCES])
+    add("momentum", [f"factor_{s}" for s in MOVING_AVERAGE_SOURCES])
     # LightGBM no acepta una matriz sin columnas; el filtro además permite fixtures antiguos.
     # Se deduplica preservando el orden: un artefacto (p. ej. moving_averages) puede reañadir un
     # factor que el catálogo base ya asignó al mismo agente, y una columna repetida rompe el fit.
@@ -279,26 +253,14 @@ def _fit_family_cached(
 def _walk_forward_scores_cached(
     frame: pd.DataFrame, settings: Settings, feature_path: Path, target_path: Path
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, list[dict[str, str]]]:
-    """Como :func:`_walk_forward_scores` pero cada familia se restaura/publica por separado."""
-    families = _fit_families(settings)
-    per_family: dict[str, pd.DataFrame] = {}
-    coeff_frames: list[pd.DataFrame] = []
-    attrib_frames: list[pd.DataFrame] = []
-    fit_audit: list[dict[str, str]] = []
-    for family in families:
-        scores, coefficients, local_attribution, audit = _fit_family_cached(
-            frame, settings, family, feature_path, target_path)
-        per_family[family] = scores
-        coeff_frames.append(coefficients)
-        attrib_frames.append(local_attribution)
-        fit_audit.append(audit)
-    if not families or all(per_family[family].empty for family in families):
-        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), fit_audit
-    predictions = _combine_family_scores(per_family, families, frame, settings)
-    return (predictions,
-            pd.concat(coeff_frames, ignore_index=True) if coeff_frames else pd.DataFrame(),
-            pd.concat(attrib_frames, ignore_index=True) if attrib_frames else pd.DataFrame(),
-            fit_audit)
+    """Restaura/publica en caché el fit walk-forward de la única familia del catálogo."""
+    family = _fit_family(settings)
+    scores, coefficients, local_attribution, audit = _fit_family_cached(
+        frame, settings, family, feature_path, target_path)
+    if scores.empty:
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), [audit]
+    predictions = _combine_family_scores(scores)
+    return predictions, coefficients, local_attribution, [audit]
 
 
 def _retrain_schedule(frame: pd.DataFrame, settings: Settings) -> list[pd.Timestamp]:
@@ -386,16 +348,11 @@ def fit_family_scores(
     return scores, pd.DataFrame(coefficients), pd.DataFrame(local_attribution)
 
 
-def _combine_family_scores(
-    family_scores: dict[str, pd.DataFrame], families: list[str], frame: pd.DataFrame, settings: Settings
-) -> pd.DataFrame:
+def _combine_family_scores(scores: pd.DataFrame) -> pd.DataFrame:
     """Normaliza la salida de la única familia elegida por el catálogo."""
-    _ = frame, settings
-    if len(families) != 1:
-        raise ValueError("Cada evaluación debe elegir exactamente una familia de modelo.")
     identifiers = ["ticker", "snapshot_date", "model_retrain_date", "agent",
                    "is_quarterly", "training_start_date", "training_end_date", "training_rows"]
-    base = family_scores[families[0]].reset_index(drop=True)
+    base = scores.reset_index(drop=True)
     result = base[identifiers].copy()
     result["score"] = base["score"].astype(float)
     return result
@@ -507,25 +464,17 @@ def _prepare_training(train: pd.DataFrame, settings: Settings) -> tuple[pd.DataF
     raise ValueError(f"OBJECTIVE desconocido: {settings.objective!r}")
 
 
-def _fit_families(settings: Settings) -> list[str]:
+def _fit_family(settings: Settings) -> str:
     """La familia única elegida por la configuración exploratoria."""
-    families = list(settings.enabled_model_families)
+    families = settings.enabled_model_families
     if len(families) != 1:
         raise ValueError("Cada evaluación debe elegir exactamente una familia de modelo.")
-    return families
+    return families[0]
 
 
 def _build_family_model(settings: Settings, family: str) -> object:
-    """Construye el estimador de una familia admitida por el catálogo."""
-    for name, model in _build_models(settings, families=[family]):
-        if name == family:
-            return model
-    return None
-
-
-def _build_models(settings: Settings, families: list[str] | None = None) -> list[tuple[str, object]]:
-    """Estimador LightGBM segun el objetivo. Los arboles manejan NA de forma nativa y son
-    invariantes a transformaciones monotonas, asi que no necesitan imputer ni scaler."""
+    """Estimador de la familia admitida por el catálogo. Los árboles manejan NA de forma nativa y
+    son invariantes a transformaciones monótonas, así que LightGBM no necesita imputer ni scaler."""
     common = dict(
         n_estimators=settings.lgbm_n_estimators,
         max_depth=settings.lgbm_max_depth,
@@ -537,25 +486,19 @@ def _build_models(settings: Settings, families: list[str] | None = None) -> list
         n_jobs=settings.lgbm_n_jobs,
         verbose=-1,
     )
-    models: list[tuple[str, object]] = []
-    families = list(families) if families is not None else _fit_families(settings)
-    for family in families:
-        if family == "lightgbm":
-            if settings.objective == "ranking":
-                models.append((family, LGBMRanker(objective="lambdarank", **common)))
-            else:
-                models.append((family, LGBMRegressor(**common)))
-        elif family == "elastic_net":
-            from sklearn.impute import SimpleImputer
-            from sklearn.linear_model import ElasticNet
-            from sklearn.pipeline import make_pipeline
-            from sklearn.preprocessing import StandardScaler
-            models.append((family, make_pipeline(SimpleImputer(strategy="median"), StandardScaler(),
-                                                 ElasticNet(alpha=0.03, l1_ratio=0.25,
-                                                            random_state=settings.random_seed, max_iter=5000))))
-        else:
-            raise ValueError(f"Familia de modelo desconocida: {family}")
-    return models
+    if family == "lightgbm":
+        if settings.objective == "ranking":
+            return LGBMRanker(objective="lambdarank", **common)
+        return LGBMRegressor(**common)
+    if family == "elastic_net":
+        from sklearn.impute import SimpleImputer
+        from sklearn.linear_model import ElasticNet
+        from sklearn.pipeline import make_pipeline
+        from sklearn.preprocessing import StandardScaler
+        return make_pipeline(SimpleImputer(strategy="median"), StandardScaler(),
+                             ElasticNet(alpha=0.03, l1_ratio=0.25,
+                                        random_state=settings.random_seed, max_iter=5000))
+    raise ValueError(f"Familia de modelo desconocida: {family}")
 
 
 def _recency_weights(train: pd.DataFrame, settings: Settings) -> pd.Series | None:
@@ -711,8 +654,7 @@ def _run_id(settings: Settings, feature_path: Path, target_path: Path) -> str:
         "target_horizon_months": settings.target_horizon_months,
         "meta_ic_lookback_quarters": settings.meta_ic_lookback_quarters,
         "meta_history": [
-            settings.meta_history_mode, settings.meta_history_quarters,
-            settings.meta_decay_half_life_quarters, settings.meta_weight_cap,
+            settings.meta_history_quarters, settings.meta_weight_cap,
             settings.meta_equal_shrinkage,
         ],
         "min_training_rows": MIN_TRAINING_ROWS,
@@ -765,9 +707,7 @@ def _manifest(
             "random_seed": settings.random_seed,
             "meta_type": settings.meta_type,
             "meta_ic_lookback_quarters": settings.meta_ic_lookback_quarters,
-            "meta_history_mode": settings.meta_history_mode,
             "meta_history_quarters": settings.meta_history_quarters,
-            "meta_decay_half_life_quarters": settings.meta_decay_half_life_quarters,
             "meta_weight_cap": settings.meta_weight_cap,
             "meta_equal_shrinkage": settings.meta_equal_shrinkage,
             "fundamental_momentum": settings.fundamental_momentum,
@@ -781,7 +721,7 @@ def _manifest(
 
 
 def _validate_inputs(features: pd.DataFrame, targets: pd.DataFrame) -> None:
-    required_features = {"ticker", "snapshot_date", "review_type", "is_price_fresh", *sum(AGENT_FEATURES.values(), [])}
+    required_features = {"ticker", "snapshot_date", "review_type", "is_price_fresh"}
     required_targets = {"ticker", "snapshot_date", "label_end_date", "target_available", "forward_excess_return"}
     if missing := required_features - set(features.columns):
         raise ValueError(f"features_point_in_time.parquet no contiene: {sorted(missing)}")

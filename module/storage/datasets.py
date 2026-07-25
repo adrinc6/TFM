@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import hashlib
-import json
-import os
 import shutil
 import tempfile
 from dataclasses import replace
@@ -12,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from environment import DATA_DIR, Settings
-from module.common.utils import sha256_file, write_json
+from module.common.utils import link_or_copy, sha256_file, write_json
 from module.data.dataset import build_point_in_time_dataset
 from module.modeling.features import build_features
 from module.storage.cache import canonical_json
@@ -28,8 +26,7 @@ CORE_FIELDS = (
 )
 FEATURE_FIELDS = (
     "target_horizon_months", "neutralize_by_sector",
-    "fundamental_momentum", "market_regime_feature", "price_momentum_multi",
-    "moving_averages", "regime_extended", "quality_growth_derived",
+    "fundamental_momentum", "market_regime_feature",
     "enabled_feature_blocks", "metric_winsorization_percentile", "risk_feature_windows",
     "technical_feature_windows", "features_code_version",
 )
@@ -83,7 +80,7 @@ def ensure_prepared(settings: Settings) -> tuple[str, Path, bool]:
             "benchmark_point_in_time.parquet",
             "asset_price_point_in_time.parquet",
         ):
-            _link_or_copy(core / name, temp / name)
+            link_or_copy(core / name, temp / name)
         build_features(runtime)
         files = {
             path.name: {"bytes": path.stat().st_size, "sha256": sha256_file(path)}
@@ -147,29 +144,6 @@ def _ensure_core(settings: Settings, key: str) -> Path:
     return final
 
 
-def _link_or_copy(source: Path, target: Path) -> None:
-    try:
-        os.link(source, target)
-    except OSError:
-        shutil.copy2(source, target)
-
-
-def prepared_usage() -> dict[str, int]:
-    files = [path for path in PREPARED_ROOT.rglob("*") if path.is_file()] if PREPARED_ROOT.exists() else []
-    unique: dict[tuple[int, int] | str, int] = {}
-    for path in files:
-        stat = path.stat()
-        identity: tuple[int, int] | str = (
-            (stat.st_dev, stat.st_ino) if stat.st_ino else str(path.resolve())
-        )
-        unique.setdefault(identity, stat.st_size)
-    return {
-        "bytes": sum(unique.values()),
-        "datasets": sum(1 for _ in PREPARED_ROOT.glob("*/dataset_manifest.json"))
-        if PREPARED_ROOT.exists() else 0,
-    }
-
-
 def validate_dataset_reference(dataset_hash: str) -> Path:
     if not dataset_hash or any(char not in "0123456789abcdef" for char in dataset_hash):
         raise ValueError("Hash de dataset inválido.")
@@ -177,45 +151,3 @@ def validate_dataset_reference(dataset_hash: str) -> Path:
     if not (path / "dataset_manifest.json").exists():
         raise FileNotFoundError(f"No existe el dataset {dataset_hash}.")
     return path
-
-
-def pinned_dataset_hashes() -> set[str]:
-    hashes: set[str] = set()
-    results = DATA_DIR.parent / "results"
-    if not results.exists():
-        return hashes
-    for metadata in results.glob("studies/*/winner.json"):
-        try:
-            payload = json.loads(metadata.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            continue
-        value = payload.get("summary", {}).get("dataset_hash")
-        if isinstance(value, str):
-            hashes.add(value)
-    return hashes
-
-
-def prune_prepared(*, keep: set[str] | None = None) -> dict[str, int]:
-    """Elimina materializaciones no referidas; conserva los cores que aún tienen consumidores."""
-    keep_hashes = set(keep or ()) | pinned_dataset_hashes()
-    if not PREPARED_ROOT.exists():
-        return prepared_usage()
-    for directory in PREPARED_ROOT.iterdir():
-        if not directory.is_dir() or directory.name == "_core":
-            continue
-        if directory.name not in keep_hashes:
-            shutil.rmtree(directory, ignore_errors=True)
-    core_hashes: set[str] = set()
-    for manifest in PREPARED_ROOT.glob("*/dataset_manifest.json"):
-        try:
-            payload = json.loads(manifest.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            continue
-        core_hash = payload.get("core_hash")
-        if isinstance(core_hash, str):
-            core_hashes.add(core_hash)
-    if CORE_ROOT.exists():
-        for directory in CORE_ROOT.iterdir():
-            if directory.is_dir() and directory.name not in core_hashes:
-                shutil.rmtree(directory, ignore_errors=True)
-    return prepared_usage()

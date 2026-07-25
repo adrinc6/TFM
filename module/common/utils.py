@@ -6,6 +6,7 @@ import json
 import logging
 import hashlib
 import os
+import shutil
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -47,6 +48,16 @@ def read_parquet(path: Path, produced_by: str | None = None) -> pd.DataFrame:
             f"No existe el artefacto requerido: {path}. Ejecuta primero {stage}."
         )
     return pd.read_parquet(path)
+
+
+def link_or_copy(source: Path, target: Path) -> None:
+    """Hardlink si es posible (mismo volumen); si no, copia el contenido."""
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.unlink(missing_ok=True)
+    try:
+        os.link(source, target)
+    except OSError:
+        shutil.copy2(source, target)
 
 
 def sha256_file(path: Path) -> str:

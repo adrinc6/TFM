@@ -48,9 +48,7 @@ FUNDAMENTAL_STEP_MONTHS = 3
 TARGET_HORIZON_MONTHS = 6
 MAX_PRICE_AGE_DAYS = 7
 META_IC_LOOKBACK_QUARTERS = 12
-META_HISTORY_MODE = "expanding"
 META_HISTORY_QUARTERS = 16
-META_DECAY_HALF_LIFE_QUARTERS = 8.0
 META_WEIGHT_CAP = 1.0
 META_EQUAL_SHRINKAGE = 0.0
 MIN_TRAINING_ROWS = 30
@@ -78,11 +76,10 @@ LGBM_LEARNING_RATE = 0.05
 LGBM_MIN_CHILD_SAMPLES = 50
 # Semilla del modelo. Fija en la comparacion principal; se barre para medir robustez del ganador.
 RANDOM_SEED = 42
-# Meta-agente: como se combinan los 3 agentes (equal | rank_ic | regime).
-#   "equal"   -> promedio equiponderado de los rangos de los agentes
-#   "rank_ic" -> ponderacion por rank-IC reciente de cada agente (mejor medido: bate al equal)
-#   "regime"  -> pesos distintos segun regimen bull/bear
-META_TYPE = "rank_ic"
+# Meta-agente: como se combinan los agentes.
+#   "equal"       -> promedio equiponderado de los rangos de los agentes
+#   "stacked_oos" -> Ridge no negativo causal sobre cohortes ya cerradas
+META_TYPE = "stacked_oos"
 
 # --- Laboratorio de factores/ML -------------------------------------------------
 # Tuplas (no listas) para que Settings siga siendo inmutable y serializable en huellas.
@@ -107,10 +104,6 @@ TECHNICAL_FEATURE_WINDOWS = (21, 63, 252)
 NEUTRALIZE_BY_SECTOR = False       # rankear factores dentro de sector en vez de global
 FUNDAMENTAL_MOMENTUM = False       # tendencia de fundamentales + descomposicion P/E precio vs fundamental
 MARKET_REGIME_FEATURE = False      # regimen bull/bear del SP500 + interacciones factor x regimen
-PRICE_MOMENTUM_MULTI = False       # aceleracion (r3m-r12m), reversion (-r1m), volatilidad reciente
-MOVING_AVERAGES = False            # precio vs SMA200/SMA50, distancia a maximo de 12m
-REGIME_EXTENDED = False            # vol del SP500, drawdown del indice, amplitud
-QUALITY_GROWTH_DERIVED = False     # tendencia de ROE/margenes, estabilidad, sorpresa de crecimiento
 NEUTRALIZE_MIN_GROUP = 5           # tamano minimo de grupo para neutralizar por sector
 
 # --- Cartera ---
@@ -169,9 +162,7 @@ class Settings:
     lgbm_n_jobs: int = -1
     random_seed: int = RANDOM_SEED
     meta_type: str = META_TYPE
-    meta_history_mode: str = META_HISTORY_MODE
     meta_history_quarters: int = META_HISTORY_QUARTERS
-    meta_decay_half_life_quarters: float = META_DECAY_HALF_LIFE_QUARTERS
     meta_weight_cap: float = META_WEIGHT_CAP
     meta_equal_shrinkage: float = META_EQUAL_SHRINKAGE
     recency_weighting: str = RECENCY_WEIGHTING
@@ -191,10 +182,6 @@ class Settings:
     neutralize_by_sector: bool = NEUTRALIZE_BY_SECTOR
     fundamental_momentum: bool = FUNDAMENTAL_MOMENTUM
     market_regime_feature: bool = MARKET_REGIME_FEATURE
-    price_momentum_multi: bool = PRICE_MOMENTUM_MULTI
-    moving_averages: bool = MOVING_AVERAGES
-    regime_extended: bool = REGIME_EXTENDED
-    quality_growth_derived: bool = QUALITY_GROWTH_DERIVED
     # cartera
     target_size: int = TARGET_SIZE
     min_hold_percentile: float = MIN_HOLD_PERCENTILE
@@ -209,11 +196,11 @@ class Settings:
     meta_weight_min: float = META_WEIGHT_MIN
     # Versiones explícitas para invalidar materializaciones y caché tras cambios científicos.
     dataset_code_version: int = 1
-    features_code_version: int = 1
+    features_code_version: int = 2
     # El fit de las familias y la combinación meta tienen versiones separadas: cambiar la
     # combinación no debe invalidar los fits LightGBM ya calculados.
-    agents_fit_code_version: int = 1
-    agents_code_version: int = 2
+    agents_fit_code_version: int = 2
+    agents_code_version: int = 3
     backtest_code_version: int = 2
     # Ruta privada de ejecución. No es una variable científica ni se incluye en fingerprints;
     # el orquestador la asigna después de crear el run.
@@ -231,16 +218,12 @@ class Settings:
             raise ValueError(
                 f"OBJECTIVE inválido: {self.objective!r}. Usa 'rank_regression' o 'ranking'."
             )
-        if self.meta_type not in ("equal", "rank_ic", "regime", "stacked_oos"):
+        if self.meta_type not in ("equal", "stacked_oos"):
             raise ValueError(
-                f"META_TYPE invalido: {self.meta_type!r}. Usa 'equal', 'rank_ic' o 'regime'."
+                f"META_TYPE invalido: {self.meta_type!r}. Usa 'equal' o 'stacked_oos'."
             )
-        if self.meta_history_mode not in ("expanding", "rolling", "exponential"):
-            raise ValueError("META_HISTORY_MODE debe ser 'expanding', 'rolling' o 'exponential'.")
         if self.meta_history_quarters < 1:
             raise ValueError("META_HISTORY_QUARTERS debe ser positivo.")
-        if self.meta_decay_half_life_quarters <= 0:
-            raise ValueError("META_DECAY_HALF_LIFE_QUARTERS debe ser positivo.")
         if not 0 < self.meta_weight_cap <= 1:
             raise ValueError("META_WEIGHT_CAP debe estar en (0, 1].")
         if not 0 <= self.meta_equal_shrinkage <= 1:

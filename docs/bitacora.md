@@ -1,5 +1,60 @@
 # Bitácora
 
+## 2026-07-25 · Limpieza integral: código muerto, legacy y features huérfanas
+
+### Decisión
+
+Auditoría función a función de todo el repositorio para eliminar código sin consumidor,
+duplicación de la misma verdad en varios sitios y modos legacy con sesgo hardcodeado, en línea
+con las reglas de `AGENTS.md`.
+
+### Hallazgo científico principal
+
+`module/modeling/catalog.py::FEATURE_CATALOG` declaraba los bloques `momentum_core` y
+`momentum_trend` (factores `mom_acceleration`, `mom_reversal_1m`, `ma_price_vs_sma6`,
+`ma_price_vs_sma12`, `ma_distance_to_high12`), presentes en todos los `feature_preset` reales y
+barridos en `recommended_definition()`. Pero esas columnas solo se calculaban si
+`settings.price_momentum_multi`/`moving_averages` eran `True`, y esas dos variables nunca
+existieron en el catálogo cerrado de `module/studies/catalog.py`: no eran alcanzables desde
+ningún Study real. El smoke de 5 tickers documentado en `docs/informe_resultados.md`
+(`study-20260725-132255-c49da9ff`) se ejecutó **sin** estas columnas de momentum multi-horizonte.
+
+### Cambios
+
+- `price_momentum_multi`/`moving_averages` dejan de ser flags: sus artefactos
+  (`add_price_momentum_multi`, `add_moving_averages`) se calculan siempre, igual que ya ocurría
+  con `add_market_risk_liquidity`. `features_code_version` y `agents_fit_code_version` suben
+  para invalidar cachés y materializaciones previas sin estas columnas.
+- Eliminados `regime_extended`/`quality_growth_derived` y sus artefactos
+  (`add_regime_extended`, `add_quality_growth_derived`): a diferencia de momentum, sus factores
+  nunca estuvieron declarados en `FEATURE_CATALOG` — código huérfano de punta a punta.
+- Eliminados los modos `meta_type="regime"`/`"rank_ic"` (sesgo `REGIME_TILT` hardcodeado a
+  mano, nunca aprendido de datos) y `meta_history_mode="expanding"`/`"exponential"` (el runner
+  siempre forzaba `"rolling"`). Solo quedan `"equal"` y `"stacked_oos"`, los dos únicos modos
+  que el catálogo cerrado puede producir.
+- Simplificada la infraestructura de ensemble multi-familia en `module/modeling/agents.py`
+  (nunca se ejecutaba con más de una familia; el catálogo obliga a exactamente una).
+- Eliminados módulos y funciones sin ningún consumidor: `module/studies/budget.py`,
+  `module/evaluation/robustness.py`, `settings_payload`, `discard_summary_cache`,
+  `append_ledger`, `cache_usage`, `prune_prepared`/`pinned_dataset_hashes`/`prepared_usage`,
+  cuatro funciones huérfanas de `signal_diagnostics.py` (`summarize_tail`, `era_summary`,
+  `moving_block_bootstrap_delta`, `holm_adjust`), endpoint `GET /api/studies/{id}/runs`.
+- Consolidada duplicación de la misma verdad: `PROFILE_NAMES` (antes definido dos veces),
+  `SELECTION_ERAS` (antes triplicado literalmente), `_link_or_copy` (antes duplicada byte a
+  byte en `cache.py` y `datasets.py`, ahora en `module/common/utils.py`).
+- Añadido botón Cancelar en el dashboard junto a Pausar/Reanudar (el endpoint ya existía sin
+  cliente de UI).
+- `CLAUDE.md` actualizado: ya no describe la arquitectura Exploratory→Confirmatory eliminada
+  el mismo día.
+
+### Validación
+
+- Suite completa: 15 tests superados, ruff y `node --check` sin avisos.
+- Smoke dirigido: dataset dev reconstruido con `ensure_prepared`; las seis columnas de
+  momentum multi-horizonte/medias móviles aparecen con 100 % de cobertura (antes ausentes).
+- `build_agent_scores` verificado de extremo a extremo con `meta_type="equal"` y
+  `meta_type="stacked_oos"` sobre el dataset dev tras la simplificación de `meta.py`.
+
 ## 2026-07-25 · Reconstrucción a Model Study único
 
 ### Decisión

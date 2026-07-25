@@ -39,10 +39,9 @@ def download_raw_data(settings: Settings) -> None:
     RAW_JSON_DIR.mkdir(parents=True, exist_ok=True)
 
     log.info(
-        "Preparando datos crudos: tickers=%s scope=%s force_download=%s",
+        "Preparando datos crudos: tickers=%s scope=%s",
         len(tickers),
         settings.run_scope,
-        False,
     )
     profiles: list[dict[str, Any]] = []
     metrics: list[dict[str, Any]] = []
