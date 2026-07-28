@@ -5,6 +5,7 @@ import pytest
 from module.studies.catalog import (
     AGENT_NAMES,
     CATALOG_VERSION,
+    FEATURE_PRESETS,
     public_catalog,
     recommended_definition,
 )
@@ -20,6 +21,22 @@ def test_catalog_is_closed_and_has_five_agents() -> None:
     assert catalog["version"] == CATALOG_VERSION
     assert len(catalog["hash"]) == 64
     assert AGENT_NAMES == ("quality", "value", "growth", "momentum", "risk")
+
+
+def test_every_preset_feeds_all_five_agents() -> None:
+    """Ningún preset puede dejar a un agente sin features.
+
+    Un preset que vacía a un agente lo elimina de hecho del sistema, y entonces la comparación deja
+    de medir «qué información necesita cada agente» para medir «qué pasa si amputo parte de la
+    arquitectura». Eran los casos de `fundamental` (sin momentum ni risk) y `technical` (sin quality,
+    value ni growth), ya retirados del catálogo.
+    """
+    from module.modeling.catalog import catalog_by_agent
+
+    for preset, blocks in FEATURE_PRESETS.items():
+        by_agent = catalog_by_agent(blocks, AGENT_NAMES)
+        starved = sorted(agent for agent, columns in by_agent.items() if not columns)
+        assert not starved, f"El preset {preset!r} deja sin features a {starved}"
 
 
 def test_portfolio_thresholds_are_economic_not_percentiles() -> None:

@@ -132,9 +132,9 @@ semilla, promediando sus \emph{scores} como reducción de varianza del estimador
   \item \textbf{La regla eligió el candidato peor.} La puerta de elegibilidad era una prueba de
   \emph{no inferioridad} aplicada también a candidatos superiores; como la anchura del intervalo
   crece con la diferencia respecto al incumbente, penalizaba estructuralmente a los retadores
-  buenos. El preset \texttt{technical} (\rankic{} $0{,}0994$, mejor en el $64{,}1\,\%$ de las
-  cohortes) se descartó frente a \texttt{core} ($0{,}0730$) por un límite inferior de $-0{,}01023$
-  frente a un margen de $-0{,}01$: falló por $0{,}00023$.
+  buenos. Ningún retador de \texttt{feature\_preset} resultó elegible pese a que \texttt{all}
+  (\rankic{} $0{,}0958$, ventaja pareada $+0{,}0216$) dominaba con claridad al incumbente
+  \texttt{core} ($0{,}0730$). Con la puerta corregida gana \texttt{all}.
   \item \textbf{Dos decisiones se tomaron sobre ruido}, con ventajas pareadas de $0{,}00112$ y
   $0{,}00033$.
   \item \textbf{La puerta era vacía en dos variables.} Al barrer el retardo de ejecución o la
@@ -142,8 +142,12 @@ semilla, promediando sus \emph{scores} como reducción de varianza del estimador
   inferior de $0{,}0$ en silencio, lo que hacía pasar automáticamente a todos los candidatos.
   \item \textbf{Colisión de identidad en caché.} La clave de evaluación no incluía el \emph{hash} del
   conjunto de datos; la misma clave aparece asociada a dos resultados distintos.
-  \item \textbf{La ablación fundamental/técnico no medía lo que declaraba}, porque seis factores
-  derivados del precio se inyectaban incondicionalmente en el agente de \emph{momentum}.
+  \item \textbf{La ablación por presets no medía lo que declaraba}, porque seis factores derivados
+  del precio se inyectaban incondicionalmente en el agente de \emph{momentum}. Al corregirlo se hizo
+  visible un problema de diseño mayor: los presets \texttt{fundamental} y \texttt{technical} dejan
+  agentes enteros sin ninguna \emph{feature}, de modo que no comparaban qué información necesita
+  cada agente sino qué ocurre al amputar parte de la arquitectura. El catálogo conserva
+  \texttt{core} y \texttt{all}, que mantienen los cinco agentes activos.
 \end{enumerate}
 
 Un sexto hallazgo afecta a un contraste, no al modelo: el nulo de carteras aleatorias producía un

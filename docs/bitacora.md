@@ -47,7 +47,7 @@ umbrales económicos y eliminar el código sin consumidor.
 
 | Defecto | Efecto medido |
 |---|---|
-| La puerta de no inferioridad penalizaba a los candidatos **superiores**: cuanto mayor la diferencia, más ancho el intervalo | `feature_preset` pasa de `core` (Rank-IC 0,0730) a `technical` (0,0994). El candidato descartado fallaba por 0,00023 |
+| La puerta de no inferioridad penalizaba a los candidatos **superiores**: cuanto mayor la diferencia, más ancho el intervalo | `feature_preset` pasa de `core` (Rank-IC 0,0730) a `all` (0,0958), con ventaja pareada +0,0216. Ningún retador era elegible pese a dominar |
 | `market_regime_feature` se decidió sobre una ventaja de 0,00112, por debajo del ruido | Pasa de `True` a `False` por simplicidad |
 | `meta_method` se decidió sobre una ventaja de 0,00033 | Se mantiene, pero ahora registrado como empate técnico, no como victoria |
 | Emparejamiento por cadena de fecha con rejillas desplazadas por `execution_lag_days` | Se empareja por periodo mensual; sin bloque completo común el resultado se marca no aplicable en vez de devolver `ci_low = 0,0` |
@@ -59,6 +59,18 @@ umbrales económicos y eliminar el código sin consumidor.
 | Una posición sin precio se marcaba plana | Convención de exclusión tipo CRSP (−30 %) y liquidación contra efectivo |
 | `subsample=0.8` sin `subsample_freq`: el bagging nunca se activaba | `subsample_freq=1` |
 | Nulo de carteras aleatorias con percentil 95 de CAGR del 107 % | Exige cobertura anual completa, aplica la guarda de datos y paga los mismos costes |
+
+### Catálogo de presets: solo `core` y `all`
+
+Se retiran `fundamental` y `technical`. El motivo no es de resultado sino de diseño: ninguno de los
+dos alimenta a los cinco agentes —`fundamental` deja sin features a momentum y risk, y `technical` a
+quality, value y growth—, de modo que un Study que los eligiera no estaría respondiendo «qué
+información necesita cada agente» sino «qué pasa si amputo parte de la arquitectura». Ambos presets
+supervivientes mantienen los cinco agentes activos: `core` con su bloque esencial y `all` con toda la
+profundidad disponible de cada especialidad.
+
+Este cambio interactúa con la corrección de la puerta pareada: con el catálogo reducido, el ganador
+de `feature_preset` pasa de `core` a `all`.
 
 ### Cartera: de percentiles a puntos básicos
 

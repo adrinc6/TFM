@@ -86,7 +86,11 @@ eso el informe debe mostrar su sensibilidad explícitamente.
 
 ### 4.2 Representación
 
-Los presets core, fundamental, technical y all seleccionan bloques cerrados. También pueden
+Los presets core y all seleccionan bloques cerrados. **Ambos alimentan a los cinco agentes**: un
+preset que deja a un agente sin ningún bloque activo lo elimina de hecho del sistema, y entonces la
+comparación deja de medir qué información necesita cada agente para medir qué pasa al amputar parte
+de la arquitectura. `core` da a cada agente su bloque esencial; `all` le da toda la profundidad
+disponible de su especialidad. También pueden
 compararse momentum fundamental, régimen de mercado, neutralización sectorial, winsorización,
 máximo de features y poda por estabilidad OOS. No se admiten listas manuales de features.
 

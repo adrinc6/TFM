@@ -50,13 +50,12 @@ STAGE_DETAILS = {
     },
 }
 
+# Dos presets, y ambos alimentan a los cinco agentes. Un preset que deja a un agente sin ningún
+# bloque activo lo elimina de hecho del sistema, lo que convierte la comparación en «cinco agentes
+# frente a dos» en vez de «qué información necesita cada agente». La pregunta que interesa es cuánta
+# profundidad de información aporta valor, no qué pasa si se amputa parte de la arquitectura.
 FEATURE_PRESETS = {
     "core": ("quality_core", "value_core", "growth_acceleration", "momentum_core", "price_risk"),
-    "fundamental": (
-        "quality_core", "quality_efficiency", "financial_strength", "value_core",
-        "value_cashflow", "growth_acceleration", "fundamental_stability",
-    ),
-    "technical": ("momentum_core", "momentum_trend", "price_risk", "market_liquidity"),
     "all": (
         "quality_core", "quality_efficiency", "financial_strength", "value_core",
         "value_cashflow", "growth_acceleration", "fundamental_stability",
@@ -170,9 +169,7 @@ def _label(identifier: str, value: Any) -> str:
         "objective": {"rank_regression": "Regresión de ranking", "ranking": "Ranking directo"},
         "feature_preset": {
             "core": "Core (lo esencial de cada agente)",
-            "fundamental": "Fundamental (todo lo contable)",
-            "technical": "Técnico (todo lo de precio)",
-            "all": "Todo (fundamental + técnico)",
+            "all": "Todo (catálogo completo)",
         },
         "winsorization": {0.0: "Sin recorte", 0.01: "1 %", 0.025: "2,5 %"},
         "max_features_per_agent": {8: "8 variables", 12: "12 variables", 20: "20 variables"},
@@ -240,10 +237,8 @@ def _description(identifier: str, value: Any) -> str:
             "ranking": "El modelo aprende directamente a poner unas acciones por delante de otras (aprende el orden, no intenta acertar la magnitud del retorno). Suele ajustar mejor a lo que realmente se necesita: un ranking, no una predicción exacta.",
         },
         "feature_preset": {
-            "core": "Cada agente recibe solo su bloque de información más esencial y directo: Calidad usa solo rentabilidad (ROE, márgenes...); Valor usa solo múltiplos de precio (PER, P/VC...); Crecimiento usa solo aceleración de resultados; Momentum usa solo retornos relativos recientes; Riesgo usa solo volatilidad y drawdown de precio. Es el conjunto más pequeño y simple de factores: menos ruido, pero también menos matices.",
-            "fundamental": "Los agentes reciben todos los bloques que vienen de los estados financieros de la empresa: rentabilidad, eficiencia operativa, solidez de balance (deuda), múltiplos de valoración, flujo de caja, aceleración de crecimiento y estabilidad de los fundamentales a lo largo del tiempo. No incluye nada calculado a partir del precio de mercado (momentum, volatilidad). Útil para aislar si lo que aporta valor es \"lo que dicen las cuentas de la empresa\".",
-            "technical": "Los agentes reciben todos los bloques calculados a partir del precio y el volumen de cotización: momentum a distintos plazos, tendencia respecto a medias móviles, volatilidad/drawdown y liquidez de mercado. No incluye nada de los estados financieros. Útil para aislar si lo que aporta valor es \"cómo se ha movido el precio\", sin mirar las cuentas.",
-            "all": "Cada agente recibe absolutamente todos los bloques de información disponibles en el catálogo: fundamentales completos más todos los factores técnicos de precio. Es el conjunto más rico y también el más caro de calcular; puede aportar más señal, pero también más ruido y riesgo de sobreajuste.",
+            "core": "Cada agente recibe solo su bloque de información más esencial y directo: Calidad usa solo rentabilidad (ROE, márgenes...); Valor usa solo múltiplos de precio (PER, P/VC...); Crecimiento usa solo aceleración de resultados; Momentum usa solo retornos relativos recientes; Riesgo usa solo volatilidad y drawdown de precio. Es el conjunto más pequeño y simple: menos ruido y menos riesgo de sobreajuste, pero también menos matices. Los cinco agentes siguen activos.",
+            "all": "Cada agente recibe todos los bloques de su especialidad disponibles en el catálogo: Calidad añade eficiencia operativa y solidez de balance; Valor añade múltiplos de flujo de caja; Crecimiento añade estabilidad de los fundamentales; Momentum añade tendencia respecto a medias móviles; Riesgo añade liquidez de mercado. Es el conjunto más rico y el más caro de calcular; puede aportar más señal, pero también más ruido. Los cinco agentes siguen activos, cada uno con más profundidad.",
         },
         "winsorization": {
             0.0: "No se recorta ningún valor extremo (outlier) de los factores antes de entrenar. Un dato anómalo (por ejemplo un PER disparatado por un beneficio casi nulo) puede distorsionar el aprendizaje.",
@@ -380,7 +375,7 @@ def recommended_definition() -> dict[str, dict[str, Any]]:
         "train_lookback_years": [8, 12],
         "execution_lag_days": [45, 60],
         "recency_weighting": ["off", "linear"],
-        "feature_preset": ["core", "fundamental", "all"],
+        "feature_preset": ["core", "all"],
         "fundamental_momentum": [False, True],
         "meta_method": ["equal", "stacked_rolling_free", "stacked_rolling_bounded"],
     }

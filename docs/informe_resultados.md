@@ -116,10 +116,12 @@ cinco semillas por agente y la publicación del rango de alfa entre semillas.
 
 ### Defectos que invalidan la selección de este Study
 
-1. **La regla eligió el candidato peor.** `feature_preset = technical` (Rank-IC 0,0994, mejor en el
-   64,1 % de las cohortes, ventaja media +0,0265) se descartó frente a `core` (0,0730) porque el
-   límite inferior de su intervalo pareado quedó en −0,01023 frente a un margen de −0,01: **falló por
-   0,00023** en un bootstrap de 1 000 extracciones. Con la puerta corregida gana `technical`.
+1. **La regla eligió el candidato peor.** Ningún retador de `feature_preset` resultó elegible pese a
+   que dos superaban claramente al incumbente: `all` (Rank-IC 0,0958, ventaja pareada +0,0216, mejor
+   en el 59,0 % de las cohortes) y el entonces disponible `technical` (0,0994, +0,0265, 64,1 %), que
+   falló por **0,00023** frente al margen de −0,01. La causa es que el límite inferior del intervalo
+   se ensancha con la diferencia respecto al incumbente, de modo que la prueba castigaba justo a los
+   candidatos superiores. Con la puerta corregida y el catálogo de dos presets, **gana `all`**.
 2. **Dos decisiones se tomaron sobre ruido.** `market_regime_feature` (ventaja +0,00112) y
    `meta_method` (+0,00033). Con la regla corregida, la primera pasa a `False` por simplicidad y la
    segunda queda registrada como empate técnico.
@@ -129,9 +131,13 @@ cinco semillas por agente y la publicación del rango de alfa entre semillas.
 4. **Colisión de caché.** `evaluation_key` no incluía el hash del dataset. La misma clave
    `7ec85537…` aparece asociada a dos resultados distintos (CAGR 0,1468 y 0,1692); las decisiones se
    tomaron sobre un dataset y el ganador se recalculó sobre otro.
-5. **La ablación fundamental/técnico no medía lo que decía.** Seis factores derivados de precio se
+5. **La ablación por presets no medía lo que decía.** Seis factores derivados de precio se
    inyectaban en el agente momentum fuera de todo condicional, de modo que el preset `fundamental`
-   —definido como «nada calculado a partir del precio»— seguía recibiéndolos.
+   —definido como «nada calculado a partir del precio»— seguía recibiéndolos. Al corregirlo se hizo
+   evidente un problema de diseño más profundo: `fundamental` y `technical` dejan agentes enteros sin
+   ninguna feature, así que no comparaban qué información necesita cada agente sino qué ocurre al
+   amputar parte de la arquitectura. Ambos se retiran del catálogo; quedan `core` y `all`, que
+   mantienen los cinco agentes activos.
 
 ### Contraste que el modelo aparentemente suspendía
 

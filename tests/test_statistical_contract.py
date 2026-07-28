@@ -94,9 +94,9 @@ def test_gate_admits_a_challenger_that_dominates_the_incumbent() -> None:
     incumbent_values = (common + 0.073).tolist()
     challenger_values = (common + 0.099 + rng.normal(0.0, 0.02, 117)).tolist()
     incumbent = {"candidate_id": "base", "value": "core", "result": _result(incumbent_values, key="a")}
-    challenger = {"candidate_id": "challenger", "value": "technical", "result": _result(challenger_values, key="b")}
+    challenger = {"candidate_id": "challenger", "value": "all", "result": _result(challenger_values, key="b")}
     decision = choose_candidate(incumbent, [incumbent, challenger], "feature_preset")
-    assert decision["winner_value"] == "technical"
+    assert decision["winner_value"] == "all"
     rows = {row["candidate_id"]: row for row in decision["candidates"]}
     assert rows["challenger"]["gates"]["paired_dominates_incumbent"] is True
     assert rows["challenger"]["paired_advantage"] > 0
@@ -145,7 +145,7 @@ def test_non_inferiority_margin_is_still_honoured_for_similar_candidates() -> No
     common = rng.normal(0.06, 0.05, 117)
     incumbent = {"candidate_id": "base", "value": "core", "result": _result(common.tolist(), key="a")}
     worse = {
-        "candidate_id": "worse", "value": "fundamental",
+        "candidate_id": "worse", "value": "all",
         "result": _result((common - 0.06).tolist(), key="b"),
     }
     decision = choose_candidate(incumbent, [incumbent, worse], "feature_preset")
