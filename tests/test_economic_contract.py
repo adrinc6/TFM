@@ -47,8 +47,9 @@ def test_rotation_requires_clearing_the_round_trip_cost() -> None:
     state = PortfolioState(holdings={"A": 0.5, "B": 0.5})
     settings = Settings(
         target_size=2, commission_bps=5, slippage_bps=10, rotation_edge_bps=50,
-        exit_expected_alpha_bps=0.0, sizing_mode="equal",
+        exit_expected_alpha_bps=0.0, sizing_mode="equal", target_horizon_months=12,
     )
+    # Con horizonte de 12 meses la conversión anual->horizonte es la identidad.
     # Umbral = 2*(5+10) + 50 = 80 pb. Ventaja de C sobre B = 70 pb: insuficiente.
     insufficient = _scores(ticker=["A", "B", "C"], meta_rank=[0.91, 0.84, 0.92],
                            expected_excess_return=[0.0200, 0.0100, 0.0170])
@@ -71,7 +72,7 @@ def test_position_below_expected_alpha_threshold_is_sold_to_cash() -> None:
     orders, weights = decide_orders(
         state, scores,
         Settings(target_size=4, cash_policy="opportunity_cash", max_cash_weight=0.25,
-                 exit_expected_alpha_bps=100.0, sizing_mode="equal"),
+                 exit_expected_alpha_bps=100.0, sizing_mode="equal", target_horizon_months=12),
     )
     assert {order["reason"] for order in orders} >= {"expected_alpha_below_exit"}
     assert set(weights) == {"A", "C", "D"}
@@ -140,7 +141,9 @@ def test_entry_needs_the_exit_threshold_plus_its_own_round_trip() -> None:
     settings = Settings(
         target_size=2, cash_policy="opportunity_cash", max_cash_weight=0.25,
         exit_expected_alpha_bps=100.0, commission_bps=5, slippage_bps=10, sizing_mode="equal",
+        target_horizon_months=12,
     )
+    # Con horizonte de 12 meses la conversión anual->horizonte es la identidad.
     # Banda: mantener exige 100 pb; entrar exige 100 + 2*(5+10) = 130 pb. B está en 115 pb.
     in_band = _scores(ticker=["A", "B"], meta_rank=[0.99, 0.95],
                       expected_excess_return=[0.0400, 0.0115])
@@ -175,3 +178,124 @@ def test_alpha_proportional_sizing_caps_at_two_to_one() -> None:
     )
     assert weights["A"] == 2 / 3
     assert weights["B"] == 1 / 3
+
+
+def test_annual_threshold_converts_geometrically_not_linearly() -> None:
+    """Los umbrales de catálogo son anuales y se componen al horizonte, no se dividen linealmente."""
+    state = PortfolioState(holdings={"A": 0.25, "B": 0.25, "C": 0.25, "D": 0.25})
+    settings = Settings(
+        target_size=4, cash_policy="opportunity_cash", max_cash_weight=0.25,
+        exit_expected_alpha_bps=100.0, sizing_mode="equal", target_horizon_months=6,
+    )
+    # Umbral geométrico a 6 meses: (1,01)^0,5 - 1 ≈ 49,876 pb. Un prorrateo lineal simple daría
+    # exactamente 50 pb. B tiene 49,9 pb: por encima del umbral geométrico real (no se vende) pero
+    # por debajo de los 50 pb que habría dado un prorrateo lineal (se habría vendido).
+    scores = _scores(ticker=["A", "B", "C", "D"], meta_rank=[0.95, 0.90, 0.85, 0.80],
+                     expected_excess_return=[0.0300, 0.00499, 0.0250, 0.0200])
+    orders, weights = decide_orders(state, scores, settings)
+    assert not [order for order in orders if order["reason"] == "expected_alpha_below_exit"]
+    assert set(weights) == {"A", "B", "C", "D"}
+
+
+def test_minimum_holding_period_quarter_horizon_protects_for_one_quarter() -> None:
+    """Con horizonte de 12 meses, quarter_horizon exige 3 meses antes de vender o rotar."""
+    settings = Settings(
+        target_size=2, cash_policy="opportunity_cash", max_cash_weight=0.25,
+        exit_expected_alpha_bps=0.0, rotation_edge_bps=0.0, commission_bps=0, slippage_bps=0,
+        sizing_mode="equal", target_horizon_months=12, minimum_holding_period="quarter_horizon",
+    )
+    state = PortfolioState(
+        holdings={"A": 0.5, "B": 0.5}, entry_dates={"A": "2020-01-31", "B": "2020-01-31"},
+    )
+    outsider = pd.DataFrame({
+        "ticker": ["A", "B", "C"], "is_quarterly": [True] * 3,
+        "meta_rank": [0.60, 0.30, 0.95], "expected_excess_return": [0.0050, 0.0001, 0.0400],
+    })
+    # A los 2 meses (2020-03-31): por debajo del mínimo de un trimestre, nada se mueve.
+    early = outsider.assign(snapshot_date="2020-03-31")
+    orders, weights = decide_orders(state, early, settings)
+    assert not orders
+    assert set(weights) == {"A", "B"}
+
+    # A los 3 meses (2020-04-30): mínimo cumplido, la rotación ya puede desplazar a B.
+    ready = outsider.assign(snapshot_date="2020-04-30")
+    orders, weights = decide_orders(state, ready, settings)
+    assert orders
+    assert "C" in weights
+
+
+def test_minimum_holding_period_half_and_full_horizon_extend_protection() -> None:
+    """half_horizon exige 6 meses y full_horizon 12, con horizonte de 12 meses."""
+    base = {
+        "target_size": 2, "cash_policy": "opportunity_cash", "max_cash_weight": 0.25,
+        "exit_expected_alpha_bps": 0.0, "rotation_edge_bps": 0.0, "commission_bps": 0,
+        "slippage_bps": 0, "sizing_mode": "equal", "target_horizon_months": 12,
+    }
+    state = PortfolioState(
+        holdings={"A": 0.5, "B": 0.5}, entry_dates={"A": "2020-01-31", "B": "2020-01-31"},
+    )
+    scores_at_6_months = pd.DataFrame({
+        "ticker": ["A", "B", "C"], "snapshot_date": ["2020-07-31"] * 3, "is_quarterly": [True] * 3,
+        "meta_rank": [0.60, 0.30, 0.95], "expected_excess_return": [0.0050, 0.0001, 0.0400],
+    })
+    _, weights_half = decide_orders(
+        state, scores_at_6_months, Settings(**{**base, "minimum_holding_period": "half_horizon"}),
+    )
+    assert "C" in weights_half
+
+    orders_full, weights_full = decide_orders(
+        state, scores_at_6_months, Settings(**{**base, "minimum_holding_period": "full_horizon"}),
+    )
+    assert not orders_full
+    assert set(weights_full) == {"A", "B"}
+
+
+def test_minimum_holding_period_none_allows_immediate_sale() -> None:
+    """Sin mínimo, una posición recién comprada puede venderse o rotarse en el mismo snapshot."""
+    settings = Settings(
+        target_size=2, cash_policy="opportunity_cash", max_cash_weight=0.25,
+        exit_expected_alpha_bps=0.0, rotation_edge_bps=0.0, commission_bps=0, slippage_bps=0,
+        sizing_mode="equal", target_horizon_months=12, minimum_holding_period="none",
+    )
+    state = PortfolioState(
+        holdings={"A": 0.5, "B": 0.5}, entry_dates={"A": "2020-03-31", "B": "2020-03-31"},
+    )
+    scores = pd.DataFrame({
+        "ticker": ["A", "B", "C"], "snapshot_date": ["2020-03-31"] * 3, "is_quarterly": [True] * 3,
+        "meta_rank": [0.60, 0.30, 0.95], "expected_excess_return": [0.0050, 0.0001, 0.0400],
+    })
+    _, weights = decide_orders(state, scores, settings)
+    assert "C" in weights
+
+
+def test_price_only_sell_only_allows_sale_but_blocks_replacement() -> None:
+    """En un snapshot de solo precio se puede vender una posición mala pero no comprar reemplazo."""
+    state = PortfolioState(holdings={"A": 0.5, "B": 0.5})
+    settings = Settings(
+        target_size=2, cash_policy="fully_invested", exit_expected_alpha_bps=100.0,
+        sizing_mode="equal", target_horizon_months=12, price_only_sell_only=True,
+    )
+    scores = pd.DataFrame({
+        "ticker": ["A", "B", "C"], "snapshot_date": ["2020-04-30"] * 3, "is_quarterly": [False] * 3,
+        "meta_rank": [0.95, 0.30, 0.99], "expected_excess_return": [0.0300, 0.0005, 0.0500],
+    })
+    orders, weights = decide_orders(state, scores, settings)
+    assert {order["reason"] for order in orders} == {"expected_alpha_below_exit"}
+    assert set(weights) == {"A"}
+    assert 1.0 - sum(weights.values()) > 0
+
+
+def test_price_only_sell_only_has_no_effect_on_quarterly_snapshots() -> None:
+    """Con fundamentales nuevos, la variable no cambia nada: compra y rotación normales."""
+    state = PortfolioState(holdings={"A": 0.5, "B": 0.5})
+    settings = Settings(
+        target_size=2, cash_policy="fully_invested", exit_expected_alpha_bps=100.0,
+        sizing_mode="equal", target_horizon_months=12, price_only_sell_only=True,
+    )
+    scores = pd.DataFrame({
+        "ticker": ["A", "B", "C"], "snapshot_date": ["2020-04-30"] * 3, "is_quarterly": [True] * 3,
+        "meta_rank": [0.95, 0.30, 0.99], "expected_excess_return": [0.0300, 0.0005, 0.0500],
+    })
+    _, weights = decide_orders(state, scores, settings)
+    assert set(weights) == {"A", "C"}
+    assert sum(weights.values()) == 1.0

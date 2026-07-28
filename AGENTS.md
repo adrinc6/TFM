@@ -33,11 +33,14 @@ Antes de cambiar ciencia, ejecución, almacenamiento o dashboard, leer `docs/met
 - Toda feature, etiqueta y cohorte del meta debe ser point-in-time y estar cerrada.
 - Los cinco agentes quality, value, growth, momentum y risk permanecen activos.
 - SPY solo es benchmark y nunca una posición. Los umbrales de la cartera son económicos, en
-  puntos básicos de alfa esperado, y una venta solo se emite si el destino del dinero (otra
-  acción o efectivo) es mejor que la posición después de costes; las entradas tienen histéresis.
-  La política de efectivo (`fully_invested` u `opportunity_cash`, remunerado al 0 %, con tope y
-  suelo de diversificación) es una decisión de cartera, diagnóstica: no altera el Rank-IC y por
-  tanto no puede elegir modelo.
+  puntos básicos ANUALES de alfa esperado (convertidos geométricamente al horizonte del modelo), y
+  una venta solo se emite si el destino del dinero (otra acción o efectivo) es mejor que la
+  posición después de costes; las entradas tienen histéresis y un mínimo de tenencia
+  (`minimum_holding_period`) puede bloquear toda venta por tiempo, no por economía. La política de
+  efectivo (`fully_invested` u `opportunity_cash`, remunerado al 0 %, con tope y suelo de
+  diversificación) es una decisión de cartera, diagnóstica: no altera el Rank-IC y por tanto no
+  puede elegir modelo. Todas las variables de cartera comparten el mismo propósito: estabilidad
+  del modelo ya congelado, nunca más alfa.
 
 ## Ejecución y persistencia
 

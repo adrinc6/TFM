@@ -13,7 +13,7 @@ from module.evaluation.profiles import PROFILE_NAMES
 from module.modeling.catalog import AGENT_NAMES
 
 
-CATALOG_VERSION = 4
+CATALOG_VERSION = 5
 SELECTION_ERAS = ((2015, 2018), (2019, 2021), (2022, 2024))
 # Frontera única entre la ventana que decide y la que solo confirma. Toda métrica de selección se
 # recorta aquí; 2025-26 no participó en ninguna decisión y por eso es la confirmación fuera de
@@ -146,12 +146,14 @@ VARIABLES: tuple[VariableSpec, ...] = (
     _v("meta_method", "Combinación de agentes", "Equiponderación o Ridge rolling causal con límites de peso.", "meta", ("equal", "stacked_rolling_free", "stacked_rolling_bounded"), "stacked_rolling_bounded", "meta", "meta", 10),
     _v("meta_history_quarters", "Ventana del meta", "Número de cohortes trimestrales cerradas usadas por el stacker.", "meta", (8, 16), 16, "meta", "meta", 20, depends_on=(("meta_method", ("stacked_rolling_free", "stacked_rolling_bounded")),)),
     _v("target_size", "Número de posiciones", "Número objetivo de acciones simultáneas.", "portfolio", (8, 12, 16, 25, 50), 12, "backtest", "backtest", 10, predictive=False),
-    _v("exit_expected_alpha_bps", "Alfa mínimo para conservar", "Alfa esperado mínimo, en puntos básicos, antes de vender una posición.", "portfolio", (0.0, 100.0, 250.0), 100.0, "backtest", "backtest", 20, predictive=False),
-    _v("rotation_edge_bps", "Ventaja para sustituir", "Ventaja de alfa esperado, en puntos básicos, exigida por encima del coste de ida y vuelta.", "portfolio", (25.0, 50.0, 100.0), 50.0, "backtest", "backtest", 30, predictive=False),
+    _v("exit_expected_alpha_bps", "Alfa mínimo para conservar", "Alfa esperado mínimo, en puntos básicos ANUALES, antes de vender una posición (se convierte geométricamente al horizonte del modelo).", "portfolio", (0.0, 100.0, 250.0), 100.0, "backtest", "backtest", 20, predictive=False),
+    _v("rotation_edge_bps", "Ventaja para sustituir", "Ventaja de alfa esperado, en puntos básicos ANUALES, exigida por encima del coste de ida y vuelta (se convierte geométricamente al horizonte del modelo).", "portfolio", (25.0, 50.0, 100.0), 50.0, "backtest", "backtest", 30, predictive=False),
     _v("cash_policy", "Política de efectivo", "Invertir siempre el 100 % o dejar efectivo cuando no hay oportunidades por encima del umbral.", "portfolio", ("fully_invested", "opportunity_cash"), "fully_invested", "backtest", "backtest", 35, predictive=False),
     _v("max_cash_weight", "Efectivo máximo", "Peso máximo que puede quedar sin invertir bajo la política de oportunidad.", "portfolio", (0.0, 0.10, 0.25), 0.25, "backtest", "backtest", 36, predictive=False, depends_on=(("cash_policy", ("opportunity_cash",)),)),
+    _v("minimum_holding_period", "Mínimo de tenencia", "Meses mínimos en cartera, como fracción del horizonte del modelo, antes de poder vender una posición por cualquier motivo (incluida la rotación).", "portfolio", ("none", "quarter_horizon", "half_horizon", "full_horizon"), "none", "backtest", "backtest", 38, predictive=False),
     _v("rebalance_drift_tolerance", "Tolerancia de rebalanceo", "Desviación relativa mínima necesaria para emitir una orden.", "portfolio", (0.0, 0.10, 0.25), 0.25, "backtest", "backtest", 40, predictive=False),
     _v("price_only_strictness_multiplier", "Prudencia sin fundamentales", "Endurece los umbrales en snapshots sin fundamentales nuevos.", "portfolio", (1.0, 1.5, 2.0), 1.5, "backtest", "backtest", 50, predictive=False),
+    _v("price_only_sell_only", "Solo vender sin fundamentales", "En snapshots sin fundamentales nuevos, permite vender una posición mala pero prohíbe comprar cualquier reemplazo.", "portfolio", (False, True), False, "backtest", "backtest", 55, predictive=False),
     _v("sizing_mode", "Reparto de pesos", "Equiponderación o peso proporcional al alfa esperado, con tope 2:1.", "portfolio", ("equal", "alpha_proportional"), "alpha_proportional", "backtest", "backtest", 60, predictive=False),
     _v("commission_bps", "Comisión", "Comisión aplicada sobre el nocional operado.", "portfolio", (0.0, 5.0, 10.0), 5.0, "backtest", "backtest", 70, predictive=False),
     _v("slippage_bps", "Slippage", "Impacto estimado aplicado sobre el nocional operado.", "portfolio", (5.0, 10.0, 20.0), 10.0, "backtest", "backtest", 80, predictive=False),
@@ -189,10 +191,16 @@ def _label(identifier: str, value: Any) -> str:
         },
         "meta_history_quarters": {8: "8 trimestres (2 años)", 16: "16 trimestres (4 años)"},
         "target_size": {8: "8 posiciones", 12: "12 posiciones", 16: "16 posiciones", 25: "25 posiciones", 50: "50 posiciones"},
-        "exit_expected_alpha_bps": {0.0: "0 pb (solo alfa negativo)", 100.0: "100 pb (1 %)", 250.0: "250 pb (2,5 %)"},
-        "rotation_edge_bps": {25.0: "25 pb sobre coste", 50.0: "50 pb sobre coste", 100.0: "100 pb sobre coste"},
+        "exit_expected_alpha_bps": {0.0: "0 pb/año (solo alfa negativo)", 100.0: "100 pb/año (1 %)", 250.0: "250 pb/año (2,5 %)"},
+        "rotation_edge_bps": {25.0: "25 pb/año sobre coste", 50.0: "50 pb/año sobre coste", 100.0: "100 pb/año sobre coste"},
         "cash_policy": {"fully_invested": "Siempre 100 % invertido", "opportunity_cash": "Efectivo por oportunidad"},
         "max_cash_weight": {0.0: "Sin efectivo", 0.10: "Hasta 10 %", 0.25: "Hasta 25 %"},
+        "minimum_holding_period": {
+            "none": "Sin mínimo",
+            "quarter_horizon": "Un cuarto del horizonte",
+            "half_horizon": "Mitad del horizonte",
+            "full_horizon": "Igual al horizonte",
+        },
         "rebalance_drift_tolerance": {0.0: "Sin tolerancia", 0.10: "10 %", 0.25: "25 %"},
         "price_only_strictness_multiplier": {1.0: "Sin extra (x1,0)", 1.5: "Prudente (x1,5)", 2.0: "Muy prudente (x2,0)"},
         "sizing_mode": {"equal": "Equiponderado", "alpha_proportional": "Proporcional al alfa esperado"},
@@ -295,14 +303,24 @@ def _description(identifier: str, value: Any) -> str:
             50: "La cartera final mantiene 50 acciones distintas a la vez. Máxima amplitud del catálogo: cada acción pesa poco y el resultado depende de la calidad media de la ordenación, no de unos pocos aciertos. Es la configuración que más se acerca a cosechar el Rank-IC completo, a costa de parecerse más al índice.",
         },
         "exit_expected_alpha_bps": {
-            0.0: "Una acción en cartera solo se vende cuando su alfa esperado se vuelve negativo. Umbral mínimo: la posición se conserva mientras el modelo espere de ella algo mejor que el mercado, por poco que sea. Es el criterio que menos opera.",
-            100.0: "Una acción en cartera se vende cuando su alfa esperado cae por debajo de 100 puntos básicos (1 %) sobre el índice, en el horizonte del modelo. Exige una expectativa positiva clara para seguir ocupando una plaza.",
-            250.0: "Una acción en cartera se vende cuando su alfa esperado cae por debajo de 250 puntos básicos (2,5 %) sobre el índice. Umbral exigente: solo conserva convicciones fuertes, lo que aumenta la rotación y, con ella, los costes.",
+            0.0: "Una acción en cartera solo se vende cuando su alfa esperado (convertido a tasa anual) se vuelve negativo. Umbral mínimo: la posición se conserva mientras el modelo espere de ella algo mejor que el mercado, por poco que sea. Es el criterio que menos opera.",
+            100.0: "El umbral se define como 100 puntos básicos POR AÑO (1 % anual) y se convierte de forma compuesta al horizonte real del modelo antes de comparar: con un horizonte de 12 meses equivale a 100 pb sobre el horizonte; con 6 meses, a unos 50 pb; con 3 meses, a unos 25 pb. Definirlo en anual hace que el mismo valor signifique lo mismo sin importar qué horizonte se elija.",
+            250.0: "El umbral se define como 250 puntos básicos POR AÑO (2,5 % anual), convertido de forma compuesta al horizonte del modelo. Umbral exigente: solo conserva convicciones fuertes, lo que aumenta la rotación y, con ella, los costes.",
         },
         "rotation_edge_bps": {
-            25.0: "Para sustituir una posición por una candidata externa, la ventaja de alfa esperado debe superar el coste completo de ida y vuelta de la operación más 25 puntos básicos. Umbral bajo: rota con relativa facilidad, pero nunca por debajo de lo que cuesta operar.",
-            50.0: "Para sustituir una posición por una candidata externa, la ventaja de alfa esperado debe superar el coste completo de ida y vuelta más 50 puntos básicos. Exigencia intermedia.",
-            100.0: "Para sustituir una posición por una candidata externa, la ventaja de alfa esperado debe superar el coste de ida y vuelta más 100 puntos básicos. Umbral alto: solo rota ante una mejora económica clara, lo que reduce mucho la rotación y el coste asociado.",
+            25.0: "La ventaja exigida se define como 25 puntos básicos POR AÑO por encima del coste de ida y vuelta, convertida de forma compuesta al horizonte del modelo antes de comparar. Umbral bajo: rota con relativa facilidad, pero nunca por debajo de lo que cuesta operar.",
+            50.0: "La ventaja exigida se define como 50 puntos básicos POR AÑO, convertida de forma compuesta al horizonte del modelo. Exigencia intermedia.",
+            100.0: "La ventaja exigida se define como 100 puntos básicos POR AÑO, convertida de forma compuesta al horizonte del modelo. Umbral alto: solo rota ante una mejora económica clara, lo que reduce mucho la rotación y el coste asociado.",
+        },
+        "minimum_holding_period": {
+            "none": "Una posición puede venderse (por caída del alfa esperado o por rotación) en cualquier momento, sin importar cuánto tiempo lleve en cartera, si la regla económica lo justifica. Es el comportamiento de referencia: máxima capacidad de reacción, mayor rotación potencial.",
+            "quarter_horizon": "Una posición no puede venderse por ningún motivo hasta llevar en cartera al menos un cuarto del horizonte del modelo (con un horizonte de 12 meses, 3 meses mínimo). Pensado para revisiones trimestrales sobre un horizonte anual: da a cada elección al menos un trimestre completo antes de poder deshacerla.",
+            "half_horizon": "Una posición no puede venderse por ningún motivo hasta llevar en cartera al menos la mitad del horizonte del modelo (con un horizonte de 12 meses, 6 meses mínimo). Reduce bastante la rotación de alta frecuencia a cambio de tardar más en corregir una posición que deja de funcionar.",
+            "full_horizon": "Una posición no puede venderse por ningún motivo hasta cumplir el horizonte completo del modelo (con un horizonte de 12 meses, 12 meses mínimo). La protección más fuerte: cada elección se sostiene el tiempo completo para el que fue calibrada, al precio de no poder reaccionar antes aunque la posición vaya mal.",
+        },
+        "price_only_sell_only": {
+            False: "En los snapshots que solo traen precio nuevo (sin resultados fundamentales frescos) se compra y se rota exactamente igual que en los snapshots con datos nuevos. Es el comportamiento de referencia.",
+            True: "En los snapshots que solo traen precio nuevo, se sigue permitiendo vender una posición cuyo alfa esperado ha caído por debajo del umbral, pero no se compra ningún reemplazo: ni una compra nueva, ni un relleno obligatorio, ni una rotación. La plaza vendida queda en efectivo hasta el siguiente snapshot con fundamentales reales, porque no hay información nueva que justifique elegir una acción distinta a la ya elegida con datos de verdad.",
         },
         "cash_policy": {
             "fully_invested": "La cartera está siempre invertida al 100 % en acciones: si una plaza queda libre se rellena con la mejor candidata disponible, aunque su alfa esperado sea bajo. Es la política de referencia y la que se compara contra el índice sin ninguna ventaja de posicionamiento.",

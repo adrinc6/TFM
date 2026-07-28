@@ -445,17 +445,29 @@ rato): **entrar** a una posición exige más alfa esperado que **mantenerse** en
 seguridad, una acción con un alfa esperado justo en la frontera se compraría y se vendería en meses
 consecutivos, pagando comisiones sin ganar nada a cambio.
 
-### Las 9 variables de cartera
+### Las 11 variables de cartera
+
+Y una idea que vale para las once: **ninguna busca más rentabilidad**. El modelo (los cinco
+analistas y el jefe de equipo) ya está elegido y congelado antes de llegar aquí, solo por su
+capacidad de ordenar acciones. Probar distintas combinaciones de estas variables no es buscar "la
+cartera que más gana" —eso sería exactamente el error de "elegir mirando el resultado" que este
+proyecto evita en todo lo demás— sino encontrar la forma más **estable y sostenible en el tiempo**
+de aprovechar ese ranking ya fijo: menos operaciones innecesarias, menos comprar y vender sin motivo
+real, sin actuar a ciegas cuando no hay datos nuevos que lo justifiquen. Si una configuración da algo
+más de rentabilidad pero mucha más rotación o resultados que cambian de signo según el año, no se
+prefiere solo por eso.
 
 | Variable | Qué decide |
 |---|---|
 | `target_size` | Cuántas acciones distintas mantiene la cartera a la vez. |
-| `exit_expected_alpha_bps` | Por debajo de qué alfa esperado (en pb) se considera que una posición "ya no vale la pena". |
-| `rotation_edge_bps` | Cuánta ventaja extra (por encima del coste de ida y vuelta) exige una rotación para autorizarse. |
+| `exit_expected_alpha_bps` | Por debajo de qué alfa esperado (en pb **anuales**) se considera que una posición "ya no vale la pena". |
+| `rotation_edge_bps` | Cuánta ventaja extra (en pb **anuales**, por encima del coste de ida y vuelta) exige una rotación para autorizarse. |
 | `cash_policy` | Si la cartera está siempre invertida al 100 % (`fully_invested`) o puede dejar huecos en efectivo (`opportunity_cash`). |
 | `max_cash_weight` | Cuánto efectivo como máximo se permite bajo `opportunity_cash`. |
+| `minimum_holding_period` | Meses mínimos que debe pasar una posición en cartera, como fracción del horizonte del modelo, antes de poder venderse por cualquier motivo. |
 | `rebalance_drift_tolerance` | Cuánto puede desviarse el peso real de una posición de su peso objetivo antes de generar una orden de ajuste. |
 | `price_only_strictness_multiplier` | Cuánto más exigentes se vuelven los umbrales en meses donde solo hay precio nuevo, sin resultados financieros nuevos. |
+| `price_only_sell_only` | Si en esos mismos meses solo se puede vender (nunca comprar un reemplazo). |
 | `sizing_mode` | Si todas las posiciones pesan igual (`equal`) o si pesan más las de mayor alfa esperado (`alpha_proportional`). |
 | `commission_bps` / `slippage_bps` | Los costes reales que se descuentan por cada operación. |
 
@@ -469,21 +481,43 @@ consecutivos, pagando comisiones sin ganar nada a cambio.
 | **25** | Más amplitud (*breadth*, "anchura"): al repartir entre más apuestas independientes, se recupera señal que una cartera muy concentrada desperdicia (existe un principio llamado la "ley fundamental de la gestión activa" que dice, resumido, que cuantas más apuestas independientes hagas con la misma habilidad de selección, mejor resultado ajustado a riesgo obtienes). |
 | **50** | Máxima amplitud: cada acción pesa poco, el resultado depende de la calidad media de todo el ranking. Se parece más al índice general, con menos posibilidad de un resultado muy distinto (para bien o para mal). |
 
-### `exit_expected_alpha_bps` — el umbral de salida
+### `exit_expected_alpha_bps` y `rotation_edge_bps` — umbrales anuales, convertidos al horizonte
 
-| Valor | Qué significa |
+Antes de ver los valores, una precisión importante: estos dos umbrales se definen en el catálogo
+**por año** (pb/año), no directamente sobre el horizonte del modelo. Y como el horizonte
+(`target_horizon_months`) también puede cambiar (3, 6 o 12 meses), un mismo valor de catálogo tiene
+que traducirse a algo distinto según el horizonte elegido: 250 pb no pueden significar "2,5 % en 3
+meses" (que anualizado es un 10 % exigente) y también "2,5 % en 12 meses" (un 2,5 % mucho más
+relajado) a la vez. La solución: el valor del catálogo es siempre "por año", y antes de compararlo se
+convierte al horizonte real con una fórmula **compuesta** (como el interés compuesto de un depósito),
+no con una simple división:
+
+```text
+umbral_del_horizonte = (1 + umbral_anual)^(meses_horizonte / 12) − 1
+```
+
+**Ejemplo**: con un umbral de salida de 250 pb/año (2,5 % al año):
+
+- Con horizonte de 12 meses: `(1 + 0,025)^(12/12) − 1 = 0,025` → **250 pb**, sin cambios (un año es
+  un año).
+- Con horizonte de 6 meses: `(1 + 0,025)^(6/12) − 1 ≈ 0,01242` → **≈ 124 pb**, no 125 (que sería la
+  mitad exacta, un "prorrateo lineal"). La diferencia entre 124 y 125 es pequeña aquí, pero crece con
+  umbrales más grandes o horizontes más cortos, y usar la fórmula compuesta es coherente con cómo el
+  resto del proyecto calcula la rentabilidad anualizada de la cartera (nunca sumando o restando
+  directamente, siempre "componiendo").
+- Con horizonte de 3 meses: `(1 + 0,025)^(3/12) − 1 ≈ 0,00619` → **≈ 62 pb**.
+
+| Valor de `exit_expected_alpha_bps` | Qué significa |
 |---|---|
-| **0 pb** | Solo se vende cuando el alfa esperado se vuelve negativo (se espera que la acción lo haga peor que el mercado). Es el criterio que menos opera. |
-| **100 pb (1 %, recomendado)** | Se exige una expectativa positiva clara (al menos un 1 % mejor que el mercado) para seguir ocupando una plaza. |
-| **250 pb (2,5 %)** | Solo se conservan convicciones fuertes. Más rotación y más coste. |
+| **0 pb/año** | Solo se vende cuando el alfa esperado se vuelve negativo (se espera que la acción lo haga peor que el mercado). Es el criterio que menos opera; a esta cifra la conversión no le afecta (0 convertido sigue siendo 0). |
+| **100 pb/año (1 %, recomendado)** | Se exige una expectativa positiva clara (equivalente a un 1 % anual) para seguir ocupando una plaza, convertida al horizonte real antes de comparar. |
+| **250 pb/año (2,5 %)** | Solo se conservan convicciones fuertes. Más rotación y más coste. |
 
-### `rotation_edge_bps` — el margen extra para rotar
-
-| Valor | Qué significa |
+| Valor de `rotation_edge_bps` | Qué significa |
 |---|---|
-| **25 pb** | Rota con relativa facilidad, siempre que cubra al menos el coste de operar más 25 pb. |
-| **50 pb (recomendado)** | Exigencia intermedia. |
-| **100 pb** | Solo rota ante una mejora económica clara. Menos rotación y menos coste. |
+| **25 pb/año** | Rota con relativa facilidad, siempre que cubra al menos el coste de operar más el equivalente de 25 pb/año convertido al horizonte. |
+| **50 pb/año (recomendado)** | Exigencia intermedia. |
+| **100 pb/año** | Solo rota ante una mejora económica clara. Menos rotación y menos coste. |
 
 ### `cash_policy` y `max_cash_weight` — la política de efectivo
 
@@ -517,6 +551,50 @@ sí (nunca de una previsión sobre si el mercado en general va a subir o bajar) 
 porque, si dependiera de una previsión de mercado, dejaría de ser "seguir la señal de las acciones" y
 pasaría a ser una apuesta sobre el rumbo general del mercado (lo que se llama **market timing**,
 "adivinar el momento del mercado"), algo que este proyecto no pretende hacer ni medir.
+
+### `minimum_holding_period` — un mínimo de tiempo que no depende de ningún número
+
+Todos los umbrales anteriores son económicos: comparan alfas esperados y costes. Este es distinto:
+es un mínimo de **tiempo**, que se aplica por encima de todo lo demás y bloquea **cualquier** venta
+—tanto la venta a efectivo como la rotación— mientras no se cumpla, aunque la regla económica diga
+que vender sería lo correcto. Se expresa como fracción del horizonte del modelo (`target_horizon_months`):
+
+| Valor | Meses mínimos con horizonte de 12 meses | Qué significa |
+|---|---|---|
+| **none (recomendado)** | 0 | Sin mínimo: una posición puede venderse el mismo mes en que se compró si la regla económica lo justifica. |
+| **quarter_horizon** | 3 | Pensado para cuando el horizonte es de un año y se revisa trimestre a trimestre: da a cada elección al menos un trimestre completo antes de poder deshacerla. |
+| **half_horizon** | 6 | Reduce bastante la rotación de alta frecuencia, a cambio de tardar más en corregir una posición que empieza a ir mal. |
+| **full_horizon** | 12 | La protección más fuerte: cada elección se sostiene el tiempo completo para el que fue calibrada. |
+
+**Ejemplo**: con `quarter_horizon` y horizonte de 12 meses, se compra "MinerCorp" el 31 de enero. El
+28 de febrero (1 mes después) su alfa esperado se desploma y además aparece una candidata muy
+superior: bajo cualquier otra configuración, se rotaría de inmediato. Pero como solo ha pasado 1 mes
+de los 3 exigidos, MinerCorp **no se puede vender todavía**, ni por la caída de alfa ni por la
+rotación. El 30 de abril (3 meses cumplidos) esa protección desaparece y, si la situación sigue
+siendo mala, la venta o la rotación ya se ejecutan con normalidad.
+
+### `price_only_sell_only` — en meses sin resultados nuevos, solo se puede vender
+
+Recuerda que algunos meses solo traen precio actualizado, sin resultados financieros nuevos que lo
+respalden. Con esta variable activada, en esos meses se sigue permitiendo **vender** una posición
+cuyo alfa esperado ya ha caído por debajo del umbral, pero se **prohíbe comprar cualquier
+reemplazo** —ni una compra nueva, ni el relleno obligatorio de `fully_invested`, ni una rotación—.
+La razón: si una acción se eligió con datos financieros reales y ahora no está cumpliendo, tiene
+sentido poder quitarla; pero elegir una acción distinta para ocupar su plaza necesitaría también
+datos reales, y ese mes no los hay.
+
+| Valor | Qué significa |
+|---|---|
+| **False (recomendado)** | Comportamiento de siempre: se compra y se rota igual con o sin resultados nuevos ese mes. |
+| **True** | En meses sin resultados nuevos, solo se puede vender. La plaza vendida queda en efectivo hasta el siguiente mes con resultados reales, sin el tope del 25 % de `opportunity_cash` (es una situación transitoria, no una decisión de cartera). |
+
+**Ejemplo**: "RetailCorp" está en cartera y solo publicó resultados hace dos meses. Este mes solo se
+actualiza su precio, que ha caído con fuerza, y su alfa esperado (recalibrado con ese nuevo precio)
+queda por debajo del umbral de salida. Con `price_only_sell_only = True`, RetailCorp se vende y su
+plaza queda en efectivo — aunque la política de efectivo sea `fully_invested` — porque no hay ningún
+resultado financiero nuevo que respalde elegir otra acción concreta para sustituirla. El mes
+siguiente, cuando lleguen resultados trimestrales frescos, esa plaza se rellena con normalidad si hay
+una candidata que supere el umbral de entrada.
 
 ### `sizing_mode` — cómo se reparte el peso entre posiciones
 
@@ -562,9 +640,11 @@ confirmación de fondo.
 
 ### Ejemplo completo, paso a paso: un snapshot inventado
 
-Imagina una cartera con `target_size = 4`, comisión 5 pb, slippage 10 pb (coste de ida y vuelta:
-2 × (5+10) = **30 pb**), umbral de salida `exit_expected_alpha_bps = 100 pb` y ventaja de rotación
-`rotation_edge_bps = 50 pb`.
+Imagina una cartera con `target_size = 4`, horizonte de 12 meses (así el umbral anual y el umbral
+sobre el horizonte coinciden, sin conversión que complique las cuentas), comisión 5 pb, slippage
+10 pb (coste de ida y vuelta: 2 × (5+10) = **30 pb**), umbral de salida
+`exit_expected_alpha_bps = 100 pb/año` y ventaja de rotación `rotation_edge_bps = 50 pb/año`, sin
+mínimo de tenencia (`minimum_holding_period = none`).
 
 Cartera actual (4 posiciones) con su alfa esperado de este mes, y dos candidatas de fuera:
 
@@ -681,14 +761,21 @@ comprobar tú mismo que el sistema se comporta como se espera:
 
 - **El índice de referencia (SPY) nunca es una posición de la cartera.** Solo se usa como vara de
   medir ("¿lo hice mejor o peor que simplemente comprar todo el mercado?").
-- **La cartera nunca queda vacía si hay datos ese mes.** Si el sistema tiene puntuaciones para ese
-  snapshot, siempre habrá al menos una posición o el efectivo estará dentro de su tope, nunca un
-  "no sé qué hacer".
-- **El efectivo nunca supera el tope configurado** (`max_cash_weight`), ni por error de redondeo ni
-  por un mes especialmente malo de candidatas.
+- **La cartera nunca queda sin explicación si hay datos ese mes.** Si el sistema tiene puntuaciones
+  para ese snapshot, el resultado siempre es una decisión trazable — posiciones, efectivo dentro de
+  su tope habitual, o el efectivo transitorio y deliberado de `price_only_sell_only` cuando no hay
+  con qué reemplazar una venta —, nunca un "no sé qué hacer" sin motivo.
+- **El efectivo bajo `opportunity_cash` nunca supera el tope configurado** (`max_cash_weight`), ni
+  por error de redondeo ni por un mes especialmente malo de candidatas.
 - **Nunca se vende una acción solo para volver a comprarla en el mismo mes.** Toda venta tiene que
-  tener un destino mejor de verdad (otra acción o efectivo justificado), nunca es un "vender por
-  vender".
+  tener un destino mejor de verdad (otra acción, efectivo justificado, o la eliminación permitida por
+  `price_only_sell_only`), nunca es un "vender por vender".
+- **Una posición protegida por `minimum_holding_period` nunca se vende antes de tiempo**, ni por
+  caída de alfa esperado ni por una rotación que sería económicamente favorable. El mínimo de tenencia
+  no depende de ninguna cifra económica, solo del calendario.
+- **En un mes sin resultados financieros nuevos, con `price_only_sell_only` activo, nunca se compra
+  nada.** Se puede vender una posición mala, pero su plaza queda en efectivo hasta el siguiente mes
+  con datos reales — nunca se sustituye a ciegas.
 - **El periodo 2025-2026 nunca participa en ninguna decisión de qué configuración gana.** Solo se usa
   después, para comprobar (una sola vez, sin repetir el experimento) si el ganador ya elegido se
   sostiene fuera de la ventana en la que fue elegido.
