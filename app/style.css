@@ -67,6 +67,10 @@ label { display: flex; flex-direction: column; gap: 5px; }
 .status { display: inline-block; width: fit-content; border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; font-size: 12px; }
 .status.succeeded, .positive { color: var(--green) !important; }
 .status.failed, .status.interrupted, .negative, .error-text { color: var(--red) !important; }
+.warn { color: #d9b45a !important; }
+.verdict { margin: 12px 0; padding: 11px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); font-weight: 600; }
+.verdict.good { border-color: var(--green); color: var(--green); }
+.verdict.bad { border-color: var(--red); color: var(--red); }
 .status.running, .status.queued { color: #ddd; }
 .study-header { margin-bottom: 10px; align-items: stretch; }
 .study-title { min-width: 230px; }

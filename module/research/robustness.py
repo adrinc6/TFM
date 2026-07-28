@@ -7,21 +7,22 @@ from typing import Any, Mapping
 import numpy as np
 import pandas as pd
 
-from module.evaluation.stats import block_bootstrap_ci
-from module.studies.catalog import SELECTION_ERAS
+from environment import MAX_MONTHLY_POSITION_RETURN
+from module.evaluation.stats import DEFAULT_BLOCK_SIZE, block_bootstrap_ci
+from module.studies.catalog import SELECTION_ERAS, SELECTION_UNTIL_YEAR
 
 
 def bootstrap_and_eras(diagnostics: pd.DataFrame, *, iterations: int = 2_000) -> dict[str, Any]:
     frame = diagnostics.loc[diagnostics["agent"].eq("meta_final")].copy()
     frame["year"] = pd.to_datetime(frame["prediction_date"]).dt.year
-    frame = frame.loc[frame["year"].le(2024)]
+    frame = frame.loc[frame["year"].le(SELECTION_UNTIL_YEAR)]
     values = frame.set_index("prediction_date")["rank_ic"].dropna()
     results = {
         "interval_90": block_bootstrap_ci(
-            values, block_size=12, n_boot=iterations, confidence=0.90,
+            values, block_size=DEFAULT_BLOCK_SIZE, n_boot=iterations, confidence=0.90,
         ),
         "interval_95": block_bootstrap_ci(
-            values, block_size=12, n_boot=iterations, confidence=0.95,
+            values, block_size=DEFAULT_BLOCK_SIZE, n_boot=iterations, confidence=0.95,
         ),
         "era_exclusions": [],
     }
@@ -50,7 +51,7 @@ def score_permutation(
     )
     merged = merged.loc[merged["target_available"].fillna(False)].copy()
     merged["year"] = pd.to_datetime(merged["snapshot_date"]).dt.year
-    merged = merged.loc[merged["year"].le(2024)]
+    merged = merged.loc[merged["year"].le(SELECTION_UNTIL_YEAR)]
     groups = [
         group[["meta_rank", "forward_excess_return"]].dropna().to_numpy()
         for _, group in merged.groupby("snapshot_date")
@@ -89,16 +90,31 @@ def random_portfolios(
     *,
     simulations: int = 1_000,
 ) -> dict[str, Any]:
+    """Nulo de carteras aleatorias del mismo tamaño, jugando con las mismas reglas que el modelo.
+
+    La versión anterior producía un percentil 95 de CAGR del 107 % anual, imposible para una cartera
+    de acciones del S&P 500, y por eso el único test que el modelo «suspendía» era en realidad un
+    fallo del test. Tres defectos lo causaban y aquí se corrigen los tres:
+
+    1. El retorno anual se calculaba como `último/primero` de los precios observados en el año, sin
+       exigir cobertura completa: una acción que solo aparecía en diciembre aportaba el retorno de
+       unos días anualizado como si fuera el del año entero.
+    2. No se aplicaba la guarda contra artefactos de datos (splits mal ajustados, tickers
+       reciclados) que el backtest sí aplica, así que el nulo heredaba precisamente los outliers que
+       el modelo tiene prohibido cobrar.
+    3. El nulo no pagaba comisiones ni slippage mientras el modelo sí, comparando una cartera bruta
+       contra una neta.
+    """
     prices = pd.read_parquet(prepared / "asset_price_point_in_time.parquet")
     scores = pd.read_parquet(evidence / "agent_scores.parquet")
     annual = pd.read_parquet(evidence / "annual_metrics.parquet")
-    prices["year"] = pd.to_datetime(prices["snapshot_date"]).dt.year
-    prices = prices.loc[prices["year"].le(2024)].sort_values(["ticker", "snapshot_date"])
-    returns = prices.groupby(["year", "ticker"])["price"].agg(["first", "last"]).reset_index()
-    returns["return"] = returns["last"] / returns["first"] - 1
-    pools = {int(year): group["return"].dropna().to_numpy() for year, group in returns.groupby("year")}
-    model = annual.loc[annual["year"].le(2024)].set_index("year")["portfolio_return"]
-    general = _simulate(model, pools, int(values["target_size"]), 42, simulations)
+    guard = float(values.get("max_monthly_position_return", MAX_MONTHLY_POSITION_RETURN))
+    cost = (float(values["commission_bps"]) + float(values["slippage_bps"])) / 10_000
+    returns = _annual_returns(prices, guard)
+    pools = {int(year): group["return"].to_numpy() for year, group in returns.groupby("year")}
+    model = annual.loc[annual["year"].le(SELECTION_UNTIL_YEAR)].set_index("year")["portfolio_return"]
+    size = int(values["target_size"])
+    general = _simulate(model, pools, size, 42, simulations, cost)
     scores["year"] = pd.to_datetime(scores["snapshot_date"]).dt.year
     risk = scores.groupby(["year", "ticker"])["risk_rank"].mean().reset_index()
     risk["quintile"] = risk.groupby("year")["risk_rank"].transform(
@@ -110,15 +126,50 @@ def random_portfolios(
         int(year): group["return"].dropna().to_numpy()
         for year, group in central.groupby("year")
     }
-    risk_matched = _simulate(model, matched_pools, int(values["target_size"]), 43, simulations)
+    risk_matched = _simulate(model, matched_pools, size, 43, simulations, cost)
     return {
         "general": general,
         "risk_matched": risk_matched,
-        "model_above_p95_both": (
+        "costs_applied_bps": cost * 10_000,
+        "model_above_p95_both": bool(
             general["model_percentile"] >= 0.95
             and risk_matched["model_percentile"] >= 0.95
         ),
     }
+
+
+def _annual_returns(prices: pd.DataFrame, guard: float) -> pd.DataFrame:
+    """Retorno anual por acción exigiendo cobertura del año completo y filtrando artefactos.
+
+    Se exige presencia en el primer y el último tercio del año para no confundir «la acción subió»
+    con «la acción solo cotizó durante el tramo que subió», que es como el nulo anterior llegaba a
+    rentabilidades imposibles.
+
+    La guarda contra artefactos es **mensual**, así que sobre un retorno anual se aplica su versión
+    compuesta ``(1 + guard)^12 − 1``. Aplicar la cota mensual directamente excluiría del nulo a
+    ganadores legítimos de más del 100 % anual que el modelo sí puede cobrar (vía movimientos
+    mensuales bajo la guarda), y sesgar el nulo a la baja favorece al modelo, que es el lado
+    inaceptable del error.
+    """
+    frame = prices.copy()
+    frame["snapshot_ts"] = pd.to_datetime(frame["snapshot_date"])
+    frame["year"] = frame["snapshot_ts"].dt.year
+    frame = frame.loc[frame["year"].le(SELECTION_UNTIL_YEAR)].sort_values(["ticker", "snapshot_ts"])
+    frame["month"] = frame["snapshot_ts"].dt.month
+    grouped = frame.groupby(["year", "ticker"])
+    summary = grouped.agg(
+        first=("price", "first"), last=("price", "last"),
+        first_month=("month", "min"), last_month=("month", "max"),
+        observations=("price", "size"),
+    ).reset_index()
+    covered = summary.loc[
+        summary["first_month"].le(4) & summary["last_month"].ge(9)
+        & summary["first"].gt(0) & summary["observations"].ge(2)
+    ].copy()
+    covered["return"] = covered["last"] / covered["first"] - 1
+    annual_guard = (1.0 + guard) ** 12 - 1.0
+    covered = covered.loc[covered["return"].abs().le(annual_guard) & covered["return"].notna()]
+    return covered[["year", "ticker", "return"]]
 
 
 def _simulate(
@@ -127,17 +178,25 @@ def _simulate(
     size: int,
     seed: int,
     simulations: int,
+    cost: float,
 ) -> dict[str, Any]:
+    """Simula carteras equiponderadas de `size` nombres, renovadas cada año y con costes.
+
+    Renovar la cartera completa cada año implica una rotación del 100 %, que a coste `cost` por
+    operación se paga dos veces (venta y compra). Es el mismo coste que soporta el modelo.
+    """
     years = sorted(set(model.index) & set(pools))
     rng = np.random.default_rng(seed)
     samples = np.zeros(simulations)
+    annual_cost = 2 * cost
     for index in range(simulations):
         yearly = []
         for year in years:
             pool = np.asarray(pools[year])
             pool = pool[np.isfinite(pool)]
             count = min(size, len(pool))
-            yearly.append(float(rng.choice(pool, count, replace=False).mean()) if count else 0.0)
+            gross = float(rng.choice(pool, count, replace=False).mean()) if count else 0.0
+            yearly.append(gross - annual_cost)
         samples[index] = np.prod(1 + np.asarray(yearly)) ** (1 / max(len(yearly), 1)) - 1
     model_values = model.reindex(years).dropna().to_numpy()
     model_cagr = (
@@ -147,9 +206,11 @@ def _simulate(
     return {
         "model_cagr": model_cagr,
         "random_mean": float(samples.mean()),
+        "random_median": float(np.median(samples)),
         "random_p95": float(np.quantile(samples, 0.95)),
         "model_percentile": float((samples < model_cagr).mean()),
         "n_simulations": simulations,
+        "portfolio_size": size,
     }
 
 

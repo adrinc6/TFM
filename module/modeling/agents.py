@@ -25,7 +25,11 @@ import numpy as np
 import pandas as pd
 from lightgbm import LGBMRanker, LGBMRegressor
 
-from environment import MIN_TRAINING_ROWS, RECENCY_HALFLIFE_YEARS, Settings
+from environment import (
+    FEATURE_SELECTION_LOOKBACK_QUARTERS, FEATURE_SELECTION_MIN_COVERAGE,
+    FEATURE_SELECTION_MIN_POSITIVE_FRACTION, MIN_TRAINING_ROWS, RECENCY_HALFLIFE_YEARS,
+    SEED_ENSEMBLE, Settings,
+)
 from module.modeling.meta import combine_agent_scores
 from module.modeling.targets import normalize_target_columns, target_artifact_path
 from module.modeling.catalog import AGENT_NAMES, catalog_by_agent
@@ -173,18 +177,23 @@ def _feature_catalog_payload(settings: Settings, diagnostics: pd.DataFrame) -> d
 
 
 def _agent_features(frame: pd.DataFrame, settings: Settings) -> dict[str, list[str]]:
-    """Features por agente. Con B3 activo, quality recibe la tendencia de fundamentales y value
-    la descomposicion precio/fundamental — pero solo las columnas que existan en el frame.
+    """Features por agente, gobernadas **exclusivamente** por los bloques activos del catálogo.
+
+    Antes, los seis factores derivados de precio (momentum multi-horizonte y medias móviles) se
+    inyectaban en el agente momentum fuera de todo condicional. El efecto era que
+    ``feature_preset="fundamental"`` —cuya definición es «nada calculado a partir del precio»— seguía
+    recibiéndolos, de modo que la ablación fundamental/técnico no medía lo que decía medir. Ahora la
+    pertenencia de un factor a un agente sale solo del catálogo, y un bloque desactivado desactiva de
+    verdad sus factores.
+
+    Los artefactos activables (momentum fundamental, régimen de mercado) sí se añaden aquí porque no
+    son bloques del catálogo sino interruptores propios, y solo cuando su interruptor está activo.
     """
     configured = catalog_by_agent(tuple(settings.enabled_feature_blocks), tuple(settings.enabled_agents))
-    # Conserva las tres familias históricas aunque un catálogo personalizado no las enumere.
-    # El catálogo es autoritativo: conservar siempre la lista histórica haría que
-    # una ablación de quality_core mantuviese ROE/ROIC y no midiese su aporte real.
-    # El catálogo completo por defecto ya incluye todos los factores históricos.
     features = {agent: list(dict.fromkeys(configured.get(agent, []))) for agent in settings.enabled_agents}
 
     def add(agent: str, factor_columns) -> None:
-        if agent in features:
+        if agent in features and features[agent]:
             features[agent] += [c for c in factor_columns if c in frame.columns]
 
     if settings.fundamental_momentum:
@@ -194,13 +203,9 @@ def _agent_features(frame: pd.DataFrame, settings: Settings) -> dict[str, list[s
     if settings.market_regime_feature:
         from module.modeling.features import REGIME_INTERACTION_FACTORS
         add("momentum", REGIME_INTERACTION_FACTORS)
-    # Momentum de precio multi-horizonte y medias móviles: siempre calculados (ver artifacts.py).
-    from module.modeling.artifacts import MOVING_AVERAGE_SOURCES, PRICE_MOMENTUM_SOURCES
-    add("momentum", [f"factor_{s}" for s in PRICE_MOMENTUM_SOURCES])
-    add("momentum", [f"factor_{s}" for s in MOVING_AVERAGE_SOURCES])
     # LightGBM no acepta una matriz sin columnas; el filtro además permite fixtures antiguos.
-    # Se deduplica preservando el orden: un artefacto (p. ej. moving_averages) puede reañadir un
-    # factor que el catálogo base ya asignó al mismo agente, y una columna repetida rompe el fit.
+    # Se deduplica preservando el orden: un artefacto puede reañadir un factor que el catálogo base
+    # ya asignó al mismo agente, y una columna repetida rompe el fit.
     return {agent: list(dict.fromkeys(column for column in columns if column in frame.columns))
             for agent, columns in features.items() if any(column in frame.columns for column in columns)}
 
@@ -281,11 +286,18 @@ def fit_family_scores(
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Fit walk-forward de UNA familia de modelo sobre todos los (snapshot × agente).
 
-    Es la parte cara y cacheable: no depende de ``meta_type``/``meta_ic_lookback_quarters`` ni del
-    Devuelve, para la familia seleccionada:
+    Es la parte cara y cacheable: no depende de ``meta_type`` ni de la combinación meta. Devuelve,
+    para la familia seleccionada:
       - ``scores``: score por fila de scoring (columnas :data:`FAMILY_FIT_COLUMNS`),
       - ``coefficients``: importancias de features,
       - ``local_attribution``: contribuciones locales (solo lightgbm; vacío en el resto).
+
+    Cada (fecha × agente) se ajusta ``SEED_ENSEMBLE`` veces con semillas distintas y el score es la
+    media de las réplicas. Es reducción de varianza del estimador, no una elección científica: la
+    ordenación aprendida apenas dependía de la semilla (Rank-IC ±0,001) pero el resultado económico
+    de una cartera concentrada sí, hasta cambiar de signo. Promediar elimina esa fragilidad sin
+    tocar la definición del modelo. Las importancias y contribuciones locales se reportan de la
+    primera réplica, que es la única que necesita ser interpretable.
     """
     agent_features = _agent_features(frame, settings)
     retrain_dates = _retrain_schedule(frame, settings)
@@ -322,11 +334,19 @@ def fit_family_scores(
                 continue
             if scoring.empty:
                 continue
-            model = _build_family_model(settings, family)
-            if model is None:
+            replicas = []
+            first_model = None
+            for offset in range(SEED_ENSEMBLE):
+                model = _build_family_model(settings, family, seed_offset=offset)
+                if model is None:
+                    continue
+                _fit_model(model, train, columns, target, settings, family, weights=recency)
+                replicas.append(np.asarray(_score(model, scoring[columns], settings, family), dtype=float))
+                first_model = first_model or model
+            if not replicas or first_model is None:
                 continue
-            _fit_model(model, train, columns, target, settings, family, weights=recency)
-            family_scores = _score(model, scoring[columns], settings, family)
+            model = first_model
+            family_scores = np.mean(replicas, axis=0)
             for row, score in zip(scoring.itertuples(index=False), family_scores, strict=True):
                 rows.append(
                     {
@@ -379,7 +399,7 @@ def _selected_feature_columns(train: pd.DataFrame, columns: list[str], settings:
     candidates: list[tuple[str, float]] = []
     for column in usable:
         coverage = float(train[column].notna().mean())
-        if coverage < settings.feature_selection_min_coverage:
+        if coverage < FEATURE_SELECTION_MIN_COVERAGE:
             continue
         cohort_ics = []
         for _, cohort in train[["snapshot_date", column, "forward_excess_return"]].groupby("snapshot_date"):
@@ -388,63 +408,18 @@ def _selected_feature_columns(train: pd.DataFrame, columns: list[str], settings:
                 value = _safe_spearman(clean[column], clean["forward_excess_return"])
                 if pd.notna(value):
                     cohort_ics.append(float(value))
-        recent = cohort_ics[-settings.feature_selection_lookback_quarters:]
+        recent = cohort_ics[-FEATURE_SELECTION_LOOKBACK_QUARTERS:]
         if not recent:
             continue
         positive = float(np.mean(np.asarray(recent) > 0))
         mean = float(np.mean(recent))
-        if positive >= settings.feature_selection_min_positive_fraction and mean > 0:
+        if positive >= FEATURE_SELECTION_MIN_POSITIVE_FRACTION and mean > 0:
             candidates.append((column, mean))
-    if settings.feature_selection_min_permutation_importance > 0 and candidates:
-        permutation = _temporal_permutation_importance(train, [name for name, _ in candidates], settings)
-        candidates = [(name, score) for name, score in candidates
-                      if permutation.get(name, float("-inf")) >= settings.feature_selection_min_permutation_importance]
     candidates.sort(key=lambda item: item[1], reverse=True)
     maximum = settings.feature_selection_max_features_per_agent
     chosen = [name for name, _ in candidates[:maximum or None]]
     # No se permite una matriz vacía: fallback transparente al catálogo completo.
     return chosen or usable
-
-
-def _temporal_permutation_importance(train: pd.DataFrame, columns: list[str], settings: Settings) -> dict[str, float]:
-    """Permutation importance on rolling, strictly earlier-training validation cohorts.
-
-    For every closed validation snapshot a Ridge model is fitted on earlier snapshots only;
-    one feature is then shuffled inside that snapshot and the Rank-IC degradation is measured.
-    This is deliberately invoked only when the threshold is positive, because it is expensive.
-    """
-    if not columns:
-        return {}
-    dates = sorted(pd.to_datetime(train["snapshot_date"]).dropna().unique())[-settings.feature_selection_lookback_quarters:]
-    drops: dict[str, list[float]] = {column: [] for column in columns}
-    try:
-        from sklearn.impute import SimpleImputer
-        from sklearn.linear_model import Ridge
-        from sklearn.pipeline import make_pipeline
-        from sklearn.preprocessing import StandardScaler
-    except ImportError:
-        return {}
-    rng = np.random.default_rng(settings.random_seed)
-    for date in dates:
-        validation = train.loc[pd.to_datetime(train["snapshot_date"]).eq(date)]
-        fitting = train.loc[pd.to_datetime(train["snapshot_date"]).lt(date)]
-        if len(fitting) < MIN_TRAINING_ROWS or len(validation) < settings.min_rank_ic_cross_section:
-            continue
-        target = fitting["forward_excess_return"].groupby(fitting["snapshot_date"]).rank(method="average", pct=True)
-        model = make_pipeline(SimpleImputer(strategy="median"), StandardScaler(), Ridge(alpha=8.0))
-        model.fit(fitting[columns], target)
-        base = _safe_spearman(pd.Series(model.predict(validation[columns]), index=validation.index),
-                              validation["forward_excess_return"])
-        if pd.isna(base):
-            continue
-        for column in columns:
-            shuffled = validation[columns].copy()
-            shuffled[column] = rng.permutation(shuffled[column].to_numpy())
-            altered = _safe_spearman(pd.Series(model.predict(shuffled), index=validation.index),
-                                     validation["forward_excess_return"])
-            if pd.notna(altered):
-                drops[column].append(float(base - altered))
-    return {column: float(np.mean(values)) for column, values in drops.items() if values}
 
 
 def _prepare_training(train: pd.DataFrame, settings: Settings) -> tuple[pd.DataFrame, pd.Series]:
@@ -472,17 +447,26 @@ def _fit_family(settings: Settings) -> str:
     return families[0]
 
 
-def _build_family_model(settings: Settings, family: str) -> object:
+def _build_family_model(settings: Settings, family: str, *, seed_offset: int = 0) -> object:
     """Estimador de la familia admitida por el catálogo. Los árboles manejan NA de forma nativa y
-    son invariantes a transformaciones monótonas, así que LightGBM no necesita imputer ni scaler."""
+    son invariantes a transformaciones monótonas, así que LightGBM no necesita imputer ni scaler.
+
+    ``seed_offset`` distingue las réplicas del ensemble: todas comparten hiperparámetros y solo
+    difieren en la semilla, de modo que promediarlas cancela ruido de inicialización sin alterar la
+    familia ni la capacidad del modelo.
+    """
+    seed = settings.random_seed + seed_offset
     common = dict(
         n_estimators=settings.lgbm_n_estimators,
         max_depth=settings.lgbm_max_depth,
         learning_rate=settings.lgbm_learning_rate,
         min_child_samples=settings.lgbm_min_child_samples,
         subsample=0.8,
+        # Sin `subsample_freq` LightGBM ignora `subsample` por completo: el bagging nunca se
+        # activaba y el parámetro era decorativo.
+        subsample_freq=1,
         colsample_bytree=0.8,
-        random_state=settings.random_seed,
+        random_state=seed,
         n_jobs=settings.lgbm_n_jobs,
         verbose=-1,
     )
@@ -497,7 +481,7 @@ def _build_family_model(settings: Settings, family: str) -> object:
         from sklearn.preprocessing import StandardScaler
         return make_pipeline(SimpleImputer(strategy="median"), StandardScaler(),
                              ElasticNet(alpha=0.03, l1_ratio=0.25,
-                                        random_state=settings.random_seed, max_iter=5000))
+                                        random_state=seed, max_iter=5000))
     raise ValueError(f"Familia de modelo desconocida: {family}")
 
 
@@ -648,39 +632,18 @@ def _execution_anchor(settings: Settings) -> pd.Timestamp:
 
 
 def _run_id(settings: Settings, feature_path: Path, target_path: Path) -> str:
-    config = {
-        "anchor": [settings.execution_year, settings.execution_quarter, settings.execution_lag_days],
-        "lookback_years": settings.train_lookback_years,
-        "target_horizon_months": settings.target_horizon_months,
-        "meta_ic_lookback_quarters": settings.meta_ic_lookback_quarters,
-        "meta_history": [
-            settings.meta_history_quarters, settings.meta_weight_cap,
-            settings.meta_equal_shrinkage,
-        ],
-        "min_training_rows": MIN_TRAINING_ROWS,
-        "min_rank_ic_cross_section": settings.min_rank_ic_cross_section,
-        "fundamental_momentum": settings.fundamental_momentum,
-        "market_regime_feature": settings.market_regime_feature,
-        "objective": settings.objective,
-        "lgbm": [settings.lgbm_n_estimators, settings.lgbm_max_depth,
-                 settings.lgbm_learning_rate, settings.lgbm_min_child_samples],
-        "random_seed": settings.random_seed,
-        "meta_type": settings.meta_type,
-        "laboratory": {
-            "enabled_feature_blocks": settings.enabled_feature_blocks,
-            "enabled_agents": settings.enabled_agents,
-            "enabled_model_families": settings.enabled_model_families,
-            "feature_weighting_mode": settings.feature_weighting_mode,
-            "selection": [settings.feature_selection_min_coverage, settings.feature_selection_lookback_quarters,
-                          settings.feature_selection_min_permutation_importance,
-                          settings.feature_selection_min_positive_fraction,
-                          settings.feature_selection_max_features_per_agent],
-        },
-        "features": sha256_file(feature_path),
-        "targets": sha256_file(target_path),
-    }
-    encoded = json.dumps(config, sort_keys=True).encode("utf-8")
-    return f"lgbm-{hashlib.sha256(encoded).hexdigest()[:12]}"
+    """Nombre del directorio privado de un fit. No es una identidad científica.
+
+    El runner localiza este directorio como «el único que hay» dentro del workspace temporal, así
+    que el nombre no discrimina nada: la identidad real de una evaluación la fijan
+    ``evaluation_key`` (runner) y ``stage_key`` (caché), ambos derivados de los campos declarados.
+    """
+    encoded = json.dumps(
+        {"features": sha256_file(feature_path), "targets": sha256_file(target_path),
+         "seed": settings.random_seed},
+        sort_keys=True,
+    ).encode("utf-8")
+    return f"{_fit_family(settings)}-{hashlib.sha256(encoded).hexdigest()[:12]}"
 
 
 def _manifest(
@@ -705,15 +668,16 @@ def _manifest(
             "lgbm_learning_rate": settings.lgbm_learning_rate,
             "lgbm_min_child_samples": settings.lgbm_min_child_samples,
             "random_seed": settings.random_seed,
+            "seed_ensemble": SEED_ENSEMBLE,
             "meta_type": settings.meta_type,
-            "meta_ic_lookback_quarters": settings.meta_ic_lookback_quarters,
             "meta_history_quarters": settings.meta_history_quarters,
             "meta_weight_cap": settings.meta_weight_cap,
-            "meta_equal_shrinkage": settings.meta_equal_shrinkage,
             "fundamental_momentum": settings.fundamental_momentum,
             "market_regime_feature": settings.market_regime_feature,
+            "enabled_feature_blocks": list(settings.enabled_feature_blocks),
             "missing_policy": "median_train_only_with_indicator",
         },
+        "active_agents": sorted(predictions["agent"].unique()) if not predictions.empty else [],
         "versions": {"lightgbm": lightgbm.__version__},
         "predictions": len(predictions),
         "agents_fit": fit_audit,

@@ -3,12 +3,18 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from module.studies.selection import choose_candidate
 from module.storage import studies
+from module.studies.selection import choose_candidate
 from module.web import queries
 
 
 def _result(rank_ic: float) -> dict:
+    """Cohortes mensuales de 2015 a 2024, la rejilla real del ganador.
+
+    El número de cohortes importa: la puerta pareada exige al menos un bloque completo de fechas
+    comunes (un año) antes de considerar que hay evidencia comparable.
+    """
+    dates = [f"20{year:02d}-{month:02d}-28" for year in range(15, 25) for month in range(1, 13)]
     return {
         "evaluation_key": str(rank_ic),
         "summary": {"mean_rank_ic": rank_ic, "rank_ic_positive_fraction": 0.75, "rank_ic_std": 0.02},
@@ -17,10 +23,7 @@ def _result(rank_ic: float) -> dict:
             {"era": "2019-2021", "rank_ic": rank_ic},
             {"era": "2022-2024", "rank_ic": rank_ic},
         ],
-        "rank_ic_by_cohort": [
-            {"date": f"20{year:02d}-12-31", "rank_ic": rank_ic}
-            for year in range(15, 25)
-        ],
+        "rank_ic_by_cohort": [{"date": date, "rank_ic": rank_ic} for date in dates],
         "known_stress_not_selection": [{"year": 2025, "alpha": 99}],
     }
 

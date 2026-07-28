@@ -18,9 +18,19 @@ participar en fechas en las que pertenecía al universo. Los fundamentales se in
 fecha de publicación y un lag de ejecución de 30, 45 o 60 días. Los precios y SPY se alinean con
 cada snapshot.
 
+Los datos crudos se regeneran con `python main.py ingest`, que descarga y consolida precios,
+fundamentales de Finnhub y fechas reales de publicación de EDGAR en `data/raw/`. Es el único punto
+de entrada a la ingesta y existe para que el trabajo pueda reproducir sus propios datos desde cero.
+
 La identidad del dataset incluye fuentes, fechas, universo, cadencia, horizonte, lag y versiones
 de transformación. Una identidad igual reutiliza `data/prepared/<dataset_hash>/`; una identidad
 distinta crea otra materialización. Los Studies guardan referencias, no copias.
+
+**La identidad de una evaluación incluye el hash del dataset.** Sin él, dos configuraciones
+idénticas evaluadas sobre datos distintos compartían clave de caché y la segunda leía el resultado
+de la primera: en los artefactos anteriores se observa la misma `evaluation_key` asociada a dos CAGR
+distintos. Es un fallo de corrección, no de reporte, y por eso la clave se calcula ahora a partir de
+la identidad del dataset resuelta antes de materializarlo.
 
 Controles de ausencia de lookahead:
 
@@ -76,7 +86,11 @@ eso el informe debe mostrar su sensibilidad explícitamente.
 
 ### 4.2 Representación
 
-Los presets core, fundamental, technical y all seleccionan bloques cerrados. También pueden
+Los presets core y all seleccionan bloques cerrados. **Ambos alimentan a los cinco agentes**: un
+preset que deja a un agente sin ningún bloque activo lo elimina de hecho del sistema, y entonces la
+comparación deja de medir qué información necesita cada agente para medir qué pasa al amputar parte
+de la arquitectura. `core` da a cada agente su bloque esencial; `all` le da toda la profundidad
+disponible de su especialidad. También pueden
 compararse momentum fundamental, régimen de mercado, neutralización sectorial, winsorización,
 máximo de features y poda por estabilidad OOS. No se admiten listas manuales de features.
 
@@ -99,42 +113,133 @@ El stacker convierte scores y retornos en rangos transversales. Se ajusta en cad
 
 Las comparaciones son pareadas por cohorte y solo usan datos hasta 2024.
 
+Las cohortes se emparejan por **periodo mensual**, no por cadena de fecha: los snapshots se
+sitúan en `fin_de_mes + execution_lag_days`, de modo que barrer el lag desplaza toda la rejilla y el
+emparejamiento literal daría cero fechas comunes.
+
 Elegibilidad:
 
 - observaciones suficientes;
 - ninguna era disponible con Rank-IC inferior a −0,02;
-- límite inferior del bootstrap pareado al 90 % de ΔRank-IC superior a −0,01.
+- y **una de estas dos** puertas pareadas:
+  - **dominancia**: diferencia media de Rank-IC positiva **y** mejor en más de la mitad de las
+    cohortes emparejadas;
+  - **no inferioridad**: límite inferior del bootstrap pareado al 90 % superior a −0,01.
 
-Orden:
+La puerta doble corrige un defecto de diseño de la versión anterior, que solo exigía no
+inferioridad. Aplicada a un candidato *superior*, esa prueba lo penalizaba: cuanto más se
+diferenciaba del incumbent, más ancho era su intervalo y más fácil era que el límite inferior cayera
+por debajo del margen. La regla premiaba estructuralmente al incumbent y llegó a descartar al mejor
+candidato disponible por 0,00023 en un bootstrap de 1 000 extracciones (ahora 2 000).
 
-1. Mayor mediana del Rank-IC entre 2015–2018, 2019–2021 y 2022–2024.
-2. Diferencias inferiores a 0,002 son empate.
+Cuando las dos series no comparten al menos un bloque completo de fechas, el resultado pareado se
+marca **no aplicable** y el candidato no es elegible. Antes ese caso devolvía `ci_low = 0,0` en
+silencio, lo que satisfacía cualquier prueba de no inferioridad y dejaba pasar automáticamente a
+todos los candidatos de las variables que desplazan la rejilla.
+
+Orden entre elegibles:
+
+1. Mayor **ventaja pareada** de Rank-IC contra el incumbent. La diferencia se mide cohorte a cohorte,
+   lo que elimina el factor común de mercado de cada fecha; la mediana entre tres eras que se usaba
+   antes es la mediana de tres números y no distingue diferencias del orden del ruido.
+2. Diferencias inferiores a 0,002 son empate y decide la simplicidad.
 3. Mayor Rank-IC medio.
 4. Mayor fracción positiva.
 5. Menor variabilidad.
 6. Menor complejidad.
 7. Conservar incumbent.
 
-Holm, spread de cola, alfa e IR se muestran como diagnósticos y no alteran esta decisión.
+El spread de cola, el alfa y el IR se muestran como diagnósticos y no alteran esta decisión. La
+corrección por multiplicidad de las cifras finales se hace con el Deflated Sharpe Ratio en
+`attribution.json`; el proyecto no usa Holm.
 
 ## 6. Cartera dinámica
 
-La cartera está siempre invertida en acciones. SPY es únicamente benchmark. No hay vintages,
-holding mínimo, núcleo pasivo ni efectivo estructural.
+SPY es únicamente benchmark y nunca una posición. Los umbrales de la cartera son **económicos, en
+puntos básicos de alfa esperado**, no percentiles del ranking: un percentil no dice cuánto se espera
+ganar y por tanto no puede compararse contra lo que cuesta operar.
 
-En cada snapshot se marcan posiciones a mercado. Una acción sale al caer bajo el percentil mínimo.
-Un outsider desplaza a la peor posición solo si supera la ventaja mínima. Las posiciones dentro de
-la tolerancia mantienen sus unidades. El presupuesto restante se reparte respetando las relaciones
-objetivo originales.
+El alfa esperado procede de la calibración isotónica causal de `meta_rank` a retorno excedente
+(`signal_calibration.parquet`), que solo usa cohortes ya cerradas. Mientras no hay suficientes
+cohortes cerradas el valor es `NaN`, no cero: son cosas distintas y la cartera las trata distinto.
+Un `NaN` nunca dispara una venta ni bloquea una compra —la regla es actuar solo ante evidencia
+económica—, de modo que durante el arranque manda la ordenación y, en cuanto hay calibración, mandan
+los umbrales.
 
-Sizing lineal:
+El principio que gobierna todas las órdenes: **una venta solo se emite si el destino del dinero es
+mejor que la posición después de costes**. Hay exactamente dos destinos posibles y cada uno tiene su
+regla. En cada snapshot se marcan posiciones a mercado y:
+
+- **Rotación (destino: otra acción).** Un outsider desplaza a la peor posición solo si
+
+  ```text
+  alfa_esperado(outsider) − alfa_esperado(peor) > 2·(comisión + slippage) + rotation_edge_bps
+  ```
+
+  es decir, **la rotación paga su propio coste de ida y vuelta** antes de autorizarse. Este es el
+  mecanismo que faltaba: con 877 % de rotación anual a 15 pb por operación, el coste drenaba en torno
+  a 1,3 puntos porcentuales al año contra una ventaja bruta de unos 3,1. Es la **única** vía de venta
+  bajo `fully_invested`: vender por umbral con la obligación de recomprar en el mismo snapshot
+  pagaría una ida y vuelta para quedar igual.
+- **Venta a efectivo (destino: efectivo; solo `opportunity_cash`).** Una posición sale si su alfa
+  esperado cae por debajo de `exit_expected_alpha_bps` **y** su plaza puede quedar en efectivo sin
+  violar el suelo de diversificación ni el tope `max_cash_weight`.
+- **Compra con histéresis.** Una entrada nueva exige `exit_expected_alpha_bps` **más el coste de ida
+  y vuelta de la propia operación**; mantener una posición ya en cartera exige solo el umbral de
+  salida. Sin esa banda, una acción oscilando alrededor del umbral se compraría y vendería en
+  snapshots consecutivos pagando costes con ventaja esperada nula.
+- Las posiciones dentro de la tolerancia mantienen sus unidades y el presupuesto restante se reparte
+  respetando las relaciones objetivo.
+
+El papel de cada insumo es explícito: el **ranking del meta** decide el orden de preferencia y los
+desempates (la confianza de los agentes), el **alfa calibrado** decide si cada operación se paga a sí
+misma (la magnitud económica), y los **costes** son el listón que toda operación debe superar.
+
+`price_only_strictness_multiplier` es el **único** mecanismo de prudencia: en los snapshots que solo
+traen precio nuevo (sin fundamentales publicados) baja el umbral de salida y sube tanto el umbral de
+entrada como la ventaja exigida para rotar —la banda de histéresis se ensancha—, de modo que la
+cartera no se mueve por ruido de precio sin confirmación fundamental.
+
+### Política de efectivo
+
+`cash_policy` decide si la cartera está siempre invertida al 100 % (`fully_invested`, referencia) o
+si deja una plaza en efectivo cuando ninguna candidata supera el umbral (`opportunity_cash`, con
+tope `max_cash_weight`, máximo del catálogo: 25 %). El efectivo **se remunera al 0 %**: es una cota
+inferior deliberadamente conservadora, nunca aporta rentabilidad y solo puede ayudar evitando malas
+compras y ahorrando costes. Si aun así mejora el alfa, la mejora no admite discusión.
+
+El tope implica un **suelo de diversificación**: al menos
+`ceil((1 − max_cash_weight) · target_size)` plazas deben estar siempre ocupadas —con las mejores por
+ranking cuando ninguna supera el umbral—, de modo que replegarse nunca concentra la cartera en unos
+pocos nombres (con 12 plazas y tope del 25 %, el suelo son 9 posiciones y ninguna acción puede pasar
+de en torno al 15 % del total). El efectivo es además **granular, no continuo**: se mueve en saltos
+de una plaza (`1/target_size`).
+
+Una propiedad que debe declararse: la calibración isotónica trabaja en 20 ventiles, así que con una
+cartera concentrada (12 posiciones sobre ~250 valores) todas las posiciones viven en el ventil
+superior y comparten casi el mismo alfa esperado. En ese régimen el efectivo responde a la **salud
+reciente de la señal** (la calibración usa los últimos 16 trimestres cerrados), no a la dispersión
+transversal del día, y es casi binario: la política solo se vuelve gradual con `target_size` 25
+o 50, donde la cartera cruza varios ventiles.
+
+La decisión de dejar efectivo se deriva **exclusivamente de la sección transversal** —del alfa
+esperado de las candidatas— y nunca de una previsión sobre el mercado. Esa restricción no es
+cosmética: derivarla de una vista de mercado convertiría el sistema en *market timing* encubierto y
+la comparación contra el índice dejaría de ser limpia.
+
+La política de efectivo es una **decisión de cartera, no de modelo**: no altera el Rank-IC, vive en
+la etapa diagnóstica y se decide al final ejecutando ambas alternativas con el ganador predictivo ya
+congelado. Cuál es mejor es un resultado del trabajo, no un supuesto previo.
+
+### Sizing
 
 ```text
-ratio = 1 + clip((meta_rank - mínimo_efectivo) / (1 - mínimo_efectivo), 0, 1)
+ratio = 1 + clip((alfa_esperado − mínimo_cartera) / (máximo_cartera − mínimo_cartera), 0, 1)
 ```
 
-El umbral recibe ratio 1 y un rank 1 recibe ratio 2. Dos ranks próximos reciben pesos próximos.
-Comisión y slippage se aplican al nocional realmente operado.
+La posición con menor alfa esperado recibe ratio 1 y la de mayor alfa esperado ratio 2. A diferencia
+de escalar por percentil, el peso responde a una magnitud económica estimada y no a la posición
+relativa en un ranking. Comisión y slippage se aplican al nocional realmente operado.
 
 Las alternativas de cartera cambian un solo eje contra la base. No hay cartesiano ni ganador
 económico y sus resultados no cambian el modelo.
@@ -151,11 +256,56 @@ La matriz principal coloca años en filas, perfiles en columnas y alfa contra SP
 
 La batería posterior contiene semillas 7 y 2026, bootstrap móvil de 12 snapshots, intervalos al
 90 % y 95 %, exclusión de eras, permutación transversal add-one, etiquetas barajadas, Rank-IC por
-agente, estabilidad de pesos meta, estrés 2025–2026 y carteras aleatorias PIT generales y
-emparejadas por riesgo.
+agente, estabilidad de pesos meta y carteras aleatorias PIT generales y emparejadas por riesgo.
+
+**Nulo de carteras aleatorias.** Las carteras aleatorias juegan con las mismas reglas que el modelo:
+exigen cobertura del año completo antes de computar un retorno anual, aplican la misma guarda contra
+artefactos de datos y **pagan las mismas comisiones y slippage**. Sin esas tres condiciones el nulo
+producía un percentil 95 de CAGR del 107 % anual —imposible para una cartera del S&P 500— y el único
+contraste que el modelo aparentemente suspendía era en realidad un fallo del contraste.
+
+**Estabilidad ante la semilla.** Cada agente entrena `SEED_ENSEMBLE = 5` réplicas que solo difieren
+en la semilla y promedia sus scores. No es una variable científica a optimizar sino reducción de
+varianza del estimador: el Rank-IC apenas dependía de la semilla (±0,001) pero el alfa de una cartera
+concentrada llegaba a cambiar de signo, porque doce posiciones amplifican el ruido de inicialización
+de LightGBM. El barrido de semillas se conserva como diagnóstico y `robustness.json` publica el rango
+mínimo-mediana-máximo de alfa; si ese rango cruza cero, la conclusión económica no es estable y hay
+que decirlo.
 
 No produce una etiqueta automática de “aprende/no aprende”. El informe debe discutir evidencia a
 favor, en contra, contradicciones y limitaciones.
+
+## 8 bis. Atribución y confirmación fuera de muestra
+
+`attribution.json` contiene la evidencia que separa «el sistema aprende» de «el sistema redescubrió
+un factor conocido»:
+
+1. **Regresión de factores.** El exceso de la cartera se regresa sobre carteras réplica de valor,
+   momentum, baja volatilidad, calidad y crecimiento, construidas del propio universo como
+   diferencial tercil superior menos tercil inferior y rebalanceadas en cada snapshot. El alfa es el
+   intercepto y su significación se evalúa con errores **Newey-West** (12 retardos), porque los
+   retornos solapados inflarían la significación con errores clásicos. No hay acceso a las series de
+   Fama-French; tamaño e inversión se declaran **no replicables** con este panel en lugar de
+   sustituirse por un sucedáneo no auditable.
+2. **Rank-IC neutralizado** por las mismas características de estilo.
+3. **Deflated Sharpe Ratio** (Bailey y López de Prado) sobre las series de IC candidatas: con
+   decenas de evaluaciones, el mejor resultado es alto aunque ninguna configuración tenga capacidad
+   real, y un p-valor sin corregir por multiplicidad no es defendible.
+4. **Baselines deterministas** (GARP, momentum puro, calidad, valor): si el sistema no los supera, el
+   aparato de aprendizaje no está justificado.
+5. **Coeficiente de transferencia** y curva de alfa neto frente a rotación.
+
+**Confirmación 2025–2026.** La era reservada no participó en ninguna decisión, así que su Rank-IC es
+la única medida predictiva del trabajo libre de sesgo de selección. Se calcula **una sola vez, sobre
+el ganador ya congelado**, y se publica salga lo que salga; el protocolo queda pre-registrado en
+`docs/bitacora.md` antes de ejecutar el Study. Con horizonte de 12 meses y cadencia mensual las
+cohortes contiguas comparten casi toda la etiqueta, de modo que el número de cohortes **no** es el
+número de pruebas independientes: se reporta también el número efectivo de observaciones
+independientes y se etiqueta como evidencia direccional del signo, no como contraste con potencia.
+
+El sesgo que esto corrige es de **selección, no de lookahead**: el entrenamiento es walk-forward con
+purga y ninguna predicción individual usa información futura, pero la *configuración* que las produce
+se eligió por haber quedado mejor sobre esa misma serie 2015–2024.
 
 ## 9. Ejecución y recuperación
 
@@ -201,10 +351,10 @@ API:
 - `POST /api/studies/{id}/cancel`
 - `POST /api/studies/{id}/pause`
 - `POST /api/studies/{id}/resume`
-- `GET /api/studies/{id}/runs`
 - `GET /api/studies/{id}/runs/{run_id}`
 - `GET /api/studies/{id}/events`
-- `GET /api/studies/{id}/analysis/{view}`
+- `GET /api/studies/{id}/analysis/{view}` con `view` ∈ {winner, learning, robustness,
+  attribution, profiles, portfolio-comparisons, portfolio, stocks, report}
 
 No existen interfaces alternativas ni compatibilidad con protocolos anteriores.
 

@@ -1,83 +1,170 @@
 \chapter{Resultados}
 \label{cap:resultados}
 
-Este capítulo presenta el resultado del estudio en dos planos separados, coherente con el criterio
-de honestidad del proyecto: primero \textbf{qué aprende} el sistema (rank-IC fuera de muestra) y
-después \textbf{qué renta} (rentabilidad por perfil de inversor). La configuración final se eligió
-por aprendizaje y estabilidad ---rank-IC OOS sobre cohortes hasta 2024---, nunca por rentabilidad.
-Todas las cifras proceden de \texttt{results/studies/} \texttt{20260718--optimization-official--bef48ddfc41f--r02/}
-y son reproducibles con \texttt{RUN\_MODE=full\_study}.
+Este capítulo presenta los resultados en dos planos separados, coherente con el criterio de
+honestidad del proyecto: primero \textbf{qué aprende} el sistema (\rankic{} fuera de muestra) y
+después \textbf{qué renta} (traducción a alfa neto). La configuración final se elige por aprendizaje
+y estabilidad ---\rankic{} sobre cohortes hasta 2024---, nunca por rentabilidad.
 
-La configuración seleccionada por el barrido dirigido combina una ventana de entrenamiento de
-12~años, ancla de ejecución en 2014, horizonte de etiqueta de 3~meses, profundidad
-\texttt{max\_depth}=6, tasa de aprendizaje $0{,}10$ y los artefactos de neutralización por sector y
-\texttt{quality\_growth\_derived}.
+\section{Estado de la evidencia}
+
+El repositorio contiene dos \emph{Model Studies} completos, ejecutados el 25 de julio de 2026. Una
+auditoría posterior identificó cinco defectos que afectan directamente a la selección del ganador y
+a la medición de sus resultados económicos (sección~\ref{sec:defectos}). Las cifras predictivas de
+esos estudios son informativas y se reportan; las cifras económicas \textbf{no son utilizables} como
+resultado y se presentan únicamente como diagnóstico que motiva los cambios de diseño.
+
+La ejecución bajo las reglas corregidas queda pendiente. Este capítulo se actualizará con sus
+cifras; el protocolo de lectura de la era reservada está pre-registrado en \texttt{docs/bitacora.md}
+con fecha anterior a esa ejecución, de modo que la confirmación fuera de muestra no puede ajustarse
+a posteriori.
+
+Identidad del estudio de referencia: \texttt{study-20260725-205429-8a8cbc7f}, run ganador
+\texttt{run-cec5a3d29e89}, dataset \texttt{41bf8192\ldots}, catálogo versión~2. El catálogo vigente
+es la versión~3 y \textbf{no es comparable}: los umbrales de cartera pasaron de percentiles a puntos
+básicos.
 
 \section{Aprendizaje: \texorpdfstring{\rankic}{rank-IC} fuera de muestra}
 
-La respuesta directa a la pregunta de investigación es afirmativa pero matizada: el sistema
-\textbf{aprende a ordenar acciones fuera de muestra con una señal débil, pero real y
-estadísticamente estable}. El rank-IC medio del \texttt{meta\_final} es $+0{,}0158$, con un
-$56{,}5\,\%$ de cohortes con rank-IC positivo y desviación típica $0{,}0566$.
+El sistema \textbf{aprende a ordenar acciones fuera de muestra con una señal débil pero real y
+estadísticamente distinguible de cero}. Sobre 117 cohortes mensuales de 2015 a 2024, el \rankic{}
+medio del \texttt{meta\_final} es $+0{,}0737$, con un $75{,}2\,\%$ de cohortes positivas y
+desviación típica $0{,}1032$.
 
-Esa señal resiste los tres contrastes de estabilidad:
+La señal resiste tres contrastes independientes:
 
 \begin{itemize}
-  \item \textbf{Bootstrap por bloques} (147 cohortes, bloque de 4): intervalo de confianza al
-  $95\,\%$ de $[\,0{,}0053,\ 0{,}0265\,]$, que \emph{no} cruza cero.
-  \item \textbf{Leave-one-year-out}: al excluir cualquier año, el rank-IC permanece entre $0{,}013$
-  y $0{,}018$; ningún año concreto sostiene el resultado por sí solo.
-  \item \textbf{Era reservada 2025--2026} (donde el sistema nunca se optimizó): rank-IC
-  $+0{,}0426$ sobre 16 cohortes ---la señal sobrevive fuera del periodo de búsqueda, que es el
-  contraste más exigente contra el sobreajuste por selección.
+  \item \textbf{Bootstrap por bloques} (117 cohortes, bloque de 12 para absorber el solapamiento del
+  horizonte de 12~meses): intervalo al $95\,\%$ de $[\,0{,}0286,\ 0{,}1290\,]$, que \emph{no} cruza
+  cero.
+  \item \textbf{Permutación transversal} con corrección \emph{add-one}: $p = 0{,}0001$ sobre
+  9\,999~permutaciones.
+  \item \textbf{Cinco placebos de etiqueta barajada}: \rankic{} entre $-0{,}0030$ y $+0{,}0037$, es
+  decir, indistinguibles de cero. Descartan que la magnitud observada proceda de la mecánica de
+  evaluación.
 \end{itemize}
 
-\section{Robustez y placebo}
+Dos matices son obligatorios. Primero, la degradación entre eras es marcada: $0{,}1074$ en
+2015--2018, $0{,}0831$ en 2019--2021 y $0{,}0221$ en 2022--2024. Segundo, y más importante, el
+$p$-valor \textbf{no está corregido por multiplicidad}: se obtuvo tras 50~evaluaciones y
+17~decisiones secuenciales. Esa corrección es la que aporta el \emph{Deflated Sharpe Ratio} de
+Bailey y López de Prado incorporado en \texttt{attribution.json}.
 
-El bootstrap por bloques y el leave-one-year-out, descritos arriba, confirman que la señal no
-depende de un tramo temporal concreto (\texttt{module/evaluation/robustness.py}). El \textbf{placebo
-por permutación de etiquetas} queda pendiente de una ejecución aislada en esta corrida
-(\texttt{label\_permutation}: 0~permutaciones); es el contraste que falta para reportar un p-valor
-del placebo y se completará en la versión definitiva. El resto de la validación de robustez sí se
-ejecutó y es consistente con una señal real de magnitud pequeña.
-
-\section{Rentabilidad como consecuencia}
-
-Todos los perfiles parten del mismo modelo ---de ahí que compartan el rank-IC $0{,}0158$---; solo
-cambia la construcción de la cartera. Con la guarda anti-artefactos activa y frente al SPY
-(CAGR $13{,}92\,\%$), los resultados por perfil son:
+\subsection{Capacidad por agente}
 
 \begin{table}[htbp]
   \centering
-  \begin{tabular}{lrrrrr}
+  \begin{tabular}{lr}
     \toprule
-    Perfil & CAGR & Dif.\ SPY & Alfa medio & Beat rate & Max DD \\
+    Agente & \rankic{} medio \\
     \midrule
-    \textbf{quality} & \textbf{16{,}94\,\%} & \textbf{$+3{,}02$} & \textbf{$+1{,}70\,\%$} & $46{,}2\,\%$ & $23{,}44\,\%$ \\
-    contrarian       & $12{,}44\,\%$ & $-1{,}49$ & $-1{,}07\,\%$ & $46{,}2\,\%$ & $32{,}02\,\%$ \\
-    balanced         & $12{,}12\,\%$ & $-1{,}81$ & $-3{,}04\,\%$ & $30{,}8\,\%$ & $24{,}05\,\%$ \\
-    conservative     & $11{,}99\,\%$ & $-1{,}93$ & $-1{,}57\,\%$ & $38{,}5\,\%$ & $32{,}01\,\%$ \\
-    garp             & $9{,}74\,\%$  & $-4{,}19$ & $-3{,}90\,\%$ & $38{,}5\,\%$ & $32{,}85\,\%$ \\
-    aggressive       & $9{,}49\,\%$  & $-4{,}44$ & $-5{,}33\,\%$ & $30{,}8\,\%$ & $29{,}11\,\%$ \\
-    momentum         & $9{,}47\,\%$  & $-4{,}46$ & $-5{,}25\,\%$ & $38{,}5\,\%$ & $29{,}03\,\%$ \\
-    value            & $8{,}78\,\%$  & $-5{,}15$ & $-3{,}92\,\%$ & $46{,}2\,\%$ & $42{,}15\,\%$ \\
+    \texttt{risk}               & $+0{,}0816$ \\
+    \texttt{meta\_final}        & $+0{,}0674$ \\
+    \texttt{meta\_equal\_weight}& $+0{,}0421$ \\
+    \texttt{value}              & $+0{,}0212$ \\
+    \texttt{momentum}           & $+0{,}0059$ \\
+    \texttt{growth}             & $+0{,}0020$ \\
+    \texttt{quality}            & $-0{,}0062$ \\
     \bottomrule
   \end{tabular}
-  \caption{CAGR y métricas de riesgo por perfil de inversor frente al SPY (CAGR $13{,}92\,\%$).
-  La columna «Dif.\ SPY» está en puntos porcentuales anuales.}
-  \label{tab:perfiles}
+  \caption{\rankic{} medio por agente sobre la ventana de selección. Concentración de pesos del
+  meta-agente (HHI): $0{,}642$.}
+  \label{tab:agentes}
 \end{table}
 
-El perfil \texttt{quality} es \textbf{el único que bate al índice} ($+3{,}02$~pp/año, alfa positivo
-y el menor \emph{drawdown}). El resto queda por debajo del SPY: la señal aprendida no basta, en
-general, para superar al índice una vez pasada por la construcción de cartera y los costes.
+El agente \texttt{risk} supera por sí solo al meta apilado. Sin un control explícito de factores, la
+lectura natural de este resultado es que el sistema \emph{redescubrió el efecto de baja
+volatilidad} en lugar de aprender una ordenación propia. Por eso la regresión del exceso de la
+cartera sobre carteras réplica de estilo, con errores Newey-West, deja de ser un análisis accesorio y
+pasa a ser la pieza que sostiene o refuta la afirmación central del trabajo.
 
-\section{Lectura conjunta de los dos planos}
+\section{Traducción a alfa: diagnóstico, no resultado}
+\label{sec:economico}
 
-Los dos planos no se contradicen; se complementan y \textbf{refuerzan} la conclusión del trabajo.
-Por un lado, el sistema \emph{aprende}: el rank-IC fuera de muestra es positivo, estable, robusto y
-aguanta en la era reservada, así que no es azar. Por otro, \emph{aprender no equivale a batir al
-mercado}: salvo el sesgo hacia calidad, las carteras no superan al SPY, porque la señal es real pero
-económicamente marginal tras la cartera y los costes. Es un resultado negativo bien medido en lo
-económico y positivo en lo metodológico ---separa con nitidez lo que el modelo aprende de lo que
-rinde, que era el objetivo de este TFM.
+Las cifras económicas del estudio de referencia son: CAGR de la cartera $16{,}92\,\%$ frente a
+$13{,}81\,\%$ del SPY, \emph{beat rate} de 6 de 12~años, mediana de alfa anual $-0{,}05\,\%$ y
+rotación anualizada del $877\,\%$. No son utilizables como resultado porque mezclan la era reservada
+2025--2026 en el CAGR, porque convivían dos definiciones incompatibles de \emph{information ratio}
+bajo el mismo nombre ($0{,}052$ y $0{,}098$ para el mismo \emph{backtest}) y porque el ganador se
+seleccionó incorrectamente.
+
+Su valor es diagnóstico y es considerable. Por la ley fundamental de la gestión activa,
+\[
+  \mathrm{IR} \approx \mathrm{IC}\cdot\sqrt{\mathrm{BR}}\cdot \mathrm{TC},
+\]
+un \rankic{} de $0{,}074$ sobre unos 250~valores implica un \emph{information ratio} teórico en
+torno a $1{,}1$, frente al $\approx 0{,}18$ realizado. Una cartera \emph{long-only} de 12~nombres con
+$877\,\%$ de rotación destruía cerca del \textbf{85\,\% de la señal}: el coste drenaba unos
+$1{,}3$~puntos porcentuales anuales contra una ventaja bruta de unos $3{,}1$.
+
+Este diagnóstico es el que justifica los tres cambios de diseño de la cartera: umbrales expresados
+en puntos básicos de alfa esperado en lugar de percentiles, una regla de rotación que exige cubrir el
+coste de ida y vuelta antes de operar, y la ampliación del número de posiciones para recuperar
+amplitud.
+
+\subsection{Estabilidad ante la semilla}
+
+\begin{table}[htbp]
+  \centering
+  \begin{tabular}{lrrr}
+    \toprule
+    Semilla & \rankic{} & Exceso sobre SPY & IR \\
+    \midrule
+    42   & $0{,}0737$ & $+3{,}11$~pp          & $+0{,}052$ \\
+    2026 & $0{,}0745$ & $+2{,}39$~pp          & $+0{,}028$ \\
+    7    & $0{,}0748$ & $\mathbf{-0{,}51}$~pp & $\mathbf{-0{,}072}$ \\
+    \bottomrule
+  \end{tabular}
+  \caption{Efecto de la semilla de inicialización sobre el aprendizaje y sobre el resultado
+  económico.}
+  \label{tab:semillas}
+\end{table}
+
+El \rankic{} es estable ($\pm 0{,}001$) pero \textbf{el signo del exceso sobre el índice cambia con
+la semilla}. Es el dato más adverso del trabajo para cualquier afirmación de estabilidad económica, y
+motiva que cada agente entrene ahora un \emph{ensemble} de cinco réplicas que solo difieren en la
+semilla, promediando sus \emph{scores} como reducción de varianza del estimador.
+
+\section{Defectos identificados en la selección}
+\label{sec:defectos}
+
+\begin{enumerate}
+  \item \textbf{La regla eligió el candidato peor.} La puerta de elegibilidad era una prueba de
+  \emph{no inferioridad} aplicada también a candidatos superiores; como la anchura del intervalo
+  crece con la diferencia respecto al incumbente, penalizaba estructuralmente a los retadores
+  buenos. Ningún retador de \texttt{feature\_preset} resultó elegible pese a que \texttt{all}
+  (\rankic{} $0{,}0958$, ventaja pareada $+0{,}0216$) dominaba con claridad al incumbente
+  \texttt{core} ($0{,}0730$). Con la puerta corregida gana \texttt{all}.
+  \item \textbf{Dos decisiones se tomaron sobre ruido}, con ventajas pareadas de $0{,}00112$ y
+  $0{,}00033$.
+  \item \textbf{La puerta era vacía en dos variables.} Al barrer el retardo de ejecución o la
+  cadencia, las rejillas de \emph{snapshots} son disjuntas y el emparejamiento devolvía un límite
+  inferior de $0{,}0$ en silencio, lo que hacía pasar automáticamente a todos los candidatos.
+  \item \textbf{Colisión de identidad en caché.} La clave de evaluación no incluía el \emph{hash} del
+  conjunto de datos; la misma clave aparece asociada a dos resultados distintos.
+  \item \textbf{La ablación por presets no medía lo que declaraba}, porque seis factores derivados
+  del precio se inyectaban incondicionalmente en el agente de \emph{momentum}. Al corregirlo se hizo
+  visible un problema de diseño mayor: los presets \texttt{fundamental} y \texttt{technical} dejan
+  agentes enteros sin ninguna \emph{feature}, de modo que no comparaban qué información necesita
+  cada agente sino qué ocurre al amputar parte de la arquitectura. El catálogo conserva
+  \texttt{core} y \texttt{all}, que mantienen los cinco agentes activos.
+\end{enumerate}
+
+Un sexto hallazgo afecta a un contraste, no al modelo: el nulo de carteras aleatorias producía un
+percentil~95 de CAGR del $107\,\%$ anual ---imposible para una cartera del S\&P~500--- porque no
+exigía cobertura anual completa, no aplicaba la guarda contra artefactos de datos y no descontaba
+costes mientras el modelo sí los pagaba. El único contraste que el modelo aparentemente suspendía era
+un fallo del contraste.
+
+\section{Lectura conjunta}
+
+Los dos planos no se contradicen. El sistema \emph{aprende}: el \rankic{} fuera de muestra es
+positivo, sobrevive al \emph{bootstrap} por bloques, a la permutación y a cinco placebos, y no
+depende de una era concreta. Pero \emph{aprender no equivale a batir al mercado}: la traducción de
+esa ordenación en alfa neto era frágil ante la semilla y quedaba en gran medida destruida por la
+rotación y los costes de una cartera concentrada.
+
+La contribución metodológica del trabajo es precisamente esa separación, y el diagnóstico
+cuantitativo de dónde se pierde la señal ---amplitud insuficiente y rotación no justificada
+económicamente--- es lo que orienta el rediseño de la cartera. La verificación de si ese rediseño
+recupera parte del $85\,\%$ perdido es el objeto de la ejecución pendiente.

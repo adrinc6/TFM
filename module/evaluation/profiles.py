@@ -52,13 +52,18 @@ PROFILE_WEIGHTS: dict[str, dict[str, float]] = {
 PROFILE_NAMES = tuple(PROFILE_WEIGHTS)
 
 
-def apply_profile(scores: pd.DataFrame, profile: str) -> pd.DataFrame:
+def apply_profile(scores: pd.DataFrame, profile: str, targets: pd.DataFrame | None = None) -> pd.DataFrame:
     """Devuelve `scores` con el `meta_rank` reemplazado por el ranking del perfil.
 
     - `balanced` devuelve el meta_rank tal cual (referencia).
     - Los demas: entre las acciones buenas (meta_rank >= GOOD_THRESHOLD) reordenan por la
       combinacion ponderada de los rangos de los agentes; las que no son buenas quedan por debajo
       (meta_rank del perfil = 0) para que nunca entren en la cartera.
+
+    Cuando el perfil reordena, **la calibración se recalcula sobre el ranking nuevo**. El
+    `expected_excess_return` es una función del rank: dejarlo como estaba lo referiría a un orden
+    que ya no se usa, y como la cartera decide con umbrales en puntos básicos sobre esa columna, el
+    perfil operaría con expectativas ajenas a sus propias posiciones.
     """
     if profile == "balanced" or profile not in PROFILE_WEIGHTS:
         return scores
@@ -89,4 +94,12 @@ def apply_profile(scores: pd.DataFrame, profile: str) -> pd.DataFrame:
     # Las no-buenas (que tenian -inf) reciben rank alto por el pct; forzarlas a 0.
     profile_rank = profile_rank.where(good, other=0.0)
     frame["meta_rank"] = profile_rank
-    return frame
+    if targets is None or "expected_excess_return" not in frame.columns:
+        return frame
+    from module.evaluation.signal_diagnostics import calibrated_alpha_path
+
+    recalibrated = calibrated_alpha_path(frame, targets)
+    return frame.drop(columns=["expected_excess_return"]).merge(
+        recalibrated[["ticker", "snapshot_date", "expected_excess_return"]],
+        on=["ticker", "snapshot_date"], how="left", validate="one_to_one",
+    )

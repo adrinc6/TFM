@@ -17,8 +17,6 @@ def get(path: str, query: dict[str, list[str]]) -> dict[str, Any] | list[dict[st
         return [_study()]
     if path == f"/api/studies/{STUDY_ID}":
         return {**_study(), "runs": _runs(), "decisions": _decisions(), "winner": _winner()}
-    if path == f"/api/studies/{STUDY_ID}/runs":
-        return _runs()
     if path.startswith(f"/api/studies/{STUDY_ID}/runs/"):
         run_id = path.rsplit("/", 1)[-1]
         return next(row for row in _runs() if row["run_id"] == run_id)
@@ -48,6 +46,10 @@ def post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
         return {"study_id": STUDY_ID, "status": "queued", "worker_pid": 12345}, 202
     if path.endswith("/cancel"):
         return {**_study(), "status": "cancelled"}, 200
+    # El dashboard ofrece «Pausar» siempre que el estudio está activo; sin esta rama el botón
+    # devolvía 404 en modo /dev y la fixture no reproducía la superficie real de la API.
+    if path.endswith("/pause"):
+        return {**_study(), "status": "paused"}, 200
     if path.endswith("/resume"):
         return {**_study(), "status": "queued"}, 202
     raise FileNotFoundError("Fixture no encontrada.")

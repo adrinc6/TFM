@@ -8,11 +8,18 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 from module.evaluation.profiles import PROFILE_NAMES
+# Fuente única de los nombres de agente: el catálogo de features es quien decide qué agentes
+# existen, porque es donde se declara qué factores recibe cada uno.
+from module.modeling.catalog import AGENT_NAMES
 
 
-CATALOG_VERSION = 2
-AGENT_NAMES = ("quality", "value", "growth", "momentum", "risk")
+CATALOG_VERSION = 4
 SELECTION_ERAS = ((2015, 2018), (2019, 2021), (2022, 2024))
+# Frontera única entre la ventana que decide y la que solo confirma. Toda métrica de selección se
+# recorta aquí; 2025-26 no participó en ninguna decisión y por eso es la confirmación fuera de
+# muestra. Vive en el catálogo porque es un parámetro científico, no un literal de implementación.
+SELECTION_UNTIL_YEAR = 2024
+KNOWN_STRESS_YEARS = (2025, 2026)
 PREDICTIVE_STAGES = ("temporal", "representation", "model", "meta")
 STAGE_ORDER = (*PREDICTIVE_STAGES, "portfolio")
 STAGE_DETAILS = {
@@ -43,13 +50,12 @@ STAGE_DETAILS = {
     },
 }
 
+# Dos presets, y ambos alimentan a los cinco agentes. Un preset que deja a un agente sin ningún
+# bloque activo lo elimina de hecho del sistema, lo que convierte la comparación en «cinco agentes
+# frente a dos» en vez de «qué información necesita cada agente». La pregunta que interesa es cuánta
+# profundidad de información aporta valor, no qué pasa si se amputa parte de la arquitectura.
 FEATURE_PRESETS = {
     "core": ("quality_core", "value_core", "growth_acceleration", "momentum_core", "price_risk"),
-    "fundamental": (
-        "quality_core", "quality_efficiency", "financial_strength", "value_core",
-        "value_cashflow", "growth_acceleration", "fundamental_stability",
-    ),
-    "technical": ("momentum_core", "momentum_trend", "price_risk", "market_liquidity"),
     "all": (
         "quality_core", "quality_efficiency", "financial_strength", "value_core",
         "value_cashflow", "growth_acceleration", "fundamental_stability",
@@ -139,12 +145,14 @@ VARIABLES: tuple[VariableSpec, ...] = (
     _v("lgbm_min_child_samples", "Mínimo por hoja", "Observaciones mínimas necesarias en una hoja.", "model", (20, 50, 100), 50, "fit", "fit", 50, depends_on=(("model_family", ("lightgbm",)),)),
     _v("meta_method", "Combinación de agentes", "Equiponderación o Ridge rolling causal con límites de peso.", "meta", ("equal", "stacked_rolling_free", "stacked_rolling_bounded"), "stacked_rolling_bounded", "meta", "meta", 10),
     _v("meta_history_quarters", "Ventana del meta", "Número de cohortes trimestrales cerradas usadas por el stacker.", "meta", (8, 16), 16, "meta", "meta", 20, depends_on=(("meta_method", ("stacked_rolling_free", "stacked_rolling_bounded")),)),
-    _v("target_size", "Número de posiciones", "Número objetivo de acciones simultáneas.", "portfolio", (8, 12, 16), 12, "backtest", "backtest", 10, predictive=False),
-    _v("min_hold_percentile", "Mínimo para conservar", "Percentil mínimo del meta-rank antes de vender una posición.", "portfolio", (70.0, 80.0, 90.0), 80.0, "backtest", "backtest", 20, predictive=False),
-    _v("rotation_edge_percentiles", "Ventaja para sustituir", "Ventaja mínima del candidato sobre la peor posición.", "portfolio", (5.0, 10.0, 15.0), 10.0, "backtest", "backtest", 30, predictive=False),
+    _v("target_size", "Número de posiciones", "Número objetivo de acciones simultáneas.", "portfolio", (8, 12, 16, 25, 50), 12, "backtest", "backtest", 10, predictive=False),
+    _v("exit_expected_alpha_bps", "Alfa mínimo para conservar", "Alfa esperado mínimo, en puntos básicos, antes de vender una posición.", "portfolio", (0.0, 100.0, 250.0), 100.0, "backtest", "backtest", 20, predictive=False),
+    _v("rotation_edge_bps", "Ventaja para sustituir", "Ventaja de alfa esperado, en puntos básicos, exigida por encima del coste de ida y vuelta.", "portfolio", (25.0, 50.0, 100.0), 50.0, "backtest", "backtest", 30, predictive=False),
+    _v("cash_policy", "Política de efectivo", "Invertir siempre el 100 % o dejar efectivo cuando no hay oportunidades por encima del umbral.", "portfolio", ("fully_invested", "opportunity_cash"), "fully_invested", "backtest", "backtest", 35, predictive=False),
+    _v("max_cash_weight", "Efectivo máximo", "Peso máximo que puede quedar sin invertir bajo la política de oportunidad.", "portfolio", (0.0, 0.10, 0.25), 0.25, "backtest", "backtest", 36, predictive=False, depends_on=(("cash_policy", ("opportunity_cash",)),)),
     _v("rebalance_drift_tolerance", "Tolerancia de rebalanceo", "Desviación relativa mínima necesaria para emitir una orden.", "portfolio", (0.0, 0.10, 0.25), 0.25, "backtest", "backtest", 40, predictive=False),
-    _v("price_only_strictness_multiplier", "Prudencia sin fundamentales", "Multiplica los umbrales en snapshots sin fundamentales nuevos.", "portfolio", (1.0, 1.5, 2.0), 1.5, "backtest", "backtest", 50, predictive=False),
-    _v("sizing_mode", "Reparto de pesos", "Equiponderación o escala lineal 1:2 anclada al umbral efectivo.", "portfolio", ("equal", "score_linear"), "score_linear", "backtest", "backtest", 60, predictive=False),
+    _v("price_only_strictness_multiplier", "Prudencia sin fundamentales", "Endurece los umbrales en snapshots sin fundamentales nuevos.", "portfolio", (1.0, 1.5, 2.0), 1.5, "backtest", "backtest", 50, predictive=False),
+    _v("sizing_mode", "Reparto de pesos", "Equiponderación o peso proporcional al alfa esperado, con tope 2:1.", "portfolio", ("equal", "alpha_proportional"), "alpha_proportional", "backtest", "backtest", 60, predictive=False),
     _v("commission_bps", "Comisión", "Comisión aplicada sobre el nocional operado.", "portfolio", (0.0, 5.0, 10.0), 5.0, "backtest", "backtest", 70, predictive=False),
     _v("slippage_bps", "Slippage", "Impacto estimado aplicado sobre el nocional operado.", "portfolio", (5.0, 10.0, 20.0), 10.0, "backtest", "backtest", 80, predictive=False),
 )
@@ -161,9 +169,7 @@ def _label(identifier: str, value: Any) -> str:
         "objective": {"rank_regression": "Regresión de ranking", "ranking": "Ranking directo"},
         "feature_preset": {
             "core": "Core (lo esencial de cada agente)",
-            "fundamental": "Fundamental (todo lo contable)",
-            "technical": "Técnico (todo lo de precio)",
-            "all": "Todo (fundamental + técnico)",
+            "all": "Todo (catálogo completo)",
         },
         "winsorization": {0.0: "Sin recorte", 0.01: "1 %", 0.025: "2,5 %"},
         "max_features_per_agent": {8: "8 variables", 12: "12 variables", 20: "20 variables"},
@@ -182,12 +188,14 @@ def _label(identifier: str, value: Any) -> str:
             "stacked_rolling_bounded": "Ridge rolling 10–50 %",
         },
         "meta_history_quarters": {8: "8 trimestres (2 años)", 16: "16 trimestres (4 años)"},
-        "target_size": {8: "8 posiciones", 12: "12 posiciones", 16: "16 posiciones"},
-        "min_hold_percentile": {70.0: "Percentil 70", 80.0: "Percentil 80", 90.0: "Percentil 90"},
-        "rotation_edge_percentiles": {5.0: "5 puntos", 10.0: "10 puntos", 15.0: "15 puntos"},
+        "target_size": {8: "8 posiciones", 12: "12 posiciones", 16: "16 posiciones", 25: "25 posiciones", 50: "50 posiciones"},
+        "exit_expected_alpha_bps": {0.0: "0 pb (solo alfa negativo)", 100.0: "100 pb (1 %)", 250.0: "250 pb (2,5 %)"},
+        "rotation_edge_bps": {25.0: "25 pb sobre coste", 50.0: "50 pb sobre coste", 100.0: "100 pb sobre coste"},
+        "cash_policy": {"fully_invested": "Siempre 100 % invertido", "opportunity_cash": "Efectivo por oportunidad"},
+        "max_cash_weight": {0.0: "Sin efectivo", 0.10: "Hasta 10 %", 0.25: "Hasta 25 %"},
         "rebalance_drift_tolerance": {0.0: "Sin tolerancia", 0.10: "10 %", 0.25: "25 %"},
         "price_only_strictness_multiplier": {1.0: "Sin extra (x1,0)", 1.5: "Prudente (x1,5)", 2.0: "Muy prudente (x2,0)"},
-        "sizing_mode": {"equal": "Equiponderado", "score_linear": "Lineal por meta-rank"},
+        "sizing_mode": {"equal": "Equiponderado", "alpha_proportional": "Proporcional al alfa esperado"},
         "commission_bps": {0.0: "Sin comisión", 5.0: "5 pb (0,05 %)", 10.0: "10 pb (0,10 %)"},
         "slippage_bps": {5.0: "5 pb (0,05 %)", 10.0: "10 pb (0,10 %)", 20.0: "20 pb (0,20 %)"},
     }
@@ -229,10 +237,8 @@ def _description(identifier: str, value: Any) -> str:
             "ranking": "El modelo aprende directamente a poner unas acciones por delante de otras (aprende el orden, no intenta acertar la magnitud del retorno). Suele ajustar mejor a lo que realmente se necesita: un ranking, no una predicción exacta.",
         },
         "feature_preset": {
-            "core": "Cada agente recibe solo su bloque de información más esencial y directo: Calidad usa solo rentabilidad (ROE, márgenes...); Valor usa solo múltiplos de precio (PER, P/VC...); Crecimiento usa solo aceleración de resultados; Momentum usa solo retornos relativos recientes; Riesgo usa solo volatilidad y drawdown de precio. Es el conjunto más pequeño y simple de factores: menos ruido, pero también menos matices.",
-            "fundamental": "Los agentes reciben todos los bloques que vienen de los estados financieros de la empresa: rentabilidad, eficiencia operativa, solidez de balance (deuda), múltiplos de valoración, flujo de caja, aceleración de crecimiento y estabilidad de los fundamentales a lo largo del tiempo. No incluye nada calculado a partir del precio de mercado (momentum, volatilidad). Útil para aislar si lo que aporta valor es \"lo que dicen las cuentas de la empresa\".",
-            "technical": "Los agentes reciben todos los bloques calculados a partir del precio y el volumen de cotización: momentum a distintos plazos, tendencia respecto a medias móviles, volatilidad/drawdown y liquidez de mercado. No incluye nada de los estados financieros. Útil para aislar si lo que aporta valor es \"cómo se ha movido el precio\", sin mirar las cuentas.",
-            "all": "Cada agente recibe absolutamente todos los bloques de información disponibles en el catálogo: fundamentales completos más todos los factores técnicos de precio. Es el conjunto más rico y también el más caro de calcular; puede aportar más señal, pero también más ruido y riesgo de sobreajuste.",
+            "core": "Cada agente recibe solo su bloque de información más esencial y directo: Calidad usa solo rentabilidad (ROE, márgenes...); Valor usa solo múltiplos de precio (PER, P/VC...); Crecimiento usa solo aceleración de resultados; Momentum usa solo retornos relativos recientes; Riesgo usa solo volatilidad y drawdown de precio. Es el conjunto más pequeño y simple: menos ruido y menos riesgo de sobreajuste, pero también menos matices. Los cinco agentes siguen activos.",
+            "all": "Cada agente recibe todos los bloques de su especialidad disponibles en el catálogo: Calidad añade eficiencia operativa y solidez de balance; Valor añade múltiplos de flujo de caja; Crecimiento añade estabilidad de los fundamentales; Momentum añade tendencia respecto a medias móviles; Riesgo añade liquidez de mercado. Es el conjunto más rico y el más caro de calcular; puede aportar más señal, pero también más ruido. Los cinco agentes siguen activos, cada uno con más profundidad.",
         },
         "winsorization": {
             0.0: "No se recorta ningún valor extremo (outlier) de los factores antes de entrenar. Un dato anómalo (por ejemplo un PER disparatado por un beneficio casi nulo) puede distorsionar el aprendizaje.",
@@ -285,16 +291,27 @@ def _description(identifier: str, value: Any) -> str:
             8: "La cartera final mantiene 8 acciones distintas a la vez. Cartera concentrada: más impacto de acertar o fallar en cada acción individual.",
             12: "La cartera final mantiene 12 acciones distintas a la vez. Diversificación intermedia.",
             16: "La cartera final mantiene 16 acciones distintas a la vez. Cartera más diversificada: cada acierto o fallo individual pesa menos sobre el resultado total.",
+            25: "La cartera final mantiene 25 acciones distintas a la vez. Más amplitud (breadth): por la ley fundamental de la gestión activa, el ratio de información crece con la raíz del número de apuestas independientes, así que ampliar posiciones recupera señal que una cartera concentrada desperdicia.",
+            50: "La cartera final mantiene 50 acciones distintas a la vez. Máxima amplitud del catálogo: cada acción pesa poco y el resultado depende de la calidad media de la ordenación, no de unos pocos aciertos. Es la configuración que más se acerca a cosechar el Rank-IC completo, a costa de parecerse más al índice.",
         },
-        "min_hold_percentile": {
-            70.0: "Una acción en cartera se vende solo si su puntuación (meta-rank) cae por debajo del percentil 70 del universo. Umbral más permisivo: cuesta más que una posición se venda por deterioro de su puntuación, lo que reduce el número de operaciones (turnover).",
-            80.0: "Una acción en cartera se vende solo si su puntuación (meta-rank) cae por debajo del percentil 80 del universo. Umbral intermedio.",
-            90.0: "Una acción en cartera se vende si su puntuación (meta-rank) cae por debajo del percentil 90 del universo. Umbral exigente: se vende antes ante cualquier deterioro relativo, lo que aumenta el número de operaciones (turnover).",
+        "exit_expected_alpha_bps": {
+            0.0: "Una acción en cartera solo se vende cuando su alfa esperado se vuelve negativo. Umbral mínimo: la posición se conserva mientras el modelo espere de ella algo mejor que el mercado, por poco que sea. Es el criterio que menos opera.",
+            100.0: "Una acción en cartera se vende cuando su alfa esperado cae por debajo de 100 puntos básicos (1 %) sobre el índice, en el horizonte del modelo. Exige una expectativa positiva clara para seguir ocupando una plaza.",
+            250.0: "Una acción en cartera se vende cuando su alfa esperado cae por debajo de 250 puntos básicos (2,5 %) sobre el índice. Umbral exigente: solo conserva convicciones fuertes, lo que aumenta la rotación y, con ella, los costes.",
         },
-        "rotation_edge_percentiles": {
-            5.0: "Para sustituir una posición en cartera por una acción nueva de fuera, basta con que la candidata externa supere en 5 puntos de percentil a la peor posición actual. Umbral bajo: rota la cartera con más facilidad.",
-            10.0: "Para sustituir una posición en cartera por una acción nueva de fuera, la candidata externa debe superar en 10 puntos de percentil a la peor posición actual. Exigencia intermedia.",
-            15.0: "Para sustituir una posición en cartera por una acción nueva de fuera, la candidata externa debe superar en 15 puntos de percentil a la peor posición actual. Umbral alto: exige una ventaja clara antes de rotar, lo que reduce operaciones innecesarias por pequeñas diferencias de puntuación.",
+        "rotation_edge_bps": {
+            25.0: "Para sustituir una posición por una candidata externa, la ventaja de alfa esperado debe superar el coste completo de ida y vuelta de la operación más 25 puntos básicos. Umbral bajo: rota con relativa facilidad, pero nunca por debajo de lo que cuesta operar.",
+            50.0: "Para sustituir una posición por una candidata externa, la ventaja de alfa esperado debe superar el coste completo de ida y vuelta más 50 puntos básicos. Exigencia intermedia.",
+            100.0: "Para sustituir una posición por una candidata externa, la ventaja de alfa esperado debe superar el coste de ida y vuelta más 100 puntos básicos. Umbral alto: solo rota ante una mejora económica clara, lo que reduce mucho la rotación y el coste asociado.",
+        },
+        "cash_policy": {
+            "fully_invested": "La cartera está siempre invertida al 100 % en acciones: si una plaza queda libre se rellena con la mejor candidata disponible, aunque su alfa esperado sea bajo. Es la política de referencia y la que se compara contra el índice sin ninguna ventaja de posicionamiento.",
+            "opportunity_cash": "Cuando ninguna candidata supera el umbral de alfa esperado, la plaza se deja en efectivo en lugar de comprar la menos mala, con dos salvaguardas: el efectivo nunca supera el tope configurado y la cartera nunca baja de un suelo mínimo de posiciones, de modo que replegarse no concentra el riesgo en unos pocos nombres. El efectivo se remunera al 0 %, así que nunca aporta rentabilidad: solo puede ayudar evitando malas compras y ahorrando costes de operación. La decisión sale exclusivamente de la sección transversal de candidatas, nunca de una previsión sobre el mercado.",
+        },
+        "max_cash_weight": {
+            0.0: "No se permite efectivo aunque la política lo autorice: equivale a estar siempre invertido.",
+            0.10: "Como máximo un 10 % de la cartera puede quedar en efectivo a la espera de oportunidades. El 90 % restante permanece invertido incluso si las candidatas son mediocres.",
+            0.25: "Como máximo un 25 % de la cartera puede quedar en efectivo. El 75 % restante se reparte siempre entre un mínimo de posiciones (el suelo de diversificación), de modo que replegarse nunca concentra la cartera en unos pocos nombres.",
         },
         "rebalance_drift_tolerance": {
             0.0: "Cualquier desviación, por mínima que sea, entre el peso actual de una posición y su peso objetivo genera una orden de ajuste. Máxima precisión de pesos, al coste de generar muchas más operaciones (y comisiones).",
@@ -308,7 +325,7 @@ def _description(identifier: str, value: Any) -> str:
         },
         "sizing_mode": {
             "equal": "Todas las posiciones objetivo de la cartera reciben exactamente el mismo peso (equiponderado), sin importar si una acción tiene una puntuación mucho mejor que otra.",
-            "score_linear": "El peso de cada posición escala de forma lineal según su puntuación (meta-rank): la acción justo en el umbral mínimo de entrada recibe peso base (x1), y la mejor acción posible (percentil 100) recibe el doble de peso (x2). Premia más a las convicciones más fuertes.",
+            "alpha_proportional": "El peso de cada posición escala con su alfa esperado calibrado: la posición con menor alfa esperado de la cartera recibe peso base (x1) y la de mayor alfa esperado recibe el doble (x2). A diferencia de escalar por percentil, aquí el peso responde a una magnitud económica estimada y no a la posición relativa en un ranking.",
         },
         "commission_bps": {
             0.0: "No se descuenta ninguna comisión por operar. Escenario idealizado, sobreestima el resultado neto real.",
@@ -358,7 +375,7 @@ def recommended_definition() -> dict[str, dict[str, Any]]:
         "train_lookback_years": [8, 12],
         "execution_lag_days": [45, 60],
         "recency_weighting": ["off", "linear"],
-        "feature_preset": ["core", "fundamental", "all"],
+        "feature_preset": ["core", "all"],
         "fundamental_momentum": [False, True],
         "meta_method": ["equal", "stacked_rolling_free", "stacked_rolling_bounded"],
     }
@@ -366,14 +383,29 @@ def recommended_definition() -> dict[str, dict[str, Any]]:
         definition[identifier] = {
             "mode": "optimize", "values": values, "baseline": BY_ID[identifier].recommended,
         }
+    # Las variables de cartera se barren como diagnóstico con el ganador predictivo ya congelado:
+    # nunca modifican la selección. Una variable dependiente se deja fija cuando su controlador es
+    # el que se está barriendo, porque comparar sus valores bajo dos regímenes distintos del
+    # controlador mezclaría dos preguntas en un único resultado.
+    swept = {
+        variable.id for variable in VARIABLES
+        if not variable.predictive and len(variable.values) > 1
+    }
     for variable in VARIABLES:
-        if not variable.predictive:
-            alternatives = list(variable.values)
+        if variable.predictive:
+            continue
+        controllers_swept = any(controller in swept for controller, _ in variable.depends_on)
+        if controllers_swept:
             definition[variable.id] = {
-                "mode": "diagnostic",
-                "values": [variable.recommended, *[value for value in alternatives if value != variable.recommended][:1]],
-                "baseline": variable.recommended,
+                "mode": "fixed", "values": [variable.recommended], "baseline": variable.recommended,
             }
+            continue
+        alternatives = [value for value in variable.values if value != variable.recommended]
+        definition[variable.id] = {
+            "mode": "diagnostic",
+            "values": [variable.recommended, *alternatives[:1]],
+            "baseline": variable.recommended,
+        }
     return definition
 
 

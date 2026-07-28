@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 from environment import Settings
-from module.modeling.catalog import AGENT_NAMES as CATALOG_AGENT_NAMES
+from module.modeling.catalog import AGENT_NAMES
 from module.modeling.targets import normalize_target_columns
 
 def combine_agent_scores(
@@ -31,7 +31,7 @@ def combine_agent_scores(
     meta_scores: list[dict] = []
     weights: list[dict] = []
 
-    all_agents = tuple(dict.fromkeys([*CATALOG_AGENT_NAMES, *scores["agent"].dropna().unique().tolist()]))
+    all_agents = tuple(dict.fromkeys([*AGENT_NAMES, *scores["agent"].dropna().unique().tolist()]))
     for date in sorted(labelled["snapshot_ts"].dropna().unique()):
         date_frame = labelled.loc[labelled["snapshot_ts"] == date].copy()
         available_agents = set(date_frame["agent"].unique())
@@ -199,7 +199,7 @@ def _weights_as_of(
         closed_history["is_quarterly"].fillna(False)
     ].copy()
     evidence: dict[str, dict[str, float | int]] = {}
-    for agent in tuple(dict.fromkeys([*CATALOG_AGENT_NAMES, *available_agents])):
+    for agent in tuple(dict.fromkeys([*AGENT_NAMES, *available_agents])):
         if agent not in available_agents:
             continue
         agent_history = quarterly_history.loc[quarterly_history["agent"] == agent]
@@ -208,7 +208,7 @@ def _weights_as_of(
             value = _rank_ic(cohort, settings.min_rank_ic_cross_section)
             if value is not None:
                 cohort_ics.append(value)
-        recent = cohort_ics[-settings.meta_ic_lookback_quarters :]
+        recent = cohort_ics[-settings.meta_history_quarters :]
         mean_ic = float(np.mean(recent)) if recent else 0.0
         evidence[agent] = {"mean_rank_ic": mean_ic, "realized_cohorts": len(recent)}
 
@@ -279,18 +279,11 @@ def _stacked_oos_weights(
 
 
 def _constrain_stacked_weights(weights: dict[str, float], settings: Settings) -> dict[str, float]:
-    """Contrae hacia equal y aplica un cap factible conservando suma uno."""
+    """Aplica el suelo y el cap del catálogo conservando suma uno."""
     if not weights:
         return {}
-    agents = sorted(weights)
-    equal = 1.0 / len(agents)
-    shrink = float(settings.meta_equal_shrinkage)
-    constrained = {
-        agent: (1.0 - shrink) * max(float(weights.get(agent, 0.0)), 0.0) + shrink * equal
-        for agent in agents
-    }
     return _clamp_agent_weights(
-        constrained,
+        {agent: max(float(value), 0.0) for agent, value in weights.items()},
         float(settings.meta_weight_min),
         float(settings.meta_weight_cap),
     )
