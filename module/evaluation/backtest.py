@@ -74,6 +74,10 @@ def run_backtest(
         frame = grouped[date]
         tradable = frame.loc[frame["ticker"].map(lambda ticker: bool(current_prices.get(ticker, 0) > 0))]
         orders, target = decide_orders(state, tradable, settings)
+        if orders and not target:
+            # Órdenes sin cartera objetivo significarían pagar costes de operaciones que la
+            # contabilidad no refleja; `decide_orders` garantiza cartera no vacía si hay scores.
+            raise ValueError(f"decide_orders emitió órdenes sin cartera objetivo en {date}.")
         if not target:
             target = {ticker: weight for ticker, weight in state.holdings.items() if current_prices.get(ticker, 0) > 0}
         if not target:

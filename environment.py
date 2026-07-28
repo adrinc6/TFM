@@ -121,7 +121,7 @@ ROTATION_EDGE_BPS = 50.0          # ventaja exigida POR ENCIMA del coste de ida 
 # al 0 %: es una cota inferior conservadora, nunca aporta rentabilidad, solo evita malas compras.
 CASH_POLICY = "fully_invested"
 CASH_POLICIES = ("fully_invested", "opportunity_cash")
-MAX_CASH_WEIGHT = 0.20
+MAX_CASH_WEIGHT = 0.25
 COMMISSION_BPS = 5                # comision por operacion, en puntos basicos
 SLIPPAGE_BPS = 10                 # slippage por operacion, en puntos basicos
 REBALANCE_DRIFT_TOLERANCE = 0.25  # fracción mínima de cambio RELATIVO a la posición para rebalancear

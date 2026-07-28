@@ -13,7 +13,7 @@ from module.evaluation.profiles import PROFILE_NAMES
 from module.modeling.catalog import AGENT_NAMES
 
 
-CATALOG_VERSION = 3
+CATALOG_VERSION = 4
 SELECTION_ERAS = ((2015, 2018), (2019, 2021), (2022, 2024))
 # Frontera única entre la ventana que decide y la que solo confirma. Toda métrica de selección se
 # recorta aquí; 2025-26 no participó en ninguna decisión y por eso es la confirmación fuera de
@@ -149,7 +149,7 @@ VARIABLES: tuple[VariableSpec, ...] = (
     _v("exit_expected_alpha_bps", "Alfa mínimo para conservar", "Alfa esperado mínimo, en puntos básicos, antes de vender una posición.", "portfolio", (0.0, 100.0, 250.0), 100.0, "backtest", "backtest", 20, predictive=False),
     _v("rotation_edge_bps", "Ventaja para sustituir", "Ventaja de alfa esperado, en puntos básicos, exigida por encima del coste de ida y vuelta.", "portfolio", (25.0, 50.0, 100.0), 50.0, "backtest", "backtest", 30, predictive=False),
     _v("cash_policy", "Política de efectivo", "Invertir siempre el 100 % o dejar efectivo cuando no hay oportunidades por encima del umbral.", "portfolio", ("fully_invested", "opportunity_cash"), "fully_invested", "backtest", "backtest", 35, predictive=False),
-    _v("max_cash_weight", "Efectivo máximo", "Peso máximo que puede quedar sin invertir bajo la política de oportunidad.", "portfolio", (0.0, 0.20, 0.40), 0.20, "backtest", "backtest", 36, predictive=False, depends_on=(("cash_policy", ("opportunity_cash",)),)),
+    _v("max_cash_weight", "Efectivo máximo", "Peso máximo que puede quedar sin invertir bajo la política de oportunidad.", "portfolio", (0.0, 0.10, 0.25), 0.25, "backtest", "backtest", 36, predictive=False, depends_on=(("cash_policy", ("opportunity_cash",)),)),
     _v("rebalance_drift_tolerance", "Tolerancia de rebalanceo", "Desviación relativa mínima necesaria para emitir una orden.", "portfolio", (0.0, 0.10, 0.25), 0.25, "backtest", "backtest", 40, predictive=False),
     _v("price_only_strictness_multiplier", "Prudencia sin fundamentales", "Endurece los umbrales en snapshots sin fundamentales nuevos.", "portfolio", (1.0, 1.5, 2.0), 1.5, "backtest", "backtest", 50, predictive=False),
     _v("sizing_mode", "Reparto de pesos", "Equiponderación o peso proporcional al alfa esperado, con tope 2:1.", "portfolio", ("equal", "alpha_proportional"), "alpha_proportional", "backtest", "backtest", 60, predictive=False),
@@ -192,7 +192,7 @@ def _label(identifier: str, value: Any) -> str:
         "exit_expected_alpha_bps": {0.0: "0 pb (solo alfa negativo)", 100.0: "100 pb (1 %)", 250.0: "250 pb (2,5 %)"},
         "rotation_edge_bps": {25.0: "25 pb sobre coste", 50.0: "50 pb sobre coste", 100.0: "100 pb sobre coste"},
         "cash_policy": {"fully_invested": "Siempre 100 % invertido", "opportunity_cash": "Efectivo por oportunidad"},
-        "max_cash_weight": {0.0: "Sin efectivo", 0.20: "Hasta 20 %", 0.40: "Hasta 40 %"},
+        "max_cash_weight": {0.0: "Sin efectivo", 0.10: "Hasta 10 %", 0.25: "Hasta 25 %"},
         "rebalance_drift_tolerance": {0.0: "Sin tolerancia", 0.10: "10 %", 0.25: "25 %"},
         "price_only_strictness_multiplier": {1.0: "Sin extra (x1,0)", 1.5: "Prudente (x1,5)", 2.0: "Muy prudente (x2,0)"},
         "sizing_mode": {"equal": "Equiponderado", "alpha_proportional": "Proporcional al alfa esperado"},
@@ -306,12 +306,12 @@ def _description(identifier: str, value: Any) -> str:
         },
         "cash_policy": {
             "fully_invested": "La cartera está siempre invertida al 100 % en acciones: si una plaza queda libre se rellena con la mejor candidata disponible, aunque su alfa esperado sea bajo. Es la política de referencia y la que se compara contra el índice sin ninguna ventaja de posicionamiento.",
-            "opportunity_cash": "Cuando ninguna candidata supera el umbral de alfa esperado, la plaza se deja en efectivo en lugar de comprar la menos mala. El efectivo se remunera al 0 %, así que nunca aporta rentabilidad: solo puede ayudar evitando malas compras y ahorrando costes de operación. La decisión sale exclusivamente de la sección transversal de candidatas, nunca de una previsión sobre el mercado.",
+            "opportunity_cash": "Cuando ninguna candidata supera el umbral de alfa esperado, la plaza se deja en efectivo en lugar de comprar la menos mala, con dos salvaguardas: el efectivo nunca supera el tope configurado y la cartera nunca baja de un suelo mínimo de posiciones, de modo que replegarse no concentra el riesgo en unos pocos nombres. El efectivo se remunera al 0 %, así que nunca aporta rentabilidad: solo puede ayudar evitando malas compras y ahorrando costes de operación. La decisión sale exclusivamente de la sección transversal de candidatas, nunca de una previsión sobre el mercado.",
         },
         "max_cash_weight": {
             0.0: "No se permite efectivo aunque la política lo autorice: equivale a estar siempre invertido.",
-            0.20: "Como máximo un 20 % de la cartera puede quedar en efectivo a la espera de oportunidades. El 80 % restante permanece invertido incluso si las candidatas son mediocres.",
-            0.40: "Como máximo un 40 % de la cartera puede quedar en efectivo. Tolerancia amplia: en periodos sin oportunidades claras la cartera se repliega bastante, lo que reduce el riesgo pero también la exposición a subidas del mercado.",
+            0.10: "Como máximo un 10 % de la cartera puede quedar en efectivo a la espera de oportunidades. El 90 % restante permanece invertido incluso si las candidatas son mediocres.",
+            0.25: "Como máximo un 25 % de la cartera puede quedar en efectivo. El 75 % restante se reparte siempre entre un mínimo de posiciones (el suelo de diversificación), de modo que replegarse nunca concentra la cartera en unos pocos nombres.",
         },
         "rebalance_drift_tolerance": {
             0.0: "Cualquier desviación, por mínima que sea, entre el peso actual de una posición y su peso objetivo genera una orden de ajuste. Máxima precisión de pesos, al coste de generar muchas más operaciones (y comisiones).",

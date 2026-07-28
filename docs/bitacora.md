@@ -1,5 +1,62 @@
 # Bitácora
 
+## 2026-07-28 · Rediseño de la gestión de cartera: toda venta necesita un destino mejor
+
+### Decisión
+
+Reordenar la lógica de compras, ventas y rotaciones bajo un principio único —**una venta solo se
+emite si el destino del dinero es mejor que la posición después de costes**— y subir el catálogo a
+la versión 4 con `max_cash_weight` en `(0 %, 10 %, 25 %)`, por defecto 25 %. Rompe la
+comparabilidad con los Studies de catálogo 3 (que no llegaron a ejecutarse).
+
+### Defectos que motivan el cambio
+
+Los tres tenían la misma raíz: las ventas se decidían sin mirar a dónde iba el dinero.
+
+1. **`opportunity_cash` con todas las candidatas bajo el umbral** (el escenario para el que existe
+   la política): `decide_orders` vendía la cartera entera y devolvía un objetivo vacío; el backtest
+   interpretaba «vacío» como «mantener posiciones» y las resucitaba, pero ya había cobrado los
+   costes de ventas que nunca ocurrieron. La cartera pagaba por replegarse sin replegarse.
+2. **`fully_invested` con la curva calibrada bajo el umbral**: como el alfa esperado es monótono con
+   el ranking, se vendían las 12 posiciones por umbral y el relleno obligatorio recompraba
+   exactamente las mismas en el mismo snapshot: una ida y vuelta completa de la cartera para quedar
+   igual. Contribuía al 877 % de rotación anual del diagnóstico.
+3. **Concentración sin tope**: con una sola candidata admisible y tope de efectivo del 20 %, el
+   80 % de la cartera acababa en una única acción, porque el suelo de inversión se repartía entre
+   las admisibles que hubiera.
+
+### Reglas resultantes
+
+- **Rotación**: única vía de venta bajo `fully_invested`; exige ventaja superior al coste de ida y
+  vuelta más `rotation_edge_bps` (sin cambios).
+- **Venta a efectivo**: solo bajo `opportunity_cash`, con alfa bajo el umbral **y** respetando el
+  suelo de diversificación `ceil((1 − max_cash_weight) · target_size)`, que garantiza a la vez el
+  tope de efectivo y un mínimo de posiciones (12 plazas y tope 25 % → suelo de 9 → ninguna acción
+  supera ~15 % del total).
+- **Compra con histéresis**: entrar exige el umbral de salida más el coste de ida y vuelta de la
+  propia operación; mantener exige solo el umbral. Elimina el churn de frontera.
+- **Prudencia sin fundamentales**: el multiplicador ensancha ahora la banda entera (baja la salida,
+  sube la entrada y la rotación).
+- **Invariante nuevo**: con puntuaciones en la fecha, la cartera objetivo nunca queda vacía; el
+  backtest lo verifica y falla ruidosamente si se viola.
+
+Se documenta además una propiedad, no un defecto: con calibración en 20 ventiles y cartera
+concentrada, el efectivo es casi binario y responde a la salud reciente de la señal; solo se vuelve
+gradual con `target_size` 25 o 50.
+
+### Correcciones menores del mismo día
+
+- El nulo de carteras aleatorias aplicaba la guarda **mensual** de artefactos a retornos
+  **anuales**, excluyendo del azar a ganadores legítimos de más del 100 % anual que el modelo sí
+  puede cobrar: sesgaba el nulo a favor del modelo. Ahora usa la cota compuesta `(1+g)^12 − 1`.
+- El Deflated Sharpe declara en su docstring la aproximación que hace (Sharpe de cartera contra
+  dispersión de series de Rank-IC de candidatos) y que se lee como orden de magnitud del haircut.
+
+### Validación
+
+Suite completa (45 tests, incluidos cinco nuevos de este rediseño), ruff sin errores nuevos,
+sintaxis JS y smoke dev end-to-end.
+
 ## 2026-07-28 · Pre-registro del protocolo de confirmación 2025–2026
 
 ### Decisión

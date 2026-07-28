@@ -283,6 +283,12 @@ def _deflated_sharpe(equity: pd.DataFrame, candidate_series: list[list[float]]) 
     Corrige el Sharpe observado por el número de configuraciones probadas: buscar entre muchas
     alternativas produce un máximo alto aunque ninguna tenga capacidad real. Sin esta corrección, un
     p-valor obtenido tras 50 evaluaciones y 17 decisiones sobrestima la evidencia.
+
+    **Aproximación declarada**: el Sharpe observado se calcula sobre los excesos de la cartera,
+    pero la dispersión entre configuraciones se estima con las series de Rank-IC de los candidatos,
+    porque no existe un backtest por candidato (solo el ganador congelado se traduce a cartera). La
+    corrección exacta exigiría ejecutar la cartera para las 50 configuraciones. El resultado se lee
+    como orden de magnitud del *haircut* por multiplicidad, no como una probabilidad exacta.
     """
     excess = pd.to_numeric(equity.get("excess_return"), errors="coerce").dropna().to_numpy()
     trials = max(len(candidate_series), 1)

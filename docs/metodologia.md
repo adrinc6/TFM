@@ -166,10 +166,11 @@ Un `NaN` nunca dispara una venta ni bloquea una compra —la regla es actuar sol
 económica—, de modo que durante el arranque manda la ordenación y, en cuanto hay calibración, mandan
 los umbrales.
 
-En cada snapshot se marcan posiciones a mercado y:
+El principio que gobierna todas las órdenes: **una venta solo se emite si el destino del dinero es
+mejor que la posición después de costes**. Hay exactamente dos destinos posibles y cada uno tiene su
+regla. En cada snapshot se marcan posiciones a mercado y:
 
-- una posición sale si su alfa esperado cae por debajo de `exit_expected_alpha_bps`;
-- un outsider desplaza a la peor posición solo si
+- **Rotación (destino: otra acción).** Un outsider desplaza a la peor posición solo si
 
   ```text
   alfa_esperado(outsider) − alfa_esperado(peor) > 2·(comisión + slippage) + rotation_edge_bps
@@ -177,21 +178,49 @@ En cada snapshot se marcan posiciones a mercado y:
 
   es decir, **la rotación paga su propio coste de ida y vuelta** antes de autorizarse. Este es el
   mecanismo que faltaba: con 877 % de rotación anual a 15 pb por operación, el coste drenaba en torno
-  a 1,3 puntos porcentuales al año contra una ventaja bruta de unos 3,1;
-- las posiciones dentro de la tolerancia mantienen sus unidades y el presupuesto restante se reparte
+  a 1,3 puntos porcentuales al año contra una ventaja bruta de unos 3,1. Es la **única** vía de venta
+  bajo `fully_invested`: vender por umbral con la obligación de recomprar en el mismo snapshot
+  pagaría una ida y vuelta para quedar igual.
+- **Venta a efectivo (destino: efectivo; solo `opportunity_cash`).** Una posición sale si su alfa
+  esperado cae por debajo de `exit_expected_alpha_bps` **y** su plaza puede quedar en efectivo sin
+  violar el suelo de diversificación ni el tope `max_cash_weight`.
+- **Compra con histéresis.** Una entrada nueva exige `exit_expected_alpha_bps` **más el coste de ida
+  y vuelta de la propia operación**; mantener una posición ya en cartera exige solo el umbral de
+  salida. Sin esa banda, una acción oscilando alrededor del umbral se compraría y vendería en
+  snapshots consecutivos pagando costes con ventaja esperada nula.
+- Las posiciones dentro de la tolerancia mantienen sus unidades y el presupuesto restante se reparte
   respetando las relaciones objetivo.
 
+El papel de cada insumo es explícito: el **ranking del meta** decide el orden de preferencia y los
+desempates (la confianza de los agentes), el **alfa calibrado** decide si cada operación se paga a sí
+misma (la magnitud económica), y los **costes** son el listón que toda operación debe superar.
+
 `price_only_strictness_multiplier` es el **único** mecanismo de prudencia: en los snapshots que solo
-traen precio nuevo (sin fundamentales publicados) baja el umbral de salida y sube la ventaja exigida
-para rotar, de modo que la cartera no se mueve por ruido de precio sin confirmación fundamental.
+traen precio nuevo (sin fundamentales publicados) baja el umbral de salida y sube tanto el umbral de
+entrada como la ventaja exigida para rotar —la banda de histéresis se ensancha—, de modo que la
+cartera no se mueve por ruido de precio sin confirmación fundamental.
 
 ### Política de efectivo
 
 `cash_policy` decide si la cartera está siempre invertida al 100 % (`fully_invested`, referencia) o
 si deja una plaza en efectivo cuando ninguna candidata supera el umbral (`opportunity_cash`, con
-tope `max_cash_weight`). El efectivo **se remunera al 0 %**: es una cota inferior deliberadamente
-conservadora, nunca aporta rentabilidad y solo puede ayudar evitando malas compras y ahorrando
-costes. Si aun así mejora el alfa, la mejora no admite discusión.
+tope `max_cash_weight`, máximo del catálogo: 25 %). El efectivo **se remunera al 0 %**: es una cota
+inferior deliberadamente conservadora, nunca aporta rentabilidad y solo puede ayudar evitando malas
+compras y ahorrando costes. Si aun así mejora el alfa, la mejora no admite discusión.
+
+El tope implica un **suelo de diversificación**: al menos
+`ceil((1 − max_cash_weight) · target_size)` plazas deben estar siempre ocupadas —con las mejores por
+ranking cuando ninguna supera el umbral—, de modo que replegarse nunca concentra la cartera en unos
+pocos nombres (con 12 plazas y tope del 25 %, el suelo son 9 posiciones y ninguna acción puede pasar
+de en torno al 15 % del total). El efectivo es además **granular, no continuo**: se mueve en saltos
+de una plaza (`1/target_size`).
+
+Una propiedad que debe declararse: la calibración isotónica trabaja en 20 ventiles, así que con una
+cartera concentrada (12 posiciones sobre ~250 valores) todas las posiciones viven en el ventil
+superior y comparten casi el mismo alfa esperado. En ese régimen el efectivo responde a la **salud
+reciente de la señal** (la calibración usa los últimos 16 trimestres cerrados), no a la dispersión
+transversal del día, y es casi binario: la política solo se vuelve gradual con `target_size` 25
+o 50, donde la cartera cruza varios ventiles.
 
 La decisión de dejar efectivo se deriva **exclusivamente de la sección transversal** —del alfa
 esperado de las candidatas— y nunca de una previsión sobre el mercado. Esa restricción no es

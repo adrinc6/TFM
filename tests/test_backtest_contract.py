@@ -46,7 +46,7 @@ def _settings(**overrides) -> Settings:
 def test_weights_plus_cash_always_sum_to_one() -> None:
     scores, prices, benchmark = _panel()
     result = run_backtest(scores, prices, benchmark, _settings(
-        cash_policy="opportunity_cash", max_cash_weight=0.40, exit_expected_alpha_bps=250.0,
+        cash_policy="opportunity_cash", max_cash_weight=0.25, exit_expected_alpha_bps=250.0,
         target_size=4,
     ))
     total = result.equity["invested_weight"] + result.equity["cash_weight"]
@@ -63,10 +63,10 @@ def test_cash_cap_binds_the_target_while_drift_is_left_to_the_tolerance() -> Non
     """
     scores, prices, benchmark = _panel()
     result = run_backtest(scores, prices, benchmark, _settings(
-        cash_policy="opportunity_cash", max_cash_weight=0.40, exit_expected_alpha_bps=250.0,
+        cash_policy="opportunity_cash", max_cash_weight=0.25, exit_expected_alpha_bps=250.0,
         target_size=4, rebalance_drift_tolerance=0.0,
     ))
-    assert (result.equity["cash_weight"] <= 0.40 + 1e-9).all()
+    assert (result.equity["cash_weight"] <= 0.25 + 1e-9).all()
 
 
 def test_fully_invested_never_holds_cash() -> None:

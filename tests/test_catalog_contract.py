@@ -56,15 +56,17 @@ def test_cash_is_a_portfolio_diagnostic_and_never_touches_selection() -> None:
     assert catalog["cash_policy"]["predictive"] is False
     assert catalog["cash_policy"]["stage"] == "portfolio"
     assert catalog["max_cash_weight"]["predictive"] is False
+    # El tope del 25 % implica un suelo de diversificación de al menos el 75 % de las plazas.
+    assert set(catalog["max_cash_weight"]["values"]) == {0.0, 0.10, 0.25}
 
 
 def test_fully_invested_forces_zero_cash_weight() -> None:
     values = {key: selection["values"][0] for key, selection in recommended_definition().items()}
     values["cash_policy"] = "fully_invested"
-    values["max_cash_weight"] = 0.40
+    values["max_cash_weight"] = 0.25
     assert settings_from_values(values).max_cash_weight == 0.0
     values["cash_policy"] = "opportunity_cash"
-    assert settings_from_values(values).max_cash_weight == 0.40
+    assert settings_from_values(values).max_cash_weight == 0.25
 
 
 def test_recommendation_is_valid_without_blocking_limits() -> None:

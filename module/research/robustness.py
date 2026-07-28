@@ -144,6 +144,12 @@ def _annual_returns(prices: pd.DataFrame, guard: float) -> pd.DataFrame:
     Se exige presencia en el primer y el último tercio del año para no confundir «la acción subió»
     con «la acción solo cotizó durante el tramo que subió», que es como el nulo anterior llegaba a
     rentabilidades imposibles.
+
+    La guarda contra artefactos es **mensual**, así que sobre un retorno anual se aplica su versión
+    compuesta ``(1 + guard)^12 − 1``. Aplicar la cota mensual directamente excluiría del nulo a
+    ganadores legítimos de más del 100 % anual que el modelo sí puede cobrar (vía movimientos
+    mensuales bajo la guarda), y sesgar el nulo a la baja favorece al modelo, que es el lado
+    inaceptable del error.
     """
     frame = prices.copy()
     frame["snapshot_ts"] = pd.to_datetime(frame["snapshot_date"])
@@ -161,7 +167,8 @@ def _annual_returns(prices: pd.DataFrame, guard: float) -> pd.DataFrame:
         & summary["first"].gt(0) & summary["observations"].ge(2)
     ].copy()
     covered["return"] = covered["last"] / covered["first"] - 1
-    covered = covered.loc[covered["return"].abs().le(guard) & covered["return"].notna()]
+    annual_guard = (1.0 + guard) ** 12 - 1.0
+    covered = covered.loc[covered["return"].abs().le(annual_guard) & covered["return"].notna()]
     return covered[["year", "ticker", "return"]]
 
 
