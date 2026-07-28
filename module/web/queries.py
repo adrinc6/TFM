@@ -8,6 +8,7 @@ from typing import Any
 
 import pandas as pd
 
+from module.evaluation.profiles import PROFILE_NAMES
 from module.storage.datasets import validate_dataset_reference
 from module.storage.studies import (
     list_runs, list_studies, read_events, read_run, read_study, safe_study_path,
@@ -16,7 +17,7 @@ from module.storage.studies import (
 
 ANALYSIS_VIEWS = {
     "winner", "learning", "robustness", "profiles", "portfolio-comparisons",
-    "portfolio", "stocks", "report",
+    "portfolio", "stocks", "report", "attribution",
 }
 
 
@@ -79,10 +80,12 @@ def analysis(study_id: str, view: str, query: dict[str, list[str]]) -> dict[str,
         }
     if view == "robustness":
         return _json(directory / "robustness.json")
+    if view == "attribution":
+        return _json(directory / "attribution.json")
     if view == "profiles":
         rows = _parquet(directory / "profile_comparison.parquet")
         annual = []
-        for name in ("balanced", "growth", "value", "quality", "momentum", "contrarian", "defensive", "garp"):
+        for name in PROFILE_NAMES:
             for row in _parquet(evidence / "profiles" / name / "annual_metrics.parquet"):
                 annual.append({"profile": name, **row})
         return {"comparison": rows, "annual": annual}

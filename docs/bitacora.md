@@ -1,5 +1,105 @@
 # Bitácora
 
+## 2026-07-28 · Pre-registro del protocolo de confirmación 2025–2026
+
+### Decisión
+
+Este bloque se escribe **antes** de ejecutar el Study con la regla de selección corregida, y fija
+qué se medirá en la era reservada y cómo se leerá el resultado. La corrección de la puerta pareada
+cambia el ganador con alta probabilidad, de modo que la confirmación solo es creíble si no podemos
+elegir configuración sabiendo cómo se comporta en 2025–2026.
+
+### Protocolo cerrado
+
+1. **Qué se mide.** Rank-IC transversal por cohorte del `meta_rank` contra `forward_excess_return`
+   en 2025–2026, y el alfa geométrico de la cartera en esa misma ventana.
+2. **Cuándo.** Una sola vez, después de congelar `winner.json`. La evaluación vive fuera de todo
+   bucle de decisión, en `module/research/attribution.py`, invocada por el runner tras escribir el
+   ganador.
+3. **Estadísticos.** Rank-IC medio, fracción de cohortes positivas, IC-IR, t de Newey-West con 12
+   retardos y número efectivo de observaciones independientes.
+4. **Cómo se lee.** Con horizonte de 12 meses y cadencia mensual, las cohortes cerradas disponibles
+   son aproximadamente seis y comparten casi toda la etiqueta. El resultado se declara **evidencia
+   direccional del signo**, no un contraste con potencia. Un Rank-IC medio positivo apoya que la
+   ordenación aprendida se mantiene fuera de la ventana de selección; uno negativo o nulo se publica
+   igualmente y obliga a matizar la conclusión principal.
+5. **Compromiso.** El resultado se publica sea cual sea, sin repetir la evaluación con otra
+   configuración ni ampliar la ventana a posteriori.
+
+### Por qué
+
+El entrenamiento es walk-forward con purga, así que no hay lookahead y ninguna cohorte está
+contaminada. El sesgo que esto ataca es distinto: las 17 decisiones secuenciales se tomaron
+comparando Rank-IC sobre las 117 cohortes de 2015–2024, y la cifra de portada procede de esa misma
+serie. Es un estimador insesgado del Rank-IC de esa configuración en ese periodo, pero optimista
+como estimador del Rank-IC futuro. La era reservada y el Deflated Sharpe atacan ese sesgo por dos
+vías complementarias: la primera mide fuera de la muestra de selección, el segundo descuenta el
+efecto de haber buscado.
+
+## 2026-07-28 · Corrección de validez, alfa neto y limpieza
+
+### Decisión
+
+Corregir los defectos que invalidaban parte de la evidencia, sustituir los umbrales de cartera por
+umbrales económicos y eliminar el código sin consumidor.
+
+### Correcciones de validez y su efecto
+
+| Defecto | Efecto medido |
+|---|---|
+| La puerta de no inferioridad penalizaba a los candidatos **superiores**: cuanto mayor la diferencia, más ancho el intervalo | `feature_preset` pasa de `core` (Rank-IC 0,0730) a `technical` (0,0994). El candidato descartado fallaba por 0,00023 |
+| `market_regime_feature` se decidió sobre una ventaja de 0,00112, por debajo del ruido | Pasa de `True` a `False` por simplicidad |
+| `meta_method` se decidió sobre una ventaja de 0,00033 | Se mantiene, pero ahora registrado como empate técnico, no como victoria |
+| Emparejamiento por cadena de fecha con rejillas desplazadas por `execution_lag_days` | Se empareja por periodo mensual; sin bloque completo común el resultado se marca no aplicable en vez de devolver `ci_low = 0,0` |
+| `evaluation_key` no incluía el hash del dataset | La misma clave aparecía con CAGR 0,1468 y 0,1692. Ahora la clave separa datasets |
+| Seis factores de precio se inyectaban en el agente momentum fuera de todo condicional | La ablación `fundamental` ya no recibe información de precio y mide lo que declara |
+| Dos definiciones incompatibles de *information ratio* bajo el mismo nombre | Una sola, anualizada |
+| CAGR, drawdown y alfa mezclaban la era reservada con la de selección | Métricas segmentadas: selección, confirmación y curva completa |
+| `geometric_excess_return` era una resta de CAGR | Cociente de acumulados |
+| Una posición sin precio se marcaba plana | Convención de exclusión tipo CRSP (−30 %) y liquidación contra efectivo |
+| `subsample=0.8` sin `subsample_freq`: el bagging nunca se activaba | `subsample_freq=1` |
+| Nulo de carteras aleatorias con percentil 95 de CAGR del 107 % | Exige cobertura anual completa, aplica la guarda de datos y paga los mismos costes |
+
+### Cartera: de percentiles a puntos básicos
+
+`min_hold_percentile` y `rotation_edge_percentiles` desaparecen. Los sustituyen
+`exit_expected_alpha_bps` y `rotation_edge_bps`, y una rotación solo se autoriza si la ventaja de
+alfa esperado supera `2·(comisión + slippage) + margen`. `sizing_mode` pasa de `score_linear`
+—anclado a un percentil arbitrario— a `alpha_proportional`. `CATALOG_VERSION` sube a 3 y se asume la
+ruptura de comparabilidad con los Studies anteriores.
+
+Se añaden `cash_policy` y `max_cash_weight` en la etapa **diagnóstica**: el efectivo no altera el
+Rank-IC y por tanto no puede elegir modelo. Se ejecutan ambas políticas al final y se comparan en
+`portfolio_comparison.parquet`. El efectivo se remunera al 0 %.
+
+`target_size` se amplía a (8, 12, 16, 25, 50) para medir cuánta señal recupera la amplitud: por la
+ley fundamental, un IC de 0,074 sobre ~250 valores implica un IR teórico en torno a 1,1 frente al
+~0,18 realizado, y una cartera de 12 nombres con 877 % de rotación destruía cerca del 85 % de la
+señal.
+
+### Estabilidad
+
+Cada agente entrena cinco réplicas que solo difieren en la semilla y promedia los scores. Motivo: el
+Rank-IC variaba ±0,001 entre semillas pero el exceso sobre SPY cambiaba de signo (semilla 7: −0,51
+pp; semilla 42: +3,11 pp). `robustness.json` publica ahora el rango de alfa entre semillas.
+
+### Evidencia nueva
+
+`module/research/attribution.py`: regresión sobre réplicas de factores con Newey-West, Rank-IC
+neutralizado, Deflated Sharpe, baselines deterministas, cobertura del universo por año y coeficiente
+de transferencia. Da consumidor a `signal_calibration.parquet`, `signal_health.parquet`,
+`top_minus_bottom` y `module/data/baselines.py`, que se calculaban y no leía nadie.
+
+### Eliminado
+
+`_temporal_permutation_importance` (rama inalcanzable), `meta_equal_shrinkage` (siempre 0,0),
+`meta_ic_lookback_quarters` (duplicaba `meta_history_quarters`), `ensure_directories`,
+`agents_code_version`, `backtest_code_version`, `PortfolioState.cash`, `price_guard`,
+`stock_sleeve_return`, `accounting_error`, las columnas `commission`/`slippage` duplicadas, el
+fallback a `top_decile_spread`, el endpoint `GET /api/studies/{id}/runs` y la duplicación de
+`AGENT_NAMES`. `module/data/ingest/` se conserva con entrada explícita `python main.py ingest`.
+
+
 ## 2026-07-25 · Limpieza integral: código muerto, legacy y features huérfanas
 
 ### Decisión

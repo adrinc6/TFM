@@ -47,10 +47,8 @@ SNAPSHOT_STEP_MONTHS = 1
 FUNDAMENTAL_STEP_MONTHS = 3
 TARGET_HORIZON_MONTHS = 6
 MAX_PRICE_AGE_DAYS = 7
-META_IC_LOOKBACK_QUARTERS = 12
 META_HISTORY_QUARTERS = 16
 META_WEIGHT_CAP = 1.0
-META_EQUAL_SHRINKAGE = 0.0
 MIN_TRAINING_ROWS = 30
 MIN_RANK_IC_CROSS_SECTION = 10
 
@@ -74,8 +72,14 @@ LGBM_N_ESTIMATORS = 200
 LGBM_MAX_DEPTH = 4
 LGBM_LEARNING_RATE = 0.05
 LGBM_MIN_CHILD_SAMPLES = 50
-# Semilla del modelo. Fija en la comparacion principal; se barre para medir robustez del ganador.
+# Semilla base del modelo. Cada agente entrena SEED_ENSEMBLE réplicas que solo difieren en la
+# semilla y promedia sus scores. No es una variable científica a optimizar sino reducción de varianza
+# del estimador: el Rank-IC apenas se movía entre semillas (±0,001) pero el resultado económico de
+# una cartera concentrada llegaba a cambiar de signo, porque 12 posiciones amplifican el ruido de
+# inicialización de LightGBM. El barrido de semillas se conserva como diagnóstico de robustez, ahora
+# sobre el ensemble completo.
 RANDOM_SEED = 42
+SEED_ENSEMBLE = 5
 # Meta-agente: como se combinan los agentes.
 #   "equal"       -> promedio equiponderado de los rangos de los agentes
 #   "stacked_oos" -> Ridge no negativo causal sobre cohortes ya cerradas
@@ -91,11 +95,12 @@ ENABLED_FEATURE_BLOCKS = (
 ENABLED_AGENTS = ("quality", "value", "growth", "momentum", "risk")
 ENABLED_MODEL_FAMILIES = ("lightgbm",)
 FEATURE_WEIGHTING_MODE = "model_native"
+FEATURE_SELECTION_MAX_FEATURES_PER_AGENT = 0  # 0 = sin límite
+# Constantes de la poda causal de features. No son variables científicas: el catálogo no las expone,
+# así que no pueden variar entre evaluaciones y no tienen sitio en las huellas de caché.
 FEATURE_SELECTION_MIN_COVERAGE = 0.55
 FEATURE_SELECTION_LOOKBACK_QUARTERS = 12
-FEATURE_SELECTION_MIN_PERMUTATION_IMPORTANCE = 0.0
 FEATURE_SELECTION_MIN_POSITIVE_FRACTION = 0.50
-FEATURE_SELECTION_MAX_FEATURES_PER_AGENT = 0  # 0 = sin límite
 METRIC_WINSORIZATION_PERCENTILE = 0.01
 RISK_FEATURE_WINDOWS = (63, 126, 252)
 TECHNICAL_FEATURE_WINDOWS = (21, 63, 252)
@@ -107,10 +112,16 @@ MARKET_REGIME_FEATURE = False      # regimen bull/bear del SP500 + interacciones
 NEUTRALIZE_MIN_GROUP = 5           # tamano minimo de grupo para neutralizar por sector
 
 # --- Cartera ---
-# Cartera fija: el top-N del meta-rank entra y permanece mientras conserve calidad relativa.
+# Los umbrales son económicos, en puntos básicos de alfa esperado, no percentiles del ranking.
 TARGET_SIZE = 8
-MIN_HOLD_PERCENTILE = 80          # percentil <= este umbral -> venta obligatoria
-ROTATION_EDGE_PERCENTILES = 10    # ventaja mínima para que un candidato desplace a un tenente
+EXIT_EXPECTED_ALPHA_BPS = 100.0   # alfa esperado por debajo de este umbral -> venta
+ROTATION_EDGE_BPS = 50.0          # ventaja exigida POR ENCIMA del coste de ida y vuelta
+# Política de efectivo. "fully_invested" mantiene el 100 % en acciones; "opportunity_cash" deja una
+# plaza vacía cuando ninguna candidata supera el umbral de alfa esperado. El efectivo se remunera
+# al 0 %: es una cota inferior conservadora, nunca aporta rentabilidad, solo evita malas compras.
+CASH_POLICY = "fully_invested"
+CASH_POLICIES = ("fully_invested", "opportunity_cash")
+MAX_CASH_WEIGHT = 0.20
 COMMISSION_BPS = 5                # comision por operacion, en puntos basicos
 SLIPPAGE_BPS = 10                 # slippage por operacion, en puntos basicos
 REBALANCE_DRIFT_TOLERANCE = 0.25  # fracción mínima de cambio RELATIVO a la posición para rebalancear
@@ -124,7 +135,8 @@ PRICE_ONLY_STRICTNESS_MULTIPLIER = 1.0
 MAX_MONTHLY_POSITION_RETURN = 2.0  # +200 % en un mes es imposible para una accion normal
 
 # Traducción señal → cartera. Son defaults internos; el catálogo fija la ejecución real.
-SIZING_MODE = "score_linear"
+SIZING_MODE = "alpha_proportional"
+SIZING_MODES = ("equal", "alpha_proportional")
 META_WEIGHT_MIN = 0.10
 
 RUN_SCOPE = os.getenv("RUN_SCOPE", "full").strip().lower()
@@ -151,7 +163,6 @@ class Settings:
     snapshot_step_months: int = SNAPSHOT_STEP_MONTHS
     fundamental_step_months: int = FUNDAMENTAL_STEP_MONTHS
     target_horizon_months: int = TARGET_HORIZON_MONTHS
-    meta_ic_lookback_quarters: int = META_IC_LOOKBACK_QUARTERS
     min_rank_ic_cross_section: int = MIN_RANK_IC_CROSS_SECTION
     objective: str = OBJECTIVE
     lgbm_n_estimators: int = LGBM_N_ESTIMATORS
@@ -164,16 +175,11 @@ class Settings:
     meta_type: str = META_TYPE
     meta_history_quarters: int = META_HISTORY_QUARTERS
     meta_weight_cap: float = META_WEIGHT_CAP
-    meta_equal_shrinkage: float = META_EQUAL_SHRINKAGE
     recency_weighting: str = RECENCY_WEIGHTING
     enabled_feature_blocks: tuple[str, ...] = ENABLED_FEATURE_BLOCKS
     enabled_agents: tuple[str, ...] = ENABLED_AGENTS
     enabled_model_families: tuple[str, ...] = ENABLED_MODEL_FAMILIES
     feature_weighting_mode: str = FEATURE_WEIGHTING_MODE
-    feature_selection_min_coverage: float = FEATURE_SELECTION_MIN_COVERAGE
-    feature_selection_lookback_quarters: int = FEATURE_SELECTION_LOOKBACK_QUARTERS
-    feature_selection_min_permutation_importance: float = FEATURE_SELECTION_MIN_PERMUTATION_IMPORTANCE
-    feature_selection_min_positive_fraction: float = FEATURE_SELECTION_MIN_POSITIVE_FRACTION
     feature_selection_max_features_per_agent: int = FEATURE_SELECTION_MAX_FEATURES_PER_AGENT
     metric_winsorization_percentile: float = METRIC_WINSORIZATION_PERCENTILE
     risk_feature_windows: tuple[int, ...] = RISK_FEATURE_WINDOWS
@@ -184,8 +190,10 @@ class Settings:
     market_regime_feature: bool = MARKET_REGIME_FEATURE
     # cartera
     target_size: int = TARGET_SIZE
-    min_hold_percentile: float = MIN_HOLD_PERCENTILE
-    rotation_edge_percentiles: float = ROTATION_EDGE_PERCENTILES
+    exit_expected_alpha_bps: float = EXIT_EXPECTED_ALPHA_BPS
+    rotation_edge_bps: float = ROTATION_EDGE_BPS
+    cash_policy: str = CASH_POLICY
+    max_cash_weight: float = MAX_CASH_WEIGHT
     commission_bps: float = COMMISSION_BPS
     slippage_bps: float = SLIPPAGE_BPS
     rebalance_drift_tolerance: float = REBALANCE_DRIFT_TOLERANCE
@@ -199,9 +207,7 @@ class Settings:
     features_code_version: int = 2
     # El fit de las familias y la combinación meta tienen versiones separadas: cambiar la
     # combinación no debe invalidar los fits LightGBM ya calculados.
-    agents_fit_code_version: int = 2
-    agents_code_version: int = 3
-    backtest_code_version: int = 2
+    agents_fit_code_version: int = 3
     # Ruta privada de ejecución. No es una variable científica ni se incluye en fingerprints;
     # el orquestador la asigna después de crear el run.
     workspace_dir: Path | None = None
@@ -226,8 +232,6 @@ class Settings:
             raise ValueError("META_HISTORY_QUARTERS debe ser positivo.")
         if not 0 < self.meta_weight_cap <= 1:
             raise ValueError("META_WEIGHT_CAP debe estar en (0, 1].")
-        if not 0 <= self.meta_equal_shrinkage <= 1:
-            raise ValueError("META_EQUAL_SHRINKAGE debe estar en [0, 1].")
         if self.recency_weighting not in ("off", "linear", "exponential"):
             raise ValueError(
                 f"RECENCY_WEIGHTING invalido: {self.recency_weighting!r}. "
@@ -237,21 +241,27 @@ class Settings:
             raise ValueError("FEATURE_WEIGHTING_MODE no reconocido.")
         if not self.enabled_agents:
             raise ValueError("ENABLED_AGENTS no puede estar vacío.")
-        if not 0 <= self.feature_selection_min_coverage <= 1:
-            raise ValueError("FEATURE_SELECTION_MIN_COVERAGE debe estar en [0, 1].")
         if not 0 <= self.metric_winsorization_percentile < 0.5:
             raise ValueError("METRIC_WINSORIZATION_PERCENTILE debe estar en [0, 0.5).")
         if self.train_lookback_years <= 0 or self.target_horizon_months <= 0:
             raise ValueError("Las ventanas temporales deben ser positivas.")
         if self.target_size < 1:
             raise ValueError("TARGET_SIZE debe ser positivo.")
-        if self.sizing_mode not in ("equal", "score_linear"):
-            raise ValueError("SIZING_MODE no reconocido.")
+        if self.sizing_mode not in SIZING_MODES:
+            raise ValueError(f"SIZING_MODE no reconocido: {self.sizing_mode!r}.")
         if not 0 <= self.meta_weight_min <= self.meta_weight_cap:
             raise ValueError("META_WEIGHT_MIN debe estar entre 0 y META_WEIGHT_CAP.")
-        for name, value in (("min_hold_percentile", self.min_hold_percentile),):
-            if not 0 <= value <= 100:
-                raise ValueError(f"{name} debe estar en [0, 100], recibido {value!r}.")
+        if self.cash_policy not in CASH_POLICIES:
+            raise ValueError(
+                f"CASH_POLICY inválido: {self.cash_policy!r}. Usa {' o '.join(CASH_POLICIES)}."
+            )
+        if not 0 <= self.max_cash_weight < 1:
+            raise ValueError("MAX_CASH_WEIGHT es una fracción de la cartera y debe estar en [0, 1).")
+        if self.rotation_edge_bps < 0:
+            raise ValueError(
+                "ROTATION_EDGE_BPS es un margen POR ENCIMA del coste de ida y vuelta y no puede ser "
+                "negativo: una rotación nunca debe autorizarse por debajo de lo que cuesta operarla."
+            )
         if self.rebalance_drift_tolerance < 0:
             raise ValueError(
                 "REBALANCE_DRIFT_TOLERANCE es una fracción relativa (0.25 = 25 %) y debe ser >= 0."
@@ -286,8 +296,3 @@ class Settings:
 
         base = DEV_TICKERS if self.dev_mode else sorted(historical_universe())
         return list(dict.fromkeys([*base, self.benchmark_ticker]))
-
-
-def ensure_directories(settings: Settings) -> None:
-    for path in (RAW_DIR, RAW_JSON_DIR, PREPARED_DIR, settings.raw_output_dir, settings.processed_output_dir):
-        path.mkdir(parents=True, exist_ok=True)

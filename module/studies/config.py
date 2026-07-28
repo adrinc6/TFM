@@ -194,14 +194,19 @@ def settings_from_values(
         "lgbm_learning_rate": float(values["lgbm_learning_rate"]),
         "lgbm_min_child_samples": int(values["lgbm_min_child_samples"]),
         "meta_type": "equal" if method == "equal" else "stacked_oos",
-        "meta_ic_lookback_quarters": int(values["meta_history_quarters"]),
         "meta_history_quarters": int(values["meta_history_quarters"]),
         "meta_weight_min": 0.10 if method == "stacked_rolling_bounded" else 0.0,
         "meta_weight_cap": 0.50 if method == "stacked_rolling_bounded" else 1.0,
-        "meta_equal_shrinkage": 0.0,
         "target_size": int(values["target_size"]),
-        "min_hold_percentile": float(values["min_hold_percentile"]),
-        "rotation_edge_percentiles": float(values["rotation_edge_percentiles"]),
+        "exit_expected_alpha_bps": float(values["exit_expected_alpha_bps"]),
+        "rotation_edge_bps": float(values["rotation_edge_bps"]),
+        "cash_policy": str(values["cash_policy"]),
+        # El tope de efectivo solo tiene sentido bajo la política de oportunidad; con
+        # `fully_invested` se fuerza a cero para que no exista un grado de libertad inoperante.
+        "max_cash_weight": (
+            float(values["max_cash_weight"])
+            if str(values["cash_policy"]) == "opportunity_cash" else 0.0
+        ),
         "rebalance_drift_tolerance": float(values["rebalance_drift_tolerance"]),
         "price_only_strictness_multiplier": float(values["price_only_strictness_multiplier"]),
         "sizing_mode": str(values["sizing_mode"]),

@@ -36,6 +36,9 @@ REQUIRED = (
     "asset_price_point_in_time.parquet",
     "features_point_in_time.parquet",
     "targets_forward.parquet",
+    # Los baselines deterministas (GARP, momentum puro, calidad, valor) son la referencia sin
+    # aprendizaje contra la que se mide el sistema en `module/research/attribution.py`.
+    "baseline_scores.parquet",
 )
 
 

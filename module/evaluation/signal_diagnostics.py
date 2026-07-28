@@ -105,7 +105,13 @@ def calibrated_alpha_path(
     scores: pd.DataFrame, targets: pd.DataFrame, *, history_quarters: int = 16,
     half_life_quarters: float = 8.0, prior_cohorts: int = 8, ventiles: int = 20,
 ) -> pd.DataFrame:
-    """Calibración isotónica causal de rank a retorno excedente esperado."""
+    """Calibración isotónica causal de rank a retorno excedente esperado.
+
+    Mientras no haya ``prior_cohorts`` cohortes cerradas el valor devuelto es ``NaN``, no ``0.0``:
+    son cosas distintas y la cartera las trata distinto. ``0.0`` significa "se espera un alfa nulo",
+    lo que activaría ventas y bloquearía compras durante todo el arranque; ``NaN`` significa "todavía
+    no hay evidencia calibrada", y en ese caso la cartera decide por ordenación.
+    """
     target_frame = normalize_target_columns(targets)
     labelled = scores.merge(
         target_frame[[
@@ -131,7 +137,7 @@ def calibrated_alpha_path(
         ].copy()
         closed_dates = sorted(closed["prediction_ts"].dropna().unique())[-history_quarters:]
         closed = closed.loc[closed["prediction_ts"].isin(closed_dates)]
-        expected = np.zeros(len(current), dtype=float)
+        expected = np.full(len(current), np.nan, dtype=float)
         if len(closed_dates) >= prior_cohorts:
             closed["ventile"] = np.minimum(
                 (pd.to_numeric(closed["meta_rank"], errors="coerce") * ventiles).fillna(0)

@@ -187,7 +187,7 @@
     const best = Math.max(...study.runs.map(run => Number(run.result?.summary?.mean_rank_ic)).filter(Number.isFinite), -Infinity);
     const active = ["queued", "running"].includes(study.status);
     const resumable = ["failed", "cancelled", "interrupted"].includes(study.status);
-    const sectionLabel = {runs: "Runs", decisions: "Decisiones", console: "Consola", robustness: "Robustez", profiles: "Perfiles"};
+    const sectionLabel = {runs: "Runs", decisions: "Decisiones", console: "Consola", robustness: "Robustez", attribution: "Atribución", profiles: "Perfiles"};
     app.innerHTML = `<section class="entity-header run-header">
       <div class="entity-top">
         <div class="entity-main"><div><p class="eyebrow">${esc(study.study_id)}</p><h2>${esc(study.name)}</h2><p>${esc(study.note || "Sin nota.")}</p></div></div>
@@ -203,7 +203,7 @@
         ["Runs", `${study.completed_runs || 0}/${total}`], ["Tiempo", duration(Date.now() - Date.parse(study.created_at))],
         ["Rank-IC máx.", best > -Infinity ? fmt(best, "rank_ic") : "—"],
       ].map(([label, value]) => `<span><b>${esc(value)}</b>${label}</span>`).join("")}</div>
-      <div class="entity-actions">${["runs", "decisions", "console", "robustness", "profiles"].map(section =>
+      <div class="entity-actions">${["runs", "decisions", "console", "robustness", "attribution", "profiles"].map(section =>
         `<button data-study-view="${section}" class="${state.section === section ? "active" : ""}">${esc(sectionLabel[section])}</button>`
       ).join("")}</div></section>
       <section id="study-content"></section>`;
@@ -232,8 +232,8 @@
         run_id: run.run_id, phase: run.phase, variable: run.variable_id, value: run.value,
         status: run.status, progress: `${Math.round((run.progress || 0) * 100)} %`,
         rank_ic: run.result?.summary?.mean_rank_ic,
-        alpha_anual: run.result?.summary?.mean_annual_alpha,
-        alpha_estres: run.result?.summary?.stress_mean_alpha,
+        alpha_anual: run.result?.summary?.geometric_excess_return,
+        alpha_confirmacion: run.result?.confirmation_2025_2026?.mean_rank_ic,
         elapsed_seconds: run.elapsed_seconds,
         source: run.result?.source, error: run.error,
       }));
@@ -263,7 +263,8 @@
       return;
     }
     const data = await api(`/api/studies/${state.selectedStudy}/analysis/${state.section}`);
-    body.innerHTML = state.section === "profiles" ? profiles(data) : robustnessView(data);
+    const views = {profiles, attribution: attributionView, robustness: robustnessView};
+    body.innerHTML = (views[state.section] || robustnessView)(data);
     bindInteractiveCharts(body);
   }
 
@@ -405,6 +406,8 @@
       ...(data.label_placebos || []).map(row => ({label: `Placebo ${row.seed}`, value: row.summary?.mean_rank_ic})),
     ];
     const agents = (data.agent_rank_ic || []).map(row => ({label: row.agent, value: row.mean_rank_ic}));
+    const dispersion = data.seed_dispersion || {};
+    const alpha = dispersion.geometric_excess_return;
     return `<h2>Robustez informativa</h2>
       ${metrics({
         observed_mean_rank_ic: observed,
@@ -414,32 +417,124 @@
         meta_weight_concentration: data.meta_weight_stability?.mean_concentration,
         meta_weight_turnover: data.meta_weight_stability?.mean_turnover,
       })}
+      ${alpha ? `<h3>Estabilidad entre semillas</h3>
+        <p class="muted">El Rank-IC apenas depende de la semilla, pero una cartera concentrada puede
+        amplificar el ruido de inicialización hasta cambiar el signo del alfa. Este rango es la
+        prueba directa de que la conclusión económica es reproducible.</p>
+        <div class="verdict ${alpha.crosses_zero ? "bad" : "good"}">
+          ${alpha.crosses_zero
+            ? "El alfa cambia de signo entre semillas: la conclusión económica NO es estable."
+            : "El alfa mantiene el signo en todas las semillas evaluadas."}
+        </div>
+        ${barChart([
+          {label: "Mínimo", value: alpha.min}, {label: "Mediana", value: alpha.median},
+          {label: "Máximo", value: alpha.max},
+        ], {percent: true, yLabel: "Alfa geométrico"})}` : ""}
       <h3>Modelo, semillas y placebos</h3>${barChart(comparisons, {percent: true, yLabel: "Rank-IC"})}
       <h3>Rank-IC medio por agente</h3>${barChart(agents, {percent: true, yLabel: "Rank-IC"})}
+      <h3>Nulo de carteras aleatorias</h3>
+      <p class="muted">Carteras del mismo tamaño elegidas al azar, con la misma guarda de datos y
+      pagando las mismas comisiones que el modelo.</p>
+      ${metrics({
+        model_cagr: data.random_portfolios?.general?.model_cagr,
+        random_median: data.random_portfolios?.general?.random_median,
+        random_p95: data.random_portfolios?.general?.random_p95,
+        model_percentile: data.random_portfolios?.general?.model_percentile,
+      })}
       <details><summary>Resultado completo de robustez</summary>${objectTree(data)}</details>`;
   }
+  function attributionView(data) {
+    const selection = data.factor_regression?.selection || {};
+    const confirmation = data.confirmation_2025_2026 || {};
+    const neutral = data.neutralized_rank_ic || {};
+    const loadings = Object.entries(selection.loadings || {}).map(([label, value]) => ({label, value}));
+    const baselines = (data.baselines?.baselines || []).map(row => ({label: row.baseline, value: row.mean_rank_ic}));
+    const alphaT = selection.alpha_t_stat;
+    return `<h2>Atribución del alfa</h2>
+      <p class="muted">Responde a la pregunta decisiva: ¿el sistema aprende una ordenación propia o
+      reproduce un factor de estilo ya conocido? El alfa es el intercepto de la regresión del exceso
+      de la cartera sobre réplicas de valor, momentum, baja volatilidad, calidad y crecimiento
+      construidas con el mismo panel point-in-time.</p>
+      ${metrics({
+        alpha_per_period: selection.alpha_per_period, alpha_t_stat: alphaT,
+        r_squared: selection.r_squared,
+        raw_mean_rank_ic: neutral.raw_mean_rank_ic,
+        neutralized_mean_rank_ic: neutral.neutralized_mean_rank_ic,
+        retained_fraction: neutral.retained_fraction,
+      })}
+      ${Number.isFinite(alphaT) ? `<div class="verdict ${Math.abs(alphaT) > 2 ? "good" : "bad"}">
+        ${Math.abs(alphaT) > 2
+          ? "El alfa sobrevive al control por factores de estilo (|t| > 2): el sistema aporta ordenación propia."
+          : "El alfa no es distinguible de la exposición a factores conocidos (|t| ≤ 2)."}
+      </div>` : ""}
+      <h3>Exposición a factores de estilo</h3>
+      ${loadings.length ? barChart(loadings, {yLabel: "Beta"}) : '<p class="muted">Sin réplicas disponibles.</p>'}
+      <h3>Confirmación fuera de muestra 2025-2026</h3>
+      <p class="muted">Esta era no participó en ninguna decisión del Study: es la única medida
+      predictiva libre de sesgo de selección. Con horizonte de 12 meses las cohortes se solapan, así
+      que se declara también el número de observaciones realmente independientes.</p>
+      ${metrics({
+        mean_rank_ic: confirmation.mean_rank_ic,
+        rank_ic_positive_fraction: confirmation.rank_ic_positive_fraction,
+        n_cohorts: confirmation.n_cohorts,
+        effective_independent_observations: data.ic_significance?.confirmation?.effective_independent_observations,
+      })}
+      <h3>Corrección por multiplicidad</h3>
+      <p class="muted">Con muchas configuraciones probadas, el mejor resultado es alto aunque ninguna
+      tenga capacidad real. El Deflated Sharpe descuenta ese efecto.</p>
+      ${metrics({
+        deflated_sharpe_probability: data.deflated_sharpe?.deflated_sharpe_probability,
+        n_trials: data.deflated_sharpe?.n_trials,
+        observed_sharpe: data.deflated_sharpe?.observed_sharpe_per_period,
+        expected_max_under_null: data.deflated_sharpe?.expected_max_sharpe_under_null,
+      })}
+      <h3>Baselines sin aprendizaje</h3>
+      <p class="muted">Reglas deterministas (GARP, momentum puro, calidad, valor). Si el sistema no
+      las supera, el aparato de aprendizaje no está justificado.</p>
+      ${baselines.length ? barChart(baselines, {percent: true, yLabel: "Rank-IC"}) : '<p class="muted">No disponibles.</p>'}
+      <details><summary>Atribución completa</summary>${objectTree(data)}</details>`;
+  }
   function metrics(data) {
-    const priority = ["mean_rank_ic", "rank_ic_positive_fraction", "cagr_portfolio", "cagr_benchmark", "cagr_difference", "information_ratio", "max_drawdown", "annualized_turnover"];
+    const priority = ["mean_rank_ic", "ic_ir", "rank_ic_positive_fraction", "geometric_excess_return", "cagr_portfolio", "cagr_benchmark", "information_ratio", "max_drawdown", "annualized_turnover", "mean_cash_weight"];
     const entries = [
       ...priority.filter(key => data[key] !== undefined).map(key => [key, data[key]]),
       ...Object.entries(data).filter(([key]) => !priority.includes(key)),
-    ].slice(0, 8);
+    ].slice(0, 10);
     return `<div class="metrics">${entries.map(([key, value]) => `<div><b class="${tone(value, key)}">${esc(fmt(value, key))}</b><span>${esc(metricLabel(key))}</span></div>`).join("")}</div>`;
   }
-  function metricLabel(key) {
-    return {cagr_difference: "Alpha anualizado vs SPY", cagr_portfolio: "CAGR cartera", cagr_benchmark: "CAGR SPY", mean_rank_ic: "Rank-IC medio", rank_ic_positive_fraction: "Cohortes Rank-IC positivas", annualized_turnover: "Turnover anualizado", max_drawdown: "Drawdown máximo", information_ratio: "Information Ratio"}[key] || key;
-  }
+  const METRIC_LABELS = {
+    geometric_excess_return: "Alfa geométrico vs SPY", cagr_portfolio: "CAGR cartera",
+    cagr_benchmark: "CAGR SPY", mean_rank_ic: "Rank-IC medio", ic_ir: "IC-IR",
+    rank_ic_positive_fraction: "Cohortes Rank-IC positivas", annualized_turnover: "Turnover anualizado",
+    max_drawdown: "Drawdown máximo", information_ratio: "Information Ratio (anualizado)",
+    mean_cash_weight: "Efectivo medio", transfer_coefficient: "Coeficiente de transferencia",
+    exit_expected_alpha_bps: "Umbral de salida (pb)", rotation_edge_bps: "Ventaja de rotación (pb)",
+    total_cost_drag: "Coste acumulado", n_cohorts: "Cohortes", beat_rate: "Años por encima de SPY",
+    tail_spread: "Diferencial decil superior", target_size: "Posiciones",
+    observed_mean_rank_ic: "Rank-IC observado", permutation_p_value: "p-valor de permutación",
+    rank_ic_bootstrap_90_low: "Bootstrap 90 % inferior", rank_ic_bootstrap_90_high: "Bootstrap 90 % superior",
+    meta_weight_concentration: "Concentración de pesos del meta", meta_weight_turnover: "Rotación de pesos del meta",
+    deflated_sharpe_probability: "Probabilidad Deflated Sharpe", alpha_t_stat: "t de Newey-West del alfa",
+    neutralized_mean_rank_ic: "Rank-IC neutralizado", raw_mean_rank_ic: "Rank-IC bruto",
+    retained_fraction: "Fracción de señal retenida", n_trials: "Configuraciones probadas",
+    effective_independent_observations: "Observaciones independientes",
+  };
+  function metricLabel(key) { return METRIC_LABELS[key] || key; }
   const COLUMN_LABELS = {
     nombre: "Nombre", estado: "Estado", etapa: "Etapa", progreso: "Progreso",
     runs_completados: "Runs completados", runs_restantes: "Runs restantes", tiempo: "Tiempo",
     rank_ic_max: "Rank-IC máximo", actualizado: "Actualizado", study_id: "Study",
     run_id: "Run", phase: "Fase", variable: "Variable", value: "Valor", status: "Estado",
-    progress: "Progreso", rank_ic: "Rank-IC", alpha_anual: "Alpha anual", alpha_estres: "Alpha estrés",
+    progress: "Progreso", rank_ic: "Rank-IC", alpha_anual: "Alfa geométrico",
+    alpha_confirmacion: "Rank-IC 2025-26",
     elapsed_seconds: "Duración (s)", source: "Origen", error: "Error", winner_value: "Valor ganador",
     selection_rule: "Regla de selección", median_era_rank_ic: "Rank-IC mediano por era",
+    paired_advantage: "Ventaja pareada",
     mean_rank_ic: "Rank-IC medio", positive_fraction: "Fracción positiva", rank_ic_std: "Desviación Rank-IC",
     observations: "Observaciones", reason: "Motivo", eligible: "Elegible", is_incumbent: "Baseline",
-    candidate_id: "Candidato",
+    candidate_id: "Candidato", cash_policy: "Política de efectivo", mean_cash_weight: "Efectivo medio",
+    geometric_excess_return: "Alfa geométrico vs SPY", ic_ir: "IC-IR",
+    transfer_coefficient: "Coeficiente de transferencia",
   };
   function columnLabel(key) {
     if (COLUMN_LABELS[key]) return COLUMN_LABELS[key];
@@ -454,23 +549,31 @@
       const label = spec?.label || columnLabel(decision.variable_id);
       const valueLabel = value => spec?.value_options?.find(option => JSON.stringify(option.value) === JSON.stringify(value))?.label ?? String(value);
       const ruleText = {
-        robust_rank_ic: "Ganó por tener el mejor Rank-IC robusto (mediana por era, luego media, luego estabilidad) entre los candidatos elegibles.",
-        tie_simplicity: "Empate técnico en Rank-IC entre el mejor candidato y el baseline: gana la opción más simple (regla de parsimonia).",
-        incumbent_no_eligible_challenger: "Ningún candidato alternativo superó los filtros de elegibilidad (observaciones suficientes, suelo de Rank-IC por era y no-inferioridad estadística); se mantiene el valor ya vigente.",
+        robust_rank_ic: "Ganó por tener la mayor ventaja pareada de Rank-IC contra el baseline entre los candidatos elegibles. La diferencia se mide cohorte a cohorte, lo que elimina el factor común de mercado de cada fecha y reduce mucho la varianza frente a comparar medias.",
+        tie_simplicity: "Empate técnico: la ventaja pareada frente al baseline queda por debajo de la tolerancia, así que la diferencia no se distingue del ruido y gana la opción más simple.",
+        incumbent_no_eligible_challenger: "Ningún candidato alternativo superó los filtros de elegibilidad (observaciones suficientes, suelo de Rank-IC por era y puerta pareada); se mantiene el valor ya vigente.",
       }[decision.selection_rule] || decision.selection_rule;
       const rows = [...decision.candidates].sort((a, b) => (a.candidate_id === decision.winner_candidate_id ? -1 : b.candidate_id === decision.winner_candidate_id ? 1 : 0));
+      const gateCell = candidate => {
+        const gates = candidate.gates || {};
+        if (!gates.paired_applicable && !candidate.is_incumbent) return '<span class="warn">No aplicable</span>';
+        if (gates.paired_dominates_incumbent) return '<span class="positive">Domina</span>';
+        if (gates.paired_bootstrap_non_inferior) return "No inferior";
+        return '<span class="negative">Inferior</span>';
+      };
       return `<article class="config-card decision-card">
         <h4>${esc(label)} <span class="decision-winner">→ ${esc(valueLabel(decision.winner_value))}</span></h4>
         <p class="muted">${esc(ruleText)}</p>
         <div class="table-wrap"><table><thead><tr>
-          <th>Valor</th><th>Rank-IC medio</th><th>Rank-IC mediano/era</th><th>% eras positivas</th>
-          <th>Observaciones</th><th>Elegible</th><th>Motivo</th>
+          <th>Valor</th><th>Rank-IC medio</th><th>Ventaja pareada</th><th>% fechas mejor</th>
+          <th>Puerta pareada</th><th>Observaciones</th><th>Elegible</th><th>Motivo</th>
         </tr></thead><tbody>${rows.map(candidate => `
           <tr class="${candidate.candidate_id === decision.winner_candidate_id ? "selected-row" : ""}">
             <td>${esc(valueLabel(candidate.value))}${candidate.is_incumbent ? " <small>(baseline)</small>" : ""}</td>
             <td class="${tone(candidate.mean_rank_ic, "rank_ic")}">${esc(fmt(candidate.mean_rank_ic, "rank_ic"))}</td>
-            <td class="${tone(candidate.median_era_rank_ic, "rank_ic")}">${esc(fmt(candidate.median_era_rank_ic, "rank_ic"))}</td>
-            <td>${esc(fmt(candidate.positive_fraction, "fraction"))}</td>
+            <td class="${tone(candidate.paired_advantage, "rank_ic")}">${esc(fmt(candidate.paired_advantage, "rank_ic"))}</td>
+            <td>${esc(fmt(candidate.paired_bootstrap_90?.fraction_a_better, "fraction"))}</td>
+            <td>${gateCell(candidate)}</td>
             <td>${esc(fmt(candidate.observations))}</td>
             <td>${candidate.eligible ? "Sí" : "No"}</td>
             <td><small>${esc(candidate.reason)}</small></td>

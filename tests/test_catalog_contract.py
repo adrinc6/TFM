@@ -2,15 +2,52 @@ from __future__ import annotations
 
 import pytest
 
-from module.studies.catalog import AGENT_NAMES, public_catalog, recommended_definition
-from module.studies.config import ConfigurationError, settings_from_values, validate_definition
+from module.studies.catalog import (
+    AGENT_NAMES,
+    CATALOG_VERSION,
+    public_catalog,
+    recommended_definition,
+)
+from module.studies.config import (
+    ConfigurationError,
+    settings_from_values,
+    validate_definition,
+)
 
 
 def test_catalog_is_closed_and_has_five_agents() -> None:
     catalog = public_catalog()
-    assert catalog["version"] == 2
+    assert catalog["version"] == CATALOG_VERSION
     assert len(catalog["hash"]) == 64
     assert AGENT_NAMES == ("quality", "value", "growth", "momentum", "risk")
+
+
+def test_portfolio_thresholds_are_economic_not_percentiles() -> None:
+    """Los umbrales de cartera se expresan en puntos básicos de alfa esperado.
+
+    Un percentil no dice cuánto se espera ganar, así que no puede compararse contra el coste de
+    operar. Con umbrales en pb, una rotación solo se autoriza si cubre su propio coste.
+    """
+    identifiers = {variable["id"] for variable in public_catalog()["variables"]}
+    assert {"exit_expected_alpha_bps", "rotation_edge_bps", "cash_policy"} <= identifiers
+    assert not {"min_hold_percentile", "rotation_edge_percentiles"} & identifiers
+
+
+def test_cash_is_a_portfolio_diagnostic_and_never_touches_selection() -> None:
+    """La política de efectivo no puede alterar la elección del modelo."""
+    catalog = {variable["id"]: variable for variable in public_catalog()["variables"]}
+    assert catalog["cash_policy"]["predictive"] is False
+    assert catalog["cash_policy"]["stage"] == "portfolio"
+    assert catalog["max_cash_weight"]["predictive"] is False
+
+
+def test_fully_invested_forces_zero_cash_weight() -> None:
+    values = {key: selection["values"][0] for key, selection in recommended_definition().items()}
+    values["cash_policy"] = "fully_invested"
+    values["max_cash_weight"] = 0.40
+    assert settings_from_values(values).max_cash_weight == 0.0
+    values["cash_policy"] = "opportunity_cash"
+    assert settings_from_values(values).max_cash_weight == 0.40
 
 
 def test_recommendation_is_valid_without_blocking_limits() -> None:

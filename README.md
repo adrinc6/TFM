@@ -26,7 +26,8 @@ Instalar dependencias y arrancar:
 
 ```powershell
 python -m pip install -r requirements.txt
-python main.py
+python main.py serve      # API y dashboard
+python main.py ingest     # regenera data/raw desde las fuentes
 ```
 
 Abrir `http://127.0.0.1:8765/`.

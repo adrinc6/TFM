@@ -50,6 +50,14 @@ FACTOR_SOURCES = {
 }
 
 
+# Bloques cuyos factores provienen del cálculo técnico diario sobre OHLCV.
+DAILY_TECHNICAL_BLOCKS = ("price_risk", "market_liquidity", "momentum_core", "momentum_trend")
+
+
+def _needs_daily_technicals(enabled_blocks: tuple[str, ...]) -> bool:
+    return any(block in enabled_blocks for block in DAILY_TECHNICAL_BLOCKS)
+
+
 def build_features(settings: Settings) -> pd.DataFrame:
     """Construye factores observables, baselines y targets en artefactos distintos."""
     output_dir = settings.processed_output_dir
@@ -293,8 +301,11 @@ def _build_feature_frame(
     from module.modeling.artifacts import add_moving_averages, add_price_momentum_multi
     add_price_momentum_multi(frame)
     add_moving_averages(frame, _price_series(asset_prices))
-    if "price_risk" in settings.enabled_feature_blocks or "market_liquidity" in settings.enabled_feature_blocks:
-        from module.modeling.artifacts import add_market_risk_liquidity, MARKET_RISK_SOURCES
+    # `momentum_12_1` está declarado en `momentum_core` pero se calcula dentro del bloque técnico
+    # diario, así que la condición debe incluir los bloques de momentum: si no, el factor quedaría
+    # declarado en el catálogo y ausente del panel, y la ablación mediría un agente mutilado.
+    if _needs_daily_technicals(settings.enabled_feature_blocks):
+        from module.modeling.artifacts import add_market_risk_liquidity
         add_market_risk_liquidity(frame, raw_prices, settings.benchmark_ticker,
                                   tuple(settings.risk_feature_windows), tuple(settings.technical_feature_windows))
 
@@ -347,7 +358,7 @@ def _build_feature_frame(
     # Rankear a factores las columnas crudas de los artefactos siempre calculados (mayor = mejor en todas).
     from module.modeling.artifacts import MOVING_AVERAGE_SOURCES, PRICE_MOMENTUM_SOURCES
     artifact_sources: list[str] = [*PRICE_MOMENTUM_SOURCES, *MOVING_AVERAGE_SOURCES]
-    if "price_risk" in settings.enabled_feature_blocks or "market_liquidity" in settings.enabled_feature_blocks:
+    if _needs_daily_technicals(settings.enabled_feature_blocks):
         from module.modeling.artifacts import MARKET_RISK_SOURCES
         artifact_sources += list(MARKET_RISK_SOURCES)
     for source in artifact_sources:

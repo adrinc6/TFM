@@ -42,7 +42,10 @@ FEATURE_CATALOG: tuple[FeatureSpec, ...] = tuple(
              "fundamental_stability", ("growth",))
     + _specs(("relative_return_3m", "relative_return_6m", "relative_return_12m", "momentum_12_1",
               "mom_acceleration", "mom_reversal_1m"), "momentum_core", ("momentum",))
-    + _specs(("ma_price_vs_sma6", "ma_price_vs_sma12", "ma_distance_to_high12"),
+    # `mom_volatility` vivía fuera de todo bloque: se inyectaba siempre en el agente momentum pero
+    # no aparecía en ninguna ablación ni en `feature_catalog.json`. Declararlo aquí lo hace visible
+    # y lo somete a la misma activación por bloques que el resto.
+    + _specs(("ma_price_vs_sma6", "ma_price_vs_sma12", "ma_distance_to_high12", "mom_volatility"),
              "momentum_trend", ("momentum",))
     + _specs(("realized_vol_63d", "realized_vol_126d", "downside_vol_63d", "beta_252d",
               "drawdown_252d", "max_drawdown_252d", "range_21d", "range_63d"),
