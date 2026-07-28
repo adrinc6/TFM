@@ -135,6 +135,25 @@ def test_metrics_are_segmented_and_selection_window_excludes_the_reserved_era() 
     assert result.summary["cagr_portfolio"] != result.summary["full_curve"]["cagr_portfolio"]
 
 
+def test_price_only_sell_only_creates_transitional_cash_under_fully_invested() -> None:
+    """El efectivo transitorio de `price_only_sell_only` cuadra y se cierra al volver a haber
+    fundamentales nuevos, aunque `cash_policy` sea `fully_invested`."""
+    scores, prices, benchmark = _panel(months=12, tickers=("A", "B", "C", "D"))
+    dates = sorted(scores["snapshot_date"].unique())
+    quarterly_dates = [dates[index] for index in range(0, len(dates), 3)]
+    result = run_backtest(scores, prices, benchmark, _settings(
+        cash_policy="fully_invested", price_only_sell_only=True,
+        exit_expected_alpha_bps=1_000_000.0, target_size=2, target_horizon_months=12,
+    ))
+    total = result.equity["invested_weight"] + result.equity["cash_weight"]
+    assert np.allclose(total, 1.0)
+    equity = result.equity.set_index("snapshot_date")
+    # A partir del segundo snapshot trimestral, el relleno obligatorio de `fully_invested` vuelve a
+    # completar la cartera sin efectivo residual (el primero no tiene nada que vender todavía).
+    later_quarterly = [date for date in quarterly_dates if date in equity.index][1:]
+    assert (equity.loc[later_quarterly, "cash_weight"] < 1e-9).all()
+
+
 def test_a_delisted_position_is_not_rescued_at_par() -> None:
     """Marcar plana una posición cuyo precio desaparece regala un rescate del 100 %."""
     scores, prices, benchmark = _panel(months=6, tickers=("A", "B"))

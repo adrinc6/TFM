@@ -155,9 +155,34 @@ corrección por multiplicidad de las cifras finales se hace con el Deflated Shar
 
 ## 6. Cartera dinámica
 
+**El propósito de esta etapa completa es la estabilidad, no más alfa.** El ganador (temporal,
+representación, modelo, meta) ya está congelado por Rank-IC antes de tocar cartera. Barrer
+`cash_policy`, `target_size`, `sizing_mode`, `minimum_holding_period` o `price_only_sell_only` no es
+una búsqueda de qué combinación da más rentabilidad —sería la misma fuga de validez que ya se
+corrigió una vez, elegir retrospectivamente por rentabilidad—, sino una exploración de cómo
+aprovechar de forma **estable y sostenible en el tiempo** la información que el modelo ya congelado
+produce: menos rotación innecesaria, menos operar sobre ruido de precio sin confirmación
+fundamental, sin comprar a ciegas cuando no hay datos nuevos que lo justifiquen.
+`portfolio_comparison.parquet` reporta turnover, coste y dispersión de alfa entre configuraciones de
+cartera como diagnóstico de estabilidad; ninguna de esas comparaciones elige nada, y una opción con
+más alfa pero más varianza entre semillas o más rotación no se prefiere solo por el alfa.
+
 SPY es únicamente benchmark y nunca una posición. Los umbrales de la cartera son **económicos, en
-puntos básicos de alfa esperado**, no percentiles del ranking: un percentil no dice cuánto se espera
-ganar y por tanto no puede compararse contra lo que cuesta operar.
+puntos básicos de alfa esperado ANUALES**, no percentiles del ranking: un percentil no dice cuánto se
+espera ganar y por tanto no puede compararse contra lo que cuesta operar. Definirlos en anual —en vez
+de directamente sobre el horizonte del modelo— los hace comparables entre configuraciones con
+distinto `target_horizon_months`: 250 pb no pueden significar un 10 %/año con horizonte de 3 meses y
+un 2,5 %/año con horizonte de 12. Antes de compararlos contra el alfa esperado (que sí está en
+unidades del horizonte completo), se convierten **geométricamente**:
+
+```text
+umbral_horizonte = (1 + umbral_anual)^(horizonte_meses / 12) − 1
+```
+
+Compuesto, no lineal —igual que el resto del proyecto anualiza CAGR e IR—: dividir el umbral anual
+entre el número de meses (100 pb/año → ~8,3 pb/mes) es el mismo atajo aritmético que ya se corrigió
+en otros sitios. Con horizonte de 12 meses la conversión es la identidad; con 6 meses, un umbral de
+100 pb/año equivale a `(1,01)^0,5 − 1 ≈ 49,9` pb sobre el horizonte, no a 50 pb exactos.
 
 El alfa esperado procede de la calibración isotónica causal de `meta_rank` a retorno excedente
 (`signal_calibration.parquet`), que solo usa cohortes ya cerradas. Mientras no hay suficientes
@@ -176,14 +201,17 @@ regla. En cada snapshot se marcan posiciones a mercado y:
   alfa_esperado(outsider) − alfa_esperado(peor) > 2·(comisión + slippage) + rotation_edge_bps
   ```
 
-  es decir, **la rotación paga su propio coste de ida y vuelta** antes de autorizarse. Este es el
-  mecanismo que faltaba: con 877 % de rotación anual a 15 pb por operación, el coste drenaba en torno
-  a 1,3 puntos porcentuales al año contra una ventaja bruta de unos 3,1. Es la **única** vía de venta
-  bajo `fully_invested`: vender por umbral con la obligación de recomprar en el mismo snapshot
+  (con `alfa_esperado` y `rotation_edge_bps` ya convertidos al horizonte), es decir, **la rotación
+  paga su propio coste de ida y vuelta** antes de autorizarse. Este es el mecanismo que faltaba: con
+  877 % de rotación anual a 15 pb por operación, el coste drenaba en torno a 1,3 puntos porcentuales
+  al año contra una ventaja bruta de unos 3,1. Es la **única** vía de venta bajo `fully_invested` sin
+  `price_only_sell_only`: vender por umbral con la obligación de recomprar en el mismo snapshot
   pagaría una ida y vuelta para quedar igual.
-- **Venta a efectivo (destino: efectivo; solo `opportunity_cash`).** Una posición sale si su alfa
+- **Venta a efectivo (destino: efectivo).** Bajo `opportunity_cash`, una posición sale si su alfa
   esperado cae por debajo de `exit_expected_alpha_bps` **y** su plaza puede quedar en efectivo sin
-  violar el suelo de diversificación ni el tope `max_cash_weight`.
+  violar el suelo de diversificación ni el tope `max_cash_weight`. Bajo `price_only_sell_only` en un
+  snapshot sin fundamentales nuevos, esta vía se abre también con `fully_invested`, sin suelo propio
+  (ver más abajo).
 - **Compra con histéresis.** Una entrada nueva exige `exit_expected_alpha_bps` **más el coste de ida
   y vuelta de la propia operación**; mantener una posición ya en cartera exige solo el umbral de
   salida. Sin esa banda, una acción oscilando alrededor del umbral se compraría y vendería en
@@ -191,14 +219,31 @@ regla. En cada snapshot se marcan posiciones a mercado y:
 - Las posiciones dentro de la tolerancia mantienen sus unidades y el presupuesto restante se reparte
   respetando las relaciones objetivo.
 
+Por encima de todo lo anterior, **el mínimo de tenencia** (`minimum_holding_period`) bloquea
+cualquier venta —por caída de alfa o por rotación— mientras la posición no lleve un mínimo de meses
+en cartera, expresado como fracción del horizonte del modelo: `none` (sin mínimo), `quarter_horizon`
+(`ceil(horizonte / 4)`), `half_horizon` (`ceil(horizonte / 2)`) o `full_horizon` (el horizonte
+completo). Es el único freno que no depende de ninguna magnitud económica, solo del tiempo, y no
+busca más alfa sino menos rotación de alta frecuencia sobre el mismo modelo ya congelado.
+
 El papel de cada insumo es explícito: el **ranking del meta** decide el orden de preferencia y los
 desempates (la confianza de los agentes), el **alfa calibrado** decide si cada operación se paga a sí
 misma (la magnitud económica), y los **costes** son el listón que toda operación debe superar.
 
-`price_only_strictness_multiplier` es el **único** mecanismo de prudencia: en los snapshots que solo
-traen precio nuevo (sin fundamentales publicados) baja el umbral de salida y sube tanto el umbral de
-entrada como la ventaja exigida para rotar —la banda de histéresis se ensancha—, de modo que la
-cartera no se mueve por ruido de precio sin confirmación fundamental.
+`price_only_strictness_multiplier` endurece los umbrales en los snapshots que solo traen precio
+nuevo (sin fundamentales publicados): baja el umbral de salida y sube tanto el umbral de entrada
+como la ventaja exigida para rotar —la banda de histéresis se ensancha—, de modo que la cartera no se
+mueve por ruido de precio sin confirmación fundamental.
+
+`price_only_sell_only` va un paso más allá: en esos mismos snapshots, si está activo, se puede
+**vender** una posición cuyo alfa esperado ya no cumple, pero se **prohíbe comprar cualquier
+reemplazo** —ni compra nueva, ni relleno obligatorio, ni rotación— porque no hay información nueva
+que justifique elegir una acción distinta a la ya elegida con datos reales. La plaza vendida queda en
+efectivo, sin el tope ni el suelo de `opportunity_cash` (es un estado transitorio, no una asignación
+deliberada de cartera), hasta el siguiente snapshot con fundamentales frescos. Con esta variable
+activa, `fully_invested` puede por tanto mostrar efectivo temporal: el relleno obligatorio vuelve a
+completar la cartera en el siguiente snapshot con datos reales si hay candidatas por encima del
+umbral de entrada.
 
 ### Política de efectivo
 

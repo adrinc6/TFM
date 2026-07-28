@@ -1,5 +1,54 @@
 # Bitácora
 
+## 2026-07-28 · Umbrales anuales con conversión geométrica, mínimo de tenencia y venta sin reemplazo
+
+### Decisión
+
+Tres cambios adicionales a la gestión de cartera, catálogo v4 → **v5**, todos con el mismo objetivo
+declarado: **estabilidad del modelo ya congelado, no más alfa**. Barrer variables de cartera nunca
+elige el modelo predictivo (eso ya está fijado por Rank-IC); busca cómo aprovechar ese modelo de
+forma sostenible en el tiempo, con menos rotación innecesaria y sin operar a ciegas cuando falta
+información. `portfolio_comparison.parquet` sigue siendo diagnóstico puro: ninguna comparación entre
+`cash_policy`, `minimum_holding_period` o `price_only_sell_only` elige una configuración por dar más
+alfa; una opción con más rentabilidad pero más varianza entre semillas o más rotación no se prefiere
+solo por eso.
+
+1. **`exit_expected_alpha_bps` y `rotation_edge_bps` pasan a definirse en puntos básicos anuales**,
+   convertidos geométricamente (compuesto, no lineal) al horizonte real del modelo antes de
+   comparar: `umbral_horizonte = (1 + umbral_anual)^(horizonte_meses / 12) − 1`. Antes, el mismo
+   valor de catálogo significaba magnitudes económicas distintas según `target_horizon_months` (250
+   pb en un horizonte de 3 meses ≈ 10 %/año; en uno de 12 meses ≈ 2,5 %/año), rompiendo la
+   comparabilidad entre configuraciones. El prorrateo lineal (dividir sin más) se descartó
+   deliberadamente por ser el mismo atajo aritmético que ya se corrigió en CAGR e IR.
+2. **Nueva variable `minimum_holding_period`** (`none`, `quarter_horizon`, `half_horizon`,
+   `full_horizon`, recomendado `none`): bloquea toda venta —caída de alfa o rotación— mientras una
+   posición no cumpla ese mínimo de meses, expresado como fracción del horizonte. `quarter_horizon`
+   está pensado para el caso de un horizonte de 12 meses revisado trimestre a trimestre. Reutiliza
+   `state.entry_dates`, ya existente; `months_held` se extrae de `backtest.py` a `portfolio.py` como
+   función pública para eliminar la duplicación.
+3. **Nueva variable `price_only_sell_only`** (booleana, recomendado `False`): en un snapshot que
+   solo trae precio nuevo (sin fundamentales frescos), permite vender una posición cuyo alfa
+   esperado ya no cumple, pero prohíbe comprar cualquier reemplazo —compra nueva, relleno
+   obligatorio o rotación—, porque no hay información nueva que justifique elegir una acción
+   distinta a la ya elegida con datos reales. Bajo `fully_invested`, esto abre una vía de efectivo
+   transitorio (sin el tope ni el suelo de `opportunity_cash`, por ser un estado pasajero hasta el
+   siguiente snapshot con datos reales) que antes no existía.
+
+### Efecto en el backtest
+
+El guard de coherencia de `backtest.py` (que antes trataba "órdenes sin cartera objetivo" siempre
+como un bug) se simplificó: `decide_orders` ya conserva las posiciones previas cuando no hay scores
+negociables, y un objetivo vacío en cualquier otro snapshot es una liquidación deliberada a efectivo
+(el mecanismo del punto 3), no un error. Solo el primer snapshot sin nada que invertir sigue siendo
+un problema real de datos.
+
+### Validación
+
+52 tests (7 nuevos: conversión geométrica, los cuatro valores de `minimum_holding_period`, y dos de
+`price_only_sell_only`), ruff sin errores nuevos sobre el baseline preexistente, sintaxis JS. El
+dashboard integra ambas variables nuevas sin cambios de código (el catálogo se renderiza de forma
+dinámica); solo se actualizaron dos etiquetas fijas de métricas ("pb" → "pb/año").
+
 ## 2026-07-28 · Rediseño de la gestión de cartera: toda venta necesita un destino mejor
 
 ### Decisión

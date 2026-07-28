@@ -208,6 +208,8 @@ def settings_from_values(
             if str(values["cash_policy"]) == "opportunity_cash" else 0.0
         ),
         "rebalance_drift_tolerance": float(values["rebalance_drift_tolerance"]),
+        "minimum_holding_period": str(values["minimum_holding_period"]),
+        "price_only_sell_only": bool(values["price_only_sell_only"]),
         "price_only_strictness_multiplier": float(values["price_only_strictness_multiplier"]),
         "sizing_mode": str(values["sizing_mode"]),
         "commission_bps": float(values["commission_bps"]),

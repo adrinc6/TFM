@@ -508,7 +508,7 @@
     rank_ic_positive_fraction: "Cohortes Rank-IC positivas", annualized_turnover: "Turnover anualizado",
     max_drawdown: "Drawdown máximo", information_ratio: "Information Ratio (anualizado)",
     mean_cash_weight: "Efectivo medio", transfer_coefficient: "Coeficiente de transferencia",
-    exit_expected_alpha_bps: "Umbral de salida (pb)", rotation_edge_bps: "Ventaja de rotación (pb)",
+    exit_expected_alpha_bps: "Umbral de salida (pb/año)", rotation_edge_bps: "Ventaja de rotación (pb/año)",
     total_cost_drag: "Coste acumulado", n_cohorts: "Cohortes", beat_rate: "Años por encima de SPY",
     tail_spread: "Diferencial decil superior", target_size: "Posiciones",
     observed_mean_rank_ic: "Rank-IC observado", permutation_p_value: "p-valor de permutación",

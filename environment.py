@@ -112,10 +112,13 @@ MARKET_REGIME_FEATURE = False      # regimen bull/bear del SP500 + interacciones
 NEUTRALIZE_MIN_GROUP = 5           # tamano minimo de grupo para neutralizar por sector
 
 # --- Cartera ---
-# Los umbrales son económicos, en puntos básicos de alfa esperado, no percentiles del ranking.
+# Los umbrales son económicos, en puntos básicos de alfa esperado ANUALES, no percentiles del
+# ranking: se convierten geométricamente al horizonte real del modelo antes de compararlos (ver
+# module/evaluation/portfolio.py::_annual_to_horizon_bps). Definirlos en anual los hace comparables
+# entre configuraciones con distinto target_horizon_months o snapshot_step_months.
 TARGET_SIZE = 8
-EXIT_EXPECTED_ALPHA_BPS = 100.0   # alfa esperado por debajo de este umbral -> venta
-ROTATION_EDGE_BPS = 50.0          # ventaja exigida POR ENCIMA del coste de ida y vuelta
+EXIT_EXPECTED_ALPHA_BPS = 100.0   # pb/año; alfa esperado por debajo del equivalente -> venta
+ROTATION_EDGE_BPS = 50.0          # pb/año; ventaja exigida POR ENCIMA del coste de ida y vuelta
 # Política de efectivo. "fully_invested" mantiene el 100 % en acciones; "opportunity_cash" deja una
 # plaza vacía cuando ninguna candidata supera el umbral de alfa esperado. El efectivo se remunera
 # al 0 %: es una cota inferior conservadora, nunca aporta rentabilidad, solo evita malas compras.
@@ -126,6 +129,20 @@ COMMISSION_BPS = 5                # comision por operacion, en puntos basicos
 SLIPPAGE_BPS = 10                 # slippage por operacion, en puntos basicos
 REBALANCE_DRIFT_TOLERANCE = 0.25  # fracción mínima de cambio RELATIVO a la posición para rebalancear
                                   # (0.25 = 25 %); por debajo, el tenente se "congela" y no opera
+# Mínimo de meses en cartera antes de poder vender una posición POR NINGÚN MOTIVO (ni caída de alfa
+# ni rotación), como fracción del horizonte del modelo. No busca más alfa: busca estabilidad y menos
+# rotación de alta frecuencia sobre el mismo modelo ya congelado.
+#   "none"           -> sin mínimo (comportamiento histórico)
+#   "quarter_horizon" -> ceil(horizonte / 4)
+#   "half_horizon"    -> ceil(horizonte / 2)
+#   "full_horizon"    -> horizonte completo
+MINIMUM_HOLDING_PERIOD = "none"
+MINIMUM_HOLDING_PERIODS = ("none", "quarter_horizon", "half_horizon", "full_horizon")
+# En un snapshot que solo trae precio nuevo (sin fundamentales frescos), permite vender una posición
+# que ya no cumple pero prohíbe comprar cualquier reemplazo (ni compra nueva, ni relleno obligatorio,
+# ni rotación): no hay información nueva que justifique elegir una acción distinta a la ya elegida
+# con datos reales. False = comportamiento histórico (compras y rotación normales todo el tiempo).
+PRICE_ONLY_SELL_ONLY = False
 # Con snapshot_step_months=1 y fundamental_step_months=3 hay revisiones que solo traen precio nuevo,
 # sin fundamentales nuevos. Este factor endurece expulsión, rotación y rebalanceo en esas revisiones
 # para no rotar la cartera por ruido de precio. 1.0 = sin efecto (comportamiento histórico).
@@ -197,6 +214,8 @@ class Settings:
     commission_bps: float = COMMISSION_BPS
     slippage_bps: float = SLIPPAGE_BPS
     rebalance_drift_tolerance: float = REBALANCE_DRIFT_TOLERANCE
+    minimum_holding_period: str = MINIMUM_HOLDING_PERIOD
+    price_only_sell_only: bool = PRICE_ONLY_SELL_ONLY
     price_only_strictness_multiplier: float = PRICE_ONLY_STRICTNESS_MULTIPLIER
     max_monthly_position_return: float = MAX_MONTHLY_POSITION_RETURN
     profile: str = "balanced"   # perfil de inversor para la seleccion de cartera (ver module/profiles.py)
@@ -270,6 +289,11 @@ class Settings:
             raise ValueError(
                 "PRICE_ONLY_STRICTNESS_MULTIPLIER debe ser >= 1: endurece las revisiones sin "
                 "fundamentales nuevos, nunca las relaja."
+            )
+        if self.minimum_holding_period not in MINIMUM_HOLDING_PERIODS:
+            raise ValueError(
+                f"MINIMUM_HOLDING_PERIOD inválido: {self.minimum_holding_period!r}. "
+                f"Usa uno de {MINIMUM_HOLDING_PERIODS}."
             )
 
     @property

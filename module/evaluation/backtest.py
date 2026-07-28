@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 
 from environment import Settings
-from module.evaluation.portfolio import PortfolioState, decide_orders
+from module.evaluation.portfolio import PortfolioState, decide_orders, months_held
 from module.studies.catalog import KNOWN_STRESS_YEARS, SELECTION_UNTIL_YEAR
 
 
@@ -74,13 +74,12 @@ def run_backtest(
         frame = grouped[date]
         tradable = frame.loc[frame["ticker"].map(lambda ticker: bool(current_prices.get(ticker, 0) > 0))]
         orders, target = decide_orders(state, tradable, settings)
-        if orders and not target:
-            # Órdenes sin cartera objetivo significarían pagar costes de operaciones que la
-            # contabilidad no refleja; `decide_orders` garantiza cartera no vacía si hay scores.
-            raise ValueError(f"decide_orders emitió órdenes sin cartera objetivo en {date}.")
-        if not target:
-            target = {ticker: weight for ticker, weight in state.holdings.items() if current_prices.get(ticker, 0) > 0}
-        if not target:
+        # `decide_orders` ya conserva las posiciones previas cuando no hay scores negociables ese
+        # día, y un objetivo vacío en cualquier otro snapshot es una liquidación deliberada a
+        # efectivo (por ejemplo, `price_only_sell_only` sin sustituto disponible), no un error: se
+        # respeta tal cual. Solo el primer snapshot sin nada que invertir es un problema real de
+        # datos, porque no hay posición previa a la que recurrir.
+        if not target and index == 0:
             raise ValueError(f"No hay acciones negociables para invertir en {date}.")
         target = _capped(target)
         cash_weight = max(0.0, 1.0 - sum(target.values()))
@@ -102,7 +101,7 @@ def run_backtest(
         previous_prices = {ticker: current_prices[ticker] for ticker in target}
         turnover = sum(abs(row["weight_after"] - row["weight_before"]) for row in priced)
         for ticker, weight in target.items():
-            positions_rows.append({"snapshot_date": date, "ticker": ticker, "weight": weight, "entry_date": state.entry_dates[ticker], "entry_price": state.entry_prices[ticker], "valuation_price": current_prices[ticker], "units": units[ticker], "market_value": position_values[ticker], "entry_cost": state.entry_costs[ticker], "months_held": _months(state.entry_dates[ticker], date), "current_percentile": _percentile(ticker, frame)})
+            positions_rows.append({"snapshot_date": date, "ticker": ticker, "weight": weight, "entry_date": state.entry_dates[ticker], "entry_price": state.entry_prices[ticker], "valuation_price": current_prices[ticker], "units": units[ticker], "market_value": position_values[ticker], "entry_cost": state.entry_costs[ticker], "months_held": months_held(state.entry_dates[ticker], date), "current_percentile": _percentile(ticker, frame)})
         orders_rows.extend(priced)
         equity_rows.append({"snapshot_date": date, "period_start_portfolio_value": value, "period_start_benchmark_value": benchmark_value / (1 + benchmark_return) if 1 + benchmark_return else benchmark_value, "portfolio_value": value_after, "benchmark_value": benchmark_value, "portfolio_return": value_after / value - 1, "benchmark_return": benchmark_return, "excess_return": value_after / value - 1 - benchmark_return, "turnover_pct": turnover, "gross_return": stock_return, "cost_drag": drag, "positions_value": sum(position_values.values()), "cash_weight": cash_weight, "invested_weight": sum(target.values()), "cumulative_costs": state.costs_paid})
         value, previous_benchmark = value_after, price
@@ -196,11 +195,6 @@ def _price_orders(orders: list[dict], prices: dict[str, float], holdings: dict[s
         rows.append({**order, "weight_before": before, "weight_after": after, "price": prices.get(order["ticker"], fallback.get(order["ticker"])), "notional": notional, "commission_amount": commission, "slippage_amount": slippage})
         total += notional * rate
     return rows, total / value if value else 0.0
-
-
-def _months(start: str, end: str) -> int:
-    left, right = pd.Timestamp(start), pd.Timestamp(end)
-    return max(0, (right.year - left.year) * 12 + right.month - left.month)
 
 
 def _percentile(ticker: str, frame: pd.DataFrame) -> float:
