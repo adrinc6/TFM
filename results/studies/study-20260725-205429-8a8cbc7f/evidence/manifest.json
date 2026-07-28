@@ -1,0 +1,40 @@
+{
+  "run_scope": "full",
+  "run_dir": "C:\\Users\\PC\\AppData\\Local\\Temp\\evaluation-7ec85537d6-3of1hza8\\agents\\lgbm-1f9b51f74394",
+  "inputs": {
+    "features": "61c3e96db09168e784eeb9f70bfdf66d45b71defdfac11ae76bbb16d0489afe9",
+    "targets": "53d87b82b1dd2758e627009cf6b079a890b3df98ddac92c413c027c5bc5ae17e"
+  },
+  "config": {
+    "execution_year": 2015,
+    "execution_quarter": 1,
+    "execution_lag_days": 60,
+    "train_lookback_years": 8,
+    "target_horizon_months": 12,
+    "objective": "rank_regression",
+    "lgbm_n_estimators": 100,
+    "lgbm_max_depth": 3,
+    "lgbm_learning_rate": 0.05,
+    "lgbm_min_child_samples": 50,
+    "random_seed": 42,
+    "meta_type": "stacked_oos",
+    "meta_ic_lookback_quarters": 16,
+    "meta_history_quarters": 16,
+    "meta_weight_cap": 1.0,
+    "meta_equal_shrinkage": 0.0,
+    "fundamental_momentum": true,
+    "market_regime_feature": true,
+    "missing_policy": "median_train_only_with_indicator"
+  },
+  "versions": {
+    "lightgbm": "4.6.0"
+  },
+  "predictions": 301900,
+  "agents_fit": [
+    {
+      "family": "lightgbm",
+      "key": "10bcb9fa4b8dffeb719755dbcec721359605a3c75f00aca94d5c9dde0985ff2d",
+      "source": "computed"
+    }
+  ]
+}

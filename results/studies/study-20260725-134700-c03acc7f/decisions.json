@@ -1,0 +1,552 @@
+{
+  "decisions": [
+    {
+      "variable_id": "snapshot_step_months",
+      "winner_candidate_id": "predictive:snapshot_step_months:6b86b273ff34",
+      "winner_value": 1,
+      "selection_rule": "robust_rank_ic",
+      "selection_metric": "rank_ic_only",
+      "known_stress_excluded": true,
+      "candidates": [
+        {
+          "candidate_id": "predictive:baseline",
+          "value": 3,
+          "is_incumbent": true,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_bootstrap_non_inferior": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "n_dates": 40,
+            "fraction_a_better": 0.0,
+            "distinguishable_from_zero": false
+          },
+          "median_era_rank_ic": 0.04626997240536288,
+          "mean_rank_ic": 0.05314030040674628,
+          "positive_fraction": 0.675,
+          "rank_ic_std": 0.12244148551239217,
+          "observations": 40,
+          "value_complexity_rank": 1,
+          "reason": "Elegible por suficiencia, estabilidad entre eras y no inferioridad pareada."
+        },
+        {
+          "candidate_id": "predictive:snapshot_step_months:6b86b273ff34",
+          "value": 1,
+          "is_incumbent": false,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_bootstrap_non_inferior": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.015332819003654087,
+            "ci_low": 0.0067922280040991715,
+            "ci_high": 0.030404592950219266,
+            "n_dates": 39,
+            "fraction_a_better": 0.5897435897435898,
+            "distinguishable_from_zero": true
+          },
+          "median_era_rank_ic": 0.0738344580831706,
+          "mean_rank_ic": 0.0739622803004054,
+          "positive_fraction": 0.717948717948718,
+          "rank_ic_std": 0.11011133655572657,
+          "observations": 117,
+          "value_complexity_rank": 0,
+          "reason": "Elegible por suficiencia, estabilidad entre eras y no inferioridad pareada."
+        }
+      ]
+    },
+    {
+      "variable_id": "target_horizon_months",
+      "winner_candidate_id": "predictive:snapshot_step_months:6b86b273ff34",
+      "winner_value": 12,
+      "selection_rule": "robust_rank_ic",
+      "selection_metric": "rank_ic_only",
+      "known_stress_excluded": true,
+      "candidates": [
+        {
+          "candidate_id": "predictive:target_horizon_months:e7f6c011776e",
+          "value": 6,
+          "is_incumbent": false,
+          "eligible": false,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_bootstrap_non_inferior": false
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": -0.028051977471836225,
+            "ci_low": -0.05729224701503692,
+            "ci_high": -0.00953651432009061,
+            "n_dates": 117,
+            "fraction_a_better": 0.42735042735042733,
+            "distinguishable_from_zero": true
+          },
+          "median_era_rank_ic": 0.0416764316142849,
+          "mean_rank_ic": 0.0459103028285692,
+          "positive_fraction": 0.6752136752136753,
+          "rank_ic_std": 0.12085812232578613,
+          "observations": 117,
+          "value_complexity_rank": 1,
+          "reason": "bootstrap incompatible con no inferioridad"
+        },
+        {
+          "candidate_id": "predictive:snapshot_step_months:6b86b273ff34",
+          "value": 12,
+          "is_incumbent": true,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_bootstrap_non_inferior": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "n_dates": 117,
+            "fraction_a_better": 0.0,
+            "distinguishable_from_zero": false
+          },
+          "median_era_rank_ic": 0.0738344580831706,
+          "mean_rank_ic": 0.0739622803004054,
+          "positive_fraction": 0.717948717948718,
+          "rank_ic_std": 0.11011133655572657,
+          "observations": 117,
+          "value_complexity_rank": 2,
+          "reason": "Elegible por suficiencia, estabilidad entre eras y no inferioridad pareada."
+        }
+      ]
+    },
+    {
+      "variable_id": "train_lookback_years",
+      "winner_candidate_id": "predictive:snapshot_step_months:6b86b273ff34",
+      "winner_value": 8,
+      "selection_rule": "robust_rank_ic",
+      "selection_metric": "rank_ic_only",
+      "known_stress_excluded": true,
+      "candidates": [
+        {
+          "candidate_id": "predictive:snapshot_step_months:6b86b273ff34",
+          "value": 8,
+          "is_incumbent": true,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_bootstrap_non_inferior": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "n_dates": 117,
+            "fraction_a_better": 0.0,
+            "distinguishable_from_zero": false
+          },
+          "median_era_rank_ic": 0.0738344580831706,
+          "mean_rank_ic": 0.0739622803004054,
+          "positive_fraction": 0.717948717948718,
+          "rank_ic_std": 0.11011133655572657,
+          "observations": 117,
+          "value_complexity_rank": 1,
+          "reason": "Elegible por suficiencia, estabilidad entre eras y no inferioridad pareada."
+        },
+        {
+          "candidate_id": "predictive:train_lookback_years:6b51d431df5d",
+          "value": 12,
+          "is_incumbent": false,
+          "eligible": false,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_bootstrap_non_inferior": false
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": -0.011685605854315785,
+            "ci_low": -0.022414931062590977,
+            "ci_high": 0.00014320087514313305,
+            "n_dates": 117,
+            "fraction_a_better": 0.42735042735042733,
+            "distinguishable_from_zero": false
+          },
+          "median_era_rank_ic": 0.057664845378953444,
+          "mean_rank_ic": 0.062276674446089635,
+          "positive_fraction": 0.6923076923076923,
+          "rank_ic_std": 0.11736684656461,
+          "observations": 117,
+          "value_complexity_rank": 2,
+          "reason": "bootstrap incompatible con no inferioridad"
+        }
+      ]
+    },
+    {
+      "variable_id": "execution_lag_days",
+      "winner_candidate_id": "predictive:snapshot_step_months:6b86b273ff34",
+      "winner_value": 60,
+      "selection_rule": "robust_rank_ic",
+      "selection_metric": "rank_ic_only",
+      "known_stress_excluded": true,
+      "candidates": [
+        {
+          "candidate_id": "predictive:execution_lag_days:811786ad1ae7",
+          "value": 45,
+          "is_incumbent": false,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_bootstrap_non_inferior": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "n_dates": 0,
+            "fraction_a_better": 0.0,
+            "distinguishable_from_zero": false
+          },
+          "median_era_rank_ic": 0.05173014815110353,
+          "mean_rank_ic": 0.0610119983173212,
+          "positive_fraction": 0.717948717948718,
+          "rank_ic_std": 0.09704529156418876,
+          "observations": 117,
+          "value_complexity_rank": 1,
+          "reason": "Elegible por suficiencia, estabilidad entre eras y no inferioridad pareada."
+        },
+        {
+          "candidate_id": "predictive:snapshot_step_months:6b86b273ff34",
+          "value": 60,
+          "is_incumbent": true,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_bootstrap_non_inferior": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "n_dates": 117,
+            "fraction_a_better": 0.0,
+            "distinguishable_from_zero": false
+          },
+          "median_era_rank_ic": 0.0738344580831706,
+          "mean_rank_ic": 0.0739622803004054,
+          "positive_fraction": 0.717948717948718,
+          "rank_ic_std": 0.11011133655572657,
+          "observations": 117,
+          "value_complexity_rank": 2,
+          "reason": "Elegible por suficiencia, estabilidad entre eras y no inferioridad pareada."
+        }
+      ]
+    },
+    {
+      "variable_id": "recency_weighting",
+      "winner_candidate_id": "predictive:snapshot_step_months:6b86b273ff34",
+      "winner_value": "off",
+      "selection_rule": "robust_rank_ic",
+      "selection_metric": "rank_ic_only",
+      "known_stress_excluded": true,
+      "candidates": [
+        {
+          "candidate_id": "predictive:snapshot_step_months:6b86b273ff34",
+          "value": "off",
+          "is_incumbent": true,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_bootstrap_non_inferior": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "n_dates": 117,
+            "fraction_a_better": 0.0,
+            "distinguishable_from_zero": false
+          },
+          "median_era_rank_ic": 0.0738344580831706,
+          "mean_rank_ic": 0.0739622803004054,
+          "positive_fraction": 0.717948717948718,
+          "rank_ic_std": 0.11011133655572657,
+          "observations": 117,
+          "value_complexity_rank": 0,
+          "reason": "Elegible por suficiencia, estabilidad entre eras y no inferioridad pareada."
+        },
+        {
+          "candidate_id": "predictive:recency_weighting:4dd109ad15a2",
+          "value": "linear",
+          "is_incumbent": false,
+          "eligible": false,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_bootstrap_non_inferior": false
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": -0.03134560728584733,
+            "ci_low": -0.051160531790934355,
+            "ci_high": -0.009901963416521165,
+            "n_dates": 117,
+            "fraction_a_better": 0.26495726495726496,
+            "distinguishable_from_zero": true
+          },
+          "median_era_rank_ic": 0.02815436324587549,
+          "mean_rank_ic": 0.042616673014558105,
+          "positive_fraction": 0.6239316239316239,
+          "rank_ic_std": 0.13457571698716214,
+          "observations": 117,
+          "value_complexity_rank": 1,
+          "reason": "bootstrap incompatible con no inferioridad"
+        }
+      ]
+    },
+    {
+      "variable_id": "feature_preset",
+      "winner_candidate_id": "predictive:snapshot_step_months:6b86b273ff34",
+      "winner_value": "core",
+      "selection_rule": "robust_rank_ic",
+      "selection_metric": "rank_ic_only",
+      "known_stress_excluded": true,
+      "candidates": [
+        {
+          "candidate_id": "predictive:snapshot_step_months:6b86b273ff34",
+          "value": "core",
+          "is_incumbent": true,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_bootstrap_non_inferior": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "n_dates": 117,
+            "fraction_a_better": 0.0,
+            "distinguishable_from_zero": false
+          },
+          "median_era_rank_ic": 0.0738344580831706,
+          "mean_rank_ic": 0.0739622803004054,
+          "positive_fraction": 0.717948717948718,
+          "rank_ic_std": 0.11011133655572657,
+          "observations": 117,
+          "value_complexity_rank": 0,
+          "reason": "Elegible por suficiencia, estabilidad entre eras y no inferioridad pareada."
+        },
+        {
+          "candidate_id": "predictive:feature_preset:0ca92235fdcc",
+          "value": "fundamental",
+          "is_incumbent": false,
+          "eligible": false,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_bootstrap_non_inferior": false
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": -0.05500791051342632,
+            "ci_low": -0.08627069903115649,
+            "ci_high": -0.025470107297270495,
+            "n_dates": 117,
+            "fraction_a_better": 0.2222222222222222,
+            "distinguishable_from_zero": true
+          },
+          "median_era_rank_ic": 0.028372676573098075,
+          "mean_rank_ic": 0.018954369786979095,
+          "positive_fraction": 0.5641025641025641,
+          "rank_ic_std": 0.09200349324891385,
+          "observations": 117,
+          "value_complexity_rank": 1,
+          "reason": "bootstrap incompatible con no inferioridad"
+        },
+        {
+          "candidate_id": "predictive:feature_preset:5cf7504d9781",
+          "value": "all",
+          "is_incumbent": false,
+          "eligible": false,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_bootstrap_non_inferior": false
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.023350745112124604,
+            "ci_low": -0.018874033817247317,
+            "ci_high": 0.06327972936427465,
+            "n_dates": 117,
+            "fraction_a_better": 0.6068376068376068,
+            "distinguishable_from_zero": false
+          },
+          "median_era_rank_ic": 0.09889852184237859,
+          "mean_rank_ic": 0.09731302541253004,
+          "positive_fraction": 0.7350427350427351,
+          "rank_ic_std": 0.1326814612548472,
+          "observations": 117,
+          "value_complexity_rank": 3,
+          "reason": "bootstrap incompatible con no inferioridad"
+        }
+      ]
+    },
+    {
+      "variable_id": "fundamental_momentum",
+      "winner_candidate_id": "predictive:snapshot_step_months:6b86b273ff34",
+      "winner_value": true,
+      "selection_rule": "robust_rank_ic",
+      "selection_metric": "rank_ic_only",
+      "known_stress_excluded": true,
+      "candidates": [
+        {
+          "candidate_id": "predictive:fundamental_momentum:fcbcf165908d",
+          "value": false,
+          "is_incumbent": false,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_bootstrap_non_inferior": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": -0.0029956091565313974,
+            "ci_low": -0.009607951297858566,
+            "ci_high": 0.0029391200948071495,
+            "n_dates": 117,
+            "fraction_a_better": 0.4017094017094017,
+            "distinguishable_from_zero": false
+          },
+          "median_era_rank_ic": 0.06049086122872269,
+          "mean_rank_ic": 0.07096667114387405,
+          "positive_fraction": 0.717948717948718,
+          "rank_ic_std": 0.11314083352849016,
+          "observations": 117,
+          "value_complexity_rank": 0,
+          "reason": "Elegible por suficiencia, estabilidad entre eras y no inferioridad pareada."
+        },
+        {
+          "candidate_id": "predictive:snapshot_step_months:6b86b273ff34",
+          "value": true,
+          "is_incumbent": true,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_bootstrap_non_inferior": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "n_dates": 117,
+            "fraction_a_better": 0.0,
+            "distinguishable_from_zero": false
+          },
+          "median_era_rank_ic": 0.0738344580831706,
+          "mean_rank_ic": 0.0739622803004054,
+          "positive_fraction": 0.717948717948718,
+          "rank_ic_std": 0.11011133655572657,
+          "observations": 117,
+          "value_complexity_rank": 1,
+          "reason": "Elegible por suficiencia, estabilidad entre eras y no inferioridad pareada."
+        }
+      ]
+    },
+    {
+      "variable_id": "meta_method",
+      "winner_candidate_id": "predictive:meta_method:77edb68eeef9",
+      "winner_value": "stacked_rolling_free",
+      "selection_rule": "robust_rank_ic",
+      "selection_metric": "rank_ic_only",
+      "known_stress_excluded": true,
+      "candidates": [
+        {
+          "candidate_id": "predictive:meta_method:874ed18a6ac1",
+          "value": "equal",
+          "is_incumbent": false,
+          "eligible": false,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_bootstrap_non_inferior": false
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": -0.022405441430090076,
+            "ci_low": -0.036064001242550846,
+            "ci_high": -0.012937878799238316,
+            "n_dates": 117,
+            "fraction_a_better": 0.3162393162393162,
+            "distinguishable_from_zero": true
+          },
+          "median_era_rank_ic": 0.03247767003503742,
+          "mean_rank_ic": 0.051556838870315334,
+          "positive_fraction": 0.6752136752136753,
+          "rank_ic_std": 0.10357254728179,
+          "observations": 117,
+          "value_complexity_rank": 0,
+          "reason": "bootstrap incompatible con no inferioridad"
+        },
+        {
+          "candidate_id": "predictive:meta_method:77edb68eeef9",
+          "value": "stacked_rolling_free",
+          "is_incumbent": false,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_bootstrap_non_inferior": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 6.636467855461959e-05,
+            "ci_low": -0.007576605990161521,
+            "ci_high": 0.00726610775193892,
+            "n_dates": 117,
+            "fraction_a_better": 0.4358974358974359,
+            "distinguishable_from_zero": false
+          },
+          "median_era_rank_ic": 0.08344961148845442,
+          "mean_rank_ic": 0.07402864497896003,
+          "positive_fraction": 0.7350427350427351,
+          "rank_ic_std": 0.10415566211131996,
+          "observations": 117,
+          "value_complexity_rank": 1,
+          "reason": "Elegible por suficiencia, estabilidad entre eras y no inferioridad pareada."
+        },
+        {
+          "candidate_id": "predictive:snapshot_step_months:6b86b273ff34",
+          "value": "stacked_rolling_bounded",
+          "is_incumbent": true,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_bootstrap_non_inferior": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "n_dates": 117,
+            "fraction_a_better": 0.0,
+            "distinguishable_from_zero": false
+          },
+          "median_era_rank_ic": 0.0738344580831706,
+          "mean_rank_ic": 0.0739622803004054,
+          "positive_fraction": 0.717948717948718,
+          "rank_ic_std": 0.11011133655572657,
+          "observations": 117,
+          "value_complexity_rank": 2,
+          "reason": "Elegible por suficiencia, estabilidad entre eras y no inferioridad pareada."
+        }
+      ]
+    }
+  ]
+}

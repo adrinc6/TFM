@@ -65,12 +65,16 @@
     const columnCount = Math.min(4, variable.value_options.length);
     return `<div class="variable-row" data-variable="${esc(variable.id)}">
       <div class="variable-copy"><strong>${esc(variable.label)}</strong><p>${esc(variable.description)}</p>
-        <small>${selection.values.length === 1 ? "Fixed" : variable.predictive ? "Optimize" : "Diagnóstico"} · Coste: ${esc(variable.cost)} · Recomendado: ${esc(variable.recommended)}</small></div>
+        <small>${selection.values.length === 1 ? "Fixed" : variable.predictive ? "Optimize" : "Diagnóstico"} · Coste: ${esc(variable.cost)} · Baseline: ${esc(selection.baseline)}</small></div>
       <div class="value-choices columns-${columnCount}">${variable.value_options.map(option => {
         const checked = selection.values.some(value => JSON.stringify(value) === JSON.stringify(option.value));
-        return `<label class="value-choice"><input type="checkbox"
+        const isBaseline = JSON.stringify(selection.baseline) === JSON.stringify(option.value);
+        return `<label class="value-choice ${isBaseline ? "is-baseline" : ""}"><input type="checkbox"
           name="value-${esc(variable.id)}" data-value='${esc(JSON.stringify(option.value))}' ${checked ? "checked" : ""}>
-          <span><b>${esc(option.label)}</b><small>${esc(option.description)}</small></span></label>`;
+          <span><b>${esc(option.label)}</b><small>${esc(option.description)}</small></span>
+          ${checked ? `<label class="baseline-pick" title="Usar como baseline"><input type="radio"
+            name="baseline-${esc(variable.id)}" data-value='${esc(JSON.stringify(option.value))}' ${isBaseline ? "checked" : ""}>
+            <small>Baseline</small></label>` : ""}</label>`;
       }).join("")}</div>
     </div>`;
   }
@@ -83,7 +87,7 @@
       return `<section class="stage-card"><div class="stage-heading"><div><p class="eyebrow">${esc(detail.label)}</p>
         <h2>${esc(detail.question)}</h2><p>${esc(detail.description)}</p></div>
         <div class="stage-plan"><b>${stageRuns(stage)}</b><span>evaluaciones predictivas</span>
-        <small>${stage === "portfolio" ? "Comparaciones informativas; nunca eligen modelo." : "Comparación secuencial contra el incumbent acumulado."}</small></div></div>
+        <small>${stage === "portfolio" ? "Comparaciones informativas; nunca eligen modelo." : "Comparación secuencial contra el baseline de cada variable, con las anteriores ya decididas."}</small></div></div>
         <div>${variables.map(variableRow).join("")}</div></section>`;
     }).join("");
     app.innerHTML = `<section class="hero"><div><p class="eyebrow">Configuración cerrada</p><h2>Un Study, una ruta científica</h2>
@@ -116,9 +120,16 @@
         else if (selection.values.length === 1) {
           input.checked = true;
           return notify("Cada variable necesita al menos un valor.", true);
-        } else selection.values = selection.values.filter(item => JSON.stringify(item) !== JSON.stringify(value));
+        } else {
+          selection.values = selection.values.filter(item => JSON.stringify(item) !== JSON.stringify(value));
+          if (JSON.stringify(selection.baseline) === JSON.stringify(value)) selection.baseline = selection.values[0];
+        }
         const spec = state.catalog.variables.find(item => item.id === id);
         selection.mode = selection.values.length === 1 ? "fixed" : spec.predictive ? "optimize" : "diagnostic";
+        preflight().then(renderHome).catch(error => notify(error.message, true));
+      });
+      row.querySelectorAll(`input[name="baseline-${id}"]`).forEach(input => input.onchange = () => {
+        state.definition[id].baseline = JSON.parse(input.dataset.value);
         preflight().then(renderHome).catch(error => notify(error.message, true));
       });
     });
@@ -176,23 +187,26 @@
     const best = Math.max(...study.runs.map(run => Number(run.result?.summary?.mean_rank_ic)).filter(Number.isFinite), -Infinity);
     const active = ["queued", "running"].includes(study.status);
     const resumable = ["failed", "cancelled", "interrupted"].includes(study.status);
-    app.innerHTML = `<section class="entity-header"><div class="entity-main">
-      <div><p class="eyebrow">${esc(study.study_id)}</p><h2>${esc(study.name)}</h2><p>${esc(study.note || "Sin nota.")}</p></div></div>
+    const sectionLabel = {runs: "Runs", decisions: "Decisiones", console: "Consola", robustness: "Robustez", profiles: "Perfiles"};
+    app.innerHTML = `<section class="entity-header run-header">
+      <div class="entity-top">
+        <div class="entity-main"><div><p class="eyebrow">${esc(study.study_id)}</p><h2>${esc(study.name)}</h2><p>${esc(study.note || "Sin nota.")}</p></div></div>
+        <div class="entity-actions inline">
+          ${active ? '<button id="pause-study">Pausar</button>' : ""}
+          ${active ? '<button id="cancel-study">Cancelar</button>' : ""}
+          ${resumable ? '<button id="resume-study">Reanudar</button>' : ""}
+          <button id="refresh-study">Actualizar</button>
+        </div>
+      </div>
       <div class="entity-cards">${[
         ["Estado", study.status], ["Etapa", study.phase], ["Progreso", `${Math.round((study.progress || 0) * 100)} %`],
         ["Runs", `${study.completed_runs || 0}/${total}`], ["Tiempo", duration(Date.now() - Date.parse(study.created_at))],
         ["Rank-IC máx.", best > -Infinity ? fmt(best, "rank_ic") : "—"],
       ].map(([label, value]) => `<span><b>${esc(value)}</b>${label}</span>`).join("")}</div>
-      <div class="entity-actions">
-        <button data-study-view="runs" class="${state.section === "runs" ? "active" : ""}">Runs</button>
-        <button data-study-view="console" class="${state.section === "console" ? "active" : ""}">Consola</button>
-        <button data-study-view="robustness" class="${state.section === "robustness" ? "active" : ""}">Robustez</button>
-        <button data-study-view="profiles" class="${state.section === "profiles" ? "active" : ""}">Perfiles</button>
-        ${active ? '<button id="pause-study">Pausar</button>' : ""}
-        ${active ? '<button id="cancel-study">Cancelar</button>' : ""}
-        ${resumable ? '<button id="resume-study">Reanudar</button>' : ""}
-        <button id="refresh-study">Actualizar</button>
-      </div></section><section id="study-content"></section>`;
+      <div class="entity-actions">${["runs", "decisions", "console", "robustness", "profiles"].map(section =>
+        `<button data-study-view="${section}" class="${state.section === section ? "active" : ""}">${esc(sectionLabel[section])}</button>`
+      ).join("")}</div></section>
+      <section id="study-content"></section>`;
     document.getElementById("refresh-study").onclick = renderStudyPage;
     app.querySelectorAll("[data-study-view]").forEach(button => button.onclick = () => {
       state.section = button.dataset.studyView;
@@ -223,12 +237,16 @@
         elapsed_seconds: run.elapsed_seconds,
         source: run.result?.source, error: run.error,
       }));
-      body.innerHTML = `<div class="content-heading"><div><h2>Runs</h2><p>Cada fila es una evaluación persistente.</p></div></div>${runSelectionTable(rows)}`;
+      body.innerHTML = `<h2>Runs</h2><p class="muted">Cada fila es una evaluación persistente.</p>${runSelectionTable(rows)}`;
       body.querySelectorAll("[data-run]").forEach(button => button.onclick = () => {
         state.selectedRun = button.dataset.run;
         state.runView = "summary";
         renderRunPage();
       });
+      return;
+    }
+    if (state.section === "decisions") {
+      body.innerHTML = `<h2>Decisiones</h2><p class="muted">Por cada variable predictiva, el candidato ganador y el porqué: solo Rank-IC robusto entre eras decide, nunca alpha ni información económica.</p>${decisionsView(study.decisions || [])}`;
       return;
     }
     if (state.section === "console") {
@@ -255,6 +273,7 @@
     const run = await api(`/api/studies/${state.selectedStudy}/runs/${state.selectedRun}`);
     const summary = run.result?.summary || {};
     const views = ["summary", "performance", "learning", "portfolio", "stocks"];
+    const runViewLabel = view => ({summary: "Resumen", performance: "Rendimiento", learning: "Aprendizaje", portfolio: "Cartera", stocks: "Acciones"}[view] || columnLabel(view));
     app.innerHTML = `<section class="entity-header run-header"><div class="entity-main">
       <div><p class="eyebrow">${esc(run.phase)} · ${esc(run.variable_id)}</p><h2>${esc(run.run_id)}</h2>
       <p>${esc(run.logical_key)}. Evalúa ${esc(run.value)} dentro de la fase ${esc(run.phase)}.</p></div></div>
@@ -262,7 +281,7 @@
         ["Estado", run.status], ["Intento", run.attempt], ["Progreso", `${Math.round((run.progress || 0) * 100)} %`],
         ["Duración", `${fmt(run.elapsed_seconds)} s`], ["Rank-IC", fmt(summary.mean_rank_ic, "rank_ic")], ["Fuente", run.result?.source || "—"],
       ].map(([label, value]) => `<span><b>${esc(fmt(value))}</b>${label}</span>`).join("")}</div>
-      <div class="entity-actions">${views.map(view => `<button data-run-view="${view}" class="${state.runView === view ? "active" : ""}">${view}</button>`).join("")}</div>
+      <div class="entity-actions">${views.map(view => `<button data-run-view="${view}" class="${state.runView === view ? "active" : ""}">${esc(runViewLabel(view))}</button>`).join("")}</div>
       </section><section id="run-content"></section>`;
     app.querySelectorAll("[data-run-view]").forEach(button => button.onclick = () => {
       state.runView = button.dataset.runView;
@@ -410,6 +429,55 @@
   function metricLabel(key) {
     return {cagr_difference: "Alpha anualizado vs SPY", cagr_portfolio: "CAGR cartera", cagr_benchmark: "CAGR SPY", mean_rank_ic: "Rank-IC medio", rank_ic_positive_fraction: "Cohortes Rank-IC positivas", annualized_turnover: "Turnover anualizado", max_drawdown: "Drawdown máximo", information_ratio: "Information Ratio"}[key] || key;
   }
+  const COLUMN_LABELS = {
+    nombre: "Nombre", estado: "Estado", etapa: "Etapa", progreso: "Progreso",
+    runs_completados: "Runs completados", runs_restantes: "Runs restantes", tiempo: "Tiempo",
+    rank_ic_max: "Rank-IC máximo", actualizado: "Actualizado", study_id: "Study",
+    run_id: "Run", phase: "Fase", variable: "Variable", value: "Valor", status: "Estado",
+    progress: "Progreso", rank_ic: "Rank-IC", alpha_anual: "Alpha anual", alpha_estres: "Alpha estrés",
+    elapsed_seconds: "Duración (s)", source: "Origen", error: "Error", winner_value: "Valor ganador",
+    selection_rule: "Regla de selección", median_era_rank_ic: "Rank-IC mediano por era",
+    mean_rank_ic: "Rank-IC medio", positive_fraction: "Fracción positiva", rank_ic_std: "Desviación Rank-IC",
+    observations: "Observaciones", reason: "Motivo", eligible: "Elegible", is_incumbent: "Baseline",
+    candidate_id: "Candidato",
+  };
+  function columnLabel(key) {
+    if (COLUMN_LABELS[key]) return COLUMN_LABELS[key];
+    const spaced = String(key).replace(/_/g, " ");
+    return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+  }
+  function decisionsView(decisions) {
+    if (!decisions.length) return "<p class='muted'>Todavía no hay decisiones registradas: el Study aún no ha comparado ninguna variable.</p>";
+    const specs = new Map((state.catalog?.variables || []).map(spec => [spec.id, spec]));
+    return decisions.map(decision => {
+      const spec = specs.get(decision.variable_id);
+      const label = spec?.label || columnLabel(decision.variable_id);
+      const valueLabel = value => spec?.value_options?.find(option => JSON.stringify(option.value) === JSON.stringify(value))?.label ?? String(value);
+      const ruleText = {
+        robust_rank_ic: "Ganó por tener el mejor Rank-IC robusto (mediana por era, luego media, luego estabilidad) entre los candidatos elegibles.",
+        tie_simplicity: "Empate técnico en Rank-IC entre el mejor candidato y el baseline: gana la opción más simple (regla de parsimonia).",
+        incumbent_no_eligible_challenger: "Ningún candidato alternativo superó los filtros de elegibilidad (observaciones suficientes, suelo de Rank-IC por era y no-inferioridad estadística); se mantiene el valor ya vigente.",
+      }[decision.selection_rule] || decision.selection_rule;
+      const rows = [...decision.candidates].sort((a, b) => (a.candidate_id === decision.winner_candidate_id ? -1 : b.candidate_id === decision.winner_candidate_id ? 1 : 0));
+      return `<article class="config-card decision-card">
+        <h4>${esc(label)} <span class="decision-winner">→ ${esc(valueLabel(decision.winner_value))}</span></h4>
+        <p class="muted">${esc(ruleText)}</p>
+        <div class="table-wrap"><table><thead><tr>
+          <th>Valor</th><th>Rank-IC medio</th><th>Rank-IC mediano/era</th><th>% eras positivas</th>
+          <th>Observaciones</th><th>Elegible</th><th>Motivo</th>
+        </tr></thead><tbody>${rows.map(candidate => `
+          <tr class="${candidate.candidate_id === decision.winner_candidate_id ? "selected-row" : ""}">
+            <td>${esc(valueLabel(candidate.value))}${candidate.is_incumbent ? " <small>(baseline)</small>" : ""}</td>
+            <td class="${tone(candidate.mean_rank_ic, "rank_ic")}">${esc(fmt(candidate.mean_rank_ic, "rank_ic"))}</td>
+            <td class="${tone(candidate.median_era_rank_ic, "rank_ic")}">${esc(fmt(candidate.median_era_rank_ic, "rank_ic"))}</td>
+            <td>${esc(fmt(candidate.positive_fraction, "fraction"))}</td>
+            <td>${esc(fmt(candidate.observations))}</td>
+            <td>${candidate.eligible ? "Sí" : "No"}</td>
+            <td><small>${esc(candidate.reason)}</small></td>
+          </tr>`).join("")}</tbody></table></div>
+      </article>`;
+    }).join("");
+  }
   function configurationCards(run) {
     const configuration = run.configuration || {};
     const specs = new Map((state.catalog?.variables || []).map(spec => [spec.id, spec]));
@@ -442,19 +510,19 @@
   function table(rows) {
     if (!rows?.length) return "<p class='muted'>Sin datos.</p>";
     const columns = Object.keys(rows[0]).slice(0, 14);
-    return `<div class="table-wrap"><table><thead><tr>${columns.map(key => `<th>${esc(key)}</th>`).join("")}</tr></thead><tbody>${rows.slice(0, 500).map(row => `<tr>${columns.map(key => `<td class="${tone(row[key], key)}">${esc(fmt(typeof row[key] === "object" ? JSON.stringify(row[key]) : row[key], key))}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+    return `<div class="table-wrap"><table><thead><tr>${columns.map(key => `<th>${esc(columnLabel(key))}</th>`).join("")}</tr></thead><tbody>${rows.slice(0, 500).map(row => `<tr>${columns.map(key => `<td class="${tone(row[key], key)}">${esc(fmt(typeof row[key] === "object" ? JSON.stringify(row[key]) : row[key], key))}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
   }
   function studySelectionTable(rows) {
     if (!rows.length) return "<p class='muted'>No hay Studies.</p>";
     const columns = ["nombre", "estado", "etapa", "progreso", "runs_completados", "runs_restantes", "tiempo", "rank_ic_max", "actualizado"];
-    return `<table><thead><tr>${columns.map(key => `<th>${esc(key)}</th>`).join("")}</tr></thead><tbody>${rows.map(row =>
+    return `<table><thead><tr>${columns.map(key => `<th>${esc(columnLabel(key))}</th>`).join("")}</tr></thead><tbody>${rows.map(row =>
       `<tr class="${row.study_id === state.selectedStudy ? "selected-row" : ""}">${columns.map(key => `<td class="${tone(row[key], key)}">${esc(display(row[key], key))}</td>`).join("")}
       <td><button data-study="${esc(row.study_id)}">Abrir</button></td></tr>`).join("")}</tbody></table>`;
   }
   function runSelectionTable(rows) {
     if (!rows.length) return "<p class='muted'>Todavía no hay runs.</p>";
     const columns = ["phase", "variable", "value", "status", "progress", "rank_ic", "alpha_anual", "alpha_estres", "elapsed_seconds", "source", "error"];
-    return `<table class="runs-table"><thead><tr>${columns.map(key => `<th>${esc(key)}</th>`).join("")}<th></th></tr></thead><tbody>${rows.map(row =>
+    return `<table class="runs-table"><thead><tr>${columns.map(key => `<th>${esc(columnLabel(key))}</th>`).join("")}<th></th></tr></thead><tbody>${rows.map(row =>
       `<tr class="${row.run_id === state.selectedRun ? "selected-row" : ""}">${columns.map(key => `<td class="${tone(row[key], key)}">${esc(display(row[key], key))}</td>`).join("")}
       <td><button data-run="${esc(row.run_id)}">Ver run</button></td></tr>`).join("")}</tbody></table>`;
   }

@@ -1,0 +1,45 @@
+{
+  "dataset_hash": "41bf819267f732df724ab886e7e8c5196fff24bcbc12f47f380499fa9dfe1902",
+  "profile": "garp",
+  "summary": {
+    "mean_rank_ic": 0.06739330287393351,
+    "rank_ic_positive_fraction": 0.7398373983739838,
+    "rank_ic_std": 0.10616889072325089,
+    "beat_rate": 0.5,
+    "max_drawdown": 0.23352972461387844,
+    "cagr_portfolio": 0.12706578383542722,
+    "cagr_benchmark": 0.1381222546987213,
+    "cagr_difference": -0.011056470863294088,
+    "geometric_excess_return": -0.011056470863294088,
+    "mean_annual_alpha": -0.010608179010750396,
+    "median_annual_alpha": -0.006437205206130336,
+    "worst_year_alpha": -0.21041351338584025,
+    "information_ratio": -0.025383687060968725,
+    "commission_bps": 5.0,
+    "slippage_bps": 10.0,
+    "target_size": 12,
+    "min_hold_percentile": 80.0,
+    "rotation_edge_percentiles": 10.0,
+    "annualized_turnover": 8.825327031796084,
+    "corrupt_returns_neutralized": 0,
+    "portfolio_policy": "dynamic_meta_rank",
+    "sizing_mode": "score_linear"
+  },
+  "eras": [
+    {
+      "era": "2015-2018",
+      "mean_alpha": 0.04061962474613437,
+      "information_ratio": 0.5806311456415012
+    },
+    {
+      "era": "2019-2021",
+      "mean_alpha": -0.010733799111717937,
+      "information_ratio": -0.030621998180912262
+    },
+    {
+      "era": "2022-2024",
+      "mean_alpha": 0.0023255450081019666,
+      "information_ratio": 0.20217008197092137
+    }
+  ]
+}

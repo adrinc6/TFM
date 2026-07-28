@@ -154,15 +154,42 @@ BY_ID = {variable.id: variable for variable in VARIABLES}
 def _label(identifier: str, value: Any) -> str:
     labels = {
         "snapshot_step_months": {1: "Mensual", 3: "Trimestral", 6: "Semestral", 12: "Anual"},
+        "target_horizon_months": {3: "3 meses", 6: "6 meses", 12: "12 meses"},
+        "train_lookback_years": {4: "4 años", 8: "8 años", 12: "12 años"},
+        "execution_lag_days": {30: "30 días", 45: "45 días", 60: "60 días"},
         "recency_weighting": {"off": "Sin ponderación", "linear": "Lineal", "exponential": "Exponencial"},
         "objective": {"rank_regression": "Regresión de ranking", "ranking": "Ranking directo"},
-        "model_family": {"lightgbm": "LightGBM", "elastic_net": "Elastic Net"},
+        "feature_preset": {
+            "core": "Core (lo esencial de cada agente)",
+            "fundamental": "Fundamental (todo lo contable)",
+            "technical": "Técnico (todo lo de precio)",
+            "all": "Todo (fundamental + técnico)",
+        },
+        "winsorization": {0.0: "Sin recorte", 0.01: "1 %", 0.025: "2,5 %"},
+        "max_features_per_agent": {8: "8 variables", 12: "12 variables", 20: "20 variables"},
+        "feature_weighting_mode": {
+            "model_native": "Selección nativa del modelo",
+            "oos_stability_prune": "Poda por estabilidad fuera de muestra",
+        },
+        "model_family": {"lightgbm": "LightGBM (árboles)", "elastic_net": "Elastic Net (lineal)"},
+        "lgbm_max_depth": {3: "Poco profundo (3)", 4: "Medio (4)", 6: "Profundo (6)"},
+        "lgbm_n_estimators": {100: "100 árboles", 200: "200 árboles", 400: "400 árboles"},
+        "lgbm_learning_rate": {0.03: "Lento (0,03)", 0.05: "Medio (0,05)", 0.10: "Rápido (0,10)"},
+        "lgbm_min_child_samples": {20: "20 observaciones", 50: "50 observaciones", 100: "100 observaciones"},
         "meta_method": {
             "equal": "Equiponderado 20 %",
             "stacked_rolling_free": "Ridge rolling libre",
             "stacked_rolling_bounded": "Ridge rolling 10–50 %",
         },
+        "meta_history_quarters": {8: "8 trimestres (2 años)", 16: "16 trimestres (4 años)"},
+        "target_size": {8: "8 posiciones", 12: "12 posiciones", 16: "16 posiciones"},
+        "min_hold_percentile": {70.0: "Percentil 70", 80.0: "Percentil 80", 90.0: "Percentil 90"},
+        "rotation_edge_percentiles": {5.0: "5 puntos", 10.0: "10 puntos", 15.0: "15 puntos"},
+        "rebalance_drift_tolerance": {0.0: "Sin tolerancia", 0.10: "10 %", 0.25: "25 %"},
+        "price_only_strictness_multiplier": {1.0: "Sin extra (x1,0)", 1.5: "Prudente (x1,5)", 2.0: "Muy prudente (x2,0)"},
         "sizing_mode": {"equal": "Equiponderado", "score_linear": "Lineal por meta-rank"},
+        "commission_bps": {0.0: "Sin comisión", 5.0: "5 pb (0,05 %)", 10.0: "10 pb (0,10 %)"},
+        "slippage_bps": {5.0: "5 pb (0,05 %)", 10.0: "10 pb (0,10 %)", 20.0: "20 pb (0,20 %)"},
     }
     if isinstance(value, bool):
         return "Activado" if value else "Desactivado"
@@ -170,24 +197,148 @@ def _label(identifier: str, value: Any) -> str:
 
 
 def _description(identifier: str, value: Any) -> str:
-    specific = {
+    specific: dict[str, dict[Any, str]] = {
+        "snapshot_step_months": {
+            1: "El sistema vuelve a mirar y puntuar todas las acciones cada mes. Es la cadencia más rápida: reacciona antes a cambios, pero genera muchas más decisiones que revisar y más coste de cálculo.",
+            3: "El sistema vuelve a mirar y puntuar todas las acciones cada 3 meses (trimestral), en línea con la publicación habitual de resultados de las empresas. Es el punto intermedio entre reaccionar rápido y no generar ruido innecesario.",
+            6: "El sistema vuelve a mirar y puntuar todas las acciones cada 6 meses. Cadencia lenta: menos decisiones, pero puede tardar más en detectar cambios de tendencia.",
+            12: "El sistema vuelve a mirar y puntuar todas las acciones una vez al año. Es la cadencia más lenta y la más conservadora en número de decisiones.",
+        },
+        "target_horizon_months": {
+            3: "El modelo aprende a ordenar acciones según su retorno esperado en los próximos 3 meses. Horizonte corto: más sensible al ruido de corto plazo.",
+            6: "El modelo aprende a ordenar acciones según su retorno esperado en los próximos 6 meses. Horizonte intermedio.",
+            12: "El modelo aprende a ordenar acciones según su retorno esperado en los próximos 12 meses (un año). Horizonte largo: suaviza el ruido de corto plazo pero tarda más en confirmar si acertó.",
+        },
+        "train_lookback_years": {
+            4: "Cada vez que se reentrena, el modelo solo mira los últimos 4 años de historia. Menos historia significa que se adapta más rápido a regímenes de mercado recientes, pero con menos ejemplos para aprender.",
+            8: "Cada vez que se reentrena, el modelo mira los últimos 8 años de historia. Compromiso entre tener suficientes ejemplos y no arrastrar demasiado pasado ya poco relevante.",
+            12: "Cada vez que se reentrena, el modelo mira los últimos 12 años de historia. Máxima cantidad de ejemplos disponibles, a costa de incluir regímenes de mercado más antiguos y posiblemente menos parecidos al presente.",
+        },
         "execution_lag_days": {
-            30: "Hipótesis exigente de disponibilidad; mayor riesgo de retrasos reales.",
-            45: "Compromiso prudente entre actualidad y disponibilidad.",
-            60: "Supuesto conservador de publicación point-in-time.",
+            30: "Se asume que unos resultados financieros están disponibles para operar solo 30 días después del cierre fiscal de la empresa. Es la hipótesis más optimista/exigente: mayor riesgo de estar usando datos que en la realidad aún no se habían publicado (lookahead), porque muchas empresas tardan más en publicar.",
+            45: "Se asume que unos resultados financieros están disponibles para operar 45 días después del cierre fiscal. Compromiso prudente entre actualidad de la información y margen de seguridad frente a publicaciones tardías.",
+            60: "Se asume que unos resultados financieros están disponibles para operar solo 60 días después del cierre fiscal. Es el supuesto más conservador: se tarda más en \"creer\" el dato, pero es el que menos riesgo tiene de usar información que aún no existía en ese momento (evita lookahead).",
+        },
+        "recency_weighting": {
+            "off": "Todas las observaciones históricas pesan igual al entrenar, da igual si son de hace 1 mes o de hace 8 años.",
+            "linear": "Las observaciones más recientes pesan progresivamente más que las antiguas, de forma proporcional a su antigüedad (una recta). El modelo se adapta algo más rápido a la situación actual del mercado.",
+            "exponential": "Las observaciones más recientes pesan mucho más que las antiguas, y ese peso cae rápidamente cuanto más atrás se mira (una curva, no una recta). El modelo prioriza fuertemente lo último visto, al precio de \"olvidar\" antes lo lejano.",
+        },
+        "objective": {
+            "rank_regression": "El modelo aprende a predecir un número (el retorno futuro estimado) y luego ese número se usa para ordenar las acciones. Es un enfoque indirecto: predice una magnitud, no un orden.",
+            "ranking": "El modelo aprende directamente a poner unas acciones por delante de otras (aprende el orden, no intenta acertar la magnitud del retorno). Suele ajustar mejor a lo que realmente se necesita: un ranking, no una predicción exacta.",
+        },
+        "feature_preset": {
+            "core": "Cada agente recibe solo su bloque de información más esencial y directo: Calidad usa solo rentabilidad (ROE, márgenes...); Valor usa solo múltiplos de precio (PER, P/VC...); Crecimiento usa solo aceleración de resultados; Momentum usa solo retornos relativos recientes; Riesgo usa solo volatilidad y drawdown de precio. Es el conjunto más pequeño y simple de factores: menos ruido, pero también menos matices.",
+            "fundamental": "Los agentes reciben todos los bloques que vienen de los estados financieros de la empresa: rentabilidad, eficiencia operativa, solidez de balance (deuda), múltiplos de valoración, flujo de caja, aceleración de crecimiento y estabilidad de los fundamentales a lo largo del tiempo. No incluye nada calculado a partir del precio de mercado (momentum, volatilidad). Útil para aislar si lo que aporta valor es \"lo que dicen las cuentas de la empresa\".",
+            "technical": "Los agentes reciben todos los bloques calculados a partir del precio y el volumen de cotización: momentum a distintos plazos, tendencia respecto a medias móviles, volatilidad/drawdown y liquidez de mercado. No incluye nada de los estados financieros. Útil para aislar si lo que aporta valor es \"cómo se ha movido el precio\", sin mirar las cuentas.",
+            "all": "Cada agente recibe absolutamente todos los bloques de información disponibles en el catálogo: fundamentales completos más todos los factores técnicos de precio. Es el conjunto más rico y también el más caro de calcular; puede aportar más señal, pero también más ruido y riesgo de sobreajuste.",
+        },
+        "winsorization": {
+            0.0: "No se recorta ningún valor extremo (outlier) de los factores antes de entrenar. Un dato anómalo (por ejemplo un PER disparatado por un beneficio casi nulo) puede distorsionar el aprendizaje.",
+            0.01: "Antes de entrenar, se recortan los valores más extremos de cada factor: el 1 % más alto y el 1 % más bajo de cada variable se \"aplanan\" al límite de ese percentil. Reduce el efecto de outliers sin eliminar observaciones.",
+            0.025: "Antes de entrenar, se recortan los valores más extremos de cada factor: el 2,5 % más alto y el 2,5 % más bajo de cada variable se \"aplanan\" al límite de ese percentil. Recorte más agresivo que el 1 %, más protección frente a outliers pero también más pérdida de información real en los extremos.",
+        },
+        "max_features_per_agent": {
+            8: "Cada agente se queda como máximo con las 8 variables más relevantes de su bloque de información, descartando el resto. Modelo más simple y con menos riesgo de sobreajuste, pero puede perder matices útiles.",
+            12: "Cada agente se queda como máximo con las 12 variables más relevantes de su bloque de información. Punto intermedio entre simplicidad y riqueza de información.",
+            20: "Cada agente puede usar hasta 20 variables de su bloque de información, prácticamente sin recortar. Modelo más rico en información pero con más riesgo de sobreajuste y más lento de entrenar.",
+        },
+        "feature_weighting_mode": {
+            "model_native": "Se deja que el propio modelo (LightGBM o Elastic Net) decida internamente qué variables usar más o menos, sin ningún filtro previo externo.",
+            "oos_stability_prune": "Antes de entrenar el modelo final, se descartan las variables cuya utilidad para predecir no se mantiene estable cuando se prueba en datos fuera de la muestra de entrenamiento (out-of-sample). Solo sobreviven las variables que demuestran ser consistentemente útiles, no solo por azar en el pasado.",
+        },
+        "model_family": {
+            "lightgbm": "Se usa LightGBM, un modelo basado en muchos árboles de decisión combinados (gradient boosting). Puede capturar relaciones no lineales y combinaciones complejas entre variables, a cambio de ser menos interpretable y con más parámetros que ajustar.",
+            "elastic_net": "Se usa Elastic Net, un modelo lineal regularizado (combina penalización Ridge y Lasso). Es más simple e interpretable que LightGBM, asume relaciones aproximadamente lineales entre los factores y el retorno futuro, y es más resistente al sobreajuste con pocos datos.",
+        },
+        "lgbm_max_depth": {
+            3: "Cada árbol de LightGBM puede hacer como máximo 3 preguntas encadenadas antes de dar un resultado. Árboles poco profundos: más simples, menos riesgo de memorizar ruido (overfitting), pero pueden no capturar interacciones complejas entre factores.",
+            4: "Cada árbol de LightGBM puede hacer como máximo 4 preguntas encadenadas. Profundidad intermedia.",
+            6: "Cada árbol de LightGBM puede hacer hasta 6 preguntas encadenadas antes de dar un resultado. Árboles más profundos: capturan interacciones más complejas entre factores, pero con más riesgo de memorizar ruido específico de los datos de entrenamiento (overfitting).",
+        },
+        "lgbm_n_estimators": {
+            100: "El modelo combina 100 árboles de decisión sucesivos. Menos árboles: entrena más rápido, pero puede quedarse \"corto\" de capacidad predictiva.",
+            200: "El modelo combina 200 árboles de decisión sucesivos. Cantidad intermedia, buen compromiso entre capacidad y velocidad de entrenamiento.",
+            400: "El modelo combina 400 árboles de decisión sucesivos. Más árboles: más capacidad de ajuste, pero más lento de entrenar y con más riesgo de sobreajuste si no se controla bien la profundidad y el learning rate.",
+        },
+        "lgbm_learning_rate": {
+            0.03: "Cada árbol nuevo corrige el error de los anteriores con pasos muy pequeños (0,03). Aprendizaje lento pero más estable; suele necesitar más árboles (n_estimators alto) para compensar.",
+            0.05: "Cada árbol nuevo corrige el error de los anteriores con pasos moderados (0,05). Punto intermedio entre velocidad de aprendizaje y estabilidad.",
+            0.10: "Cada árbol nuevo corrige el error de los anteriores con pasos grandes (0,10). Aprendizaje rápido: converge con menos árboles, pero con más riesgo de \"pasarse\" y sobreajustar.",
+        },
+        "lgbm_min_child_samples": {
+            20: "Un árbol de LightGBM puede crear una hoja final (una regla muy específica) con tan solo 20 observaciones detrás. Permite reglas muy específicas, con más riesgo de que sean simple ruido de pocas acciones concretas.",
+            50: "Un árbol de LightGBM necesita al menos 50 observaciones detrás para crear una hoja final. Exige más evidencia antes de crear una regla, reduciendo el riesgo de memorizar casos aislados.",
+            100: "Un árbol de LightGBM necesita al menos 100 observaciones detrás para crear una hoja final. Exigencia alta: solo se aceptan patrones respaldados por muchas observaciones, lo que da reglas más robustas pero también más generales (menos matizadas).",
         },
         "meta_method": {
-            "equal": "Cada agente pesa exactamente 20 %.",
-            "stacked_rolling_free": "Ridge no negativo; cualquier agente puede pesar entre 0 % y 100 %.",
-            "stacked_rolling_bounded": "Ridge no negativo; cada agente pesa entre 10 % y 50 %.",
+            "equal": "El meta-agente combina a los cinco agentes (calidad, valor, crecimiento, momentum, riesgo) dándoles siempre el mismo peso: 20 % cada uno, sin importar cuál lo esté haciendo mejor o peor. Es la opción más simple y la más difícil de sobreajustar, pero no aprovecha que unos agentes puedan ser más fiables que otros en cada momento.",
+            "stacked_rolling_free": "El meta-agente aprende automáticamente (con una regresión Ridge, usando solo información ya cerrada y pasada, nunca del futuro) qué peso dar a cada uno de los cinco agentes, sin ningún límite: en teoría un solo agente podría llegar a pesar el 100 % y el resto el 0 %. Máxima flexibilidad para premiar al mejor agente, pero también máximo riesgo de depender casi en exclusiva de uno solo.",
+            "stacked_rolling_bounded": "El meta-agente aprende automáticamente (igual que la versión libre, con Ridge y solo datos ya cerrados) qué peso dar a cada agente, pero obligado a que cada uno de los cinco pese entre un 10 % y un 50 %. Evita los dos extremos: ni ignora completamente a un agente, ni depende de uno solo. Es la opción recomendada por defecto por este equilibrio.",
+        },
+        "meta_history_quarters": {
+            8: "El meta-agente, para decidir los pesos de cada agente, solo mira los últimos 8 trimestres cerrados (2 años) de resultados pasados. Ventana corta: se adapta más rápido a cambios recientes de qué agente funciona mejor, con menos datos para decidirlo con solidez.",
+            16: "El meta-agente, para decidir los pesos de cada agente, mira los últimos 16 trimestres cerrados (4 años) de resultados pasados. Ventana más larga: decisión más estable y con más respaldo histórico, pero tarda más en reaccionar si un agente empieza a fallar recientemente.",
+        },
+        "target_size": {
+            8: "La cartera final mantiene 8 acciones distintas a la vez. Cartera concentrada: más impacto de acertar o fallar en cada acción individual.",
+            12: "La cartera final mantiene 12 acciones distintas a la vez. Diversificación intermedia.",
+            16: "La cartera final mantiene 16 acciones distintas a la vez. Cartera más diversificada: cada acierto o fallo individual pesa menos sobre el resultado total.",
+        },
+        "min_hold_percentile": {
+            70.0: "Una acción en cartera se vende solo si su puntuación (meta-rank) cae por debajo del percentil 70 del universo. Umbral más permisivo: cuesta más que una posición se venda por deterioro de su puntuación, lo que reduce el número de operaciones (turnover).",
+            80.0: "Una acción en cartera se vende solo si su puntuación (meta-rank) cae por debajo del percentil 80 del universo. Umbral intermedio.",
+            90.0: "Una acción en cartera se vende si su puntuación (meta-rank) cae por debajo del percentil 90 del universo. Umbral exigente: se vende antes ante cualquier deterioro relativo, lo que aumenta el número de operaciones (turnover).",
+        },
+        "rotation_edge_percentiles": {
+            5.0: "Para sustituir una posición en cartera por una acción nueva de fuera, basta con que la candidata externa supere en 5 puntos de percentil a la peor posición actual. Umbral bajo: rota la cartera con más facilidad.",
+            10.0: "Para sustituir una posición en cartera por una acción nueva de fuera, la candidata externa debe superar en 10 puntos de percentil a la peor posición actual. Exigencia intermedia.",
+            15.0: "Para sustituir una posición en cartera por una acción nueva de fuera, la candidata externa debe superar en 15 puntos de percentil a la peor posición actual. Umbral alto: exige una ventaja clara antes de rotar, lo que reduce operaciones innecesarias por pequeñas diferencias de puntuación.",
+        },
+        "rebalance_drift_tolerance": {
+            0.0: "Cualquier desviación, por mínima que sea, entre el peso actual de una posición y su peso objetivo genera una orden de ajuste. Máxima precisión de pesos, al coste de generar muchas más operaciones (y comisiones).",
+            0.10: "Solo se ajusta una posición cuando su peso real se desvía más de un 10 % (en términos relativos) de su peso objetivo. Reduce operaciones innecesarias por desviaciones pequeñas del peso, a cambio de tolerar carteras algo menos ajustadas al objetivo teórico.",
+            0.25: "Solo se ajusta una posición cuando su peso real se desvía más de un 25 % (en términos relativos) de su peso objetivo. Tolerancia amplia: pocas operaciones de puro rebalanceo, pero los pesos reales pueden alejarse bastante del objetivo teórico entre ajustes.",
+        },
+        "price_only_strictness_multiplier": {
+            1.0: "Cuando en un snapshot no hay fundamentales nuevos publicados (solo hay precio actualizado), se exigen exactamente los mismos umbrales de venta/compra que cuando sí hay fundamentales frescos. Sin prudencia extra.",
+            1.5: "Cuando en un snapshot no hay fundamentales nuevos publicados, los umbrales de venta/compra se multiplican por 1,5 (se vuelven más exigentes). Precaución moderada: evita mover la cartera solo por ruido de precio sin confirmación fundamental reciente.",
+            2.0: "Cuando en un snapshot no hay fundamentales nuevos publicados, los umbrales de venta/compra se multiplican por 2 (mucho más exigentes). Máxima prudencia: casi no se opera una posición basándose solo en el movimiento de precio, sin datos fundamentales frescos que lo respalden.",
         },
         "sizing_mode": {
-            "equal": "Todas las posiciones objetivo reciben el mismo peso.",
-            "score_linear": "La escala parte de 1 en el umbral de conservación y llega a 2 en meta-rank 1.",
+            "equal": "Todas las posiciones objetivo de la cartera reciben exactamente el mismo peso (equiponderado), sin importar si una acción tiene una puntuación mucho mejor que otra.",
+            "score_linear": "El peso de cada posición escala de forma lineal según su puntuación (meta-rank): la acción justo en el umbral mínimo de entrada recibe peso base (x1), y la mejor acción posible (percentil 100) recibe el doble de peso (x2). Premia más a las convicciones más fuertes.",
+        },
+        "commission_bps": {
+            0.0: "No se descuenta ninguna comisión por operar. Escenario idealizado, sobreestima el resultado neto real.",
+            5.0: "Se descuenta una comisión de 5 puntos básicos (0,05 %) sobre el importe de cada operación. Coste de bróker moderado.",
+            10.0: "Se descuenta una comisión de 10 puntos básicos (0,10 %) sobre el importe de cada operación. Coste de bróker más alto; penaliza más las estrategias con muchas operaciones (turnover alto).",
+        },
+        "slippage_bps": {
+            5.0: "Se asume que, además de la comisión, cada operación pierde 5 puntos básicos (0,05 %) extra por la diferencia entre el precio esperado y el precio real de ejecución (slippage). Supuesto optimista de liquidez.",
+            10.0: "Se asume un slippage de 10 puntos básicos (0,10 %) por operación. Supuesto intermedio.",
+            20.0: "Se asume un slippage de 20 puntos básicos (0,20 %) por operación. Supuesto conservador: penaliza más las estrategias que rotan mucho la cartera, reflejando peor liquidez o impacto de mercado.",
+        },
+    }
+    booleans: dict[str, dict[bool, str]] = {
+        "fundamental_momentum": {
+            True: "Se añaden variables que miden cómo han cambiado los fundamentales de la empresa en el tiempo (por ejemplo si el ROE está mejorando o empeorando trimestre a trimestre), no solo su valor actual. Da al modelo información de tendencia, no solo de nivel.",
+            False: "El modelo solo ve el valor actual de cada fundamental (por ejemplo el ROE de hoy), sin información de si viene mejorando o empeorando en el tiempo.",
+        },
+        "market_regime_feature": {
+            True: "Se añade una variable con el contexto general del mercado en cada fecha (por ejemplo si el mercado en conjunto está en un momento alcista o bajista), calculada solo con información ya disponible en ese momento. Ayuda al modelo a adaptar su criterio según el entorno de mercado.",
+            False: "El modelo no recibe ninguna información sobre el estado general del mercado; solo ve datos propios de cada empresa, sin contexto macro.",
+        },
+        "neutralize_by_sector": {
+            True: "Antes de aprender, cada empresa se compara solo contra otras empresas de su mismo sector (por ejemplo, tecnológicas contra tecnológicas), no contra todo el universo. Evita que el modelo confunda \"esta empresa es buena\" con \"este sector entero lo está haciendo bien\".",
+            False: "Todas las empresas se comparan entre sí directamente, sin ajustar por sector. Más simple, pero un sector en auge puede parecer sistemáticamente \"mejor\" sin que sea mérito de las empresas concretas.",
         },
     }
     if identifier in specific and value in specific[identifier]:
         return specific[identifier][value]
+    if identifier in booleans and isinstance(value, bool):
+        return booleans[identifier][value]
     if isinstance(value, bool):
         return "Incluye esta capacidad." if value else "No incluye esta capacidad."
     return f"Utiliza {value} como valor de esta variable."
@@ -195,7 +346,7 @@ def _description(identifier: str, value: Any) -> str:
 
 def default_definition() -> dict[str, dict[str, Any]]:
     return {
-        variable.id: {"mode": "fixed", "values": [variable.recommended]}
+        variable.id: {"mode": "fixed", "values": [variable.recommended], "baseline": variable.recommended}
         for variable in VARIABLES
     }
 
@@ -212,13 +363,16 @@ def recommended_definition() -> dict[str, dict[str, Any]]:
         "meta_method": ["equal", "stacked_rolling_free", "stacked_rolling_bounded"],
     }
     for identifier, values in choices.items():
-        definition[identifier] = {"mode": "optimize", "values": values}
+        definition[identifier] = {
+            "mode": "optimize", "values": values, "baseline": BY_ID[identifier].recommended,
+        }
     for variable in VARIABLES:
         if not variable.predictive:
             alternatives = list(variable.values)
             definition[variable.id] = {
                 "mode": "diagnostic",
                 "values": [variable.recommended, *[value for value in alternatives if value != variable.recommended][:1]],
+                "baseline": variable.recommended,
             }
     return definition
 

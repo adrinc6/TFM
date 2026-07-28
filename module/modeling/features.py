@@ -305,30 +305,32 @@ def _build_feature_frame(
     )
     min_group = NEUTRALIZE_MIN_GROUP if settings.neutralize_by_sector else 0
 
+    new_columns: dict[str, pd.Series] = {}
+
     for horizon in (3, 6, 12):
         stock = pd.to_numeric(frame[f"price_return_{horizon}m"], errors="coerce")
         index = pd.to_numeric(frame[f"benchmark_return_{horizon}m"], errors="coerce")
-        relative = stock - index
-        frame[f"relative_return_{horizon}m"] = relative.where(frame["is_price_fresh"])
-        frame[f"factor_relative_return_{horizon}m"] = _cross_section_rank(
-            frame, frame[f"relative_return_{horizon}m"], ascending=True, min_group=min_group
+        relative = (stock - index).where(frame["is_price_fresh"])
+        new_columns[f"relative_return_{horizon}m"] = relative
+        new_columns[f"factor_relative_return_{horizon}m"] = _cross_section_rank(
+            frame, relative, ascending=True, min_group=min_group
         )
 
     for source, (factor, ascending, positive_only) in FACTOR_SOURCES.items():
         if source not in frame:
-            frame[factor] = float("nan")
+            new_columns[factor] = pd.Series(float("nan"), index=frame.index)
             continue
         values = pd.to_numeric(frame[source], errors="coerce")
         if positive_only:
             values = values.where(values.gt(0))
         values = values.where(frame["is_price_fresh"])
-        frame[factor] = _cross_section_rank(frame, values, ascending=ascending, min_group=min_group)
+        new_columns[factor] = _cross_section_rank(frame, values, ascending=ascending, min_group=min_group)
 
     # Derivados extendidos: todos mayor=mejor tras sus transformaciones económicas.
     for source in DERIVED_GROWTH_SOURCES:
         values = (pd.to_numeric(frame[source], errors="coerce") if source in frame
                   else pd.Series(float("nan"), index=frame.index)).where(frame["is_price_fresh"])
-        frame[f"factor_{source}"] = _cross_section_rank(frame, values, ascending=True, min_group=min_group)
+        new_columns[f"factor_{source}"] = _cross_section_rank(frame, values, ascending=True, min_group=min_group)
 
     # B3: rankear las features de tendencia y descomposicion (mayor = mejor en todas: fundamental
     # que sube, y componente-fundamental positivo = barato por mejora del negocio, no por precio).
@@ -338,7 +340,7 @@ def _build_feature_frame(
         ]
         for source in b3_sources:
             values = pd.to_numeric(frame[source], errors="coerce").where(frame["is_price_fresh"])
-            frame[f"factor_{source}"] = _cross_section_rank(
+            new_columns[f"factor_{source}"] = _cross_section_rank(
                 frame, values, ascending=True, min_group=min_group
             )
 
@@ -355,9 +357,11 @@ def _build_feature_frame(
             "drawdown_252d", "max_drawdown_252d", "range_21d", "range_63d",
             "volume_volatility", "amihud_illiquidity", "gap_21d",
         }
-        frame[f"factor_{source}"] = _cross_section_rank(
+        new_columns[f"factor_{source}"] = _cross_section_rank(
             frame, values, ascending=not lower_is_better, min_group=min_group
         )
+
+    frame = pd.concat([frame, pd.DataFrame(new_columns, index=frame.index)], axis=1)
 
     # B5: regimen de mercado (bull/bear) + interacciones factor x regimen.
     if settings.market_regime_feature:

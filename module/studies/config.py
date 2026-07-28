@@ -41,7 +41,7 @@ def normalized_definition(raw: Mapping[str, Any] | None) -> dict[str, dict[str, 
     for identifier, selection in (raw or {}).items():
         if not isinstance(selection, Mapping):
             raise ConfigurationError(f"{identifier} debe declarar mode y values.")
-        extra = set(selection) - {"mode", "values"}
+        extra = set(selection) - {"mode", "values", "baseline"}
         if extra:
             raise ConfigurationError(f"Campos desconocidos en {identifier}: {sorted(extra)}.")
         spec = BY_ID[identifier]
@@ -62,7 +62,10 @@ def normalized_definition(raw: Mapping[str, Any] | None) -> dict[str, dict[str, 
             raise ConfigurationError(f"Valores fuera de catálogo en {identifier}: {invalid}.")
         if len({_stable(value) for value in canonical}) != len(canonical):
             raise ConfigurationError(f"{identifier} contiene valores repetidos.")
-        result[identifier] = {"mode": mode, "values": canonical}
+        baseline = _canonical(selection.get("baseline", canonical[0]), spec.values)
+        if baseline is None or not any(_stable(baseline) == _stable(value) for value in canonical):
+            raise ConfigurationError(f"baseline de {identifier} debe ser uno de los values seleccionados.")
+        result[identifier] = {"mode": mode, "values": canonical, "baseline": baseline}
     return result
 
 
@@ -139,12 +142,7 @@ def evaluation_budget(definition: Mapping[str, dict[str, Any]]) -> dict[str, Any
 
 
 def initial_values(definition: Mapping[str, dict[str, Any]]) -> dict[str, Any]:
-    return {
-        spec.id: spec.recommended
-        if spec.recommended in definition[spec.id]["values"]
-        else definition[spec.id]["values"][0]
-        for spec in VARIABLES
-    }
+    return {spec.id: definition[spec.id]["baseline"] for spec in VARIABLES}
 
 
 def ordered_predictive_variables(definition: Mapping[str, dict[str, Any]]) -> list[str]:
