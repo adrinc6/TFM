@@ -377,7 +377,12 @@ de resumen, rendimiento, aprendizaje, cartera y acciones. Cartera permite elegir
 mostrar posiciones y las órdenes ejecutadas en esa fecha. Acciones conserva esa misma fecha y permite
 consultar situación en cartera, agentes, puntuaciones de parámetros, valores PIT y evolución de un
 parámetro seleccionado. Un candidato descartado solo muestra su evidencia compacta. El run de
-evidencia del ganador habilita los artefactos pesados.
+evidencia del ganador habilita los artefactos pesados. El baseline (`predictive:baseline`) también
+retiene su propia evidencia completa, en `evidence_baseline/` dentro del Study, con el mismo
+contenido que la del ganador (scores de agentes, pesos del meta-agente, diagnósticos Rank-IC,
+posiciones y órdenes): es la única otra configuración con vistas de rendimiento, aprendizaje y
+cartera propias, para poder compararla directamente contra el ganador. No genera perfiles ni
+participa en robustez: esos diagnósticos siguen siendo exclusivos del ganador.
 
 Las métricas que representan tasas, retornos, pesos, drawdowns, turnover, alfa o Rank-IC se
 presentan en porcentaje, aunque los artefactos mantengan su representación decimal para el cálculo.

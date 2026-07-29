@@ -25,6 +25,13 @@ main { width: min(1600px, 95vw); margin: 30px auto 80px; }
 .metrics { display: flex; flex-wrap: wrap; gap: 8px; }
 .budget div, .metrics div { min-width: 125px; background: var(--panel2); padding: 10px; border-radius: 7px; display: flex; flex-direction: column; }
 .budget b, .metrics b { font-size: 18px; } small, .muted, .budget span, .metrics span { color: var(--muted); font-size: 12px; }
+.metric-groups { display: flex; gap: 10px; margin: 12px 0 22px; }
+.metric-group { flex-basis: 0; min-width: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 9px; padding: 13px; }
+.metric-group h4 { margin: 0 0 8px; font-size: 13px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.metric-group-items { display: flex; flex-wrap: wrap; gap: 8px; }
+.metric-group-items div { min-width: 110px; flex: 1; background: var(--panel2); padding: 10px; border-radius: 7px; display: flex; flex-direction: column; }
+.metric-group-items b { font-size: 18px; }
+.metric-group-items span { color: var(--muted); font-size: 12px; }
 .study-meta { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin: 16px 0; }
 label { display: flex; flex-direction: column; gap: 5px; }
 .stage-card { margin: 18px 0; overflow: hidden; }
@@ -83,6 +90,9 @@ label { display: flex; flex-direction: column; gap: 5px; }
 table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 11px; }
 th { background: #262626; color: var(--muted); text-align: left; }
 th, td { padding: 7px 8px; border-bottom: 1px solid var(--line); white-space: normal; overflow-wrap: anywhere; vertical-align: top; }
+td.action-cell { padding: 0; }
+td.action-cell button { display: block; width: 100%; height: 100%; border: none; border-radius: 0; }
+td.action-cell button:hover { background: var(--line); color: #fff; }
 .selected-row { background: #292929; }
 .run-detail { margin-top: 20px; padding: 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
 .run-detail-title { display: flex; justify-content: space-between; gap: 20px; }
@@ -110,7 +120,9 @@ th, td { padding: 7px 8px; border-bottom: 1px solid var(--line); white-space: no
 .chart-legend i { width: 18px; height: 4px; border-radius: 4px; }
 details { margin: 10px 0; padding: 10px 12px; background: #151515; border: 1px solid var(--line); border-radius: 8px; }
 summary { cursor: pointer; color: var(--muted); font-weight: 700; }
-.config-card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; margin: 12px 0 22px; }
+.config-card-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 12px 0 22px; }
+@media (max-width: 900px) { .config-card-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .config-card-grid { grid-template-columns: 1fr; } }
 .config-card { min-width: 0; padding: 13px; background: var(--panel); border: 1px solid var(--line); border-radius: 9px; }
 .config-card h4 { margin: 0 0 8px; font-size: 13px; }
 .config-card ul { margin: 0; padding: 0; list-style: none; }

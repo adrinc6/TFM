@@ -459,7 +459,10 @@ def execute_model_study(study_id: str) -> dict[str, Any]:
 
     update_study(study_id, status="running", phase="predictive", progress=0.01)
     append_event(study_id, "info", "study_started", "Comienza el Model Study.")
-    baseline = execute("predictive:baseline", "temporal", "baseline", "baseline", values)
+    baseline = execute(
+        "predictive:baseline", "temporal", "baseline", "baseline", values,
+        retain=directory / "evidence_baseline",
+    )
     incumbent = {
         "candidate_id": "predictive:baseline",
         "value": "baseline",

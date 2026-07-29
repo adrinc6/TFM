@@ -65,7 +65,8 @@ def analysis(study_id: str, view: str, query: dict[str, list[str]]) -> dict[str,
     if view not in ANALYSIS_VIEWS:
         raise ValueError("Vista analítica desconocida.")
     directory = safe_study_path(study_id)
-    evidence = directory / "evidence"
+    source = query.get("source", [None])[0]
+    evidence = directory / "evidence_baseline" if source == "baseline" else directory / "evidence"
     profile = query.get("profile", [None])[0]
     profile_dir = evidence / "profiles" / profile if profile else evidence
     if view == "winner":
@@ -109,15 +110,15 @@ def analysis(study_id: str, view: str, query: dict[str, list[str]]) -> dict[str,
         ticker = query.get("ticker", [""])[0].strip().upper()
         snapshot = query.get("snapshot", [None])[0]
         parameter = query.get("parameter", [None])[0]
-        return _stock(directory, evidence, ticker, snapshot, parameter)
+        return _stock(evidence, ticker, snapshot, parameter)
     return {"markdown": (directory / "report.md").read_text(encoding="utf-8") if (directory / "report.md").exists() else ""}
 
 
 def _stock(
-    directory: Path, evidence: Path, ticker: str, snapshot: str | None, parameter: str | None,
+    evidence: Path, ticker: str, snapshot: str | None, parameter: str | None,
 ) -> dict[str, Any]:
-    winner = _json(directory / "winner.json")
-    prepared = validate_dataset_reference(str(winner["summary"]["dataset_hash"]))
+    reference = _json(evidence / "dataset_reference.json")
+    prepared = validate_dataset_reference(str(reference["dataset_hash"]))
     panel = pd.read_parquet(prepared / "panel_point_in_time.parquet")
     features = pd.read_parquet(prepared / "features_point_in_time.parquet")
     scores = pd.read_parquet(evidence / "agent_scores.parquet")

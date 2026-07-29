@@ -72,7 +72,7 @@ def test_fully_invested_forces_zero_cash_weight() -> None:
 def test_recommendation_is_valid_without_blocking_limits() -> None:
     definition, budget = validate_definition(recommended_definition())
     assert definition == recommended_definition()
-    assert 12 <= budget["predictive_evaluations"] <= 20
+    assert 6 <= budget["predictive_evaluations"] <= 14
     assert budget["blocking_limits"] is False
 
 
@@ -99,7 +99,9 @@ def test_budget_is_sequential_not_cartesian() -> None:
         "values": ["equal", "stacked_rolling_free", "stacked_rolling_bounded"],
     }
     _, budget = validate_definition(definition)
-    assert budget["predictive_evaluations"] == 1 + 2 + 3
+    # 1 baseline + (2-1) + (3-1): por variable, el candidato igual al baseline
+    # vigente se reutiliza sin ejecutar (ver runner.py), así que no cuenta como run.
+    assert budget["predictive_evaluations"] == 1 + 1 + 2
 
 
 def test_meta_candidates_map_to_exact_weight_contracts() -> None:

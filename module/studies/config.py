@@ -112,14 +112,17 @@ def evaluation_budget(definition: Mapping[str, dict[str, Any]]) -> dict[str, Any
         spec for spec in VARIABLES
         if not spec.predictive and definition[spec.id]["mode"] == "diagnostic"
     ]
-    breakdown = {spec.id: len(definition[spec.id]["values"]) for spec in predictive}
+    # Cada variable predictiva reutiliza sin ejecutar el candidato igual al baseline
+    # vigente (ver runner.py: `configuration == incumbent["configuration"]`), así que
+    # solo len(values) - 1 candidatos por variable generan un run real.
+    breakdown = {spec.id: len(definition[spec.id]["values"]) - 1 for spec in predictive}
     predictive_evaluations = 1 + sum(breakdown.values())
     expensive = 1 + sum(
-        len(definition[spec.id]["values"])
+        len(definition[spec.id]["values"]) - 1
         for spec in predictive if spec.invalidates in {"dataset", "features", "fit"}
     )
     meta = sum(
-        len(definition[spec.id]["values"])
+        len(definition[spec.id]["values"]) - 1
         for spec in predictive if spec.invalidates == "meta"
     )
     portfolio = sum(max(0, len(definition[spec.id]["values"]) - 1) for spec in diagnostics)

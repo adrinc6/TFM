@@ -8,10 +8,20 @@ import hashlib
 import os
 import shutil
 import tempfile
+from datetime import datetime
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import pandas as pd
+
+_MADRID_TZ = ZoneInfo("Europe/Madrid")
+
+
+class _MadridFormatter(logging.Formatter):
+    def formatTime(self, record: logging.LogRecord, datefmt: str | None = None) -> str:
+        moment = datetime.fromtimestamp(record.created, tz=_MADRID_TZ)
+        return moment.strftime(datefmt or "%H:%M:%S")
 
 
 def setup_logging(log_path: Path | None = None) -> None:
@@ -19,13 +29,13 @@ def setup_logging(log_path: Path | None = None) -> None:
     if log_path is not None:
         log_path.parent.mkdir(parents=True, exist_ok=True)
         handlers.append(logging.FileHandler(log_path, encoding="utf-8"))
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    formatter = _MadridFormatter(
+        fmt="%(asctime)s %(levelname)s %(name)s: %(message)s",
         datefmt="%H:%M:%S",
-        handlers=handlers,
-        force=True,
     )
+    for handler in handlers:
+        handler.setFormatter(formatter)
+    logging.basicConfig(level=logging.INFO, handlers=handlers, force=True)
 
 
 def write_parquet(df: pd.DataFrame, path: Path) -> None:

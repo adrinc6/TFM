@@ -191,7 +191,8 @@ def append_event(
         stream.write(json.dumps(payload, ensure_ascii=False, default=str) + "\n")
         stream.flush()
         os.fsync(stream.fileno())
-    print(f"[{level.upper()}] {study_id} · {message}", flush=True)
+    time_of_day = datetime.now(timezone.utc).strftime("%H:%M:%S")
+    print(f"[{time_of_day}] [{level.upper()}] {study_id} · {message}", flush=True)
     return payload
 
 

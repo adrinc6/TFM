@@ -16,14 +16,23 @@
     return payload;
   };
   const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[char]));
-  const percentageKey = key => /(^|_)(alpha|return|cagr|drawdown|rate|fraction|weight|turnover|p_value)(_|$)|rank_ic/.test(key);
-  const integerKey = key => /^(year|runs_completados|runs_restantes|runs_total|observations|training_rows|realized_cohorts|closed_cohorts|attempt|target_size|elapsed_seconds)$/.test(key);
+  const bpsKey = key => /_bps$/.test(key);
+  const percentageKey = key => !bpsKey(key) && /(^|_)(alpha|return|cagr|drawdown|rate|fraction|weight|turnover|p_value)(_|$)|rank_ic/.test(key);
+  const integerKey = key => /^(year|runs_completados|runs_restantes|runs_total|observations|training_rows|realized_cohorts|closed_cohorts|attempt|target_size|elapsed_seconds|positive_alpha_years|positive_alpha_eras)$/.test(key);
   const timestampKey = key => /^(actualizado|updated_at|created_at|heartbeat)$/.test(key);
   const fmt = (value, key = "") => {
     if (typeof value !== "number" || !Number.isFinite(value)) return value ?? "—";
-    if (percentageKey(key)) return `${(value * 100).toFixed(2)} %`;
+    if (key === "elapsed_seconds") return formatElapsedSeconds(value);
+    if (bpsKey(key)) return `${value.toFixed(0)} pb`;
     if (integerKey(key)) return String(Math.round(value));
+    if (percentageKey(key)) return `${(value * 100).toFixed(2)} %`;
     return Math.abs(value) < 1 ? value.toFixed(4) : value.toFixed(2);
+  };
+  const madridTime = isoTimestamp => {
+    const date = new Date(isoTimestamp);
+    return Number.isNaN(date.getTime()) ? isoTimestamp : date.toLocaleTimeString("es-ES", {
+      timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", second: "2-digit",
+    });
   };
   const display = (value, key = "") => timestampKey(key) && typeof value === "string"
     ? value.replace(/\.\d+(?=\+|Z|$)/, "").replace(/\+00:00$/, " UTC")
@@ -50,6 +59,11 @@
 
   function stageRuns(stage) {
     if (!state.budget) return 0;
+    if (stage === "portfolio") {
+      return state.catalog.variables
+        .filter(variable => variable.stage === stage && !variable.predictive)
+        .reduce((sum, variable) => sum + Math.max(0, (state.definition[variable.id]?.values.length || 0) - 1), 0);
+    }
     return Object.entries(state.budget.breakdown || {}).filter(([id]) =>
       state.catalog.variables.find(variable => variable.id === id)?.stage === stage
     ).reduce((sum, [, count]) => sum + count, 0);
@@ -86,7 +100,7 @@
       const variables = state.catalog.variables.filter(variable => variable.stage === stage);
       return `<section class="stage-card"><div class="stage-heading"><div><p class="eyebrow">${esc(detail.label)}</p>
         <h2>${esc(detail.question)}</h2><p>${esc(detail.description)}</p></div>
-        <div class="stage-plan"><b>${stageRuns(stage)}</b><span>evaluaciones predictivas</span>
+        <div class="stage-plan"><b>${stageRuns(stage)}</b><span>${stage === "portfolio" ? "comparaciones informativas" : "evaluaciones predictivas"}</span>
         <small>${stage === "portfolio" ? "Comparaciones informativas; nunca eligen modelo." : "Comparación secuencial contra el baseline de cada variable, con las anteriores ya decididas."}</small></div></div>
         <div>${variables.map(variableRow).join("")}</div></section>`;
     }).join("");
@@ -252,7 +266,7 @@
     if (state.section === "console") {
       const events = await api(`/api/studies/${state.selectedStudy}/events?after=0`);
       body.innerHTML = `<div class="content-heading"><h2>Consola</h2><button id="refresh-console">Actualizar eventos</button></div>
-        <pre class="console">${events.map(event => `${event.sequence} ${event.timestamp} [${event.level}] ${event.message}`).join("\n")}</pre>`;
+        <pre class="console">${events.map(event => `${event.sequence} ${madridTime(event.timestamp)} [${event.level}] ${event.message}`).join("\n")}</pre>`;
       const consoleElement = body.querySelector(".console");
       consoleElement.scrollTop = consoleElement.scrollHeight;
       document.getElementById("refresh-console").onclick = async () => {
@@ -279,8 +293,8 @@
       <div><p class="eyebrow">${esc(run.phase)} · ${esc(run.variable_id)}</p><h2>${esc(run.run_id)}</h2>
       <p>${esc(run.logical_key)}. Evalúa ${esc(run.value)} dentro de la fase ${esc(run.phase)}.</p></div></div>
       <div class="entity-cards">${[
-        ["Estado", run.status], ["Intento", run.attempt], ["Progreso", `${Math.round((run.progress || 0) * 100)} %`],
-        ["Duración", `${fmt(run.elapsed_seconds)} s`], ["Rank-IC", fmt(summary.mean_rank_ic, "rank_ic")], ["Fuente", run.result?.source || "—"],
+        ["Estado", run.status], ["Intento", fmt(run.attempt, "attempt")], ["Progreso", `${Math.round((run.progress || 0) * 100)} %`],
+        ["Duración", fmt(run.elapsed_seconds, "elapsed_seconds")], ["Rank-IC", fmt(summary.mean_rank_ic, "rank_ic")], ["Fuente", run.result?.source || "—"],
       ].map(([label, value]) => `<span><b>${esc(fmt(value))}</b>${label}</span>`).join("")}</div>
       <div class="entity-actions">${views.map(view => `<button data-run-view="${view}" class="${state.runView === view ? "active" : ""}">${esc(runViewLabel(view))}</button>`).join("")}</div>
       </section><section id="run-content"></section>`;
@@ -295,23 +309,28 @@
     const body = document.getElementById("run-content");
     const summary = run.result?.summary || {};
     if (state.runView === "summary") {
-      body.innerHTML = `<h2>Resumen del run</h2>${metrics(summary)}<h3>Resultados por era</h3>${table(run.result?.eras || [])}
+      body.innerHTML = `<h2>Resumen del run</h2>${groupedMetrics(summary)}<h3>Resultados por era</h3>${table(run.result?.eras || [])}
         <h3>Configuración y evidencia</h3>${configurationCards(run)}
         ${run.error ? `<h3>Error</h3><pre class="error-text report">${esc(run.error)}\n${esc(run.traceback || "")}</pre>` : ""}`;
       return;
     }
     const isWinner = run.logical_key === "winner:evidence";
-    if (!isWinner) {
+    const isBaseline = run.logical_key === "predictive:baseline";
+    if (!isWinner && !isBaseline) {
       body.innerHTML = `<article class="detail"><h2>Vista no materializada para este candidato</h2>
-        <p>Los candidatos normales conservan configuración, Rank-IC, eras y decisión. Las vistas pesadas se guardan únicamente en el run de evidencia del ganador.</p></article>`;
+        <p>Los candidatos normales conservan configuración, Rank-IC, eras y decisión. Las vistas pesadas se guardan únicamente en el run de evidencia del ganador y en el baseline.</p></article>`;
       return;
     }
     const map = {performance: "portfolio", learning: "learning", portfolio: "portfolio", stocks: "stocks"};
+    const sourceQuery = isBaseline ? "source=baseline" : "";
     if (state.runView === "stocks") {
-      return renderStockBrowser();
+      return renderStockBrowser(isBaseline);
     }
-    const snapshotQuery = state.runView === "portfolio" && state.snapshot ? `?snapshot=${encodeURIComponent(state.snapshot)}` : "";
-    const data = await api(`/api/studies/${state.selectedStudy}/analysis/${map[state.runView]}${snapshotQuery}`);
+    const params = [
+      state.runView === "portfolio" && state.snapshot ? `snapshot=${encodeURIComponent(state.snapshot)}` : "",
+      sourceQuery,
+    ].filter(Boolean).join("&");
+    const data = await api(`/api/studies/${state.selectedStudy}/analysis/${map[state.runView]}${params ? `?${params}` : ""}`);
     if (state.runView === "performance") {
       body.innerHTML = `${metrics(data.summary?.summary || data.summary || {})}${equity(data.equity)}${table(data.annual)}`;
       bindInteractiveCharts(body);
@@ -342,8 +361,12 @@
     };
   }
 
-  async function renderStockBrowser() {
-    const initial = await api(`/api/studies/${state.selectedStudy}/analysis/stocks${state.snapshot ? `?snapshot=${encodeURIComponent(state.snapshot)}` : ""}`);
+  async function renderStockBrowser(isBaseline) {
+    state.stockSource = isBaseline ? "baseline" : null;
+    const query = new URLSearchParams();
+    if (state.snapshot) query.set("snapshot", state.snapshot);
+    if (state.stockSource) query.set("source", state.stockSource);
+    const initial = await api(`/api/studies/${state.selectedStudy}/analysis/stocks${query.toString() ? `?${query}` : ""}`);
     state.snapshot = state.snapshot || initial.selected_snapshot;
     state.stockTicker = state.stockTicker || initial.available_tickers?.[0] || null;
     if (!state.stockTicker) {
@@ -357,6 +380,7 @@
     const params = new URLSearchParams({ticker: state.stockTicker});
     if (state.snapshot) params.set("snapshot", state.snapshot);
     if (state.stockParameter) params.set("parameter", state.stockParameter);
+    if (state.stockSource) params.set("source", state.stockSource);
     const data = await api(`/api/studies/${state.selectedStudy}/analysis/stocks?${params}`);
     state.snapshot = data.selected_snapshot;
     state.stockParameter = data.selected_parameter || state.stockParameter;
@@ -502,6 +526,24 @@
     ].slice(0, 10);
     return `<div class="metrics">${entries.map(([key, value]) => `<div><b class="${tone(value, key)}">${esc(fmt(value, key))}</b><span>${esc(metricLabel(key))}</span></div>`).join("")}</div>`;
   }
+  const SUMMARY_METRIC_GROUPS = [
+    {title: "Predicción", keys: ["mean_rank_ic", "ic_ir", "rank_ic_positive_fraction"]},
+    {title: "Rendimiento vs benchmark", keys: ["geometric_excess_return", "cagr_portfolio", "cagr_benchmark", "information_ratio"]},
+    {title: "Ejecución de cartera", keys: ["max_drawdown", "annualized_turnover", "mean_cash_weight"]},
+  ];
+  function groupedMetrics(data) {
+    const groups = SUMMARY_METRIC_GROUPS
+      .map(group => ({...group, keys: group.keys.filter(key => data[key] !== undefined)}))
+      .filter(group => group.keys.length);
+    if (!groups.length) return "<p class='muted'>Sin métricas.</p>";
+    return `<div class="metric-groups">${groups.map(group => `
+      <article class="metric-group" style="flex-grow:${group.keys.length}">
+        <h4>${esc(group.title)}</h4>
+        <div class="metric-group-items">${group.keys.map(key => `
+          <div><b class="${tone(data[key], key)}">${esc(fmt(data[key], key))}</b><span>${esc(metricLabel(key))}</span></div>
+        `).join("")}</div>
+      </article>`).join("")}</div>`;
+  }
   const METRIC_LABELS = {
     geometric_excess_return: "Alfa geométrico vs SPY", cagr_portfolio: "CAGR cartera",
     cagr_benchmark: "CAGR SPY", mean_rank_ic: "Rank-IC medio", ic_ir: "IC-IR",
@@ -527,7 +569,7 @@
     run_id: "Run", phase: "Fase", variable: "Variable", value: "Valor", status: "Estado",
     progress: "Progreso", rank_ic: "Rank-IC", alpha_anual: "Alfa geométrico",
     alpha_confirmacion: "Rank-IC 2025-26",
-    elapsed_seconds: "Duración (s)", source: "Origen", error: "Error", winner_value: "Valor ganador",
+    elapsed_seconds: "Duración", source: "Origen", error: "Error", winner_value: "Valor ganador",
     selection_rule: "Regla de selección", median_era_rank_ic: "Rank-IC mediano por era",
     paired_advantage: "Ventaja pareada",
     mean_rank_ic: "Rank-IC medio", positive_fraction: "Fracción positiva", rank_ic_std: "Desviación Rank-IC",
@@ -605,7 +647,7 @@
     ].map(([name, description]) => `<li><span>${esc(name)}</span><b>${esc(description)}</b></li>`).join("")}</ul></article>`);
     const artifacts = [
       ["Fuente", result.source], ["Dataset", result.dataset_hash], ["Clave de evaluación", result.evaluation_key],
-      ["Tiempo de cálculo", result.elapsed_seconds == null ? null : `${fmt(result.elapsed_seconds, "elapsed_seconds")} s`],
+      ["Tiempo de cálculo", result.elapsed_seconds == null ? null : fmt(result.elapsed_seconds, "elapsed_seconds")],
     ].filter(([, value]) => value != null);
     if (artifacts.length) cards.push(`<article class="config-card artifact-card"><h4>Artefactos</h4><ul>${artifacts.map(([label, value]) => `<li><span>${esc(label)}</span><b>${esc(String(value))}</b></li>`).join("")}</ul></article>`);
     return `<div class="config-card-grid">${cards.join("") || "<p class='muted'>Sin configuración persistida.</p>"}</div>`;
@@ -620,20 +662,32 @@
     const columns = ["nombre", "estado", "etapa", "progreso", "runs_completados", "runs_restantes", "tiempo", "rank_ic_max", "actualizado"];
     return `<table><thead><tr>${columns.map(key => `<th>${esc(columnLabel(key))}</th>`).join("")}</tr></thead><tbody>${rows.map(row =>
       `<tr class="${row.study_id === state.selectedStudy ? "selected-row" : ""}">${columns.map(key => `<td class="${tone(row[key], key)}">${esc(display(row[key], key))}</td>`).join("")}
-      <td><button data-study="${esc(row.study_id)}">Abrir</button></td></tr>`).join("")}</tbody></table>`;
+      <td class="action-cell"><button data-study="${esc(row.study_id)}">Abrir</button></td></tr>`).join("")}</tbody></table>`;
   }
   function runSelectionTable(rows) {
     if (!rows.length) return "<p class='muted'>Todavía no hay runs.</p>";
     const columns = ["phase", "variable", "value", "status", "progress", "rank_ic", "alpha_anual", "alpha_estres", "elapsed_seconds", "source", "error"];
     return `<table class="runs-table"><thead><tr>${columns.map(key => `<th>${esc(columnLabel(key))}</th>`).join("")}<th></th></tr></thead><tbody>${rows.map(row =>
       `<tr class="${row.run_id === state.selectedRun ? "selected-row" : ""}">${columns.map(key => `<td class="${tone(row[key], key)}">${esc(display(row[key], key))}</td>`).join("")}
-      <td><button data-run="${esc(row.run_id)}">Ver run</button></td></tr>`).join("")}</tbody></table>`;
+      <td class="action-cell"><button data-run="${esc(row.run_id)}">Ver run</button></td></tr>`).join("")}</tbody></table>`;
   }
   function duration(milliseconds) {
     const seconds = Math.floor(milliseconds / 1000);
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     return `${hours} h ${minutes} min`;
+  }
+  function formatElapsedSeconds(totalSeconds) {
+    if (typeof totalSeconds !== "number" || !Number.isFinite(totalSeconds)) return "—";
+    const seconds = Math.floor(totalSeconds);
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    const parts = [];
+    if (hours) parts.push(`${hours} h`);
+    if (hours || minutes) parts.push(`${minutes} min`);
+    parts.push(`${secs} s`);
+    return parts.join(" ");
   }
   function objectTable(data) { return table(Object.entries(data).map(([key, value]) => ({variable: key, value: typeof value === "object" ? JSON.stringify(value) : value}))); }
   function objectTree(data) { return `<pre class="report">${esc(JSON.stringify(data, null, 2))}</pre>`; }
