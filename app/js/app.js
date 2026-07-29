@@ -18,13 +18,15 @@
   const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[char]));
   const bpsKey = key => /_bps$/.test(key);
   const percentageKey = key => !bpsKey(key) && /(^|_)(alpha|return|cagr|drawdown|rate|fraction|weight|turnover|p_value)(_|$)|rank_ic/.test(key);
-  const integerKey = key => /^(year|runs_completados|runs_restantes|runs_total|observations|training_rows|realized_cohorts|closed_cohorts|attempt|target_size|elapsed_seconds|positive_alpha_years|positive_alpha_eras)$/.test(key);
+  const integerKey = key => /^(year|runs_completados|runs_restantes|runs_total|observations|training_rows|realized_cohorts|closed_cohorts|attempt|target_size|elapsed_seconds|positive_alpha_years|positive_alpha_eras|months_held)$/.test(key);
   const timestampKey = key => /^(actualizado|updated_at|created_at|heartbeat)$/.test(key);
+  const rawPercentileKey = key => /^(current_percentile|percentile)$/.test(key);
   const fmt = (value, key = "") => {
     if (typeof value !== "number" || !Number.isFinite(value)) return value ?? "—";
     if (key === "elapsed_seconds") return formatElapsedSeconds(value);
     if (bpsKey(key)) return `${value.toFixed(0)} pb`;
     if (integerKey(key)) return String(Math.round(value));
+    if (rawPercentileKey(key)) return `p${value.toFixed(0)}`;
     if (percentageKey(key)) return `${(value * 100).toFixed(2)} %`;
     return Math.abs(value) < 1 ? value.toFixed(4) : value.toFixed(2);
   };
@@ -361,13 +363,16 @@
     };
   }
 
+  const STOCK_VIEWS = [
+    ["scores", "Puntuaciones"], ["portfolio", "Situación en cartera"], ["ratios", "Ratios"],
+  ];
+  let tickerInputTimer = null;
+
   async function renderStockBrowser(isBaseline) {
     state.stockSource = isBaseline ? "baseline" : null;
     const query = new URLSearchParams();
-    if (state.snapshot) query.set("snapshot", state.snapshot);
     if (state.stockSource) query.set("source", state.stockSource);
     const initial = await api(`/api/studies/${state.selectedStudy}/analysis/stocks${query.toString() ? `?${query}` : ""}`);
-    state.snapshot = state.snapshot || initial.selected_snapshot;
     state.stockTicker = state.stockTicker || initial.available_tickers?.[0] || null;
     if (!state.stockTicker) {
       document.getElementById("run-content").innerHTML = "<p class='muted'>No hay acciones disponibles.</p>";
@@ -377,39 +382,130 @@
   }
 
   async function loadStockBrowser() {
-    const params = new URLSearchParams({ticker: state.stockTicker});
-    if (state.snapshot) params.set("snapshot", state.snapshot);
-    if (state.stockParameter) params.set("parameter", state.stockParameter);
+    const params = new URLSearchParams({ticker: state.stockTicker, view: state.stockView});
     if (state.stockSource) params.set("source", state.stockSource);
+    if (state.stockView === "ratios" && state.ratioMode === "detail" && state.selectedRatio) {
+      params.set("view", "ratio-detail");
+      params.set("ratio", state.selectedRatio);
+    } else if (state.stockView === "ratios") {
+      params.set("view", "ratios-summary");
+      if (state.snapshot) params.set("snapshot", state.snapshot);
+    }
     const data = await api(`/api/studies/${state.selectedStudy}/analysis/stocks?${params}`);
-    state.snapshot = data.selected_snapshot;
-    state.stockParameter = data.selected_parameter || state.stockParameter;
+    if (state.stockView === "ratios" && state.ratioMode !== "detail") state.snapshot = data.selected_snapshot || state.snapshot;
     const body = document.getElementById("run-content");
-    const views = [
-      ["portfolio", "Situación en cartera"], ["agents", "Agentes y meta"],
-      ["parameter-scores", "Puntuaciones de parámetros"], ["parameter-values", "Valores PIT"],
-      ["evolution", "Evolución de parámetro"],
-    ];
-    const content = stockContent(data);
     body.innerHTML = `<section class="snapshot-controls stock-controls">
-      <label>Acción<select id="stock-ticker">${data.available_tickers.map(value => `<option value="${esc(value)}" ${value === data.ticker ? "selected" : ""}>${esc(value)}</option>`).join("")}</select></label>
-      <label>Snapshot<select id="stock-snapshot">${data.available_snapshots.map(value => `<option value="${esc(value)}" ${value === data.selected_snapshot ? "selected" : ""}>${esc(value)}</option>`).join("")}</select></label>
-      <label>Vista<select id="stock-view">${views.map(([id, label]) => `<option value="${id}" ${id === state.stockView ? "selected" : ""}>${label}</option>`).join("")}</select></label>
-      ${state.stockView === "evolution" ? `<label>Parámetro<select id="stock-parameter">${data.parameter_options.map(option => `<option value="${esc(option.id)}" ${option.id === data.selected_parameter ? "selected" : ""}>${esc(option.kind)} · ${esc(option.label)}</option>`).join("")}</select></label>` : ""}
-    </section><section id="stock-data">${content}</section>`;
-    document.getElementById("stock-ticker").onchange = event => { state.stockTicker = event.target.value; loadStockBrowser(); };
-    document.getElementById("stock-snapshot").onchange = event => { state.snapshot = event.target.value; loadStockBrowser(); };
-    document.getElementById("stock-view").onchange = event => { state.stockView = event.target.value; loadStockBrowser(); };
-    if (document.getElementById("stock-parameter")) document.getElementById("stock-parameter").onchange = event => { state.stockParameter = event.target.value; loadStockBrowser(); };
+      <label>Acción<input list="stock-ticker-list" id="stock-ticker" value="${esc(data.ticker)}" autocomplete="off"></label>
+      <datalist id="stock-ticker-list">${data.available_tickers.map(value => `<option value="${esc(value)}"></option>`).join("")}</datalist>
+      <label>Vista<select id="stock-view">${STOCK_VIEWS.map(([id, label]) => `<option value="${id}" ${id === state.stockView ? "selected" : ""}>${label}</option>`).join("")}</select></label>
+      ${stockViewControls(data)}
+    </section><section id="stock-data">${stockContent(data)}</section>`;
+    document.getElementById("stock-ticker").oninput = event => {
+      const value = event.target.value.trim().toUpperCase();
+      clearTimeout(tickerInputTimer);
+      tickerInputTimer = setTimeout(() => {
+        if (data.available_tickers.includes(value) && value !== state.stockTicker) { state.stockTicker = value; loadStockBrowser(); }
+      }, 250);
+    };
+    document.getElementById("stock-view").onchange = event => { state.stockView = event.target.value; state.ratioMode = "summary"; state.selectedRatio = null; loadStockBrowser(); };
+    if (document.getElementById("stock-snapshot")) document.getElementById("stock-snapshot").onchange = event => { state.snapshot = event.target.value; loadStockBrowser(); };
+    if (document.getElementById("ratio-mode")) document.getElementById("ratio-mode").onchange = event => { state.ratioMode = event.target.value; loadStockBrowser(); };
+    if (document.getElementById("ratio-select")) document.getElementById("ratio-select").onchange = event => { state.selectedRatio = event.target.value; loadStockBrowser(); };
     bindInteractiveCharts(body);
   }
 
+  function stockViewControls(data) {
+    if (state.stockView !== "ratios") return "";
+    const mode = state.ratioMode || "summary";
+    const modeControl = `<label>Modo<select id="ratio-mode">
+      <option value="summary" ${mode === "summary" ? "selected" : ""}>Resumen por snapshot</option>
+      <option value="detail" ${mode === "detail" ? "selected" : ""}>Un ratio en detalle</option>
+    </select></label>`;
+    if (mode === "detail") {
+      const selected = state.selectedRatio || data.ratio_options[0]?.id || "";
+      state.selectedRatio = state.selectedRatio || selected;
+      return `${modeControl}<label>Ratio<select id="ratio-select">${data.ratio_options.map(option => `<option value="${esc(option.id)}" ${option.id === selected ? "selected" : ""}>${esc(option.label)}</option>`).join("")}</select></label>`;
+    }
+    return `${modeControl}<label>Snapshot<select id="stock-snapshot">${(data.available_snapshots || []).map(value => `<option value="${esc(value)}" ${value === data.selected_snapshot ? "selected" : ""}>${esc(value)}</option>`).join("")}</select></label>`;
+  }
+
   function stockContent(data) {
-    if (state.stockView === "portfolio") return `<h3>Situación en cartera · ${esc(data.selected_snapshot)}</h3>${table(data.positions)}<h3>Órdenes del snapshot</h3>${table(data.orders)}`;
-    if (state.stockView === "agents") return `<h3>Scores de los cinco agentes y del meta-agente</h3>${objectTable(data.scores[0] || {})}`;
-    if (state.stockView === "parameter-scores") return `<h3>Puntuaciones normalizadas de parámetros</h3>${objectTable(data.parameter_scores[0] || {})}`;
-    if (state.stockView === "parameter-values") return `<h3>Valores point-in-time de parámetros</h3>${objectTable(data.parameter_values[0] || {})}`;
-    return `<h3>Evolución · ${esc(data.selected_parameter || "")}</h3>${singleLineChart(data.parameter_history, "snapshot_date", data.selected_parameter, {yLabel: data.selected_parameter || "Valor"})}`;
+    if (state.stockView === "scores") return stockScoresView(data);
+    if (state.stockView === "portfolio") return stockPortfolioView(data);
+    return stockRatiosView(data);
+  }
+
+  const AGENT_LABELS = {
+    quality: "Quality (calidad)", value: "Value (valoración)", growth: "Growth (crecimiento)",
+    momentum: "Momentum (tendencia)", risk: "Risk (riesgo y liquidez)",
+    meta_score: "Meta-agente · score", meta_rank: "Meta-agente · rank",
+  };
+
+  function stockScoresView(data) {
+    const current = data.current || {};
+    const rows = ["quality", "value", "growth", "momentum", "risk", "meta_score", "meta_rank"]
+      .map(key => ({puntuación: AGENT_LABELS[key], valor: current[key]}));
+    const chartRows = normalizeSeries(data.history, "snapshot_date", ["quality", "value", "growth", "momentum", "risk", "meta_score", "price"]);
+    return `<h3>Puntuaciones actuales · ${esc(current.snapshot_date || "")}</h3>${table(rows)}
+      <h3>Evolución histórica (normalizada, precio en discontinuo)</h3>
+      ${multiLineChart(chartRows, "snapshot_date", "series", "value", {domain: "weight", integerAxis: false, yLabel: "Escala 0-1", dashedSeries: ["price"]})}`;
+  }
+
+  function stockPortfolioView(data) {
+    const status = data.status || {};
+    const summary = status.in_portfolio
+      ? `<p>En cartera desde <b>${esc(status.entry_date)}</b> (${esc(String(Math.round(status.months_held ?? 0)))} meses), peso actual <b>${fmt(status.weight, "weight")}</b>, percentil <b>${fmt(status.percentile, "current_percentile")}</b> a ${esc(status.as_of)}.</p>`
+      : `<p>No está en cartera en el último snapshot (${esc(status.as_of || "sin datos")}).</p>`;
+    const events = (data.events || []).map(row => ({
+      snapshot_date: row.snapshot_date, side: SIDE_LABELS[row.side] || row.side, reason: REASON_LABELS[row.reason] || row.reason,
+      weight_before: row.weight_before, weight_after: row.weight_after, percentile: row.percentile,
+    }));
+    return `<h3>Situación actual</h3>${summary}
+      <h3>Histórico de compras y ventas</h3>${table(events)}
+      <h3>Percentil mientras estuvo en cartera</h3>${singleLineChart(data.history, "snapshot_date", "current_percentile", {yLabel: "Percentil"})}`;
+  }
+
+  function stockRatiosView(data) {
+    if (state.ratioMode === "detail") return stockRatioDetailView(data);
+    return `<h3>Puntuaciones de parámetros · ${esc(data.selected_snapshot || "")}</h3>${objectTable(data.scores?.[0] || {})}
+      <h3>Valores point-in-time · ${esc(data.selected_snapshot || "")}</h3>${objectTable(data.values?.[0] || {})}`;
+  }
+
+  function stockRatioDetailView(data) {
+    if (!data.ratio) return "<p class='muted'>Selecciona un ratio.</p>";
+    const label = data.ratio_options?.find(option => option.id === data.ratio)?.label || data.ratio;
+    const series = [
+      ...data.history.map(row => ({snapshot_date: row.snapshot_date, series: label, value: row[data.ratio]})),
+      ...(data.components || []).flatMap(component => component.history.map(row => ({snapshot_date: row.snapshot_date, series: component.id, value: row[component.id]}))),
+      ...data.price_history.map(row => ({snapshot_date: row.snapshot_date, series: "price", value: row.price})),
+    ];
+    const normalized = normalizeSeries(series, "snapshot_date", null, "series", "value");
+    return `<h3>${esc(label)} · valor actual ${fmt(data.current_value)}</h3>
+      <p>Evolución normalizada a escala 0-1 junto con ${data.components.length ? "sus componentes y " : ""}el precio (línea discontinua), para comparar patrones.</p>
+      ${multiLineChart(normalized, "snapshot_date", "series", "value", {domain: "weight", yLabel: "Escala 0-1", dashedSeries: ["price"]})}`;
+  }
+
+  function normalizeSeries(rows, xKey, valueKeys, seriesKey, valueKey) {
+    let long = rows || [];
+    if (valueKeys) {
+      long = (rows || []).flatMap(row => valueKeys.filter(key => row[key] != null).map(key => ({[xKey]: row[xKey], series: key, value: Number(row[key])})));
+      seriesKey = "series"; valueKey = "value";
+    }
+    const bySeries = new Map();
+    long.forEach(row => {
+      const name = row[seriesKey];
+      if (row[valueKey] == null || !Number.isFinite(Number(row[valueKey]))) return;
+      if (!bySeries.has(name)) bySeries.set(name, []);
+      bySeries.get(name).push(Number(row[valueKey]));
+    });
+    const ranges = new Map([...bySeries].map(([name, values]) => [name, [Math.min(...values), Math.max(...values)]]));
+    return long
+      .filter(row => row[valueKey] != null && Number.isFinite(Number(row[valueKey])))
+      .map(row => {
+        const [minimum, maximum] = ranges.get(row[seriesKey]);
+        const span = maximum - minimum;
+        return {...row, [xKey]: row[xKey], [seriesKey]: row[seriesKey], [valueKey]: span > 0 ? (Number(row[valueKey]) - minimum) / span : 0.5};
+      });
   }
 
   function profiles(data) {
@@ -576,7 +672,17 @@
     observations: "Observaciones", reason: "Motivo", eligible: "Elegible", is_incumbent: "Baseline",
     candidate_id: "Candidato", cash_policy: "Política de efectivo", mean_cash_weight: "Efectivo medio",
     geometric_excess_return: "Alfa geométrico vs SPY", ic_ir: "IC-IR",
-    transfer_coefficient: "Coeficiente de transferencia",
+    transfer_coefficient: "Coeficiente de transferencia", months_held: "Meses en cartera",
+    current_percentile: "Percentil", percentile: "Percentil", weight: "Peso", entry_date: "Fecha de entrada",
+    ticker: "Ticker", snapshot_date: "Snapshot", side: "Sentido", weight_before: "Peso anterior",
+    weight_after: "Peso nuevo",
+  };
+  const SIDE_LABELS = {buy: "Compra", sell: "Venta"};
+  const REASON_LABELS = {
+    initial_fill: "Compra inicial", fully_invested_fill: "Relleno (100 % invertido)",
+    cash_floor_fill: "Relleno (suelo de diversificación)", expected_alpha_below_exit: "Alfa esperado bajo umbral",
+    displaced_by_net_edge: "Desplazada por rotación", net_edge_over_worst: "Rotación (ventaja de alfa)",
+    rebalance: "Reequilibrio de peso",
   };
   function columnLabel(key) {
     if (COLUMN_LABELS[key]) return COLUMN_LABELS[key];
@@ -717,12 +823,14 @@
     const series = names.map((name, index) => ({
       name, color: chartColors[index % chartColors.length], values: xValues.map(value => lookup.get(`${name}:${value}`) ?? null),
     }));
+    const dashedSeries = new Set(options.dashedSeries || []);
     const paths = series.map(item => {
       const points = item.values.map((value, index) => value == null ? null : `${x(index)},${y(value)}`);
       const segments = []; let segment = [];
       points.forEach(point => { if (point) segment.push(point); else if (segment.length) { segments.push(segment); segment = []; } });
       if (segment.length) segments.push(segment);
-      return segments.map(values => `<polyline points="${values.join(" ")}" style="stroke:${item.color}"></polyline>`).join("");
+      const dash = dashedSeries.has(item.name) ? ";stroke-dasharray:4 3" : "";
+      return segments.map(values => `<polyline points="${values.join(" ")}" style="stroke:${item.color}${dash}"></polyline>`).join("");
     }).join("");
     const years = yearMarkers(xValues);
     const payload = encodeURIComponent(JSON.stringify({xValues, series, percent: Boolean(options.percent), width, left, right, top, bottom}));
