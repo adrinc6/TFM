@@ -17,7 +17,7 @@
   };
   const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[char]));
   const bpsKey = key => /_bps$/.test(key);
-  const percentageKey = key => !bpsKey(key) && /(^|_)(alpha|return|cagr|drawdown|rate|fraction|weight|turnover|p_value)(_|$)|rank_ic/.test(key);
+  const percentageKey = key => !bpsKey(key) && /(^|_)(alpha|return|cagr|drawdown|rate|fraction|weight|turnover|p_value|pnl_pct)(_|$)|rank_ic/.test(key);
   const integerKey = key => /^(year|runs_completados|runs_restantes|runs_total|observations|training_rows|realized_cohorts|closed_cohorts|attempt|target_size|elapsed_seconds|positive_alpha_years|positive_alpha_eras|months_held)$/.test(key);
   const timestampKey = key => /^(actualizado|updated_at|created_at|heartbeat)$/.test(key);
   const rawPercentileKey = key => /^(current_percentile|percentile)$/.test(key);
@@ -37,9 +37,9 @@
     });
   };
   const display = (value, key = "") => timestampKey(key) && typeof value === "string"
-    ? value.replace(/\.\d+(?=\+|Z|$)/, "").replace(/\+00:00$/, " UTC")
+    ? madridTime(value)
     : fmt(value, key);
-  const tone = (value, key = "") => typeof value === "number" && /(alpha|return|rank_ic|information|p_value)/.test(key) ? (value > 0 ? "positive" : value < 0 ? "negative" : "") : "";
+  const tone = (value, key = "") => typeof value === "number" && /(alpha|return|rank_ic|information|p_value|pnl_pct)/.test(key) ? (value > 0 ? "positive" : value < 0 ? "negative" : "") : "";
   const notify = (message, error = false) => {
     const toast = document.getElementById("toast");
     toast.textContent = message; toast.className = `show ${error ? "error" : ""}`;
@@ -675,7 +675,8 @@
     transfer_coefficient: "Coeficiente de transferencia", months_held: "Meses en cartera",
     current_percentile: "Percentil", percentile: "Percentil", weight: "Peso", entry_date: "Fecha de entrada",
     ticker: "Ticker", snapshot_date: "Snapshot", side: "Sentido", weight_before: "Peso anterior",
-    weight_after: "Peso nuevo",
+    weight_after: "Peso nuevo", entry_price: "Precio de compra", valuation_price: "Precio actual",
+    unrealized_pnl_pct: "P&L no realizado",
   };
   const SIDE_LABELS = {buy: "Compra", sell: "Venta"};
   const REASON_LABELS = {

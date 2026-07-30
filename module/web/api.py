@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+import math
 import mimetypes
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 from environment import PROJECT_ROOT
@@ -16,6 +18,18 @@ from module.web.jobs import WORKERS
 
 
 APP_ROOT = PROJECT_ROOT / "app"
+
+
+def _json_safe(value: Any) -> Any:
+    # NaN/Infinity son floats válidos en Python pero no en JSON: json.dumps los emite como
+    # literales NaN/Infinity que JSON.parse del navegador rechaza. Se convierten a null aquí.
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if isinstance(value, dict):
+        return {key: _json_safe(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_json_safe(item) for item in value]
+    return value
 
 
 def study_preflight(payload: dict) -> dict:
@@ -133,7 +147,7 @@ class Handler(BaseHTTPRequestHandler):
         return payload
 
     def _send(self, payload, status: int = 200) -> None:
-        body = json.dumps(payload, ensure_ascii=False, default=str).encode("utf-8")
+        body = json.dumps(_json_safe(payload), ensure_ascii=False, default=str).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))

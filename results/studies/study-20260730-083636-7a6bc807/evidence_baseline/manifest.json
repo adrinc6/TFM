@@ -1,9 +1,9 @@
 {
   "run_scope": "full",
-  "run_dir": "C:\\Users\\PC\\AppData\\Local\\Temp\\evaluation-c33b1ca6ef-x10bqlov\\agents\\lightgbm-f7710e09975f",
+  "run_dir": "C:\\Users\\PC\\AppData\\Local\\Temp\\evaluation-30b8c16c63-qlpxqe_w\\agents\\lightgbm-2144c691430b",
   "inputs": {
-    "features": "95e5b598306d8a458c7806b9a3169f828ead32e2b852b67e1a9c8ecfca00aa0f",
-    "targets": "53d87b82b1dd2758e627009cf6b079a890b3df98ddac92c413c027c5bc5ae17e"
+    "features": "89ea24a9bb60b14f473022b40277194069403c400d402072bb1c0ae2d2e7b412",
+    "targets": "47a5484426b6c7fd75c40c69c17fd38c11f8e23fcb64af4b8ffe730bc5c8f973"
   },
   "config": {
     "execution_year": 2015,
@@ -14,27 +14,21 @@
     "objective": "rank_regression",
     "lgbm_n_estimators": 100,
     "lgbm_max_depth": 3,
-    "lgbm_learning_rate": 0.03,
+    "lgbm_learning_rate": 0.05,
     "lgbm_min_child_samples": 50,
     "random_seed": 42,
     "seed_ensemble": 5,
     "meta_type": "stacked_oos",
     "meta_history_quarters": 16,
-    "meta_weight_cap": 1.0,
+    "meta_weight_cap": 0.5,
     "fundamental_momentum": true,
-    "market_regime_feature": false,
+    "market_regime_feature": true,
     "enabled_feature_blocks": [
       "quality_core",
-      "quality_efficiency",
-      "financial_strength",
       "value_core",
-      "value_cashflow",
       "growth_acceleration",
-      "fundamental_stability",
       "momentum_core",
-      "momentum_trend",
-      "price_risk",
-      "market_liquidity"
+      "price_risk"
     ],
     "missing_policy": "median_train_only_with_indicator"
   },
@@ -48,12 +42,12 @@
   "versions": {
     "lightgbm": "4.6.0"
   },
-  "predictions": 301900,
+  "predictions": 102725,
   "agents_fit": [
     {
       "family": "lightgbm",
-      "key": "84bcf11a7fa3990cca65305aace3bdd0290ce2510e200a4fbcf824ba0e91ec75",
-      "source": "cached"
+      "key": "56e8e4c9fdeb23d97b857970837627f9c7d769ecd628641a939f3fee5ef09757",
+      "source": "computed"
     }
   ]
 }

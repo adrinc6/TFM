@@ -20,11 +20,14 @@ ANALYSIS_VIEWS = {
     "portfolio", "stocks", "report", "attribution",
 }
 
-# Columnas de `positions.parquet` que sí se muestran: `market_value`, `entry_price`,
-# `valuation_price`, `entry_cost` y `units` son cifras absolutas sin contexto (sin `%` de cartera,
-# sin comparabilidad entre posiciones); `weight` y `current_percentile` ya dicen lo mismo de forma
-# comparable.
-POSITION_COLUMNS = ["ticker", "snapshot_date", "weight", "entry_date", "months_held", "current_percentile"]
+# Columnas de `positions.parquet` que sí se muestran: `market_value`, `entry_cost` y `units` son
+# cifras absolutas sin contexto (sin `%` de cartera, sin comparabilidad entre posiciones); `weight`
+# y `current_percentile` ya dicen lo mismo de forma comparable. `entry_price` y `valuation_price`
+# sí se muestran porque dan contexto de compra/valoración; `unrealized_pnl_pct` se deriva de ambas.
+POSITION_COLUMNS = [
+    "ticker", "snapshot_date", "weight", "entry_date", "entry_price", "valuation_price",
+    "unrealized_pnl_pct", "months_held", "current_percentile",
+]
 
 AGENT_SCORE_COLUMNS = ["quality", "value", "growth", "momentum", "risk", "meta_score", "meta_rank"]
 
@@ -111,7 +114,7 @@ def analysis(study_id: str, view: str, query: dict[str, list[str]]) -> dict[str,
     if view == "portfolio-comparisons":
         return {"rows": _parquet(directory / "portfolio_comparison.parquet")}
     if view == "portfolio":
-        positions = _read_frame(profile_dir / "positions.parquet")
+        positions = _with_unrealized_pnl(_read_frame(profile_dir / "positions.parquet"))
         orders = _read_frame(profile_dir / "orders.parquet")
         snapshots = _snapshots(positions, orders)
         selected_snapshot = _selected_snapshot(snapshots, query.get("snapshot", [None])[0])
@@ -132,6 +135,14 @@ def analysis(study_id: str, view: str, query: dict[str, list[str]]) -> dict[str,
 
 def _project_columns(rows: list[dict[str, Any]], columns: list[str]) -> list[dict[str, Any]]:
     return [{key: row[key] for key in columns if key in row} for row in rows]
+
+
+def _with_unrealized_pnl(positions: pd.DataFrame) -> pd.DataFrame:
+    if positions.empty or "entry_price" not in positions.columns or "valuation_price" not in positions.columns:
+        return positions
+    positions = positions.copy()
+    positions["unrealized_pnl_pct"] = positions["valuation_price"] / positions["entry_price"] - 1.0
+    return positions
 
 
 def _records(frame: pd.DataFrame) -> list[dict[str, Any]]:

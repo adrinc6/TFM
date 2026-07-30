@@ -1,16 +1,10 @@
 {
   "enabled_blocks": [
     "quality_core",
-    "quality_efficiency",
-    "financial_strength",
     "value_core",
-    "value_cashflow",
     "growth_acceleration",
-    "fundamental_stability",
     "momentum_core",
-    "momentum_trend",
-    "price_risk",
-    "market_liquidity"
+    "price_risk"
   ],
   "enabled_agents": [
     "quality",
@@ -29,9 +23,9 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.9107474552344156,
-        "univariate_rank_ic": 0.027903592986702058,
-        "model_importance_mean": 43.642857142857146,
+        "coverage": 0.9107834458337944,
+        "univariate_rank_ic": 0.025034262437682885,
+        "model_importance_mean": 83.53333333333333,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -45,9 +39,9 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.9107474552344156,
-        "univariate_rank_ic": 0.028712487784013786,
-        "model_importance_mean": 55.46153846153846,
+        "coverage": 0.9107834458337944,
+        "univariate_rank_ic": 0.025674023880409538,
+        "model_importance_mean": 78.29032258064517,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -61,9 +55,9 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.9461698491715581,
-        "univariate_rank_ic": 0.021573815616411786,
-        "model_importance_mean": 49.80952380952381,
+        "coverage": 0.9463870753568662,
+        "univariate_rank_ic": 0.017740390249701837,
+        "model_importance_mean": 83.96,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -77,9 +71,9 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.8676536146816257,
-        "univariate_rank_ic": 0.03333962849816923,
-        "model_importance_mean": 55.0,
+        "coverage": 0.8677381874515879,
+        "univariate_rank_ic": 0.030757222898145885,
+        "model_importance_mean": 163.8108108108108,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -93,9 +87,9 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.891475964038933,
-        "univariate_rank_ic": -0.0053322114672491585,
-        "model_importance_mean": 34.04,
+        "coverage": 0.8916952528493969,
+        "univariate_rank_ic": -0.00946028075890611,
+        "model_importance_mean": 61.23809523809524,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -109,9 +103,9 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.891475964038933,
-        "univariate_rank_ic": -0.0016740126487888851,
-        "model_importance_mean": 31.681818181818183,
+        "coverage": 0.8916952528493969,
+        "univariate_rank_ic": -0.0043718390403488915,
+        "model_importance_mean": 64.81481481481481,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -125,9 +119,9 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.7702652500185749,
-        "univariate_rank_ic": 0.001400505389905196,
-        "model_importance_mean": 92.0,
+        "coverage": 0.7704437313267677,
+        "univariate_rank_ic": 0.00038730788627480266,
+        "model_importance_mean": 124.83333333333333,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -141,9 +135,9 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.8932312950442083,
-        "univariate_rank_ic": -0.003721059968352469,
-        "model_importance_mean": 33.77777777777778,
+        "coverage": 0.8936317361956402,
+        "univariate_rank_ic": -0.006825008720220795,
+        "model_importance_mean": 69.52,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -157,9 +151,9 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.7122185897912178,
-        "univariate_rank_ic": 0.017339681267309153,
-        "model_importance_mean": 60.270270270270274,
+        "coverage": 0.7109383645014938,
+        "univariate_rank_ic": 0.01512547847745686,
+        "model_importance_mean": 143.58064516129033,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -173,10 +167,10 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.8896741957054759,
-        "univariate_rank_ic": 0.03525154878445782,
-        "model_importance_mean": 116.48387096774194,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.8898970897421711,
+        "univariate_rank_ic": 0.03410617541735591,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -189,10 +183,10 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.6443179285236644,
-        "univariate_rank_ic": -0.0008955323059992713,
-        "model_importance_mean": 93.46666666666667,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.6441296890561027,
+        "univariate_rank_ic": 0.001289578798659876,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -205,10 +199,10 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.7949699086113381,
-        "univariate_rank_ic": -0.015868651111077176,
-        "model_importance_mean": 88.0,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.7952583822064845,
+        "univariate_rank_ic": -0.01610647633173785,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -221,10 +215,10 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.8663626569581693,
-        "univariate_rank_ic": -0.002001580424139082,
-        "model_importance_mean": 70.06666666666666,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.8666039614916454,
+        "univariate_rank_ic": -0.0017754281264343236,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -237,10 +231,10 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.8663626569581693,
-        "univariate_rank_ic": 0.009347115694814986,
-        "model_importance_mean": 52.5,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.8666039614916454,
+        "univariate_rank_ic": 0.009216196327102515,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -253,10 +247,10 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.8987294747009436,
-        "univariate_rank_ic": 0.002174145955702319,
-        "model_importance_mean": 67.66666666666667,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.8990262255173177,
+        "univariate_rank_ic": 0.0025250410786726457,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -269,10 +263,10 @@
       "direction": -1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.9117505015231444,
-        "univariate_rank_ic": 0.00034271965318373676,
-        "model_importance_mean": 35.111111111111114,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.9117240234591125,
+        "univariate_rank_ic": 0.00023790051484986604,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -285,10 +279,10 @@
       "direction": -1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.9472936325135597,
-        "univariate_rank_ic": 0.010115499042693486,
-        "model_importance_mean": 52.333333333333336,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.9474383091733982,
+        "univariate_rank_ic": 0.011807260790898319,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -301,10 +295,10 @@
       "direction": -1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.9466806597815588,
-        "univariate_rank_ic": -0.0055938829591511835,
-        "model_importance_mean": 41.0,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.9468297001217219,
+        "univariate_rank_ic": -0.004980101285310107,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -317,10 +311,10 @@
       "direction": -1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.8668363177056245,
-        "univariate_rank_ic": -0.00043097783762442965,
-        "model_importance_mean": 38.4375,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.8668252738740733,
+        "univariate_rank_ic": 0.0003063554091908668,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -333,10 +327,10 @@
       "direction": -1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.9023794486960398,
-        "univariate_rank_ic": 0.0077715082957854325,
-        "model_importance_mean": 56.03846153846154,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.902539559588359,
+        "univariate_rank_ic": 0.010579413457571418,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -349,10 +343,10 @@
       "direction": -1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.9017664759640389,
-        "univariate_rank_ic": -0.00676711144499778,
-        "model_importance_mean": 65.8,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.9019309505366825,
+        "univariate_rank_ic": -0.00482545964927986,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -365,10 +359,10 @@
       "direction": -1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.8680529757039899,
-        "univariate_rank_ic": 0.006016018490387602,
-        "model_importance_mean": 36.23809523809524,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.8680701560252296,
+        "univariate_rank_ic": 0.006643957695436984,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -381,10 +375,10 @@
       "direction": -1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.9029831339624044,
-        "univariate_rank_ic": 0.005779240323585345,
-        "model_importance_mean": 42.93333333333333,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.9031758326878389,
+        "univariate_rank_ic": 0.006526711709048639,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -397,10 +391,10 @@
       "direction": -1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.8088825321346311,
-        "univariate_rank_ic": 0.010524851482621804,
-        "model_importance_mean": 84.53846153846153,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.8095606949208808,
+        "univariate_rank_ic": 0.010076124050115893,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -413,9 +407,9 @@
       "direction": -1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.8744427520618173,
-        "univariate_rank_ic": 0.009097680440999093,
-        "model_importance_mean": 134.5,
+        "coverage": 0.8748478477370809,
+        "univariate_rank_ic": 0.012267471752473998,
+        "model_importance_mean": 117.75,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -429,9 +423,9 @@
       "direction": -1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.9097444089456869,
-        "univariate_rank_ic": -0.022596809959978006,
-        "model_importance_mean": 106.6,
+        "coverage": 0.9097598760650658,
+        "univariate_rank_ic": -0.01738530670609309,
+        "model_importance_mean": 100.81481481481481,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -445,9 +439,9 @@
       "direction": -1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.6413087896574783,
-        "univariate_rank_ic": -0.011175443946563638,
-        "model_importance_mean": 78.63157894736842,
+        "coverage": 0.6423038619010734,
+        "univariate_rank_ic": -0.00633908484621268,
+        "model_importance_mean": 75.3225806451613,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -461,9 +455,9 @@
       "direction": -1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.890045694330931,
-        "univariate_rank_ic": 0.02510072794234447,
-        "model_importance_mean": 86.88888888888889,
+        "coverage": 0.890533362841651,
+        "univariate_rank_ic": 0.029981725296372667,
+        "model_importance_mean": 93.8529411764706,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -477,9 +471,9 @@
       "direction": -1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.7627981276469277,
-        "univariate_rank_ic": 0.016048065972116755,
-        "model_importance_mean": 140.96875,
+        "coverage": 0.7634170631846852,
+        "univariate_rank_ic": 0.018773177998698057,
+        "model_importance_mean": 95.1219512195122,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -493,9 +487,9 @@
       "direction": -1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.86997548109072,
-        "univariate_rank_ic": 0.013348502581355288,
-        "model_importance_mean": 68.47058823529412,
+        "coverage": 0.870421600088525,
+        "univariate_rank_ic": 0.01642296099250673,
+        "model_importance_mean": 82.36666666666666,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -509,9 +503,9 @@
       "direction": -1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.8895627461178394,
-        "univariate_rank_ic": 0.02637722236420761,
-        "model_importance_mean": 98.47368421052632,
+        "coverage": 0.8900630740289919,
+        "univariate_rank_ic": 0.030386438625975527,
+        "model_importance_mean": 98.06666666666666,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -525,10 +519,10 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.8744427520618173,
-        "univariate_rank_ic": 0.009097680440999093,
-        "model_importance_mean": 30.678571428571427,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.8748478477370809,
+        "univariate_rank_ic": 0.012267471752473998,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -541,10 +535,10 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.7627981276469277,
-        "univariate_rank_ic": 0.016048065972116755,
-        "model_importance_mean": 35.25,
-        "model_importance_positive_fraction": 0.9375,
+        "coverage": 0.7634170631846852,
+        "univariate_rank_ic": 0.018773177998698057,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -557,9 +551,9 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.9035218069693142,
-        "univariate_rank_ic": -0.0032655005465465547,
-        "model_importance_mean": 78.16666666666667,
+        "coverage": 0.9038121057873189,
+        "univariate_rank_ic": -0.005568060509833609,
+        "model_importance_mean": 161.20833333333334,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -573,9 +567,9 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.8914109517794784,
-        "univariate_rank_ic": 0.013243202726997761,
-        "model_importance_mean": 149.42307692307693,
+        "coverage": 0.8916952528493969,
+        "univariate_rank_ic": 0.0115215773341737,
+        "model_importance_mean": 190.97297297297297,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -609,9 +603,9 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.8967605319860317,
-        "univariate_rank_ic": 0.0028770731480997074,
-        "model_importance_mean": 95.08,
+        "coverage": 0.8838663273210136,
+        "univariate_rank_ic": -0.007396524695122318,
+        "model_importance_mean": 85.76923076923077,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -625,9 +619,9 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.8844546400178319,
-        "univariate_rank_ic": -0.006694689513747231,
-        "model_importance_mean": 100.33333333333333,
+        "coverage": 0.8711685293792187,
+        "univariate_rank_ic": -0.01800287629290667,
+        "model_importance_mean": 180.91666666666666,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -641,9 +635,9 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.8966583698640315,
-        "univariate_rank_ic": 0.0012031846652281338,
-        "model_importance_mean": 118.44,
+        "coverage": 0.8837003430341928,
+        "univariate_rank_ic": -0.0082874738903362,
+        "model_importance_mean": 133.86666666666667,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -657,9 +651,9 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.9344304926071774,
-        "univariate_rank_ic": 0.0006560422443597839,
-        "model_importance_mean": 141.125,
+        "coverage": 0.9211021356644904,
+        "univariate_rank_ic": 0.00297428838297372,
+        "model_importance_mean": 227.46341463414635,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -673,10 +667,10 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.896324021101122,
-        "univariate_rank_ic": -0.005414818312275816,
-        "model_importance_mean": 102.92307692307692,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.8746541994024566,
+        "univariate_rank_ic": -0.00594966609723553,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -689,10 +683,10 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.896324021101122,
-        "univariate_rank_ic": -0.012571110412087532,
-        "model_importance_mean": 65.14285714285714,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.8746541994024566,
+        "univariate_rank_ic": -0.012476444802549957,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -705,10 +699,10 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.8825507095623746,
-        "univariate_rank_ic": 0.01874413856260466,
-        "model_importance_mean": 131.6216216216216,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.8638652207591014,
+        "univariate_rank_ic": 0.03314569383624281,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -721,10 +715,10 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.9021936993833123,
-        "univariate_rank_ic": -0.01534562528836517,
-        "model_importance_mean": 62.285714285714285,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.8841982958946553,
+        "univariate_rank_ic": -0.01752234215371025,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -737,10 +731,10 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.8279589865517497,
-        "univariate_rank_ic": 0.03679623648496214,
-        "model_importance_mean": 147.4318181818182,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.8269890450370698,
+        "univariate_rank_ic": 0.03513365540339075,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -753,9 +747,9 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.9981982316665429,
-        "univariate_rank_ic": -0.001151209106313579,
-        "model_importance_mean": 122.63333333333334,
+        "coverage": 0.9982848290361845,
+        "univariate_rank_ic": -0.009036633424598949,
+        "model_importance_mean": 122.16666666666667,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -769,9 +763,9 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.9968329742179954,
-        "univariate_rank_ic": -0.0030771904780519943,
-        "model_importance_mean": 102.5,
+        "coverage": 0.9969016266460109,
+        "univariate_rank_ic": -0.012656486424783113,
+        "model_importance_mean": 115.6470588235294,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -785,9 +779,9 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.994065309458355,
-        "univariate_rank_ic": -0.012279228464342259,
-        "model_importance_mean": 92.04545454545455,
+        "coverage": 0.9941352218656634,
+        "univariate_rank_ic": -0.026560016645873798,
+        "model_importance_mean": 97.25,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -801,9 +795,9 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.9939724348019913,
-        "univariate_rank_ic": -0.011807590134070577,
-        "model_importance_mean": 104.38095238095238,
+        "coverage": 0.9940798937700565,
+        "univariate_rank_ic": -0.01812044649174715,
+        "model_importance_mean": 114.07142857142857,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -817,9 +811,9 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.994065309458355,
-        "univariate_rank_ic": 0.004858392452765531,
-        "model_importance_mean": 209.96153846153845,
+        "coverage": 0.9941352218656634,
+        "univariate_rank_ic": 0.01649896449942985,
+        "model_importance_mean": 265.2413793103448,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -833,9 +827,9 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.9991084032989078,
-        "univariate_rank_ic": 0.0018252776041892856,
-        "model_importance_mean": 116.92857142857143,
+        "coverage": 0.9990870864224853,
+        "univariate_rank_ic": 0.026933995208017276,
+        "model_importance_mean": 216.0,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -849,10 +843,10 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.9993777398023628,
-        "univariate_rank_ic": -0.0019724766451355157,
-        "model_importance_mean": 67.27777777777777,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.9993637269005201,
+        "univariate_rank_ic": -0.01647804442290251,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -865,10 +859,10 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.9993777398023628,
-        "univariate_rank_ic": -0.003820357592406349,
-        "model_importance_mean": 63.166666666666664,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.9993637269005201,
+        "univariate_rank_ic": -0.006856597634142199,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -881,10 +875,10 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.9993777398023628,
-        "univariate_rank_ic": -0.0029743150041600234,
-        "model_importance_mean": 137.14285714285714,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.9993637269005201,
+        "univariate_rank_ic": -0.006650841450387396,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -897,10 +891,10 @@
       "direction": 1,
       "source": "finnhub_series",
       "diagnostics": {
-        "coverage": 0.9981982316665429,
-        "univariate_rank_ic": 0.024544942452040284,
-        "model_importance_mean": 185.72727272727272,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.9982848290361845,
+        "univariate_rank_ic": 0.02945186897626911,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -913,9 +907,9 @@
       "direction": -1,
       "source": "ohlcv",
       "diagnostics": {
-        "coverage": 0.999089828367635,
-        "univariate_rank_ic": -0.011663057988765857,
-        "model_importance_mean": 39.75,
+        "coverage": 0.9990870864224853,
+        "univariate_rank_ic": -0.019002884466970977,
+        "model_importance_mean": 93.70833333333333,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -929,9 +923,9 @@
       "direction": -1,
       "source": "ohlcv",
       "diagnostics": {
-        "coverage": 0.9986347425514526,
-        "univariate_rank_ic": -0.010964366242122514,
-        "model_importance_mean": 71.95652173913044,
+        "coverage": 0.9988104459444506,
+        "univariate_rank_ic": -0.017336530119633493,
+        "model_importance_mean": 116.65384615384616,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -945,9 +939,9 @@
       "direction": -1,
       "source": "ohlcv",
       "diagnostics": {
-        "coverage": 0.9956999034103574,
-        "univariate_rank_ic": -0.012434302944072398,
-        "model_importance_mean": 32.869565217391305,
+        "coverage": 0.9957674006860684,
+        "univariate_rank_ic": -0.022628538274675255,
+        "model_importance_mean": 77.45,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -961,9 +955,9 @@
       "direction": -1,
       "source": "ohlcv",
       "diagnostics": {
-        "coverage": 0.9981703692696337,
-        "univariate_rank_ic": -0.03732152152668849,
-        "model_importance_mean": 103.5,
+        "coverage": 0.9982848290361845,
+        "univariate_rank_ic": -0.040906961412272305,
+        "model_importance_mean": 115.0,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -977,9 +971,9 @@
       "direction": -1,
       "source": "ohlcv",
       "diagnostics": {
-        "coverage": 0.9990991158332714,
-        "univariate_rank_ic": 0.00426331338525602,
-        "model_importance_mean": 100.125,
+        "coverage": 0.9990870864224853,
+        "univariate_rank_ic": 0.019399306350715927,
+        "model_importance_mean": 187.66666666666666,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -993,9 +987,9 @@
       "direction": -1,
       "source": "ohlcv",
       "diagnostics": {
-        "coverage": 0.9986626049483617,
-        "univariate_rank_ic": 0.0004608096644534324,
-        "model_importance_mean": 139.44444444444446,
+        "coverage": 0.9988381099922541,
+        "univariate_rank_ic": 0.010704488334084375,
+        "model_importance_mean": 205.84615384615384,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -1009,9 +1003,9 @@
       "direction": -1,
       "source": "ohlcv",
       "diagnostics": {
-        "coverage": 0.9993220150085445,
-        "univariate_rank_ic": 0.02657508724596937,
-        "model_importance_mean": 52.4,
+        "coverage": 0.9993360628527166,
+        "univariate_rank_ic": 0.025458921996756048,
+        "model_importance_mean": 153.225,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -1025,9 +1019,9 @@
       "direction": -1,
       "source": "ohlcv",
       "diagnostics": {
-        "coverage": 0.9990991158332714,
-        "univariate_rank_ic": 0.02839681162860302,
-        "model_importance_mean": 88.29411764705883,
+        "coverage": 0.9990870864224853,
+        "univariate_rank_ic": 0.022051930234264838,
+        "model_importance_mean": 169.8108108108108,
         "model_importance_positive_fraction": 1.0,
         "selection_status": "candidate"
       }
@@ -1041,10 +1035,10 @@
       "direction": -1,
       "source": "ohlcv",
       "diagnostics": {
-        "coverage": 0.9990526785050895,
-        "univariate_rank_ic": 0.010488473070701955,
-        "model_importance_mean": 63.9375,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.9990317583268784,
+        "univariate_rank_ic": 0.006343936806594697,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -1057,10 +1051,10 @@
       "direction": -1,
       "source": "ohlcv",
       "diagnostics": {
-        "coverage": 0.9982818188572702,
-        "univariate_rank_ic": -0.0018580834231133052,
-        "model_importance_mean": 56.68421052631579,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.9981741728449707,
+        "univariate_rank_ic": -0.004843545916083966,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -1073,10 +1067,10 @@
       "direction": -1,
       "source": "ohlcv",
       "diagnostics": {
-        "coverage": 0.9983375436510885,
-        "univariate_rank_ic": 0.008253989526468674,
-        "model_importance_mean": 107.58064516129032,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.9983954852273985,
+        "univariate_rank_ic": 0.0066867345865692955,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     },
@@ -1089,10 +1083,10 @@
       "direction": -1,
       "source": "ohlcv",
       "diagnostics": {
-        "coverage": 0.9993405899398172,
-        "univariate_rank_ic": 0.05380213123485201,
-        "model_importance_mean": 173.04444444444445,
-        "model_importance_positive_fraction": 1.0,
+        "coverage": 0.9993360628527166,
+        "univariate_rank_ic": 0.05490299776634004,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
         "selection_status": "candidate"
       }
     }

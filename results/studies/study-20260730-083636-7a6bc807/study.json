@@ -1,15 +1,15 @@
 {
   "schema_version": 2,
-  "study_id": "study-20260729-092936-1d57bb32",
+  "study_id": "study-20260730-083636-7a6bc807",
   "study_type": "model_study",
-  "status": "interrupted",
-  "phase": "portfolio",
-  "progress": 0.5294117647058824,
-  "created_at": "2026-07-29T07:29:36.860310+00:00",
-  "updated_at": "2026-07-29T14:49:05.099944+00:00",
-  "heartbeat": "2026-07-29T14:49:05.093893+00:00",
+  "status": "cancelled",
+  "phase": "temporal",
+  "progress": 0.030303030303030304,
+  "created_at": "2026-07-30T06:36:36.878438+00:00",
+  "updated_at": "2026-07-30T07:10:38.706526+00:00",
+  "heartbeat": "2026-07-30T07:10:38.686305+00:00",
   "worker_pid": null,
-  "completed_runs": 45,
+  "completed_runs": 2,
   "name": "Model Study",
   "note": "",
   "run_scope": "full",
@@ -26,8 +26,8 @@
     "target_horizon_months": {
       "mode": "optimize",
       "values": [
-        12,
-        6
+        6,
+        12
       ],
       "baseline": 12
     },
@@ -44,7 +44,8 @@
       "mode": "optimize",
       "values": [
         45,
-        60
+        60,
+        30
       ],
       "baseline": 60
     },
@@ -101,8 +102,7 @@
       "mode": "optimize",
       "values": [
         0.0,
-        0.01,
-        0.025
+        0.01
       ],
       "baseline": 0.0
     },
@@ -149,8 +149,8 @@
       "mode": "optimize",
       "values": [
         0.05,
-        0.1,
-        0.03
+        0.03,
+        0.1
       ],
       "baseline": 0.05
     },
@@ -209,18 +209,17 @@
       "baseline": 50.0
     },
     "cash_policy": {
-      "mode": "fixed",
-      "values": [
-        "opportunity_cash"
-      ],
-      "baseline": "opportunity_cash"
-    },
-    "max_cash_weight": {
       "mode": "diagnostic",
       "values": [
-        0.25,
-        0.0,
-        0.1
+        "fully_invested",
+        "opportunity_cash"
+      ],
+      "baseline": "fully_invested"
+    },
+    "max_cash_weight": {
+      "mode": "fixed",
+      "values": [
+        0.25
       ],
       "baseline": 0.25
     },
@@ -288,34 +287,34 @@
     }
   },
   "budget": {
-    "predictive_evaluations": 44,
-    "expensive_fits": 41,
-    "meta_recombinations": 3,
-    "portfolio_diagnostics": 23,
+    "predictive_evaluations": 26,
+    "expensive_fits": 24,
+    "meta_recombinations": 2,
+    "portfolio_diagnostics": 22,
     "profiles": 8,
     "robustness_groups": 10,
-    "total_runs": 85,
-    "estimated_minutes": 1520,
-    "estimated_incremental_bytes": 17521704960,
+    "total_runs": 66,
+    "estimated_minutes": 920,
+    "estimated_incremental_bytes": 10370416640,
     "breakdown": {
-      "snapshot_step_months": 3,
-      "target_horizon_months": 2,
-      "train_lookback_years": 3,
+      "snapshot_step_months": 2,
+      "target_horizon_months": 1,
+      "train_lookback_years": 2,
       "execution_lag_days": 2,
-      "recency_weighting": 3,
-      "objective": 2,
-      "feature_preset": 2,
-      "fundamental_momentum": 2,
-      "market_regime_feature": 2,
-      "neutralize_by_sector": 2,
-      "winsorization": 3,
-      "max_features_per_agent": 2,
-      "feature_weighting_mode": 2,
-      "lgbm_max_depth": 2,
-      "lgbm_n_estimators": 2,
-      "lgbm_learning_rate": 3,
-      "lgbm_min_child_samples": 3,
-      "meta_method": 3
+      "recency_weighting": 2,
+      "objective": 1,
+      "feature_preset": 1,
+      "fundamental_momentum": 1,
+      "market_regime_feature": 1,
+      "neutralize_by_sector": 1,
+      "winsorization": 1,
+      "max_features_per_agent": 1,
+      "feature_weighting_mode": 1,
+      "lgbm_max_depth": 1,
+      "lgbm_n_estimators": 1,
+      "lgbm_learning_rate": 2,
+      "lgbm_min_child_samples": 2,
+      "meta_method": 2
     },
     "blocking_limits": false
   },
@@ -1997,7 +1996,5 @@
     ],
     "hash": "0cca76e73439da00e50916d59ec68eabcd41c6f2608bd0bbcf6c8289b024a8c8"
   },
-  "current_run_id": "run-55c615209fbf",
-  "error": null,
-  "traceback": null
+  "current_run_id": "run-e94f9f6f54b0"
 }
