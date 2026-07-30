@@ -20,6 +20,24 @@ ANALYSIS_VIEWS = {
     "portfolio", "stocks", "report", "attribution",
 }
 
+# Columnas de `positions.parquet` que sí se muestran: `market_value`, `entry_price`,
+# `valuation_price`, `entry_cost` y `units` son cifras absolutas sin contexto (sin `%` de cartera,
+# sin comparabilidad entre posiciones); `weight` y `current_percentile` ya dicen lo mismo de forma
+# comparable.
+POSITION_COLUMNS = ["ticker", "snapshot_date", "weight", "entry_date", "months_held", "current_percentile"]
+
+AGENT_SCORE_COLUMNS = ["quality", "value", "growth", "momentum", "risk", "meta_score", "meta_rank"]
+
+# Ratios cuyos componentes en bruto también están en `panel_point_in_time.parquet`, así que se
+# pueden graficar por separado junto al ratio. El resto de ratios (ev_ebitda, debt_equity, ...) no
+# tienen sus componentes como columna PIT propia y se muestran sin descomposición.
+RATIO_COMPONENTS = {
+    "pe": ("price", "eps"),
+    "pb": ("price", "book_value"),
+    "ps": ("price", "sales_per_share"),
+    "pfcf": ("price", "fcf_per_share"),
+}
+
 
 def studies() -> list[dict[str, Any]]:
     rows = []
@@ -103,20 +121,27 @@ def analysis(study_id: str, view: str, query: dict[str, list[str]]) -> dict[str,
             "annual": _parquet(profile_dir / "annual_metrics.parquet"),
             "available_snapshots": snapshots,
             "selected_snapshot": selected_snapshot,
-            "positions": _records_at_snapshot(positions, selected_snapshot),
+            "positions": _project_columns(_records_at_snapshot(positions, selected_snapshot), POSITION_COLUMNS),
             "orders": _records_at_snapshot(orders, selected_snapshot),
         }
     if view == "stocks":
         ticker = query.get("ticker", [""])[0].strip().upper()
-        snapshot = query.get("snapshot", [None])[0]
-        parameter = query.get("parameter", [None])[0]
-        return _stock(evidence, ticker, snapshot, parameter)
+        return _stock(evidence, ticker, query)
     return {"markdown": (directory / "report.md").read_text(encoding="utf-8") if (directory / "report.md").exists() else ""}
 
 
-def _stock(
-    evidence: Path, ticker: str, snapshot: str | None, parameter: str | None,
-) -> dict[str, Any]:
+def _project_columns(rows: list[dict[str, Any]], columns: list[str]) -> list[dict[str, Any]]:
+    return [{key: row[key] for key in columns if key in row} for row in rows]
+
+
+def _records(frame: pd.DataFrame) -> list[dict[str, Any]]:
+    # `.where(cond, None)` por sí solo no basta: en una columna float64 pandas reconvierte el
+    # `None` de vuelta a NaN, que `json.dumps` serializa como el token `NaN` (JSON inválido, y
+    # `JSON.parse` del navegador lo rechaza). `.astype(object)` primero evita esa reconversión.
+    return frame.astype(object).where(pd.notna(frame), None).to_dict("records") if not frame.empty else []
+
+
+def _stock(evidence: Path, ticker: str, query: dict[str, list[str]]) -> dict[str, Any]:
     reference = _json(evidence / "dataset_reference.json")
     prepared = validate_dataset_reference(str(reference["dataset_hash"]))
     panel = pd.read_parquet(prepared / "panel_point_in_time.parquet")
@@ -124,59 +149,101 @@ def _stock(
     scores = pd.read_parquet(evidence / "agent_scores.parquet")
     positions = _read_frame(evidence / "positions.parquet")
     orders = _read_frame(evidence / "orders.parquet")
-    snapshots = sorted(scores["snapshot_date"].dropna().astype(str).unique().tolist())
-    selected_snapshot = _selected_snapshot(snapshots, snapshot)
     tickers = sorted(scores["ticker"].dropna().astype(str).unique().tolist())
+    value_columns = [
+        column for column in panel.columns
+        if column not in {"ticker", "snapshot_date", "review_type", "in_sp500", "fundamental_period", "fundamental_filed_date", "price"}
+        and pd.api.types.is_numeric_dtype(panel[column])
+    ]
+    ratio_options = [
+        {"id": column, "label": column, "components": list(RATIO_COMPONENTS.get(column, ()))}
+        for column in value_columns
+    ]
+    base = {"available_tickers": tickers, "ratio_options": ratio_options}
     if not ticker:
-        return {
-            "available_tickers": tickers,
-            "available_snapshots": snapshots,
-            "selected_snapshot": selected_snapshot,
-        }
+        return base
     if ticker not in tickers:
         raise ValueError("Ticker no disponible en el Study.")
-    score_row = scores.loc[
-        scores["ticker"].eq(ticker) & scores["snapshot_date"].astype(str).eq(selected_snapshot)
-    ]
-    panel_row = panel.loc[
-        panel["ticker"].eq(ticker) & panel["snapshot_date"].astype(str).eq(selected_snapshot)
-    ]
-    feature_row = features.loc[
-        features["ticker"].eq(ticker) & features["snapshot_date"].astype(str).eq(selected_snapshot)
-    ]
-    score_columns = [column for column in score_row.columns if column.endswith("_rank") or column in {
-        "quality", "value", "growth", "momentum", "risk", "meta_score", "meta_rank",
-    }]
+    view = query.get("view", ["scores"])[0]
+    if view == "scores":
+        return {**base, "ticker": ticker, **_stock_scores(scores, panel, ticker)}
+    if view == "portfolio":
+        return {**base, "ticker": ticker, **_stock_portfolio(scores, positions, orders, ticker)}
+    if view == "ratios-summary":
+        return {**base, "ticker": ticker, **_stock_ratios_summary(scores, features, panel, ticker, query.get("snapshot", [None])[0])}
+    if view == "ratio-detail":
+        return {**base, "ticker": ticker, **_stock_ratio_detail(panel, ticker, query.get("ratio", [None])[0])}
+    raise ValueError("Vista de acción desconocida.")
+
+
+def _stock_scores(scores: pd.DataFrame, panel: pd.DataFrame, ticker: str) -> dict[str, Any]:
+    ticker_scores = scores.loc[scores["ticker"].eq(ticker), ["snapshot_date", *AGENT_SCORE_COLUMNS]].dropna(subset=["snapshot_date"])
+    ticker_price = panel.loc[panel["ticker"].eq(ticker), ["snapshot_date", "price"]]
+    history = ticker_scores.merge(ticker_price, on="snapshot_date", how="left").sort_values("snapshot_date")
+    history_records = _records(history)
+    return {"current": history_records[-1] if history_records else {}, "history": history_records}
+
+
+def _stock_portfolio(scores: pd.DataFrame, positions: pd.DataFrame, orders: pd.DataFrame, ticker: str) -> dict[str, Any]:
+    ticker_scores = scores.loc[scores["ticker"].eq(ticker), ["snapshot_date", "meta_rank"]].copy()
+    ticker_scores["percentile"] = pd.to_numeric(ticker_scores["meta_rank"], errors="coerce") * 100
+    ticker_positions = positions.loc[positions.get("ticker", pd.Series(dtype=str)).eq(ticker)].sort_values("snapshot_date") if not positions.empty else positions
+    ticker_orders = orders.loc[orders.get("ticker", pd.Series(dtype=str)).eq(ticker)].sort_values("snapshot_date") if not orders.empty else orders
+    events = ticker_orders.merge(ticker_scores[["snapshot_date", "percentile"]], on="snapshot_date", how="left") if not ticker_orders.empty else ticker_orders
+    position_records = _records(ticker_positions)
+    last_position = position_records[-1] if position_records else None
+    current_status = {
+        "in_portfolio": last_position is not None,
+        "weight": last_position.get("weight") if last_position else None,
+        "percentile": last_position.get("current_percentile") if last_position else None,
+        "entry_date": last_position.get("entry_date") if last_position else None,
+        "months_held": last_position.get("months_held") if last_position else None,
+        "as_of": last_position.get("snapshot_date") if last_position else None,
+    }
+    return {
+        "status": current_status,
+        "history": _project_columns(position_records, ["snapshot_date", "weight", "current_percentile"]),
+        "events": _records(events),
+    }
+
+
+def _stock_ratios_summary(
+    scores: pd.DataFrame, features: pd.DataFrame, panel: pd.DataFrame, ticker: str, snapshot: str | None,
+) -> dict[str, Any]:
+    snapshots = sorted(scores["snapshot_date"].dropna().astype(str).unique().tolist())
+    selected_snapshot = _selected_snapshot(snapshots, snapshot)
+    feature_row = features.loc[features["ticker"].eq(ticker) & features["snapshot_date"].astype(str).eq(selected_snapshot)]
     factor_columns = [column for column in feature_row.columns if column.startswith("factor_")]
+    panel_row = panel.loc[panel["ticker"].eq(ticker) & panel["snapshot_date"].astype(str).eq(selected_snapshot)]
     value_columns = [
         column for column in panel_row.columns
         if column not in {"ticker", "snapshot_date", "review_type", "in_sp500", "fundamental_period", "fundamental_filed_date"}
         and pd.api.types.is_numeric_dtype(panel_row[column])
     ]
-    parameter_options = [
-        {"id": column, "label": column.removeprefix("factor_"), "kind": "puntuación"}
-        for column in factor_columns
-    ] + [
-        {"id": column, "label": column, "kind": "valor PIT"}
-        for column in value_columns
-    ]
-    available_parameters = {item["id"] for item in parameter_options}
-    selected_parameter = parameter if parameter in available_parameters else (parameter_options[0]["id"] if parameter_options else None)
-    history_source = features if selected_parameter in factor_columns else panel
-    history = history_source.loc[history_source["ticker"].eq(ticker), ["snapshot_date", selected_parameter]].dropna() if selected_parameter else pd.DataFrame()
     return {
-        "ticker": ticker,
-        "available_tickers": tickers,
         "available_snapshots": snapshots,
         "selected_snapshot": selected_snapshot,
-        "scores": score_row[score_columns].to_dict("records"),
-        "parameter_scores": feature_row[factor_columns].to_dict("records"),
-        "parameter_values": panel_row[value_columns].to_dict("records"),
-        "positions": _records_at_snapshot(positions.loc[positions.get("ticker", pd.Series(dtype=str)).eq(ticker)], selected_snapshot),
-        "orders": _records_at_snapshot(orders.loc[orders.get("ticker", pd.Series(dtype=str)).eq(ticker)], selected_snapshot),
-        "parameter_options": parameter_options,
-        "selected_parameter": selected_parameter,
-        "parameter_history": history.to_dict("records"),
+        "scores": _records(feature_row[factor_columns]),
+        "values": _records(panel_row[value_columns]),
+    }
+
+
+def _stock_ratio_detail(panel: pd.DataFrame, ticker: str, ratio: str | None) -> dict[str, Any]:
+    ticker_panel = panel.loc[panel["ticker"].eq(ticker)].sort_values("snapshot_date")
+    if not ratio or ratio not in ticker_panel.columns:
+        return {"ratio": None, "history": [], "components": [], "price_history": []}
+    history = ticker_panel[["snapshot_date", ratio]].dropna()
+    components = [
+        {"id": component, "history": ticker_panel[["snapshot_date", component]].dropna().to_dict("records")}
+        for component in RATIO_COMPONENTS.get(ratio, ())
+        if component in ticker_panel.columns
+    ]
+    return {
+        "ratio": ratio,
+        "current_value": history[ratio].iloc[-1] if not history.empty else None,
+        "history": history.to_dict("records"),
+        "components": components,
+        "price_history": ticker_panel[["snapshot_date", "price"]].dropna().to_dict("records"),
     }
 
 
