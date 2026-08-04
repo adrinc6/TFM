@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from environment import Settings
 from module.studies.catalog import (
     AGENT_NAMES,
     CATALOG_VERSION,
@@ -44,28 +45,44 @@ def test_portfolio_thresholds_are_economic_not_percentiles() -> None:
 
     Un percentil no dice cuánto se espera ganar, así que no puede compararse contra el coste de
     operar. Con umbrales en pb, una rotación solo se autoriza si cubre su propio coste.
+
+    `coverage_percentile_floor` no es una excepción a esa doctrina: no se compara contra ningún
+    coste. Es una regla de mandato —la generalización de `missing_current_score`, con el percentil
+    ausente sustituido por un percentil demasiado bajo— que decide pertenencia al universo
+    invertible, no si una operación concreta es rentable.
     """
     identifiers = {variable["id"] for variable in public_catalog()["variables"]}
-    assert {"exit_expected_alpha_bps", "rotation_edge_bps", "cash_policy"} <= identifiers
+    assert {"exit_expected_alpha_bps", "rotation_edge_bps"} <= identifiers
     assert not {"min_hold_percentile", "rotation_edge_percentiles"} & identifiers
+    catalog = {variable["id"]: variable for variable in public_catalog()["variables"]}
+    assert catalog["coverage_percentile_floor"]["predictive"] is False
+    assert catalog["coverage_percentile_floor"]["stage"] == "portfolio"
 
 
 def test_cash_is_a_portfolio_diagnostic_and_never_touches_selection() -> None:
-    """La política de efectivo no puede alterar la elección del modelo."""
+    """El tope de efectivo no puede alterar la elección del modelo."""
     catalog = {variable["id"]: variable for variable in public_catalog()["variables"]}
-    assert catalog["cash_policy"]["predictive"] is False
-    assert catalog["cash_policy"]["stage"] == "portfolio"
     assert catalog["max_cash_weight"]["predictive"] is False
+    assert catalog["max_cash_weight"]["stage"] == "portfolio"
     # El tope del 25 % implica un suelo de diversificación de al menos el 75 % de las plazas.
     assert set(catalog["max_cash_weight"]["values"]) == {0.0, 0.10, 0.25}
 
 
-def test_fully_invested_forces_zero_cash_weight() -> None:
+def test_cash_exposure_is_governed_by_a_single_variable() -> None:
+    """`max_cash_weight` es el único grado de libertad del efectivo; 0 significa siempre invertido.
+
+    Existió además una `cash_policy` con los valores `fully_invested`/`opportunity_cash`, pero era
+    redundante: el catálogo ya forzaba el tope a 0 bajo `fully_invested`, y el suelo de
+    diversificación se deriva del tope. Dos variables para una decisión invitan a combinaciones
+    inconsistentes, así que se dejó una.
+    """
+    identifiers = {variable["id"] for variable in public_catalog()["variables"]}
+    assert "cash_policy" not in identifiers
+    assert not hasattr(Settings(), "cash_policy")
     values = {key: selection["values"][0] for key, selection in recommended_definition().items()}
-    values["cash_policy"] = "fully_invested"
-    values["max_cash_weight"] = 0.25
+    values["max_cash_weight"] = 0.0
     assert settings_from_values(values).max_cash_weight == 0.0
-    values["cash_policy"] = "opportunity_cash"
+    values["max_cash_weight"] = 0.25
     assert settings_from_values(values).max_cash_weight == 0.25
 
 

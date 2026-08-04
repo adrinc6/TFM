@@ -46,7 +46,7 @@ def _settings(**overrides) -> Settings:
 def test_weights_plus_cash_always_sum_to_one() -> None:
     scores, prices, benchmark = _panel()
     result = run_backtest(scores, prices, benchmark, _settings(
-        cash_policy="opportunity_cash", max_cash_weight=0.25, exit_expected_alpha_bps=250.0,
+        max_cash_weight=0.25, exit_expected_alpha_bps=250.0,
         target_size=4,
     ))
     total = result.equity["invested_weight"] + result.equity["cash_weight"]
@@ -63,15 +63,16 @@ def test_cash_cap_binds_the_target_while_drift_is_left_to_the_tolerance() -> Non
     """
     scores, prices, benchmark = _panel()
     result = run_backtest(scores, prices, benchmark, _settings(
-        cash_policy="opportunity_cash", max_cash_weight=0.25, exit_expected_alpha_bps=250.0,
+        max_cash_weight=0.25, exit_expected_alpha_bps=250.0,
         target_size=4, rebalance_drift_tolerance=0.0,
     ))
     assert (result.equity["cash_weight"] <= 0.25 + 1e-9).all()
 
 
-def test_fully_invested_never_holds_cash() -> None:
+def test_zero_cash_cap_never_holds_cash() -> None:
+    """`max_cash_weight = 0` es lo que significa «siempre invertido»: no hace falta una política."""
     scores, prices, benchmark = _panel()
-    result = run_backtest(scores, prices, benchmark, _settings(cash_policy="fully_invested"))
+    result = run_backtest(scores, prices, benchmark, _settings(max_cash_weight=0.0))
     assert np.allclose(result.equity["cash_weight"], 0.0)
     assert np.allclose(result.equity["invested_weight"], 1.0)
 
@@ -88,6 +89,38 @@ def test_cost_drag_equals_traded_notional_times_the_rate() -> None:
         include_groups=False,
     )
     assert np.allclose(expected.to_numpy(), paid.to_numpy())
+
+
+def test_missing_score_exit_records_its_trading_costs() -> None:
+    scores, prices, benchmark = _panel(months=3, tickers=("A", "B", "C"))
+    last_date = scores["snapshot_date"].max()
+    scores = scores.loc[~(scores["ticker"].eq("B") & scores["snapshot_date"].eq(last_date))]
+    result = run_backtest(scores, prices, benchmark, _settings(commission_bps=5, slippage_bps=10))
+    forced = result.orders.loc[result.orders["reason"].eq("missing_current_score")]
+    assert len(forced) == 1
+    assert forced.iloc[0]["ticker"] == "B"
+    assert forced.iloc[0]["commission_amount"] > 0
+    assert forced.iloc[0]["slippage_amount"] > 0
+
+
+def test_positions_keep_current_meta_rank_and_sales_keep_realized_price_pnl() -> None:
+    scores, prices, benchmark = _panel(months=3, tickers=("A", "B", "C"))
+    last_date = scores["snapshot_date"].max()
+    scores = scores.loc[~(scores["ticker"].eq("B") & scores["snapshot_date"].eq(last_date))]
+    result = run_backtest(scores, prices, benchmark, _settings())
+
+    position = result.positions.loc[
+        result.positions["snapshot_date"].eq(last_date) & result.positions["ticker"].eq("A")
+    ].iloc[0]
+    assert position["meta_rank"] == 1.0
+    assert position["current_percentile"] == 100.0
+
+    sale = result.orders.loc[result.orders["reason"].eq("missing_current_score")].iloc[0]
+    assert sale["buy_price"] > 0
+    assert sale["sell_price"] > 0
+    rate = (_settings().commission_bps + _settings().slippage_bps) / 10_000
+    expected = sale["sell_price"] * (1 - rate) / (sale["buy_price"] * (1 + rate)) - 1.0
+    assert sale["realized_pnl_pct"] == pytest_approx(expected)
 
 
 def test_zero_cost_configuration_pays_nothing() -> None:
@@ -135,21 +168,25 @@ def test_metrics_are_segmented_and_selection_window_excludes_the_reserved_era() 
     assert result.summary["cagr_portfolio"] != result.summary["full_curve"]["cagr_portfolio"]
 
 
-def test_price_only_sell_only_creates_transitional_cash_under_fully_invested() -> None:
+def test_price_only_sell_only_creates_transitional_cash_with_zero_cash_cap() -> None:
     """El efectivo transitorio de `price_only_sell_only` cuadra y se cierra al volver a haber
-    fundamentales nuevos, aunque `cash_policy` sea `fully_invested`."""
+    fundamentales nuevos, aunque el tope de efectivo sea 0.
+
+    Es la única vía por la que un tope 0 puede mostrar efectivo: no es una asignación deliberada de
+    cartera sino la imposibilidad transitoria de comprar reemplazo, y por eso no respeta el tope.
+    """
     scores, prices, benchmark = _panel(months=12, tickers=("A", "B", "C", "D"))
     dates = sorted(scores["snapshot_date"].unique())
     quarterly_dates = [dates[index] for index in range(0, len(dates), 3)]
     result = run_backtest(scores, prices, benchmark, _settings(
-        cash_policy="fully_invested", price_only_sell_only=True,
+        max_cash_weight=0.0, price_only_sell_only=True,
         exit_expected_alpha_bps=1_000_000.0, target_size=2, target_horizon_months=12,
     ))
     total = result.equity["invested_weight"] + result.equity["cash_weight"]
     assert np.allclose(total, 1.0)
     equity = result.equity.set_index("snapshot_date")
-    # A partir del segundo snapshot trimestral, el relleno obligatorio de `fully_invested` vuelve a
-    # completar la cartera sin efectivo residual (el primero no tiene nada que vender todavía).
+    # A partir del segundo snapshot trimestral, el relleno obligatorio vuelve a completar la cartera
+    # sin efectivo residual (el primero no tiene nada que vender todavía).
     later_quarterly = [date for date in quarterly_dates if date in equity.index][1:]
     assert (equity.loc[later_quarterly, "cash_weight"] < 1e-9).all()
 

@@ -7,7 +7,9 @@
     catalog: null, definition: null, budget: null, studies: [],
     selectedStudy: null, selectedRun: null, section: "summary", eventSequence: 0, timer: null,
     snapshot: null, stockTicker: null, stockView: "portfolio", stockParameter: null,
+    retainAllRuns: false,
   };
+  const gigabytes = bytes => `${(Number(bytes || 0) / 1024 ** 3).toFixed(1)} GB`;
 
   const api = async (path, options = {}) => {
     const response = await fetch(base + path, {...options, headers: {"Content-Type": "application/json"}});
@@ -110,9 +112,22 @@
       <p>Solo Rank-IC robusto decide. Carteras, perfiles y robustez explican el ganador después.</p></div>${budgetMarkup()}</section>
       <div class="study-meta"><label>Nombre<input id="study-name" value="Model Study"></label>
       <label>Nota<input id="study-note" placeholder="Opcional; no afecta a la ciencia"></label></div>
+      <label class="study-option ${state.retainAllRuns ? "is-on" : ""}">
+        <input type="checkbox" id="retain-all" ${state.retainAllRuns ? "checked" : ""}>
+        <span><b>Guardar la evidencia de todos los runs</b>
+        <small>Cada run conserva su cartera, órdenes, posiciones, pesos del meta-agente y
+        diagnósticos de aprendizaje, no solo el ganador y el baseline. No cambia qué se ejecuta ni
+        cómo se elige: solo cuánto se guarda${state.budget?.retained_run_evidence
+          ? ` (${state.budget.retained_run_evidence} runs más con evidencia, ${gigabytes(state.budget.estimated_incremental_bytes)} en total)`
+          : ""}.</small></span>
+      </label>
       ${stages}<div class="actions"><button id="launch" class="primary">Lanzar Study</button></div>`;
     bindConfiguration();
     document.getElementById("launch").onclick = launch;
+    document.getElementById("retain-all").onchange = event => {
+      state.retainAllRuns = event.target.checked;
+      preflight().then(renderHome).catch(error => notify(error.message, true));
+    };
   }
 
   function budgetMarkup() {
@@ -123,7 +138,14 @@
       ["profiles", "Perfiles"], ["robustness_groups", "Robustez"],
       ["total_runs", "Runs previstos"], ["estimated_minutes", "Minutos estimados"],
     ];
-    return `<div class="budget">${items.map(([key, label]) => `<div><b>${Number.isFinite(Number(budget[key])) ? Math.round(Number(budget[key])) : "—"}</b><span>${label}</span></div>`).join("")}</div>`;
+    const cells = items.map(([key, label]) =>
+      `<div><b>${Number.isFinite(Number(budget[key])) ? Math.round(Number(budget[key])) : "—"}</b><span>${label}</span></div>`
+    );
+    if (budget.retain_all_runs) {
+      cells.push(`<div class="retained"><b>${Math.round(Number(budget.retained_run_evidence || 0))}</b><span>Runs con evidencia</span></div>`);
+    }
+    cells.push(`<div><b>${gigabytes(budget.estimated_incremental_bytes)}</b><span>Disco estimado</span></div>`);
+    return `<div class="budget">${cells.join("")}</div>`;
   }
 
   function bindConfiguration() {
@@ -153,7 +175,10 @@
 
   async function preflight() {
     const response = await api("/api/studies/preflight", {
-      method: "POST", body: JSON.stringify({definition: state.definition, run_scope: dev ? "dev" : "full"}),
+      method: "POST", body: JSON.stringify({
+        definition: state.definition, run_scope: dev ? "dev" : "full",
+        retain_all_runs: state.retainAllRuns,
+      }),
     });
     state.definition = response.definition; state.budget = response.budget;
   }
@@ -164,6 +189,7 @@
         name: document.getElementById("study-name").value,
         note: document.getElementById("study-note").value,
         definition: state.definition, run_scope: dev ? "dev" : "full",
+        retain_all_runs: state.retainAllRuns,
       };
       const result = await api("/api/studies", {method: "POST", body: JSON.stringify(payload)});
       state.selectedStudy = result.study_id;
@@ -206,7 +232,8 @@
     const sectionLabel = {runs: "Runs", decisions: "Decisiones", console: "Consola", robustness: "Robustez", attribution: "Atribución", profiles: "Perfiles"};
     app.innerHTML = `<section class="entity-header run-header">
       <div class="entity-top">
-        <div class="entity-main"><div><p class="eyebrow">${esc(study.study_id)}</p><h2>${esc(study.name)}</h2><p>${esc(study.note || "Sin nota.")}</p></div></div>
+        <div class="entity-main"><div><p class="eyebrow">${esc(study.study_id)}${study.retain_all_runs ? " · evidencia de todos los runs" : ""}</p>
+          <h2>${esc(study.name)}</h2><p>${esc(study.note || "Sin nota.")}</p></div></div>
         <div class="entity-actions inline">
           ${active ? '<button id="pause-study">Pausar</button>' : ""}
           ${active ? '<button id="cancel-study">Cancelar</button>' : ""}
@@ -273,7 +300,7 @@
       consoleElement.scrollTop = consoleElement.scrollHeight;
       document.getElementById("refresh-console").onclick = async () => {
         const latest = await api(`/api/studies/${state.selectedStudy}/events?after=0`);
-        consoleElement.textContent = latest.map(event => `${event.sequence} ${event.timestamp} [${event.level}] ${event.message}`).join("\n");
+        consoleElement.textContent = latest.map(event => `${event.sequence} ${madridTime(event.timestamp)} [${event.level}] ${event.message}`).join("\n");
         consoleElement.scrollTop = consoleElement.scrollHeight;
       };
       return;
@@ -318,15 +345,18 @@
     }
     const isWinner = run.logical_key === "winner:evidence";
     const isBaseline = run.logical_key === "predictive:baseline";
-    if (!isWinner && !isBaseline) {
+    // Con la evidencia de todos los runs activada, un candidato cualquiera conserva la suya y las
+    // vistas pesadas se sirven desde ella en lugar de estar vacías.
+    const retained = !isWinner && !isBaseline && run.evidence_path ? `run:${run.run_id}` : "";
+    if (!isWinner && !isBaseline && !retained) {
       body.innerHTML = `<article class="detail"><h2>Vista no materializada para este candidato</h2>
-        <p>Los candidatos normales conservan configuración, Rank-IC, eras y decisión. Las vistas pesadas se guardan únicamente en el run de evidencia del ganador y en el baseline.</p></article>`;
+        <p>Los candidatos normales conservan configuración, Rank-IC, eras y decisión. Las vistas pesadas se guardan únicamente en el run de evidencia del ganador y en el baseline, salvo que el Study se lance guardando la evidencia de todos los runs.</p></article>`;
       return;
     }
     const map = {performance: "portfolio", learning: "learning", portfolio: "portfolio", stocks: "stocks"};
-    const sourceQuery = isBaseline ? "source=baseline" : "";
+    const sourceQuery = isBaseline ? "source=baseline" : retained ? `source=${encodeURIComponent(retained)}` : "";
     if (state.runView === "stocks") {
-      return renderStockBrowser(isBaseline);
+      return renderStockBrowser(isBaseline, retained);
     }
     const params = [
       state.runView === "portfolio" && state.snapshot ? `snapshot=${encodeURIComponent(state.snapshot)}` : "",
@@ -334,7 +364,7 @@
     ].filter(Boolean).join("&");
     const data = await api(`/api/studies/${state.selectedStudy}/analysis/${map[state.runView]}${params ? `?${params}` : ""}`);
     if (state.runView === "performance") {
-      body.innerHTML = `${metrics(data.summary?.summary || data.summary || {})}${equity(data.equity)}${table(data.annual)}`;
+      body.innerHTML = `${groupedMetrics(data.summary?.summary || data.summary || {})}${equity(data.equity)}${table(data.annual)}`;
       bindInteractiveCharts(body);
     }
     if (state.runView === "learning") body.innerHTML = `
@@ -356,11 +386,44 @@
       <select id="portfolio-snapshot">${(data.available_snapshots || []).map(value => `<option value="${esc(value)}" ${value === data.selected_snapshot ? "selected" : ""}>${esc(value)}</option>`).join("")}</select></label>
       <p>La cartera muestra las posiciones valoradas y las órdenes ejecutadas exactamente en la fecha seleccionada.</p></section>
       <h3>Posiciones · ${esc(data.selected_snapshot || "sin fecha")}</h3>${table(data.positions)}
-      <h3>Movimientos ejecutados ese día</h3>${table(data.orders)}`;
+      <h3>Movimientos ejecutados ese día</h3>${table(data.orders)}
+      ${alphaCurveSection(data.alpha_curve)}`;
     document.getElementById("portfolio-snapshot").onchange = event => {
       state.snapshot = event.target.value;
       renderRunPage();
     };
+    const windowSelect = document.getElementById("alpha-curve-window");
+    if (windowSelect) windowSelect.onchange = event => {
+      state.alphaCurveWindow = event.target.value;
+      renderRunPage();
+    };
+  }
+
+  const ALPHA_CURVE_WINDOWS = [
+    ["horizon", "Horizonte objetivo"], ["era", "Era (16 trimestres)"],
+    ["history", "Todo el histórico"], ["fallback", "Salvaguarda ±10 %"],
+  ];
+
+  function alphaCurveSection(curve) {
+    if (!curve || !curve.windows) return "";
+    const selected = state.alphaCurveWindow && curve.windows[state.alphaCurveWindow]
+      ? state.alphaCurveWindow : "horizon";
+    const current = curve.windows[selected] || {};
+    const fallback = curve.windows.fallback;
+    const slope = Number(current.slope);
+    const verdict = selected === "fallback"
+      ? "Recta impuesta a priori, no estimada de los datos: se aplica solo cuando ninguna de las tres ventanas produce pendiente creciente."
+      : !Number.isFinite(slope)
+        ? "Sin cohortes suficientes para ajustar una recta en esta ventana."
+        : slope > 0
+          ? `Pendiente <strong>creciente</strong> (${fmt(slope, "rate")} por ventil): en esta ventana, mejor percentil se tradujo en más alfa.`
+          : `Pendiente <strong>decreciente</strong> (${fmt(slope, "rate")} por ventil): en esta ventana el ranking no discriminó a favor, así que la cascada pasa a la siguiente.`;
+    return `<h3>Alfa real anualizado por percentil</h3>
+      <section class="snapshot-controls"><label>Ventana de datos
+        <select id="alpha-curve-window">${ALPHA_CURVE_WINDOWS.map(([value, label]) => `<option value="${esc(value)}" ${value === selected ? "selected" : ""}>${esc(label)}</option>`).join("")}</select></label>
+        <p>Cada punto es la media del retorno excedente real ya cerrado, anualizado, de las acciones de ese tramo de <code>meta_rank</code> (ventiles de 5 puntos de percentil, para que cada media tenga muestra suficiente). Las cohortes recientes pesan más que las antiguas. <strong>La recta es la que asigna el alfa</strong>, evaluada en el percentil exacto de cada acción: un p99 recibe más alfa esperado que un p88. La cascada usa la primera ventana con pendiente creciente; si ninguna lo es, se impone la salvaguarda.</p></section>
+      <p class="muted">Ventana <strong>${esc(selected)}</strong> · ${esc(current.cohorts || 0)} cohortes cerradas · horizonte ${esc(curve.horizon_months)} meses. ${verdict}</p>
+      ${alphaCurveChart(current.points, selected === "fallback" ? null : current, {fallbackLine: fallback})}`;
   }
 
   const STOCK_VIEWS = [
@@ -368,8 +431,8 @@
   ];
   let tickerInputTimer = null;
 
-  async function renderStockBrowser(isBaseline) {
-    state.stockSource = isBaseline ? "baseline" : null;
+  async function renderStockBrowser(isBaseline, retained = "") {
+    state.stockSource = isBaseline ? "baseline" : retained || null;
     const query = new URLSearchParams();
     if (state.stockSource) query.set("source", state.stockSource);
     const initial = await api(`/api/studies/${state.selectedStudy}/analysis/stocks${query.toString() ? `?${query}` : ""}`);
@@ -459,6 +522,7 @@
     const events = (data.events || []).map(row => ({
       snapshot_date: row.snapshot_date, side: SIDE_LABELS[row.side] || row.side, reason: REASON_LABELS[row.reason] || row.reason,
       weight_before: row.weight_before, weight_after: row.weight_after, percentile: row.percentile,
+      buy_price: row.buy_price, sell_price: row.sell_price, realized_pnl_pct: row.realized_pnl_pct,
     }));
     return `<h3>Situación actual</h3>${summary}
       <h3>Histórico de compras y ventas</h3>${table(events)}
@@ -670,20 +734,23 @@
     paired_advantage: "Ventaja pareada",
     mean_rank_ic: "Rank-IC medio", positive_fraction: "Fracción positiva", rank_ic_std: "Desviación Rank-IC",
     observations: "Observaciones", reason: "Motivo", eligible: "Elegible", is_incumbent: "Baseline",
-    candidate_id: "Candidato", cash_policy: "Política de efectivo", mean_cash_weight: "Efectivo medio",
+    candidate_id: "Candidato", max_cash_weight: "Efectivo máximo", mean_cash_weight: "Efectivo medio",
+    coverage_percentile_floor: "Suelo de cobertura",
     geometric_excess_return: "Alfa geométrico vs SPY", ic_ir: "IC-IR",
     transfer_coefficient: "Coeficiente de transferencia", months_held: "Meses en cartera",
-    current_percentile: "Percentil", percentile: "Percentil", weight: "Peso", entry_date: "Fecha de entrada",
+    current_percentile: "Percentil", percentile: "Percentil", meta_rank: "Puntuación meta-rank", weight: "Peso", entry_date: "Fecha de entrada",
     ticker: "Ticker", snapshot_date: "Snapshot", side: "Sentido", weight_before: "Peso anterior",
     weight_after: "Peso nuevo", entry_price: "Precio de compra", valuation_price: "Precio actual",
-    unrealized_pnl_pct: "P&L no realizado",
+    buy_price: "Precio de compra", sell_price: "Precio de venta", realized_pnl_pct: "P&L realizado neto",
+    unrealized_pnl_pct: "P&L no realizado", notional: "Nocional", commission_amount: "Comisión", slippage_amount: "Slippage",
   };
   const SIDE_LABELS = {buy: "Compra", sell: "Venta"};
   const REASON_LABELS = {
     initial_fill: "Compra inicial", fully_invested_fill: "Relleno (100 % invertido)",
     cash_floor_fill: "Relleno (suelo de diversificación)", expected_alpha_below_exit: "Alfa esperado bajo umbral",
     displaced_by_net_edge: "Desplazada por rotación", net_edge_over_worst: "Rotación (ventaja de alfa)",
-    rebalance: "Reequilibrio de peso",
+    rebalance: "Reequilibrio de peso", missing_current_score: "Sin puntuación actual",
+    below_coverage_percentile: "Bajo el suelo de cobertura",
   };
   function columnLabel(key) {
     if (COLUMN_LABELS[key]) return COLUMN_LABELS[key];
@@ -846,6 +913,55 @@
       <div class="chart-legend">${series.map(item => `<span><i style="background:${item.color}"></i>${esc(item.name)}</span>`).join("")}</div></div>`;
   }
 
+  // Curva ventil -> alfa real anualizado. A diferencia de `lineChart`, el eje X es NUMÉRICO y hay
+  // dos capas: los puntos observados (media por ventil) y la recta ajustada, que es la que de verdad
+  // asigna el alfa de cada acción según su percentil exacto. La salvaguarda se dibuja discontinua
+  // para poder compararla de un vistazo con los puntos reales.
+  const VENTILES = 20;
+  function alphaCurveChart(points, line, options = {}) {
+    const clean = (points || []).filter(row => Number.isFinite(Number(row.alpha_annual)));
+    const fallback = options.fallbackLine;
+    if (!clean.length && !fallback) return "<p class='muted'>Sin cohortes cerradas suficientes para dibujar la curva.</p>";
+    const last = VENTILES - 1;
+    const width = 920, height = 360, left = 78, right = 26, top = 24, bottom = 58;
+    const innerWidth = width - left - right, innerHeight = height - top - bottom;
+    const lineAt = (fit, ventile) => fit.slope * ventile + fit.intercept;
+    const candidates = clean.map(row => Number(row.alpha_annual));
+    [line, fallback].forEach(fit => {
+      if (fit && Number.isFinite(fit.slope)) candidates.push(lineAt(fit, 0), lineAt(fit, last));
+    });
+    const ticks = niceTicks(...Object.values(chartDomain(candidates)), 6);
+    const minimum = ticks[0], maximum = ticks[ticks.length - 1];
+    const x = ventile => left + ventile * innerWidth / last;
+    const y = value => top + (maximum - value) * innerHeight / (maximum - minimum);
+    // El ventil v agrupa los percentiles [v·5, v·5+5): se etiqueta por su centro.
+    const percentileOf = ventile => Math.round(ventile * (100 / VENTILES) + 2.5);
+    const segment = (fit, color, dashed) => {
+      if (!fit || !Number.isFinite(fit.slope)) return "";
+      const dash = dashed ? ";stroke-dasharray:6 4" : "";
+      return `<polyline points="${x(0)},${y(lineAt(fit, 0))} ${x(last)},${y(lineAt(fit, last))}" style="stroke:${color}${dash}"></polyline>`;
+    };
+    const dots = clean.map(row => {
+      const value = Number(row.alpha_annual);
+      return `<circle cx="${x(Number(row.ventile))}" cy="${y(value)}" r="4.5" style="fill:${chartColors[0]}"><title>~p${esc(percentileOf(Number(row.ventile)))} · ${esc(fmt(value, "rate"))} (n=${esc(row.observations)})</title></circle>`;
+    }).join("");
+    const zero = minimum <= 0 && maximum >= 0
+      ? `<line class="axis-line" x1="${left}" y1="${y(0)}" x2="${width - right}" y2="${y(0)}"></line>` : "";
+    const legend = [
+      clean.length ? `<span><i style="background:${chartColors[0]}"></i>Alfa real observado</span>` : "",
+      line && Number.isFinite(line.slope) ? `<span><i style="background:${chartColors[3]}"></i>Recta ajustada (la que asigna el alfa)</span>` : "",
+      fallback ? `<span><i style="background:${chartColors[1]}"></i>Salvaguarda ±10 %</span>` : "",
+    ].filter(Boolean).join("");
+    return `<div class="chart-card"><svg class="chart analytic-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Alfa anualizado por percentil">
+      <g class="chart-grid">${ticks.map(value => `<line x1="${left}" y1="${y(value)}" x2="${width - right}" y2="${y(value)}"></line><text x="${left - 10}" y="${y(value) + 4}" text-anchor="end">${esc(fmt(value, "rate"))}</text>`).join("")}
+      ${[0, 4, 8, 12, 16, last].map(ventile => `<text x="${x(ventile)}" y="${height - bottom + 24}" text-anchor="middle">p${percentileOf(ventile)}</text>`).join("")}
+      <line class="axis-line" x1="${left}" y1="${top}" x2="${left}" y2="${height - bottom}"></line><line class="axis-line" x1="${left}" y1="${height - bottom}" x2="${width - right}" y2="${height - bottom}"></line></g>
+      ${zero}${segment(fallback, chartColors[1], true)}${segment(line, chartColors[3], false)}${dots}
+      <text class="axis-title" transform="translate(16 ${top + innerHeight / 2}) rotate(-90)" text-anchor="middle">Alfa anualizado</text>
+      <text class="axis-title" x="${left + innerWidth / 2}" y="${height - 8}" text-anchor="middle">Percentil de meta_rank</text></svg>
+      <div class="chart-legend">${legend}</div></div>`;
+  }
+
   function chartDomain(values, kind = "auto") {
     let minimum = Math.min(...values), maximum = Math.max(...values);
     if (minimum === maximum) {
@@ -889,9 +1005,13 @@
       const data = JSON.parse(decodeURIComponent(card.dataset.chart));
       const svg = card.querySelector("svg"), hit = card.querySelector(".chart-hit"), cursor = card.querySelector(".chart-cursor"), tooltip = card.querySelector(".chart-tooltip");
       hit.onmousemove = event => {
-        const bounds = svg.getBoundingClientRect();
-        const point = (event.clientX - bounds.left) / bounds.width * data.width;
-        const index = Math.max(0, Math.min(data.xValues.length - 1, Math.round((point - data.left) / ((data.width - data.left - data.right) / Math.max(data.xValues.length - 1, 1)))));
+        // Con `max-height`, el SVG puede quedar centrado dentro de una caja más ancha que su
+        // área dibujada. Convertir las coordenadas de pantalla al `viewBox` evita que el cursor
+        // avance más despacio que el ratón en pantalla completa.
+        const matrix = svg.getScreenCTM();
+        if (!matrix) return;
+        const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
+        const index = Math.max(0, Math.min(data.xValues.length - 1, Math.round((point.x - data.left) / ((data.width - data.left - data.right) / Math.max(data.xValues.length - 1, 1)))));
         const x = data.left + index * (data.width - data.left - data.right) / Math.max(data.xValues.length - 1, 1);
         cursor.setAttribute("x1", x); cursor.setAttribute("x2", x); cursor.classList.remove("hidden");
         tooltip.innerHTML = `<b>${esc(data.xValues[index])}</b>${data.series.map(item => item.values[index] == null ? "" : `<span><i style="background:${item.color}"></i>${esc(item.name)} <strong>${esc(data.percent ? fmt(item.values[index], "rate") : fmt(item.values[index]))}</strong></span>`).join("")}`;

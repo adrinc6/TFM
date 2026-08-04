@@ -42,7 +42,9 @@ def run_backtest(
     targets: pd.DataFrame | None = None,
 ) -> BacktestResult:
     from module.evaluation.profiles import apply_profile
-    scores = apply_profile(scores, settings.profile, targets).sort_values("snapshot_date")
+    scores = apply_profile(
+        scores, settings.profile, targets, horizon_months=settings.target_horizon_months,
+    ).sort_values("snapshot_date")
     prices_by_date = _prices(prices)
     benchmark_by_date = {row.snapshot_date: float(row.price) for row in benchmark.itertuples(index=False)}
     grouped = {date: frame for date, frame in scores.groupby("snapshot_date", sort=False)}
@@ -83,10 +85,13 @@ def run_backtest(
             raise ValueError(f"No hay acciones negociables para invertir en {date}.")
         target = _capped(target)
         cash_weight = max(0.0, 1.0 - sum(target.values()))
-        priced, drag = _price_orders(orders, current_prices, state.holdings, before_orders, settings, previous_prices)
-        value_after = before_orders * (1 - drag)
         prior_entries = dict(state.entry_dates)
         prior_prices = dict(state.entry_prices)
+        priced, drag = _price_orders(
+            orders, current_prices, state.holdings, before_orders, settings, previous_prices,
+            prior_prices,
+        )
+        value_after = before_orders * (1 - drag)
         buy_costs = {row["ticker"]: row["commission_amount"] + row["slippage_amount"] for row in priced if row["side"] == "buy"}
         position_values = {ticker: value_after * weight for ticker, weight in target.items()}
         units = {ticker: position_values[ticker] / current_prices[ticker] for ticker in target}
@@ -101,7 +106,7 @@ def run_backtest(
         previous_prices = {ticker: current_prices[ticker] for ticker in target}
         turnover = sum(abs(row["weight_after"] - row["weight_before"]) for row in priced)
         for ticker, weight in target.items():
-            positions_rows.append({"snapshot_date": date, "ticker": ticker, "weight": weight, "entry_date": state.entry_dates[ticker], "entry_price": state.entry_prices[ticker], "valuation_price": current_prices[ticker], "units": units[ticker], "market_value": position_values[ticker], "entry_cost": state.entry_costs[ticker], "months_held": months_held(state.entry_dates[ticker], date), "current_percentile": _percentile(ticker, frame)})
+            positions_rows.append({"snapshot_date": date, "ticker": ticker, "weight": weight, "entry_date": state.entry_dates[ticker], "entry_price": state.entry_prices[ticker], "valuation_price": current_prices[ticker], "units": units[ticker], "market_value": position_values[ticker], "entry_cost": state.entry_costs[ticker], "months_held": months_held(state.entry_dates[ticker], date), "current_percentile": _percentile(ticker, frame), "meta_rank": _meta_rank(ticker, frame)})
         orders_rows.extend(priced)
         equity_rows.append({"snapshot_date": date, "period_start_portfolio_value": value, "period_start_benchmark_value": benchmark_value / (1 + benchmark_return) if 1 + benchmark_return else benchmark_value, "portfolio_value": value_after, "benchmark_value": benchmark_value, "portfolio_return": value_after / value - 1, "benchmark_return": benchmark_return, "excess_return": value_after / value - 1 - benchmark_return, "turnover_pct": turnover, "gross_return": stock_return, "cost_drag": drag, "positions_value": sum(position_values.values()), "cash_weight": cash_weight, "invested_weight": sum(target.values()), "cumulative_costs": state.costs_paid})
         value, previous_benchmark = value_after, price
@@ -113,7 +118,6 @@ def run_backtest(
         "delisted_positions": len(delisted),
         "portfolio_policy": "expected_alpha_bps",
         "sizing_mode": settings.sizing_mode,
-        "cash_policy": settings.cash_policy,
     })
     return BacktestResult(pd.DataFrame(positions_rows), pd.DataFrame(orders_rows), equity, annual, summary)
 
@@ -185,21 +189,47 @@ def _mark_to_market(
     )
 
 
-def _price_orders(orders: list[dict], prices: dict[str, float], holdings: dict[str, float], value: float, settings: Settings, fallback: dict[str, float]) -> tuple[list[dict], float]:
+def _price_orders(
+    orders: list[dict], prices: dict[str, float], holdings: dict[str, float], value: float,
+    settings: Settings, fallback: dict[str, float], entry_prices: dict[str, float],
+) -> tuple[list[dict], float]:
     rows, total = [], 0.0
     rate = (settings.commission_bps + settings.slippage_bps) / 10_000
     for order in orders:
         before, after = float(order.get("weight_before") or holdings.get(order["ticker"], 0.0)), float(order.get("weight_after") or 0.0)
         notional = abs(after - before) * value
         commission, slippage = notional * settings.commission_bps / 10_000, notional * settings.slippage_bps / 10_000
-        rows.append({**order, "weight_before": before, "weight_after": after, "price": prices.get(order["ticker"], fallback.get(order["ticker"])), "notional": notional, "commission_amount": commission, "slippage_amount": slippage})
+        execution_price = prices.get(order["ticker"], fallback.get(order["ticker"]))
+        entry_price = entry_prices.get(order["ticker"])
+        is_sale = order["side"] == "sell"
+        realized_pnl_pct = (
+            execution_price * (1.0 - rate) / (entry_price * (1.0 + rate)) - 1.0
+            if is_sale and execution_price and entry_price and entry_price > 0
+            else None
+        )
+        rows.append({
+            **order,
+            "weight_before": before,
+            "weight_after": after,
+            "buy_price": execution_price if not is_sale else entry_price,
+            "sell_price": execution_price if is_sale else None,
+            "realized_pnl_pct": realized_pnl_pct,
+            "notional": notional,
+            "commission_amount": commission,
+            "slippage_amount": slippage,
+        })
         total += notional * rate
     return rows, total / value if value else 0.0
 
 
 def _percentile(ticker: str, frame: pd.DataFrame) -> float:
+    rank = _meta_rank(ticker, frame)
+    return rank * 100 if np.isfinite(rank) else float("nan")
+
+
+def _meta_rank(ticker: str, frame: pd.DataFrame) -> float:
     row = frame.loc[frame.ticker.eq(ticker), "meta_rank"]
-    return float(row.iloc[0] * 100) if not row.empty else float("nan")
+    return float(row.iloc[0]) if not row.empty else float("nan")
 
 
 def _information_ratio(excess: np.ndarray, periods_per_year: float) -> float:

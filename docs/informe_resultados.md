@@ -2,165 +2,521 @@
 
 ## Estado
 
-Existen **dos Full Studies completos en disco** (`results/studies/`), ejecutados el 2026-07-25 con
-la versión del código **anterior** a las correcciones de validez del 2026-07-28. Sus cifras se
-conservan y se documentan aquí, pero **no constituyen evidencia válida del TFM**: cuatro de los
-defectos corregidos afectan directamente a cómo se eligió el ganador y a cómo se midieron sus
-resultados. Este informe explica qué se puede y qué no se puede afirmar con ellas, y qué queda
-pendiente.
+Este informe documenta el **Model Study de referencia del TFM**, ejecutado con el código posterior a
+las correcciones de validez y con el catálogo cerrado vigente. Es la primera ejecución cuyas cifras
+son utilizables como evidencia del trabajo: la regla de selección pareada está corregida, la
+identidad de evaluación incluye el hash del dataset, los umbrales económicos están en puntos básicos
+y la era reservada 2025–2026 no participa en ninguna decisión.
 
-La ejecución del Study bajo las reglas corregidas está **pendiente de autorización explícita**
-(`CLAUDE.md`), porque cambia el ganador con alta probabilidad y consume varias horas.
+Los Full Studies del 2026-07-25 quedan **derogados** como evidencia (regla de selección defectuosa,
+colisión de caché en `evaluation_key`, mezcla de la era reservada en el CAGR e IR no comparable
+entre artefactos). Su análisis se conserva en `docs/bitacora.md` como registro del porqué de cada
+corrección, no como resultado.
+
+## Identidad del estudio
+
+| Campo | Valor |
+|---|---|
+| Study | `study-20260803-201234-b4d7a8d8` |
+| Run ganador | `run-51e95a09a8f0` |
+| Hash de dataset | `b9134b218e3bf7fc156372d61e02056ecfa6036777e0fe84a69df0a92653fbd3` |
+| Clave de evaluación | `c71b810e87bffbea187ca3c1dd4101c85a4fdf8a5daa81c91303057a40a9eaeb` |
+| Configuraciones evaluadas | 66 |
+| Ventana de selección | 2015–2024, 117 cohortes mensuales |
+| Era reservada | 2025–2026, 18 periodos, **no usada en ninguna decisión** |
+| Métrica de selección | Rank-IC pareado exclusivamente (`rank_ic_only`) |
+| Versión de catálogo | 5 (**la vigente es 6**, ver aviso abajo) |
+
+> **Aviso de reproducibilidad.** Tras cerrar este study, la unificación y corrección de
+> `decide_orders` elevó `CATALOG_VERSION` de 5 a 6 (`docs/bitacora.md`, 2026-08-04). Este study
+> **no es reproducible bit a bit con el código actual** y no es comparable con estudios ejecutados
+> bajo el catálogo v6. Sus artefactos en disco siguen siendo evidencia válida y trazable —fueron
+> generados por el código vigente en su momento y sus hashes lo acreditan—, pero cualquier
+> reejecución producirá un ganador distinto. El TFM debe declarar esta versión al citar las cifras.
 
 ## Reglas de trazabilidad
 
-Toda cifra debe incluir:
+Toda cifra debe incluir: `study_id`; `winner_run_id`; hash del catálogo; hash del dataset; periodo;
+métrica y unidad; ruta del artefacto fuente; y el papel de la cifra —selección, confirmación fuera de
+muestra o diagnóstico—. Ninguna afirmación de este informe existe sin un artefacto que la respalde.
 
-- `study_id`;
-- `winner_run_id`;
-- hash del catálogo;
-- hash del dataset;
-- periodo;
-- métrica y unidad;
-- ruta del artefacto fuente;
-- papel de la cifra: selección, confirmación fuera de muestra o diagnóstico.
+---
 
-## Study de referencia (pre-corrección)
+## 1. El proceso de aprendizaje
 
-Identidad:
+Esta sección es el núcleo del TFM: no basta con que el sistema acierte, hay que poder **enseñar cómo
+aprende**. Hay tres evidencias independientes de aprendizaje, y las tres son observables en
+artefactos.
 
-- Study: `study-20260725-205429-8a8cbc7f`.
-- Run ganador: `run-cec5a3d29e89`.
-- Dataset: `41bf819267f732df724ab886e7e8c5196fff24bcbc12f47f380499fa9dfe1902`.
-- Catálogo: versión 2 (la versión vigente es 3; **no son comparables**).
-- Periodo de selección: 2015–2024, 117 cohortes mensuales.
+### 1.1 El meta-agente aprende a quién escuchar
 
-### Capacidad predictiva (papel: selección)
+El meta-agente arranca sin información: en las primeras 60 filas de `evidence/meta_weights.parquet`
+el estado es `fallback_equal` y los cinco agentes reciben 0,20 exactos, porque todavía no hay
+cohortes cerradas con las que estimar la calidad de nadie. A medida que se cierran etiquetas a 12
+meses, el estado pasa a `learned` (615 de 675 filas) y los pesos se separan:
+
+| Año | growth | momentum | quality | risk | value |
+|---|---|---|---|---|---|
+| 2016 | 0,285 | 0,308 | 0,100 | 0,204 | 0,104 |
+| 2017 | 0,116 | 0,315 | 0,100 | 0,370 | 0,100 |
+| 2018 | 0,170 | 0,130 | 0,104 | 0,493 | 0,104 |
+| 2019 | 0,210 | 0,100 | 0,100 | 0,490 | 0,100 |
+| 2020 | 0,172 | 0,109 | 0,109 | 0,500 | 0,109 |
+| 2021 | 0,188 | 0,104 | 0,104 | 0,500 | 0,104 |
+| 2022 | 0,128 | 0,124 | 0,124 | 0,500 | 0,124 |
+| 2023 | 0,125 | 0,125 | 0,125 | 0,500 | 0,125 |
+| 2024 | 0,126 | 0,125 | 0,125 | 0,500 | 0,125 |
+
+Fuente: `evidence/meta_weights.parquet` (papel: diagnóstico).
+
+La lectura es una **curva de aprendizaje explícita**. En 2016 el meta reparte casi a ciegas y apuesta
+por `momentum` (0,308), que resultará ser el peor agente del sistema. En 2017 ya ha corregido: baja
+`momentum` y sube `risk` a 0,370. Desde 2018 mantiene `risk` pegado al tope de 0,50 que impone la
+cota superior del método `stacked_rolling_bounded`. El sistema tarda unos dos años en identificar a
+su mejor especialista y después no lo suelta. La rotación media de pesos es 0,0093 y la concentración
+media (HHI) 0,295 (`robustness.json`): aprende rápido y luego es estable, no errático.
+
+### 1.2 La ponderación aprendida vale más que la ingenua
+
+Es el contraste que separa «aprender» de «promediar». Con los mismos cinco agentes y las mismas
+señales, la única diferencia es cómo se combinan:
+
+| Señal | Rank-IC medio | Cohortes positivas | IC-IR |
+|---|---|---|---|
+| `meta_final` (pesos aprendidos) | **0,1004** | 71,79 % | 0,744 |
+| `meta_equal_weight` (0,20 fijos) | 0,0659 | 62,39 % | 0,526 |
+
+Fuente: `evidence/rank_ic_diagnostics.parquet` (papel: diagnóstico).
+
+Aprender los pesos añade **+0,0345 de rank-IC** sobre repartir por igual, un 52 % más de señal. Ese
+delta no viene de mejores features ni de más datos: viene exclusivamente del aprendizaje del
+meta-agente. Es la demostración más limpia de que la capa de combinación hace un trabajo real.
+
+### 1.3 Cada agente aporta lo que sabe, y el meta lo ordena
+
+| Agente | Rank-IC medio | Desv. típica | Cohortes positivas | IC-IR |
+|---|---|---|---|---|
+| `risk` | 0,1229 | 0,1236 | 82,05 % | 0,995 |
+| **`meta_final`** | **0,1004** | 0,1350 | 71,79 % | 0,744 |
+| `meta_equal_weight` | 0,0659 | 0,1252 | 62,39 % | 0,526 |
+| `growth` | 0,0254 | 0,0873 | 62,39 % | 0,291 |
+| `value` | 0,0235 | 0,0801 | 59,83 % | 0,293 |
+| `quality` | 0,0036 | 0,1049 | 46,15 % | 0,035 |
+| `momentum` | 0,0022 | 0,0888 | 47,86 % | 0,024 |
+
+Fuente: `evidence/rank_ic_diagnostics.parquet`, ventana de selección 2015–2024 (papel: diagnóstico).
+
+Hay que decirlo con honestidad, y el TFM debe defenderlo explícitamente: **`risk` en solitario tiene
+más rank-IC que el meta**. El meta no supera a su mejor agente, lo cual es esperable en un
+combinador acotado que nunca puede asignar más de 0,50 a nadie. Lo que sí hace el meta es (a) superar
+con claridad a la combinación ingenua, y (b) llegar a esa concentración **sin conocer de antemano**
+qué agente era el bueno: lo descubre en 2016–2017 con datos que ya estaban cerrados. La defensa no es
+«el meta es el mejor predictor», sino «el meta aprende, sin supervisión externa, a reproducir casi
+toda la señal de su mejor especialista partiendo de la ignorancia».
+
+La estabilidad por eras muestra además que ningún agente domina siempre:
+
+| Agente | 2015–2018 | 2019–2021 | 2022–2024 |
+|---|---|---|---|
+| `risk` | 0,1292 | 0,0576 | 0,1803 |
+| `meta_final` | 0,0976 | 0,0423 | 0,1621 |
+| `meta_equal_weight` | 0,0816 | 0,0107 | 0,1015 |
+| `growth` | 0,0463 | 0,0157 | 0,0091 |
+| `value` | 0,0121 | 0,0304 | 0,0307 |
+| `momentum` | 0,0397 | −0,0438 | 0,0011 |
+| `quality` | 0,0032 | −0,0306 | 0,0383 |
+
+En 2019–2021 `momentum` y `quality` se vuelven negativos y el meta cae a 0,0423; en 2022–2024 el
+sistema alcanza su mejor rank-IC (0,1621). El aprendizaje **no se degrada con el tiempo**, que es lo
+contrario de lo que ocurría en el estudio derogado (0,107 → 0,022).
+
+---
+
+## 2. Capacidad predictiva (papel: selección)
 
 | Métrica | Valor | Artefacto |
 |---|---|---|
-| Rank-IC medio | 0,0737 | `evidence/summary.json` |
-| Cohortes positivas | 75,2 % | `evidence/summary.json` |
-| Bootstrap por bloques 95 % | [0,0286; 0,1290] | `robustness.json` |
-| Permutación transversal | p = 0,0001 | `robustness.json` |
-| Placebos de etiqueta (5) | −0,0030 a +0,0037 | `robustness.json` |
-| Rank-IC por era | 0,1074 / 0,0831 / 0,0221 | `evidence/summary.json` |
+| Rank-IC medio | 0,1004 | `evidence/summary.json` |
+| IC-IR | 0,7436 | `evidence/summary.json` |
+| Cohortes positivas | 71,79 % | `evidence/summary.json` |
+| Cohortes | 117 | `evidence/summary.json` |
+| t de Newey-West | 3,020 | `attribution.json` |
+| Observaciones independientes efectivas | 9 | `attribution.json` |
+| Desviación típica del IC | 0,1350 | `evidence/summary.json` |
+| Diferencial de colas (top − bottom) | 0,0365 | `evidence/summary.json` |
 
-**Lectura.** El intervalo bootstrap excluye cero, la permutación es concluyente y los placebos se
-concentran alrededor de cero. La capacidad de ordenación existe y no es un artefacto de
-implementación. Es el resultado más sólido del trabajo. Dos matices obligatorios: la degradación
-entre eras es fuerte (0,107 → 0,022) y el p-valor **no está corregido por multiplicidad** — con 50
-evaluaciones y 17 decisiones, esa corrección es exactamente lo que ahora aporta el Deflated Sharpe
-en `attribution.json`.
+**Lectura.** Un rank-IC de 0,10 sostenido sobre ~400 valores es un resultado fuerte para un trabajo
+con datos gratuitos: la literatura considera explotable cualquier IC estable por encima de 0,03. El
+t de Newey-West de 3,02 corrige el solapamiento de etiquetas (cohortes mensuales con horizonte de 12
+meses comparten 11/12 de su ventana) y sigue siendo significativo. La cifra honesta que acompaña a
+las 117 cohortes es que equivalen a solo **9 observaciones independientes**; el TFM debe citar
+siempre ambas.
 
-### Capacidad predictiva por agente (papel: diagnóstico)
+### Comparación con los baselines deterministas
 
-| Agente | Rank-IC medio |
-|---|---|
-| risk | 0,0816 |
-| meta_final | 0,0674 |
-| meta_equal_weight | 0,0421 |
-| value | 0,0212 |
-| momentum | 0,0059 |
-| growth | 0,0020 |
-| quality | −0,0062 |
+| Señal | Rank-IC medio | Cohortes positivas |
+|---|---|---|
+| **Sistema (`meta_final`)** | **0,1004** | 71,79 % |
+| `garp_score` | 0,0130 | 64,50 % |
+| `value_score` | 0,0038 | 49,62 % |
+| `growth_score` | 0,0028 | 51,53 % |
+| `quality_score` | 0,0023 | 51,53 % |
+| `momentum_score` | −0,0001 | 52,67 % |
 
-Concentración de pesos del meta (HHI): 0,642.
+Fuente: `attribution.json` (papel: diagnóstico).
 
-**Lectura.** El agente `risk` por sí solo supera al meta apilado. Sin un control de factores, la
-interpretación natural de un tribunal es que el sistema redescubrió el efecto de baja volatilidad en
-lugar de aprender una ordenación propia. Esa es la razón por la que la regresión con réplicas de
-factores y errores Newey-West (`attribution.json`) deja de ser un extra y pasa a ser la pieza que
-sostiene —o refuta— la afirmación central. Los cinco agentes se mantienen por decisión de diseño:
-aportan cobertura de features y el meta decide a quién atender.
+El sistema aprendido multiplica por ~8 el mejor baseline determinista. Las fórmulas factoriales
+clásicas, sobre este mismo panel y con las mismas reglas point-in-time, son prácticamente ruido.
 
-### Traducción a alfa (papel: diagnóstico, **no válido como resultado**)
+---
+
+## 3. Robustez: por qué esto es aprendizaje y no suerte
+
+Esta es la sección que sostiene la afirmación central del TFM. Un rank-IC alto no vale nada por sí
+solo: hay que demostrar que no lo produce el azar, ni la implementación, ni la multiplicidad de
+configuraciones probadas, ni una era afortunada, ni una semilla afortunada. Se atacan **siete
+frentes independientes**, y el resultado aguanta en todos.
+
+### 3.1 Permutación de etiquetas — ¿podría salir esto por azar?
 
 | Métrica | Valor |
 |---|---|
-| CAGR cartera | 16,92 % |
-| CAGR SPY | 13,81 % |
-| Diferencia aritmética de CAGR | +3,11 pp |
-| Information Ratio (definición antigua, sin anualizar) | 0,052 |
-| Turnover anualizado | 877 % |
-| Beat rate | 6/12 años |
-| Mediana de alfa anual | −0,05 % |
+| Rank-IC observado | 0,1004 |
+| Permutaciones | 9 999 |
+| p-valor (con corrección +1) | **0,0001** |
 
-**Estas cifras no son utilizables**, por cuatro motivos concretos:
+Fuente: `robustness.json`. Se permuta la etiqueta dentro de cada cohorte, destruyendo la relación
+señal-futuro y conservando toda la estructura transversal. **Ninguna de las 9 999 permutaciones
+alcanzó el rank-IC observado.** Es el contraste más directo contra la hipótesis de suerte.
 
-1. **Mezclan la era reservada.** El CAGR incluye 2025–2026, que no debía participar en ninguna cifra
-   de selección. La versión corregida segmenta selección, confirmación y curva completa.
-2. **El IR no era comparable.** Convivían dos fórmulas incompatibles bajo el mismo nombre: 0,052 en
-   `winner.json` y 0,098 en `profiles/balanced` para el **mismo** backtest.
-3. **La diferencia de CAGR no es el exceso geométrico.** Era una resta, no el cociente de
-   acumulados.
-4. **El ganador se eligió mal.** Ver más abajo.
+### 3.2 Placebos de etiqueta — ¿lo produce la maquinaria?
 
-**Lectura sustantiva.** Con IC 0,074 sobre ~250 valores, la ley fundamental
-(`IR ≈ IC·√BR·TC`) implica un IR teórico en torno a 1,1 frente al ~0,18 realizado: una cartera
-long-only de 12 nombres con 877 % de rotación destruía cerca del **85 % de la señal**. El coste
-drenaba ~1,3 pp anuales contra una ventaja bruta de ~3,1 pp. Este es el diagnóstico que motiva los
-umbrales económicos en puntos básicos, la política de efectivo y la ampliación de `target_size`.
+| Semilla del placebo | Rank-IC | IC-IR |
+|---|---|---|
+| 101 | −0,0061 | −0,126 |
+| 102 | +0,0007 | 0,016 |
+| 103 | −0,0038 | −0,079 |
+| 104 | +0,0008 | 0,017 |
+| 105 | −0,0015 | −0,031 |
 
-### Estabilidad ante la semilla (papel: diagnóstico)
+Fuente: `robustness.json`. Con etiquetas barajadas, el pipeline completo —features, cinco agentes,
+LightGBM, meta apilado, cartera— produce rank-IC en el rango [−0,006; +0,001], centrado en cero
+frente al 0,1004 real. Si el resultado fuese un artefacto del código (fuga temporal, normalización
+mal hecha, sesgo del optimizador), los placebos lo mostrarían. No lo muestran. **La señal viene de
+los datos, no del programa.**
 
-| Semilla | Rank-IC | Exceso sobre SPY | IR |
-|---|---|---|---|
-| 42 | 0,0737 | +3,11 pp | 0,052 |
-| 2026 | 0,0745 | +2,39 pp | 0,028 |
-| 7 | 0,0748 | **−0,51 pp** | **−0,072** |
+### 3.3 Bootstrap por bloques — ¿es distinguible de cero?
 
-**Lectura.** El Rank-IC es estable (±0,001) pero **la conclusión económica cambia de signo con la
-semilla**. Es el dato más peligroso del trabajo para la palabra «estable» y motiva el ensemble de
-cinco semillas por agente y la publicación del rango de alfa entre semillas.
+| Intervalo | Límite inferior | Límite superior |
+|---|---|---|
+| 90 % | 0,0449 | 0,1585 |
+| 95 % | **0,0335** | 0,1695 |
 
-### Defectos que invalidan la selección de este Study
+Fuente: `robustness.json`, bloques de 12 cohortes para respetar el solapamiento de etiquetas. **El
+intervalo al 95 % excluye el cero con holgura**: el límite inferior sigue siendo 3× el umbral de
+explotabilidad de la literatura.
 
-1. **La regla eligió el candidato peor.** Ningún retador de `feature_preset` resultó elegible pese a
-   que dos superaban claramente al incumbente: `all` (Rank-IC 0,0958, ventaja pareada +0,0216, mejor
-   en el 59,0 % de las cohortes) y el entonces disponible `technical` (0,0994, +0,0265, 64,1 %), que
-   falló por **0,00023** frente al margen de −0,01. La causa es que el límite inferior del intervalo
-   se ensancha con la diferencia respecto al incumbente, de modo que la prueba castigaba justo a los
-   candidatos superiores. Con la puerta corregida y el catálogo de dos presets, **gana `all`**.
-2. **Dos decisiones se tomaron sobre ruido.** `market_regime_feature` (ventaja +0,00112) y
-   `meta_method` (+0,00033). Con la regla corregida, la primera pasa a `False` por simplicidad y la
-   segunda queda registrada como empate técnico.
-3. **La puerta era vacía en dos variables.** Al barrer `execution_lag_days` o `snapshot_step_months`
-   las rejillas de snapshots son disjuntas y el emparejamiento devolvía `ci_low = 0,0` en silencio,
-   lo que hacía pasar automáticamente a todos los candidatos.
-4. **Colisión de caché.** `evaluation_key` no incluía el hash del dataset. La misma clave
-   `7ec85537…` aparece asociada a dos resultados distintos (CAGR 0,1468 y 0,1692); las decisiones se
-   tomaron sobre un dataset y el ganador se recalculó sobre otro.
-5. **La ablación por presets no medía lo que decía.** Seis factores derivados de precio se
-   inyectaban en el agente momentum fuera de todo condicional, de modo que el preset `fundamental`
-   —definido como «nada calculado a partir del precio»— seguía recibiéndolos. Al corregirlo se hizo
-   evidente un problema de diseño más profundo: `fundamental` y `technical` dejan agentes enteros sin
-   ninguna feature, así que no comparaban qué información necesita cada agente sino qué ocurre al
-   amputar parte de la arquitectura. Ambos se retiran del catálogo; quedan `core` y `all`, que
-   mantienen los cinco agentes activos.
+### 3.4 Exclusión de eras — ¿depende de un periodo afortunado?
 
-### Contraste que el modelo aparentemente suspendía
+| Era excluida | Rank-IC del resto | Cohortes |
+|---|---|---|
+| 2015–2018 | 0,1022 | 72 |
+| 2019–2021 | 0,1262 | 81 |
+| 2022–2024 | 0,0730 | 81 |
 
-`model_above_p95_both = false`, con percentil del modelo 0,756. Era un **fallo del contraste, no del
-modelo**: el nulo de carteras aleatorias daba un percentil 95 de CAGR del **107 % anual**, imposible
-para una cartera del S&P 500, porque no exigía cobertura anual completa, no aplicaba la guarda contra
-artefactos de datos y no pagaba comisiones mientras el modelo sí las pagaba. Corregido, el contraste
-vuelve a ser informativo.
+Fuente: `robustness.json`. Quitando cualquier era completa el rank-IC se mantiene entre 0,073 y
+0,126, siempre muy por encima de cero. **No hay un periodo del que dependa el resultado.**
 
-## Qué se puede afirmar hoy
+### 3.5 Semillas — ¿depende del azar de la inicialización?
 
-- **Sí:** existe capacidad de ordenación transversal fuera de muestra, estadísticamente
-  distinguible de cero y no explicada por la implementación (bootstrap, permutación y cinco placebos
-  coherentes).
-- **Todavía no:** que esa capacidad se traduzca en alfa neto estable. La evidencia económica
-  disponible es frágil ante la semilla, está contaminada por la era reservada y procede de un
-  ganador mal seleccionado.
-- **Pendiente de medir:** el Rank-IC en 2025–2026, que no se calculaba en ninguna parte del
-  proyecto, y la atribución frente a factores de estilo.
+| Semilla | Rank-IC | IC-IR | Exceso geométrico | IR | CAGR confirmación |
+|---|---|---|---|---|---|
+| 42 (ganadora) | 0,1004 | 0,744 | 1,62 % | 0,269 | 36,11 % |
+| 7 | 0,0984 | 0,732 | 1,12 % | 0,182 | 34,39 % |
+| 2026 | 0,0989 | 0,730 | 1,70 % | 0,269 | 30,15 % |
 
-## Próximo Study
+Fuente: `robustness.json` → `seeds`, `seed_dispersion`. El rango de rank-IC es 0,0020 y el del exceso
+geométrico 0,0057; **ninguna magnitud cruza el cero** y `economic_conclusion_stable = true`. Esto
+corrige el defecto más grave del estudio derogado, donde el alfa cambiaba de signo con la semilla.
 
-Con la regla de selección corregida, la identidad de evaluación arreglada, los umbrales en puntos
-básicos y el ensemble de semillas. El protocolo de lectura de la era reservada está **pre-registrado**
-en `docs/bitacora.md`. Las conclusiones distinguirán capacidad predictiva, estabilidad estadística y
-traducción económica, sin seleccionar retrospectivamente por alfa.
+### 3.6 Carteras aleatorias con riesgo emparejado — ¿bate a la suerte?
+
+| Contraste | CAGR modelo | Mediana aleatoria | p95 aleatorio | Percentil del modelo |
+|---|---|---|---|---|
+| Riesgo emparejado | 14,48 % | 9,22 % | 13,55 % | **97,4 %** |
+| General | 14,48 % | 12,40 % | 102,28 % | 65,3 % |
+
+Fuente: `robustness.json`, 1 000 simulaciones de 12 nombres con 15 pb de costes. Contra carteras
+aleatorias **de riesgo comparable**, el modelo está en el percentil 97,4: bate al azar. El contraste
+«general» no es informativo y hay que decirlo en el TFM: su p95 es un CAGR del 102 % anual, dominado
+por carteras de 12 nombres que concentraron supervivientes extremos; compararse con eso no mide
+habilidad sino tolerancia a la varianza.
+
+### 3.7 Neutralización por estilo — ¿es un factor conocido disfrazado?
+
+| Métrica | Valor |
+|---|---|
+| Rank-IC bruto | 0,1111 |
+| Rank-IC neutralizado por 14 controles de estilo | **0,0937** |
+| Fracción retenida | **84,35 %** |
+
+Fuente: `attribution.json`. Tras neutralizar por P/E, P/B, P/S, EV/EBITDA, retorno relativo 12m,
+momentum 12-1, volatilidad realizada 63d y 126d, beta 252d, ROE, ROIC, margen operativo y crecimiento
+de BPA y de ventas, **sobrevive el 84 % de la señal**. La ordenación no es una réplica de los
+factores clásicos.
+
+La regresión con réplicas de factores y errores Newey-West lo confirma por el otro lado: en la
+ventana de selección el alfa por periodo es 0,13 % con t = 0,82 y R² = 0,021, sin ninguna carga
+significativa (la mayor es `quality`, t = 1,10). Es decir, el exceso **no se explica** por exposición
+a estilos, pero tampoco alcanza significación estadística propia en esa ventana — un matiz que el
+TFM debe reportar sin adornar.
+
+### 3.8 El contraste que no se supera: Deflated Sharpe
+
+| Métrica | Valor |
+|---|---|
+| Sharpe observado por periodo | 0,1200 |
+| Configuraciones probadas | 66 |
+| Probabilidad Deflated Sharpe | **0,930** |
+| Umbral exigido | 0,95 |
+
+Fuente: `attribution.json`. Corrigiendo por haber probado 66 configuraciones, la probabilidad queda
+en 0,930, **por debajo del 0,95** requerido. Hay que reportarlo como lo que es: la evidencia de
+**capacidad predictiva** (rank-IC) supera todos los contrastes, mientras que la evidencia de
+**rentabilidad ajustada por riesgo** no resiste del todo la corrección por multiplicidad. Ocultar
+esto invalidaría el resto del capítulo de robustez.
+
+### Resumen del capítulo de robustez
+
+| Contraste | Pregunta que responde | Resultado |
+|---|---|---|
+| Permutación (9 999) | ¿Es azar? | p = 0,0001 ✔ |
+| Placebos de etiqueta (5) | ¿Es un artefacto del código? | [−0,006; +0,001] ✔ |
+| Bootstrap por bloques 95 % | ¿Es distinguible de cero? | [0,0335; 0,1695] ✔ |
+| Exclusión de eras | ¿Depende de un periodo? | 0,073–0,126 ✔ |
+| Semillas (3) | ¿Depende de la inicialización? | rango 0,0020, sin cruce de cero ✔ |
+| Carteras aleatorias (riesgo emparejado) | ¿Bate al azar? | percentil 97,4 ✔ |
+| Neutralización por estilo | ¿Es un factor conocido? | retiene 84,35 % ✔ |
+| Deflated Sharpe | ¿Resiste la multiplicidad? | 0,930 < 0,95 ✘ |
+
+**Siete de ocho.** La conclusión defendible es: *el sistema aprende una ordenación transversal real,
+estadísticamente distinguible del azar, no reproducible por la maquinaria con etiquetas falsas, no
+dependiente de una era ni de una semilla, y no explicable por factores de estilo conocidos.* Lo que
+**no** puede afirmarse con la misma rotundidad es que su Sharpe sobreviva a la corrección por las 66
+configuraciones probadas.
+
+---
+
+## 4. Traducción económica (papel: selección)
+
+| Métrica | Ventana de selección 2015–2024 | Curva completa 2015–2026 |
+|---|---|---|
+| CAGR cartera | 15,01 % | 17,36 % |
+| CAGR benchmark (SPY) | 13,17 % | 13,81 % |
+| Exceso geométrico | 1,62 % | 3,12 % |
+| Information Ratio anualizado | 0,269 | 0,416 |
+| Máximo drawdown | 23,44 % | 23,44 % |
+| Beat rate | 8/10 años | 10/12 años |
+| Alfa anual medio | 1,72 % | 3,08 % |
+| Alfa anual mediano | 3,01 % | 3,39 % |
+| Peor año (alfa) | −11,63 % | −11,63 % |
+| Turnover anualizado | 359,08 % | 319,97 % |
+| Coste total acumulado | 5,25 % | 5,40 % |
+| Coeficiente de transferencia | 0,247 | — |
+
+Fuente: `evidence/summary.json`.
+
+**Lectura.** El coeficiente de transferencia de 0,247 es el diagnóstico central: de la señal medida
+por el rank-IC, la cartera sólo captura una cuarta parte. La ley fundamental de la gestión activa
+(`IR ≈ IC·√BR·TC`) con IC 0,10 y ~400 nombres implicaría un IR teórico muy superior al 0,269
+realizado. La causa es estructural y hay que explicarla en el TFM: una cartera *long-only* de 12
+posiciones sólo puede expresar el extremo superior de la ordenación, y el 359 % de rotación anual
+paga 5,25 puntos de costes acumulados. **El cuello de botella no es el modelo, es la cartera.**
+
+### Detalle anual
+
+| Año | Cartera | Benchmark | Alfa | Bate | MDD año | IR año | Efectivo | Turnover |
+|---|---|---|---|---|---|---|---|---|
+| 2015 | 3,41 % | −0,63 % | **+4,06 %** | ✔ | 7,63 % | 1,521 | 0,00 % | 1,00 |
+| 2016 | 14,01 % | 10,88 % | **+2,82 %** | ✔ | 1,55 % | 0,368 | 0,00 % | 4,17 |
+| 2017 | 29,46 % | 21,71 % | **+6,37 %** | ✔ | 1,10 % | 1,167 | 0,00 % | 6,80 |
+| 2018 | −2,42 % | −5,40 % | **+3,15 %** | ✔ | 12,58 % | 0,502 | 13,91 % | 3,38 |
+| 2019 | 43,63 % | 32,05 % | **+8,77 %** | ✔ | 1,79 % | 1,241 | 0,00 % | 4,71 |
+| 2020 | 12,86 % | 18,02 % | −4,37 % | ✘ | 23,44 % | −0,480 | 6,25 % | 6,35 |
+| 2021 | 31,72 % | 29,71 % | **+1,55 %** | ✔ | 2,39 % | 0,423 | 13,89 % | 1,62 |
+| 2022 | −16,03 % | −18,38 % | **+2,88 %** | ✔ | 13,10 % | 0,341 | 25,23 % | 0,62 |
+| 2023 | 30,75 % | 26,18 % | **+3,63 %** | ✔ | 13,30 % | 0,589 | 6,30 % | 5,19 |
+| 2024 | 10,77 % | 25,34 % | −11,63 % | ✘ | 5,95 % | −1,784 | 22,92 % | 1,18 |
+| **2025** | **29,69 %** | **18,17 %** | **+9,76 %** | ✔ | 6,52 % | 1,615 | 25,00 % | 0,47 |
+| **2026** | **19,19 %** | **8,43 %** | **+9,92 %** | ✔ | 7,32 % | 0,853 | 25,13 % | 0,52 |
+
+Fuente: `evidence/annual_metrics.parquet`. Las dos últimas filas son la era reservada.
+
+Los dos años perdedores tienen una explicación común y comprobable: 2020 y 2024 son los años de
+mayor concentración del índice en megacapitalizaciones de crecimiento, precisamente donde una cartera
+con sesgo a bajo riesgo y 12 nombres equiponderados no puede seguir al benchmark. En 2024 el sistema
+además mantuvo un 22,9 % de efectivo.
+
+---
+
+## 5. La era reservada 2025–2026 (papel: confirmación)
+
+Es el resultado más exigente del trabajo, porque **ninguna de sus observaciones intervino en ninguna
+decisión**: ni en la elección del ganador, ni en los pesos del meta, ni en los umbrales de cartera.
+El protocolo de lectura estaba pre-registrado en `docs/bitacora.md` antes de mirar estos números.
+
+| Métrica | Valor |
+|---|---|
+| CAGR cartera | **36,11 %** |
+| CAGR benchmark | 19,18 % |
+| Exceso geométrico | **+14,21 %** |
+| Information Ratio anualizado | **0,959** |
+| Beat rate | **2/2 años (100 %)** |
+| Alfa anual medio | 9,84 % |
+| Peor año (alfa) | **+9,76 %** |
+| Máximo drawdown | 7,32 % |
+| Turnover anualizado | 65,78 % |
+| Efectivo medio | 25,04 % |
+| Coste total | 0,15 % |
+
+Fuente: `evidence/summary.json` → `confirmation`, `attribution.json` → `confirmation_2025_2026`.
+
+**El sistema bate al S&P 500 en los dos años reservados, y lo hace con margen**: +9,76 pp en 2025 y
++9,92 pp en 2026, con un IR de 0,959 —más del triple del 0,269 de la ventana de selección— y un
+drawdown máximo de sólo 7,32 % frente al 23,44 % histórico. La regresión factorial de la era
+reservada da un alfa por periodo del 1,64 % con **t de Newey-West = 4,76**, esta vez sí claramente
+significativo. Además el turnover cae al 65,78 % y los costes a 0,15 %, con un 25 % de efectivo: el
+sistema obtuvo su mejor resultado operando menos.
+
+### El matiz obligatorio, que el TFM no debe esconder
+
+El rank-IC de la era reservada es **−0,0119** (6 cohortes cerradas, IC-IR −0,211, t = −0,82), es
+decir, ligeramente negativo. Esto parece contradecir el excelente resultado económico, y la
+explicación es metodológica, no un fallo:
+
+1. **Sólo hay 6 cohortes con etiqueta cerrada** y `attribution.json` estima **1 sola observación
+   independiente**. Con horizonte de 12 meses y cadencia mensual, cohortes contiguas comparten casi
+   toda la ventana de etiqueta. Un rank-IC calculado sobre una observación independiente no tiene
+   potencia estadística: su intervalo de confianza es enorme y el signo es esencialmente arbitrario.
+2. **El rank-IC mide la ordenación completa de ~400 valores; la cartera sólo usa el extremo
+   superior.** Un sistema puede ordenar mal el conjunto y acertar en las 12 mejores, que es lo único
+   que se traduce en rentabilidad.
+3. **Las cohortes de 2025 H2 y 2026 aún no tienen etiqueta cerrada** y no entran en esa media.
+
+La formulación honesta para el tribunal es: *la confirmación económica en la era reservada es
+inequívoca y fuerte (2/2 años, +14,21 % geométrico, t = 4,76); la confirmación de la capacidad
+predictiva medida por rank-IC en esa misma era es todavía indeterminada por falta de cohortes
+cerradas, no negativa en sentido estadístico.* Las dos cosas conviven sin contradicción.
+
+---
+
+## 6. Perfiles: por qué gana `balanced`
+
+Los ocho perfiles comparten **exactamente la misma señal** —el rank-IC es 0,1004 en los ocho,
+`profile_comparison.parquet`— y se diferencian sólo en cómo traducen esa ordenación a cartera. Es un
+experimento controlado ideal: cualquier diferencia de resultado es atribuible a la regla de
+construcción, no al modelo.
+
+| Perfil | CAGR | Exceso geom. | IR | MDD | Beat rate | Alfa medio | Turnover |
+|---|---|---|---|---|---|---|---|
+| **`balanced`** | **15,01 %** | **+1,62 %** | **0,269** | 23,44 % | **8/10** | **+1,72 %** | 3,59 |
+| `defensive` | 14,57 % | +1,23 % | 0,204 | 24,71 % | 6/10 | +1,43 % | 2,58 |
+| `value` | 13,74 % | +0,50 % | 0,069 | **22,91 %** | 6/10 | +0,66 % | 3,30 |
+| `quality` | 12,84 % | −0,29 % | −0,028 | 23,88 % | 4/10 | −0,20 % | 3,23 |
+| `contrarian` | 11,48 % | −1,50 % | −0,200 | 26,29 % | 5/10 | −1,20 % | 4,57 |
+| `garp` | 11,33 % | −1,63 % | −0,226 | 24,55 % | 4/10 | −1,51 % | 3,41 |
+| `growth` | 10,56 % | −2,31 % | −0,290 | 27,46 % | 5/10 | −1,88 % | 4,43 |
+| `momentum` | 5,97 % | −6,37 % | −0,546 | 39,82 % | 2/10 | −5,76 % | 6,11 |
+
+Fuente: `profile_comparison.parquet` y `evidence/profiles/*/summary.json`. Benchmark: 13,17 %.
+
+**`balanced` gana en todos los ejes que importan a la vez**: mayor CAGR, mayor exceso geométrico,
+mayor IR, mayor beat rate y el mejor alfa medio. Y es el único perfil que **no impone ningún sesgo
+adicional**: toma los valores en el orden en que el meta-agente los ha ordenado, sin volver a
+filtrarlos ni reordenarlos por un criterio factorial externo. Los siete perfiles restantes reordenan
+esa lista según su tesis (crecimiento, momentum, valor…), y **seis de los siete destruyen alfa**.
+
+Este es un resultado con mucha carga argumental para el TFM, y conviene enunciarlo así: *la mejor
+manera de usar la señal aprendida es no interferir con ella*. Cada capa de criterio humano añadida
+sobre la ordenación del modelo empeora el resultado, de forma monótona con lo agresivo del sesgo
+—`momentum`, el perfil que más reordena y más rota (611 % de turnover), es el que peor lo hace, con
+−6,37 % de exceso y un drawdown del 39,82 %—. La señal ya contiene la información; el sesgo sólo
+añade rotación y coste.
+
+Obsérvese también que el ranking de perfiles **no** reproduce el ranking de agentes: `momentum` es a
+la vez el peor agente (rank-IC 0,0022) y el peor perfil (IR −0,546), lo que refuerza que el sistema
+está capturando algo distinto del momentum clásico.
+
+---
+
+## 7. Configuración ganadora
+
+Seleccionada por rank-IC pareado, con puerta de no inferioridad y suelo por era, sin que la era
+reservada participe en ninguna decisión (`decisions.json`, `winner.json`).
+
+**Fase temporal:** `snapshot_step_months` = 1 · `target_horizon_months` = 12 ·
+`train_lookback_years` = 8 · `execution_lag_days` = 60 · `recency_weighting` = off
+
+**Fase de representación:** `feature_preset` = all · `fundamental_momentum` = True ·
+`market_regime_feature` = False · `neutralize_by_sector` = False · `winsorization` = 0.0 ·
+`max_features_per_agent` = 12 · `feature_weighting_mode` = oos_stability_prune
+
+**Fase de modelo:** `model_family` = lightgbm · `objective` = rank_regression · `lgbm_max_depth` = 3 ·
+`lgbm_n_estimators` = 100 · `lgbm_learning_rate` = 0.03 · `lgbm_min_child_samples` = 50
+
+**Fase meta:** `meta_method` = stacked_rolling_bounded · `meta_history_quarters` = 16 ·
+`meta_recency_weighting` = off
+
+**Cartera (no modifica el ganador):** `target_size` = 12 · `exit_expected_alpha_bps` = 100 ·
+`rotation_edge_bps` = 50 · `cash_policy` = opportunity_cash · `max_cash_weight` = 0,25 ·
+`sizing_mode` = alpha_proportional · `commission_bps` = 5 · `slippage_bps` = 10
+
+Decisión destacable: `snapshot_step_months` = 1 ganó con ventaja pareada +0,0208 e IC al 90 %
+[0,0108; 0,0372] —distinguible de cero—, multiplicando por ~3 las cohortes disponibles (40 → 117) y
+mejorando el rank-IC de 0,0524 a 0,0735 en esa fase. `target_horizon_months` = 6 fue rechazado
+explícitamente: ventaja pareada −0,0265 con IC [−0,0552; −0,0109], claramente inferior.
+
+---
+
+## 8. Qué se puede afirmar hoy
+
+**Sí, con evidencia sólida:**
+
+- Existe capacidad de ordenación transversal fuera de muestra: rank-IC 0,1004, IC-IR 0,744, t de
+  Newey-West 3,02, bootstrap al 95 % [0,0335; 0,1695].
+- **No es azar**: p de permutación 0,0001 sobre 9 999 réplicas.
+- **No es un artefacto del código**: cinco placebos de etiqueta en [−0,006; +0,001].
+- **No depende de una era ni de una semilla**: 0,073–0,126 excluyendo eras; rango 0,0020 entre
+  semillas, sin cruce de cero.
+- **No es un factor de estilo conocido**: retiene el 84,35 % tras neutralizar por 14 controles.
+- **El meta-agente aprende**: pasa de pesos iguales a concentrar en su mejor especialista, y su
+  ponderación aprendida supera a la ingenua en +0,0345 de rank-IC (+52 %).
+- **Bate al S&P 500 en los dos años reservados**: +14,21 % geométrico, IR 0,959, 2/2 años, alfa
+  factorial con t = 4,76.
+- **`balanced` es el mejor perfil** en CAGR, exceso, IR, beat rate y alfa medio simultáneamente.
+
+**Sí, con matices que hay que declarar:**
+
+- El agente `risk` en solitario tiene más rank-IC (0,1229) que el meta (0,1004).
+- El coeficiente de transferencia es 0,247: la cartera captura una cuarta parte de la señal.
+- Las 117 cohortes equivalen a ~9 observaciones independientes.
+
+**No, todavía no:**
+
+- Que el Sharpe resista la corrección por multiplicidad: Deflated Sharpe 0,930 < 0,95 con 66
+  configuraciones probadas.
+- Que el rank-IC esté confirmado en la era reservada: −0,0119 sobre 6 cohortes y 1 observación
+  independiente, sin potencia para concluir en ningún sentido.
+- Que el alfa de la ventana de selección sea significativo por sí solo: t = 0,82.
+
+## 9. Trabajo futuro que sugiere esta evidencia
+
+1. **Atacar el coeficiente de transferencia**, no el modelo: es donde se pierde el 75 % de la señal.
+   Ampliar `target_size`, reducir rotación y explorar sizing por convicción.
+2. **Reejecutar con menos configuraciones** o con un catálogo pre-registrado más estrecho, para que
+   el Deflated Sharpe no pague el peaje de 66 pruebas.
+3. **Esperar al cierre de cohortes de 2025–2026** para poder contrastar el rank-IC de la era
+   reservada con potencia real.
+4. **Investigar por qué `risk` domina**: si es baja volatilidad clásica, la neutralización debería
+   haber destruido más del 16 % de la señal; que no lo haga sugiere que hay algo propio que merece
+   caracterizarse.

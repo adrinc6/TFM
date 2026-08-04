@@ -53,7 +53,13 @@ label { display: flex; flex-direction: column; gap: 5px; }
 .value-choice span { display: flex; flex-direction: column; }
 .baseline-pick { display: flex; align-items: center; gap: 4px; margin-left: auto; padding-left: 8px; cursor: pointer; }
 .baseline-pick small { color: var(--muted); white-space: nowrap; }
-.actions { position: sticky; bottom: 10px; display: flex; justify-content: flex-end; padding: 14px; background: #101010e8; }
+.actions { position: sticky; bottom: 10px; display: flex; justify-content: flex-end; gap: 8px; padding: 14px; background: #101010e8; }
+.study-option { flex-direction: row; align-items: flex-start; gap: 10px; margin: 0 0 16px; padding: 13px 15px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
+.study-option.is-on { border-color: #2f6b47; background: #16241d; }
+.study-option input { margin-top: 2px; }
+.study-option b { display: block; margin-bottom: 3px; }
+.study-option small { display: block; max-width: 90ch; }
+.budget .retained b { color: #7fd4a3; }
 .page-title { margin-bottom: 16px; }
 .study-table { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 24px; }
 .entity-header { display: grid; grid-template-columns: minmax(260px, 1.25fr) minmax(420px, 2fr); gap: 12px; margin-bottom: 20px; padding: 18px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
@@ -103,6 +109,7 @@ td.action-cell button:hover { background: var(--line); color: #fff; }
 .interactive-card { position: relative; }
 .chart { width: 100%; max-height: 420px; margin: 0; background: #151515; }
 .chart polyline { fill: none; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.chart circle { stroke: #151515; stroke-width: 1.5; }
 .portfolio-line { stroke: #57a6ff; } .benchmark-line { stroke: #ff8a65; }
 .chart-grid line { stroke: #3a3a3a; stroke-width: 1; shape-rendering: crispEdges; }
 .chart-grid .year-divider { stroke: #666; stroke-dasharray: 3 4; }

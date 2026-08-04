@@ -60,6 +60,17 @@ MIN_RANK_IC_CROSS_SECTION = 10
 RECENCY_WEIGHTING = "off"
 RECENCY_HALFLIFE_YEARS = 3.0       # vida media (años) del decaimiento exponencial; fija
 
+# Mismo mecanismo que RECENCY_WEIGHTING, pero sobre el Ridge del meta-agente: pondera las cohortes
+# ya cerradas por antigüedad al aprender el peso de cada agente. La ventana del stacker
+# (META_HISTORY_QUARTERS) es rectangular, así que sin esto una cohorte de hace cuatro años pesa lo
+# mismo que la última al decidir en qué agente confiar. Reutiliza RECENCY_HALFLIFE_YEARS.
+META_RECENCY_WEIGHTING = "off"
+
+# Mismo mecanismo que RECENCY_WEIGHTING, pero aplicado al Ridge del meta-agente (module/modeling/meta.py):
+# da más peso a las cohortes trimestrales recientes al aprender los pesos entre los cinco agentes.
+# Reutiliza RECENCY_HALFLIFE_YEARS para el modo "exponential".
+META_RECENCY_WEIGHTING = "off"
+
 # --- Modelo LightGBM ---
 # Objetivo de aprendizaje:
 #   "rank_regression" (principal) -> regresion sobre el PERCENTIL transversal del retorno (0..1)
@@ -119,11 +130,12 @@ NEUTRALIZE_MIN_GROUP = 5           # tamano minimo de grupo para neutralizar por
 TARGET_SIZE = 8
 EXIT_EXPECTED_ALPHA_BPS = 100.0   # pb/año; alfa esperado por debajo del equivalente -> venta
 ROTATION_EDGE_BPS = 50.0          # pb/año; ventaja exigida POR ENCIMA del coste de ida y vuelta
-# Política de efectivo. "fully_invested" mantiene el 100 % en acciones; "opportunity_cash" deja una
-# plaza vacía cuando ninguna candidata supera el umbral de alfa esperado. El efectivo se remunera
-# al 0 %: es una cota inferior conservadora, nunca aporta rentabilidad, solo evita malas compras.
-CASH_POLICY = "fully_invested"
-CASH_POLICIES = ("fully_invested", "opportunity_cash")
+# Tope de efectivo: peso máximo que puede quedar sin invertir cuando ninguna candidata supera el
+# umbral de alfa esperado. Es la ÚNICA variable que gobierna el efectivo; `MAX_CASH_WEIGHT = 0`
+# significa "siempre 100 % invertido" y hace que el suelo de diversificación coincida con
+# `TARGET_SIZE`, así que no hace falta una política aparte que diga lo mismo. El efectivo se
+# remunera al 0 %: es una cota inferior conservadora, nunca aporta rentabilidad, solo evita malas
+# compras.
 MAX_CASH_WEIGHT = 0.25
 COMMISSION_BPS = 5                # comision por operacion, en puntos basicos
 SLIPPAGE_BPS = 10                 # slippage por operacion, en puntos basicos
@@ -138,6 +150,13 @@ REBALANCE_DRIFT_TOLERANCE = 0.25  # fracción mínima de cambio RELATIVO a la po
 #   "full_horizon"    -> horizonte completo
 MINIMUM_HOLDING_PERIOD = "none"
 MINIMUM_HOLDING_PERIODS = ("none", "quarter_horizon", "half_horizon", "full_horizon")
+# Suelo de cobertura del ranking, en percentil 0-100. Una posición que cae por debajo deja de
+# pertenecer a una cartera construida sobre este ranking, con independencia de su alfa esperado: es
+# la generalización de `missing_current_score` (percentil ausente) a "percentil demasiado bajo". No
+# se compara contra ningún coste, porque no decide si una operación es rentable sino si la acción
+# sigue perteneciendo al universo invertible: es un mandato, no una decisión económica. A diferencia
+# de la pérdida de cobertura, sí respeta MINIMUM_HOLDING_PERIOD. 0 desactiva la regla.
+COVERAGE_PERCENTILE_FLOOR = 0.0
 # En un snapshot que solo trae precio nuevo (sin fundamentales frescos), permite vender una posición
 # que ya no cumple pero prohíbe comprar cualquier reemplazo (ni compra nueva, ni relleno obligatorio,
 # ni rotación): no hay información nueva que justifique elegir una acción distinta a la ya elegida
@@ -193,6 +212,7 @@ class Settings:
     meta_history_quarters: int = META_HISTORY_QUARTERS
     meta_weight_cap: float = META_WEIGHT_CAP
     recency_weighting: str = RECENCY_WEIGHTING
+    meta_recency_weighting: str = META_RECENCY_WEIGHTING
     enabled_feature_blocks: tuple[str, ...] = ENABLED_FEATURE_BLOCKS
     enabled_agents: tuple[str, ...] = ENABLED_AGENTS
     enabled_model_families: tuple[str, ...] = ENABLED_MODEL_FAMILIES
@@ -209,12 +229,12 @@ class Settings:
     target_size: int = TARGET_SIZE
     exit_expected_alpha_bps: float = EXIT_EXPECTED_ALPHA_BPS
     rotation_edge_bps: float = ROTATION_EDGE_BPS
-    cash_policy: str = CASH_POLICY
     max_cash_weight: float = MAX_CASH_WEIGHT
     commission_bps: float = COMMISSION_BPS
     slippage_bps: float = SLIPPAGE_BPS
     rebalance_drift_tolerance: float = REBALANCE_DRIFT_TOLERANCE
     minimum_holding_period: str = MINIMUM_HOLDING_PERIOD
+    coverage_percentile_floor: float = COVERAGE_PERCENTILE_FLOOR
     price_only_sell_only: bool = PRICE_ONLY_SELL_ONLY
     price_only_strictness_multiplier: float = PRICE_ONLY_STRICTNESS_MULTIPLIER
     max_monthly_position_return: float = MAX_MONTHLY_POSITION_RETURN
@@ -256,6 +276,11 @@ class Settings:
                 f"RECENCY_WEIGHTING invalido: {self.recency_weighting!r}. "
                 "Usa 'off', 'linear' o 'exponential'."
             )
+        if self.meta_recency_weighting not in ("off", "linear", "exponential"):
+            raise ValueError(
+                f"META_RECENCY_WEIGHTING invalido: {self.meta_recency_weighting!r}. "
+                "Usa 'off', 'linear' o 'exponential'."
+            )
         if self.feature_weighting_mode not in ("model_native", "oos_stability_prune"):
             raise ValueError("FEATURE_WEIGHTING_MODE no reconocido.")
         if not self.enabled_agents:
@@ -270,12 +295,13 @@ class Settings:
             raise ValueError(f"SIZING_MODE no reconocido: {self.sizing_mode!r}.")
         if not 0 <= self.meta_weight_min <= self.meta_weight_cap:
             raise ValueError("META_WEIGHT_MIN debe estar entre 0 y META_WEIGHT_CAP.")
-        if self.cash_policy not in CASH_POLICIES:
-            raise ValueError(
-                f"CASH_POLICY inválido: {self.cash_policy!r}. Usa {' o '.join(CASH_POLICIES)}."
-            )
         if not 0 <= self.max_cash_weight < 1:
             raise ValueError("MAX_CASH_WEIGHT es una fracción de la cartera y debe estar en [0, 1).")
+        if not 0 <= self.coverage_percentile_floor < 100:
+            raise ValueError(
+                "COVERAGE_PERCENTILE_FLOOR es un percentil del ranking en escala 0-100 y debe estar "
+                "en [0, 100). 0 desactiva la regla."
+            )
         if self.rotation_edge_bps < 0:
             raise ValueError(
                 "ROTATION_EDGE_BPS es un margen POR ENCIMA del coste de ida y vuelta y no puede ser "

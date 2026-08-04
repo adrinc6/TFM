@@ -1,0 +1,53 @@
+{
+  "run_scope": "full",
+  "run_dir": "C:\\Users\\PC\\AppData\\Local\\Temp\\evaluation-4752ee2c7a-yz9mnqsu\\agents\\lightgbm-2144c691430b",
+  "inputs": {
+    "features": "89ea24a9bb60b14f473022b40277194069403c400d402072bb1c0ae2d2e7b412",
+    "targets": "47a5484426b6c7fd75c40c69c17fd38c11f8e23fcb64af4b8ffe730bc5c8f973"
+  },
+  "config": {
+    "execution_year": 2015,
+    "execution_quarter": 1,
+    "execution_lag_days": 60,
+    "train_lookback_years": 8,
+    "target_horizon_months": 12,
+    "objective": "rank_regression",
+    "lgbm_n_estimators": 100,
+    "lgbm_max_depth": 3,
+    "lgbm_learning_rate": 0.05,
+    "lgbm_min_child_samples": 50,
+    "random_seed": 42,
+    "seed_ensemble": 5,
+    "meta_type": "stacked_oos",
+    "meta_history_quarters": 16,
+    "meta_weight_cap": 0.5,
+    "fundamental_momentum": true,
+    "market_regime_feature": true,
+    "enabled_feature_blocks": [
+      "quality_core",
+      "value_core",
+      "growth_acceleration",
+      "momentum_core",
+      "price_risk"
+    ],
+    "missing_policy": "median_train_only_with_indicator"
+  },
+  "active_agents": [
+    "growth",
+    "momentum",
+    "quality",
+    "risk",
+    "value"
+  ],
+  "versions": {
+    "lightgbm": "4.6.0"
+  },
+  "predictions": 102725,
+  "agents_fit": [
+    {
+      "family": "lightgbm",
+      "key": "56e8e4c9fdeb23d97b857970837627f9c7d769ecd628641a939f3fee5ef09757",
+      "source": "computed"
+    }
+  ]
+}

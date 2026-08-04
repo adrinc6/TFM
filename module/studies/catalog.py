@@ -13,7 +13,7 @@ from module.evaluation.profiles import PROFILE_NAMES
 from module.modeling.catalog import AGENT_NAMES
 
 
-CATALOG_VERSION = 5
+CATALOG_VERSION = 6
 SELECTION_ERAS = ((2015, 2018), (2019, 2021), (2022, 2024))
 # Frontera única entre la ventana que decide y la que solo confirma. Toda métrica de selección se
 # recorta aquí; 2025-26 no participó en ninguna decisión y por eso es la confirmación fuera de
@@ -145,12 +145,13 @@ VARIABLES: tuple[VariableSpec, ...] = (
     _v("lgbm_min_child_samples", "Mínimo por hoja", "Observaciones mínimas necesarias en una hoja.", "model", (20, 50, 100), 50, "fit", "fit", 50, depends_on=(("model_family", ("lightgbm",)),)),
     _v("meta_method", "Combinación de agentes", "Equiponderación o Ridge rolling causal con límites de peso.", "meta", ("equal", "stacked_rolling_free", "stacked_rolling_bounded"), "stacked_rolling_bounded", "meta", "meta", 10),
     _v("meta_history_quarters", "Ventana del meta", "Número de cohortes trimestrales cerradas usadas por el stacker.", "meta", (8, 16), 16, "meta", "meta", 20, depends_on=(("meta_method", ("stacked_rolling_free", "stacked_rolling_bounded")),)),
+    _v("meta_recency_weighting", "Recencia del meta", "Peso adicional de las cohortes recientes al aprender el peso de cada agente.", "meta", ("off", "linear", "exponential"), "off", "meta", "meta", 30, depends_on=(("meta_method", ("stacked_rolling_free", "stacked_rolling_bounded")),)),
     _v("target_size", "Número de posiciones", "Número objetivo de acciones simultáneas.", "portfolio", (8, 12, 16, 25, 50), 12, "backtest", "backtest", 10, predictive=False),
     _v("exit_expected_alpha_bps", "Alfa mínimo para conservar", "Alfa esperado mínimo, en puntos básicos ANUALES, antes de vender una posición (se convierte geométricamente al horizonte del modelo).", "portfolio", (0.0, 100.0, 250.0), 100.0, "backtest", "backtest", 20, predictive=False),
     _v("rotation_edge_bps", "Ventaja para sustituir", "Ventaja de alfa esperado, en puntos básicos ANUALES, exigida por encima del coste de ida y vuelta (se convierte geométricamente al horizonte del modelo).", "portfolio", (25.0, 50.0, 100.0), 50.0, "backtest", "backtest", 30, predictive=False),
-    _v("cash_policy", "Política de efectivo", "Invertir siempre el 100 % o dejar efectivo cuando no hay oportunidades por encima del umbral.", "portfolio", ("fully_invested", "opportunity_cash"), "fully_invested", "backtest", "backtest", 35, predictive=False),
-    _v("max_cash_weight", "Efectivo máximo", "Peso máximo que puede quedar sin invertir bajo la política de oportunidad.", "portfolio", (0.0, 0.10, 0.25), 0.25, "backtest", "backtest", 36, predictive=False, depends_on=(("cash_policy", ("opportunity_cash",)),)),
+    _v("max_cash_weight", "Efectivo máximo", "Peso máximo que puede quedar sin invertir cuando ninguna candidata supera el umbral. Con 0 la cartera está siempre invertida al 100 %.", "portfolio", (0.0, 0.10, 0.25), 0.25, "backtest", "backtest", 36, predictive=False),
     _v("minimum_holding_period", "Mínimo de tenencia", "Meses mínimos en cartera, como fracción del horizonte del modelo, antes de poder vender una posición por cualquier motivo (incluida la rotación).", "portfolio", ("none", "quarter_horizon", "half_horizon", "full_horizon"), "none", "backtest", "backtest", 38, predictive=False),
+    _v("coverage_percentile_floor", "Suelo de cobertura del ranking", "Percentil por debajo del cual una posición deja de pertenecer a la cartera y se vende entera, una vez cumplido el mínimo de tenencia. 0 desactiva la regla.", "portfolio", (0.0, 60.0, 80.0), 0.0, "backtest", "backtest", 39, predictive=False),
     _v("rebalance_drift_tolerance", "Tolerancia de rebalanceo", "Desviación relativa mínima necesaria para emitir una orden.", "portfolio", (0.0, 0.10, 0.25), 0.25, "backtest", "backtest", 40, predictive=False),
     _v("price_only_strictness_multiplier", "Prudencia sin fundamentales", "Endurece los umbrales en snapshots sin fundamentales nuevos.", "portfolio", (1.0, 1.5, 2.0), 1.5, "backtest", "backtest", 50, predictive=False),
     _v("price_only_sell_only", "Solo vender sin fundamentales", "En snapshots sin fundamentales nuevos, permite vender una posición mala pero prohíbe comprar cualquier reemplazo.", "portfolio", (False, True), False, "backtest", "backtest", 55, predictive=False),
@@ -190,16 +191,21 @@ def _label(identifier: str, value: Any) -> str:
             "stacked_rolling_bounded": "Ridge rolling 10–50 %",
         },
         "meta_history_quarters": {8: "8 trimestres (2 años)", 16: "16 trimestres (4 años)"},
+        "meta_recency_weighting": {"off": "Sin ponderación", "linear": "Lineal", "exponential": "Exponencial"},
         "target_size": {8: "8 posiciones", 12: "12 posiciones", 16: "16 posiciones", 25: "25 posiciones", 50: "50 posiciones"},
         "exit_expected_alpha_bps": {0.0: "0 pb/año (solo alfa negativo)", 100.0: "100 pb/año (1 %)", 250.0: "250 pb/año (2,5 %)"},
         "rotation_edge_bps": {25.0: "25 pb/año sobre coste", 50.0: "50 pb/año sobre coste", 100.0: "100 pb/año sobre coste"},
-        "cash_policy": {"fully_invested": "Siempre 100 % invertido", "opportunity_cash": "Efectivo por oportunidad"},
-        "max_cash_weight": {0.0: "Sin efectivo", 0.10: "Hasta 10 %", 0.25: "Hasta 25 %"},
+        "max_cash_weight": {0.0: "Siempre 100 % invertido", 0.10: "Hasta 10 %", 0.25: "Hasta 25 %"},
         "minimum_holding_period": {
             "none": "Sin mínimo",
             "quarter_horizon": "Un cuarto del horizonte",
             "half_horizon": "Mitad del horizonte",
             "full_horizon": "Igual al horizonte",
+        },
+        "coverage_percentile_floor": {
+            0.0: "Sin suelo",
+            60.0: "Bajo el percentil 60",
+            80.0: "Bajo el percentil 80",
         },
         "rebalance_drift_tolerance": {0.0: "Sin tolerancia", 0.10: "10 %", 0.25: "25 %"},
         "price_only_strictness_multiplier": {1.0: "Sin extra (x1,0)", 1.5: "Prudente (x1,5)", 2.0: "Muy prudente (x2,0)"},
@@ -295,6 +301,11 @@ def _description(identifier: str, value: Any) -> str:
             8: "El meta-agente, para decidir los pesos de cada agente, solo mira los últimos 8 trimestres cerrados (2 años) de resultados pasados. Ventana corta: se adapta más rápido a cambios recientes de qué agente funciona mejor, con menos datos para decidirlo con solidez.",
             16: "El meta-agente, para decidir los pesos de cada agente, mira los últimos 16 trimestres cerrados (4 años) de resultados pasados. Ventana más larga: decisión más estable y con más respaldo histórico, pero tarda más en reaccionar si un agente empieza a fallar recientemente.",
         },
+        "meta_recency_weighting": {
+            "off": "Dentro de la ventana del meta, todos los trimestres cerrados pesan igual al decidir en qué agente confiar: un resultado de hace cuatro años cuenta lo mismo que el del último trimestre.",
+            "linear": "Dentro de la ventana del meta, los trimestres recientes pesan progresivamente más que los antiguos, de forma proporcional a su antigüedad (una recta). El meta-agente deja de confiar antes en un agente que funcionaba bien hace años pero ha empezado a fallar.",
+            "exponential": "Dentro de la ventana del meta, los trimestres recientes pesan mucho más que los antiguos, con una caída rápida cuanto más atrás se mira (una curva, no una recta). Es la opción que más rápido reacciona a un cambio de régimen de mercado, al precio de apoyarse en menos evidencia efectiva.",
+        },
         "target_size": {
             8: "La cartera final mantiene 8 acciones distintas a la vez. Cartera concentrada: más impacto de acertar o fallar en cada acción individual.",
             12: "La cartera final mantiene 12 acciones distintas a la vez. Diversificación intermedia.",
@@ -322,14 +333,15 @@ def _description(identifier: str, value: Any) -> str:
             False: "En los snapshots que solo traen precio nuevo (sin resultados fundamentales frescos) se compra y se rota exactamente igual que en los snapshots con datos nuevos. Es el comportamiento de referencia.",
             True: "En los snapshots que solo traen precio nuevo, se sigue permitiendo vender una posición cuyo alfa esperado ha caído por debajo del umbral, pero no se compra ningún reemplazo: ni una compra nueva, ni un relleno obligatorio, ni una rotación. La plaza vendida queda en efectivo hasta el siguiente snapshot con fundamentales reales, porque no hay información nueva que justifique elegir una acción distinta a la ya elegida con datos de verdad.",
         },
-        "cash_policy": {
-            "fully_invested": "La cartera está siempre invertida al 100 % en acciones: si una plaza queda libre se rellena con la mejor candidata disponible, aunque su alfa esperado sea bajo. Es la política de referencia y la que se compara contra el índice sin ninguna ventaja de posicionamiento.",
-            "opportunity_cash": "Cuando ninguna candidata supera el umbral de alfa esperado, la plaza se deja en efectivo en lugar de comprar la menos mala, con dos salvaguardas: el efectivo nunca supera el tope configurado y la cartera nunca baja de un suelo mínimo de posiciones, de modo que replegarse no concentra el riesgo en unos pocos nombres. El efectivo se remunera al 0 %, así que nunca aporta rentabilidad: solo puede ayudar evitando malas compras y ahorrando costes de operación. La decisión sale exclusivamente de la sección transversal de candidatas, nunca de una previsión sobre el mercado.",
-        },
         "max_cash_weight": {
-            0.0: "No se permite efectivo aunque la política lo autorice: equivale a estar siempre invertido.",
+            0.0: "La cartera está siempre invertida al 100 % en acciones: si una plaza queda libre se rellena con la mejor candidata disponible, aunque su alfa esperado sea bajo. Es la referencia que se compara contra el índice sin ninguna ventaja de posicionamiento.",
             0.10: "Como máximo un 10 % de la cartera puede quedar en efectivo a la espera de oportunidades. El 90 % restante permanece invertido incluso si las candidatas son mediocres.",
-            0.25: "Como máximo un 25 % de la cartera puede quedar en efectivo. El 75 % restante se reparte siempre entre un mínimo de posiciones (el suelo de diversificación), de modo que replegarse nunca concentra la cartera en unos pocos nombres.",
+            0.25: "Como máximo un 25 % de la cartera puede quedar en efectivo cuando ninguna candidata supera el umbral de alfa esperado, en lugar de comprar la menos mala. El 75 % restante se reparte siempre entre un mínimo de posiciones (el suelo de diversificación), de modo que replegarse nunca concentra la cartera en unos pocos nombres. El efectivo se remunera al 0 %, así que nunca aporta rentabilidad: solo puede ayudar evitando malas compras y ahorrando costes de operación. La decisión sale exclusivamente de la sección transversal de candidatas, nunca de una previsión sobre el mercado.",
+        },
+        "coverage_percentile_floor": {
+            0.0: "No existe suelo de cobertura: una posición permanece en cartera mientras su alfa esperado justifique conservarla, por bajo que sea su percentil en el ranking. Es el comportamiento de referencia.",
+            60.0: "Una posición que cae por debajo del percentil 60 del ranking se vende entera, aunque su alfa esperado no active ninguna otra regla. Sobre un universo de unas 500 acciones equivale a exigir que toda posición se mantenga entre las 200 mejores. No compite contra el coste de operar: es un mandato de cobertura, la generalización de la venta por pérdida de puntuación actual.",
+            80.0: "Una posición que cae por debajo del percentil 80 del ranking se vende entera. Sobre un universo de unas 500 acciones equivale a exigir que toda posición se mantenga entre las 100 mejores. Es el arma más estricta del bloque y la que más rotación genera: conviene leerla junto al mínimo de tenencia, que es lo único que la frena.",
         },
         "rebalance_drift_tolerance": {
             0.0: "Cualquier desviación, por mínima que sea, entre el peso actual de una posición y su peso objetivo genera una orden de ajuste. Máxima precisión de pesos, al coste de generar muchas más operaciones (y comisiones).",

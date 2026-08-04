@@ -6,10 +6,30 @@ principio único: **una venta solo se emite si el destino del dinero es mejor qu
 de costes**. Hay exactamente dos destinos posibles y cada uno tiene su regla:
 
 - **Otra acción (rotación)**: la ventaja de alfa esperado debe superar el coste de ida y vuelta de
-  la operación más un margen. Es la única vía de venta bajo ``fully_invested``: vender por umbral
-  con la obligación de recomprar inmediatamente pagaría una ida y vuelta para quedar igual.
-- **Efectivo (solo ``opportunity_cash``)**: el alfa esperado debe caer bajo el umbral de salida y la
-  plaza debe poder quedar vacía sin violar el suelo de diversificación ni el tope de efectivo.
+  la operación más un margen. Es la única vía de venta con ``max_cash_weight = 0``: vender por
+  umbral con la obligación de recomprar inmediatamente pagaría una ida y vuelta para quedar igual.
+- **Efectivo (solo con ``max_cash_weight > 0``)**: el alfa esperado debe caer bajo el umbral de
+  salida y la plaza debe poder quedar vacía sin violar el suelo de diversificación ni el tope.
+
+``max_cash_weight`` es la **única** variable que gobierna la exposición: 0 significa "siempre
+invertido" y hace que el suelo de diversificación coincida con ``target_size``, de modo que el
+relleno obligatorio deja la cartera llena. No hay una política de efectivo aparte que diga lo mismo
+por otra vía; existió y se eliminó porque los dos grados de libertad eran redundantes.
+
+Hay dos excepciones al principio económico, y ninguna se compara contra coste alguno porque ninguna
+decide si una operación es rentable, sino si la acción pertenece al universo invertible:
+
+- **Pérdida de cobertura**: una posición sin ``meta_rank`` en el snapshot actual ya no pertenece al
+  universo scoreable. Se vende con el motivo ``missing_current_score``, **ignora** el mínimo de
+  tenencia y nunca se recompra en ese mismo snapshot.
+- **Suelo de cobertura** (``coverage_percentile_floor``, 0 lo desactiva): una posición que cae por
+  debajo de ese percentil se vende con el motivo ``below_coverage_percentile``. Es la
+  generalización de la anterior —percentil ausente sustituido por percentil demasiado bajo— pero
+  **sí respeta** el mínimo de tenencia, porque la posición sigue siendo scoreable y la exclusión es
+  una preferencia declarada, no una pérdida de cobertura. Con ``max_cash_weight = 0`` la plaza
+  liberada se rellena en el mismo snapshot, así que la regla actúa como una rotación que no exige
+  cubrir su coste y aumenta la rotación; con tope de efectivo puede quedarse en efectivo hasta el
+  suelo de diversificación.
 
 Las compras nuevas tienen **histéresis**: entrar exige el umbral de salida más el coste de ida y
 vuelta de la propia operación. Sin esa banda, una acción oscilando alrededor del umbral se compraría
@@ -21,16 +41,17 @@ antes de compararse: así el mismo valor de catálogo significa lo mismo sin imp
 ``target_horizon_months`` se elija, en vez de que 250 pb signifiquen un 10 %/año con horizonte de 3
 meses y un 2,5 %/año con horizonte de 12.
 
-``minimum_holding_period`` añade un suelo de tiempo por encima de todo lo anterior: una posición que
-no ha cumplido ese mínimo de meses en cartera **no puede venderse por ningún motivo**, ni por caída
-del alfa esperado ni por rotación, aunque la regla económica lo justificaría. No busca más alfa:
-busca estabilidad frente a la rotación de alta frecuencia sobre el mismo modelo ya congelado.
+``minimum_holding_period`` añade un suelo de tiempo por encima de las decisiones económicas: una
+posición que no ha cumplido ese mínimo de meses en cartera no puede venderse por caída del alfa
+esperado ni por rotación. No cubre la pérdida de ``meta_rank``, que invalida la posición. No busca
+más alfa: busca estabilidad frente a la rotación de alta frecuencia sobre el mismo modelo ya
+congelado.
 
 ``price_only_sell_only`` restringe los snapshots que solo traen precio nuevo (sin fundamentales
 frescos): se sigue permitiendo vender una posición que ya no cumple, pero se prohíbe comprar
 cualquier reemplazo (compra nueva, relleno obligatorio o rotación), porque no hay información nueva
 que justifique elegir una acción distinta a la ya elegida con datos reales. La plaza vendida queda en
-efectivo, transitoriamente y sin el tope de ``opportunity_cash``, hasta el siguiente snapshot con
+efectivo, transitoriamente y sin el tope de ``max_cash_weight``, hasta el siguiente snapshot con
 fundamentales frescos.
 
 El ranking del meta decide el orden de preferencia y los desempates (la confianza de los agentes);
@@ -79,16 +100,16 @@ def decide_orders(
     """Aplica venta a efectivo con suelo, compra con histéresis y rotación que paga su coste.
 
     Devuelve las órdenes y los pesos objetivo. **Los pesos pueden sumar menos de 1**: el residuo es
-    efectivo, que aparece bajo ``cash_policy="opportunity_cash"`` (acotado por ``max_cash_weight`` y
-    el suelo de diversificación) o, transitoriamente y sin tope propio, bajo
-    ``price_only_sell_only`` en un snapshot sin fundamentales nuevos. Con ``fully_invested`` y sin
-    ese bloqueo el residuo es cero por construcción. Si hay puntuaciones en la fecha, la cartera
-    objetivo nunca queda vacía.
+    efectivo, que aparece con ``max_cash_weight > 0`` (acotado por ese tope y por el suelo de
+    diversificación) o, transitoriamente y sin tope propio, bajo ``price_only_sell_only`` en un
+    snapshot sin fundamentales nuevos. Con tope 0 y sin ese bloqueo el residuo es cero por
+    construcción. Si hay puntuaciones en la fecha, la cartera objetivo nunca queda vacía.
 
-    El alfa esperado procede de la calibración isotónica causal (``expected_excess_return``) y es
-    ``NaN`` mientras no haya suficientes cohortes cerradas para calibrar. Un ``NaN`` nunca activa una
-    venta ni bloquea una compra: la regla es "actuar solo ante evidencia económica", de modo que
-    durante el arranque manda la ordenación y, en cuanto hay calibración, mandan los umbrales.
+    El alfa esperado (``expected_excess_return``) procede de la curva causal decil -> retorno real
+    anualizado, y es ``NaN`` mientras no haya cohortes cerradas suficientes. Un ``NaN`` de alfa no
+    activa una venta ni bloquea una compra: durante el arranque manda la ordenación y, en cuanto hay
+    evidencia, mandan los umbrales. Una ausencia de ``meta_rank`` es distinta: invalida la posición
+    actual y provoca una salida forzada por cobertura. Todas las comparaciones son en base anual.
     """
     if scores_at_date.empty:
         return [], dict(state.holdings)
@@ -102,18 +123,23 @@ def decide_orders(
     alpha_bps = _expected_alpha_bps(ranked)
     candidates = list(dict.fromkeys(ranked["ticker"].astype(str)))
 
-    # Los umbrales de catálogo son anuales; se convierten geométricamente al horizonte real del
-    # modelo antes de compararlos, para que el mismo valor signifique lo mismo con cualquier
-    # horizonte. Endurecer en snapshots sin fundamentales nuevos significa operar menos en ambos
-    # sentidos: el umbral de salida baja (cuesta más gatillar una venta), y tanto la entrada como la
-    # rotación exigen más ventaja. La banda de histéresis se ensancha.
+    # Todo se compara en base ANUAL: el alfa esperado ya viene anualizado de la curva por deciles y
+    # los umbrales del catálogo son anuales, así que ninguno de los dos necesita conversión. El que
+    # sí la necesita es el coste: comisión y slippage se pagan una vez por operación, no cada año, y
+    # compararlos con un alfa anual los infravaloraría en cuanto el horizonte baja de 12 meses. Se
+    # anualiza el coste de ida y vuelta repartiéndolo sobre el horizonte que dura la posición.
+    # Endurecer en snapshots sin fundamentales nuevos significa operar menos en ambos sentidos: el
+    # umbral de salida baja (cuesta más gatillar una venta), y tanto la entrada como la rotación
+    # exigen más ventaja. La banda de histéresis se ensancha.
     horizon = settings.target_horizon_months
-    exit_horizon_bps = _annual_to_horizon_bps(settings.exit_expected_alpha_bps, horizon)
-    rotation_horizon_bps = _annual_to_horizon_bps(settings.rotation_edge_bps, horizon)
-    exit_threshold = exit_horizon_bps / strictness
-    round_trip = 2.0 * (settings.commission_bps + settings.slippage_bps)
-    entry_threshold = (exit_horizon_bps + round_trip) * strictness
-    rotation_threshold = round_trip + rotation_horizon_bps * strictness
+    exit_annual_bps = settings.exit_expected_alpha_bps
+    rotation_annual_bps = settings.rotation_edge_bps
+    exit_threshold = exit_annual_bps / strictness
+    round_trip = _horizon_cost_to_annual_bps(
+        2.0 * (settings.commission_bps + settings.slippage_bps), horizon,
+    )
+    entry_threshold = (exit_annual_bps + round_trip) * strictness
+    rotation_threshold = round_trip + rotation_annual_bps * strictness
     floor = _position_floor(settings)
     minimum_months = _minimum_holding_months(settings)
     # Sin fundamentales nuevos y con la variable activa, se puede eliminar una posición mala pero no
@@ -131,13 +157,52 @@ def decide_orders(
         if months_held(state.entry_dates.get(ticker, date), date) < minimum_months
     }
 
-    # 1. Ventas a efectivo: bajo la política de oportunidad el destino es efectivo al 0 % con el
-    # suelo de diversificación de siempre; bajo `price_only_sell_only` en un snapshot sin
-    # fundamentales nuevos, el destino es efectivo transitorio sin suelo propio, porque no hay con
-    # qué reemplazar la posición vendida. Bajo `fully_invested` sin ese bloqueo no existe esta vía:
-    # vender por umbral obligaría a recomprar en el mismo snapshot.
-    if settings.cash_policy == "opportunity_cash" or price_only_gate:
-        cash_exit_floor = floor if settings.cash_policy == "opportunity_cash" else 0
+    # 1. Cobertura: una acción sin rank actual no pertenece al universo scoreable. No puede ser la
+    # peor "desplazable" y bloquear el bucle de rotación: se vende, aun bajo mínimo de tenencia, y
+    # `removed` impide recomprarla en este snapshot. Si no hay reemplazo admisible, queda efectivo.
+    scoreable = set(candidates)
+    for ticker in sorted(holders - scoreable):
+        holders.remove(ticker)
+        removed.add(ticker)
+        protected.discard(ticker)
+        orders.append(_order(
+            date, ticker, "sell", "missing_current_score", state.holdings.get(ticker, 0.0), 0.0,
+        ))
+
+    # 1-bis. Cobertura por ranking: una posición que cae bajo el suelo deja de pertenecer a una
+    # cartera construida sobre este ranking. Es el mismo mandato que `missing_current_score` —el
+    # percentil ausente sustituido por un percentil demasiado bajo— y por eso no se compara contra
+    # ningún coste: no decide si una operación es rentable, sino si la acción sigue perteneciendo al
+    # universo invertible. A diferencia de aquella, sí respeta el mínimo de tenencia, porque la
+    # posición sigue siendo scoreable y la exclusión es una preferencia declarada, no una pérdida de
+    # cobertura. Se vende de la peor hacia arriba y nunca por debajo del suelo de diversificación.
+    if settings.coverage_percentile_floor > 0:
+        coverage_floor = floor if settings.max_cash_weight > 0.0 else 0
+        below_floor = sorted(
+            (
+                ticker for ticker in holders
+                if ticker not in protected
+                and percentile.get(ticker, 0.0) < settings.coverage_percentile_floor
+            ),
+            key=lambda ticker: percentile.get(ticker, 0.0),
+        )
+        for ticker in below_floor:
+            if len(holders) <= coverage_floor:
+                break
+            holders.remove(ticker)
+            removed.add(ticker)
+            orders.append(_order(
+                date, ticker, "sell", "below_coverage_percentile",
+                state.holdings.get(ticker, 0.0), 0.0,
+            ))
+
+    # 2. Ventas a efectivo: con tope de efectivo el destino es efectivo al 0 % con el suelo de
+    # diversificación de siempre; bajo `price_only_sell_only` en un snapshot sin fundamentales
+    # nuevos, el destino es efectivo transitorio sin suelo propio, porque no hay con qué reemplazar
+    # la posición vendida. Con tope 0 y sin ese bloqueo no existe esta vía: vender por umbral
+    # obligaría a recomprar en el mismo snapshot.
+    if settings.max_cash_weight > 0.0 or price_only_gate:
+        cash_exit_floor = floor if settings.max_cash_weight > 0.0 else 0
         below = sorted(
             (
                 ticker for ticker in holders
@@ -153,7 +218,7 @@ def decide_orders(
             orders.append(_order(date, ticker, "sell", "expected_alpha_below_exit", state.holdings.get(ticker, 0.0), 0.0))
 
     if not price_only_gate:
-        # 2. Compras con histéresis: una entrada nueva debe esperar cubrir su propio coste de ida y
+        # 3. Compras con histéresis: una entrada nueva debe esperar cubrir su propio coste de ida y
         # vuelta por encima del umbral de salida. Sin calibración (NaN) manda el ranking.
         for ticker in candidates:
             if len(holders) >= settings.target_size:
@@ -165,11 +230,13 @@ def decide_orders(
             holders.add(ticker)
             orders.append(_order(date, ticker, "buy", "initial_fill", 0.0, None))
 
-        # 3. Rellenos obligatorios por política: `fully_invested` completa hasta el objetivo con las
-        # mejores por ranking aunque no superen el umbral; `opportunity_cash` solo hasta el suelo de
-        # diversificación. Nunca se recompra lo vendido en este mismo snapshot.
-        mandatory = settings.target_size if settings.cash_policy == "fully_invested" else floor
-        reason = "fully_invested_fill" if settings.cash_policy == "fully_invested" else "cash_floor_fill"
+        # 4. Rellenos obligatorios: se completa hasta el suelo de diversificación con las mejores
+        # por ranking aunque no superen el umbral. Con tope de efectivo 0 ese suelo es el objetivo
+        # entero, así que la cartera queda siempre llena; el motivo distingue ambos casos para que
+        # la auditoría de órdenes siga diciendo por qué se compró. Nunca se recompra lo vendido en
+        # este mismo snapshot.
+        mandatory = floor
+        reason = "fully_invested_fill" if settings.max_cash_weight <= 0.0 else "cash_floor_fill"
         for ticker in candidates:
             if len(holders) >= mandatory:
                 break
@@ -178,9 +245,9 @@ def decide_orders(
             holders.add(ticker)
             orders.append(_order(date, ticker, "buy", reason, 0.0, None))
 
-        # 4. Rotación: un outsider desplaza a la peor posición desplazable solo si su ventaja de
+        # 5. Rotación: un outsider desplaza a la peor posición desplazable solo si su ventaja de
         # alfa esperado paga el coste de ida y vuelta más el margen. Las posiciones protegidas por
-        # el mínimo de tenencia nunca son la "peor" desplazable. Bajo `opportunity_cash` el outsider
+        # el mínimo de tenencia nunca son la "peor" desplazable. Con tope de efectivo el outsider
         # debe además superar el umbral de entrada: si no, su plaza natural sería efectivo.
         while len(holders) >= settings.target_size:
             movable = [ticker for ticker in holders if ticker not in protected]
@@ -191,7 +258,7 @@ def decide_orders(
                     ticker for ticker in candidates
                     if ticker not in holders and ticker not in removed
                     and (
-                        settings.cash_policy == "fully_invested"
+                        settings.max_cash_weight <= 0.0
                         or not _below(alpha_bps.get(ticker), entry_threshold)
                     )
                 ),
@@ -209,7 +276,7 @@ def decide_orders(
             orders.extend((_order(date, worst, "sell", "displaced_by_net_edge", state.holdings.get(worst, 0.0), 0.0),
                            _order(date, outsider, "buy", "net_edge_over_worst", 0.0, None)))
 
-    invested = _invested_fraction(len(holders), settings)
+    invested = _invested_fraction(len(holders), settings, blocked=price_only_gate)
     target = _weights(
         sorted(holders, key=lambda ticker: -percentile.get(ticker, -1.0)),
         alpha_bps, invested, settings,
@@ -262,15 +329,15 @@ def _alpha_or(alpha_bps: dict[str, float], ticker: str, percentile: dict[str, fl
     return percentile.get(ticker, -1.0) - 1e6
 
 
-def _annual_to_horizon_bps(annual_bps: float, horizon_months: int) -> float:
-    """Convierte un umbral anual a su equivalente geométrico sobre el horizonte del modelo.
+def _horizon_cost_to_annual_bps(horizon_bps: float, horizon_months: int) -> float:
+    """Anualiza un coste que se paga una sola vez por operación, sobre el horizonte de la posición.
 
-    Compuesto, no lineal: dividir linealmente entre meses (6 %/año → 0,5 %/mes) es el mismo atajo
+    Compuesto, no lineal: multiplicar linealmente (0,3 % en 3 meses → 1,2 %/año) es el mismo atajo
     aritmético que el proyecto ya corrigió en CAGR e IR. Con horizonte de 12 meses la conversión es
-    la identidad; con horizontes más cortos, el umbral efectivo es menor de forma compuesta, nunca
-    proporcional.
+    la identidad; con horizontes más cortos el coste anualizado es mayor, porque la misma comisión
+    se repite más veces al año.
     """
-    rate = (1.0 + annual_bps / BPS) ** (horizon_months / 12.0) - 1.0
+    rate = (1.0 + horizon_bps / BPS) ** (12.0 / horizon_months) - 1.0
     return rate * BPS
 
 
@@ -297,30 +364,42 @@ def _position_floor(settings: Settings) -> int:
     `ceil((1 − max_cash_weight) · target_size)` plazas deben estar ocupadas: así el efectivo nunca
     supera el tope y ninguna posición puede acercarse a concentrar la cartera (con 12 plazas y tope
     del 25 %, el suelo son 9 posiciones y el peso máximo implícito queda en torno al 15 %).
+
+    Con tope 0 la fórmula devuelve `target_size` por sí sola: "siempre invertido" no necesita un
+    caso especial, es el límite natural de la misma expresión.
     """
-    if settings.cash_policy == "fully_invested":
-        return settings.target_size
     floor = math.ceil((1.0 - settings.max_cash_weight) * settings.target_size)
     return max(1, min(settings.target_size, floor))
 
 
-def _invested_fraction(holders: int, settings: Settings) -> float:
-    """Fracción invertida. El hueco entre plazas cubiertas y objetivo se traduce en efectivo.
+def _invested_fraction(holders: int, settings: Settings, blocked: bool = False) -> float:
+    """Fracción invertida. El hueco entre plazas cubiertas y objetivo se traduce en efectivo,
+    acotado por `max_cash_weight` salvo cuando la compra de reemplazo está bloqueada.
 
-    Bajo `opportunity_cash` el hueco está acotado por `max_cash_weight`. Bajo `fully_invested` no
-    debería haber hueco (los rellenos obligatorios siempre completan `target_size`), salvo cuando
-    `price_only_sell_only` bloqueó la compra de reemplazo en un snapshot sin fundamentales nuevos:
-    ahí el hueco es efectivo real y sin tope propio, porque es una situación transitoria hasta el
-    siguiente snapshot con datos nuevos, no una asignación deliberada de cartera.
+    Hay dos motivos distintos para no llenar la cartera y no se comportan igual:
+
+    - **No hay con qué llenarla** (universo escaso): las plazas ausentes no existen, así que el
+      capital se reparte entre las que sí hay y el tope de efectivo decide cuánto se retiene. Aquí
+      vivía un error: una rama por política devolvía `holders / target_size` y con 9 de 12 plazas
+      dejaba un 25 % en efectivo bajo `fully_invested`, mientras que el tope 0 de `opportunity_cash`
+      invertía el 100 %. La política llamada «siempre invertida» retenía más efectivo que la de
+      efectivo con tope cero, y ese efectivo no respetaba tope alguno porque no se declaraba en
+      ninguna variable.
+    - **Hay con qué llenarla pero está prohibido comprar** (`price_only_sell_only` en un snapshot
+      sin fundamentales nuevos): el hueco es efectivo transitorio y deliberado. Repartirlo entre las
+      supervivientes concentraría la cartera justo cuando se ha decidido no actuar sin información
+      nueva, que es lo contrario de lo que persigue la variable. Por eso no se reparte ni se acota.
     """
     if holders >= settings.target_size:
         return 1.0
-    if settings.cash_policy == "opportunity_cash":
-        if holders == 0:
-            return 1.0 - settings.max_cash_weight
-        empty = (settings.target_size - holders) / settings.target_size
-        return 1.0 - min(empty, settings.max_cash_weight)
-    return holders / settings.target_size
+    if blocked:
+        return holders / settings.target_size
+    if settings.max_cash_weight <= 0.0:
+        return 1.0
+    if holders == 0:
+        return 1.0 - settings.max_cash_weight
+    empty = (settings.target_size - holders) / settings.target_size
+    return 1.0 - min(empty, settings.max_cash_weight)
 
 
 def _strictness(is_quarterly: bool, settings: Settings) -> float:

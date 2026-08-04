@@ -16,6 +16,11 @@ class ConfigurationError(ValueError):
     pass
 
 
+# Coste aproximado en disco de la evidencia completa de un run: scores, diagnósticos de Rank-IC,
+# atribución, pesos del meta-agente, equity, órdenes y posiciones (ver runner._retain_evidence).
+RETAINED_BYTES_PER_RUN = 60 * 1024**2
+
+
 def _stable(value: Any) -> tuple[str, str]:
     return type(value).__name__, repr(value)
 
@@ -144,6 +149,27 @@ def evaluation_budget(definition: Mapping[str, dict[str, Any]]) -> dict[str, Any
     }
 
 
+def retention_budget(budget: Mapping[str, Any], retain_all_runs: bool) -> dict[str, Any]:
+    """Ajusta el presupuesto cuando se conserva la evidencia completa de todos los runs.
+
+    La regla 5 del proyecto (los descartados guardan solo resúmenes) existe por coste de disco, no
+    por ciencia: la selección sigue dependiendo únicamente del Rank-IC. Al desactivarla, cada
+    evaluación materializa cartera, órdenes, posiciones y pesos del meta-agente, así que el
+    presupuesto debe declarar ese coste antes de lanzar y no descubrirlo a mitad de ejecución.
+    """
+    payload = dict(budget)
+    payload["retain_all_runs"] = bool(retain_all_runs)
+    if not retain_all_runs:
+        return payload
+    # Los runs que ya retenían evidencia (baseline y ganador) no se cuentan dos veces.
+    additional = max(0, int(payload.get("total_runs", 0)) - 2)
+    payload["retained_run_evidence"] = additional
+    payload["estimated_incremental_bytes"] = (
+        int(payload.get("estimated_incremental_bytes", 0)) + additional * RETAINED_BYTES_PER_RUN
+    )
+    return payload
+
+
 def initial_values(definition: Mapping[str, dict[str, Any]]) -> dict[str, Any]:
     return {spec.id: definition[spec.id]["baseline"] for spec in VARIABLES}
 
@@ -198,20 +224,18 @@ def settings_from_values(
         "lgbm_min_child_samples": int(values["lgbm_min_child_samples"]),
         "meta_type": "equal" if method == "equal" else "stacked_oos",
         "meta_history_quarters": int(values["meta_history_quarters"]),
+        "meta_recency_weighting": str(values["meta_recency_weighting"]),
         "meta_weight_min": 0.10 if method == "stacked_rolling_bounded" else 0.0,
         "meta_weight_cap": 0.50 if method == "stacked_rolling_bounded" else 1.0,
         "target_size": int(values["target_size"]),
         "exit_expected_alpha_bps": float(values["exit_expected_alpha_bps"]),
         "rotation_edge_bps": float(values["rotation_edge_bps"]),
-        "cash_policy": str(values["cash_policy"]),
-        # El tope de efectivo solo tiene sentido bajo la política de oportunidad; con
-        # `fully_invested` se fuerza a cero para que no exista un grado de libertad inoperante.
-        "max_cash_weight": (
-            float(values["max_cash_weight"])
-            if str(values["cash_policy"]) == "opportunity_cash" else 0.0
-        ),
+        # El tope de efectivo gobierna por sí solo la exposición: 0 significa siempre invertido, y
+        # el suelo de diversificación se deriva de él. No hay una política aparte que diga lo mismo.
+        "max_cash_weight": float(values["max_cash_weight"]),
         "rebalance_drift_tolerance": float(values["rebalance_drift_tolerance"]),
         "minimum_holding_period": str(values["minimum_holding_period"]),
+        "coverage_percentile_floor": float(values["coverage_percentile_floor"]),
         "price_only_sell_only": bool(values["price_only_sell_only"]),
         "price_only_strictness_multiplier": float(values["price_only_strictness_multiplier"]),
         "sizing_mode": str(values["sizing_mode"]),

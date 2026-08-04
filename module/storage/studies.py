@@ -10,7 +10,7 @@ from typing import Any, Mapping
 from uuid import uuid4
 
 from environment import PROJECT_ROOT
-from module.common.utils import write_json
+from module.common.utils import madrid_time_of_day, write_json
 
 
 RESULTS_ROOT = PROJECT_ROOT / "results"
@@ -126,6 +126,7 @@ def create_run(
         "cpu_percent": None,
         "ram_bytes": None,
         "bytes_persisted": 0,
+        "evidence_path": None,
         "error": None,
         "traceback": None,
         "result": None,
@@ -191,7 +192,8 @@ def append_event(
         stream.write(json.dumps(payload, ensure_ascii=False, default=str) + "\n")
         stream.flush()
         os.fsync(stream.fileno())
-    time_of_day = datetime.now(timezone.utc).strftime("%H:%M:%S")
+    # El artefacto conserva UTC para trazabilidad; la terminal se expresa en la zona del usuario.
+    time_of_day = madrid_time_of_day()
     print(f"[{time_of_day}] [{level.upper()}] {study_id} · {message}", flush=True)
     return payload
 

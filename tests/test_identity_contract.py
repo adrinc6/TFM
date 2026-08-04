@@ -54,10 +54,11 @@ def test_every_scientific_setting_belongs_to_exactly_one_fingerprint() -> None:
     # en ninguna caché de fit; su identidad la fija `evaluation_key` a través de `values`.
     portfolio = {variable.id for variable in VARIABLES if not variable.predictive}
     portfolio |= {
-        "target_size", "exit_expected_alpha_bps", "rotation_edge_bps", "cash_policy",
+        "target_size", "exit_expected_alpha_bps", "rotation_edge_bps",
         "max_cash_weight", "rebalance_drift_tolerance", "price_only_strictness_multiplier",
         "sizing_mode", "commission_bps", "slippage_bps", "max_monthly_position_return",
         "meta_weight_min", "meta_type", "meta_history_quarters", "meta_weight_cap",
+        "meta_recency_weighting",
         "min_rank_ic_cross_section", "enabled_model_families",
     }
     missing = {

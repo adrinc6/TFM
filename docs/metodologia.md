@@ -157,7 +157,8 @@ corrección por multiplicidad de las cifras finales se hace con el Deflated Shar
 
 **El propósito de esta etapa completa es la estabilidad, no más alfa.** El ganador (temporal,
 representación, modelo, meta) ya está congelado por Rank-IC antes de tocar cartera. Barrer
-`cash_policy`, `target_size`, `sizing_mode`, `minimum_holding_period` o `price_only_sell_only` no es
+`max_cash_weight`, `target_size`, `sizing_mode`, `minimum_holding_period`,
+`coverage_percentile_floor` o `price_only_sell_only` no es
 una búsqueda de qué combinación da más rentabilidad —sería la misma fuga de validez que ya se
 corrigió una vez, elegir retrospectivamente por rentabilidad—, sino una exploración de cómo
 aprovechar de forma **estable y sostenible en el tiempo** la información que el modelo ya congelado
@@ -172,24 +173,69 @@ puntos básicos de alfa esperado ANUALES**, no percentiles del ranking: un perce
 espera ganar y por tanto no puede compararse contra lo que cuesta operar. Definirlos en anual —en vez
 de directamente sobre el horizonte del modelo— los hace comparables entre configuraciones con
 distinto `target_horizon_months`: 250 pb no pueden significar un 10 %/año con horizonte de 3 meses y
-un 2,5 %/año con horizonte de 12. Antes de compararlos contra el alfa esperado (que sí está en
-unidades del horizonte completo), se convierten **geométricamente**:
+un 2,5 %/año con horizonte de 12.
+
+**Toda la comparación ocurre en base anual.** El alfa esperado ya se estima anualizado (ver abajo) y
+los umbrales del catálogo son anuales, así que ninguno de los dos necesita conversión. El que sí la
+necesita es el **coste**: comisión y slippage se pagan una vez por operación, no cada año, y
+compararlos contra un alfa anual los infravaloraría en cuanto el horizonte baja de 12 meses. Se
+anualiza **geométricamente**:
 
 ```text
-umbral_horizonte = (1 + umbral_anual)^(horizonte_meses / 12) − 1
+coste_anual = (1 + coste_horizonte)^(12 / horizonte_meses) − 1
 ```
 
-Compuesto, no lineal —igual que el resto del proyecto anualiza CAGR e IR—: dividir el umbral anual
-entre el número de meses (100 pb/año → ~8,3 pb/mes) es el mismo atajo aritmético que ya se corrigió
-en otros sitios. Con horizonte de 12 meses la conversión es la identidad; con 6 meses, un umbral de
-100 pb/año equivale a `(1,01)^0,5 − 1 ≈ 49,9` pb sobre el horizonte, no a 50 pb exactos.
+Compuesto, no lineal —igual que el resto del proyecto anualiza CAGR e IR—: multiplicar el coste por
+las vueltas que caben en un año es el mismo atajo aritmético que ya se corrigió en otros sitios. Con
+horizonte de 12 meses la conversión es la identidad; con 6 meses, 30 pb de ida y vuelta equivalen a
+`(1,003)^2 − 1 ≈ 60,09` pb anuales, no a 60 pb exactos.
 
-El alfa esperado procede de la calibración isotónica causal de `meta_rank` a retorno excedente
-(`signal_calibration.parquet`), que solo usa cohortes ya cerradas. Mientras no hay suficientes
-cohortes cerradas el valor es `NaN`, no cero: son cosas distintas y la cartera las trata distinto.
-Un `NaN` nunca dispara una venta ni bloquea una compra —la regla es actuar solo ante evidencia
-económica—, de modo que durante el arranque manda la ordenación y, en cuanto hay calibración, mandan
-los umbrales.
+#### Alfa esperado: curva percentil → retorno real, con cascada de ventanas
+
+El alfa esperado (`signal_calibration.parquet`) se estima ajustando, sobre cohortes **ya cerradas**,
+una recta que relaciona el percentil de `meta_rank` con el **retorno excedente real anualizado** que
+obtuvieron las acciones de ese tramo. Las cohortes recientes pesan más que las antiguas (decaimiento
+exponencial), porque una relación percentil→alfa de hace cuatro años no describe el régimen actual.
+
+**Estimación y evaluación usan granularidades distintas, a propósito.** La recta se *estima*
+agrupando en **20 ventiles** (tramos de 5 puntos de percentil): con un universo de ~500 valores eso
+deja ~25 acciones por punto, suficiente para que cada media signifique algo. Agrupar en 100
+percentiles dejaría ~5 acciones por punto y la recta se ajustaría sobre ruido, sobre todo en la
+ventana más corta. Pero la recta se *evalúa* en el **rank continuo** de cada acción, no en su ventil:
+así un p99 recibe estrictamente más alfa esperado que un p88, en vez de compartir el valor de su
+tramo, y no aparecen saltos artificiales en las fronteras entre ventiles —justo donde la cartera
+decide a quién desplaza—.
+
+La pendiente de esa recta es la condición económica que la cartera necesita: **solo si es creciente**
+tiene sentido ordenar por `meta_rank`, porque solo entonces mejor percentil se tradujo en más alfa.
+Cuando no lo es, la ventana se descarta y se amplía la evidencia, en cascada:
+
+```text
+horizonte objetivo → era (16 trimestres) → todo el histórico → salvaguarda
+```
+
+La **salvaguarda** es una recta impuesta de −10 % anual en el peor percentil a +10 % en el mejor. No se
+estima de los datos: es un supuesto a priori que se activa justo cuando las tres ventanas dicen que
+el ranking no discrimina a favor. Queda registrada por fila en `alpha_curve_window`, de modo que
+siempre puede contarse en qué snapshots la cartera operó sobre evidencia y en cuáles sobre supuesto.
+Su justificación y su riesgo están documentados en la bitácora.
+
+Esta formulación sustituye a la calibración isotónica anterior. La isotónica forzaba monotonía
+creciente (`increasing=True`), y cuando la relación real es decreciente la única curva creciente que
+minimiza el error es **una constante**: el alfa colapsaba al mismo valor para todo el universo y la
+cartera dejaba de poder discriminar entre posiciones, congelándolas.
+
+Mientras no hay cohortes cerradas suficientes el valor es `NaN`, no cero: son cosas distintas y la
+cartera las trata distinto. Un `NaN` nunca dispara una venta ni bloquea una compra —la regla es
+actuar solo ante evidencia económica—, de modo que durante el arranque manda la ordenación y, en
+cuanto hay evidencia, mandan los umbrales.
+
+Una ausencia de `meta_rank` es distinta de un alfa sin calibrar: significa que una posición ya no
+está en el universo scoreable del snapshot actual (por ejemplo, porque salió del S&P 500 o perdió
+cobertura de datos). Se vende de inmediato con el motivo `missing_current_score`, sin respetar el
+mínimo de tenencia y sin permitir su recompra en el mismo snapshot. Si existe una candidata, las
+reglas normales de llenado deciden el reemplazo; si no, queda efectivo. Esta salida es una regla de
+integridad de cobertura, no una decisión de alfa ni un umbral de percentil.
 
 El principio que gobierna todas las órdenes: **una venta solo se emite si el destino del dinero es
 mejor que la posición después de costes**. Hay exactamente dos destinos posibles y cada uno tiene su
@@ -201,17 +247,16 @@ regla. En cada snapshot se marcan posiciones a mercado y:
   alfa_esperado(outsider) − alfa_esperado(peor) > 2·(comisión + slippage) + rotation_edge_bps
   ```
 
-  (con `alfa_esperado` y `rotation_edge_bps` ya convertidos al horizonte), es decir, **la rotación
+  (con `alfa_esperado`, `rotation_edge_bps` y el coste ya todos en base anual), es decir, **la rotación
   paga su propio coste de ida y vuelta** antes de autorizarse. Este es el mecanismo que faltaba: con
   877 % de rotación anual a 15 pb por operación, el coste drenaba en torno a 1,3 puntos porcentuales
-  al año contra una ventaja bruta de unos 3,1. Es la **única** vía de venta bajo `fully_invested` sin
-  `price_only_sell_only`: vender por umbral con la obligación de recomprar en el mismo snapshot
+  al año contra una ventaja bruta de unos 3,1. Es la **única** vía de venta con `max_cash_weight = 0`
+  y sin `price_only_sell_only`: vender por umbral con la obligación de recomprar en el mismo snapshot
   pagaría una ida y vuelta para quedar igual.
-- **Venta a efectivo (destino: efectivo).** Bajo `opportunity_cash`, una posición sale si su alfa
+- **Venta a efectivo (destino: efectivo).** Con `max_cash_weight > 0`, una posición sale si su alfa
   esperado cae por debajo de `exit_expected_alpha_bps` **y** su plaza puede quedar en efectivo sin
-  violar el suelo de diversificación ni el tope `max_cash_weight`. Bajo `price_only_sell_only` en un
-  snapshot sin fundamentales nuevos, esta vía se abre también con `fully_invested`, sin suelo propio
-  (ver más abajo).
+  violar el suelo de diversificación ni el propio tope. Bajo `price_only_sell_only` en un snapshot
+  sin fundamentales nuevos, esta vía se abre también con tope 0, sin suelo propio (ver más abajo).
 - **Compra con histéresis.** Una entrada nueva exige `exit_expected_alpha_bps` **más el coste de ida
   y vuelta de la propia operación**; mantener una posición ya en cartera exige solo el umbral de
   salida. Sin esa banda, una acción oscilando alrededor del umbral se compraría y vendería en
@@ -226,6 +271,21 @@ en cartera, expresado como fracción del horizonte del modelo: `none` (sin míni
 completo). Es el único freno que no depende de ninguna magnitud económica, solo del tiempo, y no
 busca más alfa sino menos rotación de alta frecuencia sobre el mismo modelo ya congelado.
 
+La única excepción al mínimo es `missing_current_score`: no se puede proteger una posición que el
+snapshot actual ya no puede evaluar.
+
+**El suelo de cobertura** (`coverage_percentile_floor`, 0 lo desactiva) vende entera una posición que
+cae por debajo del percentil configurado del ranking, aunque su alfa esperado no active ninguna otra
+regla. Es la generalización de `missing_current_score` —el percentil ausente sustituido por un
+percentil demasiado bajo— y, como aquella, **no se compara contra ningún coste**: no decide si una
+operación es rentable, sino si la acción sigue perteneciendo al universo invertible. Por eso convive
+con la doctrina de umbrales económicos sin contradecirla. A diferencia de la pérdida de cobertura,
+**sí respeta el mínimo de tenencia**, porque la posición sigue siendo evaluable y su exclusión es una
+preferencia declarada, no una imposibilidad. Nunca rompe el suelo de diversificación. Debe conocerse
+una consecuencia: con `max_cash_weight = 0` el relleno obligatorio recompra en el mismo snapshot sin
+aplicar umbrales, así que la regla fuerza una rotación que el bucle económico habría rechazado y
+**aumenta** la rotación de la cartera; con tope de efectivo la plaza puede quedarse vacía.
+
 El papel de cada insumo es explícito: el **ranking del meta** decide el orden de preferencia y los
 desempates (la confianza de los agentes), el **alfa calibrado** decide si cada operación se paga a sí
 misma (la magnitud económica), y los **costes** son el listón que toda operación debe superar.
@@ -239,17 +299,23 @@ mueve por ruido de precio sin confirmación fundamental.
 **vender** una posición cuyo alfa esperado ya no cumple, pero se **prohíbe comprar cualquier
 reemplazo** —ni compra nueva, ni relleno obligatorio, ni rotación— porque no hay información nueva
 que justifique elegir una acción distinta a la ya elegida con datos reales. La plaza vendida queda en
-efectivo, sin el tope ni el suelo de `opportunity_cash` (es un estado transitorio, no una asignación
-deliberada de cartera), hasta el siguiente snapshot con fundamentales frescos. Con esta variable
-activa, `fully_invested` puede por tanto mostrar efectivo temporal: el relleno obligatorio vuelve a
+efectivo, sin el tope ni el suelo habituales (es un estado transitorio, no una asignación deliberada
+de cartera) y **sin repartirse entre las supervivientes**, porque concentrar la cartera en lo que
+queda sería actuar justo cuando se ha decidido no actuar sin información nueva. Dura hasta el
+siguiente snapshot con fundamentales frescos. Con esta variable activa, un tope de 0 puede por tanto
+mostrar efectivo temporal: el relleno obligatorio vuelve a
 completar la cartera en el siguiente snapshot con datos reales si hay candidatas por encima del
 umbral de entrada.
 
-### Política de efectivo
+### Efectivo
 
-`cash_policy` decide si la cartera está siempre invertida al 100 % (`fully_invested`, referencia) o
-si deja una plaza en efectivo cuando ninguna candidata supera el umbral (`opportunity_cash`, con
-tope `max_cash_weight`, máximo del catálogo: 25 %). El efectivo **se remunera al 0 %**: es una cota
+`max_cash_weight` es la **única** variable que gobierna la exposición: fija el peso máximo que puede
+quedar sin invertir cuando ninguna candidata supera el umbral (máximo del catálogo: 25 %), y con
+valor **0 significa «siempre invertida al 100 %»**, que es la referencia. Existió además una
+`cash_policy` con los valores `fully_invested`/`opportunity_cash`, pero era redundante —el catálogo
+ya forzaba el tope a 0 bajo `fully_invested` y el suelo de diversificación se deriva del tope—, así
+que se eliminó: dos variables para una misma decisión solo invitan a combinaciones inconsistentes.
+El efectivo **se remunera al 0 %**: es una cota
 inferior deliberadamente conservadora, nunca aporta rentabilidad y solo puede ayudar evitando malas
 compras y ahorrando costes. Si aun así mejora el alfa, la mejora no admite discusión.
 
@@ -260,12 +326,12 @@ pocos nombres (con 12 plazas y tope del 25 %, el suelo son 9 posiciones y ningun
 de en torno al 15 % del total). El efectivo es además **granular, no continuo**: se mueve en saltos
 de una plaza (`1/target_size`).
 
-Una propiedad que debe declararse: la calibración isotónica trabaja en 20 ventiles, así que con una
-cartera concentrada (12 posiciones sobre ~250 valores) todas las posiciones viven en el ventil
-superior y comparten casi el mismo alfa esperado. En ese régimen el efectivo responde a la **salud
-reciente de la señal** (la calibración usa los últimos 16 trimestres cerrados), no a la dispersión
-transversal del día, y es casi binario: la política solo se vuelve gradual con `target_size` 25
-o 50, donde la cartera cruza varios ventiles.
+Una propiedad que debe declararse: con una cartera concentrada (12 posiciones sobre ~250 valores)
+todas las posiciones viven en la parte alta del ranking, así que sus alfas esperados —aunque
+distintos, porque la recta se evalúa en el rank continuo— quedan muy próximos entre sí. En ese
+régimen el efectivo responde sobre todo a la **salud reciente de la señal** (a qué ventana de la
+cascada sobrevive y con qué pendiente), no a la dispersión transversal del día, y es casi binario:
+la política solo se vuelve gradual con `target_size` 25 o 50.
 
 La decisión de dejar efectivo se deriva **exclusivamente de la sección transversal** —del alfa
 esperado de las candidatas— y nunca de una previsión sobre el mercado. Esa restricción no es
@@ -383,6 +449,24 @@ contenido que la del ganador (scores de agentes, pesos del meta-agente, diagnós
 posiciones y órdenes): es la única otra configuración con vistas de rendimiento, aprendizaje y
 cartera propias, para poder compararla directamente contra el ganador. No genera perfiles ni
 participa en robustez: esos diagnósticos siguen siendo exclusivos del ganador.
+
+Junto al botón de lanzamiento existe un conmutador, «Ruta científica completa», que levanta esa
+restricción de forma explícita para un Study concreto. Con él activo, todos los runs —candidatos
+predictivos, diagnósticos de cartera, semillas y placebos— retienen su evidencia entera en
+`runs_evidence/<clave_lógica>/` dentro del Study: scores de agentes, pesos del meta-agente,
+diagnósticos de Rank-IC y de cola, atribución de features, curva de capital, métricas anuales,
+posiciones y órdenes. Las vistas de rendimiento, aprendizaje, cartera y acciones quedan entonces
+disponibles para cualquier run, no solo para el ganador y el baseline, direccionadas como
+`source=run:<run_id>`.
+
+La restricción que levanta es de almacenamiento, no metodológica: el plan experimental es idéntico
+con el conmutador activo o inactivo. No cambia el número de evaluaciones, ni los candidatos, ni el
+criterio de selección, que sigue siendo únicamente el Rank-IC de la ventana de selección; 2025-2026
+permanece fuera de toda decisión. Lo que sí cambia es el coste: el preflight declara por adelantado
+los runs que retendrán evidencia y el disco estimado, y como la evidencia debe materializarse, esos
+runs se recalculan en lugar de reutilizar el resumen en caché. Es la opción adecuada para auditar
+por qué un candidato descartado quedó por detrás del ganador, y desaconsejable como modo por
+defecto en ejecuciones largas.
 
 Las métricas que representan tasas, retornos, pesos, drawdowns, turnover, alfa o Rank-IC se
 presentan en porcentaje, aunque los artefactos mantengan su representación decimal para el cálculo.

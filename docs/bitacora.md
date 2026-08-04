@@ -1,5 +1,290 @@
 # Bitácora
 
+## 2026-08-04 · Cartera: una sola variable de efectivo, corrección del reparto y suelo de cobertura
+
+### 1. `cash_policy` se elimina; `max_cash_weight` gobierna sola el efectivo
+
+`cash_policy` (`fully_invested` / `opportunity_cash`) y `max_cash_weight` eran dos grados de
+libertad para una sola decisión. El propio catálogo ya lo reconocía: `settings_from_values` forzaba
+el tope a 0 bajo `fully_invested` «para que no exista un grado de libertad inoperante». De las cinco
+ramas que trataban la política como caso especial en `portfolio.py`, tres eran equivalentes a
+`max_cash_weight = 0` y dos no estaban justificadas:
+
+| Punto | `fully_invested` | `opportunity_cash` con tope 0 |
+|---|---|---|
+| Suelo de posiciones | `target_size` | `ceil(1,0 × target_size)` — igual |
+| Relleno obligatorio | `target_size` | suelo = `target_size` — igual |
+| Venta a efectivo | desactivada | activa, pero el suelo la corta — igual |
+| Rotación: umbral al outsider | no lo exige | **sí lo exige — difería** |
+| Fracción invertida | `holders / target_size` | `1,0` — **difería (ver 2)** |
+
+Ahora `max_cash_weight = 0` **significa** «siempre invertido»: el suelo de diversificación se deriva
+del tope y no hace falta una variable que diga lo mismo por otra vía. Se conserva el motivo
+`fully_invested_fill` frente a `cash_floor_fill` en las órdenes para que la auditoría siga
+distinguiendo por qué se compró.
+
+### 2. Corrección: el reparto dejaba efectivo no declarado
+
+Con 9 de 12 plazas cubiertas, `fully_invested` invertía el **75 %** y `opportunity_cash` con tope 0
+invertía el **100 %**. La política llamada «siempre invertida» retenía más efectivo que la política
+de efectivo con tope cero, y ese 25 % no lo declaraba ninguna variable, así que no respetaba tope
+alguno.
+
+La corrección distingue dos situaciones que la rama anterior confundía:
+
+- **Universo escaso** (no hay con qué llenar la cartera): el capital se reparte entre las plazas
+  realmente ocupadas y el tope decide cuánto se retiene. Aquí estaba el error.
+- **Compra bloqueada** (`price_only_sell_only` en un snapshot sin fundamentales nuevos): el hueco
+  sigue siendo efectivo transitorio y **no** se reparte. Repartirlo concentraría la cartera —una
+  superviviente pasaría del 50 % al 100 %— justo cuando se ha decidido no actuar sin información
+  nueva, que es lo contrario del propósito de la variable. Se detectó al reescribir
+  `test_price_only_sell_only_allows_sale_but_blocks_replacement`, que falló con la primera versión
+  de la corrección.
+
+### 3. Nueva variable `coverage_percentile_floor` (0 / 60 / 80), baseline 0
+
+Una posición que cae por debajo del percentil configurado se vende entera con el motivo
+`below_coverage_percentile`, **una vez cumplido el mínimo de tenencia**. Es la generalización de
+`missing_current_score`: percentil ausente sustituido por percentil demasiado bajo.
+
+Esto **enmienda** la decisión registrada el 2026-07-30 («No se introduce un umbral p4/p5»). La
+enmienda es deliberada y acotada: aquella frase defendía que los umbrales que compiten contra el
+coste de operar deben ser económicos, y eso sigue intacto —la rotación sigue exigiendo cubrir coste
+más margen—. El suelo de cobertura no se compara contra ningún coste: no decide si una operación es
+rentable, sino si la acción sigue perteneciendo al universo invertible. Es un mandato, como el
+mínimo de tenencia. El test `test_portfolio_thresholds_are_economic_not_percentiles` se estrecha en
+vez de borrarse, conservando la doctrina y documentando por qué esta variable no la viola.
+
+Diferencia con `missing_current_score`, que conviene tener presente: aquella **ignora** el mínimo de
+tenencia (la posición ha perdido cobertura y ya no es evaluable), ésta **lo respeta** (la posición
+sigue siendo scoreable y la exclusión es una preferencia declarada).
+
+**Consecuencia declarada**: con `max_cash_weight = 0` el relleno obligatorio recompra la mejor
+disponible en el mismo snapshot sin aplicar umbrales, así que la venta por cobertura fuerza una
+rotación que el bucle económico habría rechazado y **aumenta** la rotación. Con tope de efectivo la
+plaza puede quedarse vacía hasta el suelo de diversificación. Queda fijado por test.
+
+### 4. Turnover: el barrido diagnóstico ya tenía la respuesta
+
+Descomposición del turnover del ganador `study-20260803-201234-b4d7a8d8` (suma de |Δpeso| por
+motivo, total 36,0 sobre 110 snapshots con órdenes): rotación **56 %**
+(`net_edge_over_worst` + `displaced_by_net_edge`), `rebalance` 20 %, `initial_fill` 13 %,
+`expected_alpha_below_exit` 10 %. La causa raíz es estructural: se re-decide **mensualmente** sobre
+una señal a **12 meses** con `minimum_holding_period = "none"`.
+
+El barrido de cartera ya medía las palancas sobre el ganador congelado:
+
+| Cambio | Turnover | IR | Alfa geom. |
+|---|---|---|---|
+| *(ganador)* | 3,59 | 0,269 | 1,62 % |
+| `minimum_holding_period` → `half_horizon` | **2,28** | **0,398** | **2,58 %** |
+| `rotation_edge_bps` → 100 | 2,78 | 0,315 | 2,06 % |
+| `price_only_sell_only` → true | 2,53 | 0,362 | 2,24 % |
+| `minimum_holding_period` → `full_horizon` | 1,67 | −0,050 | −0,67 % |
+
+`half_horizon` baja el turnover un 36 % y **a la vez** sube IR y alfa; `full_horizon` muestra que el
+compromiso no es monótono. El valor `"none"` del ganador viene del `recommended` del catálogo, no de
+una elección medida. **Se decide no cambiar ese baseline**: queda como evidencia disponible para el
+informe, no como cambio de configuración.
+
+### Validación
+
+`python -m pytest -q` (75 pasan, 7 nuevos) y `node --check app/js/app.js`. Se capturaron 15
+escenarios de `decide_orders` antes y después del refactor: 12 idénticos, 3 diferencias, todas
+intencionadas (dos por la corrección del reparto en universo escaso, una por la etiqueta del motivo
+de relleno).
+
+**`CATALOG_VERSION` 5 → 6.** La unificación y la corrección cambian resultados, así que
+`study-20260803-201234-b4d7a8d8` deja de ser reproducible con este código y la comparabilidad con
+estudios anteriores queda rota. Habrá que re-ejecutar el study para tener un ganador coherente con
+el catálogo v6.
+
+## 2026-08-04 · Ruta científica completa: evidencia opcional de todos los runs
+
+### Decisión
+
+Se añade un conmutador junto a «Lanzar Study», «Ruta científica completa», que cuando se activa
+hace que todos los runs del Study retengan su evidencia entera —cartera, órdenes, posiciones,
+curva de capital, pesos del meta-agente, diagnósticos de Rank-IC y atribución— en
+`runs_evidence/<clave_lógica>/`, y no solo el baseline y el ganador.
+
+### Motivo
+
+La regla 5 del proyecto (los descartados guardan solo resúmenes) es una restricción de disco, no
+metodológica. Su efecto práctico era que, ante un candidato descartado, solo se podía ver su
+Rank-IC agregado: no había forma de responder *por qué* quedó por detrás sin relanzar el Study
+entero con otra configuración. Con la evidencia retenida, las vistas de rendimiento, aprendizaje,
+cartera y acciones quedan disponibles para cualquier run.
+
+### Qué no cambia
+
+El plan experimental es idéntico con el conmutador activo o inactivo: mismo número de
+evaluaciones, mismos candidatos, misma selección por Rank-IC en la ventana de selección y 2025-2026
+igualmente fuera de toda decisión. El test `test_full_scientific_route_only_changes_storage_not_selection`
+fija ese contrato comparando ambos preflight.
+
+### Coste
+
+El preflight declara por adelantado los runs que retendrán evidencia y el disco estimado (unos
+60 MB por run), visible en el panel de presupuesto antes de lanzar. Como la evidencia debe
+materializarse, esos runs se recalculan en vez de reutilizar el resumen en caché, así que la
+ejecución es más lenta. Por eso es opcional y está desactivado por defecto.
+
+### Validación
+
+`python -m pytest -q` (68 pasan, dos nuevos) y `node --check app/js/app.js`. La resolución de
+`source=run:<run_id>` toma el directorio del artefacto del run, nunca de la cadena recibida, y se
+confina bajo el Study; hay test de escape de ruta.
+
+## 2026-07-30 · Comparación de perfiles serializable en Parquet
+
+### Corrección
+
+El smoke de cinco tickers completó baseline, ganador y los ocho perfiles, pero PyArrow no pudo
+persistir `profile_comparison.parquet`: la tabla recibía diccionarios anidados y uno vacío
+(`confirmation`) no tiene un esquema Parquet válido. La comparación agregada guarda ahora solo las
+métricas escalares que presenta el dashboard; cada perfil conserva su resumen completo en
+`evidence/profiles/<perfil>/summary.json`. Es una corrección de persistencia, sin efecto científico.
+
+## 2026-07-30 · Salida forzada por pérdida de score actual
+
+### Diagnóstico y decisión
+
+La cartera ya tomaba el percentil y el alfa del snapshot actual, no los de compra. En el baseline
+de `study-20260730-115839-33de77e2`, ACN estaba en p4,96 con −9,01 % anual y MCD, fuera de cartera,
+en p100 con +10,00 %: una ventaja de 1.901 pb, suficiente para una rotación. Sin embargo, MAC seguía
+en cartera sin fila scoreable; dejó el S&P 500 el 2019-12-10. El bucle la elegía como peor posición,
+no podía calcular su ventaja y detenía toda rotación, incluida la de ACN.
+
+Toda posición sin `meta_rank` actual se vende ahora con el motivo `missing_current_score`, incluso si
+no ha cumplido `minimum_holding_period`. No puede recomprarse en ese snapshot. La sustitución posterior
+mantiene las reglas existentes: relleno bajo `fully_invested`, umbrales y suelo bajo `opportunity_cash`,
+y efectivo transitorio bajo `price_only_sell_only`. No se introduce un umbral p4/p5: los percentiles
+actuales se traducen a alfa y la rotación sigue exigiendo cubrir costes y margen.
+
+### Verificación
+
+Pruebas de contrato cubren la salida sin score con mínimo de tenencia, la rotación de una posición p4
+antes bloqueada por otra sin score y la prioridad de `price_only_sell_only`.
+
+## 2026-07-30 · Hora de Madrid en la consola de ejecución
+
+### Corrección
+
+Los eventos de cada Study continúan persistiendo su timestamp en UTC, para conservar una referencia
+inequívoca y comparable. La línea visible en terminal se formatea ahora en `Europe/Madrid`, igual que
+la Consola del dashboard. Al actualizar manualmente esa Consola se aplicaba por error el timestamp
+UTC crudo; también queda corregido.
+
+### Verificación
+
+Una prueba de flujo fija una hora de Madrid y comprueba que `append_event` la emite en terminal,
+manteniendo además la persistencia incremental de `events.jsonl`.
+
+## 2026-07-30 · Recencia en el meta-agente y curva percentil→alfa con cascada de ventanas
+
+### Diagnóstico que lo motiva
+
+Partió de una observación sobre la cartera: posiciones con 81-90 meses de antigüedad y percentil
+actual muy bajo (p4, p17, `null`) que nunca se vendían. La investigación encontró dos problemas
+encadenados, ambos verificados sobre `study-20260730-083636-7a6bc807/evidence_baseline/`:
+
+1. **El meta-agente no olvidaba el régimen viejo.** El rank-IC del meta acumula **7 trimestres
+   consecutivos en negativo** (2023-12-30 → 2025-06-29, media −0,086), la racha más larga de la
+   serie 2015-2025 —más que COVID, que fueron 4 trimestres con media −0,133—. Los cinco agentes se
+   invirtieron a la vez (growth −0,065, momentum −0,090, quality −0,077 en el último año), patrón
+   compatible con una rotación factorial de mercado ("caro" growth/quality → "barato" value) y no
+   con un error de signo: se contrastó contra `rank_ic_diagnostics.parquet`, que calcula el propio
+   pipeline, y coincide. El Ridge del meta usaba una ventana **rectangular**: una cohorte de hace
+   cuatro años pesaba igual que la última.
+2. **La calibración isotónica colapsaba.** En el snapshot 2026-06-29, `expected_excess_return` era
+   **idéntico para los 504 tickers** (−307,68 pb). No era un fallo de implementación:
+   `IsotonicRegression(increasing=True)` fuerza monotonía creciente, y cuando la relación real es
+   decreciente la única curva creciente que minimiza el error es una constante. Con alfa plano
+   `decide_orders` no puede discriminar y las posiciones quedan congeladas: `_advantage` devuelve
+   `None` y aborta el bucle de rotación entero.
+
+Una nota metodológica sobre el propio diagnóstico: un primer análisis por deciles usando la **media**
+del retorno excedente sugirió que el ranking estaba invertido en todo el histórico. Era un artefacto
+del estimador —la distribución tiene cola derecha extrema (media +3552 pb, mediana −146 pb)— y unos
+pocos multibaggers en el decil bajo lo distorsionaban. Con mediana o media winsorizada la curva
+histórica sí es creciente, coherente con el rank-IC positivo (+0,043). La inversión es real, pero
+**solo en el régimen reciente**, no en todo el histórico.
+
+### Decisión
+
+1. **Nueva variable `meta_recency_weighting`** (`off`, `linear`, `exponential`, recomendado `off`),
+   fase `meta` del catálogo. Replica el mecanismo ya validado de `recency_weighting` para los
+   agentes base (`agents.py`), aplicándolo ahora al `sample_weight` del Ridge del meta y reutilizando
+   `RECENCY_HALFLIFE_YEARS`. Depende de `meta_method` (no aplica con `equal`). Entra como eje del
+   Model Study, no como cambio directo al ganador: tendrá que ganarse el sitio por Rank-IC OOS.
+
+   Validación previa offline (réplica del stacker sobre los datos reales del estudio): en la racha
+   adversa el rank-IC medio pasa de −0,0489 a **−0,0398** (`linear`) / −0,0410 (`exponential`), sin
+   degradar el histórico completo (0,0532 → 0,0549 / 0,0551). Mejora modesta y consistente: no
+   revierte la rotación de mercado —nada lo haría— pero acorta cuánto tarda el meta en dejar de
+   confiar en un agente que ya no funciona. Se observó que sin clamp el stacker puede concentrarse
+   en un solo agente (100 % `value` en el último snapshot), por lo que la variable está pensada para
+   evaluarse junto a `stacked_rolling_bounded`, que limita cada agente al 10–50 %.
+
+2. **La calibración isotónica se sustituye por una curva percentil → retorno real anualizado con
+   cascada de ventanas**: `horizonte objetivo → era (16 trimestres) → todo el histórico →
+   salvaguarda`. Se ajusta una recta por mínimos cuadrados, ponderando las cohortes recientes más
+   que las antiguas, y se acepta la primera ventana con **pendiente creciente**. Todo el alfa pasa a
+   expresarse **anualizado**, lo que unifica las unidades con los umbrales del catálogo (que ya eran
+   anuales). En consecuencia, `_annual_to_horizon_bps` se sustituye por
+   `_horizon_cost_to_annual_bps`: lo que se convierte ahora es el **coste** (que se paga una vez por
+   operación) y no el umbral.
+
+   Sobre la granularidad se descartaron dos extremos. Estimar la recta con 100 percentiles deja ~5
+   acciones por punto (~20 observaciones en la ventana corta): la recta se ajustaría sobre ruido.
+   Estimarla con 10 deciles es robusto pero grueso. Se adoptaron **20 ventiles** (~25 acciones por
+   punto) para *estimar*, y —esto es lo que de verdad importa para la cartera— la recta se *evalúa*
+   en el **rank continuo** de cada acción, no en su ventil: un p99 recibe estrictamente más alfa que
+   un p88, y no hay saltos artificiales en las fronteras. En el estudio actual eso produce 504
+   valores de alfa distintos donde la isotónica producía 1.
+
+### Dos decisiones tomadas contra la recomendación técnica
+
+Se dejan registradas con ambos lados del argumento, por honestidad metodológica:
+
+- **Sustituir la isotónica sin dejarla como opción de catálogo.** Se recomendó introducir la cascada
+  como una variable más (`alpha_calibration`: `isotonic` | `windowed_cascade`) para que el Model
+  Study eligiera con evidencia, a coste casi nulo. *A favor de lo decidido:* el colapso de la
+  isotónica es demostrable y deja la cartera inoperante, y mantener dos rutas de calibración
+  complica el código sin que el autor prevea volver a la anterior. *En contra:* cambia el ganador
+  sin pasar por la selección secuencial por Rank-IC, que es la regla 4 del proyecto, y renuncia a
+  poder comparar ambas formulaciones con evidencia en la memoria del TFM. El autor asumió el riesgo
+  y pidió eliminar el legacy.
+- **Salvaguarda lineal fija de −10 %/+10 % hardcodeada.** *A favor:* garantiza que la cartera
+  siempre tiene un alfa utilizable y nunca queda sin señal operativa. *En contra:* es un supuesto a
+  priori, no aprendido de datos, del mismo tipo que el `REGIME_TILT` que este proyecto ya eliminó
+  (ver 2026-07-25); y se activa **precisamente** cuando las tres ventanas coinciden en que el
+  ranking no discrimina a favor, es decir, impone convicción justo cuando la evidencia disponible
+  dice lo contrario. Se recomendó una curva plana (alfa neutro, cartera equiponderada) como
+  alternativa que también evita quedarse sin señal sin imponer dirección. El autor prefirió la recta
+  fija. Mitigación adoptada: cada fila registra en `alpha_curve_window` qué ventana se usó, de modo
+  que el informe puede cuantificar en qué snapshots se operó sobre supuesto en vez de sobre
+  evidencia. En el estudio actual, la salvaguarda se activa en 4384 de 20545 filas.
+
+### Verificación
+
+`pytest` (59 pruebas), `ruff` y `node --check` en verde. Dos pruebas se reescribieron porque
+verificaban la semántica anterior: `test_annual_threshold_converts_geometrically_not_linearly` pasa a
+ser `test_operating_cost_annualizes_geometrically_not_linearly` más una prueba explícita de que el
+umbral anual se compara contra alfa anual sin reescalados.
+
+`calibrated_alpha_path` **no tenía ninguna cobertura**, y durante el desarrollo un renombrado dejó
+una llamada rota en esa ruta que la suite no detectó. Se añade `tests/test_alpha_curve_contract.py`
+(6 pruebas) cubriendo lo que puede fallar en silencio: que cada acción reciba un alfa único y
+monótono en su rank (no aplanado por ventil), que una relación decreciente caiga hasta la
+salvaguarda, que una creciente se quede en la ventana más reactiva, que sin cohortes cerradas el
+valor sea `NaN` y no `0.0`, que las tres ventanas se ajusten sobre evidencia distinta, y que la
+anualización componga en vez de prorratear.
+
+Se comprobó además que `meta_recency_weighting` en `off` reproduce exactamente los pesos previos.
+Queda pendiente de un estudio real autorizado.
+
 ## 2026-07-28 · Umbrales anuales con conversión geométrica, mínimo de tenencia y venta sin reemplazo
 
 ### Decisión

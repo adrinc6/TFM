@@ -10,7 +10,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from environment import Settings
+from environment import RECENCY_HALFLIFE_YEARS, Settings
 from module.modeling.catalog import AGENT_NAMES
 from module.modeling.targets import normalize_target_columns
 
@@ -229,6 +229,27 @@ def _weights_as_of(
     return ({agent: equal for agent in available_agents}, evidence)
 
 
+def _meta_recency_weights(snapshot_dates: pd.Series, settings: Settings) -> np.ndarray | None:
+    """Peso de cada fila del stacker según la antigüedad de su cohorte dentro de la ventana.
+
+    Mismo contrato que `_recency_weights` de los agentes base (module/modeling/agents.py), pero la
+    antigüedad se mide sobre la cohorte trimestral cerrada, no sobre la ventana de entrenamiento:
+      - "linear":      peso = (span_años + 1) - antigüedad_años (la cohorte más vieja aún pesa ~1).
+      - "exponential": peso = 0.5 ** (antigüedad_años / RECENCY_HALFLIFE_YEARS).
+    Devuelve None con "off", que es el comportamiento histórico (ventana rectangular).
+    """
+    if settings.meta_recency_weighting == "off":
+        return None
+    dates = pd.to_datetime(pd.Series(snapshot_dates))
+    age_years = (dates.max() - dates) / pd.Timedelta(days=365.25)
+    if settings.meta_recency_weighting == "linear":
+        span = float(age_years.max())
+        weights = (span + 1.0) - age_years
+    else:
+        weights = 0.5 ** (age_years / RECENCY_HALFLIFE_YEARS)
+    return weights.clip(lower=1e-6).to_numpy(dtype=float)
+
+
 def _meta_history_window(history: pd.DataFrame, settings: Settings) -> pd.DataFrame:
     """Recorta la historia a la ventana rolling causal del stacker."""
     if history.empty:
@@ -267,7 +288,13 @@ def _stacked_oos_weights(
         from sklearn.preprocessing import StandardScaler
 
         model = make_pipeline(SimpleImputer(strategy="median"), StandardScaler(), Ridge(alpha=8.0, positive=True))
-        model.fit(ranked, target)
+        # `dates` está alineado fila a fila con `ranked`, así que sirve de índice de antigüedad.
+        # El prefijo `ridge__` es obligatorio: sin él, `Pipeline.fit` no propaga el peso al Ridge.
+        sample_weight = _meta_recency_weights(dates, settings)
+        if sample_weight is None:
+            model.fit(ranked, target)
+        else:
+            model.fit(ranked, target, ridge__sample_weight=sample_weight)
         coefficients = np.maximum(np.asarray(model[-1].coef_, dtype=float), 0.0)
     except Exception:
         return None

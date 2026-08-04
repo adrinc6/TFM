@@ -11,7 +11,7 @@ from urllib.parse import parse_qs, urlparse
 
 from environment import PROJECT_ROOT
 from module.studies.catalog import public_catalog
-from module.studies.config import initial_values, validate_definition
+from module.studies.config import initial_values, retention_budget, validate_definition
 from module.storage.studies import create_run, create_study, read_study, update_study
 from module.web import dev, queries
 from module.web.jobs import WORKERS
@@ -33,7 +33,7 @@ def _json_safe(value: Any) -> Any:
 
 
 def study_preflight(payload: dict) -> dict:
-    allowed = {"name", "note", "definition", "run_scope"}
+    allowed = {"name", "note", "definition", "run_scope", "retain_all_runs"}
     unknown = set(payload) - allowed
     if unknown:
         raise ValueError(f"Campos desconocidos: {sorted(unknown)}.")
@@ -41,7 +41,16 @@ def study_preflight(payload: dict) -> dict:
     scope = payload.get("run_scope", "full")
     if scope not in {"full", "dev"}:
         raise ValueError("run_scope debe ser full o dev.")
-    return {"valid": True, "definition": definition, "budget": budget, "run_scope": scope}
+    retain_all = payload.get("retain_all_runs", False)
+    if not isinstance(retain_all, bool):
+        raise ValueError("retain_all_runs debe ser booleano.")
+    return {
+        "valid": True,
+        "definition": definition,
+        "budget": retention_budget(budget, retain_all),
+        "run_scope": scope,
+        "retain_all_runs": retain_all,
+    }
 
 
 def launch_study(payload: dict) -> dict:
@@ -51,6 +60,7 @@ def launch_study(payload: dict) -> dict:
         "name": str(payload.get("name") or "Model Study"),
         "note": str(payload.get("note") or ""),
         "run_scope": preflight["run_scope"],
+        "retain_all_runs": preflight["retain_all_runs"],
         "configuration": preflight["definition"],
         "budget": preflight["budget"],
         "catalog_version": catalog["version"],

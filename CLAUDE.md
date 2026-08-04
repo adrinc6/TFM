@@ -13,6 +13,10 @@ catálogo cerrado → Model Study → optimización secuencial por Rank-IC → g
 Antes de realizar cambios, leer `docs/metodologia.md`, `docs/bitacora.md`,
 `docs/informe_resultados.md` y `AGENTS.md`. Son las fuentes de verdad del proyecto y del futuro TFM.
 
+`docs/gestion_cartera.md` es la referencia operativa de la cartera: variables, orden de decisión,
+casuísticas y ejemplos. Es donde el usuario anota los cambios que quiere en las reglas de cartera;
+si su sección «Cambios pedidos» no está vacía, hay trabajo pendiente que trasladar al código.
+
 ## Arquitectura
 
 - `module/data`: ingesta, universo y panel PIT.

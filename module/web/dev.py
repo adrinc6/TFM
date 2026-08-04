@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from module.studies.catalog import PROFILE_NAMES, public_catalog
+from module.studies.config import retention_budget
 
 
 STUDY_ID = "study-demo-001"
@@ -30,17 +31,22 @@ def get(path: str, query: dict[str, list[str]]) -> dict[str, Any] | list[dict[st
 
 def post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
     if path == "/api/studies/preflight":
+        retain_all = bool(payload.get("retain_all_runs", False))
+        budget = {
+            "predictive_evaluations": 16, "expensive_fits": 9,
+            "meta_recombinations": 3, "portfolio_diagnostics": 8,
+            "profiles": 8, "robustness_groups": 10,
+            "total_runs": 42, "estimated_minutes": 210,
+            "estimated_incremental_bytes": 1_400_000_000,
+        }
         return {
             "valid": True,
             "definition": payload.get("definition", {}),
-            "budget": {
-                "predictive_evaluations": 16, "expensive_fits": 9,
-                "meta_recombinations": 3, "portfolio_diagnostics": 8,
-                "profiles": 8, "robustness_groups": 10,
-                "total_runs": 42, "estimated_minutes": 210,
-                "estimated_incremental_bytes": 1_400_000_000,
-            },
+            # La fixture aplica el mismo ajuste que el preflight real para que la casilla de
+            # evidencia completa muestre su coste también en /dev.
+            "budget": retention_budget(budget, retain_all),
             "run_scope": "dev",
+            "retain_all_runs": retain_all,
         }, 200
     if path == "/api/studies":
         return {"study_id": STUDY_ID, "status": "queued", "worker_pid": 12345}, 202
@@ -141,7 +147,7 @@ def _analysis(view: str, query: dict[str, list[str]]) -> dict[str, Any]:
     if view == "portfolio":
         snapshots = [f"{year}-12-31" for year in range(2018, 2025)]
         selected = query.get("snapshot", [snapshots[-1]])[0]
-        return {"summary": {"summary": {"cagr_portfolio": 0.12, "cagr_benchmark": 0.10, "cagr_difference": 0.02}}, "equity": _equity(), "annual": [], "available_snapshots": snapshots, "selected_snapshot": selected, "positions": [{"snapshot_date": selected, "ticker": "MSFT", "weight": 0.12}], "orders": [{"snapshot_date": selected, "ticker": "NVDA", "side": "buy", "reason": "edge_over_worst"}]}
+        return {"summary": {"summary": {"cagr_portfolio": 0.12, "cagr_benchmark": 0.10, "cagr_difference": 0.02}}, "equity": _equity(), "annual": [], "available_snapshots": snapshots, "selected_snapshot": selected, "positions": [{"snapshot_date": selected, "ticker": "MSFT", "weight": 0.12, "current_percentile": 87.0, "meta_rank": 0.87}], "orders": [{"snapshot_date": selected, "ticker": "NVDA", "side": "buy", "reason": "edge_over_worst", "buy_price": 125.50, "sell_price": None, "realized_pnl_pct": None}, {"snapshot_date": selected, "ticker": "AAPL", "side": "sell", "reason": "displaced_by_net_edge", "buy_price": 170.25, "sell_price": 182.00, "realized_pnl_pct": 0.0690}]}
     if view == "stocks":
         snapshots = [f"{year}-12-31" for year in range(2018, 2025)]
         tickers = ["AAPL", "MSFT", "NVDA"]

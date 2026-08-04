@@ -18,6 +18,11 @@ import pandas as pd
 _MADRID_TZ = ZoneInfo("Europe/Madrid")
 
 
+def madrid_time_of_day() -> str:
+    """Hora local de Madrid para mensajes visibles en terminal."""
+    return datetime.now(_MADRID_TZ).strftime("%H:%M:%S")
+
+
 class _MadridFormatter(logging.Formatter):
     def formatTime(self, record: logging.LogRecord, datefmt: str | None = None) -> str:
         moment = datetime.fromtimestamp(record.created, tz=_MADRID_TZ)

@@ -1,8 +1,0 @@
-{"sequence": 1, "timestamp": "2026-07-30T06:36:44.324613+00:00", "level": "info", "event": "worker_started", "message": "Worker iniciado con PID 3640."}
-{"sequence": 2, "timestamp": "2026-07-30T06:36:44.410211+00:00", "level": "info", "event": "study_started", "message": "Comienza el Model Study."}
-{"sequence": 3, "timestamp": "2026-07-30T06:36:44.554346+00:00", "level": "info", "event": "run_started", "message": "Run run-f0d93aad129b · temporal · baseline=baseline", "run_id": "run-f0d93aad129b", "phase": "temporal", "variable_id": "baseline"}
-{"sequence": 4, "timestamp": "2026-07-30T06:52:32.398247+00:00", "level": "info", "event": "run_succeeded", "message": "Run run-f0d93aad129b terminado en 944.9s", "run_id": "run-f0d93aad129b", "source": "computed"}
-{"sequence": 5, "timestamp": "2026-07-30T06:52:32.513833+00:00", "level": "info", "event": "run_started", "message": "Run run-fb2efa36d115 · temporal · snapshot_step_months=6", "run_id": "run-fb2efa36d115", "phase": "temporal", "variable_id": "snapshot_step_months"}
-{"sequence": 6, "timestamp": "2026-07-30T07:00:07.799657+00:00", "level": "info", "event": "run_succeeded", "message": "Run run-fb2efa36d115 terminado en 455.3s", "run_id": "run-fb2efa36d115", "source": "computed"}
-{"sequence": 7, "timestamp": "2026-07-30T07:00:07.920609+00:00", "level": "info", "event": "run_started", "message": "Run run-e94f9f6f54b0 · temporal · snapshot_step_months=1", "run_id": "run-e94f9f6f54b0", "phase": "temporal", "variable_id": "snapshot_step_months"}
-{"sequence": 8, "timestamp": "2026-07-30T07:10:38.717005+00:00", "level": "warning", "event": "study_cancelled", "message": "Study cancelado por el usuario."}

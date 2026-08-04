@@ -1,0 +1,547 @@
+{
+  "factor_regression": {
+    "factors": [
+      "value",
+      "momentum",
+      "low_volatility",
+      "quality",
+      "growth"
+    ],
+    "selection": {
+      "applicable": true,
+      "beta": [
+        0.001269413679044208,
+        0.004300299924618947,
+        -0.028488278140546452,
+        -0.02717402045759134,
+        0.14942711039164375,
+        -0.0904087386138998
+      ],
+      "standard_errors": [
+        0.001545500955833793,
+        0.06091035316373508,
+        0.06868206937399984,
+        0.04011351415802523,
+        0.1361373584756781,
+        0.16257917982104422
+      ],
+      "t_statistics": [
+        0.8213606560724276,
+        0.07060047596603441,
+        -0.41478479609309676,
+        -0.6774280695164382,
+        1.0976201688116343,
+        -0.5560905074894301
+      ],
+      "n_observations": 117,
+      "lags": 12,
+      "r_squared": 0.021242215053999258,
+      "alpha_per_period": 0.001269413679044208,
+      "alpha_t_stat": 0.8213606560724276,
+      "loadings": {
+        "value": 0.004300299924618947,
+        "momentum": -0.028488278140546452,
+        "low_volatility": -0.02717402045759134,
+        "quality": 0.14942711039164375,
+        "growth": -0.0904087386138998
+      },
+      "loading_t_stats": {
+        "value": 0.07060047596603441,
+        "momentum": -0.41478479609309676,
+        "low_volatility": -0.6774280695164382,
+        "quality": 1.0976201688116343,
+        "growth": -0.5560905074894301
+      }
+    },
+    "confirmation": {
+      "applicable": true,
+      "beta": [
+        0.01635930979950885,
+        -0.1397618424852175,
+        -0.14900136107489656,
+        0.03836286217804105,
+        1.0617225568479753,
+        -0.8496007787792935
+      ],
+      "standard_errors": [
+        0.0034351627259831337,
+        0.1986281806664968,
+        0.07750975817389161,
+        0.036438733731508056,
+        0.37150932406786097,
+        0.14200977260545197
+      ],
+      "t_statistics": [
+        4.762309999398023,
+        -0.7036355164521303,
+        -1.922356159860736,
+        1.0528044816461124,
+        2.857862476296929,
+        -5.982692340052913
+      ],
+      "n_observations": 17,
+      "lags": 12,
+      "r_squared": 0.4471425779078604,
+      "alpha_per_period": 0.01635930979950885,
+      "alpha_t_stat": 4.762309999398023,
+      "loadings": {
+        "value": -0.1397618424852175,
+        "momentum": -0.14900136107489656,
+        "low_volatility": 0.03836286217804105,
+        "quality": 1.0617225568479753,
+        "growth": -0.8496007787792935
+      },
+      "loading_t_stats": {
+        "value": -0.7036355164521303,
+        "momentum": -1.922356159860736,
+        "low_volatility": 1.0528044816461124,
+        "quality": 2.857862476296929,
+        "growth": -5.982692340052913
+      }
+    },
+    "full": {
+      "applicable": true,
+      "beta": [
+        0.0020657562338111824,
+        0.05752247736351197,
+        -0.019684996977041194,
+        0.005091286655211715,
+        0.281562434861349,
+        -0.2512317583132552
+      ],
+      "standard_errors": [
+        0.001447687552454217,
+        0.08213277414427927,
+        0.05926612903883028,
+        0.034875472984661364,
+        0.15527805580438767,
+        0.16471153273536232
+      ],
+      "t_statistics": [
+        1.426935135491891,
+        0.7003596062938845,
+        -0.3321458191430704,
+        0.1459847342414803,
+        1.813278981390962,
+        -1.525283349265547
+      ],
+      "n_observations": 134,
+      "lags": 12,
+      "r_squared": 0.05855874998295696,
+      "alpha_per_period": 0.0020657562338111824,
+      "alpha_t_stat": 1.426935135491891,
+      "loadings": {
+        "value": 0.05752247736351197,
+        "momentum": -0.019684996977041194,
+        "low_volatility": 0.005091286655211715,
+        "quality": 0.281562434861349,
+        "growth": -0.2512317583132552
+      },
+      "loading_t_stats": {
+        "value": 0.7003596062938845,
+        "momentum": -0.3321458191430704,
+        "low_volatility": 0.1459847342414803,
+        "quality": 1.813278981390962,
+        "growth": -1.525283349265547
+      }
+    },
+    "interpretation": "Un alfa positivo con t de Newey-West por encima de 2 indica que el exceso de la cartera no se explica por la exposición a las réplicas de valor, momentum, baja volatilidad, calidad y crecimiento. Un alfa no significativo con una carga alta en baja volatilidad indicaría que el sistema reproduce ese factor conocido en lugar de aprender una ordenación propia."
+  },
+  "factor_proxies": {
+    "method": "diferencial tercil superior menos tercil inferior, rebalanceado por snapshot",
+    "available": [
+      "growth",
+      "low_volatility",
+      "momentum",
+      "quality",
+      "value"
+    ],
+    "unavailable": {
+      "size": "El panel no incluye capitalización bursátil ni número de acciones en circulación.",
+      "investment": "El panel no incluye crecimiento de activos totales point-in-time."
+    }
+  },
+  "neutralized_rank_ic": {
+    "applicable": true,
+    "controls": [
+      "factor_pe",
+      "factor_pb",
+      "factor_ps",
+      "factor_ev_ebitda",
+      "factor_relative_return_12m",
+      "factor_momentum_12_1",
+      "factor_realized_vol_63d",
+      "factor_realized_vol_126d",
+      "factor_beta_252d",
+      "factor_roe",
+      "factor_roic",
+      "factor_operating_margin",
+      "factor_eps_growth_yoy",
+      "factor_sales_per_share_growth_yoy"
+    ],
+    "raw_mean_rank_ic": 0.11112523329980711,
+    "neutralized_mean_rank_ic": 0.09373531966701522,
+    "retained_fraction": 0.8435106670518722,
+    "n_cohorts": 117
+  },
+  "ic_significance": {
+    "selection": {
+      "applicable": true,
+      "mean_rank_ic": 0.10040934132691712,
+      "ic_ir": 0.7435744600015908,
+      "newey_west_t": 3.0197455424045065,
+      "n_cohorts": 117,
+      "effective_independent_observations": 9
+    },
+    "confirmation": {
+      "applicable": true,
+      "mean_rank_ic": -0.011914904813638412,
+      "ic_ir": -0.2111228628544817,
+      "newey_west_t": -0.8212097879474128,
+      "n_cohorts": 6,
+      "effective_independent_observations": 1
+    }
+  },
+  "deflated_sharpe": {
+    "applicable": true,
+    "observed_sharpe_per_period": 0.12004646588724371,
+    "expected_max_sharpe_under_null": 0.0,
+    "deflated_sharpe_probability": 0.9295564233994656,
+    "n_trials": 66,
+    "n_observations": 135,
+    "skew": 1.1065366860780894,
+    "kurtosis": 7.512301024294592,
+    "interpretation": "La probabilidad es la confianza de que el Sharpe observado supere al máximo esperado por azar tras probar n_trials configuraciones. Por debajo de 0,95 el resultado no resiste la corrección por multiplicidad."
+  },
+  "baselines": {
+    "applicable": true,
+    "baselines": [
+      {
+        "baseline": "garp_score",
+        "mean_rank_ic": 0.013043840058049103,
+        "positive_fraction": 0.6450381679389313,
+        "n_cohorts": 262
+      },
+      {
+        "baseline": "growth_score",
+        "mean_rank_ic": 0.002770627945709384,
+        "positive_fraction": 0.5152671755725191,
+        "n_cohorts": 262
+      },
+      {
+        "baseline": "momentum_score",
+        "mean_rank_ic": -0.00010364861455819851,
+        "positive_fraction": 0.5267175572519084,
+        "n_cohorts": 262
+      },
+      {
+        "baseline": "quality_score",
+        "mean_rank_ic": 0.00234440832999626,
+        "positive_fraction": 0.5152671755725191,
+        "n_cohorts": 262
+      },
+      {
+        "baseline": "value_score",
+        "mean_rank_ic": 0.003843169055610713,
+        "positive_fraction": 0.4961832061068702,
+        "n_cohorts": 262
+      }
+    ]
+  },
+  "universe_coverage": [
+    {
+      "year": 2003,
+      "distinct_tickers": 278,
+      "usable_rows": 2762,
+      "total_rows": 2762,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2004,
+      "distinct_tickers": 285,
+      "usable_rows": 3381,
+      "total_rows": 3382,
+      "usable_fraction": 0.9997043169722057
+    },
+    {
+      "year": 2005,
+      "distinct_tickers": 295,
+      "usable_rows": 3442,
+      "total_rows": 3442,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2006,
+      "distinct_tickers": 308,
+      "usable_rows": 3577,
+      "total_rows": 3588,
+      "usable_fraction": 0.9969342251950948
+    },
+    {
+      "year": 2007,
+      "distinct_tickers": 326,
+      "usable_rows": 3714,
+      "total_rows": 3729,
+      "usable_fraction": 0.99597747385358
+    },
+    {
+      "year": 2008,
+      "distinct_tickers": 343,
+      "usable_rows": 3881,
+      "total_rows": 3903,
+      "usable_fraction": 0.994363310274148
+    },
+    {
+      "year": 2009,
+      "distinct_tickers": 347,
+      "usable_rows": 4006,
+      "total_rows": 4022,
+      "usable_fraction": 0.9960218796618597
+    },
+    {
+      "year": 2010,
+      "distinct_tickers": 348,
+      "usable_rows": 4113,
+      "total_rows": 4114,
+      "usable_fraction": 0.9997569275644141
+    },
+    {
+      "year": 2011,
+      "distinct_tickers": 356,
+      "usable_rows": 4152,
+      "total_rows": 4152,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2012,
+      "distinct_tickers": 366,
+      "usable_rows": 4266,
+      "total_rows": 4266,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2013,
+      "distinct_tickers": 374,
+      "usable_rows": 4377,
+      "total_rows": 4377,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2014,
+      "distinct_tickers": 376,
+      "usable_rows": 4431,
+      "total_rows": 4431,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2015,
+      "distinct_tickers": 394,
+      "usable_rows": 4577,
+      "total_rows": 4578,
+      "usable_fraction": 0.9997815640017474
+    },
+    {
+      "year": 2016,
+      "distinct_tickers": 415,
+      "usable_rows": 4824,
+      "total_rows": 4824,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2017,
+      "distinct_tickers": 431,
+      "usable_rows": 4995,
+      "total_rows": 4995,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2018,
+      "distinct_tickers": 437,
+      "usable_rows": 5065,
+      "total_rows": 5065,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2019,
+      "distinct_tickers": 449,
+      "usable_rows": 5160,
+      "total_rows": 5160,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2020,
+      "distinct_tickers": 458,
+      "usable_rows": 5347,
+      "total_rows": 5347,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2021,
+      "distinct_tickers": 468,
+      "usable_rows": 5460,
+      "total_rows": 5460,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2022,
+      "distinct_tickers": 479,
+      "usable_rows": 5595,
+      "total_rows": 5595,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2023,
+      "distinct_tickers": 491,
+      "usable_rows": 5738,
+      "total_rows": 5738,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2024,
+      "distinct_tickers": 501,
+      "usable_rows": 5828,
+      "total_rows": 5828,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2025,
+      "distinct_tickers": 510,
+      "usable_rows": 5910,
+      "total_rows": 5910,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2026,
+      "distinct_tickers": 511,
+      "usable_rows": 3004,
+      "total_rows": 3004,
+      "usable_fraction": 1.0
+    }
+  ],
+  "transfer": {
+    "applicable": true,
+    "by_year": [
+      {
+        "year": 2015,
+        "turnover": 1.0,
+        "excess": 0.03784024241252626,
+        "cost": 0.0015
+      },
+      {
+        "year": 2016,
+        "turnover": 4.169233923228606,
+        "excess": 0.025820270972575665,
+        "cost": 0.006253850884842909
+      },
+      {
+        "year": 2017,
+        "turnover": 6.799185846842314,
+        "excess": 0.06537249076323415,
+        "cost": 0.010198778770263471
+      },
+      {
+        "year": 2018,
+        "turnover": 3.37742273093895,
+        "excess": 0.034515161270594064,
+        "cost": 0.005066134096408425
+      },
+      {
+        "year": 2019,
+        "turnover": 4.7104501097505445,
+        "excess": 0.0879664848699464,
+        "cost": 0.007065675164625819
+      },
+      {
+        "year": 2020,
+        "turnover": 6.3456958264470895,
+        "excess": -0.04009415204079936,
+        "cost": 0.009518543739670635
+      },
+      {
+        "year": 2021,
+        "turnover": 1.623832034879998,
+        "excess": 0.015909236843359986,
+        "cost": 0.002435748052319997
+      },
+      {
+        "year": 2022,
+        "turnover": 0.6151518122435626,
+        "excess": 0.02239672321497599,
+        "cost": 0.0009227277183653439
+      },
+      {
+        "year": 2023,
+        "turnover": 5.188054277688678,
+        "excess": 0.04495287367500855,
+        "cost": 0.007782081416533018
+      },
+      {
+        "year": 2024,
+        "turnover": 1.1808316068778595,
+        "excess": -0.12332223968108302,
+        "cost": 0.0017712474103167893
+      }
+    ],
+    "cost_per_unit_turnover": 0.0015000000000000002,
+    "signal_top_minus_bottom_mean": 0.06436158857607575,
+    "realized_cumulative_excess": 0.1713570923003387
+  },
+  "confirmation_2025_2026": {
+    "mean_rank_ic": -0.011914904813638412,
+    "rank_ic_positive_fraction": 0.3333333333333333,
+    "rank_ic_std": 0.05643588123305653,
+    "ic_ir": -0.2111228628544817,
+    "n_cohorts": 6,
+    "rank_ic_by_cohort": [
+      {
+        "date": "2025-01-29",
+        "rank_ic": 0.06310695341806292
+      },
+      {
+        "date": "2025-03-01",
+        "rank_ic": -0.006601512910853395
+      },
+      {
+        "date": "2025-04-01",
+        "rank_ic": 0.03303465524619988
+      },
+      {
+        "date": "2025-04-29",
+        "rank_ic": -0.010338521408764656
+      },
+      {
+        "date": "2025-05-30",
+        "rank_ic": -0.06537798056260977
+      },
+      {
+        "date": "2025-06-29",
+        "rank_ic": -0.08531302266386546
+      }
+    ],
+    "annual_metrics": [
+      {
+        "year": 2025,
+        "portfolio_return": 0.29693551300342547,
+        "benchmark_return": 0.1816627902239767,
+        "alpha": 0.09755128428610305,
+        "beats_benchmark": true,
+        "max_drawdown_year": 0.06516299659501346,
+        "information_ratio_year": 1.615198982095493,
+        "mean_cash_weight": 0.25,
+        "turnover": 0.4667675149430829
+      },
+      {
+        "year": 2026,
+        "portfolio_return": 0.19189435963923396,
+        "benchmark_return": 0.08431889693805306,
+        "alpha": 0.0992101705549513,
+        "beats_benchmark": true,
+        "max_drawdown_year": 0.07323366960904809,
+        "information_ratio_year": 0.8530941314159878,
+        "mean_cash_weight": 0.2512828282149002,
+        "turnover": 0.5199584961513095
+      }
+    ],
+    "role": "confirmacion_fuera_de_muestra_no_usada_en_seleccion"
+  }
+}

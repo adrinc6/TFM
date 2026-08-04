@@ -127,7 +127,9 @@ def _write_diagnostics(
         "shrunk_tail_spread": "shrunk_tail_spread_8q",
     })
     health = health.merge(health_8, on="snapshot_date", how="left", validate="one_to_one")
-    calibration = calibrated_alpha_path(wide, targets)
+    calibration = calibrated_alpha_path(
+        wide, targets, horizon_months=settings.target_horizon_months,
+    )
     write_parquet(tail, run_dir / "rank_tail_diagnostics.parquet")
     write_parquet(health, run_dir / "signal_health.parquet")
     write_parquet(calibration, run_dir / "signal_calibration.parquet")

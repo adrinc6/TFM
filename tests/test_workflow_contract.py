@@ -3,9 +3,13 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from module.storage import studies
+from module.studies.runner import _profile_comparison_row
 from module.studies.selection import choose_candidate
 from module.web import queries
+from module.web.api import study_preflight
 
 
 def _result(rank_ic: float) -> dict:
@@ -53,12 +57,33 @@ def test_run_exists_before_result_and_resume_keeps_identity(tmp_path: Path, monk
     assert second["attempt"] == 2
 
 
-def test_events_are_persistent_and_incremental(tmp_path: Path, monkeypatch) -> None:
+def test_events_are_persistent_incremental_and_print_madrid_time(tmp_path: Path, monkeypatch, capsys) -> None:
     monkeypatch.setattr(studies, "STUDIES_ROOT", tmp_path / "studies")
+    monkeypatch.setattr(studies, "madrid_time_of_day", lambda: "11:58:44")
     study_id, _ = studies.create_study({"name": "test", "configuration": {}, "catalog": {}})
     studies.append_event(study_id, "info", "one", "Primero.")
     studies.append_event(study_id, "info", "two", "Segundo.")
     assert [row["sequence"] for row in studies.read_events(study_id, after=1)] == [2]
+    assert "[11:58:44] [INFO]" in capsys.readouterr().out
+
+
+def test_profile_comparison_row_contains_only_parquet_scalars() -> None:
+    row = _profile_comparison_row("balanced", {
+        "summary": {
+            "geometric_excess_return": 0.03,
+            "information_ratio": 0.4,
+            "annualized_turnover": 1.2,
+            "mean_cash_weight": 0.0,
+            "confirmation": {},
+        },
+        "rank_ic": {"mean_rank_ic": 0.05},
+        "eras": [],
+    })
+    assert row == {
+        "profile": "balanced", "mean_rank_ic": 0.05, "geometric_excess_return": 0.03,
+        "information_ratio": 0.4, "annualized_turnover": 1.2, "mean_cash_weight": 0.0,
+    }
+    assert all(not isinstance(value, (dict, list)) for value in row.values())
 
 
 def test_study_contains_only_model_study_identity(tmp_path: Path, monkeypatch) -> None:
@@ -75,3 +100,42 @@ def test_study_contains_only_model_study_identity(tmp_path: Path, monkeypatch) -
     assert queries.studies()[0]["max_rank_ic"] is None
     studies.update_study(study_id, status="succeeded", completed_runs=35)
     assert queries.studies()[0]["runs_remaining"] == 0
+
+
+def test_full_scientific_route_only_changes_storage_not_selection() -> None:
+    """La ruta científica completa levanta la regla 5 sin tocar qué se ejecuta ni cómo se elige."""
+    off = study_preflight({"definition": None})
+    on = study_preflight({"definition": None, "retain_all_runs": True})
+    assert off["retain_all_runs"] is False and on["retain_all_runs"] is True
+    # Mismo plan experimental: ni un run más, ni un candidato distinto.
+    assert on["definition"] == off["definition"]
+    assert on["budget"]["total_runs"] == off["budget"]["total_runs"]
+    assert on["budget"]["predictive_evaluations"] == off["budget"]["predictive_evaluations"]
+    # El único efecto es de disco, y debe declararse antes de lanzar.
+    assert on["budget"]["retained_run_evidence"] == off["budget"]["total_runs"] - 2
+    assert on["budget"]["estimated_incremental_bytes"] > off["budget"]["estimated_incremental_bytes"]
+
+
+def test_retained_run_evidence_is_confined_to_its_study(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(studies, "STUDIES_ROOT", tmp_path / "studies")
+    study_id, directory = studies.create_study({
+        "name": "test", "configuration": {}, "catalog": {}, "retain_all_runs": True,
+    })
+    run = studies.create_run(
+        study_id, logical_key="predictive:foo:ab", phase="temporal",
+        variable_id="foo", value="ab", configuration={},
+    )
+    assert run["evidence_path"] is None
+    source = f"run:{run['run_id']}"
+    # Sin evidencia retenida la vista lo dice, no devuelve la del ganador por descuido.
+    with pytest.raises(FileNotFoundError):
+        queries._evidence_dir(directory, study_id, source)
+    (directory / "runs_evidence" / "predictive__foo__ab").mkdir(parents=True)
+    studies.update_run(study_id, run["run_id"], evidence_path="runs_evidence/predictive__foo__ab")
+    assert queries._evidence_dir(directory, study_id, source).name == "predictive__foo__ab"
+    # La ruta viene del artefacto, pero nunca puede escapar del Study.
+    studies.update_run(study_id, run["run_id"], evidence_path="../../../etc")
+    with pytest.raises(ValueError):
+        queries._evidence_dir(directory, study_id, source)
+    assert queries._evidence_dir(directory, study_id, None).name == "evidence"
+    assert queries._evidence_dir(directory, study_id, "baseline").name == "evidence_baseline"

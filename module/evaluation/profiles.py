@@ -52,7 +52,10 @@ PROFILE_WEIGHTS: dict[str, dict[str, float]] = {
 PROFILE_NAMES = tuple(PROFILE_WEIGHTS)
 
 
-def apply_profile(scores: pd.DataFrame, profile: str, targets: pd.DataFrame | None = None) -> pd.DataFrame:
+def apply_profile(
+    scores: pd.DataFrame, profile: str, targets: pd.DataFrame | None = None,
+    *, horizon_months: int,
+) -> pd.DataFrame:
     """Devuelve `scores` con el `meta_rank` reemplazado por el ranking del perfil.
 
     - `balanced` devuelve el meta_rank tal cual (referencia).
@@ -98,7 +101,7 @@ def apply_profile(scores: pd.DataFrame, profile: str, targets: pd.DataFrame | No
         return frame
     from module.evaluation.signal_diagnostics import calibrated_alpha_path
 
-    recalibrated = calibrated_alpha_path(frame, targets)
+    recalibrated = calibrated_alpha_path(frame, targets, horizon_months=horizon_months)
     return frame.drop(columns=["expected_excess_return"]).merge(
         recalibrated[["ticker", "snapshot_date", "expected_excess_return"]],
         on=["ticker", "snapshot_date"], how="left", validate="one_to_one",

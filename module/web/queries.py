@@ -9,6 +9,7 @@ from typing import Any
 import pandas as pd
 
 from module.evaluation.profiles import PROFILE_NAMES
+from module.evaluation.signal_diagnostics import alpha_curve_points
 from module.storage.datasets import validate_dataset_reference
 from module.storage.studies import (
     list_runs, list_studies, read_events, read_run, read_study, safe_study_path,
@@ -26,7 +27,13 @@ ANALYSIS_VIEWS = {
 # sí se muestran porque dan contexto de compra/valoración; `unrealized_pnl_pct` se deriva de ambas.
 POSITION_COLUMNS = [
     "ticker", "snapshot_date", "weight", "entry_date", "entry_price", "valuation_price",
-    "unrealized_pnl_pct", "months_held", "current_percentile",
+    "unrealized_pnl_pct", "months_held", "current_percentile", "meta_rank",
+]
+
+ORDER_COLUMNS = [
+    "ticker", "snapshot_date", "side", "reason", "weight_before", "weight_after",
+    "buy_price", "sell_price", "realized_pnl_pct", "notional", "commission_amount",
+    "slippage_amount",
 ]
 
 AGENT_SCORE_COLUMNS = ["quality", "value", "growth", "momentum", "risk", "meta_score", "meta_rank"]
@@ -82,12 +89,32 @@ def events(study_id: str, after: int) -> list[dict[str, Any]]:
     return read_events(study_id, after)
 
 
+def _evidence_dir(directory: Path, study_id: str, source: str | None) -> Path:
+    """Resuelve qué evidencia lee una vista analítica.
+
+    ``baseline`` y el ganador son las dos rutas históricas. Con la ruta científica completa cada
+    run guarda la suya, y se direcciona como ``run:<run_id>``: el directorio se toma del propio
+    artefacto del run, nunca de la cadena recibida, y se confina bajo el Study.
+    """
+    if source == "baseline":
+        return directory / "evidence_baseline"
+    if source and source.startswith("run:"):
+        run = read_run(study_id, source.removeprefix("run:"))
+        relative = run.get("evidence_path")
+        if not relative:
+            raise FileNotFoundError("Ese run no conserva evidencia propia.")
+        resolved = (directory / relative).resolve()
+        resolved.relative_to(directory.resolve())
+        return resolved
+    return directory / "evidence"
+
+
 def analysis(study_id: str, view: str, query: dict[str, list[str]]) -> dict[str, Any]:
     if view not in ANALYSIS_VIEWS:
         raise ValueError("Vista analítica desconocida.")
     directory = safe_study_path(study_id)
     source = query.get("source", [None])[0]
-    evidence = directory / "evidence_baseline" if source == "baseline" else directory / "evidence"
+    evidence = _evidence_dir(directory, study_id, source)
     profile = query.get("profile", [None])[0]
     profile_dir = evidence / "profiles" / profile if profile else evidence
     if view == "winner":
@@ -125,7 +152,8 @@ def analysis(study_id: str, view: str, query: dict[str, list[str]]) -> dict[str,
             "available_snapshots": snapshots,
             "selected_snapshot": selected_snapshot,
             "positions": _project_columns(_records_at_snapshot(positions, selected_snapshot), POSITION_COLUMNS),
-            "orders": _records_at_snapshot(orders, selected_snapshot),
+            "orders": _project_columns(_records_at_snapshot(orders, selected_snapshot), ORDER_COLUMNS),
+            "alpha_curve": _alpha_curve(evidence, selected_snapshot),
         }
     if view == "stocks":
         ticker = query.get("ticker", [""])[0].strip().upper()
@@ -256,6 +284,34 @@ def _stock_ratio_detail(panel: pd.DataFrame, ticker: str, ratio: str | None) -> 
         "components": components,
         "price_history": ticker_panel[["snapshot_date", "price"]].dropna().to_dict("records"),
     }
+
+
+def _alpha_curve(evidence: Path, snapshot: str | None) -> dict[str, Any]:
+    """Curva decil -> alfa real anualizado en `snapshot`, por cada ventana de la cascada.
+
+    Devuelve `{}` cuando falta cualquier pieza (estudio sin scores, dataset preparado ausente): la
+    vista es un diagnóstico añadido, y su ausencia no debe tumbar la pestaña de cartera entera.
+    """
+    scores_path = evidence / "agent_scores.parquet"
+    reference_path = evidence / "dataset_reference.json"
+    if not snapshot or not scores_path.exists() or not reference_path.exists():
+        return {}
+    try:
+        prepared = validate_dataset_reference(str(_json(reference_path)["dataset_hash"]))
+        targets_path = prepared / "targets_forward.parquet"
+        if not targets_path.exists():
+            return {}
+        scores = pd.read_parquet(scores_path)
+        scores = scores.loc[scores["snapshot_date"].astype(str).le(snapshot)]
+        if scores.empty:
+            return {}
+        horizon = int(_json(evidence / "manifest.json").get("config", {}).get("target_horizon_months", 12))
+        windows = alpha_curve_points(
+            scores, pd.read_parquet(targets_path), horizon_months=horizon,
+        )
+    except (KeyError, ValueError, FileNotFoundError):
+        return {}
+    return {"snapshot_date": snapshot, "horizon_months": horizon, "windows": windows}
 
 
 def _snapshots(*frames: pd.DataFrame) -> list[str]:

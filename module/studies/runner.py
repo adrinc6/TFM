@@ -169,6 +169,20 @@ def run_profile_evaluation(
     return summary
 
 
+def _profile_comparison_row(profile: str, result: Mapping[str, Any]) -> dict[str, Any]:
+    """Fila escalar para la comparación Parquet; el resumen completo vive por perfil."""
+    summary = result["summary"]
+    rank_ic = result["rank_ic"]
+    return {
+        "profile": profile,
+        "mean_rank_ic": rank_ic.get("mean_rank_ic"),
+        "geometric_excess_return": summary.get("geometric_excess_return"),
+        "information_ratio": summary.get("information_ratio"),
+        "annualized_turnover": summary.get("annualized_turnover"),
+        "mean_cash_weight": summary.get("mean_cash_weight"),
+    }
+
+
 def _profile_eras(annual: pd.DataFrame) -> list[dict[str, Any]]:
     rows = []
     for start, end in SELECTION_ERAS:
@@ -359,7 +373,11 @@ def execute_model_study(study_id: str) -> dict[str, Any]:
     study = read_study(study_id)
     definition = study["configuration"]
     dev_scope = study.get("run_scope") == "dev"
+    # Ruta científica completa: la regla 5 (descartados solo con resumen) se levanta a petición
+    # explícita y cada run conserva su evidencia entera bajo runs_evidence/<run_id>.
+    retain_all = bool(study.get("retain_all_runs"))
     directory = safe_study_path(study_id)
+    runs_evidence = directory / "runs_evidence"
     evidence = directory / "evidence"
     evidence.mkdir(exist_ok=True)
     values = initial_values(definition)
@@ -385,6 +403,11 @@ def execute_model_study(study_id: str) -> dict[str, Any]:
         target_identity: str = "real",
     ) -> dict[str, Any]:
         nonlocal completed
+        # El destino explícito (baseline, ganador) manda; en modo completo el resto de runs
+        # retiene bajo su propio directorio, nombrado por la clave lógica para que la evidencia
+        # sea legible sin abrir el JSON del run.
+        if retain is None and retain_all:
+            retain = runs_evidence / logical_key.replace(":", "__")
         previous = find_run(study_id, logical_key)
         if previous and previous["status"] == "succeeded" and previous.get("result"):
             append_event(study_id, "info", "run_reused", f"Run reutilizado: {logical_key}", run_id=previous["run_id"])
@@ -434,6 +457,7 @@ def execute_model_study(study_id: str) -> dict[str, Any]:
                 study_id, run["run_id"], status="succeeded", stage="completed",
                 progress=1.0, elapsed_seconds=elapsed,
                 bytes_persisted=bytes_persisted, result=result,
+                evidence_path=_evidence_path(retain, directory),
             )
             completed += 1
             total = max(int(study.get("budget", {}).get("total_runs", 1)), 1)
@@ -568,10 +592,16 @@ def execute_model_study(study_id: str) -> dict[str, Any]:
         else:
             update_run(study_id, run["run_id"], status="running", stage="backtest", progress=0.1)
             append_event(study_id, "info", "profile_started", f"Perfil {profile}.", run_id=run["run_id"])
-            result = run_profile_evaluation(values, profile, evidence, profiles_root / profile)
-            update_run(study_id, run["run_id"], status="succeeded", stage="completed", progress=1.0, result=result)
+            retain_profile = profiles_root / profile
+            result = run_profile_evaluation(values, profile, evidence, retain_profile)
+            # El perfil siempre materializa su cartera; se registra la ruta para que las vistas
+            # pesadas del run la encuentren igual que las de cualquier otro run con evidencia.
+            update_run(
+                study_id, run["run_id"], status="succeeded", stage="completed", progress=1.0,
+                result=result, evidence_path=_evidence_path(retain_profile, directory),
+            )
             completed += 1
-        profile_rows.append({"profile": profile, **result["summary"]})
+        profile_rows.append(_profile_comparison_row(profile, result))
     write_parquet(pd.DataFrame(profile_rows), directory / "profile_comparison.parquet")
 
     dev = dev_scope
@@ -635,6 +665,13 @@ def execute_model_study(study_id: str) -> dict[str, Any]:
     write_storage_manifest(study_id)
     append_event(study_id, "info", "study_succeeded", "Model Study terminado correctamente.")
     return final
+
+
+def _evidence_path(retain: Path | None, directory: Path) -> str | None:
+    """Ruta de la evidencia de un run, relativa al Study, o None si no materializó ninguna."""
+    if retain is None or not retain.exists():
+        return None
+    return str(retain.relative_to(directory))
 
 
 def _ledger_row(
