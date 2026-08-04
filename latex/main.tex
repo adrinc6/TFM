@@ -26,8 +26,17 @@
 
 % --- Figuras y tablas ------------------------------------------------
 \usepackage{graphicx}
-\graphicspath{{figuras/}}          % las figuras del pipeline se referencian por nombre
 \usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric}
+\usepackage{siunitx}
+\sisetup{output-decimal-marker={,},group-separator={.},group-minimum-digits=4}
 
 % --- Enlaces y citas -------------------------------------------------
 \usepackage{csquotes}
@@ -73,6 +82,11 @@
 \input{caps/07_resultados}
 \input{caps/08_limitaciones}
 \input{caps/09_conclusiones}
+
+\appendix
+\input{caps/a_reproducibilidad}
+\input{caps/b_catalogo_protocolo}
+\input{caps/c_evidencia_complementaria}
 
 \printbibliography[heading=bibintoc]
 

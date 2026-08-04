@@ -1,0 +1,57 @@
+\chapter{Limitaciones y amenazas a la validez}
+\label{chap:limitaciones}
+
+La principal limitación es la multiplicidad: se evaluaron 66 configuraciones y el Deflated Sharpe
+es 0,930, inferior al umbral 0,95. Por ello el trabajo no afirma que la rentabilidad ajustada por
+riesgo sobreviva concluyentemente a todas las pruebas de selección múltiple. Esta salvedad no anula
+el Rank-IC, pero delimita la afirmación económica.
+
+El horizonte de doce meses crea fuerte solapamiento entre cohortes: 117 observaciones mensuales
+equivalen aproximadamente a nueve independientes. Además, la era reservada contiene sólo seis
+cohortes cerradas y una observación independiente efectiva; su Rank-IC es indeterminado aunque la
+confirmación económica sea favorable. El alfa factorial de la ventana de selección tampoco es
+significativo por sí solo ($t=0,82$).
+
+Existen límites de datos: universo restringido a Estados Unidos y al S\&P 500, cobertura desigual
+de fundamentales, posibles restatements no observables en años antiguos y costes constantes que no
+modelan impacto de mercado. Finalmente, el predominio de \textit{risk} obliga a interpretar con
+prudencia la novedad de la señal; la neutralización conserva 84,35\%, lo que es evidencia parcial
+contra una explicación puramente factorial, no una prueba definitiva.
+
+Estas limitaciones conducen a una lectura disciplinada: la investigación demuestra una ordenación
+predictiva robusta bajo un protocolo concreto y sugiere utilidad económica, pero requiere más
+cohortes cerradas, universos adicionales y un catálogo más estrecho antes de extrapolarla.
+
+\section{Amenazas a la validez interna}
+
+El diseño point-in-time reduce de forma directa el \textit{lookahead bias}, pero depende de la
+calidad de las fechas de filing y de la correspondencia entre métricas de Finnhub y periodos
+contables. Los restatements históricos pueden ser invisibles en años tempranos: que una cifra esté
+hoy disponible con una fecha de filing antigua no garantiza que sea idéntica a la cifra que conoció
+el mercado ese día. La mitigación consiste en conservar periodo, filing y lag de ejecución, y en no
+presentar la fuente como una cinta histórica perfecta.
+
+La pertenencia histórica al índice limita el sesgo de supervivencia de composición, pero no elimina
+la cobertura desigual de empresas retiradas ni la posible pérdida de fundamentales antiguos. El
+estudio mide la fracción de filas utilizables y protege contra tickers reciclados; una réplica con
+una fuente comercial point-in-time sería una prueba adicional de robustez. Esta limitación afecta
+principalmente a la generalización, no a la trazabilidad del panel que sí se evaluó.
+
+\section{Amenazas estadísticas y económicas}
+
+Las 117 cohortes mensuales no son 117 ensayos independientes: el horizonte de doce meses hace que
+dos cohortes contiguas compartan casi toda su ventana de retorno. Newey--West y bootstrap por bloques
+reducen la sobreconfianza, pero no crean información nueva; por ello se informa también de unas
+nueve observaciones efectivas. La multiplicidad añade una segunda cautela: las 66 configuraciones y
+un Deflated Sharpe de 0,930 impiden una afirmación concluyente de Sharpe ajustado por selección.
+
+Los costes son constantes, 5 pb de comisión y 10 pb de slippage. Esto demuestra que el resultado no
+requiere coste cero, pero no modela impacto de mercado, bid--ask dinámico, capacidad ni fiscalidad.
+Dado el turnover de selección, 359\% anualizado, una especificación dependiente de liquidez puede
+modificar la cartera sin alterar el Rank-IC. El universo estadounidense de gran capitalización limita
+además la extrapolación a pequeñas empresas, otros países o regímenes de liquidez diferentes.
+
+La lectura correcta es específica: multiplicidad limita el Sharpe, solapamiento limita la precisión,
+cobertura limita la generalización y cartera limita la transferencia de señal. Ninguna de estas
+salvedades permite ignorar los placebos, la permutación o la estabilidad por eras; cada conclusión
+debe mantenerse dentro del alcance de la evidencia que realmente la respalda.

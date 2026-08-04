@@ -1,0 +1,115 @@
+\chapter{Diseño experimental, selección y cartera}
+\label{chap:diseno-experimental}
+
+El diseño separa de forma estricta el aprendizaje predictivo de la traducción económica. La
+configuración ganadora sólo se elige con Rank-IC robusto, calculado sobre 2015--2024; costes,
+turnover, alfa, perfiles y rendimiento frente a SPY se calculan después como diagnósticos. Esta
+separación evita seleccionar retrospectivamente una cartera porque su rentabilidad conocida fue
+alta, una práctica especialmente problemática cuando se prueban muchas alternativas
+\parencite{harvey2016cross,lopezdeprado2014pseudo}.
+
+\section{Optimización secuencial y regla de decisión}
+
+El catálogo cerrado se recorre en cuatro fases: temporal, representación, modelo y meta. Se parte
+de un \textit{baseline}; en cada fase se modifica una variable y se comparan sus candidatos con el
+incumbente acumulado. Así, el coste científico es una suma de alternativas, no una búsqueda
+cartesiana opaca. Las 66 configuraciones ejecutadas quedan registradas junto con cada elección.
+
+Un candidato debe tener observaciones suficientes, no caer por debajo de $-0,02$ en ninguna era
+disponible y superar una puerta pareada: dominar al incumbente (ventaja media positiva y mejor en
+más de la mitad de cohortes) o ser no inferior con límite inferior bootstrap al 90\% superior a
+$-0,01$. Las diferencias se calculan por periodo mensual, lo que permite comparar lags distintos
+sin confundir el desplazamiento de sus fechas de ejecución con ausencia de evidencia.
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[node distance=5mm, >=Latex, every node/.style={font=\small,align=center}]
+    \node[draw,rounded corners,fill=blue!8,minimum width=27mm,minimum height=10mm] (t) {Temporal};
+    \node[draw,rounded corners,fill=teal!10,right=of t,minimum width=30mm,minimum height=10mm] (r) {Representación};
+    \node[draw,rounded corners,fill=orange!12,right=of r,minimum width=25mm,minimum height=10mm] (m) {Modelo};
+    \node[draw,rounded corners,fill=green!10,right=of m,minimum width=25mm,minimum height=10mm] (x) {Meta};
+    \node[draw,rounded corners,fill=gray!15,below=8mm of r,minimum width=48mm,minimum height=10mm] (w) {Ganador congelado};
+    \node[draw,rounded corners,fill=yellow!18,right=of w,minimum width=38mm,minimum height=10mm] (d) {Robustez y cartera\\diagnósticas};
+    \draw[->,thick] (t)--(r); \draw[->,thick] (r)--(m); \draw[->,thick] (m)--(x);
+    \draw[->,thick] (x.south)--++(0,-5mm)-|(w.north);
+    \draw[->,thick] (w)--(d);
+  \end{tikzpicture}
+  \caption{Protocolo de selección. Sólo las cuatro fases superiores pueden modificar el ganador;
+  la evidencia económica se calcula una vez congelada la señal.}
+  \label{fig:protocolo}
+\end{figure}
+
+La Tabla~\ref{tab:decisiones} hace auditable esa traza. Destaca la elección de cadencia mensual:
+su ventaja pareada fue 0,0208, con IC al 90\% $[0,0108;0,0372]$, y amplió las cohortes de 40 a 117.
+En contraste, el horizonte de seis meses fue rechazado, con ventaja negativa y un intervalo entero
+por debajo de cero. Mostrar un rechazo es tan importante como mostrar una elección: evidencia que
+la regla no se limita a confirmar el resultado deseado.
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{Traza de decisiones del Model Study.}
+  \label{tab:decisiones}
+  \input{tablas/t06_decisiones.tex}
+  \caption*{Fuente: \texttt{decisions.json}. Ventaja e intervalo frente al incumbente de cada fase.}
+\end{table}
+
+\section{Construcción de cartera}
+
+La cartera del ganador contiene 12 posiciones, aplica pesos proporcionales al alfa esperado, una
+política de efectivo por oportunidad con tope del 25\%, comisión de 5 pb y \textit{slippage} de 10
+pb. SPY se usa sólo como benchmark; nunca es una posición. Los umbrales se expresan en puntos
+básicos anuales de alfa esperado para poder compararlos entre horizontes. Una rotación requiere que
+la diferencia esperada cubra el coste de ida y vuelta y un margen de 50 pb; una compra nueva usa
+histéresis. Estas reglas pretenden preservar señal y controlar rotación, no volver a optimizar el
+modelo por rentabilidad.
+
+La era 2025--2026 fue aislada antes de aplicar la selección. Sus observaciones no participan ni en
+los pesos del meta ni en la elección de parámetros; su papel es exclusivamente de confirmación
+posterior.
+
+\section{Por qué la selección es secuencial}
+
+Una búsqueda cartesiana de todos los valores posibles permitiría encontrar combinaciones muy
+ajustadas a la historia, dificultaría explicar de dónde surge el ganador y multiplicaría las
+pruebas. El protocolo fija un orden: temporalidad, representación, modelo y meta. Cada fase hereda
+el incumbent anterior, de modo que una decisión posterior no puede reabrir silenciosamente una
+elección temporal. Si dos alternativas difieren menos de 0,002 en ventaja pareada, se prefiere la
+más simple; si tampoco hay evidencia suficiente, se conserva el incumbent.
+
+\section{Ejemplo de comparación pareada}
+
+Supóngase que un candidato y el incumbent producen Rank-IC sobre las mismas 40 cohortes. En cada
+fecha se resta el Rank-IC del incumbente al del candidato y se re-muestrean bloques de doce cohortes
+para preservar la dependencia inducida por el horizonte anual. Si la ventaja media es 0,0208, el
+candidato mejora el 57,5\% de cohortes y el IC bootstrap al 90\% es $[0,0108;0,0372]$, hay evidencia
+de dominancia. Éste es el caso real de la cadencia mensual frente al baseline trimestral.
+
+La rentabilidad de cartera no influye en este paso. Un CAGR alto puede surgir de concentración,
+exposición accidental a una acción extrema o efectivo, sin demostrar que se ordene mejor el
+universo. El horizonte de seis meses ilustra un rechazo: su ventaja pareada fue $-0,0265$ y el
+intervalo $[-0,0552;-0,0109]$. Mostrar este resultado evita presentar la selección como una
+confirmación automática de la configuración preferida.
+
+\section{De rango a alfa esperado}
+
+La cartera necesita una magnitud económica, no sólo un percentil. Sobre cohortes cerradas se estima
+una relación entre ventiles de \texttt{meta\_rank} y retorno excedente anualizado. Se usan veinte
+grupos para no ajustar una curva a medias de muy pocas acciones, aunque la función se evalúa sobre
+el rango continuo. Si la pendiente no es creciente, la evidencia se amplía en cascada a dieciséis
+trimestres y al histórico completo; la salvaguarda final queda registrada como supuesto y no se
+presenta como estimación empírica.
+
+\section{Ejemplo de decisión y coste}
+
+Con horizonte de doce meses, comisión de 5 pb y slippage de 10 pb, una rotación completa cuesta 30
+pb. Si la peor posición tiene alfa esperado 60 pb, una candidata externa 250 pb y el margen de
+rotación es 50 pb, la mejora de 190 pb supera 80 pb y se rota. Si la candidata ofrece 120 pb, la
+mejora no cubre coste y margen, por lo que se conserva la posición. El ranking ordena preferencias;
+la operación necesita además una ventaja neta.
+
+Las entradas nuevas incorporan histéresis y el efectivo rinde 0\%. Bajo
+\texttt{opportunity\_cash}, una plaza puede permanecer en efectivo sólo si respeta el tope de 25\%
+y el suelo de diversificación. Un mínimo de tenencia, si se activa, bloquea ventas por rotación o
+caída de alfa hasta cumplir la fracción de horizonte configurada. Estas reglas controlan fricción y
+estabilidad; no pueden alterar el ganador predictivo.

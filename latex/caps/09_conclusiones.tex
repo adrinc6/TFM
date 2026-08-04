@@ -1,0 +1,45 @@
+\chapter{Conclusiones y trabajo futuro}
+
+El sistema aprende una ordenación transversal fuera de muestra: su Rank-IC medio es 0,1004, supera
+los baselines deterministas y se mantiene positivo tras placebos, permutación, bootstrap, exclusión
+de eras, semillas y neutralización por estilo. El meta-agente aporta valor frente al promedio
+equiponderado porque aprende a reponderar especialistas a partir de cohortes cerradas.
+
+La traducción económica es positiva en la ventana de selección y en los dos años reservados. Sin
+embargo, la conclusión no es una promesa de inversión: el Deflated Sharpe no supera el umbral, la
+muestra efectiva es pequeña y la confirmación de Rank-IC en la era reservada aún no tiene potencia.
+La contribución defendible del TFM es metodológica: demuestra cómo separar señal, selección,
+robustez y cartera en un sistema de aprendizaje financiero reproducible.
+
+La prioridad futura no es añadir complejidad al modelo, sino elevar el coeficiente de transferencia:
+ampliar el número de posiciones, reducir rotación, estudiar sizing por convicción y probar costes
+dependientes de liquidez. También será necesario esperar el cierre de nuevas cohortes reservadas y
+replicar el protocolo en otros universos y regímenes.
+
+\section{Respuesta a la pregunta de investigación}
+
+La respuesta es afirmativa con condiciones. Dentro del universo, periodo y protocolo definidos, los
+cinco agentes y su meta producen una ordenación transversal con Rank-IC positivo, superior a los
+baselines incluidos y estable frente a contrastes adversariales. El meta parte de pesos iguales y
+aprende de cohortes cerradas, por lo que su comportamiento no se reduce a fijar de antemano el
+especialista ganador.
+
+La respuesta económica es positiva pero más acotada. La cartera supera a SPY en selección y en los
+dos años reservados neta de los costes modelados. Sin embargo, el Deflated Sharpe y la muestra
+efectiva impiden transformar esa observación en una promesa de superioridad ajustada por riesgo. La
+formulación defendible es que el ranking tiene evidencia predictiva robusta y que su implementación
+es económicamente compatible con esa señal bajo restricciones declaradas.
+
+\section{Contribución y agenda}
+
+La contribución principal es un protocolo auditable: separa fecha de publicación y cierre fiscal,
+etiqueta futura y entrada de entrenamiento, selección predictiva y cartera, y evidencia de selección
+y confirmación reservada. Los artefactos permiten reconstruir configuraciones, pesos, decisiones,
+figuras y tablas. Esta disciplina es transferible a otros problemas de ML financiero incluso si el
+ranking concreto no se replica.
+
+El trabajo futuro debe priorizar la transferencia antes que añadir complejidad al modelo: estudiar
+tamaño de cartera, sizing, costes y rebalanceo sin reabrir la selección predictiva. Después debe
+reducirse la multiplicidad con un catálogo pre-registrado, esperar etiquetas reservadas y replicar
+el protocolo en otros universos. Cada extensión debe preservar la observabilidad temporal que hace
+interpretables los resultados actuales.

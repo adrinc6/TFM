@@ -1,0 +1,261 @@
+\chapter{Resultados}
+\label{chap:resultados}
+
+Este capítulo presenta primero evidencia de predicción, después contrastes de robustez y sólo a
+continuación su traducción económica. Esa secuencia es importante: una curva de patrimonio atractiva
+no demuestra capacidad predictiva si puede explicarse por azar, una era concreta o una decisión de
+cartera escogida retrospectivamente.
+
+\section{Capacidad predictiva fuera de muestra}
+
+En la ventana de selección 2015--2024, el sistema alcanza Rank-IC medio 0,1004, IC-IR 0,744 y
+71,79\% de cohortes positivas. Son 117 cohortes mensuales, aunque el horizonte de doce meses deja
+aproximadamente nueve observaciones independientes efectivas: ambos números deben leerse juntos.
+El estadístico Newey--West es 3,02 y el diferencial medio entre la cola superior e inferior es
+0,0365. La evidencia mide la calidad de la ordenación transversal, no la rentabilidad de una única
+cartera.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.96\textwidth]{figuras/f07_rankic_serie.png}
+  \caption{Rank-IC por cohorte. La banda dorada identifica la era reservada, que no intervino en
+  ninguna decisión. Fuente: \texttt{evidence/summary.json}.}
+  \label{fig:rankic-serie}
+\end{figure}
+
+La comparación limpia se hace contra scores deterministas calculados sobre el mismo panel y con las
+mismas restricciones temporales. El mejor, \texttt{garp\_score}, obtiene 0,0130; el sistema lo
+multiplica aproximadamente por ocho. No se infiere de ello que los factores clásicos sean inútiles,
+sino que, bajo este universo y este protocolo, una combinación no lineal y temporalmente cerrada
+ordena mejor los retornos futuros que las fórmulas fijas.
+
+\begin{table}[H]
+  \centering
+  \caption{Sistema frente a baselines deterministas.}
+  \label{tab:baselines}
+  \input{tablas/t07_baselines.tex}
+  \caption*{Fuente: \texttt{attribution.json} y \texttt{evidence/summary.json}.}
+\end{table}
+
+Por eras, el Rank-IC es 0,0976 en 2015--2018, 0,0423 en 2019--2021 y 0,1621 en 2022--2024. La
+señal se debilita en el régimen intermedio, pero no cambia de signo ni depende de la era final. Esta
+heterogeneidad justifica reportar series y no una única media agregada.
+
+\section{Robustez: aprendizaje y no suerte}
+
+La Tabla~\ref{tab:robustez} resume ocho contrastes predefinidos. Siete respaldan la capacidad
+predictiva; el Deflated Sharpe no alcanza su umbral de 0,95. Reportar este último resultado evita
+convertir la robustez en una lista selectiva de éxitos: la evidencia de señal y la evidencia de
+rentabilidad ajustada por multiplicidad no tienen la misma fuerza.
+
+\begin{table}[H]
+  \centering
+  \caption{Resumen de contrastes de robustez.}
+  \label{tab:robustez}
+  \input{tablas/t07_robustez.tex}
+  \caption*{Fuente: \texttt{robustness.json} y \texttt{attribution.json}.}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.92\textwidth]{figuras/f07_robustez.png}
+  \caption{Veredicto de los ocho contrastes. La figura sintetiza los estadísticos persistidos; los
+  valores exactos y su interpretación se detallan en la Tabla~\ref{tab:robustez}.}
+  \label{fig:robustez}
+\end{figure}
+
+El test de permutación entrega $p=0,0001$ con 9.999 réplicas y corrección +1: ninguna réplica
+igualó el Rank-IC observado. Los cinco placebos de etiqueta, que conservan la maquinaria de
+features, agentes y cartera pero destruyen la relación señal-retorno, quedan entre $-0,006$ y
+$+0,001$. Esto descarta que el pipeline genere por sí mismo una señal comparable.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.88\textwidth]{figuras/f07_placebos.png}
+  \caption{Placebos de etiqueta y Rank-IC del sistema. Fuente: \texttt{robustness.json}.}
+  \label{fig:placebos}
+\end{figure}
+
+El bootstrap por bloques de 12 cohortes sitúa el intervalo al 95\% en $[0,0335;0,1695]$; excluyendo
+por completo cualquiera de las tres eras, la media permanece entre 0,073 y 0,126. En tres semillas,
+el rango de Rank-IC es sólo 0,0020 y no cruza cero. Finalmente, frente a 1.000 carteras aleatorias
+de riesgo emparejado, la cartera del modelo ocupa el percentil 97,4. El contraste aleatorio general
+no se usa como prueba favorable: su percentil 95 de CAGR es 102,28\%, dominado por carteras muy
+concentradas de supervivientes extremos.
+
+La neutralización por 14 controles de estilo reduce el Rank-IC de 0,1111 a 0,0937; por tanto se
+retiene 84,35\% de la señal. La regresión factorial de la ventana de selección produce alfa por
+periodo 0,13\%, $t=0,82$ y $R^2=0,021$. No hay evidencia suficiente para atribuir ese alfa a un
+factor clásico, pero tampoco para afirmar que sea significativo por sí mismo.
+
+\section{Traducción económica y confirmación reservada}
+
+Una vez congelada la señal, la cartera obtiene entre 2015 y 2024 CAGR 15,01\% frente a 13,17\% de
+SPY; el exceso geométrico es 1,62\%, el IR 0,269, el máximo drawdown 23,44\% y el benchmark se bate
+en 8 de 10 años. El coste acumulado, 5,25\%, y el turnover anualizado, 359,08\%, son centrales para
+interpretar el resultado: la implementación captura sólo una parte de la señal disponible.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.96\textwidth]{figuras/f07_equity.png}
+  \caption{Curva de patrimonio de la cartera y SPY. La región dorada es confirmación reservada,
+  no selección. Fuente: \texttt{evidence/equity.parquet}.}
+  \label{fig:equity}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.91\textwidth]{figuras/f07_alfa_anual.png}
+  \caption{Alfa anual. El color dorado marca 2025--2026. Fuente:
+  \texttt{evidence/annual\_metrics.parquet}.}
+  \label{fig:alfa-anual}
+\end{figure}
+
+\begin{table}[H]
+  \centering
+  \scriptsize
+  \caption{Resultado anual de la cartera.}
+  \label{tab:anual}
+  \input{tablas/t07_anual.tex}
+  \caption*{Fuente: \texttt{evidence/annual\_metrics.parquet}. Turnover anualizado; efectivo medio.}
+\end{table}
+
+La era reservada 2025--2026 ofrece una confirmación económica positiva: CAGR de cartera 36,11\%
+frente a 19,18\% de SPY, exceso geométrico 14,21\%, IR 0,959 y 2 de 2 años por encima del benchmark.
+El alfa factorial por periodo es 1,64\% con $t=4,76$, mientras que el turnover anualizado cae a
+65,78\%. Sin embargo, su Rank-IC cerrado es $-0,0119$ sobre sólo seis cohortes y una observación
+independiente efectiva. No debe calificarse como confirmación predictiva negativa, sino como
+indeterminada por falta de potencia: la cartera usa la cola superior, el Rank-IC mide todo el
+universo y varias etiquetas todavía no cerraron.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.92\textwidth]{figuras/f07_drawdown.png}
+  \caption{Drawdown acumulado de cartera y SPY. Fuente: \texttt{evidence/equity.parquet}.}
+  \label{fig:drawdown}
+\end{figure}
+
+\section{Perfiles y coeficiente de transferencia}
+
+Los ocho perfiles comparten el mismo Rank-IC; sólo modifican la manera de llevarlo a cartera. Es un
+experimento controlado: las diferencias no pueden atribuirse a otro modelo. \texttt{balanced}, que
+no reordena la señal del meta, alcanza el mayor IR y el mayor exceso geométrico. Seis de los siete
+perfiles que imponen un sesgo adicional destruyen alfa; \texttt{momentum} es el peor, con el mayor
+turnover.
+
+\begin{table}[H]
+  \centering
+  \caption{Perfiles construidos a partir de la misma señal.}
+  \label{tab:perfiles}
+  \input{tablas/t07_perfiles.tex}
+  \caption*{Fuente: \texttt{profile\_comparison.parquet}.}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.90\textwidth]{figuras/f07_perfiles_exceso.png}
+  \caption{Exceso geométrico por perfil. Fuente: \texttt{profile\_comparison.parquet}.}
+  \label{fig:perfiles-exceso}
+\end{figure}
+
+El coeficiente de transferencia es 0,247: la cartera materializa aproximadamente una cuarta parte
+de la señal. La ley fundamental de la gestión activa relaciona IR, IC, amplitud y transferencia;
+en este caso la restricción \textit{long-only}, 12 nombres, el coste de transacción y 359\% de
+rotación explican que la limitación práctica esté en la cartera y no necesariamente en el ranking.
+Esta lectura concuerda con la distinción entre calidad de señal e implementación de
+\textcite{lopezdeprado2018advances}.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.84\textwidth]{figuras/f07_perfiles_tradeoff.png}
+\caption{Relación entre rotación y exceso geométrico de los perfiles. Fuente:
+\texttt{profile\_comparison.parquet}.}
+\label{fig:perfiles-tradeoff}
+\end{figure}
+
+\section{Lectura conjunta de la evidencia}
+
+Los resultados no deben reducirse a la frase ``la cartera batió al índice''. La evidencia tiene tres
+capas y cada una contesta una pregunta distinta. La primera es predictiva: el Rank-IC indica que el
+orden transversal contiene información y que el sistema supera los baselines deterministas. La
+segunda es estadística: permutación, placebos, bootstrap, exclusión de eras y semillas evalúan si la
+relación podría ser azar, un defecto mecánico o una coincidencia de régimen. La tercera es económica:
+la cartera muestra qué parte de esa señal sobrevive a restricciones long-only, costes y tamaño
+limitado.
+
+La secuencia también explica por qué dos métricas aparentemente discordantes pueden coexistir. Un
+ranking puede acertar la sección transversal completa y perder frente al benchmark en un año concreto
+si el índice está dominado por unas pocas megacapitalizaciones que la cartera no posee. De forma
+inversa, una cartera puede obtener un buen año por acertar el extremo superior aun cuando el
+Rank-IC, que mide unos cuatrocientos nombres, no tenga potencia suficiente para concluir sobre un
+periodo breve. Por ello se evita transformar cualquier cifra aislada en una afirmación general.
+
+\section{Qué aportan los contrastes de robustez}
+
+La permutación destruye sólo el vínculo entre ranking y retorno futuro dentro de cada cohorte, pero
+conserva distribución transversal, número de empresas y calendario. Su $p=0,0001$ responde a la
+pregunta de si un Rank-IC como el observado puede surgir sin asociación predictiva. Los placebos son
+complementarios: recorren el pipeline completo con etiquetas falsas. Si hubiese una fuga temporal o
+una normalización que fabricase señal, los placebos deberían mostrar una magnitud comparable; en
+cambio permanecen próximos a cero.
+
+El bootstrap por bloques y la exclusión de eras responden a otra objeción: una media positiva puede
+estar dominada por meses correlacionados o por un subperiodo excepcional. El intervalo al 95\%
+excluye cero incluso al mantener bloques de doce cohortes, y eliminar cualquier era conserva un
+Rank-IC positivo. La estabilidad entre semillas reduce la posibilidad de que el resultado dependa de
+una inicialización favorable del boosting. Ningún contraste por sí mismo prueba causalidad, pero sus
+modos de fallo son diferentes; que todos apunten en la misma dirección fortalece la interpretación.
+
+El contraste de carteras aleatorias requiere una lectura especialmente cuidadosa. Una cartera
+aleatoria de doce nombres puede concentrar por casualidad una empresa superviviente extraordinaria;
+por ello su distribución general presenta una cola extrema y no constituye un benchmark útil. Al
+emparejar riesgo, el modelo se sitúa en el percentil 97,4. El resultado sugiere que la señal aporta
+algo más que elegir doce nombres con una volatilidad similar, pero no autoriza a afirmar que toda
+cartera aleatoria sea inferior en toda muestra posible.
+
+\section{Atribución, factores y resultado no superado}
+
+La neutralización de estilo reduce el Rank-IC de 0,1111 a 0,0937. La pérdida del 15,65\% indica que
+parte de la señal comparte información con controles conocidos, como sería esperable en un sistema
+que utiliza ratios económicos y medidas de riesgo. La retención del 84,35\% muestra, sin embargo,
+que no se agota en esos controles. La regresión factorial tiene $R^2=0,021$ y no presenta cargas
+significativas, pero el alfa de selección tampoco es significativo de forma aislada. La conclusión
+prudente es que la evidencia es compatible con una señal parcialmente distinta de los factores
+implementados, no que haya descubierto una prima nueva y causal.
+
+El Deflated Sharpe de 0,930, inferior a 0,95, es la limitación empírica más importante. Penaliza el
+Sharpe por el número de configuraciones ensayadas y, por tanto, recuerda que una rentabilidad
+histórica seleccionada entre 66 alternativas merece escepticismo adicional. No contradice el test de
+permutación del Rank-IC: ambos examinan objetos diferentes. El primero limita una afirmación de
+rentabilidad ajustada por riesgo; el segundo apoya que el ranking no se comporta como ruido puro.
+
+\section{Análisis de los años adversos y de la era reservada}
+
+Los años con alfa negativo, 2020 y 2024, son informativos. En ambos el benchmark estuvo muy
+condicionado por grandes empresas de crecimiento; una cartera equiponderada de doce títulos con una
+inclinación hacia riesgo bajo no tiene por qué replicar esa concentración. En 2024 el efectivo medio
+fue además 22,92\%, de modo que la política prudente renunció a parte de la subida del índice. No es
+una explicación ex post que convierta la pérdida en éxito: identifica qué restricción de la cartera
+es coherente con la diferencia observada y debe considerarse al interpretar el riesgo de uso real.
+
+La era reservada ofrece el contraste opuesto. El exceso geométrico de 14,21\%, IR 0,959 y dos de dos
+años por encima de SPY son económicamente fuertes y no pudieron intervenir en la selección. No
+obstante, se informa junto a su debilidad estadística: sólo seis cohortes tienen etiqueta cerrada,
+varias observaciones futuras no han madurado y el número independiente efectivo es uno. El texto no
+convierte esa combinación en una contradicción. La confirmación económica es positiva; la
+confirmación del Rank-IC en esa era aún es insuficiente para una conclusión definitiva.
+
+\section{Implicación para el diseño de cartera}
+
+El mejor perfil es \texttt{balanced}, precisamente el que no reordena el resultado del meta. Esta
+comparación tiene valor causal limitado pero controlado: todos los perfiles parten de la misma señal,
+por lo que sus diferencias se atribuyen a la regla de construcción y no al reentrenamiento de otro
+modelo. Los perfiles con sesgos agresivos elevan a menudo el turnover y reducen el exceso. El caso
+de \texttt{momentum}, peor perfil y agente más débil, advierte contra imponer una narrativa de estilo
+sobre un ranking que ya incorporó esa información.
+
+El coeficiente de transferencia de 0,247 concentra la agenda práctica. La señal no es el único
+cuello de botella: una cartera long-only de doce posiciones no puede explotar la cola inferior, paga
+costes por rotar y debe limitar concentración. Las mejoras futuras deben evaluar tamaños de cartera,
+sizing y fricciones sin reabrir la selección predictiva. Ésa es una consecuencia metodológica del
+resultado, no una invitación a optimizar de nuevo hasta lograr el CAGR más alto.

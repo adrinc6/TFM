@@ -1,0 +1,140 @@
+\chapter{Agentes especializados y meta-agente}
+\label{chap:agentes}
+
+Este capítulo describe la parte propiamente predictiva del sistema. La hipótesis no es que una sola
+familia de ratios domine de forma estable todos los regímenes, sino que distintas vistas económicas
+del universo aportan información con persistencia desigual. Por ello se entrenan cinco agentes
+especializados ---\textit{quality}, \textit{value}, \textit{growth}, \textit{momentum} y
+\textit{risk}--- y un combinador que aprende cómo ponderarlos sin conocer a priori cuál será el
+más útil.
+
+\section{Arquitectura y aprendizaje \textit{walk-forward}}
+
+Cada agente recibe sólo los bloques de variables asignados a su especialidad. \textit{Quality}
+resume rentabilidad, márgenes, eficiencia y solidez financiera; \textit{value} utiliza ratios de
+precio y flujos; \textit{growth} mide aceleración y estabilidad de fundamentales; \textit{momentum}
+recoge tendencias de precio y de fundamentales; y \textit{risk} representa riesgo de precio y
+liquidez. Esta separación tiene dos fines: conserva interpretabilidad económica y evita que el
+meta-agente confunda cinco copias del mismo predictor.
+
+En cada fecha de snapshot se ajusta un LightGBM por agente sobre una ventana móvil de ocho años.
+El ganador fijado por el estudio emplea profundidad máxima 3, 100 estimadores, tasa de aprendizaje
+0,03 y mínimo de 50 observaciones por hoja. LightGBM permite representar interacciones no lineales
+sin imponer una forma funcional única \parencite{ke2017lightgbm}; el entrenamiento temporal evita
+que el modelo evalúe observaciones que habría visto durante el ajuste.
+
+Las cinco puntuaciones se convierten en rangos transversales y pasan al meta-agente
+\texttt{stacked\_rolling\_bounded}. Éste usa exclusivamente cohortes trimestrales cerradas de los
+16 trimestres precedentes y estima una Ridge positiva con pesos entre 0,10 y 0,50. Si todavía no
+hay etiquetas cerradas suficientes, usa por construcción pesos iguales de 0,20. La restricción
+superior es deliberada: impide que una ventaja transitoria apague por completo a los restantes
+agentes y hace visible la diferencia entre aprender y concentrar sin control.
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[node distance=9mm and 12mm, >=Latex, every node/.style={font=\small}]
+    \node[draw,rounded corners,fill=blue!8,minimum width=25mm,minimum height=10mm] (f) {Variables PIT};
+    \node[draw,rounded corners,fill=teal!10,right=of f,minimum width=31mm,minimum height=22mm,align=center] (a) {Cinco agentes\\LightGBM};
+    \node[draw,rounded corners,fill=orange!12,right=of a,minimum width=32mm,minimum height=16mm,align=center] (m) {Meta apilado\\acotado};
+    \node[draw,rounded corners,fill=green!10,right=of m,minimum width=26mm,minimum height=10mm,align=center] (s) {Ranking final};
+    \draw[->,thick] (f) -- (a);
+    \draw[->,thick] (a) -- (m);
+    \draw[->,thick] (m) -- (s);
+  \end{tikzpicture}
+  \caption{Arquitectura predictiva. Las variables sólo están disponibles cuando ya se publicaron;
+  los agentes se ajustan \textit{walk-forward} y el meta aprende con cohortes cuya etiqueta ya cerró.}
+  \label{fig:arquitectura}
+\end{figure}
+
+\section{La evidencia de que el meta aprende}
+
+El aprendizaje es observable, no una afirmación inferida de la rentabilidad final. Las primeras
+60 filas de \texttt{meta\_weights.parquet} corresponden a \texttt{fallback\_equal}: cada agente
+recibe 0,20 porque aún no existe evidencia cerrada. Después aparecen 615 filas
+\texttt{learned}. En 2016 el meta concentra inicialmente el peso en \textit{momentum}; al cerrar
+nuevas cohortes corrige esa decisión y, desde 2018, aproxima el peso de \textit{risk} al límite de
+0,50. La rotación media de pesos es sólo 0,0093 y la concentración media 0,295, por lo que el
+resultado no es una oscilación mecánica.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.94\textwidth]{figuras/f05_meta_pesos.png}
+  \caption{Pesos del meta-agente por fecha de snapshot. La franja inicial uniforme corresponde a
+  la ausencia de etiquetas cerradas; las variaciones posteriores usan únicamente información ya
+  observable. Fuente: \texttt{evidence/meta\_weights.parquet}.}
+  \label{fig:pesos-meta}
+\end{figure}
+
+El contraste relevante conserva exactamente los mismos cinco agentes y cambia sólo la regla de
+combinación. En la ventana de selección, el meta aprendido alcanza Rank-IC 0,1004 frente a 0,0659
+del promedio equiponderado: una mejora de 0,0345, equivalente al 52\%. Por tanto, la capa de
+combinación añade información útil y no sólo reescala los scores.
+
+\begin{table}[H]
+  \centering
+  \caption{Capacidad predictiva de los agentes y combinadores en 2015--2024.}
+  \label{tab:agentes}
+  \input{tablas/t05_agentes.tex}
+  \caption*{Fuente: \texttt{evidence/rank\_ic\_diagnostics.parquet}. Desviación e IC-IR se calculan
+  sobre cohortes cerradas de la ventana de selección.}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.90\textwidth]{figuras/f05_agentes_rankic.png}
+  \caption{Rank-IC medio por señal; las barras de error muestran el error estándar de la media.
+  Fuente: \texttt{evidence/rank\_ic\_diagnostics.parquet}.}
+  \label{fig:agentes-rankic}
+\end{figure}
+
+Hay un matiz esencial. \textit{Risk} aislado presenta el mayor Rank-IC: 0,1229. El meta no puede
+igualarlo porque su diseño prohíbe atribuirle más de la mitad del peso. La conclusión defendible no
+es que el meta supere a su mejor componente, sino que aprende desde una situación de ignorancia a
+superar con claridad la combinación ingenua y a reproducir buena parte de la señal del especialista
+dominante. El Capítulo~\ref{chap:resultados} comprobará además que dicha señal conserva el 84,35\%
+tras neutralizar controles de estilo, de modo que no debe reducirse sin más a baja volatilidad
+clásica.
+
+\section{Qué aprende cada especialista}
+
+La especialización no asigna una conclusión previa al modelo; asigna un vocabulario económico para
+formular hipótesis. El agente \textit{quality} recibe ratios como ROE, ROIC, ROA, márgenes, rotación
+de activos, liquidez y endeudamiento. Un ROIC alto puede indicar un uso eficiente del capital, pero
+el modelo no recibe la regla ``ROIC alto implica comprar''; aprende una relación condicionada a la
+historia disponible. \textit{Value} combina valoraciones relativas y flujos de caja; \textit{growth}
+busca aceleración, persistencia y estabilidad de resultados; \textit{momentum} incorpora tendencia
+de precio y de fundamentales; y \textit{risk} resume volatilidad, riesgo de precio y liquidez.
+
+El preset ganador, \texttt{all}, activa once bloques cerrados y conserva como máximo doce variables
+por agente mediante poda por estabilidad fuera de muestra. Así evita un conjunto demasiado reducido,
+que amputaría información relevante, y un conjunto arbitrariamente amplio, que aumentaría la
+varianza y dificultaría la interpretación. La poda forma parte del catálogo; no es una selección
+manual posterior a observar el resultado.
+
+\section{Entrenamiento y combinación de rangos}
+
+En cada snapshot el modelo recibe sólo la historia permitida. Si la fecha es abril de 2020 y la
+ventana es de ocho años, el conjunto comienza aproximadamente en abril de 2012; una fila de finales
+de 2019 entra sólo si su etiqueta anual ya cerró. El ajuste se repite al avanzar el tiempo. Los
+parámetros ganadores ---profundidad 3, 100 estimadores, tasa 0,03 y mínimo de 50 observaciones por
+hoja--- limitan interacciones demasiado específicas; se eligieron con la regla del Capítulo 6, no
+porque sean universales.
+
+Los scores se convierten a rangos porcentuales dentro de cada cohorte. Esta operación evita que la
+escala numérica de un agente domine al resto: si \textit{risk} produce valores entre 0,4 y 0,6 y
+\textit{value} entre $-2$ y $3$, ambos pasan a expresar posición relativa en su sección transversal.
+El meta combina después esos rangos, no sus unidades originales.
+
+\section{Ejemplo de combinación acotada}
+
+Supóngase una empresa con rangos quality 0,80, value 0,55, growth 0,70, momentum 0,45 y risk 0,90.
+En el arranque, los pesos iguales producen $(0,80+0,55+0,70+0,45+0,90)/5=0,68$. Si la evidencia
+cerrada produce pesos $(0,10,0,10,0,15,0,50)$, el score es 0,72. La empresa mejora de posición no
+por una decisión discrecional, sino porque su fortaleza en \textit{risk} gana relevancia según datos
+ya observados. El límite inferior 0,10 impide apagar un agente por una mala racha corta y el máximo
+0,50 evita que el meta se convierta en una copia exacta del especialista dominante.
+
+La arquitectura permite atribuir cambios a agentes, no inferir causalidad financiera. Que
+\textit{risk} tenga peso alto no demuestra que la baja volatilidad sea la causa del resultado. Puede
+reflejar interacciones, características del universo o límites de las variables disponibles. Por eso
+los capítulos posteriores muestran estabilidad por eras y neutralización por estilo.

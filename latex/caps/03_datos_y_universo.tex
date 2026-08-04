@@ -1,0 +1,99 @@
+\chapter{Datos y universo de inversión}
+
+El universo se reconstruye históricamente a partir de la pertenencia al S\&P 500. Una empresa sólo
+es elegible cuando pertenecía al índice en ese snapshot; por tanto, no se usa la composición actual
+para describir el pasado. Los precios proceden de Yahoo Finance, los fundamentales de Finnhub y las
+fechas de publicación de SEC EDGAR. SPY es el benchmark y se excluye explícitamente de las
+posiciones.
+
+La cobertura se mide, no se presume. El pipeline identifica reutilizaciones de ticker, como CPQ y
+MOB, y evita asociar precios de una empresa posterior a un miembro histórico. La fracción utilizable
+es al menos 99,4\% en los años representados, aunque persiste un riesgo residual de supervivencia y
+de restatements históricos que se discute en el Capítulo~\ref{chap:limitaciones}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.93\textwidth]{figuras/f03_cobertura.png}
+\caption{Cobertura anual del universo histórico. Fuente: \texttt{attribution.json} →
+\texttt{universe\_coverage}.}
+\end{figure}
+
+El dataset preparado está identificado por el hash
+\texttt{b9134b218e3bf7fc156372d61e02056ecfa6036777e0fe84a69df0a92653fbd3}. Guardar la identidad,
+y no una copia del dataset dentro de resultados, permite rastrear la procedencia de toda cifra y
+evita reutilizar por error una evaluación sobre datos distintos.
+
+\section{Fuentes y función de cada fuente}
+
+Ninguna fuente aislada proporciona todos los elementos necesarios para una evaluación temporalmente
+honesta. Yahoo Finance aporta series de precios ajustados que permiten valorar posiciones y calcular
+retornos. Finnhub aporta ratios y series fundamentales con los que se construyen las variables de
+calidad, valor, crecimiento y parte del riesgo. SEC EDGAR proporciona la fecha de filing de los
+10-K y 10-Q; esta fecha establece cuándo el mercado pudo conocer un estado financiero. Por último,
+el historial de composición del índice determina qué empresas forman parte del universo invertible
+en cada instante.
+
+Esta combinación introduce una jerarquía de confianza. Los precios se usan con la última cotización
+disponible antes del snapshot. Los fundamentales no se usan sólo por existir en la descarga: deben
+estar asociados a un periodo y a un filing elegible. Los perfiles de Finnhub, como el sector, nunca
+entran como señal predictiva; sólo se pueden usar para agrupaciones auxiliares cuando la
+configuración solicita neutralización. Esta restricción reduce el riesgo de que una columna moderna
+de perfil introduzca información retrospectiva.
+
+La falta de un dato no se interpreta como un retorno nulo ni se sustituye con una media global que
+mezcle fechas futuras. El pipeline aplica una imputación basada en la mediana del conjunto de
+entrenamiento disponible e incorpora indicadores de ausencia. De esta manera el modelo puede
+aprender que la falta de cobertura es informativa, pero no recibe una estimación calculada con el
+futuro. Una observación sin precio suficiente o sin fundamental elegible puede quedar fuera de la
+cohorte; esa exclusión se registra en la cobertura anual.
+
+\section{Universo dinámico y pertenencia histórica}
+
+El universo no es la lista actual del S\&P 500. Para cada fecha se consulta qué tickers pertenecían
+al índice en ese momento y se construye la sección transversal sólo con ellos. Esta decisión evita
+un sesgo frecuente: usar empresas que sobrevivieron y permanecen hoy en el índice para evaluar
+periodos en los que otras empresas ya habían sido expulsadas, adquiridas o quebrado. La literatura
+ha documentado que esta selección puede inflar de forma material las conclusiones de rendimiento
+\parencite{brown1992survivorship}.
+
+La corrección no equivale a eliminar todo sesgo de supervivencia. Las fuentes gratuitas pueden no
+ofrecer la misma profundidad para firmas retiradas, algunos fundamentales históricos se han
+restatado y la disponibilidad puede variar por año. La diferencia es metodológica: el trabajo mide
+esa cobertura, expone sus huecos y evita tratarlos como si no existieran. La Figura de cobertura
+mostrada antes hace visible tanto el crecimiento del número de tickers como la fracción de filas que
+realmente pueden usar el pipeline.
+
+Un caso adicional es la reutilización de símbolos. Un ticker puede corresponder a una empresa
+histórica y, años después, a otra distinta. CPQ dejó de pertenecer al índice en 2002, pero una serie
+de precios descargada posteriormente no necesariamente representa a Compaq; MOB presenta un caso
+análogo. Si se unieran esas series por ticker sin comprobar el intervalo de pertenencia, se crearía
+una historia de precios inexistente. La guarda de reciclaje compara la primera fecha de precio con
+el intervalo de membresía y excluye los símbolos incompatibles.
+
+\section{Identidad, materialización y trazabilidad}
+
+El dataset se materializa una vez bajo una identidad que resume fuentes, rango temporal, universo,
+cadencia, horizonte, lag y versiones de transformación. Si dos evaluaciones resuelven la misma
+identidad, pueden reutilizar la materialización; si cualquiera de esos elementos cambia, se crea un
+dataset distinto. Los resultados no contienen una copia del panel: conservan la referencia y su
+hash. Esta elección reduce duplicación y permite reconstruir de qué datos procedió un resultado.
+
+La identidad de evaluación incluye además el hash del dataset. Sin esa condición, dos estudios con
+parámetros nominalmente iguales pero datos distintos podrían compartir por error una clave de caché.
+Por tanto, la trazabilidad no es un detalle administrativo: impide que una métrica calculada sobre
+un panel se atribuya a otro. En los anexos se conserva el hash de dataset, la clave de evaluación,
+el identificador del estudio y las rutas de los artefactos que alimentan cada tabla y figura.
+
+\section{Ventanas temporales del experimento}
+
+El modelo necesita historia anterior para entrenarse. Con una ventana móvil de ocho años y primer
+snapshot de la evaluación en 2015, la información de entrenamiento procede de periodos anteriores,
+siempre que sus etiquetas ya hayan cerrado. La ventana de selección se extiende de 2015 a 2024 y
+contiene 117 cohortes mensuales. Los datos de 2025--2026 se separan como era reservada antes de
+elegir variables, pesos o reglas de cartera. Así, observar un buen resultado reservado no permite
+volver atrás para retocar el ganador.
+
+Esta separación no convierte automáticamente 2025--2026 en una prueba definitiva. El horizonte de
+doce meses deja varias etiquetas abiertas y reduce la información independiente. Su función es más
+exigente que una fila adicional en la tabla de selección: es una comprobación externa del modelo ya
+congelado, cuya interpretación se mantiene deliberadamente prudente en el Capítulo~\ref{chap:resultados}.

@@ -1,0 +1,131 @@
+\chapter{Introducción y motivación}
+
+La selección de acciones mediante aprendizaje automático plantea un problema metodológico antes que
+uno de ingeniería: una estrategia puede parecer rentable por azar, por información futura o por
+haber probado muchas variantes. Este trabajo estudia si un sistema de cinco agentes especializados
+puede aprender una ordenación transversal de acciones que mantenga poder predictivo fuera de muestra
+cuando los datos se cierran temporalmente y la selección no utiliza rentabilidad.
+
+La pregunta de investigación es: \emph{¿puede un sistema de agentes especializados aprender una
+ordenación transversal de acciones con valor predictivo fuera de muestra, medida con Rank-IC, y esa
+ordenación traducirse en utilidad económica neta de costes?} La respuesta se formula con precisión:
+la evidencia respalda la capacidad predictiva y una confirmación económica favorable, pero no
+establece con igual fuerza que el Sharpe resista la penalización por multiplicidad.
+
+La contribución es doble. Primero, impone una cadena point-in-time desde la publicación del
+fundamental hasta el cierre de etiqueta. Segundo, separa selección por Rank-IC, robustez y cartera:
+el rendimiento no puede escoger el modelo. Los Capítulos~\ref{chap:agentes}--\ref{chap:resultados}
+desarrollan esta cadena y el Capítulo~\ref{chap:limitaciones} fija el alcance exacto de sus
+conclusiones.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=6mm,>=Latex,every node/.style={font=\small,align=center}]
+\node[draw,rounded corners,fill=blue!8,minimum width=25mm] (c) {Catálogo cerrado};
+\node[draw,rounded corners,fill=teal!10,right=of c,minimum width=27mm] (s) {Model Study};
+\node[draw,rounded corners,fill=orange!12,right=of s,minimum width=30mm] (r) {Selección\\Rank-IC};
+\node[draw,rounded corners,fill=green!10,right=of r,minimum width=27mm] (w) {Ganador};
+\node[draw,rounded corners,fill=gray!15,below=of w,minimum width=40mm] (e) {Robustez, cartera y perfiles};
+\draw[->,thick](c)--(s); \draw[->,thick](s)--(r); \draw[->,thick](r)--(w); \draw[->,thick](w)--(e);
+\end{tikzpicture}
+\caption{Flujo científico único del TFM. La evidencia económica se produce después de congelar el
+ganador predictivo.}
+\end{figure}
+
+\section{El problema: predecir no es maximizar retrospectivamente}
+
+En un problema de clasificación convencional es frecuente comparar modelos con una métrica única y
+elegir el mayor valor observado. En mercados financieros esa práctica es insuficiente. Los retornos
+son ruidosos, los datos tienen una dependencia temporal fuerte y el investigador suele disponer de
+muchas decisiones plausibles: universo, fecha de rebalanceo, horizonte, transformaciones, modelo,
+costes y tamaño de cartera. Si se usa la misma historia para escoger cada una de esas decisiones y
+para celebrar el resultado final, la rentabilidad puede reflejar la exploración acumulada y no una
+relación económica estable. Este fenómeno, habitualmente llamado \textit{backtest overfitting}, es
+uno de los motivos por los que un buen gráfico de rendimiento no basta como evidencia
+\parencite{lopezdeprado2014pseudo,harvey2016cross}.
+
+Un ejemplo simplificado ilustra el problema. Supóngase que un investigador prueba veinte reglas
+aleatorias para formar una cartera de doce acciones durante diez años. Aunque ninguna regla tenga
+información sobre el futuro, es probable que una presente el mejor CAGR por pura variabilidad. Si se
+publica sólo esa ganadora y se omiten las diecinueve alternativas, el lector observará una curva
+ascendente y podría atribuirle habilidad. La conclusión cambia si se pregunta qué métrica eligió la
+regla, cuántas alternativas se probaron, qué datos estaban disponibles en cada fecha y si la
+estrategia se sostuvo tras congelar todas las decisiones.
+
+Este trabajo adopta esa segunda pregunta. No intenta identificar retrospectivamente la cartera más
+rentable del S\&P 500 ni construir una recomendación de inversión. El objeto científico es una
+ordenación: dadas las acciones disponibles en una fecha, ¿asigna el sistema puntuaciones más altas,
+en promedio, a las que después obtienen retornos excedentes mayores? Esta formulación permite
+evaluar todo el universo transversal y no sólo las doce posiciones finalmente compradas. También
+permite distinguir el aprendizaje del ranking de las fricciones de una implementación concreta.
+
+\section{Pregunta, hipótesis y objetivos}
+
+La pregunta de investigación se concreta en tres hipótesis complementarias. La primera,
+\textbf{H1}, sostiene que el score final tiene Rank-IC medio positivo y estadísticamente distinguible
+de cero en cohortes cerradas entre 2015 y 2024. La segunda, \textbf{H2}, sostiene que dicha señal no
+es un artefacto de una semilla, una era, una etiqueta permutada o un factor de estilo conocido. La
+tercera, \textbf{H3}, pregunta si una traducción prudente de la señal a cartera obtiene resultados
+económicos informativos netos de costes, sin que esos resultados se usen para elegir el modelo.
+
+De estas hipótesis se derivan cinco objetivos operativos. Primero, reconstruir un panel de acciones
+con pertenencia histórica al índice y observabilidad \textit{point-in-time}. Segundo, entrenar cinco
+agentes que representan hipótesis económicas diferentes. Tercero, combinar sus scores con un
+meta-agente que sólo aprende de etiquetas ya cerradas. Cuarto, seleccionar de forma secuencial una
+configuración predictiva mediante comparaciones pareadas de Rank-IC. Quinto, auditar la señal con
+contrastes adversariales y con una era reservada que no participa en ninguna decisión.
+
+La hipótesis nula sigue siendo científicamente útil. Si el Rank-IC no superase los contrastes, el
+resultado no sería un fracaso del TFM: sería evidencia contra la afirmación de que esta arquitectura
+aprende una ordenación estable bajo las restricciones propuestas. Este criterio es importante porque
+reduce el incentivo a modificar el protocolo hasta obtener una rentabilidad atractiva.
+
+\section{Contribución del trabajo}
+
+La primera contribución es de diseño temporal. Un fundamental se asocia a su fecha real de
+publicación regulatoria y no a su cierre fiscal. De este modo, una observación no entra en el modelo
+antes de que un inversor real pudiera conocerla. La segunda es de diseño experimental: la selección
+del ganador sólo utiliza Rank-IC pareado hasta 2024. La cartera, sus costes, el efectivo y los
+perfiles se tratan como una capa posterior de diagnóstico. La tercera es de auditabilidad: el
+estudio conserva configuración, decisiones, cohortes, pesos del meta, posiciones, órdenes y
+artefactos de robustez.
+
+La arquitectura de agentes también responde a una cuestión interpretativa. El mercado puede premiar
+en un régimen la rentabilidad y solidez de un negocio, y en otro la exposición a riesgo, el valor o
+la tendencia. En lugar de pedir a un único modelo que mezcle toda esa información sin estructura,
+el sistema mantiene especialistas y permite observar qué peso aprende el combinador. Así se puede
+examinar no sólo \emph{si} hay señal, sino \emph{cómo} cambia la evidencia disponible para cada
+especialidad.
+
+\section{Del ranking a una decisión económica}
+
+Conviene separar tres conceptos que a menudo se confunden. El \textbf{score} es la salida continua de
+un agente para una acción; el \textbf{rango} ordena los scores dentro de cada snapshot; y el
+\textbf{Rank-IC} es la correlación de Spearman entre ese rango y el retorno excedente observado al
+cierre de la etiqueta. Si $r_{i,t}$ es el rango de la acción $i$ en la fecha $t$ y $y_{i,t+h}$ su
+retorno excedente futuro, la métrica por cohorte es
+
+\[
+\rankic_t=\rho_{\mathrm{Spearman}}\!\left(r_{i,t}, y_{i,t+h}\right).
+\]
+
+Un Rank-IC positivo no promete que todas las posiciones individuales ganen ni que la cartera supere
+al benchmark cada año. Significa que, de media, el orden relativo contiene información. La cartera
+añade restricciones: sólo puede comprar, mantiene doce posiciones, paga costes y puede conservar
+efectivo cuando la calibración de alfa no justifica una entrada. Por eso un sistema puede exhibir un
+Rank-IC sólido y un IR de cartera moderado. El Capítulo~\ref{chap:resultados} cuantifica esa pérdida
+de transmisión mediante un coeficiente de 0,247.
+
+\section{Alcance y organización del documento}
+
+El alcance empírico se limita a acciones que pertenecieron históricamente al S\&P 500, a fuentes
+gratuitas y a una cartera \textit{long-only}. SPY actúa sólo como benchmark. No se modela impacto de
+mercado dependiente del volumen, no se afirma causalidad económica y no se extrapolan resultados a
+otros mercados sin replicación. Estas restricciones se desarrollan como amenazas a la validez en el
+Capítulo~\ref{chap:limitaciones}.
+
+El Capítulo 2 sitúa el estudio en la literatura de factores y aprendizaje automático. El Capítulo 3
+describe los datos y el universo; el 4 formaliza la disciplina temporal. Los Capítulos 5 y 6
+presentan la arquitectura y el protocolo de selección. El Capítulo 7 presenta los resultados y sus
+matices; el 8 delimita sus limitaciones y el 9 concluye con una agenda de investigación. Los anexos
+permiten reproducir activos, configuración y evidencia auxiliar sin interrumpir la lectura central.

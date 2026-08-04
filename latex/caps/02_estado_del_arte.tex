@@ -1,0 +1,113 @@
+\chapter{Estado del arte}
+
+La inversión factorial documenta diferencias transversales asociadas a valor, tamaño y mercado
+\parencite{fama1992cross,fama1993common}, así como a momentum \parencite{jegadeesh1993returns} y
+calidad \parencite{asness2013quality}. Estas regularidades son tanto una motivación como una prueba
+difícil: un sistema predictivo debe demostrar que no se limita a reproducir una fórmula factorial.
+
+El aprendizaje automático amplía las relaciones que pueden estimarse entre características y
+retornos; por ejemplo, \textcite{gu2020empirical} documentan ganancias empíricas de métodos no
+lineales en asset pricing. Sin embargo, esa flexibilidad aumenta los riesgos de ajustar ruido.
+La multiplicidad de especificaciones, la fuga temporal y el sesgo de supervivencia pueden producir
+resultados convincentes pero no replicables \parencite{brown1992survivorship,harvey2016cross}.
+
+El criterio principal de este estudio es Rank-IC, la correlación de Spearman entre el score en una
+fecha y el retorno excedente futuro una vez cerrada la etiqueta. A diferencia del CAGR de una
+cartera concreta, mide toda la ordenación y permite separar señal de implementación. Esta distinción
+será decisiva al interpretar el coeficiente de transferencia del Capítulo~\ref{chap:resultados}.
+
+\section{De las anomalías a las variables explicativas}
+
+La literatura de factores parte de una observación sencilla: los retornos esperados no parecen
+independientes de todas las características observables de una empresa. Los modelos de Fama y French
+documentaron primas asociadas a tamaño y valor \parencite{fama1992cross,fama1993common}; trabajos
+posteriores mostraron persistencia del momentum \parencite{jegadeesh1993returns} y una prima ligada
+a calidad \parencite{asness2013quality}. Estas relaciones no deben entenderse como leyes mecánicas.
+Su magnitud cambia con el horizonte, el universo, los costes y el régimen, y una señal que funciona
+en promedio puede atravesar años adversos.
+
+Para este TFM los factores cumplen tres papeles. Primero, orientan la división de features entre
+agentes: rentabilidad y solvencia para \textit{quality}; ratios de valoración para \textit{value};
+aceleración de resultados para \textit{growth}; tendencias para \textit{momentum}; y medidas de
+volatilidad y liquidez para \textit{risk}. Segundo, sirven de baseline: una fórmula determinista de
+un factor debe compararse contra el sistema aprendido sobre el mismo panel. Tercero, son controles
+de atribución: si la señal desaparece al neutralizar exposiciones conocidas, la interpretación debe
+ser más modesta.
+
+No se afirma que un agente represente un factor puro. Por ejemplo, una empresa de alta calidad puede
+presentar al mismo tiempo baja volatilidad, crecimiento persistente y una valoración elevada. La
+especialización organiza la entrada del modelo; no impone que el mercado recompense cada bloque por
+separado ni evita interacciones posteriores dentro del LightGBM.
+
+\section{Aprendizaje automático en \textit{asset pricing}}
+
+Los métodos de aprendizaje automático amplían la capacidad de modelar no linealidades e
+interacciones entre características. \textcite{gu2020empirical} muestran que estos modelos pueden
+mejorar la predicción transversal cuando el conjunto de señales es amplio y el entrenamiento respeta
+la estructura temporal. LightGBM, usado aquí en cada agente, pertenece a la familia de árboles
+potenciados: construye de forma secuencial árboles débiles que corrigen errores de los anteriores y
+puede manejar relaciones no monotónicas \parencite{ke2017lightgbm}.
+
+Esa flexibilidad tiene un coste epistemológico. Un modelo flexible puede encontrar patrones espurios
+con facilidad, especialmente si se prueban parámetros hasta maximizar una métrica final. Por ello la
+pregunta no es si un algoritmo complejo puede ajustar la historia, sino si conserva una ventaja al
+evaluarse en observaciones posteriores no utilizadas para su entrenamiento ni para su selección.
+El diseño \textit{walk-forward}, las etiquetas cerradas y la era reservada son respuestas a esa
+exigencia.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Posicionamiento metodológico del estudio frente a líneas de literatura relevantes.}
+\begin{tabularx}{\textwidth}{lXXX}
+\toprule
+Enfoque & Aportación principal & Riesgo metodológico & Respuesta de este TFM\\
+\midrule
+Factores clásicos & Interpretabilidad económica y baselines simples & Confundir una prima histórica con señal universal & Comparación sobre el mismo panel y neutralización de estilo\\
+ML transversal & Interacciones y no linealidades & Sobreajuste de parámetros y dependencia temporal & \textit{Walk-forward}, catálogo cerrado y Rank-IC OOS\\
+Backtest de cartera & Traducción a utilidad económica & Elegir por CAGR, ignorar costes o supervivencia & Cartera posterior al ganador y costes explícitos\\
+Inferencia con múltiples pruebas & Penalización del \textit{data snooping} & Publicar sólo la mejor especificación & Bootstrap, permutación, placebos y Deflated Sharpe\\
+\bottomrule
+\end{tabularx}
+\caption*{Fuente: elaboración propia a partir de \textcite{gu2020empirical,harvey2016cross,lopezdeprado2014pseudo}.}
+\end{table}
+
+\section{Medición de señal: Rank-IC, amplitud y transferencia}
+
+La métrica elegida es la correlación de rangos y no el error cuadrático de una predicción puntual.
+Para seleccionar acciones importa más ordenar correctamente dos empresas que estimar con precisión
+el retorno porcentual de cada una. La correlación de Spearman es además robusta a transformaciones
+monótonas del score: si un modelo cambia la escala pero no el orden, su Rank-IC no cambia.
+
+Un Rank-IC no debe presentarse aislado. Su estabilidad se describe mediante la fracción de cohortes
+positivas, su dispersión, intervalos por bloques y el IC-IR, definido como la media de Rank-IC
+dividida por su desviación típica. Cuando las etiquetas se solapan, el número nominal de cohortes
+sobrestima la cantidad de información independiente; el uso de correcciones Newey--West y bloques
+de doce meses reconoce precisamente esa dependencia.
+
+La literatura de gestión activa también distingue señal de implementación. Una forma habitual de
+expresar esa idea relaciona el information ratio con el information coefficient, la amplitud de
+decisiones independientes y el coeficiente de transferencia. En este trabajo esa intuición se usa
+como marco, no como una identidad exacta: una cartera \textit{long-only} de doce nombres no puede
+expresar la parte negativa de un ranking ni operar sin fricciones. El análisis de perfiles mostrará
+que reordenar una señal con reglas estilísticas adicionales puede reducir, y no aumentar, el valor
+económico capturado.
+
+\section{Sesgos que condicionan la evidencia}
+
+El \textit{lookahead bias} aparece cuando una variable incorpora información que no era conocida en
+la fecha de decisión. En fundamentales, usar la fecha de cierre fiscal en lugar de la fecha de filing
+es un ejemplo clásico: el trimestre puede haber terminado, pero sus resultados no se publicaron
+aún. El sesgo de supervivencia surge cuando se usa la composición actual de un índice para describir
+el pasado; se eliminan así empresas que salieron del universo y se exagera la calidad de la muestra
+\parencite{brown1992survivorship}.
+
+El \textit{data snooping} es distinto: incluso con datos perfectamente cerrados, muchas pruebas
+incrementan la probabilidad de encontrar una aparente ganadora. \textcite{harvey2016cross} alertan
+del gran número de factores propuestos en la literatura y de la necesidad de elevar el estándar de
+evidencia. El Deflated Sharpe Ratio es útil porque descuenta la selección entre configuraciones, pero
+no sustituye a la disciplina de congelar una era reservada ni a contrastes de permutación y placebo.
+
+En síntesis, la contribución del TFM no consiste en proponer un sexto factor. Consiste en evaluar una
+arquitectura de aprendizaje con una separación explícita entre datos disponibles, modelo elegido,
+robustez y cartera. Ese posicionamiento condiciona todos los capítulos posteriores.
