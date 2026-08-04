@@ -2,14 +2,14 @@
   "schema_version": 2,
   "study_id": "study-20260804-122546-f140435d",
   "study_type": "model_study",
-  "status": "running",
-  "phase": "portfolio",
-  "progress": 0.5681818181818182,
+  "status": "succeeded",
+  "phase": "completed",
+  "progress": 1.0,
   "created_at": "2026-08-04T10:25:46.390917+00:00",
-  "updated_at": "2026-08-04T12:04:41.777650+00:00",
-  "heartbeat": "2026-08-04T12:04:41.748276+00:00",
-  "worker_pid": 17844,
-  "completed_runs": 25,
+  "updated_at": "2026-08-04T12:48:35.786498+00:00",
+  "heartbeat": "2026-08-04T12:48:35.763760+00:00",
+  "worker_pid": null,
+  "completed_runs": 42,
   "name": "Model Study",
   "note": "",
   "run_scope": "full",
@@ -2024,5 +2024,8 @@
     ],
     "hash": "96ae07068ba4b4d6473f56be3ade6221220c948b1a785c320c6e53153d5c4c21"
   },
-  "current_run_id": "run-9e0d797794f5"
+  "current_run_id": "run-c563a0bf77ca",
+  "winner_run_id": "run-a7412bcbb17a",
+  "error": null,
+  "traceback": null
 }

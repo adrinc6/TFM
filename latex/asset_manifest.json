@@ -1,0 +1,36 @@
+{
+  "study_id": "study-20260803-201234-b4d7a8d8",
+  "generated_at": "2026-08-04T12:31:53.229008+00:00",
+  "sources": [
+    "evidence/summary.json",
+    "robustness.json",
+    "attribution.json",
+    "decisions.json",
+    "evidence/meta_weights.parquet",
+    "evidence/rank_ic_diagnostics.parquet",
+    "evidence/equity.parquet",
+    "evidence/annual_metrics.parquet",
+    "profile_comparison.parquet"
+  ],
+  "figures": [
+    "f03_cobertura.png",
+    "f05_agentes_rankic.png",
+    "f05_meta_pesos.png",
+    "f07_alfa_anual.png",
+    "f07_drawdown.png",
+    "f07_equity.png",
+    "f07_perfiles_exceso.png",
+    "f07_perfiles_tradeoff.png",
+    "f07_placebos.png",
+    "f07_rankic_serie.png",
+    "f07_robustez.png"
+  ],
+  "tables": [
+    "t05_agentes.tex",
+    "t06_decisiones.tex",
+    "t07_anual.tex",
+    "t07_baselines.tex",
+    "t07_perfiles.tex",
+    "t07_robustez.tex"
+  ]
+}
