@@ -1,0 +1,73 @@
+% =====================================================================
+% Resumen (ES) y abstract (EN). Van antes del índice, sin numerar.
+% Las cifras citadas aquí proceden del Study \studyid y deben coincidir
+% con las de los capítulos 5 a 7.
+% =====================================================================
+\chapter*{Resumen}
+\addcontentsline{toc}{chapter}{Resumen}
+
+Este trabajo evalúa si un sistema de cinco agentes especializados, combinados por un meta-agente que
+aprende sus pesos, es capaz de aprender una ordenación transversal de acciones que conserve
+capacidad predictiva fuera de muestra. La pregunta se plantea deliberadamente en términos de
+predicción y no de rentabilidad retrospectiva: el objetivo no es encontrar la cartera más rentable
+de la historia conocida, sino medir si existe señal y cuánta de esa señal sobrevive a la
+implementación.
+
+El universo es la composición histórica del S\&P 500 sobre un panel \textit{point-in-time}
+construido a partir de fechas reales de publicación, de modo que ninguna decisión utiliza
+información no disponible en su fecha. Sobre un catálogo cerrado de variables se ejecuta un único
+\textit{Model Study} que optimiza de forma secuencial por Rank-IC, dejando 2025--2026 como era
+reservada que no interviene en ninguna decisión. La cartera y los ocho perfiles de inversión se
+construyen después de congelar el ganador, y nunca influyen en su selección.
+
+El sistema alcanza un Rank-IC medio de 0,1004 con IC-IR 0,744 y 71,79\,\% de cohortes positivas en
+la ventana de selección, frente a 0,0130 del mejor \textit{baseline} determinista. La ponderación
+aprendida por el meta-agente supera en un 52\,\% a la ponderación uniforme. Siete de ocho contrastes
+de robustez respaldan la existencia de señal --- permutación con $p=0{,}0001$, placebos de etiqueta,
+\textit{bootstrap} por bloques, exclusión de eras, estabilidad entre semillas, carteras aleatorias
+de riesgo emparejado y neutralización de estilo ---, mientras que el Deflated Sharpe de 0,930 no
+alcanza su umbral y se reporta como tal. En la era reservada la cartera obtiene un exceso geométrico
+del 14,21\,\% con IR 0,959, si bien su Rank-IC cerrado todavía carece de potencia estadística.
+
+El resultado central para la práctica es el coeficiente de transferencia, 0,247: la cartera
+materializa aproximadamente una cuarta parte de la señal disponible. El cuello de botella no es el
+modelo sino la construcción de cartera, una conclusión que el barrido diagnóstico de veintitrés
+variantes confirma de forma controlada.
+
+\vspace{1em}
+\noindent\textbf{Palabras clave:} aprendizaje automático, selección de acciones, \textit{point-in-time},
+Rank-IC, sistemas multiagente, sobreajuste de \textit{backtest}.
+
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+This work evaluates whether a system of five specialised agents, combined by a meta-agent that
+learns their weights, can learn a cross-sectional ranking of stocks that retains out-of-sample
+predictive power. The question is deliberately framed in terms of prediction rather than
+retrospective profitability: the goal is not to find the most profitable portfolio in known history,
+but to measure whether signal exists and how much of it survives implementation.
+
+The universe is the historical composition of the S\&P 500 over a point-in-time panel built from
+actual publication dates, so that no decision uses information unavailable at its date. A single
+Model Study is run over a closed catalogue of variables, optimising sequentially by Rank-IC and
+holding out 2025--2026 as a reserved era that takes part in no decision. The portfolio and the eight
+investor profiles are constructed only after the winner is frozen, and never influence its
+selection.
+
+The system attains a mean Rank-IC of 0.1004 with an IC-IR of 0.744 and 71.79\,\% positive cohorts in
+the selection window, against 0.0130 for the best deterministic baseline. The meta-agent's learned
+weighting outperforms uniform weighting by 52\,\%. Seven of eight robustness tests support the
+existence of signal --- permutation with $p=0.0001$, label placebos, block bootstrap, era exclusion,
+seed stability, risk-matched random portfolios and style neutralisation --- while the Deflated
+Sharpe of 0.930 falls short of its threshold and is reported as such. In the reserved era the
+portfolio achieves a geometric excess return of 14.21\,\% with an IR of 0.959, although its closed
+Rank-IC still lacks statistical power.
+
+The central practical finding is the transfer coefficient of 0.247: the portfolio materialises
+roughly one quarter of the available signal. The bottleneck is not the model but portfolio
+construction, a conclusion confirmed under controlled conditions by a diagnostic sweep of
+twenty-three variants.
+
+\vspace{1em}
+\noindent\textbf{Keywords:} machine learning, stock selection, point-in-time data, Rank-IC,
+multi-agent systems, backtest overfitting.

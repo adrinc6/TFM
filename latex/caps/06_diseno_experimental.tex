@@ -6,7 +6,7 @@ configuración ganadora sólo se elige con Rank-IC robusto, calculado sobre 2015
 turnover, alfa, perfiles y rendimiento frente a SPY se calculan después como diagnósticos. Esta
 separación evita seleccionar retrospectivamente una cartera porque su rentabilidad conocida fue
 alta, una práctica especialmente problemática cuando se prueban muchas alternativas
-\parencite{harvey2016cross,lopezdeprado2014pseudo}.
+(Harvey et al., 2016; López de Prado et al., 2014).
 
 \section{Optimización secuencial y regla de decisión}
 
@@ -51,8 +51,71 @@ la regla no se limita a confirmar el resultado deseado.
   \caption{Traza de decisiones del Model Study.}
   \label{tab:decisiones}
   \input{tablas/t06_decisiones.tex}
-  \caption*{Fuente: \texttt{decisions.json}. Ventaja e intervalo frente al incumbente de cada fase.}
+  \caption*{Fuente: \artefacto{decisions.json}. Ventaja e intervalo frente al incumbente de cada fase.}
 \end{table}
+
+\subsection*{La escalera del Rank-IC}
+
+Presentar las diecinueve decisiones como una lista plana oculta lo esencial: cuántas de ellas
+cambiaron realmente algo. La Tabla~\ref{tab:escalera} añade el Rank-IC acumulado tras cada paso y
+marca explícitamente si el ganador desplazó al incumbente; la Figura~\ref{fig:escalera} lo
+representa como una escalera.
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{Rank-IC acumulado tras cada decisión secuencial.}
+  \label{tab:escalera}
+  \input{tablas/t06_escalera.tex}
+  \caption*{Fuente: \artefacto{decisions.json}. El Rank-IC es el del ganador de cada paso, es decir,
+  el incumbente con el que arranca el siguiente. «Cambió» indica que el ganador desplazó al
+  incumbente.}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.96\textwidth]{figuras/f06_escalera.png}
+  \caption{Rank-IC acumulado a lo largo de la optimización secuencial. En dorado, las cinco
+  decisiones que desplazaron al incumbente. Fuente: \artefacto{decisions.json}.}
+  \label{fig:escalera}
+\end{figure}
+
+El resultado es contundente y va en contra de la intuición habitual sobre este tipo de búsquedas:
+\textbf{sólo cinco de las diecinueve decisiones cambiaron el incumbente}. Las catorce restantes
+confirmaron el valor de partida, con una ventaja pareada exactamente nula. El Rank-IC recorre
+0,0524 en el \textit{baseline}, 0,0735 tras fijar la cadencia, 0,0972 tras el conjunto de
+variables, 0,0975, 0,0995 y finalmente 0,1004.
+
+La distribución de esa mejora es igualmente informativa. Dos decisiones --- la cadencia de snapshots
+y el conjunto de variables --- aportan $+0{,}0208$ y $+0{,}0226$, es decir, prácticamente toda la
+ganancia sobre el \textit{baseline}. Las tres restantes suman menos de 0,004 entre las tres, y dos
+de ellas se resolvieron por la regla de simplicidad al quedar por debajo del umbral de empate
+técnico. Dicho de otro modo: casi todo lo que este sistema aprendió procede de decidir con qué
+frecuencia observar el mercado y con qué información alimentar a los agentes, no de afinar
+hiperparámetros del modelo.
+
+Este patrón es una defensa parcial frente a la objeción de sobreajuste por multiplicidad. Un
+protocolo que aceptase cualquier mejora aparente habría desplazado al incumbente muchas más veces,
+persiguiendo diferencias dentro del ruido. Que catorce de diecinueve decisiones terminen en «no
+cambiar» indica que las puertas de elegibilidad están operando. No elimina el problema --- el
+Deflated Sharpe del Capítulo~\ref{chap:resultados} sigue penalizando por las 66 configuraciones
+ensayadas ---, pero acota su alcance: la multiplicidad afecta sobre todo a la afirmación económica,
+no a la traza de decisiones predictivas.
+
+\subsection*{El catálogo cerrado como garantía}
+
+La afirmación de que nada se optimizó fuera del catálogo sólo es verificable si el catálogo es
+público. El Anexo~\ref{anexo:catalogo} reproduce las treinta y tres variables con su rejilla
+completa, su etapa, si son predictivas y el valor que tomó el ganador. Su función en este documento
+no es descriptiva sino probatoria: cualquier lector puede comprobar que el valor ganador de cada
+variable pertenece a su rejilla declarada, y que ninguna variable ajena aparece en la configuración
+final.
+
+Doce de esas treinta y tres variables son de cartera y están marcadas como no predictivas. La
+distinción es la que sostiene el Capítulo~\ref{chap:resultados}: se ejecutan después de congelar el
+ganador, se reportan como diagnóstico y no pueden modificarlo. Es lo que convierte el barrido de la
+Sección~\ref{sec:cartera-barrido} en un experimento controlado en lugar de una segunda ronda de
+optimización.
 
 \section{Construcción de cartera}
 

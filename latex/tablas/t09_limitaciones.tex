@@ -1,0 +1,57 @@
+% Tabla compuesta: cada fila enlaza una limitación con la cifra concreta que la
+% cuantifica. Las cifras proceden de los artefactos citados en el capítulo.
+\begin{tabularx}{\textwidth}{lXl}
+\toprule
+Limitación & Evidencia que la cuantifica & Severidad \\
+\midrule
+Multiplicidad de configuraciones &
+Deflated Sharpe 0,930 sobre 66 configuraciones, por debajo del umbral 0,95 &
+Alta \\
+\addlinespace
+Solapamiento de cohortes &
+117 cohortes mensuales equivalen a $\approx 9$ observaciones independientes con horizonte de 12
+meses &
+Alta \\
+\addlinespace
+Potencia de la era reservada &
+6 cohortes cerradas, 1 observación independiente efectiva, Rank-IC $-0{,}0119$ &
+Alta \\
+\addlinespace
+Cartera no optimizada &
+13 de 23 variantes del barrido superan al ganador congelado; \texttt{half\_horizon} logra 2,58\,\%
+frente a 1,62\,\% &
+Media \\
+\addlinespace
+Salvaguarda \textit{a priori} en la curva de alfa &
+Se activa en 4.384 de 20.545 filas (21,3\,\%) &
+Media \\
+\addlinespace
+Alfa factorial no significativo en selección &
+Alfa 0,13\,\% por periodo, $t=0{,}82$, $R^2=0{,}019$ &
+Media \\
+\addlinespace
+Dominio de un solo agente &
+\textit{risk} aislado 0,1229 frente a 0,1004 del meta; neutralización retiene 84,35\,\% &
+Media \\
+\addlinespace
+Reproducibilidad bit a bit &
+Estudio ejecutado con catálogo v5; código actual en v6 &
+Media \\
+\addlinespace
+Costes constantes &
+5 pb de comisión y 10 pb de \textit{slippage}, sin impacto de mercado ni capacidad &
+Media \\
+\addlinespace
+Universo restringido &
+S\&P 500 estadounidense; 278 \textit{tickers} en 2003 frente a más de 500 en años recientes &
+Media \\
+\addlinespace
+Factores no construibles &
+Tamaño e inversión declarados no replicables en la regresión factorial &
+Baja \\
+\addlinespace
+Distribuciones nulas no persistidas &
+Sólo se conservan estadísticos-resumen de permutación, \textit{bootstrap} y carteras aleatorias &
+Baja \\
+\bottomrule
+\end{tabularx}

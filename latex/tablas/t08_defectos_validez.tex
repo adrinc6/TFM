@@ -1,0 +1,47 @@
+% Fuente: docs/bitacora.md, entrada 2026-07-28 «Corrección de validez, alfa neto y limpieza».
+% Tabla transcrita del registro de desarrollo, no generada por script: su origen es la
+% bitácora del proyecto y no un artefacto del Study.
+\begin{tabularx}{\textwidth}{XX}
+\toprule
+Defecto detectado & Efecto medido de la corrección \\
+\midrule
+La puerta de no inferioridad penalizaba a los candidatos \textbf{superiores}: cuanto mayor la
+diferencia, más ancho el intervalo &
+\texttt{feature\_preset} pasa de \texttt{core} (Rank-IC 0,0730) a \texttt{all} (0,0958), con
+ventaja pareada $+0{,}0216$. Ningún retador era elegible pese a dominar \\
+\addlinespace
+\texttt{market\_regime\_feature} se decidió sobre una ventaja de 0,00112, por debajo del ruido &
+Pasa de \texttt{True} a \texttt{False} por simplicidad \\
+\addlinespace
+\texttt{meta\_method} se decidió sobre una ventaja de 0,00033 &
+Se mantiene, pero registrado como empate técnico y no como victoria \\
+\addlinespace
+Emparejamiento por cadena de fecha con rejillas desplazadas por \texttt{execution\_lag\_days} &
+Se empareja por periodo mensual; sin bloque completo común el resultado se marca no aplicable en
+vez de devolver \texttt{ci\_low = 0,0} \\
+\addlinespace
+\texttt{evaluation\_key} no incluía el hash del dataset &
+La misma clave aparecía con CAGR 0,1468 y 0,1692. Ahora la clave separa datasets \\
+\addlinespace
+Seis factores de precio se inyectaban en el agente \textit{momentum} fuera de todo condicional &
+La ablación \texttt{fundamental} deja de recibir información de precio y mide lo que declara \\
+\addlinespace
+Dos definiciones incompatibles de \textit{information ratio} bajo el mismo nombre &
+Una sola, anualizada \\
+\addlinespace
+CAGR, \textit{drawdown} y alfa mezclaban la era reservada con la de selección &
+Métricas segmentadas: selección, confirmación y curva completa \\
+\addlinespace
+\texttt{geometric\_excess\_return} era una resta de CAGR &
+Cociente de acumulados \\
+\addlinespace
+Una posición sin precio se marcaba plana &
+Convención de exclusión tipo CRSP ($-30\,\%$) y liquidación contra efectivo \\
+\addlinespace
+\texttt{subsample=0.8} sin \texttt{subsample\_freq}: el \textit{bagging} nunca se activaba &
+\texttt{subsample\_freq=1} \\
+\addlinespace
+Nulo de carteras aleatorias con percentil 95 de CAGR del 107\,\% &
+Exige cobertura anual completa, aplica la guarda de datos y paga los mismos costes \\
+\bottomrule
+\end{tabularx}

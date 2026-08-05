@@ -62,18 +62,23 @@ información.
 
 \section{Proposición de ausencia de fuga temporal}
 
-\textbf{Proposición.} Sea $\mathcal{I}_t$ el conjunto de entradas utilizado para generar la señal en
+\begin{proposicion}[Ausencia de fuga temporal]
+\label{prop:sin-fuga}
+Sea $\mathcal{I}_t$ el conjunto de entradas utilizado para generar la señal en
 \(\tsnap=t\). Si para cada fundamental $x\in\mathcal{I}_t$ se cumple
 $\tfiled(x)+L\leq t$, si cada precio se obtiene en una fecha no posterior a $t$, y si cada etiqueta
 de entrenamiento satisface $\texttt{label\_end\_date}\leq t$, entonces la señal es medible con la
 información disponible en $t$.
+\end{proposicion}
 
-\textbf{Demostración.} Por la primera condición, ningún fundamental de entrada se publicó después
+\begin{proof}
+Por la primera condición, ningún fundamental de entrada se publicó después
 de $t-L$ y, por tanto, tampoco después de $t$. Por la segunda, ningún precio usado como predictor
 es posterior a $t$. Por la tercera, todos los retornos que intervienen en ajuste o combinación ya
 han concluido en $t$. Las transformaciones posteriores (rangos, winsorización y modelos) son
 funciones de estas entradas, por lo que tampoco pueden incorporar un dato posterior. En
-consecuencia, la señal pertenece a la sigma-álgebra de información observable en $t$. \hfill$\square$
+consecuencia, la señal pertenece a la sigma-álgebra de información observable en $t$.
+\end{proof}
 
 La proposición no demuestra que los datos sean perfectos ni que el modelo generalice; demuestra algo
 anterior: que la evaluación no concede al algoritmo una ventaja imposible. La validez de las fuentes,
@@ -87,9 +92,34 @@ serie se construyen sólo con publicaciones pasadas. Las transformaciones que us
 medias, estabilidad o momentum fundamental, agrupan por ticker y desplazan el pasado antes de
 calcular una ventana. El meta-agente filtra explícitamente cohortes no cerradas.
 
-La batería de tests de contrato cubre estos invariantes. Los tests de identidad verifican qué
-parámetros definen un dataset y una evaluación. Los tests estadísticos ejercitan los límites de
-selección pareada. Los tests económicos verifican que una venta respete costes, histéresis, mínimo
-de tenencia y restricciones de efectivo. Los tests de workflow comprueban la persistencia de runs y
-errores. Un test sintético no es evidencia económica, pero sí evidencia de que el mecanismo rechaza
-estados que violarían la metodología declarada.
+La batería de tests de contrato cubre estos invariantes. La Tabla~\ref{tab:contratos} los agrupa por
+fichero, con el número de comprobaciones de cada uno y el invariante que protege.
+
+\begin{table}[H]
+  \centering
+  \footnotesize
+  \caption{Batería de contratos que protege los invariantes metodológicos.}
+  \label{tab:contratos}
+  \input{tablas/t04_tests_contrato.tex}
+  \caption*{Fuente: recuento de funciones \texttt{test\_*} en \artefacto{tests/} del repositorio.}
+\end{table}
+
+Un test sintético no es evidencia económica, pero sí evidencia de que el mecanismo rechaza estados
+que violarían la metodología declarada. La distribución de esos 75 contratos es en sí misma
+informativa: casi el 60\,\% se concentra en las reglas económicas y en la contabilidad del
+\textit{backtest}, que es donde el desarrollo encontró la mayoría de los defectos documentados en el
+Capítulo~\ref{chap:desarrollo}.
+
+Conviene ser preciso sobre el alcance de esta batería. Los contratos comprueban que el código
+respeta las reglas declaradas; no comprueban que las reglas sean correctas. La
+Proposición~\ref{prop:sin-fuga} es un argumento sobre el diseño, y los contratos verifican que la
+implementación no lo contradiga --- por ejemplo, que el meta-agente filtre efectivamente las
+cohortes no cerradas ---, pero ninguna prueba unitaria puede garantizar que la fuente de datos
+respete las fechas de publicación que declara. Esa parte queda como una limitación de datos y se
+discute en el Capítulo~\ref{chap:limitaciones}.
+
+La historia de esta batería refuerza el punto. Pasó de 15 a 75 contratos a lo largo del desarrollo,
+y prácticamente cada añadido procede de un defecto concreto que llegó a manifestarse. El caso más
+ilustrativo es el de la curva de alfa: esa ruta no tenía ninguna cobertura, un renombrado dejó en
+ella una llamada rota y la batería existente no lo detectó. Los seis contratos que hoy la cubren
+existen porque antes faltaban.

@@ -16,8 +16,12 @@ ROOT = Path(__file__).resolve().parents[2]
 LATEX = ROOT / "latex"
 INCLUDE = re.compile(r"\\includegraphics(?:\[[^]]*\])?\{([^}]+)\}")
 TABLE = re.compile(r"\\input\{(tablas/[^}]+)\}")
-CITE = re.compile(r"\\(?:textcite|parencite|cite)\{([^}]+)\}")
-ENTRY = re.compile(r"@\w+\{([^,]+),")
+CHAPTER = re.compile(r"\\input\{(caps/[^}]+)\}")
+# El documento no usa biblatex: la bibliografía es un capítulo manual. Si
+# reaparece cualquiera de estos comandos, la compilación vuelve a romperse.
+BIB_COMMAND = re.compile(r"\\(?:textcite|parencite|autocite|cite|printbibliography|addbibresource)\b")
+LABEL = re.compile(r"\\label\{([^}]+)\}")
+REF = re.compile(r"\\(?:ref|eqref|autoref)\{([^}]+)\}")
 MOJIBAKE = ("Ã", "Â", "�")
 
 
@@ -28,13 +32,25 @@ def fail(message: str, errors: list[str]) -> None:
 def main() -> int:
     errors: list[str] = []
     tex_files = [LATEX / "main.tex", *sorted((LATEX / "caps").glob("*.tex"))]
-    bibliography = (LATEX / "referencias.bib").read_text(encoding="utf-8")
-    keys = set(ENTRY.findall(bibliography))
+    # Las tablas longtable llevan su propio \label dentro de tablas/: hay que
+    # recolectarlos o toda \ref a una de ellas parecería no tener destino.
+    scanned = tex_files + sorted((LATEX / "tablas").glob("*.tex"))
+    used_graphics: set[str] = set()
+    used_tables: set[str] = set()
+    labels: set[str] = set()
+    references: list[tuple[str, str]] = []
     for path in tex_files:
         content = path.read_text(encoding="utf-8")
         if any(marker in content for marker in MOJIBAKE):
             fail(f"Mojibake en {path.relative_to(ROOT)}", errors)
+        if BIB_COMMAND.search(content):
+            fail(
+                f"Comando de bibliografía en {path.name}: el documento no usa biblatex, "
+                "las citas van en texto plano autor-año",
+                errors,
+            )
         for graphic in INCLUDE.findall(content):
+            used_graphics.add(graphic)
             if not graphic.startswith("figuras/"):
                 fail(f"Ruta de figura no explícita en {path.name}: {graphic}", errors)
             if Path(graphic).is_absolute() or ":" in graphic:
@@ -42,12 +58,34 @@ def main() -> int:
             if not (LATEX / graphic).is_file():
                 fail(f"Figura inexistente: {graphic}", errors)
         for table in TABLE.findall(content):
+            used_tables.add(table)
             if not (LATEX / table).is_file():
                 fail(f"Tabla inexistente: {table}", errors)
-        for citation_group in CITE.findall(content):
-            for key in (item.strip() for item in citation_group.split(",")):
-                if key and key not in keys:
-                    fail(f"Cita sin bibliografía en {path.name}: {key}", errors)
+        for chapter in CHAPTER.findall(content):
+            target = LATEX / chapter
+            if target.suffix != ".tex":
+                target = target.with_suffix(".tex")
+            if not target.is_file():
+                fail(f"Capítulo inexistente: {chapter}", errors)
+        references.extend((path.name, key) for key in REF.findall(content))
+
+    for path in scanned:
+        labels.update(LABEL.findall(path.read_text(encoding="utf-8")))
+
+    # Una \ref sin \label compila pero imprime «??» en el PDF. Sin compilador
+    # local es el fallo más fácil de dejar escapar tras renumerar capítulos.
+    for origin, key in references:
+        if key not in labels:
+            fail(f"Referencia sin destino en {origin}: \\ref{{{key}}}", errors)
+
+    # Activos generados pero no insertados en ningún capítulo.
+    for figure in sorted((LATEX / "figuras").glob("*.png")):
+        if f"figuras/{figure.name}" not in used_graphics:
+            fail(f"Figura huérfana (generada pero no insertada): {figure.name}", errors)
+    for table in sorted((LATEX / "tablas").glob("*.tex")):
+        if f"tablas/{table.name}" not in used_tables:
+            fail(f"Tabla huérfana (generada pero no insertada): {table.name}", errors)
+
     pdfs = list((LATEX / "figuras").glob("*.pdf"))
     if pdfs:
         fail("Hay figuras PDF: " + ", ".join(path.name for path in pdfs), errors)
@@ -55,7 +93,10 @@ def main() -> int:
         print("VALIDACIÓN FALLIDA")
         print("\n".join(f"- {error}" for error in errors))
         return 1
-    print("VALIDACIÓN CORRECTA: rutas explícitas, recursos existentes, UTF-8 y citas verificadas.")
+    print(
+        "VALIDACIÓN CORRECTA: rutas explícitas, recursos existentes, UTF-8, "
+        "referencias cruzadas resueltas y sin comandos de bibliografía."
+    )
     return 0
 
 

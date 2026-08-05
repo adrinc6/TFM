@@ -18,6 +18,30 @@ el rendimiento no puede escoger el modelo. Los Capítulos~\ref{chap:agentes}--\r
 desarrollan esta cadena y el Capítulo~\ref{chap:limitaciones} fija el alcance exacto de sus
 conclusiones.
 
+\section*{Cinco afirmaciones y su matiz}
+\addcontentsline{toc}{section}{Cinco afirmaciones y su matiz}
+
+El documento se organiza en torno a cinco afirmaciones. La Tabla~\ref{tab:afirmaciones} las presenta
+juntas, cada una con la cifra que la sostiene y con la salvedad que la acompaña, porque ninguna de
+las cinco se sostiene sin su matiz.
+
+\begin{table}[H]
+  \centering
+  \footnotesize
+  \caption{Las cinco afirmaciones del trabajo, con su evidencia y su salvedad.}
+  \label{tab:afirmaciones}
+  \input{tablas/t01_afirmaciones.tex}
+  \caption*{Todas las cifras proceden del estudio \studyid{} y se desarrollan en los
+  Capítulos~\ref{chap:agentes} y~\ref{chap:resultados}.}
+\end{table}
+
+Esta tabla cumple una función deliberada: impedir la lectura selectiva. Cada columna central
+contiene un resultado favorable y cada columna derecha, la razón por la que ese resultado no debe
+extrapolarse sin cuidado. La convención se mantiene en todo el documento --- ningún resultado
+positivo se presenta sin su salvedad en el mismo párrafo o en el inmediatamente siguiente --- porque
+el objeto de estudio es precisamente la facilidad con la que un sistema de este tipo produce
+evidencia convincente y falsa.
+
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}[node distance=6mm,>=Latex,every node/.style={font=\small,align=center}]
@@ -42,7 +66,7 @@ costes y tamaño de cartera. Si se usa la misma historia para escoger cada una d
 para celebrar el resultado final, la rentabilidad puede reflejar la exploración acumulada y no una
 relación económica estable. Este fenómeno, habitualmente llamado \textit{backtest overfitting}, es
 uno de los motivos por los que un buen gráfico de rendimiento no basta como evidencia
-\parencite{lopezdeprado2014pseudo,harvey2016cross}.
+(López de Prado et al., 2014; Harvey et al., 2016).
 
 Un ejemplo simplificado ilustra el problema. Supóngase que un investigador prueba veinte reglas
 aleatorias para formar una cartera de doce acciones durante diez años. Aunque ninguna regla tenga

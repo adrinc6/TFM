@@ -1,6 +1,21 @@
 \chapter{Limitaciones y amenazas a la validez}
 \label{chap:limitaciones}
 
+Este capítulo no es una disculpa genérica. Cada limitación se enuncia junto a la cifra concreta que
+permite dimensionarla, porque una limitación que no puede cuantificarse no orienta al lector sobre
+cuánto debe descontar de las conclusiones. La Tabla~\ref{tab:limitaciones} las reúne ordenadas por
+severidad.
+
+\begin{table}[H]
+  \centering
+  \footnotesize
+  \caption{Limitaciones, evidencia que las cuantifica y severidad asignada.}
+  \label{tab:limitaciones}
+  \input{tablas/t09_limitaciones.tex}
+  \caption*{La severidad es un juicio del autor sobre cuánto condiciona cada limitación las
+  conclusiones, no una medida estadística.}
+\end{table}
+
 La principal limitación es la multiplicidad: se evaluaron 66 configuraciones y el Deflated Sharpe
 es 0,930, inferior al umbral 0,95. Por ello el trabajo no afirma que la rentabilidad ajustada por
 riesgo sobreviva concluyentemente a todas las pruebas de selección múltiple. Esta salvedad no anula
@@ -55,3 +70,44 @@ La lectura correcta es específica: multiplicidad limita el Sharpe, solapamiento
 cobertura limita la generalización y cartera limita la transferencia de señal. Ninguna de estas
 salvedades permite ignorar los placebos, la permutación o la estabilidad por eras; cada conclusión
 debe mantenerse dentro del alcance de la evidencia que realmente la respalda.
+
+\section{Limitaciones heredadas del proceso de desarrollo}
+
+Tres limitaciones no proceden del diseño sino de decisiones tomadas durante el desarrollo, y se
+documentan en el Capítulo~\ref{chap:desarrollo}. Merecen figurar aquí porque afectan a la
+interpretación de las cifras y no serían visibles para un lector que sólo viera el resultado final.
+
+La primera es la salvaguarda de la curva de alfa. Cuando ninguna de las tres ventanas de la cascada
+produce una pendiente creciente, el sistema aplica una recta fija entre $-10\,\%$ y $+10\,\%$. Es un
+supuesto \emph{a priori}, no aprendido de los datos, y se activa en 4.384 de 20.545 filas del
+estudio, algo más de una de cada cinco. Se activa además precisamente cuando la evidencia disponible
+indica que la ordenación no discrimina, de modo que sustituye una ausencia de señal por una señal
+supuesta. Toda cifra de cartera de este trabajo está condicionada por ese mecanismo en una
+proporción apreciable de sus filas.
+
+La segunda es que la calibración isotónica se retiró sin conservarla como opción del catálogo. La
+sustitución estaba justificada --- colapsaba a una constante y dejaba la cartera inoperativa ---,
+pero se hizo sin pasar por la selección secuencial, de modo que este trabajo \emph{no puede} ofrecer
+una comparación empírica entre ambas formulaciones. La afirmación de que la nueva es mejor descansa
+en un argumento sobre el estimador, no en una medición pareada.
+
+La tercera es que \texttt{minimum\_holding\_period} tomó el valor \texttt{none} por venir así en el
+catálogo recomendado, no por haberse medido. El barrido diagnóstico muestra que
+\texttt{half\_horizon} lo domina simultáneamente en exceso, IR y rotación. No cambiarlo es
+metodológicamente correcto, porque las variables de cartera no se optimizan; pero significa que la
+cartera evaluada no es la mejor que esta señal admite, y las cifras económicas del
+Capítulo~\ref{chap:resultados} deben leerse como una cota inferior y no como el potencial del
+sistema.
+
+\section{Reproducibilidad y congelación del estudio}
+
+El estudio se ejecutó bajo la versión 5 del catálogo cerrado; el código actual está en la versión 6.
+Los artefactos son válidos y trazables --- conservan sus hashes y su instantánea de catálogo ---
+pero no son reproducibles bit a bit con el código actual ni comparables con estudios de la versión
+6.
+
+La decisión de congelar en lugar de reejecutar se explica en la
+Sección~\ref{sec:reproducibilidad}, y su razón es metodológica: reejecutar cambiaría el ganador, y
+sustituirlo cuando los capítulos de resultados ya están redactados se parecería demasiado a elegir
+la configuración cuyas cifras encajan mejor con el texto. La consecuencia, sin embargo, es real y
+debe declararse: un tercero que ejecute hoy el código no obtendrá exactamente estos números.

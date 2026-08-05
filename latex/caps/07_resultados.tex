@@ -41,6 +41,57 @@ Por eras, el Rank-IC es 0,0976 en 2015--2018, 0,0423 en 2019--2021 y 0,1621 en 2
 señal se debilita en el régimen intermedio, pero no cambia de signo ni depende de la era final. Esta
 heterogeneidad justifica reportar series y no una única media agregada.
 
+\subsection*{La cola superior frente a la ordenación completa}
+
+El Rank-IC resume la calidad de toda la ordenación transversal, pero la cartera sólo compra el
+extremo superior. Conviene por tanto comprobar si la ventaja se concentra donde efectivamente se
+utiliza. La Tabla~\ref{tab:cola} descompone el comportamiento de la cola por era.
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{Comportamiento de la cola superior de la ordenación, por era.}
+  \label{tab:cola}
+  \input{tablas/t07_cola.tex}
+  \caption*{Fuente: \artefacto{evidence/rank\_tail\_diagnostics.parquet}. «Top 10» es el exceso medio
+  de las diez primeras posiciones; «Universo» el de todo el panel. Diagnóstico, no criterio de
+  selección.}
+\end{table}
+
+La lectura relevante es que el decil superior bate al universo en las tres eras de selección, de
+modo que la ventaja no procede exclusivamente de acertar la cola inferior --- que una cartera
+\textit{long-only} no puede explotar. La Figura~\ref{fig:cola} muestra esa diferencia cohorte a
+cohorte: es ruidosa, como corresponde a un estadístico calculado sobre unas pocas decenas de
+valores, pero su media móvil se mantiene por encima de cero durante casi toda la ventana.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.94\textwidth]{figuras/f07_cola.png}
+  \caption{Exceso del decil superior sobre el universo, por cohorte. Fuente:
+  \artefacto{evidence/rank\_tail\_diagnostics.parquet}.}
+  \label{fig:cola}
+\end{figure}
+
+Existe además un diagnóstico que el sistema calcula en cada snapshot para su propio uso: el Rank-IC
+contraído sobre las cohortes ya cerradas en ese momento. Es la única medida de calidad de señal
+disponible \textit{en tiempo real}, puesto que no utiliza información posterior a la fecha. La
+Figura~\ref{fig:salud} la representa con dos memorias distintas.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.94\textwidth]{figuras/f07_salud.png}
+  \caption{Salud de la señal observable en cada snapshot, con memoria de dieciséis y de ocho
+  trimestres. Fuente: \artefacto{evidence/signal\_health.parquet}.}
+  \label{fig:salud}
+\end{figure}
+
+La comparación entre ambas memorias es informativa por sí misma. La ventana corta reacciona antes a
+los cambios de régimen, pero también oscila más y llega a cruzar cero en episodios que la ventana
+larga apenas registra. Esta diferencia explica por qué el catálogo trata la longitud de la memoria
+del meta-agente como una variable a decidir con evidencia y no como una constante razonable: ambas
+opciones tienen un coste, y la elección entre reaccionar antes o estimar con menos varianza no
+puede resolverse por intuición.
+
 \section{Robustez: aprendizaje y no suerte}
 
 La Tabla~\ref{tab:robustez} resume ocho contrastes predefinidos. Siete respaldan la capacidad
@@ -65,23 +116,101 @@ rentabilidad ajustada por multiplicidad no tienen la misma fuerza.
 \end{figure}
 
 El test de permutación entrega $p=0,0001$ con 9.999 réplicas y corrección +1: ninguna réplica
-igualó el Rank-IC observado. Los cinco placebos de etiqueta, que conservan la maquinaria de
-features, agentes y cartera pero destruyen la relación señal-retorno, quedan entre $-0,006$ y
-$+0,001$. Esto descarta que el pipeline genere por sí mismo una señal comparable.
+igualó el Rank-IC observado. La permutación destruye únicamente el vínculo entre el orden predicho
+y el retorno futuro dentro de cada cohorte, conservando el calendario, el número de empresas y la
+distribución transversal de los retornos. Responde por tanto a una pregunta muy concreta: ¿puede
+surgir un Rank-IC como el observado sin ninguna asociación predictiva? Con 9.999 réplicas y ninguna
+que lo alcance, la respuesta empírica es que no.
+
+Los cinco placebos de etiqueta son complementarios y atacan otra objeción. Conservan la maquinaria
+completa de features, agentes, meta-agente y cartera, pero sustituyen la etiqueta por una barajada.
+Si alguna parte del \textit{pipeline} fabricase señal por sí misma --- una normalización mal
+cerrada, una fuga temporal, un artefacto de la validación ---, los placebos deberían mostrar una
+magnitud comparable a la observada. Quedan entre $-0,0061$ y $+0,0008$, es decir, indistinguibles de
+cero y dos órdenes de magnitud por debajo del sistema.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.94\textwidth]{figuras/f07_permutacion.png}
+  \caption{Situación del Rank-IC observado frente al rango de los placebos de etiqueta y al
+  resultado del contraste de permutación. Fuente: \artefacto{robustness.json}.}
+  \label{fig:permutacion}
+\end{figure}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.88\textwidth]{figuras/f07_placebos.png}
-  \caption{Placebos de etiqueta y Rank-IC del sistema. Fuente: \texttt{robustness.json}.}
+  \caption{Placebos de etiqueta y Rank-IC del sistema. Fuente: \artefacto{robustness.json}.}
   \label{fig:placebos}
 \end{figure}
 
-El bootstrap por bloques de 12 cohortes sitúa el intervalo al 95\% en $[0,0335;0,1695]$; excluyendo
-por completo cualquiera de las tres eras, la media permanece entre 0,073 y 0,126. En tres semillas,
-el rango de Rank-IC es sólo 0,0020 y no cruza cero. Finalmente, frente a 1.000 carteras aleatorias
-de riesgo emparejado, la cartera del modelo ocupa el percentil 97,4. El contraste aleatorio general
-no se usa como prueba favorable: su percentil 95 de CAGR es 102,28\%, dominado por carteras muy
-concentradas de supervivientes extremos.
+Una advertencia sobre la Figura~\ref{fig:permutacion}: representa estadísticos-resumen, no la
+distribución nula completa. El estudio persiste el $p$-valor, el número de réplicas y el Rank-IC
+observado, pero no los 9.999 valores individuales. Dibujar un histograma exigiría simular una
+distribución plausible, lo que produciría una figura convincente a partir de datos inventados; se ha
+preferido representar sólo lo que existe. El Anexo~\ref{anexo:evidencia} documenta esta limitación
+de trazabilidad.
+
+El \textit{bootstrap} por bloques y la exclusión de eras responden a una tercera objeción: que una
+media positiva esté dominada por meses correlacionados o por un subperiodo excepcional. Manteniendo
+bloques de doce cohortes --- la longitud del horizonte, precisamente para no romper la dependencia
+que el solapamiento induce ---, el intervalo al 95\,\% es $[0,0335;\,0,1695]$ y excluye cero.
+Eliminando por completo cualquiera de las tres eras, la media permanece entre 0,0730 y 0,1262. La
+Figura~\ref{fig:bootstrap} reúne ambos contrastes.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.94\textwidth]{figuras/f07_bootstrap.png}
+  \caption{Intervalos de confianza del Rank-IC y estabilidad ante la exclusión de eras completas.
+  Fuente: \artefacto{robustness.json}.}
+  \label{fig:bootstrap}
+\end{figure}
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{Intervalos, exclusión de eras y dispersión entre semillas.}
+  \label{tab:eras-bootstrap}
+  \input{tablas/t07_eras_bootstrap.tex}
+  \caption*{Fuente: \artefacto{robustness.json}. La exclusión de eras reajusta el sistema sobre el
+  resto de la ventana; las semillas reejecutan el estudio completo.}
+\end{table}
+
+El contraste más exigente de la era 2022--2024 merece una nota: al excluirla, el Rank-IC cae a
+0,0730, el valor más bajo de los tres. Es coherente con que sea la era de mayor señal (0,1621) y no
+indica fragilidad, sino que esa era aporta una parte apreciable de la evidencia. La conclusión
+prudente es que el resultado no depende de ninguna era, pero tampoco es homogéneo entre ellas.
+
+La estabilidad entre semillas ataca una posibilidad distinta: que el resultado dependa de una
+inicialización afortunada del \textit{boosting}. En las tres semillas ensayadas el rango de Rank-IC
+es 0,0020 y no cruza cero. La Figura~\ref{fig:semillas} muestra, sin embargo, que la conclusión
+económica es bastante más frágil que la predictiva: el exceso geométrico varía apreciablemente más
+que el Rank-IC en términos relativos. Esta asimetría es la misma que motivó introducir el conjunto
+de semillas durante el desarrollo, según se documenta en el Capítulo~\ref{chap:desarrollo}.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.92\textwidth]{figuras/f07_semillas.png}
+  \caption{Dispersión de las métricas principales entre las tres semillas ensayadas. Fuente:
+  \artefacto{robustness.json}.}
+  \label{fig:semillas}
+\end{figure}
+
+Frente a 1.000 carteras aleatorias de riesgo emparejado, la cartera del modelo ocupa el percentil
+97,4. El contraste aleatorio general no se usa como prueba favorable, y conviene explicar por qué:
+su percentil 95 de CAGR es 102,28\,\%, dominado por carteras que por azar concentraron alguna
+superviviente extraordinaria. Un nulo con esa cola no es un \textit{benchmark} informativo, y
+presentarlo como si el modelo «sólo» alcanzase el percentil 65 sería tan engañoso como omitirlo. La
+Figura~\ref{fig:aleatorias} muestra los dos escenarios juntos precisamente para que la diferencia
+sea visible.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.92\textwidth]{figuras/f07_aleatorias.png}
+  \caption{Cartera del modelo frente a 1.000 carteras aleatorias, en el escenario general y con
+  riesgo emparejado. Fuente: \artefacto{robustness.json}.}
+  \label{fig:aleatorias}
+\end{figure}
 
 La neutralización por 14 controles de estilo reduce el Rank-IC de 0,1111 a 0,0937; por tanto se
 retiene 84,35\% de la señal. La regresión factorial de la ventana de selección produce alfa por
@@ -94,6 +223,34 @@ Una vez congelada la señal, la cartera obtiene entre 2015 y 2024 CAGR 15,01\% f
 SPY; el exceso geométrico es 1,62\%, el IR 0,269, el máximo drawdown 23,44\% y el benchmark se bate
 en 8 de 10 años. El coste acumulado, 5,25\%, y el turnover anualizado, 359,08\%, son centrales para
 interpretar el resultado: la implementación captura sólo una parte de la señal disponible.
+
+Antes de entrar en el detalle conviene fijar una convención de lectura que el resto del capítulo
+respeta. Toda cifra económica de este trabajo pertenece a una de tres ventanas con estatus
+epistemológico distinto, y mezclarlas produce afirmaciones que no se sostienen. La ventana de
+\emph{selección} (2015--2024) es donde se tomaron las diecinueve decisiones: sus cifras describen
+el sistema, pero están contaminadas por esa selección. La ventana de \emph{confirmación}
+(2025--2026) no intervino en ninguna decisión, de modo que sus cifras son honestamente fuera de
+muestra, pero son pocas. La \emph{curva completa} sirve para describir la serie histórica en su
+conjunto y no debe usarse como evidencia de nada, porque mezcla ambos regímenes. La
+Tabla~\ref{tab:tres-ventanas} las presenta separadas y etiquetadas.
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{Las tres ventanas de evaluación, con su papel declarado.}
+  \label{tab:tres-ventanas}
+  \input{tablas/t07_selec_conf_full.tex}
+  \caption*{Fuente: \artefacto{evidence/summary.json}. Selección: se tomaron decisiones sobre ella.
+  Confirmación: reservada, ninguna decisión la utilizó. Curva completa: descriptiva, no probatoria.}
+\end{table}
+
+La tabla contiene una diferencia que conviene señalar porque condiciona la interpretación de la era
+reservada: el efectivo medio pasa de 9,08\,\% en selección a 25,04\,\% en confirmación, es decir,
+la cartera estuvo en promedio una cuarta parte fuera del mercado durante los dos años en que batió
+al índice por mayor margen. Como se verá en la Sección~\ref{sec:cartera-barrido}, ese efectivo no
+responde a una visión de mercado sino a la mecánica del tope y de los umbrales de entrada, pero el
+hecho de que el mejor resultado coincida con la mayor posición de liquidez obliga a no atribuirlo
+sin más a la calidad de la señal.
 
 \begin{figure}[H]
   \centering
@@ -163,7 +320,7 @@ de la señal. La ley fundamental de la gestión activa relaciona IR, IC, amplitu
 en este caso la restricción \textit{long-only}, 12 nombres, el coste de transacción y 359\% de
 rotación explican que la limitación práctica esté en la cartera y no necesariamente en el ranking.
 Esta lectura concuerda con la distinción entre calidad de señal e implementación de
-\textcite{lopezdeprado2018advances}.
+López de Prado (2018).
 
 \begin{figure}[H]
   \centering
@@ -223,6 +380,50 @@ significativas, pero el alfa de selección tampoco es significativo de forma ais
 prudente es que la evidencia es compatible con una señal parcialmente distinta de los factores
 implementados, no que haya descubierto una prima nueva y causal.
 
+\begin{table}[H]
+  \centering
+  \small
+  \caption{Neutralización del Rank-IC por controles de estilo.}
+  \label{tab:neutralizacion}
+  \input{tablas/t07_neutralizacion.tex}
+  \caption*{Fuente: \artefacto{attribution.json}. Los catorce controles son ratios de valoración,
+  rentabilidad, crecimiento, volatilidad y beta, listados en el Anexo~\ref{anexo:evidencia}.}
+\end{table}
+
+La regresión factorial merece un examen por ventanas, porque su lectura cambia radicalmente entre
+ellas y esa diferencia es en sí misma un resultado. La Tabla~\ref{tab:factores} y la
+Figura~\ref{fig:factores} la presentan.
+
+\begin{table}[H]
+  \centering
+  \scriptsize
+  \caption{Regresión factorial con errores Newey--West de doce retardos, por ventana.}
+  \label{tab:factores}
+  \input{tablas/t07_factores.tex}
+  \caption*{Fuente: \artefacto{attribution.json}. Los factores de tamaño e inversión no son
+  construibles con las fuentes disponibles y se declaran no replicables en lugar de sustituirse por
+  un sucedáneo no auditable.}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.94\textwidth]{figuras/f07_factores.png}
+  \caption{Cargas factoriales en las ventanas de selección y confirmación. En azul, las cargas con
+  $|t|\geq 2$. Fuente: \artefacto{attribution.json}.}
+  \label{fig:factores}
+\end{figure}
+
+En la ventana de selección el modelo apenas tiene estructura factorial: $R^2=0,019$ y ninguna carga
+significativa. En la de confirmación, en cambio, $R^2=0,447$ y aparecen cargas grandes y
+significativas --- negativa en valor y en calidad, positiva en crecimiento y en baja volatilidad ---
+junto a un alfa por periodo de 0,84\,\% con $t=2,53$. La tentación sería presentar únicamente el
+alfa significativo de la era reservada. Sería un error de lectura: con diecisiete observaciones y
+cinco regresores, un $R^2$ de 0,447 es exactamente lo que cabe esperar por construcción, y las
+cargas no describen tanto una exposición estable como el hecho de que dos años concretos tuvieron
+un carácter factorial marcado. La conclusión defendible es la conservadora: el sistema no muestra
+una exposición factorial estable a lo largo del tiempo, y su alfa no puede declararse
+significativo en la ventana donde se dispone de potencia estadística.
+
 El Deflated Sharpe de 0,930, inferior a 0,95, es la limitación empírica más importante. Penaliza el
 Sharpe por el número de configuraciones ensayadas y, por tanto, recuerda que una rentabilidad
 histórica seleccionada entre 66 alternativas merece escepticismo adicional. No contradice el test de
@@ -244,6 +445,122 @@ obstante, se informa junto a su debilidad estadística: sólo seis cohortes tien
 varias observaciones futuras no han madurado y el número independiente efectivo es uno. El texto no
 convierte esa combinación en una contradicción. La confirmación económica es positiva; la
 confirmación del Rank-IC en esa era aún es insuficiente para una conclusión definitiva.
+
+\section{Gestión de cartera: el barrido diagnóstico}
+\label{sec:cartera-barrido}
+
+Las doce variables de cartera del catálogo no son predictivas: se ejecutan \emph{después} de
+congelar el ganador y nunca influyen en su selección. Esa separación, impuesta por el protocolo,
+tiene una consecuencia metodológica valiosa. Como todas las variantes parten exactamente del mismo
+modelo, de la misma señal y del mismo panel, sus diferencias sólo pueden atribuirse a la regla de
+construcción de cartera. Es un experimento controlado en el sentido estricto: una única variable
+cambia cada vez.
+
+La Tabla~\ref{tab:cartera-barrido} recoge las veintitrés variantes evaluadas junto al ganador
+congelado, y la Figura~\ref{fig:barrido} las sitúa en el plano rotación--exceso.
+
+\input{tablas/t07_cartera_barrido.tex}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.94\textwidth]{figuras/f07_barrido_cartera.png}
+  \caption{Barrido diagnóstico de cartera. Cada punto es una variante de una sola variable sobre el
+  mismo ganador congelado; la estrella es la configuración efectivamente empleada. Fuente:
+  \artefacto{portfolio\_comparison.parquet}.}
+  \label{fig:barrido}
+\end{figure}
+
+El resultado más incómodo de este trabajo está en esa tabla, y se reporta precisamente porque lo es:
+\textbf{trece de las veintitrés variantes superan al ganador congelado en exceso geométrico}. La más
+llamativa es \artefacto{minimum\_holding\_period}: pasar de \texttt{none} a \texttt{half\_horizon}
+eleva el exceso de 1,62\,\% a 2,58\,\%, sube el IR de 0,269 a 0,398 y \emph{simultáneamente} reduce
+el turnover de 3,59 a 2,28. No es un compromiso entre rentabilidad y rotación; es una mejora en
+ambos ejes a la vez.
+
+Conviene explicar por qué la configuración empleada no es ésa. El valor \texttt{none} no se eligió
+por medición: es el valor recomendado del catálogo, y las variables de cartera se ejecutan como
+diagnóstico y no como optimización. Cambiar el ganador a la vista de esta tabla sería seleccionar
+una regla de cartera por su rentabilidad conocida, exactamente la práctica que la regla 4 del
+protocolo prohíbe y contra la que se argumenta en el Capítulo~\ref{chap:diseno-experimental}. La
+decisión de no tocarlo es, por tanto, metodológicamente correcta. Pero también es una limitación
+real del resultado presentado, y como tal se registra en el Capítulo~\ref{chap:limitaciones}: el
+trabajo no afirma haber encontrado la mejor cartera posible para esta señal, sino haber medido una
+cartera fijada de antemano.
+
+El barrido desmiente además una lectura simplista que la tabla podría sugerir. Si menos rotación
+fuera siempre mejor, \texttt{full\_horizon} --- el mínimo de tenencia más largo, con turnover 1,67
+--- debería ser el mejor de todos. Es el peor: exceso $-0,67\,\%$. La relación no es monótona porque
+un mínimo de tenencia demasiado largo impide reaccionar cuando la señal cambia de opinión sobre una
+posición, y ese coste de oportunidad acaba superando al ahorro en fricciones. El compromiso tiene un
+óptimo interior, y sólo un barrido lo revela.
+
+\subsection*{De dónde procede la rotación}
+
+Un turnover del 359\,\% anualizado exige explicación. La Tabla~\ref{tab:ordenes} lo descompone por
+motivo declarado de cada orden, y la Figura~\ref{fig:ordenes} lo representa.
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{Descomposición del flujo de cartera por motivo de orden.}
+  \label{tab:ordenes}
+  \input{tablas/t07_ordenes_motivo.tex}
+  \caption*{Fuente: \artefacto{evidence/orders.parquet}. El flujo es la suma de $|\Delta w|$ de cada
+  orden. El coste agrega comisión y \textit{slippage} efectivamente cargados.}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.92\textwidth]{figuras/f07_ordenes.png}
+  \caption{Origen del turnover por motivo de orden. Fuente: \artefacto{evidence/orders.parquet}.}
+  \label{fig:ordenes}
+\end{figure}
+
+Los dos motivos de rotación --- \texttt{net\_edge\_over\_worst} y \texttt{displaced\_by\_net\_edge},
+que son las dos caras de una misma operación --- suman el 56,5\,\% del flujo. El
+\texttt{rebalance} aporta un 20,2\,\%, las compras iniciales un 13,5\,\% y las salidas por alfa
+insuficiente un 10,0\,\%. La causa raíz no es un umbral mal calibrado sino algo estructural: el
+sistema \emph{re-decide todos los meses} sobre una señal cuyo horizonte es de \emph{doce}. Cada
+snapshot vuelve a comparar las doce posiciones con todo el universo, y basta una diferencia neta
+que supere el umbral de rotación para que se ejecute un intercambio que la señal, a doce meses
+vista, quizá no habría pedido.
+
+De ahí que la palanca estructural sea \artefacto{snapshot\_step\_months}, que reduciría la rotación
+en un factor cercano a tres. Pero es una variable \emph{predictiva}: cambiarla obligaría a rehacer
+la selección secuencial completa, y de hecho fue la primera decisión del estudio, donde la cadencia
+mensual ganó con una ventaja pareada de $+0{,}0208$ frente a la trimestral. El sistema se encuentra
+así ante un conflicto real entre dos objetivos legítimos --- más cohortes para decidir mejor frente
+a menos rotación para implementar mejor --- que este trabajo documenta pero no resuelve.
+
+\subsection*{Rotación, coste y exceso año a año}
+
+La Figura~\ref{fig:transferencia} cruza las tres magnitudes por año.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.94\textwidth]{figuras/f07_transferencia.png}
+  \caption{Rotación, exceso sobre SPY y coste por año. El área de cada punto es proporcional al
+  coste soportado. Fuente: \artefacto{attribution.json}, campo \texttt{transfer.by\_year}.}
+  \label{fig:transferencia}
+\end{figure}
+
+Una precisión sobre las fuentes, para que la comparación entre esta figura y la
+Tabla~\ref{tab:anual} no induzca a error: son dos series próximas pero no idénticas. La tabla anual
+usa \artefacto{evidence/annual\_metrics.parquet}, cuya alfa se calcula sobre el año natural
+completo; la figura usa el campo de transferencia de \artefacto{attribution.json}, que agrega por
+cohortes. Para 2024 la primera da $-11{,}63\,\%$ y la segunda $-12{,}33\,\%$. La diferencia es de
+agregación, no de resultado, pero conviene no citar ambas como si fueran la misma cifra.
+
+No hay una relación monótona entre rotar más y obtener más exceso, lo que descarta que el turnover
+esté comprando rentabilidad. 2017 y 2019, los dos mejores años en exceso, tienen rotaciones muy
+distintas (6,80 y 4,71), y 2022 obtuvo un exceso positivo del 2,24\,\% con la rotación más baja de
+toda la serie (0,62). En el otro extremo, 2020 combinó el segundo turnover más alto (6,35) con un
+exceso negativo: la cartera pagó fricciones precisamente en uno de los años en que peor lo hizo. El
+peor año, 2024, tuvo en cambio poca rotación (1,18), de modo que su pérdida frente al índice no se
+explica por costes sino por composición. El coste
+acumulado de 5,25 puntos porcentuales sobre la ventana completa no es una cifra despreciable frente
+a un exceso geométrico de 1,62\,\%: en términos brutos, antes de costes, la ventaja sería
+sustancialmente mayor, y es la implementación la que se come la mayor parte.
 
 \section{Implicación para el diseño de cartera}
 

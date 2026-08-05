@@ -54,7 +54,7 @@ al índice en ese momento y se construye la sección transversal sólo con ellos
 un sesgo frecuente: usar empresas que sobrevivieron y permanecen hoy en el índice para evaluar
 periodos en los que otras empresas ya habían sido expulsadas, adquiridas o quebrado. La literatura
 ha documentado que esta selección puede inflar de forma material las conclusiones de rendimiento
-\parencite{brown1992survivorship}.
+(Brown et al., 1992).
 
 La corrección no equivale a eliminar todo sesgo de supervivencia. Las fuentes gratuitas pueden no
 ofrecer la misma profundidad para firmas retiradas, algunos fundamentales históricos se han
@@ -97,3 +97,82 @@ Esta separación no convierte automáticamente 2025--2026 en una prueba definiti
 doce meses deja varias etiquetas abiertas y reduce la información independiente. Su función es más
 exigente que una fila adicional en la tabla de selección: es una comprobación externa del modelo ya
 congelado, cuya interpretación se mantiene deliberadamente prudente en el Capítulo~\ref{chap:resultados}.
+
+La Tabla~\ref{tab:cobertura-anual} documenta la cobertura año a año desde 2003, es decir, incluyendo
+los años que sólo se usan como historia de entrenamiento y nunca como cohortes de evaluación.
+
+\input{tablas/t03_cobertura_anual.tex}
+
+Dos observaciones sobre esa tabla. La primera es que el número de \textit{tickers} distintos crece
+de 278 en 2003 a más de 500 en los años recientes, lo que refleja que la reconstrucción de la
+pertenencia histórica es más completa cuanto más cerca está del presente: es una limitación de la
+fuente, no una propiedad del índice, que ha tenido alrededor de quinientos componentes durante todo
+el periodo. La segunda es que la fracción de filas utilizables se mantiene muy próxima a uno en
+todos los años. Esto último debe leerse con cuidado: mide qué proporción de las filas efectivamente
+construidas supera los controles de calidad, no qué proporción de las empresas que existieron
+llegaron a construirse. El sesgo de supervivencia que preocupa no se manifiesta como filas
+defectuosas sino como empresas ausentes, y esa ausencia no es observable desde el propio panel.
+
+\section{El catálogo de variables y su reparto entre agentes}
+
+Las variables que alimentan a los agentes no se eligen a mano ni por conveniencia. El catálogo
+declara bloques temáticos, cada bloque se asigna a un agente, y el conjunto de variables que entra
+en el estudio es una decisión del propio protocolo. La Tabla~\ref{tab:features-bloque} resume esos
+bloques con sus diagnósticos.
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{Bloques de variables, agente asignado y diagnósticos univariantes.}
+  \label{tab:features-bloque}
+  \input{tablas/t03_features_bloque.tex}
+  \caption*{Fuente: \artefacto{evidence/feature\_catalog.json} y
+  \artefacto{evidence/feature\_diagnostics.parquet}. El Rank-IC univariante es el de cada variable
+  por separado, sin modelo; la importancia es la media asignada por LightGBM.}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.94\textwidth]{figuras/f03_features_bloques.png}
+  \caption{Rank-IC univariante medio por bloque. Fuente:
+  \artefacto{evidence/feature\_diagnostics.parquet}.}
+  \label{fig:features-bloques}
+\end{figure}
+
+La tabla exige tres advertencias metodológicas, y las tres importan para no sobreinterpretarla.
+
+La primera es que las dos fuentes no coinciden exactamente. El catálogo declara 68 variables con su
+bloque y su agente; el fichero de diagnósticos contiene 73 filas, porque incluye siete columnas
+derivadas que el catálogo no declara por separado --- componentes descompuestos de otras variables
+--- y omite dos que sí declara pero para las que no llegó a calcular diagnósticos. La tabla hace una
+unión de ambas y agrupa esas siete bajo la etiqueta «no declarado» en lugar de descartarlas
+silenciosamente. Es una asimetría menor, pero ocultarla habría significado presentar un recuento que
+no coincide con ninguno de los dos artefactos.
+
+La segunda es que el estado de selección vale \texttt{candidate} en las 73 filas. El artefacto no
+registra
+qué variables fueron efectivamente podadas por el mecanismo de estabilidad fuera de muestra, de modo
+que \emph{esta tabla no puede leerse como «variables seleccionadas frente a descartadas»}. Describe
+el catálogo declarado y sus diagnósticos, nada más.
+
+La tercera es sobre la magnitud de las cifras. Los Rank-IC univariantes son diminutos --- el mayor
+bloque apenas alcanza 0,0177 --- frente al 0,1004 del sistema completo. No es una contradicción: es
+exactamente el argumento a favor de combinar. Ninguna variable aislada ordena el mercado, y la
+capacidad predictiva aparece al combinar muchas señales débiles mediante modelos no lineales y una
+ponderación aprendida. La Tabla~\ref{tab:features-top} muestra los extremos de esa distribución.
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{Variables con mayor y menor Rank-IC univariante.}
+  \label{tab:features-top}
+  \input{tablas/t03_features_top.tex}
+  \caption*{Fuente: \artefacto{evidence/feature\_diagnostics.parquet}. Doce primeras y cinco últimas
+  de las 73 disponibles, ordenadas por Rank-IC univariante.}
+\end{table}
+
+Obsérvese que el bloque de liquidez de mercado, asignado al agente \textit{risk}, encabeza la
+clasificación por bloques, mientras que los bloques de \textit{momentum} aparecen en la parte baja e
+incluso con signo negativo. Es coherente con lo que el Capítulo~\ref{chap:agentes} documenta sobre
+el dominio de \textit{risk} y la debilidad de \textit{momentum}, y sugiere que esa jerarquía ya está
+presente en los datos antes de cualquier modelo.

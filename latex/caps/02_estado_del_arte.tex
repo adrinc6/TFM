@@ -1,15 +1,15 @@
 \chapter{Estado del arte}
 
 La inversión factorial documenta diferencias transversales asociadas a valor, tamaño y mercado
-\parencite{fama1992cross,fama1993common}, así como a momentum \parencite{jegadeesh1993returns} y
-calidad \parencite{asness2013quality}. Estas regularidades son tanto una motivación como una prueba
+(Fama y French, 1992, 1993), así como a momentum (Jegadeesh y Titman, 1993) y
+calidad (Asness et al., 2019). Estas regularidades son tanto una motivación como una prueba
 difícil: un sistema predictivo debe demostrar que no se limita a reproducir una fórmula factorial.
 
 El aprendizaje automático amplía las relaciones que pueden estimarse entre características y
-retornos; por ejemplo, \textcite{gu2020empirical} documentan ganancias empíricas de métodos no
+retornos; por ejemplo, Gu et al. (2020) documentan ganancias empíricas de métodos no
 lineales en asset pricing. Sin embargo, esa flexibilidad aumenta los riesgos de ajustar ruido.
 La multiplicidad de especificaciones, la fuga temporal y el sesgo de supervivencia pueden producir
-resultados convincentes pero no replicables \parencite{brown1992survivorship,harvey2016cross}.
+resultados convincentes pero no replicables (Brown et al., 1992; Harvey et al., 2016).
 
 El criterio principal de este estudio es Rank-IC, la correlación de Spearman entre el score en una
 fecha y el retorno excedente futuro una vez cerrada la etiqueta. A diferencia del CAGR de una
@@ -19,12 +19,24 @@ será decisiva al interpretar el coeficiente de transferencia del Capítulo~\ref
 \section{De las anomalías a las variables explicativas}
 
 La literatura de factores parte de una observación sencilla: los retornos esperados no parecen
-independientes de todas las características observables de una empresa. Los modelos de Fama y French
-documentaron primas asociadas a tamaño y valor \parencite{fama1992cross,fama1993common}; trabajos
-posteriores mostraron persistencia del momentum \parencite{jegadeesh1993returns} y una prima ligada
-a calidad \parencite{asness2013quality}. Estas relaciones no deben entenderse como leyes mecánicas.
+independientes de todas las características observables de una empresa. El punto de partida
+histórico suele situarse en Banz (1981), que documentó que las empresas de menor capitalización
+obtenían retornos ajustados por riesgo superiores a los que predecía el modelo de mercado: una
+característica contable y pública, disponible para cualquiera, quedaba asociada a una diferencia
+sistemática de rentabilidad. Los modelos de Fama y French formalizaron después primas asociadas a
+tamaño y valor (Fama y French, 1992, 1993); trabajos
+posteriores mostraron persistencia del momentum (Jegadeesh y Titman, 1993) y una prima ligada
+a calidad (Asness et al., 2019). Carhart (1997) incorporó el momentum como cuarto factor
+al modelo de tres, y su trabajo es relevante aquí por una razón adicional: mostró que buena parte
+de la persistencia aparente en el rendimiento de los fondos de inversión desaparecía al controlar
+por exposiciones factoriales conocidas. Es exactamente la lógica que este TFM aplica a su propia
+señal en el análisis de neutralización de estilo del Capítulo~\ref{chap:resultados}.
+
+Estas relaciones no deben entenderse como leyes mecánicas.
 Su magnitud cambia con el horizonte, el universo, los costes y el régimen, y una señal que funciona
-en promedio puede atravesar años adversos.
+en promedio puede atravesar años adversos. El propio efecto tamaño de Banz se debilitó de forma
+notable en las décadas posteriores a su publicación, un recordatorio de que una regularidad
+documentada no es una garantía de rendimiento futuro.
 
 Para este TFM los factores cumplen tres papeles. Primero, orientan la división de features entre
 agentes: rentabilidad y solvencia para \textit{quality}; ratios de valoración para \textit{value};
@@ -42,11 +54,11 @@ separado ni evita interacciones posteriores dentro del LightGBM.
 \section{Aprendizaje automático en \textit{asset pricing}}
 
 Los métodos de aprendizaje automático amplían la capacidad de modelar no linealidades e
-interacciones entre características. \textcite{gu2020empirical} muestran que estos modelos pueden
+interacciones entre características. Gu et al. (2020) muestran que estos modelos pueden
 mejorar la predicción transversal cuando el conjunto de señales es amplio y el entrenamiento respeta
 la estructura temporal. LightGBM, usado aquí en cada agente, pertenece a la familia de árboles
 potenciados: construye de forma secuencial árboles débiles que corrigen errores de los anteriores y
-puede manejar relaciones no monotónicas \parencite{ke2017lightgbm}.
+puede manejar relaciones no monotónicas (Ke et al., 2017).
 
 Esa flexibilidad tiene un coste epistemológico. Un modelo flexible puede encontrar patrones espurios
 con facilidad, especialmente si se prueban parámetros hasta maximizar una métrica final. Por ello la
@@ -69,7 +81,8 @@ Backtest de cartera & Traducción a utilidad económica & Elegir por CAGR, ignor
 Inferencia con múltiples pruebas & Penalización del \textit{data snooping} & Publicar sólo la mejor especificación & Bootstrap, permutación, placebos y Deflated Sharpe\\
 \bottomrule
 \end{tabularx}
-\caption*{Fuente: elaboración propia a partir de \textcite{gu2020empirical,harvey2016cross,lopezdeprado2014pseudo}.}
+\caption*{Fuente: elaboración propia a partir de Gu et al. (2020), Harvey et al. (2016) y
+López de Prado et al. (2014).}
 \end{table}
 
 \section{Medición de señal: Rank-IC, amplitud y transferencia}
@@ -100,10 +113,10 @@ la fecha de decisión. En fundamentales, usar la fecha de cierre fiscal en lugar
 es un ejemplo clásico: el trimestre puede haber terminado, pero sus resultados no se publicaron
 aún. El sesgo de supervivencia surge cuando se usa la composición actual de un índice para describir
 el pasado; se eliminan así empresas que salieron del universo y se exagera la calidad de la muestra
-\parencite{brown1992survivorship}.
+(Brown et al., 1992).
 
 El \textit{data snooping} es distinto: incluso con datos perfectamente cerrados, muchas pruebas
-incrementan la probabilidad de encontrar una aparente ganadora. \textcite{harvey2016cross} alertan
+incrementan la probabilidad de encontrar una aparente ganadora. Harvey et al. (2016) alertan
 del gran número de factores propuestos en la literatura y de la necesidad de elevar el estándar de
 evidencia. El Deflated Sharpe Ratio es útil porque descuenta la selección entre configuraciones, pero
 no sustituye a la disciplina de congelar una era reservada ni a contrastes de permutación y placebo.
@@ -111,3 +124,56 @@ no sustituye a la disciplina de congelar una era reservada ni a contrastes de pe
 En síntesis, la contribución del TFM no consiste en proponer un sexto factor. Consiste en evaluar una
 arquitectura de aprendizaje con una separación explícita entre datos disponibles, modelo elegido,
 robustez y cartera. Ese posicionamiento condiciona todos los capítulos posteriores.
+
+\section{Señal e implementación: por qué se miden por separado}
+
+Existe una relación clásica en gestión activa que conviene enunciar aquí, aunque este trabajo la use
+como marco conceptual y no como identidad exacta. El \textit{information ratio} alcanzable por un
+gestor depende aproximadamente de tres factores: la calidad de su señal, medida por el
+\textit{information coefficient}; la amplitud, es decir, el número de decisiones aproximadamente
+independientes que puede tomar; y el coeficiente de transferencia, que mide qué proporción de esa
+señal llega efectivamente a la cartera.
+
+\[
+  \text{IR} \;\approx\; \text{IC} \times \sqrt{\text{amplitud}} \times \text{TC}
+\]
+
+La utilidad de esta descomposición para el presente trabajo es que separa tres causas distintas de
+un mal resultado, que de otro modo se confundirían en una única cifra de rentabilidad. Un sistema
+puede fracasar porque su señal no ordena, porque toma pocas decisiones independientes o porque su
+cartera no consigue expresar lo que la señal indica. Son problemas diferentes y admiten soluciones
+diferentes.
+
+Tres restricciones del diseño de este TFM actúan directamente sobre el tercer término. La cartera es
+\textit{long-only}, de modo que no puede explotar la parte inferior de la ordenación --- la mitad de
+la información que el Rank-IC mide es, por construcción, inaccesible. Contiene doce posiciones sobre
+un universo de unos quinientos valores, lo que limita drásticamente la amplitud efectiva. Y paga
+costes de transacción proporcionales a su rotación. El Capítulo~\ref{chap:resultados} cuantifica el
+resultado conjunto de esas tres restricciones en un coeficiente de transferencia de 0,247.
+
+Esta separación explica también por qué la métrica de selección de este trabajo es el Rank-IC y no
+el CAGR. Seleccionar por rentabilidad final confundiría los tres términos: una configuración podría
+ganar por tener mejor señal, o simplemente por haber tropezado con una cartera afortunada. Medir la
+señal aislada permite atribuir después, con un experimento controlado, cuánto pierde la
+implementación.
+
+\section{Posición de este trabajo}
+
+La literatura revisada sugiere tres tensiones que cualquier estudio de esta clase debe resolver, y
+conviene declarar cómo las resuelve éste.
+
+La primera es entre flexibilidad del modelo y credibilidad de la evidencia. Este trabajo se sitúa
+deliberadamente en el extremo conservador: un catálogo cerrado y publicado, una métrica de selección
+fijada de antemano, y una era reservada que no interviene en ninguna decisión. El coste es que no
+explora arquitecturas más ambiciosas; el beneficio es que sus afirmaciones pueden acotarse.
+
+La segunda es entre interpretabilidad y capacidad. La arquitectura de agentes especializados es un
+compromiso: cada agente recibe un vocabulario económico reconocible, lo que permite preguntarse qué
+aprendió cada uno, pero dentro de cada agente el modelo es una caja relativamente opaca. El
+Capítulo~\ref{chap:agentes} muestra que ese compromiso rinde --- se puede observar que el
+meta-agente descubre a su mejor especialista --- sin pretender que el sistema sea interpretable en
+sentido estricto.
+
+La tercera es entre señal y utilidad. Buena parte de la literatura reporta capacidad predictiva sin
+llevarla a una cartera con costes, o reporta rentabilidad sin aislar la señal. Aquí se hacen ambas
+cosas, pero en un orden que importa: primero la señal, después la cartera, y nunca al revés.

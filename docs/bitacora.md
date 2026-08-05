@@ -1,5 +1,90 @@
 # Bitácora
 
+## 2026-08-05 · Manuscrito: bibliografía manual, trazabilidad de robustez y ampliación a ~69 páginas
+
+### Decisión
+
+Ampliar el TFM de ~38 a ~69 páginas estimadas, eliminar `biblatex` del documento y cerrar el último
+hueco de trazabilidad del pipeline de activos. Toda la evidencia sigue procediendo de un único
+estudio, `study-20260803-201234-b4d7a8d8` (catálogo v5); no se introduce ningún otro.
+
+### Motivo
+
+Tres problemas distintos. El primero era bloqueante: la cadena `biblatex` + `biber` impedía compilar,
+de modo que el manuscrito no podía ni revisarse. El segundo, de contenido: los capítulos explicaban
+*qué* se decidió sin desarrollar *cómo* ni *por qué*, los anexos eran esbozos de seis líneas y la
+bitácora —donde está registrado el proceso real de desarrollo— no aparecía en ningún sitio. El
+tercero, de coherencia: el estudio persistía bastante más evidencia de la que el documento explotaba.
+
+### Cambios
+
+1. **Fuera `biblatex`.** Se eliminan el paquete, `\addbibresource` y `\printbibliography`; se
+   conserva `csquotes` (lo usa babel). Las 17 llamadas de cita pasan a texto plano autor-año, y las
+   cuatro `\textcite` de sujeto gramatical se reescriben como frase. Nuevo `caps/10_bibliografia.tex`
+   con las doce referencias a mano. `referencias.bib` se conserva como registro, sin intervenir en la
+   compilación. **Overleaf: XeLaTeX, dos pasadas, sin Biber.**
+2. **Trazabilidad de robustez.** `draw_robustness()` recibía `robustness` y `attribution` y **no los
+   leía**: `tests` y `verdict=[1,1,1,1,1,1,1,0]` eran literales, igual que las ocho filas de
+   `t07_robustez.tex`. Eran los dos únicos activos no trazados a artefactos. Ahora
+   `build_robustness_rows()` deriva los ocho contrastes y alimenta tabla y figura. **Ninguna cifra ni
+   veredicto cambia** (verificado contra la versión anterior); sólo cambia su procedencia, y dos
+   filas ganan precisión al dejar de estar redondeadas a mano.
+3. **Activos nuevos**: 15 figuras y 16 tablas generadas desde artefactos ya existentes —matriz
+   rank-IC por agente y era, pesos anuales del meta, escalera de decisiones, forest plot del
+   bootstrap, barrido de cartera, descomposición del turnover por motivo, catálogo completo,
+   cobertura anual, catálogo de features. `write_tables` se divide en cuatro funciones y se añade
+   `longtable()` para las tablas que no caben en una página.
+4. **Capítulo 8 nuevo, «Proceso de desarrollo, defectos encontrados y decisiones»** (2.500
+   palabras), escrito desde esta bitácora: la puerta de no inferioridad que penalizaba a los
+   superiores, las features declaradas que no se calculaban, el colapso de la isotónica y el
+   artefacto media/mediana, el caso MAC, las dos decisiones tomadas contra la recomendación técnica y
+   la advertencia de reproducibilidad v5/v6. Limitaciones pasa a capítulo 9 y conclusiones a 10.
+5. **Resto de capítulos**: resumen/abstract, `\listoffigures`, `\listoftables`, `amsthm` para la
+   proposición de no fuga, y ampliación de los capítulos 1 a 7, 9 y 10 más los tres anexos.
+
+### Correcciones detectadas al escribir
+
+- `f07_barrido_cartera` usaba `PercentFormatter(decimals=0)` sobre un rango de tres puntos
+  porcentuales: todas las etiquetas del eje colapsaban en «2 %». Ahora un decimal.
+- El anexo de reproducibilidad seguía indicando «ejecutar Biber», ya obsoleto.
+- Se afirmaba que el producto cartesiano del catálogo superaba «diez millones» de combinaciones. Son
+  1,9 × 10^14 (5,4 × 10^8 restringido a las predictivas).
+- Al redactar el capítulo 7 se comprobó que el peor año es 2024, no 2020. Nota: conviven dos series
+  próximas pero distintas —`annual_metrics.parquet` da alfa 2024 de −11,63 % y 2020 de −4,37 %,
+  mientras `attribution.json.transfer.by_year` da exceso de −12,33 % y −4,01 %—. El capítulo 7 usa la
+  primera para la tabla anual y la segunda para el gráfico de rotación/exceso, y lo declara.
+
+### Asimetrías declaradas en el texto
+
+- `feature_catalog.json` declara 68 features y `feature_diagnostics.parquet` contiene 73. La tabla
+  hace unión externa y marca el origen en vez de descartar en silencio.
+- `selection_status` vale `candidate` en las 73 filas: **no hay traza de qué se podó**, así que la
+  tabla se presenta como «catálogo declarado y sus diagnósticos», no como seleccionadas/descartadas.
+- Conviven dos ventanas de rank-IC por agente: 117 cohortes (selección: risk 0,1229, meta 0,1004) y
+  123 (`robustness.json`: 0,1199 y 0,0949). Cada tabla declara cuál usa.
+- **Las distribuciones nulas no se persisten** (permutación, bootstrap, carteras aleatorias): sólo
+  estadísticos-resumen. No se dibujan histogramas porque exigiría simular datos; se representan los
+  resúmenes reales y la limitación queda declarada en el anexo C.
+
+### Resultado incómodo que el texto reporta
+
+El barrido diagnóstico muestra que **13 de 23 variantes superan al ganador congelado** en exceso
+geométrico. `minimum_holding_period → half_horizon` sube el exceso de 1,62 % a 2,58 %, el IR de
+0,269 a 0,398 **y** baja el turnover de 3,59 a 2,28. El valor `none` no se midió: viene del
+`recommended` del catálogo. No cambiarlo es correcto (regla 4: la cartera no se optimiza), pero es
+una limitación real y se declara como tal en el capítulo 9.
+
+### Validación
+
+- `python latex/scripts/verify_latex_assets.py` correcto. Se amplía: ahora detecta comandos de
+  bibliografía reaparecidos, `\ref` sin `\label` (recolectando también los de `tablas/`), capítulos
+  inexistentes y activos generados sin insertar.
+- 75 tests pasan, `node --check` sin avisos. `ruff` reporta un único error (`AGENT_NAMES` sin usar en
+  `module/studies/catalog.py`) **preexistente**, verificado con el árbol limpio; no se toca por estar
+  fuera del alcance.
+- Sin compilador LaTeX local: se valida con un chequeo estructural (balance de entornos, llaves y
+  `$`) y con el verificador. **La compilación real en Overleaf está pendiente de confirmación.**
+
 ## 2026-08-04 · Cartera: una sola variable de efectivo, corrección del reparto y suelo de cobertura
 
 ### 1. `cash_policy` se elimina; `max_cash_weight` gobierna sola el efectivo

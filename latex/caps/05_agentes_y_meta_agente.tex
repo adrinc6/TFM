@@ -20,7 +20,7 @@ meta-agente confunda cinco copias del mismo predictor.
 En cada fecha de snapshot se ajusta un LightGBM por agente sobre una ventana móvil de ocho años.
 El ganador fijado por el estudio emplea profundidad máxima 3, 100 estimadores, tasa de aprendizaje
 0,03 y mínimo de 50 observaciones por hoja. LightGBM permite representar interacciones no lineales
-sin imponer una forma funcional única \parencite{ke2017lightgbm}; el entrenamiento temporal evita
+sin imponer una forma funcional única (Ke et al., 2017); el entrenamiento temporal evita
 que el modelo evalúe observaciones que habría visto durante el ajuste.
 
 Las cinco puntuaciones se convierten en rangos transversales y pasan al meta-agente
@@ -94,6 +94,110 @@ superar con claridad la combinación ingenua y a reproducir buena parte de la se
 dominante. El Capítulo~\ref{chap:resultados} comprobará además que dicha señal conserva el 84,35\%
 tras neutralizar controles de estilo, de modo que no debe reducirse sin más a baja volatilidad
 clásica.
+
+Conviene una advertencia de lectura que afecta a todo el capítulo. Los artefactos contienen dos
+ventanas distintas para esta misma métrica: la de \emph{selección}, con 117 cohortes hasta 2024, y
+la \emph{completa}, con 123 cohortes que incluyen las cerradas de la era reservada. En la primera,
+\textit{risk} obtiene 0,1229 y el meta 0,1004; en la segunda, 0,1199 y 0,0949. Ninguna es más
+correcta que la otra, pero mezclarlas produce discrepancias aparentes. Las tablas de este capítulo
+usan la ventana de selección salvo indicación expresa.
+
+\subsection*{Estabilidad por eras: qué aprendió y qué no}
+
+Una media agregada puede ocultar que una señal funcionó en un régimen y no en otro. La
+Tabla~\ref{tab:rankic-era} y la Figura~\ref{fig:rankic-era} descomponen el Rank-IC de cada señal por
+era, incluyendo la reservada a título informativo.
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{Rank-IC medio por señal y era.}
+  \label{tab:rankic-era}
+  \input{tablas/t05_rankic_era.tex}
+  \caption*{Fuente: \artefacto{evidence/rank\_ic\_diagnostics.parquet}. Las tres primeras columnas
+  son ventana de selección; la cuarta es la era reservada y no intervino en ninguna decisión.}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.94\textwidth]{figuras/f05_rankic_era.png}
+  \caption{Rank-IC por señal y era. El azul indica capacidad predictiva positiva y el rojo negativa;
+  la línea vertical separa la era reservada. Fuente:
+  \artefacto{evidence/rank\_ic\_diagnostics.parquet}.}
+  \label{fig:rankic-era}
+\end{figure}
+
+La tabla contiene tres lecturas que el promedio agregado no permite. La primera es que \textit{risk}
+es la única señal positiva en las cuatro eras; ninguna otra lo consigue. La segunda es que el meta
+aprendido supera al equiponderado en las tres eras de selección, no sólo en promedio, lo que
+refuerza que la mejora del 52\,\% no procede de un único subperiodo afortunado. La tercera es la más
+incómoda y se reporta precisamente por serlo: en la era reservada todos los agentes fundamentales se
+vuelven negativos a la vez --- \textit{growth} llega a $-0{,}1352$ --- y sólo \textit{risk} aguanta
+en positivo. El meta queda en $-0{,}0119$, prácticamente en cero.
+
+Que los cinco agentes se inviertan simultáneamente es informativo: apunta a una rotación de factores
+en el mercado y no a un error de signo en un modelo concreto, que afectaría a uno solo. Este mismo
+patrón fue el que motivó introducir la ponderación por recencia como variable del catálogo, según se
+documenta en el Capítulo~\ref{chap:desarrollo}. Debe leerse junto a la advertencia estadística del
+Capítulo~\ref{chap:resultados}: son seis cohortes cerradas y una observación independiente efectiva,
+insuficiente para concluir que la capacidad predictiva se haya degradado.
+
+\subsection*{La trayectoria del peso aprendido}
+
+La Tabla~\ref{tab:pesos-anual} y la Figura~\ref{fig:pesos-anual} muestran cómo evoluciona la
+ponderación año a año.
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{Peso medio anual asignado por el meta-agente a cada especialista.}
+  \label{tab:pesos-anual}
+  \input{tablas/t05_meta_pesos_anual.tex}
+  \caption*{Fuente: \artefacto{evidence/meta\_weights.parquet}. 2015 corresponde íntegramente al
+  reparto uniforme por ausencia de cohortes cerradas.}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.94\textwidth]{figuras/f05_pesos_anual.png}
+  \caption{Peso medio anual por agente. Fuente: \artefacto{evidence/meta\_weights.parquet}.}
+  \label{fig:pesos-anual}
+\end{figure}
+
+La trayectoria describe un aprendizaje reconocible. En 2015 el reparto es uniforme por construcción,
+al no existir evidencia cerrada. En 2016 el meta concentra en \textit{momentum}, que acabará siendo
+el peor especialista de todo el periodo: es un error, y es exactamente lo que cabe esperar de un
+sistema que decide con dos años de datos. En 2017 corrige hacia \textit{risk}, en 2018 lo lleva
+hasta 0,493 y desde 2019 lo mantiene pegado al tope de 0,50 durante el resto de la serie.
+
+\subsection*{Qué significa que el meta toque su propio tope}
+
+Que el peso de \textit{risk} quede fijado en el límite superior durante ocho años consecutivos es un
+resultado ambivalente y conviene no presentarlo sólo por su lado favorable.
+
+Leído a favor, demuestra que el aprendizaje funciona: el sistema identifica a su mejor especialista
+en unos dos años, partiendo de la ignorancia, y mantiene esa identificación de forma estable. La
+rotación media de pesos, 0,0093, confirma que no se trata de oscilación mecánica.
+
+Leído en contra, significa que la restricción de diseño es activa --- está mordiendo --- durante la
+mayor parte de la ventana. El meta \emph{querría} asignar más peso a \textit{risk} y no puede. De
+ahí que su Rank-IC quede por debajo del de \textit{risk} aislado: la diferencia entre 0,1004 y
+0,1229 no mide un fallo de aprendizaje, mide el coste de una restricción impuesta a propósito.
+
+La restricción se mantiene por una razón que no es de rendimiento. Un meta capaz de asignar el
+100\,\% del peso a un único agente deja de ser un combinador y pasa a ser un selector, y su
+comportamiento fuera de muestra depende por completo de que ese agente siga funcionando. La era
+reservada ilustra ese riesgo: es precisamente donde los demás agentes se invierten. Un sistema con
+todo el peso en \textit{risk} habría obtenido allí un Rank-IC mayor, pero la decisión de acotarlo se
+tomó antes de observar esa era, que es cuando las decisiones de diseño tienen valor.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.94\textwidth]{figuras/f05_concentracion.png}
+  \caption{Concentración de los pesos del meta-agente y peso máximo asignado, por fecha. Fuente:
+  \artefacto{evidence/rank\_tail\_diagnostics.parquet}.}
+  \label{fig:concentracion}
+\end{figure}
 
 \section{Qué aprende cada especialista}
 

@@ -1,7 +1,75 @@
 \chapter{Reproducibilidad}
+\label{anexo:reproducibilidad}
 
-La evidencia empírica procede del estudio \texttt{study-20260803-201234-b4d7a8d8} y del run ganador
-\texttt{run-51e95a09a8f0}. El script
-\texttt{latex/scripts/export\_study\_assets.py} regenera tablas e imágenes PNG a partir de los
-artefactos persistidos. El fichero \texttt{latex/asset\_manifest.json} lista las fuentes de cada
-salida. Para la compilación en Overleaf se debe seleccionar XeLaTeX y ejecutar Biber.
+\section{Identidad del estudio}
+
+Toda la evidencia empírica de este trabajo procede de un único estudio. Sus identificadores son los
+siguientes, y permiten localizar cualquier cifra citada en el texto:
+
+\begin{description}[leftmargin=3.2cm,style=nextline,font=\normalfont\ttfamily]
+  \item[study\_id] \studyid
+  \item[winner\_run\_id] \artefacto{run-51e95a09a8f0}
+  \item[dataset\_hash] \artefacto{b9134b218e3bf7fc\ldots{}a69df0a92653fbd3}
+  \item[evaluation\_key] \artefacto{c71b810e87bffbea\ldots{}1303057a40a9eaeb}
+  \item[catalog\_hash] \artefacto{921d21ee3bb71e41\ldots{}4ae336a3e5c47bac}
+  \item[catalog\_version] 5
+\end{description}
+
+El estudio ejecutó 66 configuraciones, empleó una ventana de selección de 117 cohortes mensuales
+entre 2015 y 2024 y reservó 2025--2026 sin que interviniera en ninguna decisión. La métrica de
+selección fue \texttt{rank\_ic\_only}.
+
+\section{Advertencia sobre la reproducibilidad exacta}
+
+Como se documenta en la Sección~\ref{sec:reproducibilidad}, el estudio se ejecutó bajo la versión 5
+del catálogo cerrado, mientras que el código actual está en la versión 6. Los artefactos conservan
+su instantánea de catálogo y sus hashes, de modo que cualquier cifra de este documento es
+verificable contra ellos, pero \textbf{una reejecución con el código actual no produciría los mismos
+resultados} y no sería comparable con estudios de la versión 6.
+
+Esta discrepancia es deliberada: se optó por congelar el estudio en lugar de reejecutarlo, para
+evitar que el ganador cambiara una vez redactados los capítulos de resultados.
+
+\section{Regeneración de figuras y tablas}
+
+Las figuras y tablas del manuscrito no se dibujan a mano: se generan desde los artefactos
+persistidos mediante un único comando, ejecutado desde la raíz del repositorio.
+
+\begin{quote}
+\ttfamily
+python latex/scripts/export\_study\_assets.py \\
+\hspace*{2em}--study-id study-20260803-201234-b4d7a8d8
+\end{quote}
+
+El script escribe los PNG a 300\,ppp en \artefacto{latex/figuras/} y los cuerpos de tabla en
+\artefacto{latex/tablas/}, y actualiza \artefacto{latex/asset\_manifest.json} con la lista de
+artefactos consumidos. Ese manifiesto es la tabla de correspondencia entre cada salida del
+manuscrito y su origen: ninguna cifra generada por script entra en el documento sin quedar
+registrada allí.
+
+Dos elementos son la excepción y conviene declararlo: las Tablas~\ref{tab:defectos}
+y~\ref{tab:versiones} del Capítulo~\ref{chap:desarrollo} se transcriben de la bitácora del proyecto
+y no de un artefacto del estudio, porque documentan el proceso de desarrollo y no una medición.
+
+Un segundo script comprueba que el proyecto sea portable antes de subirlo:
+
+\begin{quote}
+\ttfamily
+python latex/scripts/verify\_latex\_assets.py
+\end{quote}
+
+Verifica que no haya \textit{mojibake}, que todas las rutas de figura sean relativas y existan, que
+cada tabla incluida exista, que toda referencia cruzada tenga destino, que no queden figuras ni
+tablas generadas sin insertar y que no reaparezca ningún comando de bibliografía.
+
+\section{Compilación}
+
+El documento se compila con \textbf{XeLaTeX}, que lee UTF-8 de forma nativa y gestiona las fuentes
+con \texttt{fontspec}. En Overleaf basta seleccionar XeLaTeX como compilador y \artefacto{main.tex}
+como documento principal.
+
+\textbf{No se debe ejecutar Biber ni ningún motor de bibliografía.} El documento no usa
+\texttt{biblatex}: las citas están escritas en texto plano con formato autor-año y la bibliografía
+es un capítulo manual. El fichero \artefacto{latex/referencias.bib} se conserva únicamente como
+registro de los datos bibliográficos completos y no interviene en la compilación. Son necesarias dos
+pasadas para que el índice, el listado de figuras y el de tablas queden resueltos.

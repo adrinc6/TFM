@@ -1,0 +1,49 @@
+\begin{longtable}{lllp{0.34\linewidth}l}
+\caption{Catálogo cerrado completo: las 33 variables, su rejilla y el valor del ganador.}\label{tab:catalogo}\\
+\toprule
+Variable & Etapa & Predictiva & Valores del catálogo & Ganador \\
+\midrule
+\endfirsthead
+\toprule
+Variable & Etapa & Predictiva & Valores del catálogo & Ganador \\
+\midrule
+\endhead
+\midrule
+\multicolumn{5}{r}{\footnotesize Continúa en la página siguiente}\\
+\endfoot
+\bottomrule
+\endlastfoot
+feature\_preset & Representación & Sí & core, all & all \\
+meta\_method & Meta-agente & Sí & equal, stacked rolling free, stacked rolling bounded & stacked rolling bounded \\
+model\_family & Modelo & Sí & lightgbm, elastic net & lightgbm \\
+snapshot\_step\_months & Temporal & Sí & 1, 3, 6, 12 & 1 \\
+target\_size & Cartera informativa & No & 8, 12, 16, 25, 50 & 12 \\
+exit\_expected\_alpha\_bps & Cartera informativa & No & 0.0, 100.0, 250.0 & 100.0 \\
+fundamental\_momentum & Representación & Sí & False, True & True \\
+lgbm\_max\_depth & Modelo & Sí & 3, 4, 6 & 3 \\
+meta\_history\_quarters & Meta-agente & Sí & 8, 16 & 16 \\
+target\_horizon\_months & Temporal & Sí & 3, 6, 12 & 12 \\
+lgbm\_n\_estimators & Modelo & Sí & 100, 200, 400 & 100 \\
+market\_regime\_feature & Representación & Sí & False, True & False \\
+meta\_recency\_weighting & Meta-agente & Sí & off, linear, exponential & off \\
+rotation\_edge\_bps & Cartera informativa & No & 25.0, 50.0, 100.0 & 50.0 \\
+train\_lookback\_years & Temporal & Sí & 4, 8, 12 & 8 \\
+cash\_policy & Cartera informativa & No & fully invested, opportunity cash & opportunity cash \\
+max\_cash\_weight & Cartera informativa & No & 0.0, 0.1, 0.25 & 0.25 \\
+minimum\_holding\_period & Cartera informativa & No & none, quarter horizon, half horizon, full horizon & none \\
+execution\_lag\_days & Temporal & Sí & 30, 45, 60 & 60 \\
+lgbm\_learning\_rate & Modelo & Sí & 0.03, 0.05, 0.1 & 0.03 \\
+neutralize\_by\_sector & Representación & Sí & False, True & False \\
+rebalance\_drift\_tolerance & Cartera informativa & No & 0.0, 0.1, 0.25 & 0.25 \\
+lgbm\_min\_child\_samples & Modelo & Sí & 20, 50, 100 & 50 \\
+price\_only\_strictness\_multiplier & Cartera informativa & No & 1.0, 1.5, 2.0 & 1.5 \\
+recency\_weighting & Temporal & Sí & off, linear, exponential & off \\
+winsorization & Representación & Sí & 0.0, 0.01, 0.025 & 0.0 \\
+price\_only\_sell\_only & Cartera informativa & No & False, True & False \\
+max\_features\_per\_agent & Representación & Sí & 8, 12, 20 & 12 \\
+objective & Temporal & Sí & rank regression, ranking & rank regression \\
+sizing\_mode & Cartera informativa & No & equal, alpha proportional & alpha proportional \\
+commission\_bps & Cartera informativa & No & 0.0, 5.0, 10.0 & 5.0 \\
+feature\_weighting\_mode & Representación & Sí & model native, oos stability prune & oos stability prune \\
+slippage\_bps & Cartera informativa & No & 5.0, 10.0, 20.0 & 10.0 \\
+\end{longtable}

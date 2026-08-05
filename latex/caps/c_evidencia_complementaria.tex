@@ -1,6 +1,76 @@
 \chapter{Evidencia complementaria}
+\label{anexo:evidencia}
 
-Los artefactos conservan posiciones, órdenes, pesos del meta, diagnósticos por cohorte, perfiles y
-resultados por semilla. Se incluyen para auditoría y para facilitar replicaciones, pero las
-conclusiones del texto principal se apoyan únicamente en las métricas y contrastes explicitados en
-el Capítulo~\ref{chap:resultados}.
+\section{Inventario de artefactos}
+
+El estudio persiste bastante más evidencia de la que el texto principal utiliza. Se documenta aquí
+para auditoría y para facilitar replicaciones, con sus dimensiones reales, de modo que quien quiera
+verificar una cifra sepa dónde buscarla.
+
+\begin{description}[leftmargin=0.5cm,style=nextline,font=\normalfont\ttfamily\small]
+  \item[evidence/equity.parquet] 135 filas $\times$ 15 columnas. Serie mensual de la cartera y del
+  \textit{benchmark} entre abril de 2015 y junio de 2026, con retornos, rotación, arrastre de costes
+  y peso en efectivo por snapshot.
+  \item[evidence/annual\_metrics.parquet] 12 $\times$ 9. Resultado por año, de 2015 a 2026.
+  \item[evidence/orders.parquet] 635 $\times$ 12. Cada orden emitida, con su motivo declarado,
+  precios, comisión, \textit{slippage} y resultado realizado.
+  \item[evidence/positions.parquet] Posiciones por snapshot.
+  \item[evidence/meta\_weights.parquet] 675 $\times$ 6. Peso asignado a cada agente en cada fecha,
+  con el estado que indica si fue aprendido o de reparto uniforme.
+  \item[evidence/rank\_ic\_diagnostics.parquet] 861 $\times$ 6. Rank-IC por agente y fecha: siete
+  señales sobre 123 cohortes.
+  \item[evidence/rank\_tail\_diagnostics.parquet] 123 $\times$ 16. Comportamiento de las colas y
+  concentración de los pesos del meta-agente.
+  \item[evidence/signal\_health.parquet] 135 $\times$ 7. Rank-IC contraído observable en cada
+  snapshot, con memorias de ocho y dieciséis trimestres.
+  \item[evidence/feature\_diagnostics.parquet] 73 $\times$ 6. Cobertura, Rank-IC univariante e
+  importancia por variable.
+  \item[evidence/agent\_scores.parquet] 60.380 $\times$ 26. Puntuación de cada agente para cada
+  valor y snapshot.
+  \item[evidence/model\_feature\_attribution.parquet] 1.509 $\times$ 6. Coeficientes por agente y
+  fecha de reajuste.
+  \item[evidence/profiles/] Ocho perfiles, cada uno con su propia curva de patrimonio, métricas
+  anuales, órdenes y posiciones.
+  \item[portfolio\_comparison.parquet] 23 $\times$ 39. El barrido diagnóstico de cartera.
+  \item[robustness.json, attribution.json, decisions.json] Contrastes de robustez, atribución
+  factorial y traza completa de decisiones con todos sus candidatos.
+\end{description}
+
+\section{Los catorce controles de neutralización}
+
+La neutralización de estilo del Capítulo~\ref{chap:resultados} regresa la señal contra estos
+catorce controles antes de recalcular el Rank-IC: \texttt{factor\_pe}, \texttt{factor\_pb},
+\texttt{factor\_ps}, \texttt{factor\_ev\_ebitda}, \texttt{factor\_relative\_return\_12m},
+\texttt{factor\_momentum\_12\_1}, \texttt{factor\_realized\_vol\_63d},
+\texttt{factor\_realized\_vol\_126d}, \texttt{factor\_beta\_252d}, \texttt{factor\_roe},
+\texttt{factor\_roic}, \texttt{factor\_operating\_margin}, \texttt{factor\_eps\_growth\_yoy} y
+\texttt{factor\_sales\_per\_share\_growth\_yoy}.
+
+\section{Limitación de trazabilidad: las distribuciones nulas}
+
+Hay una limitación de los artefactos que conviene declarar de forma explícita, porque afecta a cómo
+se han podido representar tres contrastes de robustez.
+
+El estudio persiste los \emph{estadísticos-resumen} de los contrastes basados en simulación, pero no
+las distribuciones que los generaron. Del test de permutación se conservan el $p$-valor, el número
+de réplicas y el Rank-IC observado, pero no los 9.999 valores individuales. Del \textit{bootstrap}
+por bloques se conservan los extremos del intervalo, pero no las remuestras. De las carteras
+aleatorias se conservan la media, la mediana, el percentil 95 y el percentil que ocupa el modelo,
+pero no las 1.000 simulaciones.
+
+En consecuencia, las Figuras~\ref{fig:permutacion},~\ref{fig:bootstrap} y~\ref{fig:aleatorias}
+representan estadísticos-resumen y no histogramas de la distribución nula. Un histograma habría sido
+visualmente más contundente, pero exigiría simular una distribución plausible a partir de los
+resúmenes, lo que equivaldría a presentar datos inventados con apariencia de medición. Se ha
+preferido representar únicamente lo que existe.
+
+Corregir esta limitación exigiría reejecutar el estudio persistiendo las réplicas, lo que
+contradice la decisión de congelarlo explicada en la Sección~\ref{sec:reproducibilidad}. Queda
+anotada como mejora para futuras ejecuciones: el coste de almacenamiento es despreciable frente al
+valor probatorio de poder mostrar la distribución completa.
+
+\section{Alcance de las conclusiones}
+
+Las conclusiones del texto principal se apoyan únicamente en las métricas y contrastes explicitados
+en el Capítulo~\ref{chap:resultados}. El resto de los artefactos aquí inventariados se conserva para
+auditoría y no sostiene ninguna afirmación que no aparezca respaldada en el cuerpo del documento.

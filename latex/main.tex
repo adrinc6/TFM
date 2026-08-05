@@ -23,6 +23,12 @@
 % --- Matemáticas y notación ------------------------------------------
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{amsthm}
+% Entornos numerados por capítulo. 'proposicion' se usa en el capítulo de
+% metodología para enunciar la ausencia de fuga temporal de forma formal.
+\newtheorem{proposicion}{Proposición}[chapter]
+\theoremstyle{definition}
+\newtheorem{ejemplo}{Ejemplo}[chapter]
 
 % --- Figuras y tablas ------------------------------------------------
 \usepackage{graphicx}
@@ -33,19 +39,23 @@
 \usepackage{caption}
 \usepackage{float}
 \usepackage{xcolor}
+\usepackage{multirow}    % celdas agrupadas (catálogo de features por bloque)
+\usepackage{makecell}    % cabeceras a dos líneas en las tablas anchas
+\usepackage{pdflscape}   % el catálogo cerrado de 33 variables va apaisado
+\usepackage{enumitem}    % listas compactas en limitaciones y anexos
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,shapes.geometric}
 \usepackage{siunitx}
 \sisetup{output-decimal-marker={,},group-separator={.},group-minimum-digits=4}
 
 % --- Enlaces y citas -------------------------------------------------
-\usepackage{csquotes}
-% Bibliografía autor-año (ligera y rápida). Se eligió el estilo 'authoryear'
-% en vez de 'apa' porque este último (paquete biblatex-apa) es pesado y en el
-% plan gratuito de Overleaf ralentiza mucho la compilación. Sigue siendo
-% autor-año, coherente con las citas \textcite/\parencite del texto.
-\usepackage[style=authoryear,backend=biber,natbib=true]{biblatex}
-\addbibresource{referencias.bib}
+\usepackage{csquotes}   % lo usa babel para las comillas españolas
+% NO se usa biblatex ni biber: la cadena biblatex+biber impedía compilar el
+% documento. Con doce referencias, la bibliografía se escribe a mano como un
+% capítulo más (caps/10_bibliografia.tex) y las citas del texto son autor-año
+% en texto plano: «Autor (año)» o «(Autor, año)». El fichero referencias.bib
+% se conserva como registro de los datos bibliográficos completos, pero no
+% interviene en la compilación.
 
 \usepackage[hidelinks]{hyperref}   % enlaces internos sin recuadros de color
 
@@ -58,6 +68,10 @@
 \newcommand{\hlabel}{h}
 % Coeficiente de información por rango (rank-IC).
 \newcommand{\rankic}{\text{rank-IC}}
+% Identificador del único Study del que procede toda la evidencia del TFM.
+\newcommand{\studyid}{\texttt{study-20260803-201234-b4d7a8d8}}
+% Ruta a un artefacto persistido. Homogeneiza las menciones a ficheros.
+\newcommand{\artefacto}[1]{\texttt{#1}}
 
 % --- Metadatos -------------------------------------------------------
 % Portada provisional. Sustituir por la portada oficial del máster cuando
@@ -71,7 +85,12 @@
 \begin{document}
 
 \maketitle
+
+\input{caps/00_resumen}
+
 \tableofcontents
+\listoffigures
+\listoftables
 
 \input{caps/01_introduccion}
 \input{caps/02_estado_del_arte}
@@ -80,14 +99,14 @@
 \input{caps/05_agentes_y_meta_agente}
 \input{caps/06_diseno_experimental}
 \input{caps/07_resultados}
-\input{caps/08_limitaciones}
-\input{caps/09_conclusiones}
+\input{caps/08_desarrollo}
+\input{caps/09_limitaciones}
+\input{caps/10_conclusiones}
+\input{caps/10_bibliografia}
 
 \appendix
 \input{caps/a_reproducibilidad}
 \input{caps/b_catalogo_protocolo}
 \input{caps/c_evidencia_complementaria}
-
-\printbibliography[heading=bibintoc]
 
 \end{document}

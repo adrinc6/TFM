@@ -1,0 +1,104 @@
+\chapter{Conclusiones y trabajo futuro}
+
+El sistema aprende una ordenación transversal fuera de muestra: su Rank-IC medio es 0,1004, supera
+los baselines deterministas y se mantiene positivo tras placebos, permutación, bootstrap, exclusión
+de eras, semillas y neutralización por estilo. El meta-agente aporta valor frente al promedio
+equiponderado porque aprende a reponderar especialistas a partir de cohortes cerradas.
+
+La traducción económica es positiva en la ventana de selección y en los dos años reservados. Sin
+embargo, la conclusión no es una promesa de inversión: el Deflated Sharpe no supera el umbral, la
+muestra efectiva es pequeña y la confirmación de Rank-IC en la era reservada aún no tiene potencia.
+La contribución defendible del TFM es metodológica: demuestra cómo separar señal, selección,
+robustez y cartera en un sistema de aprendizaje financiero reproducible.
+
+La prioridad futura no es añadir complejidad al modelo, sino elevar el coeficiente de transferencia:
+ampliar el número de posiciones, reducir rotación, estudiar sizing por convicción y probar costes
+dependientes de liquidez. También será necesario esperar el cierre de nuevas cohortes reservadas y
+replicar el protocolo en otros universos y regímenes.
+
+\section{Respuesta a la pregunta de investigación}
+
+La respuesta es afirmativa con condiciones. Dentro del universo, periodo y protocolo definidos, los
+cinco agentes y su meta producen una ordenación transversal con Rank-IC positivo, superior a los
+baselines incluidos y estable frente a contrastes adversariales. El meta parte de pesos iguales y
+aprende de cohortes cerradas, por lo que su comportamiento no se reduce a fijar de antemano el
+especialista ganador.
+
+La respuesta económica es positiva pero más acotada. La cartera supera a SPY en selección y en los
+dos años reservados neta de los costes modelados. Sin embargo, el Deflated Sharpe y la muestra
+efectiva impiden transformar esa observación en una promesa de superioridad ajustada por riesgo. La
+formulación defendible es que el ranking tiene evidencia predictiva robusta y que su implementación
+es económicamente compatible con esa señal bajo restricciones declaradas.
+
+\section{Contribución y agenda}
+
+La contribución principal es un protocolo auditable: separa fecha de publicación y cierre fiscal,
+etiqueta futura y entrada de entrenamiento, selección predictiva y cartera, y evidencia de selección
+y confirmación reservada. Los artefactos permiten reconstruir configuraciones, pesos, decisiones,
+figuras y tablas. Esta disciplina es transferible a otros problemas de ML financiero incluso si el
+ranking concreto no se replica.
+
+El trabajo futuro debe priorizar la transferencia antes que añadir complejidad al modelo: estudiar
+tamaño de cartera, sizing, costes y rebalanceo sin reabrir la selección predictiva. Después debe
+reducirse la multiplicidad con un catálogo pre-registrado, esperar etiquetas reservadas y replicar
+el protocolo en otros universos. Cada extensión debe preservar la observabilidad temporal que hace
+interpretables los resultados actuales.
+
+\section{Agenda ordenada por prioridad}
+
+El barrido diagnóstico del Capítulo~\ref{chap:resultados} no sólo señala dónde está el cuello de
+botella: indica en qué orden conviene atacarlo.
+
+\begin{enumerate}[leftmargin=*,itemsep=0.4em]
+  \item \textbf{Medir el mínimo de tenencia como variable de pleno derecho.} Es la intervención con
+  mejor relación entre evidencia disponible y esfuerzo: el barrido ya sugiere que
+  \texttt{half\_horizon} domina simultáneamente en exceso, IR y rotación. Convertirlo en una
+  decisión medida --- y no heredada del valor recomendado --- exigiría declararlo antes de observar
+  el resultado, para no incurrir en la selección por rentabilidad que el protocolo prohíbe.
+  \item \textbf{Resolver el conflicto entre cadencia y rotación.} La cadencia mensual ganó la primera
+  decisión con una ventaja clara, pero es también la causa estructural del 359\,\% de rotación:
+  re-decidir cada mes sobre una señal a doce meses. Separar la frecuencia de \emph{evaluación} de la
+  de \emph{ejecución} permitiría conservar las 117 cohortes sin pagar la rotación asociada.
+  \item \textbf{Reducir el catálogo antes de volver a ejecutar.} El Deflated Sharpe penaliza por las
+  66 configuraciones ensayadas. Un catálogo pre-registrado más estrecho, que fije de antemano las
+  variables cuyo valor no se espera que cambie, elevaría la probabilidad deflactada sin necesidad de
+  mejorar el modelo.
+  \item \textbf{Esperar el cierre de cohortes reservadas.} La confirmación predictiva de 2025--2026
+  es hoy indeterminada por falta de etiquetas cerradas, no por resultado adverso. Es la única
+  limitación de esta lista que se resuelve sola con el paso del tiempo.
+  \item \textbf{Investigar por qué domina \textit{risk}.} Que un solo agente supere al conjunto en
+  las cuatro eras es el resultado menos explicado del trabajo. Puede ser una prima de baja
+  volatilidad conocida, un artefacto del universo de gran capitalización o una interacción con el
+  horizonte de doce meses; distinguirlo exige un diseño específico.
+\end{enumerate}
+
+Obsérvese que ninguna de las cinco prioridades consiste en usar un modelo más potente. El sistema
+captura una cuarta parte de la señal que ya tiene; mejorar la señal antes de resolver la
+transferencia sería optimizar el término equivocado.
+
+\section{Qué aprendería quien repitiera este trabajo}
+
+Algunas lecciones del desarrollo, documentadas en el Capítulo~\ref{chap:desarrollo}, son
+independientes del dominio financiero y probablemente más reutilizables que el resultado empírico.
+
+La primera es que declarar no es computar. Un catálogo puede describir variables que el código nunca
+calcula, y el sistema seguirá produciendo resultados plausibles: la comprobación de que lo declarado
+coincide con lo computado debe ser automática, porque no es observable a simple vista.
+
+La segunda es que una puerta estadística puede fallar en la dirección contraria a la esperada. La
+regla de no inferioridad de este proyecto penalizaba a los candidatos superiores porque su intervalo
+era más ancho, y el síntoma no fue un error sino una regularidad sospechosa: nadie resultaba
+elegible nunca.
+
+La tercera es que la ausencia de excepción no es evidencia de corrección. Un modelo que devuelve una
+constante, una calibración que colapsa, una política de cartera que cobra costes de operaciones no
+ejecutadas: todos terminaron su ejecución con éxito aparente y escribieron sus artefactos.
+
+La cuarta es sobre estimadores. Un diagnóstico por deciles basado en la media sugirió durante un
+tiempo que la ordenación estaba invertida en todo el histórico; con la mediana, la conclusión se
+invertía. Antes de rediseñar un sistema conviene comprobar que el estadístico empleado para
+diagnosticarlo sea robusto a la distribución que realmente tienen los datos.
+
+La quinta, y la más incómoda, es que conviene registrar las decisiones tomadas en contra de la
+recomendación técnica, con ambos lados del argumento. No mejoran el resultado, pero son
+precisamente las que un lector externo no podría reconstruir desde el código.
