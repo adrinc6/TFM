@@ -1,4 +1,5 @@
 \chapter{Estado del arte}
+\label{chap:estado-arte}
 
 La inversión factorial documenta diferencias transversales asociadas a valor, tamaño y mercado
 (Fama y French, 1992, 1993), así como a momentum (Jegadeesh y Titman, 1993) y
@@ -85,27 +86,6 @@ Inferencia con múltiples pruebas & Penalización del \textit{data snooping} & P
 López de Prado et al. (2014).}
 \end{table}
 
-\section{Medición de señal: Rank-IC, amplitud y transferencia}
-
-La métrica elegida es la correlación de rangos y no el error cuadrático de una predicción puntual.
-Para seleccionar acciones importa más ordenar correctamente dos empresas que estimar con precisión
-el retorno porcentual de cada una. La correlación de Spearman es además robusta a transformaciones
-monótonas del score: si un modelo cambia la escala pero no el orden, su Rank-IC no cambia.
-
-Un Rank-IC no debe presentarse aislado. Su estabilidad se describe mediante la fracción de cohortes
-positivas, su dispersión, intervalos por bloques y el IC-IR, definido como la media de Rank-IC
-dividida por su desviación típica. Cuando las etiquetas se solapan, el número nominal de cohortes
-sobrestima la cantidad de información independiente; el uso de correcciones Newey--West y bloques
-de doce meses reconoce precisamente esa dependencia.
-
-La literatura de gestión activa también distingue señal de implementación. Una forma habitual de
-expresar esa idea relaciona el information ratio con el information coefficient, la amplitud de
-decisiones independientes y el coeficiente de transferencia. En este trabajo esa intuición se usa
-como marco, no como una identidad exacta: una cartera \textit{long-only} de doce nombres no puede
-expresar la parte negativa de un ranking ni operar sin fricciones. El análisis de perfiles mostrará
-que reordenar una señal con reglas estilísticas adicionales puede reducir, y no aumentar, el valor
-económico capturado.
-
 \section{Sesgos que condicionan la evidencia}
 
 El \textit{lookahead bias} aparece cuando una variable incorpora información que no era conocida en
@@ -125,14 +105,24 @@ En síntesis, la contribución del TFM no consiste en proponer un sexto factor. 
 arquitectura de aprendizaje con una separación explícita entre datos disponibles, modelo elegido,
 robustez y cartera. Ese posicionamiento condiciona todos los capítulos posteriores.
 
-\section{Señal e implementación: por qué se miden por separado}
+\section{Medición de señal, amplitud y transferencia: Rank-IC como criterio de selección}
 
-Existe una relación clásica en gestión activa que conviene enunciar aquí, aunque este trabajo la use
-como marco conceptual y no como identidad exacta. El \textit{information ratio} alcanzable por un
-gestor depende aproximadamente de tres factores: la calidad de su señal, medida por el
-\textit{information coefficient}; la amplitud, es decir, el número de decisiones aproximadamente
-independientes que puede tomar; y el coeficiente de transferencia, que mide qué proporción de esa
-señal llega efectivamente a la cartera.
+La métrica elegida para seleccionar el sistema es la correlación de rangos y no el error cuadrático
+de una predicción puntual. Para seleccionar acciones importa más ordenar correctamente dos empresas
+que estimar con precisión el retorno porcentual de cada una. La correlación de Spearman es además
+robusta a transformaciones monótonas del score: si un modelo cambia la escala pero no el orden, su
+Rank-IC no cambia. Un Rank-IC no debe presentarse aislado: su estabilidad se describe mediante la
+fracción de cohortes positivas, su dispersión, intervalos por bloques y el IC-IR, definido como la
+media de Rank-IC dividida por su desviación típica. Cuando las etiquetas se solapan, el número
+nominal de cohortes sobrestima la cantidad de información independiente; el uso de correcciones
+Newey--West y bloques de doce meses reconoce precisamente esa dependencia.
+
+La literatura de gestión activa distingue además señal de implementación, y conviene enunciar aquí
+esa relación clásica, aunque este trabajo la use como marco conceptual y no como identidad exacta.
+El \textit{information ratio} alcanzable por un gestor depende aproximadamente de tres factores: la
+calidad de su señal, medida por el \textit{information coefficient}; la amplitud, es decir, el
+número de decisiones aproximadamente independientes que puede tomar; y el coeficiente de
+transferencia, que mide qué proporción de esa señal llega efectivamente a la cartera.
 
 \[
   \text{IR} \;\approx\; \text{IC} \times \sqrt{\text{amplitud}} \times \text{TC}

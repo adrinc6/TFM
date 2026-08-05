@@ -61,7 +61,7 @@ Todo el TFM se ordena alrededor de estas cinco afirmaciones, cada una con artefa
 3. Un capítulo solo se escribe con datos y resultados que existen. **Ninguna cifra entra en el `.tex`
    sin que se pueda señalar el artefacto exacto de donde sale.** Nada de cifras inventadas ni
    redondeadas «de memoria».
-4. Un `.tex` por capítulo, en `latex/caps/`, pensado para pegar directamente en Overleaf.
+4. Un `.tex` por capítulo, en `latex/assets/`, pensado para pegar directamente en Overleaf.
 5. Al cerrar un capítulo, se actualiza la tabla de estado de este documento.
 
 ## Decisiones de formato (acordadas)
@@ -73,7 +73,7 @@ Todo el TFM se ordena alrededor de estas cinco afirmaciones, cada una con artefa
 | Motor LaTeX | **XeLaTeX** + `biber`. UTF-8 nativo (sin `inputenc`), fuentes con `fontspec`. En Overleaf: Menu > Compiler: XeLaTeX. |
 | Granularidad | Capitulado clásico (9 capítulos, ver índice). |
 | Referencias | **Autor-año** con `biblatex` (`style=authoryear`, `backend=biber`), un único `referencias.bib`. Se evita `biblatex-apa` por pesado y lento en el plan gratuito de Overleaf. |
-| Figuras/tablas | Generadas por el script de exportación desde los artefactos del study, no dibujadas a mano. Se referencian por nombre desde `latex/figuras/`. |
+| Figuras/tablas | Generadas por el script de exportación desde los artefactos del study, no dibujadas a mano. Se referencian por nombre suelto desde `latex/assets/`, junto a los capítulos. |
 | Compilación | Subir `latex/` a Overleaf y seleccionar **XeLaTeX**. |
 
 **Pendiente de acordar** (no bloquea): portada oficial de la universidad (hay una provisional en
@@ -86,18 +86,28 @@ latex/
   plan_tfm.md          # este documento
   main.tex             # documento maestro: preámbulo + \input de cada capítulo
   referencias.bib
-  caps/
+  assets/               # capítulos, tablas y figuras, todo suelto sin subcarpetas
+    00_resumen.tex
     01_introduccion.tex
     02_estado_del_arte.tex
     03_datos_y_universo.tex
     04_diseno_metodologico.tex
-    05_agentes_y_meta_agente.tex
-    06_diseno_experimental.tex
-    07_resultados.tex
-    08_limitaciones.tex
-    09_conclusiones.tex
-  figuras/              # imágenes y tablas exportadas del study de referencia
-  tablas/               # .tex de tablas generadas, para \input desde los capítulos
+    05_desarrollo_metodo.tex       # historia del desarrollo (I): estudio único y contratos
+    06_agentes_y_meta_agente.tex
+    07_diseno_experimental.tex
+    08_desarrollo_cartera.tex      # historia del desarrollo (II): cartera y reproducibilidad
+    09_resultados.tex
+    10_limitaciones.tex
+    11_conclusiones.tex
+    12_bibliografia.tex
+    a_reproducibilidad.tex
+    b_catalogo_protocolo.tex
+    c_evidencia_complementaria.tex
+    t*.tex               # cuerpos de tabla generados, \input desde los capítulos
+    f*.png                # figuras generadas (no versionadas, ver .gitignore)
+  # Nota (2026-08): el capítulo de desarrollo se dividió en dos y el resto de ficheros se
+  # renumeró en cascada para que el prefijo vuelva a documentar el orden real de lectura;
+  # capítulos, tablas y figuras se unificaron en assets/ sin subcarpetas. Ver docs/bitacora.md.
 ```
 
 El preámbulo de `main.tex` fija paquetes, geometría, bibliografía y la notación compartida
@@ -106,8 +116,9 @@ reutilizan sin redefinirla.
 
 ## Índice de capítulos
 
-`caps/` está **vacío**: ningún capítulo se ha escrito todavía. Toda la evidencia necesaria existe,
-así que los nueve son redactables ya. El orden recomendado de redacción está en la última columna.
+Nota histórica: en la fase de planificación original `latex/caps/` estaba vacío y ningún capítulo se
+había escrito todavía. Desde agosto de 2026 todos los capítulos existen en `latex/assets/`, ver la
+estructura de carpetas más arriba.
 
 | # | Capítulo | Fuentes principales | Estado | Orden |
 |---|---|---|---|---|
@@ -448,10 +459,9 @@ imprescindible, **B** = recomendable.
 | F7.12 | Descomposición del coef. de transferencia | `attribution.json` → `transfer` | B |
 | T8.1 | Limitaciones con severidad y evidencia | `attribution.json`, bitácora | A |
 
-**Pendiente de implementar:** un script de exportación (p. ej. `module/reporting/export_latex.py`)
-que lea el study de referencia y escriba `latex/figuras/*.pdf` y `latex/tablas/*.tex`. Debe recibir
-el `study_id` como argumento y ser reejecutable, para que ninguna figura se genere a mano y todas
-queden trazadas a su artefacto. Figuras en PDF vectorial, tablas en `booktabs`.
+Nota histórica: este apartado describía un script de exportación aún no implementado. Desde
+`latex/scripts/export_study_assets.py` existe y escribe `latex/assets/f*.png` y `latex/assets/t*.tex`
+a partir del `study_id`, de forma reejecutable, con tablas en `booktabs`.
 
 ## Convenciones de escritura
 

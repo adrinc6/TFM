@@ -156,10 +156,9 @@ def load_paths(study_id: str) -> Paths:
     evidence = study / "evidence"
     if not (study / "winner.json").is_file() or not evidence.is_dir():
         raise FileNotFoundError(f"No se encontraron artefactos completos para {study_id}.")
-    figures, tables = LATEX / "figuras", LATEX / "tablas"
-    figures.mkdir(parents=True, exist_ok=True)
-    tables.mkdir(parents=True, exist_ok=True)
-    return Paths(study, evidence, figures, tables)
+    assets = LATEX / "assets"
+    assets.mkdir(parents=True, exist_ok=True)
+    return Paths(study, evidence, assets, assets)
 
 
 def read_json(path: Path) -> dict:
@@ -170,6 +169,12 @@ def save(fig: plt.Figure, output: Path) -> None:
     fig.tight_layout()
     fig.savefig(output, format="png", dpi=300, facecolor="white", bbox_inches="tight", pad_inches=0.03)
     plt.close(fig)
+
+
+def legend_below(ax: plt.Axes, ncol: int | None = None, anchor: float = -0.16) -> None:
+    """Leyenda horizontal centrada debajo del gráfico, para no solaparse con los datos."""
+    handles, labels = ax.get_legend_handles_labels()
+    ax.legend(handles, labels, ncol=ncol or len(labels), loc="upper center", bbox_to_anchor=(0.5, anchor), frameon=False)
 
 
 def table(path: Path, columns: list[str], rows: list[list[str]], align: str | None = None) -> None:
@@ -531,13 +536,15 @@ def write_tables_catalog(paths: Paths, catalog: dict, winner: dict, decisions: d
 
 
 def draw_meta_weights(weights: pd.DataFrame, output: Path) -> None:
+    weights = weights.copy()
+    weights["snapshot_date"] = pd.to_datetime(weights["snapshot_date"])
     wide = weights.pivot(index="snapshot_date", columns="agent", values="weight").sort_index()
     order = [a for a in ["quality", "value", "growth", "momentum", "risk"] if a in wide]
     colors = [SLATE, GOLD, TEAL, RED, NAVY]
     fig, ax = plt.subplots(figsize=(7.2, 3.6))
     ax.stackplot(wide.index, *[wide[a] for a in order], labels=order, colors=colors[: len(order)], alpha=0.93)
     ax.set(title="Evolución de los pesos del meta-agente", ylabel="Peso", ylim=(0, 1))
-    ax.legend(ncol=5, loc="upper center", bbox_to_anchor=(0.5, -0.19), frameon=False)
+    legend_below(ax)
     save(fig, output)
 
 
@@ -564,7 +571,7 @@ def draw_rank_ic(summary: dict, output: Path) -> None:
     ax.axhline(summary["summary"]["mean_rank_ic"], color=GOLD, linewidth=1.3, linestyle="--", label="Media de selección")
     ax.axvspan(pd.Timestamp("2025-01-01"), frame["date"].max(), color=GOLD, alpha=0.13, label="Era reservada")
     ax.set(title="Rank-IC por cohorte", ylabel="Rank-IC")
-    ax.legend(loc="lower left", frameon=False)
+    legend_below(ax, ncol=4)
     save(fig, output)
 
 
@@ -575,7 +582,7 @@ def draw_equity(equity: pd.DataFrame, output: Path) -> None:
     ax.plot(equity["snapshot_date"], equity["benchmark_value"], color=SLATE, linewidth=1.7, label="SPY")
     ax.axvspan(pd.Timestamp("2025-01-01"), equity["snapshot_date"].max(), color=GOLD, alpha=0.13, label="Era reservada")
     ax.set(title="Evolución acumulada: cartera frente a SPY", ylabel="Valor de 100 unidades monetarias")
-    ax.legend(loc="upper left", frameon=False)
+    legend_below(ax)
     save(fig, output)
 
 
@@ -588,7 +595,7 @@ def draw_drawdown(equity: pd.DataFrame, output: Path) -> None:
         ax.plot(equity["snapshot_date"], drawdown, color=color, linewidth=1.4, label=label)
     ax.set(title="Drawdown acumulado", ylabel="Drawdown")
     ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter(1, decimals=0))
-    ax.legend(loc="lower left", frameon=False)
+    legend_below(ax)
     save(fig, output)
 
 
@@ -634,7 +641,7 @@ def draw_placebos(robustness: dict, observed: float, output: Path) -> None:
     ax.axhline(observed, color=NAVY, linewidth=2, label="Sistema observado")
     ax.axhline(0, color="black", linewidth=0.8)
     ax.set(title="Placebos de etiqueta frente al Rank-IC observado", xlabel="Semilla del placebo", ylabel="Rank-IC medio")
-    ax.legend(frameon=False, loc="upper left")
+    legend_below(ax)
     save(fig, output)
 
 
@@ -705,7 +712,7 @@ def draw_meta_weights_annual(weights: pd.DataFrame, output: Path) -> None:
         ax.bar(wide.index.astype(str), wide[agent], bottom=bottom, color=color, label=agent, width=0.78)
         bottom += wide[agent].to_numpy()
     ax.set(title="Peso medio anual del meta-agente por agente", ylabel="Peso medio", ylim=(0, 1))
-    ax.legend(ncol=5, loc="upper center", bbox_to_anchor=(0.5, -0.13), frameon=False)
+    legend_below(ax)
     save(fig, output)
 
 
@@ -717,7 +724,7 @@ def draw_meta_concentration(tails: pd.DataFrame, output: Path) -> None:
     ax.plot(frame["prediction_date"], frame["meta_weight_max"], color=TEAL, linewidth=1.5, label="Peso máximo")
     ax.axhline(0.5, color=GOLD, linewidth=1.2, linestyle="--", label="Tope de la variante acotada")
     ax.set(title="Concentración de los pesos del meta-agente", ylabel="Proporción")
-    ax.legend(loc="lower right", frameon=False)
+    legend_below(ax)
     save(fig, output)
 
 
@@ -794,13 +801,13 @@ def draw_permutation(robustness: dict, output: Path) -> None:
         yticks=[],
         ylim=(-0.5, 1.05),
     )
-    ax.legend(loc="upper left", frameon=False)
+    legend_below(ax)
     save(fig, output)
 
 
 def draw_random_portfolios(robustness: dict, output: Path) -> None:
     scenarios = [("general", "Aleatorias generales"), ("risk_matched", "Riesgo emparejado")]
-    fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.3), sharey=False)
+    fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.5), sharey=False)
     for ax, (key, title) in zip(axes, scenarios):
         data = robustness["random_portfolios"][key]
         labels = ["Mediana", "Media", "Percentil 95"]
@@ -810,7 +817,9 @@ def draw_random_portfolios(robustness: dict, output: Path) -> None:
         ax.set(title=f"{title}\npercentil {num(100 * data['model_percentile'], 1)}", ylabel="CAGR" if key == "general" else None)
         ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter(1, decimals=0))
         ax.tick_params(axis="x", labelsize=7.5)
-        ax.legend(loc="upper left", frameon=False, fontsize=7.5)
+        ax.margins(y=0.18)
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, ncol=len(labels), loc="upper center", bbox_to_anchor=(0.5, 0.02), frameon=False)
     save(fig, output)
 
 
@@ -841,7 +850,7 @@ def draw_seed_dispersion(robustness: dict, output: Path) -> None:
     ax.set(title="Dispersión entre semillas (42, 7 y 2026)", yticks=range(len(available)))
     ax.set_yticklabels([f"{label}{'  (%)' if scale != 1 else ''}" for _, label, scale in available], fontsize=8)
     ax.invert_yaxis()
-    ax.legend(loc="lower right", frameon=False)
+    legend_below(ax)
     save(fig, output)
 
 
@@ -892,8 +901,9 @@ def draw_portfolio_sweep(sweep: pd.DataFrame, baseline: dict, output: Path) -> N
     ax.annotate(
         f"{best.variable_id}\n→ {tex_free(best.diagnostic_value)}",
         (best.annualized_turnover, best.geometric_excess_return),
-        xytext=(10, -4),
+        xytext=(-8, -22),
         textcoords="offset points",
+        ha="right",
         fontsize=7.5,
         color=GREEN,
     )
@@ -903,7 +913,8 @@ def draw_portfolio_sweep(sweep: pd.DataFrame, baseline: dict, output: Path) -> N
     # El rango útil es de apenas tres puntos porcentuales: sin decimal, todas
     # las etiquetas colapsarían en el mismo «2 %».
     ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter(1, decimals=1))
-    ax.legend(loc="lower right", frameon=False)
+    ax.margins(y=0.14)
+    legend_below(ax)
     save(fig, output)
 
 
@@ -938,7 +949,7 @@ def draw_tail_spread(tails: pd.DataFrame, output: Path) -> None:
     ax.axvspan(pd.Timestamp("2025-01-01"), frame["prediction_date"].max(), color=GOLD, alpha=0.13, label="Era reservada")
     ax.set(title="Ventaja del decil superior sobre el universo", ylabel="Exceso medio")
     ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter(1, decimals=0))
-    ax.legend(loc="upper left", frameon=False)
+    legend_below(ax)
     save(fig, output)
 
 
@@ -951,7 +962,7 @@ def draw_signal_health(health: pd.DataFrame, output: Path) -> None:
     ax.axhline(0, color="black", linewidth=0.8)
     ax.axvspan(pd.Timestamp("2025-01-01"), frame["snapshot_date"].max(), color=GOLD, alpha=0.13, label="Era reservada")
     ax.set(title="Salud de la señal observable en cada snapshot", ylabel="Rank-IC contraído")
-    ax.legend(loc="lower left", frameon=False)
+    legend_below(ax)
     save(fig, output)
 
 
@@ -965,8 +976,8 @@ def draw_feature_blocks(features: pd.DataFrame, output: Path) -> None:
     colors = diverging_colors(grouped["rank_ic"], float(grouped["rank_ic"].abs().max()))
     ax.barh([str(name).replace("_", " ") for name in grouped.index], grouped["rank_ic"], color=colors)
     for index, (value, count, coverage) in enumerate(zip(grouped["rank_ic"], grouped["n"], grouped["coverage"])):
-        offset = 0.0006 if value >= 0 else -0.0006
-        ax.text(value + offset, index, f"{count} vars · cob. {100 * coverage:.0f} %".replace(".", ","), va="center", ha="left" if value >= 0 else "right", fontsize=7.5)
+        label_x = value + 0.0006 if value >= 0 else 0.0006
+        ax.text(label_x, index, f"{count} vars · cob. {100 * coverage:.0f} %".replace(".", ","), va="center", ha="left", fontsize=7.5)
     ax.axvline(0, color="black", linewidth=0.8)
     ax.set(title="Rank-IC univariante medio por bloque de features", xlabel="Rank-IC univariante medio")
     ax.margins(x=0.22)
@@ -1059,7 +1070,7 @@ def draw_coverage(attribution: dict, output: Path) -> None:
     ax2.set_ylim(0.9, 1.005)
     lines, labels = ax1.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
-    ax1.legend(lines + lines2, labels + labels2, loc="lower right", frameon=False)
+    ax1.legend(lines + lines2, labels + labels2, ncol=2, loc="upper center", bbox_to_anchor=(0.5, -0.16), frameon=False)
     save(fig, output)
 
 
@@ -1168,8 +1179,8 @@ def main() -> None:
             "evidence/rank_tail_diagnostics.parquet", "evidence/signal_health.parquet",
             "evidence/feature_catalog.json", "evidence/feature_diagnostics.parquet",
         ],
-        "figures": sorted(path.name for path in paths.figures.glob("*.png")),
-        "tables": sorted(path.name for path in paths.tables.glob("*.tex")),
+        "figures": sorted(path.name for path in paths.figures.glob("f*.png")),
+        "tables": sorted(path.name for path in paths.tables.glob("t*.tex")),
     }
     (LATEX / "asset_manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 

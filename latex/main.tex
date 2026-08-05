@@ -6,7 +6,8 @@
 % fontspec. La bibliografía es autor-año con biblatex + biber.
 %
 % Estructura y convenciones: ver latex/plan_tfm.md.
-% Cada capítulo es un fichero en caps/ que se incorpora con \input al final.
+% Cada capítulo es un fichero en assets/ que se incorpora con \input al final.
+% Capítulos, tablas y figuras conviven sueltos en assets/, sin subcarpetas.
 % =====================================================================
 \documentclass[11pt,a4paper]{report}
 
@@ -52,7 +53,7 @@
 \usepackage{csquotes}   % lo usa babel para las comillas españolas
 % NO se usa biblatex ni biber: la cadena biblatex+biber impedía compilar el
 % documento. Con doce referencias, la bibliografía se escribe a mano como un
-% capítulo más (caps/10_bibliografia.tex) y las citas del texto son autor-año
+% capítulo más (assets/12_bibliografia.tex) y las citas del texto son autor-año
 % en texto plano: «Autor (año)» o «(Autor, año)». El fichero referencias.bib
 % se conserva como registro de los datos bibliográficos completos, pero no
 % interviene en la compilación.
@@ -86,27 +87,28 @@
 
 \maketitle
 
-\input{caps/00_resumen}
+\input{assets/00_resumen}
 
 \tableofcontents
 \listoffigures
 \listoftables
 
-\input{caps/01_introduccion}
-\input{caps/02_estado_del_arte}
-\input{caps/03_datos_y_universo}
-\input{caps/04_diseno_metodologico}
-\input{caps/05_agentes_y_meta_agente}
-\input{caps/06_diseno_experimental}
-\input{caps/07_resultados}
-\input{caps/08_desarrollo}
-\input{caps/09_limitaciones}
-\input{caps/10_conclusiones}
-\input{caps/10_bibliografia}
+\input{assets/01_introduccion}
+\input{assets/02_estado_del_arte}
+\input{assets/03_datos_y_universo}
+\input{assets/04_diseno_metodologico}
+\input{assets/05_desarrollo_metodo}
+\input{assets/06_agentes_y_meta_agente}
+\input{assets/07_diseno_experimental}
+\input{assets/08_desarrollo_cartera}
+\input{assets/09_resultados}
+\input{assets/10_limitaciones}
+\input{assets/11_conclusiones}
+\input{assets/12_bibliografia}
 
 \appendix
-\input{caps/a_reproducibilidad}
-\input{caps/b_catalogo_protocolo}
-\input{caps/c_evidencia_complementaria}
+\input{assets/a_reproducibilidad}
+\input{assets/b_catalogo_protocolo}
+\input{assets/c_evidencia_complementaria}
 
 \end{document}

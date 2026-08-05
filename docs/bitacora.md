@@ -1,5 +1,69 @@
 # Bitácora
 
+## 2026-08-05 · Manuscrito: unificación de capítulos, tablas y figuras en `latex/assets/`
+
+### Decisión
+
+Fusionar `latex/caps/`, `latex/figuras/` y `latex/tablas/` en una única carpeta plana
+`latex/assets/`, sin subcarpetas: los 16 capítulos `.tex`, las 25 tablas `.tex` y las figuras `.png`
+conviven sueltos ahí. Es una reorganización de rutas, no de contenido: ninguna cifra ni artefacto
+cambia.
+
+### Cambios
+
+1. `main.tex` pasa a incluir capítulos con `\input{assets/...}`; dentro de cada capítulo, las
+   referencias a tablas y figuras pierden el prefijo de subcarpeta (`\input{tXX_...}`,
+   `\includegraphics{fXX_...}`).
+2. `latex/scripts/export_study_assets.py`: `load_paths()` escribe figuras y tablas directamente en
+   `latex/assets/`; el manifiesto filtra por prefijo (`f*.png`, `t*.tex`) para no listar los
+   capítulos como si fueran tablas generadas.
+3. `latex/scripts/verify_latex_assets.py` reescrito para la estructura plana: exige que
+   `\includegraphics`/`\input` de tablas no lleven subcarpeta, y que `\input` de capítulos use el
+   prefijo `assets/`.
+4. `latex/plan_tfm.md` actualizado con la nueva estructura de carpetas.
+
+## 2026-08-05 · Manuscrito: reordenación de capítulos para lectura lineal, sin cambio de evidencia
+
+### Decisión
+
+Reorganizar la prosa y el orden de los capítulos del manuscrito LaTeX para que una lectura lineal,
+de principio a fin, no obligue a saltos ni a relecturas. Ningún artefacto, cifra, tabla ni figura
+cambia; es una reorganización puramente editorial sobre el mismo estudio `study-20260803-201234-b4d7a8d8`.
+
+### Motivo
+
+El capítulo 8, «Proceso de desarrollo, defectos encontrados y decisiones», vivía después del
+capítulo de Resultados, pero varios capítulos anteriores (4, 5, 6, 7) ya lo citaban o daban por
+sabido su contenido —por ejemplo, la «salvaguarda de la curva de alfa» se usaba en el capítulo de
+diseño experimental sin definirse, y sólo se explicaba en el capítulo 8, leído después—. Además
+había tres duplicaciones de contenido casi textuales (la advertencia de reproducibilidad v5/v6
+repetida tres veces; dos secciones del capítulo de Resultados que resumían lo ya dicho en el mismo
+capítulo; el capítulo de Limitaciones repitiendo la narrativa causal de tres defectos ya contados en
+el capítulo 8) y una duplicación interna en Estado del arte (dos secciones explicando la misma
+fórmula IR≈IC·√amplitud·TC).
+
+### Cambios
+
+1. **División del capítulo de desarrollo en dos.** `05_desarrollo_metodo.tex` (historia I: estudio
+   único, contratos, puerta de no inferioridad, ponderación por recencia) se coloca tras el capítulo
+   de diseño metodológico. `08_desarrollo_cartera.tex` (historia II: rediseño de cartera, colapso
+   isotónico, advertencia de reproducibilidad) se coloca tras diseño experimental. Cada mitad
+   aparece justo antes de que su contenido se dé por sabido en el capítulo siguiente.
+2. **Renumeración en cascada** de todos los ficheros de `latex/caps/` para que el prefijo numérico
+   vuelva a documentar el orden real de lectura (01 a 12, más los tres anexos sin prefijo numérico).
+3. **Tres duplicaciones resueltas** con el patrón fuente única + remisión breve: la advertencia de
+   reproducibilidad queda íntegra sólo en `08_desarrollo_cartera.tex`; las dos secciones redundantes
+   de Resultados se eliminan/recortan; «Limitaciones heredadas del desarrollo» se recorta a la
+   consecuencia interpretativa, remitiendo al capítulo de desarrollo para la causa.
+4. **Fusión de la duplicación interna en Estado del arte**: las dos secciones sobre Rank-IC,
+   amplitud y transferencia se funden en una única sección.
+5. **Referencias cruzadas reapuntadas**: el label `chap:desarrollo` se divide en
+   `chap:desarrollo-metodo` y `chap:desarrollo-cartera`, y las siete citas existentes se reasignan al
+   capítulo correcto. Se añaden labels `chap:estado-arte` y `chap:datos`, ausentes hasta ahora, para
+   poder referenciarlos por macro en vez de número literal.
+6. **Números de capítulo en texto plano corregidos** a macros `\ref`: el resumen de organización del
+   capítulo de introducción y una referencia suelta en el capítulo de agentes.
+
 ## 2026-08-05 · Manuscrito: bibliografía manual, trazabilidad de robustez y ampliación a ~69 páginas
 
 ### Decisión

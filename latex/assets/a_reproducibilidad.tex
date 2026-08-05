@@ -21,14 +21,11 @@ selección fue \texttt{rank\_ic\_only}.
 
 \section{Advertencia sobre la reproducibilidad exacta}
 
-Como se documenta en la Sección~\ref{sec:reproducibilidad}, el estudio se ejecutó bajo la versión 5
-del catálogo cerrado, mientras que el código actual está en la versión 6. Los artefactos conservan
-su instantánea de catálogo y sus hashes, de modo que cualquier cifra de este documento es
-verificable contra ellos, pero \textbf{una reejecución con el código actual no produciría los mismos
-resultados} y no sería comparable con estudios de la versión 6.
-
-Esta discrepancia es deliberada: se optó por congelar el estudio en lugar de reejecutarlo, para
-evitar que el ganador cambiara una vez redactados los capítulos de resultados.
+El estudio se ejecutó bajo la versión 5 del catálogo cerrado, mientras que el código actual está en
+la versión 6: \textbf{una reejecución con el código actual no produciría los mismos resultados} y no
+sería comparable con estudios de la versión 6. El razonamiento completo --- por qué se optó por
+congelar el estudio en lugar de reejecutarlo, y qué queda garantizado pese a ello --- se documenta
+en la Sección~\ref{sec:reproducibilidad}.
 
 \section{Regeneración de figuras y tablas}
 
@@ -41,14 +38,14 @@ python latex/scripts/export\_study\_assets.py \\
 \hspace*{2em}--study-id study-20260803-201234-b4d7a8d8
 \end{quote}
 
-El script escribe los PNG a 300\,ppp en \artefacto{latex/figuras/} y los cuerpos de tabla en
-\artefacto{latex/tablas/}, y actualiza \artefacto{latex/asset\_manifest.json} con la lista de
+El script escribe los PNG a 300\,ppp y los cuerpos de tabla en \artefacto{latex/assets/}, junto al
+resto de capítulos, y actualiza \artefacto{latex/asset\_manifest.json} con la lista de
 artefactos consumidos. Ese manifiesto es la tabla de correspondencia entre cada salida del
 manuscrito y su origen: ninguna cifra generada por script entra en el documento sin quedar
 registrada allí.
 
 Dos elementos son la excepción y conviene declararlo: las Tablas~\ref{tab:defectos}
-y~\ref{tab:versiones} del Capítulo~\ref{chap:desarrollo} se transcriben de la bitácora del proyecto
+y~\ref{tab:versiones} del Capítulo~\ref{chap:desarrollo-metodo} se transcriben de la bitácora del proyecto
 y no de un artefacto del estudio, porque documentan el proceso de desarrollo y no una medición.
 
 Un segundo script comprueba que el proyecto sea portable antes de subirlo:

@@ -58,7 +58,7 @@ resultado no es una oscilación mecánica.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.94\textwidth]{figuras/f05_meta_pesos.png}
+  \includegraphics[width=0.94\textwidth]{assets/f05_meta_pesos.png}
   \caption{Pesos del meta-agente por fecha de snapshot. La franja inicial uniforme corresponde a
   la ausencia de etiquetas cerradas; las variaciones posteriores usan únicamente información ya
   observable. Fuente: \texttt{evidence/meta\_weights.parquet}.}
@@ -74,14 +74,14 @@ combinación añade información útil y no sólo reescala los scores.
   \centering
   \caption{Capacidad predictiva de los agentes y combinadores en 2015--2024.}
   \label{tab:agentes}
-  \input{tablas/t05_agentes.tex}
+  \input{assets/t05_agentes.tex}
   \caption*{Fuente: \texttt{evidence/rank\_ic\_diagnostics.parquet}. Desviación e IC-IR se calculan
   sobre cohortes cerradas de la ventana de selección.}
 \end{table}
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.90\textwidth]{figuras/f05_agentes_rankic.png}
+  \includegraphics[width=0.90\textwidth]{assets/f05_agentes_rankic.png}
   \caption{Rank-IC medio por señal; las barras de error muestran el error estándar de la media.
   Fuente: \texttt{evidence/rank\_ic\_diagnostics.parquet}.}
   \label{fig:agentes-rankic}
@@ -113,14 +113,14 @@ era, incluyendo la reservada a título informativo.
   \small
   \caption{Rank-IC medio por señal y era.}
   \label{tab:rankic-era}
-  \input{tablas/t05_rankic_era.tex}
+  \input{assets/t05_rankic_era.tex}
   \caption*{Fuente: \artefacto{evidence/rank\_ic\_diagnostics.parquet}. Las tres primeras columnas
   son ventana de selección; la cuarta es la era reservada y no intervino en ninguna decisión.}
 \end{table}
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.94\textwidth]{figuras/f05_rankic_era.png}
+  \includegraphics[width=0.94\textwidth]{assets/f05_rankic_era.png}
   \caption{Rank-IC por señal y era. El azul indica capacidad predictiva positiva y el rojo negativa;
   la línea vertical separa la era reservada. Fuente:
   \artefacto{evidence/rank\_ic\_diagnostics.parquet}.}
@@ -138,7 +138,7 @@ en positivo. El meta queda en $-0{,}0119$, prácticamente en cero.
 Que los cinco agentes se inviertan simultáneamente es informativo: apunta a una rotación de factores
 en el mercado y no a un error de signo en un modelo concreto, que afectaría a uno solo. Este mismo
 patrón fue el que motivó introducir la ponderación por recencia como variable del catálogo, según se
-documenta en el Capítulo~\ref{chap:desarrollo}. Debe leerse junto a la advertencia estadística del
+documenta en el Capítulo~\ref{chap:desarrollo-metodo}. Debe leerse junto a la advertencia estadística del
 Capítulo~\ref{chap:resultados}: son seis cohortes cerradas y una observación independiente efectiva,
 insuficiente para concluir que la capacidad predictiva se haya degradado.
 
@@ -152,14 +152,14 @@ ponderación año a año.
   \small
   \caption{Peso medio anual asignado por el meta-agente a cada especialista.}
   \label{tab:pesos-anual}
-  \input{tablas/t05_meta_pesos_anual.tex}
+  \input{assets/t05_meta_pesos_anual.tex}
   \caption*{Fuente: \artefacto{evidence/meta\_weights.parquet}. 2015 corresponde íntegramente al
   reparto uniforme por ausencia de cohortes cerradas.}
 \end{table}
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.94\textwidth]{figuras/f05_pesos_anual.png}
+  \includegraphics[width=0.94\textwidth]{assets/f05_pesos_anual.png}
   \caption{Peso medio anual por agente. Fuente: \artefacto{evidence/meta\_weights.parquet}.}
   \label{fig:pesos-anual}
 \end{figure}
@@ -193,7 +193,7 @@ tomó antes de observar esa era, que es cuando las decisiones de diseño tienen 
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.94\textwidth]{figuras/f05_concentracion.png}
+  \includegraphics[width=0.94\textwidth]{assets/f05_concentracion.png}
   \caption{Concentración de los pesos del meta-agente y peso máximo asignado, por fecha. Fuente:
   \artefacto{evidence/rank\_tail\_diagnostics.parquet}.}
   \label{fig:concentracion}
@@ -221,7 +221,8 @@ En cada snapshot el modelo recibe sólo la historia permitida. Si la fecha es ab
 ventana es de ocho años, el conjunto comienza aproximadamente en abril de 2012; una fila de finales
 de 2019 entra sólo si su etiqueta anual ya cerró. El ajuste se repite al avanzar el tiempo. Los
 parámetros ganadores ---profundidad 3, 100 estimadores, tasa 0,03 y mínimo de 50 observaciones por
-hoja--- limitan interacciones demasiado específicas; se eligieron con la regla del Capítulo 6, no
+hoja--- limitan interacciones demasiado específicas; se eligieron con la regla del
+Capítulo~\ref{chap:diseno-experimental}, no
 porque sean universales.
 
 Los scores se convierten a rangos porcentuales dentro de cada cohorte. Esta operación evita que la

@@ -1,4 +1,5 @@
 \chapter{Datos y universo de inversión}
+\label{chap:datos}
 
 El universo se reconstruye históricamente a partir de la pertenencia al S\&P 500. Una empresa sólo
 es elegible cuando pertenecía al índice en ese snapshot; por tanto, no se usa la composición actual
@@ -13,7 +14,7 @@ de restatements históricos que se discute en el Capítulo~\ref{chap:limitacione
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.93\textwidth]{figuras/f03_cobertura.png}
+\includegraphics[width=0.93\textwidth]{assets/f03_cobertura.png}
 \caption{Cobertura anual del universo histórico. Fuente: \texttt{attribution.json} →
 \texttt{universe\_coverage}.}
 \end{figure}
@@ -101,7 +102,7 @@ congelado, cuya interpretación se mantiene deliberadamente prudente en el Capí
 La Tabla~\ref{tab:cobertura-anual} documenta la cobertura año a año desde 2003, es decir, incluyendo
 los años que sólo se usan como historia de entrenamiento y nunca como cohortes de evaluación.
 
-\input{tablas/t03_cobertura_anual.tex}
+\input{assets/t03_cobertura_anual.tex}
 
 Dos observaciones sobre esa tabla. La primera es que el número de \textit{tickers} distintos crece
 de 278 en 2003 a más de 500 en los años recientes, lo que refleja que la reconstrucción de la
@@ -125,7 +126,7 @@ bloques con sus diagnósticos.
   \small
   \caption{Bloques de variables, agente asignado y diagnósticos univariantes.}
   \label{tab:features-bloque}
-  \input{tablas/t03_features_bloque.tex}
+  \input{assets/t03_features_bloque.tex}
   \caption*{Fuente: \artefacto{evidence/feature\_catalog.json} y
   \artefacto{evidence/feature\_diagnostics.parquet}. El Rank-IC univariante es el de cada variable
   por separado, sin modelo; la importancia es la media asignada por LightGBM.}
@@ -133,7 +134,7 @@ bloques con sus diagnósticos.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.94\textwidth]{figuras/f03_features_bloques.png}
+  \includegraphics[width=0.94\textwidth]{assets/f03_features_bloques.png}
   \caption{Rank-IC univariante medio por bloque. Fuente:
   \artefacto{evidence/feature\_diagnostics.parquet}.}
   \label{fig:features-bloques}
@@ -166,7 +167,7 @@ ponderación aprendida. La Tabla~\ref{tab:features-top} muestra los extremos de 
   \small
   \caption{Variables con mayor y menor Rank-IC univariante.}
   \label{tab:features-top}
-  \input{tablas/t03_features_top.tex}
+  \input{assets/t03_features_top.tex}
   \caption*{Fuente: \artefacto{evidence/feature\_diagnostics.parquet}. Doce primeras y cinco últimas
   de las 73 disponibles, ordenadas por Rank-IC univariante.}
 \end{table}

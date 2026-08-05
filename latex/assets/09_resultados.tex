@@ -17,7 +17,7 @@ cartera.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.96\textwidth]{figuras/f07_rankic_serie.png}
+  \includegraphics[width=0.96\textwidth]{assets/f07_rankic_serie.png}
   \caption{Rank-IC por cohorte. La banda dorada identifica la era reservada, que no intervino en
   ninguna decisión. Fuente: \texttt{evidence/summary.json}.}
   \label{fig:rankic-serie}
@@ -33,7 +33,7 @@ ordena mejor los retornos futuros que las fórmulas fijas.
   \centering
   \caption{Sistema frente a baselines deterministas.}
   \label{tab:baselines}
-  \input{tablas/t07_baselines.tex}
+  \input{assets/t07_baselines.tex}
   \caption*{Fuente: \texttt{attribution.json} y \texttt{evidence/summary.json}.}
 \end{table}
 
@@ -52,7 +52,7 @@ utiliza. La Tabla~\ref{tab:cola} descompone el comportamiento de la cola por era
   \small
   \caption{Comportamiento de la cola superior de la ordenación, por era.}
   \label{tab:cola}
-  \input{tablas/t07_cola.tex}
+  \input{assets/t07_cola.tex}
   \caption*{Fuente: \artefacto{evidence/rank\_tail\_diagnostics.parquet}. «Top 10» es el exceso medio
   de las diez primeras posiciones; «Universo» el de todo el panel. Diagnóstico, no criterio de
   selección.}
@@ -66,7 +66,7 @@ valores, pero su media móvil se mantiene por encima de cero durante casi toda l
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.94\textwidth]{figuras/f07_cola.png}
+  \includegraphics[width=0.94\textwidth]{assets/f07_cola.png}
   \caption{Exceso del decil superior sobre el universo, por cohorte. Fuente:
   \artefacto{evidence/rank\_tail\_diagnostics.parquet}.}
   \label{fig:cola}
@@ -79,7 +79,7 @@ Figura~\ref{fig:salud} la representa con dos memorias distintas.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.94\textwidth]{figuras/f07_salud.png}
+  \includegraphics[width=0.94\textwidth]{assets/f07_salud.png}
   \caption{Salud de la señal observable en cada snapshot, con memoria de dieciséis y de ocho
   trimestres. Fuente: \artefacto{evidence/signal\_health.parquet}.}
   \label{fig:salud}
@@ -103,13 +103,13 @@ rentabilidad ajustada por multiplicidad no tienen la misma fuerza.
   \centering
   \caption{Resumen de contrastes de robustez.}
   \label{tab:robustez}
-  \input{tablas/t07_robustez.tex}
+  \input{assets/t07_robustez.tex}
   \caption*{Fuente: \texttt{robustness.json} y \texttt{attribution.json}.}
 \end{table}
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.92\textwidth]{figuras/f07_robustez.png}
+  \includegraphics[width=0.92\textwidth]{assets/f07_robustez.png}
   \caption{Veredicto de los ocho contrastes. La figura sintetiza los estadísticos persistidos; los
   valores exactos y su interpretación se detallan en la Tabla~\ref{tab:robustez}.}
   \label{fig:robustez}
@@ -131,7 +131,7 @@ cero y dos órdenes de magnitud por debajo del sistema.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.94\textwidth]{figuras/f07_permutacion.png}
+  \includegraphics[width=0.94\textwidth]{assets/f07_permutacion.png}
   \caption{Situación del Rank-IC observado frente al rango de los placebos de etiqueta y al
   resultado del contraste de permutación. Fuente: \artefacto{robustness.json}.}
   \label{fig:permutacion}
@@ -139,7 +139,7 @@ cero y dos órdenes de magnitud por debajo del sistema.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.88\textwidth]{figuras/f07_placebos.png}
+  \includegraphics[width=0.88\textwidth]{assets/f07_placebos.png}
   \caption{Placebos de etiqueta y Rank-IC del sistema. Fuente: \artefacto{robustness.json}.}
   \label{fig:placebos}
 \end{figure}
@@ -160,7 +160,7 @@ Figura~\ref{fig:bootstrap} reúne ambos contrastes.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.94\textwidth]{figuras/f07_bootstrap.png}
+  \includegraphics[width=0.94\textwidth]{assets/f07_bootstrap.png}
   \caption{Intervalos de confianza del Rank-IC y estabilidad ante la exclusión de eras completas.
   Fuente: \artefacto{robustness.json}.}
   \label{fig:bootstrap}
@@ -171,7 +171,7 @@ Figura~\ref{fig:bootstrap} reúne ambos contrastes.
   \small
   \caption{Intervalos, exclusión de eras y dispersión entre semillas.}
   \label{tab:eras-bootstrap}
-  \input{tablas/t07_eras_bootstrap.tex}
+  \input{assets/t07_eras_bootstrap.tex}
   \caption*{Fuente: \artefacto{robustness.json}. La exclusión de eras reajusta el sistema sobre el
   resto de la ventana; las semillas reejecutan el estudio completo.}
 \end{table}
@@ -186,11 +186,11 @@ inicialización afortunada del \textit{boosting}. En las tres semillas ensayadas
 es 0,0020 y no cruza cero. La Figura~\ref{fig:semillas} muestra, sin embargo, que la conclusión
 económica es bastante más frágil que la predictiva: el exceso geométrico varía apreciablemente más
 que el Rank-IC en términos relativos. Esta asimetría es la misma que motivó introducir el conjunto
-de semillas durante el desarrollo, según se documenta en el Capítulo~\ref{chap:desarrollo}.
+de semillas durante el desarrollo, según se documenta en el Capítulo~\ref{chap:desarrollo-metodo}.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.92\textwidth]{figuras/f07_semillas.png}
+  \includegraphics[width=0.92\textwidth]{assets/f07_semillas.png}
   \caption{Dispersión de las métricas principales entre las tres semillas ensayadas. Fuente:
   \artefacto{robustness.json}.}
   \label{fig:semillas}
@@ -206,7 +206,7 @@ sea visible.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.92\textwidth]{figuras/f07_aleatorias.png}
+  \includegraphics[width=0.92\textwidth]{assets/f07_aleatorias.png}
   \caption{Cartera del modelo frente a 1.000 carteras aleatorias, en el escenario general y con
   riesgo emparejado. Fuente: \artefacto{robustness.json}.}
   \label{fig:aleatorias}
@@ -239,7 +239,7 @@ Tabla~\ref{tab:tres-ventanas} las presenta separadas y etiquetadas.
   \small
   \caption{Las tres ventanas de evaluación, con su papel declarado.}
   \label{tab:tres-ventanas}
-  \input{tablas/t07_selec_conf_full.tex}
+  \input{assets/t07_selec_conf_full.tex}
   \caption*{Fuente: \artefacto{evidence/summary.json}. Selección: se tomaron decisiones sobre ella.
   Confirmación: reservada, ninguna decisión la utilizó. Curva completa: descriptiva, no probatoria.}
 \end{table}
@@ -254,7 +254,7 @@ sin más a la calidad de la señal.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.96\textwidth]{figuras/f07_equity.png}
+  \includegraphics[width=0.96\textwidth]{assets/f07_equity.png}
   \caption{Curva de patrimonio de la cartera y SPY. La región dorada es confirmación reservada,
   no selección. Fuente: \texttt{evidence/equity.parquet}.}
   \label{fig:equity}
@@ -262,7 +262,7 @@ sin más a la calidad de la señal.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.91\textwidth]{figuras/f07_alfa_anual.png}
+  \includegraphics[width=0.91\textwidth]{assets/f07_alfa_anual.png}
   \caption{Alfa anual. El color dorado marca 2025--2026. Fuente:
   \texttt{evidence/annual\_metrics.parquet}.}
   \label{fig:alfa-anual}
@@ -273,7 +273,7 @@ sin más a la calidad de la señal.
   \scriptsize
   \caption{Resultado anual de la cartera.}
   \label{tab:anual}
-  \input{tablas/t07_anual.tex}
+  \input{assets/t07_anual.tex}
   \caption*{Fuente: \texttt{evidence/annual\_metrics.parquet}. Turnover anualizado; efectivo medio.}
 \end{table}
 
@@ -287,7 +287,7 @@ universo y varias etiquetas todavía no cerraron.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.92\textwidth]{figuras/f07_drawdown.png}
+  \includegraphics[width=0.92\textwidth]{assets/f07_drawdown.png}
   \caption{Drawdown acumulado de cartera y SPY. Fuente: \texttt{evidence/equity.parquet}.}
   \label{fig:drawdown}
 \end{figure}
@@ -304,13 +304,13 @@ turnover.
   \centering
   \caption{Perfiles construidos a partir de la misma señal.}
   \label{tab:perfiles}
-  \input{tablas/t07_perfiles.tex}
+  \input{assets/t07_perfiles.tex}
   \caption*{Fuente: \texttt{profile\_comparison.parquet}.}
 \end{table}
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.90\textwidth]{figuras/f07_perfiles_exceso.png}
+  \includegraphics[width=0.90\textwidth]{assets/f07_perfiles_exceso.png}
   \caption{Exceso geométrico por perfil. Fuente: \texttt{profile\_comparison.parquet}.}
   \label{fig:perfiles-exceso}
 \end{figure}
@@ -324,7 +324,7 @@ López de Prado (2018).
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.84\textwidth]{figuras/f07_perfiles_tradeoff.png}
+  \includegraphics[width=0.84\textwidth]{assets/f07_perfiles_tradeoff.png}
 \caption{Relación entre rotación y exceso geométrico de los perfiles. Fuente:
 \texttt{profile\_comparison.parquet}.}
 \label{fig:perfiles-tradeoff}
@@ -338,37 +338,8 @@ orden transversal contiene información y que el sistema supera los baselines de
 segunda es estadística: permutación, placebos, bootstrap, exclusión de eras y semillas evalúan si la
 relación podría ser azar, un defecto mecánico o una coincidencia de régimen. La tercera es económica:
 la cartera muestra qué parte de esa señal sobrevive a restricciones long-only, costes y tamaño
-limitado.
-
-La secuencia también explica por qué dos métricas aparentemente discordantes pueden coexistir. Un
-ranking puede acertar la sección transversal completa y perder frente al benchmark en un año concreto
-si el índice está dominado por unas pocas megacapitalizaciones que la cartera no posee. De forma
-inversa, una cartera puede obtener un buen año por acertar el extremo superior aun cuando el
-Rank-IC, que mide unos cuatrocientos nombres, no tenga potencia suficiente para concluir sobre un
-periodo breve. Por ello se evita transformar cualquier cifra aislada en una afirmación general.
-
-\section{Qué aportan los contrastes de robustez}
-
-La permutación destruye sólo el vínculo entre ranking y retorno futuro dentro de cada cohorte, pero
-conserva distribución transversal, número de empresas y calendario. Su $p=0,0001$ responde a la
-pregunta de si un Rank-IC como el observado puede surgir sin asociación predictiva. Los placebos son
-complementarios: recorren el pipeline completo con etiquetas falsas. Si hubiese una fuga temporal o
-una normalización que fabricase señal, los placebos deberían mostrar una magnitud comparable; en
-cambio permanecen próximos a cero.
-
-El bootstrap por bloques y la exclusión de eras responden a otra objeción: una media positiva puede
-estar dominada por meses correlacionados o por un subperiodo excepcional. El intervalo al 95\%
-excluye cero incluso al mantener bloques de doce cohortes, y eliminar cualquier era conserva un
-Rank-IC positivo. La estabilidad entre semillas reduce la posibilidad de que el resultado dependa de
-una inicialización favorable del boosting. Ningún contraste por sí mismo prueba causalidad, pero sus
-modos de fallo son diferentes; que todos apunten en la misma dirección fortalece la interpretación.
-
-El contraste de carteras aleatorias requiere una lectura especialmente cuidadosa. Una cartera
-aleatoria de doce nombres puede concentrar por casualidad una empresa superviviente extraordinaria;
-por ello su distribución general presenta una cola extrema y no constituye un benchmark útil. Al
-emparejar riesgo, el modelo se sitúa en el percentil 97,4. El resultado sugiere que la señal aporta
-algo más que elegir doce nombres con una volatilidad similar, pero no autoriza a afirmar que toda
-cartera aleatoria sea inferior en toda muestra posible.
+limitado. Con esa secuencia en mente, la sección siguiente traduce la señal ya validada a resultado
+de cartera.
 
 \section{Atribución, factores y resultado no superado}
 
@@ -385,7 +356,7 @@ implementados, no que haya descubierto una prima nueva y causal.
   \small
   \caption{Neutralización del Rank-IC por controles de estilo.}
   \label{tab:neutralizacion}
-  \input{tablas/t07_neutralizacion.tex}
+  \input{assets/t07_neutralizacion.tex}
   \caption*{Fuente: \artefacto{attribution.json}. Los catorce controles son ratios de valoración,
   rentabilidad, crecimiento, volatilidad y beta, listados en el Anexo~\ref{anexo:evidencia}.}
 \end{table}
@@ -399,7 +370,7 @@ Figura~\ref{fig:factores} la presentan.
   \scriptsize
   \caption{Regresión factorial con errores Newey--West de doce retardos, por ventana.}
   \label{tab:factores}
-  \input{tablas/t07_factores.tex}
+  \input{assets/t07_factores.tex}
   \caption*{Fuente: \artefacto{attribution.json}. Los factores de tamaño e inversión no son
   construibles con las fuentes disponibles y se declaran no replicables en lugar de sustituirse por
   un sucedáneo no auditable.}
@@ -407,7 +378,7 @@ Figura~\ref{fig:factores} la presentan.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.94\textwidth]{figuras/f07_factores.png}
+  \includegraphics[width=0.94\textwidth]{assets/f07_factores.png}
   \caption{Cargas factoriales en las ventanas de selección y confirmación. En azul, las cargas con
   $|t|\geq 2$. Fuente: \artefacto{attribution.json}.}
   \label{fig:factores}
@@ -459,11 +430,11 @@ cambia cada vez.
 La Tabla~\ref{tab:cartera-barrido} recoge las veintitrés variantes evaluadas junto al ganador
 congelado, y la Figura~\ref{fig:barrido} las sitúa en el plano rotación--exceso.
 
-\input{tablas/t07_cartera_barrido.tex}
+\input{assets/t07_cartera_barrido.tex}
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.94\textwidth]{figuras/f07_barrido_cartera.png}
+  \includegraphics[width=0.94\textwidth]{assets/f07_barrido_cartera.png}
   \caption{Barrido diagnóstico de cartera. Cada punto es una variante de una sola variable sobre el
   mismo ganador congelado; la estrella es la configuración efectivamente empleada. Fuente:
   \artefacto{portfolio\_comparison.parquet}.}
@@ -504,14 +475,14 @@ motivo declarado de cada orden, y la Figura~\ref{fig:ordenes} lo representa.
   \small
   \caption{Descomposición del flujo de cartera por motivo de orden.}
   \label{tab:ordenes}
-  \input{tablas/t07_ordenes_motivo.tex}
+  \input{assets/t07_ordenes_motivo.tex}
   \caption*{Fuente: \artefacto{evidence/orders.parquet}. El flujo es la suma de $|\Delta w|$ de cada
   orden. El coste agrega comisión y \textit{slippage} efectivamente cargados.}
 \end{table}
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.92\textwidth]{figuras/f07_ordenes.png}
+  \includegraphics[width=0.92\textwidth]{assets/f07_ordenes.png}
   \caption{Origen del turnover por motivo de orden. Fuente: \artefacto{evidence/orders.parquet}.}
   \label{fig:ordenes}
 \end{figure}
@@ -538,7 +509,7 @@ La Figura~\ref{fig:transferencia} cruza las tres magnitudes por año.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.94\textwidth]{figuras/f07_transferencia.png}
+  \includegraphics[width=0.94\textwidth]{assets/f07_transferencia.png}
   \caption{Rotación, exceso sobre SPY y coste por año. El área de cada punto es proporcional al
   coste soportado. Fuente: \artefacto{attribution.json}, campo \texttt{transfer.by\_year}.}
   \label{fig:transferencia}

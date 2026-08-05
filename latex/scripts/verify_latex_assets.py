@@ -14,9 +14,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 LATEX = ROOT / "latex"
+ASSETS = LATEX / "assets"
 INCLUDE = re.compile(r"\\includegraphics(?:\[[^]]*\])?\{([^}]+)\}")
-TABLE = re.compile(r"\\input\{(tablas/[^}]+)\}")
-CHAPTER = re.compile(r"\\input\{(caps/[^}]+)\}")
+TABLE = re.compile(r"\\input\{(assets/t[^}]+\.tex)\}")
+CHAPTER = re.compile(r"\\input\{(assets/[^}]+)\}")
 # El documento no usa biblatex: la bibliografía es un capítulo manual. Si
 # reaparece cualquiera de estos comandos, la compilación vuelve a romperse.
 BIB_COMMAND = re.compile(r"\\(?:textcite|parencite|autocite|cite|printbibliography|addbibresource)\b")
@@ -31,10 +32,10 @@ def fail(message: str, errors: list[str]) -> None:
 
 def main() -> int:
     errors: list[str] = []
-    tex_files = [LATEX / "main.tex", *sorted((LATEX / "caps").glob("*.tex"))]
-    # Las tablas longtable llevan su propio \label dentro de tablas/: hay que
-    # recolectarlos o toda \ref a una de ellas parecería no tener destino.
-    scanned = tex_files + sorted((LATEX / "tablas").glob("*.tex"))
+    # Capítulos, tablas y figuras conviven sueltos en assets/, sin subcarpetas
+    # dentro de assets/. main.tex vive un nivel por encima, en latex/, así que
+    # todo \input y \includegraphics debe llevar el prefijo "assets/".
+    tex_files = [LATEX / "main.tex", *sorted(ASSETS.glob("*.tex"))]
     used_graphics: set[str] = set()
     used_tables: set[str] = set()
     labels: set[str] = set()
@@ -51,8 +52,8 @@ def main() -> int:
             )
         for graphic in INCLUDE.findall(content):
             used_graphics.add(graphic)
-            if not graphic.startswith("figuras/"):
-                fail(f"Ruta de figura no explícita en {path.name}: {graphic}", errors)
+            if not graphic.startswith("assets/"):
+                fail(f"Ruta de figura sin prefijo assets/ en {path.name}: {graphic}", errors)
             if Path(graphic).is_absolute() or ":" in graphic:
                 fail(f"Ruta absoluta de figura en {path.name}: {graphic}", errors)
             if not (LATEX / graphic).is_file():
@@ -69,7 +70,7 @@ def main() -> int:
                 fail(f"Capítulo inexistente: {chapter}", errors)
         references.extend((path.name, key) for key in REF.findall(content))
 
-    for path in scanned:
+    for path in tex_files:
         labels.update(LABEL.findall(path.read_text(encoding="utf-8")))
 
     # Una \ref sin \label compila pero imprime «??» en el PDF. Sin compilador
@@ -79,14 +80,14 @@ def main() -> int:
             fail(f"Referencia sin destino en {origin}: \\ref{{{key}}}", errors)
 
     # Activos generados pero no insertados en ningún capítulo.
-    for figure in sorted((LATEX / "figuras").glob("*.png")):
-        if f"figuras/{figure.name}" not in used_graphics:
+    for figure in sorted(ASSETS.glob("f*.png")):
+        if f"assets/{figure.name}" not in used_graphics:
             fail(f"Figura huérfana (generada pero no insertada): {figure.name}", errors)
-    for table in sorted((LATEX / "tablas").glob("*.tex")):
-        if f"tablas/{table.name}" not in used_tables:
+    for table in sorted(ASSETS.glob("t*.tex")):
+        if f"assets/{table.name}" not in used_tables:
             fail(f"Tabla huérfana (generada pero no insertada): {table.name}", errors)
 
-    pdfs = list((LATEX / "figuras").glob("*.pdf"))
+    pdfs = list(ASSETS.glob("*.pdf"))
     if pdfs:
         fail("Hay figuras PDF: " + ", ".join(path.name for path in pdfs), errors)
     if errors:

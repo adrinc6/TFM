@@ -100,7 +100,7 @@ fichero, con el número de comprobaciones de cada uno y el invariante que proteg
   \footnotesize
   \caption{Batería de contratos que protege los invariantes metodológicos.}
   \label{tab:contratos}
-  \input{tablas/t04_tests_contrato.tex}
+  \input{assets/t04_tests_contrato.tex}
   \caption*{Fuente: recuento de funciones \texttt{test\_*} en \artefacto{tests/} del repositorio.}
 \end{table}
 
@@ -108,7 +108,7 @@ Un test sintético no es evidencia económica, pero sí evidencia de que el meca
 que violarían la metodología declarada. La distribución de esos 75 contratos es en sí misma
 informativa: casi el 60\,\% se concentra en las reglas económicas y en la contabilidad del
 \textit{backtest}, que es donde el desarrollo encontró la mayoría de los defectos documentados en el
-Capítulo~\ref{chap:desarrollo}.
+Capítulo~\ref{chap:desarrollo-metodo}.
 
 Conviene ser preciso sobre el alcance de esta batería. Los contratos comprueban que el código
 respeta las reglas declaradas; no comprueban que las reglas sean correctas. La

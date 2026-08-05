@@ -1,0 +1,132 @@
+\chapter{Historia del desarrollo (II): de la selección secuencial a la cartera}
+\label{chap:desarrollo-cartera}
+
+Esta segunda mitad retoma la historia del desarrollo iniciada en el
+Capítulo~\ref{chap:desarrollo-metodo}. Si aquella cubría el paso a un único Model Study y los
+defectos que afectaron a la metodología de contratos y a la selección secuencial, ésta cubre el
+rediseño de la construcción de cartera descrita en el Capítulo~\ref{chap:diseno-experimental}: tres
+defectos con una raíz común en la lógica de venta, el colapso de la calibración isotónica que
+motiva la salvaguarda de la curva de alfa usada en la Sección~\ref{sec:cartera-barrido}, y dos
+decisiones tomadas contra la recomendación técnica. Cierra con la advertencia de reproducibilidad
+que condiciona la lectura de toda cifra del Capítulo~\ref{chap:resultados}.
+
+\section{Toda venta necesita un destino mejor}
+
+El rediseño de la cartera partió de tres defectos que, vistos por separado, parecían independientes,
+y que compartían una única raíz: las ventas se decidían sin mirar a dónde iba el dinero.
+
+El primero era el más grave en términos contables. Bajo la política de efectivo oportunista, si
+ningún candidato superaba el umbral, la lógica vendía la cartera entera y devolvía una cartera
+objetivo vacía. El \textit{backtest} interpretaba «vacía» como «mantener» y resucitaba las
+posiciones --- pero ya había cargado los costes de unas ventas que nunca se ejecutaron. La cartera
+pagaba por replegarse sin replegarse.
+
+El segundo producía el efecto contrario y contribuyó de forma decisiva al 877\,\% de rotación anual
+que se observaba entonces. Bajo la política de permanecer siempre invertido, las doce posiciones se
+vendían por umbral y el relleno obligatorio \emph{recompraba exactamente las mismas en el mismo
+snapshot}: una ida y vuelta completa, con sus costes, para acabar donde se estaba.
+
+El tercero era la ausencia de un límite de concentración: con un único candidato admisible y un tope
+de efectivo del 20\,\%, el 80\,\% de la cartera acababa en un solo valor.
+
+La regla que los resuelve a los tres es la que gobierna hoy la cartera: una venta sólo se emite si
+el destino del dinero es mejor que la posición, después de costes. El destino puede ser otro valor
+--- y entonces debe superar el umbral de rotación --- o el efectivo, que exige un tope declarado y
+respeta un suelo de diversificación. Se añadió además histéresis entre el umbral de entrada y el de
+salida, para que una posición no oscile dentro y fuera por variaciones mínimas.
+
+\section{El colapso de la calibración isotónica}
+
+El diagnóstico de posiciones que nunca se vendían pese a un percentil muy bajo, presentado en el
+Capítulo~\ref{chap:desarrollo-metodo}, encadenaba dos problemas distintos. Aquel capítulo documentó
+el primero, de naturaleza predictiva --- una ventana rectangular que no olvidaba el régimen
+antiguo. Éste es el segundo, más sutil, y bloqueaba la cartera por completo.
+
+La calibración de percentil a alfa esperada usaba una regresión isotónica creciente. Cuando la
+relación real entre percentil y retorno futuro es \emph{decreciente}, la única curva creciente que
+minimiza el error es una constante. El resultado fue que la alfa esperada era idéntica para los
+quinientos cuatro valores del universo. Con una alfa plana no existe ventaja calculable entre dos
+posiciones, y el bucle de rotación se interrumpía sin emitir ninguna orden. No era un fallo de
+implementación: era el comportamiento correcto de un estimador aplicado fuera de su supuesto.
+
+El diagnóstico de ese episodio contiene una lección estadística que merece registrarse por sí misma.
+El primer análisis por deciles, hecho con la \emph{media} del retorno excedente, sugería que la
+ordenación estaba invertida en todo el histórico. Era un artefacto del estimador: la distribución
+tiene una cola derecha extrema, y unos pocos valores multiplicadores situados en el decil bajo
+bastaban para que su media (${+}3552$ puntos básicos) contradijera a su mediana (${-}146$). Con la
+mediana, o con una media winsorizada, la curva histórica \emph{sí} es creciente, de forma coherente
+con el Rank-IC positivo. La inversión era real, pero sólo en el régimen reciente. Un diagnóstico
+apresurado habría llevado a reescribir el sistema entero para corregir un problema que no existía.
+
+La isotónica se sustituyó por una recta de percentil a retorno anualizado real con una cascada de
+ventanas, que acepta la primera ventana con pendiente creciente. La estimación se hace sobre veinte
+ventiles, pero la evaluación se realiza en el rango continuo: produce quinientos cuatro valores de
+alfa distintos donde la isotónica producía uno. Es la cascada que el
+Capítulo~\ref{chap:diseno-experimental} describe en «De rango a alfa esperado».
+
+\section{Dos decisiones tomadas contra la recomendación técnica}
+
+El registro documenta dos decisiones que se adoptaron en contra de la recomendación técnica. Se
+recogen aquí con ambos lados del argumento, porque omitirlas presentaría el protocolo como más
+limpio de lo que es.
+
+La primera fue sustituir la calibración isotónica sin conservarla como opción del catálogo. A favor:
+el colapso es demostrable y deja la cartera inoperativa, de modo que mantener la opción habría
+significado conservar una rama que se sabe rota. En contra: cambia el ganador sin pasar por la
+selección secuencial por Rank-IC, que es precisamente la regla 4 del protocolo, y renuncia a poder
+comparar ambas formulaciones con evidencia. El autor asumió el riesgo y pidió eliminar la
+alternativa.
+
+La segunda es más incómoda. Cuando ninguna de las tres ventanas de la cascada produce una pendiente
+creciente, el sistema aplica una salvaguarda: una recta fija entre $-10\,\%$ y $+10\,\%$. En contra
+de esa elección se argumentó que es un supuesto \emph{a priori}, del mismo tipo que el sesgo de
+régimen fijado por constantes que este proyecto ya había eliminado, y que se activa precisamente
+cuando las tres ventanas coinciden en que la ordenación no discrimina a favor --- es decir, cuando
+la evidencia disponible dice que no hay señal, el sistema inventa una. La recomendación técnica fue
+usar una curva plana, equivalente a repartir por igual. Se prefirió la recta fija.
+
+La mitigación consiste en registrar, para cada fila, qué ventana produjo su alfa. En el estudio de
+referencia la salvaguarda se activa en 4.384 de 20.545 filas, algo más de una de cada cinco. Es una
+proporción suficientemente alta como para que el lector deba tenerla presente al interpretar
+cualquier cifra de cartera, y por eso se recoge también en el Capítulo~\ref{chap:limitaciones}.
+
+Durante esa misma revisión se descubrió que la ruta de calibración de alfa \emph{no tenía ninguna
+cobertura de pruebas}. Un renombrado había dejado una llamada rota en esa ruta que la batería
+existente no detectaba. Se añadió un contrato específico que cubre justamente lo que puede fallar en
+silencio: que cada rango produzca una alfa distinta y monótona, que una relación decreciente caiga a
+la salvaguarda, y que la ausencia de cohortes cerradas produzca un valor no disponible en lugar de
+un cero.
+
+\section{Una posición sin puntuación detenía toda la rotación}
+
+Un episodio concreto ilustra por qué las casuísticas de datos incompletos merecen tratamiento
+explícito. En una ejecución, una posición estaba en el percentil 4,96 con un retorno esperado
+de $-9{,}01\,\%$ anual, mientras otro valor fuera de la cartera estaba en el percentil 100 con
+$+10{,}00\,\%$: una ventaja de 1.901 puntos básicos, muy por encima de cualquier umbral de rotación.
+El intercambio no se produjo.
+
+La causa era que una tercera posición, de una empresa que había salido del índice años antes, no
+tenía fila puntuable en esa fecha. El bucle la seleccionaba como peor posición, no podía calcular su
+ventaja y se detenía --- bloqueando de paso todas las rotaciones posteriores, incluida la que sí era
+claramente rentable. La corrección fue tratar la ausencia de puntuación como un mandato de venta,
+no como una decisión económica: una posición sin puntuación actual se vende, ignorando el mínimo de
+tenencia, y no se recompra en ese mismo snapshot.
+
+\section{Advertencia de reproducibilidad}
+\label{sec:reproducibilidad}
+
+Hay una consecuencia de este historial que debe declararse sin rodeos. El estudio del que procede
+toda la evidencia de este trabajo, \studyid, se ejecutó bajo la versión 5 del catálogo. El código
+actual está en la versión 6, tras la corrección del reparto de efectivo del 4 de agosto de 2026.
+
+Los artefactos siguen siendo válidos y trazables: conservan sus identificadores, sus hashes de
+conjunto de datos y su instantánea de catálogo, y cualquier cifra de este documento puede
+verificarse contra ellos. Pero \textbf{no son reproducibles bit a bit con el código actual}, y no
+son comparables con estudios ejecutados bajo la versión 6.
+
+La alternativa habría sido reejecutar el estudio completo. Se descartó por una razón metodológica y
+no de conveniencia: la reejecución cambiaría el ganador, y escribir los capítulos de resultados
+sobre un ganador y después sustituirlo por otro cuando el texto ya está redactado se parece
+demasiado a elegir la configuración cuyos resultados encajan mejor con lo escrito. Se optó por
+congelar el estudio, declarar la discrepancia y mantener todas las cifras referidas a la versión con
+la que realmente se calcularon.
