@@ -387,6 +387,7 @@
       <p>La cartera muestra las posiciones valoradas y las órdenes ejecutadas exactamente en la fecha seleccionada.</p></section>
       <h3>Posiciones · ${esc(data.selected_snapshot || "sin fecha")}</h3>${table(data.positions)}
       <h3>Movimientos ejecutados ese día</h3>${table(data.orders)}
+      ${cashSection(data.equity)}
       ${alphaCurveSection(data.alpha_curve)}`;
     document.getElementById("portfolio-snapshot").onchange = event => {
       state.snapshot = event.target.value;
@@ -403,6 +404,13 @@
     ["horizon", "Horizonte objetivo"], ["era", "Era (16 trimestres)"],
     ["history", "Todo el histórico"], ["fallback", "Salvaguarda ±10 %"],
   ];
+
+  function cashSection(equity) {
+    if (!equity?.length) return "";
+    return `<h3>Efectivo por snapshot</h3>
+      <p class="muted">Peso en efectivo de la cartera en cada fecha; sale de la misma serie que la curva de capital, no de las posiciones (que solo suman el peso invertido).</p>
+      ${singleLineChart(equity, "snapshot_date", "cash_weight", {percent: true, domain: "weight", yLabel: "Efectivo"})}`;
+  }
 
   function alphaCurveSection(curve) {
     if (!curve || !curve.windows) return "";

@@ -13,7 +13,7 @@ from module.evaluation.profiles import PROFILE_NAMES
 from module.modeling.catalog import AGENT_NAMES
 
 
-CATALOG_VERSION = 6
+CATALOG_VERSION = 7
 SELECTION_ERAS = ((2015, 2018), (2019, 2021), (2022, 2024))
 # Frontera única entre la ventana que decide y la que solo confirma. Toda métrica de selección se
 # recorta aquí; 2025-26 no participó en ninguna decisión y por eso es la confirmación fuera de
@@ -128,7 +128,11 @@ VARIABLES: tuple[VariableSpec, ...] = (
     _v("snapshot_step_months", "Cadencia de snapshots", "Frecuencia con la que se vuelve a observar y puntuar el universo.", "temporal", (1, 3, 6, 12), 3, "dataset", "fit", 10),
     _v("target_horizon_months", "Horizonte objetivo", "Meses del retorno futuro cuya ordenación aprende el modelo.", "temporal", (3, 6, 12), 12, "features", "fit", 20),
     _v("train_lookback_years", "Historia de entrenamiento", "Años anteriores disponibles en cada ajuste walk-forward.", "temporal", (4, 8, 12), 8, "fit", "fit", 30),
-    _v("execution_lag_days", "Lag PIT", "Días exigidos entre el cierre fiscal y la disponibilidad operativa de fundamentales.", "temporal", (30, 45, 60), 60, "dataset", "fit", 40),
+    # `simplicity` invertida a propósito: en un empate técnico gana el lag MAYOR. Un lag menor no es
+    # una hipótesis más simple sino más fuerte —afirma que el fundamental ya estaba disponible para
+    # operar antes—, así que desempatar hacia 30 elegiría sistemáticamente la opción con más riesgo
+    # de lookahead. Con este orden, cuando la evidencia no distingue, gana la prudencia PIT.
+    _v("execution_lag_days", "Lag PIT", "Días exigidos entre el cierre fiscal y la disponibilidad operativa de fundamentales.", "temporal", (30, 45, 60), 60, "dataset", "fit", 40, simplicity=(60, 45, 30)),
     _v("recency_weighting", "Peso de recencia", "Importancia adicional de las observaciones recientes dentro del entrenamiento.", "temporal", ("off", "linear", "exponential"), "off", "fit", "fit", 50),
     _v("objective", "Objetivo de aprendizaje", "Regresión del rango continuo o ranking directo.", "temporal", ("rank_regression", "ranking"), "rank_regression", "fit", "fit", 60),
     _v("feature_preset", "Preset de información", "Conjunto cerrado de bloques de factores que reciben los agentes.", "representation", tuple(FEATURE_PRESETS), "core", "features", "fit", 10),
@@ -146,13 +150,13 @@ VARIABLES: tuple[VariableSpec, ...] = (
     _v("meta_method", "Combinación de agentes", "Equiponderación o Ridge rolling causal con límites de peso.", "meta", ("equal", "stacked_rolling_free", "stacked_rolling_bounded"), "stacked_rolling_bounded", "meta", "meta", 10),
     _v("meta_history_quarters", "Ventana del meta", "Número de cohortes trimestrales cerradas usadas por el stacker.", "meta", (8, 16), 16, "meta", "meta", 20, depends_on=(("meta_method", ("stacked_rolling_free", "stacked_rolling_bounded")),)),
     _v("meta_recency_weighting", "Recencia del meta", "Peso adicional de las cohortes recientes al aprender el peso de cada agente.", "meta", ("off", "linear", "exponential"), "off", "meta", "meta", 30, depends_on=(("meta_method", ("stacked_rolling_free", "stacked_rolling_bounded")),)),
-    _v("target_size", "Número de posiciones", "Número objetivo de acciones simultáneas.", "portfolio", (8, 12, 16, 25, 50), 12, "backtest", "backtest", 10, predictive=False),
+    _v("target_size", "Número de posiciones", "Número objetivo de acciones simultáneas.", "portfolio", (5, 8, 12, 16, 25, 50), 12, "backtest", "backtest", 10, predictive=False),
     _v("exit_expected_alpha_bps", "Alfa mínimo para conservar", "Alfa esperado mínimo, en puntos básicos ANUALES, antes de vender una posición (se convierte geométricamente al horizonte del modelo).", "portfolio", (0.0, 100.0, 250.0), 100.0, "backtest", "backtest", 20, predictive=False),
     _v("rotation_edge_bps", "Ventaja para sustituir", "Ventaja de alfa esperado, en puntos básicos ANUALES, exigida por encima del coste de ida y vuelta (se convierte geométricamente al horizonte del modelo).", "portfolio", (25.0, 50.0, 100.0), 50.0, "backtest", "backtest", 30, predictive=False),
     _v("max_cash_weight", "Efectivo máximo", "Peso máximo que puede quedar sin invertir cuando ninguna candidata supera el umbral. Con 0 la cartera está siempre invertida al 100 %.", "portfolio", (0.0, 0.10, 0.25), 0.25, "backtest", "backtest", 36, predictive=False),
     _v("minimum_holding_period", "Mínimo de tenencia", "Meses mínimos en cartera, como fracción del horizonte del modelo, antes de poder vender una posición por cualquier motivo (incluida la rotación).", "portfolio", ("none", "quarter_horizon", "half_horizon", "full_horizon"), "none", "backtest", "backtest", 38, predictive=False),
     _v("coverage_percentile_floor", "Suelo de cobertura del ranking", "Percentil por debajo del cual una posición deja de pertenecer a la cartera y se vende entera, una vez cumplido el mínimo de tenencia. 0 desactiva la regla.", "portfolio", (0.0, 60.0, 80.0), 0.0, "backtest", "backtest", 39, predictive=False),
-    _v("rebalance_drift_tolerance", "Tolerancia de rebalanceo", "Desviación relativa mínima necesaria para emitir una orden.", "portfolio", (0.0, 0.10, 0.25), 0.25, "backtest", "backtest", 40, predictive=False),
+    _v("rebalance_drift_tolerance", "Tolerancia de rebalanceo", "Desviación relativa mínima necesaria para emitir una orden.", "portfolio", (0.0, 0.10, 0.25, 0.40), 0.25, "backtest", "backtest", 40, predictive=False),
     _v("price_only_strictness_multiplier", "Prudencia sin fundamentales", "Endurece los umbrales en snapshots sin fundamentales nuevos.", "portfolio", (1.0, 1.5, 2.0), 1.5, "backtest", "backtest", 50, predictive=False),
     _v("price_only_sell_only", "Solo vender sin fundamentales", "En snapshots sin fundamentales nuevos, permite vender una posición mala pero prohíbe comprar cualquier reemplazo.", "portfolio", (False, True), False, "backtest", "backtest", 55, predictive=False),
     _v("sizing_mode", "Reparto de pesos", "Equiponderación o peso proporcional al alfa esperado, con tope 2:1.", "portfolio", ("equal", "alpha_proportional"), "alpha_proportional", "backtest", "backtest", 60, predictive=False),
@@ -192,7 +196,7 @@ def _label(identifier: str, value: Any) -> str:
         },
         "meta_history_quarters": {8: "8 trimestres (2 años)", 16: "16 trimestres (4 años)"},
         "meta_recency_weighting": {"off": "Sin ponderación", "linear": "Lineal", "exponential": "Exponencial"},
-        "target_size": {8: "8 posiciones", 12: "12 posiciones", 16: "16 posiciones", 25: "25 posiciones", 50: "50 posiciones"},
+        "target_size": {5: "5 posiciones", 8: "8 posiciones", 12: "12 posiciones", 16: "16 posiciones", 25: "25 posiciones", 50: "50 posiciones"},
         "exit_expected_alpha_bps": {0.0: "0 pb/año (solo alfa negativo)", 100.0: "100 pb/año (1 %)", 250.0: "250 pb/año (2,5 %)"},
         "rotation_edge_bps": {25.0: "25 pb/año sobre coste", 50.0: "50 pb/año sobre coste", 100.0: "100 pb/año sobre coste"},
         "max_cash_weight": {0.0: "Siempre 100 % invertido", 0.10: "Hasta 10 %", 0.25: "Hasta 25 %"},
@@ -207,7 +211,7 @@ def _label(identifier: str, value: Any) -> str:
             60.0: "Bajo el percentil 60",
             80.0: "Bajo el percentil 80",
         },
-        "rebalance_drift_tolerance": {0.0: "Sin tolerancia", 0.10: "10 %", 0.25: "25 %"},
+        "rebalance_drift_tolerance": {0.0: "Sin tolerancia", 0.10: "10 %", 0.25: "25 %", 0.40: "40 %"},
         "price_only_strictness_multiplier": {1.0: "Sin extra (x1,0)", 1.5: "Prudente (x1,5)", 2.0: "Muy prudente (x2,0)"},
         "sizing_mode": {"equal": "Equiponderado", "alpha_proportional": "Proporcional al alfa esperado"},
         "commission_bps": {0.0: "Sin comisión", 5.0: "5 pb (0,05 %)", 10.0: "10 pb (0,10 %)"},
@@ -307,6 +311,7 @@ def _description(identifier: str, value: Any) -> str:
             "exponential": "Dentro de la ventana del meta, los trimestres recientes pesan mucho más que los antiguos, con una caída rápida cuanto más atrás se mira (una curva, no una recta). Es la opción que más rápido reacciona a un cambio de régimen de mercado, al precio de apoyarse en menos evidencia efectiva.",
         },
         "target_size": {
+            5: "La cartera final mantiene solo 5 acciones distintas a la vez. Es la cartera más concentrada del catálogo: cada posición pesa en torno al 20 %, así que el resultado depende casi por completo de un puñado de aciertos o fallos individuales. Máxima exposición al riesgo idiosincrático y mínima amplitud (breadth).",
             8: "La cartera final mantiene 8 acciones distintas a la vez. Cartera concentrada: más impacto de acertar o fallar en cada acción individual.",
             12: "La cartera final mantiene 12 acciones distintas a la vez. Diversificación intermedia.",
             16: "La cartera final mantiene 16 acciones distintas a la vez. Cartera más diversificada: cada acierto o fallo individual pesa menos sobre el resultado total.",
@@ -347,6 +352,7 @@ def _description(identifier: str, value: Any) -> str:
             0.0: "Cualquier desviación, por mínima que sea, entre el peso actual de una posición y su peso objetivo genera una orden de ajuste. Máxima precisión de pesos, al coste de generar muchas más operaciones (y comisiones).",
             0.10: "Solo se ajusta una posición cuando su peso real se desvía más de un 10 % (en términos relativos) de su peso objetivo. Reduce operaciones innecesarias por desviaciones pequeñas del peso, a cambio de tolerar carteras algo menos ajustadas al objetivo teórico.",
             0.25: "Solo se ajusta una posición cuando su peso real se desvía más de un 25 % (en términos relativos) de su peso objetivo. Tolerancia amplia: pocas operaciones de puro rebalanceo, pero los pesos reales pueden alejarse bastante del objetivo teórico entre ajustes.",
+            0.40: "Solo se ajusta una posición cuando su peso real se desvía más de un 40 % (en términos relativos) de su peso objetivo. Tolerancia muy amplia: minimiza las operaciones de puro rebalanceo, a costa de permitir que los pesos reales se alejen considerablemente del objetivo teórico entre ajustes.",
         },
         "price_only_strictness_multiplier": {
             1.0: "Cuando en un snapshot no hay fundamentales nuevos publicados (solo hay precio actualizado), se exigen exactamente los mismos umbrales de venta/compra que cuando sí hay fundamentales frescos. Sin prudencia extra.",

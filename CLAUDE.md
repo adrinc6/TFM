@@ -17,6 +17,9 @@ Antes de realizar cambios, leer `docs/metodologia.md`, `docs/bitacora.md`,
 casuísticas y ejemplos. Es donde el usuario anota los cambios que quiere en las reglas de cartera;
 si su sección «Cambios pedidos» no está vacía, hay trabajo pendiente que trasladar al código.
 
+`docs/plan_estudios_encadenados.md` fija la estrategia vigente de estudios encadenados (el ganador
+de cada study es el baseline del siguiente) y la migración del manuscrito LaTeX al study final.
+
 ## Arquitectura
 
 - `module/data`: ingesta, universo y panel PIT.

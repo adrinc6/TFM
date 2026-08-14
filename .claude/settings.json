@@ -61,7 +61,9 @@
       "Bash(python -m pytest tests/backtest/test_portfolio_rules.py -q)",
       "Bash(python -c \"import ast; [ast.parse\\(open\\(f,encoding='utf-8'\\).read\\(\\)\\) for f in ['module/runs/recycle.py','module/runs/execution.py']]; print\\('sintaxis OK'\\)\")",
       "Bash(python -m ruff check module/runs/recycle.py module/runs/execution.py)",
-      "Bash(python -c \"import module.runs.recycle, module.runs.execution; print\\('imports OK'\\)\")"
+      "Bash(python -c \"import module.runs.recycle, module.runs.execution; print\\('imports OK'\\)\")",
+      "Bash(python -m pytest -q)",
+      "Bash(python -m pytest -q tests/test_catalog_contract.py)"
     ],
     "additionalDirectories": [
       "C:\\Users\\PC\\AppData\\Local\\Temp"

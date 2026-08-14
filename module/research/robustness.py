@@ -17,13 +17,18 @@ def bootstrap_and_eras(diagnostics: pd.DataFrame, *, iterations: int = 2_000) ->
     frame["year"] = pd.to_datetime(frame["prediction_date"]).dt.year
     frame = frame.loc[frame["year"].le(SELECTION_UNTIL_YEAR)]
     values = frame.set_index("prediction_date")["rank_ic"].dropna()
+    interval_90 = block_bootstrap_ci(
+        values, block_size=DEFAULT_BLOCK_SIZE, n_boot=iterations, confidence=0.90,
+    )
+    interval_95 = block_bootstrap_ci(
+        values, block_size=DEFAULT_BLOCK_SIZE, n_boot=iterations, confidence=0.95,
+    )
+    # Ambos intervalos remuestrean la misma serie con la misma semilla, así que sus réplicas son
+    # idénticas: se conservan una sola vez, en el intervalo al 95 %. Guardarlas dos veces no
+    # añadiría información y duplicaría el tamaño del artefacto.
     results = {
-        "interval_90": block_bootstrap_ci(
-            values, block_size=DEFAULT_BLOCK_SIZE, n_boot=iterations, confidence=0.90,
-        ),
-        "interval_95": block_bootstrap_ci(
-            values, block_size=DEFAULT_BLOCK_SIZE, n_boot=iterations, confidence=0.95,
-        ),
+        "interval_90": {key: value for key, value in interval_90.items() if key != "replicates"},
+        "interval_95": interval_95,
         "era_exclusions": [],
     }
     for start, end in SELECTION_ERAS:
@@ -64,22 +69,27 @@ def score_permutation(
             "n_permutations": iterations,
             "add_one_correction": True,
             "applicable": False,
+            "null_distribution": [],
         }
     observed = float(np.mean([_spearman(group[:, 0], group[:, 1]) for group in groups]))
     rng = np.random.default_rng(42)
-    exceedances = 0
-    for _ in range(iterations):
-        statistic = float(np.mean([
+    # Se conserva el estadístico de cada permutación, no solo cuántas superan al observado: el
+    # p-valor dice si la señal destaca, pero solo la distribución completa deja ver *cuánto*
+    # destaca. Sin ella, la figura del contraste tendría que simular la forma de la nula.
+    null_statistics = np.empty(iterations)
+    for index in range(iterations):
+        null_statistics[index] = float(np.mean([
             _spearman(group[:, 0], rng.permutation(group[:, 1]))
             for group in groups
         ]))
-        exceedances += statistic >= observed
+    exceedances = int((null_statistics >= observed).sum())
     return {
         "observed_mean_rank_ic": observed,
         "p_value": float((exceedances + 1) / (iterations + 1)),
         "n_permutations": iterations,
         "add_one_correction": True,
         "applicable": True,
+        "null_distribution": [float(value) for value in null_statistics],
     }
 
 
@@ -211,6 +221,9 @@ def _simulate(
         "model_percentile": float((samples < model_cagr).mean()),
         "n_simulations": simulations,
         "portfolio_size": size,
+        # El CAGR de cada cartera simulada, no solo sus cuantiles: es lo que permite dibujar
+        # dónde cae el modelo dentro de la nube de carteras aleatorias comparables.
+        "null_distribution": [float(value) for value in samples],
     }
 
 

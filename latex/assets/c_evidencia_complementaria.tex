@@ -46,28 +46,30 @@ catorce controles antes de recalcular el Rank-IC: \texttt{factor\_pe}, \texttt{f
 \texttt{factor\_roic}, \texttt{factor\_operating\_margin}, \texttt{factor\_eps\_growth\_yoy} y
 \texttt{factor\_sales\_per\_share\_growth\_yoy}.
 
-\section{Limitación de trazabilidad: las distribuciones nulas}
+\section{Trazabilidad de las distribuciones nulas}
 
-Hay una limitación de los artefactos que conviene declarar de forma explícita, porque afecta a cómo
-se han podido representar tres contrastes de robustez.
+Los contrastes basados en simulación persisten tanto sus estadísticos-resumen como \emph{la
+distribución que los generó}. Del test de permutación se conservan el $p$-valor, el Rank-IC
+observado y los estadísticos de las 9.999 permutaciones; del \textit{bootstrap} por bloques, los
+extremos del intervalo y las 2.000 medias remuestreadas; de las carteras aleatorias, los cuantiles
+y el CAGR de cada una de las 1.000 simulaciones, tanto en la versión general como en la emparejada
+por riesgo.
 
-El estudio persiste los \emph{estadísticos-resumen} de los contrastes basados en simulación, pero no
-las distribuciones que los generaron. Del test de permutación se conservan el $p$-valor, el número
-de réplicas y el Rank-IC observado, pero no los 9.999 valores individuales. Del \textit{bootstrap}
-por bloques se conservan los extremos del intervalo, pero no las remuestras. De las carteras
-aleatorias se conservan la media, la mediana, el percentil 95 y el percentil que ocupa el modelo,
-pero no las 1.000 simulaciones.
+Esto permite que las Figuras~\ref{fig:permutacion},~\ref{fig:bootstrap} y~\ref{fig:aleatorias}
+representen histogramas de la distribución nula y no solo sus resúmenes: se ve dónde cae el valor
+observado dentro de la nube completa, no únicamente que la supera. Todo lo representado son valores
+medidos y persistidos; ninguna figura simula una distribución plausible a partir de un resumen.
 
-En consecuencia, las Figuras~\ref{fig:permutacion},~\ref{fig:bootstrap} y~\ref{fig:aleatorias}
-representan estadísticos-resumen y no histogramas de la distribución nula. Un histograma habría sido
-visualmente más contundente, pero exigiría simular una distribución plausible a partir de los
-resúmenes, lo que equivaldría a presentar datos inventados con apariencia de medición. Se ha
-preferido representar únicamente lo que existe.
+Los estadísticos-resumen se pueden recalcular exactamente desde las réplicas guardadas —el
+$p$-valor del contraste de permutación y los extremos del intervalo \textit{bootstrap} se
+reproducen sin discrepancia—, de modo que la figura y la cifra del texto proceden demostrablemente
+del mismo cálculo.
 
-Corregir esta limitación exigiría reejecutar el estudio persistiendo las réplicas, lo que
-contradice la decisión de congelarlo explicada en la Sección~\ref{sec:reproducibilidad}. Queda
-anotada como mejora para futuras ejecuciones: el coste de almacenamiento es despreciable frente al
-valor probatorio de poder mostrar la distribución completa.
+Las réplicas se guardan únicamente en los tres contrastes de robustez que se representan. La
+comparación pareada que decide cada variable del catálogo también usa \textit{bootstrap} por
+bloques, pero ahí se descartan a propósito: se evalúa una vez por candidato de cada variable y
+arrastrar sus remuestras multiplicaría el tamaño de \artefacto{decisions.json} sin que ninguna
+figura las utilice.
 
 \section{Alcance de las conclusiones}
 

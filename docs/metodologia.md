@@ -109,6 +109,48 @@ parámetros incompatibles quedan ocultos e inactivos.
 El stacker convierte scores y retornos en rangos transversales. Se ajusta en cada fecha con las
 últimas 8 o 16 cohortes trimestrales cerradas. Si no existe evidencia suficiente, usa equal.
 
+## 4.5 El baseline (`recommended`), revisado por lógica el 2026-08-12
+
+El `recommended` de cada variable predictiva en
+[module/studies/catalog.py](../module/studies/catalog.py) es el punto de partida de la
+optimización secuencial (§3): la primera evaluación (`predictive:baseline`) y el incumbent sobre
+el que se prueba la primera variable optimizable. Antes de lanzar ningún Model Study, se revisó
+variable por variable si el valor actual seguía siendo el más defendible **por lógica de dominio
+únicamente**, sin usar ningún resultado empírico de un study todavía inexistente. Conclusión:
+**los 21 baselines vigentes se mantienen sin cambios.** Todos comparten dos criterios rectores:
+
+1. **Simplicidad/regularización como default**: entre valores equivalentes, se prefiere el más
+   simple o más conservador; la complejidad (más árboles, más profundidad, más features, pesos
+   más libres) es la hipótesis que debe demostrar que mejora el Rank-IC, no algo que se asuma de
+   entrada.
+2. **PIT y causalidad estrictos por defecto**: donde hay ambigüedad, se prefiere el valor más
+   prudente frente a lookahead o sobreajuste (lag de 60 días, poda por estabilidad OOS, límites
+   acotados en el meta-agente).
+
+| Variable | `recommended` | Razón (por qué es el punto de partida, no una elección empírica) |
+|---|---|---|
+| `snapshot_step_months` | 3 | Coherente con la cadencia real de los fundamentales (informes trimestrales): observar más a menudo que la fuente de datos añade ruido de precio, no información nueva. |
+| `target_horizon_months` | 12 | Horizonte largo da señal fundamental más estable y menos ruido de corto plazo, coherente con agentes fundamentales (quality/value/growth). |
+| `train_lookback_years` | 8 | Cubre más de un ciclo de mercado sin diluir la relación factor-retorno con datos de un régimen demasiado distinto (pre-2008). |
+| `execution_lag_days` | 60 | El más conservador de {30,45,60}; PIT estricto es la prioridad del proyecto (regla 2 de `CLAUDE.md`). |
+| `recency_weighting` | off | Neutral: ponderar recencia es una hipótesis adicional que debe ganarse compitiendo, no asumirse. |
+| `objective` | rank_regression | Señal continua (magnitud), más informativa como punto de partida que el ranking puro. |
+| `feature_preset` | core | Mínimo suficiente por diseño; `all` es la hipótesis de que más profundidad de información ayuda, no el default. |
+| `fundamental_momentum` | True | Cambios PIT de fundamentales son información causal legítima y barata de incluir. |
+| `market_regime_feature` | True | Contexto de mercado causal y disponible sin lookahead; mismo criterio que el anterior. |
+| `neutralize_by_sector` | False | Punto de partida menos restrictivo: deja toda la señal disponible, incluida la sectorial; neutralizar es una hipótesis de diseño adicional a demostrar. |
+| `winsorization` | 0.0 | Sin transformación adicional sobre los datos crudos; el recorte de colas es una hipótesis de robustez que debe ganarse con Rank-IC. |
+| `max_features_per_agent` | 8 | El más bajo de {8,12,20}; menos parámetros como punto de partida frente a sobreajuste. |
+| `feature_weighting_mode` | oos_stability_prune | Más conservador frente a overfitting que la selección nativa del modelo; alineado con generalizar fuera de muestra. |
+| `model_family` | lightgbm | Captura no linealidades e interacciones sin especificarlas a mano; Elastic Net es la alternativa lineal más simple a probar. |
+| `lgbm_max_depth` | 3 | El más bajo de {3,4,6}; árboles poco profundos regularizan como punto de partida. |
+| `lgbm_n_estimators` | 100 | El más bajo de {100,200,400}; mismo criterio de regularización. |
+| `lgbm_learning_rate` | 0.05 | Valor medio de {0.03,0.05,0.10}: ni underfitting por lentitud con pocos estimadores, ni inestabilidad por agresividad. |
+| `lgbm_min_child_samples` | 50 | Valor medio de {20,50,100}: evita hojas con pocas observaciones sin perder señal por exceso de restricción. |
+| `meta_method` | stacked_rolling_bounded | Ya incorpora una salvaguarda de diseño (límites 10–50 %) que evita que el meta colapse en un solo agente; usa solo cohortes ya cerradas (causal). `equal` ignora por completo si un agente es sistemáticamente mejor, que es también una asunción fuerte, no un default neutral. |
+| `meta_history_quarters` | 16 | Ventana más larga (4 años) da un ajuste del stacker más estable que 8 trimestres. |
+| `meta_recency_weighting` | off | Neutral, mismo criterio que `recency_weighting`. |
+
 ## 5. Regla de selección
 
 Las comparaciones son pareadas por cohorte y solo usan datos hasta 2024.

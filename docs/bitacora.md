@@ -1,5 +1,309 @@
 # Bitácora
 
+## 2026-08-14 · Cadena de tres studies completada; el study 3 pasa a ser la referencia del TFM
+
+### Resultado
+
+La cadena de tres Model Studies encadenados (§ `docs/plan_estudios_encadenados.md`) terminó. **El
+study de referencia del TFM pasa a ser `study-20260813-232458-05b4d236`** (ganador
+`run-d304f6074665`), el más optimizado. Los tres corrieron bajo catálogo v6 y son comparables.
+
+| Métrica | Study 1 | Study 2 | Study 3 |
+|---|---|---|---|
+| Rank-IC medio (selección) | 0,1000 | 0,1074 | **0,1090** |
+| IC-IR | 0,735 | 0,835 | **0,851** |
+| Cohortes positivas | 70,94 % | 74,36 % | 74,36 % |
+| Coeficiente de transferencia | 0,178 | 0,234 | **0,049** |
+| Information Ratio | 0,189 | 0,294 | **0,121** |
+| Deflated Sharpe | 0,844 | 0,867 | **0,584** |
+
+### Por qué se encadenó
+
+La optimización es **greedy secuencial**, así que el ganador depende del punto de partida: cada
+variable se evalúa sobre el incumbent acumulado, no sobre todas las combinaciones posibles. Usar el
+ganador de cada pasada como baseline de la siguiente es un ascenso por coordenadas, y se hizo para
+intentar alcanzar una configuración mejor que la que alcanza una sola pasada desde el baseline del
+catálogo.
+
+### Qué demuestra
+
+**Funciona en la métrica de selección**: Rank-IC sube de forma monótona (+9,0 % acumulado) e IC-IR
+de 0,735 a 0,851. Y **converge**: solo cambia una variable por pasada (`meta_method` en la 2.ª,
+`execution_lag_days` en la 3.ª) y las otras 19 se mantienen, señal de que el óptimo greedy es
+estable frente al punto de partida.
+
+**No se traduce en economía, y hay que decirlo**: con el mejor Rank-IC de las tres, el study 3 tiene
+el peor coeficiente de transferencia (0,049 frente a 0,234) y peor IR (0,121 frente a 0,294). La
+tercera pasada ordena mejor el universo y a la vez convierte peor esa ordenación en rentabilidad.
+Es evidencia directa de que el cuello de botella está en la traducción señal → cartera, no en la
+capacidad predictiva. El Deflated Sharpe también empeora (0,584), consecuencia esperada de la
+multiplicidad que introduce encadenar pasadas.
+
+### Consecuencias para el manuscrito
+
+- La quinta afirmación vertebradora («el perfil `balanced` es el mejor») **es falsa**: no gana en
+  ninguna pasada. El mejor perfil es `defensive` en 1 y 2, y `value` en la 3.
+- El agente `risk` por sí solo (Rank-IC 0,1197) **sigue superando al meta-agente** (0,1058).
+- El contraste de carteras aleatorias no se supera en el escenario general (percentil 56,7 en el
+  study 3); sí en el emparejado por riesgo (92,4), aunque por debajo del umbral de 0,95.
+
+## 2026-08-14 · `execution_lag_days`: se invierte la tabla de simplicidad (catálogo v7)
+
+### Decisión
+
+`simplicity` de `execution_lag_days` pasa de `(30, 45, 60)` a **`(60, 45, 30)`**, de modo que en un
+empate técnico gana el **lag mayor**. `CATALOG_VERSION` sube de 6 a **7**.
+
+### Motivo
+
+El desempate por simplicidad (`tie_simplicity` en
+[module/studies/selection.py](../module/studies/selection.py)) elegía sistemáticamente el lag
+**menor** cuando la evidencia no distinguía. Pero un lag menor no es una hipótesis más simple sino
+**más fuerte**: afirma que el fundamental ya estaba disponible para operar antes. La tabla estaba
+premiando, en caso de duda, la opción con más riesgo de lookahead — justo lo contrario de la regla 2
+de `CLAUDE.md` y del criterio con el que el catálogo recomienda 60.
+
+Se auditaron las 21 variables predictivas: **es el único caso** con este defecto de validez. En las
+de LightGBM (`lgbm_max_depth`, `lgbm_n_estimators`, `lgbm_learning_rate`, `lgbm_min_child_samples`)
+el orden es correcto —menos capacidad es genuinamente más simple— y en `market_regime_feature`,
+`fundamental_momentum`, `feature_weighting_mode` o `snapshot_step_months` el ganador de empates no
+coincide con el `recommended`, pero eso es la tensión normal entre punto de partida y desempate, no
+un defecto.
+
+### Alcance real
+
+Afecta a decisiones frágiles: en el study 1 se resolvieron **4 de 19** decisiones por
+`tie_simplicity` (una con ventaja de +0,00001, ruido puro), 1 en el study 2 y 2 en el study 3. En
+concreto, el lag ganador **tanto del study 1 (30) como del study 3 (60) salió de esta regla**, no de
+la evidencia: la ventaja pareada entre ambos nunca superó `TIE_TOLERANCE` (0,002). El TFM debe
+declarar que la evidencia no distingue entre 30 y 60 días, en vez de presentar el lag final como un
+hallazgo medido.
+
+La cadena de tres studies es **v6** y el código vigente es **v7**; el manuscrito debe citar la
+versión de catálogo junto al `study_id`.
+
+## 2026-08-13 · Estrategia: estudios encadenados (el ganador de uno es el baseline del siguiente)
+
+### Decisión
+
+Encadenar tres Model Studies: el ganador de cada uno se marca como `baseline` de todas las
+variables del siguiente. El TFM se redactará sobre el **último** de la cadena, y la progresión
+entre los tres se contará como evidencia de que el procedimiento converge. Plan completo en
+[docs/plan_estudios_encadenados.md](plan_estudios_encadenados.md).
+
+### Motivo
+
+La optimización es greedy secuencial, así que **el ganador depende del punto de partida**: cada
+variable se evalúa sobre el incumbent acumulado, no sobre todas las combinaciones. Encadenar es
+un ascenso por coordenadas — cada pasada completa es una iteración.
+
+El study 1 (`study-20260812-163136-1b104667`, catálogo v6, ganador `run-6eaa47a0597b`) lo pedía:
+su configuración ganadora se aparta del baseline del catálogo en **8 de 21 variables
+predictivas**, y **4 de 19 decisiones se resolvieron por `tie_simplicity`** (empate estadístico:
+`execution_lag_days`, `market_regime_feature`, `lgbm_learning_rate`, `lgbm_min_child_samples`).
+Un empate significa que la ventaja no se distinguía del ruido *con el incumbent de ese momento*;
+reevaluadas desde un baseline mejor pueden resolverse de otra forma.
+
+### Cómo se implementa
+
+No requiere código nuevo: `normalized_definition`
+([module/studies/config.py:41-74](../module/studies/config.py)) ya admite `baseline` por variable
+—exigiendo que sea uno de los `values` seleccionados— e `initial_values` (línea 173) siembra con
+él la evaluación `predictive:baseline`. Encadenar es lanzar el study siguiente marcando como
+baseline el valor ganador del anterior.
+
+### Riesgo declarado
+
+Encadenar pasadas multiplica las configuraciones probadas sobre los mismos datos y **agrava la
+selección múltiple**. El Deflated Sharpe ya lo penaliza vía `n_trials` (74 en el study 1). El
+capítulo de limitaciones debe declarar que la ganancia de Rank-IC entre pasadas y el riesgo de
+sobreajuste crecen a la vez, y que la ventana reservada 2025-2026 —que no participa en ninguna
+pasada— es la única defensa real.
+
+### Hallazgos del study 1 que obligarán a reescribir el manuscrito
+
+Medidos sobre el study 1; **habrá que recalcularlos sobre el study final**, no copiarlos:
+
+- El perfil `defensive` bate a `balanced` (exceso 3,34 % vs 1,07 %; IR 0,46 vs 0,19), lo que
+  contradice la quinta afirmación vertebradora del TFM.
+- El agente `risk` por sí solo (Rank-IC 0,117) **supera al meta-agente** (0,094), que le asigna el
+  tope máximo de peso (0,50).
+- El contraste de carteras aleatorias no se supera en el escenario general (percentil 61,4); sí en
+  el emparejado por riesgo (96,8). El Deflated Sharpe sigue sin superarse (0,844 < 0,95).
+- Rank-IC casi idéntico al study anterior (0,1000 vs 0,1004) pero economía más débil (IR 0,189 vs
+  0,269; exceso 1,07 % vs 1,62 %), con coeficiente de transferencia 0,178.
+
+### Pendiente
+
+El usuario lanza los studies 2 y 3. Después: rellenar la tabla de progresión y ejecutar la fase 2
+(migración del manuscrito) sobre el study final.
+
+## 2026-08-12 · `target_size` incorpora 5 posiciones al extremo concentrado de la rejilla
+
+### Decisión
+
+La rejilla de `target_size` pasa de (8, 12, 16, 25, 50) a **(5, 8, 12, 16, 25, 50)**. El baseline
+sigue siendo 12: solo se amplía el barrido, no se cambia la configuración recomendada.
+
+### Motivo
+
+La rejilla se había ampliado por arriba (25 y 50) para medir cuánta señal recupera la amplitud, pero
+nunca por abajo: 8 era el extremo concentrado y no permitía ver dónde empieza a dominar el riesgo
+idiosincrático. Con 5 nombres cada posición pesa en torno al 20 %, así que el barrido cubre ahora el
+rango completo entre «la cartera es un puñado de convicciones» y «la cartera cosecha el Rank-IC
+medio», que es justo la curva que la ley fundamental predice.
+
+`target_size` es `predictive=False` (etapa `portfolio`), así que este valor **no puede alterar el
+ganador**: se ejecuta después de congelarlo y solo describe su comportamiento económico.
+
+### Cambios
+
+1. [module/studies/catalog.py](../module/studies/catalog.py): valor `5` en la rejilla, con su
+   etiqueta («5 posiciones») y su descripción larga para la interfaz.
+2. [docs/gestion_cartera.md](gestion_cartera.md): tabla de variables actualizada.
+
+### Verificación
+
+`pytest` 75/75. El catálogo público expone los seis valores con etiqueta y descripción. El hash del
+catálogo cambia —lo fija el contenido de las rejillas—, pero `CATALOG_VERSION` se mantiene en 6: no
+hay ruptura de comparabilidad predictiva, porque ninguna variable de selección se toca.
+
+### Pendiente
+
+El barrido de cartera de studies anteriores no contiene el punto de 5 posiciones; aparecerá en el
+próximo run.
+
+## 2026-08-12 · Robustez: se persisten las distribuciones nulas, no solo sus resúmenes
+
+### Decisión
+
+Los tres contrastes de robustez basados en simulación calculaban sus réplicas y las descartaban,
+guardando únicamente estadísticos-resumen. Ahora se persisten las distribuciones completas en
+`robustness.json`:
+
+| Contraste | Función | Qué se guarda ahora |
+|---|---|---|
+| Permutación | `score_permutation` ([module/research/robustness.py](../module/research/robustness.py)) | `null_distribution`: los 9.999 estadísticos permutados |
+| Bootstrap por bloques | `block_bootstrap_ci` ([module/evaluation/stats.py](../module/evaluation/stats.py)) | `replicates`: las 2.000 medias remuestreadas |
+| Carteras aleatorias | `_simulate` ([module/research/robustness.py](../module/research/robustness.py)) | `null_distribution`: el CAGR de las 1.000 simulaciones, en el escenario general y en el emparejado por riesgo |
+
+### Motivo
+
+El manuscrito declaraba una limitación autoimpuesta (anexo de evidencia complementaria): al
+conservar solo resúmenes, tres figuras del TFM representaban estadísticos y no histogramas de la
+distribución nula, porque dibujar el histograma habría exigido *simular* una distribución
+plausible —es decir, inventar datos—. El propio anexo concluía que «el coste de almacenamiento es
+despreciable frente al valor probatorio». Con las réplicas persistidas esa limitación desaparece:
+las figuras pueden mostrar dónde cae el valor observado dentro de la nube completa.
+
+### Cambios
+
+1. `module/evaluation/stats.py`: `block_bootstrap_ci` devuelve `replicates`.
+   **`paired_difference_ci` las descarta a propósito**: alimenta la selección del Study y se
+   evalúa una vez por candidato de cada variable, así que arrastrarlas multiplicaría el tamaño de
+   `decisions.json` sin que ninguna figura las lea.
+2. `module/research/robustness.py`: `score_permutation` acumula los estadísticos en vez de solo
+   contar excedencias; `_simulate` devuelve las muestras; `bootstrap_and_eras` guarda las réplicas
+   **una sola vez** (en `interval_95`), porque los intervalos al 90 % y al 95 % remuestrean la
+   misma serie con la misma semilla y sus réplicas son idénticas.
+3. `latex/assets/c_evidencia_complementaria.tex`: la sección «Limitación de trazabilidad» pasa a
+   describir qué se guarda de cada contraste.
+4. `latex/assets/09_resultados.tex` y `latex/assets/t09_limitaciones.tex`: se elimina la
+   advertencia y la fila de la tabla de limitaciones que declaraban la limitación ya resuelta.
+
+### Verificación
+
+Los estadísticos-resumen **no cambian**: recalculados sobre el study
+`study-20260803-201234-b4d7a8d8`, `interval_90` e `interval_95` reproducen bit a bit los valores
+ya persistidos (media 0,100409; IC 95 % [0,033450; 0,169474]) y las exclusiones por era son
+idénticas. Además el IC se recalcula exactamente desde las réplicas guardadas y el $p$-valor de
+permutación se reproduce desde su distribución nula: el cambio es puramente aditivo. Coste en
+disco ≈ 260 KB por study. `pytest` 75/75 y `verify_latex_assets.py` correctos.
+
+### Pendiente
+
+El study en curso queda obsoleto con este cambio: **el usuario reinicia el run**. Después, la fase
+2 (migrar el manuscrito al study nuevo, con material nuevo: explicabilidad por acción, análisis
+real de cartera, calibración de la señal, evolución de coeficientes e histogramas de distribución
+nula) según el plan acordado.
+
+## 2026-08-12 · Revisión a priori del baseline (`recommended`) de las 21 variables predictivas
+
+### Decisión
+
+Antes de lanzar ningún Model Study, se revisó variable por variable si el `recommended` actual
+en [module/studies/catalog.py](../module/studies/catalog.py) seguía siendo el punto de partida
+más defendible **por lógica de dominio únicamente**, sin usar ningún resultado empírico (no
+existe todavía ningún study lanzado con este catálogo). Resultado: **los 21 baselines vigentes se
+mantienen sin cambios** — cada uno resistió el análisis bajo dos criterios rectores: simplicidad/
+regularización como default (la complejidad debe ganarse compitiendo, no asumirse) y prudencia
+PIT/causal donde había ambigüedad.
+
+Se aclaró explícitamente con el usuario que esto no se refiere a los 8 "perfiles de inversor"
+(`module/evaluation/profiles.py`, `PROFILE_WEIGHTS`) — esos ya son pesos de agente elegidos a
+priori y se aplican después de que el study elija un único ganador, no configuran el catálogo.
+
+### Motivo
+
+El usuario pidió fijar el mejor baseline por variable "en base a la lógica, antes de haber hecho
+ningún study ni saber lo que mejor funcionaría", para tenerlo listo cuando decida iniciar el
+próximo Model Study. El `recommended` de cada variable es el baseline con el que arranca la
+optimización secuencial greedy (docs/metodologia.md §3): condiciona sobre qué incumbent se
+evalúa cada variable siguiente, así que no es un detalle cosmético.
+
+### Cambios
+
+- `docs/metodologia.md`: nueva sección 4.5 con la razón de cada baseline, variable por variable.
+- Ningún cambio en `module/studies/catalog.py` (no se justificó ningún cambio de valor).
+
+### Pendiente
+
+Ninguno: es una revisión, no abre trabajo nuevo. El baseline queda documentado para cuando se
+lance el próximo Model Study.
+
+## 2026-08-12 · Cartera: suelo de cobertura incondicional y nueva tolerancia de rebalanceo 0.40
+
+### Decisión
+
+Dos cambios pedidos por el usuario sobre `docs/gestion_cartera.md`, ambos en variables
+`predictive=False` (no exigen re-ejecutar el study):
+
+1. **Suelo de cobertura siempre vende.** El paso 1-bis (`below_coverage_percentile`) en
+   `decide_orders` ([module/evaluation/portfolio.py](../module/evaluation/portfolio.py)) dejó de
+   frenarse por el suelo de diversificación (`coverage_floor`). Antes, con `max_cash_weight > 0`,
+   una posición bajo `coverage_percentile_floor` podía **no** venderse si hacerlo rompía el mínimo
+   de plazas ocupadas. Ahora se vende siempre, sin excepción, respetando solo
+   `minimum_holding_period`. El paso 4 (relleno obligatorio) sigue decidiendo, sin cambios, si la
+   plaza liberada se recompra o queda en efectivo.
+2. **Nueva opción de catálogo `rebalance_drift_tolerance = 0.40`** ([module/studies/catalog.py](../module/studies/catalog.py)),
+   para atacar el 20 % de turnover atribuido a rebalanceo de pesos (§6 de
+   `docs/gestion_cartera.md`). El valor "actual" del ganador congelado no cambia (sigue en 0.25);
+   0.40 queda disponible para el barrido de escenarios.
+
+### Motivo
+
+El usuario, revisando `docs/gestion_cartera.md`, pidió que la venta por suelo de cobertura fuera
+incondicional (vender siempre y decidir el destino del efectivo después, no antes) y que se
+explorara reducir la rotación anual actuando sobre pesos/rebalanceo sin tocar variables
+predictivas ni relanzar el study.
+
+### Cambios
+
+- `module/evaluation/portfolio.py`: eliminado el freno `if len(holders) <= coverage_floor: break`
+  del bucle de venta por suelo de cobertura; docstring del módulo y del bucle actualizados.
+- `module/studies/catalog.py`: añadido `0.40` a los valores de `rebalance_drift_tolerance`, con su
+  etiqueta y descripción.
+- `tests/test_economic_contract.py`: `test_coverage_floor_never_breaks_the_diversification_floor`
+  reescrito como `test_coverage_floor_sells_every_position_below_it_unconditionally` para reflejar
+  el nuevo comportamiento (las cuatro posiciones se venden, no solo hasta el suelo).
+- `docs/gestion_cartera.md`: secciones 2, 3, 4, 6 y 7 actualizadas; la tabla de efecto medido en §4
+  se marca como anterior al cambio, pendiente de remedir.
+
+### Pendiente
+
+Remedir el panel de prueba de §4 y el barrido de turnover de §6 con la nueva lógica; decidir si
+`rebalance_drift_tolerance = 0.40` pasa a ser el valor "actual" una vez medido.
+
 ## 2026-08-05 · Manuscrito: unificación de capítulos, tablas y figuras en `latex/assets/`
 
 ### Decisión

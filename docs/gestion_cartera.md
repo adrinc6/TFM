@@ -49,13 +49,13 @@ la selección del modelo (regla 4 de CLAUDE.md). Solo sirven para explicar y est
 
 | Variable | Valores | Actual | Qué controla |
 |---|---|---|---|
-| `target_size` | 8, 12, 16, 25, 50 | 12 | Nº de posiciones simultáneas |
+| `target_size` | 5, 8, 12, 16, 25, 50 | 12 | Nº de posiciones simultáneas |
 | `exit_expected_alpha_bps` | 0, 100, 250 | 100 | Alfa mínimo (pb/año) para conservar |
 | `rotation_edge_bps` | 25, 50, 100 | 50 | Ventaja exigida **sobre el coste** para sustituir |
 | `max_cash_weight` | 0, 0.10, 0.25 | 0.25 | Tope de efectivo. **0 = siempre invertido** |
 | `minimum_holding_period` | none, quarter, half, full | none | Meses mínimos antes de poder vender |
 | `coverage_percentile_floor` | 0, 60, 80 | 0 | Percentil bajo el cual se vende entera |
-| `rebalance_drift_tolerance` | 0, 0.10, 0.25 | 0.25 | Desviación relativa mínima para reajustar peso |
+| `rebalance_drift_tolerance` | 0, 0.10, 0.25, 0.40 | 0.25 | Desviación relativa mínima para reajustar peso |
 | `price_only_strictness_multiplier` | 1.0, 1.5, 2.0 | 1.5 | Endurece umbrales sin fundamentales nuevos |
 | `price_only_sell_only` | False, True | False | Sin fundamentales: vender sí, comprar no |
 | `sizing_mode` | equal, alpha_proportional | alpha_proportional | Reparto de pesos |
@@ -125,8 +125,10 @@ vende siempre. **Ignora el mínimo de tenencia** y no puede recomprarse ese snap
 
 ### Paso 1-bis — Suelo de cobertura (`below_coverage_percentile`)
 
-Una posición que cae por debajo de `coverage_percentile_floor` se vende entera, **aunque su alfa no
-active ninguna otra regla**. Ver sección 4: es la variable más delicada del bloque.
+Una posición que cae por debajo de `coverage_percentile_floor` se vende entera **siempre**, **aunque
+su alfa no active ninguna otra regla**. La venta no se frena por el suelo de diversificación: qué
+pasa con la plaza liberada (recompra o efectivo) lo decide después el relleno obligatorio del paso 4,
+no esta regla. Ver sección 4: es la variable más delicada del bloque.
 
 ### Paso 2 — Venta a efectivo (`expected_alpha_below_exit`)
 
@@ -207,12 +209,17 @@ porque no compite contra ningún coste: no decide si una operación es rentable,
 
 ### La consecuencia que hay que tener presente
 
+La venta por suelo de cobertura es **incondicional**: se vende toda posición bajo el suelo, sin
+excepción, y esta regla no decide qué pasa después con la plaza liberada — eso es siempre cosa del
+paso 4 (relleno obligatorio).
+
 Con **`max_cash_weight = 0`**, el paso 4 recompra la mejor disponible en el mismo snapshot sin
 aplicar umbrales. Es decir: la venta por cobertura **fuerza una rotación que el bucle económico
 habría rechazado** por no cubrir su coste, y por tanto **aumenta la rotación**.
 
-Con **`max_cash_weight > 0`**, la plaza puede quedarse en efectivo hasta el suelo de diversificación,
-y la regla sí de-arriesga de verdad. La configuración actual usa 0.25, así que estás en este caso.
+Con **`max_cash_weight > 0`**, el paso 4 solo rellena hasta el suelo de diversificación, así que la
+plaza puede quedarse en efectivo y la regla sí de-arriesga de verdad. La configuración actual usa
+0.25, así que estás en este caso.
 
 ### Calibración de los valores
 
@@ -230,8 +237,9 @@ Con `target_size = 12` sobre un universo de ~500 acciones, las posiciones se com
 > diagnóstico lo medirá contra el ganador congelado; si el efecto no compensa, bajar a valores más
 > cercanos a p10-p25 es un cambio de una línea en el catálogo.
 
-**Efecto medido** sobre un panel de prueba pequeño (4 tickers, 12 meses, `target_size=2`), suficiente
-para ver la dirección aunque no para extrapolar magnitudes:
+**Efecto medido** (previo al cambio del 2026-08-12: la venta pasó a ser incondicional, ver §7) sobre
+un panel de prueba pequeño (4 tickers, 12 meses, `target_size=2`), suficiente para ver la dirección
+aunque no para extrapolar magnitudes:
 
 | Suelo | Tope efectivo | Ventas por cobertura | Turnover |
 |---|---|---|---|
@@ -240,10 +248,12 @@ para ver la dirección aunque no para extrapolar magnitudes:
 | **80** | **0** | **11** | **11,94** |
 | 80 | 0,25 | 0 | 1,00 |
 
-Confirma las dos propiedades declaradas: con **tope 0** el suelo dispara rotación forzada (el relleno
-recompra en el mismo snapshot), y con **tope > 0** el suelo de diversificación puede bloquear las
-ventas por completo. Es decir, **la misma variable hace cosas muy distintas según el tope de
-efectivo**, y por eso conviene leer ambas juntas.
+Confirmaba entonces dos propiedades: con **tope 0** el suelo dispara rotación forzada (el relleno
+recompra en el mismo snapshot), y con **tope > 0** el suelo de diversificación **bloqueaba** las
+ventas por completo. Esta segunda propiedad ya no es cierta: desde el 2026-08-12 la venta por suelo
+de cobertura es incondicional en ambos casos, y solo cambia lo que hace el paso 4 con la plaza
+liberada (recompra con tope 0, posible efectivo con tope > 0). El panel necesita remedirse contra
+esta nueva lógica.
 
 ---
 
@@ -333,6 +343,15 @@ muestra que el compromiso no es monótono — retener demasiado destruye el alfa
 > El valor actual `"none"` viene del `recommended` del catálogo, **no de una elección medida**.
 > Cambiarlo a `half_horizon` es una línea en `catalog.py` y exige re-ejecutar el study.
 
+### Nueva palanca sobre el 20 % de rebalanceo de pesos
+
+Se añadió **`rebalance_drift_tolerance` = 0.40** al catálogo (2026-08-12), como opción disponible
+para el barrido de escenarios. `rebalance_drift_tolerance` no es predictiva, así que probar 0.40 no
+exige re-ejecutar el study: solo repetir el barrido de cartera sobre el ganador congelado. El valor
+**actual** sigue en 0.25 hasta que el barrido mida si 0.40 mejora la relación turnover/alfa; no se
+asume aquí que lo haga. Congela más posiciones con desviaciones moderadas del peso objetivo, a costa
+de tolerar carteras algo menos ajustadas al objetivo teórico entre rebalanceos.
+
 ### Palanca estructural, fuera del bloque de cartera
 
 `snapshot_step_months` 1 → 3 reduciría el turnover ~3× por construcción, pero es una variable
@@ -346,4 +365,18 @@ posterior de cartera.
 > Anota aquí lo que quieras modificar. Formato sugerido: qué regla, qué comportamiento nuevo, y por
 > qué. Se traslada al código, con sus tests y su entrada de bitácora.
 
-*(vacío)*
+### Resueltos (2026-08-12)
+
+1. **Suelo de cobertura siempre vende.** El paso 1-bis (`below_coverage_percentile`) dejó de
+   frenarse por el suelo de diversificación: toda posición bajo `coverage_percentile_floor` se
+   vende, sin excepción (respetando solo `minimum_holding_period`). El destino de la plaza liberada
+   —recompra o efectivo— lo sigue decidiendo el paso 4, sin cambios. Implementado en
+   [module/evaluation/portfolio.py](../module/evaluation/portfolio.py), función `decide_orders`.
+
+2. **Reducir rotación por rebalanceo de pesos.** Se añadió `rebalance_drift_tolerance = 0.40` al
+   catálogo ([module/studies/catalog.py](../module/studies/catalog.py)) como nueva opción, sin
+   tocar la lógica de `_apply_rebalance_tolerance` (sigue siendo tolerancia relativa pura). El
+   valor "actual" no cambia (sigue en 0.25); 0.40 queda disponible para medir con el barrido de
+   escenarios si compensa el 20 % de turnover atribuido a rebalanceo de pesos.
+
+*(sin más pendientes)*

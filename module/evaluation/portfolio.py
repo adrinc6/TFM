@@ -23,13 +23,15 @@ decide si una operación es rentable, sino si la acción pertenece al universo i
   universo scoreable. Se vende con el motivo ``missing_current_score``, **ignora** el mínimo de
   tenencia y nunca se recompra en ese mismo snapshot.
 - **Suelo de cobertura** (``coverage_percentile_floor``, 0 lo desactiva): una posición que cae por
-  debajo de ese percentil se vende con el motivo ``below_coverage_percentile``. Es la
+  debajo de ese percentil se vende **siempre**, con el motivo ``below_coverage_percentile``. Es la
   generalización de la anterior —percentil ausente sustituido por percentil demasiado bajo— pero
   **sí respeta** el mínimo de tenencia, porque la posición sigue siendo scoreable y la exclusión es
-  una preferencia declarada, no una pérdida de cobertura. Con ``max_cash_weight = 0`` la plaza
-  liberada se rellena en el mismo snapshot, así que la regla actúa como una rotación que no exige
-  cubrir su coste y aumenta la rotación; con tope de efectivo puede quedarse en efectivo hasta el
-  suelo de diversificación.
+  una preferencia declarada, no una pérdida de cobertura. La venta no se frena por el suelo de
+  diversificación: qué pasa con la plaza liberada (recompra o efectivo) lo decide después,
+  igual que siempre, el relleno obligatorio del paso 4. Con ``max_cash_weight = 0`` esa plaza se
+  rellena en el mismo snapshot, así que la regla actúa como una rotación que no exige cubrir su
+  coste y aumenta la rotación; con tope de efectivo puede quedarse en efectivo hasta el suelo de
+  diversificación.
 
 Las compras nuevas tienen **histéresis**: entrar exige el umbral de salida más el coste de ida y
 vuelta de la propia operación. Sin esa banda, una acción oscilando alrededor del umbral se compraría
@@ -175,9 +177,9 @@ def decide_orders(
     # ningún coste: no decide si una operación es rentable, sino si la acción sigue perteneciendo al
     # universo invertible. A diferencia de aquella, sí respeta el mínimo de tenencia, porque la
     # posición sigue siendo scoreable y la exclusión es una preferencia declarada, no una pérdida de
-    # cobertura. Se vende de la peor hacia arriba y nunca por debajo del suelo de diversificación.
+    # cobertura. Se vende siempre: qué pasa con la plaza liberada (recompra o efectivo) lo decide el
+    # relleno obligatorio del paso 4, no esta regla.
     if settings.coverage_percentile_floor > 0:
-        coverage_floor = floor if settings.max_cash_weight > 0.0 else 0
         below_floor = sorted(
             (
                 ticker for ticker in holders
@@ -187,8 +189,6 @@ def decide_orders(
             key=lambda ticker: percentile.get(ticker, 0.0),
         )
         for ticker in below_floor:
-            if len(holders) <= coverage_floor:
-                break
             holders.remove(ticker)
             removed.add(ticker)
             orders.append(_order(

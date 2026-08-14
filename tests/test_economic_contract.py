@@ -491,13 +491,18 @@ def test_coverage_floor_disabled_by_default_changes_nothing() -> None:
     assert set(weights) == {"A", "B", "C", "D"}
 
 
-def test_coverage_floor_never_breaks_the_diversification_floor() -> None:
-    """Vaciar la cartera por cobertura concentraría el riesgo justo al replegarse."""
+def test_coverage_floor_sells_every_position_below_it_unconditionally() -> None:
+    """La venta por suelo de cobertura es incondicional: no la frena el suelo de diversificación.
+
+    Qué pasa con las plazas liberadas (recompra o efectivo) lo decide después el relleno
+    obligatorio, no esta regla.
+    """
     state = PortfolioState(
         holdings={"A": 0.25, "B": 0.25, "C": 0.25, "D": 0.25},
         entry_dates={ticker: "2015-01-31" for ticker in "ABCD"},
     )
-    # Las cuatro posiciones caen bajo el suelo, pero con tope 25 % y 4 plazas el suelo son 3.
+    # Las cuatro posiciones caen bajo el suelo; con tope 25 % y 4 plazas el suelo sería 3, pero
+    # eso ya no frena la venta.
     scores = _scores(ticker=["A", "B", "C", "D"], meta_rank=[0.50, 0.40, 0.30, 0.20],
                      expected_excess_return=[0.0400, 0.0350, 0.0300, 0.0250])
     orders, weights = decide_orders(state, scores, Settings(
@@ -505,8 +510,7 @@ def test_coverage_floor_never_breaks_the_diversification_floor() -> None:
         exit_expected_alpha_bps=0.0, coverage_percentile_floor=60.0,
     ))
     sold = {order["ticker"] for order in orders if order["reason"] == "below_coverage_percentile"}
-    assert sold == {"D"}
-    assert len(weights) == 3
+    assert sold == {"A", "B", "C", "D"}
 
 
 def test_coverage_floor_with_zero_cash_cap_refills_in_the_same_snapshot() -> None:

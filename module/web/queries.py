@@ -143,15 +143,17 @@ def analysis(study_id: str, view: str, query: dict[str, list[str]]) -> dict[str,
     if view == "portfolio":
         positions = _with_unrealized_pnl(_read_frame(profile_dir / "positions.parquet"))
         orders = _read_frame(profile_dir / "orders.parquet")
+        equity = _read_frame(profile_dir / "equity.parquet")
         snapshots = _snapshots(positions, orders)
         selected_snapshot = _selected_snapshot(snapshots, query.get("snapshot", [None])[0])
+        position_rows = _project_columns(_records_at_snapshot(positions, selected_snapshot), POSITION_COLUMNS)
         return {
             "summary": _json(profile_dir / "summary.json"),
             "equity": _parquet(profile_dir / "equity.parquet"),
             "annual": _parquet(profile_dir / "annual_metrics.parquet"),
             "available_snapshots": snapshots,
             "selected_snapshot": selected_snapshot,
-            "positions": _project_columns(_records_at_snapshot(positions, selected_snapshot), POSITION_COLUMNS),
+            "positions": _with_cash_row(position_rows, equity, selected_snapshot),
             "orders": _project_columns(_records_at_snapshot(orders, selected_snapshot), ORDER_COLUMNS),
             "alpha_curve": _alpha_curve(evidence, selected_snapshot),
         }
@@ -163,6 +165,22 @@ def analysis(study_id: str, view: str, query: dict[str, list[str]]) -> dict[str,
 
 def _project_columns(rows: list[dict[str, Any]], columns: list[str]) -> list[dict[str, Any]]:
     return [{key: row[key] for key in columns if key in row} for row in rows]
+
+
+def _with_cash_row(
+    positions: list[dict[str, Any]], equity: pd.DataFrame, snapshot: str | None,
+) -> list[dict[str, Any]]:
+    """Antepone una fila sintética `$$CASH$$` con el peso en efectivo del snapshot.
+
+    `positions.parquet` no incluye el efectivo (sus pesos solo suman `invested_weight`, nunca
+    1.0 — ver `docs/gestion_cartera.md` sección G), así que se toma de `equity.parquet`, la
+    única fuente que ya lo calcula por snapshot.
+    """
+    cash_rows = _records_at_snapshot(equity, snapshot)
+    cash_weight = cash_rows[0].get("cash_weight") if cash_rows else None
+    if cash_weight is None:
+        return positions
+    return [{"ticker": "$$CASH$$", "snapshot_date": snapshot, "weight": cash_weight}, *positions]
 
 
 def _with_unrealized_pnl(positions: pd.DataFrame) -> pd.DataFrame:

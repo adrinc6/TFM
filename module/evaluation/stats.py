@@ -34,12 +34,19 @@ def block_bootstrap_ci(
 
     `values_by_date`: serie de rank-IC por fecha, ordenada temporalmente. `block_size` en número de
     cohortes: debe cubrir al menos el solapamiento inducido por el horizonte de la etiqueta.
+
+    Devuelve además `replicates`: las medias remuestreadas que generaron el intervalo. Guardarlas
+    permite representar la distribución completa en vez de solo sus extremos; sin ellas, una figura
+    del intervalo tendría que simular la forma de la distribución, que sería inventar datos.
     """
     values = values_by_date.dropna().to_numpy()
     n = len(values)
     if n < block_size or n == 0:
         mean = float(values.mean()) if n else 0.0
-        return {"mean": mean, "ci_low": mean, "ci_high": mean, "n_cohorts": n, "block_size": block_size}
+        return {
+            "mean": mean, "ci_low": mean, "ci_high": mean, "n_cohorts": n,
+            "block_size": block_size, "replicates": [],
+        }
 
     rng = np.random.default_rng(seed)
     n_blocks = int(np.ceil(n / block_size))
@@ -57,6 +64,7 @@ def block_bootstrap_ci(
         "ci_high": float(np.quantile(boot_means, 1 - alpha)),
         "n_cohorts": n,
         "block_size": block_size,
+        "replicates": [float(value) for value in boot_means],
     }
 
 
@@ -91,6 +99,10 @@ def paired_difference_ci(
     diff = (paired["a"] - paired["b"]).to_numpy()
     boot = block_bootstrap_ci(pd.Series(diff), block_size=block_size, n_boot=n_boot,
                               confidence=confidence, seed=seed)
+    # `boot["replicates"]` se descarta a propósito: esta función alimenta la selección del Study y
+    # se persiste una vez por candidato de cada variable, así que arrastrar 2.000 flotantes por
+    # candidato multiplicaría el tamaño de `decisions.json` sin que nada lo lea. Las réplicas solo
+    # se guardan donde se van a representar: los tres contrastes de robustez del informe.
     return {
         "mean_diff": boot["mean"],
         "ci_low": boot["ci_low"],
