@@ -20,6 +20,10 @@ class ConfigurationError(ValueError):
 # atribución, pesos del meta-agente, equity, órdenes y posiciones (ver runner._retain_evidence).
 RETAINED_BYTES_PER_RUN = 60 * 1024**2
 
+# Coste medido de una combinación de cartera: reutiliza los scores congelados del ganador y solo
+# rehace el backtest, así que cuesta segundos y no los minutos de un run predictivo con ajuste.
+PORTFOLIO_SECONDS_PER_COMBINATION = 6.0
+
 
 def _stable(value: Any) -> tuple[str, str]:
     return type(value).__name__, repr(value)
@@ -145,6 +149,83 @@ def evaluation_budget(definition: Mapping[str, dict[str, Any]]) -> dict[str, Any
         "estimated_minutes": estimated_minutes,
         "estimated_incremental_bytes": estimated_bytes,
         "breakdown": breakdown,
+        "blocking_limits": False,
+    }
+
+
+def validate_portfolio_definition(
+    raw: Mapping[str, Any] | None,
+) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
+    """Valida la rejilla de un Portfolio Study y calcula su presupuesto.
+
+    Dos reglas, y cada una responde a un motivo distinto:
+
+    - De las **seis variables optimizables** se puede marcar cualquier subconjunto de valores (uno o
+      todos): son las que el cartesiano explora, y marcar un solo valor equivale a fijarla.
+    - De las **demás variables de cartera** hay que marcar **exactamente uno**. No se optimizan, así
+      que no admiten alternativas: `commission_bps` y `slippage_bps` son supuestos de coste
+      —optimizarlos sería elegir el mundo en el que la estrategia luce mejor— y el resto gobierna
+      cuándo se opera bajo información incompleta, que se estresa aparte y no se elige por IR.
+    """
+    from module.studies.portfolio_study import PORTFOLIO_STUDY_VARIABLES
+
+    raw = raw or {}
+    unknown = set(raw) - {spec.id for spec in VARIABLES if not spec.predictive}
+    if unknown:
+        raise ConfigurationError(
+            f"El Portfolio Study solo admite variables de cartera; sobran: {sorted(unknown)}."
+        )
+    definition: dict[str, dict[str, Any]] = {}
+    for spec in VARIABLES:
+        if spec.predictive:
+            continue
+        selection = raw.get(spec.id)
+        values = list(selection["values"]) if isinstance(selection, Mapping) and "values" in selection else [spec.recommended]
+        canonical = [_canonical(value, spec.values) for value in values]
+        if any(value is None for value in canonical):
+            invalid = [value for value, ok in zip(values, canonical) if ok is None]
+            raise ConfigurationError(f"Valores fuera de catálogo en {spec.id}: {invalid}.")
+        if len({_stable(value) for value in canonical}) != len(canonical):
+            raise ConfigurationError(f"{spec.id} contiene valores repetidos.")
+        if not canonical:
+            raise ConfigurationError(f"{spec.id} necesita al menos un valor.")
+        if spec.id not in PORTFOLIO_STUDY_VARIABLES and len(canonical) != 1:
+            raise ConfigurationError(
+                f"{spec.id} no se optimiza: debe fijarse en exactamente un valor, no {len(canonical)}."
+            )
+        definition[spec.id] = {
+            "mode": "grid" if spec.id in PORTFOLIO_STUDY_VARIABLES else "fixed",
+            "values": canonical,
+            "baseline": canonical[0],
+        }
+    return definition, portfolio_budget(definition)
+
+
+def portfolio_budget(definition: Mapping[str, dict[str, Any]]) -> dict[str, Any]:
+    """Presupuesto del cartesiano de cartera.
+
+    Cada combinación reutiliza los scores ya congelados del ganador y solo rehace el backtest, del
+    orden de segundos, frente a los minutos que cuesta un run predictivo con su ajuste.
+    """
+    from module.studies.portfolio_study import PORTFOLIO_STUDY_VARIABLES
+
+    breakdown = {
+        variable_id: len(definition[variable_id]["values"])
+        for variable_id in PORTFOLIO_STUDY_VARIABLES
+        if variable_id in definition
+    }
+    combinations = 1
+    for count in breakdown.values():
+        combinations *= count
+    return {
+        "combinations": combinations,
+        "grid_variables": len([count for count in breakdown.values() if count > 1]),
+        "fixed_variables": len([count for count in breakdown.values() if count == 1]),
+        "breakdown": breakdown,
+        "seconds_per_combination": PORTFOLIO_SECONDS_PER_COMBINATION,
+        "estimated_minutes": round(combinations * PORTFOLIO_SECONDS_PER_COMBINATION / 60),
+        # Solo sobrevive la evidencia del mejor vigente, así que el disco no crece con la rejilla.
+        "estimated_incremental_bytes": RETAINED_BYTES_PER_RUN,
         "blocking_limits": False,
     }
 

@@ -8,6 +8,14 @@
     selectedStudy: null, selectedRun: null, section: "summary", eventSequence: 0, timer: null,
     snapshot: null, stockTicker: null, stockView: "portfolio", stockParameter: null,
     retainAllRuns: false,
+    // Optimizador activo en Inicio: "model" elige el modelo por Rank-IC; "portfolio" no toca el
+    // modelo y elige las variables de cartera por Information Ratio sobre un ganador ya congelado.
+    optimizer: "model",
+    portfolioDefinition: null, portfolioBudget: null, portfolioSources: [], portfolioSource: null,
+    portfolioProfiles: null,
+    // Evidencia de cartera que se está viendo dentro de un Portfolio Study: la ganadora o un
+    // perfil concreto. `{source, label}`; null cuando no se ha abierto ninguna.
+    portfolioRun: null,
   };
   const gigabytes = bytes => `${(Number(bytes || 0) / 1024 ** 3).toFixed(1)} GB`;
 
@@ -97,7 +105,27 @@
     </div>`;
   }
 
+  // El conmutador vive en la cabecera, junto a Inicio/Resultados, no dentro del formulario: elige
+  // qué se configura, así que no debe desplazarse con el contenido de la vista.
+  function renderOptimizerSwitch(visible) {
+    const host = document.getElementById("optimizer-switch");
+    if (!host) return;
+    host.classList.toggle("hidden", !visible);
+    if (!visible) return (host.innerHTML = "");
+    host.innerHTML = [["model", "Modelo", "Rank-IC"], ["portfolio", "Cartera", "Information Ratio"]]
+      .map(([id, label, metric]) =>
+        `<button data-optimizer="${id}" class="${state.optimizer === id ? "active" : ""}" role="tab"
+          aria-selected="${state.optimizer === id}"><b>${esc(label)}</b><small>${esc(metric)}</small></button>`
+      ).join("");
+    host.querySelectorAll("[data-optimizer]").forEach(button => button.onclick = () => {
+      if (state.optimizer === button.dataset.optimizer) return;
+      state.optimizer = button.dataset.optimizer;
+      renderHome();
+    });
+  }
+
   function renderHome() {
+    if (state.optimizer === "portfolio") return renderPortfolioHome();
     setBackNavigation();
     const stages = state.catalog.stage_order.map(stage => {
       const detail = state.catalog.stages.find(item => item.id === stage);
@@ -123,11 +151,204 @@
       </label>
       ${stages}<div class="actions"><button id="launch" class="primary">Lanzar Study</button></div>`;
     bindConfiguration();
+    renderOptimizerSwitch(true);
     document.getElementById("launch").onclick = launch;
     document.getElementById("retain-all").onchange = event => {
       state.retainAllRuns = event.target.checked;
       preflight().then(renderHome).catch(error => notify(error.message, true));
     };
+  }
+
+  // --- Optimizador de cartera -------------------------------------------------
+  // No reentrena nada: parte de los scores congelados de un Model Study ganador y solo decide cómo
+  // se traduce esa ordenación en una cartera. Por eso su métrica es el Information Ratio y no el
+  // Rank-IC, que ya está fijado por el modelo de origen.
+
+  const PORTFOLIO_GRID_VARIABLES = [
+    "target_size", "max_cash_weight", "sizing_mode",
+    "minimum_holding_period", "coverage_percentile_floor", "rebalance_drift_tolerance",
+  ];
+
+  function portfolioVariableRow(variable, inGrid) {
+    const selection = state.portfolioDefinition[variable.id];
+    const columnCount = Math.min(4, variable.value_options.length);
+    return `<div class="variable-row" data-portfolio-variable="${esc(variable.id)}">
+      <div class="variable-copy"><strong>${esc(variable.label)}</strong><p>${esc(variable.description)}</p>
+        <small>${inGrid
+          ? `En la rejilla · ${selection.values.length} ${selection.values.length === 1 ? "valor (fija)" : "valores"}`
+          : "No se optimiza · exactamente un valor"}</small></div>
+      <div class="value-choices columns-${columnCount}">${variable.value_options.map(option => {
+        const checked = selection.values.some(value => JSON.stringify(value) === JSON.stringify(option.value));
+        return `<label class="value-choice ${checked ? "is-baseline" : ""}"><input type="${inGrid ? "checkbox" : "radio"}"
+          name="portfolio-${esc(variable.id)}" data-value='${esc(JSON.stringify(option.value))}' ${checked ? "checked" : ""}>
+          <span><b>${esc(option.label)}</b><small>${esc(option.description)}</small></span></label>`;
+      }).join("")}</div>
+    </div>`;
+  }
+
+  function portfolioBudgetMarkup() {
+    const budget = state.portfolioBudget || {};
+    const minutes = Number(budget.estimated_minutes);
+    const profiles = (state.portfolioProfiles || []).length;
+    const items = [
+      [budget.combinations, "Combinaciones"],
+      [budget.grid_variables, "Variables en rejilla"],
+      [budget.fixed_variables, "Variables fijas"],
+      [profiles, "Perfiles al final"],
+      [minutes, "Minutos estimados"],
+      [Number.isFinite(minutes) ? (minutes / 60).toFixed(1) : null, "Horas estimadas"],
+    ];
+    return `<div class="entity-cards">${items.map(([value, label]) =>
+      `<span><b>${value === null || value === undefined || Number.isNaN(Number(value)) ? "—" : value}</b>${esc(label)}</span>`
+    ).join("")}</div>`;
+  }
+
+  // Los ocho perfiles de inversor NO entran en el cartesiano: un perfil reordena la señal, mientras
+  // las seis variables solo gestionan la cartera ya elegida. Se evalúan al final, con la combinación
+  // ganadora, y por eso se eligen aquí — entre la rejilla y las variables fijas.
+  function portfolioProfilesSection() {
+    const available = state.catalog?.profiles || [];
+    const chosen = state.portfolioProfiles || [];
+    return `<section class="stage-card"><div class="stage-heading"><div><p class="eyebrow">Perfiles</p>
+      <h2>¿Qué estilos de inversor se evalúan con la cartera ganadora?</h2>
+      <p>No compiten en la rejilla ni se elige ninguno por su Information Ratio: un perfil
+      <b>reordena la señal</b> (sustituye el <code>meta_rank</code> y recalibra el alfa), mientras
+      las seis variables de arriba solo gestionan la cartera ya elegida. Se evalúan una vez
+      terminada la rejilla, con la combinación ganadora, para responder cómo le habría ido a cada
+      estilo con la mejor gestión. Son diagnóstico informativo.</p></div>
+      <div class="stage-plan"><b>${chosen.length}</b><span>perfiles</span>
+      <small>Unos segundos cada uno; no alargan la rejilla.</small></div></div>
+      <div class="variable-row" data-portfolio-profiles>
+        <div class="variable-copy"><strong>Perfiles a evaluar</strong>
+          <p>Marca los que quieras; puedes dejarlo vacío si no te interesa esta comparación.</p></div>
+        <div class="value-choices columns-4">${available.map(profile => {
+          const checked = chosen.includes(profile);
+          return `<label class="value-choice ${checked ? "is-baseline" : ""}"><input type="checkbox"
+            data-profile="${esc(profile)}" ${checked ? "checked" : ""}>
+            <span><b>${esc(profile)}</b><small>${esc(PROFILE_HINTS[profile] || "")}</small></span></label>`;
+        }).join("")}</div>
+      </div></section>`;
+  }
+
+  const PROFILE_HINTS = {
+    balanced: "El meta puro, sin sesgo de estilo: es la referencia.",
+    growth: "Crecimiento como motor, con calidad y momentum confirmando.",
+    value: "Empresas infravaloradas; calidad y riesgo filtran las trampas de valor.",
+    quality: "Negocios excelentes y duraderos; la calidad manda.",
+    momentum: "Pura fuerza de precio, aceptando la volatilidad que la acompaña.",
+    contrarian: "Compra lo castigado; apuesta en contra del momentum reciente.",
+    defensive: "Preservación de capital: baja volatilidad y calidad.",
+    garp: "Crecimiento a precio razonable: crece, pero con disciplina de precio.",
+  };
+
+  async function renderPortfolioHome() {
+    setBackNavigation();
+    if (!state.portfolioDefinition) {
+      try { await portfolioPreflight(); }
+      catch (error) { notify(error.message, true); }
+    }
+    const specs = state.catalog.variables.filter(variable => !variable.predictive);
+    const grid = specs.filter(variable => PORTFOLIO_GRID_VARIABLES.includes(variable.id));
+    const fixed = specs.filter(variable => !PORTFOLIO_GRID_VARIABLES.includes(variable.id));
+    const sources = state.portfolioSources || [];
+    app.innerHTML = `<section class="hero"><div><p class="eyebrow">Optimización de cartera</p>
+        <h2>Qué cartera extrae más de la misma señal</h2>
+        <p>Producto cartesiano sobre los scores ya congelados de un Model Study: no reentrena nada y
+        elige por <b>Information Ratio</b>, que premia el exceso por unidad de riesgo asumido. La era
+        2025-2026 no participa en la elección.</p></div>${portfolioBudgetMarkup()}</section>
+      <div class="study-meta triple">
+        <label>Nombre<input id="portfolio-name" value="Portfolio Study"></label>
+        <label>Modelo de origen<select id="portfolio-source">${sources.length
+          ? sources.map(item => `<option value="${esc(item.study_id)}" ${item.study_id === state.portfolioSource ? "selected" : ""}>${esc(item.name)} · ${esc(String(item.created_at).slice(0, 10))} · ${esc(item.study_id.slice(-8))}</option>`).join("")
+          : `<option value="">No hay Model Studies terminados</option>`}</select></label>
+        <label>Nota<input id="portfolio-note" placeholder="Opcional; no afecta a la ciencia"></label>
+      </div>
+      <section class="stage-card"><div class="stage-heading"><div><p class="eyebrow">Rejilla</p>
+        <h2>¿Qué combinación de reglas de cartera maximiza el Information Ratio?</h2>
+        <p>Se evalúan <b>todas</b> las combinaciones de las variables marcadas. Marcar un solo valor
+        equivale a fijar esa variable. El cartesiano existe porque estas variables interactúan: el
+        efecto de las posiciones depende del tope de efectivo, y el del suelo de cobertura depende de
+        si la plaza liberada se recompra o queda en efectivo.</p></div>
+        <div class="stage-plan"><b>${state.portfolioBudget?.combinations ?? "—"}</b><span>combinaciones</span>
+        <small>Solo se conserva la evidencia de la mejor; el resto deja una fila de resumen.</small></div></div>
+        <div>${grid.map(variable => portfolioVariableRow(variable, true)).join("")}</div></section>
+      ${portfolioProfilesSection()}
+      <section class="stage-card"><div class="stage-heading"><div><p class="eyebrow">Supuestos fijos</p>
+        <h2>Lo que no se optimiza</h2>
+        <p>Comisión y <i>slippage</i> son <b>supuestos de coste</b>, no decisiones de gestión:
+        optimizarlos equivaldría a elegir el mundo en el que la estrategia luce mejor. Los umbrales en
+        puntos básicos y las reglas sin fundamentales frescos gobiernan cuándo se opera bajo
+        información incompleta y se estresan aparte. Por eso aquí se fija <b>exactamente un</b> valor
+        de cada una.</p></div></div>
+        <div>${fixed.map(variable => portfolioVariableRow(variable, false)).join("")}</div></section>
+      <div class="actions"><button id="launch-portfolio" class="primary" ${sources.length ? "" : "disabled"}>Lanzar Portfolio Study</button></div>`;
+    renderOptimizerSwitch(true);
+    bindPortfolioConfiguration();
+    const launchButton = document.getElementById("launch-portfolio");
+    if (launchButton) launchButton.onclick = launchPortfolio;
+    const sourceSelect = document.getElementById("portfolio-source");
+    if (sourceSelect) sourceSelect.onchange = event => { state.portfolioSource = event.target.value; };
+  }
+
+  function bindPortfolioConfiguration() {
+    const profileRow = document.querySelector("[data-portfolio-profiles]");
+    if (profileRow) profileRow.querySelectorAll("input").forEach(input => input.onchange = () => {
+      state.portfolioProfiles = [...profileRow.querySelectorAll("input")]
+        .filter(item => item.checked).map(item => item.dataset.profile);
+      renderPortfolioHome();
+    });
+    document.querySelectorAll("[data-portfolio-variable]").forEach(row => {
+      const variableId = row.dataset.portfolioVariable;
+      const inGrid = PORTFOLIO_GRID_VARIABLES.includes(variableId);
+      row.querySelectorAll("input").forEach(input => input.onchange = () => {
+        const selected = [...row.querySelectorAll("input")]
+          .filter(item => item.checked)
+          .map(item => JSON.parse(item.dataset.value));
+        // Una variable de la rejilla nunca puede quedarse sin valores: sin ninguno marcado no hay
+        // nada que evaluar, así que se restaura el que el usuario acaba de desmarcar.
+        if (inGrid && !selected.length) {
+          input.checked = true;
+          return notify("Cada variable de la rejilla necesita al menos un valor.", true);
+        }
+        state.portfolioDefinition[variableId].values = inGrid ? selected : [JSON.parse(input.dataset.value)];
+        portfolioPreflight().then(renderPortfolioHome).catch(error => notify(error.message, true));
+      });
+    });
+  }
+
+  async function portfolioPreflight() {
+    const definition = state.portfolioDefinition
+      ? Object.fromEntries(Object.entries(state.portfolioDefinition).map(([key, value]) => [key, {values: value.values}]))
+      : null;
+    const response = await api("/api/portfolio-studies/preflight", {
+      method: "POST", body: JSON.stringify({definition}),
+    });
+    state.portfolioDefinition = response.definition;
+    state.portfolioBudget = response.budget;
+    state.portfolioSources = response.sources;
+    if (!state.portfolioSource && response.sources.length) state.portfolioSource = response.sources[0].study_id;
+    // Por defecto se evalúan todos los perfiles: es el diagnóstico completo, y quitarlos es una
+    // decisión deliberada del usuario, no el punto de partida.
+    if (state.portfolioProfiles === null) state.portfolioProfiles = [...(state.catalog?.profiles || [])];
+  }
+
+  async function launchPortfolio() {
+    try {
+      const definition = Object.fromEntries(
+        Object.entries(state.portfolioDefinition).map(([key, value]) => [key, {values: value.values}]),
+      );
+      const result = await api("/api/portfolio-studies", {
+        method: "POST", body: JSON.stringify({
+          name: document.getElementById("portfolio-name").value,
+          note: document.getElementById("portfolio-note").value,
+          source_study_id: state.portfolioSource, definition,
+          profiles: state.portfolioProfiles || [],
+        }),
+      });
+      state.selectedStudy = result.study_id;
+      notify(`Portfolio Study ${result.study_id} creado.`);
+      document.querySelector('[data-view="results"]').click();
+    } catch (error) { notify(error.message, true); }
   }
 
   function budgetMarkup() {
@@ -201,6 +422,8 @@
   async function renderResults() {
     setBackNavigation();
     clearInterval(state.timer);
+    // El conmutador solo tiene sentido en Inicio, que es donde se configura qué lanzar.
+    renderOptimizerSwitch(false);
     state.studies = await api("/api/studies");
     const now = Date.now();
     const rows = state.studies.map(study => ({
@@ -225,6 +448,7 @@
     clearInterval(state.timer);
     setBackNavigation("← Studies", renderResults);
     const study = await api(`/api/studies/${state.selectedStudy}`);
+    if (study.study_type === "portfolio_study") return renderPortfolioStudyPage(study);
     const total = Number(study.budget?.total_runs || 0);
     const best = Math.max(...study.runs.map(run => Number(run.result?.summary?.mean_rank_ic)).filter(Number.isFinite), -Infinity);
     const active = ["queued", "running"].includes(study.status);
@@ -259,6 +483,181 @@
     if (document.getElementById("cancel-study")) document.getElementById("cancel-study").onclick = () => studyAction("cancel");
     if (document.getElementById("resume-study")) document.getElementById("resume-study").onclick = () => studyAction("resume");
     await renderStudyContent(study);
+  }
+
+  async function renderPortfolioStudyPage(study) {
+    const budget = study.budget || {};
+    const total = Number(budget.combinations || 0);
+    const done = Number(study.completed_runs || 0);
+    const active = ["queued", "running"].includes(study.status);
+    const resumable = ["failed", "cancelled", "interrupted"].includes(study.status);
+    let winner = null;
+    try { winner = await api(`/api/studies/${state.selectedStudy}/analysis/portfolio-winner`); }
+    catch { winner = null; }
+    // Mientras la rejilla corre todavía no hay ganador, pero sí filas ya evaluadas: el mejor
+    // vigente sale de ellas, para que las tarjetas informen desde la primera combinación en vez
+    // de quedarse en «—» durante dos horas y media.
+    let best = winner ? {
+      information_ratio: winner.winner_summary?.information_ratio,
+      combination: winner.winner_combination,
+    } : null;
+    if (!best) {
+      try {
+        const payload = await api(`/api/studies/${state.selectedStudy}/analysis/portfolio-grid`);
+        const rows = (payload.rows || []).filter(row => Number.isFinite(Number(row.information_ratio)));
+        if (rows.length) {
+          const top = rows.reduce((a, b) => Number(b.information_ratio) > Number(a.information_ratio) ? b : a);
+          best = {information_ratio: top.information_ratio, combination: null, evaluated: rows.length};
+        }
+      } catch { /* la rejilla aún no ha volcado nada */ }
+    }
+    const summary = winner?.winner_summary || {};
+    const delta = winner?.improvement?.information_ratio;
+    app.innerHTML = `<section class="entity-header run-header">
+      <div class="entity-top">
+        <div class="entity-main"><div><p class="eyebrow">${esc(study.study_id)} · cartera sobre ${esc(String(study.source_study_id || "").slice(-8))}</p>
+          <h2>${esc(study.name)}</h2><p>${esc(study.note || "Optimización de cartera por Information Ratio; no reentrena el modelo.")}</p></div></div>
+        <div class="entity-actions inline">
+          ${active ? '<button id="pause-study">Pausar</button>' : ""}
+          ${active ? '<button id="cancel-study">Cancelar</button>' : ""}
+          ${resumable ? '<button id="resume-study">Reanudar</button>' : ""}
+          <button id="refresh-study">Actualizar</button>
+        </div>
+      </div>
+      <div class="entity-cards cards-7">${[
+        ["Estado", study.status], ["Etapa", study.phase],
+        ["Progreso", `${Math.round((study.progress || 0) * 100)} %`],
+        ["Combinaciones", `${done}/${total}`],
+        ["Tiempo", duration(Date.now() - Date.parse(study.created_at))],
+        [winner ? "IR ganador" : "Mejor IR vigente",
+          Number.isFinite(Number(best?.information_ratio)) ? fmt(best.information_ratio) : "—"],
+        ["Mejora de IR", delta ? `${delta.delta >= 0 ? "+" : ""}${fmt(delta.delta)}` : "—"],
+      ].map(([label, value]) => `<span><b>${esc(value)}</b>${label}</span>`).join("")}</div>
+      </section>
+      <section id="study-content"></section>`;
+    document.getElementById("refresh-study").onclick = renderStudyPage;
+    if (document.getElementById("pause-study")) document.getElementById("pause-study").onclick = () => studyAction("pause");
+    if (document.getElementById("cancel-study")) document.getElementById("cancel-study").onclick = () => studyAction("cancel");
+    if (document.getElementById("resume-study")) document.getElementById("resume-study").onclick = () => studyAction("resume");
+    await renderPortfolioStudyContent(study, winner, best);
+    if (active) state.timer = setInterval(renderStudyPage, 15000);
+  }
+
+  async function renderPortfolioStudyContent(study, winner, best) {
+    const body = document.getElementById("study-content");
+    if (!winner) {
+      // Sin ganador todavía, pero la rejilla ya vuelca resultados parciales: se muestran ordenados
+      // por IR para poder seguir la búsqueda en vivo, no solo el registro de eventos.
+      let partial = [];
+      try {
+        const payload = await api(`/api/studies/${state.selectedStudy}/analysis/portfolio-grid`);
+        partial = (payload.rows || []).slice()
+          .sort((a, b) => Number(b.information_ratio) - Number(a.information_ratio)).slice(0, 25);
+      } catch { partial = []; }
+      const events = await api(`/api/studies/${state.selectedStudy}/events?after=0`);
+      return body.innerHTML = `${partial.length ? `<h3>Mejores combinaciones hasta ahora</h3>
+        <p class="muted">Resultados parciales de las ${best?.evaluated ?? partial.length} combinaciones ya
+        evaluadas, de mejor a peor Information Ratio. La elección definitiva se hace al terminar la
+        rejilla; hasta entonces esto es solo seguimiento.</p>${table(partial)}` : ""}
+        <h3>Progreso</h3>${consoleView(events.events || [])}`;
+    }
+    const rows = await api(`/api/studies/${state.selectedStudy}/analysis/portfolio-grid`);
+    const grid = (rows.rows || []).slice().sort((a, b) =>
+      Number(b.information_ratio) - Number(a.information_ratio));
+    let profiles = [];
+    try {
+      const payload = await api(`/api/studies/${state.selectedStudy}/analysis/portfolio-profiles`);
+      profiles = (payload.rows || []).slice().sort((a, b) =>
+        Number(b.information_ratio) - Number(a.information_ratio));
+    } catch { profiles = []; }
+    const improvementRows = Object.entries(winner.improvement || {}).map(([key, value]) => ({
+      metrica: columnLabel(key), cartera_del_modelo: value.baseline, cartera_optimizada: value.winner, diferencia: value.delta,
+    }));
+    body.innerHTML = `<div class="content-heading"><h3>Combinación ganadora</h3>
+      <button id="open-portfolio-winner">Ver run de la cartera ganadora</button></div>
+      <p class="muted">Elegida por Information Ratio sobre la ventana de selección 2015-2024. La era
+      reservada 2025-2026 no participó en la elección; su resultado se reporta aparte precisamente
+      para poder comprobar si la cartera elegida generaliza.</p>
+      ${objectTable(winner.winner_combination || {})}
+      <h3>Qué aporta frente a la cartera del modelo</h3>${table(improvementRows)}
+      <h3>Resultado en la era reservada 2025-2026</h3>
+      <p class="muted">No intervino en la elección: es la comprobación honesta de si la cartera
+      optimizada aguanta fuera de la ventana con la que se eligió.</p>
+      ${objectTable(winner.winner_confirmation || {})}
+      ${profiles.length ? `<h3>Los ocho perfiles de inversor con la cartera ganadora</h3>
+      <p class="muted">Responden a una pregunta distinta de la rejilla: cómo le habría ido a cada
+      estilo de inversor usando la mejor gestión encontrada. Un perfil <b>reordena la señal</b>
+      (sustituye el <code>meta_rank</code> y recalibra el alfa), mientras las seis variables solo
+      gestionan la cartera ya elegida; por eso no compiten entre sí y <b>ningún perfil se elige por
+      su Information Ratio</b>. Es diagnóstico informativo.</p>
+      ${portfolioRunTable(profiles)}` : ""}
+      <h3>Rejilla completa · ${grid.length} combinaciones, de mejor a peor IR</h3>
+      <p class="muted">De las descartadas solo se conserva esta fila de resumen; la evidencia
+      completa (cartera, órdenes, posiciones) es únicamente la de la ganadora.</p>
+      ${table(grid)}`;
+    const openWinner = document.getElementById("open-portfolio-winner");
+    if (openWinner) openWinner.onclick = () => {
+      state.portfolioRun = {source: "portfolio-winner", label: "Cartera ganadora"};
+      state.runView = "performance";
+      renderPortfolioRunPage();
+    };
+    body.querySelectorAll("[data-portfolio-profile]").forEach(button => button.onclick = () => {
+      const name = button.dataset.portfolioProfile;
+      state.portfolioRun = {source: `portfolio-profile:${name}`, label: `Perfil ${name}`};
+      state.runView = "performance";
+      renderPortfolioRunPage();
+    });
+  }
+
+  async function renderPortfolioRunPage() {
+    // Vista de run para la evidencia de cartera del Portfolio Study. Reutiliza las mismas pestañas
+    // que un run normal, salvo las de modelo (aprendizaje, resumen predictivo): un perfil no
+    // reentrena nada, así que esos artefactos no existen y no se ofrecen.
+    clearInterval(state.timer);
+    setBackNavigation("← Portfolio Study", renderStudyPage);
+    const {source, label} = state.portfolioRun;
+    const views = ["performance", "portfolio"];
+    const runViewLabel = view => ({performance: "Rendimiento", portfolio: "Cartera"}[view] || columnLabel(view));
+    if (!views.includes(state.runView)) state.runView = "performance";
+    const query = `source=${encodeURIComponent(source)}`;
+    let summary = {};
+    try {
+      const data = await api(`/api/studies/${state.selectedStudy}/analysis/portfolio?${query}`);
+      summary = data.summary?.summary || data.summary || {};
+    } catch { summary = {}; }
+    app.innerHTML = `<section class="entity-header run-header"><div class="entity-main">
+      <div><p class="eyebrow">${esc(state.selectedStudy)} · evidencia de cartera</p><h2>${esc(label)}</h2>
+      <p>Cartera ganadora de la rejilla, evaluada sobre la serie completa. Las cifras de 2025-2026
+      son comprobación posterior: no intervinieron en ninguna elección.</p></div></div>
+      <div class="entity-cards">${[
+        ["IR", fmt(summary.information_ratio, "information_ratio")],
+        ["Exceso", fmt(summary.geometric_excess_return, "geometric_excess_return")],
+        ["Turnover", fmt(summary.annualized_turnover, "annualized_turnover")],
+        ["Máx. caída", fmt(summary.max_drawdown, "max_drawdown")],
+        ["Años que baten", fmt(summary.beat_rate, "beat_rate")],
+      ].map(([key, value]) => `<span><b>${esc(value)}</b>${key}</span>`).join("")}</div>
+      <div class="entity-actions">${views.map(view => `<button data-portfolio-view="${view}" class="${state.runView === view ? "active" : ""}">${esc(runViewLabel(view))}</button>`).join("")}</div>
+      </section><section id="run-content"></section>`;
+    app.querySelectorAll("[data-portfolio-view]").forEach(button => button.onclick = () => {
+      state.runView = button.dataset.portfolioView;
+      renderPortfolioRunPage();
+    });
+    await renderPortfolioRunContent(source);
+  }
+
+  async function renderPortfolioRunContent(source) {
+    const body = document.getElementById("run-content");
+    const params = [
+      state.runView === "portfolio" && state.snapshot ? `snapshot=${encodeURIComponent(state.snapshot)}` : "",
+      `source=${encodeURIComponent(source)}`,
+    ].filter(Boolean).join("&");
+    const data = await api(`/api/studies/${state.selectedStudy}/analysis/portfolio?${params}`);
+    if (state.runView === "performance") {
+      body.innerHTML = `${groupedMetrics(data.summary?.summary || data.summary || {})}${equity(data.equity)}${table(data.annual)}`;
+      bindInteractiveCharts(body);
+      return;
+    }
+    renderPortfolioSnapshot(data, renderPortfolioRunPage);
   }
 
   async function studyAction(action) {
@@ -379,7 +778,9 @@
     if (state.runView === "portfolio") renderPortfolioSnapshot(data);
   }
 
-  function renderPortfolioSnapshot(data) {
+  function renderPortfolioSnapshot(data, rerender = renderRunPage) {
+    // `rerender` permite reutilizar esta vista desde el Portfolio Study, cuyos cambios de snapshot
+    // deben volver a su propia página y no a la de un run del Model Study.
     state.snapshot = data.selected_snapshot || state.snapshot;
     const body = document.getElementById("run-content");
     body.innerHTML = `<section class="snapshot-controls"><label>Snapshot de cartera
@@ -391,12 +792,12 @@
       ${alphaCurveSection(data.alpha_curve)}`;
     document.getElementById("portfolio-snapshot").onchange = event => {
       state.snapshot = event.target.value;
-      renderRunPage();
+      rerender();
     };
     const windowSelect = document.getElementById("alpha-curve-window");
     if (windowSelect) windowSelect.onchange = event => {
       state.alphaCurveWindow = event.target.value;
-      renderRunPage();
+      rerender();
     };
   }
 
@@ -852,6 +1253,15 @@
     return `<table class="runs-table"><thead><tr>${columns.map(key => `<th>${esc(columnLabel(key))}</th>`).join("")}<th></th></tr></thead><tbody>${rows.map(row =>
       `<tr class="${row.run_id === state.selectedRun ? "selected-row" : ""}">${columns.map(key => `<td class="${tone(row[key], key)}">${esc(display(row[key], key))}</td>`).join("")}
       <td class="action-cell"><button data-run="${esc(row.run_id)}">Ver run</button></td></tr>`).join("")}</tbody></table>`;
+  }
+  function portfolioRunTable(rows) {
+    // Como la tabla de runs de un Model Study: cada perfil conserva su evidencia de cartera
+    // completa, así que se puede abrir y recorrer igual que un run normal.
+    if (!rows.length) return "<p class='muted'>Todavía no hay perfiles evaluados.</p>";
+    const columns = Object.keys(rows[0]).filter(key => key !== "applicable" && key !== "reason");
+    return `<table class="runs-table"><thead><tr>${columns.map(key => `<th>${esc(columnLabel(key))}</th>`).join("")}<th></th></tr></thead><tbody>${rows.map(row =>
+      `<tr>${columns.map(key => `<td class="${tone(row[key], key)}">${esc(display(row[key], key))}</td>`).join("")}
+      <td class="action-cell">${row.applicable === false ? "—" : `<button data-portfolio-profile="${esc(row.profile)}">Ver run</button>`}</td></tr>`).join("")}</tbody></table>`;
   }
   function duration(milliseconds) {
     const seconds = Math.floor(milliseconds / 1000);

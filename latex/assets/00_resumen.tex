@@ -20,19 +20,28 @@ información no disponible en su fecha. Sobre un catálogo cerrado de variables 
 reservada que no interviene en ninguna decisión. La cartera y los ocho perfiles de inversión se
 construyen después de congelar el ganador, y nunca influyen en su selección.
 
-El sistema alcanza un Rank-IC medio de 0,1004 con IC-IR 0,744 y 71,79\,\% de cohortes positivas en
-la ventana de selección, frente a 0,0130 del mejor \textit{baseline} determinista. La ponderación
-aprendida por el meta-agente supera en un 52\,\% a la ponderación uniforme. Siete de ocho contrastes
-de robustez respaldan la existencia de señal --- permutación con $p=0{,}0001$, placebos de etiqueta,
-\textit{bootstrap} por bloques, exclusión de eras, estabilidad entre semillas, carteras aleatorias
-de riesgo emparejado y neutralización de estilo ---, mientras que el Deflated Sharpe de 0,930 no
-alcanza su umbral y se reporta como tal. En la era reservada la cartera obtiene un exceso geométrico
-del 14,21\,\% con IR 0,959, si bien su Rank-IC cerrado todavía carece de potencia estadística.
+La configuración final procede de una cadena de tres estudios en la que el ganador de cada pasada es
+el punto de partida de la siguiente, seguida de un cuarto estudio que optimiza la construcción de
+cartera por Information Ratio recorriendo 1.728 combinaciones sobre una serie recortada, de modo que
+ninguna de ellas puede observar la era reservada.
 
-El resultado central para la práctica es el coeficiente de transferencia, 0,247: la cartera
-materializa aproximadamente una cuarta parte de la señal disponible. El cuello de botella no es el
-modelo sino la construcción de cartera, una conclusión que el barrido diagnóstico de veintitrés
-variantes confirma de forma controlada.
+El sistema alcanza un Rank-IC medio de 0,1090 con IC-IR 0,851 y 74,36\,\% de cohortes positivas en
+la ventana de selección, frente a 0,0130 del mejor \textit{baseline} determinista. La ponderación
+aprendida por el meta-agente supera en un 61\,\% a la ponderación uniforme, aunque el agente de
+riesgo por separado ordena algo mejor que la combinación. Los contrastes de robustez respaldan la
+existencia de señal --- permutación con $p=0{,}0001$, placebos de etiqueta, \textit{bootstrap} por
+bloques, exclusión de eras y neutralización de estilo, que conserva el 86,62\,\% ---, mientras que
+el Deflated Sharpe de 0,682 no alcanza su umbral y se reporta como tal: encadenar estudios compra
+Rank-IC al precio de encarecer cualquier afirmación de rentabilidad ajustada por selección.
+
+El resultado central es el contraste entre ambas carteras en la era reservada. Con la construcción
+recomendada por el catálogo, la señal pierde un 11,29\,\% frente al índice, con Information Ratio
+$-1{,}167$ y ningún año por encima. Con la cartera optimizada --- el mismo modelo, la misma señal y
+el mismo panel --- obtiene un exceso del 2,56\,\% con Information Ratio $+0{,}304$. El Rank-IC de
+esa era es positivo en ambos casos ($+0{,}0441$), porque no depende de la cartera. El cuello de
+botella no era, por tanto, la capacidad predictiva sino su traducción a posiciones, hasta el punto
+de decidir el signo del resultado fuera de muestra. La conclusión se enuncia con la cautela que
+imponen seis cohortes cerradas y aproximadamente 1,41 años de cartera en esa ventana.
 
 \vspace{1em}
 \noindent\textbf{Palabras clave:} aprendizaje automático, selección de acciones, \textit{point-in-time},

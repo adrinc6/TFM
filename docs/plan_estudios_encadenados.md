@@ -1,10 +1,26 @@
-# Plan: estudios encadenados y migración del TFM al study final
+# Plan: estudios encadenados, optimización de cartera y migración del TFM
 
 > Documento de trabajo. Fija (1) la estrategia de encadenar Model Studies usando el ganador de cada
-> uno como baseline del siguiente, (2) cómo se mide y se cuenta que el proceso mejora, y (3) la
-> migración completa del manuscrito LaTeX al último study de la cadena.
+> uno como baseline del siguiente, (2) el **Portfolio Study** que optimiza la cartera por
+> Information Ratio sobre ese ganador, (3) cómo se mide y se cuenta que el proceso mejora, y (4) la
+> migración completa del manuscrito LaTeX al resultado final.
 >
-> Estado a 2026-08-13: **study 1 terminado**, studies 2 y 3 **pendientes de lanzar por el usuario**.
+> **Estado a 2026-08-14**: cadena de tres Model Studies **terminada**; Portfolio Study
+> **implementado y pendiente de ejecutar la rejilla completa**; fases 1 y 2 del manuscrito
+> **planificadas y sin ejecutar**.
+
+## Resumen de decisiones tomadas
+
+| Decisión | Resolución |
+|---|---|
+| ¿Cómo se mejora sobre el greedy secuencial? | Encadenar studies: el ganador de cada pasada es el baseline de la siguiente (ascenso por coordenadas) |
+| ¿Qué optimiza la cartera? | Un **Portfolio Study** aparte, por **Information Ratio**, sobre el ganador ya congelado |
+| ¿Cartesiano o greedy en la cartera? | **Cartesiano** de 6 variables (1.728 combos): interactúan entre sí y un greedy no lo vería |
+| ¿Qué variables de cartera se optimizan? | `target_size`, `max_cash_weight`, `sizing_mode`, `minimum_holding_period`, `coverage_percentile_floor`, `rebalance_drift_tolerance` |
+| ¿Y comisión y slippage? | **Nunca**: son supuestos de coste, no decisiones. Optimizarlos sería elegir el mundo que más conviene |
+| ¿Entran los 8 perfiles en el cartesiano? | **No**: reordenan la señal, no gestionan la cartera. Se evalúan al final con la cartera ganadora, y ninguno se elige por su IR |
+| ¿Puede la rejilla ver 2025-2026? | **No**: el backtest se corta en 2024 recortando los scores. Solo el ganador se reevalúa sobre la serie completa |
+| ¿Qué se guarda de las 1.728 carteras? | Una fila de resumen de cada una; **evidencia completa solo del mejor vigente** |
 
 ---
 
@@ -88,14 +104,17 @@ meta_history_quarters: 16      meta_recency_weighting: off
 |---|---|---|---|
 | 1 | `study-20260812-163136-1b104667` | `run-6eaa47a0597b` | 8 variables frente al baseline del catálogo |
 | 2 | `study-20260813-103456-aa733655` | `run-2dc586be8653` | `meta_method`: `stacked_rolling_bounded` → `stacked_rolling_free` |
-| 3 | **`study-20260813-232458-05b4d236`** | **`run-d304f6074665`** | `execution_lag_days`: 30 → **60** |
+| 3 | **`study-20260814-095144-5ec17b78`** | **`run-f134d7eb9e06`** | `execution_lag_days`: 30 → **60**; `target_size`: 12 → **8** |
 
 **El study 3 es el de referencia del TFM.** Es el más optimizado de la cadena y del que salen todos
 los resultados, conclusiones, figuras y tablas del manuscrito. Los studies 1 y 2 solo aparecen en la
 tabla de progresión (§3) como evidencia de que el procedimiento converge.
 
-Configuración ganadora final (study 3), idéntica a la del study 1 salvo `meta_method` y
-`execution_lag_days`:
+> Nota: una versión anterior del study 3 (`…232458-05b4d236`) se descartó y se relanzó. Sus cifras
+> no valen; las de este documento son del study vigente.
+
+Configuración ganadora final (study 3), idéntica a la del study 1 salvo `meta_method`,
+`execution_lag_days` y `target_size`:
 
 ```
 snapshot_step_months: 1        target_horizon_months: 12     train_lookback_years: 8
@@ -105,8 +124,11 @@ neutralize_by_sector: False    winsorization: 0.0            max_features_per_ag
 feature_weighting_mode: oos_stability_prune                  model_family: lightgbm
 lgbm_max_depth: 3              lgbm_n_estimators: 100        lgbm_learning_rate: 0.03
 lgbm_min_child_samples: 20     meta_method: stacked_rolling_free
-meta_history_quarters: 16      meta_recency_weighting: off
+meta_history_quarters: 16      meta_recency_weighting: off   target_size: 8
 ```
+
+**Es esta configuración la que alimenta el Portfolio Study** (§4): sus variables de cartera se
+sustituyen por la combinación ganadora de la rejilla, y el resto se mantiene intacto.
 
 > Detalle con valor metodológico para el TFM: la tercera pasada **revirtió** `execution_lag_days` de
 > 30 a 60. Pero conviene no sobrevender el hallazgo: **ambas decisiones se tomaron por
@@ -137,45 +159,56 @@ Los tres studies corrieron bajo **catálogo v6**, así que son comparables entre
 
 | Métrica | Study 1 | Study 2 | Study 3 (final) |
 |---|---|---|---|
-| `study_id` | `…163136-1b104667` | `…103456-aa733655` | **`…232458-05b4d236`** |
-| Run ganador | `run-6eaa47a0597b` | `run-2dc586be8653` | **`run-d304f6074665`** |
+| `study_id` | `…163136-1b104667` | `…103456-aa733655` | **`…095144-5ec17b78`** |
+| Run ganador | `run-6eaa47a0597b` | `run-2dc586be8653` | **`run-f134d7eb9e06`** |
 | **Rank-IC medio (selección)** | 0,1000 | 0,1074 | **0,1090** |
 | **IC-IR** | 0,735 | 0,835 | **0,851** |
+| $t$ de Newey-West | 2,95 | 3,36 | **3,46** |
 | Cohortes positivas | 70,94 % | 74,36 % | 74,36 % |
 | Rank-IC del meta (`meta_final`) | 0,0945 | 0,1047 | 0,1058 |
 | Rank-IC `meta_equal_weight` | 0,0618 | 0,0618 | 0,0606 |
-| Rank-IC del agente `risk` solo | 0,1172 | 0,1172 | 0,1197 |
-| Diferencial de cola | 0,0348 | 0,0374 | 0,0360 |
+| Rank-IC del agente `risk` solo | 0,1172 | 0,1172 | **0,1197** |
 | $p$ de permutación | 0,0001 | 0,0001 | 0,0001 |
-| Decisiones por `tie_simplicity` | 4 de 19 | 1 | 2 |
-| Variables que cambian vs. pasada anterior | — (8 vs. catálogo) | `meta_method` | `execution_lag_days` |
-| — *Métricas económicas (no criterio)* | | | |
-| Coeficiente de transferencia | 0,178 | 0,234 | **0,049** |
-| Information Ratio | 0,189 | 0,294 | **0,121** |
-| Exceso geométrico | 1,07 % | 1,89 % | **0,39 %** |
-| Deflated Sharpe | 0,844 | 0,867 | **0,584** |
-| Rank-IC confirmación 2025-26 | −0,0139 | +0,0529 | +0,0441 |
+| Decisiones por `tie_simplicity` | 4 de 19 | 1 de 17 | 2 de 17 |
+| Variables que cambian vs. pasada anterior | — (8 vs. catálogo) | `meta_method` | `execution_lag_days`, `target_size` |
+| — *Métricas económicas (no criterio de selección)* | | | |
+| Coeficiente de transferencia | 0,178 | 0,234 | **0,328** |
+| Information Ratio | 0,189 | 0,294 | **0,339** |
+| Exceso geométrico | 1,07 % | 1,89 % | **2,61 %** |
+| Beat rate | 50 % | 50 % | **70 %** |
+| Turnover anualizado | 3,99 | 4,03 | **3,58** |
+| Deflated Sharpe | 0,844 | 0,867 | **0,682** |
+| — *Era reservada 2025-2026 (nunca decide)* | | | |
+| Rank-IC | −0,0139 | +0,0529 | +0,0441 |
+| Exceso geométrico | +8,49 % | +4,36 % | **−11,29 %** |
+| Information Ratio | 0,898 | 0,476 | **−1,167** |
+| Años que baten al S&P | 2/2 | 1/2 | **0/2** |
 
-**Lectura.** En la métrica de selección la cadena funciona y de forma monótona: Rank-IC
-0,1000 → 0,1074 → 0,1090 (+9,0 % acumulado) e IC-IR 0,735 → 0,851. Además la cadena **converge**:
-solo cambia una variable por pasada (`meta_method` de `stacked_rolling_bounded` a
-`stacked_rolling_free` en la 2.ª; `execution_lag_days` de 30 a 60 en la 3.ª) y las 19 restantes se
-mantienen, que es la señal de que el óptimo greedy es estable frente al punto de partida.
+**Lectura.** La cadena funciona en la métrica que optimiza, y de forma monótona: Rank-IC
+0,1000 → 0,1074 → 0,1090 (+9,0 % acumulado), IC-IR 0,735 → 0,851 y $t$ 2,95 → 3,46. Y esta vez
+**también mejora la economía**: transferencia 0,178 → 0,328, IR 0,189 → 0,339, exceso 1,07 % →
+2,61 %, con **menos** turnover (3,99 → 3,58). No hay divorcio entre señal y cartera.
 
-**Pero hay que decirlo entero, y es lo más importante de esta tabla**: la mejora predictiva **no se
-traduce en economía**. El coeficiente de transferencia se hunde de 0,234 a 0,049 en la última
-pasada y el IR cae de 0,294 a 0,121, con el mejor Rank-IC de las tres. Es decir, la tercera pasada
-ordena mejor el universo **y a la vez** convierte peor esa ordenación en rentabilidad. También el
-Deflated Sharpe empeora (0,584), lo que era esperable: al encadenar pasadas crece el número
-efectivo de configuraciones probadas y el contraste por multiplicidad se vuelve más exigente.
+La cadena además **converge**: una sola variable cambia en la 2.ª pasada y dos en la 3.ª, mientras
+las demás se mantienen — señal de que el óptimo greedy es estable frente al punto de partida.
 
-Este divorcio entre Rank-IC y alfa es un **resultado del trabajo, no un defecto que ocultar**: es
-evidencia directa de que optimizar la ordenación transversal no garantiza una cartera mejor, y de
-que el cuello de botella está en la traducción señal → cartera. El TFM debe contarlo así.
+**Pero hay un resultado que domina a todos los demás y no se puede suavizar**: en la era reservada
+el study 3 **pierde los dos años** (exceso −11,29 %, IR −1,167), con el mejor Rank-IC de la cadena y
+Rank-IC positivo (+0,0441) en esa misma era. Ordena bien y aun así pierde dinero fuera de muestra.
+Es exactamente lo que la ventana reservada existe para detectar, y pasa a ser el **hallazgo central
+del TFM**. El Deflated Sharpe cae a 0,682, coherente con la multiplicidad que añade encadenar.
 
-**Nota sobre el perfil ganador**: cambia entre pasadas (`defensive` en 1 y 2, `value` en la 3),
-y `balanced` no gana en ninguna. La quinta afirmación vertebradora del manuscrito («el perfil
-`balanced` es el mejor») **es falsa** con esta cadena y hay que reescribirla.
+**Nota sobre el perfil ganador**: cambia entre pasadas (`defensive` en 1 y 2, `value` en la 3, con
+`balanced` a 0,0016 de distancia — ruido). La quinta afirmación vertebradora del manuscrito («el
+perfil `balanced` es el mejor») **no se sostiene** con esta cadena y hay que reescribirla.
+
+**Nota sobre el agente `risk`**: por sí solo alcanza Rank-IC 0,1197, **por encima del meta-agente**
+(0,1058). El TFM debe matizar la tesis multi-agente en vez de darla por demostrada.
+
+> Una versión anterior del study 3 (descartada) mostró el patrón contrario: mejor Rank-IC con
+> transferencia hundida (0,049) e IR 0,121. Se documenta aquí porque ilustra que **el divorcio
+> entre ordenación y economía es posible** y que conviene reportar siempre ambas familias de
+> métricas, no solo la de selección.
 
 **Lectura honesta que hay que hacer, no dar por supuesta**: la cadena puede converger sin mejorar.
 Si el study 2 devuelve el mismo ganador que el study 1, **eso también es un resultado publicable**
@@ -193,13 +226,125 @@ la única defensa real, precisamente porque no participa en ninguna de las tres 
 
 ---
 
-## 4. Fase 2: migración del manuscrito al study final
+## 4. El Portfolio Study: optimizar la cartera por Information Ratio
+
+### Por qué existe
+
+El Model Study optimiza **Rank-IC**, que mide la calidad de la *ordenación*. Pero ordenar bien y
+ganar dinero no son lo mismo: se observó un ganador con el mejor Rank-IC de su cadena y a la vez el
+peor coeficiente de transferencia. Optimizar la ordenación no optimiza la cartera, así que la
+cartera necesita su propio criterio.
+
+Ese criterio es el **Information Ratio**: exceso medio sobre el índice ÷ volatilidad de ese exceso
+(*tracking error*). A diferencia del alfa bruto, **premia la consistencia**: una cartera que bate al
+índice un 2 % todos los años tiene un IR altísimo; otra que lo bate un 15 % y pierde un 11 % al
+siguiente puede tener el mismo alfa medio y un IR pésimo.
+
+### Las seis variables y cómo mueven el IR
+
+| Variable | Efecto |
+|---|---|
+| `target_size` | El más directo. Pocas posiciones → cada acierto pesa mucho → exceso volátil → denominador grande. Muchas → te pareces al índice → numerador pequeño |
+| `max_cash_weight` | El efectivo **amortigua**: baja la volatilidad del exceso y también el exceso (se remunera al 0 %). Sube el IR solo si evita malas compras |
+| `sizing_mode` | `equal` reparte riesgo; `alpha_proportional` concentra en las de más alfa (tope 2:1): sube el numerador si acierta y el denominador siempre |
+| `minimum_holding_period` | Retener reduce rotación y **costes**, que se restan del numerador. Pero retener de más impide corregir: la relación no es monótona |
+| `coverage_percentile_floor` | Corta la cola: saca lo que se hunde en el ranking. Menos desastres, pero puede disparar ventas y su coste |
+| `rebalance_drift_tolerance` | Pura fricción: más tolerancia, menos operaciones cosméticas; demasiada, y los pesos derivan |
+
+### Por qué cartesiano y no greedy
+
+**Estas variables interactúan.** El suelo de diversificación sale de `target_size` **y**
+`max_cash_weight` a la vez; y lo que hace `coverage_percentile_floor` depende de si la plaza que
+libera se recompra (tope 0) o queda en efectivo (tope > 0) — la misma variable hace cosas opuestas
+según el tope. Un greedy fijaría la primera antes de mirar la segunda y no vería nada de eso.
+
+Es asequible porque cada combinación **reutiliza los scores congelados** del ganador y solo rehace
+el backtest: **~5-6 s**, frente a los ~146 s de un run predictivo con ajuste. Las 1.728
+combinaciones son ~2,5 h en vez de 70.
+
+### Qué NO se optimiza, y por qué
+
+`commission_bps` y `slippage_bps` se fijan a **un único valor**: son *supuestos de coste*, no
+decisiones de gestión, y optimizarlos equivaldría a elegir el mundo en el que la estrategia luce
+mejor. Los umbrales en puntos básicos y las variables `price_only_*` gobiernan cuándo se opera bajo
+información incompleta y se estresan aparte. La validación lo impone, no es solo una convención de
+la interfaz.
+
+### Los 8 perfiles quedan fuera de la rejilla
+
+Un perfil **reordena la señal** (`apply_profile` sustituye el `meta_rank` y recalibra el alfa),
+mientras las seis variables solo gestionan la cartera ya elegida. Son planos distintos. Incluirlos
+multiplicaría por 8 (13.824 combinaciones, ~23 h) y, sobre todo, **elegiría el estilo de inversor
+por su rentabilidad conocida**: `value` y `balanced` se separaron por 0,0016 en el study 3, que es
+ruido.
+
+En su lugar, al terminar la rejilla **la cartera ganadora se aplica a los perfiles seleccionados**
+(todos por defecto), para responder «cómo le habría ido a cada estilo con la mejor gestión». Siguen
+siendo diagnóstico informativo: ninguno se elige por su IR.
+
+### Cómo se aísla la era reservada
+
+Durante la rejilla el backtest **se corta en 2024**: los scores se recortan antes de simular
+(`selection_evidence`), así que 2025-2026 **no llega a calcularse** para ninguna combinación. No
+basta con filtrar el resumen al elegir —la cartera es secuencial, y si la simulación entrase en la
+era reservada su resultado existiría y bastaría con mirarlo—. Solo la combinación **ya ganadora** se
+reevalúa sobre la serie completa, y esa evidencia se guarda aparte (`evidence_best_full/`). La
+cartera de partida contra la que se mide la mejora usa la **misma** serie recortada: compararla
+sobre la completa mediría ventanas distintas y la mejora sería ficticia.
+
+### Qué se guarda
+
+Cada combinación deja una fila de resumen en `portfolio_grid.parquet`; la evidencia completa es
+**solo la del mejor vigente** (`evidence_best/`), que se sustituye en cuanto otra la supera. Al
+terminar queda exactamente una carpeta. Es la regla 5 del repositorio aplicada al IR.
+
+La rejilla vuelca cada 25 combinaciones y al arrancar salta las ya evaluadas, de modo que una
+interrupción cuesta minutos y no horas.
+
+### Riesgo que hay que declarar
+
+Probar 1.728 carteras sobre los mismos datos **añade multiplicidad**, igual que encadenar pasadas.
+La defensa es que la elección solo ve 2015-2024 y que el resultado de la era reservada se reporta
+**junto** al de selección, nunca en su lugar. El TFM debe dar las dos cifras siempre.
+
+### Resultado (2026-08-14) · `study-20260814-135754-fdbdf2c5`
+
+Cartera ganadora: `target_size=8`, `max_cash_weight=0.0`, `sizing_mode=alpha_proportional`,
+`minimum_holding_period=half_horizon`, `coverage_percentile_floor=60`,
+`rebalance_drift_tolerance=0.1`.
+
+| Métrica | Cartera del modelo | Cartera ganadora | Era reservada |
+|---|---|---|---|
+| Information Ratio | 0,339 | **0,844** | **+0,304** |
+| Exceso geométrico | 2,61 % | **6,97 %** | **+2,56 %** |
+| Rotación anualizada | 3,58 | 3,24 | 3,91 |
+| Años que baten | 70 % | 80 % | 50 % |
+
+**El resultado invierte lo que se esperaba.** Con la cartera del catálogo, la era reservada daba
+−11,29 % de exceso e IR −1,167 (0/2 años); con la optimizada, +2,56 % e IR +0,304 (1/2 años). El
+Rank-IC de esa era es +0,0441 en ambos casos, porque no depende de la cartera. La señal siempre
+había generalizado: lo que fallaba era la construcción de cartera.
+
+Lecturas de la rejilla que merecieron entrar en el manuscrito:
+
+- El IR **no** es función del turnover: hay carteras buenas y malas en todo el rango de rotación, y
+  la ganadora **baja** la rotación (3,58 → 3,24) mientras sube el exceso.
+- Las variables que mueven el IR son `target_size` y `max_cash_weight`; `rebalance_drift_tolerance`
+  es prácticamente **inerte** (sus cuatro cajas son indistinguibles). El barrido de una variable
+  cada vez no podía distinguir «este valor es mejor» de «esta variable da igual».
+- Los perfiles con la cartera ganadora: `balanced` domina en selección (IR 0,844 vs 0,570 del
+  segundo), pero en la era reservada el orden **se invierte** —`momentum`, el peor en selección, es
+  el mejor allí con IR 1,889 sobre 6 cohortes—. Es régimen, no hallazgo, y así se reporta.
+
+---
+
+## 5. Fase 2: migración del manuscrito al study final
 
 Se ejecuta **una sola vez**, sobre el **último** study de la cadena. Los studies 1 y 2 no se
 documentan como referencia: solo aparecen en la sección de progresión (§3) como evidencia de que el
 proceso converge.
 
-### 4.1 Levantar la regla dura del plan del TFM
+### 5.1 Levantar la regla dura del plan del TFM
 
 `latex/plan_tfm.md:24-35` congela el study viejo y exige que un cambio se registre explícitamente
 allí y en la bitácora. Hay que **escribir esa decisión**, no saltársela: actualizar tabla de estado
@@ -207,7 +352,7 @@ allí y en la bitácora. Hay que **escribir esa decisión**, no saltársela: act
 corren bajo **v6**, así que ese aviso cambia de sentido: dejan de ser «no reproducibles con el
 código actual»).
 
-### 4.2 Regenerar activos y sustituir identificadores
+### 5.2 Regenerar activos y sustituir identificadores
 
 ```powershell
 python latex/scripts/export_study_assets.py --study-id <STUDY_FINAL>
@@ -224,7 +369,7 @@ Identificadores a sustituir: `latex/main.tex:73` (macro `\studyid`, propaga a to
 `latex/assets/t09_limitaciones.tex:38` y el docstring de
 `latex/scripts/export_study_assets.py:4`.
 
-### 4.3 Material nuevo (acordado)
+### 5.3 Material nuevo (acordado)
 
 El study persiste 10 artefactos que el manuscrito **no usa**. Cada bloque exige añadir funciones
 `draw_*`/`table` al script de exportación —nunca dibujar a mano, es la convención de
@@ -240,7 +385,7 @@ marca como huérfanos.
 | **Histogramas de distribución nula** | `robustness.json` (ya los persiste desde el 2026-08-12) | Sustituye 3 figuras de resumen; la limitación ya se retiró del anexo |
 | **Progresión de la cadena** (§3) | `evidence/summary.json` de los tres studies | **Sección nueva** en el capítulo de diseño experimental o de resultados |
 
-### 4.4 Reescritura de la prosa
+### 5.4 Reescritura de la prosa
 
 Las tablas generadas se actualizan solas; **la prosa no**: ~175 cifras decimales escritas a mano.
 Por densidad: `09_resultados.tex` (549 líneas, 82 cifras, reescritura completa),
@@ -256,7 +401,7 @@ Tablas escritas a mano que el script **no** regenera (excepción declarada en
 Study-agnósticos, no tocar: `02_estado_del_arte.tex`, `04_diseno_metodologico.tex`,
 `12_bibliografia.tex`, `b_catalogo_protocolo.tex`.
 
-### 4.5 Revalidar las cinco afirmaciones vertebradoras
+### 5.5 Revalidar las cinco afirmaciones vertebradoras
 
 `plan_tfm.md` y `t01_afirmaciones.tex` sostienen el manuscrito sobre cinco afirmaciones. **Se
 revalidan una a una contra el study final**; las que no se sostengan se reescriben o se sustituyen,
@@ -270,7 +415,7 @@ narrativa** (regla 9 de `CLAUDE.md`).
 > study 1 y no deben copiarse al TFM**: hay que recalcularlos sobre el study final. Se anotan aquí
 > solo como aviso de que la revalidación es real y probablemente obligue a reescribir afirmaciones.
 
-### 4.6 Verificación
+### 5.6 Verificación
 
 ```powershell
 python latex/scripts/verify_latex_assets.py   # rutas, UTF-8, refs cruzadas, activos huérfanos
@@ -281,7 +426,7 @@ python -m ruff check .
 Después, `grep` en `latex/` del `study_id`, run ganador y `dataset_hash` de **todos** los studies
 anteriores de la cadena, para confirmar que solo queda el final.
 
-### 4.7 Documentación
+### 5.7 Documentación
 
 `docs/informe_resultados.md:20` (tabla de cabecera y cifras), `docs/gestion_cartera.md` §6
 (turnover atribuido al ganador), y entrada en `docs/bitacora.md` registrando el cambio de study de
@@ -290,18 +435,25 @@ entradas antiguas de la bitácora **se conservan**: son registro histórico.
 
 ---
 
-## 5. Orden de ejecución
+## 6. Orden de ejecución
 
 1. ~~Lanzar study 1~~ — hecho (`…1b104667`).
 2. ~~Lanzar study 2 con el ganador del 1 como baseline~~ — hecho (`…aa733655`).
-3. ~~Lanzar study 3 con el ganador del 2 como baseline~~ — hecho (`…05b4d236`).
+3. ~~Lanzar study 3 con el ganador del 2 como baseline~~ — hecho (`…095144-5ec17b78`).
 4. ~~Rellenar la tabla de progresión (§3)~~ — hecha, cadena completada el 2026-08-14.
-5. **Ejecutar la fase 2 completa (§4) sobre el study 3** ← siguiente.
+5. ~~Implementar el Portfolio Study (§4)~~ — hecho: motor, validación, API, worker, interfaz,
+   reanudación incremental, aislamiento de la era reservada y evaluación por perfiles.
+6. **Ejecutar la rejilla completa del Portfolio Study** (1.728 combinaciones, ~2,5 h) ← siguiente,
+   lo lanza el usuario.
+7. Ejecutar la **fase 1** del manuscrito: documentar la cadena y el Portfolio Study, con sus tablas
+   y figuras nuevas.
+8. Ejecutar la **fase 2** (§5): todos los resultados sobre el ganador del study 3 con la cartera
+   ganadora de la rejilla.
 
 No se lanza ningún study desde el asistente: los lanza el usuario (regla del repo — no ejecutar un
 estudio real completo sin autorización explícita).
 
-## 6. Aviso: catálogo v7 y comparabilidad
+## 7. Aviso: catálogo v7 y comparabilidad
 
 Los tres studies de la cadena corrieron bajo **catálogo v6**. Después de completarla se invirtió la
 tabla de `simplicity` de `execution_lag_days` a `(60, 45, 30)` y se subió a **`CATALOG_VERSION = 7`**

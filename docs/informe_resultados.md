@@ -2,37 +2,77 @@
 
 ## Estado
 
-Este informe documenta el **Model Study de referencia del TFM**, ejecutado con el código posterior a
-las correcciones de validez y con el catálogo cerrado vigente. Es la primera ejecución cuyas cifras
-son utilizables como evidencia del trabajo: la regla de selección pareada está corregida, la
-identidad de evaluación incluye el hash del dataset, los umbrales económicos están en puntos básicos
-y la era reservada 2025–2026 no participa en ninguna decisión.
+Este informe documenta la **cadena de cuatro estudios de referencia del TFM** (2026-08-14): tres
+Model Studies encadenados, en los que el ganador de cada pasada es el baseline de la siguiente, y un
+Portfolio Study que optimiza la construcción de cartera del último por Information Ratio sin
+reentrenar nada.
 
-Los Full Studies del 2026-07-25 quedan **derogados** como evidencia (regla de selección defectuosa,
-colisión de caché en `evaluation_key`, mezcla de la era reservada en el CAGR e IR no comparable
-entre artefactos). Su análisis se conserva en `docs/bitacora.md` como registro del porqué de cada
-corrección, no como resultado.
+Los studies anteriores —incluido `study-20260803-201234-b4d7a8d8`, que fue referencia hasta esta
+fecha— quedan **fuera del TFM**. Su análisis se conserva en `docs/bitacora.md` como registro
+histórico, no como resultado vigente.
 
-## Identidad del estudio
+## Identidad de los estudios
 
 | Campo | Valor |
 |---|---|
-| Study | `study-20260803-201234-b4d7a8d8` |
-| Run ganador | `run-51e95a09a8f0` |
+| Model Study 1 | `study-20260812-163136-1b104667` · ganador `run-6eaa47a0597b` · catálogo v6 |
+| Model Study 2 | `study-20260813-103456-aa733655` · ganador `run-2dc586be8653` · catálogo v6 |
+| **Model Study 3 (referencia)** | **`study-20260814-095144-5ec17b78`** · ganador `run-f134d7eb9e06` · catálogo **v7** |
+| **Portfolio Study** | **`study-20260814-135754-fdbdf2c5`** · 1.728 carteras |
 | Hash de dataset | `b9134b218e3bf7fc156372d61e02056ecfa6036777e0fe84a69df0a92653fbd3` |
-| Clave de evaluación | `c71b810e87bffbea187ca3c1dd4101c85a4fdf8a5daa81c91303057a40a9eaeb` |
-| Configuraciones evaluadas | 66 |
+| Clave de evaluación (study 3) | `0088d08579c1e65f1b2f495d550ed2ea54249558ab4354675dbf2fa71de0a27f` |
+| Configuraciones evaluadas (study 3) | 71 · 17 decisiones, 2 por empate técnico |
 | Ventana de selección | 2015–2024, 117 cohortes mensuales |
-| Era reservada | 2025–2026, 18 periodos, **no usada en ninguna decisión** |
-| Métrica de selección | Rank-IC pareado exclusivamente (`rank_ic_only`) |
-| Versión de catálogo | 5 (**la vigente es 6**, ver aviso abajo) |
+| Era reservada | 2025–2026, 6 cohortes cerradas (~1,41 años de cartera), **no usada en ninguna decisión** |
+| Métrica de selección | Rank-IC pareado (`rank_ic_only`); Information Ratio en el Portfolio Study |
 
-> **Aviso de reproducibilidad.** Tras cerrar este study, la unificación y corrección de
-> `decide_orders` elevó `CATALOG_VERSION` de 5 a 6 (`docs/bitacora.md`, 2026-08-04). Este study
-> **no es reproducible bit a bit con el código actual** y no es comparable con estudios ejecutados
-> bajo el catálogo v6. Sus artefactos en disco siguen siendo evidencia válida y trazable —fueron
-> generados por el código vigente en su momento y sus hashes lo acreditan—, pero cualquier
-> reejecución producirá un ganador distinto. El TFM debe declarar esta versión al citar las cifras.
+> **Regla de procedencia.** La evidencia **predictiva** (Rank-IC, agentes, meta, decisiones,
+> robustez, atribución) sale del Model Study 3. La **económica** (equity, órdenes, posiciones,
+> métricas anuales, perfiles) sale del ganador del Portfolio Study, bajo `evidence_best_full/`.
+> Mezclarlas produce afirmaciones que no se sostienen.
+
+> **Aviso de reproducibilidad.** La cadena no corrió entera bajo la misma versión de catálogo: los
+> studies 1 y 2 usaron v6 y el 3 usó v7, que invierte el desempate por simplicidad de
+> `execution_lag_days`. El cambio sólo actúa cuando la evidencia no distingue entre candidatos, de
+> modo que no altera ninguna medición, pero las tablas deben citar la versión junto al `study_id`.
+
+## La cadena de estudios
+
+| Métrica | Study 1 | Study 2 | Study 3 |
+|---|---|---|---|
+| Rank-IC medio | 0,1000 | 0,1074 | **0,1090** |
+| IC-IR | 0,735 | 0,835 | **0,851** |
+| t Newey-West | 2,95 | 3,36 | **3,46** |
+| Transferencia | 0,178 | 0,234 | **0,328** |
+| IR (selección) | 0,189 | 0,294 | **0,339** |
+| Variables cambiadas | 8 | 1 | 2 |
+| **Era reservada: IR** | +0,898 | +0,476 | **−1,167** |
+
+La cadena **converge** (8 → 1 → 2 variables modificadas) y mejora monótonamente dentro de la ventana
+de selección, pero **se degrada monótonamente fuera de ella**. Esa divergencia es la firma del
+sobreajuste por búsqueda, y es lo que motivó el Portfolio Study.
+
+## El Portfolio Study y el hallazgo central
+
+Cartera ganadora: `target_size=8`, `max_cash_weight=0.0`, `sizing_mode=alpha_proportional`,
+`minimum_holding_period=half_horizon`, `coverage_percentile_floor=60`,
+`rebalance_drift_tolerance=0.1`.
+
+| Métrica | Cartera del modelo | Cartera ganadora | Era reservada |
+|---|---|---|---|
+| Information Ratio | 0,339 | **0,844** | **+0,304** |
+| Exceso geométrico | 2,61 % | **6,97 %** | **+2,56 %** |
+| Rotación anualizada | 3,58 | 3,24 | 3,91 |
+| Años que baten | 70 % | 80 % | 50 % |
+
+**Con la cartera del modelo, la era reservada daba −11,29 % de exceso e IR −1,167 (0/2 años). Con la
+optimizada, +2,56 % e IR +0,304 (1/2 años).** El Rank-IC de esa era es +0,0441 en ambos casos,
+porque no depende de la cartera. El cuello de botella no era la capacidad predictiva sino su
+traducción a posiciones, hasta el punto de decidir el signo del resultado fuera de muestra.
+
+Cautelas obligatorias al citar esto: 6 cohortes cerradas, ~1,41 años de cartera, y la ganadora es la
+mejor de 1.728 evaluadas. La rejilla se calculó sobre scores recortados en 2024, de modo que ninguna
+combinación pudo observar la era reservada durante la selección.
 
 ## Reglas de trazabilidad
 
@@ -41,6 +81,12 @@ métrica y unidad; ruta del artefacto fuente; y el papel de la cifra —selecci�
 muestra o diagnóstico—. Ninguna afirmación de este informe existe sin un artefacto que la respalde.
 
 ---
+
+> ⚠️ **Aviso sobre las secciones 1 a 6.** Su estructura argumental sigue siendo válida, pero **las
+> cifras concretas proceden del study derogado `b4d7a8d8`** y no se han reescrito una por una. Para
+> cualquier cifra vigente, la fuente de verdad es el manuscrito en `latex/assets/`, que sí está
+> completamente actualizado contra los cuatro estudios, o directamente los artefactos en disco.
+> Estas secciones se conservan por su análisis cualitativo, no como referencia numérica.
 
 ## 1. El proceso de aprendizaje
 

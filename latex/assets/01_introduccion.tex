@@ -80,7 +80,7 @@ Este trabajo adopta esa segunda pregunta. No intenta identificar retrospectivame
 rentable del S\&P 500 ni construir una recomendación de inversión. El objeto científico es una
 ordenación: dadas las acciones disponibles en una fecha, ¿asigna el sistema puntuaciones más altas,
 en promedio, a las que después obtienen retornos excedentes mayores? Esta formulación permite
-evaluar todo el universo transversal y no sólo las doce posiciones finalmente compradas. También
+evaluar todo el universo transversal y no sólo las pocas posiciones finalmente compradas. También
 permite distinguir el aprendizaje del ranking de las fricciones de una implementación concreta.
 
 \section{Pregunta, hipótesis y objetivos}
@@ -135,10 +135,12 @@ retorno excedente futuro, la métrica por cohorte es
 
 Un Rank-IC positivo no promete que todas las posiciones individuales ganen ni que la cartera supere
 al benchmark cada año. Significa que, de media, el orden relativo contiene información. La cartera
-añade restricciones: sólo puede comprar, mantiene doce posiciones, paga costes y puede conservar
-efectivo cuando la calibración de alfa no justifica una entrada. Por eso un sistema puede exhibir un
-Rank-IC sólido y un IR de cartera moderado. El Capítulo~\ref{chap:resultados} cuantifica esa pérdida
-de transmisión mediante un coeficiente de 0,247.
+añade restricciones: sólo puede comprar, mantiene un número reducido de posiciones, paga costes y
+puede conservar efectivo cuando la calibración de alfa no justifica una entrada. Por eso un sistema
+puede exhibir un Rank-IC sólido y un IR de cartera moderado. El Capítulo~\ref{chap:resultados}
+cuantifica esa pérdida de transmisión mediante un coeficiente de 0,328, y muestra además que
+cambiar únicamente las reglas de cartera basta para invertir el signo del resultado fuera de
+muestra: es la contribución central de este trabajo.
 
 \section{Alcance y organización del documento}
 

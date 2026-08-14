@@ -1,32 +1,35 @@
 % Tabla compuesta: las cinco afirmaciones que vertebran el documento, cada una
 % con la cifra que la sostiene, el artefacto donde verificarla y su matiz.
+% Se escribe a mano —no la genera el script— porque combina cifras de los cuatro
+% estudios con la valoración cualitativa de cada una.
 \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.24\textwidth}lX}
 \toprule
 Afirmación & Cifra & Matiz que la acompaña \\
 \midrule
 El sistema aprende a ponderar a sus especialistas &
-$+52\,\%$ &
-El meta pasa de reparto uniforme a identificar a \textit{risk} en dos años, pero queda pegado a su
-tope de 0,50 desde 2019 \\
++61\% &
+El meta aprendido alcanza $\rankic = 0{,}1090$ frente a 0,0675 del reparto uniforme, pero el agente
+\textit{risk} por separado llega a 0,1227 y bate al propio meta \\
 \addlinespace
 Lo aprendido es señal y no ruido &
-$\rankic = 0{,}1004$ &
-Frente a 0,0130 del mejor \textit{baseline}, pero 117 cohortes equivalen a $\approx 9$
-observaciones independientes \\
+$\rankic = 0{,}1090$ &
+IC-IR 0,851 y $t$ de Newey--West 3,46 sobre 117 cohortes, que equivalen a $\approx 9$ observaciones
+independientes por el horizonte anual \\
 \addlinespace
 No es suerte &
-7 de 8 contrastes &
-Permutación $p=0{,}0001$ y placebos en cero; el Deflated Sharpe 0,930 no alcanza su umbral y se
-reporta igualmente \\
+$p = 0{,}0001$ &
+Permutación y placebos concluyentes, pero las carteras aleatorias del escenario general dejan al
+modelo en el percentil 0,761 y el Deflated Sharpe queda en 0,682 \\
 \addlinespace
-Bate al índice en la era reservada &
-$+14{,}21\,\%$ &
-Exceso geométrico con IR 0,959 y 2 de 2 años, pero el Rank-IC de esa era es indeterminado por falta
-de cohortes cerradas \\
+La señal se traslada a rentabilidad fuera de muestra &
+$\text{IR} = +0{,}304$ &
+Con la cartera optimizada; con la cartera por defecto la misma señal daba $-1{,}167$. El resultado
+depende de la gestión, no del modelo, y la era reservada son 6 cohortes ($\approx 1{,}4$ años) \\
 \addlinespace
 La mejor forma de usar la señal es no interferirla &
-$\text{TC}=0{,}247$ &
-El perfil que no reordena gana; seis de siete perfiles sesgados destruyen alfa. La cartera
-materializa una cuarta parte de la señal \\
+$0{,}844$ vs. $0{,}570$ &
+Con la cartera ganadora, el perfil que no reordena domina la ventana de selección y los siete que sí
+la reordenan quedan por debajo. En la era reservada el orden se invierte sobre seis cohortes, lo que
+sugiere dependencia del régimen \\
 \bottomrule
 \end{tabularx}

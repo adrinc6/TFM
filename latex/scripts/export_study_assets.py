@@ -1,7 +1,16 @@
-"""Exporta activos del study de referencia para el manuscrito XeLaTeX.
+"""Exporta activos de los estudios de referencia para el manuscrito XeLaTeX.
 
 Uso desde la raíz del repositorio:
-    python latex/scripts/export_study_assets.py --study-id study-20260803-201234-b4d7a8d8
+    python latex/scripts/export_study_assets.py \
+        --study-id study-20260814-095144-5ec17b78 \
+        --chain-study-id study-20260812-163136-1b104667 \
+        --chain-study-id study-20260813-103456-aa733655 \
+        --chain-study-id study-20260814-095144-5ec17b78 \
+        --portfolio-study-id study-20260814-135754-fdbdf2c5
+
+``--study-id`` aporta la evidencia predictiva; ``--portfolio-study-id``, la económica, leída del
+ganador de la rejilla de cartera; y los ``--chain-study-id``, en orden de ejecución, las figuras de
+la cadena de studies encadenados.
 
 Los PNG se generan a 300 dpi, con fondo blanco y dimensiones de impresión, y están preparados
 para incluirse directamente en Overleaf. Cada salida queda registrada en
@@ -12,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -86,39 +96,6 @@ def tex_free(value: object) -> str:
     return text.replace("_", " ")
 
 
-def decision_records(decisions: dict) -> list[dict]:
-    """Traza de la optimización secuencial, decisión a decisión.
-
-    ``decisions.json`` no persiste si el ganador desplazó al incumbente, así que
-    se deriva comparando el candidato ganador con el marcado ``is_incumbent``.
-    El Rank-IC devuelto es el del ganador, es decir, el incumbente con el que
-    arranca la decisión siguiente: la serie forma la escalera acumulada.
-    """
-    records = []
-    for decision in decisions["decisions"]:
-        candidates = decision["candidates"]
-        winner = next(item for item in candidates if item["candidate_id"] == decision["winner_candidate_id"])
-        incumbent = next((item for item in candidates if item.get("is_incumbent")), None)
-        paired = winner["paired_bootstrap_90"]
-        records.append(
-            {
-                "variable": decision["variable_id"],
-                "value": winner["value"],
-                "rank_ic": winner["mean_rank_ic"],
-                "advantage": winner["paired_advantage"],
-                "rule": decision["selection_rule"],
-                "changed": incumbent is not None and winner["candidate_id"] != incumbent["candidate_id"],
-                "interval": (
-                    f"[{num(paired['ci_low'])}; {num(paired['ci_high'])}]"
-                    if paired.get("applicable")
-                    else "No aplicable"
-                ),
-                "candidates": len(candidates),
-            }
-        )
-    return records
-
-
 def load_features(paths: "Paths") -> pd.DataFrame:
     """Une el catálogo declarado con los diagnósticos calculados.
 
@@ -159,6 +136,77 @@ def load_paths(study_id: str) -> Paths:
     assets = LATEX / "assets"
     assets.mkdir(parents=True, exist_ok=True)
     return Paths(study, evidence, assets, assets)
+
+
+def load_chain(study_ids: list[str]) -> pd.DataFrame:
+    """Métricas comparables de la cadena de Model Studies, en orden de ejecución.
+
+    Cada pasada tomó como baseline al ganador de la anterior, así que la fila *i* no es un
+    experimento independiente sino el punto de partida de la *i+1*. Todo se lee de los artefactos:
+    ninguna cifra de la cadena se escribe a mano.
+
+    ``newey_west_t`` no está en ``summary.json`` —vive en ``attribution.json``, bajo
+    ``ic_significance/selection``— y las cifras de la era reservada salen de ``confirmation``, que
+    solo existe porque el ganador se reevaluó sobre la serie completa.
+    """
+    rows = []
+    for order, study_id in enumerate(study_ids, start=1):
+        study = ROOT / "results" / "studies" / study_id
+        summary = read_json(study / "evidence" / "summary.json")["summary"]
+        attribution = read_json(study / "attribution.json")
+        winner = read_json(study / "winner.json")
+        meta = read_json(study / "study.json")
+        confirmation = summary.get("confirmation", {})
+        rows.append(
+            {
+                "order": order,
+                "study_id": study_id,
+                "run_id": winner.get("winner_run_id"),
+                "catalog_version": meta.get("catalog_version"),
+                "mean_rank_ic": summary.get("mean_rank_ic"),
+                "ic_ir": summary.get("ic_ir"),
+                "newey_west_t": attribution["ic_significance"]["selection"]["newey_west_t"],
+                "positive_fraction": summary.get("rank_ic_positive_fraction"),
+                "transfer_coefficient": summary.get("transfer_coefficient"),
+                "information_ratio": summary.get("information_ratio"),
+                "geometric_excess_return": summary.get("geometric_excess_return"),
+                "beat_rate": summary.get("beat_rate"),
+                "annualized_turnover": summary.get("annualized_turnover"),
+                "configuration": winner.get("configuration", {}),
+                "confirmation_rank_ic": attribution.get("confirmation_2025_2026", {}).get("mean_rank_ic"),
+                "confirmation_excess": confirmation.get("geometric_excess_return"),
+                "confirmation_ir": confirmation.get("information_ratio"),
+                "confirmation_beat_rate": confirmation.get("beat_rate"),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def chain_configuration_changes(chain: pd.DataFrame) -> list[dict]:
+    """Variables en que cada pasada se aparta de la anterior.
+
+    La primera fila se compara contra el baseline recomendado del catálogo, que es de donde partió
+    la cadena; las siguientes, contra el ganador que heredaron. El recuento resultante es la
+    evidencia de convergencia: si la cadena estuviera explorando al azar no decrecería.
+    """
+    # El script se invoca desde `latex/scripts/`, así que la raíz del repositorio no está en
+    # `sys.path` y el catálogo no sería importable sin añadirla.
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from module.studies.catalog import VARIABLES
+
+    baseline = {variable.id: variable.recommended for variable in VARIABLES}
+    changes = []
+    previous = baseline
+    for row in chain.itertuples():
+        current = dict(row.configuration)
+        differing = sorted(
+            key for key, value in current.items()
+            if key in previous and previous[key] != value
+        )
+        changes.append({"order": row.order, "study_id": row.study_id, "variables": differing})
+        previous = current
+    return changes
 
 
 def read_json(path: Path) -> dict:
@@ -312,8 +360,15 @@ def write_tables_predictive(paths: Paths, diag: pd.DataFrame, features: pd.DataF
     )
 
 
-def write_tables_robustness(paths: Paths, summary: dict, robustness: dict, attribution: dict) -> None:
-    """Tablas de robustez, atribución factorial y ventanas de evaluación."""
+def write_tables_robustness(
+    paths: Paths, summary: dict, robustness: dict, attribution: dict, portfolio: dict | None = None,
+) -> None:
+    """Tablas de robustez, atribución factorial y ventanas de evaluación.
+
+    ``portfolio`` redirige la tabla de las tres ventanas a la evidencia económica del ganador de la
+    rejilla. Sin él, la tabla describiría la cartera del Model Study —la que el catálogo recomienda,
+    no la que el documento adopta— y contradiría al resto del capítulo.
+    """
     boot = robustness["bootstrap_and_era_exclusion"]
     rows = [
         [
@@ -352,7 +407,14 @@ def write_tables_robustness(paths: Paths, summary: dict, robustness: dict, attri
         ("total_cost_drag", "Coste acumulado", "pct"),
         ("n_periods", "Periodos", "int"),
     ]
-    blocks = {"summary": summary["summary"], "confirmation": summary["summary"]["confirmation"], "full_curve": summary["summary"]["full_curve"]}
+    # Las tres ventanas son económicas de principio a fin, así que describen la cartera adoptada y
+    # no la del Model Study. `evidence_best_full/summary.json` tiene la misma forma que el summary
+    # del modelo, de modo que el resto de la función no cambia.
+    economic = summary
+    if portfolio is not None:
+        economic = read_json(portfolio["study"] / "evidence_best_full" / "summary.json")
+    root = economic.get("summary", economic)
+    blocks = {"summary": root, "confirmation": root["confirmation"], "full_curve": root["full_curve"]}
     rows = []
     for key, label, kind in metrics:
         cells = []
@@ -400,41 +462,12 @@ def write_tables_robustness(paths: Paths, summary: dict, robustness: dict, attri
     table(paths.tables / "t07_neutralizacion.tex", ["Concepto", "Valor"], rows, "lr")
 
 
-def write_tables_portfolio(paths: Paths, sweep: pd.DataFrame, baseline: dict, orders: pd.DataFrame, tails: pd.DataFrame) -> None:
-    """Tablas del barrido diagnóstico de cartera y de la cola de la señal."""
-    frame = sweep.sort_values("geometric_excess_return", ascending=False)
-    rows = [
-        [
-            tex(row.variable_id),
-            tex(tex_free(row.base_value)),
-            tex(tex_free(row.diagnostic_value)),
-            pct(row.geometric_excess_return),
-            num(row.information_ratio, 3),
-            num(row.annualized_turnover, 2),
-            pct(row.max_drawdown),
-            num(row.transfer_coefficient, 3),
-        ]
-        for row in frame.itertuples()
-    ]
-    baseline_row = [
-        r"\textbf{Ganador congelado}",
-        "—",
-        "—",
-        r"\textbf{" + pct(baseline["geometric_excess_return"]) + "}",
-        r"\textbf{" + num(baseline["information_ratio"], 3) + "}",
-        r"\textbf{" + num(baseline["annualized_turnover"], 2) + "}",
-        r"\textbf{" + pct(baseline["max_drawdown"]) + "}",
-        r"\textbf{" + num(baseline["transfer_coefficient"], 3) + "}",
-    ]
-    longtable(
-        paths.tables / "t07_cartera_barrido.tex",
-        ["Variable", "Base", "Diagnóstico", "Exceso", "IR", "Turnover", "MDD", "Transf."],
-        [baseline_row] + rows,
-        "Barrido diagnóstico de cartera sobre el ganador congelado, ordenado por exceso geométrico.",
-        "tab:cartera-barrido",
-        "lllrrrrr",
-    )
+def _write_tables_orders_and_tails(paths: Paths, orders: pd.DataFrame, tails: pd.DataFrame) -> None:
+    """Motivos de las órdenes y comportamiento de la cola de la señal.
 
+    Se emiten con o sin Portfolio Study: describen cómo se ejecuta la cartera y cómo se comporta el
+    extremo del ranking, no qué cartera se eligió.
+    """
     flows = orders.copy()
     flows["flow"] = (flows["weight_after"] - flows["weight_before"]).abs()
     grouped = flows.groupby("reason").agg(
@@ -486,6 +519,433 @@ def write_tables_portfolio(paths: Paths, sweep: pd.DataFrame, baseline: dict, or
     )
 
 
+GRID_VARIABLES = (
+    "target_size", "max_cash_weight", "sizing_mode",
+    "minimum_holding_period", "coverage_percentile_floor", "rebalance_drift_tolerance",
+)
+
+GRID_LABELS = {
+    "target_size": "Posiciones objetivo",
+    "max_cash_weight": "Tope de efectivo",
+    "sizing_mode": "Reparto de pesos",
+    "minimum_holding_period": "Tenencia mínima",
+    "coverage_percentile_floor": "Suelo de cobertura",
+    "rebalance_drift_tolerance": "Tolerancia de deriva",
+}
+
+
+def load_agent_attribution(paths: "Paths") -> dict[str, pd.DataFrame]:
+    """Resume la atribución local por acción en tres agregados pequeños.
+
+    ``agent_local_attribution.parquet`` son 1,3 millones de filas —una por acción, fecha, agente y
+    variable— y no cabe manipularlo repetidamente. Se lee **una sola vez**, se agrega aquí y el
+    resto del script trabaja con los resúmenes.
+
+    Se devuelven tres cosas distintas: cuánto pesa cada variable dentro de cada agente
+    (``by_feature``), cuántas variables distintas llega a encabezar cada agente (``vocabulary``) y
+    cómo cambia por año la variable dominante (``by_year``). La magnitud que se agrega es el valor
+    absoluto de la contribución: contribuciones de signo opuesto se cancelarían en media y darían la
+    impresión falsa de que una variable no interviene.
+    """
+    frame = pd.read_parquet(
+        paths.evidence / "agent_local_attribution.parquet",
+        columns=["snapshot_date", "agent", "feature", "local_contribution", "importance_rank"],
+    )
+    frame["abs_contribution"] = frame["local_contribution"].abs()
+
+    by_feature = frame.groupby(["agent", "feature"], as_index=False).agg(
+        mean_abs=("abs_contribution", "mean"),
+        mean_signed=("local_contribution", "mean"),
+        rows=("abs_contribution", "size"),
+    )
+
+    leaders = frame[frame["importance_rank"] == 1]
+    vocabulary = leaders.groupby("agent", as_index=False).agg(
+        distinct_features=("feature", "nunique"),
+        rows=("feature", "size"),
+    )
+
+    leaders_by_year = leaders.copy()
+    leaders_by_year["year"] = pd.to_datetime(leaders_by_year["snapshot_date"]).dt.year
+    by_year = leaders_by_year.groupby(["agent", "year", "feature"], as_index=False).size()
+
+    return {"by_feature": by_feature, "vocabulary": vocabulary, "by_year": by_year}
+
+
+def draw_agent_attribution(summary: dict[str, pd.DataFrame], agent: str, output: Path, top: int = 8) -> None:
+    """Variables que más mueven la puntuación de un agente.
+
+    La longitud de la barra es la magnitud media de la contribución. No se codifica el signo: la
+    contribución media con signo es de orden $10^{-4}$ o menor en todas estas variables, es decir,
+    se cancela entre acciones. Colorear por ese signo sugeriría un sesgo direccional que los datos
+    no sostienen. Lo que la figura mide es **cuánto** pesa cada variable al ordenar, no hacia dónde
+    empuja.
+    """
+    frame = summary["by_feature"]
+    frame = frame[frame["agent"] == agent].nlargest(top, "mean_abs").iloc[::-1]
+    labels = [name.replace("factor_", "").replace("_", " ") for name in frame["feature"]]
+    fig, ax = plt.subplots(figsize=(7.2, 3.6))
+    ax.barh(labels, frame["mean_abs"], color=NAVY)
+    ax.set(
+        title=f"Variables que más mueven la puntuación del agente {agent}",
+        xlabel="Contribución absoluta media a la puntuación",
+    )
+    save(fig, output)
+
+
+def draw_attribution_by_year(summary: dict[str, pd.DataFrame], agent: str, output: Path, top: int = 4) -> None:
+    """Cuota anual de las variables que encabezan la atribución de un agente.
+
+    Responde a si el agente mira siempre lo mismo. Cada banda es la fracción de acciones y fechas de
+    ese año en las que la variable fue la primera por importancia.
+    """
+    frame = summary["by_year"]
+    frame = frame[frame["agent"] == agent]
+    pivot = frame.pivot_table(index="year", columns="feature", values="size", aggfunc="sum").fillna(0)
+    pivot = pivot.loc[:, pivot.sum().nlargest(top).index]
+    shares = pivot.div(pivot.sum(axis=1).where(lambda total: total > 0), axis=0).fillna(0)
+    fig, ax = plt.subplots(figsize=(7.2, 3.6))
+    bottom = np.zeros(len(shares))
+    for column, color in zip(shares.columns, [NAVY, TEAL, GOLD, RED, GREEN]):
+        values = shares[column].to_numpy()
+        ax.bar(shares.index.astype(str), values, bottom=bottom, color=color,
+               label=column.replace("factor_", "").replace("_", " "))
+        bottom += values
+    ax.set(
+        title=f"Qué variable encabeza la atribución de {agent}, año a año",
+        ylabel="Cuota de las observaciones del año",
+    )
+    ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter(1, decimals=0))
+    legend_below(ax, 2, anchor=-0.20)
+    save(fig, output)
+
+
+def write_tables_attribution(paths: Paths, summary: dict[str, pd.DataFrame], top: int = 3) -> None:
+    """Las variables principales de cada agente y la amplitud de su vocabulario.
+
+    «Encabeza» es la fracción de observaciones en las que esa variable fue la primera por
+    importancia; mide con qué frecuencia manda, frente a la contribución media, que mide cuánto pesa
+    cuando interviene. No se tabula el signo medio porque se cancela entre acciones y no es
+    interpretable.
+    """
+    by_feature, vocabulary = summary["by_feature"], summary["vocabulary"]
+    leaders = summary["by_year"].groupby(["agent", "feature"], as_index=False)["size"].sum()
+    rows = []
+    for agent in AGENT_ORDER:
+        best = by_feature[by_feature["agent"] == agent].nlargest(top, "mean_abs")
+        vocab = vocabulary.loc[vocabulary["agent"] == agent, "distinct_features"]
+        agent_leaders = leaders[leaders["agent"] == agent]
+        total = agent_leaders["size"].sum()
+        for position, row in enumerate(best.itertuples()):
+            share = agent_leaders.loc[agent_leaders["feature"] == row.feature, "size"].sum()
+            rows.append([
+                tex(agent) if position == 0 else "",
+                tex(row.feature.replace("factor_", "")),
+                num(row.mean_abs),
+                pct(share / total, 1) if total else "—",
+                str(int(vocab.iloc[0])) if position == 0 and len(vocab) else "",
+            ])
+    table(
+        paths.tables / "t05_atribucion.tex",
+        ["Agente", "Variable", "Contrib. media", "Encabeza", "Variables distintas"],
+        rows,
+        "llrrr",
+    )
+
+
+AGENT_ORDER = ("risk", "value", "growth", "quality", "momentum")
+
+
+def _grid_sort_key(value: object) -> tuple[int, float, str]:
+    """Ordena los valores de una variable de rejilla de forma legible.
+
+    Los valores llegan serializados como JSON, así que ``8`` y ``50`` son cadenas y un orden
+    alfabético los colocaría como 12, 16, 25, 5, 50, 8. Los numéricos se ordenan por su valor y los
+    categóricos alfabéticamente, detrás.
+    """
+    text = str(value).strip('"')
+    try:
+        return (0, float(text), "")
+    except ValueError:
+        return (1, 0.0, text)
+
+
+def load_portfolio(study_id: str) -> dict:
+    """Artefactos del Portfolio Study: rejilla completa, ganador y perfiles.
+
+    La rejilla se midió sobre la serie recortada en 2024 —ninguna de las 1.728 combinaciones pudo
+    ver la era reservada—, mientras que ``portfolio_winner.json`` guarda además la confirmación del
+    ganador sobre la serie completa. Son cifras de ventanas distintas y no deben mezclarse.
+    """
+    study = ROOT / "results" / "studies" / study_id
+    winner_path = study / "portfolio_winner.json"
+    grid_path = study / "portfolio_grid.parquet"
+    if not winner_path.is_file() or not grid_path.is_file():
+        raise FileNotFoundError(f"El Portfolio Study {study_id} no tiene artefactos completos.")
+    profiles_path = study / "portfolio_profiles.parquet"
+    return {
+        "study_id": study_id,
+        "study": study,
+        "grid": pd.read_parquet(grid_path),
+        "winner": read_json(winner_path),
+        "profiles": pd.read_parquet(profiles_path) if profiles_path.is_file() else None,
+    }
+
+
+def draw_portfolio_grid(grid: pd.DataFrame, winner: dict, output: Path) -> None:
+    """Nube de las combinaciones evaluadas: Information Ratio frente a rotación anual.
+
+    Sustituye al barrido diagnóstico de una variable cada vez. Cada punto es una cartera completa
+    —seis coordenadas simultáneas— y el color codifica el tope de efectivo, que es la variable que
+    más separa la nube. La ganadora se marca aparte: interesa dónde cae respecto de la masa, no su
+    valor aislado.
+    """
+    frame = grid.dropna(subset=["information_ratio", "annualized_turnover"]).copy()
+    cash = frame["max_cash_weight"].astype(float)
+    levels = sorted(cash.unique())
+    palette = [NAVY, TEAL, GOLD, RED, GREEN][: len(levels)]
+    fig, ax = plt.subplots(figsize=(7.2, 4.2))
+    for level, color in zip(levels, palette):
+        mask = cash == level
+        # Etiqueta para matplotlib, no para LaTeX: `pct` escaparía el símbolo de porcentaje.
+        ax.scatter(
+            frame.loc[mask, "annualized_turnover"], frame.loc[mask, "information_ratio"],
+            s=9, alpha=0.55, color=color, linewidths=0, label=f"Efectivo máx. {level:.0%}",
+        )
+    best = winner["winner_summary"]
+    ax.scatter(
+        [best["annualized_turnover"]], [best["information_ratio"]],
+        s=110, facecolor="none", edgecolor="black", linewidth=1.6, zorder=5, label="Cartera ganadora",
+    )
+    ax.set(
+        title=f"Las {len(frame):,} carteras evaluadas: Information Ratio frente a rotación".replace(",", "."),
+        xlabel="Rotación anualizada (veces la cartera al año)", ylabel="Information Ratio (2015-2024)",
+    )
+    legend_below(ax, min(len(levels) + 1, 4), anchor=-0.20)
+    save(fig, output)
+
+
+def draw_portfolio_marginals(grid: pd.DataFrame, output: Path) -> None:
+    """Efecto marginal de cada variable de cartera sobre el Information Ratio.
+
+    Un panel por variable, con la distribución del IR de todas las combinaciones que comparten ese
+    valor. Es la lectura honesta de un cartesiano: al fijar una coordenada, las otras cinco siguen
+    variando, así que cada caja resume un conjunto de carteras y no una cartera concreta. Sirve
+    para ver qué variables mueven el IR y cuáles son casi indiferentes.
+    """
+    fig, axes = plt.subplots(2, 3, figsize=(7.6, 5.0))
+    for ax, variable in zip(axes.ravel(), GRID_VARIABLES):
+        values = sorted(grid[variable].dropna().unique(), key=_grid_sort_key)
+        groups = [grid.loc[grid[variable] == value, "information_ratio"].dropna().to_numpy() for value in values]
+        box = ax.boxplot(groups, patch_artist=True, widths=0.55, showfliers=False)
+        for patch in box["boxes"]:
+            patch.set(facecolor=LIGHT, edgecolor=NAVY, linewidth=0.9)
+        for element in ("whiskers", "caps"):
+            for item in box[element]:
+                item.set(color=NAVY, linewidth=0.9)
+        for median in box["medians"]:
+            median.set(color=RED, linewidth=1.4)
+        ax.set_title(GRID_LABELS[variable], fontsize=9)
+        ax.set_xticks(range(1, len(values) + 1))
+        ax.set_xticklabels([tex_free(value) for value in values], rotation=32, ha="right", fontsize=6.6)
+        ax.tick_params(axis="y", labelsize=7)
+    fig.supylabel("Information Ratio (2015-2024)", fontsize=9)
+    save(fig, output)
+
+
+def draw_selection_vs_reserved(chain: pd.DataFrame, output: Path) -> None:
+    """El hallazgo central: la ventana de selección mejora y la era reservada se hunde.
+
+    Enfrenta, pasada a pasada, el Information Ratio medido en la ventana donde se tomaron las
+    decisiones contra el de la era reservada. La divergencia es el resultado: la tercera pasada es
+    la mejor de la cadena en selección (0,339) y la peor con diferencia fuera de ella (-1,167).
+    """
+    labels = [f"Study {row.order}" for row in chain.itertuples()]
+    selection = chain["information_ratio"].astype(float).tolist()
+    reserved = chain["confirmation_ir"].astype(float).tolist()
+    positions = np.arange(len(labels))
+    fig, ax = plt.subplots(figsize=(7.2, 3.6))
+    ax.bar(positions - 0.2, selection, width=0.38, color=NAVY, label="Ventana de selección (2015-2024)")
+    ax.bar(positions + 0.2, reserved, width=0.38, color=RED, label="Era reservada (2025-2026)")
+    for index, (left, right) in enumerate(zip(selection, reserved)):
+        ax.annotate(num(left, 3), (index - 0.2, left), xytext=(0, 4 if left >= 0 else -11), textcoords="offset points", ha="center", fontsize=7.5)
+        ax.annotate(num(right, 3), (index + 0.2, right), xytext=(0, 4 if right >= 0 else -11), textcoords="offset points", ha="center", fontsize=7.5)
+    ax.axhline(0, color=SLATE, linewidth=0.9)
+    ax.set(title="Information Ratio dentro y fuera de la ventana de selección", ylabel="Information Ratio", xticks=positions)
+    ax.set_xticklabels(labels)
+    ax.margins(y=0.22)
+    legend_below(ax, 2)
+    save(fig, output)
+
+
+def write_tables_chain(paths: Paths, chain: pd.DataFrame, changes: list[dict]) -> None:
+    """Tabla comparativa de la cadena y tabla de qué cambió en cada pasada."""
+    rows = []
+    for row in chain.itertuples():
+        rows.append([
+            f"Study {row.order}",
+            tex(row.run_id),
+            num(row.mean_rank_ic),
+            num(row.ic_ir, 3),
+            num(row.newey_west_t, 2),
+            num(row.transfer_coefficient, 3),
+            num(row.information_ratio, 3),
+            pct(row.geometric_excess_return),
+            num(row.confirmation_ir, 3),
+        ])
+    table(
+        paths.tables / "t06_cadena.tex",
+        ["Pasada", "Run ganador", "Rank-IC", "IC-IR", "$t$ NW", "Transf.", "IR sel.", "Exceso sel.", "IR reserv."],
+        rows,
+        "llrrrrrrr",
+    )
+
+    change_rows = [
+        [
+            f"Study {item['order']}",
+            str(len(item["variables"])),
+            tex(", ".join(item["variables"])) if item["variables"] else "—",
+        ]
+        for item in changes
+    ]
+    table(
+        paths.tables / "t06_cadena_config.tex",
+        ["Pasada", "Cambios", "Variables modificadas respecto del punto de partida"],
+        change_rows,
+        "lrp{0.62\\linewidth}",
+    )
+
+
+def write_tables_portfolio_study(paths: Paths, portfolio: dict, baseline: dict) -> None:
+    """Tablas del Portfolio Study: mejores carteras, ganadora y perfiles.
+
+    ``baseline`` es el resumen del ganador del Model Study, es decir, la cartera que el manuscrito
+    documentaba antes de optimizar. Aparece como fila de referencia para que la mejora se lea como
+    diferencia y no como cifra suelta.
+
+    En lugar de un top-N —cuyas filas se diferencian en un decimal y repiten la misma cartera con
+    variaciones menores— se tabula cuánto separa cada variable el Information Ratio. Responde a la
+    pregunta útil: qué decisiones de cartera importan y cuáles son indiferentes.
+    """
+    grid = portfolio["grid"].dropna(subset=["information_ratio"])
+    rows = []
+    for variable in GRID_VARIABLES:
+        medians = grid.groupby(grid[variable].astype(str))["information_ratio"].median().sort_values(ascending=False)
+        if medians.empty:
+            continue
+        rows.append({
+            "variable": variable,
+            "best_value": medians.index[0],
+            "best": medians.iloc[0],
+            "worst_value": medians.index[-1],
+            "worst": medians.iloc[-1],
+            "spread": medians.iloc[0] - medians.iloc[-1],
+        })
+    rows.sort(key=lambda item: item["spread"], reverse=True)
+    table(
+        paths.tables / "t08_cartera_influencia.tex",
+        ["Variable", "Mejor valor", "IR mediano", "Peor valor", "IR mediano", "Diferencia"],
+        [
+            [
+                tex(GRID_LABELS[row["variable"]]),
+                tex(tex_free(row["best_value"])),
+                num(row["best"], 3),
+                tex(tex_free(row["worst_value"])),
+                num(row["worst"], 3),
+                num(row["spread"], 3),
+            ]
+            for row in rows
+        ],
+        "llrlrr",
+    )
+
+    winner = portfolio["winner"]
+    summary = winner["winner_summary"]
+    confirmation = winner.get("winner_confirmation", {})
+    combination = winner["winner_combination"]
+    config_rows = [
+        [tex(GRID_LABELS[variable]), tex(tex_free(combination.get(variable)))]
+        for variable in GRID_VARIABLES
+    ]
+    table(
+        paths.tables / "t08_cartera_ganadora_config.tex",
+        ["Variable de cartera", "Valor ganador"], config_rows, "ll",
+    )
+
+    def _delta(current: float | None, reference: float | None, formatter, digits: int) -> str:
+        """Diferencia con signo, en el mismo formato que las dos columnas que compara."""
+        if current is None or reference is None:
+            return "—"
+        return formatter(float(current) - float(reference), digits)
+
+    metric_rows = [
+        [
+            "Information Ratio",
+            num(baseline["information_ratio"], 3),
+            num(summary["information_ratio"], 3),
+            _delta(summary["information_ratio"], baseline["information_ratio"], num, 3),
+            num(confirmation.get("information_ratio"), 3) if confirmation.get("information_ratio") is not None else "—",
+        ],
+        [
+            "Exceso geométrico",
+            pct(baseline["geometric_excess_return"]),
+            pct(summary["geometric_excess_return"]),
+            _delta(summary["geometric_excess_return"], baseline["geometric_excess_return"], pct, 2),
+            pct(confirmation["geometric_excess_return"]) if confirmation.get("geometric_excess_return") is not None else "—",
+        ],
+        [
+            "Rotación anualizada",
+            num(baseline["annualized_turnover"], 2),
+            num(summary["annualized_turnover"], 2),
+            _delta(summary["annualized_turnover"], baseline["annualized_turnover"], num, 2),
+            num(confirmation["annualized_turnover"], 2) if confirmation.get("annualized_turnover") is not None else "—",
+        ],
+        [
+            "Máxima caída",
+            pct(baseline["max_drawdown"]),
+            pct(summary["max_drawdown"]),
+            _delta(summary["max_drawdown"], baseline["max_drawdown"], pct, 2),
+            pct(confirmation["max_drawdown"]) if confirmation.get("max_drawdown") is not None else "—",
+        ],
+        [
+            "Años que baten",
+            pct(baseline["beat_rate"], 0),
+            pct(summary["beat_rate"], 0),
+            _delta(summary["beat_rate"], baseline["beat_rate"], pct, 0),
+            pct(confirmation["beat_rate"], 0) if confirmation.get("beat_rate") is not None else "—",
+        ],
+    ]
+    table(
+        paths.tables / "t08_cartera_ganadora.tex",
+        ["Métrica", "Cartera del modelo", "Cartera ganadora", "Diferencia", "Era reservada"],
+        metric_rows,
+        "lrrrr",
+    )
+
+    profiles = portfolio.get("profiles")
+    if profiles is not None and not profiles.empty:
+        applicable = profiles[profiles["applicable"]] if "applicable" in profiles else profiles
+        ordered = applicable.sort_values("information_ratio", ascending=False)
+        profile_rows = [
+            [
+                tex(row.profile),
+                num(row.information_ratio, 3),
+                pct(row.geometric_excess_return),
+                num(row.annualized_turnover, 2),
+                pct(row.mean_cash_weight),
+                num(row.confirmation_information_ratio, 3) if pd.notna(row.confirmation_information_ratio) else "—",
+                pct(row.confirmation_excess) if pd.notna(row.confirmation_excess) else "—",
+            ]
+            for row in ordered.itertuples()
+        ]
+        table(
+            paths.tables / "t08_perfiles_cartera.tex",
+            ["Perfil", "IR sel.", "Exceso sel.", "Turnover", "Efectivo", "IR reserv.", "Exceso reserv."],
+            profile_rows,
+            "lrrrrrr",
+        )
+
+
 def write_tables_catalog(paths: Paths, catalog: dict, winner: dict, decisions: dict) -> None:
     """Catálogo cerrado completo y escalera de decisiones secuenciales."""
     configuration = winner["configuration"]
@@ -512,26 +972,6 @@ def write_tables_catalog(paths: Paths, catalog: dict, winner: dict, decisions: d
         # conserva el valor del formato vertical: hay que usar \linewidth para
         # aprovechar el ancho real de la página girada.
         "lllp{0.34\\linewidth}l",
-    )
-
-    rows = []
-    for index, record in enumerate(decision_records(decisions), start=1):
-        rows.append(
-            [
-                str(index),
-                tex(record["variable"]),
-                tex(tex_free(record["value"])),
-                num(record["rank_ic"]),
-                num(record["advantage"]),
-                record["interval"],
-                "Sí" if record["changed"] else "—",
-            ]
-        )
-    table(
-        paths.tables / "t06_escalera.tex",
-        ["\\#", "Variable", "Ganador", "Rank-IC", "Ventaja", "IC pareado 90\\%", "Cambió"],
-        rows,
-        "llrrrcc",
     )
 
 
@@ -728,30 +1168,70 @@ def draw_meta_concentration(tails: pd.DataFrame, output: Path) -> None:
     save(fig, output)
 
 
-def draw_decision_ladder(decisions: dict, output: Path) -> None:
-    records = decision_records(decisions)
-    labels = [record["variable"].replace("_", " ") for record in records]
-    values = [record["rank_ic"] for record in records]
-    changed = [record["changed"] for record in records]
-    fig, ax = plt.subplots(figsize=(7.2, 3.8))
-    ax.step(range(len(values)), values, where="post", color=NAVY, linewidth=1.8)
-    ax.scatter(
-        range(len(values)),
-        values,
-        s=[58 if flag else 26 for flag in changed],
-        c=[GOLD if flag else SLATE for flag in changed],
-        zorder=3,
-    )
-    for index, record in enumerate(records):
-        if record["changed"]:
-            ax.annotate(num(record["rank_ic"]), (index, record["rank_ic"]), xytext=(0, 8), textcoords="offset points", ha="center", fontsize=7.5)
-    ax.set(
-        title="Rank-IC acumulado tras cada decisión secuencial",
-        ylabel="Rank-IC del incumbente",
-        xticks=range(len(labels)),
-    )
-    ax.set_xticklabels(labels, rotation=62, ha="right", fontsize=7)
-    ax.margins(y=0.16)   # deja aire para las anotaciones sobre los escalones
+def draw_chain_progression(chain: pd.DataFrame, output: Path) -> None:
+    """Cuatro métricas de la cadena, cada una en su panel y en su escala.
+
+    Van separadas a propósito: Rank-IC (~0,1), IC-IR (~0,8), transferencia (~0,3) e IR (~0,3) no
+    comparten unidades, y superponerlas en un solo eje sugeriría una comparación que no existe.
+    Lo que sí se compara es la *forma*: las cuatro suben monótonamente a lo largo de la cadena.
+    """
+    panels = [
+        ("Rank-IC medio", "mean_rank_ic", NAVY),
+        ("IC-IR", "ic_ir", TEAL),
+        ("Coef. de transferencia", "transfer_coefficient", GOLD),
+        ("Information Ratio (selección)", "information_ratio", GREEN),
+    ]
+    fig, axes = plt.subplots(1, 4, figsize=(7.6, 2.6))
+    labels = [f"Study {row.order}" for row in chain.itertuples()]
+    for ax, (title, column, color) in zip(axes, panels):
+        values = chain[column].astype(float).tolist()
+        ax.plot(labels, values, marker="o", color=color, linewidth=1.8, markersize=5)
+        for index, value in enumerate(values):
+            # El primer punto queda pegado al eje: su etiqueta se desplaza a la derecha para no
+            # salirse del panel, y las demás se centran sobre el marcador.
+            offset, align = ((6, "left") if index == 0 else (0, "center"))
+            ax.annotate(
+                num(value, 3), (index, value), xytext=(offset, 7),
+                textcoords="offset points", ha=align, fontsize=7,
+            )
+        ax.set_title(title, fontsize=9)
+        ax.tick_params(axis="x", labelsize=7.5)
+        ax.margins(y=0.28)
+    save(fig, output)
+
+
+def draw_chain_configuration(changes: list[dict], output: Path) -> None:
+    """Cuántas variables cambia cada pasada respecto de su punto de partida.
+
+    Es la evidencia visual de convergencia del ascenso por coordenadas: la primera pasada reescribe
+    ocho variables del baseline del catálogo y las siguientes apenas retocan una y dos. Las
+    etiquetas nombran las variables porque el recuento por sí solo no dice cuáles se movieron.
+    """
+    labels = [f"Study {item['order']}" for item in changes]
+    counts = [len(item["variables"]) for item in changes]
+    fig, ax = plt.subplots(figsize=(7.2, 3.2))
+    bars = ax.bar(labels, counts, color=[NAVY, TEAL, GOLD][: len(labels)], width=0.55)
+    for bar, item in zip(bars, changes):
+        names = "\n".join(variable.replace("_", " ") for variable in item["variables"])
+        centre = bar.get_x() + bar.get_width() / 2
+        ax.annotate(
+            f"{len(item['variables'])}", (centre, bar.get_height()),
+            xytext=(0, 4), textcoords="offset points", ha="center", fontsize=9, fontweight="bold",
+        )
+        # Las barras cortas no tienen sitio dentro para la lista de variables: en ese caso la
+        # etiqueta va encima, en gris, y solo se escribe dentro cuando la barra la puede contener.
+        if len(item["variables"]) >= 4:
+            ax.annotate(
+                names, (centre, 0), xytext=(0, 8), textcoords="offset points",
+                ha="center", va="bottom", fontsize=6.6, color="white",
+            )
+        else:
+            ax.annotate(
+                names, (centre, bar.get_height()), xytext=(0, 18), textcoords="offset points",
+                ha="center", va="bottom", fontsize=6.6, color=SLATE,
+            )
+    ax.set(title="Variables que cambia cada pasada respecto de su punto de partida", ylabel="Variables modificadas")
+    ax.margins(y=0.26)
     save(fig, output)
 
 
@@ -882,39 +1362,6 @@ def draw_transfer_by_year(attribution: dict, output: Path) -> None:
     ax.axhline(0, color="black", linewidth=0.8)
     ax.set(title="Rotación, exceso y coste por año (el área es el coste)", xlabel="Turnover anual", ylabel="Exceso sobre SPY")
     ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter(1, decimals=0))
-    save(fig, output)
-
-
-def draw_portfolio_sweep(sweep: pd.DataFrame, baseline: dict, output: Path) -> None:
-    fig, ax = plt.subplots(figsize=(7.2, 4.1))
-    ax.scatter(sweep["annualized_turnover"], sweep["geometric_excess_return"], color=SLATE, s=42, zorder=3, label="Variante diagnóstica")
-    ax.scatter(
-        baseline["annualized_turnover"],
-        baseline["geometric_excess_return"],
-        color=NAVY,
-        s=125,
-        marker="*",
-        zorder=4,
-        label="Ganador congelado",
-    )
-    best = sweep.loc[sweep["geometric_excess_return"].idxmax()]
-    ax.annotate(
-        f"{best.variable_id}\n→ {tex_free(best.diagnostic_value)}",
-        (best.annualized_turnover, best.geometric_excess_return),
-        xytext=(-8, -22),
-        textcoords="offset points",
-        ha="right",
-        fontsize=7.5,
-        color=GREEN,
-    )
-    ax.axhline(baseline["geometric_excess_return"], color=NAVY, linewidth=1, linestyle="--", alpha=0.6)
-    ax.axhline(0, color="black", linewidth=0.8)
-    ax.set(title="Barrido diagnóstico de cartera sobre el mismo ganador", xlabel="Turnover anualizado", ylabel="Exceso geométrico")
-    # El rango útil es de apenas tres puntos porcentuales: sin decimal, todas
-    # las etiquetas colapsarían en el mismo «2 %».
-    ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter(1, decimals=1))
-    ax.margins(y=0.14)
-    legend_below(ax)
     save(fig, output)
 
 
@@ -1095,24 +1542,74 @@ def write_tables(paths: Paths, summary: dict, robustness: dict, attribution: dic
     annual_rows = [[str(int(r.year)), pct(r.portfolio_return), pct(r.benchmark_return), pct(r.alpha), pct(r.max_drawdown_year), num(r.information_ratio_year, 3), pct(r.mean_cash_weight), pct(r.turnover)] for r in annual.itertuples()]
     table(paths.tables / "t07_anual.tex", ["Año", "Cartera", "SPY", "Alfa", "MDD", "IR", "Efectivo", "Turnover"], annual_rows)
 
-    profile_rows = [[tex(r.profile), num(r.mean_rank_ic), pct(r.geometric_excess_return), num(r.information_ratio, 3), pct(r.annualized_turnover), pct(r.mean_cash_weight)] for r in profiles.sort_values("information_ratio", ascending=False).itertuples()]
-    table(paths.tables / "t07_perfiles.tex", ["Perfil", "Rank-IC", "Exceso", "IR", "Turnover", "Efectivo"], profile_rows)
+    # La tabla de perfiles se emite desde el Portfolio Study (`t08_perfiles_cartera`): con la
+    # cartera del modelo el orden entre perfiles es distinto, y mantener las dos versiones dejaría
+    # dos cifras contradictorias para el mismo perfil.
 
-    decision_rows: list[list[str]] = []
+    write_tables_decisions(paths, decisions)
+
+
+def write_tables_decisions(paths: Paths, decisions: dict) -> None:
+    """Qué alternativa se rechazó en cada decisión y cuánto Rank-IC costaba.
+
+    En la última pasada de una cadena convergida el Rank-IC del incumbente es constante —cada
+    variable llega ya en su mejor valor— y una tabla de esa columna es literalmente una columna de
+    ceros. Lo informativo es la alternativa descartada: cuánto habría costado adoptarla.
+
+    El coste se define como el Rank-IC de la mejor alternativa menos el del ganador, de modo que un
+    valor **positivo** significa que la alternativa medía mejor y que el ganador se decidió por otra
+    vía. Eso ocurre en los empates técnicos, y por eso la regla se tabula junto al coste: sin ella,
+    un coste positivo parecería un error.
+    """
+    rows = []
     for decision in decisions["decisions"]:
-        winner = next(candidate for candidate in decision["candidates"] if candidate["candidate_id"] == decision["winner_candidate_id"])
-        paired = winner["paired_bootstrap_90"]
-        if paired["applicable"]:
-            interval = f"[{num(paired['ci_low'])}; {num(paired['ci_high'])}]"
-        else:
-            interval = "No aplicable"
-        decision_rows.append([tex(decision["variable_id"]), tex(decision["winner_value"]), num(winner["paired_advantage"]), interval])
-    table(paths.tables / "t06_decisiones.tex", ["Variable", "Ganador", "Ventaja", r"IC pareado 90\%"], decision_rows, "llrr")
+        candidates = decision["candidates"]
+        winner = next(item for item in candidates if item["candidate_id"] == decision["winner_candidate_id"])
+        others = [item for item in candidates if item["candidate_id"] != winner["candidate_id"]]
+        if not others:
+            continue
+        runner_up = max(others, key=lambda item: item["mean_rank_ic"])
+        rows.append({
+            "variable": decision["variable_id"],
+            "winner": decision["winner_value"],
+            "alternative": runner_up["value"],
+            "alternative_rank_ic": runner_up["mean_rank_ic"],
+            "cost": runner_up["mean_rank_ic"] - winner["mean_rank_ic"],
+            "rule": decision["selection_rule"],
+        })
+    rows.sort(key=lambda item: item["cost"])
+
+    labels = {"robust_rank_ic": "Rank-IC robusto", "tie_simplicity": "Empate: simplicidad"}
+    table_rows = [
+        [
+            tex(row["variable"]),
+            tex(tex_free(row["winner"])),
+            tex(tex_free(row["alternative"])),
+            num(row["alternative_rank_ic"]),
+            num(row["cost"]),
+            tex(labels.get(row["rule"], row["rule"])),
+        ]
+        for row in rows
+    ]
+    table(
+        paths.tables / "t06_decisiones.tex",
+        ["Variable", "Ganador", "Mejor alternativa", "Su Rank-IC", "Coste", "Regla"],
+        table_rows,
+        "lllrrl",
+    )
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--study-id", required=True)
+    parser.add_argument("--study-id", required=True, help="Model Study de referencia (evidencia predictiva).")
+    parser.add_argument(
+        "--chain-study-id", action="append", default=None,
+        help="Model Studies de la cadena, en orden de ejecución. Repetible. El último debe ser --study-id.",
+    )
+    parser.add_argument(
+        "--portfolio-study-id", default=None,
+        help="Portfolio Study cuyo ganador aporta la evidencia económica (rejilla, cartera y perfiles).",
+    )
     args = parser.parse_args()
     paths = load_paths(args.study_id)
     summary = read_json(paths.evidence / "summary.json")
@@ -1123,14 +1620,19 @@ def main() -> None:
     winner = read_json(paths.study / "winner.json")
     weights = pd.read_parquet(paths.evidence / "meta_weights.parquet")
     diag = pd.read_parquet(paths.evidence / "rank_ic_diagnostics.parquet")
-    equity = pd.read_parquet(paths.evidence / "equity.parquet")
-    annual = pd.read_parquet(paths.evidence / "annual_metrics.parquet")
     profiles = pd.read_parquet(paths.study / "profile_comparison.parquet")
-    sweep = pd.read_parquet(paths.study / "portfolio_comparison.parquet")
-    orders = pd.read_parquet(paths.evidence / "orders.parquet")
     tails = pd.read_parquet(paths.evidence / "rank_tail_diagnostics.parquet")
     health = pd.read_parquet(paths.evidence / "signal_health.parquet")
     features = load_features(paths)
+
+    # La evidencia predictiva sale siempre del Model Study; la económica, del ganador del Portfolio
+    # Study si se declara. Separarlas es lo que permite documentar el modelo del study 3 con la
+    # cartera optimizada sin duplicar evidencia en disco ni mezclar procedencias en una figura.
+    portfolio = load_portfolio(args.portfolio_study_id) if args.portfolio_study_id else None
+    economic = (portfolio["study"] / "evidence_best_full") if portfolio else paths.evidence
+    equity = pd.read_parquet(economic / "equity.parquet")
+    annual = pd.read_parquet(economic / "annual_metrics.parquet")
+    orders = pd.read_parquet(economic / "orders.parquet")
 
     draw_meta_weights(weights, paths.figures / "f05_meta_pesos.png")
     draw_agent_ic(diag, paths.figures / "f05_agentes_rankic.png")
@@ -1138,8 +1640,12 @@ def main() -> None:
     draw_equity(equity, paths.figures / "f07_equity.png")
     draw_drawdown(equity, paths.figures / "f07_drawdown.png")
     draw_annual_alpha(annual, paths.figures / "f07_alfa_anual.png")
-    draw_profiles(profiles, paths.figures / "f07_perfiles_exceso.png")
-    draw_profile_tradeoff(profiles, paths.figures / "f07_perfiles_tradeoff.png")
+    # Los perfiles se dibujan con la cartera adoptada cuando hay Portfolio Study: con la del modelo
+    # el orden entre estilos cambia —gana `value` en vez de `balanced`— y las figuras contradirían
+    # a la tabla del capítulo.
+    profile_figures = portfolio["profiles"] if portfolio is not None and portfolio.get("profiles") is not None else profiles
+    draw_profiles(profile_figures, paths.figures / "f07_perfiles_exceso.png")
+    draw_profile_tradeoff(profile_figures, paths.figures / "f07_perfiles_tradeoff.png")
     draw_placebos(robustness, summary["summary"]["mean_rank_ic"], paths.figures / "f07_placebos.png")
     draw_robustness(build_robustness_rows(robustness, attribution), paths.figures / "f07_robustez.png")
     draw_coverage(attribution, paths.figures / "f03_cobertura.png")
@@ -1149,36 +1655,75 @@ def main() -> None:
     draw_rankic_era_heatmap(diag, paths.figures / "f05_rankic_era.png")
     draw_meta_weights_annual(weights, paths.figures / "f05_pesos_anual.png")
     draw_meta_concentration(tails, paths.figures / "f05_concentracion.png")
-    draw_decision_ladder(decisions, paths.figures / "f06_escalera.png")
+
+    # Explicabilidad: qué variables mueven a cada agente y si eso cambia con el régimen. Se agrega
+    # una sola vez porque el artefacto de origen tiene 1,3 millones de filas.
+    attribution_summary = load_agent_attribution(paths)
+    draw_agent_attribution(attribution_summary, "risk", paths.figures / "f05_atribucion_risk.png")
+    draw_attribution_by_year(attribution_summary, "risk", paths.figures / "f05_atribucion_anual.png")
+    write_tables_attribution(paths, attribution_summary)
+
+    # Activos de la cadena de studies encadenados. Solo se generan si se declara la cadena: sin
+    # ella el manuscrito documentaría un study suelto y estas figuras no tendrían nada que contar.
+    if args.chain_study_id:
+        chain = load_chain(args.chain_study_id)
+        changes = chain_configuration_changes(chain)
+        draw_chain_progression(chain, paths.figures / "f06_cadena_progresion.png")
+        draw_chain_configuration(changes, paths.figures / "f06_cadena_config.png")
+        draw_selection_vs_reserved(chain, paths.figures / "f09_seleccion_vs_reservada.png")
+        write_tables_chain(paths, chain, changes)
     draw_bootstrap_forest(robustness, paths.figures / "f07_bootstrap.png")
     draw_permutation(robustness, paths.figures / "f07_permutacion.png")
     draw_random_portfolios(robustness, paths.figures / "f07_aleatorias.png")
     draw_seed_dispersion(robustness, paths.figures / "f07_semillas.png")
     draw_factor_loadings(attribution, paths.figures / "f07_factores.png")
     draw_transfer_by_year(attribution, paths.figures / "f07_transferencia.png")
-    draw_portfolio_sweep(sweep, summary["summary"], paths.figures / "f07_barrido_cartera.png")
     draw_order_reasons(orders, paths.figures / "f07_ordenes.png")
     draw_tail_spread(tails, paths.figures / "f07_cola.png")
     draw_signal_health(health, paths.figures / "f07_salud.png")
 
     write_tables(paths, summary, robustness, attribution, diag, annual, profiles, decisions)
     write_tables_predictive(paths, diag, features, attribution, weights)
-    write_tables_robustness(paths, summary, robustness, attribution)
-    write_tables_portfolio(paths, sweep, summary["summary"], orders, tails)
+    write_tables_robustness(paths, summary, robustness, attribution, portfolio)
+    _write_tables_orders_and_tails(paths, orders, tails)
+
+    # Activos de la rejilla de cartera. Sustituyen al barrido diagnóstico de una variable cada vez:
+    # el esquema de la rejilla tiene seis coordenadas simultáneas y el objetivo pasa a ser el IR.
+    if portfolio is not None:
+        draw_portfolio_grid(portfolio["grid"], portfolio["winner"], paths.figures / "f08_cartera_rejilla.png")
+        draw_portfolio_marginals(portfolio["grid"], paths.figures / "f08_cartera_marginales.png")
+        write_tables_portfolio_study(paths, portfolio, summary["summary"])
     write_tables_catalog(paths, catalog, winner, decisions)
 
+    # El manifiesto declara de qué estudio sale cada familia de artefactos: lo predictivo del Model
+    # Study y lo económico del ganador del Portfolio Study. Sin esa separación, una figura de
+    # equity y una de Rank-IC parecerían tener el mismo origen y no lo tienen.
     manifest = {
         "study_id": args.study_id,
+        "chain_study_ids": list(args.chain_study_id or []),
+        "portfolio_study_id": args.portfolio_study_id,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "sources": [
             "catalog_snapshot.json", "winner.json",
             "evidence/summary.json", "robustness.json", "attribution.json", "decisions.json",
             "evidence/meta_weights.parquet", "evidence/rank_ic_diagnostics.parquet",
-            "evidence/equity.parquet", "evidence/annual_metrics.parquet", "profile_comparison.parquet",
-            "portfolio_comparison.parquet", "evidence/orders.parquet",
+            "profile_comparison.parquet",
             "evidence/rank_tail_diagnostics.parquet", "evidence/signal_health.parquet",
             "evidence/feature_catalog.json", "evidence/feature_diagnostics.parquet",
+            "evidence/agent_local_attribution.parquet",
         ],
+        "economic_sources": (
+            [
+                f"{args.portfolio_study_id}/portfolio_grid.parquet",
+                f"{args.portfolio_study_id}/portfolio_winner.json",
+                f"{args.portfolio_study_id}/portfolio_profiles.parquet",
+                f"{args.portfolio_study_id}/evidence_best_full/equity.parquet",
+                f"{args.portfolio_study_id}/evidence_best_full/annual_metrics.parquet",
+                f"{args.portfolio_study_id}/evidence_best_full/orders.parquet",
+            ]
+            if portfolio
+            else ["evidence/equity.parquet", "evidence/annual_metrics.parquet", "evidence/orders.parquet"]
+        ),
         "figures": sorted(path.name for path in paths.figures.glob("f*.png")),
         "tables": sorted(path.name for path in paths.tables.glob("t*.tex")),
     }

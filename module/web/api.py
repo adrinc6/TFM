@@ -11,8 +11,12 @@ from urllib.parse import parse_qs, urlparse
 
 from environment import PROJECT_ROOT
 from module.studies.catalog import public_catalog
-from module.studies.config import initial_values, retention_budget, validate_definition
-from module.storage.studies import create_run, create_study, read_study, update_study
+from module.studies.config import (
+    initial_values, retention_budget, validate_definition, validate_portfolio_definition,
+)
+from module.storage.studies import (
+    create_run, create_study, list_studies, read_study, safe_study_path, update_study,
+)
 from module.web import dev, queries
 from module.web.jobs import WORKERS
 
@@ -51,6 +55,89 @@ def study_preflight(payload: dict) -> dict:
         "run_scope": scope,
         "retain_all_runs": retain_all,
     }
+
+
+def completed_model_studies() -> list[dict]:
+    """Model Studies que pueden servir de origen: terminados y con ganador y evidencia en disco.
+
+    Un Portfolio Study no reentrena nada: reutiliza los scores congelados del ganador, así que sin
+    `winner.json` ni `evidence/agent_scores.parquet` no hay nada sobre lo que optimizar.
+    """
+    sources = []
+    for study in list_studies():
+        if study.get("study_type", "model_study") != "model_study":
+            continue
+        if study.get("status") != "succeeded":
+            continue
+        directory = safe_study_path(study["study_id"])
+        if not (directory / "winner.json").exists():
+            continue
+        if not (directory / "evidence" / "agent_scores.parquet").exists():
+            continue
+        sources.append({
+            "study_id": study["study_id"],
+            "name": study.get("name") or "Model Study",
+            "created_at": study.get("created_at"),
+        })
+    return sources
+
+
+def portfolio_preflight(payload: dict) -> dict:
+    allowed = {"name", "note", "definition", "source_study_id", "profiles"}
+    unknown = set(payload) - allowed
+    if unknown:
+        raise ValueError(f"Campos desconocidos: {sorted(unknown)}.")
+    definition, budget = validate_portfolio_definition(payload.get("definition"))
+    return {
+        "valid": True,
+        "definition": definition,
+        "budget": budget,
+        "profiles": _validated_profiles(payload.get("profiles")),
+        "sources": completed_model_studies(),
+    }
+
+
+def _validated_profiles(raw: Any) -> list[str]:
+    """Perfiles a evaluar al final. `None` significa todos; una lista vacía, ninguno.
+
+    Se distingue el caso porque son cosas distintas: no declarar nada es aceptar el diagnóstico
+    completo, y declarar una lista vacía es renunciar a él deliberadamente.
+    """
+    from module.evaluation.profiles import PROFILE_NAMES
+
+    if raw is None:
+        return list(PROFILE_NAMES)
+    if not isinstance(raw, list):
+        raise ValueError("profiles debe ser una lista de nombres de perfil.")
+    unknown = [name for name in raw if name not in PROFILE_NAMES]
+    if unknown:
+        raise ValueError(f"Perfiles desconocidos: {sorted(unknown)}.")
+    return [name for name in PROFILE_NAMES if name in raw]
+
+
+def launch_portfolio_study(payload: dict) -> dict:
+    preflight = portfolio_preflight(payload)
+    source_id = str(payload.get("source_study_id") or "").strip()
+    sources = {item["study_id"] for item in preflight["sources"]}
+    if source_id not in sources:
+        raise ValueError(
+            "source_study_id debe ser un Model Study terminado con ganador y evidencia."
+        )
+    catalog = public_catalog()
+    study_id, _ = create_study({
+        "name": str(payload.get("name") or "Portfolio Study"),
+        "note": str(payload.get("note") or ""),
+        "study_type": "portfolio_study",
+        "source_study_id": source_id,
+        "profiles": preflight["profiles"],
+        "configuration": preflight["definition"],
+        "budget": preflight["budget"],
+        "catalog_version": catalog["version"],
+        "catalog_hash": catalog["hash"],
+        "catalog": catalog,
+    })
+    pid = WORKERS.start(study_id)
+    return {"study_id": study_id, "status": "queued", "worker_pid": pid}
 
 
 def launch_study(payload: dict) -> dict:
@@ -108,6 +195,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(result, status)
             if path == "/api/studies/preflight":
                 return self._send(study_preflight(payload))
+            if path == "/api/portfolio-studies/preflight":
+                return self._send(portfolio_preflight(payload))
+            if path == "/api/portfolio-studies":
+                return self._send(launch_portfolio_study(payload), 202)
             if path == "/api/studies":
                 return self._send(launch_study(payload), 202)
             if path.startswith("/api/studies/") and path.endswith("/cancel"):

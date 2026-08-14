@@ -1,31 +1,45 @@
 \chapter{Reproducibilidad}
 \label{anexo:reproducibilidad}
 
-\section{Identidad del estudio}
+\section{Identidad de los estudios}
 
-Toda la evidencia empírica de este trabajo procede de un único estudio. Sus identificadores son los
-siguientes, y permiten localizar cualquier cifra citada en el texto:
+La evidencia empírica de este trabajo procede de cuatro estudios encadenados: tres \textit{Model
+Studies} en los que el ganador de cada pasada es el \textit{baseline} de la siguiente, y un
+\textit{Portfolio Study} que optimiza la cartera del último sin reentrenar nada. Sus identificadores
+permiten localizar cualquier cifra citada en el texto.
 
 \begin{description}[leftmargin=3.2cm,style=nextline,font=\normalfont\ttfamily]
-  \item[study\_id] \studyid
-  \item[winner\_run\_id] \artefacto{run-51e95a09a8f0}
-  \item[dataset\_hash] \artefacto{b9134b218e3bf7fc\ldots{}a69df0a92653fbd3}
-  \item[evaluation\_key] \artefacto{c71b810e87bffbea\ldots{}1303057a40a9eaeb}
-  \item[catalog\_hash] \artefacto{921d21ee3bb71e41\ldots{}4ae336a3e5c47bac}
-  \item[catalog\_version] 5
+  \item[Model Study 1] \studyidA{} · ganador \artefacto{run-6eaa47a0597b} · catálogo v6
+  \item[Model Study 2] \studyidB{} · ganador \artefacto{run-2dc586be8653} · catálogo v6
+  \item[Model Study 3] \studyidC{} · ganador \artefacto{run-f134d7eb9e06} · catálogo v7
+  \item[Portfolio Study] \studyportfolio{} · 1.728 carteras evaluadas
 \end{description}
 
-El estudio ejecutó 66 configuraciones, empleó una ventana de selección de 117 cohortes mensuales
-entre 2015 y 2024 y reservó 2025--2026 sin que interviniera en ninguna decisión. La métrica de
-selección fue \texttt{rank\_ic\_only}.
+El Model Study 3 es el estudio de referencia del documento: de él sale toda la evidencia predictiva.
+Sus identificadores de datos son los siguientes.
+
+\begin{description}[leftmargin=3.2cm,style=nextline,font=\normalfont\ttfamily]
+  \item[dataset\_hash] \artefacto{b9134b218e3bf7fc\ldots{}a69df0a92653fbd3}
+  \item[evaluation\_key] \artefacto{0088d08579c1e65f\ldots{}5dbf2fa71de0a27f}
+  \item[catalog\_hash] \artefacto{845d55249866f2f0\ldots{}049f59a8b1a92e7}
+  \item[catalog\_version] 7
+\end{description}
+
+Las tres pasadas emplearon la misma ventana de selección --- 117 cohortes mensuales entre 2015 y
+2024 --- y reservaron 2025--2026 sin que interviniera en ninguna decisión. La métrica de selección
+fue \texttt{rank\_ic\_only} en los tres casos y \texttt{information\_ratio} en el Portfolio Study,
+cuya rejilla se calculó además sobre una serie recortada en 2024 para que ninguna de las 1.728
+combinaciones pudiera observar la era reservada.
 
 \section{Advertencia sobre la reproducibilidad exacta}
 
-El estudio se ejecutó bajo la versión 5 del catálogo cerrado, mientras que el código actual está en
-la versión 6: \textbf{una reejecución con el código actual no produciría los mismos resultados} y no
-sería comparable con estudios de la versión 6. El razonamiento completo --- por qué se optó por
-congelar el estudio en lugar de reejecutarlo, y qué queda garantizado pese a ello --- se documenta
-en la Sección~\ref{sec:reproducibilidad}.
+La cadena no se ejecutó entera bajo la misma versión del catálogo cerrado: las dos primeras pasadas
+usaron la versión 6 y la tercera la versión 7, que invierte el desempate por simplicidad de
+\artefacto{execution\_lag\_days}. En consecuencia, \textbf{las tres pasadas no son estrictamente
+comparables entre sí} en lo relativo a las reglas de desempate, y toda tabla que las compare cita la
+versión de catálogo junto al identificador. El razonamiento completo --- por qué la discrepancia
+afecta a una regla de desempate y no a una medición --- se documenta en la
+Sección~\ref{sec:reproducibilidad}.
 
 \section{Regeneración de figuras y tablas}
 
@@ -35,14 +49,26 @@ persistidos mediante un único comando, ejecutado desde la raíz del repositorio
 \begin{quote}
 \ttfamily
 python latex/scripts/export\_study\_assets.py \\
-\hspace*{2em}--study-id study-20260803-201234-b4d7a8d8
+\hspace*{2em}--study-id study-20260814-095144-5ec17b78 \\
+\hspace*{2em}--chain-study-id study-20260812-163136-1b104667 \\
+\hspace*{2em}--chain-study-id study-20260813-103456-aa733655 \\
+\hspace*{2em}--chain-study-id study-20260814-095144-5ec17b78 \\
+\hspace*{2em}--portfolio-study-id study-20260814-135754-fdbdf2c5
 \end{quote}
+
+Los tres \texttt{--chain-study-id} se declaran en orden de ejecución y el último coincide con
+\texttt{--study-id}: de ellos salen las figuras y tablas de la cadena. La separación entre
+\texttt{--study-id} y \texttt{--portfolio-study-id} es deliberada y hace explícita la procedencia de
+cada activo: del primero sale todo lo \emph{predictivo} --- Rank-IC, agentes, meta-agente,
+decisiones, robustez y atribución --- y del segundo todo lo \emph{económico} --- rejilla de
+carteras, patrimonio, órdenes, métricas anuales y perfiles ---, leído de la evidencia del ganador
+sobre la serie completa.
 
 El script escribe los PNG a 300\,ppp y los cuerpos de tabla en \artefacto{latex/assets/}, junto al
 resto de capítulos, y actualiza \artefacto{latex/asset\_manifest.json} con la lista de
-artefactos consumidos. Ese manifiesto es la tabla de correspondencia entre cada salida del
-manuscrito y su origen: ninguna cifra generada por script entra en el documento sin quedar
-registrada allí.
+artefactos consumidos, separando las fuentes predictivas de las económicas. Ese manifiesto es la
+tabla de correspondencia entre cada salida del manuscrito y su origen: ninguna cifra generada por
+script entra en el documento sin quedar registrada allí.
 
 Dos elementos son la excepción y conviene declararlo: las Tablas~\ref{tab:defectos}
 y~\ref{tab:versiones} del Capítulo~\ref{chap:desarrollo-metodo} se transcriben de la bitácora del proyecto

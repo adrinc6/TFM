@@ -8,6 +8,7 @@ import hashlib
 import os
 import shutil
 import tempfile
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -105,6 +106,30 @@ def write_json(payload: dict[str, Any], path: Path) -> None:
             handle.write("\n")
             handle.flush()
             os.fsync(handle.fileno())
-        os.replace(temporary, path)
+        _replace_with_retry(temporary, path)
     finally:
         temporary.unlink(missing_ok=True)
+
+
+# Reintentos del rename atómico. En Windows, un antivirus o el indexador pueden mantener abierto
+# el fichero destino unas decenas de milisegundos y hacer fallar `os.replace` con WinError 5, aun
+# teniendo permisos correctos. Es transitorio: reintentar con esperas crecientes lo resuelve.
+_REPLACE_ATTEMPTS = 6
+_REPLACE_BACKOFF_SECONDS = 0.05
+
+
+def _replace_with_retry(source: Path, target: Path) -> None:
+    """`os.replace` tolerante a bloqueos transitorios del sistema de ficheros.
+
+    Un fallo aquí aborta el proceso entero, y hay escrituras muy frecuentes —el Portfolio Study
+    actualiza el estado en cada combinación de la rejilla, más de mil veces—, así que un bloqueo
+    momentáneo de un tercero no puede tumbar horas de cómputo.
+    """
+    for attempt in range(_REPLACE_ATTEMPTS):
+        try:
+            os.replace(source, target)
+            return
+        except PermissionError:
+            if attempt == _REPLACE_ATTEMPTS - 1:
+                raise
+            time.sleep(_REPLACE_BACKOFF_SECONDS * (attempt + 1))

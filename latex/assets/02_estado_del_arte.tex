@@ -136,10 +136,11 @@ diferentes.
 
 Tres restricciones del diseño de este TFM actúan directamente sobre el tercer término. La cartera es
 \textit{long-only}, de modo que no puede explotar la parte inferior de la ordenación --- la mitad de
-la información que el Rank-IC mide es, por construcción, inaccesible. Contiene doce posiciones sobre
-un universo de unos quinientos valores, lo que limita drásticamente la amplitud efectiva. Y paga
-costes de transacción proporcionales a su rotación. El Capítulo~\ref{chap:resultados} cuantifica el
-resultado conjunto de esas tres restricciones en un coeficiente de transferencia de 0,247.
+la información que el Rank-IC mide es, por construcción, inaccesible. Contiene unas pocas decenas de
+posiciones como mucho sobre un universo de unos quinientos valores, lo que limita drásticamente la
+amplitud efectiva. Y paga costes de transacción proporcionales a su rotación. El
+Capítulo~\ref{chap:resultados} cuantifica el resultado conjunto de esas tres restricciones en un
+coeficiente de transferencia de 0,328.
 
 Esta separación explica también por qué la métrica de selección de este trabajo es el Rank-IC y no
 el CAGR. Seleccionar por rentabilidad final confundiría los tres términos: una configuración podría
@@ -161,9 +162,24 @@ La segunda es entre interpretabilidad y capacidad. La arquitectura de agentes es
 compromiso: cada agente recibe un vocabulario económico reconocible, lo que permite preguntarse qué
 aprendió cada uno, pero dentro de cada agente el modelo es una caja relativamente opaca. El
 Capítulo~\ref{chap:agentes} muestra que ese compromiso rinde --- se puede observar que el
-meta-agente descubre a su mejor especialista --- sin pretender que el sistema sea interpretable en
-sentido estricto.
+meta-agente descubre a su mejor especialista, y la atribución local de la
+Sección~\ref{sec:atribucion-local} permite además comprobar qué variables mueven a cada uno ---
+sin pretender que el sistema sea interpretable en sentido estricto. Esa atribución es descriptiva:
+sirve para explicar un resultado ya medido, no para sostenerlo.
 
 La tercera es entre señal y utilidad. Buena parte de la literatura reporta capacidad predictiva sin
 llevarla a una cartera con costes, o reporta rentabilidad sin aislar la señal. Aquí se hacen ambas
 cosas, pero en un orden que importa: primero la señal, después la cartera, y nunca al revés.
+
+Ese orden permite una decisión metodológica que conviene situar explícitamente, porque combina dos
+prácticas que la literatura suele tratar como incompatibles. La búsqueda predictiva es
+\emph{secuencial e iterada}: se recorre el catálogo por fases y el procedimiento se repite tomando
+como punto de partida el ganador anterior, en la forma de un ascenso por coordenadas. La búsqueda de
+cartera es \emph{cartesiana} y se optimiza por Information Ratio en lugar de por rentabilidad bruta,
+siguiendo la distinción entre calidad de señal e implementación que formula López de Prado (2018).
+La tensión aparente se disuelve al observar que ambas búsquedas actúan sobre objetos distintos: la
+primera sobre la métrica que el trabajo reporta como resultado, donde cada comparación adicional
+infla la cifra final y obliga a ser parco; la segunda sobre una señal ya congelada, que no puede
+contaminar el Rank-IC. Lo que ninguna de las dos evita es la multiplicidad frente a la afirmación
+económica, y por eso el trabajo reporta el Deflated Sharpe (López de Prado et al., 2014) aun
+sabiendo que su propia estrategia de búsqueda lo empeora.

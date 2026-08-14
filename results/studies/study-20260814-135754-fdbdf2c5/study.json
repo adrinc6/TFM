@@ -1,0 +1,1896 @@
+{
+  "schema_version": 2,
+  "study_id": "study-20260814-135754-fdbdf2c5",
+  "study_type": "portfolio_study",
+  "status": "succeeded",
+  "phase": "completed",
+  "progress": 1.0,
+  "created_at": "2026-08-14T11:57:54.982118+00:00",
+  "updated_at": "2026-08-14T15:00:25.148686+00:00",
+  "heartbeat": "2026-08-14T15:00:25.144082+00:00",
+  "worker_pid": null,
+  "completed_runs": 1728,
+  "name": "Portfolio Study",
+  "note": "",
+  "source_study_id": "study-20260814-095144-5ec17b78",
+  "profiles": [
+    "balanced",
+    "growth",
+    "value",
+    "quality",
+    "momentum",
+    "contrarian",
+    "defensive",
+    "garp"
+  ],
+  "configuration": {
+    "target_size": {
+      "mode": "grid",
+      "values": [
+        5,
+        8,
+        12,
+        16,
+        25,
+        50
+      ],
+      "baseline": 5
+    },
+    "exit_expected_alpha_bps": {
+      "mode": "fixed",
+      "values": [
+        100.0
+      ],
+      "baseline": 100.0
+    },
+    "rotation_edge_bps": {
+      "mode": "fixed",
+      "values": [
+        50.0
+      ],
+      "baseline": 50.0
+    },
+    "max_cash_weight": {
+      "mode": "grid",
+      "values": [
+        0.0,
+        0.1,
+        0.25
+      ],
+      "baseline": 0.0
+    },
+    "minimum_holding_period": {
+      "mode": "grid",
+      "values": [
+        "none",
+        "quarter_horizon",
+        "half_horizon",
+        "full_horizon"
+      ],
+      "baseline": "none"
+    },
+    "coverage_percentile_floor": {
+      "mode": "grid",
+      "values": [
+        0.0,
+        60.0,
+        80.0
+      ],
+      "baseline": 0.0
+    },
+    "rebalance_drift_tolerance": {
+      "mode": "grid",
+      "values": [
+        0.0,
+        0.1,
+        0.25,
+        0.4
+      ],
+      "baseline": 0.0
+    },
+    "price_only_strictness_multiplier": {
+      "mode": "fixed",
+      "values": [
+        1.5
+      ],
+      "baseline": 1.5
+    },
+    "price_only_sell_only": {
+      "mode": "fixed",
+      "values": [
+        false
+      ],
+      "baseline": false
+    },
+    "sizing_mode": {
+      "mode": "grid",
+      "values": [
+        "equal",
+        "alpha_proportional"
+      ],
+      "baseline": "equal"
+    },
+    "commission_bps": {
+      "mode": "fixed",
+      "values": [
+        5.0
+      ],
+      "baseline": 5.0
+    },
+    "slippage_bps": {
+      "mode": "fixed",
+      "values": [
+        10.0
+      ],
+      "baseline": 10.0
+    }
+  },
+  "budget": {
+    "combinations": 1728,
+    "grid_variables": 6,
+    "fixed_variables": 0,
+    "breakdown": {
+      "target_size": 6,
+      "max_cash_weight": 3,
+      "sizing_mode": 2,
+      "minimum_holding_period": 4,
+      "coverage_percentile_floor": 3,
+      "rebalance_drift_tolerance": 4
+    },
+    "seconds_per_combination": 6.0,
+    "estimated_minutes": 173,
+    "estimated_incremental_bytes": 62914560,
+    "blocking_limits": false
+  },
+  "catalog_version": 7,
+  "catalog_hash": "845d55249866f2f05fab5ffca32d86de6b73ad6e584252093049f59a8b1a92e7",
+  "catalog": {
+    "version": 7,
+    "stage_order": [
+      "temporal",
+      "representation",
+      "model",
+      "meta",
+      "portfolio"
+    ],
+    "predictive_stages": [
+      "temporal",
+      "representation",
+      "model",
+      "meta"
+    ],
+    "stages": [
+      {
+        "id": "temporal",
+        "label": "Temporal",
+        "description": "Define cuándo se observa la información, cuánto futuro se predice y cuánta historia aprende el modelo.",
+        "question": "¿Qué definición temporal conserva más capacidad predictiva fuera de muestra?"
+      },
+      {
+        "id": "representation",
+        "label": "Representación",
+        "description": "Define los bloques de información point-in-time y su transformación antes del aprendizaje.",
+        "question": "¿Qué representación mejora el Rank-IC de forma estable entre eras?"
+      },
+      {
+        "id": "model",
+        "label": "Modelo",
+        "description": "Compara capacidad y regularización del modelo de cada uno de los cinco agentes.",
+        "question": "¿Qué modelo aprende mejor sin depender de una sola era?"
+      },
+      {
+        "id": "meta",
+        "label": "Meta-agente",
+        "description": "Combina causalmente los cinco rankings usando únicamente etiquetas ya cerradas.",
+        "question": "¿Equiponderar o aprender pesos rolling mejora el Rank-IC robusto?"
+      },
+      {
+        "id": "portfolio",
+        "label": "Cartera informativa",
+        "description": "Traduce el ganador a una cartera 100 % acciones sin intervenir en la selección predictiva.",
+        "question": "¿Cómo se comporta económicamente la señal ya elegida?"
+      }
+    ],
+    "variables": [
+      {
+        "id": "snapshot_step_months",
+        "label": "Cadencia de snapshots",
+        "description": "Frecuencia con la que se vuelve a observar y puntuar el universo.",
+        "stage": "temporal",
+        "values": [
+          1,
+          3,
+          6,
+          12
+        ],
+        "recommended": 3,
+        "invalidates": "dataset",
+        "cost": "fit",
+        "order": 10,
+        "predictive": true,
+        "depends_on": [],
+        "simplicity": [
+          1,
+          3,
+          6,
+          12
+        ],
+        "modes": [
+          "fixed",
+          "optimize"
+        ],
+        "value_options": [
+          {
+            "value": 1,
+            "label": "Mensual",
+            "description": "El sistema vuelve a mirar y puntuar todas las acciones cada mes. Es la cadencia más rápida: reacciona antes a cambios, pero genera muchas más decisiones que revisar y más coste de cálculo."
+          },
+          {
+            "value": 3,
+            "label": "Trimestral",
+            "description": "El sistema vuelve a mirar y puntuar todas las acciones cada 3 meses (trimestral), en línea con la publicación habitual de resultados de las empresas. Es el punto intermedio entre reaccionar rápido y no generar ruido innecesario."
+          },
+          {
+            "value": 6,
+            "label": "Semestral",
+            "description": "El sistema vuelve a mirar y puntuar todas las acciones cada 6 meses. Cadencia lenta: menos decisiones, pero puede tardar más en detectar cambios de tendencia."
+          },
+          {
+            "value": 12,
+            "label": "Anual",
+            "description": "El sistema vuelve a mirar y puntuar todas las acciones una vez al año. Es la cadencia más lenta y la más conservadora en número de decisiones."
+          }
+        ]
+      },
+      {
+        "id": "target_horizon_months",
+        "label": "Horizonte objetivo",
+        "description": "Meses del retorno futuro cuya ordenación aprende el modelo.",
+        "stage": "temporal",
+        "values": [
+          3,
+          6,
+          12
+        ],
+        "recommended": 12,
+        "invalidates": "features",
+        "cost": "fit",
+        "order": 20,
+        "predictive": true,
+        "depends_on": [],
+        "simplicity": [
+          3,
+          6,
+          12
+        ],
+        "modes": [
+          "fixed",
+          "optimize"
+        ],
+        "value_options": [
+          {
+            "value": 3,
+            "label": "3 meses",
+            "description": "El modelo aprende a ordenar acciones según su retorno esperado en los próximos 3 meses. Horizonte corto: más sensible al ruido de corto plazo."
+          },
+          {
+            "value": 6,
+            "label": "6 meses",
+            "description": "El modelo aprende a ordenar acciones según su retorno esperado en los próximos 6 meses. Horizonte intermedio."
+          },
+          {
+            "value": 12,
+            "label": "12 meses",
+            "description": "El modelo aprende a ordenar acciones según su retorno esperado en los próximos 12 meses (un año). Horizonte largo: suaviza el ruido de corto plazo pero tarda más en confirmar si acertó."
+          }
+        ]
+      },
+      {
+        "id": "train_lookback_years",
+        "label": "Historia de entrenamiento",
+        "description": "Años anteriores disponibles en cada ajuste walk-forward.",
+        "stage": "temporal",
+        "values": [
+          4,
+          8,
+          12
+        ],
+        "recommended": 8,
+        "invalidates": "fit",
+        "cost": "fit",
+        "order": 30,
+        "predictive": true,
+        "depends_on": [],
+        "simplicity": [
+          4,
+          8,
+          12
+        ],
+        "modes": [
+          "fixed",
+          "optimize"
+        ],
+        "value_options": [
+          {
+            "value": 4,
+            "label": "4 años",
+            "description": "Cada vez que se reentrena, el modelo solo mira los últimos 4 años de historia. Menos historia significa que se adapta más rápido a regímenes de mercado recientes, pero con menos ejemplos para aprender."
+          },
+          {
+            "value": 8,
+            "label": "8 años",
+            "description": "Cada vez que se reentrena, el modelo mira los últimos 8 años de historia. Compromiso entre tener suficientes ejemplos y no arrastrar demasiado pasado ya poco relevante."
+          },
+          {
+            "value": 12,
+            "label": "12 años",
+            "description": "Cada vez que se reentrena, el modelo mira los últimos 12 años de historia. Máxima cantidad de ejemplos disponibles, a costa de incluir regímenes de mercado más antiguos y posiblemente menos parecidos al presente."
+          }
+        ]
+      },
+      {
+        "id": "execution_lag_days",
+        "label": "Lag PIT",
+        "description": "Días exigidos entre el cierre fiscal y la disponibilidad operativa de fundamentales.",
+        "stage": "temporal",
+        "values": [
+          30,
+          45,
+          60
+        ],
+        "recommended": 60,
+        "invalidates": "dataset",
+        "cost": "fit",
+        "order": 40,
+        "predictive": true,
+        "depends_on": [],
+        "simplicity": [
+          60,
+          45,
+          30
+        ],
+        "modes": [
+          "fixed",
+          "optimize"
+        ],
+        "value_options": [
+          {
+            "value": 30,
+            "label": "30 días",
+            "description": "Se asume que unos resultados financieros están disponibles para operar solo 30 días después del cierre fiscal de la empresa. Es la hipótesis más optimista/exigente: mayor riesgo de estar usando datos que en la realidad aún no se habían publicado (lookahead), porque muchas empresas tardan más en publicar."
+          },
+          {
+            "value": 45,
+            "label": "45 días",
+            "description": "Se asume que unos resultados financieros están disponibles para operar 45 días después del cierre fiscal. Compromiso prudente entre actualidad de la información y margen de seguridad frente a publicaciones tardías."
+          },
+          {
+            "value": 60,
+            "label": "60 días",
+            "description": "Se asume que unos resultados financieros están disponibles para operar solo 60 días después del cierre fiscal. Es el supuesto más conservador: se tarda más en \"creer\" el dato, pero es el que menos riesgo tiene de usar información que aún no existía en ese momento (evita lookahead)."
+          }
+        ]
+      },
+      {
+        "id": "recency_weighting",
+        "label": "Peso de recencia",
+        "description": "Importancia adicional de las observaciones recientes dentro del entrenamiento.",
+        "stage": "temporal",
+        "values": [
+          "off",
+          "linear",
+          "exponential"
+        ],
+        "recommended": "off",
+        "invalidates": "fit",
+        "cost": "fit",
+        "order": 50,
+        "predictive": true,
+        "depends_on": [],
+        "simplicity": [
+          "off",
+          "linear",
+          "exponential"
+        ],
+        "modes": [
+          "fixed",
+          "optimize"
+        ],
+        "value_options": [
+          {
+            "value": "off",
+            "label": "Sin ponderación",
+            "description": "Todas las observaciones históricas pesan igual al entrenar, da igual si son de hace 1 mes o de hace 8 años."
+          },
+          {
+            "value": "linear",
+            "label": "Lineal",
+            "description": "Las observaciones más recientes pesan progresivamente más que las antiguas, de forma proporcional a su antigüedad (una recta). El modelo se adapta algo más rápido a la situación actual del mercado."
+          },
+          {
+            "value": "exponential",
+            "label": "Exponencial",
+            "description": "Las observaciones más recientes pesan mucho más que las antiguas, y ese peso cae rápidamente cuanto más atrás se mira (una curva, no una recta). El modelo prioriza fuertemente lo último visto, al precio de \"olvidar\" antes lo lejano."
+          }
+        ]
+      },
+      {
+        "id": "objective",
+        "label": "Objetivo de aprendizaje",
+        "description": "Regresión del rango continuo o ranking directo.",
+        "stage": "temporal",
+        "values": [
+          "rank_regression",
+          "ranking"
+        ],
+        "recommended": "rank_regression",
+        "invalidates": "fit",
+        "cost": "fit",
+        "order": 60,
+        "predictive": true,
+        "depends_on": [],
+        "simplicity": [
+          "rank_regression",
+          "ranking"
+        ],
+        "modes": [
+          "fixed",
+          "optimize"
+        ],
+        "value_options": [
+          {
+            "value": "rank_regression",
+            "label": "Regresión de ranking",
+            "description": "El modelo aprende a predecir un número (el retorno futuro estimado) y luego ese número se usa para ordenar las acciones. Es un enfoque indirecto: predice una magnitud, no un orden."
+          },
+          {
+            "value": "ranking",
+            "label": "Ranking directo",
+            "description": "El modelo aprende directamente a poner unas acciones por delante de otras (aprende el orden, no intenta acertar la magnitud del retorno). Suele ajustar mejor a lo que realmente se necesita: un ranking, no una predicción exacta."
+          }
+        ]
+      },
+      {
+        "id": "feature_preset",
+        "label": "Preset de información",
+        "description": "Conjunto cerrado de bloques de factores que reciben los agentes.",
+        "stage": "representation",
+        "values": [
+          "core",
+          "all"
+        ],
+        "recommended": "core",
+        "invalidates": "features",
+        "cost": "fit",
+        "order": 10,
+        "predictive": true,
+        "depends_on": [],
+        "simplicity": [
+          "core",
+          "all"
+        ],
+        "modes": [
+          "fixed",
+          "optimize"
+        ],
+        "value_options": [
+          {
+            "value": "core",
+            "label": "Core (lo esencial de cada agente)",
+            "description": "Cada agente recibe solo su bloque de información más esencial y directo: Calidad usa solo rentabilidad (ROE, márgenes...); Valor usa solo múltiplos de precio (PER, P/VC...); Crecimiento usa solo aceleración de resultados; Momentum usa solo retornos relativos recientes; Riesgo usa solo volatilidad y drawdown de precio. Es el conjunto más pequeño y simple: menos ruido y menos riesgo de sobreajuste, pero también menos matices. Los cinco agentes siguen activos."
+          },
+          {
+            "value": "all",
+            "label": "Todo (catálogo completo)",
+            "description": "Cada agente recibe todos los bloques de su especialidad disponibles en el catálogo: Calidad añade eficiencia operativa y solidez de balance; Valor añade múltiplos de flujo de caja; Crecimiento añade estabilidad de los fundamentales; Momentum añade tendencia respecto a medias móviles; Riesgo añade liquidez de mercado. Es el conjunto más rico y el más caro de calcular; puede aportar más señal, pero también más ruido. Los cinco agentes siguen activos, cada uno con más profundidad."
+          }
+        ]
+      },
+      {
+        "id": "fundamental_momentum",
+        "label": "Momentum fundamental",
+        "description": "Añade cambios point-in-time de los fundamentales.",
+        "stage": "representation",
+        "values": [
+          false,
+          true
+        ],
+        "recommended": true,
+        "invalidates": "features",
+        "cost": "fit",
+        "order": 20,
+        "predictive": true,
+        "depends_on": [],
+        "simplicity": [
+          false,
+          true
+        ],
+        "modes": [
+          "fixed",
+          "optimize"
+        ],
+        "value_options": [
+          {
+            "value": false,
+            "label": "Desactivado",
+            "description": "El modelo solo ve el valor actual de cada fundamental (por ejemplo el ROE de hoy), sin información de si viene mejorando o empeorando en el tiempo."
+          },
+          {
+            "value": true,
+            "label": "Activado",
+            "description": "Se añaden variables que miden cómo han cambiado los fundamentales de la empresa en el tiempo (por ejemplo si el ROE está mejorando o empeorando trimestre a trimestre), no solo su valor actual. Da al modelo información de tendencia, no solo de nivel."
+          }
+        ]
+      },
+      {
+        "id": "market_regime_feature",
+        "label": "Régimen de mercado",
+        "description": "Añade contexto causal del mercado en cada snapshot.",
+        "stage": "representation",
+        "values": [
+          false,
+          true
+        ],
+        "recommended": true,
+        "invalidates": "features",
+        "cost": "fit",
+        "order": 30,
+        "predictive": true,
+        "depends_on": [],
+        "simplicity": [
+          false,
+          true
+        ],
+        "modes": [
+          "fixed",
+          "optimize"
+        ],
+        "value_options": [
+          {
+            "value": false,
+            "label": "Desactivado",
+            "description": "El modelo no recibe ninguna información sobre el estado general del mercado; solo ve datos propios de cada empresa, sin contexto macro."
+          },
+          {
+            "value": true,
+            "label": "Activado",
+            "description": "Se añade una variable con el contexto general del mercado en cada fecha (por ejemplo si el mercado en conjunto está en un momento alcista o bajista), calculada solo con información ya disponible en ese momento. Ayuda al modelo a adaptar su criterio según el entorno de mercado."
+          }
+        ]
+      },
+      {
+        "id": "neutralize_by_sector",
+        "label": "Neutralización sectorial",
+        "description": "Compara las empresas dentro de su sector antes de aprender.",
+        "stage": "representation",
+        "values": [
+          false,
+          true
+        ],
+        "recommended": false,
+        "invalidates": "features",
+        "cost": "fit",
+        "order": 40,
+        "predictive": true,
+        "depends_on": [],
+        "simplicity": [
+          false,
+          true
+        ],
+        "modes": [
+          "fixed",
+          "optimize"
+        ],
+        "value_options": [
+          {
+            "value": false,
+            "label": "Desactivado",
+            "description": "Todas las empresas se comparan entre sí directamente, sin ajustar por sector. Más simple, pero un sector en auge puede parecer sistemáticamente \"mejor\" sin que sea mérito de las empresas concretas."
+          },
+          {
+            "value": true,
+            "label": "Activado",
+            "description": "Antes de aprender, cada empresa se compara solo contra otras empresas de su mismo sector (por ejemplo, tecnológicas contra tecnológicas), no contra todo el universo. Evita que el modelo confunda \"esta empresa es buena\" con \"este sector entero lo está haciendo bien\"."
+          }
+        ]
+      },
+      {
+        "id": "winsorization",
+        "label": "Winsorización",
+        "description": "Recorta extremos transversales al percentil indicado.",
+        "stage": "representation",
+        "values": [
+          0.0,
+          0.01,
+          0.025
+        ],
+        "recommended": 0.0,
+        "invalidates": "features",
+        "cost": "fit",
+        "order": 50,
+        "predictive": true,
+        "depends_on": [],
+        "simplicity": [
+          0.0,
+          0.01,
+          0.025
+        ],
+        "modes": [
+          "fixed",
+          "optimize"
+        ],
+        "value_options": [
+          {
+            "value": 0.0,
+            "label": "Sin recorte",
+            "description": "No se recorta ningún valor extremo (outlier) de los factores antes de entrenar. Un dato anómalo (por ejemplo un PER disparatado por un beneficio casi nulo) puede distorsionar el aprendizaje."
+          },
+          {
+            "value": 0.01,
+            "label": "1 %",
+            "description": "Antes de entrenar, se recortan los valores más extremos de cada factor: el 1 % más alto y el 1 % más bajo de cada variable se \"aplanan\" al límite de ese percentil. Reduce el efecto de outliers sin eliminar observaciones."
+          },
+          {
+            "value": 0.025,
+            "label": "2,5 %",
+            "description": "Antes de entrenar, se recortan los valores más extremos de cada factor: el 2,5 % más alto y el 2,5 % más bajo de cada variable se \"aplanan\" al límite de ese percentil. Recorte más agresivo que el 1 %, más protección frente a outliers pero también más pérdida de información real en los extremos."
+          }
+        ]
+      },
+      {
+        "id": "max_features_per_agent",
+        "label": "Máximo de features",
+        "description": "Límite de variables conservadas por cada agente.",
+        "stage": "representation",
+        "values": [
+          8,
+          12,
+          20
+        ],
+        "recommended": 8,
+        "invalidates": "fit",
+        "cost": "fit",
+        "order": 60,
+        "predictive": true,
+        "depends_on": [],
+        "simplicity": [
+          8,
+          12,
+          20
+        ],
+        "modes": [
+          "fixed",
+          "optimize"
+        ],
+        "value_options": [
+          {
+            "value": 8,
+            "label": "8 variables",
+            "description": "Cada agente se queda como máximo con las 8 variables más relevantes de su bloque de información, descartando el resto. Modelo más simple y con menos riesgo de sobreajuste, pero puede perder matices útiles."
+          },
+          {
+            "value": 12,
+            "label": "12 variables",
+            "description": "Cada agente se queda como máximo con las 12 variables más relevantes de su bloque de información. Punto intermedio entre simplicidad y riqueza de información."
+          },
+          {
+            "value": 20,
+            "label": "20 variables",
+            "description": "Cada agente puede usar hasta 20 variables de su bloque de información, prácticamente sin recortar. Modelo más rico en información pero con más riesgo de sobreajuste y más lento de entrenar."
+          }
+        ]
+      },
+      {
+        "id": "feature_weighting_mode",
+        "label": "Selección de features",
+        "description": "Usa selección nativa o poda basada en estabilidad fuera de muestra.",
+        "stage": "representation",
+        "values": [
+          "model_native",
+          "oos_stability_prune"
+        ],
+        "recommended": "oos_stability_prune",
+        "invalidates": "fit",
+        "cost": "fit",
+        "order": 70,
+        "predictive": true,
+        "depends_on": [],
+        "simplicity": [
+          "model_native",
+          "oos_stability_prune"
+        ],
+        "modes": [
+          "fixed",
+          "optimize"
+        ],
+        "value_options": [
+          {
+            "value": "model_native",
+            "label": "Selección nativa del modelo",
+            "description": "Se deja que el propio modelo (LightGBM o Elastic Net) decida internamente qué variables usar más o menos, sin ningún filtro previo externo."
+          },
+          {
+            "value": "oos_stability_prune",
+            "label": "Poda por estabilidad fuera de muestra",
+            "description": "Antes de entrenar el modelo final, se descartan las variables cuya utilidad para predecir no se mantiene estable cuando se prueba en datos fuera de la muestra de entrenamiento (out-of-sample). Solo sobreviven las variables que demuestran ser consistentemente útiles, no solo por azar en el pasado."
+          }
+        ]
+      },
+      {
+        "id": "model_family",
+        "label": "Familia del modelo",
+        "description": "Modelo usado de forma independiente por los cinco agentes.",
+        "stage": "model",
+        "values": [
+          "lightgbm",
+          "elastic_net"
+        ],
+        "recommended": "lightgbm",
+        "invalidates": "fit",
+        "cost": "fit",
+        "order": 10,
+        "predictive": true,
+        "depends_on": [],
+        "simplicity": [
+          "lightgbm",
+          "elastic_net"
+        ],
+        "modes": [
+          "fixed",
+          "optimize"
+        ],
+        "value_options": [
+          {
+            "value": "lightgbm",
+            "label": "LightGBM (árboles)",
+            "description": "Se usa LightGBM, un modelo basado en muchos árboles de decisión combinados (gradient boosting). Puede capturar relaciones no lineales y combinaciones complejas entre variables, a cambio de ser menos interpretable y con más parámetros que ajustar."
+          },
+          {
+            "value": "elastic_net",
+            "label": "Elastic Net (lineal)",
+            "description": "Se usa Elastic Net, un modelo lineal regularizado (combina penalización Ridge y Lasso). Es más simple e interpretable que LightGBM, asume relaciones aproximadamente lineales entre los factores y el retorno futuro, y es más resistente al sobreajuste con pocos datos."
+          }
+        ]
+      },
+      {
+        "id": "lgbm_max_depth",
+        "label": "Profundidad",
+        "description": "Profundidad máxima de cada árbol LightGBM.",
+        "stage": "model",
+        "values": [
+          3,
+          4,
+          6
+        ],
+        "recommended": 3,
+        "invalidates": "fit",
+        "cost": "fit",
+        "order": 20,
+        "predictive": true,
+        "depends_on": [
+          {
+            "variable": "model_family",
+            "values": [
+              "lightgbm"
+            ]
+          }
+        ],
+        "simplicity": [
+          3,
+          4,
+          6
+        ],
+        "modes": [
+          "fixed",
+          "optimize"
+        ],
+        "value_options": [
+          {
+            "value": 3,
+            "label": "Poco profundo (3)",
+            "description": "Cada árbol de LightGBM puede hacer como máximo 3 preguntas encadenadas antes de dar un resultado. Árboles poco profundos: más simples, menos riesgo de memorizar ruido (overfitting), pero pueden no capturar interacciones complejas entre factores."
+          },
+          {
+            "value": 4,
+            "label": "Medio (4)",
+            "description": "Cada árbol de LightGBM puede hacer como máximo 4 preguntas encadenadas. Profundidad intermedia."
+          },
+          {
+            "value": 6,
+            "label": "Profundo (6)",
+            "description": "Cada árbol de LightGBM puede hacer hasta 6 preguntas encadenadas antes de dar un resultado. Árboles más profundos: capturan interacciones más complejas entre factores, pero con más riesgo de memorizar ruido específico de los datos de entrenamiento (overfitting)."
+          }
+        ]
+      },
+      {
+        "id": "lgbm_n_estimators",
+        "label": "Estimadores",
+        "description": "Número de árboles del boosting.",
+        "stage": "model",
+        "values": [
+          100,
+          200,
+          400
+        ],
+        "recommended": 100,
+        "invalidates": "fit",
+        "cost": "fit",
+        "order": 30,
+        "predictive": true,
+        "depends_on": [
+          {
+            "variable": "model_family",
+            "values": [
+              "lightgbm"
+            ]
+          }
+        ],
+        "simplicity": [
+          100,
+          200,
+          400
+        ],
+        "modes": [
+          "fixed",
+          "optimize"
+        ],
+        "value_options": [
+          {
+            "value": 100,
+            "label": "100 árboles",
+            "description": "El modelo combina 100 árboles de decisión sucesivos. Menos árboles: entrena más rápido, pero puede quedarse \"corto\" de capacidad predictiva."
+          },
+          {
+            "value": 200,
+            "label": "200 árboles",
+            "description": "El modelo combina 200 árboles de decisión sucesivos. Cantidad intermedia, buen compromiso entre capacidad y velocidad de entrenamiento."
+          },
+          {
+            "value": 400,
+            "label": "400 árboles",
+            "description": "El modelo combina 400 árboles de decisión sucesivos. Más árboles: más capacidad de ajuste, pero más lento de entrenar y con más riesgo de sobreajuste si no se controla bien la profundidad y el learning rate."
+          }
+        ]
+      },
+      {
+        "id": "lgbm_learning_rate",
+        "label": "Learning rate",
+        "description": "Paso de actualización de cada árbol.",
+        "stage": "model",
+        "values": [
+          0.03,
+          0.05,
+          0.1
+        ],
+        "recommended": 0.05,
+        "invalidates": "fit",
+        "cost": "fit",
+        "order": 40,
+        "predictive": true,
+        "depends_on": [
+          {
+            "variable": "model_family",
+            "values": [
+              "lightgbm"
+            ]
+          }
+        ],
+        "simplicity": [
+          0.03,
+          0.05,
+          0.1
+        ],
+        "modes": [
+          "fixed",
+          "optimize"
+        ],
+        "value_options": [
+          {
+            "value": 0.03,
+            "label": "Lento (0,03)",
+            "description": "Cada árbol nuevo corrige el error de los anteriores con pasos muy pequeños (0,03). Aprendizaje lento pero más estable; suele necesitar más árboles (n_estimators alto) para compensar."
+          },
+          {
+            "value": 0.05,
+            "label": "Medio (0,05)",
+            "description": "Cada árbol nuevo corrige el error de los anteriores con pasos moderados (0,05). Punto intermedio entre velocidad de aprendizaje y estabilidad."
+          },
+          {
+            "value": 0.1,
+            "label": "Rápido (0,10)",
+            "description": "Cada árbol nuevo corrige el error de los anteriores con pasos grandes (0,10). Aprendizaje rápido: converge con menos árboles, pero con más riesgo de \"pasarse\" y sobreajustar."
+          }
+        ]
+      },
+      {
+        "id": "lgbm_min_child_samples",
+        "label": "Mínimo por hoja",
+        "description": "Observaciones mínimas necesarias en una hoja.",
+        "stage": "model",
+        "values": [
+          20,
+          50,
+          100
+        ],
+        "recommended": 50,
+        "invalidates": "fit",
+        "cost": "fit",
+        "order": 50,
+        "predictive": true,
+        "depends_on": [
+          {
+            "variable": "model_family",
+            "values": [
+              "lightgbm"
+            ]
+          }
+        ],
+        "simplicity": [
+          20,
+          50,
+          100
+        ],
+        "modes": [
+          "fixed",
+          "optimize"
+        ],
+        "value_options": [
+          {
+            "value": 20,
+            "label": "20 observaciones",
+            "description": "Un árbol de LightGBM puede crear una hoja final (una regla muy específica) con tan solo 20 observaciones detrás. Permite reglas muy específicas, con más riesgo de que sean simple ruido de pocas acciones concretas."
+          },
+          {
+            "value": 50,
+            "label": "50 observaciones",
+            "description": "Un árbol de LightGBM necesita al menos 50 observaciones detrás para crear una hoja final. Exige más evidencia antes de crear una regla, reduciendo el riesgo de memorizar casos aislados."
+          },
+          {
+            "value": 100,
+            "label": "100 observaciones",
+            "description": "Un árbol de LightGBM necesita al menos 100 observaciones detrás para crear una hoja final. Exigencia alta: solo se aceptan patrones respaldados por muchas observaciones, lo que da reglas más robustas pero también más generales (menos matizadas)."
+          }
+        ]
+      },
+      {
+        "id": "meta_method",
+        "label": "Combinación de agentes",
+        "description": "Equiponderación o Ridge rolling causal con límites de peso.",
+        "stage": "meta",
+        "values": [
+          "equal",
+          "stacked_rolling_free",
+          "stacked_rolling_bounded"
+        ],
+        "recommended": "stacked_rolling_bounded",
+        "invalidates": "meta",
+        "cost": "meta",
+        "order": 10,
+        "predictive": true,
+        "depends_on": [],
+        "simplicity": [
+          "equal",
+          "stacked_rolling_free",
+          "stacked_rolling_bounded"
+        ],
+        "modes": [
+          "fixed",
+          "optimize"
+        ],
+        "value_options": [
+          {
+            "value": "equal",
+            "label": "Equiponderado 20 %",
+            "description": "El meta-agente combina a los cinco agentes (calidad, valor, crecimiento, momentum, riesgo) dándoles siempre el mismo peso: 20 % cada uno, sin importar cuál lo esté haciendo mejor o peor. Es la opción más simple y la más difícil de sobreajustar, pero no aprovecha que unos agentes puedan ser más fiables que otros en cada momento."
+          },
+          {
+            "value": "stacked_rolling_free",
+            "label": "Ridge rolling libre",
+            "description": "El meta-agente aprende automáticamente (con una regresión Ridge, usando solo información ya cerrada y pasada, nunca del futuro) qué peso dar a cada uno de los cinco agentes, sin ningún límite: en teoría un solo agente podría llegar a pesar el 100 % y el resto el 0 %. Máxima flexibilidad para premiar al mejor agente, pero también máximo riesgo de depender casi en exclusiva de uno solo."
+          },
+          {
+            "value": "stacked_rolling_bounded",
+            "label": "Ridge rolling 10–50 %",
+            "description": "El meta-agente aprende automáticamente (igual que la versión libre, con Ridge y solo datos ya cerrados) qué peso dar a cada agente, pero obligado a que cada uno de los cinco pese entre un 10 % y un 50 %. Evita los dos extremos: ni ignora completamente a un agente, ni depende de uno solo. Es la opción recomendada por defecto por este equilibrio."
+          }
+        ]
+      },
+      {
+        "id": "meta_history_quarters",
+        "label": "Ventana del meta",
+        "description": "Número de cohortes trimestrales cerradas usadas por el stacker.",
+        "stage": "meta",
+        "values": [
+          8,
+          16
+        ],
+        "recommended": 16,
+        "invalidates": "meta",
+        "cost": "meta",
+        "order": 20,
+        "predictive": true,
+        "depends_on": [
+          {
+            "variable": "meta_method",
+            "values": [
+              "stacked_rolling_free",
+              "stacked_rolling_bounded"
+            ]
+          }
+        ],
+        "simplicity": [
+          8,
+          16
+        ],
+        "modes": [
+          "fixed",
+          "optimize"
+        ],
+        "value_options": [
+          {
+            "value": 8,
+            "label": "8 trimestres (2 años)",
+            "description": "El meta-agente, para decidir los pesos de cada agente, solo mira los últimos 8 trimestres cerrados (2 años) de resultados pasados. Ventana corta: se adapta más rápido a cambios recientes de qué agente funciona mejor, con menos datos para decidirlo con solidez."
+          },
+          {
+            "value": 16,
+            "label": "16 trimestres (4 años)",
+            "description": "El meta-agente, para decidir los pesos de cada agente, mira los últimos 16 trimestres cerrados (4 años) de resultados pasados. Ventana más larga: decisión más estable y con más respaldo histórico, pero tarda más en reaccionar si un agente empieza a fallar recientemente."
+          }
+        ]
+      },
+      {
+        "id": "meta_recency_weighting",
+        "label": "Recencia del meta",
+        "description": "Peso adicional de las cohortes recientes al aprender el peso de cada agente.",
+        "stage": "meta",
+        "values": [
+          "off",
+          "linear",
+          "exponential"
+        ],
+        "recommended": "off",
+        "invalidates": "meta",
+        "cost": "meta",
+        "order": 30,
+        "predictive": true,
+        "depends_on": [
+          {
+            "variable": "meta_method",
+            "values": [
+              "stacked_rolling_free",
+              "stacked_rolling_bounded"
+            ]
+          }
+        ],
+        "simplicity": [
+          "off",
+          "linear",
+          "exponential"
+        ],
+        "modes": [
+          "fixed",
+          "optimize"
+        ],
+        "value_options": [
+          {
+            "value": "off",
+            "label": "Sin ponderación",
+            "description": "Dentro de la ventana del meta, todos los trimestres cerrados pesan igual al decidir en qué agente confiar: un resultado de hace cuatro años cuenta lo mismo que el del último trimestre."
+          },
+          {
+            "value": "linear",
+            "label": "Lineal",
+            "description": "Dentro de la ventana del meta, los trimestres recientes pesan progresivamente más que los antiguos, de forma proporcional a su antigüedad (una recta). El meta-agente deja de confiar antes en un agente que funcionaba bien hace años pero ha empezado a fallar."
+          },
+          {
+            "value": "exponential",
+            "label": "Exponencial",
+            "description": "Dentro de la ventana del meta, los trimestres recientes pesan mucho más que los antiguos, con una caída rápida cuanto más atrás se mira (una curva, no una recta). Es la opción que más rápido reacciona a un cambio de régimen de mercado, al precio de apoyarse en menos evidencia efectiva."
+          }
+        ]
+      },
+      {
+        "id": "target_size",
+        "label": "Número de posiciones",
+        "description": "Número objetivo de acciones simultáneas.",
+        "stage": "portfolio",
+        "values": [
+          5,
+          8,
+          12,
+          16,
+          25,
+          50
+        ],
+        "recommended": 12,
+        "invalidates": "backtest",
+        "cost": "backtest",
+        "order": 10,
+        "predictive": false,
+        "depends_on": [],
+        "simplicity": [
+          5,
+          8,
+          12,
+          16,
+          25,
+          50
+        ],
+        "modes": [
+          "fixed",
+          "diagnostic"
+        ],
+        "value_options": [
+          {
+            "value": 5,
+            "label": "5 posiciones",
+            "description": "La cartera final mantiene solo 5 acciones distintas a la vez. Es la cartera más concentrada del catálogo: cada posición pesa en torno al 20 %, así que el resultado depende casi por completo de un puñado de aciertos o fallos individuales. Máxima exposición al riesgo idiosincrático y mínima amplitud (breadth)."
+          },
+          {
+            "value": 8,
+            "label": "8 posiciones",
+            "description": "La cartera final mantiene 8 acciones distintas a la vez. Cartera concentrada: más impacto de acertar o fallar en cada acción individual."
+          },
+          {
+            "value": 12,
+            "label": "12 posiciones",
+            "description": "La cartera final mantiene 12 acciones distintas a la vez. Diversificación intermedia."
+          },
+          {
+            "value": 16,
+            "label": "16 posiciones",
+            "description": "La cartera final mantiene 16 acciones distintas a la vez. Cartera más diversificada: cada acierto o fallo individual pesa menos sobre el resultado total."
+          },
+          {
+            "value": 25,
+            "label": "25 posiciones",
+            "description": "La cartera final mantiene 25 acciones distintas a la vez. Más amplitud (breadth): por la ley fundamental de la gestión activa, el ratio de información crece con la raíz del número de apuestas independientes, así que ampliar posiciones recupera señal que una cartera concentrada desperdicia."
+          },
+          {
+            "value": 50,
+            "label": "50 posiciones",
+            "description": "La cartera final mantiene 50 acciones distintas a la vez. Máxima amplitud del catálogo: cada acción pesa poco y el resultado depende de la calidad media de la ordenación, no de unos pocos aciertos. Es la configuración que más se acerca a cosechar el Rank-IC completo, a costa de parecerse más al índice."
+          }
+        ]
+      },
+      {
+        "id": "exit_expected_alpha_bps",
+        "label": "Alfa mínimo para conservar",
+        "description": "Alfa esperado mínimo, en puntos básicos ANUALES, antes de vender una posición (se convierte geométricamente al horizonte del modelo).",
+        "stage": "portfolio",
+        "values": [
+          0.0,
+          100.0,
+          250.0
+        ],
+        "recommended": 100.0,
+        "invalidates": "backtest",
+        "cost": "backtest",
+        "order": 20,
+        "predictive": false,
+        "depends_on": [],
+        "simplicity": [
+          0.0,
+          100.0,
+          250.0
+        ],
+        "modes": [
+          "fixed",
+          "diagnostic"
+        ],
+        "value_options": [
+          {
+            "value": 0.0,
+            "label": "0 pb/año (solo alfa negativo)",
+            "description": "Una acción en cartera solo se vende cuando su alfa esperado (convertido a tasa anual) se vuelve negativo. Umbral mínimo: la posición se conserva mientras el modelo espere de ella algo mejor que el mercado, por poco que sea. Es el criterio que menos opera."
+          },
+          {
+            "value": 100.0,
+            "label": "100 pb/año (1 %)",
+            "description": "El umbral se define como 100 puntos básicos POR AÑO (1 % anual) y se convierte de forma compuesta al horizonte real del modelo antes de comparar: con un horizonte de 12 meses equivale a 100 pb sobre el horizonte; con 6 meses, a unos 50 pb; con 3 meses, a unos 25 pb. Definirlo en anual hace que el mismo valor signifique lo mismo sin importar qué horizonte se elija."
+          },
+          {
+            "value": 250.0,
+            "label": "250 pb/año (2,5 %)",
+            "description": "El umbral se define como 250 puntos básicos POR AÑO (2,5 % anual), convertido de forma compuesta al horizonte del modelo. Umbral exigente: solo conserva convicciones fuertes, lo que aumenta la rotación y, con ella, los costes."
+          }
+        ]
+      },
+      {
+        "id": "rotation_edge_bps",
+        "label": "Ventaja para sustituir",
+        "description": "Ventaja de alfa esperado, en puntos básicos ANUALES, exigida por encima del coste de ida y vuelta (se convierte geométricamente al horizonte del modelo).",
+        "stage": "portfolio",
+        "values": [
+          25.0,
+          50.0,
+          100.0
+        ],
+        "recommended": 50.0,
+        "invalidates": "backtest",
+        "cost": "backtest",
+        "order": 30,
+        "predictive": false,
+        "depends_on": [],
+        "simplicity": [
+          25.0,
+          50.0,
+          100.0
+        ],
+        "modes": [
+          "fixed",
+          "diagnostic"
+        ],
+        "value_options": [
+          {
+            "value": 25.0,
+            "label": "25 pb/año sobre coste",
+            "description": "La ventaja exigida se define como 25 puntos básicos POR AÑO por encima del coste de ida y vuelta, convertida de forma compuesta al horizonte del modelo antes de comparar. Umbral bajo: rota con relativa facilidad, pero nunca por debajo de lo que cuesta operar."
+          },
+          {
+            "value": 50.0,
+            "label": "50 pb/año sobre coste",
+            "description": "La ventaja exigida se define como 50 puntos básicos POR AÑO, convertida de forma compuesta al horizonte del modelo. Exigencia intermedia."
+          },
+          {
+            "value": 100.0,
+            "label": "100 pb/año sobre coste",
+            "description": "La ventaja exigida se define como 100 puntos básicos POR AÑO, convertida de forma compuesta al horizonte del modelo. Umbral alto: solo rota ante una mejora económica clara, lo que reduce mucho la rotación y el coste asociado."
+          }
+        ]
+      },
+      {
+        "id": "max_cash_weight",
+        "label": "Efectivo máximo",
+        "description": "Peso máximo que puede quedar sin invertir cuando ninguna candidata supera el umbral. Con 0 la cartera está siempre invertida al 100 %.",
+        "stage": "portfolio",
+        "values": [
+          0.0,
+          0.1,
+          0.25
+        ],
+        "recommended": 0.25,
+        "invalidates": "backtest",
+        "cost": "backtest",
+        "order": 36,
+        "predictive": false,
+        "depends_on": [],
+        "simplicity": [
+          0.0,
+          0.1,
+          0.25
+        ],
+        "modes": [
+          "fixed",
+          "diagnostic"
+        ],
+        "value_options": [
+          {
+            "value": 0.0,
+            "label": "Siempre 100 % invertido",
+            "description": "La cartera está siempre invertida al 100 % en acciones: si una plaza queda libre se rellena con la mejor candidata disponible, aunque su alfa esperado sea bajo. Es la referencia que se compara contra el índice sin ninguna ventaja de posicionamiento."
+          },
+          {
+            "value": 0.1,
+            "label": "Hasta 10 %",
+            "description": "Como máximo un 10 % de la cartera puede quedar en efectivo a la espera de oportunidades. El 90 % restante permanece invertido incluso si las candidatas son mediocres."
+          },
+          {
+            "value": 0.25,
+            "label": "Hasta 25 %",
+            "description": "Como máximo un 25 % de la cartera puede quedar en efectivo cuando ninguna candidata supera el umbral de alfa esperado, en lugar de comprar la menos mala. El 75 % restante se reparte siempre entre un mínimo de posiciones (el suelo de diversificación), de modo que replegarse nunca concentra la cartera en unos pocos nombres. El efectivo se remunera al 0 %, así que nunca aporta rentabilidad: solo puede ayudar evitando malas compras y ahorrando costes de operación. La decisión sale exclusivamente de la sección transversal de candidatas, nunca de una previsión sobre el mercado."
+          }
+        ]
+      },
+      {
+        "id": "minimum_holding_period",
+        "label": "Mínimo de tenencia",
+        "description": "Meses mínimos en cartera, como fracción del horizonte del modelo, antes de poder vender una posición por cualquier motivo (incluida la rotación).",
+        "stage": "portfolio",
+        "values": [
+          "none",
+          "quarter_horizon",
+          "half_horizon",
+          "full_horizon"
+        ],
+        "recommended": "none",
+        "invalidates": "backtest",
+        "cost": "backtest",
+        "order": 38,
+        "predictive": false,
+        "depends_on": [],
+        "simplicity": [
+          "none",
+          "quarter_horizon",
+          "half_horizon",
+          "full_horizon"
+        ],
+        "modes": [
+          "fixed",
+          "diagnostic"
+        ],
+        "value_options": [
+          {
+            "value": "none",
+            "label": "Sin mínimo",
+            "description": "Una posición puede venderse (por caída del alfa esperado o por rotación) en cualquier momento, sin importar cuánto tiempo lleve en cartera, si la regla económica lo justifica. Es el comportamiento de referencia: máxima capacidad de reacción, mayor rotación potencial."
+          },
+          {
+            "value": "quarter_horizon",
+            "label": "Un cuarto del horizonte",
+            "description": "Una posición no puede venderse por ningún motivo hasta llevar en cartera al menos un cuarto del horizonte del modelo (con un horizonte de 12 meses, 3 meses mínimo). Pensado para revisiones trimestrales sobre un horizonte anual: da a cada elección al menos un trimestre completo antes de poder deshacerla."
+          },
+          {
+            "value": "half_horizon",
+            "label": "Mitad del horizonte",
+            "description": "Una posición no puede venderse por ningún motivo hasta llevar en cartera al menos la mitad del horizonte del modelo (con un horizonte de 12 meses, 6 meses mínimo). Reduce bastante la rotación de alta frecuencia a cambio de tardar más en corregir una posición que deja de funcionar."
+          },
+          {
+            "value": "full_horizon",
+            "label": "Igual al horizonte",
+            "description": "Una posición no puede venderse por ningún motivo hasta cumplir el horizonte completo del modelo (con un horizonte de 12 meses, 12 meses mínimo). La protección más fuerte: cada elección se sostiene el tiempo completo para el que fue calibrada, al precio de no poder reaccionar antes aunque la posición vaya mal."
+          }
+        ]
+      },
+      {
+        "id": "coverage_percentile_floor",
+        "label": "Suelo de cobertura del ranking",
+        "description": "Percentil por debajo del cual una posición deja de pertenecer a la cartera y se vende entera, una vez cumplido el mínimo de tenencia. 0 desactiva la regla.",
+        "stage": "portfolio",
+        "values": [
+          0.0,
+          60.0,
+          80.0
+        ],
+        "recommended": 0.0,
+        "invalidates": "backtest",
+        "cost": "backtest",
+        "order": 39,
+        "predictive": false,
+        "depends_on": [],
+        "simplicity": [
+          0.0,
+          60.0,
+          80.0
+        ],
+        "modes": [
+          "fixed",
+          "diagnostic"
+        ],
+        "value_options": [
+          {
+            "value": 0.0,
+            "label": "Sin suelo",
+            "description": "No existe suelo de cobertura: una posición permanece en cartera mientras su alfa esperado justifique conservarla, por bajo que sea su percentil en el ranking. Es el comportamiento de referencia."
+          },
+          {
+            "value": 60.0,
+            "label": "Bajo el percentil 60",
+            "description": "Una posición que cae por debajo del percentil 60 del ranking se vende entera, aunque su alfa esperado no active ninguna otra regla. Sobre un universo de unas 500 acciones equivale a exigir que toda posición se mantenga entre las 200 mejores. No compite contra el coste de operar: es un mandato de cobertura, la generalización de la venta por pérdida de puntuación actual."
+          },
+          {
+            "value": 80.0,
+            "label": "Bajo el percentil 80",
+            "description": "Una posición que cae por debajo del percentil 80 del ranking se vende entera. Sobre un universo de unas 500 acciones equivale a exigir que toda posición se mantenga entre las 100 mejores. Es el arma más estricta del bloque y la que más rotación genera: conviene leerla junto al mínimo de tenencia, que es lo único que la frena."
+          }
+        ]
+      },
+      {
+        "id": "rebalance_drift_tolerance",
+        "label": "Tolerancia de rebalanceo",
+        "description": "Desviación relativa mínima necesaria para emitir una orden.",
+        "stage": "portfolio",
+        "values": [
+          0.0,
+          0.1,
+          0.25,
+          0.4
+        ],
+        "recommended": 0.25,
+        "invalidates": "backtest",
+        "cost": "backtest",
+        "order": 40,
+        "predictive": false,
+        "depends_on": [],
+        "simplicity": [
+          0.0,
+          0.1,
+          0.25,
+          0.4
+        ],
+        "modes": [
+          "fixed",
+          "diagnostic"
+        ],
+        "value_options": [
+          {
+            "value": 0.0,
+            "label": "Sin tolerancia",
+            "description": "Cualquier desviación, por mínima que sea, entre el peso actual de una posición y su peso objetivo genera una orden de ajuste. Máxima precisión de pesos, al coste de generar muchas más operaciones (y comisiones)."
+          },
+          {
+            "value": 0.1,
+            "label": "10 %",
+            "description": "Solo se ajusta una posición cuando su peso real se desvía más de un 10 % (en términos relativos) de su peso objetivo. Reduce operaciones innecesarias por desviaciones pequeñas del peso, a cambio de tolerar carteras algo menos ajustadas al objetivo teórico."
+          },
+          {
+            "value": 0.25,
+            "label": "25 %",
+            "description": "Solo se ajusta una posición cuando su peso real se desvía más de un 25 % (en términos relativos) de su peso objetivo. Tolerancia amplia: pocas operaciones de puro rebalanceo, pero los pesos reales pueden alejarse bastante del objetivo teórico entre ajustes."
+          },
+          {
+            "value": 0.4,
+            "label": "40 %",
+            "description": "Solo se ajusta una posición cuando su peso real se desvía más de un 40 % (en términos relativos) de su peso objetivo. Tolerancia muy amplia: minimiza las operaciones de puro rebalanceo, a costa de permitir que los pesos reales se alejen considerablemente del objetivo teórico entre ajustes."
+          }
+        ]
+      },
+      {
+        "id": "price_only_strictness_multiplier",
+        "label": "Prudencia sin fundamentales",
+        "description": "Endurece los umbrales en snapshots sin fundamentales nuevos.",
+        "stage": "portfolio",
+        "values": [
+          1.0,
+          1.5,
+          2.0
+        ],
+        "recommended": 1.5,
+        "invalidates": "backtest",
+        "cost": "backtest",
+        "order": 50,
+        "predictive": false,
+        "depends_on": [],
+        "simplicity": [
+          1.0,
+          1.5,
+          2.0
+        ],
+        "modes": [
+          "fixed",
+          "diagnostic"
+        ],
+        "value_options": [
+          {
+            "value": 1.0,
+            "label": "Sin extra (x1,0)",
+            "description": "Cuando en un snapshot no hay fundamentales nuevos publicados (solo hay precio actualizado), se exigen exactamente los mismos umbrales de venta/compra que cuando sí hay fundamentales frescos. Sin prudencia extra."
+          },
+          {
+            "value": 1.5,
+            "label": "Prudente (x1,5)",
+            "description": "Cuando en un snapshot no hay fundamentales nuevos publicados, los umbrales de venta/compra se multiplican por 1,5 (se vuelven más exigentes). Precaución moderada: evita mover la cartera solo por ruido de precio sin confirmación fundamental reciente."
+          },
+          {
+            "value": 2.0,
+            "label": "Muy prudente (x2,0)",
+            "description": "Cuando en un snapshot no hay fundamentales nuevos publicados, los umbrales de venta/compra se multiplican por 2 (mucho más exigentes). Máxima prudencia: casi no se opera una posición basándose solo en el movimiento de precio, sin datos fundamentales frescos que lo respalden."
+          }
+        ]
+      },
+      {
+        "id": "price_only_sell_only",
+        "label": "Solo vender sin fundamentales",
+        "description": "En snapshots sin fundamentales nuevos, permite vender una posición mala pero prohíbe comprar cualquier reemplazo.",
+        "stage": "portfolio",
+        "values": [
+          false,
+          true
+        ],
+        "recommended": false,
+        "invalidates": "backtest",
+        "cost": "backtest",
+        "order": 55,
+        "predictive": false,
+        "depends_on": [],
+        "simplicity": [
+          false,
+          true
+        ],
+        "modes": [
+          "fixed",
+          "diagnostic"
+        ],
+        "value_options": [
+          {
+            "value": false,
+            "label": "Desactivado",
+            "description": "En los snapshots que solo traen precio nuevo (sin resultados fundamentales frescos) se compra y se rota exactamente igual que en los snapshots con datos nuevos. Es el comportamiento de referencia."
+          },
+          {
+            "value": true,
+            "label": "Activado",
+            "description": "En los snapshots que solo traen precio nuevo, se sigue permitiendo vender una posición cuyo alfa esperado ha caído por debajo del umbral, pero no se compra ningún reemplazo: ni una compra nueva, ni un relleno obligatorio, ni una rotación. La plaza vendida queda en efectivo hasta el siguiente snapshot con fundamentales reales, porque no hay información nueva que justifique elegir una acción distinta a la ya elegida con datos de verdad."
+          }
+        ]
+      },
+      {
+        "id": "sizing_mode",
+        "label": "Reparto de pesos",
+        "description": "Equiponderación o peso proporcional al alfa esperado, con tope 2:1.",
+        "stage": "portfolio",
+        "values": [
+          "equal",
+          "alpha_proportional"
+        ],
+        "recommended": "alpha_proportional",
+        "invalidates": "backtest",
+        "cost": "backtest",
+        "order": 60,
+        "predictive": false,
+        "depends_on": [],
+        "simplicity": [
+          "equal",
+          "alpha_proportional"
+        ],
+        "modes": [
+          "fixed",
+          "diagnostic"
+        ],
+        "value_options": [
+          {
+            "value": "equal",
+            "label": "Equiponderado",
+            "description": "Todas las posiciones objetivo de la cartera reciben exactamente el mismo peso (equiponderado), sin importar si una acción tiene una puntuación mucho mejor que otra."
+          },
+          {
+            "value": "alpha_proportional",
+            "label": "Proporcional al alfa esperado",
+            "description": "El peso de cada posición escala con su alfa esperado calibrado: la posición con menor alfa esperado de la cartera recibe peso base (x1) y la de mayor alfa esperado recibe el doble (x2). A diferencia de escalar por percentil, aquí el peso responde a una magnitud económica estimada y no a la posición relativa en un ranking."
+          }
+        ]
+      },
+      {
+        "id": "commission_bps",
+        "label": "Comisión",
+        "description": "Comisión aplicada sobre el nocional operado.",
+        "stage": "portfolio",
+        "values": [
+          0.0,
+          5.0,
+          10.0
+        ],
+        "recommended": 5.0,
+        "invalidates": "backtest",
+        "cost": "backtest",
+        "order": 70,
+        "predictive": false,
+        "depends_on": [],
+        "simplicity": [
+          0.0,
+          5.0,
+          10.0
+        ],
+        "modes": [
+          "fixed",
+          "diagnostic"
+        ],
+        "value_options": [
+          {
+            "value": 0.0,
+            "label": "Sin comisión",
+            "description": "No se descuenta ninguna comisión por operar. Escenario idealizado, sobreestima el resultado neto real."
+          },
+          {
+            "value": 5.0,
+            "label": "5 pb (0,05 %)",
+            "description": "Se descuenta una comisión de 5 puntos básicos (0,05 %) sobre el importe de cada operación. Coste de bróker moderado."
+          },
+          {
+            "value": 10.0,
+            "label": "10 pb (0,10 %)",
+            "description": "Se descuenta una comisión de 10 puntos básicos (0,10 %) sobre el importe de cada operación. Coste de bróker más alto; penaliza más las estrategias con muchas operaciones (turnover alto)."
+          }
+        ]
+      },
+      {
+        "id": "slippage_bps",
+        "label": "Slippage",
+        "description": "Impacto estimado aplicado sobre el nocional operado.",
+        "stage": "portfolio",
+        "values": [
+          5.0,
+          10.0,
+          20.0
+        ],
+        "recommended": 10.0,
+        "invalidates": "backtest",
+        "cost": "backtest",
+        "order": 80,
+        "predictive": false,
+        "depends_on": [],
+        "simplicity": [
+          5.0,
+          10.0,
+          20.0
+        ],
+        "modes": [
+          "fixed",
+          "diagnostic"
+        ],
+        "value_options": [
+          {
+            "value": 5.0,
+            "label": "5 pb (0,05 %)",
+            "description": "Se asume que, además de la comisión, cada operación pierde 5 puntos básicos (0,05 %) extra por la diferencia entre el precio esperado y el precio real de ejecución (slippage). Supuesto optimista de liquidez."
+          },
+          {
+            "value": 10.0,
+            "label": "10 pb (0,10 %)",
+            "description": "Se asume un slippage de 10 puntos básicos (0,10 %) por operación. Supuesto intermedio."
+          },
+          {
+            "value": 20.0,
+            "label": "20 pb (0,20 %)",
+            "description": "Se asume un slippage de 20 puntos básicos (0,20 %) por operación. Supuesto conservador: penaliza más las estrategias que rotan mucho la cartera, reflejando peor liquidez o impacto de mercado."
+          }
+        ]
+      }
+    ],
+    "recommended_definition": {
+      "snapshot_step_months": {
+        "mode": "fixed",
+        "values": [
+          3
+        ],
+        "baseline": 3
+      },
+      "target_horizon_months": {
+        "mode": "optimize",
+        "values": [
+          6,
+          12
+        ],
+        "baseline": 12
+      },
+      "train_lookback_years": {
+        "mode": "optimize",
+        "values": [
+          8,
+          12
+        ],
+        "baseline": 8
+      },
+      "execution_lag_days": {
+        "mode": "optimize",
+        "values": [
+          45,
+          60
+        ],
+        "baseline": 60
+      },
+      "recency_weighting": {
+        "mode": "optimize",
+        "values": [
+          "off",
+          "linear"
+        ],
+        "baseline": "off"
+      },
+      "objective": {
+        "mode": "fixed",
+        "values": [
+          "rank_regression"
+        ],
+        "baseline": "rank_regression"
+      },
+      "feature_preset": {
+        "mode": "optimize",
+        "values": [
+          "core",
+          "all"
+        ],
+        "baseline": "core"
+      },
+      "fundamental_momentum": {
+        "mode": "optimize",
+        "values": [
+          false,
+          true
+        ],
+        "baseline": true
+      },
+      "market_regime_feature": {
+        "mode": "fixed",
+        "values": [
+          true
+        ],
+        "baseline": true
+      },
+      "neutralize_by_sector": {
+        "mode": "fixed",
+        "values": [
+          false
+        ],
+        "baseline": false
+      },
+      "winsorization": {
+        "mode": "fixed",
+        "values": [
+          0.0
+        ],
+        "baseline": 0.0
+      },
+      "max_features_per_agent": {
+        "mode": "fixed",
+        "values": [
+          8
+        ],
+        "baseline": 8
+      },
+      "feature_weighting_mode": {
+        "mode": "fixed",
+        "values": [
+          "oos_stability_prune"
+        ],
+        "baseline": "oos_stability_prune"
+      },
+      "model_family": {
+        "mode": "fixed",
+        "values": [
+          "lightgbm"
+        ],
+        "baseline": "lightgbm"
+      },
+      "lgbm_max_depth": {
+        "mode": "fixed",
+        "values": [
+          3
+        ],
+        "baseline": 3
+      },
+      "lgbm_n_estimators": {
+        "mode": "fixed",
+        "values": [
+          100
+        ],
+        "baseline": 100
+      },
+      "lgbm_learning_rate": {
+        "mode": "fixed",
+        "values": [
+          0.05
+        ],
+        "baseline": 0.05
+      },
+      "lgbm_min_child_samples": {
+        "mode": "fixed",
+        "values": [
+          50
+        ],
+        "baseline": 50
+      },
+      "meta_method": {
+        "mode": "optimize",
+        "values": [
+          "equal",
+          "stacked_rolling_free",
+          "stacked_rolling_bounded"
+        ],
+        "baseline": "stacked_rolling_bounded"
+      },
+      "meta_history_quarters": {
+        "mode": "fixed",
+        "values": [
+          16
+        ],
+        "baseline": 16
+      },
+      "meta_recency_weighting": {
+        "mode": "fixed",
+        "values": [
+          "off"
+        ],
+        "baseline": "off"
+      },
+      "target_size": {
+        "mode": "diagnostic",
+        "values": [
+          12,
+          5
+        ],
+        "baseline": 12
+      },
+      "exit_expected_alpha_bps": {
+        "mode": "diagnostic",
+        "values": [
+          100.0,
+          0.0
+        ],
+        "baseline": 100.0
+      },
+      "rotation_edge_bps": {
+        "mode": "diagnostic",
+        "values": [
+          50.0,
+          25.0
+        ],
+        "baseline": 50.0
+      },
+      "max_cash_weight": {
+        "mode": "diagnostic",
+        "values": [
+          0.25,
+          0.0
+        ],
+        "baseline": 0.25
+      },
+      "minimum_holding_period": {
+        "mode": "diagnostic",
+        "values": [
+          "none",
+          "quarter_horizon"
+        ],
+        "baseline": "none"
+      },
+      "coverage_percentile_floor": {
+        "mode": "diagnostic",
+        "values": [
+          0.0,
+          60.0
+        ],
+        "baseline": 0.0
+      },
+      "rebalance_drift_tolerance": {
+        "mode": "diagnostic",
+        "values": [
+          0.25,
+          0.0
+        ],
+        "baseline": 0.25
+      },
+      "price_only_strictness_multiplier": {
+        "mode": "diagnostic",
+        "values": [
+          1.5,
+          1.0
+        ],
+        "baseline": 1.5
+      },
+      "price_only_sell_only": {
+        "mode": "diagnostic",
+        "values": [
+          false,
+          true
+        ],
+        "baseline": false
+      },
+      "sizing_mode": {
+        "mode": "diagnostic",
+        "values": [
+          "alpha_proportional",
+          "equal"
+        ],
+        "baseline": "alpha_proportional"
+      },
+      "commission_bps": {
+        "mode": "diagnostic",
+        "values": [
+          5.0,
+          0.0
+        ],
+        "baseline": 5.0
+      },
+      "slippage_bps": {
+        "mode": "diagnostic",
+        "values": [
+          10.0,
+          5.0
+        ],
+        "baseline": 10.0
+      }
+    },
+    "profiles": [
+      "balanced",
+      "growth",
+      "value",
+      "quality",
+      "momentum",
+      "contrarian",
+      "defensive",
+      "garp"
+    ],
+    "hash": "845d55249866f2f05fab5ffca32d86de6b73ad6e584252093049f59a8b1a92e7"
+  }
+}

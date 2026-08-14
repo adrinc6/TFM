@@ -1,25 +1,23 @@
-\begin{tabular}{llrr}
+\begin{tabular}{lllrrl}
 \toprule
-Variable & Ganador & Ventaja & IC pareado 90\% \\
+Variable & Ganador & Mejor alternativa & Su Rank-IC & Coste & Regla \\
 \midrule
-snapshot\_step\_months & 1 & 0,0208 & [0,0108; 0,0372] \\
-target\_horizon\_months & 12 & 0,0000 & [0,0000; 0,0000] \\
-train\_lookback\_years & 8 & 0,0000 & [0,0000; 0,0000] \\
-execution\_lag\_days & 60 & 0,0000 & [0,0000; 0,0000] \\
-recency\_weighting & off & 0,0000 & [0,0000; 0,0000] \\
-objective & rank\_regression & 0,0000 & [0,0000; 0,0000] \\
-feature\_preset & all & 0,0226 & [-0,0177; 0,0642] \\
-fundamental\_momentum & True & 0,0000 & [0,0000; 0,0000] \\
-market\_regime\_feature & False & 0,0008 & [-0,0029; 0,0054] \\
-neutralize\_by\_sector & False & 0,0000 & [0,0000; 0,0000] \\
-winsorization & 0.0 & 0,0000 & [0,0000; 0,0000] \\
-max\_features\_per\_agent & 12 & 0,0023 & [-0,0014; 0,0078] \\
-feature\_weighting\_mode & oos\_stability\_prune & 0,0000 & [0,0000; 0,0000] \\
-lgbm\_max\_depth & 3 & 0,0000 & [0,0000; 0,0000] \\
-lgbm\_n\_estimators & 100 & 0,0000 & [0,0000; 0,0000] \\
-lgbm\_learning\_rate & 0.03 & 0,0007 & [-0,0040; 0,0055] \\
-lgbm\_min\_child\_samples & 50 & 0,0000 & [0,0000; 0,0000] \\
-meta\_history\_quarters & 16 & 0,0000 & [0,0000; 0,0000] \\
-meta\_recency\_weighting & off & 0,0000 & [0,0000; 0,0000] \\
+neutralize\_by\_sector & False & True & 0,0576 & -0,0429 & Rank-IC robusto \\
+recency\_weighting & off & linear & 0,0632 & -0,0373 & Rank-IC robusto \\
+target\_horizon\_months & 12 & 6 & 0,0684 & -0,0322 & Rank-IC robusto \\
+feature\_preset & all & core & 0,0716 & -0,0290 & Rank-IC robusto \\
+snapshot\_step\_months & 1 & 3 & 0,0916 & -0,0089 & Rank-IC robusto \\
+meta\_method & stacked rolling free & stacked rolling bounded & 0,1005 & -0,0085 & Rank-IC robusto \\
+train\_lookback\_years & 8 & 12 & 0,0953 & -0,0052 & Rank-IC robusto \\
+feature\_weighting\_mode & oos stability prune & model native & 0,0959 & -0,0047 & Rank-IC robusto \\
+fundamental\_momentum & True & False & 0,0967 & -0,0038 & Rank-IC robusto \\
+winsorization & 0.0 & 0.01 & 0,0984 & -0,0021 & Rank-IC robusto \\
+lgbm\_max\_depth & 3 & 4 & 0,0992 & -0,0014 & Rank-IC robusto \\
+lgbm\_learning\_rate & 0.03 & 0.05 & 0,0995 & -0,0010 & Rank-IC robusto \\
+lgbm\_n\_estimators & 100 & 200 & 0,0997 & -0,0008 & Rank-IC robusto \\
+execution\_lag\_days & 60 & 30 & 0,1000 & -0,0005 & Empate: simplicidad \\
+max\_features\_per\_agent & 20 & 12 & 0,1000 & -0,0005 & Rank-IC robusto \\
+market\_regime\_feature & False & True & 0,1001 & -0,0004 & Rank-IC robusto \\
+lgbm\_min\_child\_samples & 20 & 50 & 0,1009 & 0,0004 & Empate: simplicidad \\
 \bottomrule
 \end{tabular}

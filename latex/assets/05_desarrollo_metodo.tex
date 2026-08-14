@@ -46,6 +46,85 @@ dividieran un conjunto de sesenta y cinco filas, de modo que el modelo devolvía
 valor. El proceso terminó sin error, escribió sus artefactos y se declaró correcto. No se aceptó
 como validación. Es un recordatorio de que la ausencia de excepción no es evidencia de corrección.
 
+\section{De un estudio aislado a una cadena de estudios}
+\label{sec:cadena-studies}
+
+La regla anterior --- una única unidad científica, ejecutada entera --- resolvió la trazabilidad,
+pero dejó al descubierto una limitación distinta que solo se hizo visible al mirar los resultados de
+la primera pasada completa.
+
+La selección secuencial recorre las fases en orden y cada una hereda al incumbente de la anterior.
+Eso significa que el resultado depende del punto de partida: una variable decidida en la primera
+fase se decide con los valores por defecto de todas las demás, y no vuelve a revisarse aunque las
+decisiones posteriores cambien el contexto en que aquella elección tenía sentido. La primera pasada
+lo dejó claro en cifras: su ganador se apartaba en \textbf{ocho variables} del baseline recomendado
+del catálogo, de modo que la mayoría de sus decisiones se habían tomado partiendo de una
+configuración que el propio estudio acabó descartando.
+
+La respuesta fue encadenar los estudios. El ganador de cada pasada se convierte en el baseline de la
+siguiente, que vuelve a recorrer las fases desde ese punto. Es un ascenso por coordenadas: cada
+pasada solo puede mejorar o confirmar, porque el incumbente se conserva cuando no hay evidencia
+suficiente para desplazarlo.
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{Las tres pasadas de la cadena, medidas sobre la ventana de selección.}
+  \label{tab:cadena}
+  \input{assets/t06_cadena.tex}
+  \caption*{Fuente: \artefacto{evidence/summary.json}, \artefacto{attribution.json} y
+  \artefacto{winner.json} de cada pasada. «IR reserv.» es el Information Ratio en la era
+  2025--2026, que no participó en ninguna decisión.}
+\end{table}
+
+La Tabla~\ref{tab:cadena} y la Figura~\ref{fig:cadena-progresion} muestran que la cadena mejoró de
+forma monótona en las cuatro métricas de selección. El Rank-IC pasó de 0,1000 a 0,1090, el IC-IR de
+0,735 a 0,851, el coeficiente de transferencia de 0,178 a 0,328 y el Information Ratio de 0,189 a
+0,339.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.96\textwidth]{assets/f06_cadena_progresion.png}
+  \caption{Progresión de la cadena en las cuatro métricas de selección. Cada panel tiene su propia
+  escala porque las magnitudes no son comparables entre sí; lo comparable es la forma. Fuente:
+  \artefacto{evidence/summary.json} y \artefacto{attribution.json} de las tres pasadas.}
+  \label{fig:cadena-progresion}
+\end{figure}
+
+Más informativo que la mejora es el patrón de convergencia de la Figura~\ref{fig:cadena-config}. La
+primera pasada modificó ocho variables respecto de su punto de partida; la segunda, una sola
+(\artefacto{meta\_method}, de acotado a libre); la tercera, dos
+(\artefacto{execution\_lag\_days} y \artefacto{target\_size}). El procedimiento se está quedando sin
+cambios que hacer, que es exactamente lo que debe ocurrir si está convergiendo y no explorando al
+azar.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.92\textwidth]{assets/f06_cadena_config.png}
+  \caption{Variables que cada pasada modifica respecto de su punto de partida. La primera se compara
+  con el baseline recomendado del catálogo; las siguientes, con el ganador que heredan. Fuente:
+  \artefacto{winner.json} de las tres pasadas.}
+  \label{fig:cadena-config}
+\end{figure}
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{Qué cambió cada pasada respecto de su punto de partida.}
+  \label{tab:cadena-config}
+  \input{assets/t06_cadena_config.tex}
+  \caption*{Fuente: \artefacto{winner.json} de cada pasada, comparado con el baseline recomendado
+  del catálogo en el caso de la primera.}
+\end{table}
+
+Conviene declarar el coste metodológico de este procedimiento, porque no es gratuito. Encadenar
+estudios multiplica el número de configuraciones evaluadas sobre la misma ventana de selección, y
+por tanto aumenta la probabilidad de que la mejor cifra observada deba parte de su tamaño a la
+propia búsqueda. La cadena no es una forma de evitar el sobreajuste: es una forma de sistematizarlo
+y hacerlo visible. Lo que protege al resultado no es el procedimiento de búsqueda sino la ventana
+reservada, que no participa en ninguna de las tres pasadas, y cuyo veredicto se analiza en el
+Capítulo~\ref{chap:resultados}.
+
 \section{Variables declaradas que no se calculaban}
 
 El hallazgo científicamente más relevante de la limpieza de julio fue de otra naturaleza. El

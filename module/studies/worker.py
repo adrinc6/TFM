@@ -46,7 +46,13 @@ def run(study_id: str, parent_pid: int) -> int:
     append_event(study_id, "info", "worker_started", f"Worker iniciado con PID {os.getpid()}.")
     thread.start()
     try:
-        execute_model_study(study_id)
+        # El tipo decide el motor: el Model Study optimiza el modelo por Rank-IC; el Portfolio
+        # Study no toca el modelo y recorre la rejilla de cartera por Information Ratio.
+        if read_study(study_id).get("study_type") == "portfolio_study":
+            from module.studies.portfolio_study import execute_portfolio_study
+            execute_portfolio_study(study_id)
+        else:
+            execute_model_study(study_id)
         return 0
     except BaseException as exc:
         error = str(exc) or type(exc).__name__

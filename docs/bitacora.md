@@ -1,5 +1,365 @@
 # Bitácora
 
+## 2026-08-14 · Cartera equivocada en tres activos, y tres tablas vacías sustituidas
+
+### El error: la tabla de las tres ventanas describía la cartera del modelo
+
+`t07_selec_conf_full` («Las tres ventanas de evaluación») afirmaba que en 2025-2026 la cartera perdía
+un 11,29 % con IR −1,167 y batía al índice el **0 %** de los años. Eso es la cartera del Model
+Study, no la ganadora del Portfolio Study, así que el documento **se contradecía a sí mismo** en
+cuatro capítulos.
+
+Causa: `write_tables_robustness` construía sus bloques desde `summary["summary"]`, es decir
+`evidence/summary.json`. Nunca recibió el Portfolio Study. Corregido con un parámetro `portfolio`
+que redirige a `evidence_best_full/summary.json`, que tiene la misma forma (`summary`,
+`confirmation`, `full_curve`).
+
+| Métrica | Antes (modelo) | Ahora (ganadora) |
+|---|---|---|
+| Exceso, selección | 2,61 % | **6,97 %** |
+| Exceso, reservada | −11,29 % | **+2,56 %** |
+| IR, reservada | −1,167 | **+0,304** |
+| Años que baten, reservada | 0 % | **50 %** |
+
+Al arreglarlo cayó otra afirmación falsa: la prosa decía que «el efectivo medio pasa de 9,08 % a
+25,04 %» y que el mejor resultado coincidía con la mayor posición de liquidez. La cartera ganadora
+**no sostiene efectivo** (0 % en las tres ventanas), así que su exceso no puede atribuirse a haber
+estado fuera del mercado. Reescrito.
+
+### Perfiles: había dos tablas con ganadores distintos
+
+`t07_perfiles` (cartera del modelo) y `t08_perfiles_cartera` (cartera ganadora) coexistían, y **no
+dan el mismo orden**:
+
+| Perfil | Cartera modelo | Cartera ganadora |
+|---|---|---|
+| `value` | **0,340 (1.º)** | 0,190 (5.º) |
+| `balanced` | 0,339 (2.º) | **0,844 (1.º)** |
+| `defensive` | 0,259 | 0,570 (2.º) |
+
+Con la cartera vieja gana `value` por 0,001 —el «empate por ruido» que el manuscrito describía—;
+con la buena, `balanced` domina por margen amplio. **La afirmación 5 se sostiene mejor de lo que
+decía el documento.** Decisión del autor: presentar **sólo la cartera ganadora**. Eliminado
+`t07_perfiles.tex` y regeneradas las dos figuras desde `portfolio_profiles.parquet`.
+
+### Tablas vacías sustituidas por evidencia real
+
+**La escalera de decisiones era una columna de ceros.** 17 filas con Rank-IC 0,1005 y ventaja
+0,0000, salvo la última. No era un error: es lo esperable de la última pasada de una cadena
+convergida, porque cada variable llega ya en su mejor valor. Pero enseñaba la columna equivocada.
+
+`t06_decisiones` se reescribe como **«qué se rechazó y cuánto costaba»**, ordenada por coste:
+neutralizar por sector −0,0429, pesos de recencia −0,0373, horizonte de 6 meses −0,0322, preset
+`core` −0,0290… hasta un grupo con costes por debajo de 0,005 (todos los hiperparámetros de
+LightGBM) que demuestra que el sistema no debe su capacidad al ajuste fino. Y marca los dos empates
+técnicos: en `lgbm_min_child_samples` la alternativa medía **+0,0004 mejor** que el ganador.
+
+Eliminados `t06_escalera.tex` y `f06_escalera.png` (eran casi la misma tabla que `t06_decisiones`,
+ambas llenas de ceros) y con ellos `decision_records` y `draw_decision_ladder`.
+
+**El top-20 de la rejilla tampoco discriminaba** (IR de 0,844 a 0,703, 20 variaciones de la misma
+cartera). Sustituido por `t08_cartera_influencia`: cuánto separa cada variable el IR.
+
+| Variable | Diferencia mejor-peor |
+|---|---|
+| Posiciones objetivo | **0,300** |
+| Tope de efectivo | **0,202** |
+| Suelo de cobertura | 0,107 |
+| Tenencia mínima | 0,039 |
+| Tolerancia de deriva | 0,016 |
+| Reparto de pesos | **0,009** |
+
+Contiene además un argumento que faltaba: el mejor `target_size` **marginal** es 5, pero la ganadora
+usa **8**. Optimizar variable a variable no habría encontrado la ganadora — que es justo por qué la
+búsqueda es cartesiana y no secuencial.
+
+### Lo que no se puede arreglar y se declara
+
+`t07_factores`, `f07_transferencia` y el Deflated Sharpe salen de `attribution.json`, calculado
+sobre la cartera del Model Study. El Portfolio Study **no recalcula** atribución factorial ni
+robustez: su `evidence_best_full/` sólo tiene equity, órdenes, posiciones y métricas anuales. La
+corrección es de honestidad: cada caption declara ahora que esas cifras corresponden a la cartera
+del Model Study.
+
+**Regla que queda fijada**: todo activo económico se lee de `evidence_best_full/` o de
+`portfolio_profiles.parquet`; lo predictivo, del Model Study; lo que no se pueda regenerar, se
+declara en el caption.
+
+## 2026-08-14 · Explicabilidad: `risk` no es baja volatilidad, y la salvaguarda nunca se activó
+
+### Por qué domina `risk` (la pregunta que las conclusiones dejaban abierta)
+
+`agent_local_attribution.parquet` (1,3 M filas) estaba persistido pero sin explotar. Agregado,
+responde a lo que el manuscrito declaraba como su resultado menos explicado:
+
+| Variable de `risk` | Contrib. media | Encabeza |
+|---|---|---|
+| `gap_21d` | 0,0216 | **51,2 %** |
+| `range_63d` | 0,0136 | 26,8 % |
+| `max_drawdown_252d` | 0,0092 | 4,2 % |
+
+**No es la prima clásica de baja volatilidad.** Mandan la microestructura de precio a corto plazo
+—huecos de apertura y rango de negociación, 78 % de las observaciones entre las dos—, mientras que
+`beta_252d`, el candidato obvio, es el séptimo (2,9 %). Esto explica mecánicamente por qué la
+neutralización por 14 controles de estilo retiene el 86,62 %: si el agente dominante replicara el
+factor de volatilidad, debería destruir mucho más.
+
+**Segundo hallazgo**: la variable que gobierna a `risk` cambia con el régimen. `range_63d` domina
+2017-2020 (incluido el desplome de 2020) y luego se desvanece; `gap_21d` crece hasta encabezar el
+64-77 % desde 2023. Aunque el meta concentre >95 % del peso en `risk`, ese agente **no es una
+apuesta fija**: reasigna atención por dentro. Suaviza —sin eliminarla— la objeción de depender de un
+único especialista.
+
+Añadido también que `quality` encabeza con **29 variables distintas** frente a 10-12 del resto, y es
+de los peores por Rank-IC (0,0096). Se presenta como asociación sugerente, no como causalidad: son
+cinco agentes, no una muestra.
+
+### Corrección: la salvaguarda de la curva de alfa no se activa nunca
+
+El manuscrito afirmaba en tres sitios que la salvaguarda «se activa en **4.384 de 20.545 filas**,
+algo más de una de cada cinco», y lo declaraba amenaza a la validez con severidad Media. Era cifra
+del study derogado. En el study 3, `signal_calibration.parquet` reparte sus 60.380 filas en
+`horizon` 43.639 (80 %) y `era` 10.905 (20 %); las 5.836 filas `none` son **sólo de 2015-2016** y
+tienen alfa nulo — el arranque sin cohortes cerradas, no la salvaguarda.
+
+Es decir: **no se activa ni una vez**. Corregido en `08_desarrollo_cartera.tex`,
+`10_limitaciones.tex` y `t09_limitaciones.tex`, rebajando la severidad a Baja. La crítica de diseño
+se conserva (un supuesto *a priori* que se dispararía justo cuando la evidencia dice que no hay
+señal sigue siendo mala idea), pero pasa a ser rama muerta y no defecto medido.
+
+### Decisiones de presentación
+
+- **Sección, no capítulo.** Va en `06_agentes_y_meta_agente.tex` §«Qué mira realmente cada agente»,
+  donde *cierra* un argumento abierto. Un capítulo propio quedaría descolgado: el material es
+  descriptivo, no aporta evidencia sobre las cinco afirmaciones y prometería más de lo que demuestra.
+- **No se codifica el signo** de la contribución en figura ni tabla: la media con signo es de orden
+  10⁻⁴ (se cancela entre acciones) y colorear por ella sugeriría un sesgo direccional inexistente.
+  Se sustituyó por «Encabeza» (fracción de veces que la variable es la primera), que sí es legible.
+- **`signal_calibration` descartado** como sección: el alfa esperado medio es negativo en 7 de 11
+  años mientras la cartera batía al índice. No es contradicción —es calibración de percentil a
+  retorno, no predicción de cartera— pero explicarlo cuesta más de lo que aporta y se presta a
+  malinterpretación en una defensa. Queda documentado en el anexo.
+
+Activos nuevos: `f05_atribucion_risk.png`, `f05_atribucion_anual.png`, `t05_atribucion.tex`.
+`load_agent_attribution` lee el parquet **una sola vez** y devuelve tres agregados pequeños (0,9 s).
+
+## 2026-08-14 · El TFM pasa a la cadena de 4 estudios; la cartera decide el signo del resultado
+
+### Qué se ha hecho
+
+El manuscrito LaTeX documentaba `study-20260803-201234-b4d7a8d8` (catálogo v5, ~175 cifras a mano).
+Se ha trasladado entero a la cadena vigente: tres Model Studies encadenados
+(`1b104667` → `aa733655` → `5ec17b78`) más el Portfolio Study `fdbdf2c5`. **No queda ni una cifra
+del study anterior en `latex/`**, verificado por grep.
+
+La regla dura de `latex/plan_tfm.md` («el TFM se redacta exclusivamente con este study») exigía
+registrar cualquier cambio allí y aquí. Queda registrado: el study antiguo sale del documento.
+
+### El hallazgo que cambia la tesis
+
+La cadena mejora monótonamente **dentro** de la ventana de selección (IR 0,189 → 0,294 → 0,339) y se
+degrada monótonamente **fuera** (IR +0,898 → +0,476 → **−1,167**). Con la cartera del catálogo, el
+study 3 —el mejor de la cadena en selección— perdía un 11,29 % frente al índice en la era reservada
+sin batirla ni un año. Es la firma clásica del sobreajuste por búsqueda.
+
+**Pero la degradación no venía del modelo.** Con la cartera ganadora del Portfolio Study —misma
+señal, mismos scores congelados, sin reentrenar nada— la era reservada da **+2,56 % de exceso e IR
++0,304**, batiendo al índice 1 de 2 años. El Rank-IC de esa era es **+0,0441 en ambos casos**,
+porque no depende de la cartera: la ordenación nunca se rompió, lo que fallaba era su traducción a
+posiciones.
+
+La tesis del TFM pasa a ser eso: en un sistema de esta clase la construcción de cartera no es un
+detalle de implementación, es una variable capaz de decidir el signo del resultado fuera de muestra.
+Cautelas declaradas en el texto: 6 cohortes cerradas, ~1,41 años de cartera, y la ganadora es la
+mejor de 1.728.
+
+### Otros resultados que obligaron a matizar el manuscrito
+
+- **`risk` solo (0,1227) bate al meta (0,1090)** en la ventana de selección, y el meta —ya con
+  `stacked_rolling_free`, sin tope— acaba asignándole **más del 95 %** del peso. La arquitectura
+  multi-agente se matiza en lugar de darse por demostrada.
+- **Deflated Sharpe baja a 0,682**. Encadenar estudios compra Rank-IC y encarece cualquier
+  afirmación de rentabilidad ajustada por selección. Se reporta como el contraste no superado.
+- **Sólo 1 de 17 decisiones** desplazó al incumbente en el study 3 (escalera plana en 0,1005 hasta
+  `meta_method`): es lo que se espera de la última pasada de una cadena convergida.
+- **2 decisiones se resolvieron por `tie_simplicity`** y se declara explícitamente que sus valores
+  no son hallazgos empíricos.
+- La cadena no corrió entera bajo el mismo catálogo: studies 1 y 2 con v6, study 3 con **v7**.
+
+### Conflicto metodológico resuelto
+
+El manuscrito argumentaba **en contra** del cartesiano (`07_diseno_experimental.tex`) y registraba
+como limitación no haber optimizado la cartera (`09_resultados.tex`). Se distinguen los dos planos:
+el argumento secuencial se mantiene para lo **predictivo** (donde la búsqueda infla el Rank-IC que
+el trabajo reporta) y el cartesiano se justifica para la **cartera** (que no toca el Rank-IC y cuya
+rejilla se calcula sobre scores recortados en 2024, de modo que la era reservada no llega a
+calcularse). La vieja limitación desaparece y la sustituye una de multiplicidad.
+
+### Panel
+
+Cada perfil y la cartera ganadora tienen botón **«Ver run»** con las mismas vistas que un run normal
+(Rendimiento y Cartera: snapshots, posiciones con `$$CASH$$`, órdenes, efectivo). Fuentes nuevas
+`portfolio-winner` y `portfolio-profile:<nombre>` en [module/web/queries.py](../module/web/queries.py),
+confinadas bajo `profiles/`. No se ofrecen Aprendizaje ni Acciones porque un perfil no reentrena el
+modelo y esos artefactos no existen.
+
+### Limpieza para Overleaf
+
+Eliminados por obsoletos: `f07_barrido_cartera.png`, `t07_cartera_barrido.tex`,
+`draw_portfolio_sweep`, `write_tables_portfolio` y `latex/scripts/__pycache__`. `plan_tfm.md` pasa
+de 497 a 185 líneas: su guion capítulo a capítulo reproducía cifras del study derogado, y mantener
+dos copias garantiza que una quede obsoleta. `latex/` queda sin activos huérfanos.
+
+`export_study_assets.py` acepta ahora `--chain-study-id` (repetible) y `--portfolio-study-id`; el
+manifiesto separa fuentes predictivas de económicas.
+
+## 2026-08-14 · La escritura atómica reintenta ante bloqueos transitorios (WinError 5)
+
+### Problema
+
+Un Portfolio Study abortó a las **7 de 1.728 combinaciones** con
+`PermissionError: [WinError 5] Acceso denegado` al renombrar `.study.json.<rnd>.tmp` sobre
+`study.json`. No es un problema de permisos: en Windows un antivirus o el indexador pueden retener
+el fichero destino unas decenas de milisegundos, y `os.replace` falla. Ya había ocurrido antes en
+un Model Study, pero ahí era raro; el Portfolio Study lo convierte en casi seguro porque escribía
+el estado **en cada combinación**, es decir 1.728 oportunidades de tropezar.
+
+### Solución, en dos frentes
+
+1. **Reintento en `write_json`** ([module/common/utils.py](../module/common/utils.py)):
+   `_replace_with_retry` reintenta el rename hasta 6 veces con espera creciente (50 ms, 100 ms…).
+   Si el bloqueo es permanente el error se propaga: no se silencia nada.
+2. **Menos escrituras** ([module/studies/portfolio_study.py](../module/studies/portfolio_study.py)):
+   el estado se persiste cada `STATUS_EVERY = 10` combinaciones en vez de en todas. Con ~6 s por
+   combinación eso refresca el panel cada minuto, resolución de sobra, y reduce la exposición en un
+   90 %.
+
+Las dos son necesarias: la primera hace el fallo recuperable, la segunda lo hace raro.
+
+### Verificación
+
+`pytest` 87/87, con dos tests nuevos en `tests/test_workflow_contract.py`: uno comprueba que un
+bloqueo transitorio se supera reintentando y no deja temporales huérfanos; el otro, que un bloqueo
+permanente sigue propagando la excepción.
+
+## 2026-08-14 · Portfolio Study: reanudación incremental y perfiles con la cartera ganadora
+
+### Decisión
+
+Dos añadidos al Portfolio Study, ambos previos a lanzar la rejilla definitiva:
+
+1. **Reanudación real.** La rejilla vuelca `portfolio_grid.parquet` cada 25 combinaciones y, al
+   arrancar, salta las que ya figuran en él reconstruyendo el mejor vigente.
+2. **Los ocho perfiles de inversor se evalúan con la cartera ganadora**, al terminar la rejilla, en
+   `portfolio_profiles.parquet`.
+
+### Motivo
+
+**La reanudación era un agujero real**: `WORKERS.pause` mata el proceso y `/resume` relanza el
+worker, pero `run_portfolio_study` recorría la rejilla desde el principio. A diferencia del Model
+Study —que reutiliza runs por `logical_key`— la rejilla no persiste runs individuales, así que
+pausar tiraba todo el cómputo. Se comprobó en la práctica: el primer lanzamiento se detuvo en
+412/1728 y, al no existir todavía el volcado periódico, esas ~40 minutos se perdieron.
+
+**Los perfiles quedan fuera del cartesiano** por una razón de método, no de coste. `apply_profile`
+([module/evaluation/profiles.py](../module/evaluation/profiles.py)) **reordena la señal**:
+sustituye el `meta_rank` y recalibra el alfa. Las seis variables de la rejilla, en cambio, solo
+gestionan la cartera ya elegida. Son dos planos distintos y el TFM los mantiene separados.
+Incluirlos multiplicaría la rejilla por ocho (13.824 combinaciones, ~23 h) y, sobre todo,
+**elegiría el estilo de inversor por su rentabilidad conocida**: en el study 3, `value` (IR 0,3405)
+y `balanced` (0,3389) se separan por 0,0016, que es ruido. Los perfiles responden a otra pregunta
+—«cómo le habría ido a cada tipo de inversor»— y siguen siendo diagnóstico informativo.
+
+### Detalles
+
+- `combination_key` serializa en el orden fijo de `PORTFOLIO_STUDY_VARIABLES`, no en el de
+  inserción del diccionario, para que la identidad de una combinación no dependa de cómo se
+  construyó.
+- `_resume` empieza de cero si el parquet está corrupto —volcado interrumpido a medias—: es
+  preferible repetir trabajo a arrastrar un estado inconsistente.
+- Cada perfil se evalúa **dos veces**, igual que el ganador: sobre la serie recortada en 2024 para
+  las cifras de selección y sobre la completa para la era reservada. La comparación entre perfiles
+  nunca se contamina con 2025-2026.
+- Un perfil que exija rangos de agentes ausentes se registra como `applicable=False` en vez de
+  romper el estudio.
+- Vista `portfolio-profiles` en la API y tabla nueva en la página del Portfolio Study, con el aviso
+  explícito de que ningún perfil se elige por su IR.
+
+### Verificación
+
+`pytest` 85/85 (10 en `tests/test_portfolio_study_contract.py`, incluidos uno que comprueba que la
+reanudación no repite combinaciones, otro que `combination_key` no depende del orden y otro que los
+perfiles usan la cartera ganadora contra las dos series), `ruff` y `node --check` limpios.
+
+### Pendiente
+
+El usuario reanuda la rejilla. Después: fases 1 y 2 de la actualización del TFM, ya planificadas.
+
+## 2026-08-14 · Portfolio Study: segundo optimizador, por Information Ratio
+
+### Decisión
+
+Se añade un **segundo tipo de estudio** que no toca el modelo: parte de un Model Study ganador,
+reutiliza sus scores congelados y recorre el **producto cartesiano** de las seis variables de
+cartera que gobiernan el riesgo, eligiendo por **Information Ratio**. Vive en
+[module/studies/portfolio_study.py](../module/studies/portfolio_study.py) y se lanza desde un
+conmutador «Modelo / Cartera» en Inicio.
+
+### Motivo
+
+El Model Study optimiza Rank-IC, que mide la calidad de la **ordenación**. Pero se observó que
+Rank-IC y rentabilidad pueden divergir: en la cadena de studies hubo un ganador con el mejor
+Rank-IC y a la vez el peor coeficiente de transferencia. Optimizar la ordenación no optimiza la
+cartera, así que la cartera necesita su propio criterio. El IR lo es porque premia el exceso **por
+unidad de riesgo**, no el alfa bruto.
+
+### Diseño
+
+- **Cartesiano y no greedy**: las seis variables interactúan (el suelo de diversificación sale de
+  `target_size` **y** `max_cash_weight`; el efecto de `coverage_percentile_floor` depende de si la
+  plaza liberada se recompra o queda en efectivo). Un recorrido greedy no ve esas interacciones.
+- **Barato**: cada combinación reutiliza los scores del ganador vía `run_profile_evaluation` y solo
+  rehace el backtest. Medido: **~5,2 s por combinación**, frente a los ~146 s de un run predictivo.
+  Las 1.728 combinaciones de la rejilla completa son ~2,5 h, no 70.
+- **Retención (regla 5)**: cada combinación deja una fila de resumen en `portfolio_grid.parquet`;
+  la evidencia completa es **solo la del mejor vigente** en `evidence_best/`, que se sustituye
+  cuando otra combinación lo supera. Al terminar queda exactamente una carpeta.
+- **Qué no se optimiza**: `commission_bps` y `slippage_bps` se fijan a un único valor porque son
+  *supuestos de coste*, no decisiones —optimizarlos sería elegir el mundo en el que la estrategia
+  luce mejor—; las `price_only_*` y los umbrales en pb gobiernan cuándo se opera bajo información
+  incompleta y se estresan aparte. La validación lo impone: exactamente un valor cada una.
+- **2025-2026 no se calcula durante la rejilla**: el backtest de cada combinación se **corta en
+  2024** recortando los scores antes de simular (`selection_evidence`). No basta con filtrar el
+  resumen al elegir: la cartera es secuencial, así que si la simulación entra en la era reservada su
+  resultado existe, y basta con mirarlo para caer en la tentación de elegir por él. Cortando la
+  serie, ese resultado **no se ha calculado**. Solo la combinación ya ganadora se reevalúa una vez
+  sobre la serie completa, y esa evidencia se guarda aparte en `evidence_best_full/`. La cartera de
+  partida contra la que se mide la mejora usa la **misma** serie recortada; compararla sobre la
+  completa mediría ventanas distintas y la mejora sería ficticia.
+
+### Riesgo declarado
+
+Optimizar por IR sobre la ventana de selección **añade multiplicidad**: 1.728 carteras probadas
+sobre los mismos datos. Es exactamente el riesgo que la era reservada existe para detectar, y el
+manuscrito debe reportar el IR de 2025-2026 de la cartera elegida junto al de selección, nunca solo
+el segundo.
+
+### Verificación
+
+`pytest` 82/82 (7 tests nuevos en `tests/test_portfolio_study_contract.py`, incluidos uno que
+comprueba que la evidencia conservada es la del mejor y no la de la última evaluada, y otro que
+verifica que la rejilla no puede ver la era reservada), `ruff`, `node --check`.
+
+Prueba de extremo a extremo con rejilla reducida: el ganador (`target_size=8`, `max_cash_weight=0`)
+da **IR 0,4455 en la ventana de selección** frente a 0,3389 de la cartera del modelo (**+0,107**), y
+la evidencia de la rejilla termina en 2024 con **cero filas** de 2025-2026, mientras la del ganador
+llega a 2026.
+
+**Y el aislamiento demostró servir para algo**: ese mismo ganador obtiene **IR −0,508 en la era
+reservada**. La cartera que mejor rinde en la ventana con la que se elige es peor fuera de ella, que
+es exactamente el sobreajuste que la separación existe para detectar. El manuscrito debe reportar
+las dos cifras juntas, nunca solo la de selección.
+
 ## 2026-08-14 · Cadena de tres studies completada; el study 3 pasa a ser la referencia del TFM
 
 ### Resultado

@@ -16,22 +16,47 @@ severidad.
   conclusiones, no una medida estadística.}
 \end{table}
 
-La principal limitación es la multiplicidad: se evaluaron 66 configuraciones y el Deflated Sharpe
-es 0,930, inferior al umbral 0,95. Por ello el trabajo no afirma que la rentabilidad ajustada por
-riesgo sobreviva concluyentemente a todas las pruebas de selección múltiple. Esta salvedad no anula
-el Rank-IC, pero delimita la afirmación económica.
+La principal limitación es la multiplicidad, y este trabajo la agravó deliberadamente en dos
+ocasiones. Primero al encadenar tres Model Studies, lo que multiplica las configuraciones evaluadas
+sobre la misma ventana de selección; el Deflated Sharpe cae a 0,682, muy por debajo del umbral 0,95,
+y esa caída es en buena medida el precio declarado de haber buscado más. Después al recorrer un
+cartesiano de 1.728 carteras. Por ello el trabajo no afirma que la rentabilidad ajustada por riesgo
+sobreviva concluyentemente a las pruebas de selección múltiple. Esta salvedad no anula el Rank-IC,
+cuyo contraste de permutación es independiente del número de configuraciones probadas, pero delimita
+con severidad la afirmación económica.
+
+La multiplicidad de la rejilla de cartera merece una precisión, porque su alcance es distinto del de
+la predictiva. Ninguna de las 1.728 combinaciones pudo observar la era reservada: la rejilla se
+calculó sobre una serie recortada en 2024, de modo que el resultado fuera de muestra de la cartera
+ganadora no estaba disponible en el momento de elegirla. Eso protege esa comprobación concreta, pero
+no convierte la elección en libre de sobreajuste dentro de la ventana de selección, donde la mejora
+de 0,339 a 0,844 de Information Ratio debe leerse como una cota superior optimista.
 
 El horizonte de doce meses crea fuerte solapamiento entre cohortes: 117 observaciones mensuales
 equivalen aproximadamente a nueve independientes. Además, la era reservada contiene sólo seis
-cohortes cerradas y una observación independiente efectiva; su Rank-IC es indeterminado aunque la
-confirmación económica sea favorable. El alfa factorial de la ventana de selección tampoco es
-significativo por sí solo ($t=0,82$).
+cohortes cerradas y una observación independiente efectiva, y su tramo de cartera abarca
+aproximadamente 1,41 años. Que la cartera optimizada bata al índice allí es un indicio favorable,
+no una demostración: con dos años naturales y uno favorable, el resultado es compatible con un
+margen amplio de escenarios. El alfa factorial de la ventana de selección tampoco es significativo
+por sí solo ($t=1,44$).
 
 Existen límites de datos: universo restringido a Estados Unidos y al S\&P 500, cobertura desigual
 de fundamentales, posibles restatements no observables en años antiguos y costes constantes que no
 modelan impacto de mercado. Finalmente, el predominio de \textit{risk} obliga a interpretar con
-prudencia la novedad de la señal; la neutralización conserva 84,35\%, lo que es evidencia parcial
-contra una explicación puramente factorial, no una prueba definitiva.
+prudencia la novedad de la señal; la neutralización conserva 86,62\%, lo que es evidencia parcial
+contra una explicación puramente factorial, no una prueba definitiva. Ese predominio se ha
+acentuado: con el meta-agente sin tope, el peso de \textit{risk} supera 0,95 al final de la serie,
+de modo que la señal del sistema es en la práctica la de un único especialista y su comportamiento
+futuro depende de que ese especialista siga funcionando.
+
+La atribución local de la Sección~\ref{sec:atribucion-local} matiza esa dependencia en un sentido y
+la agrava en otro, y conviene declarar ambos. La matiza porque \textit{risk} no resulta ser una
+réplica de la prima de baja volatilidad --- sus variables dominantes son de microestructura de
+precio a corto plazo --- y porque reasigna atención entre ellas según el régimen, de modo que no es
+una apuesta congelada. La agrava porque ese hallazgo desplaza la incógnita sin resolverla: el
+trabajo no explica \emph{por qué} unas variables de estructura de negociación a semanas ordenan
+retornos a doce meses, y una señal cuyo mecanismo no se comprende es más frágil ante un cambio de
+régimen que una respaldada por una hipótesis económica contrastada.
 
 Estas limitaciones conducen a una lectura disciplinada: la investigación demuestra una ordenación
 predictiva robusta bajo un protocolo concreto y sugiere utilidad económica, pero requiere más
@@ -57,12 +82,13 @@ principalmente a la generalización, no a la trazabilidad del panel que sí se e
 Las 117 cohortes mensuales no son 117 ensayos independientes: el horizonte de doce meses hace que
 dos cohortes contiguas compartan casi toda su ventana de retorno. Newey--West y bootstrap por bloques
 reducen la sobreconfianza, pero no crean información nueva; por ello se informa también de unas
-nueve observaciones efectivas. La multiplicidad añade una segunda cautela: las 66 configuraciones y
-un Deflated Sharpe de 0,930 impiden una afirmación concluyente de Sharpe ajustado por selección.
+nueve observaciones efectivas. La multiplicidad añade una segunda cautela: las configuraciones
+acumuladas por las tres pasadas de la cadena, más las 1.728 carteras de la rejilla, y un Deflated
+Sharpe de 0,682 impiden una afirmación concluyente de Sharpe ajustado por selección.
 
 Los costes son constantes, 5 pb de comisión y 10 pb de slippage. Esto demuestra que el resultado no
 requiere coste cero, pero no modela impacto de mercado, bid--ask dinámico, capacidad ni fiscalidad.
-Dado el turnover de selección, 359\% anualizado, una especificación dependiente de liquidez puede
+Dado el turnover de selección, 324\% anualizado, una especificación dependiente de liquidez puede
 modificar la cartera sin alterar el Rank-IC. El universo estadounidense de gran capitalización limita
 además la extrapolación a pequeñas empresas, otros países o regímenes de liquidez diferentes.
 
@@ -78,26 +104,36 @@ figurar aquí porque afectan a la interpretación de las cifras y no serían vis
 que sólo viera el resultado final; su origen y la disyuntiva técnica que las motivó se documentan en
 el Capítulo~\ref{chap:desarrollo-cartera}.
 
-La primera es la salvaguarda de la curva de alfa: una recta fija entre $-10\,\%$ y $+10\,\%$ que se
-activa en 4.384 de 20.545 filas del estudio, algo más de una de cada cinco. Toda cifra de cartera de
-este trabajo está condicionada por ese mecanismo en una proporción apreciable de sus filas.
+La primera es la salvaguarda de la curva de alfa: una recta fija entre $-10$\,\% y $+10$\,\% que se
+aplicaría si ninguna ventana de la cascada produjese una pendiente creciente. En el estudio de
+referencia \textbf{no se activa en ninguna fila}: la calibración usa la ventana de horizonte en el
+80\,\% de los casos y la de era en el 20\,\% restante. Deja de ser, por tanto, una limitación
+material de estas cifras y pasa a ser una decisión de diseño discutible que conviene declarar ---
+un supuesto \emph{a priori} que se dispararía precisamente cuando la evidencia indica que no hay
+señal ---, pero que ninguna cifra de este trabajo utiliza.
 
 La segunda es que la calibración isotónica que precedió a esa salvaguarda se retiró sin conservarla
 como opción del catálogo, de modo que este trabajo \emph{no puede} ofrecer una comparación empírica
 entre ambas formulaciones; la afirmación de que la nueva es mejor descansa en un argumento sobre el
 estimador, no en una medición pareada.
 
-La tercera es que \texttt{minimum\_holding\_period} tomó el valor \texttt{none} por venir así en el
-catálogo recomendado, no por haberse medido. El barrido diagnóstico del
-Capítulo~\ref{chap:resultados} muestra que \texttt{half\_horizon} lo domina simultáneamente en
-exceso, IR y rotación. No cambiarlo es metodológicamente correcto, porque las variables de cartera
-no se optimizan; pero significa que la cartera evaluada no es la mejor que esta señal admite, y las
-cifras económicas deben leerse como una cota inferior y no como el potencial del sistema.
+La tercera afectaba a las variables de cartera, que en versiones anteriores de este trabajo tomaban
+su valor del catálogo recomendado y no de una medición, de modo que las cifras económicas debían
+leerse como una cota inferior. El Portfolio Study resuelve esa limitación y la sustituye por otra de
+naturaleza distinta: la cartera ya no es arbitraria, pero es la mejor de 1.728 evaluadas sobre la
+ventana de selección, y por tanto sus cifras dentro de esa ventana son ahora una cota \emph{superior}
+optimista en lugar de una inferior conservadora. La comprobación de la era reservada es la única
+lectura de esas cifras que no está sujeta a ese sesgo, y descansa sobre poco más de un año de datos.
 
-\section{Reproducibilidad y congelación del estudio}
+\section{Reproducibilidad y versiones de catálogo}
 
-El estudio se ejecutó bajo la versión 5 del catálogo cerrado; el código actual está en la versión 6,
-y por tanto no es reproducible bit a bit ni comparable con estudios de la versión 6. La razón de
-congelar en lugar de reejecutar y el detalle de qué artefactos siguen siendo válidos se documentan
-en la Sección~\ref{sec:reproducibilidad}. La consecuencia práctica para el lector es directa: un
-tercero que ejecute hoy el código no obtendrá exactamente estos números.
+La cadena no se ejecutó entera bajo la misma versión del catálogo cerrado: las dos primeras pasadas
+usaron la versión 6 y la tercera la versión 7, que invierte el desempate por simplicidad de
+\artefacto{execution\_lag\_days}. Las tres pasadas no son, por tanto, estrictamente comparables entre
+sí en lo relativo a las reglas de desempate, y toda tabla que las compare cita la versión junto al
+identificador. El detalle se documenta en la Sección~\ref{sec:reproducibilidad}.
+
+La discrepancia afecta a una regla que sólo interviene cuando dos alternativas difieren menos de
+0,002 en ventaja pareada, es decir, cuando la evidencia no distingue entre ellas. Aun así, dos de
+las diecisiete decisiones de la pasada de referencia se resolvieron por ese criterio, y sus valores
+finales no deben presentarse como hallazgos empíricos sino como preferencias declaradas de antemano.

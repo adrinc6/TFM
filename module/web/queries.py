@@ -19,6 +19,8 @@ from module.storage.studies import (
 ANALYSIS_VIEWS = {
     "winner", "learning", "robustness", "profiles", "portfolio-comparisons",
     "portfolio", "stocks", "report", "attribution",
+    # Vistas propias del Portfolio Study (cartesiano de cartera por Information Ratio).
+    "portfolio-winner", "portfolio-grid", "portfolio-profiles",
 }
 
 # Columnas de `positions.parquet` que sí se muestran: `market_value`, `entry_cost` y `units` son
@@ -98,6 +100,18 @@ def _evidence_dir(directory: Path, study_id: str, source: str | None) -> Path:
     """
     if source == "baseline":
         return directory / "evidence_baseline"
+    # Evidencia del Portfolio Study: la del ganador sobre la serie completa y la de cada perfil
+    # reevaluado con esa cartera. Son directorios de cartera —equity, órdenes, posiciones y
+    # métricas anuales—, sin artefactos de modelo, porque un perfil no reentrena nada.
+    if source == "portfolio-winner":
+        return directory / "evidence_best_full"
+    if source and source.startswith("portfolio-profile:"):
+        name = source.removeprefix("portfolio-profile:")
+        resolved = (directory / "profiles" / name).resolve()
+        resolved.relative_to((directory / "profiles").resolve())
+        if not resolved.is_dir():
+            raise FileNotFoundError(f"El perfil {name} no conserva evidencia.")
+        return resolved
     if source and source.startswith("run:"):
         run = read_run(study_id, source.removeprefix("run:"))
         relative = run.get("evidence_path")
@@ -113,6 +127,17 @@ def analysis(study_id: str, view: str, query: dict[str, list[str]]) -> dict[str,
     if view not in ANALYSIS_VIEWS:
         raise ValueError("Vista analítica desconocida.")
     directory = safe_study_path(study_id)
+    # Las vistas del Portfolio Study se resuelven antes de tocar `evidence/`: ese estudio no
+    # produce evidencia de modelo propia, sino la del ganador de cartera bajo `evidence_best/`.
+    if view == "portfolio-winner":
+        payload = _json(directory / "portfolio_winner.json")
+        if not payload:
+            raise FileNotFoundError("El Portfolio Study todavía no ha elegido ganador.")
+        return payload
+    if view == "portfolio-grid":
+        return {"rows": _parquet(directory / "portfolio_grid.parquet")}
+    if view == "portfolio-profiles":
+        return {"rows": _parquet(directory / "portfolio_profiles.parquet")}
     source = query.get("source", [None])[0]
     evidence = _evidence_dir(directory, study_id, source)
     profile = query.get("profile", [None])[0]

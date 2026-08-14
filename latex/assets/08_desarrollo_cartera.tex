@@ -6,7 +6,7 @@ Capítulo~\ref{chap:desarrollo-metodo}. Si aquella cubría el paso a un único M
 defectos que afectaron a la metodología de contratos y a la selección secuencial, ésta cubre el
 rediseño de la construcción de cartera descrita en el Capítulo~\ref{chap:diseno-experimental}: tres
 defectos con una raíz común en la lógica de venta, el colapso de la calibración isotónica que
-motiva la salvaguarda de la curva de alfa usada en la Sección~\ref{sec:cartera-barrido}, y dos
+motiva la salvaguarda de la curva de alfa usada en la Sección~\ref{sec:cartera-rejilla}, y dos
 decisiones tomadas contra la recomendación técnica. Cierra con la advertencia de reproducibilidad
 que condiciona la lectura de toda cifra del Capítulo~\ref{chap:resultados}.
 
@@ -78,17 +78,26 @@ comparar ambas formulaciones con evidencia. El autor asumió el riesgo y pidió 
 alternativa.
 
 La segunda es más incómoda. Cuando ninguna de las tres ventanas de la cascada produce una pendiente
-creciente, el sistema aplica una salvaguarda: una recta fija entre $-10\,\%$ y $+10\,\%$. En contra
+creciente, el sistema aplica una salvaguarda: una recta fija entre $-10$\,\% y $+10$\,\%. En contra
 de esa elección se argumentó que es un supuesto \emph{a priori}, del mismo tipo que el sesgo de
 régimen fijado por constantes que este proyecto ya había eliminado, y que se activa precisamente
 cuando las tres ventanas coinciden en que la ordenación no discrimina a favor --- es decir, cuando
 la evidencia disponible dice que no hay señal, el sistema inventa una. La recomendación técnica fue
 usar una curva plana, equivalente a repartir por igual. Se prefirió la recta fija.
 
-La mitigación consiste en registrar, para cada fila, qué ventana produjo su alfa. En el estudio de
-referencia la salvaguarda se activa en 4.384 de 20.545 filas, algo más de una de cada cinco. Es una
-proporción suficientemente alta como para que el lector deba tenerla presente al interpretar
-cualquier cifra de cartera, y por eso se recoge también en el Capítulo~\ref{chap:limitaciones}.
+La mitigación consiste en registrar, para cada fila, qué ventana produjo su alfa, y esa trazabilidad
+permite ahora cerrar la discusión con una medición en lugar de un argumento. En el estudio de
+referencia, \artefacto{evidence/signal\_calibration.parquet} reparte sus 60.380 filas entre la
+ventana de horizonte (43.639, el 80\,\%) y la de era (10.905, el 20\,\%). Las 5.836 filas restantes
+corresponden a 2015 y 2016, no tienen alfa calculada y reflejan el arranque del sistema, cuando
+todavía no hay cohortes cerradas con las que estimar nada.
+
+Es decir: \textbf{la salvaguarda no llega a activarse ni una sola vez}. La objeción que se le hizo
+sigue siendo correcta como crítica de diseño --- un supuesto \emph{a priori} que se dispara justo
+cuando la evidencia dice que no hay señal es una mala idea ---, pero en esta configuración es una
+rama muerta y ninguna cifra de cartera de este trabajo depende de ella. Se documenta porque la
+decisión se tomó contra la recomendación técnica y porque una versión anterior de este documento,
+construida sobre otro estudio, sí reportaba una activación frecuente.
 
 Durante esa misma revisión se descubrió que la ruta de calibración de alfa \emph{no tenía ninguna
 cobertura de pruebas}. Un renombrado había dejado una llamada rota en esa ruta que la batería
@@ -101,8 +110,8 @@ un cero.
 
 Un episodio concreto ilustra por qué las casuísticas de datos incompletos merecen tratamiento
 explícito. En una ejecución, una posición estaba en el percentil 4,96 con un retorno esperado
-de $-9{,}01\,\%$ anual, mientras otro valor fuera de la cartera estaba en el percentil 100 con
-$+10{,}00\,\%$: una ventaja de 1.901 puntos básicos, muy por encima de cualquier umbral de rotación.
+de $-9{,}01$\,\% anual, mientras otro valor fuera de la cartera estaba en el percentil 100 con
+$+10{,}00$\,\%: una ventaja de 1.901 puntos básicos, muy por encima de cualquier umbral de rotación.
 El intercambio no se produjo.
 
 La causa era que una tercera posición, de una empresa que había salido del índice años antes, no
@@ -112,21 +121,111 @@ claramente rentable. La corrección fue tratar la ausencia de puntuación como u
 no como una decisión económica: una posición sin puntuación actual se vende, ignorando el mínimo de
 tenencia, y no se recompra en ese mismo snapshot.
 
+\section{Del barrido diagnóstico a la optimización por Information Ratio}
+\label{sec:portfolio-study}
+
+El barrido de cartera descrito hasta aquí movía una variable cada vez sobre la configuración
+recomendada. Servía para diagnosticar, y de hecho diagnosticó bien: varias variantes batían a la
+cartera empleada. Pero dejaba el trabajo en una posición incómoda. Sabía que su cartera no era la
+mejor, no podía adoptar ninguna de las mejores sin incurrir en la práctica que su propio protocolo
+prohíbe --- elegir una regla por su rentabilidad ya conocida --- y terminaba registrando esa
+renuncia como limitación.
+
+La renuncia era innecesaria, y el motivo es que la prohibición estaba mal aplicada. Lo que la regla
+protege es la \emph{métrica predictiva}: si se elige una configuración porque su Rank-IC es alto y
+después se reporta ese mismo Rank-IC como resultado, la cifra está inflada por la propia búsqueda.
+Las reglas de cartera no participan de ese circuito. Operan sobre una señal ya congelada, no
+reentrenan nada y no pueden modificar el Rank-IC. Lo que sí hay que proteger de ellas es otra cosa:
+la era reservada. Y eso no se protege con una renuncia, sino con una construcción.
+
+De ahí el \emph{Portfolio Study}. Toma el ganador del último Model Study, no reentrena nada, y
+recorre el producto cartesiano de las seis variables que gobiernan la cartera midiendo cada
+combinación sobre una serie de puntuaciones \textbf{recortada en 2024}. La distinción es fina pero
+decisiva: no se trata de calcular el resultado de cada cartera en la era reservada y después
+ignorarlo --- si existiera, bastaría con mirarlo --- sino de que ese resultado \emph{no llega a
+calcularse}. Solo la ganadora, ya elegida, se reevalúa después sobre la serie completa, y esa
+reevaluación es una comprobación, nunca un criterio.
+
+\subsection*{Qué es el Information Ratio y por qué se optimiza éste}
+
+El criterio de selección deja de ser el exceso geométrico y pasa a ser el \emph{Information Ratio}:
+el exceso medio sobre el índice dividido por la volatilidad de ese exceso. Premia la
+\textbf{consistencia}, no el alfa bruto. Una cartera que bate al índice un 2\,\% todos los años
+tiene un IR altísimo; otra que alterna $+15$\,\% y $-11$\,\% puede tener el mismo exceso medio y un
+IR pésimo. Para un trabajo cuya pregunta es si una señal se sostiene fuera de muestra, la segunda
+cartera no es equivalente a la primera aunque el promedio coincida, y optimizar por exceso bruto no
+sabría distinguirlas.
+
+Las seis variables mueven ese cociente por vías distintas, y conviene enunciarlas porque explican la
+forma de los resultados:
+
+\begin{itemize}
+  \item \artefacto{target\_size} gobierna el compromiso central. Pocas posiciones concentran la
+  señal pero hacen el exceso volátil; muchas lo estabilizan a costa de parecerse al índice, y una
+  cartera que se parece al índice tiene poco exceso que mostrar en el numerador.
+  \item \artefacto{max\_cash\_weight} amortigua numerador y denominador a la vez. El efectivo no se
+  remunera en esta simulación, de modo que sostener caja resta rentabilidad esperada, pero también
+  resta varianza del exceso.
+  \item \artefacto{sizing\_mode} decide si el peso sigue al alfa esperado o se reparte por igual.
+  Concentrar en las convicciones altas sube el exceso y la varianza simultáneamente.
+  \item \artefacto{minimum\_holding\_period} reduce fricciones, pero no de forma monótona: retener
+  de más impide corregir cuando la señal cambia de opinión, y ese coste de oportunidad acaba
+  superando al ahorro en costes.
+  \item \artefacto{coverage\_percentile\_floor} corta la cola inferior del ranking, forzando la
+  venta de lo que cae por debajo del percentil declarado.
+  \item \artefacto{rebalance\_drift\_tolerance} es pura fricción: no cambia qué se tiene, sino cada
+  cuánto se corrige el peso de lo que ya se tiene.
+\end{itemize}
+
+\subsection*{Por qué cartesiano y no secuencial}
+
+El Capítulo~\ref{chap:diseno-experimental} argumenta que la selección predictiva debe ser
+secuencial. Aquí se hace lo contrario, y no por comodidad: las seis variables \textbf{interactúan},
+y un procedimiento que las recorriera de una en una obtendría una respuesta que depende del orden en
+que se pregunte.
+
+Dos ejemplos concretos lo muestran. El suelo efectivo de diversificación no lo fija ninguna variable
+por separado, sino \artefacto{target\_size} y \artefacto{max\_cash\_weight} conjuntamente: el peso
+máximo por posición depende de cuántas posiciones caben y de cuánta caja se tolera. Y
+\artefacto{coverage\_percentile\_floor} hace cosas \emph{opuestas} según el tope de efectivo: con
+tope cero, la plaza que deja una posición vendida por suelo se recompra necesariamente, de modo que
+el suelo actúa como un mecanismo de sustitución; con tope positivo, esa misma plaza puede quedarse
+en caja, y entonces el suelo actúa como un mecanismo de reducción de exposición. La misma variable,
+con el mismo valor, significa dos cosas distintas según el valor de otra.
+
+Un ascenso por coordenadas sobre variables que interactúan así converge a un óptimo local que
+depende del punto de partida. El cartesiano no tiene ese problema. Tiene otro, la multiplicidad de
+comparaciones, que se declara abiertamente en el Capítulo~\ref{chap:limitaciones}.
+
+\subsection*{Los perfiles quedan fuera de la rejilla}
+
+Los ocho perfiles de inversor no compiten en el cartesiano, y la razón es que no son variables de
+cartera. Un perfil \emph{reordena la señal}: sustituye el ranking del meta-agente y recalibra el
+alfa esperado. Opera, por tanto, en el plano predictivo y no en el de gestión. Meterlos en la
+rejilla equivaldría a elegir el estilo de inversor por su rentabilidad conocida, que es justamente
+lo que la regla protege.
+
+Lo que sí se hace es reevaluar los ocho con la cartera ya ganadora, para responder a una pregunta
+legítimamente distinta: cómo le habría ido a cada estilo de inversor con la mejor gestión
+disponible. Es un diagnóstico informativo y se presenta como tal; \textbf{ningún perfil se
+selecciona por su Information Ratio}.
+
 \section{Advertencia de reproducibilidad}
 \label{sec:reproducibilidad}
 
-Hay una consecuencia de este historial que debe declararse sin rodeos. El estudio del que procede
-toda la evidencia de este trabajo, \studyid, se ejecutó bajo la versión 5 del catálogo. El código
-actual está en la versión 6, tras la corrección del reparto de efectivo del 4 de agosto de 2026.
+Hay una consecuencia de este historial que debe declararse sin rodeos. La cadena de estudios de la
+que procede toda la evidencia de este trabajo no se ejecutó entera bajo la misma versión del
+catálogo: \studyidA{} y \studyidB{} corrieron bajo la versión 6, y \studyidC{} bajo la versión 7,
+que invierte el desempate por simplicidad de \artefacto{execution\_lag\_days}.
 
 Los artefactos siguen siendo válidos y trazables: conservan sus identificadores, sus hashes de
 conjunto de datos y su instantánea de catálogo, y cualquier cifra de este documento puede
-verificarse contra ellos. Pero \textbf{no son reproducibles bit a bit con el código actual}, y no
-son comparables con estudios ejecutados bajo la versión 6.
+verificarse contra ellos. Pero las tres pasadas \textbf{no son estrictamente comparables entre sí}
+en lo que respecta a las reglas de desempate, y por eso toda tabla que las compare cita la versión
+de catálogo junto al identificador del estudio.
 
-La alternativa habría sido reejecutar el estudio completo. Se descartó por una razón metodológica y
-no de conveniencia: la reejecución cambiaría el ganador, y escribir los capítulos de resultados
-sobre un ganador y después sustituirlo por otro cuando el texto ya está redactado se parece
-demasiado a elegir la configuración cuyos resultados encajan mejor con lo escrito. Se optó por
-congelar el estudio, declarar la discrepancia y mantener todas las cifras referidas a la versión con
-la que realmente se calcularon.
+La discrepancia afecta a una regla de desempate, no a una medición. El desempate solo interviene
+cuando dos alternativas difieren menos de 0,002 en ventaja pareada, es decir, cuando la evidencia
+\emph{no} distingue entre ellas; de ahí que su efecto sea seleccionar entre opciones
+empíricamente equivalentes y no alterar ninguna cifra de Rank-IC. Aun así se declara, porque el
+lector no tiene por qué fiarse de esa valoración sin conocer el hecho.

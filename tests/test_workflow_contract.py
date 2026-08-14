@@ -5,11 +5,55 @@ from pathlib import Path
 
 import pytest
 
+from module.common import utils
+from module.common.utils import write_json
 from module.storage import studies
 from module.studies.runner import _profile_comparison_row
 from module.studies.selection import choose_candidate
 from module.web import queries
 from module.web.api import study_preflight
+
+
+def test_atomic_write_survives_a_transient_file_lock(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Un bloqueo momentáneo del sistema de ficheros no puede tumbar horas de cómputo.
+
+    En Windows un antivirus o el indexador pueden retener el destino unas decenas de milisegundos
+    y hacer fallar `os.replace` con WinError 5 pese a tener permisos. Ocurrió de verdad: abortó un
+    Portfolio Study a las 7 de 1.728 combinaciones.
+    """
+    target = tmp_path / "estado.json"
+    attempts = {"count": 0}
+    original = utils.os.replace
+
+    def flaky_replace(source, destination):
+        attempts["count"] += 1
+        if attempts["count"] < 3:
+            raise PermissionError(5, "Acceso denegado")
+        return original(source, destination)
+
+    monkeypatch.setattr(utils.os, "replace", flaky_replace)
+    monkeypatch.setattr(utils, "_REPLACE_BACKOFF_SECONDS", 0.0)
+    write_json({"ok": True}, target)
+
+    assert attempts["count"] == 3, "no reintentó tras el bloqueo transitorio"
+    assert json.loads(target.read_text(encoding="utf-8")) == {"ok": True}
+    # El temporal no queda huérfano en el directorio.
+    assert [item.name for item in tmp_path.iterdir()] == ["estado.json"]
+
+
+def test_atomic_write_gives_up_on_a_permanent_lock(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Si el bloqueo no es transitorio, el error debe propagarse y no silenciarse."""
+    def always_locked(source, destination):
+        raise PermissionError(5, "Acceso denegado")
+
+    monkeypatch.setattr(utils.os, "replace", always_locked)
+    monkeypatch.setattr(utils, "_REPLACE_BACKOFF_SECONDS", 0.0)
+    with pytest.raises(PermissionError):
+        write_json({"ok": True}, tmp_path / "estado.json")
 
 
 def _result(rank_ic: float) -> dict:

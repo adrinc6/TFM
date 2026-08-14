@@ -13,7 +13,8 @@ alta, una práctica especialmente problemática cuando se prueban muchas alterna
 El catálogo cerrado se recorre en cuatro fases: temporal, representación, modelo y meta. Se parte
 de un \textit{baseline}; en cada fase se modifica una variable y se comparan sus candidatos con el
 incumbente acumulado. Así, el coste científico es una suma de alternativas, no una búsqueda
-cartesiana opaca. Las 66 configuraciones ejecutadas quedan registradas junto con cada elección.
+cartesiana opaca. Las 71 configuraciones ejecutadas en la pasada de referencia quedan registradas
+junto con cada elección, y las de las dos pasadas anteriores conservan sus propios registros.
 
 Un candidato debe tener observaciones suficientes, no caer por debajo de $-0,02$ en ninguna era
 disponible y superar una puerta pareada: dominar al incumbente (ventaja media positiva y mejor en
@@ -39,68 +40,71 @@ sin confundir el desplazamiento de sus fechas de ejecución con ausencia de evid
   \label{fig:protocolo}
 \end{figure}
 
-La Tabla~\ref{tab:decisiones} hace auditable esa traza. Destaca la elección de cadencia mensual:
-su ventaja pareada fue 0,0208, con IC al 90\% $[0,0108;0,0372]$, y amplió las cohortes de 40 a 117.
-En contraste, el horizonte de seis meses fue rechazado, con ventaja negativa y un intervalo entero
-por debajo de cero. Mostrar un rechazo es tan importante como mostrar una elección: evidencia que
-la regla no se limita a confirmar el resultado deseado.
+La Tabla~\ref{tab:decisiones} hace auditable esa traza para la pasada de referencia. Conviene
+explicar qué columna se tabula y por qué, porque la elección no es inocente. El Rank-IC acumulado
+tras cada paso --- la representación habitual, en forma de escalera --- sería en esta pasada una
+columna constante: 0,1005 repetido dieciséis veces. No por un defecto de la medición, sino porque la
+tercera pasada parte del ganador de la segunda y casi todas las variables llegan ya en su mejor
+valor conocido, de modo que la comparación pareada no encuentra motivo para moverlas.
+
+Lo informativo, entonces, no es el valor que se conserva sino \textbf{la alternativa que se
+descarta}: cuánto Rank-IC habría costado adoptarla. Esa es la columna que se tabula, ordenada de
+mayor a menor coste.
 
 \begin{table}[H]
   \centering
   \small
-  \caption{Traza de decisiones del Model Study.}
+  \caption{Qué alternativa se rechazó en cada decisión y cuánto habría costado adoptarla.}
   \label{tab:decisiones}
   \input{assets/t06_decisiones.tex}
-  \caption*{Fuente: \artefacto{decisions.json}. Ventaja e intervalo frente al incumbente de cada fase.}
+  \caption*{Fuente: \artefacto{decisions.json}. El coste es el Rank-IC de la mejor alternativa menos
+  el del ganador; un coste \emph{positivo} indica que la alternativa medía mejor y que el ganador se
+  decidió por otra vía, lo que sólo ocurre en los empates técnicos.}
 \end{table}
 
-\subsection*{La escalera del Rank-IC}
+Leída así, la tabla separa con claridad tres grupos. Cuatro decisiones eran caras de equivocar:
+neutralizar por sector habría costado $-0{,}0429$ de Rank-IC, aplicar pesos de recencia $-0{,}0373$,
+acortar el horizonte a seis meses $-0{,}0322$ y reducir el conjunto de variables a \texttt{core}
+$-0{,}0290$. Son las decisiones estructurales, y las cuatro se resolvieron con holgura.
 
-Presentar las diecinueve decisiones como una lista plana oculta lo esencial: cuántas de ellas
-cambiaron realmente algo. La Tabla~\ref{tab:escalera} añade el Rank-IC acumulado tras cada paso y
-marca explícitamente si el ganador desplazó al incumbente; la Figura~\ref{fig:escalera} lo
-representa como una escalera.
+Un segundo grupo, el más numeroso, tiene costes por debajo de 0,005: los hiperparámetros de LightGBM
+(profundidad, número de árboles, tasa de aprendizaje), la winsorización o el número máximo de
+variables por agente. Ahí la evidencia apenas distingue entre alternativas, y conviene decirlo
+abiertamente: el sistema no debe su capacidad predictiva al ajuste fino del modelo.
 
-\begin{table}[H]
-  \centering
-  \small
-  \caption{Rank-IC acumulado tras cada decisión secuencial.}
-  \label{tab:escalera}
-  \input{assets/t06_escalera.tex}
-  \caption*{Fuente: \artefacto{decisions.json}. El Rank-IC es el del ganador de cada paso, es decir,
-  el incumbente con el que arranca el siguiente. «Cambió» indica que el ganador desplazó al
-  incumbente.}
-\end{table}
+El tercer grupo son las dos decisiones resueltas por empate técnico, que la última columna marca de
+forma explícita. En \artefacto{execution\_lag\_days} la alternativa de 30 días quedó $0{,}0005$ por
+debajo del ganador y en \artefacto{lgbm\_min\_child\_samples} el valor 50 medía $0{,}0004$
+\emph{mejor}. Es decir, en el segundo caso el ganador no es el valor que mejor midió. Ninguna de las
+dos debe presentarse como hallazgo empírico, y por eso figuran con su regla al lado.
 
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.96\textwidth]{assets/f06_escalera.png}
-  \caption{Rank-IC acumulado a lo largo de la optimización secuencial. En dorado, las cinco
-  decisiones que desplazaron al incumbente. Fuente: \artefacto{decisions.json}.}
-  \label{fig:escalera}
-\end{figure}
+\subsection*{Por qué la escalera es plana}
 
-El resultado es contundente y va en contra de la intuición habitual sobre este tipo de búsquedas:
-\textbf{sólo cinco de las diecinueve decisiones cambiaron el incumbente}. Las catorce restantes
-confirmaron el valor de partida, con una ventaja pareada exactamente nula. El Rank-IC recorre
-0,0524 en el \textit{baseline}, 0,0735 tras fijar la cadencia, 0,0972 tras el conjunto de
-variables, 0,0975, 0,0995 y finalmente 0,1004.
+El resultado de la tercera pasada es contundente y va en contra de la intuición habitual sobre este
+tipo de búsquedas: \textbf{sólo una de las diecisiete decisiones cambió el incumbente}. Las
+dieciséis restantes confirmaron el valor de partida, con una ventaja pareada exactamente nula. El
+Rank-IC permanece en 0,1005 durante toda la pasada y sólo se mueve en el último paso,
+\artefacto{meta\_method}, que lo lleva a 0,1090.
 
-La distribución de esa mejora es igualmente informativa. Dos decisiones --- la cadencia de snapshots
-y el conjunto de variables --- aportan $+0{,}0208$ y $+0{,}0226$, es decir, prácticamente toda la
-ganancia sobre el \textit{baseline}. Las tres restantes suman menos de 0,004 entre las tres, y dos
-de ellas se resolvieron por la regla de simplicidad al quedar por debajo del umbral de empate
-técnico. Dicho de otro modo: casi todo lo que este sistema aprendió procede de decidir con qué
-frecuencia observar el mercado y con qué información alimentar a los agentes, no de afinar
-hiperparámetros del modelo.
+Esa planitud no es un defecto del procedimiento sino la consecuencia esperable de encadenar
+estudios. La tercera pasada parte del ganador de la segunda, de modo que casi todas las variables
+llegan ya en su mejor valor conocido y la comparación pareada no encuentra motivo para moverlas.
+Una escalera plana en la última pasada de una cadena significa que la cadena ha convergido; la
+primera pasada, que partía del baseline recomendado del catálogo, presentaba un perfil muy distinto,
+como documenta la Sección~\ref{sec:cadena-studies}.
 
 Este patrón es una defensa parcial frente a la objeción de sobreajuste por multiplicidad. Un
 protocolo que aceptase cualquier mejora aparente habría desplazado al incumbente muchas más veces,
-persiguiendo diferencias dentro del ruido. Que catorce de diecinueve decisiones terminen en «no
+persiguiendo diferencias dentro del ruido. Que dieciséis de diecisiete decisiones terminen en «no
 cambiar» indica que las puertas de elegibilidad están operando. No elimina el problema --- el
-Deflated Sharpe del Capítulo~\ref{chap:resultados} sigue penalizando por las 66 configuraciones
-ensayadas ---, pero acota su alcance: la multiplicidad afecta sobre todo a la afirmación económica,
-no a la traza de decisiones predictivas.
+Deflated Sharpe del Capítulo~\ref{chap:resultados} sigue penalizando por las configuraciones
+ensayadas, y la cadena eleva ese recuento en lugar de reducirlo ---, pero acota su alcance: la
+multiplicidad afecta sobre todo a la afirmación económica, no a la traza de decisiones predictivas.
+
+La regla de simplicidad que resolvió esas dos decisiones opera bajo un umbral de empate técnico de
+0,002 en ventaja pareada. Es una preferencia declarada de antemano --- ante evidencia equivalente,
+se elige la opción más simple o la más conservadora --- y no una medición, lo que delimita
+exactamente qué puede afirmarse sobre los valores que produce.
 
 \subsection*{El catálogo cerrado como garantía}
 
@@ -114,7 +118,7 @@ final.
 Doce de esas treinta y tres variables son de cartera y están marcadas como no predictivas. La
 distinción es la que sostiene el Capítulo~\ref{chap:resultados}: se ejecutan después de congelar el
 ganador, se reportan como diagnóstico y no pueden modificarlo. Es lo que convierte el barrido de la
-Sección~\ref{sec:cartera-barrido} en un experimento controlado en lugar de una segunda ronda de
+Sección~\ref{sec:cartera-rejilla} en un experimento controlado en lugar de una segunda ronda de
 optimización.
 
 \section{Construcción de cartera}
@@ -131,7 +135,8 @@ La era 2025--2026 fue aislada antes de aplicar la selección. Sus observaciones 
 los pesos del meta ni en la elección de parámetros; su papel es exclusivamente de confirmación
 posterior.
 
-\section{Por qué la selección es secuencial}
+\section{Por qué la selección predictiva es secuencial}
+\label{sec:seleccion-secuencial}
 
 Una búsqueda cartesiana de todos los valores posibles permitiría encontrar combinaciones muy
 ajustadas a la historia, dificultaría explicar de dónde surge el ganador y multiplicaría las
@@ -140,13 +145,32 @@ el incumbent anterior, de modo que una decisión posterior no puede reabrir sile
 elección temporal. Si dos alternativas difieren menos de 0,002 en ventaja pareada, se prefiere la
 más simple; si tampoco hay evidencia suficiente, se conserva el incumbent.
 
+Conviene precisar el alcance de este argumento, porque el trabajo emplea después una búsqueda
+cartesiana y sería contradictorio no explicar por qué. El razonamiento anterior vale para el plano
+\textbf{predictivo}, y vale por dos motivos que no son intercambiables. El primero es estadístico:
+la selección predictiva se decide sobre el Rank-IC, la misma magnitud que después se reporta como
+resultado principal, de modo que cada comparación adicional infla el mejor valor observado y
+contamina precisamente la cifra que sostiene el trabajo. El segundo es expositivo: el objetivo del
+Model Study no es solo encontrar una configuración buena, sino poder explicar de dónde sale cada
+decisión, y una rejilla de miles de puntos devuelve un ganador que nadie puede narrar.
+
+Ninguno de los dos motivos se aplica al plano de la \textbf{cartera}. Las reglas de cartera no
+tocan el modelo ni modifican el Rank-IC: operan sobre una señal ya congelada, así que optimizarlas
+no puede inflar la métrica predictiva que el documento reporta. Y su elección no necesita narrarse
+como una escalera de decisiones porque no lo es: las variables de cartera interactúan entre sí, y un
+protocolo secuencial no solo sería innecesario sino directamente inadecuado, como se argumenta en el
+Capítulo~\ref{chap:desarrollo-cartera}. Queda un riesgo real, la multiplicidad de comparaciones, que
+no se disimula: se declara en el Capítulo~\ref{chap:limitaciones} y se acota por construcción
+impidiendo que la rejilla llegue a calcular la era reservada.
+
 \section{Ejemplo de comparación pareada}
 
 Supóngase que un candidato y el incumbent producen Rank-IC sobre las mismas 40 cohortes. En cada
 fecha se resta el Rank-IC del incumbente al del candidato y se re-muestrean bloques de doce cohortes
 para preservar la dependencia inducida por el horizonte anual. Si la ventaja media es 0,0208, el
 candidato mejora el 57,5\% de cohortes y el IC bootstrap al 90\% es $[0,0108;0,0372]$, hay evidencia
-de dominancia. Éste es el caso real de la cadencia mensual frente al baseline trimestral.
+de dominancia. Éste es el caso real de la cadencia mensual frente al baseline trimestral, tal como
+se decidió en la primera pasada de la cadena.
 
 La rentabilidad de cartera no influye en este paso. Un CAGR alto puede surgir de concentración,
 exposición accidental a una acción extrema o efectivo, sin demostrar que se ordene mejor el

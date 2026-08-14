@@ -1,20 +1,37 @@
 \chapter{Conclusiones y trabajo futuro}
 
-El sistema aprende una ordenación transversal fuera de muestra: su Rank-IC medio es 0,1004, supera
+El sistema aprende una ordenación transversal fuera de muestra: su Rank-IC medio es 0,1090, supera
 los baselines deterministas y se mantiene positivo tras placebos, permutación, bootstrap, exclusión
 de eras, semillas y neutralización por estilo. El meta-agente aporta valor frente al promedio
-equiponderado porque aprende a reponderar especialistas a partir de cohortes cerradas.
+equiponderado porque aprende a reponderar especialistas a partir de cohortes cerradas, si bien el
+agente de riesgo por separado ordena algo mejor que la combinación, lo que impide presentar la
+arquitectura multi-agente como demostrada por estos datos.
 
-La traducción económica es positiva en la ventana de selección y en los dos años reservados. Sin
-embargo, la conclusión no es una promesa de inversión: el Deflated Sharpe no supera el umbral, la
-muestra efectiva es pequeña y la confirmación de Rank-IC en la era reservada aún no tiene potencia.
-La contribución defendible del TFM es metodológica: demuestra cómo separar señal, selección,
-robustez y cartera en un sistema de aprendizaje financiero reproducible.
+El hallazgo central del trabajo, sin embargo, no está en el modelo sino en lo que ocurre al llevarlo
+a una cartera. Con la construcción de cartera recomendada por el catálogo, la señal perdía un
+11,29\,\% frente al índice en la era reservada, con Information Ratio $-1{,}167$ y ningún año por
+encima. Con la cartera elegida por el estudio de optimización --- mismo modelo, misma señal, mismo
+panel, sin reentrenar nada --- obtiene un exceso del 2,56\,\% con Information Ratio $+0{,}304$. El
+Rank-IC de esa era es positivo en ambos casos, porque no depende de la cartera.
 
-La prioridad futura no es añadir complejidad al modelo, sino elevar el coeficiente de transferencia:
-ampliar el número de posiciones, reducir rotación, estudiar sizing por convicción y probar costes
-dependientes de liquidez. También será necesario esperar el cierre de nuevas cohortes reservadas y
-replicar el protocolo en otros universos y regímenes.
+De ahí se sigue la conclusión que este trabajo defiende: en un sistema de esta clase, la
+construcción de cartera no es un detalle de implementación posterior sino una variable capaz de
+decidir el signo del resultado fuera de muestra. Ninguna afirmación sobre la utilidad práctica de un
+sistema predictivo es interpretable sin declarar con qué cartera se midió, y una evaluación que
+reporte únicamente capacidad predictiva puede estar ocultando tanto un éxito como un fracaso.
+
+Nada de esto es una promesa de inversión, y las razones son explícitas: el Deflated Sharpe cae a
+0,682 --- encadenar estudios compra Rank-IC al precio de encarecer cualquier afirmación de
+rentabilidad ajustada por selección ---, la era reservada aporta seis cohortes cerradas y algo más
+de un año de cartera, y la cartera ganadora es la mejor de 1.728 evaluadas. La contribución
+defendible del TFM sigue siendo metodológica: demuestra cómo separar señal, selección, robustez y
+cartera de forma que preguntas como ésta puedan formularse y responderse sin contaminar la
+evidencia.
+
+La prioridad futura no es añadir complejidad al modelo. Es acumular cohortes reservadas suficientes
+para someter el hallazgo anterior a una prueba con potencia real, replicar el protocolo en otros
+universos y regímenes, y estudiar costes dependientes de liquidez que pongan a prueba una cartera
+concentrada en ocho posiciones.
 
 \section{Respuesta a la pregunta de investigación}
 
@@ -24,11 +41,14 @@ baselines incluidos y estable frente a contrastes adversariales. El meta parte d
 aprende de cohortes cerradas, por lo que su comportamiento no se reduce a fijar de antemano el
 especialista ganador.
 
-La respuesta económica es positiva pero más acotada. La cartera supera a SPY en selección y en los
-dos años reservados neta de los costes modelados. Sin embargo, el Deflated Sharpe y la muestra
-efectiva impiden transformar esa observación en una promesa de superioridad ajustada por riesgo. La
-formulación defendible es que el ranking tiene evidencia predictiva robusta y que su implementación
-es económicamente compatible con esa señal bajo restricciones declaradas.
+La respuesta económica es positiva pero mucho más acotada, y sólo es positiva con una precisión que
+no puede omitirse: depende de la cartera. Con la cartera optimizada, el sistema supera a SPY en la
+ventana de selección y también en la era reservada, neto de los costes modelados; con la cartera de
+partida, no lo hacía en la era reservada. El Deflated Sharpe y el tamaño de la muestra efectiva
+impiden transformar esa observación en una promesa de superioridad ajustada por riesgo. La
+formulación defendible es que el ranking tiene evidencia predictiva robusta, que su implementación
+puede ser económicamente compatible con esa señal bajo restricciones declaradas, y que la distancia
+entre «puede serlo» y «lo es» la recorre la construcción de cartera y no el modelo.
 
 \section{Contribución y agenda}
 
@@ -38,43 +58,54 @@ y confirmación reservada. Los artefactos permiten reconstruir configuraciones, 
 figuras y tablas. Esta disciplina es transferible a otros problemas de ML financiero incluso si el
 ranking concreto no se replica.
 
-El trabajo futuro debe priorizar la transferencia antes que añadir complejidad al modelo: estudiar
-tamaño de cartera, sizing, costes y rebalanceo sin reabrir la selección predictiva. Después debe
-reducirse la multiplicidad con un catálogo pre-registrado, esperar etiquetas reservadas y replicar
-el protocolo en otros universos. Cada extensión debe preservar la observabilidad temporal que hace
-interpretables los resultados actuales.
+La segunda contribución es la propia agenda de transferencia, que este trabajo no se limita a
+proponer sino que ejecuta: estudiar tamaño de cartera, reparto de pesos, efectivo, tenencia mínima,
+suelo de cobertura y rebalanceo sin reabrir la selección predictiva, y hacerlo sobre una serie
+recortada para que la ventana reservada siga siendo una comprobación y no un criterio. El resultado
+justifica el esfuerzo: la mejora obtenida sin tocar el modelo es mayor que la acumulada por las tres
+pasadas predictivas juntas.
+
+El trabajo futuro debe reducir la multiplicidad con un catálogo pre-registrado, esperar etiquetas
+reservadas hasta disponer de potencia estadística real, y replicar el protocolo en otros universos y
+regímenes. Debe también someter la cartera ganadora a costes dependientes de liquidez, porque una
+cartera de ocho posiciones sin efectivo es más sensible a esa especificación que la que se evaluaba
+antes. Cada extensión debe preservar la observabilidad temporal que hace interpretables los
+resultados actuales.
 
 \section{Agenda ordenada por prioridad}
 
-El barrido diagnóstico del Capítulo~\ref{chap:resultados} no sólo señala dónde está el cuello de
-botella: indica en qué orden conviene atacarlo.
+La evidencia acumulada no sólo señala dónde está el cuello de botella: indica en qué orden conviene
+atacar lo que queda.
 
 \begin{enumerate}[leftmargin=*,itemsep=0.4em]
-  \item \textbf{Medir el mínimo de tenencia como variable de pleno derecho.} Es la intervención con
-  mejor relación entre evidencia disponible y esfuerzo: el barrido ya sugiere que
-  \texttt{half\_horizon} domina simultáneamente en exceso, IR y rotación. Convertirlo en una
-  decisión medida --- y no heredada del valor recomendado --- exigiría declararlo antes de observar
-  el resultado, para no incurrir en la selección por rentabilidad que el protocolo prohíbe.
-  \item \textbf{Resolver el conflicto entre cadencia y rotación.} La cadencia mensual ganó la primera
-  decisión con una ventaja clara, pero es también la causa estructural del 359\,\% de rotación:
-  re-decidir cada mes sobre una señal a doce meses. Separar la frecuencia de \emph{evaluación} de la
-  de \emph{ejecución} permitiría conservar las 117 cohortes sin pagar la rotación asociada.
-  \item \textbf{Reducir el catálogo antes de volver a ejecutar.} El Deflated Sharpe penaliza por las
-  66 configuraciones ensayadas. Un catálogo pre-registrado más estrecho, que fije de antemano las
-  variables cuyo valor no se espera que cambie, elevaría la probabilidad deflactada sin necesidad de
-  mejorar el modelo.
-  \item \textbf{Esperar el cierre de cohortes reservadas.} La confirmación predictiva de 2025--2026
-  es hoy indeterminada por falta de etiquetas cerradas, no por resultado adverso. Es la única
-  limitación de esta lista que se resuelve sola con el paso del tiempo.
-  \item \textbf{Investigar por qué domina \textit{risk}.} Que un solo agente supere al conjunto en
-  las cuatro eras es el resultado menos explicado del trabajo. Puede ser una prima de baja
-  volatilidad conocida, un artefacto del universo de gran capitalización o una interacción con el
-  horizonte de doce meses; distinguirlo exige un diseño específico.
+  \item \textbf{Someter la cartera ganadora a una era reservada con potencia.} Es la prioridad
+  absoluta, porque de ella depende el hallazgo central. Hoy descansa sobre seis cohortes cerradas y
+  algo más de un año de cartera; con tres o cuatro años acumulados podría contrastarse de verdad si
+  la optimización generaliza o si su éxito fuera de muestra fue afortunado.
+  \item \textbf{Resolver el conflicto entre cadencia y rotación.} La cadencia mensual ganó su
+  decisión con una ventaja clara, pero es también la causa estructural de una rotación superior al
+  300\,\%: re-decidir cada mes sobre una señal a doce meses. Separar la frecuencia de
+  \emph{evaluación} de la de \emph{ejecución} permitiría conservar las 117 cohortes sin pagar la
+  rotación asociada.
+  \item \textbf{Reducir el catálogo antes de volver a ejecutar.} El Deflated Sharpe penaliza por
+  todas las configuraciones ensayadas, y encadenar pasadas eleva ese recuento. Un catálogo
+  pre-registrado más estrecho, que fije de antemano las variables cuyo valor no se espera que
+  cambie, elevaría la probabilidad deflactada sin necesidad de mejorar el modelo.
+  \item \textbf{Probar costes dependientes de liquidez sobre la cartera ganadora.} Ocho posiciones
+  sin efectivo es una configuración más expuesta al impacto de mercado que la evaluada
+  anteriormente, y los costes constantes de esta simulación podrían estar favoreciéndola.
+  \item \textbf{Contrastar por qué funciona la microestructura de precio.} La atribución local de la
+  Sección~\ref{sec:atribucion-local} descarta la explicación más obvia del predominio de
+  \textit{risk} --- no se apoya en la prima de baja volatilidad, sino en huecos y rangos de
+  negociación a corto plazo --- pero eso desplaza la pregunta en lugar de cerrarla. Que esas
+  variables ordenen retornos a doce meses es un resultado que este trabajo describe y no explica, y
+  que merece un diseño específico: podría reflejar una prima de liquidez, un efecto de
+  microestructura o un artefacto del universo de gran capitalización.
 \end{enumerate}
 
-Obsérvese que ninguna de las cinco prioridades consiste en usar un modelo más potente. El sistema
-captura una cuarta parte de la señal que ya tiene; mejorar la señal antes de resolver la
-transferencia sería optimizar el término equivocado.
+Obsérvese que ninguna de las cinco prioridades consiste en usar un modelo más potente. La
+experiencia de este trabajo apunta en la dirección contraria: la mejora más grande que obtuvo no
+vino de mejorar la señal, sino de dejar de desperdiciarla al construir la cartera.
 
 \section{Qué aprendería quien repitiera este trabajo}
 

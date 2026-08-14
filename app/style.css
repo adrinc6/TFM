@@ -11,9 +11,21 @@ h1 { font-size: clamp(30px, 5vw, 58px); letter-spacing: -.045em; margin: 0; }
 h2, h3, p { margin-top: 0; }
 .eyebrow { color: var(--muted); text-transform: uppercase; letter-spacing: .15em; font-size: 11px; font-weight: 800; margin-bottom: 5px; }
 nav, .subnav { display: flex; gap: 6px; flex-wrap: wrap; }
-.main-nav { display: grid; grid-template-columns: repeat(2, minmax(110px, 1fr)); width: 226px; }
+/* `width` fija cabía justo para dos botones; con el conmutador debajo la caja debe poder crecer
+   hasta el ancho de éste, que es mayor. */
+.main-nav { display: grid; grid-template-columns: repeat(2, minmax(110px, 1fr)); min-width: 226px; justify-content: end; }
 .main-nav #nav-back { grid-column: 1 / -1; }
 .hidden { display: none !important; }
+/* Conmutador entre los dos optimizadores: el de modelo (Rank-IC) y el de cartera (Information
+   Ratio). Va bajo la navegación principal porque cambia qué se configura, no en qué vista se está. */
+.optimizer-switch { display: inline-flex; gap: 4px; padding: 4px; grid-column: 1 / -1; justify-self: end;
+  background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; }
+.optimizer-switch button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+  min-width: 150px; border-color: transparent; background: transparent; padding: 8px 14px; }
+.optimizer-switch button b { font-size: 15px; }
+.optimizer-switch button small { color: var(--muted); font-size: 11px; }
+.optimizer-switch button.active { background: #1d1d1d; border-color: var(--accent); }
+.optimizer-switch button.active small { color: var(--accent); }
 button, input, select { border: 1px solid var(--line); border-radius: 7px; background: var(--panel2); color: var(--text); padding: 9px 12px; font: inherit; }
 button { cursor: pointer; } button:hover, button.active { border-color: var(--accent); color: #fff; }
 button.primary { background: #eee; color: #111; border-color: #eee; font-weight: 800; }
@@ -33,6 +45,9 @@ main { width: min(1600px, 95vw); margin: 30px auto 80px; }
 .metric-group-items b { font-size: 18px; }
 .metric-group-items span { color: var(--muted); font-size: 12px; }
 .study-meta { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin: 16px 0; }
+/* El formulario de cartera tiene tres campos (nombre, origen, nota) y deben caber en una fila:
+   el modelo de origen es la decisión más importante y no puede quedar separado de las demás. */
+.study-meta.triple { grid-template-columns: 1fr 1.4fr 1.6fr; }
 label { display: flex; flex-direction: column; gap: 5px; }
 .stage-card { margin: 18px 0; overflow: hidden; }
 .stage-heading { display: flex; justify-content: space-between; gap: 20px; padding: 18px; background: #1e1e1e; border-bottom: 1px solid var(--line); }
@@ -73,6 +88,9 @@ label { display: flex; flex-direction: column; gap: 5px; }
 .run-header { grid-template-columns: 1fr; }
 .run-header .entity-main, .run-header .entity-cards { grid-column: 1; }
 .run-header .entity-cards { grid-template-columns: repeat(6, minmax(110px, 1fr)); }
+/* Las tarjetas de un Portfolio Study son siete y deben caber en una sola fila: partirlas deja una
+   suelta debajo y rompe la lectura de un vistazo. */
+.run-header .entity-cards.cards-7 { grid-template-columns: repeat(7, minmax(84px, 1fr)); }
 .run-header .entity-actions { grid-column: 1; justify-content: center; }
 .content-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 4px 0 10px; }
 .entity-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }

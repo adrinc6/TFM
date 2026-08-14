@@ -36,7 +36,7 @@ ventajas pareadas e intervalos está en \artefacto{decisions.json}.
 
 Las variables de cartera no participan en ninguno de estos filtros. Se ejecutan después de congelar
 el ganador y se reportan como diagnóstico, según se detalla en la
-Sección~\ref{sec:cartera-barrido}.
+Sección~\ref{sec:cartera-rejilla}.
 
 \section{El catálogo completo}
 
@@ -53,7 +53,26 @@ de cartesiana.
 La diferencia de magnitud entre ambos recorridos justifica por sí sola la elección. El producto
 cartesiano de las treinta y tres rejillas asciende a $1{,}9 \times 10^{14}$ combinaciones; incluso
 restringido a las veintiuna variables predictivas son $5{,}4 \times 10^{8}$. El recorrido secuencial
-evaluó 66 configuraciones. Esa reducción no es sólo computacional: cada configuración adicional
-ensayada incrementa la probabilidad de encontrar una ganadora por azar, y es exactamente lo que el
-Deflated Sharpe del Capítulo~\ref{chap:resultados} penaliza. Un barrido cartesiano habría hecho
-imposible cualquier afirmación estadística sobre el resultado.
+evaluó 71 configuraciones en la pasada de referencia. Esa reducción no es sólo computacional: cada
+configuración adicional ensayada incrementa la probabilidad de encontrar una ganadora por azar, y es
+exactamente lo que el Deflated Sharpe del Capítulo~\ref{chap:resultados} penaliza. Un barrido
+cartesiano sobre las variables predictivas habría hecho imposible cualquier afirmación estadística
+sobre el resultado.
+
+Ese argumento vale para el plano predictivo y no se extiende al de cartera, donde este trabajo sí
+recorre un producto cartesiano. La diferencia es doble: las seis variables de cartera generan 1.728
+combinaciones --- cinco órdenes de magnitud menos que las predictivas ---, y sobre todo no tocan el
+Rank-IC, de modo que su búsqueda no puede inflar la métrica que el documento reporta como resultado
+principal. El razonamiento completo está en la
+Sección~\ref{sec:seleccion-secuencial} y el diseño del estudio correspondiente en el
+Capítulo~\ref{chap:desarrollo-cartera}.
+
+\section{Versiones de catálogo empleadas}
+
+El catálogo es un objeto versionado y la cadena no corrió entera bajo la misma versión. Las dos
+primeras pasadas usaron la versión 6 y la tercera la versión 7. El único cambio entre ambas afecta
+al orden de preferencia por simplicidad de \artefacto{execution\_lag\_days}, que pasó a preferir el
+retardo mayor. La corrección se introdujo al detectar que el orden anterior favorecía
+sistemáticamente, en caso de empate técnico, la alternativa con más riesgo de anticipación. Como
+sólo interviene cuando la evidencia no distingue entre candidatos, no altera ninguna medición de
+Rank-IC, pero se declara porque afecta a la comparabilidad estricta entre pasadas.

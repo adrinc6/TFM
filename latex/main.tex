@@ -70,7 +70,14 @@
 % Coeficiente de información por rango (rank-IC).
 \newcommand{\rankic}{\text{rank-IC}}
 % Identificador del único Study del que procede toda la evidencia del TFM.
-\newcommand{\studyid}{\texttt{study-20260803-201234-b4d7a8d8}}
+% La cadena son cuatro estudios: tres Model Studies encadenados —el ganador de cada pasada es el
+% baseline de la siguiente— y el Portfolio Study que optimiza la cartera del último.
+\newcommand{\studyidA}{\texttt{study-20260812-163136-1b104667}}
+\newcommand{\studyidB}{\texttt{study-20260813-103456-aa733655}}
+\newcommand{\studyidC}{\texttt{study-20260814-095144-5ec17b78}}
+\newcommand{\studyportfolio}{\texttt{study-20260814-135754-fdbdf2c5}}
+% Alias del study de referencia: la evidencia predictiva del documento sale de la tercera pasada.
+\newcommand{\studyid}{\studyidC}
 % Ruta a un artefacto persistido. Homogeneiza las menciones a ficheros.
 \newcommand{\artefacto}[1]{\texttt{#1}}
 
