@@ -120,48 +120,27 @@ proporción de esa señal llega efectivamente a la cartera.
   \text{IR} \;\approx\; \text{IC} \times \sqrt{\text{amplitud}} \times \text{TC}
 \]
 
-La utilidad de esta descomposición para el presente trabajo es que separa tres causas distintas de
-un mal resultado, que de otro modo se confundirían en una única cifra de rentabilidad. Un sistema
-puede fracasar porque su señal no ordena, porque toma pocas decisiones independientes o porque su
-cartera no consigue expresar lo que la señal indica. Son problemas diferentes y admiten soluciones
-diferentes.
+Su utilidad aquí es que separa tres causas distintas de un mal resultado que una cifra de
+rentabilidad confundiría: que la señal no ordene, que se tomen pocas decisiones independientes o que
+la cartera no consiga expresar lo que la señal indica. Y tres restricciones de este diseño actúan
+directamente sobre el tercer término: la cartera es \textit{long-only}, de modo que la mitad de la
+información que el Rank-IC mide es por construcción inaccesible; contiene unas pocas decenas de
+posiciones sobre un universo de unos quinientos valores; y paga costes proporcionales a su rotación.
 
-Tres restricciones del diseño de este TFM actúan directamente sobre el tercer término. La cartera es
-\textit{long-only}, de modo que no puede explotar la parte inferior de la ordenación --- la mitad de
-la información que el Rank-IC mide es, por construcción, inaccesible. Contiene unas pocas decenas de
-posiciones como mucho sobre un universo de unos quinientos valores, lo que limita drásticamente la
-amplitud efectiva. Y paga costes de transacción proporcionales a su rotación. El
-Capítulo~\ref{chap:resultados-economicos} mide el efecto conjunto de esas tres restricciones y, más
-importante, muestra que su magnitud depende de la regla de cartera elegida.
-
-Esta separación explica también por qué la métrica de selección de este trabajo es el Rank-IC y no
-el CAGR. Seleccionar por rentabilidad final confundiría los tres términos: una configuración podría
-ganar por tener mejor señal, o simplemente por haber tropezado con una cartera afortunada. Medir la
-señal aislada permite atribuir después, con un experimento controlado, cuánto pierde la
-implementación.
+De ahí que la métrica de selección sea el Rank-IC y no el CAGR: seleccionar por rentabilidad final
+confundiría los tres términos, mientras que medir la señal aislada permite atribuir después, con un
+experimento controlado, cuánto pierde la implementación. El trabajo usa esta descomposición como
+marco conceptual y no como identidad: el Capítulo~\ref{chap:resultados-economicos} declara que el
+coeficiente de transferencia no está disponible para la cartera adoptada y mide la pérdida de
+transmisión por otra vía.
 
 \section{Posición de este trabajo}
 
-La literatura revisada sugiere tres tensiones que cualquier estudio de esta clase debe resolver, y
-conviene declarar cómo las resuelve éste.
-
-La primera es entre flexibilidad del modelo y credibilidad de la evidencia. Este trabajo se sitúa
-deliberadamente en el extremo conservador: un catálogo cerrado y publicado, una métrica de selección
-fijada de antemano, y una era reservada que no interviene en ninguna decisión. El coste es que no
-explora arquitecturas más ambiciosas; el beneficio es que sus afirmaciones pueden acotarse.
-
-La segunda es entre interpretabilidad y capacidad. La arquitectura de agentes especializados es un
-compromiso: cada agente recibe un vocabulario económico reconocible, lo que permite preguntarse qué
-aprendió cada uno, pero dentro de cada agente el modelo es una caja relativamente opaca. El
-Capítulo~\ref{chap:agentes} muestra que ese compromiso rinde --- se puede observar que el
-meta-agente descubre a su mejor especialista, y la atribución local de la
-Sección~\ref{sec:atribucion-local} permite además comprobar qué variables mueven a cada uno ---
-sin pretender que el sistema sea interpretable en sentido estricto. Esa atribución es descriptiva:
-sirve para explicar un resultado ya medido, no para sostenerlo.
-
-La tercera es entre señal y utilidad. Buena parte de la literatura reporta capacidad predictiva sin
-llevarla a una cartera con costes, o reporta rentabilidad sin aislar la señal. Aquí se hacen ambas
-cosas, pero en un orden que importa: primero la señal, después la cartera, y nunca al revés.
+La tabla anterior resume cómo responde este trabajo a los riesgos de cada línea. Queda una tensión
+que no cabe en una celda y que conviene declarar: la que hay entre señal y utilidad. Buena parte de
+la literatura reporta capacidad predictiva sin llevarla a una cartera con costes, o reporta
+rentabilidad sin aislar la señal. Aquí se hacen ambas cosas, pero en un orden que importa: primero
+la señal, después la cartera, y nunca al revés.
 
 Ese orden permite una decisión metodológica que la literatura suele tratar como contradictoria: la
 búsqueda predictiva es secuencial e iterada, y la de cartera cartesiana y optimizada por Information

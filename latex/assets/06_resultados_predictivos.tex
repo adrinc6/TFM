@@ -333,9 +333,7 @@ utiliza. La Tabla~\ref{tab:cola} descompone el comportamiento de la cola por era
 
 La lectura relevante es que el decil superior bate al universo en las tres eras de selección, de
 modo que la ventaja no procede exclusivamente de acertar la cola inferior --- que una cartera
-\textit{long-only} no puede explotar. La Figura~\ref{fig:cola} muestra esa diferencia cohorte a
-cohorte: es ruidosa, como corresponde a un estadístico calculado sobre unas pocas decenas de
-valores, pero su media móvil se mantiene por encima de cero durante casi toda la ventana.
+\textit{long-only} no puede explotar.
 
 La cuarta fila obliga a un matiz que conviene no dejar al lector. En la era reservada el decil
 superior obtiene $-7{,}67$\,\% frente al $-1{,}85$\,\% del universo: \textbf{pierde contra el
@@ -346,35 +344,6 @@ igual de bien ---, pero el nivel de toda la cola alta cayó por debajo del panel
 el Rank-IC positivo de esa era y con que la cartera adoptada, que compra en ese decil, batiese al
 índice: lo hizo eligiendo dentro de él, no porque el decil entero fuese ganador. Sobre seis
 cohortes, en todo caso, ninguna de las dos lecturas admite más peso del que aquí se le da.
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.94\textwidth]{assets/f07_cola.png}
-  \caption{Exceso del decil superior sobre el universo, por cohorte. Fuente:
-  \artefacto{evidence/rank\_tail\_diagnostics.parquet}.}
-  \label{fig:cola}
-\end{figure}
-
-Existe además un diagnóstico que el sistema calcula en cada snapshot para su propio uso: el Rank-IC
-contraído sobre las cohortes ya cerradas en ese momento. Es la única medida de calidad de señal
-disponible \textit{en tiempo real}, puesto que no utiliza información posterior a la fecha. La
-Figura~\ref{fig:salud} la representa con dos memorias distintas.
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.94\textwidth]{assets/f07_salud.png}
-  \caption{Salud de la señal observable en cada snapshot, con memoria de dieciséis y de ocho
-  trimestres. Fuente: \artefacto{evidence/signal\_health.parquet}.}
-  \label{fig:salud}
-\end{figure}
-
-La comparación entre ambas memorias es informativa por sí misma. La ventana corta reacciona antes a
-los cambios de régimen, pero también oscila más y llega a cruzar cero en episodios que la ventana
-larga apenas registra. Ambas opciones tienen, por tanto, un coste, y la elección entre reaccionar
-antes o estimar con menos varianza no puede resolverse por intuición. El catálogo declara la
-longitud de esa memoria con rejilla propia, aunque la pasada de referencia la ejecutó fijada en
-dieciséis trimestres, de modo que su valor no procede de una comparación pareada: es una de las
-cuatro variables predictivas que el Anexo~\ref{anexo:catalogo} identifica como fijadas de antemano.
 
 \section{¿Es la señal una réplica de factores conocidos?}
 

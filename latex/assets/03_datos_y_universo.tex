@@ -96,9 +96,8 @@ Dos observaciones sobre esa tabla. La primera es que el número de \textit{ticke
 de 278 en 2003 a más de 500 en los años recientes, lo que refleja que la reconstrucción de la
 pertenencia histórica es más completa cuanto más cerca está del presente: es una limitación de la
 fuente, no una propiedad del índice, que ha tenido alrededor de quinientos componentes durante todo
-el periodo. La segunda es que la fracción de filas utilizables no baja del 99,4\,\% en ningún año y
-se mantiene muy próxima a uno en
-todos los años. Esto último debe leerse con cuidado: mide qué proporción de las filas efectivamente
+el periodo. La segunda es que la fracción de filas utilizables no baja del 99,4\,\% en ningún año.
+Esto último debe leerse con cuidado: mide qué proporción de las filas efectivamente
 construidas supera los controles de calidad, no qué proporción de las empresas que existieron
 llegaron a construirse. El sesgo de supervivencia que preocupa no se manifiesta como filas
 defectuosas sino como empresas ausentes, y esa ausencia no es observable desde el propio panel.
@@ -235,44 +234,18 @@ Anexo~\ref{anexo:desarrollo} los documenta uno a uno.
 
 \section{El catálogo de variables y su reparto entre agentes}
 
-Las variables que alimentan a los agentes no se eligen a mano ni por conveniencia. El catálogo
-declara bloques temáticos, cada bloque se asigna a un agente, y el conjunto de variables que entra
-en el estudio es una decisión del propio protocolo. La Tabla~\ref{tab:features-bloque} resume esos
-bloques con sus diagnósticos.
+Las variables que alimentan a los agentes no se eligen a mano ni por conveniencia: el catálogo
+declara bloques temáticos, cada bloque se asigna a un agente --- reparto que detalla el
+Capítulo~\ref{chap:agentes} --- y el conjunto que entra en el estudio es una decisión del propio
+protocolo. Lo que interesa medir aquí es otra cosa: cuánta señal tiene cada variable
+\emph{por separado}, antes de cualquier modelo.
 
-\begin{table}[H]
-  \centering
-  \small
-  \caption{Bloques de variables, agente asignado y diagnósticos univariantes.}
-  \label{tab:features-bloque}
-  \input{assets/t03_features_bloque.tex}
-  \caption*{Fuente: \artefacto{evidence/feature\_catalog.json} y
-  \artefacto{evidence/feature\_diagnostics.parquet}. El Rank-IC univariante es el de cada variable
-  por separado, sin modelo; la importancia es la media asignada por LightGBM.}
-\end{table}
-
-
-La tabla exige tres advertencias metodológicas, y las tres importan para no sobreinterpretarla.
-
-La primera es que las dos fuentes no coinciden exactamente. El catálogo declara 68 variables con su
-bloque y su agente; el fichero de diagnósticos contiene 73 filas, porque incluye siete columnas
-derivadas que el catálogo no declara por separado --- componentes descompuestos de otras variables
---- y omite dos que sí declara pero para las que no llegó a calcular diagnósticos. La tabla hace una
-unión de ambas y agrupa esas siete bajo la etiqueta «no declarado» en lugar de descartarlas
-silenciosamente. Es una asimetría menor, pero ocultarla habría significado presentar un recuento que
-no coincide con ninguno de los dos artefactos.
-
-La segunda es que el estado de selección vale \texttt{candidate} en las 73 filas. El artefacto no
-registra
-qué variables fueron efectivamente podadas por el mecanismo de estabilidad fuera de muestra, de modo
-que \emph{esta tabla no puede leerse como «variables seleccionadas frente a descartadas»}. Describe
-el catálogo declarado y sus diagnósticos, nada más.
-
-La tercera es sobre la magnitud de las cifras. Los Rank-IC univariantes son diminutos --- el mayor
-bloque apenas alcanza 0,0177 --- frente al 0,1090 del sistema completo. No es una contradicción: es
-exactamente el argumento a favor de combinar. Ninguna variable aislada ordena el mercado, y la
-capacidad predictiva aparece al combinar muchas señales débiles mediante modelos no lineales y una
-ponderación aprendida. La Tabla~\ref{tab:features-top} muestra los extremos de esa distribución.
+La respuesta es que muy poca, y ese es justamente el punto. Los Rank-IC univariantes son diminutos
+frente al 0,1090 del sistema completo: el mayor de todos, \artefacto{gap\_21d}, llega a 0,0538, y la
+mayoría se queda un orden de magnitud por debajo. No es una contradicción sino el argumento a favor
+de combinar: ninguna variable aislada ordena el mercado, y la capacidad predictiva aparece al
+agregar muchas señales débiles mediante modelos no lineales y una ponderación aprendida. La
+Tabla~\ref{tab:features-top} muestra los extremos de esa distribución.
 
 \begin{table}[H]
   \centering
@@ -281,11 +254,15 @@ ponderación aprendida. La Tabla~\ref{tab:features-top} muestra los extremos de 
   \label{tab:features-top}
   \input{assets/t03_features_top.tex}
   \caption*{Fuente: \artefacto{evidence/feature\_diagnostics.parquet}. Doce primeras y cinco últimas
-  de las 73 disponibles, ordenadas por Rank-IC univariante.}
+  de las 73 disponibles, ordenadas por Rank-IC univariante. El artefacto contiene 73 filas frente a
+  las 68 que declara el catálogo, porque añade componentes derivados de otras variables; y su estado
+  de selección vale \texttt{candidate} en todas, de modo que la tabla describe el catálogo declarado
+  y sus diagnósticos, no qué variables sobrevivieron a la poda por estabilidad.}
 \end{table}
 
-Obsérvese que el bloque de liquidez de mercado, asignado al agente \textit{risk}, encabeza la
-clasificación por bloques, mientras que los bloques de \textit{momentum} aparecen en la parte baja e
-incluso con signo negativo. Es coherente con lo que el Capítulo~\ref{chap:agentes} documenta sobre
-el dominio de \textit{risk} y la debilidad de \textit{momentum}, y sugiere que esa jerarquía ya está
-presente en los datos antes de cualquier modelo.
+Dos observaciones anticipan resultados posteriores. La variable que encabeza la lista,
+\artefacto{gap\_21d}, es de liquidez de mercado y pertenece al agente \textit{risk}: la misma que el
+Capítulo~\ref{chap:resultados} encontrará dominando la atribución local de ese agente. Y la que
+cierra por el extremo negativo es \artefacto{beta\_252d}, el candidato obvio si la señal fuese una
+réplica de la prima de baja volatilidad. Esa jerarquía ya está en los datos antes de cualquier
+modelo.
