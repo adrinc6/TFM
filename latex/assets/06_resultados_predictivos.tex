@@ -67,10 +67,10 @@ cada uno.
 \section{La evidencia de que el meta aprende}
 \label{sec:meta-aprende}
 
-El aprendizaje es observable, no una afirmación inferida de la rentabilidad final. Las primeras
-filas de \texttt{meta\_weights.parquet} corresponden a \texttt{fallback\_equal}: cada agente recibe
-0,20 porque aún no existe evidencia cerrada. Después aparecen las filas \texttt{learned}, y en ellas
-el peso se desplaza hacia \textit{risk} a medida que se cierran cohortes --- la
+El aprendizaje es observable, no una afirmación inferida de la rentabilidad final. Durante los
+primeros meses el meta reparte 0,20 a cada agente, porque aún no existe ninguna cohorte cerrada con
+la que estimar la calidad de nadie. En cuanto las hay, empieza a ponderar, y el peso se desplaza
+hacia \textit{risk} a medida que se cierran más --- la
 Figura~\ref{fig:pesos-anual} recoge esa trayectoria año a año. Al final de la serie el reparto es
 prácticamente degenerado --- 0,954 para \textit{risk} y 0,047 para \textit{value}, con los tres
 agentes restantes en cero ---, de modo que el meta-agente no aprendió a combinar cinco especialistas

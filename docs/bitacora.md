@@ -41,13 +41,17 @@ solapadas a dos objetivos y cinco preguntas. Cada explicación repetida —secue
 cartesiano, serie recortada, escalera plana, trayectoria de pesos— se da entera en un sitio y se
 remite desde los demás.
 
-**Sobre la extensión.** La poda de duplicación quitó unas 98 líneas y el trabajo de trazabilidad
-añadió unas 125, de modo que en un primer momento el neto fue **+27**: los dos objetivos —quitar
-duplicación y que ninguna cifra aparezca sin origen— tiran en direcciones opuestas. Una segunda
-pasada, ya con el texto auditado, retiró por valor una tabla y dos figuras y comprimió los pasajes
-redundantes del capítulo 2, dejando el neto en **−46 líneas de fuente, 12 figuras (antes 14) y 24
-tablas (antes 25)**. Es una reducción moderada: bajar más exigiría recortar evidencia, no
-redundancia.
+**Sobre la extensión y sobre dónde vive la trazabilidad.** La verificación de que cada cifra la
+respaldan las ejecuciones es una exigencia sobre el trabajo, no algo que deba escribirse en el
+manuscrito: el cuerpo y las diapositivas no dicen de qué fichero sale cada dato. Se retiró todo ese
+aparato —leyendas de fuente, el macro `\fuente` de la presentación con sus trece llamadas, los
+identificadores de estudio del cierre y las menciones a rutas en la prosa—, conservando íntegra la
+explicación metodológica que las acompañaba, que es lo que el lector sí necesita: qué mide cada
+columna, sobre qué ventana y con qué cartera. Los anexos de reproducibilidad y evidencia
+complementaria se mantienen, porque existen precisamente para eso.
+
+El balance de extensión queda en **−78 líneas de fuente, 12 figuras (antes 14) y 24 tablas (antes
+25)**. Bajar más exigiría recortar evidencia, no redundancia.
 
 **Pendiente.** Las secciones 2 y 3 de `docs/informe_resultados.md` describen el study derogado
 `study-20260803-201234-b4d7a8d8` (rank-IC 0,1004, IC-IR 0,744, DSR 0,930), no la cadena vigente. Se
