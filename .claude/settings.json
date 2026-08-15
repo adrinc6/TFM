@@ -63,7 +63,10 @@
       "Bash(python -m ruff check module/runs/recycle.py module/runs/execution.py)",
       "Bash(python -c \"import module.runs.recycle, module.runs.execution; print\\('imports OK'\\)\")",
       "Bash(python -m pytest -q)",
-      "Bash(python -m pytest -q tests/test_catalog_contract.py)"
+      "Bash(python -m pytest -q tests/test_catalog_contract.py)",
+      "Read(//c/Users/PC/AppData/Local/Temp/claude/c--Users-PC-Desktop-Documents-TFM/e8756e3d-360f-4c56-a29a-734ce8774fd0/scratchpad/**)",
+      "Bash(cat preamble.tex cuerpo.tex)",
+      "Bash(cp nueva.tex \"/c/Users/PC/Desktop/Documents/TFM/latex/presentacion.tex\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\PC\\AppData\\Local\\Temp"
