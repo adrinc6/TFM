@@ -41,14 +41,13 @@ solapadas a dos objetivos y cinco preguntas. Cada explicación repetida —secue
 cartesiano, serie recortada, escalera plana, trayectoria de pesos— se da entera en un sitio y se
 remite desde los demás.
 
-**Sobre la extensión.** La poda quitó unas 98 líneas de fuente (anexo D, capítulo 8, entradillas de
-los capítulos 2 y 3, enumeraciones del 1) y el trabajo de trazabilidad añadió unas 125 (notas de
-procedencia, la cola de la era reservada, el catálogo del anexo B, el desglose de rotación
-rehecho). El neto es **+27 líneas**: el documento no se ha acortado. Los dos objetivos —quitar
-duplicación y que ninguna cifra aparezca sin origen— tiran en direcciones opuestas, y aquí ha
-pesado más el segundo. Si hace falta bajar páginas de verdad, los candidatos que quedan sin tocar
-son la tabla de bloques de features del capítulo 3 con sus tres párrafos de advertencias, la
-sección de perfiles del capítulo 7 y el anexo C.
+**Sobre la extensión.** La poda de duplicación quitó unas 98 líneas y el trabajo de trazabilidad
+añadió unas 125, de modo que en un primer momento el neto fue **+27**: los dos objetivos —quitar
+duplicación y que ninguna cifra aparezca sin origen— tiran en direcciones opuestas. Una segunda
+pasada, ya con el texto auditado, retiró por valor una tabla y dos figuras y comprimió los pasajes
+redundantes del capítulo 2, dejando el neto en **−46 líneas de fuente, 12 figuras (antes 14) y 24
+tablas (antes 25)**. Es una reducción moderada: bajar más exigiría recortar evidencia, no
+redundancia.
 
 **Pendiente.** Las secciones 2 y 3 de `docs/informe_resultados.md` describen el study derogado
 `study-20260803-201234-b4d7a8d8` (rank-IC 0,1004, IC-IR 0,744, DSR 0,930), no la cadena vigente. Se
