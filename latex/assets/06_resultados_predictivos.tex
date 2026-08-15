@@ -62,10 +62,10 @@ plana.
 La configuración ganadora resultante emplea cadencia mensual de snapshots, horizonte de etiqueta de
 doce meses, el preset de variables \texttt{all} con un máximo de veinte por agente, sin neutralización
 sectorial ni ponderación por recencia, y un meta-agente \texttt{stacked\_rolling\_free}, es decir,
-sin tope por agente. Esta última elección --- la única que la tercera pasada modificó en el plano
-predictivo --- gobierna buena parte de lo que sigue. La Sección~\ref{sec:cadena-studies} del
-Anexo~\ref{anexo:desarrollo} documenta por qué se encadenaron los estudios y qué se aprendió en cada
-uno.
+sin tope por agente. Esa última elección procede de la segunda pasada y gobierna buena parte de lo
+que sigue; la tercera volvió a compararla con la variante acotada y la confirmó. La
+Sección~\ref{sec:cadena-studies} documenta por qué se encadenaron los estudios y qué se aprendió en
+cada uno.
 
 \section{La evidencia de que el meta aprende}
 \label{sec:meta-aprende}
@@ -82,10 +82,10 @@ combinar cinco especialistas sino a descartar cuatro.
 Ese desenlace merece leerse con cuidado, porque es el resultado esperable del método y no una
 anomalía. La configuración ganadora emplea \texttt{stacked\_rolling\_free}, es decir, un apilado sin
 tope por agente; enfrentado a un especialista que domina de forma consistente, el procedimiento
-converge a él. Las pasadas anteriores de la cadena usaban la variante acotada, y el cambio a la
-libre fue precisamente la única decisión que la tercera pasada modificó. Se ganó Rank-IC ---
-$+0{,}00827$ de ventaja pareada --- a costa de que la arquitectura multi-agente quede, en la
-práctica, reducida a uno.
+converge a él. La primera pasada de la cadena usaba la variante acotada; la segunda adoptó la libre
+y la tercera volvió a medir ambas y la ratificó, con $+0{,}00827$ de ventaja pareada sobre la
+acotada. Se ganó Rank-IC, por tanto, a costa de que la arquitectura multi-agente quede en la
+práctica reducida a uno.
 
 El contraste relevante conserva exactamente los mismos cinco agentes y cambia sólo la regla de
 combinación. En la ventana de selección, el meta aprendido alcanza Rank-IC 0,1090 frente a 0,0675
@@ -131,15 +131,14 @@ candidatos. Leído en contra, la arquitectura multi-agente se vacía de contenid
 ganador. Un meta que asigna el 95\,\% del peso a un único agente ha dejado de ser un combinador para
 ser un selector.
 
-Las dos primeras pasadas de la cadena usaban la variante acotada, que impedía superar 0,50
-precisamente para evitar este desenlace; la tercera adoptó la libre porque medía mejor en Rank-IC.
-Es un caso claro de decisión que mejora la métrica de selección y empeora una propiedad cualitativa
-del diseño que ninguna métrica del protocolo estaba midiendo. El riesgo que la restricción cubría
-sigue existiendo y queda asumido: la señal del sistema es, en la práctica, la del agente
-\textit{risk}, de modo que su comportamiento futuro depende de que ese especialista siga
-funcionando. La era reservada permite una primera comprobación --- el Rank-IC se mantiene positivo
-en $+0{,}0441$ ---, pero seis cohortes no bastan para descartar que la concentración sea frágil.
-Queda recogido como limitación en el Capítulo~\ref{chap:limitaciones}.
+La variante acotada existía precisamente para evitar este desenlace, y adoptar la libre es un caso
+claro de decisión que mejora la métrica de selección a costa de una propiedad cualitativa del
+diseño que ninguna métrica del protocolo estaba midiendo. El riesgo que la restricción cubría sigue
+existiendo y queda asumido: la señal del sistema es, en la práctica, la del agente \textit{risk}, de
+modo que su comportamiento futuro depende de que ese especialista siga funcionando. La era reservada
+permite una primera comprobación --- el Rank-IC se mantiene positivo en $+0{,}0441$ ---, pero seis
+cohortes no bastan para descartar que la concentración sea frágil. Queda recogido como limitación en
+el Capítulo~\ref{chap:limitaciones}.
 
 Una advertencia de lectura afecta a todo el capítulo. Los artefactos contienen dos ventanas para
 esta misma métrica: la de \emph{selección}, con 117 cohortes hasta 2024, y la \emph{completa}, con
@@ -471,7 +470,7 @@ prudente es que el resultado no depende de ninguna era, pero tampoco es homogén
 
 La estabilidad entre semillas ataca una posibilidad distinta: que el resultado dependa de una
 inicialización afortunada del \textit{boosting}. En las tres semillas ensayadas el rango de Rank-IC
-es 0,0020 y no cruza cero. La Figura~\ref{fig:semillas} muestra, sin embargo, que la conclusión
+es 0,0015 y no cruza cero. La Figura~\ref{fig:semillas} muestra, sin embargo, que la conclusión
 económica es bastante más frágil que la predictiva: el exceso geométrico varía apreciablemente más
 que el Rank-IC en términos relativos. Esta asimetría es la misma que motivó introducir el conjunto
 de semillas durante el desarrollo, según se documenta en el Anexo~\ref{anexo:desarrollo}.
@@ -508,9 +507,9 @@ perímetro estrecho que el resto del documento respeta.
 
 Queda establecido que la ordenación existe. El Rank-IC de 0,1090 con $t$ de Newey--West 3,46 no es
 un artefacto de la agregación: ninguna de 9.999 permutaciones lo alcanza, los cinco placebos de
-etiqueta quedan dos órdenes de magnitud por debajo, el intervalo bootstrap por bloques excluye cero,
+etiqueta quedan un orden de magnitud por debajo, el intervalo bootstrap por bloques excluye cero,
 la conclusión sobrevive a eliminar cualquier era completa y las tres semillas coinciden dentro de
-0,0020. Queda establecido también que no se agota en controles conocidos: la neutralización por
+0,0015. Queda establecido también que no se agota en controles conocidos: la neutralización por
 catorce variables de estilo retiene el 86,62\,\% de la señal, y la atribución local explica por qué
 --- el agente dominante lee microestructura de precio a corto plazo, no la prima de baja volatilidad
 que su nombre sugiere.

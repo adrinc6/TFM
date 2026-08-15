@@ -54,15 +54,11 @@ sin confundir el desplazamiento de sus fechas de ejecución con ausencia de evid
 \end{figure}
 
 La Tabla~\ref{tab:decisiones} hace auditable esa traza para la pasada de referencia. Conviene
-explicar qué columna se tabula y por qué, porque la elección no es inocente. El Rank-IC acumulado
-tras cada paso --- la representación habitual, en forma de escalera --- sería en esta pasada una
-columna constante: 0,1005 repetido dieciséis veces. No por un defecto de la medición, sino porque la
-tercera pasada parte del ganador de la segunda y casi todas las variables llegan ya en su mejor
-valor conocido, de modo que la comparación pareada no encuentra motivo para moverlas.
-
-Lo informativo, entonces, no es el valor que se conserva sino \textbf{la alternativa que se
-descarta}: cuánto Rank-IC habría costado adoptarla. Esa es la columna que se tabula, ordenada de
-mayor a menor coste.
+explicar qué columna se tabula y por qué, porque la elección no es inocente. La representación
+habitual --- el Rank-IC acumulado tras cada paso, en forma de escalera --- sería aquí una columna
+casi constante, por los motivos que desarrolla el apartado siguiente. Lo informativo, entonces, no
+es el valor que se conserva sino \textbf{la alternativa que se descarta}: cuánto Rank-IC habría
+costado adoptarla. Esa es la columna que se tabula, ordenada de mayor a menor coste.
 
 \begin{table}[H]
   \centering
@@ -94,10 +90,10 @@ dos debe presentarse como hallazgo empírico, y por eso figuran con su regla al 
 \subsection*{Por qué la escalera es plana}
 
 El resultado de la tercera pasada es contundente y va en contra de la intuición habitual sobre este
-tipo de búsquedas: \textbf{sólo una de las diecisiete decisiones cambió el incumbente}. Las
-dieciséis restantes confirmaron el valor de partida, con una ventaja pareada exactamente nula. El
-Rank-IC permanece en 0,1005 durante toda la pasada y sólo se mueve en el último paso,
-\artefacto{meta\_method}, que lo lleva a 0,1090.
+tipo de búsquedas: \textbf{las diecisiete decisiones confirmaron su valor de partida}, dieciséis de
+ellas con una ventaja pareada exactamente nula. La única comparación que midió una diferencia
+apreciable fue \artefacto{meta\_method}, donde la variante libre obtuvo 0,1090 frente a 0,1005 de la
+acotada; también ahí el procedimiento conservó el valor que ya traía.
 
 Esa planitud no es un defecto del procedimiento sino la consecuencia esperable de encadenar
 estudios. La tercera pasada parte del ganador de la segunda, de modo que casi todas las variables
@@ -107,9 +103,9 @@ primera pasada, que partía del baseline recomendado del catálogo, presentaba u
 como documenta la Sección~\ref{sec:cadena-studies}.
 
 Este patrón es una defensa parcial frente a la objeción de sobreajuste por multiplicidad. Un
-protocolo que aceptase cualquier mejora aparente habría desplazado al incumbente muchas más veces,
-persiguiendo diferencias dentro del ruido. Que dieciséis de diecisiete decisiones terminen en «no
-cambiar» indica que las puertas de elegibilidad están operando. No elimina el problema --- el
+protocolo que aceptase cualquier mejora aparente habría desplazado al incumbente muchas veces,
+persiguiendo diferencias dentro del ruido. Que las diecisiete decisiones terminen en «no cambiar»
+indica que las puertas de elegibilidad están operando. No elimina el problema --- el
 Deflated Sharpe del Capítulo~\ref{chap:resultados} sigue penalizando por las configuraciones
 ensayadas, y la cadena eleva ese recuento en lugar de reducirlo ---, pero acota su alcance: la
 multiplicidad afecta sobre todo a la afirmación económica, no a la traza de decisiones predictivas.

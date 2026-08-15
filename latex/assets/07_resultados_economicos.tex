@@ -126,10 +126,13 @@ primer paso y nunca habría vuelto sobre ello.
 
 La cartera elegida concentra en ocho posiciones, reparte el peso en proporción al alfa esperado, no
 sostiene efectivo, retiene cada posición al menos medio horizonte, corta por debajo del percentil 60
-y corrige la deriva al 10\,\%. Es una cartera \emph{más} concentrada y \emph{menos} defensiva que la
-del modelo, lo que resulta coherente con lo que mide el Information Ratio: el efectivo sin remunerar
-reduce el numerador de forma sistemática, y la concentración es rentable cuando la ordenación
-subyacente tiene contenido.
+y corrige la deriva al 10\,\%. Conviene precisar en qué se diferencia exactamente de la cartera del
+modelo, porque es lo que convierte la comparación en un experimento legible: comparten el número de
+posiciones, el reparto de pesos y el suelo de cobertura, y difieren en tres cosas --- renuncia al
+efectivo (del 25\,\% al 0\,\%), impone una tenencia mínima de medio horizonte donde antes no había
+ninguna, y estrecha la corrección de deriva de 0,25 a 0,1. Es, por tanto, una cartera \emph{menos}
+defensiva, no más concentrada. Y eso es coherente con lo que mide el Information Ratio: el efectivo
+sin remunerar reduce el numerador de forma sistemática y su ahorro de varianza no lo compensa.
 
 \begin{table}[H]
   \centering
@@ -238,11 +241,11 @@ serie.
   \label{fig:drawdown}
 \end{figure}
 
-El drawdown máximo de 28,40\,\% es la contrapartida de una cartera de ocho posiciones sin efectivo:
-la concentración que eleva el Information Ratio también amplifica las caídas. Que el drawdown de la
-cartera sea comparable al del índice pese a tener ocho nombres en lugar de quinientos es un
-resultado favorable, pero no debe leerse como control de riesgo: es consecuencia de la señal, no de
-una política de exposición, que el sistema no tiene.
+El drawdown máximo de 28,40\,\% es la contrapartida de haber renunciado al efectivo: 1,42 puntos más
+que la cartera del modelo, que mantenía un colchón del 25\,\%. La optimización no redujo el riesgo
+de caída, lo aceptó a cambio de numerador. Que el drawdown de una cartera de ocho nombres sea
+comparable al de un índice de quinientos es un resultado favorable, pero no debe leerse como control
+de riesgo: es consecuencia de la señal, no de una política de exposición, que el sistema no tiene.
 
 
 \begin{table}[H]
@@ -278,21 +281,38 @@ motivo declarado de cada orden.
 \end{table}
 
 
-Los dos motivos de rotación --- \texttt{net\_edge\_over\_worst} y \texttt{displaced\_by\_net\_edge},
-que son las dos caras de una misma operación --- suman el 56,5\,\% del flujo. El
-\texttt{rebalance} aporta un 20,2\,\%, las compras iniciales un 13,5\,\% y las salidas por alfa
-insuficiente un 10,0\,\%. La causa raíz no es un umbral mal calibrado sino algo estructural: el
-sistema \emph{re-decide todos los meses} sobre una señal cuyo horizonte es de \emph{doce}. Cada
-snapshot vuelve a comparar las posiciones en cartera con todo el universo, y basta una diferencia neta
-que supere el umbral de rotación para que se ejecute un intercambio que la señal, a doce meses
-vista, quizá no habría pedido.
+El desglose revela que la rotación tiene \textbf{dos fuentes de tamaño comparable, y de naturaleza
+muy distinta}. La primera es el cambio de opinión de la señal:
+\texttt{net\_edge\_over\_worst} y \texttt{displaced\_by\_net\_edge}, que son las dos caras de una
+misma operación, suman el 37,0\,\% del flujo. La segunda es el \texttt{rebalance}, con un
+38,2\,\%, que no cambia \emph{qué} se tiene sino sólo el peso de lo que ya se tiene. El resto ---
+compras iniciales 10,9\,\%, ventas por caer bajo el suelo de cobertura 9,0\,\% y dos motivos
+residuales --- completa el cuadro.
 
-De ahí que la palanca estructural sea \artefacto{snapshot\_step\_months}, que reduciría la rotación
-en un factor cercano a tres. Pero es una variable \emph{predictiva}: cambiarla obligaría a rehacer
-la selección secuencial completa, y de hecho fue la primera decisión del estudio, donde la cadencia
-mensual ganó con una ventaja pareada de $+0{,}0208$ frente a la trimestral. El sistema se encuentra
-así ante un conflicto real entre dos objetivos legítimos --- más cohortes para decidir mejor frente
-a menos rotación para implementar mejor --- que este trabajo documenta pero no resuelve.
+Las dos fuentes se distinguen además por su granularidad. El \texttt{rebalance} son 408 órdenes
+pequeñas, mientras que la rotación por ventaja neta son 104 órdenes unas cuatro veces mayores cada
+una. Y ambas cuestan lo suyo: el \texttt{rebalance} se lleva 8,08 de los 21,19 puntos de coste
+acumulado, prácticamente lo mismo que la rotación.
+
+Cada fuente responde a una palanca distinta, y sólo una está disponible. La rotación por ventaja
+neta es estructural: el sistema \emph{re-decide todos los meses} sobre una señal cuyo horizonte es
+de \emph{doce}, de modo que cada snapshot vuelve a comparar las posiciones con todo el universo y
+basta una diferencia neta que supere el umbral para que se ejecute un intercambio que la señal, a
+doce meses vista, quizá no habría pedido. Su palanca es \artefacto{snapshot\_step\_months}, pero es
+una variable \emph{predictiva}: cambiarla obligaría a rehacer la selección secuencial completa, y de
+hecho fue la primera decisión del estudio, donde la cadencia mensual ganó con una ventaja pareada de
+$+0{,}0208$ frente a la trimestral. Queda así un conflicto real entre dos objetivos legítimos ---
+más cohortes para decidir mejor frente a menos rotación para implementar mejor --- que este trabajo
+documenta pero no resuelve.
+
+El \texttt{rebalance}, en cambio, depende de \artefacto{rebalance\_drift\_tolerance}, que sí es una
+variable de cartera y sí se optimizó. La rejilla eligió 0,1 sobre una escala que llega a 0,4, es
+decir, una corrección de deriva estrecha. Y aquí aparece un dato que conviene no pasar por alto:
+esa misma variable es, según la Tabla~\ref{tab:cartera-influencia}, la penúltima en capacidad de
+mover el Information Ratio (0,016). El sistema está pagando con ella su mayor partida de flujo de
+órdenes a cambio de una diferencia marginal en el criterio que se optimizó. No es un defecto del
+procedimiento --- 0,1 medía mejor que las alternativas, y por poco que sea la rejilla lo prefirió
+---, pero sí señala dónde habría margen para reducir fricción casi sin coste en Information Ratio.
 
 \subsection*{Rotación, coste y exceso año a año}
 
