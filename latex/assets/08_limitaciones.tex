@@ -16,51 +16,30 @@ severidad.
   conclusiones, no una medida estadística.}
 \end{table}
 
-La principal limitación es la multiplicidad, y este trabajo la agravó deliberadamente en dos
-ocasiones. Primero al encadenar tres Model Studies, lo que multiplica las configuraciones evaluadas
-sobre la misma ventana de selección; el Deflated Sharpe cae a 0,682, muy por debajo del umbral 0,95,
-y esa caída es en buena medida el precio declarado de haber buscado más. Después al recorrer un
-cartesiano de 1.728 carteras. Por ello el trabajo no afirma que la rentabilidad ajustada por riesgo
-sobreviva concluyentemente a las pruebas de selección múltiple. Esta salvedad no anula el Rank-IC,
-cuyo contraste de permutación es independiente del número de configuraciones probadas, pero delimita
-con severidad la afirmación económica.
+Cada una de esas limitaciones aparece ya, con su cifra, junto al resultado que acota en los
+Capítulos~\ref{chap:resultados} y~\ref{chap:resultados-economicos}; la tabla las reúne para poder
+verlas juntas y ordenadas. Quedan dos precisiones que ninguna fila puede expresar por sí sola.
 
-La multiplicidad de la rejilla de cartera merece una precisión, porque su alcance es distinto del de
-la predictiva. Ninguna de las 1.728 combinaciones pudo observar la era reservada: la rejilla se
-calculó sobre una serie recortada en 2024, de modo que el resultado fuera de muestra de la cartera
-ganadora no estaba disponible en el momento de elegirla. Eso protege esa comprobación concreta, pero
-no convierte la elección en libre de sobreajuste dentro de la ventana de selección, donde la mejora
-de 0,339 a 0,844 de Information Ratio debe leerse como una cota superior optimista.
+La primera es que la multiplicidad se agravó \emph{deliberadamente}, dos veces: al encadenar tres
+Model Studies y al recorrer un cartesiano de 1.728 carteras. No es un descuido sino una decisión que
+asume su precio, y ese precio está declarado. Pero sus dos alcances son distintos y conviene no
+confundirlos: la multiplicidad predictiva contamina la métrica que el trabajo reporta como resultado
+principal, mientras que la de la rejilla de cartera no puede tocar el Rank-IC y se limita a
+convertir el Information Ratio de la ventana de selección en una cota superior optimista. Ninguna de
+las dos anula el contraste de permutación, que es independiente del número de configuraciones
+ensayadas.
 
-El horizonte de doce meses crea fuerte solapamiento entre cohortes: 117 observaciones mensuales
-equivalen aproximadamente a nueve independientes. Además, la era reservada contiene sólo seis
-cohortes cerradas y una observación independiente efectiva, y su tramo de cartera abarca
-aproximadamente 1,41 años. Que la cartera optimizada bata al índice allí es un indicio favorable,
-no una demostración: con dos años naturales y uno favorable, el resultado es compatible con un
-margen amplio de escenarios. El alfa factorial de la ventana de selección tampoco es significativo
-por sí solo ($t=1,44$).
+La segunda afecta al predominio de \textit{risk}, y la atribución local de la
+Sección~\ref{sec:atribucion-local} lo matiza en un sentido y lo agrava en otro. Lo matiza porque ese
+agente no resulta ser una réplica de la prima de baja volatilidad y porque reasigna atención entre
+sus variables según el régimen, de modo que no es una apuesta congelada. Lo agrava porque desplaza
+la incógnita sin resolverla: el trabajo no explica \emph{por qué} unas variables de estructura de
+negociación a semanas ordenan retornos a doce meses, y una señal cuyo mecanismo no se comprende es
+más frágil ante un cambio de régimen que una respaldada por una hipótesis económica contrastada.
 
-Existen límites de datos: universo restringido a Estados Unidos y al S\&P 500, cobertura desigual
-de fundamentales, posibles restatements no observables en años antiguos y costes constantes que no
-modelan impacto de mercado. Finalmente, el predominio de \textit{risk} obliga a interpretar con
-prudencia la novedad de la señal; la neutralización conserva 86,62\%, lo que es evidencia parcial
-contra una explicación puramente factorial, no una prueba definitiva. Ese predominio se ha
-acentuado: con el meta-agente sin tope, el peso de \textit{risk} supera 0,95 al final de la serie,
-de modo que la señal del sistema es en la práctica la de un único especialista y su comportamiento
-futuro depende de que ese especialista siga funcionando.
-
-La atribución local de la Sección~\ref{sec:atribucion-local} matiza esa dependencia en un sentido y
-la agrava en otro, y conviene declarar ambos. La matiza porque \textit{risk} no resulta ser una
-réplica de la prima de baja volatilidad --- sus variables dominantes son de microestructura de
-precio a corto plazo --- y porque reasigna atención entre ellas según el régimen, de modo que no es
-una apuesta congelada. La agrava porque ese hallazgo desplaza la incógnita sin resolverla: el
-trabajo no explica \emph{por qué} unas variables de estructura de negociación a semanas ordenan
-retornos a doce meses, y una señal cuyo mecanismo no se comprende es más frágil ante un cambio de
-régimen que una respaldada por una hipótesis económica contrastada.
-
-Estas limitaciones conducen a una lectura disciplinada: la investigación demuestra una ordenación
-predictiva robusta bajo un protocolo concreto y sugiere utilidad económica, pero requiere más
-cohortes cerradas, universos adicionales y un catálogo más estrecho antes de extrapolarla.
+Todo ello conduce a una lectura disciplinada: la investigación demuestra una ordenación predictiva
+robusta bajo un protocolo concreto y sugiere utilidad económica, pero requiere más cohortes
+cerradas, universos adicionales y un catálogo más estrecho antes de extrapolarla.
 
 \section{Amenazas a la validez interna}
 

@@ -93,7 +93,7 @@ en promedio, a las que después obtienen retornos excedentes mayores? Esta formu
 evaluar todo el universo transversal y no sólo las pocas posiciones finalmente compradas. También
 permite distinguir el aprendizaje del ranking de las fricciones de una implementación concreta.
 
-\section{Pregunta, hipótesis y objetivos}
+\section{Pregunta y objetivos}
 
 La pregunta de investigación se descompone en \textbf{dos objetivos} que se abordan en ese orden y
 con evidencia separada.
@@ -113,25 +113,12 @@ secundaria y sin optimizar}: se mantiene la configuración por defecto del catá
 que ninguna decisión predictiva pueda apoyarse en ella. Sólo cuando el ganador predictivo está
 congelado se convierte la construcción de cartera en objeto de estudio por derecho propio.
 
-De ahí se derivan cuatro hipótesis. La primera, \textbf{H1}, sostiene que el score final tiene
-Rank-IC medio positivo y estadísticamente distinguible de cero en cohortes cerradas entre 2015 y
-2024. La segunda, \textbf{H2}, sostiene que dicha señal no es un artefacto de una semilla, una era,
-una etiqueta permutada o un factor de estilo conocido. Ambas pertenecen al Objetivo 1. La tercera,
-\textbf{H3}, sostiene que las variables de construcción de cartera producen diferencias materiales
-en el resultado económico de una misma señal congelada. La cuarta, \textbf{H4}, pregunta si la
-cartera elegida por Information Ratio dentro de la ventana de selección conserva ventaja en la era
-reservada, sin que ningún resultado económico haya intervenido en la elección del modelo. H3 y H4
-pertenecen al Objetivo 2.
-
-De estas hipótesis se derivan seis objetivos operativos. Primero, reconstruir un panel de acciones
-con pertenencia histórica al índice y observabilidad \textit{point-in-time}. Segundo, entrenar cinco
-agentes que representan hipótesis económicas diferentes. Tercero, combinar sus scores con un
-meta-agente que sólo aprende de etiquetas ya cerradas. Cuarto, seleccionar de forma secuencial una
-configuración predictiva mediante comparaciones pareadas de Rank-IC. Quinto, auditar la señal con
-contrastes adversariales y con una era reservada que no participa en ninguna decisión. Sexto, ya con
-el ganador predictivo congelado, recorrer una rejilla cartesiana de configuraciones de cartera
-optimizada por Information Ratio sobre una serie recortada en 2024, de modo que ninguna combinación
-pueda observar la era reservada.
+Las cinco preguntas del apartado anterior son la forma falsable de estos dos objetivos: las tres
+primeras desarrollan el Objetivo 1 --- que exista una ordenación, que sea señal y no ruido, y que se
+sostenga fuera de la ventana en que se decidió ---, la cuarta el Objetivo 2 y la quinta acota lo
+afirmable en ambos. Cada una lleva asociada una hipótesis nula concreta, que el
+Capítulo~\ref{chap:resultados} y el Capítulo~\ref{chap:resultados-economicos} intentan rechazar con
+evidencia propia.
 
 La hipótesis nula sigue siendo científicamente útil. Si el Rank-IC no superase los contrastes, el
 resultado no sería un fracaso del TFM: sería evidencia contra la afirmación de que esta arquitectura

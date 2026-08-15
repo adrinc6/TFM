@@ -8,23 +8,6 @@ ser observables, y por último cómo se separan las ventanas de evaluación --- 
 demostración formal de que la señal no puede incorporar información futura. Sólo entonces tiene
 sentido construir el sistema de predicción del Capítulo~\ref{chap:agentes}.
 
-El universo se reconstruye históricamente a partir de la pertenencia al S\&P 500. Una empresa sólo
-es elegible cuando pertenecía al índice en ese snapshot; por tanto, no se usa la composición actual
-para describir el pasado. Los precios proceden de Yahoo Finance, los fundamentales de Finnhub y las
-fechas de publicación de SEC EDGAR. SPY es el benchmark y se excluye explícitamente de las
-posiciones.
-
-La cobertura se mide, no se presume. El pipeline identifica reutilizaciones de ticker, como CPQ y
-MOB, y evita asociar precios de una empresa posterior a un miembro histórico. La fracción utilizable
-es al menos 99,4\% en los años representados, aunque persiste un riesgo residual de supervivencia y
-de restatements históricos que se discute en el Capítulo~\ref{chap:limitaciones}.
-
-
-El dataset preparado está identificado por el hash
-\texttt{b9134b218e3bf7fc156372d61e02056ecfa6036777e0fe84a69df0a92653fbd3}. Guardar la identidad,
-y no una copia del dataset dentro de resultados, permite rastrear la procedencia de toda cifra y
-evita reutilizar por error una evaluación sobre datos distintos.
-
 \section{Fuentes y función de cada fuente}
 
 Ninguna fuente aislada proporciona todos los elementos necesarios para una evaluación temporalmente
@@ -33,7 +16,9 @@ retornos. Finnhub aporta ratios y series fundamentales con los que se construyen
 calidad, valor, crecimiento y parte del riesgo. SEC EDGAR proporciona la fecha de filing de los
 10-K y 10-Q; esta fecha establece cuándo el mercado pudo conocer un estado financiero. Por último,
 el historial de composición del índice determina qué empresas forman parte del universo invertible
-en cada instante.
+en cada instante. SPY interviene sólo como \textit{benchmark} --- es el índice contra el que se mide
+el exceso --- y queda excluido explícitamente de las posiciones, de modo que la cartera nunca puede
+comprar el propio índice que intenta batir.
 
 Esta combinación introduce una jerarquía de confianza. Los precios se usan con la última cotización
 disponible antes del snapshot. Los fundamentales no se usan sólo por existir en la descarga: deben
@@ -78,7 +63,9 @@ El dataset se materializa una vez bajo una identidad que resume fuentes, rango t
 cadencia, horizonte, lag y versiones de transformación. Si dos evaluaciones resuelven la misma
 identidad, pueden reutilizar la materialización; si cualquiera de esos elementos cambia, se crea un
 dataset distinto. Los resultados no contienen una copia del panel: conservan la referencia y su
-hash. Esta elección reduce duplicación y permite reconstruir de qué datos procedió un resultado.
+hash, que para el panel de este trabajo es
+\texttt{b9134b218e3bf7fc\ldots{}a69df0a92653fbd3}. Esta elección reduce duplicación y permite
+reconstruir de qué datos procedió un resultado.
 
 La identidad de evaluación incluye además el hash del dataset. Sin esa condición, dos estudios con
 parámetros nominalmente iguales pero datos distintos podrían compartir por error una clave de caché.
@@ -109,7 +96,8 @@ Dos observaciones sobre esa tabla. La primera es que el número de \textit{ticke
 de 278 en 2003 a más de 500 en los años recientes, lo que refleja que la reconstrucción de la
 pertenencia histórica es más completa cuanto más cerca está del presente: es una limitación de la
 fuente, no una propiedad del índice, que ha tenido alrededor de quinientos componentes durante todo
-el periodo. La segunda es que la fracción de filas utilizables se mantiene muy próxima a uno en
+el periodo. La segunda es que la fracción de filas utilizables no baja del 99,4\,\% en ningún año y
+se mantiene muy próxima a uno en
 todos los años. Esto último debe leerse con cuidado: mide qué proporción de las filas efectivamente
 construidas supera los controles de calidad, no qué proporción de las empresas que existieron
 llegaron a construirse. El sesgo de supervivencia que preocupa no se manifiesta como filas

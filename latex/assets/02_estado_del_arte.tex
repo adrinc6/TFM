@@ -1,21 +1,11 @@
 \chapter{Estado del arte}
 \label{chap:estado-arte}
 
-La inversión factorial documenta diferencias transversales asociadas a valor, tamaño y mercado
-(Fama y French, 1992, 1993), así como a momentum (Jegadeesh y Titman, 1993) y
-calidad (Asness et al., 2019). Estas regularidades son tanto una motivación como una prueba
-difícil: un sistema predictivo debe demostrar que no se limita a reproducir una fórmula factorial.
-
-El aprendizaje automático amplía las relaciones que pueden estimarse entre características y
-retornos; por ejemplo, Gu et al. (2020) documentan ganancias empíricas de métodos no
-lineales en asset pricing. Sin embargo, esa flexibilidad aumenta los riesgos de ajustar ruido.
-La multiplicidad de especificaciones, la fuga temporal y el sesgo de supervivencia pueden producir
-resultados convincentes pero no replicables (Brown et al., 1992; Harvey et al., 2016).
-
-El criterio principal de este estudio es Rank-IC, la correlación de Spearman entre el score en una
-fecha y el retorno excedente futuro una vez cerrada la etiqueta. A diferencia del CAGR de una
-cartera concreta, mide toda la ordenación y permite separar señal de implementación. Esta distinción
-será decisiva al interpretar el coeficiente de transferencia del Capítulo~\ref{chap:resultados}.
+Este capítulo recorre la literatura que el trabajo necesita, en el orden en que la va a usar: las
+regularidades factoriales que orientan el diseño de los agentes y sirven de baseline, lo que el
+aprendizaje automático añade y lo que arriesga, los sesgos que condicionan cualquier evidencia de
+esta clase, y por qué la métrica de selección es el Rank-IC y no la rentabilidad. Cierra declarando
+cómo se posiciona el TFM ante las tensiones que esa literatura deja abiertas.
 
 \section{De las anomalías a las variables explicativas}
 

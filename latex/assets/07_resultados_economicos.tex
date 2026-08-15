@@ -45,16 +45,10 @@ consecuencia metodológica valiosa. Como todas las carteras parten exactamente d
 la misma señal y del mismo panel, sus diferencias sólo pueden atribuirse a la regla de construcción
 de cartera. Es un experimento controlado en sentido estricto.
 
-Una versión anterior de este trabajo exploraba esas reglas de una en una, cambiando una variable
-sobre la configuración recomendada y dejando las demás fijas. Ese barrido diagnóstico producía un
-resultado incómodo --- buena parte de las variantes batían a la cartera empleada --- que el
-documento se limitaba a reportar sin actuar, porque cambiar el ganador a la vista de su rentabilidad
-conocida es exactamente lo que el protocolo prohíbe. El Anexo~\ref{anexo:desarrollo}
-explica por qué esa renuncia era innecesaria y cómo se sustituye por una optimización legítima: se
-recorre el producto cartesiano de las seis variables que gobiernan la cartera, se optimiza el
-Information Ratio en lugar del exceso bruto, y \textbf{la rejilla se calcula sobre una serie
-recortada en 2024}, de modo que ninguna de las combinaciones evaluadas puede ver la era reservada.
-No es que se ignore su resultado: es que no llega a calcularse.
+Las 1.728 carteras de esta sección son las del Portfolio Study descrito en la
+Sección~\ref{sec:portfolio-study}: producto cartesiano de las seis variables, optimizado por
+Information Ratio y medido sobre la serie recortada en 2024, de modo que ninguna combinación pudo
+ver la era reservada.
 
 \begin{table}[H]
   \centering
