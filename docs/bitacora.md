@@ -39,7 +39,16 @@ limitaciones que los capítulos 6 y 7 ya dan junto a su resultado. Los capítulo
 con un resumen que adelanta todo y luego lo repite. El capítulo 1 pasa de cuatro enumeraciones
 solapadas a dos objetivos y cinco preguntas. Cada explicación repetida —secuencial contra
 cartesiano, serie recortada, escalera plana, trayectoria de pesos— se da entera en un sitio y se
-remite desde los demás. El manuscrito baja de unas 78 a unas 62 páginas.
+remite desde los demás.
+
+**Sobre la extensión.** La poda quitó unas 98 líneas de fuente (anexo D, capítulo 8, entradillas de
+los capítulos 2 y 3, enumeraciones del 1) y el trabajo de trazabilidad añadió unas 125 (notas de
+procedencia, la cola de la era reservada, el catálogo del anexo B, el desglose de rotación
+rehecho). El neto es **+27 líneas**: el documento no se ha acortado. Los dos objetivos —quitar
+duplicación y que ninguna cifra aparezca sin origen— tiran en direcciones opuestas, y aquí ha
+pesado más el segundo. Si hace falta bajar páginas de verdad, los candidatos que quedan sin tocar
+son la tabla de bloques de features del capítulo 3 con sus tres párrafos de advertencias, la
+sección de perfiles del capítulo 7 y el anexo C.
 
 **Pendiente.** Las secciones 2 y 3 de `docs/informe_resultados.md` describen el study derogado
 `study-20260803-201234-b4d7a8d8` (rank-IC 0,1004, IC-IR 0,744, DSR 0,930), no la cadena vigente. Se
