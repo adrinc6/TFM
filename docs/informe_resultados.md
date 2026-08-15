@@ -281,22 +281,25 @@ Fuente: `robustness.json`. Quitando cualquier era completa el rank-IC se mantien
 
 ### 3.5 Semillas — ¿depende del azar de la inicialización?
 
-| Semilla | Rank-IC | IC-IR | Exceso geométrico | IR | CAGR confirmación |
+| Semilla | Rank-IC | Exceso geométrico | IR | CAGR de cartera | Máximo drawdown |
 |---|---|---|---|---|---|
-| 42 (ganadora) | 0,1004 | 0,744 | 1,62 % | 0,269 | 36,11 % |
-| 7 | 0,0984 | 0,732 | 1,12 % | 0,182 | 34,39 % |
-| 2026 | 0,0989 | 0,730 | 1,70 % | 0,269 | 30,15 % |
+| 42 (ganadora) | 0,1090 | 2,61 % | 0,339 | 16,13 % | 26,97 % |
+| 7 | 0,1075 | 2,06 % | 0,294 | 15,51 % | 27,80 % |
+| 2026 | 0,1087 | −0,01 % | 0,088 | 13,17 % | 30,45 % |
 
-Fuente: `robustness.json` → `seeds`, `seed_dispersion`. El rango de rank-IC es 0,0020 y el del exceso
-geométrico 0,0057; **ninguna magnitud cruza el cero** y `economic_conclusion_stable = true`. Esto
-corrige el defecto más grave del estudio derogado, donde el alfa cambiaba de signo con la semilla.
+Fuente: `robustness.json` → `seeds`, `seed_dispersion`. El rango de rank-IC es **0,0015** y no cruza
+cero: la conclusión predictiva es estable. La económica **no**: el exceso geométrico va de −0,01 % a
++2,61 %, de modo que **cruza cero** (`geometric_excess_return.crosses_zero = true`) y el artefacto
+registra `economic_conclusion_stable = false`. Cambiando sólo la inicialización del boosting, la
+misma configuración puede no batir al índice. Es la asimetría central del trabajo: la ordenación
+aguanta, su traducción a rentabilidad es frágil.
 
 ### 3.6 Carteras aleatorias con riesgo emparejado — ¿bate a la suerte?
 
 | Contraste | CAGR modelo | Mediana aleatoria | p95 aleatorio | Percentil del modelo |
 |---|---|---|---|---|
-| Riesgo emparejado | 14,48 % | 9,22 % | 13,55 % | **97,4 %** |
-| General | 14,48 % | 12,40 % | 102,28 % | 65,3 % |
+| Riesgo emparejado | 15,56 % | 9,23 % | 14,99 % | **96,8 %** |
+| General | 15,56 % | 12,08 % | 75,06 % | 76,1 % |
 
 Fuente: `robustness.json`, 1 000 simulaciones de 12 nombres con 15 pb de costes. Contra carteras
 aleatorias **de riesgo comparable**, el modelo está en el percentil 97,4: bate al azar. El contraste
@@ -343,13 +346,13 @@ esto invalidaría el resto del capítulo de robustez.
 | Contraste | Pregunta que responde | Resultado |
 |---|---|---|
 | Permutación (9 999) | ¿Es azar? | p = 0,0001 ✔ |
-| Placebos de etiqueta (5) | ¿Es un artefacto del código? | [−0,006; +0,001] ✔ |
-| Bootstrap por bloques 95 % | ¿Es distinguible de cero? | [0,0335; 0,1695] ✔ |
-| Exclusión de eras | ¿Depende de un periodo? | 0,073–0,126 ✔ |
-| Semillas (3) | ¿Depende de la inicialización? | rango 0,0020, sin cruce de cero ✔ |
-| Carteras aleatorias (riesgo emparejado) | ¿Bate al azar? | percentil 97,4 ✔ |
-| Neutralización por estilo | ¿Es un factor conocido? | retiene 84,35 % ✔ |
-| Deflated Sharpe | ¿Resiste la multiplicidad? | 0,930 < 0,95 ✘ |
+| Placebos de etiqueta (5) | ¿Es un artefacto del código? | [−0,0081; +0,0013] ✔ |
+| Bootstrap por bloques 95 % | ¿Es distinguible de cero? | [0,0425; 0,1723] ✔ |
+| Exclusión de eras | ¿Depende de un periodo? | 0,0780–0,1350 ✔ |
+| Semillas (3) | ¿Depende de la inicialización? | rango rank-IC 0,0015, sin cruce de cero ✔ |
+| Carteras aleatorias (riesgo emparejado) | ¿Bate al azar? | percentil 96,8 ✔ |
+| Neutralización por estilo | ¿Es un factor conocido? | retiene 86,62 % ✔ |
+| Deflated Sharpe | ¿Resiste la multiplicidad? | 0,682 < 0,95 ✘ |
 
 **Siete de ocho.** La conclusión defendible es: *el sistema aprende una ordenación transversal real,
 estadísticamente distinguible del azar, no reproducible por la maquinaria con etiquetas falsas, no
@@ -594,7 +597,9 @@ las económicas de la cartera ganadora del Portfolio Study.
 1. **Esperar al cierre de cohortes de 2025–2026** para contrastar con potencia real, tanto el
    rank-IC como el resultado económico. Es la limitación que más ata a todas las demás.
 2. **Separar frecuencia de evaluación de frecuencia de ejecución**: se redecide cada mes sobre una
-   señal a doce meses, y la rotación (56,5 % del flujo de órdenes) sale de ahí.
+   señal a doce meses, y de ahí sale la rotación por ventaja neta (37,0 % del flujo de órdenes de
+   la cartera ganadora). Una fracción comparable, el 38,2 %, es `rebalance` puro: corrección de
+   deriva de pesos, que depende de `rebalance_drift_tolerance` y no de la cadencia.
 3. **Reejecutar con un catálogo pre-registrado más estrecho**, para que el Deflated Sharpe no pague
    el peaje de 71 pruebas más una rejilla de 1.728 carteras.
 4. **Modelar costes dependientes de liquidez**: una cartera de 8 posiciones con 324 % de rotación
