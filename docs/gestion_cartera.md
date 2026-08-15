@@ -223,8 +223,8 @@ plaza puede quedarse en efectivo y la regla sí de-arriesga de verdad. La config
 
 ### Calibración de los valores
 
-Con `target_size = 12` sobre un universo de ~500 acciones, las posiciones se compran en torno a
-**p97,6 o mejor**. Por tanto:
+Con `target_size = 8` —el valor de la cartera adoptada— sobre un universo de ~500 acciones, las
+posiciones se compran en torno a **p98,4 o mejor**. Por tanto:
 
 | Valor | Equivale a | Efecto esperado |
 |---|---|---|

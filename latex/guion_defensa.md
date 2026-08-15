@@ -115,7 +115,7 @@ lleva inercia. Y «risk», lo que se comporta de forma estable.
 
 Fíjense en la nota de la izquierda, porque es una decisión de diseño que un tribunal debe poder
 cuestionar: **los bloques de variables son disjuntos**. Ninguna variable la comparten dos agentes.
-Eso es deliberado — si les diera a todos las mismas treinta y tres variables acabaría teniendo cinco
+Eso es deliberado — si les diera a todos las mismas sesenta y ocho variables acabaría teniendo cinco
 copias del mismo predictor, y el meta-agente no tendría nada que arbitrar. El precio que pago es que
 cada agente ve menos información de la que podría; la ventaja es que sus errores son razonablemente
 independientes, que es lo que hace que combinarlos tenga sentido.
@@ -124,6 +124,11 @@ Encima hay un meta-agente que hace de árbitro: aprende cuánto pesa cada especi
 está la restricción que lo hace honesto: **sólo aprende de cohortes cuya respuesta ya se conoce**.
 Nunca de las que están abiertas. Si aprendiera de cohortes abiertas estaría usando el futuro para
 decidir el presente.
+
+Un apunte por si sale en preguntas: estas sesenta y ocho variables son las **características
+financieras** que entran al modelo, y no hay que confundirlas con las treinta y tres del catálogo
+cerrado de la diapositiva siguiente. Esas treinta y tres son los **parámetros del experimento** —el
+horizonte, la profundidad de los árboles, el retardo de ejecución—, no los datos de las empresas.
 
 Y la salida, importante, no es una predicción de precio ni una probabilidad de subida. Es un
 ranking: de la mejor a la peor de unas quinientas acciones. Todo lo que voy a medir después mide la
@@ -202,11 +207,13 @@ El Rank-IC responde a una sola pregunta: ¿se parece el orden que yo propuse al 
 ocurrió? Es una correlación de rangos. Cero es azar puro: mi ordenación no aporta nada. Uno sería el
 orden perfecto, y en finanzas eso no existe.
 
-Y aquí está lo contraintuitivo, que conviene decir antes de enseñar cifras: en la literatura de
-selección de activos, **valores entre 0,02 y 0,05 ya se consideran explotables**. Suena
-ridículamente bajo si uno viene de otros dominios del aprendizaje automático, donde una correlación
-de 0,03 sería una tomadura de pelo. Pero aquí se aplica sobre quinientas acciones, todos los meses,
-durante años: un sesgo pequeño y persistente en el orden es exactamente lo que se busca.
+Y aquí está lo contraintuitivo, que conviene decir antes de enseñar cifras: la escala útil es mucho
+más baja de lo que uno esperaría. Para no depender de lo que diga la literatura, pongo como
+referencia una cifra medida en este mismo trabajo: **el mejor criterio clásico que probé como
+baseline, sobre el mismo panel y con las mismas restricciones, saca 0,0130**. Eso es lo que hay que
+batir. Suena ridículo si uno viene de otros dominios del aprendizaje automático, donde una
+correlación de 0,03 sería una tomadura de pelo. Pero aquí se aplica sobre quinientas acciones, todos
+los meses, durante años: un sesgo pequeño y persistente en el orden es exactamente lo que se busca.
 
 Dos cosas más. Se calcula mes a mes y se promedia sobre las 117 cohortes, así que un mes bueno
 aislado no lo salva. Y al ser una correlación de rangos, no me exige acertar cuánto sube una acción:
@@ -249,14 +256,14 @@ qué variable pesó más en la decisión de ese agente.
 
 Lo esperable sería que un agente llamado «risk» estuviera leyendo la **prima de baja volatilidad**,
 que es un factor clásico y muy conocido. Pues no. La beta a un año ni siquiera está entre las tres
-primeras variables. Lo que encabeza son `gap_21d` y `range_63d` —el hueco de apertura a tres semanas
+primeras variables. Lo que encabeza son `gap_21d` y `range_63d` —el hueco de apertura a un mes
 y el rango de precios a tres meses— que juntas dominan el 78 % de las observaciones.
 
 Eso significa que el agente dominante está leyendo **microestructura de precio a escala de
 semanas**, no una prima de riesgo clásica.
 
 Y esto tiene una consecuencia medible: cuando neutralizo la señal contra catorce controles de estilo
-conocidos —valor, tamaño, momentum, volatilidad y compañía— conserva el 86,62 %. Es decir, lo que
+conocidos —valoración, rentabilidad, crecimiento, volatilidad y beta— conserva el 86,62 %. Es decir, lo que
 hace no es una reexpresión de un factor que ya estaba en la literatura. Si lo fuera, la
 neutralización se lo habría comido casi entero.
 
@@ -264,12 +271,10 @@ neutralización se lo habría comido casi entero.
 
 Estos son los números del objetivo uno.
 
-El sistema saca un Rank-IC de 0,1090. Con la escala que expliqué hace dos diapositivas, eso está muy
-por encima de lo que se considera explotable.
-
-Para que sirva de referencia y no de cifra suelta: el mejor criterio clásico de los que probé como
-baseline —una combinación de crecimiento a precio razonable— se queda en 0,0130. El sistema es unas
-ocho veces mejor que la mejor regla sencilla que se me ocurrió.
+El sistema saca un Rank-IC de 0,1090. Con la escala que expliqué hace dos diapositivas, eso es unas
+**ocho veces** el 0,0130 del mejor criterio clásico que probé como baseline —una combinación de
+crecimiento a precio razonable—, medido sobre el mismo panel y con las mismas restricciones
+temporales.
 
 La t de Newey-West es 3,46. Uso Newey-West precisamente porque las cohortes mensuales se solapan y
 los errores están autocorrelacionados; con la corrección puesta, sigue siendo claramente
@@ -298,7 +303,7 @@ importante: no hay una capacidad predictiva constante, hay regímenes.
 Segundo, `risk` es el único agente positivo en las cuatro eras. El meta final va justo por debajo,
 que es coherente con lo que vimos: acaba pareciéndose mucho a `risk`.
 
-Y tercero, lo que más me interesa: en la era reservada, **todos los agentes fundamentales —value,
+Y tercero, lo que más me interesa: en la era reservada, **los cuatro agentes distintos de `risk` —value,
 growth, quality— se vuelven negativos a la vez**. No uno: todos, simultáneamente. Eso es una firma
 bastante clara de rotación de factores del mercado en ese periodo, y no de un error de signo en un
 modelo concreto. Si sólo se hubiera hundido uno, sospecharía de mi implementación; que se hundan los
@@ -316,7 +321,7 @@ La primera es la más contundente: barajé las etiquetas al azar casi diez mil v
 todo. Ninguna de las 9.999 permutaciones llegó a lo que da el modelo real. p = 0,0001, que es el
 mínimo posible con ese número de réplicas.
 
-Los placebos de etiqueta: predigo cosas que no debería poder predecir, y en efecto no las predice —
+Los placebos de etiqueta atacan otra objeción, y no hay que confundirlos con la permutación: la permutación rompe sólo el vínculo entre mi orden y el retorno, mientras que el placebo reentrena la máquina entera con la etiqueta barajada. Si alguna pieza fabricara señal por sí misma, ahí aparecería. No aparece —
 se queda pegado a cero. Es el control negativo.
 
 El bootstrap por bloques respeta la estructura temporal, y el intervalo al 95 % no toca el cero.
@@ -435,7 +440,7 @@ Aquí está la cartera ganadora abierta en canal, porque un Information Ratio su
 de cartera es.
 
 Leyendo la columna del medio: ocho posiciones, sin efectivo, pesos proporcionales al alfa estimado.
-Es una cartera **concentrada por diseño**, y eso tiene consecuencias que se ven en la tabla.
+Conviene precisar qué cambió de verdad respecto a la cartera por defecto, porque no es la concentración: las dos tienen ocho posiciones. Cambian tres cosas —renuncia al efectivo, del 25 % a cero; obliga a mantener cada posición medio horizonte; y estrecha la corrección de deriva.
 
 La máxima caída es del 28 %, un punto y medio **peor** que la cartera por defecto. O sea, la
 optimización no ha reducido el riesgo de caída: ha mejorado el ratio subiendo el numerador, no
@@ -549,8 +554,8 @@ cuál.
 | ¿Y la robustez completa? | **12** | Siete de ocho superados. El que falla es el Deflated Sharpe (0,682 frente a un umbral de 0,95) y se reporta como falla, no se esconde. |
 | ¿No es sobreajuste elegir 1 de 1.728? | **16** y **19** | Sí, y por eso el 0,844 se presenta como **cota superior optimista**. Lo que sostiene el objetivo 2 no es ese número sino la **dispersión**: que la misma señal produzca IR entre negativo y 0,85 según la cartera. Y la confirmación en la era reservada (+2,56 %) es fuera de la ventana de decisión. |
 | ¿Por qué rejilla cartesiana y no secuencial? | **16** | Porque las variables interactúan: marginalmente el mejor número de posiciones es 5, pero la ganadora usa 8. Optimizando variable a variable no se habría encontrado. |
-| ¿Aguanta por eras? | **11** | `risk` es el único positivo en las cuatro. En la era reservada todos los agentes fundamentales se vuelven negativos **a la vez**, lo que apunta a rotación de factores del mercado, no a un error de signo. |
-| ¿Cuánto cae la cartera? | **17** | 28,40 % de máxima caída en selección, 12,09 % en la era reservada. Es una cartera de 8 posiciones: concentrada por diseño. Y la optimización **no** mejoró la caída: mejoró el numerador del ratio. |
+| ¿Aguanta por eras? | **11** | `risk` es el único positivo en las cuatro. En la era reservada los cuatro agentes distintos de `risk` se vuelven negativos **a la vez**, lo que apunta a rotación de factores del mercado, no a un error de signo. |
+| ¿Cuánto cae la cartera? | **17** | 28,40 % de máxima caída en selección, 12,09 % en la era reservada. La cartera por defecto ya tenía 8 posiciones: lo que sube la caída es haber renunciado al 25 % de efectivo. La optimización **no** mejoró la caída, la aceptó a cambio de numerador. |
 | ¿De dónde salen los datos? ¿Y el sesgo de supervivencia? | **4** | Composición **histórica** del S&P 500, no la actual: una empresa sólo es elegible en las fechas en que pertenecía al índice. Fechas de publicación reales de SEC EDGAR. Cobertura ≥ 99,4 % cada año. |
 | ¿Costes realistas? | **17** | 5 pb de comisión más 10 pb de *slippage*, constantes. Es una limitación declarada: no modelo impacto de mercado ni capacidad, y con 3,2 rotaciones al año sobre 8 posiciones eso importa. |
 | ¿Y los perfiles de inversión? | — | Quedaron **fuera de la rejilla** a propósito: se construyen sobre la cartera ya elegida y no influyeron en su selección. El perfil que **no** reordena la señal (`balanced`, IR 0,844) domina la ventana de selección, y el orden de los otros siete se predice desde el Rank-IC de los agentes que cada uno pondera: `defensive` (0,570) carga 0,60 en `risk`, el mejor agente; `momentum` (0,017) carga 0,75 en el peor y encima penaliza a `risk`. **Un perfil no añade información, redistribuye la que ya hay** — por eso no está en la presentación. |

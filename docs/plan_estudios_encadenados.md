@@ -5,9 +5,10 @@
 > Information Ratio sobre ese ganador, (3) cómo se mide y se cuenta que el proceso mejora, y (4) la
 > migración completa del manuscrito LaTeX al resultado final.
 >
-> **Estado a 2026-08-14**: cadena de tres Model Studies **terminada**; Portfolio Study
-> **implementado y pendiente de ejecutar la rejilla completa**; fases 1 y 2 del manuscrito
-> **planificadas y sin ejecutar**.
+> **Estado a 2026-08-15**: cadena de tres Model Studies **terminada**; Portfolio Study
+> **ejecutado** (`study-20260814-135754-fdbdf2c5`, 1.728 carteras evaluadas sobre serie recortada en
+> 2024); manuscrito y presentación **migrados al resultado final** y auditados cifra a cifra contra
+> los artefactos. Este documento pasa a ser registro de la estrategia, no plan pendiente.
 
 ## Resumen de decisiones tomadas
 
@@ -155,7 +156,10 @@ la misma ventana**. Reglas:
 
 ### Tabla de progresión (cadena completada el 2026-08-14)
 
-Los tres studies corrieron bajo **catálogo v6**, así que son comparables entre sí.
+Los studies 1 y 2 corrieron bajo **catálogo v6** y el 3 bajo **v7**, que invierte el desempate por
+simplicidad de `execution_lag_days`. Como ese desempate sólo actúa cuando la evidencia no distingue
+entre candidatos, no altera ninguna medición, pero las tres pasadas **no son estrictamente
+comparables** en sus reglas de desempate.
 
 | Métrica | Study 1 | Study 2 | Study 3 (final) |
 |---|---|---|---|
@@ -165,9 +169,9 @@ Los tres studies corrieron bajo **catálogo v6**, así que son comparables entre
 | **IC-IR** | 0,735 | 0,835 | **0,851** |
 | $t$ de Newey-West | 2,95 | 3,36 | **3,46** |
 | Cohortes positivas | 70,94 % | 74,36 % | 74,36 % |
-| Rank-IC del meta (`meta_final`) | 0,0945 | 0,1047 | 0,1058 |
+| Rank-IC del meta, ventana completa (123 cohortes) | 0,0945 | 0,1047 | 0,1058 |
 | Rank-IC `meta_equal_weight` | 0,0618 | 0,0618 | 0,0606 |
-| Rank-IC del agente `risk` solo | 0,1172 | 0,1172 | **0,1197** |
+| Rank-IC de `risk` solo, ventana completa | 0,1172 | 0,1172 | **0,1197** |
 | $p$ de permutación | 0,0001 | 0,0001 | 0,0001 |
 | Decisiones por `tie_simplicity` | 4 de 19 | 1 de 17 | 2 de 17 |
 | Variables que cambian vs. pasada anterior | — (8 vs. catálogo) | `meta_method` | `execution_lag_days`, `target_size` |
@@ -195,15 +199,26 @@ las demás se mantienen — señal de que el óptimo greedy es estable frente al
 **Pero hay un resultado que domina a todos los demás y no se puede suavizar**: en la era reservada
 el study 3 **pierde los dos años** (exceso −11,29 %, IR −1,167), con el mejor Rank-IC de la cadena y
 Rank-IC positivo (+0,0441) en esa misma era. Ordena bien y aun así pierde dinero fuera de muestra.
-Es exactamente lo que la ventana reservada existe para detectar, y pasa a ser el **hallazgo central
-del TFM**. El Deflated Sharpe cae a 0,682, coherente con la multiplicidad que añade encadenar.
+Es exactamente lo que la ventana reservada existe para detectar. El Deflated Sharpe cae a 0,682,
+coherente con la multiplicidad que añade encadenar.
 
-**Nota sobre el perfil ganador**: cambia entre pasadas (`defensive` en 1 y 2, `value` en la 3, con
-`balanced` a 0,0016 de distancia — ruido). La quinta afirmación vertebradora del manuscrito («el
-perfil `balanced` es el mejor») **no se sostiene** con esta cadena y hay que reescribirla.
+> **Resuelto por el Portfolio Study** (`study-20260814-135754-fdbdf2c5`). Todas las cifras
+> económicas de esta tabla son de la **cartera por defecto del catálogo**, que es la que estuvo
+> vigente durante las tres pasadas. Al optimizar las seis variables de cartera sobre la señal ya
+> congelada —sin reentrenar nada y sobre una serie recortada en 2024— el mismo study 3 pasa a
+> **+2,56 % de exceso e IR +0,304** en la era reservada. El problema no estaba en el modelo sino en
+> su traducción a posiciones, y **ése**, y no la degradación, es el hallazgo central del TFM.
 
-**Nota sobre el agente `risk`**: por sí solo alcanza Rank-IC 0,1197, **por encima del meta-agente**
-(0,1058). El TFM debe matizar la tesis multi-agente en vez de darla por demostrada.
+**Nota sobre el perfil ganador**: con la cartera por defecto cambiaba entre pasadas (`defensive` en
+1 y 2, `value` en la 3, con `balanced` a 0,0016 — ruido). Reevaluados con la cartera ganadora, en
+cambio, `balanced` domina la ventana de selección con IR 0,844 frente al 0,570 del siguiente, y
+ninguno de los siete estilos que reordenan mejora a la señal sin tocar. La afirmación vertebradora
+se sostiene con la cartera adoptada, con el matiz de que en la era reservada el orden se invierte
+casi por completo sobre seis cohortes.
+
+**Nota sobre el agente `risk`**: por sí solo alcanza Rank-IC 0,1197 en ventana completa (0,1227 en
+selección), **por encima del meta-agente** (0,1058 y 0,1090). El TFM matiza la tesis multi-agente en
+vez de darla por demostrada.
 
 > Una versión anterior del study 3 (descartada) mostró el patrón contrario: mejor Rank-IC con
 > transferencia hundida (0,049) e IR 0,121. Se documenta aquí porque ilustra que **el divorcio
