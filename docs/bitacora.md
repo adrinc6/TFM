@@ -39,16 +39,41 @@ Ficheros tocados: `00_resumen.tex` (resumen y abstract, mantenidos equivalentes)
 `01_introduccion.tex`, `07_resultados_economicos.tex`, `09_conclusiones.tex`,
 `t01_afirmaciones.tex` (las cinco afirmaciones agrupadas 3 + 2 por objetivo) y `plan_tfm.md`.
 
-**Lo que no se hizo, a propósito.** No se tocó ninguna cifra, ningún matiz ni ninguna limitación:
-se conservan el Deflated Sharpe en 0,682, las seis cohortes reservadas, «la ganadora es la mejor de
+**Lo que el reenfoque no tocó, a propósito.** Ninguna cifra, ningún matiz y ninguna limitación: se
+conservan el Deflated Sharpe en 0,682, las seis cohortes reservadas, «la ganadora es la mejor de
 1.728 evaluadas» y que `risk` por separado (0,1227) bate al meta (0,1090). La convención de que
-ningún resultado favorable se presenta sin su salvedad se respeta sin excepción. Tampoco se
-corrigieron las tres discrepancias de prosa detectadas de paso y que siguen pendientes: el capítulo
-6 dice «percentil 97,4» y «p95 de CAGR 102,28 %» cuando `robustness.json` da 96,8 y 75,06 %; dice
-que el meta queda en «−0,0119» en la era reservada cuando `t05_rankic_era.tex` y
-`evidence/summary.json` dan **+0,0441**, que invierte el signo de una afirmación de titular; y cita
-«doce» variables por agente cuando `winner.json` dice **20**. Son erratas de cifra, no de enfoque, y
-merecen su propia pasada.
+ningún resultado favorable se presenta sin su salvedad se respeta sin excepción.
+
+## 2026-08-15 · Erratas de cifra en el capítulo 6 y secciones 7–9 del informe
+
+Corrección de las discrepancias detectadas al preparar la defensa. Todas verificadas contra
+`robustness.json`, `winner.json`, `attribution.json` y `portfolio_winner.json` antes de tocar nada.
+
+**En `06_resultados_predictivos.tex`, cuatro cifras y un signo.** El percentil de carteras
+aleatorias de riesgo emparejado decía 97,4 cuando es **96,8**; el percentil 95 de CAGR del escenario
+general decía 102,28 % cuando es **75,06 %**; y la frase que explicaba por qué ese escenario no es
+informativo hablaba del «percentil 65» cuando el modelo queda en el **76,1**. La peor invertía un
+signo de titular: «El meta queda en $-0{,}0119$, prácticamente en cero» en la era reservada, cuando
+`evidence/summary.json` del ganador da **+0,0441**. El −0,0119 procedía de `evidence_baseline`, es
+decir, del baseline y no del ganador, contra la regla de procedencia. La corrección además gana un
+argumento: el meta aguanta positivo porque ya había concentrado en `risk`, mientras la ponderación
+uniforme cae a −0,0735. También `growth` en esa era decía −0,1352 y la tabla generada da −0,1333, y
+la configuración ganadora citaba «un máximo de doce por agente» cuando `winner.json` dice **20**.
+
+**El origen del «doce» estaba en `docs/informe_resultados.md`, y era peor de lo que parecía.** El
+aviso de derogación cubría las secciones 1 a 6, pero **las secciones 7, 8 y 9 estaban igual de
+obsoletas y nadie las había marcado**, pese a ser las más citables del documento: la «configuración
+ganadora» daba `max_features_per_agent` = 12, `lgbm_min_child_samples` = 50, `meta_method` =
+`stacked_rolling_bounded` y una cartera de 12 posiciones con 25 % de efectivo —cuando el ganador
+real es 20, 20, `stacked_rolling_free` y una cartera de 8 posiciones sin efectivo—, y «Qué se puede
+afirmar hoy» estaba entero en cifras del study derogado (rank-IC 0,1004, DSR 0,930, era reservada
++14,21 %, transferencia 0,247). Las tres secciones se reescriben contra los artefactos vigentes, la
+8 reorganizada además por los dos objetivos, y el aviso se amplía para declarar explícitamente qué
+está actualizado y qué no.
+
+Lección que conviene retener: **un aviso de derogación parcial es una trampa**. Marcar «las
+secciones 1 a 6» dejó tres secciones sin marcar que parecían vigentes precisamente por no estar
+marcadas, y de ahí se filtró una cifra al manuscrito.
 
 ## 2026-08-15 · Cifras falsas en la prosa, poda de 21 activos y regla de procedencia estricta
 
