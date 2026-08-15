@@ -8,9 +8,11 @@ cuando los datos se cierran temporalmente y la selección no utiliza rentabilida
 
 La pregunta de investigación es: \emph{¿puede un sistema de agentes especializados aprender una
 ordenación transversal de acciones con valor predictivo fuera de muestra, medida con Rank-IC, y esa
-ordenación traducirse en utilidad económica neta de costes?} La respuesta se formula con precisión:
-la evidencia respalda la capacidad predictiva y una confirmación económica favorable, pero no
-establece con igual fuerza que el Sharpe resista la penalización por multiplicidad.
+ordenación traducirse en utilidad económica neta de costes?} Tiene por tanto dos mitades, y el
+trabajo las aborda como dos objetivos sucesivos: primero, \textbf{que el sistema aprenda a ordenar};
+después, ya con la señal congelada, \textbf{que esa ordenación se sepa gestionar}. La respuesta se
+formula con precisión: la evidencia respalda ambos objetivos, pero no establece con igual fuerza que
+el Sharpe resista la penalización por multiplicidad.
 
 La contribución es doble. Primero, impone una cadena point-in-time desde la publicación del
 fundamental hasta el cierre de etiqueta. Segundo, separa selección por Rank-IC, robustez y cartera:
@@ -23,7 +25,8 @@ conclusiones.
 
 El trabajo se organiza en torno a cinco preguntas concretas. Se enuncian aquí como preguntas y no
 como conclusiones, porque cada una necesita evidencia propia y ninguna se responde con un sí o un no
-sin matices.
+sin matices. Las tres primeras desarrollan el Objetivo 1, la cuarta el Objetivo 2 y la quinta fija
+hasta dónde llega lo afirmable en ambos.
 
 \begin{enumerate}[leftmargin=*,itemsep=0.45em]
   \item \textbf{¿Aprende el sistema a ponderar a sus especialistas?} Es decir, ¿la combinación
@@ -34,8 +37,10 @@ sin matices.
   pregunta exige contrastes que intenten activamente destruir el resultado.
   \item \textbf{¿Se sostiene fuera de la ventana en la que se decidió?} Toda la selección ocurre
   sobre 2015--2024; 2025--2026 se reserva desde el principio y no participa en ninguna decisión.
-  \item \textbf{¿Sobrevive la señal al convertirse en cartera?} Una ordenación puede ser correcta y
-  aun así perder su ventaja al comprar unas pocas acciones, pagar costes y rotar.
+  \item \textbf{¿Importa cómo se convierte la señal en cartera, y se puede optimizar?} Una
+  ordenación no se compra entera: una cartera real toma unas pocas acciones, paga costes y rota. La
+  pregunta es doble --- si esas decisiones de construcción mueven el resultado y cuánto, y si
+  optimizarlas por Information Ratio produce una cartera mejor que la del catálogo.
   \item \textbf{¿Cuánto de todo esto puede afirmarse, y con qué fuerza?} La distancia entre
   «la evidencia es favorable» y «queda demostrado» es el objeto último del trabajo.
 \end{enumerate}
@@ -90,19 +95,43 @@ permite distinguir el aprendizaje del ranking de las fricciones de una implement
 
 \section{Pregunta, hipótesis y objetivos}
 
-La pregunta de investigación se concreta en tres hipótesis complementarias. La primera,
-\textbf{H1}, sostiene que el score final tiene Rank-IC medio positivo y estadísticamente distinguible
-de cero en cohortes cerradas entre 2015 y 2024. La segunda, \textbf{H2}, sostiene que dicha señal no
-es un artefacto de una semilla, una era, una etiqueta permutada o un factor de estilo conocido. La
-tercera, \textbf{H3}, pregunta si una traducción prudente de la señal a cartera obtiene resultados
-económicos informativos netos de costes, sin que esos resultados se usen para elegir el modelo.
+La pregunta de investigación se descompone en \textbf{dos objetivos} que se abordan en ese orden y
+con evidencia separada.
 
-De estas hipótesis se derivan cinco objetivos operativos. Primero, reconstruir un panel de acciones
+\begin{description}[leftmargin=*,itemsep=0.4em]
+  \item[Objetivo 1 — que el sistema aprenda a ordenar.] Establecer si un sistema de agentes
+  especializados aprende una ordenación transversal con valor predictivo fuera de muestra, medida
+  con Rank-IC. Lo responden los tres \textit{Model Studies} encadenados.
+  \item[Objetivo 2 — que la ordenación se sepa gestionar.] Establecer si las variables de
+  construcción de cartera afectan de forma material al resultado y si, optimizando por Information
+  Ratio, se obtiene una cartera mejor que la que el catálogo recomienda por defecto. Lo responde el
+  \textit{Portfolio Study}.
+\end{description}
+
+El orden no es arbitrario ni retórico. Durante los tres Model Studies \textbf{la cartera es una capa
+secundaria y sin optimizar}: se mantiene la configuración por defecto del catálogo precisamente para
+que ninguna decisión predictiva pueda apoyarse en ella. Sólo cuando el ganador predictivo está
+congelado se convierte la construcción de cartera en objeto de estudio por derecho propio.
+
+De ahí se derivan cuatro hipótesis. La primera, \textbf{H1}, sostiene que el score final tiene
+Rank-IC medio positivo y estadísticamente distinguible de cero en cohortes cerradas entre 2015 y
+2024. La segunda, \textbf{H2}, sostiene que dicha señal no es un artefacto de una semilla, una era,
+una etiqueta permutada o un factor de estilo conocido. Ambas pertenecen al Objetivo 1. La tercera,
+\textbf{H3}, sostiene que las variables de construcción de cartera producen diferencias materiales
+en el resultado económico de una misma señal congelada. La cuarta, \textbf{H4}, pregunta si la
+cartera elegida por Information Ratio dentro de la ventana de selección conserva ventaja en la era
+reservada, sin que ningún resultado económico haya intervenido en la elección del modelo. H3 y H4
+pertenecen al Objetivo 2.
+
+De estas hipótesis se derivan seis objetivos operativos. Primero, reconstruir un panel de acciones
 con pertenencia histórica al índice y observabilidad \textit{point-in-time}. Segundo, entrenar cinco
 agentes que representan hipótesis económicas diferentes. Tercero, combinar sus scores con un
 meta-agente que sólo aprende de etiquetas ya cerradas. Cuarto, seleccionar de forma secuencial una
 configuración predictiva mediante comparaciones pareadas de Rank-IC. Quinto, auditar la señal con
-contrastes adversariales y con una era reservada que no participa en ninguna decisión.
+contrastes adversariales y con una era reservada que no participa en ninguna decisión. Sexto, ya con
+el ganador predictivo congelado, recorrer una rejilla cartesiana de configuraciones de cartera
+optimizada por Information Ratio sobre una serie recortada en 2024, de modo que ninguna combinación
+pueda observar la era reservada.
 
 La hipótesis nula sigue siendo científicamente útil. Si el Rank-IC no superase los contrastes, el
 resultado no sería un fracaso del TFM: sería evidencia contra la afirmación de que esta arquitectura
@@ -114,8 +143,9 @@ reduce el incentivo a modificar el protocolo hasta obtener una rentabilidad atra
 La primera contribución es de diseño temporal. Un fundamental se asocia a su fecha real de
 publicación regulatoria y no a su cierre fiscal. De este modo, una observación no entra en el modelo
 antes de que un inversor real pudiera conocerla. La segunda es de diseño experimental: la selección
-del ganador sólo utiliza Rank-IC pareado hasta 2024. La cartera, sus costes, el efectivo y los
-perfiles se tratan como una capa posterior de diagnóstico. La tercera es de auditabilidad: el
+del ganador sólo utiliza Rank-IC pareado hasta 2024. Durante esa fase la cartera, sus costes, el
+efectivo y los perfiles son una capa posterior meramente diagnóstica; sólo cuando el ganador está
+congelado pasa la construcción de cartera a ser objeto de estudio. La tercera es de auditabilidad: el
 estudio conserva configuración, decisiones, cohortes, pesos del meta, posiciones, órdenes y
 artefactos de robustez.
 

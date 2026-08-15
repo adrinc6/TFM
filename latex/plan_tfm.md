@@ -64,7 +64,35 @@ artefactos también contienen la ventana completa (123 cohortes), donde el meta 
    (`defensive`). ⚠️ En la era reservada el orden se invierte casi por completo —`momentum`, el peor
    en selección, es el mejor allí con IR 1,889— sobre 6 cohortes: es régimen, no hallazgo.
 
-**El hallazgo central del TFM es el contraste de la afirmación 4.** El mismo modelo, la misma señal
+### El marco narrativo vigente: dos objetivos (2026-08-15)
+
+**El TFM se cuenta como dos objetivos sucesivos, no como un hallazgo único.** El marco anterior
+elevaba el contraste de carteras a «hallazgo central del TFM» y subordinaba a él la evidencia
+predictiva. Se sustituye por éste, que es el que el autor considera correcto y el que responde a
+cómo se ejecutó realmente el trabajo:
+
+| | Objetivo | Lo demuestra | Respuesta |
+|---|---|---|---|
+| **1** | Un sistema de ML **aprende a ordenar acciones** con valor predictivo fuera de muestra | Los tres Model Studies | Sí, con matices |
+| **2** | **Las variables de construcción de cartera afectan al resultado**, y optimizando por Information Ratio se construye una buena | El Portfolio Study | Sí |
+
+La clave del marco: durante los tres Model Studies **la cartera es secundaria porque todavía no se
+había optimizado** —se mantuvo la configuración por defecto del catálogo precisamente para que
+ninguna decisión predictiva pudiera apoyarse en ella—. Por eso el −11,29 % de la era reservada con
+esa cartera no es el fracaso del trabajo: es el punto de partida del Objetivo 2 y la medida de
+cuánto depende el resultado de la gestión.
+
+**Ninguna cifra cambia con este reenfoque.** Cambia qué se presenta como titular y se explicita el
+objetivo que faltaba: el Portfolio Study se incorporó el 2026-08-14 y la introducción nunca se
+actualizó —sus cinco objetivos operativos eran panel, agentes, meta, selección y auditoría, todos
+del Objetivo 1—. El realineamiento afecta a `00_resumen.tex` (ES y EN), `01_introduccion.tex`
+(dos objetivos, H1–H4 y sexto objetivo operativo), `07_resultados_economicos.tex`,
+`09_conclusiones.tex` y `t01_afirmaciones.tex`. Los matices declarados se conservan sin excepción:
+DSR 0,682, seis cohortes reservadas, la ganadora es la mejor de 1.728 y `risk` bate al meta.
+
+---
+
+Contraste que sostiene el Objetivo 2: el mismo modelo, la misma señal
 y el mismo panel producen fuera de la ventana de decisión un exceso de −11,29 % o de +2,56 % según
 cómo se construya la cartera. La capacidad predictiva no era el cuello de botella: lo era su
 traducción a posiciones, hasta el punto de decidir el signo del resultado. Se enuncia con la cautela
@@ -94,6 +122,7 @@ que imponen 6 cohortes cerradas y ~1,41 años de cartera, y declarando que la ga
 | Referencias | **Autor-año escritas a mano** en `10_bibliografia.tex`. No se usa `biblatex` ni `biber`: la cadena impedía compilar. El proyecto no contiene ningún fichero `.bib`. |
 | Figuras/tablas | Generadas por el script de exportación desde los artefactos del study, no dibujadas a mano. Se referencian por nombre suelto desde `latex/assets/`, junto a los capítulos. |
 | Compilación | Subir `latex/` a Overleaf y seleccionar **XeLaTeX**. |
+| Presentación de defensa | `latex/presentacion.tex`, Beamer 16:9 con XeLaTeX y tema propio. Vive **junto a `main.tex`**, no en una subcarpeta, para reutilizar las figuras con las mismas rutas `assets/` sin duplicar ningún PNG; en Overleaf sólo se cambia *Main document*. Guion hablado en `latex/guion_defensa.md`. |
 
 **Pendiente de acordar** (no bloquea): portada oficial de la universidad (hay una provisional en
 `main.tex`) y estructura definitiva de anexos.

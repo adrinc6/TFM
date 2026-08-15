@@ -1,19 +1,31 @@
 \chapter{Conclusiones y trabajo futuro}
 \label{chap:conclusiones}
 
-El sistema aprende una ordenación transversal fuera de muestra: su Rank-IC medio es 0,1090, supera
-los baselines deterministas y se mantiene positivo tras placebos, permutación, bootstrap, exclusión
-de eras, semillas y neutralización por estilo. El meta-agente aporta valor frente al promedio
-equiponderado porque aprende a reponderar especialistas a partir de cohortes cerradas, si bien el
-agente de riesgo por separado ordena algo mejor que la combinación, lo que impide presentar la
-arquitectura multi-agente como demostrada por estos datos.
+\textbf{El primer objetivo queda cumplido.} El sistema aprende una ordenación transversal fuera de
+muestra: su Rank-IC medio es 0,1090, supera los baselines deterministas --- el mejor se queda en
+0,0130 --- y se mantiene positivo tras placebos, permutación, bootstrap, exclusión de eras, semillas
+y neutralización por estilo. En la era reservada, que no intervino en ninguna decisión, el Rank-IC
+sigue siendo positivo ($+0{,}0441$). El meta-agente aporta valor frente al promedio equiponderado
+porque aprende a reponderar especialistas a partir de cohortes cerradas, si bien el agente de riesgo
+por separado ordena algo mejor que la combinación, lo que impide presentar la arquitectura
+multi-agente como demostrada por estos datos.
 
-El hallazgo central del trabajo, sin embargo, no está en el modelo sino en lo que ocurre al llevarlo
-a una cartera. Con la construcción de cartera recomendada por el catálogo, la señal perdía un
-11,29\,\% frente al índice en la era reservada, con Information Ratio $-1{,}167$ y ningún año por
-encima. Con la cartera elegida por el estudio de optimización --- mismo modelo, misma señal, mismo
-panel, sin reentrenar nada --- obtiene un exceso del 2,56\,\% con Information Ratio $+0{,}304$. El
-Rank-IC de esa era es positivo en ambos casos, porque no depende de la cartera.
+\textbf{El segundo objetivo también queda cumplido, y es el que más margen aportó.} Sobre esa señal
+ya congelada, la rejilla de 1.728 configuraciones muestra que las variables de construcción de
+cartera afectan al resultado de forma material y muy desigual: el número de posiciones mueve el
+Information Ratio mediano en 0,300 y el tope de efectivo en 0,202, mientras que la tolerancia de
+deriva y el reparto de pesos son prácticamente inertes (0,016 y 0,009). Optimizar por Information
+Ratio eleva el ratio de 0,339 a 0,844 y el exceso geométrico del 2,61 al 6,97\,\%, sin reentrenar
+nada. La mejora obtenida sin tocar el modelo es mayor que la acumulada por las tres pasadas
+predictivas juntas.
+
+El contraste en la era reservada mide exactamente esa distancia. Con la construcción de cartera
+recomendada por el catálogo --- la que estuvo vigente, sin optimizar, durante todo el trabajo
+predictivo --- la señal perdía un 11,29\,\% frente al índice, con Information Ratio $-1{,}167$ y
+ningún año por encima. Con la cartera elegida por el estudio de optimización --- mismo modelo, misma
+señal, mismo panel, sin reentrenar nada --- obtiene un exceso del 2,56\,\% con Information Ratio
+$+0{,}304$. El Rank-IC de esa era es positivo en ambos casos, porque no depende de la cartera: la
+capacidad de ordenar era idéntica y lo único que cambió fue su gestión.
 
 De ahí se sigue la conclusión que este trabajo defiende: en un sistema de esta clase, la
 construcción de cartera no es un detalle de implementación posterior sino una variable capaz de
@@ -36,20 +48,24 @@ concentrada en ocho posiciones.
 
 \section{Respuesta a la pregunta de investigación}
 
-La respuesta es afirmativa con condiciones. Dentro del universo, periodo y protocolo definidos, los
-cinco agentes y su meta producen una ordenación transversal con Rank-IC positivo, superior a los
-baselines incluidos y estable frente a contrastes adversariales. El meta parte de pesos iguales y
-aprende de cohortes cerradas, por lo que su comportamiento no se reduce a fijar de antemano el
-especialista ganador.
+La respuesta es afirmativa con condiciones en los dos objetivos.
 
-La respuesta económica es positiva pero mucho más acotada, y sólo es positiva con una precisión que
-no puede omitirse: depende de la cartera. Con la cartera optimizada, el sistema supera a SPY en la
-ventana de selección y también en la era reservada, neto de los costes modelados; con la cartera de
-partida, no lo hacía en la era reservada. El Deflated Sharpe y el tamaño de la muestra efectiva
-impiden transformar esa observación en una promesa de superioridad ajustada por riesgo. La
-formulación defendible es que el ranking tiene evidencia predictiva robusta, que su implementación
-puede ser económicamente compatible con esa señal bajo restricciones declaradas, y que la distancia
-entre «puede serlo» y «lo es» la recorre la construcción de cartera y no el modelo.
+\textbf{Objetivo 1.} Dentro del universo, periodo y protocolo definidos, los cinco agentes y su meta
+producen una ordenación transversal con Rank-IC positivo, superior a los baselines incluidos y
+estable frente a contrastes adversariales. El meta parte de pesos iguales y aprende de cohortes
+cerradas, por lo que su comportamiento no se reduce a fijar de antemano el especialista ganador.
+
+\textbf{Objetivo 2.} Las variables de construcción de cartera afectan al resultado de forma medible
+y desigual, y optimizarlas por Information Ratio produce una cartera claramente mejor que la de
+partida. Con esa cartera el sistema supera a SPY en la ventana de selección y también en la era
+reservada, neto de los costes modelados; con la cartera de partida no lo hacía en la era reservada.
+La respuesta económica es, aun así, mucho más acotada que la predictiva: el Deflated Sharpe y el
+tamaño de la muestra efectiva impiden transformar la observación en una promesa de superioridad
+ajustada por riesgo, y la cartera elegida es la mejor de 1.728, de modo que su Information Ratio es
+una cota superior optimista. La formulación defendible es que el ranking tiene evidencia predictiva
+robusta, que su implementación puede ser económicamente compatible con esa señal bajo restricciones
+declaradas, y que la distancia entre «puede serlo» y «lo es» la recorre la construcción de cartera y
+no el modelo.
 
 La Tabla~\ref{tab:afirmaciones} recoge las cinco preguntas de la introducción convertidas ya en
 afirmaciones, cada una con la cifra que la sostiene y con la salvedad sin la cual no debe citarse.

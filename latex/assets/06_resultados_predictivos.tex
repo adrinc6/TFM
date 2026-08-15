@@ -60,7 +60,7 @@ en tres pasadas, y es también la razón de que la traza de decisiones del capí
 plana.
 
 La configuración ganadora resultante emplea cadencia mensual de snapshots, horizonte de etiqueta de
-doce meses, el preset de variables \texttt{all} con un máximo de doce por agente, sin neutralización
+doce meses, el preset de variables \texttt{all} con un máximo de veinte por agente, sin neutralización
 sectorial ni ponderación por recencia, y un meta-agente \texttt{stacked\_rolling\_free}, es decir,
 sin tope por agente. Esta última elección --- la única que la tercera pasada modificó en el plano
 predictivo --- gobierna buena parte de lo que sigue. La Sección~\ref{sec:cadena-studies} del
@@ -169,11 +169,14 @@ La tabla contiene tres lecturas que el promedio agregado no permite. La primera 
 es la única señal positiva en las cuatro eras; ninguna otra lo consigue. La segunda es que el meta
 aprendido supera al equiponderado en las tres eras de selección, no sólo en promedio, lo que
 refuerza que la mejora del 61\,\% no procede de un único subperiodo afortunado. La tercera es la más
-incómoda y se reporta precisamente por serlo: en la era reservada todos los agentes fundamentales se
-vuelven negativos a la vez --- \textit{growth} llega a $-0{,}1352$ --- y sólo \textit{risk} aguanta
-en positivo. El meta queda en $-0{,}0119$, prácticamente en cero.
+incómoda y se reporta precisamente por serlo: en la era reservada los cuatro agentes fundamentales se
+vuelven negativos a la vez --- \textit{growth} llega a $-0{,}1333$ --- y sólo \textit{risk} aguanta
+en positivo, con 0,0616. El meta aprendido conserva un Rank-IC positivo de $+0{,}0441$ justamente
+porque para entonces ya había concentrado su peso en \textit{risk}; la ponderación uniforme, que
+sigue repartiendo entre los cinco, cae a $-0{,}0735$. Es la única era en la que la diferencia entre
+aprender los pesos y fijarlos de antemano cambia el signo del resultado.
 
-Que los cinco agentes se inviertan simultáneamente es informativo: apunta a una rotación de factores
+Que los cuatro se inviertan simultáneamente es informativo: apunta a una rotación de factores
 en el mercado y no a un error de signo en un modelo concreto, que afectaría a uno solo. Este mismo
 patrón fue el que motivó introducir la ponderación por recencia como variable del catálogo, según se
 documenta en el Anexo~\ref{anexo:desarrollo}. Debe leerse junto a su advertencia estadística: son
@@ -482,10 +485,11 @@ de semillas durante el desarrollo, según se documenta en el Anexo~\ref{anexo:de
 \end{figure}
 
 Frente a 1.000 carteras aleatorias de riesgo emparejado, la cartera del modelo ocupa el percentil
-97,4. El contraste aleatorio general no se usa como prueba favorable, y conviene explicar por qué:
-su percentil 95 de CAGR es 102,28\,\%, dominado por carteras que por azar concentraron alguna
-superviviente extraordinaria. Un nulo con esa cola no es un \textit{benchmark} informativo, y
-presentarlo como si el modelo «sólo» alcanzase el percentil 65 sería tan engañoso como omitirlo. La
+96,8, con un CAGR del 15,56\,\% frente a una mediana aleatoria del 9,23\,\%. El contraste aleatorio
+general no se usa como prueba favorable, y conviene explicar por qué: su percentil 95 de CAGR es
+75,06\,\%, dominado por carteras que por azar concentraron alguna superviviente extraordinaria. Un
+nulo con esa cola no es un \textit{benchmark} informativo, y presentarlo como si el modelo «sólo»
+alcanzase el percentil 76,1 sería tan engañoso como omitirlo. La
 Figura~\ref{fig:aleatorias} muestra los dos escenarios juntos precisamente para que la diferencia
 sea visible.
 

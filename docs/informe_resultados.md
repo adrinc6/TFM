@@ -87,6 +87,12 @@ muestra o diagnóstico—. Ninguna afirmación de este informe existe sin un art
 > cualquier cifra vigente, la fuente de verdad es el manuscrito en `latex/assets/`, que sí está
 > completamente actualizado contra los cuatro estudios, o directamente los artefactos en disco.
 > Estas secciones se conservan por su análisis cualitativo, no como referencia numérica.
+>
+> **Las secciones 7, 8 y 9 sí están actualizadas** contra `winner.json`, `robustness.json`,
+> `attribution.json` y `portfolio_winner.json` de los estudios vigentes (2026-08-15). Antes no lo
+> estaban y el aviso anterior no las cubría, pese a ser las más citables del documento: la
+> configuración ganadora daba `max_features_per_agent` = 12 y `meta_method` =
+> `stacked_rolling_bounded`, y de ahí se coló un «máximo de doce por agente» en el manuscrito.
 
 ## 1. El proceso de aprendizaje
 
@@ -500,69 +506,100 @@ está capturando algo distinto del momentum clásico.
 Seleccionada por rank-IC pareado, con puerta de no inferioridad y suelo por era, sin que la era
 reservada participe en ninguna decisión (`decisions.json`, `winner.json`).
 
+Valores leídos de `winner.json` del Model Study 3 (`run-f134d7eb9e06`, catálogo v7).
+
 **Fase temporal:** `snapshot_step_months` = 1 · `target_horizon_months` = 12 ·
 `train_lookback_years` = 8 · `execution_lag_days` = 60 · `recency_weighting` = off
 
 **Fase de representación:** `feature_preset` = all · `fundamental_momentum` = True ·
 `market_regime_feature` = False · `neutralize_by_sector` = False · `winsorization` = 0.0 ·
-`max_features_per_agent` = 12 · `feature_weighting_mode` = oos_stability_prune
+`max_features_per_agent` = **20** · `feature_weighting_mode` = oos_stability_prune
 
 **Fase de modelo:** `model_family` = lightgbm · `objective` = rank_regression · `lgbm_max_depth` = 3 ·
-`lgbm_n_estimators` = 100 · `lgbm_learning_rate` = 0.03 · `lgbm_min_child_samples` = 50
+`lgbm_n_estimators` = 100 · `lgbm_learning_rate` = 0.03 · `lgbm_min_child_samples` = **20**
 
-**Fase meta:** `meta_method` = stacked_rolling_bounded · `meta_history_quarters` = 16 ·
-`meta_recency_weighting` = off
+**Fase meta:** `meta_method` = **stacked_rolling_free** · `meta_history_quarters` = 16 ·
+`meta_recency_weighting` = off. Es decir, sin tope por agente: es la única variable predictiva que
+modificó la tercera pasada, y explica que el meta acabe concentrando más del 95 % del peso en
+`risk`.
 
-**Cartera (no modifica el ganador):** `target_size` = 12 · `exit_expected_alpha_bps` = 100 ·
-`rotation_edge_bps` = 50 · `cash_policy` = opportunity_cash · `max_cash_weight` = 0,25 ·
-`sizing_mode` = alpha_proportional · `commission_bps` = 5 · `slippage_bps` = 10
+**Cartera ganadora del Portfolio Study** (`portfolio_winner.json`, no modifica el ganador
+predictivo): `target_size` = 8 · `max_cash_weight` = 0.0 · `sizing_mode` = alpha_proportional ·
+`minimum_holding_period` = half_horizon · `coverage_percentile_floor` = 60 ·
+`rebalance_drift_tolerance` = 0.1 · `commission_bps` = 5 · `slippage_bps` = 10.
 
-Decisión destacable: `snapshot_step_months` = 1 ganó con ventaja pareada +0,0208 e IC al 90 %
-[0,0108; 0,0372] —distinguible de cero—, multiplicando por ~3 las cohortes disponibles (40 → 117) y
-mejorando el rank-IC de 0,0524 a 0,0735 en esa fase. `target_horizon_months` = 6 fue rechazado
-explícitamente: ventaja pareada −0,0265 con IC [−0,0552; −0,0109], claramente inferior.
+La traza completa de las 17 decisiones de esta pasada, ordenadas por el coste de la alternativa
+rechazada, está en `decisions.json` y se reproduce en el manuscrito
+(`latex/assets/t06_decisiones.tex`). Dos de ellas se resolvieron por `tie_simplicity` y no por
+evidencia; el manuscrito las declara como tales.
 
 ---
 
 ## 8. Qué se puede afirmar hoy
 
-**Sí, con evidencia sólida:**
+Se organiza por los dos objetivos del trabajo. Las cifras predictivas proceden del Model Study 3 y
+las económicas de la cartera ganadora del Portfolio Study.
 
-- Existe capacidad de ordenación transversal fuera de muestra: rank-IC 0,1004, IC-IR 0,744, t de
-  Newey-West 3,02, bootstrap al 95 % [0,0335; 0,1695].
-- **No es azar**: p de permutación 0,0001 sobre 9 999 réplicas.
-- **No es un artefacto del código**: cinco placebos de etiqueta en [−0,006; +0,001].
-- **No depende de una era ni de una semilla**: 0,073–0,126 excluyendo eras; rango 0,0020 entre
-  semillas, sin cruce de cero.
-- **No es un factor de estilo conocido**: retiene el 84,35 % tras neutralizar por 14 controles.
-- **El meta-agente aprende**: pasa de pesos iguales a concentrar en su mejor especialista, y su
-  ponderación aprendida supera a la ingenua en +0,0345 de rank-IC (+52 %).
-- **Bate al S&P 500 en los dos años reservados**: +14,21 % geométrico, IR 0,959, 2/2 años, alfa
-  factorial con t = 4,76.
-- **`balanced` es el mejor perfil** en CAGR, exceso, IR, beat rate y alfa medio simultáneamente.
+**Objetivo 1 — el sistema aprende a ordenar. Sí, con evidencia sólida:**
+
+- Existe capacidad de ordenación transversal fuera de muestra: rank-IC 0,1090, IC-IR 0,851, t de
+  Newey-West 3,46, bootstrap al 95 % [0,0425; 0,1723], 74,36 % de cohortes positivas.
+- **Supera con holgura a los baselines deterministas**: el mejor, `garp_score`, se queda en 0,0130.
+- **No es azar**: p de permutación 0,0001 sobre 9.999 réplicas, ninguna alcanzó lo observado.
+- **No es un artefacto del código**: cinco placebos de etiqueta entre −0,0081 y +0,0013.
+- **No depende de una era ni de una semilla**: 0,0780–0,1350 excluyendo eras completas; rango 0,0015
+  entre semillas, sin cruce de cero.
+- **No es un factor de estilo conocido**: retiene el 86,62 % tras neutralizar por 14 controles.
+- **Bate al azar con riesgo comparable**: percentil 96,8 frente a 1.000 carteras aleatorias de
+  riesgo emparejado (CAGR 15,56 % contra una mediana aleatoria de 9,23 %).
+- **El meta-agente aprende**: parte de pesos iguales, se equivoca en 2016 concentrando en `momentum`
+  y se corrige solo hacia `risk`; su ponderación aprendida supera a la ingenua en +0,0415 de rank-IC
+  (+61 %).
+- **Sigue ordenando en la era reservada**: rank-IC +0,0441, y no depende de la cartera.
+
+**Objetivo 2 — la ordenación se sabe gestionar. Sí, con evidencia sólida:**
+
+- **Las variables de cartera afectan al resultado y de forma muy desigual**: sobre 1.728
+  configuraciones, el número de posiciones mueve el IR mediano 0,300 y el tope de efectivo 0,202,
+  mientras que la tolerancia de deriva (0,016) y el reparto de pesos (0,009) son casi inertes.
+- **Optimizar por Information Ratio mejora la cartera sin tocar el modelo**: IR de 0,339 a 0,844 y
+  exceso geométrico del 2,61 al 6,97 %, reutilizando los scores congelados.
+- **Bate al S&P 500 en la era reservada con la cartera optimizada**: +2,56 % geométrico, IR +0,304,
+  1 de 2 años. Con la cartera por defecto era −11,29 % e IR −1,167.
+- **El perfil que no reordena la señal domina** la ventana de selección: IR 0,844 frente a 0,570 del
+  segundo.
 
 **Sí, con matices que hay que declarar:**
 
-- El agente `risk` en solitario tiene más rank-IC (0,1229) que el meta (0,1004).
-- El coeficiente de transferencia es 0,247: la cartera captura una cuarta parte de la señal.
-- Las 117 cohortes equivalen a ~9 observaciones independientes.
+- El agente `risk` en solitario tiene más rank-IC (0,1227) que el meta (0,1090), y el meta le asigna
+  más del 95 % del peso: la arquitectura multi-agente no queda demostrada por estos datos.
+- El coeficiente de transferencia es 0,328: la cartera captura una tercera parte de la señal.
+- Las 117 cohortes equivalen a ~9 observaciones independientes por el horizonte anual.
+- La cartera ganadora es la mejor de 1.728 evaluadas: su IR 0,844 es una cota superior optimista,
+  no una estimación insesgada.
 
 **No, todavía no:**
 
-- Que el Sharpe resista la corrección por multiplicidad: Deflated Sharpe 0,930 < 0,95 con 66
-  configuraciones probadas.
-- Que el rank-IC esté confirmado en la era reservada: −0,0119 sobre 6 cohortes y 1 observación
-  independiente, sin potencia para concluir en ningún sentido.
-- Que el alfa de la ventana de selección sea significativo por sí solo: t = 0,82.
+- Que el Sharpe resista la corrección por multiplicidad: Deflated Sharpe 0,682 < 0,95 con 71
+  configuraciones probadas. Encadenar tres estudios compró rank-IC al precio de encarecer esto.
+- Que el resultado económico esté confirmado con potencia: la era reservada aporta 6 cohortes
+  cerradas y ~1,41 años de cartera, aproximadamente una observación independiente.
+- Que el alfa de la ventana de selección sea significativo por sí solo: 0,27 % por periodo con
+  t = 1,44 y R² = 0,017.
+- Que la conclusión económica sea estable entre semillas: el rango del exceso geométrico cruza cero
+  (`economic_conclusion_stable` = false), mientras que la predictiva no lo hace.
 
 ## 9. Trabajo futuro que sugiere esta evidencia
 
-1. **Atacar el coeficiente de transferencia**, no el modelo: es donde se pierde el 75 % de la señal.
-   Ampliar `target_size`, reducir rotación y explorar sizing por convicción.
-2. **Reejecutar con menos configuraciones** o con un catálogo pre-registrado más estrecho, para que
-   el Deflated Sharpe no pague el peaje de 66 pruebas.
-3. **Esperar al cierre de cohortes de 2025–2026** para poder contrastar el rank-IC de la era
-   reservada con potencia real.
-4. **Investigar por qué `risk` domina**: si es baja volatilidad clásica, la neutralización debería
-   haber destruido más del 16 % de la señal; que no lo haga sugiere que hay algo propio que merece
-   caracterizarse.
+1. **Esperar al cierre de cohortes de 2025–2026** para contrastar con potencia real, tanto el
+   rank-IC como el resultado económico. Es la limitación que más ata a todas las demás.
+2. **Separar frecuencia de evaluación de frecuencia de ejecución**: se redecide cada mes sobre una
+   señal a doce meses, y la rotación (56,5 % del flujo de órdenes) sale de ahí.
+3. **Reejecutar con un catálogo pre-registrado más estrecho**, para que el Deflated Sharpe no pague
+   el peaje de 71 pruebas más una rejilla de 1.728 carteras.
+4. **Modelar costes dependientes de liquidez**: una cartera de 8 posiciones con 324 % de rotación
+   anual es justo donde el supuesto de coste constante (5 + 10 pb) puede romperse.
+5. **Investigar por qué `risk` domina**: no es baja volatilidad clásica —`gap_21d` y `range_63d`
+   encabezan el 78 % de las observaciones y `beta_252d` ni está entre las tres primeras—, lo que
+   explica que la neutralización por estilos apenas destruya el 13 % de la señal. Que
+   microestructura a semanas ordene retornos a doce meses merece caracterizarse.

@@ -1,5 +1,86 @@
 # Bitácora
 
+## 2026-08-15 · Presentación de defensa y reenfoque del manuscrito a dos objetivos
+
+Dos trabajos encadenados, ambos de cómo se **cuenta** el TFM. Ninguna cifra cambia.
+
+**La presentación de defensa.** No existía ninguna: `latex/presentacion.tex`, Beamer 16:9 con
+XeLaTeX, quince diapositivas para diez minutos más once de reserva para el turno de preguntas, y
+`latex/guion_defensa.md` con el guion hablado cronometrado. Vive junto a `main.tex` y no en una
+subcarpeta, decisión deliberada: así las figuras se referencian con las mismas rutas `assets/` que
+el manuscrito, el linter las valida sin excepciones y no se duplica ningún PNG. El tema reutiliza la
+paleta de `export_study_assets.py`, que es la de las quince figuras, para que diapositivas y
+gráficos parezcan una sola pieza. `verify_latex_assets.py` escanea ahora también la presentación.
+
+**El reenfoque, que es el cambio de fondo.** El manuscrito decía en `09_conclusiones.tex` que «el
+hallazgo central del trabajo, sin embargo, no está en el modelo sino en lo que ocurre al llevarlo a
+una cartera», y `00_resumen.tex` y `plan_tfm.md` repetían esa jerarquía. El autor la corrige: el
+trabajo son **dos objetivos sucesivos**, no un hallazgo único que desplaza al modelo.
+
+1. **Que el sistema aprenda a ordenar** acciones fuera de muestra. Lo demuestran los tres Model
+   Studies.
+2. **Que las variables de cartera importen** y que optimizando por Information Ratio se construya
+   una buena. Lo demuestra el Portfolio Study.
+
+La clave es que durante los tres Model Studies **la cartera es secundaria porque no se había
+optimizado todavía**: se mantuvo la configuración por defecto del catálogo precisamente para que
+ninguna decisión predictiva pudiera apoyarse en ella. Con ese marco, el −11,29 % de la era reservada
+deja de ser un giro incómodo y pasa a ser el punto de partida del Objetivo 2 y la medida de cuánto
+depende el resultado de la gestión.
+
+**El hueco real que se cierra no era de tono.** El Portfolio Study se incorporó el 2026-08-14 y
+`01_introduccion.tex` nunca se actualizó: sus cinco objetivos operativos eran panel, agentes, meta,
+selección y auditoría —todos del Objetivo 1— y H3 hablaba de «una traducción prudente de la señal a
+cartera», no de optimizarla. Ahora hay **H1–H4** (H1 y H2 del Objetivo 1; H3, que las variables de
+cartera producen diferencias materiales, y H4, que la cartera elegida conserva ventaja fuera de la
+ventana, del Objetivo 2) y un **sexto objetivo operativo** para la rejilla cartesiana.
+
+Ficheros tocados: `00_resumen.tex` (resumen y abstract, mantenidos equivalentes),
+`01_introduccion.tex`, `07_resultados_economicos.tex`, `09_conclusiones.tex`,
+`t01_afirmaciones.tex` (las cinco afirmaciones agrupadas 3 + 2 por objetivo) y `plan_tfm.md`.
+
+**Lo que el reenfoque no tocó, a propósito.** Ninguna cifra, ningún matiz y ninguna limitación: se
+conservan el Deflated Sharpe en 0,682, las seis cohortes reservadas, «la ganadora es la mejor de
+1.728 evaluadas» y que `risk` por separado (0,1227) bate al meta (0,1090). La convención de que
+ningún resultado favorable se presenta sin su salvedad se respeta sin excepción.
+
+## 2026-08-15 · Erratas de cifra en el capítulo 6 y secciones 7–9 del informe
+
+Corrección de las discrepancias detectadas al preparar la defensa. Todas verificadas contra
+`robustness.json`, `winner.json`, `attribution.json` y `portfolio_winner.json` antes de tocar nada.
+
+**En `06_resultados_predictivos.tex`, cuatro cifras y un signo.** El percentil de carteras
+aleatorias de riesgo emparejado decía 97,4 cuando es **96,8**; el percentil 95 de CAGR del escenario
+general decía 102,28 % cuando es **75,06 %**; y la frase que explicaba por qué ese escenario no es
+informativo hablaba del «percentil 65» cuando el modelo queda en el **76,1**. La peor invertía un
+signo de titular: «El meta queda en $-0{,}0119$, prácticamente en cero» en la era reservada, cuando
+`evidence/summary.json` del ganador da **+0,0441**. El −0,0119 procedía de `evidence_baseline`, es
+decir, del baseline y no del ganador, contra la regla de procedencia. La corrección además gana un
+argumento: el meta aguanta positivo porque ya había concentrado en `risk`, mientras la ponderación
+uniforme cae a −0,0735. También `growth` en esa era decía −0,1352 y la tabla generada da −0,1333, y
+la configuración ganadora citaba «un máximo de doce por agente» cuando `winner.json` dice **20**.
+
+**El origen del «doce» estaba en `docs/informe_resultados.md`, y era peor de lo que parecía.** El
+aviso de derogación cubría las secciones 1 a 6, pero **las secciones 7, 8 y 9 estaban igual de
+obsoletas y nadie las había marcado**, pese a ser las más citables del documento: la «configuración
+ganadora» daba `max_features_per_agent` = 12, `lgbm_min_child_samples` = 50, `meta_method` =
+`stacked_rolling_bounded` y una cartera de 12 posiciones con 25 % de efectivo —cuando el ganador
+real es 20, 20, `stacked_rolling_free` y una cartera de 8 posiciones sin efectivo—, y «Qué se puede
+afirmar hoy» estaba entero en cifras del study derogado (rank-IC 0,1004, DSR 0,930, era reservada
++14,21 %, transferencia 0,247). Las tres secciones se reescriben contra los artefactos vigentes, la
+8 reorganizada además por los dos objetivos, y el aviso se amplía para declarar explícitamente qué
+está actualizado y qué no.
+
+Lección que conviene retener: **un aviso de derogación parcial es una trampa**. Marcar «las
+secciones 1 a 6» dejó tres secciones sin marcar que parecían vigentes precisamente por no estar
+marcadas, y de ahí se filtró una cifra al manuscrito.
+
+**Adaptación al borrado de `f07_perfiles_tradeoff`.** La entrada siguiente elimina esa figura y la
+sustituye por la explicación del mecanismo de los perfiles. La diapositiva de reserva que la usaba
+pasa a mostrar `t08_perfiles_cartera` y a contar el hallazgo que la acompaña —el orden entre perfiles
+se predice desde el Rank-IC de los agentes que cada uno pondera—, que además es mejor material de
+defensa que el gráfico. El guion se actualiza en consecuencia.
+
 ## 2026-08-15 · Los perfiles de inversor, por fin explicados
 
 El manuscrito presentaba una tabla con ocho perfiles —`garp`, `contrarian`, `defensive`…— y sus
