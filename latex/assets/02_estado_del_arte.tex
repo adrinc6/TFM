@@ -98,7 +98,8 @@ el pasado; se eliminan así empresas que salieron del universo y se exagera la c
 El \textit{data snooping} es distinto: incluso con datos perfectamente cerrados, muchas pruebas
 incrementan la probabilidad de encontrar una aparente ganadora. Harvey et al. (2016) alertan
 del gran número de factores propuestos en la literatura y de la necesidad de elevar el estándar de
-evidencia. El Deflated Sharpe Ratio es útil porque descuenta la selección entre configuraciones, pero
+evidencia. El Deflated Sharpe Ratio (Bailey y López de Prado, 2014) es útil porque descuenta la
+selección entre configuraciones, pero
 no sustituye a la disciplina de congelar una era reservada ni a contrastes de permutación y placebo.
 
 En síntesis, la contribución del TFM no consiste en proponer un sexto factor. Consiste en evaluar una
@@ -118,11 +119,12 @@ nominal de cohortes sobrestima la cantidad de información independiente; el uso
 Newey--West y bloques de doce meses reconoce precisamente esa dependencia.
 
 La literatura de gestión activa distingue además señal de implementación, y conviene enunciar aquí
-esa relación clásica, aunque este trabajo la use como marco conceptual y no como identidad exacta.
-El \textit{information ratio} alcanzable por un gestor depende aproximadamente de tres factores: la
-calidad de su señal, medida por el \textit{information coefficient}; la amplitud, es decir, el
-número de decisiones aproximadamente independientes que puede tomar; y el coeficiente de
-transferencia, que mide qué proporción de esa señal llega efectivamente a la cartera.
+esa relación clásica --- la ley fundamental de la gestión activa de Grinold (1989) ---, aunque este
+trabajo la use como marco conceptual y no como identidad exacta. El \textit{information ratio}
+alcanzable por un gestor depende aproximadamente de tres factores: la calidad de su señal, medida
+por el \textit{information coefficient}; la amplitud, es decir, el número de decisiones
+aproximadamente independientes que puede tomar; y el coeficiente de transferencia, que mide qué
+proporción de esa señal llega efectivamente a la cartera.
 
 \[
   \text{IR} \;\approx\; \text{IC} \times \sqrt{\text{amplitud}} \times \text{TC}
@@ -181,5 +183,5 @@ La tensión aparente se disuelve al observar que ambas búsquedas actúan sobre 
 primera sobre la métrica que el trabajo reporta como resultado, donde cada comparación adicional
 infla la cifra final y obliga a ser parco; la segunda sobre una señal ya congelada, que no puede
 contaminar el Rank-IC. Lo que ninguna de las dos evita es la multiplicidad frente a la afirmación
-económica, y por eso el trabajo reporta el Deflated Sharpe (López de Prado et al., 2014) aun
+económica, y por eso el trabajo reporta el Deflated Sharpe (Bailey y López de Prado, 2014) aun
 sabiendo que su propia estrategia de búsqueda lo empeora.

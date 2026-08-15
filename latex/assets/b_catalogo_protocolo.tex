@@ -36,6 +36,14 @@ completa de candidatos, puertas de elegibilidad, ventajas pareadas e intervalos 
 \artefacto{decisions.json}: quince decisiones se resolvieron por \texttt{robust\_rank\_ic} y dos por
 \texttt{tie\_simplicity}.
 
+Diecisiete decisiones no cubren las veintiuna variables predictivas del catálogo, y la diferencia
+conviene declararla. Cuatro --- \artefacto{model\_family}, \artefacto{objective},
+\artefacto{meta\_history\_quarters} y \artefacto{meta\_recency\_weighting} --- se ejecutaron en modo
+\texttt{fixed} en la pasada de referencia, es decir, con un único valor alcanzable de su rejilla, de
+modo que no había comparación que hacer. Sus valores finales son los que la tabla recoge, pero
+provienen de una decisión declarada de antemano y no de una medición pareada, exactamente igual que
+los dos empates técnicos.
+
 Las variables de cartera no participan en ninguno de estos filtros. Se ejecutan después de congelar
 el ganador y se reportan como diagnóstico, según se detalla en la
 Sección~\ref{sec:cartera-rejilla}.
@@ -51,6 +59,28 @@ modificar al ganador. La quinta, cartera, no. El coste declarado de cada variabl
 recalcularse al cambiarla: un ajuste completo, únicamente la recombinación del meta-agente o sólo el
 \textit{backtest}. Ese coste es lo que hace viable recorrer el catálogo de forma secuencial en lugar
 de cartesiana.
+
+\paragraph{Qué ganador recoge la última columna.} La columna «Ganador» es la del \textbf{Model
+Study 3}, incluidas sus variables de cartera, que en esa fase conservaban el valor por defecto del
+catálogo. No es, por tanto, la cartera que el trabajo adopta: el Portfolio Study reoptimizó después
+seis de las doce variables de cartera y cambió tres de ellas ---
+\artefacto{max\_cash\_weight} de 0,25 a 0,0, \artefacto{minimum\_holding\_period} de
+\texttt{none} a \texttt{half\_horizon} y \artefacto{rebalance\_drift\_tolerance} de 0,25 a 0,1 ---,
+mientras que \artefacto{target\_size}, \artefacto{sizing\_mode} y
+\artefacto{coverage\_percentile\_floor} coincidieron con los de partida. La configuración adoptada
+se presenta en la Sección~\ref{sec:cartera-ganadora}. Se tabula aquí el ganador del Model Study
+porque este anexo documenta el catálogo del protocolo predictivo, no la gestión de cartera.
+
+\paragraph{Por qué seis de las doce.} Las otras seis variables de cartera ---
+\artefacto{commission\_bps}, \artefacto{slippage\_bps}, \artefacto{exit\_expected\_alpha\_bps},
+\artefacto{rotation\_edge\_bps}, \artefacto{price\_only\_strictness\_multiplier} y
+\artefacto{price\_only\_sell\_only} --- declaran rejilla pero no entran en el cartesiano, y la razón
+es que no describen una decisión del gestor sino el entorno en el que opera. Las dos primeras son
+condiciones de mercado: optimizarlas equivaldría a elegir cuánto se quiere pagar por operar, que no
+es una elección disponible. Las cuatro restantes gobiernan umbrales de la mecánica de rotación cuyo
+efecto ya está mediado por las seis que sí se recorren. Fijarlas es una decisión declarada de
+antemano, no una medición, y como tal acota lo que puede afirmarse: el barrido responde a qué
+cartera es mejor \emph{dado} ese entorno, no a cuál sería la mejor sin restricciones.
 
 La diferencia de magnitud entre ambos recorridos justifica por sí sola la elección. El producto
 cartesiano de las treinta y tres rejillas asciende a $1{,}9 \times 10^{14}$ combinaciones; incluso

@@ -275,8 +275,9 @@ en unas pocas con contenido.
 \section{Capacidad predictiva fuera de muestra}
 
 En la ventana de selección 2015--2024, el sistema alcanza Rank-IC medio 0,1090, IC-IR 0,851 y
-74,36\% de cohortes positivas. Son 117 cohortes mensuales, aunque el horizonte de doce meses deja
-aproximadamente nueve observaciones independientes efectivas: ambos números deben leerse juntos.
+74,36\% de cohortes positivas. Son 117 cohortes mensuales, aunque el horizonte de doce meses las
+solapa y deja aproximadamente nueve observaciones independientes efectivas --- las 117 divididas
+por los doce meses que tarda una etiqueta en cerrar ---: ambos números deben leerse juntos.
 El estadístico Newey--West es 3,46. La evidencia mide la calidad de la ordenación transversal, no la
 rentabilidad de una única cartera.
 
@@ -336,6 +337,16 @@ modo que la ventaja no procede exclusivamente de acertar la cola inferior --- qu
 cohorte: es ruidosa, como corresponde a un estadístico calculado sobre unas pocas decenas de
 valores, pero su media móvil se mantiene por encima de cero durante casi toda la ventana.
 
+La cuarta fila obliga a un matiz que conviene no dejar al lector. En la era reservada el decil
+superior obtiene $-7{,}67$\,\% frente al $-1{,}85$\,\% del universo: \textbf{pierde contra el
+panel}, al revés que en las tres eras anteriores. Y sin embargo la diferencia entre el decil
+superior y el inferior sigue siendo de $+11{,}33$ puntos, la segunda mayor de la tabla. Las dos
+cosas juntas dicen algo preciso: la ordenación siguió funcionando --- separa lo bueno de lo malo
+igual de bien ---, pero el nivel de toda la cola alta cayó por debajo del panel. Es coherente con
+el Rank-IC positivo de esa era y con que la cartera adoptada, que compra en ese decil, batiese al
+índice: lo hizo eligiendo dentro de él, no porque el decil entero fuese ganador. Sobre seis
+cohortes, en todo caso, ninguna de las dos lecturas admite más peso del que aquí se le da.
+
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.94\textwidth]{assets/f07_cola.png}
@@ -359,27 +370,34 @@ Figura~\ref{fig:salud} la representa con dos memorias distintas.
 
 La comparación entre ambas memorias es informativa por sí misma. La ventana corta reacciona antes a
 los cambios de régimen, pero también oscila más y llega a cruzar cero en episodios que la ventana
-larga apenas registra. Esta diferencia explica por qué el catálogo trata la longitud de la memoria
-del meta-agente como una variable a decidir con evidencia y no como una constante razonable: ambas
-opciones tienen un coste, y la elección entre reaccionar antes o estimar con menos varianza no
-puede resolverse por intuición.
-\section{Atribución, factores y resultado no superado}
+larga apenas registra. Ambas opciones tienen, por tanto, un coste, y la elección entre reaccionar
+antes o estimar con menos varianza no puede resolverse por intuición. El catálogo declara la
+longitud de esa memoria con rejilla propia, aunque la pasada de referencia la ejecutó fijada en
+dieciséis trimestres, de modo que su valor no procede de una comparación pareada: es una de las
+cuatro variables predictivas que el Anexo~\ref{anexo:catalogo} identifica como fijadas de antemano.
 
-Dos contrastes independientes preguntan lo mismo desde ángulos distintos: ¿es la señal una réplica
-de estilos ya conocidos?
+\section{¿Es la señal una réplica de factores conocidos?}
+
+Dos contrastes independientes preguntan lo mismo desde ángulos distintos, y ambos proceden de
+\artefacto{attribution.json}.
 
 El primero neutraliza. Regresando la señal contra catorce controles de valoración, rentabilidad,
 crecimiento, volatilidad y beta --- listados en el Anexo~\ref{anexo:evidencia} --- y recalculando
-después el Rank-IC, éste baja de 0,1177 a 0,1019. La pérdida del 13,38\,\% indica que parte de la
-señal comparte información con esos controles, como sería esperable en un sistema que usa ratios
-económicos; la retención del \textbf{86,62\,\%} muestra que no se agota en ellos.
+después el Rank-IC, éste baja de 0,1177 a 0,1019. Conviene declarar de dónde sale ese 0,1177, porque
+no coincide con el 0,1090 del resto del capítulo: el contraste se calcula sobre las mismas 117
+cohortes de selección, pero sólo sobre las filas en que los catorce controles están disponibles, y
+sobre ese subconjunto el Rank-IC bruto es algo mayor. Lo que importa es que las dos cifras se miden
+sobre la misma muestra, de modo que su cociente sí es interpretable. La pérdida del 13,38\,\% indica
+que parte de la señal comparte información con esos controles, como sería esperable en un sistema
+que usa ratios económicos; la retención del \textbf{86,62\,\%} muestra que no se agota en ellos.
 
 El segundo regresa los retornos contra cinco factores de estilo con errores Newey--West de doce
-retardos. Sobre las 117 cohortes de selección el $R^2$ es 0,017 y ninguna carga alcanza
-significación --- la mayor en valor absoluto es momentum, con $-0{,}105$ ---, de modo que no hay
-exposición factorial estable. Su alfa por periodo, 0,27\,\% con $t=1{,}44$, tampoco es significativo
-de forma aislada. Los factores de tamaño e inversión no son construibles con las fuentes disponibles
-y se declaran no replicables en lugar de sustituirse por un sucedáneo no auditable.
+retardos (Newey y West, 1987). Sobre las 117 cohortes de selección el $R^2$ es 0,017 y ninguna carga
+alcanza significación --- la mayor en valor absoluto es momentum, con $-0{,}105$ ---, de modo que no
+hay exposición factorial estable. Su alfa por periodo, 0,27\,\% con $t=1{,}44$, tampoco es
+significativo de forma aislada. Los factores de tamaño e inversión no son construibles con las
+fuentes disponibles y se declaran no replicables en lugar de sustituirse por un sucedáneo no
+auditable.
 
 Las dos mitades deben leerse juntas, porque acotan la afirmación por ambos lados: no hay evidencia
 suficiente para atribuir la señal a un factor clásico, ni tampoco para afirmar que genere alfa por
@@ -471,9 +489,13 @@ prudente es que el resultado no depende de ninguna era, pero tampoco es homogén
 La estabilidad entre semillas ataca una posibilidad distinta: que el resultado dependa de una
 inicialización afortunada del \textit{boosting}. En las tres semillas ensayadas el rango de Rank-IC
 es 0,0015 y no cruza cero. La Figura~\ref{fig:semillas} muestra, sin embargo, que la conclusión
-económica es bastante más frágil que la predictiva: el exceso geométrico varía apreciablemente más
-que el Rank-IC en términos relativos. Esta asimetría es la misma que motivó introducir el conjunto
-de semillas durante el desarrollo, según se documenta en el Anexo~\ref{anexo:desarrollo}.
+económica no aguanta la misma prueba: el exceso geométrico \textbf{sí cruza cero} entre semillas
+--- va de $-0{,}01$\,\% a $+2{,}61$\,\% ---, hasta el punto de que \artefacto{robustness.json}
+registra la estabilidad de la conclusión económica como \emph{falsa}. Conviene decirlo con esa
+crudeza: la misma configuración, cambiando sólo la inicialización del \textit{boosting}, puede no
+batir al índice. La ordenación es estable; su traducción a rentabilidad, no. Esta asimetría es la
+misma que motivó introducir el conjunto de semillas durante el desarrollo, según se documenta en el
+Anexo~\ref{anexo:desarrollo}.
 
 \begin{figure}[H]
   \centering
@@ -483,14 +505,14 @@ de semillas durante el desarrollo, según se documenta en el Anexo~\ref{anexo:de
   \label{fig:semillas}
 \end{figure}
 
-Frente a 1.000 carteras aleatorias de riesgo emparejado, la cartera del modelo ocupa el percentil
-96,8, con un CAGR del 15,56\,\% frente a una mediana aleatoria del 9,23\,\%. El contraste aleatorio
-general no se usa como prueba favorable, y conviene explicar por qué: su percentil 95 de CAGR es
-75,06\,\%, dominado por carteras que por azar concentraron alguna superviviente extraordinaria. Un
-nulo con esa cola no es un \textit{benchmark} informativo, y presentarlo como si el modelo «sólo»
-alcanzase el percentil 76,1 sería tan engañoso como omitirlo. La
-Figura~\ref{fig:aleatorias} muestra los dos escenarios juntos precisamente para que la diferencia
-sea visible.
+El último contraste enfrenta la cartera del modelo a 1.000 carteras aleatorias de ocho posiciones
+--- el mismo tamaño, para que la comparación sea legítima --- y pagando los mismos costes. Con
+riesgo emparejado, el modelo ocupa el percentil 96,8 (CAGR 15,56\,\% frente a una mediana aleatoria
+del 9,23\,\%). En el escenario general baja al percentil 76,1, pero ese nulo no se usa como prueba
+en ninguna dirección: su percentil 95 de CAGR llega al 75,06\,\%, dominado por carteras que por azar
+concentraron alguna superviviente extraordinaria, y una distribución con esa cola no es un
+\textit{benchmark} informativo. La Figura~\ref{fig:aleatorias} muestra los dos escenarios juntos
+para que la diferencia sea visible; las cifras proceden de \artefacto{robustness.json}.
 
 \begin{figure}[H]
   \centering

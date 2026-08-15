@@ -26,8 +26,9 @@ otros datos en los Capítulos~\ref{chap:resultados} y~\ref{chap:resultados-econo
 El catálogo cerrado se recorre en cuatro fases: temporal, representación, modelo y meta. Se parte
 de un \textit{baseline}; en cada fase se modifica una variable y se comparan sus candidatos con el
 incumbente acumulado. Así, el coste científico es una suma de alternativas, no una búsqueda
-cartesiana opaca. Las 71 configuraciones ejecutadas en la pasada de referencia quedan registradas
-junto con cada elección, y las de las dos pasadas anteriores conservan sus propios registros.
+cartesiana opaca. Las 71 configuraciones ejecutadas en la pasada de referencia quedan registradas en
+\artefacto{decisions.json} junto con cada elección, y las de las dos pasadas anteriores conservan
+sus propios registros.
 
 Un candidato debe tener observaciones suficientes, no caer por debajo de $-0,02$ en ninguna era
 disponible y superar una puerta pareada: dominar al incumbente (ventaja media positiva y mejor en
@@ -68,7 +69,10 @@ costado adoptarla. Esa es la columna que se tabula, ordenada de mayor a menor co
   \input{assets/t06_decisiones.tex}
   \caption*{Fuente: \artefacto{decisions.json}. El coste es el Rank-IC de la mejor alternativa menos
   el del ganador; un coste \emph{positivo} indica que la alternativa medía mejor y que el ganador se
-  decidió por otra vía, lo que sólo ocurre en los empates técnicos.}
+  decidió por otra vía, lo que sólo ocurre en los empates técnicos. No debe confundirse con la
+  \emph{ventaja pareada}, que promedia la diferencia cohorte a cohorte y por eso no coincide
+  exactamente: en \artefacto{meta\_method}, por ejemplo, el coste es $-0{,}0085$ y la ventaja
+  pareada $+0{,}00827$.}
 \end{table}
 
 Leída así, la tabla separa con claridad tres grupos. Cuatro decisiones eran caras de equivocar:
@@ -160,17 +164,22 @@ impidiendo que la rejilla llegue a calcular la era reservada.
 
 \section{Ejemplo de comparación pareada}
 
-Supóngase que un candidato y el incumbent producen Rank-IC sobre las mismas 40 cohortes. En cada
-fecha se resta el Rank-IC del incumbente al del candidato y se re-muestrean bloques de doce cohortes
-para preservar la dependencia inducida por el horizonte anual. Si la ventaja media es 0,0208, el
-candidato mejora el 57,5\% de cohortes y el IC bootstrap al 90\% es $[0,0108;0,0372]$, hay evidencia
-de dominancia. Éste es el caso real de la cadencia mensual frente al baseline trimestral, tal como
-se decidió en la primera pasada de la cadena.
+\begin{ejemplo}[Mecánica de la comparación]
+Un candidato y el incumbente producen Rank-IC sobre las mismas 40 cohortes. En cada fecha se resta
+el Rank-IC del incumbente al del candidato y se re-muestrean bloques de doce cohortes para preservar
+la dependencia inducida por el horizonte anual. Si la ventaja media resultase 0,0208, con el
+candidato mejor en el 57,5\,\% de las cohortes y un intervalo \textit{bootstrap} al 90\,\% de
+$[0{,}0108;\,0{,}0372]$, habría evidencia de dominancia.
+\end{ejemplo}
+
+Las cifras del ejemplo son ilustrativas, pero corresponden al orden de magnitud de un caso real: así
+se decidió la cadencia mensual frente al baseline trimestral en la primera pasada de la cadena, con
+una ventaja pareada de $+0{,}0208$.
 
 La rentabilidad de cartera no influye en este paso. Un CAGR alto puede surgir de concentración,
 exposición accidental a una acción extrema o efectivo, sin demostrar que se ordene mejor el
-universo. El horizonte de seis meses ilustra un rechazo: su ventaja pareada fue $-0,0265$ y el
-intervalo $[-0,0552;-0,0109]$. Mostrar este resultado evita presentar la selección como una
+universo. El horizonte de seis meses ilustra un rechazo medido: su ventaja pareada fue $-0,0265$ y
+el intervalo $[-0,0552;-0,0109]$. Mostrar este resultado evita presentar la selección como una
 confirmación automática de la configuración preferida.
 
 \section{De la señal congelada a una cartera}
@@ -212,11 +221,16 @@ posterior.
 
 \section{Ejemplo de decisión y coste}
 
-Con horizonte de doce meses, comisión de 5 pb y slippage de 10 pb, una rotación completa cuesta 30
-pb. Si la peor posición tiene alfa esperado 60 pb, una candidata externa 250 pb y el margen de
-rotación es 50 pb, la mejora de 190 pb supera 80 pb y se rota. Si la candidata ofrece 120 pb, la
-mejora no cubre coste y margen, por lo que se conserva la posición. El ranking ordena preferencias;
-la operación necesita además una ventaja neta.
+\begin{ejemplo}[Cuándo se rota y cuándo no]
+Con horizonte de doce meses, comisión de 5 pb y \textit{slippage} de 10 pb, una rotación completa
+cuesta 30 pb. Si la peor posición tuviese alfa esperado 60 pb, una candidata externa 250 pb y el
+margen de rotación fuese 50 pb, la mejora de 190 pb superaría los 80 pb exigidos y se rotaría. Si la
+candidata ofreciese 120 pb, la mejora no cubriría coste y margen, y se conservaría la posición.
+\end{ejemplo}
+
+El ranking ordena preferencias; la operación necesita además una ventaja neta. Las cifras anteriores
+son inventadas para ilustrar la regla: los costes sí son los de la simulación, pero los alfas no
+proceden de ninguna medición.
 
 Las entradas nuevas incorporan histéresis y el efectivo rinde 0\%. Bajo la política
 \texttt{opportunity\_cash}, una plaza puede permanecer en efectivo sólo si respeta el tope declarado

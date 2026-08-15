@@ -105,13 +105,17 @@ El meta combina después esos rangos, no sus unidades originales.
 
 \section{Ejemplo de combinación}
 
-Supóngase una empresa con rangos quality 0,80, value 0,55, growth 0,70, momentum 0,45 y risk 0,90.
-En el arranque, los pesos iguales producen $(0,80+0,55+0,70+0,45+0,90)/5=0,68$: la empresa queda
-algo por encima de la mediana del universo, y ninguna de sus cinco vistas pesa más que otra.
+\begin{ejemplo}[De cinco rangos a un score]
+Una empresa presenta rangos quality 0,80, value 0,55, growth 0,70, momentum 0,45 y risk 0,90. En el
+arranque, los pesos iguales producen $(0,80+0,55+0,70+0,45+0,90)/5=0,68$: queda algo por encima de
+la mediana del universo, y ninguna de sus cinco vistas pesa más que otra.
 
-Supóngase ahora que la evidencia ya cerrada indica que \textit{risk} ordena mejor que los demás y el
-meta le asigna 0,70, repartiendo 0,075 entre los cuatro restantes. El score pasa a
-$0{,}70\times0{,}90 + 0{,}075\times(0{,}80+0{,}55+0{,}70+0{,}45) = 0{,}82$. La empresa mejora de
+Si la evidencia ya cerrada indicase que \textit{risk} ordena mejor que los demás y el meta le
+asignara 0,70, repartiendo 0,075 entre los cuatro restantes, el score pasaría a
+$0{,}70\times0{,}90 + 0{,}075\times(0{,}80+0{,}55+0{,}70+0{,}45) = 0{,}82$.
+\end{ejemplo}
+
+Los rangos del ejemplo son inventados; lo que ilustra el cálculo es real. La empresa mejora de
 posición, y conviene fijarse en por qué: no porque nadie haya decidido que el riesgo importa, sino
 porque su fortaleza en la dimensión que mejor ha venido ordenando gana relevancia según datos ya
 observados.

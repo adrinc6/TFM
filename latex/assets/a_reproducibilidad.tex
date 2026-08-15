@@ -68,6 +68,17 @@ Dos elementos son la excepción y conviene declararlo: las Tablas~\ref{tab:defec
 y~\ref{tab:versiones} del Anexo~\ref{anexo:desarrollo} se transcriben de la bitácora del proyecto
 y no de un artefacto del estudio, porque documentan el proceso de desarrollo y no una medición.
 
+Hay una segunda salvedad, sobre qué se puede regenerar y qué no. El repositorio versiona los
+artefactos en formato JSON --- \artefacto{winner.json}, \artefacto{decisions.json},
+\artefacto{robustness.json}, \artefacto{attribution.json}, \artefacto{portfolio\_winner.json} y los
+\artefacto{summary.json} de cada evidencia ---, que son los que sostienen la mayoría de las cifras
+citadas en el texto y permiten verificarlas directamente. Los \artefacto{.parquet}, en cambio,
+quedan excluidos por tamaño, de modo que las tablas y figuras que se construyen a partir de ellos
+--- cobertura, agentes, atribución local, colas, órdenes, métricas anuales, rejilla de carteras y
+perfiles --- se conservan ya generadas en \artefacto{latex/assets/} pero no pueden recalcularse
+desde un clon del repositorio sin volver a ejecutar el estudio. Se declara porque el comando
+anterior sólo es reproducible en su totalidad sobre la instalación donde corrieron los estudios.
+
 Un segundo script comprueba que el proyecto sea portable antes de subirlo:
 
 \begin{quote}
