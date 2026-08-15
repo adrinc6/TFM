@@ -3,7 +3,7 @@
 % Documento maestro. Pensado para compilar con XeLaTeX en Overleaf:
 %   Menu > Settings > Compiler: XeLaTeX ; Main document: main.tex
 % XeLaTeX es UTF-8 nativo (NO se usa inputenc) y gestiona las fuentes con
-% fontspec. La bibliografía es autor-año con biblatex + biber.
+% fontspec. La bibliografía es autor-año escrita a mano, sin biblatex ni biber.
 %
 % Estructura y convenciones: ver latex/plan_tfm.md.
 % Cada capítulo es un fichero en assets/ que se incorpora con \input al final.
@@ -53,10 +53,9 @@
 \usepackage{csquotes}   % lo usa babel para las comillas españolas
 % NO se usa biblatex ni biber: la cadena biblatex+biber impedía compilar el
 % documento. Con doce referencias, la bibliografía se escribe a mano como un
-% capítulo más (assets/12_bibliografia.tex) y las citas del texto son autor-año
-% en texto plano: «Autor (año)» o «(Autor, año)». El fichero referencias.bib
-% se conserva como registro de los datos bibliográficos completos, pero no
-% interviene en la compilación.
+% capítulo más (assets/10_bibliografia.tex) y las citas del texto son autor-año
+% en texto plano: «Autor (año)» o «(Autor, año)». El proyecto no contiene
+% ningún fichero .bib ni lo necesita.
 
 \usepackage[hidelinks]{hyperref}   % enlaces internos sin recuadros de color
 
@@ -100,22 +99,24 @@
 \listoffigures
 \listoftables
 
+% Orden narrativo: problema -> datos observables -> sistema -> protocolo -> resultados
+% predictivos -> resultados economicos -> limites -> conclusion. La historia del desarrollo
+% se recoge integra en el Anexo D para no interrumpir ese hilo.
 \input{assets/01_introduccion}
 \input{assets/02_estado_del_arte}
 \input{assets/03_datos_y_universo}
-\input{assets/04_diseno_metodologico}
-\input{assets/05_desarrollo_metodo}
-\input{assets/06_agentes_y_meta_agente}
-\input{assets/07_diseno_experimental}
-\input{assets/08_desarrollo_cartera}
-\input{assets/09_resultados}
-\input{assets/10_limitaciones}
-\input{assets/11_conclusiones}
-\input{assets/12_bibliografia}
+\input{assets/04_agentes_y_meta_agente}
+\input{assets/05_protocolo_experimental}
+\input{assets/06_resultados_predictivos}
+\input{assets/07_resultados_economicos}
+\input{assets/08_limitaciones}
+\input{assets/09_conclusiones}
+\input{assets/10_bibliografia}
 
 \appendix
 \input{assets/a_reproducibilidad}
 \input{assets/b_catalogo_protocolo}
 \input{assets/c_evidencia_complementaria}
+\input{assets/d_auditoria_desarrollo}
 
 \end{document}

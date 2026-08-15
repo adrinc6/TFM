@@ -264,26 +264,8 @@ def longtable(path: Path, columns: list[str], rows: list[list[str]], caption: st
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
-def write_tables_predictive(paths: Paths, diag: pd.DataFrame, features: pd.DataFrame, attribution: dict, weights: pd.DataFrame) -> None:
+def write_tables_predictive(paths: Paths, diag: pd.DataFrame, features: pd.DataFrame, attribution: dict) -> None:
     """Tablas sobre datos, features y capacidad predictiva por agente."""
-    annual = weights.copy()
-    annual["year"] = pd.to_datetime(annual["snapshot_date"]).dt.year
-    wide = annual.pivot_table(index="year", columns="agent", values="weight", aggfunc="mean")
-    order = [agent for agent in ["risk", "growth", "momentum", "quality", "value"] if agent in wide]
-    status = annual.groupby("year")["weight_status"].agg(
-        lambda values: "uniforme" if (values == "fallback_equal").all() else "aprendido"
-    )
-    rows = [
-        [str(int(year))] + [num(wide.loc[year, agent], 3) for agent in order] + [status.loc[year]]
-        for year in wide.index
-    ]
-    table(
-        paths.tables / "t05_meta_pesos_anual.tex",
-        ["Año"] + [tex(agent) for agent in order] + ["Estado"],
-        rows,
-        "l" + "r" * len(order) + "l",
-    )
-
     matrix = agent_era_matrix(diag)
     rows = [
         [tex(str(name).replace("_", " "))] + [num(matrix.loc[name, era]) for era in matrix.columns]
@@ -379,19 +361,6 @@ def write_tables_robustness(
             str(int(boot["interval_95"]["n_cohorts"])),
         ]
     ]
-    for entry in boot["era_exclusions"]:
-        rows.append([f"Excluyendo {tex(entry['excluded_era'])}", num(entry["mean_rank_ic"]), "—", "—", str(int(entry["n_cohorts"]))])
-    dispersion = robustness["seed_dispersion"]
-    for key, label, digits in [("mean_rank_ic", "Rank-IC entre semillas", 4), ("information_ratio", "IR entre semillas", 3)]:
-        entry = dispersion[key]
-        rows.append([label, num(entry["median"], digits), f"[{num(entry['min'], digits)}; {num(entry['max'], digits)}]", "—", str(int(dispersion["n_seeds"]))])
-    table(
-        paths.tables / "t07_eras_bootstrap.tex",
-        ["Contraste", "Valor central", "Intervalo 90\\%", "Intervalo 95\\%", "Obs."],
-        rows,
-        "lrccr",
-    )
-
     windows = [("summary", "Selección 2015–2024"), ("confirmation", "Confirmación 2025–2026"), ("full_curve", "Curva completa")]
     metrics = [
         ("cagr_portfolio", "CAGR de cartera", "pct"),
@@ -431,35 +400,7 @@ def write_tables_robustness(
         rows.append([label] + cells)
     table(paths.tables / "t07_selec_conf_full.tex", ["Métrica"] + [label for _, label in windows], rows)
 
-    rows = []
-    for key, label in [("selection", "Selección"), ("confirmation", "Confirmación"), ("full", "Curva completa")]:
-        window = attribution["factor_regression"][key]
-        rows.append(
-            [
-                label,
-                pct(window["alpha_per_period"]),
-                num(window["alpha_t_stat"], 2),
-                num(window["r_squared"], 3),
-                str(int(window["n_observations"])),
-            ]
-            + [num(window["loadings"][name], 3) for name in window["loadings"]]
-        )
-    factor_names = list(attribution["factor_regression"]["selection"]["loadings"].keys())
-    table(
-        paths.tables / "t07_factores.tex",
-        ["Ventana", "Alfa/periodo", "$t$", "$R^2$", "Obs."] + [tex(name.replace("_", " ")) for name in factor_names],
-        rows,
-    )
 
-    neutralized = attribution["neutralized_rank_ic"]
-    rows = [
-        ["Rank-IC bruto", num(neutralized["raw_mean_rank_ic"])],
-        ["Rank-IC neutralizado", num(neutralized["neutralized_mean_rank_ic"])],
-        ["Fracción retenida", pct(neutralized["retained_fraction"])],
-        ["Controles aplicados", str(len(neutralized["controls"]))],
-        ["Cohortes", str(int(neutralized["n_cohorts"]))],
-    ]
-    table(paths.tables / "t07_neutralizacion.tex", ["Concepto", "Valor"], rows, "lr")
 
 
 def _write_tables_orders_and_tails(paths: Paths, orders: pd.DataFrame, tails: pd.DataFrame) -> None:
@@ -570,27 +511,6 @@ def load_agent_attribution(paths: "Paths") -> dict[str, pd.DataFrame]:
     by_year = leaders_by_year.groupby(["agent", "year", "feature"], as_index=False).size()
 
     return {"by_feature": by_feature, "vocabulary": vocabulary, "by_year": by_year}
-
-
-def draw_agent_attribution(summary: dict[str, pd.DataFrame], agent: str, output: Path, top: int = 8) -> None:
-    """Variables que más mueven la puntuación de un agente.
-
-    La longitud de la barra es la magnitud media de la contribución. No se codifica el signo: la
-    contribución media con signo es de orden $10^{-4}$ o menor en todas estas variables, es decir,
-    se cancela entre acciones. Colorear por ese signo sugeriría un sesgo direccional que los datos
-    no sostienen. Lo que la figura mide es **cuánto** pesa cada variable al ordenar, no hacia dónde
-    empuja.
-    """
-    frame = summary["by_feature"]
-    frame = frame[frame["agent"] == agent].nlargest(top, "mean_abs").iloc[::-1]
-    labels = [name.replace("factor_", "").replace("_", " ") for name in frame["feature"]]
-    fig, ax = plt.subplots(figsize=(7.2, 3.6))
-    ax.barh(labels, frame["mean_abs"], color=NAVY)
-    ax.set(
-        title=f"Variables que más mueven la puntuación del agente {agent}",
-        xlabel="Contribución absoluta media a la puntuación",
-    )
-    save(fig, output)
 
 
 def draw_attribution_by_year(summary: dict[str, pd.DataFrame], agent: str, output: Path, top: int = 4) -> None:
@@ -862,15 +782,6 @@ def write_tables_portfolio_study(paths: Paths, portfolio: dict, baseline: dict) 
     winner = portfolio["winner"]
     summary = winner["winner_summary"]
     confirmation = winner.get("winner_confirmation", {})
-    combination = winner["winner_combination"]
-    config_rows = [
-        [tex(GRID_LABELS[variable]), tex(tex_free(combination.get(variable)))]
-        for variable in GRID_VARIABLES
-    ]
-    table(
-        paths.tables / "t08_cartera_ganadora_config.tex",
-        ["Variable de cartera", "Valor ganador"], config_rows, "ll",
-    )
 
     def _delta(current: float | None, reference: float | None, formatter, digits: int) -> str:
         """Diferencia con signo, en el mismo formato que las dos columnas que compara."""
@@ -975,32 +886,6 @@ def write_tables_catalog(paths: Paths, catalog: dict, winner: dict, decisions: d
     )
 
 
-def draw_meta_weights(weights: pd.DataFrame, output: Path) -> None:
-    weights = weights.copy()
-    weights["snapshot_date"] = pd.to_datetime(weights["snapshot_date"])
-    wide = weights.pivot(index="snapshot_date", columns="agent", values="weight").sort_index()
-    order = [a for a in ["quality", "value", "growth", "momentum", "risk"] if a in wide]
-    colors = [SLATE, GOLD, TEAL, RED, NAVY]
-    fig, ax = plt.subplots(figsize=(7.2, 3.6))
-    ax.stackplot(wide.index, *[wide[a] for a in order], labels=order, colors=colors[: len(order)], alpha=0.93)
-    ax.set(title="Evolución de los pesos del meta-agente", ylabel="Peso", ylim=(0, 1))
-    legend_below(ax)
-    save(fig, output)
-
-
-def draw_agent_ic(diag: pd.DataFrame, output: Path) -> None:
-    selection = diag[pd.to_datetime(diag["prediction_date"]).dt.year.le(2024)]
-    summary = selection.groupby("agent")["rank_ic"].agg(["mean", "std", "count"]).sort_values("mean")
-    names = [str(x).replace("_", " ") for x in summary.index]
-    err = summary["std"] / np.sqrt(summary["count"])
-    colors = [NAVY if a == "meta_final" else TEAL if a == "risk" else SLATE for a in summary.index]
-    fig, ax = plt.subplots(figsize=(7.2, 3.7))
-    ax.barh(names, summary["mean"], xerr=err, color=colors, capsize=3)
-    ax.axvline(0, color="black", linewidth=0.8)
-    ax.set(title="Capacidad predictiva por agente", xlabel="Rank-IC medio (2015–2024)")
-    save(fig, output)
-
-
 def draw_rank_ic(summary: dict, output: Path) -> None:
     frame = pd.DataFrame(summary["rank_ic_by_cohort"])
     frame["date"] = pd.to_datetime(frame["date"])
@@ -1039,28 +924,6 @@ def draw_drawdown(equity: pd.DataFrame, output: Path) -> None:
     save(fig, output)
 
 
-def draw_annual_alpha(annual: pd.DataFrame, output: Path) -> None:
-    annual = annual.copy()
-    colors = [GOLD if y >= 2025 else GREEN if x >= 0 else RED for y, x in zip(annual.year, annual.alpha)]
-    fig, ax = plt.subplots(figsize=(7.2, 3.4))
-    ax.bar(annual["year"].astype(str), annual["alpha"], color=colors)
-    ax.axhline(0, color="black", linewidth=0.8)
-    ax.set(title="Alfa anual de la cartera frente a SPY", ylabel="Alfa anual")
-    ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter(1, decimals=0))
-    save(fig, output)
-
-
-def draw_profiles(profiles: pd.DataFrame, output: Path) -> None:
-    frame = profiles.sort_values("geometric_excess_return")
-    colors = [NAVY if x == "balanced" else TEAL if v >= 0 else RED for x, v in zip(frame.profile, frame.geometric_excess_return)]
-    fig, ax = plt.subplots(figsize=(7.2, 3.7))
-    ax.barh(frame["profile"], frame["geometric_excess_return"], color=colors)
-    ax.axvline(0, color="black", linewidth=0.8)
-    ax.set(title="Exceso geométrico por perfil", xlabel="Exceso geométrico anual")
-    ax.xaxis.set_major_formatter(mpl.ticker.PercentFormatter(1, decimals=0))
-    save(fig, output)
-
-
 def draw_profile_tradeoff(profiles: pd.DataFrame, output: Path) -> None:
     fig, ax = plt.subplots(figsize=(6.3, 3.8))
     for row in profiles.itertuples():
@@ -1070,18 +933,6 @@ def draw_profile_tradeoff(profiles: pd.DataFrame, output: Path) -> None:
     ax.axhline(0, color="black", linewidth=0.8)
     ax.set(title="Rotación y exceso geométrico", xlabel="Turnover anualizado", ylabel="Exceso geométrico")
     ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter(1, decimals=0))
-    save(fig, output)
-
-
-def draw_placebos(robustness: dict, observed: float, output: Path) -> None:
-    values = [entry["summary"]["mean_rank_ic"] for entry in robustness["label_placebos"]]
-    labels = [str(entry["seed"]) for entry in robustness["label_placebos"]]
-    fig, ax = plt.subplots(figsize=(7.2, 3.2))
-    ax.bar(labels, values, color=SLATE, label="Placebo")
-    ax.axhline(observed, color=NAVY, linewidth=2, label="Sistema observado")
-    ax.axhline(0, color="black", linewidth=0.8)
-    ax.set(title="Placebos de etiqueta frente al Rank-IC observado", xlabel="Semilla del placebo", ylabel="Rank-IC medio")
-    legend_below(ax)
     save(fig, output)
 
 
@@ -1107,39 +958,6 @@ def agent_era_matrix(diag: pd.DataFrame) -> pd.DataFrame:
     return matrix.loc[order]
 
 
-def diverging_colors(values, vmax: float) -> list[str]:
-    """Rojo para negativos, azul para positivos, con intensidad proporcional."""
-    colors = []
-    for value in values:
-        weight = min(abs(float(value)) / vmax, 1.0) if vmax else 0.0
-        base = np.array(mpl.colors.to_rgb(NAVY if value >= 0 else RED))
-        colors.append(mpl.colors.to_hex(1 - weight * (1 - base)))
-    return colors
-
-
-def draw_rankic_era_heatmap(diag: pd.DataFrame, output: Path) -> None:
-    matrix = agent_era_matrix(diag)
-    limit = float(np.abs(matrix.to_numpy()).max())
-    fig, ax = plt.subplots(figsize=(7.2, 3.6))
-    ax.imshow(matrix.to_numpy(), cmap="RdBu", vmin=-limit, vmax=limit, aspect="auto")
-    ax.set(
-        xticks=range(matrix.shape[1]),
-        yticks=range(matrix.shape[0]),
-        title="Rank-IC por señal y era",
-    )
-    ax.set_xticklabels(matrix.columns)
-    ax.set_yticklabels([str(name).replace("_", " ") for name in matrix.index])
-    for row in range(matrix.shape[0]):
-        for col in range(matrix.shape[1]):
-            value = matrix.iat[row, col]
-            shade = "white" if abs(value) > 0.62 * limit else "black"
-            ax.text(col, row, num(value, 4), ha="center", va="center", color=shade, fontsize=8)
-    ax.grid(False)
-    ax.axvline(2.5, color="black", linewidth=1.4)
-    ax.text(3.0, -0.85, "Reservada", ha="center", fontsize=8, color=GOLD, fontweight="bold")
-    save(fig, output)
-
-
 def draw_meta_weights_annual(weights: pd.DataFrame, output: Path) -> None:
     frame = weights.copy()
     frame["year"] = pd.to_datetime(frame["snapshot_date"]).dt.year
@@ -1153,85 +971,6 @@ def draw_meta_weights_annual(weights: pd.DataFrame, output: Path) -> None:
         bottom += wide[agent].to_numpy()
     ax.set(title="Peso medio anual del meta-agente por agente", ylabel="Peso medio", ylim=(0, 1))
     legend_below(ax)
-    save(fig, output)
-
-
-def draw_meta_concentration(tails: pd.DataFrame, output: Path) -> None:
-    frame = tails.copy()
-    frame["prediction_date"] = pd.to_datetime(frame["prediction_date"])
-    fig, ax = plt.subplots(figsize=(7.2, 3.5))
-    ax.plot(frame["prediction_date"], frame["meta_weight_concentration_hhi"], color=NAVY, linewidth=1.8, label="Concentración (HHI)")
-    ax.plot(frame["prediction_date"], frame["meta_weight_max"], color=TEAL, linewidth=1.5, label="Peso máximo")
-    ax.axhline(0.5, color=GOLD, linewidth=1.2, linestyle="--", label="Tope de la variante acotada")
-    ax.set(title="Concentración de los pesos del meta-agente", ylabel="Proporción")
-    legend_below(ax)
-    save(fig, output)
-
-
-def draw_chain_progression(chain: pd.DataFrame, output: Path) -> None:
-    """Cuatro métricas de la cadena, cada una en su panel y en su escala.
-
-    Van separadas a propósito: Rank-IC (~0,1), IC-IR (~0,8), transferencia (~0,3) e IR (~0,3) no
-    comparten unidades, y superponerlas en un solo eje sugeriría una comparación que no existe.
-    Lo que sí se compara es la *forma*: las cuatro suben monótonamente a lo largo de la cadena.
-    """
-    panels = [
-        ("Rank-IC medio", "mean_rank_ic", NAVY),
-        ("IC-IR", "ic_ir", TEAL),
-        ("Coef. de transferencia", "transfer_coefficient", GOLD),
-        ("Information Ratio (selección)", "information_ratio", GREEN),
-    ]
-    fig, axes = plt.subplots(1, 4, figsize=(7.6, 2.6))
-    labels = [f"Study {row.order}" for row in chain.itertuples()]
-    for ax, (title, column, color) in zip(axes, panels):
-        values = chain[column].astype(float).tolist()
-        ax.plot(labels, values, marker="o", color=color, linewidth=1.8, markersize=5)
-        for index, value in enumerate(values):
-            # El primer punto queda pegado al eje: su etiqueta se desplaza a la derecha para no
-            # salirse del panel, y las demás se centran sobre el marcador.
-            offset, align = ((6, "left") if index == 0 else (0, "center"))
-            ax.annotate(
-                num(value, 3), (index, value), xytext=(offset, 7),
-                textcoords="offset points", ha=align, fontsize=7,
-            )
-        ax.set_title(title, fontsize=9)
-        ax.tick_params(axis="x", labelsize=7.5)
-        ax.margins(y=0.28)
-    save(fig, output)
-
-
-def draw_chain_configuration(changes: list[dict], output: Path) -> None:
-    """Cuántas variables cambia cada pasada respecto de su punto de partida.
-
-    Es la evidencia visual de convergencia del ascenso por coordenadas: la primera pasada reescribe
-    ocho variables del baseline del catálogo y las siguientes apenas retocan una y dos. Las
-    etiquetas nombran las variables porque el recuento por sí solo no dice cuáles se movieron.
-    """
-    labels = [f"Study {item['order']}" for item in changes]
-    counts = [len(item["variables"]) for item in changes]
-    fig, ax = plt.subplots(figsize=(7.2, 3.2))
-    bars = ax.bar(labels, counts, color=[NAVY, TEAL, GOLD][: len(labels)], width=0.55)
-    for bar, item in zip(bars, changes):
-        names = "\n".join(variable.replace("_", " ") for variable in item["variables"])
-        centre = bar.get_x() + bar.get_width() / 2
-        ax.annotate(
-            f"{len(item['variables'])}", (centre, bar.get_height()),
-            xytext=(0, 4), textcoords="offset points", ha="center", fontsize=9, fontweight="bold",
-        )
-        # Las barras cortas no tienen sitio dentro para la lista de variables: en ese caso la
-        # etiqueta va encima, en gris, y solo se escribe dentro cuando la barra la puede contener.
-        if len(item["variables"]) >= 4:
-            ax.annotate(
-                names, (centre, 0), xytext=(0, 8), textcoords="offset points",
-                ha="center", va="bottom", fontsize=6.6, color="white",
-            )
-        else:
-            ax.annotate(
-                names, (centre, bar.get_height()), xytext=(0, 18), textcoords="offset points",
-                ha="center", va="bottom", fontsize=6.6, color=SLATE,
-            )
-    ax.set(title="Variables que cambia cada pasada respecto de su punto de partida", ylabel="Variables modificadas")
-    ax.margins(y=0.26)
     save(fig, output)
 
 
@@ -1334,52 +1073,6 @@ def draw_seed_dispersion(robustness: dict, output: Path) -> None:
     save(fig, output)
 
 
-def draw_factor_loadings(attribution: dict, output: Path) -> None:
-    windows = [("selection", "Selección 2015–2024"), ("confirmation", "Confirmación 2025–2026")]
-    fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.5), sharey=True)
-    for ax, (key, title) in zip(axes, windows):
-        window = attribution["factor_regression"][key]
-        names = list(window["loadings"].keys())
-        values = [window["loadings"][name] for name in names]
-        stats = [window["loading_t_stats"][name] for name in names]
-        colors = [NAVY if abs(stat) >= 2 else SLATE for stat in stats]
-        ax.barh([name.replace("_", " ") for name in names], values, color=colors)
-        ax.axvline(0, color="black", linewidth=0.8)
-        ax.set(title=f"{title}\n$R^2={num(window['r_squared'], 3)}$", xlabel="Carga factorial")
-    axes[0].set_ylabel("Factor")
-    fig.suptitle("Cargas factoriales (azul: $|t|\\geq2$)", fontsize=10)
-    save(fig, output)
-
-
-def draw_transfer_by_year(attribution: dict, output: Path) -> None:
-    frame = pd.DataFrame(attribution["transfer"]["by_year"])
-    fig, ax = plt.subplots(figsize=(7.2, 3.7))
-    sizes = 40 + 5200 * frame["cost"]
-    colors = [GREEN if value >= 0 else RED for value in frame["excess"]]
-    ax.scatter(frame["turnover"], frame["excess"], s=sizes, c=colors, alpha=0.72, zorder=3)
-    for row in frame.itertuples():
-        ax.annotate(str(int(row.year)), (row.turnover, row.excess), xytext=(6, 5), textcoords="offset points", fontsize=7.5)
-    ax.axhline(0, color="black", linewidth=0.8)
-    ax.set(title="Rotación, exceso y coste por año (el área es el coste)", xlabel="Turnover anual", ylabel="Exceso sobre SPY")
-    ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter(1, decimals=0))
-    save(fig, output)
-
-
-def draw_order_reasons(orders: pd.DataFrame, output: Path) -> None:
-    frame = orders.copy()
-    frame["flow"] = (frame["weight_after"] - frame["weight_before"]).abs()
-    grouped = frame.groupby("reason").agg(share=("flow", "sum"), count=("flow", "size")).sort_values("share")
-    grouped["share"] /= grouped["share"].sum()
-    labels = [str(name).replace("_", " ") for name in grouped.index]
-    fig, ax = plt.subplots(figsize=(7.2, 3.3))
-    ax.barh(labels, grouped["share"], color=[NAVY if value == grouped["share"].max() else SLATE for value in grouped["share"]])
-    for index, (share, count) in enumerate(zip(grouped["share"], grouped["count"])):
-        ax.text(share, index, f"  {pct(share, 1).replace(chr(92) + '%', ' %')} · {count} órdenes", va="center", fontsize=8)
-    ax.set(title="Descomposición del turnover por motivo de orden", xlabel="Proporción del flujo total", xlim=(0, grouped["share"].max() * 1.32))
-    ax.xaxis.set_major_formatter(mpl.ticker.PercentFormatter(1, decimals=0))
-    save(fig, output)
-
-
 def draw_tail_spread(tails: pd.DataFrame, output: Path) -> None:
     frame = tails.copy()
     frame["prediction_date"] = pd.to_datetime(frame["prediction_date"])
@@ -1410,24 +1103,6 @@ def draw_signal_health(health: pd.DataFrame, output: Path) -> None:
     ax.axvspan(pd.Timestamp("2025-01-01"), frame["snapshot_date"].max(), color=GOLD, alpha=0.13, label="Era reservada")
     ax.set(title="Salud de la señal observable en cada snapshot", ylabel="Rank-IC contraído")
     legend_below(ax)
-    save(fig, output)
-
-
-def draw_feature_blocks(features: pd.DataFrame, output: Path) -> None:
-    grouped = (
-        features.groupby("block")
-        .agg(n=("feature", "size"), coverage=("coverage", "mean"), rank_ic=("univariate_rank_ic", "mean"))
-        .sort_values("rank_ic")
-    )
-    fig, ax = plt.subplots(figsize=(7.2, 3.9))
-    colors = diverging_colors(grouped["rank_ic"], float(grouped["rank_ic"].abs().max()))
-    ax.barh([str(name).replace("_", " ") for name in grouped.index], grouped["rank_ic"], color=colors)
-    for index, (value, count, coverage) in enumerate(zip(grouped["rank_ic"], grouped["n"], grouped["coverage"])):
-        label_x = value + 0.0006 if value >= 0 else 0.0006
-        ax.text(label_x, index, f"{count} vars · cob. {100 * coverage:.0f} %".replace(".", ","), va="center", ha="left", fontsize=7.5)
-    ax.axvline(0, color="black", linewidth=0.8)
-    ax.set(title="Rank-IC univariante medio por bloque de features", xlabel="Rank-IC univariante medio")
-    ax.margins(x=0.22)
     save(fig, output)
 
 
@@ -1493,35 +1168,7 @@ def build_robustness_rows(robustness: dict, attribution: dict) -> list[dict]:
     ]
 
 
-def draw_robustness(rows: list[dict], output: Path) -> None:
-    labels = [row["name"] for row in rows]
-    verdict = [int(row["passes"]) for row in rows]
-    fig, ax = plt.subplots(figsize=(7.2, 2.5))
-    ax.scatter(range(len(labels)), verdict, s=150, c=[GREEN if x else RED for x in verdict], marker="o")
-    for index, value in enumerate(verdict):
-        ax.text(index, value, "✓" if value else "✕", ha="center", va="center", color="white", fontsize=11, fontweight="bold")
-    ax.set(xticks=range(len(labels)), xticklabels=labels, ylim=(-0.35, 1.35), yticks=[0, 1], yticklabels=["No supera", "Supera"], title="Resumen de contrastes de robustez")
-    ax.tick_params(axis="x", rotation=25)
-    save(fig, output)
-
-
-def draw_coverage(attribution: dict, output: Path) -> None:
-    coverage = pd.DataFrame(attribution["universe_coverage"])
-    fig, ax1 = plt.subplots(figsize=(7.2, 3.5))
-    ax1.plot(coverage["year"], coverage["distinct_tickers"], color=NAVY, linewidth=2, label="Tickers distintos")
-    ax1.set(ylabel="Tickers distintos", title="Cobertura histórica del universo")
-    ax2 = ax1.twinx()
-    ax2.plot(coverage["year"], coverage["usable_fraction"], color=TEAL, linewidth=1.8, label="Fracción utilizable")
-    ax2.set_ylabel("Fracción utilizable")
-    ax2.yaxis.set_major_formatter(mpl.ticker.PercentFormatter(1, decimals=0))
-    ax2.set_ylim(0.9, 1.005)
-    lines, labels = ax1.get_legend_handles_labels()
-    lines2, labels2 = ax2.get_legend_handles_labels()
-    ax1.legend(lines + lines2, labels + labels2, ncol=2, loc="upper center", bbox_to_anchor=(0.5, -0.16), frameon=False)
-    save(fig, output)
-
-
-def write_tables(paths: Paths, summary: dict, robustness: dict, attribution: dict, diag: pd.DataFrame, annual: pd.DataFrame, profiles: pd.DataFrame, decisions: dict) -> None:
+def write_tables(paths: Paths, summary: dict, robustness: dict, attribution: dict, diag: pd.DataFrame, annual: pd.DataFrame, decisions: dict) -> None:
     selection = diag[pd.to_datetime(diag["prediction_date"]).dt.year.le(2024)]
     agents = selection.groupby("agent")["rank_ic"].agg(["mean", "std", "count", lambda s: (s > 0).mean()])
     agents.columns = ["mean", "std", "count", "positive"]
@@ -1634,32 +1281,21 @@ def main() -> None:
     annual = pd.read_parquet(economic / "annual_metrics.parquet")
     orders = pd.read_parquet(economic / "orders.parquet")
 
-    draw_meta_weights(weights, paths.figures / "f05_meta_pesos.png")
-    draw_agent_ic(diag, paths.figures / "f05_agentes_rankic.png")
     draw_rank_ic(summary, paths.figures / "f07_rankic_serie.png")
     draw_equity(equity, paths.figures / "f07_equity.png")
     draw_drawdown(equity, paths.figures / "f07_drawdown.png")
-    draw_annual_alpha(annual, paths.figures / "f07_alfa_anual.png")
     # Los perfiles se dibujan con la cartera adoptada cuando hay Portfolio Study: con la del modelo
     # el orden entre estilos cambia —gana `value` en vez de `balanced`— y las figuras contradirían
     # a la tabla del capítulo.
     profile_figures = portfolio["profiles"] if portfolio is not None and portfolio.get("profiles") is not None else profiles
-    draw_profiles(profile_figures, paths.figures / "f07_perfiles_exceso.png")
     draw_profile_tradeoff(profile_figures, paths.figures / "f07_perfiles_tradeoff.png")
-    draw_placebos(robustness, summary["summary"]["mean_rank_ic"], paths.figures / "f07_placebos.png")
-    draw_robustness(build_robustness_rows(robustness, attribution), paths.figures / "f07_robustez.png")
-    draw_coverage(attribution, paths.figures / "f03_cobertura.png")
 
     # Activos añadidos para la versión extendida del manuscrito.
-    draw_feature_blocks(features, paths.figures / "f03_features_bloques.png")
-    draw_rankic_era_heatmap(diag, paths.figures / "f05_rankic_era.png")
     draw_meta_weights_annual(weights, paths.figures / "f05_pesos_anual.png")
-    draw_meta_concentration(tails, paths.figures / "f05_concentracion.png")
 
     # Explicabilidad: qué variables mueven a cada agente y si eso cambia con el régimen. Se agrega
     # una sola vez porque el artefacto de origen tiene 1,3 millones de filas.
     attribution_summary = load_agent_attribution(paths)
-    draw_agent_attribution(attribution_summary, "risk", paths.figures / "f05_atribucion_risk.png")
     draw_attribution_by_year(attribution_summary, "risk", paths.figures / "f05_atribucion_anual.png")
     write_tables_attribution(paths, attribution_summary)
 
@@ -1668,22 +1304,17 @@ def main() -> None:
     if args.chain_study_id:
         chain = load_chain(args.chain_study_id)
         changes = chain_configuration_changes(chain)
-        draw_chain_progression(chain, paths.figures / "f06_cadena_progresion.png")
-        draw_chain_configuration(changes, paths.figures / "f06_cadena_config.png")
         draw_selection_vs_reserved(chain, paths.figures / "f09_seleccion_vs_reservada.png")
         write_tables_chain(paths, chain, changes)
     draw_bootstrap_forest(robustness, paths.figures / "f07_bootstrap.png")
     draw_permutation(robustness, paths.figures / "f07_permutacion.png")
     draw_random_portfolios(robustness, paths.figures / "f07_aleatorias.png")
     draw_seed_dispersion(robustness, paths.figures / "f07_semillas.png")
-    draw_factor_loadings(attribution, paths.figures / "f07_factores.png")
-    draw_transfer_by_year(attribution, paths.figures / "f07_transferencia.png")
-    draw_order_reasons(orders, paths.figures / "f07_ordenes.png")
     draw_tail_spread(tails, paths.figures / "f07_cola.png")
     draw_signal_health(health, paths.figures / "f07_salud.png")
 
-    write_tables(paths, summary, robustness, attribution, diag, annual, profiles, decisions)
-    write_tables_predictive(paths, diag, features, attribution, weights)
+    write_tables(paths, summary, robustness, attribution, diag, annual, decisions)
+    write_tables_predictive(paths, diag, features, attribution)
     write_tables_robustness(paths, summary, robustness, attribution, portfolio)
     _write_tables_orders_and_tails(paths, orders, tails)
 

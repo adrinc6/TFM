@@ -31,15 +31,9 @@ fue \texttt{rank\_ic\_only} en los tres casos y \texttt{information\_ratio} en e
 cuya rejilla se calculó además sobre una serie recortada en 2024 para que ninguna de las 1.728
 combinaciones pudiera observar la era reservada.
 
-\section{Advertencia sobre la reproducibilidad exacta}
-
-La cadena no se ejecutó entera bajo la misma versión del catálogo cerrado: las dos primeras pasadas
-usaron la versión 6 y la tercera la versión 7, que invierte el desempate por simplicidad de
-\artefacto{execution\_lag\_days}. En consecuencia, \textbf{las tres pasadas no son estrictamente
-comparables entre sí} en lo relativo a las reglas de desempate, y toda tabla que las compare cita la
-versión de catálogo junto al identificador. El razonamiento completo --- por qué la discrepancia
-afecta a una regla de desempate y no a una medición --- se documenta en la
-Sección~\ref{sec:reproducibilidad}.
+Las pasadas 1 y 2 corrieron bajo la versión 6 del catálogo y la tercera bajo la 7, de modo que no
+son estrictamente comparables entre sí en sus reglas de desempate. El alcance de esa discrepancia se
+analiza en la Sección~\ref{sec:reproducibilidad}.
 
 \section{Regeneración de figuras y tablas}
 
@@ -71,7 +65,7 @@ tabla de correspondencia entre cada salida del manuscrito y su origen: ninguna c
 script entra en el documento sin quedar registrada allí.
 
 Dos elementos son la excepción y conviene declararlo: las Tablas~\ref{tab:defectos}
-y~\ref{tab:versiones} del Capítulo~\ref{chap:desarrollo-metodo} se transcriben de la bitácora del proyecto
+y~\ref{tab:versiones} del Anexo~\ref{anexo:desarrollo} se transcriben de la bitácora del proyecto
 y no de un artefacto del estudio, porque documentan el proceso de desarrollo y no una medición.
 
 Un segundo script comprueba que el proyecto sea portable antes de subirlo:
@@ -85,14 +79,3 @@ Verifica que no haya \textit{mojibake}, que todas las rutas de figura sean relat
 cada tabla incluida exista, que toda referencia cruzada tenga destino, que no queden figuras ni
 tablas generadas sin insertar y que no reaparezca ningún comando de bibliografía.
 
-\section{Compilación}
-
-El documento se compila con \textbf{XeLaTeX}, que lee UTF-8 de forma nativa y gestiona las fuentes
-con \texttt{fontspec}. En Overleaf basta seleccionar XeLaTeX como compilador y \artefacto{main.tex}
-como documento principal.
-
-\textbf{No se debe ejecutar Biber ni ningún motor de bibliografía.} El documento no usa
-\texttt{biblatex}: las citas están escritas en texto plano con formato autor-año y la bibliografía
-es un capítulo manual. El fichero \artefacto{latex/referencias.bib} se conserva únicamente como
-registro de los datos bibliográficos completos y no interviene en la compilación. Son necesarias dos
-pasadas para que el índice, el listado de figuras y el de tablas queden resueltos.

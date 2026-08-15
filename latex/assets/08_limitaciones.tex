@@ -77,32 +77,29 @@ estudio mide la fracción de filas utilizables y protege contra tickers reciclad
 una fuente comercial point-in-time sería una prueba adicional de robustez. Esta limitación afecta
 principalmente a la generalización, no a la trazabilidad del panel que sí se evaluó.
 
-\section{Amenazas estadísticas y económicas}
+\section{Amenazas económicas}
 
-Las 117 cohortes mensuales no son 117 ensayos independientes: el horizonte de doce meses hace que
-dos cohortes contiguas compartan casi toda su ventana de retorno. Newey--West y bootstrap por bloques
-reducen la sobreconfianza, pero no crean información nueva; por ello se informa también de unas
-nueve observaciones efectivas. La multiplicidad añade una segunda cautela: las configuraciones
-acumuladas por las tres pasadas de la cadena, más las 1.728 carteras de la rejilla, y un Deflated
-Sharpe de 0,682 impiden una afirmación concluyente de Sharpe ajustado por selección.
+Los costes son constantes, 5 pb de comisión y 10 pb de \textit{slippage}. Esto demuestra que el
+resultado no requiere coste cero, pero no modela impacto de mercado, \textit{bid--ask} dinámico,
+capacidad ni fiscalidad. Dado el turnover del 324\,\% anualizado, una especificación dependiente de
+liquidez podría modificar apreciablemente la cartera sin alterar el Rank-IC, y la cartera adoptada
+--- ocho posiciones, sin efectivo --- es más sensible a esa especificación que la de partida.
 
-Los costes son constantes, 5 pb de comisión y 10 pb de slippage. Esto demuestra que el resultado no
-requiere coste cero, pero no modela impacto de mercado, bid--ask dinámico, capacidad ni fiscalidad.
-Dado el turnover de selección, 324\% anualizado, una especificación dependiente de liquidez puede
-modificar la cartera sin alterar el Rank-IC. El universo estadounidense de gran capitalización limita
-además la extrapolación a pequeñas empresas, otros países o regímenes de liquidez diferentes.
+El universo estadounidense de gran capitalización limita además la extrapolación a pequeñas
+empresas, otros países o regímenes de liquidez diferentes.
 
-La lectura correcta es específica: multiplicidad limita el Sharpe, solapamiento limita la precisión,
-cobertura limita la generalización y cartera limita la transferencia de señal. Ninguna de estas
-salvedades permite ignorar los placebos, la permutación o la estabilidad por eras; cada conclusión
-debe mantenerse dentro del alcance de la evidencia que realmente la respalda.
+La lectura correcta es específica, y conviene enunciarla porque cada limitación acota una afirmación
+distinta: la multiplicidad limita el Sharpe, el solapamiento limita la precisión, la cobertura limita
+la generalización y la cartera limita la transferencia de señal. Ninguna de estas salvedades permite
+ignorar los placebos, la permutación o la estabilidad por eras; cada conclusión debe mantenerse
+dentro del alcance de la evidencia que realmente la respalda.
 
 \section{Limitaciones heredadas del proceso de desarrollo}
 
 Tres limitaciones no proceden del diseño sino de decisiones tomadas durante el desarrollo. Merecen
 figurar aquí porque afectan a la interpretación de las cifras y no serían visibles para un lector
 que sólo viera el resultado final; su origen y la disyuntiva técnica que las motivó se documentan en
-el Capítulo~\ref{chap:desarrollo-cartera}.
+el Anexo~\ref{anexo:desarrollo}.
 
 La primera es la salvaguarda de la curva de alfa: una recta fija entre $-10$\,\% y $+10$\,\% que se
 aplicaría si ninguna ventana de la cascada produjese una pendiente creciente. En el estudio de
@@ -127,13 +124,13 @@ lectura de esas cifras que no está sujeta a ese sesgo, y descansa sobre poco m�
 
 \section{Reproducibilidad y versiones de catálogo}
 
-La cadena no se ejecutó entera bajo la misma versión del catálogo cerrado: las dos primeras pasadas
-usaron la versión 6 y la tercera la versión 7, que invierte el desempate por simplicidad de
-\artefacto{execution\_lag\_days}. Las tres pasadas no son, por tanto, estrictamente comparables entre
-sí en lo relativo a las reglas de desempate, y toda tabla que las compare cita la versión junto al
-identificador. El detalle se documenta en la Sección~\ref{sec:reproducibilidad}.
+Las tres pasadas de la cadena no corrieron bajo la misma versión del catálogo, lo que las hace no
+estrictamente comparables en sus reglas de desempate; el Anexo~\ref{anexo:catalogo} detalla qué
+cambió y por qué no altera ninguna medición de Rank-IC.
 
-La discrepancia afecta a una regla que sólo interviene cuando dos alternativas difieren menos de
-0,002 en ventaja pareada, es decir, cuando la evidencia no distingue entre ellas. Aun así, dos de
-las diecisiete decisiones de la pasada de referencia se resolvieron por ese criterio, y sus valores
-finales no deben presentarse como hallazgos empíricos sino como preferencias declaradas de antemano.
+Lo que sí condiciona la lectura de los resultados es la consecuencia: dos de las diecisiete
+decisiones de la pasada de referencia se resolvieron por empate técnico, es decir, por una
+preferencia declarada de antemano y no por medición. Sus valores finales
+--- \artefacto{execution\_lag\_days} y \artefacto{lgbm\_min\_child\_samples} --- no deben
+presentarse como hallazgos empíricos. En el segundo caso, además, la alternativa medía
+\emph{ligeramente mejor} que el valor elegido.

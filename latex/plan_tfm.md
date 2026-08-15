@@ -90,8 +90,8 @@ que imponen 6 cohortes cerradas y ~1,41 años de cartera, y declarando que la ga
 | Plantilla | Estructura académica libre, no hay plantilla obligatoria del máster. |
 | Idioma | Español. |
 | Motor LaTeX | **XeLaTeX**, sin biber. UTF-8 nativo (sin `inputenc`), fuentes con `fontspec`. En Overleaf: Menu > Compiler: XeLaTeX. |
-| Granularidad | Capitulado clásico (9 capítulos, ver índice). |
-| Referencias | **Autor-año escritas a mano** en `12_bibliografia.tex`. No se usa `biblatex` ni `biber`: la cadena impedía compilar. `referencias.bib` se conserva como registro de los datos completos. |
+| Granularidad | Capitulado clásico (9 capítulos más bibliografía y cuatro anexos, ver índice). |
+| Referencias | **Autor-año escritas a mano** en `10_bibliografia.tex`. No se usa `biblatex` ni `biber`: la cadena impedía compilar. El proyecto no contiene ningún fichero `.bib`. |
 | Figuras/tablas | Generadas por el script de exportación desde los artefactos del study, no dibujadas a mano. Se referencian por nombre suelto desde `latex/assets/`, junto a los capítulos. |
 | Compilación | Subir `latex/` a Overleaf y seleccionar **XeLaTeX**. |
 
@@ -104,30 +104,39 @@ que imponen 6 cohortes cerradas y ~1,41 años de cartera, y declarando que la ga
 latex/
   plan_tfm.md          # este documento
   main.tex             # documento maestro: preámbulo + \input de cada capítulo
-  referencias.bib
   assets/               # capítulos, tablas y figuras, todo suelto sin subcarpetas
     00_resumen.tex
     01_introduccion.tex
     02_estado_del_arte.tex
-    03_datos_y_universo.tex
-    04_diseno_metodologico.tex
-    05_desarrollo_metodo.tex       # historia del desarrollo (I): estudio único y contratos
-    06_agentes_y_meta_agente.tex
-    07_diseno_experimental.tex
-    08_desarrollo_cartera.tex      # historia del desarrollo (II): cartera y reproducibilidad
-    09_resultados.tex
-    10_limitaciones.tex
-    11_conclusiones.tex
-    12_bibliografia.tex
+    03_datos_y_universo.tex          # universo + fuentes + observabilidad PIT + features
+    04_agentes_y_meta_agente.tex     # arquitectura del sistema, sin resultados
+    05_protocolo_experimental.tex    # selección predictiva + cartera + Portfolio Study
+    06_resultados_predictivos.tex    # qué aprendió el sistema y si resiste contrastes
+    07_resultados_economicos.tex     # rejilla, cartera ganadora y era reservada
+    08_limitaciones.tex
+    09_conclusiones.tex
+    10_bibliografia.tex
     a_reproducibilidad.tex
     b_catalogo_protocolo.tex
     c_evidencia_complementaria.tex
+    d_auditoria_desarrollo.tex       # historia del desarrollo, íntegra, fuera del hilo principal
     t*.tex               # cuerpos de tabla generados, \input desde los capítulos
     f*.png                # figuras generadas (no versionadas, ver .gitignore)
-  # Nota (2026-08): el capítulo de desarrollo se dividió en dos y el resto de ficheros se
-  # renumeró en cascada para que el prefijo vuelva a documentar el orden real de lectura;
-  # capítulos, tablas y figuras se unificaron en assets/ sin subcarpetas. Ver docs/bitacora.md.
 ```
+
+**Reestructuración narrativa (2026-08-14).** El documento se reordenó para que se lea como un relato
+lineal —problema → datos observables → sistema → protocolo → resultados predictivos → resultados
+económicos → límites → conclusión— sin que el lector tenga que avanzar y retroceder. Los cambios:
+
+- Los antiguos capítulos de datos y de diseño PIT se fusionan en `03_datos_y_universo.tex`.
+- El capítulo de agentes conserva sólo la arquitectura; su evidencia empírica pasa al capítulo de
+  resultados predictivos, donde ya existe un protocolo que explique por qué esa configuración.
+- El antiguo capítulo único de resultados se divide en dos, porque respondía a dos preguntas
+  distintas: si la señal existe y si sobrevive al convertirse en cartera.
+- Las dos historias del desarrollo se fusionan íntegras en el Anexo D. Se conservan enteras: sólo
+  cambian de lugar, para no interrumpir la explicación del sistema final con errores ya corregidos.
+- La tabla de las cinco afirmaciones se traslada de la introducción a las conclusiones. La
+  introducción plantea las cinco *preguntas*; las respuestas llegan cuando hay evidencia detrás.
 
 El preámbulo de `main.tex` fija paquetes, geometría, bibliografía y la notación compartida
 (`\tsnap`, `\tfiled`, `\hlabel`, `\rankic`). La notación se define ahí una vez y los capítulos la
@@ -140,32 +149,71 @@ verdad de su propio contenido**: este plan ya no reproduce el guion capítulo a 
 mantener dos copias de las mismas cifras garantiza que una de ellas quede obsoleta. Lo que sí fija
 este documento es qué estudios alimentan cada parte y qué activos deben existir.
 
-| # | Fichero | Evidencia que lo alimenta |
+| # | Fichero | Pregunta que responde | Evidencia que lo alimenta |
+|---|---|---|---|
+| 0 | `00_resumen.tex` | — | Todos; se redacta al final |
+| 1 | `01_introduccion.tex` | ¿Qué se pregunta y por qué? | Ninguna cifra: plantea las cinco preguntas |
+| 2 | `02_estado_del_arte.tex` | ¿Qué se sabe y qué puede fallar? | Bibliografía manual, sin fichero `.bib` |
+| 3 | `03_datos_y_universo.tex` | ¿Qué información existía en cada fecha? | `dataset_reference.json`, `universe_coverage`, features, tests |
+| 4 | `04_agentes_y_meta_agente.tex` | ¿Cómo se genera la ordenación? | Sólo arquitectura; sin resultados |
+| 5 | `05_protocolo_experimental.tex` | ¿Cómo se decide sin mirar la respuesta? | `decisions.json`, catálogo, diseño del Portfolio Study |
+| 6 | `06_resultados_predictivos.tex` | ¿Existe la señal y resiste? | `summary.json`, `robustness.json`, `attribution.json`, atribución local |
+| 7 | `07_resultados_economicos.tex` | ¿Sobrevive al convertirse en cartera? | `portfolio_grid`, `evidence_best_full/`, `portfolio_profiles` |
+| 8 | `08_limitaciones.tex` | ¿Hasta dónde llega lo anterior? | `attribution.json`, `docs/bitacora.md` |
+| 9 | `09_conclusiones.tex` | ¿Cuál es la respuesta? | `t01_afirmaciones.tex` (escrita a mano) |
+| 10 | `10_bibliografia.tex` | — | Manual, sin biblatex |
+| A-D | Anexos | Reproducibilidad, catálogo, evidencia complementaria y auditoría del desarrollo |  |
+
+### Reparto de contenido entre los cuatro capítulos centrales
+
+La frontera entre los capítulos 4 a 7 es una regla, no una preferencia de estilo: cada elemento
+aparece **una sola vez**, en el capítulo cuya pregunta responde.
+
+| Capítulo | Contiene | No contiene |
 |---|---|---|
-| 0 | `00_resumen.tex` | Todos; se redacta al final |
-| 1 | `01_introduccion.tex` | `t01_afirmaciones.tex` (escrita a mano) |
-| 2 | `02_estado_del_arte.tex` | `referencias.bib` (bibliografía manual) |
-| 3 | `03_datos_y_universo.tex` | `dataset_reference.json`, `universe_coverage`, features |
-| 4 | `04_diseno_metodologico.tex` | `docs/metodologia.md`, tests de contrato |
-| 5 | `05_desarrollo_metodo.tex` | Bitácora + **cadena de studies** (`t06_cadena`, `f06_cadena_*`) |
-| 6 | `06_agentes_y_meta_agente.tex` | `meta_weights.parquet`, `rank_ic_diagnostics.parquet` |
-| 7 | `07_diseno_experimental.tex` | `decisions.json`, `config.json` |
-| 8 | `08_desarrollo_cartera.tex` | Bitácora + diseño del Portfolio Study |
-| 9 | `09_resultados.tex` | `summary.json`, `robustness.json`, `attribution.json`, **rejilla de cartera** |
-| 10 | `10_limitaciones.tex` | `attribution.json`, `docs/bitacora.md` |
-| 11 | `11_conclusiones.tex` | Todo |
-| 12 | `12_bibliografia.tex` | Manual, sin biblatex |
-| A-C | Anexos | Reproducibilidad, catálogo y evidencia complementaria |
+| 4 · Arquitectura | Agentes, bloques, walk-forward, alternativas del catálogo, ejemplo de combinación | Ningún valor ganador, ningún hiperparámetro elegido, ningún peso observado |
+| 5 · Protocolo | Reglas de decisión, traza auditable (`t06_decisiones`), catálogo cerrado, diseño del Portfolio Study, ejemplos pareados | Interpretación de resultados; ninguna configuración de cartera presentada como «la final» |
+| 6 · Evidencia predictiva | Cadena y configuración ganadora, meta y agentes, atribución local, Rank-IC, baselines, neutralización, robustez, Deflated Sharpe | Narrativa económica; cifras de cartera salvo las estrictamente diagnósticas y etiquetadas |
+| 7 · Evidencia económica | Rejilla, cartera ganadora, tres ventanas, órdenes, transferencia, perfiles, era reservada | Contrastes predictivos, que ya se cerraron en el 6 |
+
+Dos consecuencias operativas que conviene respetar al editar:
+
+- **La era reservada se cuenta una sola vez**, en la Sección `sec:era-reservada` del capítulo 7,
+  después de que el lector conozca cartera, selección y métricas. Las menciones anteriores son
+  remisiones, no desarrollos.
+- **Ningún capítulo se cita a sí mismo.** Para reenviar dentro del mismo capítulo se usa «más
+  adelante en este capítulo» o la etiqueta de sección concreta.
 
 ### Regla de procedencia
 
-Cada activo declara de qué estudio sale, y esa separación es la que permite documentar el modelo del
-study 3 con la cartera del Portfolio Study sin mezclar procedencias:
+La cadena y el Portfolio Study se **explican como procedimiento**, pero las cifras salen únicamente
+de **los ganadores**:
 
-- **Predictivo** (Rank-IC, agentes, meta, decisiones, robustez, atribución) → Model Study 3.
-- **Económico** (equity, órdenes, métricas anuales, rejilla, perfiles) → ganador del Portfolio Study,
-  leído de `evidence_best_full/`.
-- **Cadena** (`t06_cadena*`, `f06_cadena_*`, `f09_seleccion_vs_reservada`) → las tres pasadas.
+- **Predictivo** (Rank-IC, agentes, meta, decisiones, robustez, atribución) → ganador del Model
+  Study 3.
+- **Económico** (equity, drawdown, órdenes, métricas anuales, tres ventanas, rejilla, perfiles) →
+  ganador del Portfolio Study, leído de `evidence_best_full/`.
+- **Cadena** (`t06_cadena*`, `f09_seleccion_vs_reservada`) → las tres pasadas.
+
+**Ninguna cifra de la cartera del Model Study se presenta como resultado del trabajo**, porque esa
+cartera se descartó al optimizarla. Por eso se eliminaron la sección de transferencia (el
+coeficiente 0,328 describe la cartera por defecto) y la fila de confirmación de la regresión
+factorial.
+
+Dos excepciones declaradas, y ninguna más: el **Deflated Sharpe** y las **carteras aleatorias** se
+calculan sobre la cartera del Model Study porque el Portfolio Study no reejecuta la batería de
+robustez. Se conservan porque miden el procedimiento de búsqueda y no una cartera concreta, y
+porque presentarlos con la cartera menos favorable es conservador: no inflan ninguna afirmación.
+
+### Inventario de activos (2026-08-15)
+
+**24 tablas y 15 figuras.** El criterio de poda fue: un activo se queda si el texto lo analiza y
+dice algo que la prosa no diga ya. Se eliminaron 21 —13 de ellos no estaban referenciados en ningún
+sitio— junto con las 17 funciones del generador que los producían.
+
+Del par tabla+figura solo sobrevive uno salvo en `t08_cartera_influencia` +
+`f08_cartera_marginales`, donde el texto argumenta explícitamente que la figura aporta la *forma*
+(dispersión) que las medianas no pueden dar.
 
 El comando de regeneración está en `assets/a_reproducibilidad.tex` y el manifiesto resultante,
 `latex/asset_manifest.json`, registra ambas familias de fuentes por separado.

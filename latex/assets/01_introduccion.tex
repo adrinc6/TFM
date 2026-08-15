@@ -18,29 +18,34 @@ el rendimiento no puede escoger el modelo. Los Capítulos~\ref{chap:agentes}--\r
 desarrollan esta cadena y el Capítulo~\ref{chap:limitaciones} fija el alcance exacto de sus
 conclusiones.
 
-\section*{Cinco afirmaciones y su matiz}
-\addcontentsline{toc}{section}{Cinco afirmaciones y su matiz}
+\section*{Las cinco preguntas que vertebran el documento}
+\addcontentsline{toc}{section}{Las cinco preguntas que vertebran el documento}
 
-El documento se organiza en torno a cinco afirmaciones. La Tabla~\ref{tab:afirmaciones} las presenta
-juntas, cada una con la cifra que la sostiene y con la salvedad que la acompaña, porque ninguna de
-las cinco se sostiene sin su matiz.
+El trabajo se organiza en torno a cinco preguntas concretas. Se enuncian aquí como preguntas y no
+como conclusiones, porque cada una necesita evidencia propia y ninguna se responde con un sí o un no
+sin matices.
 
-\begin{table}[H]
-  \centering
-  \footnotesize
-  \caption{Las cinco afirmaciones del trabajo, con su evidencia y su salvedad.}
-  \label{tab:afirmaciones}
-  \input{assets/t01_afirmaciones.tex}
-  \caption*{Todas las cifras proceden del estudio \studyid{} y se desarrollan en los
-  Capítulos~\ref{chap:agentes} y~\ref{chap:resultados}.}
-\end{table}
+\begin{enumerate}[leftmargin=*,itemsep=0.45em]
+  \item \textbf{¿Aprende el sistema a ponderar a sus especialistas?} Es decir, ¿la combinación
+  aprendida ordena mejor que repartir el peso por igual, y lo hace usando sólo información que
+  estaba disponible en cada fecha?
+  \item \textbf{¿Es señal lo que aprende, o ruido con buena apariencia?} Un Rank-IC positivo puede
+  surgir por azar, por un defecto de la maquinaria o por haber probado muchas configuraciones. La
+  pregunta exige contrastes que intenten activamente destruir el resultado.
+  \item \textbf{¿Se sostiene fuera de la ventana en la que se decidió?} Toda la selección ocurre
+  sobre 2015--2024; 2025--2026 se reserva desde el principio y no participa en ninguna decisión.
+  \item \textbf{¿Sobrevive la señal al convertirse en cartera?} Una ordenación puede ser correcta y
+  aun así perder su ventaja al comprar unas pocas acciones, pagar costes y rotar.
+  \item \textbf{¿Cuánto de todo esto puede afirmarse, y con qué fuerza?} La distancia entre
+  «la evidencia es favorable» y «queda demostrado» es el objeto último del trabajo.
+\end{enumerate}
 
-Esta tabla cumple una función deliberada: impedir la lectura selectiva. Cada columna central
-contiene un resultado favorable y cada columna derecha, la razón por la que ese resultado no debe
-extrapolarse sin cuidado. La convención se mantiene en todo el documento --- ningún resultado
-positivo se presenta sin su salvedad en el mismo párrafo o en el inmediatamente siguiente --- porque
-el objeto de estudio es precisamente la facilidad con la que un sistema de este tipo produce
-evidencia convincente y falsa.
+Una convención se mantiene en todo el documento y conviene anunciarla: ningún resultado favorable se
+presenta sin su principal salvedad en el mismo párrafo o en el inmediatamente siguiente. El objeto
+de estudio es precisamente la facilidad con la que un sistema de este tipo produce evidencia
+convincente y falsa, de modo que ocultar los matices contradiría el propósito del trabajo. Las cinco
+preguntas se responden, una por una y con sus reservas, en el
+Capítulo~\ref{chap:conclusiones}.
 
 \begin{figure}[H]
 \centering
@@ -137,10 +142,10 @@ Un Rank-IC positivo no promete que todas las posiciones individuales ganen ni qu
 al benchmark cada año. Significa que, de media, el orden relativo contiene información. La cartera
 añade restricciones: sólo puede comprar, mantiene un número reducido de posiciones, paga costes y
 puede conservar efectivo cuando la calibración de alfa no justifica una entrada. Por eso un sistema
-puede exhibir un Rank-IC sólido y un IR de cartera moderado. El Capítulo~\ref{chap:resultados}
-cuantifica esa pérdida de transmisión mediante un coeficiente de 0,328, y muestra además que
-cambiar únicamente las reglas de cartera basta para invertir el signo del resultado fuera de
-muestra: es la contribución central de este trabajo.
+puede exhibir un Rank-IC sólido y un IR de cartera moderado. El
+Capítulo~\ref{chap:resultados-economicos} mide esa pérdida de transmisión y muestra que cambiar
+únicamente las reglas de cartera, sin tocar el modelo, basta para invertir el signo del resultado
+fuera de muestra: es la contribución central de este trabajo.
 
 \section{Alcance y organización del documento}
 
@@ -150,14 +155,30 @@ mercado dependiente del volumen, no se afirma causalidad económica y no se extr
 otros mercados sin replicación. Estas restricciones se desarrollan como amenazas a la validez en el
 Capítulo~\ref{chap:limitaciones}.
 
+El documento sigue el orden en que se construyó el argumento, de modo que cada paso pueda entenderse
+cuando aparece y sin necesidad de adelantarse.
+
 El Capítulo~\ref{chap:estado-arte} sitúa el estudio en la literatura de factores y aprendizaje
-automático. El Capítulo~\ref{chap:datos} describe los datos y el universo; el
-Capítulo~\ref{chap:metodologia} formaliza la disciplina temporal, seguido de la primera mitad de la
-historia del desarrollo (Capítulo~\ref{chap:desarrollo-metodo}). Los
-Capítulos~\ref{chap:agentes} y~\ref{chap:diseno-experimental} presentan la arquitectura y el
-protocolo de selección, y la segunda mitad de esa historia
-(Capítulo~\ref{chap:desarrollo-cartera}) cierra con el rediseño de la cartera. El
-Capítulo~\ref{chap:resultados} presenta los resultados y sus matices; el
-Capítulo~\ref{chap:limitaciones} delimita sus limitaciones y las conclusiones cierran con una
-agenda de investigación. Los anexos permiten reproducir activos, configuración y evidencia auxiliar
-sin interrumpir la lectura central.
+automático, y cierra explicando qué exige esa literatura de un diseño experimental honesto. El
+Capítulo~\ref{chap:datos} responde a la pregunta previa a cualquier modelo --- qué información
+existía realmente en cada fecha ---, describiendo universo, fuentes, observabilidad temporal y la
+separación entre la ventana de selección y la era reservada.
+
+Sobre esa base, el Capítulo~\ref{chap:agentes} explica cómo se transforma la información disponible
+en una ordenación transversal, y el Capítulo~\ref{chap:diseno-experimental} cómo se decide qué
+configuración usar y cómo esa ordenación se convierte en una cartera. Ninguno de los dos presenta
+resultados: describen mecanismo y protocolo.
+
+Los dos capítulos siguientes contienen la evidencia, separada según a qué pregunta responde. El
+Capítulo~\ref{chap:resultados} examina si la ordenación aprendida existe y resiste contrastes
+adversariales; el Capítulo~\ref{chap:resultados-economicos} examina qué ocurre al convertirla en
+posiciones y qué parte de ese resultado es genuinamente fuera de muestra. El
+Capítulo~\ref{chap:limitaciones} delimita el alcance de ambas y el
+Capítulo~\ref{chap:conclusiones} responde a la pregunta de investigación.
+
+Los anexos permiten reproducir activos, configuración y evidencia auxiliar sin interrumpir la
+lectura central. El Anexo~\ref{anexo:desarrollo} recoge íntegra la historia del desarrollo: los
+defectos que aparecieron, cómo se corrigieron y qué decisiones se tomaron contra la recomendación
+técnica. Está al final porque recorrer errores ya corregidos interrumpe la explicación del sistema
+final, pero su lectura es la que explica por qué muchas de las reglas del
+Capítulo~\ref{chap:diseno-experimental} son como son.

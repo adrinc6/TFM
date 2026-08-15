@@ -1,4 +1,5 @@
 \chapter{Conclusiones y trabajo futuro}
+\label{chap:conclusiones}
 
 El sistema aprende una ordenación transversal fuera de muestra: su Rank-IC medio es 0,1090, supera
 los baselines deterministas y se mantiene positivo tras placebos, permutación, bootstrap, exclusión
@@ -49,6 +50,22 @@ impiden transformar esa observación en una promesa de superioridad ajustada por
 formulación defendible es que el ranking tiene evidencia predictiva robusta, que su implementación
 puede ser económicamente compatible con esa señal bajo restricciones declaradas, y que la distancia
 entre «puede serlo» y «lo es» la recorre la construcción de cartera y no el modelo.
+
+La Tabla~\ref{tab:afirmaciones} recoge las cinco preguntas de la introducción convertidas ya en
+afirmaciones, cada una con la cifra que la sostiene y con la salvedad sin la cual no debe citarse.
+Ninguna de las cinco se sostiene sin su matiz, y esa es precisamente la conclusión de conjunto: hay
+evidencia favorable en todas ellas y demostración concluyente en ninguna.
+
+\begin{table}[H]
+  \centering
+  \footnotesize
+  \caption{Las cinco afirmaciones del trabajo, con su evidencia y su salvedad.}
+  \label{tab:afirmaciones}
+  \input{assets/t01_afirmaciones.tex}
+  \caption*{Las cifras predictivas proceden del Model Study de referencia y las económicas de la
+  cartera ganadora del Portfolio Study; se desarrollan en los
+  Capítulos~\ref{chap:resultados} y~\ref{chap:resultados-economicos}.}
+\end{table}
 
 \section{Contribución y agenda}
 
@@ -109,8 +126,7 @@ vino de mejorar la señal, sino de dejar de desperdiciarla al construir la carte
 
 \section{Qué aprendería quien repitiera este trabajo}
 
-Algunas lecciones del desarrollo, documentadas en los Capítulos~\ref{chap:desarrollo-metodo}
-y~\ref{chap:desarrollo-cartera}, son
+Algunas lecciones del desarrollo, documentadas en el Anexo~\ref{anexo:desarrollo}, son
 independientes del dominio financiero y probablemente más reutilizables que el resultado empírico.
 
 La primera es que declarar no es computar. Un catálogo puede describir variables que el código nunca

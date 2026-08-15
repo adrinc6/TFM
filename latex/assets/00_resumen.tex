@@ -63,19 +63,28 @@ holding out 2025--2026 as a reserved era that takes part in no decision. The por
 investor profiles are constructed only after the winner is frozen, and never influence its
 selection.
 
-The system attains a mean Rank-IC of 0.1004 with an IC-IR of 0.744 and 71.79\,\% positive cohorts in
-the selection window, against 0.0130 for the best deterministic baseline. The meta-agent's learned
-weighting outperforms uniform weighting by 52\,\%. Seven of eight robustness tests support the
-existence of signal --- permutation with $p=0.0001$, label placebos, block bootstrap, era exclusion,
-seed stability, risk-matched random portfolios and style neutralisation --- while the Deflated
-Sharpe of 0.930 falls short of its threshold and is reported as such. In the reserved era the
-portfolio achieves a geometric excess return of 14.21\,\% with an IR of 0.959, although its closed
-Rank-IC still lacks statistical power.
+The final configuration comes from a chain of three studies in which the winner of each pass becomes
+the starting point of the next, followed by a fourth study that optimises portfolio construction by
+Information Ratio over 1,728 combinations evaluated on a series truncated at 2024, so that none of
+them can observe the reserved era.
 
-The central practical finding is the transfer coefficient of 0.247: the portfolio materialises
-roughly one quarter of the available signal. The bottleneck is not the model but portfolio
-construction, a conclusion confirmed under controlled conditions by a diagnostic sweep of
-twenty-three variants.
+The system attains a mean Rank-IC of 0.1090 with an IC-IR of 0.851 and 74.36\,\% positive cohorts in
+the selection window, against 0.0130 for the best deterministic baseline. The meta-agent's learned
+weighting outperforms uniform weighting by 61\,\%, although the risk agent on its own ranks slightly
+better than the combination. The robustness tests support the existence of signal --- permutation
+with $p=0.0001$, label placebos, block bootstrap, era exclusion, seed stability and style
+neutralisation, which retains 86.62\,\% --- while the Deflated Sharpe of 0.682 falls short of its
+threshold and is reported as such: chaining studies buys Rank-IC at the price of making any
+selection-adjusted profitability claim more expensive.
+
+The central finding is the contrast between the two portfolios in the reserved era. Under the
+construction recommended by the catalogue, the signal loses 11.29\,\% against the index, with an
+Information Ratio of $-1.167$ and no year above it. Under the optimised portfolio --- same model,
+same signal, same panel --- it achieves a 2.56\,\% excess return with an Information Ratio of
+$+0.304$. The Rank-IC of that era is positive in both cases ($+0.0441$), because it does not depend
+on the portfolio. The bottleneck was therefore not predictive capacity but its translation into
+positions, to the point of deciding the sign of the out-of-sample result. The conclusion is stated
+with the caution imposed by six closed cohorts and roughly 1.41 years of portfolio in that window.
 
 \vspace{1em}
 \noindent\textbf{Keywords:} machine learning, stock selection, point-in-time data, Rank-IC,

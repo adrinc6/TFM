@@ -1,5 +1,6 @@
 % Tabla compuesta: cada fila enlaza una limitación con la cifra concreta que la
-% cuantifica. Las cifras proceden de los artefactos citados en el capítulo.
+% cuantifica. Las cifras proceden de los artefactos citados en el capítulo:
+% lo predictivo del Model Study 3 y lo económico del ganador del Portfolio Study.
 \begin{tabularx}{\textwidth}{lXl}
 \toprule
 Limitación & Evidencia que la cuantifica & Severidad \\
@@ -15,38 +16,45 @@ meses &
 Alta \\
 \addlinespace
 Potencia de la era reservada &
-6 cohortes cerradas, 1 observación independiente efectiva, Rank-IC $-0{,}0119$ &
+6 cohortes cerradas y $\approx 1$ observación independiente efectiva; 1,41 años de cartera y 1 de
+2 años por encima del índice &
 Alta \\
 \addlinespace
-Cartera no optimizada &
-13 de 23 variantes del barrido superan al ganador congelado; \texttt{half\_horizon} logra 2,58\,\%
-frente a 1,62\,\% &
-Media \\
-\addlinespace
-Salvaguarda \textit{a priori} en la curva de alfa &
-No se activa en ninguna fila: la calibración usa horizonte (80\,\%) o era (20\,\%) &
-Baja \\
-\addlinespace
-Alfa factorial no significativo en selección &
-Alfa 0,13\,\% por periodo, $t=0{,}82$, $R^2=0{,}019$ &
-Media \\
+Cartera elegida sobre la ventana de selección &
+La ganadora es la mejor de 1.728: su IR de 0,844 en 2015--2024 es una cota superior optimista, no
+una estimación insesgada &
+Alta \\
 \addlinespace
 Dominio de un solo agente &
-	extit{risk} aislado 0,1227 frente a 0,1090 del meta, que además le asigna más del 95\,\% del
+\textit{risk} aislado 0,1227 frente a 0,1090 del meta, que además le asigna más del 95\,\% del
 peso; la neutralización retiene 86,62\,\% &
 Media \\
 \addlinespace
-Reproducibilidad bit a bit &
-Estudio ejecutado con catálogo v5; código actual en v6 &
+Mecanismo de la señal sin explicar &
+El agente dominante se apoya en \texttt{gap\_21d} y \texttt{range\_63d} (78\,\% de las
+observaciones), microestructura a semanas que ordena retornos a doce meses &
+Media \\
+\addlinespace
+Alfa factorial no significativo en selección &
+Alfa 0,27\,\% por periodo, $t=1{,}44$, $R^2=0{,}017$ &
 Media \\
 \addlinespace
 Costes constantes &
-5 pb de comisión y 10 pb de \textit{slippage}, sin impacto de mercado ni capacidad &
+5 pb de comisión y 10 pb de \textit{slippage}, sin impacto de mercado ni capacidad, sobre un
+turnover del 324\,\% &
 Media \\
 \addlinespace
 Universo restringido &
 S\&P 500 estadounidense; 278 \textit{tickers} en 2003 frente a más de 500 en años recientes &
 Media \\
+\addlinespace
+Versiones de catálogo heterogéneas &
+Pasadas 1 y 2 bajo catálogo v6, pasada 3 bajo v7, que invierte un desempate por simplicidad &
+Baja \\
+\addlinespace
+Salvaguarda \textit{a priori} en la curva de alfa &
+No se activa en ninguna fila: la calibración usa horizonte (80\,\%) o era (20\,\%) &
+Baja \\
 \addlinespace
 Factores no construibles &
 Tamaño e inversión declarados no replicables en la regresión factorial &

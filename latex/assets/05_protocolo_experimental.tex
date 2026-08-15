@@ -1,12 +1,25 @@
-\chapter{Diseño experimental, selección y cartera}
+\chapter{Protocolo experimental: de la señal a la cartera}
 \label{chap:diseno-experimental}
 
-El diseño separa de forma estricta el aprendizaje predictivo de la traducción económica. La
-configuración ganadora sólo se elige con Rank-IC robusto, calculado sobre 2015--2024; costes,
-turnover, alfa, perfiles y rendimiento frente a SPY se calculan después como diagnósticos. Esta
-separación evita seleccionar retrospectivamente una cartera porque su rentabilidad conocida fue
-alta, una práctica especialmente problemática cuando se prueban muchas alternativas
-(Harvey et al., 2016; López de Prado et al., 2014).
+El capítulo anterior describió cómo se produce una ordenación. Éste explica cómo se decide qué
+configuración usar y cómo esa ordenación se convierte en posiciones, sin que en ningún momento la
+rentabilidad observada influya en las decisiones predictivas.
+
+El orden de exposición reproduce el orden real del procedimiento: primero se elige la configuración
+predictiva comparando Rank-IC, después se congela, y sólo entonces se traduce el ranking a alfa
+esperado y a una cartera. La última parte del capítulo explica cómo se optimizó esa cartera y por
+qué ese segundo procedimiento usa una búsqueda distinta de la primera.
+
+Conviene precisar qué clase de cifras aparecen en este capítulo y cuáles no, porque la distinción
+organiza el resto del documento. Aquí se presentan las \emph{trazas de decisión}: qué alternativa se
+comparó con cuál, cuánta ventaja pareada midió cada una y qué regla resolvió el empate. Son
+necesarias, porque sin ellas la afirmación de que el protocolo se aplicó tal como se declara no
+sería comprobable, y un protocolo no auditable no es un protocolo.
+
+Lo que no aparece aquí es la interpretación de esas cifras como evidencia sobre el mundo. Que una
+alternativa midiera peor documenta una decisión; si la señal resultante es real, si resiste
+contrastes adversariales y si se traduce en rentabilidad son preguntas distintas, y se responden con
+otros datos en los Capítulos~\ref{chap:resultados} y~\ref{chap:resultados-economicos}.
 
 \section{Optimización secuencial y regla de decisión}
 
@@ -121,20 +134,6 @@ ganador, se reportan como diagnóstico y no pueden modificarlo. Es lo que convie
 Sección~\ref{sec:cartera-rejilla} en un experimento controlado en lugar de una segunda ronda de
 optimización.
 
-\section{Construcción de cartera}
-
-La cartera del ganador contiene 12 posiciones, aplica pesos proporcionales al alfa esperado, una
-política de efectivo por oportunidad con tope del 25\%, comisión de 5 pb y \textit{slippage} de 10
-pb. SPY se usa sólo como benchmark; nunca es una posición. Los umbrales se expresan en puntos
-básicos anuales de alfa esperado para poder compararlos entre horizontes. Una rotación requiere que
-la diferencia esperada cubra el coste de ida y vuelta y un margen de 50 pb; una compra nueva usa
-histéresis. Estas reglas pretenden preservar señal y controlar rotación, no volver a optimizar el
-modelo por rentabilidad.
-
-La era 2025--2026 fue aislada antes de aplicar la selección. Sus observaciones no participan ni en
-los pesos del meta ni en la elección de parámetros; su papel es exclusivamente de confirmación
-posterior.
-
 \section{Por qué la selección predictiva es secuencial}
 \label{sec:seleccion-secuencial}
 
@@ -159,7 +158,7 @@ tocan el modelo ni modifican el Rank-IC: operan sobre una señal ya congelada, a
 no puede inflar la métrica predictiva que el documento reporta. Y su elección no necesita narrarse
 como una escalera de decisiones porque no lo es: las variables de cartera interactúan entre sí, y un
 protocolo secuencial no solo sería innecesario sino directamente inadecuado, como se argumenta en el
-Capítulo~\ref{chap:desarrollo-cartera}. Queda un riesgo real, la multiplicidad de comparaciones, que
+Anexo~\ref{anexo:desarrollo}. Queda un riesgo real, la multiplicidad de comparaciones, que
 no se disimula: se declara en el Capítulo~\ref{chap:limitaciones} y se acota por construcción
 impidiendo que la rejilla llegue a calcular la era reservada.
 
@@ -178,6 +177,12 @@ universo. El horizonte de seis meses ilustra un rechazo: su ventaja pareada fue 
 intervalo $[-0,0552;-0,0109]$. Mostrar este resultado evita presentar la selección como una
 confirmación automática de la configuración preferida.
 
+\section{De la señal congelada a una cartera}
+
+Todo lo anterior ocurre en el plano predictivo y termina con una configuración congelada. A partir
+de aquí el problema cambia de naturaleza: ya no se trata de ordenar mejor, sino de convertir una
+ordenación en posiciones concretas sin destruir por el camino la ventaja que contiene.
+
 \section{De rango a alfa esperado}
 
 La cartera necesita una magnitud económica, no sólo un percentil. Sobre cohortes cerradas se estima
@@ -187,6 +192,28 @@ el rango continuo. Si la pendiente no es creciente, la evidencia se amplía en c
 trimestres y al histórico completo; la salvaguarda final queda registrada como supuesto y no se
 presenta como estimación empírica.
 
+\section{Construcción de cartera}
+
+Seis variables gobiernan cómo se traduce el ranking en posiciones: cuántas se mantienen
+(\artefacto{target\_size}), cómo se reparte el peso entre ellas (\artefacto{sizing\_mode}), cuánto
+efectivo se tolera (\artefacto{max\_cash\_weight}), cuánto debe retenerse una posición
+(\artefacto{minimum\_holding\_period}), por debajo de qué percentil se vende
+(\artefacto{coverage\_percentile\_floor}) y con qué frecuencia se corrige la deriva de los pesos
+(\artefacto{rebalance\_drift\_tolerance}). El catálogo declara la rejilla de cada una; qué valores
+toman finalmente se decide con el procedimiento de la Sección~\ref{sec:portfolio-study} y se
+presenta en el Capítulo~\ref{chap:resultados-economicos}.
+
+Las restantes condiciones de simulación sí son constantes del entorno y no se optimizan: comisión de
+5 pb, \textit{slippage} de 10 pb y SPY como benchmark, nunca como posición. Los umbrales se expresan
+en puntos básicos anuales de alfa esperado para poder compararlos entre horizontes. Una rotación
+requiere que la diferencia esperada cubra el coste de ida y vuelta y un margen de 50 pb; una compra
+nueva usa histéresis. Estas reglas pretenden preservar señal y controlar rotación, no volver a
+optimizar el modelo por rentabilidad.
+
+La era 2025--2026 fue aislada antes de aplicar la selección. Sus observaciones no participan ni en
+los pesos del meta ni en la elección de parámetros; su papel es exclusivamente de confirmación
+posterior.
+
 \section{Ejemplo de decisión y coste}
 
 Con horizonte de doce meses, comisión de 5 pb y slippage de 10 pb, una rotación completa cuesta 30
@@ -195,8 +222,114 @@ rotación es 50 pb, la mejora de 190 pb supera 80 pb y se rota. Si la candidata 
 mejora no cubre coste y margen, por lo que se conserva la posición. El ranking ordena preferencias;
 la operación necesita además una ventaja neta.
 
-Las entradas nuevas incorporan histéresis y el efectivo rinde 0\%. Bajo
-\texttt{opportunity\_cash}, una plaza puede permanecer en efectivo sólo si respeta el tope de 25\%
-y el suelo de diversificación. Un mínimo de tenencia, si se activa, bloquea ventas por rotación o
-caída de alfa hasta cumplir la fracción de horizonte configurada. Estas reglas controlan fricción y
-estabilidad; no pueden alterar el ganador predictivo.
+Las entradas nuevas incorporan histéresis y el efectivo rinde 0\%. Bajo la política
+\texttt{opportunity\_cash}, una plaza puede permanecer en efectivo sólo si respeta el tope declarado
+y el suelo de diversificación; con el tope fijado en cero, esa misma plaza debe reinvertirse
+necesariamente. Un mínimo de tenencia, si se activa, bloquea ventas por rotación o caída de alfa
+hasta cumplir la fracción de horizonte configurada. Estas reglas controlan fricción y estabilidad;
+no pueden alterar el ganador predictivo.
+
+\section{Del barrido diagnóstico a la optimización por Information Ratio}
+\label{sec:portfolio-study}
+
+El barrido de cartera descrito hasta aquí movía una variable cada vez sobre la configuración
+recomendada. Servía para diagnosticar, y de hecho diagnosticó bien: varias variantes batían a la
+cartera empleada. Pero dejaba el trabajo en una posición incómoda. Sabía que su cartera no era la
+mejor, no podía adoptar ninguna de las mejores sin incurrir en la práctica que su propio protocolo
+prohíbe --- elegir una regla por su rentabilidad ya conocida --- y terminaba registrando esa
+renuncia como limitación.
+
+La renuncia era innecesaria, y el motivo es que la prohibición estaba mal aplicada. Lo que la regla
+protege es la \emph{métrica predictiva}: si se elige una configuración porque su Rank-IC es alto y
+después se reporta ese mismo Rank-IC como resultado, la cifra está inflada por la propia búsqueda.
+Las reglas de cartera no participan de ese circuito. Operan sobre una señal ya congelada, no
+reentrenan nada y no pueden modificar el Rank-IC. Lo que sí hay que proteger de ellas es otra cosa:
+la era reservada. Y eso no se protege con una renuncia, sino con una construcción.
+
+De ahí el \emph{Portfolio Study}. Toma el ganador del último Model Study, no reentrena nada, y
+recorre el producto cartesiano de las seis variables que gobiernan la cartera midiendo cada
+combinación sobre una serie de puntuaciones \textbf{recortada en 2024}. La distinción es fina pero
+decisiva: no se trata de calcular el resultado de cada cartera en la era reservada y después
+ignorarlo --- si existiera, bastaría con mirarlo --- sino de que ese resultado \emph{no llega a
+calcularse}. Solo la ganadora, ya elegida, se reevalúa después sobre la serie completa, y esa
+reevaluación es una comprobación, nunca un criterio.
+
+\subsection*{Qué es el Information Ratio y por qué se optimiza éste}
+
+El criterio de selección deja de ser el exceso geométrico y pasa a ser el \emph{Information Ratio}:
+el exceso medio sobre el índice dividido por la volatilidad de ese exceso. Premia la
+\textbf{consistencia}, no el alfa bruto. Una cartera que bate al índice un 2\,\% todos los años
+tiene un IR altísimo; otra que alterna $+15$\,\% y $-11$\,\% puede tener el mismo exceso medio y un
+IR pésimo. Para un trabajo cuya pregunta es si una señal se sostiene fuera de muestra, la segunda
+cartera no es equivalente a la primera aunque el promedio coincida, y optimizar por exceso bruto no
+sabría distinguirlas.
+
+Las seis variables mueven ese cociente por vías distintas, y conviene enunciarlas porque explican la
+forma de los resultados:
+
+\begin{itemize}
+  \item \artefacto{target\_size} gobierna el compromiso central. Pocas posiciones concentran la
+  señal pero hacen el exceso volátil; muchas lo estabilizan a costa de parecerse al índice, y una
+  cartera que se parece al índice tiene poco exceso que mostrar en el numerador.
+  \item \artefacto{max\_cash\_weight} amortigua numerador y denominador a la vez. El efectivo no se
+  remunera en esta simulación, de modo que sostener caja resta rentabilidad esperada, pero también
+  resta varianza del exceso.
+  \item \artefacto{sizing\_mode} decide si el peso sigue al alfa esperado o se reparte por igual.
+  Concentrar en las convicciones altas sube el exceso y la varianza simultáneamente.
+  \item \artefacto{minimum\_holding\_period} reduce fricciones, pero no de forma monótona: retener
+  de más impide corregir cuando la señal cambia de opinión, y ese coste de oportunidad acaba
+  superando al ahorro en costes.
+  \item \artefacto{coverage\_percentile\_floor} corta la cola inferior del ranking, forzando la
+  venta de lo que cae por debajo del percentil declarado.
+  \item \artefacto{rebalance\_drift\_tolerance} es pura fricción: no cambia qué se tiene, sino cada
+  cuánto se corrige el peso de lo que ya se tiene.
+\end{itemize}
+
+\subsection*{Por qué cartesiano y no secuencial}
+
+La Sección~\ref{sec:seleccion-secuencial} argumentó que la selección predictiva debe ser secuencial.
+Aquí se hace lo contrario, y no por comodidad: las seis variables \textbf{interactúan},
+y un procedimiento que las recorriera de una en una obtendría una respuesta que depende del orden en
+que se pregunte.
+
+Dos ejemplos concretos lo muestran. El suelo efectivo de diversificación no lo fija ninguna variable
+por separado, sino \artefacto{target\_size} y \artefacto{max\_cash\_weight} conjuntamente: el peso
+máximo por posición depende de cuántas posiciones caben y de cuánta caja se tolera. Y
+\artefacto{coverage\_percentile\_floor} hace cosas \emph{opuestas} según el tope de efectivo: con
+tope cero, la plaza que deja una posición vendida por suelo se recompra necesariamente, de modo que
+el suelo actúa como un mecanismo de sustitución; con tope positivo, esa misma plaza puede quedarse
+en caja, y entonces el suelo actúa como un mecanismo de reducción de exposición. La misma variable,
+con el mismo valor, significa dos cosas distintas según el valor de otra.
+
+Un ascenso por coordenadas sobre variables que interactúan así converge a un óptimo local que
+depende del punto de partida. El cartesiano no tiene ese problema. Tiene otro, la multiplicidad de
+comparaciones, que se declara abiertamente en el Capítulo~\ref{chap:limitaciones}.
+
+\subsection*{Los perfiles quedan fuera de la rejilla}
+
+Los ocho perfiles de inversor no compiten en el cartesiano, y la razón es que no son variables de
+cartera. Un perfil \emph{reordena la señal}: sustituye el ranking del meta-agente y recalibra el
+alfa esperado. Opera, por tanto, en el plano predictivo y no en el de gestión. Meterlos en la
+rejilla equivaldría a elegir el estilo de inversor por su rentabilidad conocida, que es justamente
+lo que la regla protege.
+
+Lo que sí se hace es reevaluar los ocho con la cartera ya ganadora, para responder a una pregunta
+legítimamente distinta: cómo le habría ido a cada estilo de inversor con la mejor gestión
+disponible. Es un diagnóstico informativo y se presenta como tal; \textbf{ningún perfil se
+selecciona por su Information Ratio}.
+
+\section*{Qué queda fijado al terminar este capítulo}
+
+Al concluir el protocolo existen dos objetos congelados y ninguna cifra de resultado interpretada.
+El primero es una \emph{configuración predictiva}: un valor para cada variable del catálogo,
+elegido comparando Rank-IC pareado y sin que la rentabilidad interviniera en ninguna comparación.
+El segundo es un \emph{procedimiento de cartera}: seis variables con su rejilla, un criterio de
+optimización --- el Information Ratio --- y la garantía constructiva de que la era reservada no
+llega a calcularse durante la búsqueda.
+
+Con eso, las dos preguntas empíricas del trabajo quedan planteadas en el orden en que pueden
+responderse. La primera es si la ordenación que ese sistema produce existe realmente y resiste los
+intentos de explicarla por azar; es independiente de cualquier cartera y la responde el
+Capítulo~\ref{chap:resultados}. La segunda sólo tiene sentido si la primera se responde
+afirmativamente: si esa ordenación sobrevive al convertirse en posiciones. La responde el
+Capítulo~\ref{chap:resultados-economicos}.

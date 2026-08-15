@@ -30,9 +30,11 @@ Un candidato desplaza al incumbente sólo si supera, en este orden, tres filtros
 \end{enumerate}
 
 La última cláusula importa: ante evidencia indistinguible, el protocolo \emph{no cambia}. Es lo que
-explica que catorce de las diecinueve decisiones del Capítulo~\ref{chap:diseno-experimental}
-terminen confirmando el valor de partida. La traza completa de candidatos, puertas de elegibilidad,
-ventajas pareadas e intervalos está en \artefacto{decisions.json}.
+explica que dieciséis de las diecisiete decisiones de la pasada de referencia terminen confirmando
+el valor de partida, según la traza del Capítulo~\ref{chap:diseno-experimental}. La relación
+completa de candidatos, puertas de elegibilidad, ventajas pareadas e intervalos está en
+\artefacto{decisions.json}: quince decisiones se resolvieron por \texttt{robust\_rank\_ic} y dos por
+\texttt{tie\_simplicity}.
 
 Las variables de cartera no participan en ninguno de estos filtros. Se ejecutan después de congelar
 el ganador y se reportan como diagnóstico, según se detalla en la
@@ -65,7 +67,7 @@ combinaciones --- cinco órdenes de magnitud menos que las predictivas ---, y so
 Rank-IC, de modo que su búsqueda no puede inflar la métrica que el documento reporta como resultado
 principal. El razonamiento completo está en la
 Sección~\ref{sec:seleccion-secuencial} y el diseño del estudio correspondiente en el
-Capítulo~\ref{chap:desarrollo-cartera}.
+Anexo~\ref{anexo:desarrollo}.
 
 \section{Versiones de catálogo empleadas}
 

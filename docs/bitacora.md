@@ -1,5 +1,148 @@
 # Bitácora
 
+## 2026-08-15 · Cifras falsas en la prosa, poda de 21 activos y regla de procedencia estricta
+
+Auditoría a fondo del manuscrito con dos objetivos: bajarlo de ~90 a 60–80 páginas y hacerlo
+defendible. El segundo resultó ser el urgente.
+
+**La prosa contradecía a las tablas.** Seis cifras del texto no existían en ningún artefacto; eran
+residuos de studies anteriores que sobrevivieron a las reescrituras. La peor invertía un signo: el
+manuscrito afirmaba que el alfa factorial de la era reservada era «0,84 % con *t* = 2,53» ---
+positivo y significativo --- cuando `attribution.json` da **−0,48 % con *t* = −3,50**, y construía
+sobre ello un párrafo entero. Las demás: intervalo bootstrap `[0,0335; 0,1695]` frente al real
+`[0,0425; 0,1723]`; exclusión de eras «0,0730–0,1262» frente a 0,0780–0,1350; placebos
+«−0,0061/+0,0008» frente a −0,0081/+0,0013; Rank-IC de 2022–2024 citado como 0,1621 cuando la tabla
+dice 0,1788; y una contradicción interna en el capítulo 6, que decía «61 %» en la línea 101 y «52 %»
+en la 180 para la misma mejora. **El abstract inglés entero era de otro study** (Rank-IC 0.1004,
+DSR 0.930, era reservada +14,21 %, transferencia 0.247) y contradecía al resumen español de su misma
+página. Todo verificado contra los JSON y corregido; ahora un script contrasta las doce cifras clave
+contra sus artefactos.
+
+**`t09_limitaciones.tex` estaba roto en cuatro sitios** y nadie lo había visto porque es un fichero
+manual, no generado: un `\t` comido por un escape renderizaba «extit{risk}» en el PDF; declaraba
+«catálogo v5, código en v6» cuando los studies son v6/v6/v7; y mantenía como limitación vigente
+«13 de 23 variantes del barrido superan al ganador», un barrido que el Portfolio Study sustituyó.
+Reescrita entera. También el Anexo B decía «catorce de las diecinueve decisiones» cuando
+`decisions.json` tiene **17** (15 por `robust_rank_ic`, 2 por `tie_simplicity`).
+
+**Regla de procedencia aplicada sin excepciones.** La cadena y el Portfolio Study se explican como
+procedimiento, pero las cifras salen solo de los ganadores: lo predictivo del Model Study 3, lo
+económico de `evidence_best_full/`. La consecuencia fue eliminar contenido que describía la cartera
+**descartada**: la sección «Transferencia» (25 líneas sobre el coeficiente 0,328 de la cartera por
+defecto, siete de ellas explicando que la cifra no describe la adoptada), su figura, y la fila de
+confirmación de la regresión factorial. Se conservan el Deflated Sharpe y las carteras aleatorias
+porque miden el procedimiento de búsqueda, no una cartera concreta, y presentarlos con la cartera
+menos favorable es conservador.
+
+**Poda de activos: de 60 a 39.** Trece no estaban referenciados en ninguna parte del texto y varios
+pares tabla+figura mostraban los mismos datos. Fuera 16 figuras y 5 tablas; con ellas, 17 funciones
+y 2 parámetros muertos del generador, detectados por AST. Se conserva el único par cuyo texto
+argumenta que la figura aporta algo que la tabla no puede dar (dispersión frente a mediana).
+
+**Repetición eliminada.** El hallazgo «*risk* aislado bate al meta» se contaba tres veces en el
+capítulo 6; la era reservada, tres veces en el 7, que además tenía tres finales. El capítulo 6
+fundió dos secciones separadas por subsecciones intercaladas y el 7 quedó con un solo cierre.
+
+Resultado: 4.019 → 3.697 líneas de fuente y 60 → 39 activos, sin perder ninguna afirmación ni
+ninguna cifra correcta. Verificación: 12/12 cifras cuadran con los artefactos, cero refs rotas, cero
+labels duplicados, cero activos huérfanos, cero autorreferencias de capítulo, cero duplicación
+literal, sin código muerto, 89 tests.
+
+## 2026-08-15 · Cierre de la reestructuración: cada cosa una sola vez y en su sitio
+
+La reestructuración anterior movió los capítulos al orden correcto pero dejó las costuras a la
+vista. Esta pasada las cierra. El criterio es que cada elemento aparezca **una sola vez**, en el
+capítulo cuya pregunta responde, sin recortar profundidad: el manuscrito pasa de 3.892 a 4.019
+líneas porque lo eliminado se sustituye por transiciones y análisis de procedencia.
+
+**Duplicaciones literales eliminadas.** El capítulo económico repetía dos bloques enteros palabra
+por palabra: los años adversos y la lectura de la era reservada aparecían en las líneas 404–428 y
+otra vez en las 449–474. La era reservada llegó a contarse **tres veces**. El capítulo predictivo
+repetía la neutralización de estilo completa (0,1177 → 0,1019 y el 86,62 %) en dos secciones
+distintas. Se conserva en cada caso la versión más extensa y se traslada a ella cualquier detalle
+exclusivo de la otra: el alfa de 0,27 % con *t* = 1,44, que solo estaba en la versión corta, se
+integra en la desarrollada.
+
+**Frontera entre capítulos.** El capítulo de arquitectura adelantaba resultados que aún no podían
+justificarse —hiperparámetros ganadores, el meta finalmente elegido, el peso de `risk` por encima de
+0,95—. Se sustituyen por la disyuntiva de catálogo que representan: `stacked_rolling_bounded` protege
+una propiedad cualitativa del diseño que ninguna métrica mide, `stacked_rolling_free` maximiza la
+que sí se mide. El ejemplo numérico se reescribe con un peso hipotético de 0,70 para ilustrar el
+mecanismo sin revelar el desenlace. El capítulo de protocolo afirmaba que «ninguna cifra de
+resultados aparece aquí» y contenía la traza completa de decisiones; ahora distingue entre trazas
+auditables (que sí van ahí, porque sin ellas el protocolo no es comprobable) e interpretación (que
+no). También presentaba una cartera de 12 posiciones con tope de efectivo del 25 % como si fuera la
+adoptada, cuando la ganadora tiene 8 y cero efectivo: pasa a describir las seis variables y su
+rejilla, sin valores.
+
+**Tres defectos que impedían la lectura seguida.** El capítulo de resultados predictivos se
+**citaba a sí mismo** tres veces («el Capítulo 6 comprobará…» dentro del capítulo 6). La
+configuración ganadora no aparecía en ningún punto del cuerpo —las tablas de la cadena vivían solo
+en el Anexo D—, de modo que el lector llegaba a los resultados sin saber qué se estaba evaluando;
+`t06_cadena` y `t06_cadena_config` se trasladan al cuerpo y el anexo remite a ellas. Al hacerlo
+aparecieron **labels duplicados** (`tab:cadena`, `tab:cadena-config` definidos en dos ficheros), que
+habrían roto la compilación: se eliminan las copias del anexo.
+
+**Procedencia verificada, no supuesta.** Se auditó el generador en lugar de confiar en los captions.
+`f07_equity`, `f07_drawdown`, `f07_alfa_anual`, `f07_ordenes`, `t07_anual` y las dos figuras de
+perfiles salen de `evidence_best_full/` —cartera ganadora— y sus captions lo declaran ahora de forma
+uniforme. `f07_factores` y `f07_transferencia` salen de `attribution.json`, que se calculó sobre la
+cartera del Model Study y no puede regenerarse: se marcan **expresamente como diagnósticas**. El
+texto que rodea a `f07_transferencia` explicaba una sola fuente de discrepancia con la tabla anual
+(la agregación) cuando hay dos: también cambia la cartera.
+
+**Dato corregido.** La sección de rotación citaba un turnover del 359 % que no existe en ningún
+artefacto: es un residuo de la cartera anterior. El valor de la ventana de selección es 324,43 % y
+el de la curva completa 333,35 %, ambos verificados contra `evidence_best_full/summary.json`.
+
+**Código muerto.** El parámetro `profiles` de `write_tables` se leía del disco y se pasaba por dos
+funciones sin usarse desde que la tabla de perfiles se emite del Portfolio Study. Eliminado.
+
+Verificación: `verify_latex_assets.py` correcto, cero labels duplicados, cero referencias rotas,
+cero mojibake, 89 tests en verde. La validación visual del PDF queda pendiente de Overleaf.
+
+## 2026-08-14 · Reestructuración narrativa del manuscrito
+
+El documento se leía en zigzag: la historia del desarrollo interrumpía dos veces la explicación del
+sistema, los resultados predictivos y económicos convivían en un único capítulo de 761 líneas, y la
+arquitectura de los agentes venía mezclada con sus resultados —que sólo se pueden justificar después
+de explicar el protocolo de selección—.
+
+**Orden nuevo**: problema → datos observables → sistema → protocolo → resultados predictivos →
+resultados económicos → límites → conclusión.
+
+| Antes | Ahora |
+|---|---|
+| `03_datos` + `04_diseno_metodologico` | `03_datos_y_universo` (universo, fuentes, PIT, features) |
+| `06_agentes` (arquitectura + resultados) | `04_agentes_y_meta_agente` (sólo arquitectura, 112 líneas) |
+| `07_diseno_experimental` + diseño del Portfolio Study | `05_protocolo_experimental` (303 líneas) |
+| `09_resultados` (761 líneas, dos preguntas mezcladas) | `06_resultados_predictivos` (583) + `07_resultados_economicos` (501) |
+| `05_desarrollo_metodo` + `08_desarrollo_cartera` | **Anexo D** `d_auditoria_desarrollo` (373 líneas, íntegro) |
+
+**Decisiones de fondo:**
+
+- **El Anexo D conserva las dos historias completas**, no un resumen. Cambian de lugar, no de
+  contenido: recorrer cronológicamente errores ya corregidos interrumpe la explicación del sistema
+  final, pero omitirlos sería peor porque muchas reglas del protocolo existen porque algo falló.
+- **La tabla de las cinco afirmaciones se traslada a las conclusiones.** La introducción plantea las
+  cinco *preguntas*; las respuestas llegan cuando ya hay evidencia detrás. Antes el documento
+  revelaba el desenlace en la página 2.
+- **Los capítulos 4 y 5 no contienen ni una cifra de resultados.** Describen mecanismo y regla de
+  decisión; su evidencia vive en los capítulos 6 y 7. Cada uno anuncia explícitamente dónde se
+  analiza lo que describe.
+- **El capítulo 7 abre con una advertencia epistemológica**: la cartera se eligió por IR sobre
+  2015-2024, de modo que sus cifras de selección describen la configuración elegida pero no son
+  confirmación independiente. La única lectura económica reservada es 2025-2026.
+
+**El documento no encogió**: 3.160 → 3.892 líneas (+23 %), por las transiciones nuevas y el material
+añadido hoy. Ningún bloque de análisis se eliminó; sólo se eliminó duplicación literal tras las
+migraciones, sustituida por referencias cruzadas.
+
+**Verificación**: `verify_latex_assets` correcto, 0 etiquetas duplicadas, 0 referencias sin destino,
+entornos balanceados, sin mojibake y sin capítulos huérfanos. Las etiquetas `chap:metodologia`,
+`chap:desarrollo-metodo` y `chap:desarrollo-cartera` se conservan o redirigen al Anexo D para no
+romper las referencias existentes.
+
 ## 2026-08-14 · Cartera equivocada en tres activos, y tres tablas vacías sustituidas
 
 ### El error: la tabla de las tres ventanas describía la cartera del modelo
