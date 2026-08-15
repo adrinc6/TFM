@@ -32,6 +32,29 @@ de la primera: en los artefactos anteriores se observa la misma `evaluation_key`
 distintos. Es un fallo de corrección, no de reporte, y por eso la clave se calcula ahora a partir de
 la identidad del dataset resuelta antes de materializarlo.
 
+### Cobertura del universo: dónde entra realmente el sesgo de supervivencia
+
+La composición del índice es point-in-time y se intenta descargar **todo** ticker que perteneció al
+S&P 500 en algún momento, no solo los vivos (`historical_universe`), con una guarda contra símbolos
+reciclados: si el primer precio disponible es posterior a la última fecha en el índice, esos datos
+son de otra empresa que reutilizó el símbolo y se descartan (`is_recycled_ticker`).
+
+Eso elimina el sesgo de supervivencia **de la composición**, pero no el de la **cobertura de datos**,
+que es donde de verdad vive. Una empresa entra en el panel solo si tiene precio observable y un
+periodo fundamental casado con un informe publicado; las que quebraron, fueron absorbidas o
+cambiaron de símbolo tienden a fallar ese requisito, de modo que el panel de los años tempranos es
+más pequeño que el índice de esos años. **El índice ha tenido ~500 miembros durante todo el periodo
+estudiado**: cualquier diferencia entre eso y el número de tickers del panel es cobertura perdida, no
+un índice más pequeño, y confundir ambas cosas convierte una limitación honesta en un error.
+
+Por eso la cobertura se **mide y se publica**, no se declara: `universe_coverage.json` registra, por
+año, los miembros del índice, cuántos son elegibles para el panel y el motivo de exclusión de cada
+uno de los demás (`recycled_ticker`, `missing_price`, `missing_fundamental_or_report`), y añade un
+recuento de resolución sobre el universo histórico completo. Un ticker que no resuelve **no es
+prueba de que la empresa muriera**: puede haber cambiado de símbolo, presentar formularios de emisor
+extranjero o llevar una clase de acción con puntuación distinta. Esas cuatro causas son separables y
+se cuentan por separado, precisamente para que la mortalidad real no se sobreestime.
+
 Controles de ausencia de lookahead:
 
 1. La fecha efectiva del fundamental no supera el snapshot.
@@ -194,6 +217,109 @@ Orden entre elegibles:
 El spread de cola, el alfa y el IR se muestran como diagnósticos y no alteran esta decisión. La
 corrección por multiplicidad de las cifras finales se hace con el Deflated Sharpe Ratio en
 `attribution.json`; el proyecto no usa Holm.
+
+## 5 bis. Estudios encadenados: cómo se mejora sobre una sola pasada
+
+La optimización de un Model Study es greedy secuencial (§3), y eso tiene una consecuencia conocida:
+**el resultado depende del punto de partida**, porque cada variable se evalúa sobre el incumbent
+acumulado hasta ese momento y no sobre todas las combinaciones posibles. Una variable que se decidió
+pronto, cuando el resto de la configuración todavía era la recomendada por defecto, nunca vuelve a
+revisarse con lo demás ya optimizado.
+
+Encadenar studies ataca exactamente esa limitación: **el ganador del study *n* es el baseline del
+study *n+1***, manteniendo en `values` el abanico que se quiera reexplorar. Cada pasada completa es
+una iteración de **ascenso por coordenadas** (*coordinate ascent*), y la mejora entre pasadas es la
+evidencia de que el procedimiento converge.
+
+No hay que programar nada para encadenar. `normalized_definition`
+([module/studies/config.py](../module/studies/config.py)) admite por variable
+`{"mode", "values", "baseline"}` y exige que el `baseline` sea uno de los `values` seleccionados;
+`initial_values` siembra con él la primera evaluación (`predictive:baseline`). Cada study crea
+siempre un `study_id` nuevo: no existe «reanudar una cadena», y son directorios independientes en
+`results/studies/`, que es justo lo que permite compararlos.
+
+### Cómo se demuestra que la cadena mejora
+
+1. **La métrica de comparación es el Rank-IC robusto de la ventana de selección**, que es el criterio
+   con el que se eligió cada ganador. Es lo único comparable entre pasadas.
+2. **2025–2026 no participa en ninguna comparación**, en ninguna pasada.
+3. Las métricas económicas se reportan pero **no** son el criterio: la cadena optimiza capacidad
+   predictiva, no rentabilidad.
+
+Una cadena puede **converger sin mejorar**, y eso también es un resultado publicable: si una pasada
+devuelve el mismo ganador que la anterior, significa que el óptimo greedy es estable frente al punto
+de partida, y debe contarse como tal en vez de disimularse.
+
+### El riesgo que hay que declarar
+
+Encadenar **multiplica el número de configuraciones probadas sobre los mismos datos**, y eso agrava
+la selección múltiple: el Deflated Sharpe penaliza vía `n_trials`, que crece con cada pasada. La
+ganancia de Rank-IC entre pasadas y el riesgo de sobreajuste por multiplicidad **crecen a la vez**, y
+la era reservada es la única defensa real, precisamente porque no participa en ninguna pasada.
+
+### Empates técnicos y versión de catálogo
+
+Cuando la ventaja pareada de un retador no supera `TIE_TOLERANCE`, la decisión la resuelve la tabla
+de simplicidad del catálogo, no la evidencia. Esas decisiones **no deben presentarse como hallazgos
+empíricos**: son convenciones de desempate declaradas de antemano.
+
+De ahí se sigue una precisión que es fácil enunciar mal. Cambiar la tabla de simplicidad de una
+variable —como ocurrió al pasar de catálogo v6 a v7, invirtiendo el orden de `execution_lag_days` a
+`(60, 45, 30)`— **no altera ninguna medición**, pero **sí puede invertir una decisión** tomada por
+empate y, con ella, el baseline de todas las pasadas siguientes. Una cadena cuyas pasadas no
+compartan versión de catálogo es por tanto **condicional a esa versión** en su trayectoria, aunque
+todas sus cifras sean correctas. La regla operativa es simple: **todas las pasadas de una cadena
+corren bajo la misma versión de catálogo**, y la versión se declara junto al `study_id`.
+
+## 5 ter. El Portfolio Study
+
+El Model Study optimiza Rank-IC, que mide la calidad de la *ordenación*. Ordenar bien y ganar dinero
+no son lo mismo: se ha observado un ganador con el mejor Rank-IC de su cadena y a la vez el peor
+coeficiente de transferencia. Optimizar la ordenación no optimiza la cartera, así que **la cartera
+necesita su propio criterio**, y ese criterio es el **Information Ratio**: exceso medio sobre el
+índice dividido por la volatilidad de ese exceso. A diferencia del alfa bruto, premia la
+consistencia.
+
+Se ejecuta **sobre el ganador ya congelado, sin reentrenar nada**: cada combinación reutiliza los
+scores del ganador y solo rehace el backtest, lo que la abarata en dos órdenes de magnitud frente a
+un run predictivo con ajuste.
+
+**Cartesiano, no greedy.** Las seis variables de cartera —`target_size`, `max_cash_weight`,
+`sizing_mode`, `minimum_holding_period`, `coverage_percentile_floor`,
+`rebalance_drift_tolerance`— **interactúan**: el suelo de diversificación se deriva de `target_size`
+y `max_cash_weight` a la vez, y lo que hace `coverage_percentile_floor` depende de si la plaza que
+libera se recompra (tope 0) o queda en efectivo (tope > 0) — la misma variable hace cosas opuestas
+según el tope. Un greedy fijaría la primera antes de mirar la segunda y no vería nada de eso.
+
+**Qué no se optimiza.** `commission_bps` y `slippage_bps` se fijan a un único valor: son *supuestos
+de coste*, no decisiones de gestión, y optimizarlos equivaldría a elegir el mundo en el que la
+estrategia luce mejor. La validación lo impone; no es una convención de la interfaz.
+
+**Los perfiles quedan fuera de la rejilla.** Un perfil *reordena la señal*, mientras las seis
+variables solo gestionan la cartera ya elegida: son planos distintos. Incluirlos multiplicaría el
+coste por ocho y, sobre todo, elegiría el estilo de inversor por su rentabilidad conocida. Al
+terminar la rejilla, la cartera ganadora se aplica a todos los perfiles para responder «cómo le
+habría ido a cada estilo con la mejor gestión»; ninguno se elige por su IR.
+
+**Cómo se aísla la era reservada.** Durante la rejilla el backtest se corta en 2024 recortando los
+scores antes de simular (`selection_evidence`), de modo que 2025–2026 **no llega a calcularse** para
+ninguna combinación. No basta con filtrar el resumen al elegir: la cartera es secuencial, y si la
+simulación entrase en la era reservada su resultado existiría y bastaría con mirarlo. Solo la
+combinación ya ganadora se reevalúa sobre la serie completa, y esa evidencia se guarda aparte. La
+cartera de partida contra la que se mide la mejora usa la **misma** serie recortada: compararla
+sobre la completa mediría ventanas distintas y la mejora sería ficticia.
+
+**Qué se guarda.** Una fila de resumen por combinación en `portfolio_grid.parquet`; la evidencia
+completa es solo la del mejor vigente, que se sustituye en cuanto otra la supera (regla 5 del
+repositorio aplicada al IR). La rejilla vuelca cada 25 combinaciones y al arrancar salta las ya
+evaluadas.
+
+**El riesgo que hay que declarar**: probar una rejilla entera sobre los mismos datos añade
+multiplicidad, igual que encadenar pasadas. La defensa es que la elección solo ve la ventana de
+selección y que el resultado de la era reservada se reporta **junto** al de selección, nunca en su
+lugar. Y una consecuencia que no se puede suavizar: la cartera adoptada es la mejor de la rejilla, de
+modo que sus cifras **dentro** de la ventana de selección son una cota superior optimista, no una
+estimación insesgada.
 
 ## 6. Cartera dinámica
 
@@ -384,6 +510,81 @@ La política de efectivo es una **decisión de cartera, no de modelo**: no alter
 la etapa diagnóstica y se decide al final ejecutando ambas alternativas con el ganador predictivo ya
 congelado. Cuál es mejor es un resultado del trabajo, no un supuesto previo.
 
+### Orden de decisión en cada snapshot
+
+Toda la lógica vive en una única función, `decide_orders`
+([module/evaluation/portfolio.py](../module/evaluation/portfolio.py)); la contabilidad (precios,
+costes, turnover) está en [module/evaluation/backtest.py](../module/evaluation/backtest.py). **El
+orden importa**: cada paso condiciona los siguientes, y una acción vendida no puede recomprarse en
+ese mismo snapshot.
+
+```text
+0.     Preparación: ranking, percentiles, alfas, umbrales, protegidas por tenencia
+1.     Venta forzada por pérdida de cobertura      (missing_current_score)
+1-bis. Venta por suelo de cobertura                (below_coverage_percentile)
+2.     Venta a efectivo por umbral                 (expected_alpha_below_exit)
+--- a partir de aquí, todo bloqueado si price_only_sell_only y no hay fundamentales ---
+3.     Compras nuevas con histéresis               (initial_fill)
+4.     Relleno obligatorio hasta el suelo          (fully_invested_fill / cash_floor_fill)
+5.     Rotación: outsider desplaza a la peor       (displaced_by_net_edge)
+6.     Pesos, tolerancia de deriva y órdenes       (rebalance)
+```
+
+Los tres umbrales se calculan una vez por snapshot, **todos en base anual**:
+
+```text
+coste_ida_y_vuelta = anualizar(2 × (comisión + slippage), horizonte)
+umbral_salida      = exit_expected_alpha_bps / dureza
+umbral_entrada     = (exit_expected_alpha_bps + coste_ida_y_vuelta) × dureza
+umbral_rotación    = coste_ida_y_vuelta + rotation_edge_bps × dureza
+```
+
+donde `dureza` vale 1,0 en snapshots con fundamentales nuevos y
+`price_only_strictness_multiplier` en el resto.
+
+El **paso 4** es la razón de que varias reglas «no hagan lo que parece» con tope 0: se completa hasta
+el suelo de diversificación con las mejores por ranking **sin aplicar ningún umbral**, así que
+vendas lo que vendas, el relleno vuelve a llenar la cartera en el mismo snapshot.
+
+El **paso 5** se detiene —no continúa— en cuanto el mejor par disponible no supera el umbral:
+`outsider` es la mejor candidata fuera y `peor` la peor desplazable, de modo que si ese par no lo
+supera, ningún otro lo hará; además, continuar sería un bucle infinito porque ninguno de los dos
+cambia. Si a alguno de los dos le falta calibración de alfa, la ventaja es indefinida y la rotación
+se detiene: una rotación que no puede justificarse económicamente no se hace.
+
+### Casuísticas
+
+- **Una posición pierde su puntuación** (sale del índice, deja de cotizar) → se vende en el paso 1,
+  siempre, incluso bajo mínimo de tenencia, y no se recompra ese snapshot.
+- **Todas las posiciones caen bajo el umbral y no hay nada mejor** → con tope 0 no se emite ninguna
+  orden, porque vender la cartera entera para recomprarla igual sería una ida y vuelta completa para
+  quedar en el mismo sitio; con tope > 0 se venden las peores a efectivo hasta el suelo.
+- **Hay menos candidatas que plazas** → si el universo es escaso, el capital se reparte entre las
+  plazas ocupadas y el tope decide cuánto se retiene, porque las plazas ausentes no existen. Si en
+  cambio la compra está bloqueada por `price_only_sell_only`, el hueco **queda en efectivo y no se
+  reparte**: concentrar sería actuar justo cuando se ha decidido no actuar sin información nueva.
+- **Una posición protegida por el mínimo de tenencia** no puede venderse por caída de alfa, ni por
+  rotación, ni por suelo de cobertura; sí por `missing_current_score`, y sí puede ajustarse su peso
+  por rebalanceo, que no es una venta de la posición.
+- **El alfa aún no está calibrado** (arranque del backtest) → manda la ordenación por ranking, ningún
+  `NaN` dispara una venta ni bloquea una compra, y la rotación se detiene.
+- **Los pesos no suman 1** → es legítimo y significa efectivo, por tope activo, por
+  `price_only_sell_only` o por un universo menor que `target_size`.
+
+### De dónde sale la rotación
+
+La causa raíz del turnover es estructural: se re-decide con la cadencia de snapshot sobre una señal
+al horizonte del modelo, de modo que con cadencia mensual y horizonte anual se toman doce decisiones
+sobre una etiqueta que solo se cierra una vez. Los motivos de orden persistidos permiten atribuir el
+turnover a rotación, rebalanceo de pesos, compras iniciales y ventas a efectivo, y esa atribución es
+la que dice qué palanca merece moverse.
+
+`minimum_holding_period` y `rotation_edge_bps` actúan sobre la rotación económica;
+`rebalance_drift_tolerance` sobre la cosmética. `snapshot_step_months` es la palanca estructural,
+pero es **predictiva**: cambiarla re-ejecuta la selección entera y produce otro ganador, así que no
+es un ajuste posterior de cartera. Las cifras concretas de cada palanca viven en
+`portfolio_grid.parquet` y en las métricas del ganador, no en este documento.
+
 ### Sizing
 
 ```text
@@ -534,9 +735,31 @@ API:
 
 No existen interfaces alternativas ni compatibilidad con protocolos anteriores.
 
-## 11. Interpretación para el TFM
+## 11. Dónde viven las cifras
+
+Ninguna cifra vive en este documento ni en ningún otro `.md`. Viven en los artefactos de
+`results/studies/<study_id>/` y se leen de ahí:
+
+| Artefacto | Qué contiene |
+|---|---|
+| `winner.json` | Configuración ganadora y su resumen |
+| `decisions.json` | Cada decisión, su regla (`robust_rank_ic`, `tie_simplicity`) y sus candidatos |
+| `evidence/summary.json` | Rank-IC, IC-IR, cohortes, métricas económicas del ganador |
+| `robustness.json` | Semillas, bootstrap, exclusión de eras, permutación, placebos, carteras aleatorias |
+| `attribution.json` | Regresión factorial, Rank-IC neutralizado, Deflated Sharpe, cobertura del universo |
+| `portfolio_grid.parquet` | Una fila por combinación de cartera evaluada |
+
+Toda afirmación numérica cita el `study_id` y la ruta del artefacto. Copiar cifras a un documento
+crea una segunda verdad que se desincroniza en cuanto se relanza un study, que es exactamente lo que
+esta regla existe para impedir.
+
+## 12. Interpretación para el TFM
 
 Un Study dev demuestra que el software funciona, no que exista señal económica. La evidencia del
 TFM debe proceder de Studies completos, identificar configuración y hashes, separar selección de
 estrés conocido y discutir multiplicidad, solapamiento temporal, costes, universo y sesgos
 residuales.
+
+El manuscrito LaTeX es el informe formal y **está congelado entre migraciones**: no se edita como
+parte de un cambio de código. Lo que el manuscrito tendrá que recoger se acumula en
+`docs/cambios_latex.md`, y lo planificado y todavía no hecho en `docs/plan_pendiente.md`.

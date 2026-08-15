@@ -11,7 +11,7 @@ catálogo → Model Study → optimización secuencial por Rank-IC → ganador
 ```
 
 Antes de cambiar ciencia, ejecución, almacenamiento o dashboard, leer `docs/metodologia.md`,
-`docs/bitacora.md`, `docs/informe_resultados.md` y `README.md`.
+`docs/bitacora.md` y `README.md`.
 
 ## Una sola ruta
 
@@ -37,10 +37,10 @@ Antes de cambiar ciencia, ejecución, almacenamiento o dashboard, leer `docs/met
   una venta solo se emite si el destino del dinero (otra acción o efectivo) es mejor que la
   posición después de costes; las entradas tienen histéresis y un mínimo de tenencia
   (`minimum_holding_period`) puede bloquear toda venta por tiempo, no por economía. La política de
-  efectivo (`fully_invested` u `opportunity_cash`, remunerado al 0 %, con tope y suelo de
-  diversificación) es una decisión de cartera, diagnóstica: no altera el Rank-IC y por tanto no
-  puede elegir modelo. Todas las variables de cartera comparten el mismo propósito: estabilidad
-  del modelo ya congelado, nunca más alfa.
+  efectivo la gobierna únicamente `max_cash_weight` (remunerado al 0 %, con suelo de diversificación
+  derivado del tope; 0 significa siempre invertida al 100 %) y es una decisión de cartera,
+  diagnóstica: no altera el Rank-IC y por tanto no puede elegir modelo. Todas las variables de
+  cartera comparten el mismo propósito: estabilidad del modelo ya congelado, nunca más alfa.
 
 ## Ejecución y persistencia
 
@@ -64,10 +64,23 @@ Antes de cambiar ciencia, ejecución, almacenamiento o dashboard, leer `docs/met
 
 ## Documentación
 
+`docs/` contiene exactamente cuatro ficheros: `metodologia.md`, `bitacora.md`, `cambios_latex.md` y
+`plan_pendiente.md`. No se crean más.
+
 - Cambios metodológicos: actualizar `docs/metodologia.md`.
 - Decisiones, fallos, correcciones y ejecuciones: añadir entrada en `docs/bitacora.md`.
-- Cifras reales: actualizar `docs/informe_resultados.md` indicando el artefacto de origen.
+- **Las cifras viven en los artefactos de `results/studies/<study_id>/`** (`winner.json`,
+  `evidence/summary.json`, `robustness.json`, `attribution.json`, `decisions.json`,
+  `portfolio_grid.parquet`) y se leen de ahí. **No se duplican en ningún documento.** Toda
+  afirmación numérica cita el `study_id` y la ruta del artefacto que la respalda.
 - No presentar un test sintético o smoke dev como evidencia económica.
+
+## El manuscrito LaTeX no se toca
+
+`latex/main.tex`, `latex/presentacion.tex` y `latex/assets/*` quedan congelados entre migraciones.
+Un cambio que afecte al manuscrito **no lo edita**: añade una entrada a `docs/cambios_latex.md` con
+qué cambió, a qué capítulos, tablas o figuras afecta, y qué artefacto lo respalda. `latex/scripts/`
+sí es código editable, pero el exportador no se ejecuta como parte de un cambio.
 
 ## UTF-8
 

@@ -2,9 +2,13 @@
 
 > Documento vivo. Fija el índice completo del TFM y las convenciones de escritura **antes** de
 > redactar ningún capítulo. Complementa a `docs/metodologia.md` (cómo se construye el sistema),
-> `docs/bitacora.md` (el porqué de cada decisión) y `docs/informe_resultados.md` (las cifras
-> trazables). Aquí se decide cómo se **cuenta** el proyecto, no cómo se construye. Se actualiza
-> cada vez que se cierra un capítulo o cambia una decisión de estructura.
+> `docs/bitacora.md` (el porqué de cada decisión) y los artefactos de `results/studies/<study_id>/`
+> (las cifras trazables). Aquí se decide cómo se **cuenta** el proyecto, no cómo se construye. Se
+> actualiza cada vez que se cierra un capítulo o cambia una decisión de estructura.
+>
+> **El manuscrito está congelado entre migraciones**: los cambios de código no lo editan, sino que
+> se acumulan en `docs/cambios_latex.md`. Ese fichero es el punto de partida de la próxima
+> migración.
 
 ## Estado del proyecto a 2026-08-14
 
@@ -104,7 +108,7 @@ que imponen 6 cohortes cerradas y ~1,41 años de cartera, y declarando que la ga
 1. El autor pide un capítulo o una sección concreta.
 2. Antes de escribir, se relee este plan, los capítulos `.tex` ya redactados (para mantener
    terminología y notación consistentes) y el estado real del proyecto: `docs/metodologia.md`,
-   `docs/informe_resultados.md`, el código, los tests y los artefactos del study de referencia.
+   `docs/cambios_latex.md`, el código, los tests y los artefactos del study de referencia.
 3. Un capítulo solo se escribe con datos y resultados que existen. **Ninguna cifra entra en el `.tex`
    sin que se pueda señalar el artefacto exacto de donde sale.** Nada de cifras inventadas ni
    redondeadas «de memoria».

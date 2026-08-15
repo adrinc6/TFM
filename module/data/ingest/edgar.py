@@ -9,7 +9,7 @@ EDGAR da la fecha real (`filingDate`) desde 1993, es gratuita, oficial y no nece
 Finnhub solo la da desde 2010, por lo que no sirve para simular desde el año 2000.
 
 La SEC exige un User-Agent identificatorio y limita a ~10 req/s.
-Ver `docs/plan_fases.md` (Fase 0).
+Ver `docs/metodologia.md` («Universo y datos point-in-time»).
 """
 
 from __future__ import annotations
@@ -25,9 +25,15 @@ import requests
 
 log = logging.getLogger(__name__)
 
-# Solo informes periódicos: 10-Q (trimestral) y 10-K (anual). Son los que traen los
-# fundamentales que usa el sistema; se ignoran 8-K, S-1, etc.
-PERIODIC_FORMS = ("10-Q", "10-K")
+# Solo informes periódicos: los que traen los fundamentales que usa el sistema. Se ignoran 8-K,
+# S-1, etc.
+#
+# 20-F y 40-F son los equivalentes anuales de los emisores privados extranjeros (los canadienses
+# usan 40-F bajo el sistema MJDS). Estuvieron fuera de esta tupla, y la consecuencia era que una
+# empresa extranjera del índice —con CIK válido y sus cuentas publicadas puntualmente— quedaba sin
+# ningún informe periódico y se contaba como si no existiera. Ese fallo se sumaba al sesgo de
+# supervivencia sin ser mortalidad: la empresa estaba viva y sus datos estaban en EDGAR.
+PERIODIC_FORMS = ("10-Q", "10-K", "20-F", "40-F")
 
 
 class EdgarClient:
@@ -90,9 +96,12 @@ class EdgarClient:
     def ticker_to_cik(self) -> dict[str, str]:
         """Mapeo ticker -> CIK (identificador de empresa en la SEC), con ceros a la izquierda.
 
-        Solo lista empresas VIVAS: los deslistados no aparecen. De los 1206 tickers del
-        universo histórico, ~715 tienen CIK. Los ausentes son en su mayoría quebrados o
-        absorbidos, y son parte de la evidencia del sesgo de supervivencia.
+        Solo lista emisores vivos y bajo su símbolo **actual**, así que una parte del universo
+        histórico no resuelve aquí. Cuántos y por qué es una medida, no una interpretación: lo
+        reparte `_ticker_resolution` en `module/data/ingest/pipeline.py` y queda en
+        `universe_coverage.json`. No debe asumirse que los ausentes murieron —un cambio de ticker,
+        una absorción o un emisor extranjero producen el mismo síntoma— y por eso existe el
+        fallback `lookup_cik`.
         """
         data = self._get(self.TICKERS_URL, self.cache_dir / "company_tickers.json")
         if not data:
@@ -104,17 +113,21 @@ class EdgarClient:
         }
 
     def lookup_cik(self, ticker: str) -> str | None:
-        """Resuelve un ticker con el buscador SEC si el mapa actual es ambiguo.
+        """Resuelve un ticker con el buscador SEC si el mapa actual es ambiguo o no lo contiene.
 
-        ``company_tickers.json`` puede apuntar a una sociedad distinta tras una
-        reutilización de ticker (por ejemplo, XOM). El buscador de EDGAR resuelve
-        el emisor de los formularios periódicos para el símbolo solicitado.
+        ``company_tickers.json`` solo lista emisores vivos y bajo su símbolo **actual**, así que
+        falla en dos casos que no son mortalidad: una empresa que cambió de ticker y una que fue
+        absorbida (su CIK y sus filings siguen en EDGAR para siempre). También puede apuntar a otra
+        sociedad tras una reutilización de símbolo. El buscador de EDGAR cubre esos casos.
+
+        No se filtra por tipo de formulario. Filtrar por ``10-Q`` excluía justo a los emisores
+        extranjeros, que presentan 20-F o 40-F: el mismo defecto que tenía ``PERIODIC_FORMS``,
+        repetido aquí, de modo que el fallback tampoco podía rescatarlos.
         """
         query = urlencode(
             {
                 "action": "getcompany",
                 "CIK": ticker,
-                "type": "10-Q",
                 "owner": "exclude",
                 "output": "atom",
             }

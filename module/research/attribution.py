@@ -31,6 +31,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from module.data.universe import annual_membership_dates, members_at
 from module.studies.catalog import KNOWN_STRESS_YEARS, SELECTION_UNTIL_YEAR
 
 log = logging.getLogger(__name__)
@@ -393,23 +394,57 @@ def _baseline_rank_ic(prepared: Path, targets: pd.DataFrame) -> dict[str, Any]:
 # --- Cobertura y transferencia -------------------------------------------------------------------
 
 def _coverage_by_year(features: pd.DataFrame) -> list[dict[str, Any]]:
-    """Cobertura efectiva del universo por año: convierte una limitación declarada en una medida."""
+    """Cobertura efectiva del universo por año: convierte una limitación declarada en una medida.
+
+    `usable_fraction` mide calidad **dentro** del panel y puede valer 100 % mientras falta media
+    lista del índice, así que por sí sola no dice nada sobre cobertura. El denominador que sí lo
+    dice son los miembros reales del S&P 500 de ese año (`members_at`): el índice ha tenido ~500
+    componentes durante todo el periodo estudiado, de modo que la diferencia con `distinct_tickers`
+    es cobertura perdida —empresas deslistadas cuyos fundamentales no se recuperan—, no un índice
+    más pequeño. Confundir ambas cosas presenta un defecto medible como una característica del
+    diseño.
+    """
     if "snapshot_date" not in features:
         return []
     frame = features[["ticker", "snapshot_date"]].copy()
     frame["year"] = pd.to_datetime(frame["snapshot_date"]).dt.year
     fresh = features.get("is_price_fresh")
     frame["usable"] = fresh.fillna(False).to_numpy() if fresh is not None else True
+    members_by_year = _index_members_by_year()
     rows = []
     for year, group in frame.groupby("year"):
+        distinct = int(group["ticker"].nunique())
+        members = members_by_year.get(int(year), 0)
         rows.append({
             "year": int(year),
-            "distinct_tickers": int(group["ticker"].nunique()),
+            "distinct_tickers": distinct,
+            "sp500_members": members,
+            "panel_coverage_fraction": float(distinct / members) if members else None,
             "usable_rows": int(group["usable"].sum()),
             "total_rows": len(group),
             "usable_fraction": float(group["usable"].mean()),
         })
     return rows
+
+
+def _index_members_by_year() -> dict[int, int]:
+    """Miembros del S&P 500 en el último snapshot de composición de cada año natural.
+
+    Sin el CSV de composición no hay denominador posible. Se degrada a vacío —la cobertura queda
+    `None`, no 0— en vez de propagar el error: un panel sintético de test no tiene por qué traer la
+    composición histórica, y perder el denominador no invalida el resto de la atribución.
+    """
+    try:
+        return {
+            int(as_of.year): len(members_at(as_of))
+            for as_of in annual_membership_dates()
+        }
+    except FileNotFoundError:
+        log.warning(
+            "Sin composición histórica del S&P 500: la cobertura del panel se publica sin "
+            "denominador y no puede compararse contra el tamaño real del índice."
+        )
+        return {}
 
 
 def _transfer_curve(equity: pd.DataFrame, tail: pd.DataFrame) -> dict[str, Any]:
