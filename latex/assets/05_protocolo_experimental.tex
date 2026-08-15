@@ -21,13 +21,45 @@ alternativa midiera peor documenta una decisión; si la señal resultante es rea
 contrastes adversariales y si se traduce en rentabilidad son preguntas distintas, y se responden con
 otros datos en los Capítulos~\ref{chap:resultados} y~\ref{chap:resultados-economicos}.
 
+\section{Por qué el protocolo se aplicó tres veces}
+\label{sec:cadena-studies}
+
+El protocolo que describe este capítulo no se ejecutó una vez sino tres, encadenadas, y conviene
+explicarlo antes de entrar en la mecánica, porque todas las trazas que siguen son las de la tercera
+pasada --- a la que el documento llama \emph{pasada de referencia}.
+
+La selección secuencial recorre las fases en orden y cada una hereda al incumbente de la anterior.
+Eso significa que el resultado depende del punto de partida: una variable decidida en la primera
+fase se decide con los valores por defecto de todas las demás, y no vuelve a revisarse aunque las
+decisiones posteriores cambien el contexto en que aquella elección tenía sentido. La primera pasada
+lo dejó claro en cifras: su ganador se apartaba en \textbf{ocho variables} del baseline recomendado
+del catálogo, de modo que la mayoría de sus decisiones se habían tomado partiendo de una
+configuración que el propio estudio acabó descartando.
+
+La respuesta fue encadenar los estudios. El ganador de cada pasada se convierte en el baseline de la
+siguiente, que vuelve a recorrer las fases desde ese punto. Es un ascenso por coordenadas: cada
+pasada sólo puede mejorar o confirmar, porque el incumbente se conserva cuando no hay evidencia
+suficiente para desplazarlo. La primera modificó ocho variables respecto de su punto de partida; la
+segunda, una sola (\artefacto{meta\_method}, de acotado a libre); la tercera, dos
+(\artefacto{execution\_lag\_days} y \artefacto{target\_size}). El procedimiento se queda sin cambios
+que hacer, que es lo que debe ocurrir si converge en lugar de explorar al azar, y es la razón de
+detenerse en tres. Las Tablas~\ref{tab:cadena} y~\ref{tab:cadena-config} del
+Capítulo~\ref{chap:resultados} recogen qué obtuvo y qué cambió cada pasada.
+
+Conviene declarar el coste metodológico, porque no es gratuito. Encadenar estudios multiplica el
+número de configuraciones evaluadas sobre la misma ventana de selección, y por tanto aumenta la
+probabilidad de que la mejor cifra observada deba parte de su tamaño a la propia búsqueda. La cadena
+no es una forma de evitar el sobreajuste: es una forma de sistematizarlo y hacerlo visible. Lo que
+protege al resultado no es el procedimiento de búsqueda sino la ventana reservada, que no participa
+en ninguna de las tres pasadas.
+
 \section{Optimización secuencial y regla de decisión}
 
 El catálogo cerrado se recorre en cuatro fases: temporal, representación, modelo y meta. Se parte
 de un \textit{baseline}; en cada fase se modifica una variable y se comparan sus candidatos con el
 incumbente acumulado. Así, el coste científico es una suma de alternativas, no una búsqueda
-cartesiana opaca. Las 71 configuraciones ejecutadas en la pasada de referencia quedan registradas
-junto con cada elección, y las de las dos pasadas anteriores conservan sus propios registros.
+cartesiana opaca. La pasada de referencia ejecutó 71 configuraciones, y cada una queda registrada
+junto con la elección que motivó.
 
 Un candidato debe tener observaciones suficientes, no caer por debajo de $-0,02$ en ninguna era
 disponible y superar una puerta pareada: dominar al incumbente (ventaja media positiva y mejor en
@@ -54,15 +86,11 @@ sin confundir el desplazamiento de sus fechas de ejecución con ausencia de evid
 \end{figure}
 
 La Tabla~\ref{tab:decisiones} hace auditable esa traza para la pasada de referencia. Conviene
-explicar qué columna se tabula y por qué, porque la elección no es inocente. El Rank-IC acumulado
-tras cada paso --- la representación habitual, en forma de escalera --- sería en esta pasada una
-columna constante: 0,1005 repetido dieciséis veces. No por un defecto de la medición, sino porque la
-tercera pasada parte del ganador de la segunda y casi todas las variables llegan ya en su mejor
-valor conocido, de modo que la comparación pareada no encuentra motivo para moverlas.
-
-Lo informativo, entonces, no es el valor que se conserva sino \textbf{la alternativa que se
-descarta}: cuánto Rank-IC habría costado adoptarla. Esa es la columna que se tabula, ordenada de
-mayor a menor coste.
+explicar qué columna se tabula y por qué, porque la elección no es inocente. La representación
+habitual --- el Rank-IC acumulado tras cada paso, en forma de escalera --- sería aquí una columna
+casi constante, por los motivos que desarrolla el apartado siguiente. Lo informativo, entonces, no
+es el valor que se conserva sino \textbf{la alternativa que se descarta}: cuánto Rank-IC habría
+costado adoptarla. Esa es la columna que se tabula, ordenada de mayor a menor coste.
 
 \begin{table}[H]
   \centering
@@ -70,9 +98,11 @@ mayor a menor coste.
   \caption{Qué alternativa se rechazó en cada decisión y cuánto habría costado adoptarla.}
   \label{tab:decisiones}
   \input{assets/t06_decisiones.tex}
-  \caption*{Fuente: \artefacto{decisions.json}. El coste es el Rank-IC de la mejor alternativa menos
-  el del ganador; un coste \emph{positivo} indica que la alternativa medía mejor y que el ganador se
-  decidió por otra vía, lo que sólo ocurre en los empates técnicos.}
+  \caption*{El coste es el Rank-IC de la mejor alternativa menos el del ganador; un coste
+  \emph{positivo} indica que la alternativa medía mejor y que el ganador se decidió por otra vía, lo
+  que sólo ocurre en los empates técnicos. No debe confundirse con la \emph{ventaja pareada}, que
+  promedia la diferencia cohorte a cohorte: en \artefacto{meta\_method} el coste es $-0{,}0085$ y la
+  ventaja pareada $+0{,}00827$.}
 \end{table}
 
 Leída así, la tabla separa con claridad tres grupos. Cuatro decisiones eran caras de equivocar:
@@ -94,22 +124,20 @@ dos debe presentarse como hallazgo empírico, y por eso figuran con su regla al 
 \subsection*{Por qué la escalera es plana}
 
 El resultado de la tercera pasada es contundente y va en contra de la intuición habitual sobre este
-tipo de búsquedas: \textbf{sólo una de las diecisiete decisiones cambió el incumbente}. Las
-dieciséis restantes confirmaron el valor de partida, con una ventaja pareada exactamente nula. El
-Rank-IC permanece en 0,1005 durante toda la pasada y sólo se mueve en el último paso,
-\artefacto{meta\_method}, que lo lleva a 0,1090.
+tipo de búsquedas: \textbf{las diecisiete decisiones confirmaron su valor de partida}, dieciséis de
+ellas con una ventaja pareada exactamente nula. La única comparación que midió una diferencia
+apreciable fue \artefacto{meta\_method}, donde la variante libre obtuvo 0,1090 frente a 0,1005 de la
+acotada; también ahí el procedimiento conservó el valor que ya traía.
 
-Esa planitud no es un defecto del procedimiento sino la consecuencia esperable de encadenar
-estudios. La tercera pasada parte del ganador de la segunda, de modo que casi todas las variables
-llegan ya en su mejor valor conocido y la comparación pareada no encuentra motivo para moverlas.
-Una escalera plana en la última pasada de una cadena significa que la cadena ha convergido; la
-primera pasada, que partía del baseline recomendado del catálogo, presentaba un perfil muy distinto,
-como documenta la Sección~\ref{sec:cadena-studies}.
+Esa planitud es exactamente lo que cabía esperar de una cadena que ha convergido: la pasada de
+referencia parte del ganador de la anterior, de modo que casi todas las variables llegan ya en su
+mejor valor conocido y la comparación pareada no encuentra motivo para moverlas. La primera pasada,
+que partía del baseline del catálogo, presentaba un perfil muy distinto.
 
 Este patrón es una defensa parcial frente a la objeción de sobreajuste por multiplicidad. Un
-protocolo que aceptase cualquier mejora aparente habría desplazado al incumbente muchas más veces,
-persiguiendo diferencias dentro del ruido. Que dieciséis de diecisiete decisiones terminen en «no
-cambiar» indica que las puertas de elegibilidad están operando. No elimina el problema --- el
+protocolo que aceptase cualquier mejora aparente habría desplazado al incumbente muchas veces,
+persiguiendo diferencias dentro del ruido. Que las diecisiete decisiones terminen en «no cambiar»
+indica que las puertas de elegibilidad están operando. No elimina el problema --- el
 Deflated Sharpe del Capítulo~\ref{chap:resultados} sigue penalizando por las configuraciones
 ensayadas, y la cadena eleva ese recuento en lugar de reducirlo ---, pero acota su alcance: la
 multiplicidad afecta sobre todo a la afirmación económica, no a la traza de decisiones predictivas.
@@ -153,39 +181,41 @@ contamina precisamente la cifra que sostiene el trabajo. El segundo es expositiv
 Model Study no es solo encontrar una configuración buena, sino poder explicar de dónde sale cada
 decisión, y una rejilla de miles de puntos devuelve un ganador que nadie puede narrar.
 
-Ninguno de los dos motivos se aplica al plano de la \textbf{cartera}. Las reglas de cartera no
-tocan el modelo ni modifican el Rank-IC: operan sobre una señal ya congelada, así que optimizarlas
-no puede inflar la métrica predictiva que el documento reporta. Y su elección no necesita narrarse
-como una escalera de decisiones porque no lo es: las variables de cartera interactúan entre sí, y un
-protocolo secuencial no solo sería innecesario sino directamente inadecuado, como se argumenta en el
-Anexo~\ref{anexo:desarrollo}. Queda un riesgo real, la multiplicidad de comparaciones, que
-no se disimula: se declara en el Capítulo~\ref{chap:limitaciones} y se acota por construcción
-impidiendo que la rejilla llegue a calcular la era reservada.
+Ninguno de los dos motivos se aplica al plano de la \textbf{cartera}, y de ahí que allí el trabajo
+haga lo contrario. Las reglas de cartera no tocan el modelo ni modifican el Rank-IC: operan sobre
+una señal ya congelada, así que optimizarlas no puede inflar la métrica predictiva que el documento
+reporta. Y su elección no necesita narrarse como una escalera de decisiones porque no lo es, según
+se argumenta al presentar el Portfolio Study en la Sección~\ref{sec:portfolio-study}. Queda un
+riesgo real, la multiplicidad de comparaciones, que no se disimula y se declara en el
+Capítulo~\ref{chap:limitaciones}.
 
 \section{Ejemplo de comparación pareada}
 
-Supóngase que un candidato y el incumbent producen Rank-IC sobre las mismas 40 cohortes. En cada
-fecha se resta el Rank-IC del incumbente al del candidato y se re-muestrean bloques de doce cohortes
-para preservar la dependencia inducida por el horizonte anual. Si la ventaja media es 0,0208, el
-candidato mejora el 57,5\% de cohortes y el IC bootstrap al 90\% es $[0,0108;0,0372]$, hay evidencia
-de dominancia. Éste es el caso real de la cadencia mensual frente al baseline trimestral, tal como
-se decidió en la primera pasada de la cadena.
+\begin{ejemplo}[Mecánica de la comparación]
+Un candidato y el incumbente producen Rank-IC sobre las mismas 40 cohortes. En cada fecha se resta
+el Rank-IC del incumbente al del candidato y se re-muestrean bloques de doce cohortes para preservar
+la dependencia inducida por el horizonte anual. Si la ventaja media resultase 0,0208, con el
+candidato mejor en el 57,5\,\% de las cohortes y un intervalo \textit{bootstrap} al 90\,\% de
+$[0{,}0108;\,0{,}0372]$, habría evidencia de dominancia.
+\end{ejemplo}
+
+Las cifras del ejemplo son ilustrativas, pero corresponden al orden de magnitud de un caso real: así
+se decidió la cadencia mensual frente al baseline trimestral en la primera pasada de la cadena, con
+una ventaja pareada de $+0{,}0208$.
 
 La rentabilidad de cartera no influye en este paso. Un CAGR alto puede surgir de concentración,
 exposición accidental a una acción extrema o efectivo, sin demostrar que se ordene mejor el
-universo. El horizonte de seis meses ilustra un rechazo: su ventaja pareada fue $-0,0265$ y el
-intervalo $[-0,0552;-0,0109]$. Mostrar este resultado evita presentar la selección como una
+universo. El horizonte de seis meses ilustra un rechazo medido: su ventaja pareada fue $-0,0265$ y
+el intervalo $[-0,0552;-0,0109]$. Mostrar este resultado evita presentar la selección como una
 confirmación automática de la configuración preferida.
 
-\section{De la señal congelada a una cartera}
+\section{De rango a alfa esperado}
 
 Todo lo anterior ocurre en el plano predictivo y termina con una configuración congelada. A partir
 de aquí el problema cambia de naturaleza: ya no se trata de ordenar mejor, sino de convertir una
 ordenación en posiciones concretas sin destruir por el camino la ventaja que contiene.
 
-\section{De rango a alfa esperado}
-
-La cartera necesita una magnitud económica, no sólo un percentil. Sobre cohortes cerradas se estima
+El primer paso es que la cartera necesita una magnitud económica, no sólo un percentil. Sobre cohortes cerradas se estima
 una relación entre ventiles de \texttt{meta\_rank} y retorno excedente anualizado. Se usan veinte
 grupos para no ajustar una curva a medias de muy pocas acciones, aunque la función se evalúa sobre
 el rango continuo. Si la pendiente no es creciente, la evidencia se amplía en cascada a dieciséis
@@ -216,11 +246,16 @@ posterior.
 
 \section{Ejemplo de decisión y coste}
 
-Con horizonte de doce meses, comisión de 5 pb y slippage de 10 pb, una rotación completa cuesta 30
-pb. Si la peor posición tiene alfa esperado 60 pb, una candidata externa 250 pb y el margen de
-rotación es 50 pb, la mejora de 190 pb supera 80 pb y se rota. Si la candidata ofrece 120 pb, la
-mejora no cubre coste y margen, por lo que se conserva la posición. El ranking ordena preferencias;
-la operación necesita además una ventaja neta.
+\begin{ejemplo}[Cuándo se rota y cuándo no]
+Con horizonte de doce meses, comisión de 5 pb y \textit{slippage} de 10 pb, una rotación completa
+cuesta 30 pb. Si la peor posición tuviese alfa esperado 60 pb, una candidata externa 250 pb y el
+margen de rotación fuese 50 pb, la mejora de 190 pb superaría los 80 pb exigidos y se rotaría. Si la
+candidata ofreciese 120 pb, la mejora no cubriría coste y margen, y se conservaría la posición.
+\end{ejemplo}
+
+El ranking ordena preferencias; la operación necesita además una ventaja neta. Las cifras anteriores
+son inventadas para ilustrar la regla: los costes sí son los de la simulación, pero los alfas no
+proceden de ninguna medición.
 
 Las entradas nuevas incorporan histéresis y el efectivo rinde 0\%. Bajo la política
 \texttt{opportunity\_cash}, una plaza puede permanecer en efectivo sólo si respeta el tope declarado
@@ -229,29 +264,26 @@ necesariamente. Un mínimo de tenencia, si se activa, bloquea ventas por rotaci�
 hasta cumplir la fracción de horizonte configurada. Estas reglas controlan fricción y estabilidad;
 no pueden alterar el ganador predictivo.
 
-\section{Del barrido diagnóstico a la optimización por Information Ratio}
+\section{El Portfolio Study: optimizar la cartera sin tocar la señal}
 \label{sec:portfolio-study}
 
-El barrido de cartera descrito hasta aquí movía una variable cada vez sobre la configuración
-recomendada. Servía para diagnosticar, y de hecho diagnosticó bien: varias variantes batían a la
-cartera empleada. Pero dejaba el trabajo en una posición incómoda. Sabía que su cartera no era la
-mejor, no podía adoptar ninguna de las mejores sin incurrir en la práctica que su propio protocolo
-prohíbe --- elegir una regla por su rentabilidad ya conocida --- y terminaba registrando esa
-renuncia como limitación.
+Las seis variables anteriores tienen que tomar algún valor, y elegirlo por su rentabilidad conocida
+parecería contradecir la regla que gobierna todo el protocolo. No lo hace, y conviene ver por qué,
+porque de ese razonamiento sale el diseño del cuarto estudio.
 
-La renuncia era innecesaria, y el motivo es que la prohibición estaba mal aplicada. Lo que la regla
-protege es la \emph{métrica predictiva}: si se elige una configuración porque su Rank-IC es alto y
-después se reporta ese mismo Rank-IC como resultado, la cifra está inflada por la propia búsqueda.
-Las reglas de cartera no participan de ese circuito. Operan sobre una señal ya congelada, no
-reentrenan nada y no pueden modificar el Rank-IC. Lo que sí hay que proteger de ellas es otra cosa:
-la era reservada. Y eso no se protege con una renuncia, sino con una construcción.
+Lo que la regla protege es la \emph{métrica predictiva}: si se elige una configuración porque su
+Rank-IC es alto y después se reporta ese mismo Rank-IC como resultado, la cifra está inflada por la
+propia búsqueda. Las reglas de cartera no participan de ese circuito. Operan sobre una señal ya
+congelada, no reentrenan nada y no pueden modificar el Rank-IC. Lo que sí hay que protegerles es
+otra cosa: la era reservada. Y eso no se protege renunciando a optimizar, sino con una
+construcción.
 
 De ahí el \emph{Portfolio Study}. Toma el ganador del último Model Study, no reentrena nada, y
 recorre el producto cartesiano de las seis variables que gobiernan la cartera midiendo cada
 combinación sobre una serie de puntuaciones \textbf{recortada en 2024}. La distinción es fina pero
 decisiva: no se trata de calcular el resultado de cada cartera en la era reservada y después
 ignorarlo --- si existiera, bastaría con mirarlo --- sino de que ese resultado \emph{no llega a
-calcularse}. Solo la ganadora, ya elegida, se reevalúa después sobre la serie completa, y esa
+calcularse}. Sólo la ganadora, ya elegida, se reevalúa después sobre la serie completa, y esa
 reevaluación es una comprobación, nunca un criterio.
 
 \subsection*{Qué es el Information Ratio y por qué se optimiza éste}

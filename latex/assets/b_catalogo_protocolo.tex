@@ -30,11 +30,19 @@ Un candidato desplaza al incumbente sólo si supera, en este orden, tres filtros
 \end{enumerate}
 
 La última cláusula importa: ante evidencia indistinguible, el protocolo \emph{no cambia}. Es lo que
-explica que dieciséis de las diecisiete decisiones de la pasada de referencia terminen confirmando
+explica que las diecisiete decisiones de la pasada de referencia terminen confirmando
 el valor de partida, según la traza del Capítulo~\ref{chap:diseno-experimental}. La relación
 completa de candidatos, puertas de elegibilidad, ventajas pareadas e intervalos está en
 \artefacto{decisions.json}: quince decisiones se resolvieron por \texttt{robust\_rank\_ic} y dos por
 \texttt{tie\_simplicity}.
+
+Diecisiete decisiones no cubren las veintiuna variables predictivas del catálogo, y la diferencia
+conviene declararla. Cuatro --- \artefacto{model\_family}, \artefacto{objective},
+\artefacto{meta\_history\_quarters} y \artefacto{meta\_recency\_weighting} --- se ejecutaron en modo
+\texttt{fixed} en la pasada de referencia, es decir, con un único valor alcanzable de su rejilla, de
+modo que no había comparación que hacer. Sus valores finales son los que la tabla recoge, pero
+provienen de una decisión declarada de antemano y no de una medición pareada, exactamente igual que
+los dos empates técnicos.
 
 Las variables de cartera no participan en ninguno de estos filtros. Se ejecutan después de congelar
 el ganador y se reportan como diagnóstico, según se detalla en la
@@ -52,6 +60,28 @@ recalcularse al cambiarla: un ajuste completo, únicamente la recombinación del
 \textit{backtest}. Ese coste es lo que hace viable recorrer el catálogo de forma secuencial en lugar
 de cartesiana.
 
+\paragraph{Qué ganador recoge la última columna.} La columna «Ganador» es la del \textbf{Model
+Study 3}, incluidas sus variables de cartera, que en esa fase conservaban el valor por defecto del
+catálogo. No es, por tanto, la cartera que el trabajo adopta: el Portfolio Study reoptimizó después
+seis de las doce variables de cartera y cambió tres de ellas ---
+\artefacto{max\_cash\_weight} de 0,25 a 0,0, \artefacto{minimum\_holding\_period} de
+\texttt{none} a \texttt{half\_horizon} y \artefacto{rebalance\_drift\_tolerance} de 0,25 a 0,1 ---,
+mientras que \artefacto{target\_size}, \artefacto{sizing\_mode} y
+\artefacto{coverage\_percentile\_floor} coincidieron con los de partida. La configuración adoptada
+se presenta en la Sección~\ref{sec:cartera-ganadora}. Se tabula aquí el ganador del Model Study
+porque este anexo documenta el catálogo del protocolo predictivo, no la gestión de cartera.
+
+\paragraph{Por qué seis de las doce.} Las otras seis variables de cartera ---
+\artefacto{commission\_bps}, \artefacto{slippage\_bps}, \artefacto{exit\_expected\_alpha\_bps},
+\artefacto{rotation\_edge\_bps}, \artefacto{price\_only\_strictness\_multiplier} y
+\artefacto{price\_only\_sell\_only} --- declaran rejilla pero no entran en el cartesiano, y la razón
+es que no describen una decisión del gestor sino el entorno en el que opera. Las dos primeras son
+condiciones de mercado: optimizarlas equivaldría a elegir cuánto se quiere pagar por operar, que no
+es una elección disponible. Las cuatro restantes gobiernan umbrales de la mecánica de rotación cuyo
+efecto ya está mediado por las seis que sí se recorren. Fijarlas es una decisión declarada de
+antemano, no una medición, y como tal acota lo que puede afirmarse: el barrido responde a qué
+cartera es mejor \emph{dado} ese entorno, no a cuál sería la mejor sin restricciones.
+
 La diferencia de magnitud entre ambos recorridos justifica por sí sola la elección. El producto
 cartesiano de las treinta y tres rejillas asciende a $1{,}9 \times 10^{14}$ combinaciones; incluso
 restringido a las veintiuna variables predictivas son $5{,}4 \times 10^{8}$. El recorrido secuencial
@@ -61,13 +91,9 @@ exactamente lo que el Deflated Sharpe del Capítulo~\ref{chap:resultados} penali
 cartesiano sobre las variables predictivas habría hecho imposible cualquier afirmación estadística
 sobre el resultado.
 
-Ese argumento vale para el plano predictivo y no se extiende al de cartera, donde este trabajo sí
-recorre un producto cartesiano. La diferencia es doble: las seis variables de cartera generan 1.728
-combinaciones --- cinco órdenes de magnitud menos que las predictivas ---, y sobre todo no tocan el
-Rank-IC, de modo que su búsqueda no puede inflar la métrica que el documento reporta como resultado
-principal. El razonamiento completo está en la
-Sección~\ref{sec:seleccion-secuencial} y el diseño del estudio correspondiente en el
-Anexo~\ref{anexo:desarrollo}.
+Ese argumento vale para el plano predictivo y no se extiende al de cartera, donde las seis variables
+generan 1.728 combinaciones: cinco órdenes de magnitud menos, y sobre una señal que ya no puede
+cambiar. El razonamiento completo está en la Sección~\ref{sec:seleccion-secuencial}.
 
 \section{Versiones de catálogo empleadas}
 

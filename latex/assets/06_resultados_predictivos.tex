@@ -9,7 +9,7 @@ El capítulo se ocupa exclusivamente de evidencia \emph{predictiva}. Toda cifra 
 aquí --- y aparecen algunas, porque ciertos contrastes de robustez se construyen sobre carteras ---
 tiene carácter diagnóstico y no debe confundirse con la evaluación económica del
 Capítulo~\ref{chap:resultados-economicos}, que se hace con una cartera distinta y elegida por otro
-criterio. Cada tabla declara su procedencia.
+criterio.
 
 El orden es deliberado: primero qué configuración eligió el protocolo, después qué aprendió el
 meta-agente y cada especialista, luego la capacidad predictiva agregada y su comparación con
@@ -17,11 +17,10 @@ baselines, y por último los contrastes adversariales.
 \section{La configuración ganadora y la cadena de estudios}
 \label{sec:configuracion-ganadora}
 
-La evidencia de este capítulo procede del tercer Model Study de la cadena, y conviene fijar antes de
-nada de dónde sale cada cifra. El protocolo del capítulo anterior no se aplicó una vez sino tres,
-encadenadas: el ganador de cada pasada se convierte en el punto de partida de la siguiente. Los tres
-estudios comparten ventana de selección, era reservada y métrica, y se diferencian únicamente en ese
-punto de partida.
+La evidencia de este capítulo es la de la última pasada de la cadena. El protocolo del capítulo
+anterior no se aplicó una vez sino tres, encadenadas: el ganador de cada pasada se convierte en el
+punto de partida de la siguiente. Las tres comparten ventana de selección, era reservada y métrica,
+y se diferencian únicamente en ese punto de partida.
 
 \begin{table}[H]
   \centering
@@ -29,10 +28,9 @@ punto de partida.
   \caption{Las tres pasadas de la cadena y su ganador.}
   \label{tab:cadena}
   \input{assets/t06_cadena.tex}
-  \caption*{Fuente: \artefacto{winner.json}, \artefacto{evidence/summary.json} y
-  \artefacto{attribution.json} de cada pasada. Rank-IC, IC-IR y $t$ de Newey--West son de la ventana
-  de selección; IR y exceso corresponden a la cartera \emph{por defecto} de cada estudio, no a la
-  optimizada del Capítulo~\ref{chap:resultados-economicos}.}
+  \caption*{Rank-IC, IC-IR y $t$ de Newey--West son de la ventana de selección; IR y exceso
+  corresponden a la cartera \emph{por defecto} de cada estudio, no a la optimizada del
+  Capítulo~\ref{chap:resultados-economicos}.}
 \end{table}
 
 Dos lecturas de esta tabla condicionan todo el capítulo. La primera es que la cadena mejoró de forma
@@ -48,9 +46,8 @@ examina en detalle, porque su explicación resultó no estar en el modelo.
   \caption{Qué cambió cada pasada respecto de su punto de partida.}
   \label{tab:cadena-config}
   \input{assets/t06_cadena_config.tex}
-  \caption*{Fuente: \artefacto{winner.json} de cada pasada, comparado con la configuración de
-  partida. El Anexo~\ref{anexo:catalogo} reproduce el catálogo completo con el valor final de las
-  treinta y tres variables.}
+  \caption*{Cada pasada se compara con su configuración de partida. El Anexo~\ref{anexo:catalogo}
+  reproduce el catálogo completo con el valor final de las treinta y tres variables.}
 \end{table}
 
 La Tabla~\ref{tab:cadena-config} muestra en qué sentido la cadena convergió: la primera pasada se
@@ -62,30 +59,30 @@ plana.
 La configuración ganadora resultante emplea cadencia mensual de snapshots, horizonte de etiqueta de
 doce meses, el preset de variables \texttt{all} con un máximo de veinte por agente, sin neutralización
 sectorial ni ponderación por recencia, y un meta-agente \texttt{stacked\_rolling\_free}, es decir,
-sin tope por agente. Esta última elección --- la única que la tercera pasada modificó en el plano
-predictivo --- gobierna buena parte de lo que sigue. La Sección~\ref{sec:cadena-studies} del
-Anexo~\ref{anexo:desarrollo} documenta por qué se encadenaron los estudios y qué se aprendió en cada
-uno.
+sin tope por agente. Esa última elección procede de la segunda pasada y gobierna buena parte de lo
+que sigue; la tercera volvió a compararla con la variante acotada y la confirmó. La
+Sección~\ref{sec:cadena-studies} documenta por qué se encadenaron los estudios y qué se aprendió en
+cada uno.
 
 \section{La evidencia de que el meta aprende}
 \label{sec:meta-aprende}
 
-El aprendizaje es observable, no una afirmación inferida de la rentabilidad final. Las primeras
-filas de \texttt{meta\_weights.parquet} corresponden a \texttt{fallback\_equal}: cada agente recibe
-0,20 porque aún no existe evidencia cerrada. Después aparecen las filas \texttt{learned}, y en ellas
-el peso de \textit{risk} crece de forma sostenida a medida que se cierran cohortes: 0,22 de media en
-2016, 0,45 en 2017, 0,66 en 2018, 0,83 en 2020 y valores en torno a 0,95 desde 2022. Al final de la
-serie el reparto es prácticamente degenerado --- 0,954 para \textit{risk} y 0,047 para
-\textit{value}, con los tres agentes restantes en cero ---, de modo que el meta-agente no aprendió a
-combinar cinco especialistas sino a descartar cuatro.
+El aprendizaje es observable, no una afirmación inferida de la rentabilidad final. Durante los
+primeros meses el meta reparte 0,20 a cada agente, porque aún no existe ninguna cohorte cerrada con
+la que estimar la calidad de nadie. En cuanto las hay, empieza a ponderar, y el peso se desplaza
+hacia \textit{risk} a medida que se cierran más --- la
+Figura~\ref{fig:pesos-anual} recoge esa trayectoria año a año. Al final de la serie el reparto es
+prácticamente degenerado --- 0,954 para \textit{risk} y 0,047 para \textit{value}, con los tres
+agentes restantes en cero ---, de modo que el meta-agente no aprendió a combinar cinco especialistas
+sino a descartar cuatro.
 
 Ese desenlace merece leerse con cuidado, porque es el resultado esperable del método y no una
 anomalía. La configuración ganadora emplea \texttt{stacked\_rolling\_free}, es decir, un apilado sin
 tope por agente; enfrentado a un especialista que domina de forma consistente, el procedimiento
-converge a él. Las pasadas anteriores de la cadena usaban la variante acotada, y el cambio a la
-libre fue precisamente la única decisión que la tercera pasada modificó. Se ganó Rank-IC ---
-$+0{,}00827$ de ventaja pareada --- a costa de que la arquitectura multi-agente quede, en la
-práctica, reducida a uno.
+converge a él. La primera pasada de la cadena usaba la variante acotada; la segunda adoptó la libre
+y la tercera volvió a medir ambas y la ratificó, con $+0{,}00827$ de ventaja pareada sobre la
+acotada. Se ganó Rank-IC, por tanto, a costa de que la arquitectura multi-agente quede en la
+práctica reducida a uno.
 
 El contraste relevante conserva exactamente los mismos cinco agentes y cambia sólo la regla de
 combinación. En la ventana de selección, el meta aprendido alcanza Rank-IC 0,1090 frente a 0,0675
@@ -97,8 +94,7 @@ añade, por tanto, información útil y no sólo reescala los scores.
   \caption{Capacidad predictiva de los agentes y combinadores en 2015--2024.}
   \label{tab:agentes}
   \input{assets/t05_agentes.tex}
-  \caption*{Fuente: \artefacto{evidence/rank\_ic\_diagnostics.parquet}. Desviación e IC-IR se
-  calculan sobre cohortes cerradas de la ventana de selección.}
+  \caption*{Desviación e IC-IR se calculan sobre cohortes cerradas de la ventana de selección.}
 \end{table}
 
 Hay, sin embargo, un resultado que este trabajo debe reportar aunque incomode a su propia
@@ -131,15 +127,14 @@ candidatos. Leído en contra, la arquitectura multi-agente se vacía de contenid
 ganador. Un meta que asigna el 95\,\% del peso a un único agente ha dejado de ser un combinador para
 ser un selector.
 
-Las dos primeras pasadas de la cadena usaban la variante acotada, que impedía superar 0,50
-precisamente para evitar este desenlace; la tercera adoptó la libre porque medía mejor en Rank-IC.
-Es un caso claro de decisión que mejora la métrica de selección y empeora una propiedad cualitativa
-del diseño que ninguna métrica del protocolo estaba midiendo. El riesgo que la restricción cubría
-sigue existiendo y queda asumido: la señal del sistema es, en la práctica, la del agente
-\textit{risk}, de modo que su comportamiento futuro depende de que ese especialista siga
-funcionando. La era reservada permite una primera comprobación --- el Rank-IC se mantiene positivo
-en $+0{,}0441$ ---, pero seis cohortes no bastan para descartar que la concentración sea frágil.
-Queda recogido como limitación en el Capítulo~\ref{chap:limitaciones}.
+La variante acotada existía precisamente para evitar este desenlace, y adoptar la libre es un caso
+claro de decisión que mejora la métrica de selección a costa de una propiedad cualitativa del
+diseño que ninguna métrica del protocolo estaba midiendo. El riesgo que la restricción cubría sigue
+existiendo y queda asumido: la señal del sistema es, en la práctica, la del agente \textit{risk}, de
+modo que su comportamiento futuro depende de que ese especialista siga funcionando. La era reservada
+permite una primera comprobación --- el Rank-IC se mantiene positivo en $+0{,}0441$ ---, pero seis
+cohortes no bastan para descartar que la concentración sea frágil. Queda recogido como limitación en
+el Capítulo~\ref{chap:limitaciones}.
 
 Una advertencia de lectura afecta a todo el capítulo. Los artefactos contienen dos ventanas para
 esta misma métrica: la de \emph{selección}, con 117 cohortes hasta 2024, y la \emph{completa}, con
@@ -160,8 +155,8 @@ título informativo.
   \caption{Rank-IC medio por señal y era.}
   \label{tab:rankic-era}
   \input{assets/t05_rankic_era.tex}
-  \caption*{Fuente: \artefacto{evidence/rank\_ic\_diagnostics.parquet}. Las tres primeras columnas
-  son ventana de selección; la cuarta es la era reservada y no intervino en ninguna decisión.}
+  \caption*{Las tres primeras columnas son ventana de selección; la cuarta es la era reservada y no
+  intervino en ninguna decisión.}
 \end{table}
 
 
@@ -169,7 +164,8 @@ La tabla contiene tres lecturas que el promedio agregado no permite. La primera 
 es la única señal positiva en las cuatro eras; ninguna otra lo consigue. La segunda es que el meta
 aprendido supera al equiponderado en las tres eras de selección, no sólo en promedio, lo que
 refuerza que la mejora del 61\,\% no procede de un único subperiodo afortunado. La tercera es la más
-incómoda y se reporta precisamente por serlo: en la era reservada los cuatro agentes fundamentales se
+incómoda y se reporta precisamente por serlo: en la era reservada los cuatro agentes distintos de
+\textit{risk} se
 vuelven negativos a la vez --- \textit{growth} llega a $-0{,}1333$ --- y sólo \textit{risk} aguanta
 en positivo, con 0,0616. El meta aprendido conserva un Rank-IC positivo de $+0{,}0441$ justamente
 porque para entonces ya había concentrado su peso en \textit{risk}; la ponderación uniforme, que
@@ -189,8 +185,7 @@ insuficiente para concluir que la capacidad predictiva se haya degradado.
   \centering
   \includegraphics[width=0.94\textwidth]{assets/f05_pesos_anual.png}
   \caption{Peso medio anual asignado por el meta-agente a cada especialista. 2015 corresponde
-  íntegramente al reparto uniforme por ausencia de cohortes cerradas. Fuente:
-  \artefacto{evidence/meta\_weights.parquet}.}
+  íntegramente al reparto uniforme por ausencia de cohortes cerradas.}
   \label{fig:pesos-anual}
 \end{figure}
 
@@ -209,7 +204,7 @@ etiqueta.
 Lo anterior describe el vocabulario que cada agente \emph{recibe}. Qué hace con él es una pregunta
 distinta y comprobable: el estudio persiste, para cada acción, fecha, agente y variable, la
 contribución local de esa variable a la puntuación resultante
-(\artefacto{evidence/agent\_local\_attribution.parquet}, 1.309.618 filas). La
+--- 1.309.618 contribuciones en total. La
 Tabla~\ref{tab:atribucion} resume las tres variables de mayor peso en cada agente.
 
 \begin{table}[H]
@@ -218,10 +213,9 @@ Tabla~\ref{tab:atribucion} resume las tres variables de mayor peso en cada agent
   \caption{Variables que más contribuyen a la puntuación de cada agente.}
   \label{tab:atribucion}
   \input{assets/t05_atribucion.tex}
-  \caption*{Fuente: \artefacto{evidence/agent\_local\_attribution.parquet}. «Contrib. media» es la
-  magnitud media de la contribución local; «Encabeza», la fracción de observaciones en las que esa
-  variable fue la primera por importancia. No se reporta el signo medio porque se cancela entre
-  acciones y no admite lectura direccional.}
+  \caption*{«Contrib. media» es la magnitud media de la contribución local; «Encabeza», la fracción
+  de observaciones en las que esa variable fue la primera por importancia. No se reporta el signo
+  medio porque se cancela entre acciones y no admite lectura direccional.}
 \end{table}
 
 El resultado más relevante afecta a \textit{risk}, que es el agente que domina el sistema y cuyo
@@ -249,7 +243,7 @@ explicación mecánica.
   \centering
   \includegraphics[width=0.92\textwidth]{assets/f05_atribucion_anual.png}
   \caption{Variable que encabeza la atribución de \textit{risk} en cada año, como fracción de las
-  observaciones. Fuente: \artefacto{evidence/agent\_local\_attribution.parquet}.}
+  observaciones.}
   \label{fig:atribucion-anual}
 \end{figure}
 
@@ -276,27 +270,28 @@ en unas pocas con contenido.
 \section{Capacidad predictiva fuera de muestra}
 
 En la ventana de selección 2015--2024, el sistema alcanza Rank-IC medio 0,1090, IC-IR 0,851 y
-74,36\% de cohortes positivas. Son 117 cohortes mensuales, aunque el horizonte de doce meses deja
-aproximadamente nueve observaciones independientes efectivas: ambos números deben leerse juntos.
+74,36\% de cohortes positivas. Son 117 cohortes mensuales, aunque el horizonte de doce meses las
+solapa y deja aproximadamente nueve observaciones independientes efectivas --- las 117 divididas
+por los doce meses que tarda una etiqueta en cerrar ---: ambos números deben leerse juntos.
 El estadístico Newey--West es 3,46. La evidencia mide la calidad de la ordenación transversal, no la
 rentabilidad de una única cartera.
 
-Estas cifras corresponden a la tercera y última pasada de la cadena de estudios descrita en la
-Sección~\ref{sec:cadena-studies}. Las tres pasadas mejoraron de forma monótona dentro de esta
-ventana --- 0,1000, 0,1074 y 0,1090 de Rank-IC ---, y esa mejora sostenida es precisamente lo que
-obliga a mirar con atención la era reservada más adelante en este capítulo.
+Son las cifras de la tercera pasada, y la mejora monótona de la cadena que recoge la
+Tabla~\ref{tab:cadena} es precisamente lo que obliga a mirar con atención la era reservada más
+adelante en este capítulo. La Figura~\ref{fig:rankic-serie} muestra la serie cohorte a cohorte, con
+la era reservada marcada en dorado.
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.96\textwidth]{assets/f07_rankic_serie.png}
   \caption{Rank-IC por cohorte. La banda dorada identifica la era reservada, que no intervino en
-  ninguna decisión. Fuente: \texttt{evidence/summary.json}.}
+  ninguna decisión.}
   \label{fig:rankic-serie}
 \end{figure}
 
 La comparación limpia se hace contra scores deterministas calculados sobre el mismo panel y con las
-mismas restricciones temporales. El mejor, \texttt{garp\_score}, obtiene 0,0130; el sistema lo
-multiplica aproximadamente por ocho. No se infiere de ello que los factores clásicos sean inútiles,
+mismas restricciones temporales, y la recoge la Tabla~\ref{tab:baselines}. El mejor,
+\texttt{garp\_score}, obtiene 0,0130; el sistema lo multiplica aproximadamente por ocho. No se infiere de ello que los factores clásicos sean inútiles,
 sino que, bajo este universo y este protocolo, una combinación no lineal y temporalmente cerrada
 ordena mejor los retornos futuros que las fórmulas fijas.
 
@@ -305,14 +300,13 @@ ordena mejor los retornos futuros que las fórmulas fijas.
   \caption{Sistema frente a baselines deterministas.}
   \label{tab:baselines}
   \input{assets/t07_baselines.tex}
-  \caption*{Fuente: \texttt{attribution.json} y \texttt{evidence/summary.json}.}
 \end{table}
 
-Por eras, el Rank-IC es 0,0999 en 2015--2018, 0,0506 en 2019--2021 y 0,1788 en 2022--2024. La
-señal se debilita a la mitad en el régimen intermedio, pero no cambia de signo ni depende de la era
-final. Esta heterogeneidad justifica reportar series y no una única media agregada, y advierte de
-antemano que una media de diez años puede ocultar regímenes en los que el sistema ordena bastante
-peor de lo que su cifra agregada sugiere.
+Conviene recordar aquí la heterogeneidad que ya mostró la Tabla~\ref{tab:rankic-era}: la señal se
+debilita a la mitad en el régimen intermedio sin cambiar de signo ni depender de la era final. Es lo
+que justifica reportar series y no una única media agregada, y advierte de que una media de diez
+años puede ocultar regímenes en los que el sistema ordena bastante peor de lo que su cifra agregada
+sugiere.
 
 \subsection*{La cola superior frente a la ordenación completa}
 
@@ -326,70 +320,54 @@ utiliza. La Tabla~\ref{tab:cola} descompone el comportamiento de la cola por era
   \caption{Comportamiento de la cola superior de la ordenación, por era.}
   \label{tab:cola}
   \input{assets/t07_cola.tex}
-  \caption*{Fuente: \artefacto{evidence/rank\_tail\_diagnostics.parquet}. «Top 10» es el exceso medio
-  de las diez primeras posiciones; «Universo» el de todo el panel. Diagnóstico, no criterio de
-  selección.}
+  \caption*{«Top 10» es el exceso medio de las diez primeras posiciones; «Universo» el de todo el
+  panel. Diagnóstico, no criterio de selección.}
 \end{table}
 
 La lectura relevante es que el decil superior bate al universo en las tres eras de selección, de
 modo que la ventaja no procede exclusivamente de acertar la cola inferior --- que una cartera
-\textit{long-only} no puede explotar. La Figura~\ref{fig:cola} muestra esa diferencia cohorte a
-cohorte: es ruidosa, como corresponde a un estadístico calculado sobre unas pocas decenas de
-valores, pero su media móvil se mantiene por encima de cero durante casi toda la ventana.
+\textit{long-only} no puede explotar.
 
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.94\textwidth]{assets/f07_cola.png}
-  \caption{Exceso del decil superior sobre el universo, por cohorte. Fuente:
-  \artefacto{evidence/rank\_tail\_diagnostics.parquet}.}
-  \label{fig:cola}
-\end{figure}
+La cuarta fila obliga a un matiz que conviene no dejar al lector. En la era reservada el decil
+superior obtiene $-7{,}67$\,\% frente al $-1{,}85$\,\% del universo: \textbf{pierde contra el
+panel}, al revés que en las tres eras anteriores. Y sin embargo la diferencia entre el decil
+superior y el inferior sigue siendo de $+11{,}33$ puntos, la segunda mayor de la tabla. Las dos
+cosas juntas dicen algo preciso: la ordenación siguió funcionando --- separa lo bueno de lo malo
+igual de bien ---, pero el nivel de toda la cola alta cayó por debajo del panel. Es coherente con
+el Rank-IC positivo de esa era y con que la cartera adoptada, que compra en ese decil, batiese al
+índice: lo hizo eligiendo dentro de él, no porque el decil entero fuese ganador. Sobre seis
+cohortes, en todo caso, ninguna de las dos lecturas admite más peso del que aquí se le da.
 
-Existe además un diagnóstico que el sistema calcula en cada snapshot para su propio uso: el Rank-IC
-contraído sobre las cohortes ya cerradas en ese momento. Es la única medida de calidad de señal
-disponible \textit{en tiempo real}, puesto que no utiliza información posterior a la fecha. La
-Figura~\ref{fig:salud} la representa con dos memorias distintas.
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.94\textwidth]{assets/f07_salud.png}
-  \caption{Salud de la señal observable en cada snapshot, con memoria de dieciséis y de ocho
-  trimestres. Fuente: \artefacto{evidence/signal\_health.parquet}.}
-  \label{fig:salud}
-\end{figure}
-
-La comparación entre ambas memorias es informativa por sí misma. La ventana corta reacciona antes a
-los cambios de régimen, pero también oscila más y llega a cruzar cero en episodios que la ventana
-larga apenas registra. Esta diferencia explica por qué el catálogo trata la longitud de la memoria
-del meta-agente como una variable a decidir con evidencia y no como una constante razonable: ambas
-opciones tienen un coste, y la elección entre reaccionar antes o estimar con menos varianza no
-puede resolverse por intuición.
-\section{Atribución, factores y resultado no superado}
+\section{¿Es la señal una réplica de factores conocidos?}
 
 Dos contrastes independientes preguntan lo mismo desde ángulos distintos: ¿es la señal una réplica
 de estilos ya conocidos?
 
 El primero neutraliza. Regresando la señal contra catorce controles de valoración, rentabilidad,
 crecimiento, volatilidad y beta --- listados en el Anexo~\ref{anexo:evidencia} --- y recalculando
-después el Rank-IC, éste baja de 0,1177 a 0,1019. La pérdida del 13,38\,\% indica que parte de la
-señal comparte información con esos controles, como sería esperable en un sistema que usa ratios
-económicos; la retención del \textbf{86,62\,\%} muestra que no se agota en ellos.
+después el Rank-IC, éste baja de 0,1177 a 0,1019. Conviene declarar de dónde sale ese 0,1177, porque
+no coincide con el 0,1090 del resto del capítulo: el contraste se calcula sobre las mismas 117
+cohortes de selección, pero sólo sobre las filas en que los catorce controles están disponibles, y
+sobre ese subconjunto el Rank-IC bruto es algo mayor. Lo que importa es que las dos cifras se miden
+sobre la misma muestra, de modo que su cociente sí es interpretable. La pérdida del 13,38\,\% indica
+que parte de la señal comparte información con esos controles, como sería esperable en un sistema
+que usa ratios económicos; la retención del \textbf{86,62\,\%} muestra que no se agota en ellos.
 
 El segundo regresa los retornos contra cinco factores de estilo con errores Newey--West de doce
-retardos. Sobre las 117 cohortes de selección el $R^2$ es 0,017 y ninguna carga alcanza
-significación --- la mayor en valor absoluto es momentum, con $-0{,}105$ ---, de modo que no hay
-exposición factorial estable. Su alfa por periodo, 0,27\,\% con $t=1{,}44$, tampoco es significativo
-de forma aislada. Los factores de tamaño e inversión no son construibles con las fuentes disponibles
-y se declaran no replicables en lugar de sustituirse por un sucedáneo no auditable.
+retardos (Newey y West, 1987). Sobre las 117 cohortes de selección el $R^2$ es 0,017 y ninguna carga
+alcanza significación --- la mayor en valor absoluto es momentum, con $-0{,}105$ ---, de modo que no
+hay exposición factorial estable. Su alfa por periodo, 0,27\,\% con $t=1{,}44$, tampoco es
+significativo de forma aislada. Los factores de tamaño e inversión no son construibles con las
+fuentes disponibles y se declaran no replicables en lugar de sustituirse por un sucedáneo no
+auditable.
 
 Las dos mitades deben leerse juntas, porque acotan la afirmación por ambos lados: no hay evidencia
 suficiente para atribuir la señal a un factor clásico, ni tampoco para afirmar que genere alfa por
 sí misma. La conclusión prudente es que la evidencia es compatible con una señal parcialmente
 distinta de los factores implementados, no que se haya descubierto una prima nueva y causal.
 
-Conviene precisar el alcance del segundo contraste, porque su procedencia difiere del resto del
-capítulo: se calcula sobre la serie de retornos de la cartera de referencia del Model Study, que no
-es la que el trabajo adopta. Eso lo hace válido para la pregunta que aquí se formula --- si la señal
+Conviene precisar el alcance del segundo contraste, porque se calcula sobre la serie de retornos de
+la cartera de referencia del Model Study, que no es la que el trabajo adopta. Eso lo hace válido para la pregunta que aquí se formula --- si la señal
 se explica por estilos conocidos, algo que no depende de cuántas posiciones se compren --- pero no
 para describir la cartera final, cuyas cifras se presentan íntegramente en el
 Capítulo~\ref{chap:resultados-economicos} desde su propia evidencia.
@@ -415,9 +393,8 @@ rentabilidad ajustada por multiplicidad no tienen la misma fuerza.
   \caption{Resumen de contrastes de robustez.}
   \label{tab:robustez}
   \input{assets/t07_robustez.tex}
-  \caption*{Fuente: \texttt{robustness.json} y \texttt{attribution.json}. Los contrastes de señal no
-  dependen de la cartera; el Deflated Sharpe y las carteras aleatorias, que sí, están calculados
-  sobre la cartera del Model Study.}
+  \caption*{Los contrastes de señal no dependen de la cartera; el Deflated Sharpe y las carteras
+  aleatorias, que sí, están calculados sobre la cartera del Model Study.}
 \end{table}
 
 
@@ -439,7 +416,7 @@ de cero y un orden de magnitud por debajo del sistema.
   \centering
   \includegraphics[width=0.94\textwidth]{assets/f07_permutacion.png}
   \caption{Situación del Rank-IC observado frente al rango de los placebos de etiqueta y al
-  resultado del contraste de permutación. Fuente: \artefacto{robustness.json}.}
+  resultado del contraste de permutación.}
   \label{fig:permutacion}
 \end{figure}
 
@@ -459,8 +436,7 @@ Figura~\ref{fig:bootstrap} reúne ambos contrastes.
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.94\textwidth]{assets/f07_bootstrap.png}
-  \caption{Intervalos de confianza del Rank-IC y estabilidad ante la exclusión de eras completas.
-  Fuente: \artefacto{robustness.json}.}
+  \caption{Intervalos de confianza del Rank-IC y estabilidad ante la exclusión de eras completas.}
   \label{fig:bootstrap}
 \end{figure}
 
@@ -471,33 +447,36 @@ prudente es que el resultado no depende de ninguna era, pero tampoco es homogén
 
 La estabilidad entre semillas ataca una posibilidad distinta: que el resultado dependa de una
 inicialización afortunada del \textit{boosting}. En las tres semillas ensayadas el rango de Rank-IC
-es 0,0020 y no cruza cero. La Figura~\ref{fig:semillas} muestra, sin embargo, que la conclusión
-económica es bastante más frágil que la predictiva: el exceso geométrico varía apreciablemente más
-que el Rank-IC en términos relativos. Esta asimetría es la misma que motivó introducir el conjunto
-de semillas durante el desarrollo, según se documenta en el Anexo~\ref{anexo:desarrollo}.
+es 0,0015 y no cruza cero. La Figura~\ref{fig:semillas} muestra, sin embargo, que la conclusión
+económica no aguanta la misma prueba: el exceso geométrico \textbf{sí cruza cero} entre semillas
+--- va de $-0{,}01$\,\% a $+2{,}61$\,\% ---, hasta el punto de que el propio estudio registra la
+estabilidad de la conclusión económica como \emph{falsa}. Conviene decirlo con esa
+crudeza: la misma configuración, cambiando sólo la inicialización del \textit{boosting}, puede no
+batir al índice. La ordenación es estable; su traducción a rentabilidad, no. Esta asimetría es la
+misma que motivó introducir el conjunto de semillas durante el desarrollo, según se documenta en el
+Anexo~\ref{anexo:desarrollo}.
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.92\textwidth]{assets/f07_semillas.png}
-  \caption{Dispersión de las métricas principales entre las tres semillas ensayadas. Fuente:
-  \artefacto{robustness.json}.}
+  \caption{Dispersión de las métricas principales entre las tres semillas ensayadas.}
   \label{fig:semillas}
 \end{figure}
 
-Frente a 1.000 carteras aleatorias de riesgo emparejado, la cartera del modelo ocupa el percentil
-96,8, con un CAGR del 15,56\,\% frente a una mediana aleatoria del 9,23\,\%. El contraste aleatorio
-general no se usa como prueba favorable, y conviene explicar por qué: su percentil 95 de CAGR es
-75,06\,\%, dominado por carteras que por azar concentraron alguna superviviente extraordinaria. Un
-nulo con esa cola no es un \textit{benchmark} informativo, y presentarlo como si el modelo «sólo»
-alcanzase el percentil 76,1 sería tan engañoso como omitirlo. La
-Figura~\ref{fig:aleatorias} muestra los dos escenarios juntos precisamente para que la diferencia
-sea visible.
+El último contraste enfrenta la cartera del modelo a 1.000 carteras aleatorias de ocho posiciones
+--- el mismo tamaño, para que la comparación sea legítima --- y pagando los mismos costes. Con
+riesgo emparejado, el modelo ocupa el percentil 96,8 (CAGR 15,56\,\% frente a una mediana aleatoria
+del 9,23\,\%). En el escenario general baja al percentil 76,1, pero ese nulo no se usa como prueba
+en ninguna dirección: su percentil 95 de CAGR llega al 75,06\,\%, dominado por carteras que por azar
+concentraron alguna superviviente extraordinaria, y una distribución con esa cola no es un
+\textit{benchmark} informativo. La Figura~\ref{fig:aleatorias} muestra los dos escenarios juntos
+para que la diferencia sea visible.
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.92\textwidth]{assets/f07_aleatorias.png}
   \caption{Cartera del modelo frente a 1.000 carteras aleatorias, en el escenario general y con
-  riesgo emparejado. Fuente: \artefacto{robustness.json}.}
+  riesgo emparejado.}
   \label{fig:aleatorias}
 \end{figure}
 
@@ -508,9 +487,9 @@ perímetro estrecho que el resto del documento respeta.
 
 Queda establecido que la ordenación existe. El Rank-IC de 0,1090 con $t$ de Newey--West 3,46 no es
 un artefacto de la agregación: ninguna de 9.999 permutaciones lo alcanza, los cinco placebos de
-etiqueta quedan dos órdenes de magnitud por debajo, el intervalo bootstrap por bloques excluye cero,
+etiqueta quedan un orden de magnitud por debajo, el intervalo bootstrap por bloques excluye cero,
 la conclusión sobrevive a eliminar cualquier era completa y las tres semillas coinciden dentro de
-0,0020. Queda establecido también que no se agota en controles conocidos: la neutralización por
+0,0015. Queda establecido también que no se agota en controles conocidos: la neutralización por
 catorce variables de estilo retiene el 86,62\,\% de la señal, y la atribución local explica por qué
 --- el agente dominante lee microestructura de precio a corto plazo, no la prima de baja volatilidad
 que su nombre sugiere.

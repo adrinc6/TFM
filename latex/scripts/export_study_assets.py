@@ -273,37 +273,11 @@ def write_tables_predictive(paths: Paths, diag: pd.DataFrame, features: pd.DataF
     ]
     table(paths.tables / "t05_rankic_era.tex", ["Señal"] + list(matrix.columns), rows)
 
-    grouped = (
-        features.groupby("block")
-        .agg(
-            n=("feature", "size"),
-            coverage=("coverage", "mean"),
-            rank_ic=("univariate_rank_ic", "mean"),
-            importance=("model_importance_mean", "mean"),
-        )
-        .sort_values("rank_ic", ascending=False)
-    )
-    agents_by_block = features.groupby("block")["agents"].agg(
-        lambda values: ", ".join(sorted({item for value in values if value != "—" for item in str(value).split(", ")}))
-    )
-    rows = [
-        [
-            tex(str(name).replace("_", " ")),
-            tex(agents_by_block.get(name, "—") or "—"),
-            str(int(row.n)),
-            pct(row.coverage, 1) if pd.notna(row.coverage) else "n/d",
-            num(row.rank_ic) if pd.notna(row.rank_ic) else "n/d",
-            num(row.importance, 1) if pd.notna(row.importance) else "n/d",
-        ]
-        for name, row in grouped.iterrows()
-    ]
-    table(
-        paths.tables / "t03_features_bloque.tex",
-        ["Bloque", "Agentes", "Vars.", "Cobertura", "Rank-IC univ.", "Importancia"],
-        rows,
-        "llrrrr",
-    )
-
+    # El agregado por bloque se retiró del manuscrito: repetía el argumento de la
+    # tabla de extremos —los Rank-IC univariantes son diminutos— y obligaba a tres
+    # párrafos de advertencias sobre una asimetría entre catálogo y diagnósticos
+    # que no aportaba al hilo. El reparto de bloques por agente se explica en el
+    # capítulo de arquitectura.
     ranked = features.dropna(subset=["univariate_rank_ic"]).sort_values("univariate_rank_ic", ascending=False)
     selected = pd.concat([ranked.head(12), ranked.tail(5)])
     rows = []
@@ -1061,39 +1035,6 @@ def draw_seed_dispersion(robustness: dict, output: Path) -> None:
     save(fig, output)
 
 
-def draw_tail_spread(tails: pd.DataFrame, output: Path) -> None:
-    frame = tails.copy()
-    frame["prediction_date"] = pd.to_datetime(frame["prediction_date"])
-    fig, ax = plt.subplots(figsize=(7.2, 3.6))
-    ax.bar(frame["prediction_date"], frame["top_decile_minus_universe"], width=22, color=SLATE, alpha=0.55, label="Decil superior menos universo")
-    ax.plot(
-        frame["prediction_date"],
-        frame["top_decile_minus_universe"].rolling(12, min_periods=4).mean(),
-        color=NAVY,
-        linewidth=2,
-        label="Media móvil de 12 cohortes",
-    )
-    ax.axhline(0, color="black", linewidth=0.8)
-    ax.axvspan(pd.Timestamp("2025-01-01"), frame["prediction_date"].max(), color=GOLD, alpha=0.13, label="Era reservada")
-    ax.set(title="Ventaja del decil superior sobre el universo", ylabel="Exceso medio")
-    ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter(1, decimals=0))
-    legend_below(ax)
-    save(fig, output)
-
-
-def draw_signal_health(health: pd.DataFrame, output: Path) -> None:
-    frame = health.copy()
-    frame["snapshot_date"] = pd.to_datetime(frame["snapshot_date"])
-    fig, ax = plt.subplots(figsize=(7.2, 3.5))
-    ax.plot(frame["snapshot_date"], frame["shrunk_rank_ic"], color=NAVY, linewidth=1.9, label="Memoria de 16 trimestres")
-    ax.plot(frame["snapshot_date"], frame["shrunk_rank_ic_8q"], color=TEAL, linewidth=1.5, linestyle="--", label="Memoria de 8 trimestres")
-    ax.axhline(0, color="black", linewidth=0.8)
-    ax.axvspan(pd.Timestamp("2025-01-01"), frame["snapshot_date"].max(), color=GOLD, alpha=0.13, label="Era reservada")
-    ax.set(title="Salud de la señal observable en cada snapshot", ylabel="Rank-IC contraído")
-    legend_below(ax)
-    save(fig, output)
-
-
 def build_robustness_rows(robustness: dict, attribution: dict) -> list[dict]:
     """Deriva los ocho contrastes de robustez desde los artefactos persistidos.
 
@@ -1256,7 +1197,6 @@ def main() -> None:
     weights = pd.read_parquet(paths.evidence / "meta_weights.parquet")
     diag = pd.read_parquet(paths.evidence / "rank_ic_diagnostics.parquet")
     tails = pd.read_parquet(paths.evidence / "rank_tail_diagnostics.parquet")
-    health = pd.read_parquet(paths.evidence / "signal_health.parquet")
     features = load_features(paths)
 
     # La evidencia predictiva sale siempre del Model Study; la económica, del ganador del Portfolio
@@ -1291,8 +1231,6 @@ def main() -> None:
     draw_permutation(robustness, paths.figures / "f07_permutacion.png")
     draw_random_portfolios(robustness, paths.figures / "f07_aleatorias.png")
     draw_seed_dispersion(robustness, paths.figures / "f07_semillas.png")
-    draw_tail_spread(tails, paths.figures / "f07_cola.png")
-    draw_signal_health(health, paths.figures / "f07_salud.png")
 
     write_tables(paths, summary, robustness, attribution, diag, annual, decisions)
     write_tables_predictive(paths, diag, features, attribution)
@@ -1320,7 +1258,7 @@ def main() -> None:
             "evidence/summary.json", "robustness.json", "attribution.json", "decisions.json",
             "evidence/meta_weights.parquet", "evidence/rank_ic_diagnostics.parquet",
             "profile_comparison.parquet",
-            "evidence/rank_tail_diagnostics.parquet", "evidence/signal_health.parquet",
+            "evidence/rank_tail_diagnostics.parquet",
             "evidence/feature_catalog.json", "evidence/feature_diagnostics.parquet",
             "evidence/agent_local_attribution.parquet",
         ],

@@ -1,21 +1,11 @@
 \chapter{Estado del arte}
 \label{chap:estado-arte}
 
-La inversión factorial documenta diferencias transversales asociadas a valor, tamaño y mercado
-(Fama y French, 1992, 1993), así como a momentum (Jegadeesh y Titman, 1993) y
-calidad (Asness et al., 2019). Estas regularidades son tanto una motivación como una prueba
-difícil: un sistema predictivo debe demostrar que no se limita a reproducir una fórmula factorial.
-
-El aprendizaje automático amplía las relaciones que pueden estimarse entre características y
-retornos; por ejemplo, Gu et al. (2020) documentan ganancias empíricas de métodos no
-lineales en asset pricing. Sin embargo, esa flexibilidad aumenta los riesgos de ajustar ruido.
-La multiplicidad de especificaciones, la fuga temporal y el sesgo de supervivencia pueden producir
-resultados convincentes pero no replicables (Brown et al., 1992; Harvey et al., 2016).
-
-El criterio principal de este estudio es Rank-IC, la correlación de Spearman entre el score en una
-fecha y el retorno excedente futuro una vez cerrada la etiqueta. A diferencia del CAGR de una
-cartera concreta, mide toda la ordenación y permite separar señal de implementación. Esta distinción
-será decisiva al interpretar el coeficiente de transferencia del Capítulo~\ref{chap:resultados}.
+Este capítulo recorre la literatura que el trabajo necesita, en el orden en que la va a usar: las
+regularidades factoriales que orientan el diseño de los agentes y sirven de baseline, lo que el
+aprendizaje automático añade y lo que arriesga, los sesgos que condicionan cualquier evidencia de
+esta clase, y por qué la métrica de selección es el Rank-IC y no la rentabilidad. Cierra declarando
+cómo se posiciona el TFM ante las tensiones que esa literatura deja abiertas.
 
 \section{De las anomalías a las variables explicativas}
 
@@ -82,7 +72,7 @@ Backtest de cartera & Traducción a utilidad económica & Elegir por CAGR, ignor
 Inferencia con múltiples pruebas & Penalización del \textit{data snooping} & Publicar sólo la mejor especificación & Bootstrap, permutación, placebos y Deflated Sharpe\\
 \bottomrule
 \end{tabularx}
-\caption*{Fuente: elaboración propia a partir de Gu et al. (2020), Harvey et al. (2016) y
+\caption*{Elaboración propia a partir de Gu et al. (2020), Harvey et al. (2016) y
 López de Prado et al. (2014).}
 \end{table}
 
@@ -98,7 +88,8 @@ el pasado; se eliminan así empresas que salieron del universo y se exagera la c
 El \textit{data snooping} es distinto: incluso con datos perfectamente cerrados, muchas pruebas
 incrementan la probabilidad de encontrar una aparente ganadora. Harvey et al. (2016) alertan
 del gran número de factores propuestos en la literatura y de la necesidad de elevar el estándar de
-evidencia. El Deflated Sharpe Ratio es útil porque descuenta la selección entre configuraciones, pero
+evidencia. El Deflated Sharpe Ratio (Bailey y López de Prado, 2014) es útil porque descuenta la
+selección entre configuraciones, pero
 no sustituye a la disciplina de congelar una era reservada ni a contrastes de permutación y placebo.
 
 En síntesis, la contribución del TFM no consiste en proponer un sexto factor. Consiste en evaluar una
@@ -118,68 +109,43 @@ nominal de cohortes sobrestima la cantidad de información independiente; el uso
 Newey--West y bloques de doce meses reconoce precisamente esa dependencia.
 
 La literatura de gestión activa distingue además señal de implementación, y conviene enunciar aquí
-esa relación clásica, aunque este trabajo la use como marco conceptual y no como identidad exacta.
-El \textit{information ratio} alcanzable por un gestor depende aproximadamente de tres factores: la
-calidad de su señal, medida por el \textit{information coefficient}; la amplitud, es decir, el
-número de decisiones aproximadamente independientes que puede tomar; y el coeficiente de
-transferencia, que mide qué proporción de esa señal llega efectivamente a la cartera.
+esa relación clásica --- la ley fundamental de la gestión activa de Grinold (1989) ---, aunque este
+trabajo la use como marco conceptual y no como identidad exacta. El \textit{information ratio}
+alcanzable por un gestor depende aproximadamente de tres factores: la calidad de su señal, medida
+por el \textit{information coefficient}; la amplitud, es decir, el número de decisiones
+aproximadamente independientes que puede tomar; y el coeficiente de transferencia, que mide qué
+proporción de esa señal llega efectivamente a la cartera.
 
 \[
   \text{IR} \;\approx\; \text{IC} \times \sqrt{\text{amplitud}} \times \text{TC}
 \]
 
-La utilidad de esta descomposición para el presente trabajo es que separa tres causas distintas de
-un mal resultado, que de otro modo se confundirían en una única cifra de rentabilidad. Un sistema
-puede fracasar porque su señal no ordena, porque toma pocas decisiones independientes o porque su
-cartera no consigue expresar lo que la señal indica. Son problemas diferentes y admiten soluciones
-diferentes.
+Su utilidad aquí es que separa tres causas distintas de un mal resultado que una cifra de
+rentabilidad confundiría: que la señal no ordene, que se tomen pocas decisiones independientes o que
+la cartera no consiga expresar lo que la señal indica. Y tres restricciones de este diseño actúan
+directamente sobre el tercer término: la cartera es \textit{long-only}, de modo que la mitad de la
+información que el Rank-IC mide es por construcción inaccesible; contiene unas pocas decenas de
+posiciones sobre un universo de unos quinientos valores; y paga costes proporcionales a su rotación.
 
-Tres restricciones del diseño de este TFM actúan directamente sobre el tercer término. La cartera es
-\textit{long-only}, de modo que no puede explotar la parte inferior de la ordenación --- la mitad de
-la información que el Rank-IC mide es, por construcción, inaccesible. Contiene unas pocas decenas de
-posiciones como mucho sobre un universo de unos quinientos valores, lo que limita drásticamente la
-amplitud efectiva. Y paga costes de transacción proporcionales a su rotación. El
-Capítulo~\ref{chap:resultados-economicos} mide el efecto conjunto de esas tres restricciones y, más
-importante, muestra que su magnitud depende de la regla de cartera elegida.
-
-Esta separación explica también por qué la métrica de selección de este trabajo es el Rank-IC y no
-el CAGR. Seleccionar por rentabilidad final confundiría los tres términos: una configuración podría
-ganar por tener mejor señal, o simplemente por haber tropezado con una cartera afortunada. Medir la
-señal aislada permite atribuir después, con un experimento controlado, cuánto pierde la
-implementación.
+De ahí que la métrica de selección sea el Rank-IC y no el CAGR: seleccionar por rentabilidad final
+confundiría los tres términos, mientras que medir la señal aislada permite atribuir después, con un
+experimento controlado, cuánto pierde la implementación. El trabajo usa esta descomposición como
+marco conceptual y no como identidad: el Capítulo~\ref{chap:resultados-economicos} declara que el
+coeficiente de transferencia no está disponible para la cartera adoptada y mide la pérdida de
+transmisión por otra vía.
 
 \section{Posición de este trabajo}
 
-La literatura revisada sugiere tres tensiones que cualquier estudio de esta clase debe resolver, y
-conviene declarar cómo las resuelve éste.
+La tabla anterior resume cómo responde este trabajo a los riesgos de cada línea. Queda una tensión
+que no cabe en una celda y que conviene declarar: la que hay entre señal y utilidad. Buena parte de
+la literatura reporta capacidad predictiva sin llevarla a una cartera con costes, o reporta
+rentabilidad sin aislar la señal. Aquí se hacen ambas cosas, pero en un orden que importa: primero
+la señal, después la cartera, y nunca al revés.
 
-La primera es entre flexibilidad del modelo y credibilidad de la evidencia. Este trabajo se sitúa
-deliberadamente en el extremo conservador: un catálogo cerrado y publicado, una métrica de selección
-fijada de antemano, y una era reservada que no interviene en ninguna decisión. El coste es que no
-explora arquitecturas más ambiciosas; el beneficio es que sus afirmaciones pueden acotarse.
-
-La segunda es entre interpretabilidad y capacidad. La arquitectura de agentes especializados es un
-compromiso: cada agente recibe un vocabulario económico reconocible, lo que permite preguntarse qué
-aprendió cada uno, pero dentro de cada agente el modelo es una caja relativamente opaca. El
-Capítulo~\ref{chap:agentes} muestra que ese compromiso rinde --- se puede observar que el
-meta-agente descubre a su mejor especialista, y la atribución local de la
-Sección~\ref{sec:atribucion-local} permite además comprobar qué variables mueven a cada uno ---
-sin pretender que el sistema sea interpretable en sentido estricto. Esa atribución es descriptiva:
-sirve para explicar un resultado ya medido, no para sostenerlo.
-
-La tercera es entre señal y utilidad. Buena parte de la literatura reporta capacidad predictiva sin
-llevarla a una cartera con costes, o reporta rentabilidad sin aislar la señal. Aquí se hacen ambas
-cosas, pero en un orden que importa: primero la señal, después la cartera, y nunca al revés.
-
-Ese orden permite una decisión metodológica que conviene situar explícitamente, porque combina dos
-prácticas que la literatura suele tratar como incompatibles. La búsqueda predictiva es
-\emph{secuencial e iterada}: se recorre el catálogo por fases y el procedimiento se repite tomando
-como punto de partida el ganador anterior, en la forma de un ascenso por coordenadas. La búsqueda de
-cartera es \emph{cartesiana} y se optimiza por Information Ratio en lugar de por rentabilidad bruta,
-siguiendo la distinción entre calidad de señal e implementación que formula López de Prado (2018).
-La tensión aparente se disuelve al observar que ambas búsquedas actúan sobre objetos distintos: la
-primera sobre la métrica que el trabajo reporta como resultado, donde cada comparación adicional
-infla la cifra final y obliga a ser parco; la segunda sobre una señal ya congelada, que no puede
-contaminar el Rank-IC. Lo que ninguna de las dos evita es la multiplicidad frente a la afirmación
-económica, y por eso el trabajo reporta el Deflated Sharpe (López de Prado et al., 2014) aun
-sabiendo que su propia estrategia de búsqueda lo empeora.
+Ese orden permite una decisión metodológica que la literatura suele tratar como contradictoria: la
+búsqueda predictiva es secuencial e iterada, y la de cartera cartesiana y optimizada por Information
+Ratio, siguiendo la distinción entre calidad de señal e implementación que formula López de Prado
+(2018). Por qué ambas cosas son compatibles se argumenta en la
+Sección~\ref{sec:seleccion-secuencial}. Lo que ninguna de las dos evita es la multiplicidad frente a
+la afirmación económica, y por eso el trabajo reporta el Deflated Sharpe (Bailey y López de Prado,
+2014) aun sabiendo que su propia estrategia de búsqueda lo empeora.

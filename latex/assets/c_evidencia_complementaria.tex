@@ -27,7 +27,9 @@ documento final proceden del ganador del Portfolio Study (\studyportfolio), bajo
   \item[evidence/rank\_tail\_diagnostics.parquet] 123 $\times$ 16. Comportamiento de las colas y
   concentración de los pesos del meta-agente.
   \item[evidence/signal\_health.parquet] 135 $\times$ 7. Rank-IC contraído observable en cada
-  snapshot, con memorias de ocho y dieciséis trimestres.
+  snapshot, con memorias de ocho y dieciséis trimestres. Es la única medida de calidad de señal
+  disponible \emph{en tiempo real}, porque no usa información posterior a la fecha; el cuerpo no la
+  explota, pero es el instrumento natural para monitorizar el sistema en producción.
   \item[robustness.json, attribution.json, decisions.json] Contrastes de robustez, atribución
   factorial y traza completa de decisiones con todos sus candidatos.
 \end{description}

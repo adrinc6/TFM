@@ -1,5 +1,63 @@
 # Bitácora
 
+## 2026-08-15 · Auditoría de trazabilidad y reorganización del LaTeX
+
+Revisión completa de `main.tex` y `presentacion.tex` cotejando **cada cifra de la prosa contra la
+tabla que la genera y contra los artefactos de `results/studies/`**. El linter
+`verify_latex_assets.py` pasaba limpio: todo lo encontrado era semántico.
+
+**Cifras que contradecían a sus propias tablas.** La más grave estaba en el desglose de órdenes del
+capítulo 7, que citaba la tabla anterior al Portfolio Study —rotación 56,5 % del flujo, `rebalance`
+20,2 %— cuando la vigente dice `rebalance` 38,2 % y rotación 37,0 %. No es un decimal: invertía el
+diagnóstico del capítulo, que atribuía la rotación a re-decidir cada mes sobre señal a doce meses.
+Con la tabla real hay **dos fuentes de tamaño comparable y naturaleza distinta**, cada una con su
+palanca, y una de ellas —la corrección de deriva— es justo la variable que la rejilla considera casi
+inerte para el IR. También: rango entre semillas 0,0020 → **0,0015** (el artefacto y la figura ya
+decían 0,0015), placebos «dos órdenes de magnitud» → **un** orden, percentil aleatorio 0,761 → 76,1,
+contratos «casi el 60 %» → 53 %, y la afirmación de que la cartera ganadora es «más concentrada» que
+la del modelo, que es **falsa**: ambas tienen ocho posiciones, y lo que cambia es el efectivo, la
+tenencia mínima y la deriva.
+
+**Un solo relato de la cadena.** El capítulo 6 atribuía a la tercera pasada el cambio del meta a
+`stacked_rolling_free`; los `winner.json` y `t06_cadena_config` lo sitúan en la **segunda**. Se
+reescribe para que la tercera lo confirme, conservando la ventaja pareada de +0,00827 como lo que
+es: la ratificación de una decisión anterior.
+
+**Cifras sin origen.** Se declara de dónde sale el 0,1177 de la neutralización —mismas 117 cohortes,
+subconjunto de filas con los catorce controles disponibles—, y se citan `attribution.json`,
+`decisions.json` y `portfolio_winner.json` donde faltaba. Se añade lo que el artefacto dice y el
+texto suavizaba: entre semillas el exceso geométrico **cruza cero** y `economic_conclusion_stable`
+es `false`. Se explica que las diecisiete decisiones no cubren las veintiuna variables predictivas
+porque cuatro corrieron en modo `fixed`, y por qué el Portfolio Study optimiza seis de las doce
+variables de cartera. Los tres ejemplos con cifras inventadas pasan al entorno `ejemplo`. Entran en
+bibliografía Grinold (1989), Newey y West (1987) y Bailey y López de Prado (2014), y el Deflated
+Sharpe se reatribuye a este último.
+
+**Reorganización.** La cadena de estudios sube del Anexo D al comienzo del capítulo 5, donde el
+lector la necesita para entender qué es la pasada de referencia. El capítulo 8 deja de reenunciar
+limitaciones que los capítulos 6 y 7 ya dan junto a su resultado. Los capítulos 2 y 3 dejan de abrir
+con un resumen que adelanta todo y luego lo repite. El capítulo 1 pasa de cuatro enumeraciones
+solapadas a dos objetivos y cinco preguntas. Cada explicación repetida —secuencial contra
+cartesiano, serie recortada, escalera plana, trayectoria de pesos— se da entera en un sitio y se
+remite desde los demás.
+
+**Sobre la extensión y sobre dónde vive la trazabilidad.** La verificación de que cada cifra la
+respaldan las ejecuciones es una exigencia sobre el trabajo, no algo que deba escribirse en el
+manuscrito: el cuerpo y las diapositivas no dicen de qué fichero sale cada dato. Se retiró todo ese
+aparato —leyendas de fuente, el macro `\fuente` de la presentación con sus trece llamadas, los
+identificadores de estudio del cierre y las menciones a rutas en la prosa—, conservando íntegra la
+explicación metodológica que las acompañaba, que es lo que el lector sí necesita: qué mide cada
+columna, sobre qué ventana y con qué cartera. Los anexos de reproducibilidad y evidencia
+complementaria se mantienen, porque existen precisamente para eso.
+
+El balance de extensión queda en **−78 líneas de fuente, 12 figuras (antes 14) y 24 tablas (antes
+25)**. Bajar más exigiría recortar evidencia, no redundancia.
+
+**Pendiente.** Las secciones 2 y 3 de `docs/informe_resultados.md` describen el study derogado
+`study-20260803-201234-b4d7a8d8` (rank-IC 0,1004, IC-IR 0,744, DSR 0,930), no la cadena vigente. Se
+han corregido las tres tablas de robustez verificables contra JSON; el resto necesita su propia
+pasada.
+
 ## 2026-08-15 · Presentación de defensa y reenfoque del manuscrito a dos objetivos
 
 Dos trabajos encadenados, ambos de cómo se **cuenta** el TFM. Ninguna cifra cambia.
