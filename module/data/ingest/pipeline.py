@@ -27,6 +27,34 @@ log = logging.getLogger(__name__)
 REPORT_DATE_COLUMNS = ["ticker", "cik", "form", "period", "filed_date"]
 FAILURE_COLUMNS = ["ticker", "dataset", "reason"]
 
+# Clasificación de por qué un ticker del universo histórico no llega al panel. El orden es de
+# precedencia y refleja el flujo de `download_raw_data`: un fallo temprano impide llegar a los
+# siguientes, de modo que cada ticker se cuenta exactamente una vez y los recuentos suman el
+# universo. Sin ese orden, un ticker con varios fallos aparecería en varias categorías.
+#
+# Importa distinguirlas porque "no resuelve" NO es sinónimo de "la empresa murió": un cambio de
+# símbolo, un emisor extranjero que presenta 20-F en vez de 10-K, o una clase de acción con
+# puntuación distinta producen el mismo síntoma que una quiebra. Contarlas juntas sobreestima la
+# mortalidad y convierte un defecto de resolución en un sesgo de supervivencia aparente.
+RESOLUTION_REASONS: tuple[tuple[str, str], ...] = (
+    ("recycled_ticker", "Símbolo reutilizado por otra empresa: los precios no son los de la histórica"),
+    ("missing_price", "Sin serie de precios observable"),
+    ("missing_cik", "El símbolo no resuelve a ningún CIK de la SEC"),
+    ("missing_reports", "CIK resuelto, pero sin informes periódicos"),
+    ("no_metric_period_match", "Informes publicados que no casan con ningún periodo de fundamentales"),
+    ("missing_fundamentals", "Sin serie de fundamentales"),
+)
+
+# Qué fila de `download_failures.csv` corresponde a cada categoría. `profile` y `company_news` no
+# aparecen: no excluyen del panel, que exige precio, fundamentales e informe publicado.
+_FAILURE_TO_REASON = {
+    ("ohlcv", "missing"): "missing_price",
+    ("edgar", "missing_cik"): "missing_cik",
+    ("edgar", "missing_reports"): "missing_reports",
+    ("edgar", "no_metric_period_match"): "no_metric_period_match",
+    ("basic_financials", "missing"): "missing_fundamentals",
+}
+
 
 def download_raw_data(settings: Settings) -> None:
     """Descarga el universo solicitado y escribe agregados en su alcance aislado."""
@@ -238,7 +266,7 @@ def download_raw_data(settings: Settings) -> None:
         output_dir / "download_failures.csv", index=False
     )
     write_json(
-        _universe_coverage(settings, observations, recycled_tickers),
+        _universe_coverage(settings, observations, recycled_tickers, failures),
         output_dir / "universe_coverage.json",
     )
     log.info(
@@ -250,10 +278,60 @@ def download_raw_data(settings: Settings) -> None:
     )
 
 
+def _ticker_resolution(
+    settings: Settings,
+    failures: list[dict[str, str]],
+    recycled_tickers: set[str],
+) -> dict[str, Any]:
+    """Reparte el universo histórico entre el panel y cada motivo de exclusión.
+
+    Existe para que el tamaño del agujero de cobertura sea una **medida** y no una interpretación:
+    saber cuántos tickers no resuelven no dice cuántas empresas murieron, y el reparto por motivo es
+    lo único que permite separar mortalidad real de fallo de resolución (ver `RESOLUTION_REASONS`).
+    """
+    universe = [ticker for ticker in settings.tickers if ticker != settings.benchmark_ticker]
+    reason_by_ticker: dict[str, str] = {ticker: "recycled_ticker" for ticker in recycled_tickers}
+    precedence = {reason: index for index, (reason, _) in enumerate(RESOLUTION_REASONS)}
+    for failure in failures:
+        reason = _FAILURE_TO_REASON.get((failure["dataset"], failure["reason"]))
+        if reason is None:
+            continue
+        current = reason_by_ticker.get(failure["ticker"])
+        if current is None or precedence[reason] < precedence[current]:
+            reason_by_ticker[failure["ticker"]] = reason
+
+    counts = {reason: 0 for reason, _ in RESOLUTION_REASONS}
+    for ticker in universe:
+        reason = reason_by_ticker.get(ticker)
+        if reason is not None:
+            counts[reason] += 1
+    excluded = sum(counts.values())
+    return {
+        "universe_tickers": len(universe),
+        "in_panel": len(universe) - excluded,
+        "excluded": excluded,
+        "by_reason": [
+            {"reason": reason, "description": description, "tickers": counts[reason]}
+            for reason, description in RESOLUTION_REASONS
+        ],
+        "unresolved_sample": sorted(
+            ticker for ticker, reason in reason_by_ticker.items()
+            if reason == "missing_cik" and ticker in set(universe)
+        )[:50],
+        "note": (
+            "Un símbolo que no resuelve no prueba que la empresa desapareciera: puede haber "
+            "cambiado de ticker, presentar formularios de emisor extranjero o llevar una clase de "
+            "acción con otra puntuación. `missing_cik` es por tanto una cota superior de la "
+            "mortalidad, no una medida de ella."
+        ),
+    }
+
+
 def _universe_coverage(
     settings: Settings,
     observations: dict[str, dict[str, set[str]]],
     recycled_tickers: set[str],
+    failures: list[dict[str, str]],
 ) -> dict[str, Any]:
     """Mide la cobertura histórica observable; la muestra dev no es representativa."""
     if settings.dev_mode:
@@ -301,6 +379,7 @@ def _universe_coverage(
         "run_scope": "full",
         "representative": True,
         "eligibility": "precio observable y periodo fundamental con informe SEC publicado",
+        "ticker_resolution": _ticker_resolution(settings, failures, recycled_tickers),
         "years": years,
     }
 

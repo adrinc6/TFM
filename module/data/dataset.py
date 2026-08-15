@@ -93,7 +93,7 @@ YOY_TOLERANCE_DAYS = 45
 # Las de flujo NO lo admiten (solo `quarterly`): un cierre anual y su Q4 comparten fecha
 # (1999-12-31 es a la vez el Q4 y el cierre del ejercicio), de modo que el fallback mezclaría
 # un margen de doce meses con uno de tres dentro del mismo corte transversal. Sin frecuencia
-# trimestral, NA. Ver `docs/plan_fases.md` (Hallazgo 3).
+# trimestral, NA.
 METRIC_CANDIDATES = {
     "roe": (("roeTTM", "roe"), ("quarterly", "annual")),
     "roic": (("roicTTM", "roic"), ("quarterly", "annual")),

@@ -301,18 +301,33 @@ def write_tables_predictive(paths: Paths, diag: pd.DataFrame, features: pd.DataF
         "lllrr",
     )
 
+    # `usable_fraction` mide calidad dentro del panel; `panel_coverage_fraction` mide cuánto del
+    # índice llega a él. Sin la segunda, la tabla luce 100 % mientras falta media lista del S&P 500.
     coverage = pd.DataFrame(attribution["universe_coverage"])
     rows = [
-        [str(int(row.year)), str(int(row.distinct_tickers)), f"{int(row.usable_rows):,}".replace(",", "."), pct(row.usable_fraction, 2)]
+        [
+            str(int(row.year)),
+            str(int(row.sp500_members)) if getattr(row, "sp500_members", 0) else "—",
+            str(int(row.distinct_tickers)),
+            pct(row.panel_coverage_fraction, 1)
+            if getattr(row, "panel_coverage_fraction", None) is not None else "—",
+            f"{int(row.usable_rows):,}".replace(",", "."),
+            pct(row.usable_fraction, 2),
+        ]
         for row in coverage.itertuples()
     ]
     longtable(
         paths.tables / "t03_cobertura_anual.tex",
-        ["Año", "Tickers distintos", "Filas utilizables", "Fracción utilizable"],
+        [
+            "Año", "Miembros S\\&P 500", "Tickers del panel", "Cobertura",
+            "Filas utilizables", "Fracción utilizable",
+        ],
         rows,
-        "Cobertura anual del universo y calidad del panel.",
+        "Cobertura anual del universo y calidad del panel. «Cobertura» es la fracción de los "
+        "miembros reales del índice que llega al panel; «fracción utilizable» mide la calidad "
+        "dentro de él y no dice nada sobre los que faltan.",
         "tab:cobertura-anual",
-        "lrrr",
+        "lrrrrr",
     )
 
 

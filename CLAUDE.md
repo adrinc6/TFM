@@ -10,15 +10,32 @@ catálogo cerrado → Model Study → optimización secuencial por Rank-IC → g
                                 → robustez, carteras y perfiles informativos → informe
 ```
 
-Antes de realizar cambios, leer `docs/metodologia.md`, `docs/bitacora.md`,
-`docs/informe_resultados.md` y `AGENTS.md`. Son las fuentes de verdad del proyecto y del futuro TFM.
+Antes de realizar cambios, leer `docs/metodologia.md`, `docs/bitacora.md` y `AGENTS.md`. Son las
+fuentes de verdad del proyecto y del futuro TFM.
 
-`docs/gestion_cartera.md` es la referencia operativa de la cartera: variables, orden de decisión,
-casuísticas y ejemplos. Es donde el usuario anota los cambios que quiere en las reglas de cartera;
-si su sección «Cambios pedidos» no está vacía, hay trabajo pendiente que trasladar al código.
+## Documentación: cuatro ficheros y ninguno más
 
-`docs/plan_estudios_encadenados.md` fija la estrategia vigente de estudios encadenados (el ganador
-de cada study es el baseline del siguiente) y la migración del manuscrito LaTeX al study final.
+| Fichero | Qué contiene |
+|---|---|
+| `docs/metodologia.md` | El **cómo**, en profundidad: universo y datos PIT, optimización secuencial, estudios encadenados, Portfolio Study, doctrina operativa de cartera, robustez y atribución. |
+| `docs/bitacora.md` | La **agenda**: qué se decidió, qué falló, qué se corrigió y qué se ejecutó, en orden cronológico. |
+| `docs/cambios_latex.md` | La **deuda con el manuscrito**: lo que habrá que llevar al LaTeX cuando se ordene la migración. |
+| `docs/plan_pendiente.md` | El **trabajo planificado y no hecho**, con su justificación. |
+
+Las cifras **no viven en ningún documento**: viven en los artefactos de
+`results/studies/<study_id>/` y se leen de ahí. Duplicarlas en un `.md` crea una segunda verdad que
+se desincroniza.
+
+## El manuscrito LaTeX está congelado
+
+`latex/main.tex`, `latex/presentacion.tex` y `latex/assets/*.tex` **no se editan** como parte de un
+cambio, ni se regeneran sus figuras y tablas. En su lugar se añade una entrada a
+`docs/cambios_latex.md` explicando qué cambió, a qué capítulos, tablas o figuras afecta y qué
+artefacto lo respalda. Cuando el usuario ordene la migración, ese fichero es el contexto de partida.
+
+Sí son editables `latex/scripts/*.py` (es código) y `latex/plan_tfm.md` (es documentación), pero el
+exportador **no se ejecuta** como parte del cambio. Entre migraciones el manuscrito está
+desactualizado a propósito: `docs/cambios_latex.md` es el registro de esa deuda.
 
 ## Arquitectura
 
@@ -40,8 +57,9 @@ No se deben crear scenarios, experiments, runs sueltos ni rutas alternativas.
 5. Los descartados guardan solo resúmenes.
 6. Mantener UTF-8 y evitar mojibake.
 7. Preferir funciones pequeñas y flujos explícitos.
-8. Actualizar metodología, bitácora e informe cuando cambien decisiones o evidencia.
-9. No afirmar resultados financieros sin vincularlos a artefactos reales.
+8. Actualizar metodología y bitácora cuando cambien decisiones o evidencia; anotar en
+   `docs/cambios_latex.md` lo que el manuscrito tendrá que recoger.
+9. No afirmar resultados financieros sin vincularlos a artefactos reales, citando `study_id` y ruta.
 
 ## Verificación
 

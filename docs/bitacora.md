@@ -1,5 +1,77 @@
 # Bitácora
 
+## 2026-08-15 · Reorganización documental y corrección del sesgo de cobertura
+
+Dos frentes: qué documentos existen y dónde estaba realmente el sesgo de supervivencia.
+
+### La documentación se reduce a cuatro ficheros
+
+`docs/` pasa de seis documentos solapados a cuatro con papel disjunto: `metodologia.md` (el cómo,
+en profundidad), `bitacora.md` (la agenda), `cambios_latex.md` (la deuda con el manuscrito) y
+`plan_pendiente.md` (lo planificado y no hecho). Se borran `guia_decisiones.md`,
+`gestion_cartera.md`, `informe_resultados.md` y `plan_estudios_encadenados.md`, absorbiendo en
+metodología lo que debía sobrevivir: la estrategia de estudios encadenados, el Portfolio Study y la
+doctrina operativa de cartera (orden de decisión, umbrales derivados y casuísticas).
+
+**El manuscrito LaTeX queda congelado entre migraciones.** Un cambio de código ya no lo edita: deja
+una entrada en `cambios_latex.md`. Mezclar ambos ritmos era lo que obligaba a retocar la prosa del
+TFM cada vez que se tocaba una función.
+
+**Las cifras dejan de vivir en documentos.** Viven en `results/studies/<study_id>/` y se leen de
+ahí; toda afirmación numérica cita `study_id` y ruta. `informe_resultados.md` era precisamente una
+segunda verdad que se desincronizaba —la auditoría del mismo día encontró en él cifras de un study
+derogado—, así que la regla que obligaba a mantenerlo se sustituye por la que apunta al artefacto.
+
+De paso se retira una contradicción antigua de `AGENTS.md`, que seguía describiendo una `cash_policy`
+con valores `fully_invested`/`opportunity_cash` eliminada del catálogo, y cuatro referencias del
+código a `docs/plan_fases.md`, un fichero que no existe —una de ellas dentro de un mensaje de error
+que ve el usuario final—.
+
+### El sesgo de supervivencia no estaba donde se creía
+
+La composición del índice ya era point-in-time y se intentaban descargar los 1.206 tickers que
+pertenecieron al S&P 500 alguna vez, con guarda contra símbolos reciclados. El sesgo entraba por la
+**cobertura de datos**: el panel tenía muchos menos tickers que el índice en los años tempranos, y
+el manuscrito lo describía como si el índice hubiera sido más pequeño entonces. **El S&P 500 tiene
+500 miembros desde 1957**, así que esa diferencia es cobertura perdida, no un universo menor.
+
+Tres correcciones:
+
+1. **`_coverage_by_year` no tenía denominador.** Publicaba «fracción utilizable» —calidad dentro del
+   panel— que puede valer 100 % mientras falta media lista del índice. Ahora compara contra
+   `members_at()` y publica la cobertura efectiva. El exportador de LaTeX se actualiza para
+   reflejarlo, pero **no se ejecuta**: queda anotado en `cambios_latex.md`.
+2. **El 715 de 1.206 nunca se midió, se interpretó.** El docstring de `ticker_to_cik` afirmaba que
+   los ausentes eran «en su mayoría quebrados o absorbidos». No hay evidencia de eso: un cambio de
+   símbolo, una absorción o un emisor extranjero producen el mismo síntoma que una quiebra. Se añade
+   `_ticker_resolution`, que reparte el universo por motivo de exclusión con precedencia fija —de
+   modo que los recuentos suman el universo y ningún ticker se cuenta dos veces— y declara en el
+   propio artefacto que `missing_cik` es una **cota superior** de la mortalidad.
+3. **Dos filtros excluían a los emisores extranjeros, y uno tapaba al otro.** `PERIODIC_FORMS` solo
+   admitía 10-K y 10-Q, así que una empresa extranjera del índice, con CIK válido y cuentas
+   publicadas, quedaba sin ningún informe periódico. El fallback `lookup_cik`, que debía rescatar
+   esos casos, consultaba con `type=10-Q` y repetía el mismo defecto. Se añaden 20-F y 40-F y se
+   retira el filtro del fallback.
+
+Ninguna de estas tres cosas es una decisión científica: son defectos de medición. El efecto real
+sobre la cobertura solo se conocerá al reejecutar la ingesta, y esa comparación —antes y después—
+es parte del plan.
+
+### Validación
+
+- Suite completa: 96 tests, todos superados, incluidos 7 nuevos de contrato de cobertura.
+- `ruff check .`: 88 avisos antes del cambio y 88 después, idénticos salvo desplazamiento de línea.
+  Ninguno nuevo. Son preexistentes y quedan como estaban.
+- `node --check app/js/app.js` sin avisos.
+- `grep` de los cuatro documentos borrados y de `plan_fases`: sin referencias vivas fuera de las
+  menciones históricas de esta bitácora.
+
+### Lo que queda
+
+En `docs/plan_pendiente.md`. El siguiente paso lo ejecuta el usuario: relanzar la cadena con el
+panel corregido y las tres pasadas bajo la misma versión de catálogo. Los diagnósticos de coste y
+capacidad, y la lectura de la auditoría de tickers, van después.
+
 ## 2026-08-15 · Auditoría de trazabilidad y reorganización del LaTeX
 
 Revisión completa de `main.tex` y `presentacion.tex` cotejando **cada cifra de la prosa contra la

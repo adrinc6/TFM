@@ -66,6 +66,6 @@ python -m ruff check .
 node --check app/js/app.js
 ```
 
-La metodología completa está en [docs/metodologia.md](docs/metodologia.md), las decisiones en
-[docs/bitacora.md](docs/bitacora.md) y los resultados trazables en
-[docs/informe_resultados.md](docs/informe_resultados.md).
+La metodología completa está en [docs/metodologia.md](docs/metodologia.md) y las decisiones en
+[docs/bitacora.md](docs/bitacora.md). Las cifras no se duplican en ningún documento: viven en los
+artefactos de `results/studies/<study_id>/` y se leen de ahí.
