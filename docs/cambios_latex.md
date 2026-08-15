@@ -102,6 +102,33 @@ primera pasada eligió `execution_lag_days = 30` con regla `tie_simplicity`.
 
 ---
 
+### 2026-08-15 · Tabla de sensibilidad a costes y rebaja de su limitación
+
+**Artefacto**: `cost_sensitivity.json` (todavía no existe; se generará con el primer Portfolio Study
+posterior al relanzamiento — diseño en `docs/plan_pendiente.md`, paso 2.1).
+**Afecta a**: capítulo económico (`latex/assets/07_resultados_economicos.tex`) y la fila «Costes
+constantes» de `latex/assets/t09_limitaciones.tex`, más su desarrollo en
+`latex/assets/08_limitaciones.tex:61-65`.
+
+**Tabla nueva**, con tres escenarios sobre la cartera adoptada: bruto (coste 0), estándar (5 + 10 pb)
+y equilibrio, este último expresado en pb, en porcentaje y en ida y vuelta. La prosa debe enunciar el
+resultado como *«el sistema bate al índice mientras operar cueste menos de X pb por operación»*, y
+declarar las cuatro salvedades que el artefacto trae dentro: el escenario bruto no lo realiza nadie,
+el equilibrio de ruta congelada es conservador, el exceso de la ventana de selección ya es una cota
+superior optimista, y los costes nunca seleccionan.
+
+**La fila de limitaciones cambia de naturaleza**: hoy dice «5 pb de comisión y 10 pb de slippage, sin
+impacto de mercado ni capacidad, sobre un turnover del 324 %» sin ninguna cifra que la acote. Pasará
+a declarar el margen medido. Si el equilibrio queda muy por encima de cualquier coste plausible para
+gran capitalización —la estimación previa lo sitúa un orden de magnitud por encima—, la severidad
+baja de Media a Baja y hay que decirlo, en vez de mantener una cautela que la evidencia no sostiene.
+
+La prosa debe explicar además **por qué hay dos familias de cifras**: el coste entra en la
+contabilidad y en los umbrales de decisión, así que «sin costes» no es la misma cartera sin
+comisiones. Está desarrollado en `docs/metodologia.md`, «El coste entra dos veces».
+
+---
+
 ## Aplicado
 
 *(vacío: nada de lo anterior se ha llevado todavía al manuscrito)*

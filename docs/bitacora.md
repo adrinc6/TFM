@@ -1,5 +1,39 @@
 # Bitácora
 
+## 2026-08-15 · Especificado el análisis de sensibilidad a costes
+
+Queda diseñado, no implementado, en `docs/plan_pendiente.md` (paso 2.1). El supuesto de coste fijo
+sobre una cartera de rotación alta es la cifra más atacable del capítulo económico y hoy no tiene
+ninguna que la acote; el entregable son tres escenarios sobre la cartera **adoptada** —bruto,
+estándar y equilibrio— con el equilibrio definido contra el índice, porque la alternativa real de un
+inversor es comprar el S&P 500, no quedarse en efectivo.
+
+**Dos hechos del motor determinan el diseño, y ninguno era evidente.**
+
+El primero abarata el diagnóstico casi hasta cero: en `_price_orders` el drag es
+`Σ(notional × tasa) / valor`, y como `notional = |Δw| × valor`, resulta la identidad exacta
+`drag = turnover × tasa`. Como `equity.parquet` ya guarda `turnover_pct` por snapshot, la curva de
+costes entera sobre la ruta de operaciones ya ejecutada es aritmética cerrada, sin resimular nada.
+
+El segundo obliga a no publicar un solo número: **el coste entra dos veces**, en la contabilidad y
+en los umbrales de decisión de `decide_orders`. Simular con coste cero no da «la misma cartera sin
+comisiones» sino otra cartera, porque los umbrales de entrada y rotación se desploman y se opera
+mucho más. De ahí las dos familias —ruta congelada y resimulada—, cuya distancia mide cuánto protege
+la propia doctrina de umbrales económicos del proyecto. Se anota también en `docs/metodologia.md`,
+porque afecta a cómo se lee cualquier análisis de costes, no solo a este.
+
+**El catálogo no puede expresar el barrido.** Sus valores dan entre 5 y 30 pb por operación, y la
+estimación de servilleta sobre las cifras derogadas sitúa el equilibrio en torno a 215 pb: un orden
+de magnitud fuera. La escalera irá como constante de diagnóstico, con el precedente de
+`SEED_ENSEMBLE` y de los `iterations` del bootstrap. No hay que tocar el catálogo cerrado:
+`settings_from_values` no valida contra él, porque la validación ocurre antes, al definir el study.
+
+**Por qué no se implementa ahora.** Su consumidor es el ganador del Portfolio Study —la cartera que
+el TFM adopta, no la del catálogo por defecto—, y la cadena vigente está derogada. La prueba que da
+valor a la familia congelada es la autoconsistencia: evaluada en el coste adoptado debe reproducir
+exactamente el exceso ya reportado. Sin un Portfolio Study vigente no hay contra qué comprobarla, así
+que se implementará con el primero posterior al relanzamiento.
+
 ## 2026-08-15 · Reorganización documental y corrección del sesgo de cobertura
 
 Dos frentes: qué documentos existen y dónde estaba realmente el sesgo de supervivencia.

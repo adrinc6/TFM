@@ -571,6 +571,24 @@ se detiene: una rotación que no puede justificarse económicamente no se hace.
 - **Los pesos no suman 1** → es legítimo y significa efectivo, por tope activo, por
   `price_only_sell_only` o por un universo menor que `target_size`.
 
+### El coste entra dos veces, y eso condiciona cómo se mide su efecto
+
+Comisión y slippage no son solo una partida contable. Aparecen en dos sitios:
+
+1. **En la contabilidad** ([module/evaluation/backtest.py](../module/evaluation/backtest.py)): el
+   drag de cada snapshot es `Σ(notional × tasa) / valor`. Como `notional = |Δw| × valor` y el
+   turnover es `Σ|Δw|`, resulta la identidad exacta **`drag = turnover × tasa`**.
+2. **En las decisiones** ([module/evaluation/portfolio.py](../module/evaluation/portfolio.py)): el
+   coste de ida y vuelta fija el umbral de entrada y el de rotación, que es el mecanismo por el que
+   una operación debe pagarse a sí misma.
+
+La consecuencia importa al interpretar cualquier análisis de costes: **simular con coste cero no
+produce «la misma cartera sin comisiones»**, sino una cartera distinta, porque los umbrales se
+desploman y se opera mucho más. Y al revés, una cartera que afronta costes altos opera menos y se
+protege sola. Por eso el efecto del coste tiene dos lecturas legítimas —sobre la ruta de operaciones
+congelada y sobre una cartera que vuelve a decidir— y la distancia entre ambas mide cuánto protege
+esta doctrina de umbrales. El diseño del diagnóstico está en `docs/plan_pendiente.md`.
+
 ### De dónde sale la rotación
 
 La causa raíz del turnover es estructural: se re-decide con la cadencia de snapshot sobre una señal
