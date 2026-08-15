@@ -1,5 +1,55 @@
 # Bitácora
 
+## 2026-08-15 · Presentación de defensa y reenfoque del manuscrito a dos objetivos
+
+Dos trabajos encadenados, ambos de cómo se **cuenta** el TFM. Ninguna cifra cambia.
+
+**La presentación de defensa.** No existía ninguna: `latex/presentacion.tex`, Beamer 16:9 con
+XeLaTeX, quince diapositivas para diez minutos más once de reserva para el turno de preguntas, y
+`latex/guion_defensa.md` con el guion hablado cronometrado. Vive junto a `main.tex` y no en una
+subcarpeta, decisión deliberada: así las figuras se referencian con las mismas rutas `assets/` que
+el manuscrito, el linter las valida sin excepciones y no se duplica ningún PNG. El tema reutiliza la
+paleta de `export_study_assets.py`, que es la de las quince figuras, para que diapositivas y
+gráficos parezcan una sola pieza. `verify_latex_assets.py` escanea ahora también la presentación.
+
+**El reenfoque, que es el cambio de fondo.** El manuscrito decía en `09_conclusiones.tex` que «el
+hallazgo central del trabajo, sin embargo, no está en el modelo sino en lo que ocurre al llevarlo a
+una cartera», y `00_resumen.tex` y `plan_tfm.md` repetían esa jerarquía. El autor la corrige: el
+trabajo son **dos objetivos sucesivos**, no un hallazgo único que desplaza al modelo.
+
+1. **Que el sistema aprenda a ordenar** acciones fuera de muestra. Lo demuestran los tres Model
+   Studies.
+2. **Que las variables de cartera importen** y que optimizando por Information Ratio se construya
+   una buena. Lo demuestra el Portfolio Study.
+
+La clave es que durante los tres Model Studies **la cartera es secundaria porque no se había
+optimizado todavía**: se mantuvo la configuración por defecto del catálogo precisamente para que
+ninguna decisión predictiva pudiera apoyarse en ella. Con ese marco, el −11,29 % de la era reservada
+deja de ser un giro incómodo y pasa a ser el punto de partida del Objetivo 2 y la medida de cuánto
+depende el resultado de la gestión.
+
+**El hueco real que se cierra no era de tono.** El Portfolio Study se incorporó el 2026-08-14 y
+`01_introduccion.tex` nunca se actualizó: sus cinco objetivos operativos eran panel, agentes, meta,
+selección y auditoría —todos del Objetivo 1— y H3 hablaba de «una traducción prudente de la señal a
+cartera», no de optimizarla. Ahora hay **H1–H4** (H1 y H2 del Objetivo 1; H3, que las variables de
+cartera producen diferencias materiales, y H4, que la cartera elegida conserva ventaja fuera de la
+ventana, del Objetivo 2) y un **sexto objetivo operativo** para la rejilla cartesiana.
+
+Ficheros tocados: `00_resumen.tex` (resumen y abstract, mantenidos equivalentes),
+`01_introduccion.tex`, `07_resultados_economicos.tex`, `09_conclusiones.tex`,
+`t01_afirmaciones.tex` (las cinco afirmaciones agrupadas 3 + 2 por objetivo) y `plan_tfm.md`.
+
+**Lo que no se hizo, a propósito.** No se tocó ninguna cifra, ningún matiz ni ninguna limitación:
+se conservan el Deflated Sharpe en 0,682, las seis cohortes reservadas, «la ganadora es la mejor de
+1.728 evaluadas» y que `risk` por separado (0,1227) bate al meta (0,1090). La convención de que
+ningún resultado favorable se presenta sin su salvedad se respeta sin excepción. Tampoco se
+corrigieron las tres discrepancias de prosa detectadas de paso y que siguen pendientes: el capítulo
+6 dice «percentil 97,4» y «p95 de CAGR 102,28 %» cuando `robustness.json` da 96,8 y 75,06 %; dice
+que el meta queda en «−0,0119» en la era reservada cuando `t05_rankic_era.tex` y
+`evidence/summary.json` dan **+0,0441**, que invierte el signo de una afirmación de titular; y cita
+«doce» variables por agente cuando `winner.json` dice **20**. Son erratas de cifra, no de enfoque, y
+merecen su propia pasada.
+
 ## 2026-08-15 · Cifras falsas en la prosa, poda de 21 activos y regla de procedencia estricta
 
 Auditoría a fondo del manuscrito con dos objetivos: bajarlo de ~90 a 60–80 páginas y hacerlo
