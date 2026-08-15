@@ -236,9 +236,15 @@ porque presentarlos con la cartera menos favorable es conservador: no inflan nin
 
 ### Inventario de activos (2026-08-15)
 
-**24 tablas y 15 figuras.** El criterio de poda fue: un activo se queda si el texto lo analiza y
+**24 tablas y 12 figuras.** El criterio de poda fue: un activo se queda si el texto lo analiza y
 dice algo que la prosa no diga ya. Se eliminaron 21 —13 de ellos no estaban referenciados en ningún
 sitio— junto con las 17 funciones del generador que los producían.
+
+En la revisión del 2026-08-15 se retiraron tres más, aplicando el mismo criterio ahora que el texto
+está auditado: la tabla de bloques de features (repetía el argumento de la de extremos y exigía tres
+párrafos de advertencias), la figura de salud de la señal (no sostenía ninguna afirmación, y la
+variable que decía justificar corrió en modo `fixed`) y la figura de la cola por cohorte (el propio
+texto la describía como ruidosa y su mensaje ya está en la tabla, con precisión por era).
 
 Del par tabla+figura solo sobrevive uno salvo en `t08_cartera_influencia` +
 `f08_cartera_marginales`, donde el texto argumenta explícitamente que la figura aporta la *forma*
