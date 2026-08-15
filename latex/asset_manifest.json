@@ -18,7 +18,6 @@
     "evidence/rank_ic_diagnostics.parquet",
     "profile_comparison.parquet",
     "evidence/rank_tail_diagnostics.parquet",
-    "evidence/signal_health.parquet",
     "evidence/feature_catalog.json",
     "evidence/feature_diagnostics.parquet",
     "evidence/agent_local_attribution.parquet"
@@ -36,12 +35,10 @@
     "f05_pesos_anual.png",
     "f07_aleatorias.png",
     "f07_bootstrap.png",
-    "f07_cola.png",
     "f07_drawdown.png",
     "f07_equity.png",
     "f07_permutacion.png",
     "f07_rankic_serie.png",
-    "f07_salud.png",
     "f07_semillas.png",
     "f08_cartera_marginales.png",
     "f08_cartera_rejilla.png",
@@ -50,7 +47,6 @@
   "tables": [
     "t01_afirmaciones.tex",
     "t03_cobertura_anual.tex",
-    "t03_features_bloque.tex",
     "t03_features_top.tex",
     "t04_tests_contrato.tex",
     "t05_agentes.tex",

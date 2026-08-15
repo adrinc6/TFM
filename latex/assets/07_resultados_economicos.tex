@@ -124,7 +124,8 @@ posiciones, el reparto de pesos y el suelo de cobertura, y difieren en tres cosa
 efectivo (del 25\,\% al 0\,\%), impone una tenencia mínima de medio horizonte donde antes no había
 ninguna, y estrecha la corrección de deriva de 0,25 a 0,1. Es, por tanto, una cartera \emph{menos}
 defensiva, no más concentrada. Y eso es coherente con lo que mide el Information Ratio: el efectivo
-sin remunerar reduce el numerador de forma sistemática y su ahorro de varianza no lo compensa.
+sin remunerar reduce el numerador de forma sistemática y su ahorro de varianza no lo compensa. La
+Tabla~\ref{tab:cartera-ganadora} enfrenta las dos.
 
 \begin{table}[H]
   \centering
@@ -181,7 +182,8 @@ capacidad predictiva --- era el cuello de botella.
 \label{sec:economia-completa}
 
 Con la cartera ya elegida, la evaluación sobre la serie completa produce las cifras que este
-apartado desarrolla. Entre 2015 y 2024 la cartera obtiene CAGR 21,06\,\% frente a 13,17\,\% de SPY;
+apartado desarrolla, separadas por ventana en la Tabla~\ref{tab:tres-ventanas}. Entre 2015 y 2024
+la cartera obtiene CAGR 21,06\,\% frente a 13,17\,\% de SPY;
 el exceso geométrico es 6,97\,\%, el IR 0,844, el máximo drawdown 28,40\,\% y el benchmark se bate
 en 8 de 10 años. El coste acumulado, 4,74\,\%, y el turnover anualizado, 324,43\,\%, son centrales
 para interpretar el resultado: la implementación captura sólo una parte de la señal disponible, y lo
@@ -354,7 +356,8 @@ de antemano. El resultado sustituye al \texttt{meta\_rank} y la cartera lo consu
 Los pesos pueden ser \emph{negativos} cuando el estilo apuesta en contra de un agente --- es el caso
 del \texttt{contrarian} frente al momentum ---, y conviene tener presente una convención del
 catálogo: en \texttt{risk} el rango alto significa \emph{menos} riesgo, de modo que un peso positivo
-prioriza baja volatilidad y uno negativo la tolera.
+prioriza baja volatilidad y uno negativo la tolera. La Tabla~\ref{tab:perfiles-def} recoge los ocho
+con sus pesos.
 
 \begin{table}[H]
   \centering
@@ -370,6 +373,9 @@ nuevo}: si no se hiciera, el perfil operaría con expectativas referidas a un or
 sus umbrales en puntos básicos decidirían sobre posiciones ajenas.
 
 \subsection*{Qué le pasó a cada estilo}
+
+La Tabla~\ref{tab:perfiles-cartera} evalúa los ocho con la cartera ya ganadora, dentro y fuera de la
+ventana de selección.
 
 \begin{table}[H]
   \centering
