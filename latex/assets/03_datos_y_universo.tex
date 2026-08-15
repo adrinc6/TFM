@@ -211,7 +211,7 @@ fichero, con el número de comprobaciones de cada uno y el invariante que proteg
   \caption{Batería de contratos que protege los invariantes metodológicos.}
   \label{tab:contratos}
   \input{assets/t04_tests_contrato.tex}
-  \caption*{Fuente: recuento de funciones \texttt{test\_*} en \artefacto{tests/} del repositorio.}
+  \caption*{Recuento de funciones de prueba por fichero de contratos.}
 \end{table}
 
 Un test sintético no es evidencia económica, pero sí evidencia de que el mecanismo rechaza estados
@@ -253,11 +253,10 @@ Tabla~\ref{tab:features-top} muestra los extremos de esa distribución.
   \caption{Variables con mayor y menor Rank-IC univariante.}
   \label{tab:features-top}
   \input{assets/t03_features_top.tex}
-  \caption*{Fuente: \artefacto{evidence/feature\_diagnostics.parquet}. Doce primeras y cinco últimas
-  de las 73 disponibles, ordenadas por Rank-IC univariante. El artefacto contiene 73 filas frente a
-  las 68 que declara el catálogo, porque añade componentes derivados de otras variables; y su estado
-  de selección vale \texttt{candidate} en todas, de modo que la tabla describe el catálogo declarado
-  y sus diagnósticos, no qué variables sobrevivieron a la poda por estabilidad.}
+  \caption*{Doce primeras y cinco últimas de las 73 variables con diagnóstico, ordenadas por
+  Rank-IC univariante. Los diagnósticos cubren 73 variables frente a las 68 que declara el catálogo,
+  porque añaden componentes derivados de otras; y ninguna aparece marcada como podada, de modo que la
+  tabla describe el catálogo declarado y no qué variables sobrevivieron a la poda por estabilidad.}
 \end{table}
 
 Dos observaciones anticipan resultados posteriores. La variable que encabeza la lista,

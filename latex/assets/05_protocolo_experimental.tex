@@ -58,9 +58,8 @@ en ninguna de las tres pasadas.
 El catálogo cerrado se recorre en cuatro fases: temporal, representación, modelo y meta. Se parte
 de un \textit{baseline}; en cada fase se modifica una variable y se comparan sus candidatos con el
 incumbente acumulado. Así, el coste científico es una suma de alternativas, no una búsqueda
-cartesiana opaca. Las 71 configuraciones ejecutadas en la pasada de referencia quedan registradas en
-\artefacto{decisions.json} junto con cada elección, y las de las dos pasadas anteriores conservan
-sus propios registros.
+cartesiana opaca. La pasada de referencia ejecutó 71 configuraciones, y cada una queda registrada
+junto con la elección que motivó.
 
 Un candidato debe tener observaciones suficientes, no caer por debajo de $-0,02$ en ninguna era
 disponible y superar una puerta pareada: dominar al incumbente (ventaja media positiva y mejor en
@@ -99,12 +98,11 @@ costado adoptarla. Esa es la columna que se tabula, ordenada de mayor a menor co
   \caption{Qué alternativa se rechazó en cada decisión y cuánto habría costado adoptarla.}
   \label{tab:decisiones}
   \input{assets/t06_decisiones.tex}
-  \caption*{Fuente: \artefacto{decisions.json}. El coste es el Rank-IC de la mejor alternativa menos
-  el del ganador; un coste \emph{positivo} indica que la alternativa medía mejor y que el ganador se
-  decidió por otra vía, lo que sólo ocurre en los empates técnicos. No debe confundirse con la
-  \emph{ventaja pareada}, que promedia la diferencia cohorte a cohorte y por eso no coincide
-  exactamente: en \artefacto{meta\_method}, por ejemplo, el coste es $-0{,}0085$ y la ventaja
-  pareada $+0{,}00827$.}
+  \caption*{El coste es el Rank-IC de la mejor alternativa menos el del ganador; un coste
+  \emph{positivo} indica que la alternativa medía mejor y que el ganador se decidió por otra vía, lo
+  que sólo ocurre en los empates técnicos. No debe confundirse con la \emph{ventaja pareada}, que
+  promedia la diferencia cohorte a cohorte: en \artefacto{meta\_method} el coste es $-0{,}0085$ y la
+  ventaja pareada $+0{,}00827$.}
 \end{table}
 
 Leída así, la tabla separa con claridad tres grupos. Cuatro decisiones eran caras de equivocar:

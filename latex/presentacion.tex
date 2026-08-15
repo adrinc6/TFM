@@ -115,11 +115,6 @@
   \colorbox{light}{\parbox{\dimexpr\linewidth-2\fboxsep\relax}{%
     \small{\color{gold}\textbf{Matiz.}}~#1}}}
 
-% \fuente{artefacto} — de dónde sale la cifra. Cuesta una línea de 7 pt y
-% es exactamente lo que un tribunal quiere poder comprobar.
-\newcommand{\fuente}[1]{%
-  \vfill{\raggedleft\tiny\color{slate}\texttt{#1}\par}}
-
 % \respondido{n} — cierre de acto.
 \newcommand{\respondido}[1]{%
   \colorbox{verde!12}{\color{verde}\textbf{$\checkmark$~Objetivo #1 respondido}}}
@@ -131,10 +126,6 @@
 \newcommand{\tfiled}{t_{\text{filed}}}
 \newcommand{\hlabel}{h}
 \newcommand{\rankic}{\text{rank-IC}}
-\newcommand{\studyidA}{\texttt{study-20260812-163136-1b104667}}
-\newcommand{\studyidB}{\texttt{study-20260813-103456-aa733655}}
-\newcommand{\studyidC}{\texttt{study-20260814-095144-5ec17b78}}
-\newcommand{\studyportfolio}{\texttt{study-20260814-135754-fdbdf2c5}}
 
 \title{Aprendizaje automático aplicado a la selección de acciones}
 \author{Adrián Núñez}
@@ -320,7 +311,6 @@ lo que voy a medir después mide la calidad de ese orden.}
   sólo es elegible \textbf{en las fechas en que realmente pertenecía al
   índice}. Sin eso, el universo estaría formado por supervivientes y cualquier
   resultado sería un artefacto.}
-  \fuente{03\_datos\_y\_universo.tex · dataset\_reference.json}
 \end{frame}
 
 \note{[60 s] Antes de ningún resultado, de dónde salen los datos, porque la
@@ -367,7 +357,6 @@ en las fechas en que de verdad estaba en el índice.}
   \vspace{0.25cm}
   {\small Un dato entra en la decisión \textbf{sólo si ya se había publicado} en
   esa fecha, más un retardo de ejecución. La etiqueta no se usa hasta que cierra.}
-  \fuente{03\_datos\_y\_universo.tex · proposición de ausencia de fuga temporal · cubierto por tests}
 \end{frame}
 
 \note{[60 s] Y esta es la regla que lo condiciona absolutamente todo, porque es
@@ -519,7 +508,6 @@ de las que suben menos.}
     \begin{column}{0.30\textwidth}\cifra{0,1090}{lo que aprende \ \textbf{+61\,\%}}\end{column}
     \begin{column}{0.30\textwidth}\cifracolor{0,1227}{\texttt{risk} por separado}{rojo}\end{column}
   \end{columns}
-  \fuente{t05\_agentes.tex · evidence/rank\_ic\_diagnostics.parquet}
 \end{frame}
 
 \note{[70 s] Esta es la diapositiva donde el sistema se retrata solo.
@@ -581,7 +569,6 @@ como demostrada. Volveré a esto en las limitaciones.}
       señal: no es un factor conocido disfrazado.}
     \end{column}
   \end{columns}
-  \fuente{t05\_atribucion.tex · 1.309.618 filas de atribución local}
 \end{frame}
 
 \note{[60 s] Si «risk» domina, la pregunta obligada es qué está mirando «risk».
@@ -628,7 +615,6 @@ literatura. Si lo fuera, la neutralización se lo habría comido casi entero.}
   \vspace{0.35cm}
   {\centering\small\color{slate}Baja respecto al 0,1090 de la ventana de
   selección, como era de esperar; pero \textbf{no se hunde ni cambia de signo}.\par}
-  \fuente{t05\_agentes.tex · t07\_baselines.tex · t05\_rankic\_era.tex}
 \end{frame}
 
 \note{[60 s] Estos son los números del objetivo uno.
@@ -678,7 +664,6 @@ Lo relevante es que no se hunde ni cambia de signo. Ordena fuera de muestra.}
   cuatro agentes distintos de \texttt{risk} se vuelven negativos a la vez}: eso apunta a una
   rotación de factores del mercado, no a un error de signo en un modelo concreto.
   \texttt{risk} y el meta son los únicos que aguantan.\par}
-  \fuente{t05\_rankic\_era.tex}
 \end{frame}
 
 \note{[60 s] Esta tabla desagrega el resultado anterior por eras, y me parece de
@@ -733,7 +718,6 @@ negativo en esa era: arrastra a los tres que fallan.}
   \matiz{\footnotesize El octavo \textbf{no} se supera. El \textit{Deflated
   Sharpe} penaliza por el número de configuraciones probadas, y encadenar tres
   estudios es exactamente lo que penaliza. Es el precio declarado de la búsqueda.}
-  \fuente{t07\_robustez.tex · robustness.json}
 \end{frame}
 
 \note{[65 s] La pregunta obvia después de enseñar un resultado bueno: ¿y si es
@@ -799,7 +783,6 @@ de haber buscado, y lo reporto como falla, no lo escondo.}
       Rank-IC no se degradó. Sólo el IR. Luego el problema no estaba en la señal.}
     \end{column}
   \end{columns}
-  \fuente{t06\_cadena.tex}
 \end{frame}
 
 \note{[65 s] Esta diapositiva es la bisagra de la charla, y es la que más
@@ -909,7 +892,6 @@ Así que la pregunta del objetivo dos es: ¿da igual cómo la construya?}
       decisiones concretas} se llevan casi todo.}
     \end{column}
   \end{columns}
-  \fuente{t08\_cartera\_influencia.tex · portfolio\_grid}
 \end{frame}
 
 \note{[65 s] La respuesta es que importa muchísimo, y además de forma muy
@@ -958,7 +940,6 @@ cuáles no merece la pena discutir. Eso es accionable.}
       secuencial: las variables interactúan.\par}
     \end{column}
   \end{columns}
-  \fuente{t08\_cartera\_ganadora.tex · \studyportfolio}
 \end{frame}
 
 \note{[60 s] Así que monté una rejilla completa: mil setecientas veintiocho
@@ -1010,7 +991,6 @@ habría encontrado nunca.}
   percentil 60 · \textbf{deriva 0,1} (antes 0,25). En negrita, lo único que
   cambió: el número de posiciones ya era 8.\\
   \textbf{Costes:} 5 pb de comisión + 10 pb de \textit{slippage}, constantes.\par}
-  \fuente{t08\_cartera\_ganadora.tex · portfolio\_winner.json}
 \end{frame}
 
 \note{[55 s] Aquí está la cartera ganadora abierta en canal, porque un Information
@@ -1071,7 +1051,6 @@ pero se mantiene positivo.}
   \vspace{0.15cm}
   {\centering\small Mismo modelo, misma señal, mismo panel. \textbf{Sólo cambian
   las reglas de cartera.}\par}
-  \fuente{t08\_cartera\_ganadora.tex · evidence\_best\_full/summary.json}
 \end{frame}
 
 \note{[70 s] Y este es el contraste que cierra el trabajo, en la era reservada,
@@ -1184,9 +1163,6 @@ Nada de esto es una recomendación de inversión. La contribución es metodológ
       Ninguna afirmación sobre la utilidad de un sistema predictivo es
       interpretable\\ \textbf{sin declarar con qué cartera se midió}.\par}}
   \end{center}
-  \vspace{0.35cm}
-  {\centering\footnotesize\color{slate}Toda la evidencia procede de cuatro
-  estudios trazables: \studyidA · \studyidB · \studyidC · \studyportfolio\par}
 \end{frame}
 
 \note{[55 s] Resumo, y con esto termino.
@@ -1208,9 +1184,6 @@ sobre la utilidad de un sistema predictivo es interpretable sin declarar con qu�
 cartera se midió. Un trabajo que sólo reporte capacidad predictiva puede estar
 escondiendo tanto un éxito como un fracaso — y yo tengo las dos cosas medidas
 sobre exactamente la misma señal.
-
-Todo lo que he enseñado sale de cuatro estudios con identificador trazable, y cada
-cifra de esta presentación tiene su artefacto detrás.
 
 Muchas gracias.}
 

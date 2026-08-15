@@ -56,9 +56,8 @@ ver la era reservada.
   \caption{Cuánto separa cada variable de cartera el Information Ratio.}
   \label{tab:cartera-influencia}
   \input{assets/t08_cartera_influencia.tex}
-  \caption*{Fuente: \artefacto{portfolio\_grid.parquet}, 1.728 carteras sobre la serie recortada en
-  2024. Para cada variable se toma la mediana del IR de todas las carteras que comparten un valor,
-  con las otras cinco variando libremente, y se comparan el mejor y el peor valor. No se tabulan las
+  \caption*{Para cada variable se toma la mediana del IR de todas las carteras que comparten un
+  valor, con las otras cinco variando libremente, y se comparan el mejor y el peor. No se tabulan las
   mejores carteras individuales porque se diferencian en un decimal y repiten la misma configuración
   con variaciones menores.}
 \end{table}
@@ -79,7 +78,7 @@ exactamente la razón por la que esta búsqueda es cartesiana y no secuencial.
   \includegraphics[width=0.94\textwidth]{assets/f08_cartera_rejilla.png}
   \caption{Las carteras evaluadas en el plano rotación--Information Ratio. Cada punto es una cartera
   completa, con las seis coordenadas fijadas a la vez; el color codifica el tope de efectivo y el
-  círculo negro señala la ganadora. Fuente: \artefacto{portfolio\_grid.parquet}.}
+  círculo negro señala la ganadora.}
   \label{fig:cartera-rejilla}
 \end{figure}
 
@@ -93,8 +92,7 @@ topes bajos.
   \centering
   \includegraphics[width=0.96\textwidth]{assets/f08_cartera_marginales.png}
   \caption{Efecto marginal de cada variable sobre el Information Ratio. Cada caja resume todas las
-  carteras que comparten ese valor, con las cinco variables restantes variando libremente. Fuente:
-  \artefacto{portfolio\_grid.parquet}.}
+  carteras que comparten ese valor, con las cinco variables restantes variando libremente.}
   \label{fig:cartera-marginales}
 \end{figure}
 
@@ -134,9 +132,8 @@ sin remunerar reduce el numerador de forma sistemática y su ahorro de varianza 
   \caption{La cartera ganadora frente a la cartera del modelo.}
   \label{tab:cartera-ganadora}
   \input{assets/t08_cartera_ganadora.tex}
-  \caption*{Fuentes: \artefacto{portfolio\_winner.json} y \artefacto{evidence/summary.json} del
-  Model Study. Las dos primeras columnas se miden sobre 2015--2024; la última, sobre la era
-  reservada, que no intervino en la elección.}
+  \caption*{Las dos primeras columnas se miden sobre 2015--2024; la última, sobre la era reservada,
+  que no intervino en la elección.}
 \end{table}
 
 La mejora en la ventana de selección es grande y era esperable, porque es justo la ventana sobre la
@@ -150,8 +147,7 @@ que se optimizó: el Information Ratio pasa de 0,339 a 0,844 y el exceso geomét
   \centering
   \includegraphics[width=0.92\textwidth]{assets/f09_seleccion_vs_reservada.png}
   \caption{Information Ratio dentro y fuera de la ventana de selección, pasada a pasada de la
-  cadena, con la cartera por defecto del catálogo. Fuente: \artefacto{evidence/summary.json} de las
-  tres pasadas.}
+  cadena, con la cartera por defecto del catálogo.}
   \label{fig:seleccion-vs-reservada}
 \end{figure}
 
@@ -198,10 +194,9 @@ hace pagando fricción por el camino.
   \caption{Las tres ventanas de evaluación, con su papel declarado.}
   \label{tab:tres-ventanas}
   \input{assets/t07_selec_conf_full.tex}
-  \caption*{Fuente: \artefacto{evidence\_best\_full/summary.json} del ganador del Portfolio Study:
-  son cifras de la cartera adoptada, no de la que el catálogo recomienda. Selección: se tomaron
-  decisiones sobre ella. Confirmación: reservada, ninguna decisión la utilizó. Curva completa:
-  descriptiva, no probatoria.}
+  \caption*{Cifras de la cartera adoptada, no de la que el catálogo recomienda. Selección: se
+  tomaron decisiones sobre ella. Confirmación: reservada, ninguna decisión la utilizó. Curva
+  completa: descriptiva, no probatoria.}
 \end{table}
 
 Dos observaciones sobre la tabla condicionan su lectura. La primera es que el efectivo medio es
@@ -218,8 +213,7 @@ la señal obliga a una rotación completa de la plaza afectada.
   \centering
   \includegraphics[width=0.96\textwidth]{assets/f07_equity.png}
   \caption{Curva de patrimonio de la cartera ganadora y SPY. La región dorada es confirmación
-  reservada, no selección. Fuente: \artefacto{evidence\_best\_full/equity.parquet} del Portfolio
-  Study.}
+  reservada, no selección.}
   \label{fig:equity}
 \end{figure}
 
@@ -231,8 +225,7 @@ serie.
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.92\textwidth]{assets/f07_drawdown.png}
-  \caption{Drawdown acumulado de la cartera ganadora y SPY. Fuente:
-  \artefacto{evidence\_best\_full/equity.parquet} del Portfolio Study.}
+  \caption{Drawdown acumulado de la cartera ganadora y SPY.}
   \label{fig:drawdown}
 \end{figure}
 
@@ -249,8 +242,7 @@ de riesgo: es consecuencia de la señal, no de una política de exposición, que
   \caption{Resultado anual de la cartera ganadora.}
   \label{tab:anual}
   \input{assets/t07_anual.tex}
-  \caption*{Fuente: \artefacto{evidence\_best\_full/annual\_metrics.parquet} del ganador del
-  Portfolio Study. Turnover anualizado; efectivo medio.}
+  \caption*{Turnover anualizado; efectivo medio.}
 \end{table}
 
 El detalle anual desmiente que el exceso agregado proceda de un año excepcional. La cartera bate al
@@ -270,9 +262,8 @@ motivo declarado de cada orden.
   \caption{Descomposición del flujo de cartera por motivo de orden.}
   \label{tab:ordenes}
   \input{assets/t07_ordenes_motivo.tex}
-  \caption*{Fuente: \artefacto{evidence\_best\_full/orders.parquet} del ganador del Portfolio Study.
-  El flujo es la suma de $|\Delta w|$ de cada orden. El coste agrega comisión y \textit{slippage}
-  efectivamente cargados.}
+  \caption*{El flujo es la suma de $|\Delta w|$ de cada orden. El coste agrega comisión y
+  \textit{slippage} efectivamente cargados.}
 \end{table}
 
 
@@ -372,11 +363,6 @@ prioriza baja volatilidad y uno negativo la tolera.
   \caption{Los ocho perfiles: qué hipótesis de estilo representa cada uno.}
   \label{tab:perfiles-def}
   \input{assets/t08_perfiles_def.tex}
-  \caption*{Fuente: \artefacto{module/evaluation/profiles.py}, constante
-  \texttt{PROFILE\_WEIGHTS}. Abreviaturas: \texttt{qual} = quality, \texttt{val} = value,
-  \texttt{grow} = growth, \texttt{mom} = momentum. El conjunto se diseñó para cubrir arquetipos
-  reconocibles con solapamiento mínimo: \texttt{momentum} y \texttt{contrarian} son opuestos por
-  construcción.}
 \end{table}
 
 Como la reordenación cambia qué acciones se compran, el alfa esperado deja de corresponder al orden
@@ -392,9 +378,6 @@ sus umbrales en puntos básicos decidirían sobre posiciones ajenas.
   \caption{Los ocho perfiles de inversor evaluados con la cartera ganadora.}
   \label{tab:perfiles-cartera}
   \input{assets/t08_perfiles_cartera.tex}
-  \caption*{Fuente: \artefacto{portfolio\_profiles.parquet}. Las columnas de selección se miden
-  sobre 2015--2024 y las de la era reservada sobre 2025--2026. Ningún perfil se elige por su
-  Information Ratio.}
 \end{table}
 
 El resultado principal es que \textbf{ninguno de los siete estilos mejora a la señal sin reordenar}.
