@@ -1,0 +1,40 @@
+% Definición de los ocho perfiles: transcrita de PROFILE_WEIGHTS en
+% module/evaluation/profiles.py. No es un artefacto del estudio sino la
+% configuración del código, por eso se escribe a mano y no se genera.
+\begin{tabularx}{\textwidth}{lXl}
+\toprule
+Perfil & Hipótesis de estilo & Pesos sobre los rangos de agente \\
+\midrule
+\texttt{balanced} &
+El meta-agente sin alterar. Es la referencia: mide qué ocurre cuando \emph{no} se impone estilo &
+\texttt{meta} 1,00 \\
+\addlinespace
+\texttt{defensive} &
+Preservación de capital: baja volatilidad y negocios sólidos &
+\texttt{risk} 0,60 · \texttt{qual} 0,35 · \texttt{val} 0,05 \\
+\addlinespace
+\texttt{quality} &
+\textit{Compounder} tipo Buffett: negocios excelentes y duraderos &
+\texttt{qual} 0,70 · \texttt{grow} 0,20 · \texttt{val} 0,10 \\
+\addlinespace
+\texttt{growth} &
+Crecimiento como motor, pero de calidad; el momentum confirma la tendencia &
+\texttt{grow} 0,60 · \texttt{qual} 0,25 · \texttt{mom} 0,15 \\
+\addlinespace
+\texttt{value} &
+Empresas infravaloradas; calidad y riesgo filtran las \textit{value traps} &
+\texttt{val} 0,70 · \texttt{qual} 0,15 · \texttt{risk} 0,15 \\
+\addlinespace
+\texttt{garp} &
+\textit{Growth at a reasonable price}: crecer con disciplina de precio &
+\texttt{grow} 0,40 · \texttt{val} 0,35 · \texttt{qual} 0,25 \\
+\addlinespace
+\texttt{contrarian} &
+Comprar lo castigado: apuesta \emph{en contra} del momentum reciente &
+\texttt{mom} $-0{,}55$ · \texttt{val} 0,30 · \texttt{risk} 0,15 \\
+\addlinespace
+\texttt{momentum} &
+Fuerza de precio pura, aceptando la volatilidad que la acompaña &
+\texttt{mom} 0,75 · \texttt{risk} $-0{,}25$ \\
+\bottomrule
+\end{tabularx}

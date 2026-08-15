@@ -924,18 +924,6 @@ def draw_drawdown(equity: pd.DataFrame, output: Path) -> None:
     save(fig, output)
 
 
-def draw_profile_tradeoff(profiles: pd.DataFrame, output: Path) -> None:
-    fig, ax = plt.subplots(figsize=(6.3, 3.8))
-    for row in profiles.itertuples():
-        color = NAVY if row.profile == "balanced" else TEAL
-        ax.scatter(row.annualized_turnover, row.geometric_excess_return, color=color, s=46, zorder=3)
-        ax.annotate(row.profile, (row.annualized_turnover, row.geometric_excess_return), xytext=(5, 4), textcoords="offset points", fontsize=8)
-    ax.axhline(0, color="black", linewidth=0.8)
-    ax.set(title="Rotación y exceso geométrico", xlabel="Turnover anualizado", ylabel="Exceso geométrico")
-    ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter(1, decimals=0))
-    save(fig, output)
-
-
 def era_of(year: int) -> str:
     """Etiqueta de era. Coincide con SELECTION_ERAS más la era reservada."""
     if year <= 2018:
@@ -1267,7 +1255,6 @@ def main() -> None:
     winner = read_json(paths.study / "winner.json")
     weights = pd.read_parquet(paths.evidence / "meta_weights.parquet")
     diag = pd.read_parquet(paths.evidence / "rank_ic_diagnostics.parquet")
-    profiles = pd.read_parquet(paths.study / "profile_comparison.parquet")
     tails = pd.read_parquet(paths.evidence / "rank_tail_diagnostics.parquet")
     health = pd.read_parquet(paths.evidence / "signal_health.parquet")
     features = load_features(paths)
@@ -1284,12 +1271,6 @@ def main() -> None:
     draw_rank_ic(summary, paths.figures / "f07_rankic_serie.png")
     draw_equity(equity, paths.figures / "f07_equity.png")
     draw_drawdown(equity, paths.figures / "f07_drawdown.png")
-    # Los perfiles se dibujan con la cartera adoptada cuando hay Portfolio Study: con la del modelo
-    # el orden entre estilos cambia —gana `value` en vez de `balanced`— y las figuras contradirían
-    # a la tabla del capítulo.
-    profile_figures = portfolio["profiles"] if portfolio is not None and portfolio.get("profiles") is not None else profiles
-    draw_profile_tradeoff(profile_figures, paths.figures / "f07_perfiles_tradeoff.png")
-
     # Activos añadidos para la versión extendida del manuscrito.
     draw_meta_weights_annual(weights, paths.figures / "f05_pesos_anual.png")
 

@@ -75,6 +75,41 @@ Lección que conviene retener: **un aviso de derogación parcial es una trampa**
 secciones 1 a 6» dejó tres secciones sin marcar que parecían vigentes precisamente por no estar
 marcadas, y de ahí se filtró una cifra al manuscrito.
 
+**Adaptación al borrado de `f07_perfiles_tradeoff`.** La entrada siguiente elimina esa figura y la
+sustituye por la explicación del mecanismo de los perfiles. La diapositiva de reserva que la usaba
+pasa a mostrar `t08_perfiles_cartera` y a contar el hallazgo que la acompaña —el orden entre perfiles
+se predice desde el Rank-IC de los agentes que cada uno pondera—, que además es mejor material de
+defensa que el gráfico. El guion se actualiza en consecuencia.
+
+## 2026-08-15 · Los perfiles de inversor, por fin explicados
+
+El manuscrito presentaba una tabla con ocho perfiles —`garp`, `contrarian`, `defensive`…— y sus
+resultados, pero **en ningún punto decía qué hace cada uno**. El lector veía que `momentum` obtiene
+IR 0,017 y `defensive` 0,570 sin ninguna forma de saber por qué, ni qué distingue a uno de otro.
+
+Se añade la explicación del mecanismo, transcrita de `PROFILE_WEIGHTS`: un perfil no es un modelo ni
+una cartera distinta, sino una reordenación de la señal congelada en dos pasos —acota el universo al
+percentil 60 del `meta_rank`, y reordena ese conjunto con pesos fijos sobre los rangos de los cinco
+agentes—. Se documenta que los pesos pueden ser negativos (el `contrarian` apuesta contra el
+momentum) y la convención de que en `risk` el rango alto significa *menos* riesgo. Nueva tabla
+`t08_perfiles_def` con la hipótesis de estilo y los pesos de los ocho.
+
+Con el mecanismo explícito aparece un hallazgo que la tabla de resultados ya contenía y nadie había
+leído: **el orden entre perfiles se predice desde el Rank-IC de los agentes que cada uno pondera**.
+El mejor de los siete que reordenan es `defensive` (IR 0,570), que carga 0,60 en `risk`, el agente
+de mayor Rank-IC (0,1227); el peor es `momentum` (IR 0,017), que carga 0,75 en el agente de Rank-IC
+0,0005 y además penaliza a `risk`. Los cuatro intermedios ponderan agentes de Rank-IC 0,01–0,02 y
+quedan agrupados entre 0,112 y 0,312. Un perfil no añade información: cambia el peso relativo de la
+que ya existe, y empeora en proporción a lo malo que sea el agente al que se lo desplaza.
+
+Se elimina `f07_perfiles_tradeoff`: el turnover que mostraba ya está en la tabla, y el dato relevante
+(`momentum` rota 5,98 veces al año, casi el doble que `balanced`, para exceso negativo) se dice ahora
+en el texto.
+
+**Metadiscurso podado.** Tres pasajes del capítulo 7 anunciaban lo que iban a decir antes de decirlo
+o repetían la misma advertencia sobre las cajas marginales en tres párrafos. El contenido se
+conserva; desaparece el rodeo.
+
 ## 2026-08-15 · Cifras falsas en la prosa, poda de 21 activos y regla de procedencia estricta
 
 Auditoría a fondo del manuscrito con dos objetivos: bajarlo de ~90 a 60–80 páginas y hacerlo

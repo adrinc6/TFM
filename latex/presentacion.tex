@@ -900,14 +900,21 @@ Muchas gracias.}
 \end{frame}
 
 % --- R7 · perfiles ---------------------------------------------------
+% Se usa la tabla y no una figura: f07_perfiles_tradeoff se eliminó del
+% manuscrito porque el turnover que mostraba ya está en esta tabla.
 \begin{frame}{Los ocho perfiles de inversión}
-  \begin{center}
-    \includegraphics[width=0.56\linewidth]{assets/f07_perfiles_tradeoff.png}
+  \vspace{0.2cm}
+  \begin{center}\footnotesize
+    \input{assets/t08_perfiles_cartera.tex}
   \end{center}
-  {\footnotesize\color{slate}Los perfiles quedaron fuera de la rejilla: se
-  construyen sobre la cartera ya elegida y no influyeron en su selección. El
-  perfil que \emph{no} reordena la señal domina la ventana de selección.}
-  \fuente{f07\_perfiles\_tradeoff.png}
+  \vspace{0.15cm}
+  {\footnotesize Quedaron fuera de la rejilla: se construyen sobre la cartera ya
+  elegida y no influyeron en su selección. \textbf{El orden se predice desde el
+  Rank-IC de los agentes que cada perfil pondera}: \texttt{defensive} carga 0,60
+  en \texttt{risk}, el agente de mayor Rank-IC; \texttt{momentum} carga 0,75 en
+  el de Rank-IC 0,0005 y además penaliza a \texttt{risk}. Un perfil no añade
+  información, sólo redistribuye la que ya hay.}
+  \fuente{t08\_perfiles\_cartera.tex}
 \end{frame}
 
 % --- R8 · drawdown ---------------------------------------------------
