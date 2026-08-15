@@ -73,11 +73,11 @@ cada uno.
 El aprendizaje es observable, no una afirmación inferida de la rentabilidad final. Las primeras
 filas de \texttt{meta\_weights.parquet} corresponden a \texttt{fallback\_equal}: cada agente recibe
 0,20 porque aún no existe evidencia cerrada. Después aparecen las filas \texttt{learned}, y en ellas
-el peso de \textit{risk} crece de forma sostenida a medida que se cierran cohortes: 0,22 de media en
-2016, 0,45 en 2017, 0,66 en 2018, 0,83 en 2020 y valores en torno a 0,95 desde 2022. Al final de la
-serie el reparto es prácticamente degenerado --- 0,954 para \textit{risk} y 0,047 para
-\textit{value}, con los tres agentes restantes en cero ---, de modo que el meta-agente no aprendió a
-combinar cinco especialistas sino a descartar cuatro.
+el peso se desplaza hacia \textit{risk} a medida que se cierran cohortes --- la
+Figura~\ref{fig:pesos-anual} recoge esa trayectoria año a año. Al final de la serie el reparto es
+prácticamente degenerado --- 0,954 para \textit{risk} y 0,047 para \textit{value}, con los tres
+agentes restantes en cero ---, de modo que el meta-agente no aprendió a combinar cinco especialistas
+sino a descartar cuatro.
 
 Ese desenlace merece leerse con cuidado, porque es el resultado esperable del método y no una
 anomalía. La configuración ganadora emplea \texttt{stacked\_rolling\_free}, es decir, un apilado sin
@@ -281,10 +281,9 @@ por los doce meses que tarda una etiqueta en cerrar ---: ambos números deben le
 El estadístico Newey--West es 3,46. La evidencia mide la calidad de la ordenación transversal, no la
 rentabilidad de una única cartera.
 
-Estas cifras corresponden a la tercera y última pasada de la cadena de estudios descrita en la
-Sección~\ref{sec:cadena-studies}. Las tres pasadas mejoraron de forma monótona dentro de esta
-ventana --- 0,1000, 0,1074 y 0,1090 de Rank-IC ---, y esa mejora sostenida es precisamente lo que
-obliga a mirar con atención la era reservada más adelante en este capítulo.
+Son las cifras de la tercera pasada, y la mejora monótona de la cadena que recoge la
+Tabla~\ref{tab:cadena} es precisamente lo que obliga a mirar con atención la era reservada más
+adelante en este capítulo.
 
 \begin{figure}[H]
   \centering
@@ -308,11 +307,11 @@ ordena mejor los retornos futuros que las fórmulas fijas.
   \caption*{Fuente: \texttt{attribution.json} y \texttt{evidence/summary.json}.}
 \end{table}
 
-Por eras, el Rank-IC es 0,0999 en 2015--2018, 0,0506 en 2019--2021 y 0,1788 en 2022--2024. La
-señal se debilita a la mitad en el régimen intermedio, pero no cambia de signo ni depende de la era
-final. Esta heterogeneidad justifica reportar series y no una única media agregada, y advierte de
-antemano que una media de diez años puede ocultar regímenes en los que el sistema ordena bastante
-peor de lo que su cifra agregada sugiere.
+Conviene recordar aquí la heterogeneidad que ya mostró la Tabla~\ref{tab:rankic-era}: la señal se
+debilita a la mitad en el régimen intermedio sin cambiar de signo ni depender de la era final. Es lo
+que justifica reportar series y no una única media agregada, y advierte de que una media de diez
+años puede ocultar regímenes en los que el sistema ordena bastante peor de lo que su cifra agregada
+sugiere.
 
 \subsection*{La cola superior frente a la ordenación completa}
 

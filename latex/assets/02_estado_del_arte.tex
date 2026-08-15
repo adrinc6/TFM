@@ -163,15 +163,10 @@ La tercera es entre señal y utilidad. Buena parte de la literatura reporta capa
 llevarla a una cartera con costes, o reporta rentabilidad sin aislar la señal. Aquí se hacen ambas
 cosas, pero en un orden que importa: primero la señal, después la cartera, y nunca al revés.
 
-Ese orden permite una decisión metodológica que conviene situar explícitamente, porque combina dos
-prácticas que la literatura suele tratar como incompatibles. La búsqueda predictiva es
-\emph{secuencial e iterada}: se recorre el catálogo por fases y el procedimiento se repite tomando
-como punto de partida el ganador anterior, en la forma de un ascenso por coordenadas. La búsqueda de
-cartera es \emph{cartesiana} y se optimiza por Information Ratio en lugar de por rentabilidad bruta,
-siguiendo la distinción entre calidad de señal e implementación que formula López de Prado (2018).
-La tensión aparente se disuelve al observar que ambas búsquedas actúan sobre objetos distintos: la
-primera sobre la métrica que el trabajo reporta como resultado, donde cada comparación adicional
-infla la cifra final y obliga a ser parco; la segunda sobre una señal ya congelada, que no puede
-contaminar el Rank-IC. Lo que ninguna de las dos evita es la multiplicidad frente a la afirmación
-económica, y por eso el trabajo reporta el Deflated Sharpe (Bailey y López de Prado, 2014) aun
-sabiendo que su propia estrategia de búsqueda lo empeora.
+Ese orden permite una decisión metodológica que la literatura suele tratar como contradictoria: la
+búsqueda predictiva es secuencial e iterada, y la de cartera cartesiana y optimizada por Information
+Ratio, siguiendo la distinción entre calidad de señal e implementación que formula López de Prado
+(2018). Por qué ambas cosas son compatibles se argumenta en la
+Sección~\ref{sec:seleccion-secuencial}. Lo que ninguna de las dos evita es la multiplicidad frente a
+la afirmación económica, y por eso el trabajo reporta el Deflated Sharpe (Bailey y López de Prado,
+2014) aun sabiendo que su propia estrategia de búsqueda lo empeora.
