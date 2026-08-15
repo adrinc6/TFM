@@ -45,7 +45,7 @@
 
 % --- Paleta ----------------------------------------------------------
 % Copiada literalmente de latex/scripts/export_study_assets.py, que es la
-% que usan las quince figuras. Por eso diapositivas y gráficos parecen una
+% que usan las catorce figuras. Por eso diapositivas y gráficos parecen una
 % sola pieza y no un collage.
 \definecolor{navy}{HTML}{16324F}
 \definecolor{teal}{HTML}{007C83}
@@ -233,7 +233,7 @@ secundaria porque todavía no se había optimizado.}
       caja/.style={draw=slate,rounded corners=2pt,align=center,inner sep=6pt},
       ag/.style={caja,draw=teal,fill=white,minimum width=44mm,minimum height=7mm}]
     \node[caja,fill=light,minimum width=26mm,minimum height=12mm] (v) at (0,0)
-      {33 variables\\\textit{point-in-time}};
+      {68 variables\\\textit{point-in-time}};
     \node[ag] (a1) at (5.5, 2.6) {\textbf{value} \ {\color{slate}barato}};
     \node[ag] (a2) at (5.5, 1.3) {\textbf{growth} \ {\color{slate}crece}};
     \node[ag] (a3) at (5.5, 0.0) {\textbf{quality} \ {\color{slate}sano}};
@@ -266,11 +266,18 @@ forma de mirar una empresa.
 Fíjense en la nota de la izquierda, porque es una decisión de diseño que un
 tribunal debe poder cuestionar: los bloques de variables son disjuntos. Ninguna
 variable la comparten dos agentes. Eso es deliberado — si les diera a todos las
-mismas treinta y tres variables acabaría teniendo cinco copias del mismo
+mismas sesenta y ocho variables acabaría teniendo cinco copias del mismo
 predictor, y el meta-agente no tendría nada que arbitrar. El precio que pago es
 que cada agente ve menos información de la que podría; la ventaja es que sus
 errores son razonablemente independientes, que es lo que hace que combinarlos
 tenga sentido.
+
+Un apunte por si sale en preguntas: estas sesenta y ocho variables son las
+características financieras que entran al modelo, y no hay que confundirlas con
+las treinta y tres del catálogo cerrado que veremos en la siguiente diapositiva.
+Esas treinta y tres son los parámetros del experimento — el horizonte, la
+profundidad de los árboles, el retardo de ejecución —, no los datos de las
+empresas.
 
 Encima hay un meta-agente que hace de árbitro: aprende cuánto pesa cada
 especialista. Y a la derecha está la restricción que lo hace honesto: sólo
@@ -460,7 +467,7 @@ mercado.}
       \cifracolor{0}{azar puro:\\ mi orden no dice nada}{slate}
     \end{column}
     \begin{column}{0.30\textwidth}
-      \cifracolor{0,02--0,05}{lo que la literatura\\considera explotable}{navy}
+      \cifracolor{0,0130}{el mejor criterio clásico,\\medido en este mismo panel}{navy}
     \end{column}
     \begin{column}{0.30\textwidth}
       \cifracolor{1}{orden perfecto:\\ imposible en la práctica}{slate}
@@ -483,12 +490,15 @@ orden que realmente ocurrió? Es una correlación de rangos. Cero es azar puro: 
 ordenación no aporta nada. Uno sería el orden perfecto, y en finanzas eso no
 existe.
 
-Y aquí está lo contraintuitivo, que conviene decir antes de enseñar cifras: en la
-literatura de selección de activos, valores entre dos y cinco centésimas ya se
-consideran explotables. Suena ridículamente bajo si uno viene de otros dominios
-del aprendizaje automático, donde una correlación de 0,03 sería una tomadura de
-pelo. Pero aquí se aplica sobre quinientas acciones, todos los meses, durante
-años: un sesgo pequeño y persistente en el orden es exactamente lo que se busca.
+Y aquí está lo contraintuitivo, que conviene decir antes de enseñar cifras: la
+escala útil es mucho más baja de lo que uno esperaría. Para no depender de lo que
+diga la literatura, pongo como referencia una cifra medida en este mismo trabajo:
+el mejor criterio clásico que probé como baseline, sobre el mismo panel y con las
+mismas restricciones, saca 0,0130. Eso es lo que hay que batir. Suena ridículo si
+uno viene de otros dominios del aprendizaje automático, donde una correlación de
+0,03 sería una tomadura de pelo. Pero aquí se aplica sobre quinientas acciones,
+todos los meses, durante años: un sesgo pequeño y persistente en el orden es
+exactamente lo que se busca.
 
 Dos cosas más. Se calcula mes a mes y se promedia sobre las ciento diecisiete
 cohortes, así que un mes bueno aislado no lo salva. Y al ser una correlación de
@@ -551,21 +561,20 @@ como demostrada. Volveré a esto en las limitaciones.}
       \small
       \begin{tabular}{llr}
         \toprule
-        Agente & Variable & Encabeza \\
+        Variable de \texttt{risk} & Qué mide & Encabeza \\
         \midrule
-        \texttt{risk}   & \texttt{gap\_21d}            & 51,2\,\% \\
-        \texttt{risk}   & \texttt{range\_63d}          & 26,8\,\% \\
-        \texttt{risk}   & \texttt{max\_drawdown\_252d} & 4,2\,\% \\
+        \texttt{gap\_21d}            & huecos de apertura, 21 d & 51,2\,\% \\
+        \texttt{range\_63d}          & rango de negociación, 63 d & 26,8\,\% \\
+        \texttt{max\_drawdown\_252d} & caída máxima, 252 d & 4,2\,\% \\
         \addlinespace
-        \texttt{growth} & \texttt{cash\_conversion}    & 65,8\,\% \\
-        \texttt{value}  & \texttt{pfcf}                & 25,6\,\% \\
+        \texttt{beta\_252d}          & \textit{el candidato obvio} & {\color{rojo}no está} \\
         \bottomrule
       \end{tabular}
     \end{column}
     \begin{column}{0.49\textwidth}
-      {\small \texttt{gap\_21d} y \texttt{range\_63d} encabezan el \textbf{78\,\%}
-      de las observaciones. \texttt{beta\_252d} \textbf{ni siquiera} está entre
-      las tres primeras.\\[0.55em]
+      {\small Las dos primeras encabezan el \textbf{78\,\%} de las observaciones.
+      \texttt{beta\_252d}, que es lo que uno esperaría de un agente llamado
+      «riesgo», \textbf{ni siquiera} está entre las tres primeras.\\[0.55em]
       El agente dominante lee \textbf{microestructura de precio a semanas},
       no la prima clásica de baja volatilidad.\\[0.55em]
       Por eso la neutralización por estilos conserva el \textbf{86,62\,\%} de la
@@ -584,16 +593,17 @@ para cada acción y cada mes, qué variable pesó más en la decisión de ese ag
 Lo esperable sería que un agente llamado «risk» estuviera leyendo la prima de
 baja volatilidad, que es un factor clásico y muy conocido. Pues no. La beta a un
 año ni siquiera está entre las tres primeras variables. Lo que encabeza son
-«gap\_21d» y «range\_63d» —el hueco de apertura a tres semanas y el rango de
-precios a tres meses— que juntas dominan el setenta y ocho por ciento de las
+«gap\_21d» y «range\_63d» —el hueco de apertura a un mes y el rango de
+negociación a tres meses— que juntas dominan el setenta y ocho por ciento de las
 observaciones.
 
 Eso significa que el agente dominante está leyendo microestructura de precio a
 escala de semanas, no una prima de riesgo clásica.
 
 Y esto tiene una consecuencia medible, que es la tercera frase: cuando neutralizo
-la señal contra catorce controles de estilo conocidos —valor, tamaño, momentum,
-volatilidad y compañía— conserva el ochenta y seis coma seis por ciento. Es
+la señal contra catorce controles de estilo conocidos —valoración, rentabilidad,
+crecimiento, volatilidad y beta— conserva el ochenta y seis coma seis por ciento.
+Es
 decir, lo que hace no es una reexpresión de un factor que ya estaba en la
 literatura. Si lo fuera, la neutralización se lo habría comido casi entero.}
 
@@ -624,12 +634,9 @@ literatura. Si lo fuera, la neutralización se lo habría comido casi entero.}
 \note{[60 s] Estos son los números del objetivo uno.
 
 El sistema saca un Rank-IC de 0,1090. Con la escala que expliqué hace dos
-diapositivas, eso está muy por encima de lo que se considera explotable.
-
-Para que sirva de referencia y no de cifra suelta: el mejor criterio clásico de
-los que probé como baseline —una combinación de crecimiento a precio razonable—
-se queda en 0,0130. El sistema es unas ocho veces mejor que la mejor regla
-sencilla que se me ocurrió.
+diapositivas, eso es unas ocho veces el 0,0130 del mejor criterio clásico que
+probé como baseline —una combinación de crecimiento a precio razonable—, medido
+sobre el mismo panel y con las mismas restricciones temporales.
 
 La t de Newey-West es 3,46. Uso Newey-West precisamente porque las cohortes
 mensuales se solapan y los errores están autocorrelacionados; con la corrección
@@ -667,8 +674,8 @@ Lo relevante es que no se hunde ni cambia de signo. Ordena fuera de muestra.}
   \end{tabular}
   \end{center}
   \vspace{0.3cm}
-  {\footnotesize\color{slate}La última columna es la era reservada. \textbf{Todos
-  los agentes fundamentales se vuelven negativos a la vez}: eso apunta a una
+  {\footnotesize\color{slate}La última columna es la era reservada. \textbf{Los
+  cuatro agentes distintos de \texttt{risk} se vuelven negativos a la vez}: eso apunta a una
   rotación de factores del mercado, no a un error de signo en un modelo concreto.
   \texttt{risk} y el meta son los únicos que aguantan.\par}
   \fuente{t05\_rankic\_era.tex}
@@ -690,12 +697,12 @@ Segundo, «risk» es el único agente positivo en las cuatro eras. El meta final
 va justo por debajo, que es coherente con lo que vimos: acaba pareciéndose mucho
 a «risk».
 
-Y tercero, lo que más me interesa de esta tabla: en la era reservada, todos los
-agentes fundamentales —value, growth, quality— se vuelven negativos a la vez. No
-uno: todos, simultáneamente. Eso es una firma bastante clara de rotación de
-factores del mercado en ese periodo, y no de un error de signo en un modelo
-concreto. Si sólo se hubiera hundido uno, sospecharía de mi implementación; que
-se hundan los tres a la vez apunta al mercado.
+Y tercero, lo que más me interesa de esta tabla: en la era reservada, los cuatro
+agentes que no son «risk» —value, growth, quality y momentum— se vuelven
+negativos a la vez. No uno: los cuatro, simultáneamente. Eso es una firma
+bastante clara de rotación de factores del mercado en ese periodo, y no de un
+error de signo en un modelo concreto. Si sólo se hubiera hundido uno, sospecharía
+de mi implementación; que se hundan los cuatro a la vez apunta al mercado.
 
 También explica por qué el meta equiponderado, que reparte por igual, se va a
 negativo en esa era: arrastra a los tres que fallan.}
@@ -737,8 +744,12 @@ veces y volví a medir todo. Ninguna de las nueve mil novecientas noventa y nuev
 permutaciones llegó a lo que da el modelo real. p igual a cero coma cero cero
 cero uno, que es el mínimo posible con ese número de réplicas.
 
-Los placebos de etiqueta: predigo cosas que no debería poder predecir, y en efecto
-no las predice — se queda pegado a cero. Es el control negativo.
+Los placebos de etiqueta atacan otra objeción distinta, y conviene no
+confundirlos con la permutación. La permutación rompe sólo el vínculo entre mi
+orden y el retorno; el placebo vuelve a entrenar la máquina entera —variables,
+agentes, meta-agente y cartera— con la etiqueta barajada. Si alguna pieza del
+pipeline fabricara señal por sí misma, ahí aparecería. No aparece: se queda
+pegado a cero. Es el control negativo del sistema completo.
 
 El bootstrap por bloques respeta la estructura temporal, y el intervalo al noventa
 y cinco por ciento no toca el cero. Quitar eras enteras: el resultado se mueve
@@ -994,8 +1005,10 @@ habría encontrado nunca.}
   \end{center}
   \vspace{0.35cm}
   {\footnotesize\color{slate}\textbf{Configuración ganadora:} 8 posiciones ·
-  efectivo máximo 0\,\% · reparto proporcional al alfa · tenencia mínima medio
-  horizonte · suelo de cobertura percentil 60 · tolerancia de deriva 0,1.\\
+  \textbf{efectivo 0\,\%} (antes 25\,\%) · reparto proporcional al alfa ·
+  \textbf{tenencia mínima medio horizonte} (antes ninguna) · suelo de cobertura
+  percentil 60 · \textbf{deriva 0,1} (antes 0,25). En negrita, lo único que
+  cambió: el número de posiciones ya era 8.\\
   \textbf{Costes:} 5 pb de comisión + 10 pb de \textit{slippage}, constantes.\par}
   \fuente{t08\_cartera\_ganadora.tex · portfolio\_winner.json}
 \end{frame}
@@ -1004,13 +1017,16 @@ habría encontrado nunca.}
 Ratio suelto no dice qué tipo de cartera es.
 
 Leyendo la columna del medio: ocho posiciones, sin efectivo, pesos proporcionales
-al alfa estimado. Es una cartera concentrada por diseño, y eso tiene consecuencias
-que se ven en la tabla.
+al alfa estimado. Conviene precisar qué cambió de verdad respecto a la cartera por
+defecto, porque no es la concentración: las dos tienen ocho posiciones. Lo que
+cambia son tres cosas —renuncia al efectivo, del veinticinco por ciento a cero;
+obliga a mantener cada posición medio horizonte; y estrecha la corrección de
+deriva.
 
-La máxima caída es del veintiocho por ciento, un punto y medio peor que la cartera
-por defecto. O sea, la optimización no ha reducido el riesgo de caída: ha mejorado
-el ratio subiendo el numerador, no bajando el denominador. Con ocho posiciones eso
-es esperable y hay que decirlo.
+Eso explica la fila de la máxima caída: veintiocho por ciento, un punto y medio
+peor que la cartera por defecto. Al quitar el colchón de caja, la optimización no
+ha reducido el riesgo de caída, lo ha aceptado a cambio de numerador. Hay que
+decirlo.
 
 La rotación es de tres coma dos veces al año, es decir, la cartera se renueva
 entera unas tres veces por año. Sobre eso aplico cinco puntos básicos de comisión
