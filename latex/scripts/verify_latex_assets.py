@@ -15,6 +15,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 LATEX = ROOT / "latex"
 ASSETS = LATEX / "assets"
+# Documentos maestros: la memoria y la presentación de defensa. Ambos viven en
+# latex/ y comparten las figuras de assets/, así que se validan igual.
+MAESTROS = ("main.tex", "presentacion.tex")
 INCLUDE = re.compile(r"\\includegraphics(?:\[[^]]*\])?\{([^}]+)\}")
 TABLE = re.compile(r"\\input\{(assets/t[^}]+\.tex)\}")
 CHAPTER = re.compile(r"\\input\{(assets/[^}]+)\}")
@@ -33,9 +36,12 @@ def fail(message: str, errors: list[str]) -> None:
 def main() -> int:
     errors: list[str] = []
     # Capítulos, tablas y figuras conviven sueltos en assets/, sin subcarpetas
-    # dentro de assets/. main.tex vive un nivel por encima, en latex/, así que
-    # todo \input y \includegraphics debe llevar el prefijo "assets/".
-    tex_files = [LATEX / "main.tex", *sorted(ASSETS.glob("*.tex"))]
+    # dentro de assets/. Los documentos maestros viven un nivel por encima, en
+    # latex/, así que todo \input y \includegraphics debe llevar el prefijo
+    # "assets/". La presentación se coloca junto a main.tex precisamente para
+    # poder reutilizar esas mismas rutas sin duplicar ninguna figura.
+    tex_files = [LATEX / nombre for nombre in MAESTROS if (LATEX / nombre).is_file()]
+    tex_files.extend(sorted(ASSETS.glob("*.tex")))
     used_graphics: set[str] = set()
     used_tables: set[str] = set()
     labels: set[str] = set()
