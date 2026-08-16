@@ -20,7 +20,8 @@ PREPARED_ROOT = DATA_DIR / "prepared"
 CORE_ROOT = PREPARED_ROOT / "_core"
 DATASET_SCHEMA_VERSION = 1
 CORE_FIELDS = (
-    "run_scope", "data_start_date", "end_date", "benchmark_ticker", "execution_year",
+    "run_scope", "data_start_date", "panel_start_date", "end_date", "benchmark_ticker",
+    "execution_year",
     "execution_quarter", "execution_lag_days", "snapshot_step_months",
     "fundamental_step_months", "dataset_code_version",
 )

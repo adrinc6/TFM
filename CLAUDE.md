@@ -59,7 +59,7 @@ No se deben crear scenarios, experiments, runs sueltos ni rutas alternativas.
 7. Preferir funciones pequeñas y flujos explícitos.
 8. Actualizar metodología y bitácora cuando cambien decisiones o evidencia; anotar en
    `docs/cambios_latex.md` lo que el manuscrito tendrá que recoger.
-9. No afirmar resultados financieros sin vincularlos a artefactos reales, citando `study_id` y ruta.
+9. No afirmar resultados financieros sin vincularlos a artefactos reales, citando `study_id` y ruta (aunque en informe y presentacion no hay que citarlos, pero si comprobar que los resultados existen en los artefactos y no se usan valores antiguos).
 
 ## Verificación
 

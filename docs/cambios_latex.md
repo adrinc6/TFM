@@ -12,6 +12,43 @@
 
 ## Pendiente
 
+### 2026-08-16 · El sesgo de supervivencia hay que reescribirlo: apunta al lado contrario
+
+**Artefactos**: `data/raw/ticker_diagnostics.csv` (una fila por ticker del universo, se genera en la
+ingesta corregida) y `data/raw/universe_coverage.json`.
+**Afecta a**: el capítulo de datos y universo, la fila de sesgo de supervivencia de
+`latex/assets/t09_limitaciones.tex` y su desarrollo en `latex/assets/08_limitaciones.tex`, más la
+tabla de cobertura por año.
+
+**Qué cambia, y no es un matiz.** El manuscrito trata la cobertura parcial del universo (630 de 1206)
+como sesgo de supervivencia. Por definición, ese sesgo elimina perdedores e **infla** los resultados,
+y así está redactada la cautela. La evidencia lo contradice: solo el **7,7 %** de los ausentes llevan
+marcador de quiebra; el resto son **adquisiciones —cerradas con prima, o sea ganadoras—** y empresas
+vivas cuyo símbolo el proveedor ha retirado. **La dirección del sesgo es ambigua y probablemente
+conservadora.** Mantener la redacción actual afirma una cautela que la evidencia no sostiene, y
+además en la dirección equivocada.
+
+**Reetiquetado**: de «sesgo de supervivencia» a **«sesgo de disponibilidad de datos del proveedor»**,
+con su descomposición medida (quiebra / adquisición / símbolo retirado / fuera de ventana) leída del
+artefacto, no copiada aquí.
+
+**Cobertura por año**: hay que declarar que 1996-2002 figuraba al **0 %** por la ventana que
+empezaba en 2003 —una decisión de configuración, no una propiedad de los datos— y dar la cobertura
+tras corregirla. La tabla se regenera desde `universe_coverage.json`.
+
+**Cambios de ticker**: añadir que las sucesiones (`RTN`→`RTX`, `DWDP`→`DD`, `FB`→`META`…) conservan
+el histórico bajo el símbolo sucesor y que no hay doble contabilidad, declarando `CBS`/`VIAC`→`PARA`
+como la excepción donde sí se pierde historia.
+
+**Limitación que hay que enunciar sin adornos**: con las fuentes actuales (Yahoo + Finnhub + EDGAR)
+hay ~190-250 símbolos irrecuperables porque el proveedor los ha retirado. Se documentan uno a uno en
+el artefacto; el manuscrito debe decir que la cobertura completa del histórico exigiría un proveedor
+de pago.
+
+**Aviso de encadenamiento**: si se ejecuta el retroceso de la ventana a 1990 cambia el periodo de
+entrenamiento y puede cambiar el ganador del Model Study; en ese caso aplica también la derogación
+de la cadena vigente anotada el 2026-08-15.
+
 ### 2026-08-15 · La cadena vigente queda derogada
 
 **Qué pasa.** El usuario va a relanzar la cadena entera (tres Model Studies + Portfolio Study) con

@@ -106,7 +106,12 @@ def membership_span(ticker: str) -> tuple[pd.Timestamp, pd.Timestamp] | None:
     return dates[0], dates[-1]
 
 
-def is_recycled_ticker(ticker: str, first_price_date) -> bool:
+# Margen antes de declarar reciclaje. Un símbolo reasignado tarda meses en reaparecer; un hueco de
+# semanas es historia truncada por el proveedor.
+_RECYCLE_GRACE_DAYS = 30
+
+
+def is_recycled_ticker(ticker: str, first_price_date, data_start_date=None) -> bool:
     """True si los precios de `ticker` son de OTRA empresa que reutilizó el símbolo.
 
     Un símbolo liberado por una empresa (quiebra, fusión) puede reasignarse años después. Sus
@@ -116,8 +121,20 @@ def is_recycled_ticker(ticker: str, first_price_date) -> bool:
 
     La regla: si el primer precio disponible es POSTERIOR a la última fecha en el índice, esos
     datos no pueden ser de la empresa histórica.
+
+    Dos salvaguardas contra el falso positivo, ambas necesarias porque la regla compara una fecha
+    de *pertenencia* con una fecha de *disponibilidad*, y esta última depende de la ventana de
+    descarga y del proveedor:
+
+    - `data_start_date`: si el ticker salió del índice antes de que empiece la ventana, su primer
+      precio observable cae por fuerza después de su última fecha en el índice y la regla lo
+      marcaría siempre. Eso no es reciclaje, es una ventana que no alcanza: no es aplicable.
+    - `_RECYCLE_GRACE_DAYS`: un hueco de pocas semanas es historia truncada por el proveedor, no un
+      símbolo reasignado. Reasignar un símbolo lleva meses.
     """
     span = membership_span(ticker)
     if span is None or first_price_date is None:
         return False
-    return pd.Timestamp(first_price_date) > span[1]
+    if data_start_date is not None and span[1] < pd.Timestamp(data_start_date):
+        return False
+    return pd.Timestamp(first_price_date) > span[1] + pd.Timedelta(days=_RECYCLE_GRACE_DAYS)

@@ -156,3 +156,56 @@ def test_coverage_degrades_without_the_index_composition(monkeypatch):
 
     assert rows[0]["sp500_members"] == 0
     assert rows[0]["panel_coverage_fraction"] is None
+
+
+def test_a_withdrawn_symbol_is_not_counted_as_absence_of_data():
+    """Un 404 del proveedor y una serie vacía no son el mismo hecho.
+
+    Colapsarlos —como hacía el `ohlcv,missing` único— convierte una avería del proveedor en
+    mortalidad empresarial aparente y sobreestima el sesgo de supervivencia, que es justo lo que
+    estas categorías existen para impedir.
+    """
+    universe = _Universe(["AAA", "BBB", "CCC"])
+    failures = [
+        _failure("AAA", "ohlcv", "not_found"),
+        _failure("BBB", "ohlcv", "rate_limited"),
+        _failure("CCC", "ohlcv", "empty_series"),
+    ]
+
+    resolution = _ticker_resolution(universe, failures, recycled_tickers=set())
+    by_reason = {row["reason"]: row["tickers"] for row in resolution["by_reason"]}
+
+    assert by_reason["symbol_withdrawn"] == 1
+    assert by_reason["download_failed"] == 1
+    assert by_reason["missing_price"] == 1
+    assert resolution["in_panel"] == 0
+
+
+def test_a_ticker_that_crashed_is_excluded_instead_of_counted_as_present():
+    """El catch-all emitía `str(exc)`, que no casa con ningún motivo conocido.
+
+    El ticker quedaba entonces como `in_panel` sin haber aportado un solo dato: la cobertura se
+    sobreestimaba en silencio, que es el modo de fallo más difícil de detectar.
+    """
+    universe = _Universe(["AAA", "BBB"])
+    failures = [_failure("AAA", "all", "download_error")]
+
+    resolution = _ticker_resolution(universe, failures, recycled_tickers=set())
+
+    assert resolution["in_panel"] == 1
+    assert resolution["excluded"] == 1
+
+
+def test_every_failure_reason_maps_to_a_declared_resolution_reason():
+    """Todo motivo que el pipeline sabe emitir debe tener categoría.
+
+    Un motivo sin mapear no falla: se ignora, y el ticker se cuenta como presente. Este test es la
+    red que evita repetir ese fallo al añadir motivos nuevos.
+    """
+    from module.data.ingest.clients import PRICE_FAILURE_REASONS
+    from module.data.ingest.pipeline import _FAILURE_TO_REASON
+
+    declared = {reason for reason, _ in RESOLUTION_REASONS}
+    assert set(_FAILURE_TO_REASON.values()) <= declared
+    for reason in PRICE_FAILURE_REASONS:
+        assert ("ohlcv", reason) in _FAILURE_TO_REASON, reason

@@ -29,9 +29,20 @@ def _load_dotenv(path: Path) -> None:
 
 _load_dotenv(PROJECT_ROOT / ".env")
 
-# Ventana temporal descargada: permite entrenar hacia atrás desde el año 2000.
-DATA_START_DATE = "2003-01-01"
+# Ventana temporal descargada. Cubre toda la composición histórica del índice (el CSV empieza en
+# 1996-01-02) con margen previo para las medias móviles y el momentum a 12 meses del primer
+# snapshot. Empezaba en 2003-01-01, lo que dejaba 1996-2002 en 0 tickers elegibles: no era que
+# faltaran datos, es que no se descargaban. Además marcaba como `recycled_ticker` a todo símbolo que
+# salió del índice antes de 2003, porque su primer precio observable caía por fuerza después de su
+# última fecha en el índice (83 de 165 falsos positivos). Ver docs/bitacora.md, 2026-08-16.
+DATA_START_DATE = "1990-01-01"
 DATA_END_DATE = "2026-07-15"
+# Inicio del panel point-in-time, DISTINTO de la ventana de descarga. Descargar desde 1990 sirve
+# para resolver el universo (saber si un símbolo existió y cuándo) y para que las medias móviles y
+# el momentum a 12 meses del primer snapshot tengan historia previa; el panel, en cambio, arranca
+# aquí. Mantenerlo en 2003-01-01 conserva el periodo de entrenamiento y de backtest tal como
+# estaban, de modo que ampliar la descarga no mueve el ganador del Model Study.
+PANEL_START_DATE = "2003-01-01"
 DEV_TICKERS = ["AAPL", "MSFT", "NVDA", "JPM", "XOM"]
 BENCHMARK_TICKER = "SPY"
 # Fase 1: el panel se construye para toda la historia disponible. La fecha ancla
@@ -184,11 +195,15 @@ EDGAR_USER_AGENT = os.getenv(
 
 # Un snapshot por día de mercado (1996-2026): fuente del universo dinámico.
 SP500_COMPONENTS_CSV = DATA_DIR / "S&P 500 Historical Components & Changes.csv"
+# Símbolos históricos que la SEC ya no indexa bajo su nombre antiguo (renombramientos y
+# absorciones). Opcional: si no existe, la resolución de CIK sigue como antes.
+TICKER_ALIASES_CSV = DATA_DIR / "ticker_aliases.csv"
 
 
 @dataclass(frozen=True)
 class Settings:
     data_start_date: str = DATA_START_DATE
+    panel_start_date: str = PANEL_START_DATE
     end_date: str = DATA_END_DATE
     run_scope: str = RUN_SCOPE
     benchmark_ticker: str = BENCHMARK_TICKER

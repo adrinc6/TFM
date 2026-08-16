@@ -1,5 +1,76 @@
 # Bitácora
 
+## 2026-08-16 · Por qué el panel usa 630 de 1206 tickers: no es mortalidad empresarial
+
+El panel usa **630 de los 1206** tickers del universo histórico. Se comprobó si la pérdida era
+mortalidad empresarial —las ~500 ausentes habrían quebrado—. **No lo es.** Todo lo que sigue está
+medido contra las APIs, no inferido.
+
+**1. Yahoo ha retirado símbolos de empresas que existen.** `query1`/`query2` devuelven
+`404 "No data found, symbol may be delisted"` para `BK`, `K`, `MMC`, `JNPR`, `ATVI` o `RTN`
+mientras `AAPL` responde 5919 filas **en la misma sesión**. Es determinista (tres sesiones limpias,
+mismo resultado), no depende del rango ni de `range=max`, y no es rate-limit. `yfinance 1.5.2`
+devuelve vacío para esos mismos símbolos, así que no es un defecto del cliente propio. La búsqueda
+de símbolos de Yahoo tampoco los encuentra como equity de EE.UU., y ningún sufijo los recupera. Con
+las fuentes actuales son **irrecuperables**, y eso hay que documentarlo, no esconderlo.
+
+**2. Los fundamentales no son el cuello de botella.** Finnhub sirve fundamentales para los tickers
+descartados, incluidos delistados: `BK` (1985-2025), `EA` (1986-2026), `ATVI` (1988-2022), `CTXS`
+(1991-2021). El problema es el **orden del pipeline**: el `continue` de `pipeline.py` mata el ticker
+en cuanto falla el precio, **antes** de pedir perfil, fundamentales y EDGAR. Por eso `metrics=665`
+frente a `report_dates=630`: los fundamentales ni se intentan.
+
+**3. El sesgo NO es de supervivencia clásico, y esto cambia el argumento del TFM.** Solo **29 de los
+376** `missing_price` (**7,7 %**) llevan el sufijo `Q` de quiebra (`ENRNQ`, `LEHMQ`, `WAMUQ`,
+`AAMRQ`, `EKDKQ`, `NRTLQ`). El **92,3 % restante no quebró**: son adquisiciones (`ATVI`→Microsoft,
+`CELG`→BMS, `MON`→Bayer, `XLNX`→AMD, `PXD`→Exxon, `ANSS`→Synopsys, `JNPR`→HPE) o empresas
+**cotizando hoy con normalidad** (`BK`, `MMC`, `EA`, `FI`). Un sesgo de supervivencia puro elimina
+perdedores e **infla** el rendimiento; aquí lo que falta son sobre todo **adquiridas, que se cierran
+con prima**, es decir ganadoras. La dirección neta del sesgo es **ambigua y probablemente
+conservadora**, y es de *disponibilidad de datos del proveedor*, no de mortalidad.
+
+**4. Los cambios de ticker no pierden la empresa.** Yahoo conserva el histórico completo bajo el
+símbolo sucesor, y el sucesor **ya está en el panel**: `RTN`→`RTX` (9199 filas desde 1990),
+`DWDP`→`DD`, `CTL`→`LUMN`, `NLOK`→`GEN`, `ANTM`→`ELV`, `WLTW`→`WTW`, `FB`→`META`. No hay doble
+contabilidad: el símbolo antiguo está fuera y el nuevo dentro, nunca los dos. Lo que sí se pierde es
+la etiqueta histórica del símbolo viejo en las fechas en que el índice lo llamaba así. Excepción
+real: `CBS`/`VIAC`→`PARA`, con solo 1359 filas desde 2021.
+
+**5. 1996-2002 es 0 % elegible por construcción.** `DATA_START_DATE = 2003-01-01` impide que ningún
+miembro anterior a 2003 tenga precio, así que la cobertura de esos siete años no es baja: es
+**exactamente cero**. Verificado que tiene arreglo: 18 de 20 miembros de 1998 ya en panel tienen
+historia completa desde 1990 en Yahoo (`LMT`, `CVS`, `SO`, `MU`, `CL`, `USB`…, 3280 sesiones).
+
+Efecto colateral sobre el reciclaje, **medido ticker a ticker tras ampliar la ventana**: de los 165
+`recycled_ticker`, **12 eran falsos positivos** (`CCK`, `CSR`, `NC`, `TKR`, `AIT`, `BCO`, `CAL`,
+`FCN`, `MCIC`, `MD`, `SCI`, `SNT`) y se recuperan al aparecer su historia anterior a 2003. Los otros
+153 son reciclajes **reales**: `ABX` salió del índice en 2002 y su primer precio es de 2020, `ANV`
+salió en 1999 y su primer precio es de 2026. Una estimación previa cifraba los falsos positivos en
+83 contando los que salieron del índice antes de 2003; la comprobación contra el proveedor la
+desmiente, porque para la mayoría de ellos Yahoo tampoco tiene historia antigua.
+
+**6. Reconstruir el precio desde los ratios de Finnhub: probado y descartado.** `psTTM ×
+salesPerShare` medido sobre **589 tickers** da correlación mediana **0,97 en nivel** pero solo
+**0,73 en retornos**, con apenas un 20 % por encima de 0,9. Todo lo predictivo del proyecto son
+retornos rankeados en corte transversal, así que ese error entraría directo en la etiqueta de
+entrenamiento. Además la serie es **trimestral**: no puede generar variación mensual ni momentum ni
+volatilidad. Vía cerrada.
+
+**La ventana de descarga se separa del inicio del panel.** Ampliar la descarga a 1990 sin más
+habría movido el arranque del panel a 1996 y con él el periodo de entrenamiento, cambiando el
+ganador del Model Study por un motivo ajeno a la ciencia del estudio. Se introduce
+`PANEL_START_DATE = 2003-01-01`, distinto de `DATA_START_DATE = 1990-01-01`: se **descarga** desde
+1990 —para resolver el universo, distinguir símbolo retirado de empresa inexistente y dar historia
+previa a medias móviles y momentum— pero el panel **arranca donde siempre**. Entrenamiento y
+backtest quedan intactos. Ambas fechas entran en `CORE_FIELDS`, así que el `dataset_hash` cambia y
+ningún panel antiguo se reutiliza en silencio.
+
+**Decisión.** Se corrige lo corregible con las fuentes actuales —ventana a 1990, desacoplar
+fundamentales del fallo de precio, truncar reciclados en vez de descartarlos, alias de CIK y de
+sucesión de símbolo— y se documenta ticker a ticker lo que no, en
+`data/raw/ticker_diagnostics.csv`. Se descarta **Tiingo** pese a cubrir 185 de los 376 ausentes: su
+límite de 50 símbolos/hora hace inviable probarlo.
+
 ## 2026-08-16 · Todo lo calculable se calcula solo; el plan pendiente pasa a ser agenda de lectura
 
 `docs/plan_pendiente.md` mezclaba trabajo de implementación con decisiones que solo pueden tomarse

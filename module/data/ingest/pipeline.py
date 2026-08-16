@@ -15,17 +15,23 @@ from environment import (
     EDGAR_USER_AGENT,
     FINNHUB_API_KEY,
     RAW_JSON_DIR,
+    TICKER_ALIASES_CSV,
     Settings,
 )
 from module.data.ingest.clients import FinnhubClient, YahooClient
 from module.data.ingest.edgar import EdgarClient
-from module.data.universe import annual_membership_dates, is_recycled_ticker, members_at
+from module.data.universe import (
+    annual_membership_dates,
+    is_recycled_ticker,
+    members_at,
+    membership_span,
+)
 from module.common.utils import write_json, write_parquet
 
 log = logging.getLogger(__name__)
 
 REPORT_DATE_COLUMNS = ["ticker", "cik", "form", "period", "filed_date"]
-FAILURE_COLUMNS = ["ticker", "dataset", "reason"]
+FAILURE_COLUMNS = ["ticker", "dataset", "reason", "detail"]
 
 # Clasificación de por qué un ticker del universo histórico no llega al panel. El orden es de
 # precedencia y refleja el flujo de `download_raw_data`: un fallo temprano impide llegar a los
@@ -38,21 +44,35 @@ FAILURE_COLUMNS = ["ticker", "dataset", "reason"]
 # mortalidad y convierte un defecto de resolución en un sesgo de supervivencia aparente.
 RESOLUTION_REASONS: tuple[tuple[str, str], ...] = (
     ("recycled_ticker", "Símbolo reutilizado por otra empresa: los precios no son los de la histórica"),
+    ("symbol_withdrawn", "El proveedor de precios no reconoce el símbolo (retirado de su API)"),
+    ("download_failed", "La descarga de precios falló por red o límite de peticiones: reintentable"),
     ("missing_price", "Sin serie de precios observable"),
     ("missing_cik", "El símbolo no resuelve a ningún CIK de la SEC"),
     ("missing_reports", "CIK resuelto, pero sin informes periódicos"),
     ("no_metric_period_match", "Informes publicados que no casan con ningún periodo de fundamentales"),
     ("missing_fundamentals", "Sin serie de fundamentales"),
+    ("download_error", "El ticker abortó con una excepción durante la descarga"),
 )
 
 # Qué fila de `download_failures.csv` corresponde a cada categoría. `profile` y `company_news` no
 # aparecen: no excluyen del panel, que exige precio, fundamentales e informe publicado.
+#
+# `symbol_withdrawn` y `download_failed` se separan de `missing_price` a propósito: el primero es
+# una propiedad del proveedor (el símbolo existió pero ya no se sirve) y el segundo es una avería
+# reintentable. Sumarlos a "sin precios" convierte ambos en mortalidad empresarial aparente.
 _FAILURE_TO_REASON = {
-    ("ohlcv", "missing"): "missing_price",
+    ("ohlcv", "not_found"): "symbol_withdrawn",
+    ("ohlcv", "bad_request"): "symbol_withdrawn",
+    ("ohlcv", "empty_series"): "missing_price",
+    ("ohlcv", "rate_limited"): "download_failed",
+    ("ohlcv", "http_error"): "download_failed",
+    ("ohlcv", "transport_error"): "download_failed",
+    ("ohlcv", "missing"): "missing_price",  # vocabulario anterior, por compatibilidad
     ("edgar", "missing_cik"): "missing_cik",
     ("edgar", "missing_reports"): "missing_reports",
     ("edgar", "no_metric_period_match"): "no_metric_period_match",
     ("basic_financials", "missing"): "missing_fundamentals",
+    ("all", "download_error"): "download_error",
 }
 
 
@@ -87,37 +107,63 @@ def download_raw_data(settings: Settings) -> None:
     }
     observations: dict[str, dict[str, set[str]]] = {}
     recycled_tickers: set[str] = set()
+    diagnostics: dict[str, dict[str, Any]] = {}
+    alias_cik = _load_alias_cik()
     downloaded_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     started_at = time.perf_counter()
 
     for ticker_index, ticker in enumerate(tickers, start=1):
         log.info("[%s] datos crudos (%s/%s)", ticker, ticker_index, len(tickers))
         try:
+            # Se limpia antes de cada ticker: `_cached_json` puede servir de disco sin llamar al
+            # cliente, y entonces el motivo que quedara ahí sería el del ticker anterior.
+            yahoo.last_failure_reason = None
             ohlcv = _cached_json(
                 _json_path("yahoo", ticker, f"ohlcv_{settings.data_start_date}_{settings.end_date}"),
                 lambda: yahoo.ohlcv(ticker, settings.data_start_date, settings.end_date),
             )
             price_rows = (ohlcv or {}).get("data") or []
-            if not price_rows:
+            has_prices = bool(price_rows)
+            if not has_prices:
                 dataset = "benchmark_ohlcv" if ticker == settings.benchmark_ticker else "ohlcv"
-                failures.append(_failure(ticker, dataset, "missing"))
-                continue
+                # El motivo real, no un `missing` que mete en el mismo saco un símbolo retirado por
+                # el proveedor y un corte de red. Sin esta distinción, una avería de infraestructura
+                # se contabiliza como mortalidad empresarial.
+                reason = yahoo.last_failure_reason or "empty_series"
+                failures.append(_failure(ticker, dataset, reason))
+                if ticker == settings.benchmark_ticker:
+                    continue
 
-            first_price_date = min(row["date"] for row in price_rows if row.get("date"))
-            if is_recycled_ticker(ticker, first_price_date):
-                recycled_tickers.add(ticker)
-                failures.append(
-                    _failure(ticker, "ohlcv", f"recycled_ticker:first_price_date={first_price_date}")
-                )
-                continue
+            if has_prices:
+                first_price_date = min(row["date"] for row in price_rows if row.get("date"))
+                if is_recycled_ticker(ticker, first_price_date, settings.data_start_date):
+                    recycled_tickers.add(ticker)
+                    failures.append(
+                        _failure(ticker, "ohlcv", f"recycled_ticker:first_price_date={first_price_date}")
+                    )
+                    # Un símbolo reciclado conserva historia legítima mientras estuvo en el índice:
+                    # se trunca a ese tramo en vez de descartar el ticker entero, que tiraba también
+                    # perfil, fundamentales e informes.
+                    price_rows = _rows_within_membership(ticker, price_rows)
+                    has_prices = bool(price_rows)
 
-            coverage["prices"] += 1
-            prices.extend({"ticker": ticker, **row} for row in price_rows)
-            if ticker == settings.benchmark_ticker:
-                coverage["benchmark_price_rows"] = len(price_rows)
-                # SPY es una serie de referencia, no una empresa del universo: no
-                # necesita perfil, fundamentales, CIK ni noticias para el pipeline.
-                continue
+            diagnostic = diagnostics.setdefault(ticker, _blank_diagnostic(ticker))
+            diagnostic["price_status"] = "ok" if has_prices else (
+                yahoo.last_failure_reason or "empty_series"
+            )
+            diagnostic["price_rows"] = len(price_rows)
+            if price_rows:
+                observed = sorted(_date_only(row["date"]) for row in price_rows if row.get("date"))
+                diagnostic["price_first"], diagnostic["price_last"] = observed[0], observed[-1]
+
+            if has_prices:
+                coverage["prices"] += 1
+                prices.extend({"ticker": ticker, **row} for row in price_rows)
+                if ticker == settings.benchmark_ticker:
+                    coverage["benchmark_price_rows"] = len(price_rows)
+                    # SPY es una serie de referencia, no una empresa del universo: no
+                    # necesita perfil, fundamentales, CIK ni noticias para el pipeline.
+                    continue
             observations[ticker] = {
                 "price_dates": {_date_only(row["date"]) for row in price_rows if row.get("date")},
                 "matched_filed_dates": set(),
@@ -127,6 +173,7 @@ def download_raw_data(settings: Settings) -> None:
                 _json_path("finnhub", ticker, "profile"),
                 lambda: _require_finnhub(finnhub).company_profile2(ticker),
             )
+            diagnostic["has_profile"] = bool(profile)
             if profile:
                 coverage["profiles"] += 1
                 profiles.append(
@@ -144,9 +191,14 @@ def download_raw_data(settings: Settings) -> None:
                 lambda: _require_finnhub(finnhub).basic_financials(ticker),
             )
             metric_periods: set[str] = set()
+            diagnostic["has_fundamentals"] = bool(metric)
             if metric:
                 payload = _strip_meta(metric)
                 metric_periods = _metric_periods(payload)
+                if metric_periods:
+                    ordered = sorted(metric_periods)
+                    diagnostic["fundamentals_first"] = ordered[0]
+                    diagnostic["fundamentals_last"] = ordered[-1]
                 coverage["metrics"] += 1
                 metrics.append(
                     {
@@ -158,7 +210,7 @@ def download_raw_data(settings: Settings) -> None:
             else:
                 failures.append(_failure(ticker, "basic_financials", "missing"))
 
-            cik = cik_by_ticker.get(ticker)
+            cik = cik_by_ticker.get(ticker) or alias_cik.get(ticker)
             ticker_reports = edgar.report_dates(ticker, cik) if cik else []
             if not ticker_reports:
                 fallback_cik = edgar.lookup_cik(ticker)
@@ -174,6 +226,8 @@ def download_raw_data(settings: Settings) -> None:
                         cik = fallback_cik
                         ticker_reports = fallback_reports
 
+            diagnostic["cik"] = cik or ""
+            diagnostic["has_reports"] = bool(ticker_reports)
             if not cik:
                 failures.append(_failure(ticker, "edgar", "missing_cik"))
             elif not ticker_reports:
@@ -219,7 +273,10 @@ def download_raw_data(settings: Settings) -> None:
                 failures.append(_failure(ticker, "company_news", "missing"))
         except Exception as exc:
             log.exception("[%s] fallo al descargar datos crudos", ticker)
-            failures.append(_failure(ticker, "all", str(exc)))
+            # Motivo fijo, no `str(exc)`: el mensaje de la excepción es irrepetible y no casaría con
+            # `_FAILURE_TO_REASON`, de modo que el ticker se contaba como `in_panel` pese a no haber
+            # aportado ningún dato. El detalle va a una columna aparte.
+            failures.append(_failure(ticker, "all", "download_error", detail=str(exc)))
 
     benchmark_rows = [row for row in prices if row["ticker"] == settings.benchmark_ticker]
     if not benchmark_rows:
@@ -269,6 +326,7 @@ def download_raw_data(settings: Settings) -> None:
         _universe_coverage(settings, observations, recycled_tickers, failures),
         output_dir / "universe_coverage.json",
     )
+    _write_ticker_diagnostics(settings, diagnostics, failures, recycled_tickers, output_dir)
     log.info(
         "Datos crudos finalizados: tickers=%s informes=%s fallos=%s elapsed_seconds=%.1f",
         len(tickers),
@@ -276,6 +334,132 @@ def download_raw_data(settings: Settings) -> None:
         len(failures),
         elapsed_seconds,
     )
+
+
+DIAGNOSTIC_COLUMNS = [
+    "ticker",
+    "first_membership",
+    "last_membership",
+    "price_status",
+    "price_rows",
+    "price_first",
+    "price_last",
+    "has_profile",
+    "has_fundamentals",
+    "fundamentals_first",
+    "fundamentals_last",
+    "cik",
+    "has_reports",
+    "in_panel",
+    "exclusion_reason",
+]
+
+
+def _blank_diagnostic(ticker: str) -> dict[str, Any]:
+    """Fila de diagnóstico con los campos de pertenencia ya resueltos."""
+    span = membership_span(ticker)
+    return {
+        "ticker": ticker,
+        "first_membership": span[0].date().isoformat() if span else "",
+        "last_membership": span[1].date().isoformat() if span else "",
+        "price_status": "not_attempted",
+        "price_rows": 0,
+        "price_first": "",
+        "price_last": "",
+        "has_profile": False,
+        "has_fundamentals": False,
+        "fundamentals_first": "",
+        "fundamentals_last": "",
+        "cik": "",
+        "has_reports": False,
+        "in_panel": False,
+        "exclusion_reason": "",
+    }
+
+
+def _load_alias_cik() -> dict[str, str]:
+    """Mapa `ticker histórico -> CIK` para símbolos que la SEC ya no indexa.
+
+    `company_tickers.json` solo lista emisores vivos bajo su símbolo actual, así que las empresas
+    renombradas o absorbidas (AET->CVS, ESRX->Cigna, TWX...) no resuelven. Sin la tabla, un cambio
+    de nombre es indistinguible de una desaparición.
+    """
+    if not TICKER_ALIASES_CSV.exists():
+        return {}
+    frame = pd.read_csv(TICKER_ALIASES_CSV, dtype=str).fillna("")
+    return {
+        row.historical_ticker.strip().upper(): row.cik.strip()
+        for row in frame.itertuples(index=False)
+        if getattr(row, "historical_ticker", "").strip() and getattr(row, "cik", "").strip()
+    }
+
+
+def _exclusion_reason_by_ticker(
+    failures: list[dict[str, str]],
+    recycled_tickers: set[str],
+) -> dict[str, str]:
+    """Motivo único de exclusión por ticker, resuelto por precedencia.
+
+    Un ticker puede acumular varios fallos (sin precio y además sin CIK); se queda con el primero
+    del flujo, que es el que realmente lo excluyó. Así cada ticker se cuenta una sola vez y los
+    recuentos suman el universo.
+    """
+    reason_by_ticker: dict[str, str] = {ticker: "recycled_ticker" for ticker in recycled_tickers}
+    precedence = {reason: index for index, (reason, _) in enumerate(RESOLUTION_REASONS)}
+    for failure in failures:
+        reason = _FAILURE_TO_REASON.get((failure["dataset"], failure["reason"]))
+        if reason is None:
+            continue
+        current = reason_by_ticker.get(failure["ticker"])
+        if current is None or precedence[reason] < precedence[current]:
+            reason_by_ticker[failure["ticker"]] = reason
+    return reason_by_ticker
+
+
+def _write_ticker_diagnostics(
+    settings: Settings,
+    diagnostics: dict[str, dict[str, Any]],
+    failures: list[dict[str, str]],
+    recycled_tickers: set[str],
+    output_dir: Path,
+) -> None:
+    """Una fila por ticker del universo con qué se pudo descargar y por qué falta lo demás.
+
+    Responde «¿por qué no está X?» sin reconstruirlo a mano cruzando artefactos. Importa que
+    incluya a los tickers que no llegan al panel: son justo los que sostienen la discusión sobre el
+    sesgo de cobertura, y sin esta tabla su ausencia es un agujero sin explicación.
+    """
+    reason_by_ticker = _exclusion_reason_by_ticker(failures, recycled_tickers)
+    universe = [ticker for ticker in settings.tickers if ticker != settings.benchmark_ticker]
+    rows = []
+    for ticker in universe:
+        row = diagnostics.get(ticker) or _blank_diagnostic(ticker)
+        reason = reason_by_ticker.get(ticker, "")
+        row["exclusion_reason"] = reason
+        row["in_panel"] = not reason
+        rows.append(row)
+    frame = pd.DataFrame(rows, columns=DIAGNOSTIC_COLUMNS).sort_values("ticker")
+    frame.to_csv(output_dir / "ticker_diagnostics.csv", index=False)
+    log.info(
+        "Diagnóstico por ticker: %s filas, %s en panel, %s excluidos",
+        len(frame),
+        int(frame["in_panel"].sum()),
+        int((~frame["in_panel"]).sum()),
+    )
+
+
+def _rows_within_membership(ticker: str, price_rows: list[dict]) -> list[dict]:
+    """Filas de precio dentro del periodo en que `ticker` estuvo en el índice.
+
+    Para un símbolo reciclado, las filas posteriores a su salida pertenecen a la empresa que
+    reutilizó el símbolo y contaminarían el backtest; las anteriores son de la histórica y son
+    justo las que el panel necesita.
+    """
+    span = membership_span(ticker)
+    if span is None:
+        return []
+    first, last = span[0].date().isoformat(), span[1].date().isoformat()
+    return [row for row in price_rows if row.get("date") and first <= _date_only(row["date"]) <= last]
 
 
 def _ticker_resolution(
@@ -290,15 +474,7 @@ def _ticker_resolution(
     lo único que permite separar mortalidad real de fallo de resolución (ver `RESOLUTION_REASONS`).
     """
     universe = [ticker for ticker in settings.tickers if ticker != settings.benchmark_ticker]
-    reason_by_ticker: dict[str, str] = {ticker: "recycled_ticker" for ticker in recycled_tickers}
-    precedence = {reason: index for index, (reason, _) in enumerate(RESOLUTION_REASONS)}
-    for failure in failures:
-        reason = _FAILURE_TO_REASON.get((failure["dataset"], failure["reason"]))
-        if reason is None:
-            continue
-        current = reason_by_ticker.get(failure["ticker"])
-        if current is None or precedence[reason] < precedence[current]:
-            reason_by_ticker[failure["ticker"]] = reason
+    reason_by_ticker = _exclusion_reason_by_ticker(failures, recycled_tickers)
 
     counts = {reason: 0 for reason, _ in RESOLUTION_REASONS}
     for ticker in universe:
@@ -402,8 +578,13 @@ def _date_only(value: Any) -> str:
     return str(value).split(" ", maxsplit=1)[0]
 
 
-def _failure(ticker: str, dataset: str, reason: str) -> dict[str, str]:
-    return {"ticker": ticker, "dataset": dataset, "reason": reason}
+def _failure(ticker: str, dataset: str, reason: str, detail: str = "") -> dict[str, str]:
+    """Una fila de `download_failures.csv`.
+
+    `reason` es vocabulario cerrado (lo consume `_FAILURE_TO_REASON`); `detail` es texto libre
+    para el diagnóstico humano y no se interpreta.
+    """
+    return {"ticker": ticker, "dataset": dataset, "reason": reason, "detail": detail}
 
 
 def _require_rows(rows: list[dict[str, Any]], name: str) -> None:

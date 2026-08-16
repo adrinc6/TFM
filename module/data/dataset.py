@@ -215,7 +215,10 @@ def snapshot_dates(settings: Settings) -> list[pd.Timestamp]:
     datos y barrerlo produce rejillas distintas (información real), en vez de un día de mes arbitrario.
     El PIT sigue garantizado: `_fundamentals_at`/`_observed_price` solo ven lo publicado antes del snapshot.
     """
-    start = max(pd.Timestamp(settings.data_start_date), first_membership_date())
+    # `panel_start_date`, no `data_start_date`: la descarga baja más historia de la que el panel
+    # usa (para resolver el universo y alimentar medias móviles), pero la rejilla de snapshots
+    # arranca donde siempre, de modo que ampliar la descarga no cambia el periodo evaluado.
+    start = max(pd.Timestamp(settings.panel_start_date), first_membership_date())
     end = pd.Timestamp(settings.end_date)
     lag = pd.Timedelta(days=settings.execution_lag_days)
     step = settings.snapshot_step_months

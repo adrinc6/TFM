@@ -11,6 +11,19 @@ import requests
 
 log = logging.getLogger(__name__)
 
+# Por qué una descarga de precios no devolvió serie. Distinguirlos importa: "el proveedor no
+# reconoce el símbolo" y "la petición falló" producen el mismo síntoma (sin datos) pero significan
+# cosas opuestas. Colapsarlos en `None` convierte una avería de red en mortalidad empresarial
+# aparente y sobreestima el sesgo de supervivencia (ver docs/bitacora.md, 2026-08-16).
+PRICE_FAILURE_REASONS = (
+	"not_found",  # 404: el proveedor no sirve el símbolo (retirado o inexistente)
+	"bad_request",  # 400: símbolo conocido pero rango no servible
+	"rate_limited",  # 429 tras agotar reintentos: reintentable, NO es ausencia de datos
+	"http_error",  # otros códigos no 200
+	"transport_error",  # excepción de red/parseo
+	"empty_series",  # respuesta 200 válida pero sin observaciones
+)
+
 
 class FinnhubClient:
 	"""Cliente HTTP para Finnhub con rate limiting conservador (plan free)."""
@@ -99,11 +112,20 @@ class YahooClient:
 		self.session = requests.Session()
 		self.session.headers.update(self.HEADERS)
 		self._last_call = 0.0
+		self.last_failure_reason: str | None = None
 
 	def _dt(self, date_str: str) -> int:
 		return int(datetime.strptime(date_str, "%Y-%m-%d").timestamp())
 
 	def ohlcv(self, ticker: str, start: str, end: str, _attempt: int = 1) -> Optional[dict]:
+		"""Serie diaria, o `None` si no hay datos.
+
+		Cuando devuelve `None`, el motivo queda en `self.last_failure_reason` (uno de
+		`PRICE_FAILURE_REASONS`). El motivo NO se deduce del valor de retorno: un 404 del
+		proveedor y un corte de red son indistinguibles desde fuera, pero solo el primero
+		justifica excluir al ticker del universo.
+		"""
+		self.last_failure_reason: str | None = None
 		wait = 0.5 - (time.time() - self._last_call)
 		if wait > 0:
 			time.sleep(wait)
@@ -125,6 +147,7 @@ class YahooClient:
 			if resp.status_code == 429:
 				if _attempt >= self.MAX_429_RETRIES:
 					log.error(f"[{ticker}] Yahoo rate limit exceeded {self.MAX_429_RETRIES} retries, giving up.")
+					self.last_failure_reason = "rate_limited"
 					return None
 				log.warning(f"[{ticker}] Yahoo rate limit — waiting 30 s... (attempt {_attempt}/{self.MAX_429_RETRIES})")
 				time.sleep(30)
@@ -132,11 +155,16 @@ class YahooClient:
 
 			if resp.status_code != 200:
 				log.warning(f"[{ticker}] Yahoo status {resp.status_code}")
+				self.last_failure_reason = {
+					404: "not_found",
+					400: "bad_request",
+				}.get(resp.status_code, "http_error")
 				return None
 
 			raw = resp.json()
 			result = raw.get("chart", {}).get("result")
 			if not result:
+				self.last_failure_reason = "empty_series"
 				return None
 
 			result = result[0]
@@ -181,6 +209,7 @@ class YahooClient:
 
 		except Exception as e:
 			log.warning(f"[{ticker}] Yahoo error: {e}")
+			self.last_failure_reason = "transport_error"
 			return None
 
 
