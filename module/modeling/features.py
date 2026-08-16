@@ -72,7 +72,7 @@ def build_features(settings: Settings) -> pd.DataFrame:
             "Actualiza los datos raw y vuelve a preparar el dataset."
         )
 
-    sector_by_ticker = _load_sector_map(settings) if settings.neutralize_by_sector else {}
+    sector_by_ticker = load_sector_map(settings) if settings.neutralize_by_sector else {}
     features = _build_feature_frame(panel, benchmark, settings, sector_by_ticker, asset_prices, raw_prices)
     targets = _build_targets(features, asset_prices, benchmark, settings)
     baselines = build_baseline_scores(features)
@@ -236,7 +236,7 @@ def _price_series(asset_prices: pd.DataFrame | None) -> dict[str, tuple[list, li
     return result
 
 
-def _load_sector_map(settings: Settings) -> dict[str, str]:
+def load_sector_map(settings: Settings) -> dict[str, str]:
     """Mapa ticker -> sector desde profiles.parquet, SOLO para agrupar (nunca como senal).
 
     El sector es un snapshot actual de Finnhub. Su uso como variable de neutralizacion

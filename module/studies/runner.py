@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 
 from environment import DATA_DIR
-from module.common.utils import write_json, write_parquet
+from module.common.utils import link_or_copy, write_json, write_parquet
 from module.evaluation.backtest import BacktestResult, run_backtest
 from module.modeling.agents import build_agent_scores
 from module.studies.catalog import KNOWN_STRESS_YEARS, SELECTION_ERAS, SELECTION_UNTIL_YEAR
@@ -27,6 +27,18 @@ from module.storage.datasets import dataset_identity, ensure_prepared
 
 SUMMARY_CACHE = DATA_DIR / "cache" / "evaluations"
 log = logging.getLogger(__name__)
+
+# Artefactos que describen el **modelo** de un ganador, frente a los que describen su cartera
+# (equity, posiciones, órdenes, contribuciones, métricas anuales). Una sola lista, porque la usan
+# dos caminos: quien retiene la evidencia de un run del Model Study y quien la enlaza a la evidencia
+# del ganador del Portfolio Study, que reutiliza esos mismos ficheros sin reentrenar nada.
+MODEL_EVIDENCE_FILES = (
+    "agent_scores.parquet", "meta_weights.parquet", "rank_ic_diagnostics.parquet",
+    "rank_tail_diagnostics.parquet", "model_feature_attribution.parquet",
+    "agent_local_attribution.parquet", "feature_diagnostics.parquet",
+    "signal_health.parquet", "signal_calibration.parquet", "feature_catalog.json",
+    "manifest.json", "dataset_reference.json",
+)
 
 
 def evaluation_key(
@@ -138,8 +150,20 @@ def run_evaluation(
 
 def run_profile_evaluation(
     values: Mapping[str, Any], profile: str, evidence_dir: Path, retain_dir: Path | None = None,
+    *, include_model_artifacts: bool = False,
 ) -> dict[str, Any]:
-    """Backtest de un perfil sobre los scores ya congelados del ganador, sin reentrenar."""
+    """Backtest de un perfil sobre los scores ya congelados del ganador, sin reentrenar.
+
+    Con ``include_model_artifacts`` la evidencia retenida deja de ser solo de cartera: se enlazan
+    también los artefactos de modelo que se acaban de leer de ``evidence_dir``. No se recalculan
+    porque **son los mismos**: este camino no reentrena, así que reejecutar el ganador para
+    reproducirlos gastaría un entrenamiento completo y podría no coincidir, ante cualquier
+    no-determinismo, con la evidencia que sí alimentó la decisión. Se enlaza con `link_or_copy`, así
+    que el coste de disco es cero.
+
+    Queda desactivado por defecto porque la rejilla del Portfolio Study evalúa cientos de
+    combinaciones desechables y enlazar y borrar en cada una sería ruido de E/S sin beneficio.
+    """
     log.info("Perfil %s: backtest sobre scores congelados", profile)
     runtime = settings_from_values(values, profile=profile)
     reference = json.loads((evidence_dir / "dataset_reference.json").read_text(encoding="utf-8"))
@@ -164,7 +188,13 @@ def run_profile_evaluation(
         write_parquet(result.annual_metrics, retain_dir / "annual_metrics.parquet")
         write_parquet(result.positions, retain_dir / "positions.parquet")
         write_parquet(result.orders, retain_dir / "orders.parquet")
+        write_parquet(result.contributions, retain_dir / "contributions.parquet")
         write_json(summary, retain_dir / "summary.json")
+        if include_model_artifacts:
+            for name in MODEL_EVIDENCE_FILES:
+                source = evidence_dir / name
+                if source.exists():
+                    link_or_copy(source, retain_dir / name)
     log.info("Perfil %s: terminado (IR=%s, alfa=%s)", profile, result.summary.get("information_ratio"), result.summary.get("mean_annual_alpha"))
     return summary
 
@@ -333,14 +363,7 @@ def _retain_evidence(
     summary: Mapping[str, Any],
 ) -> None:
     destination.mkdir(parents=True, exist_ok=True)
-    keep = (
-        "agent_scores.parquet", "meta_weights.parquet", "rank_ic_diagnostics.parquet",
-        "rank_tail_diagnostics.parquet", "model_feature_attribution.parquet",
-        "agent_local_attribution.parquet", "feature_diagnostics.parquet",
-        "signal_health.parquet", "signal_calibration.parquet", "feature_catalog.json",
-        "manifest.json",
-    )
-    for name in keep:
+    for name in MODEL_EVIDENCE_FILES:
         source = agent_dir / name
         if source.exists():
             shutil.copy2(source, destination / name)
@@ -348,6 +371,7 @@ def _retain_evidence(
     write_parquet(result.annual_metrics, destination / "annual_metrics.parquet")
     write_parquet(result.orders, destination / "orders.parquet")
     write_parquet(result.positions, destination / "positions.parquet")
+    write_parquet(result.contributions, destination / "contributions.parquet")
     write_json(dict(summary), destination / "summary.json")
     write_json(
         {"dataset_hash": summary["dataset_hash"], "prepared_path": str(prepared)},

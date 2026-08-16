@@ -68,6 +68,7 @@ def test_only_the_winner_keeps_evidence_and_it_is_the_best_by_ir(
 
     def fake_evaluation(
         values: dict[str, Any], profile: str, evidence_dir: Path, retain_dir: Path | None = None,
+        *, include_model_artifacts: bool = False,
     ) -> dict[str, Any]:
         ratio = scores[int(values["target_size"])]
         if retain_dir is not None:
@@ -173,6 +174,7 @@ def test_resume_skips_already_evaluated_combinations(
 
     def fake_evaluation(
         values: dict[str, Any], profile: str, evidence_dir: Path, retain_dir: Path | None = None,
+        *, include_model_artifacts: bool = False,
     ) -> dict[str, Any]:
         size = int(values["target_size"])
         # Solo cuentan las evaluaciones de la rejilla, que van contra la evidencia recortada; la
@@ -245,6 +247,7 @@ def test_profiles_are_evaluated_with_the_winning_portfolio(
 
     def fake_evaluation(
         values: dict[str, Any], profile: str, evidence_dir: Path, retain_dir: Path | None = None,
+        *, include_model_artifacts: bool = False,
     ) -> dict[str, Any]:
         seen.append((profile, evidence_dir.name))
         assert int(values["target_size"]) == 25, "el perfil no usó la cartera ganadora"
@@ -277,6 +280,7 @@ def test_only_the_selected_profiles_are_evaluated(
 
     def fake_evaluation(
         values: dict[str, Any], profile: str, evidence_dir: Path, retain_dir: Path | None = None,
+        *, include_model_artifacts: bool = False,
     ) -> dict[str, Any]:
         seen.append(profile)
         return {"summary": {"information_ratio": 0.2, "confirmation": {}}, "rank_ic": {}}
@@ -329,3 +333,153 @@ def test_portfolio_evidence_sources_resolve_to_their_directories(tmp_path: Path)
     # La ruta se confina bajo `profiles/`: un nombre con salto de directorio no puede escapar.
     with pytest.raises(ValueError):
         _evidence_dir(study, "study-x", "portfolio-profile:../../etc")
+
+
+def test_the_winner_keeps_a_complete_evidence_directory_but_the_grid_does_not(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """El ganador de cartera se explora como un run del Model Study; la rejilla no paga por ello.
+
+    El Portfolio Study no reentrena nada, así que los artefactos de modelo de su ganador **son** los
+    del Model Study de origen y se enlazan en vez de recalcularse. Pero enlazarlos en cada una de las
+    cientos de combinaciones desechables sería ruido de E/S sin beneficio, así que la rejilla debe
+    seguir pidiendo solo evidencia de cartera.
+    """
+    linked: list[bool] = []
+
+    def fake_evaluation(
+        values: dict[str, Any], profile: str, evidence_dir: Path, retain_dir: Path | None = None,
+        *, include_model_artifacts: bool = False,
+    ) -> dict[str, Any]:
+        if evidence_dir.name == "_selection_evidence":
+            linked.append(include_model_artifacts)
+        if retain_dir is not None:
+            retain_dir.mkdir(parents=True, exist_ok=True)
+            (retain_dir / "modelo.txt").write_text(str(include_model_artifacts), encoding="utf-8")
+        return {"summary": {"information_ratio": float(values["target_size"]), "confirmation": {}},
+                "rank_ic": {}}
+
+    monkeypatch.setattr("module.studies.runner.run_profile_evaluation", fake_evaluation)
+    monkeypatch.setattr(
+        "module.studies.portfolio_study.selection_evidence",
+        lambda evidence_dir, workspace: (workspace.mkdir(parents=True, exist_ok=True), workspace)[1],
+    )
+    monkeypatch.setattr(
+        "module.studies.portfolio_study._profiles_with_winner",
+        lambda values, evidence_dir, selection_dir, output_dir, profiles=None: [],
+    )
+
+    output = tmp_path / "portfolio_study"
+    run_portfolio_study(
+        {"target_size": 8}, tmp_path / "evidence", output,
+        definition=_definition([8, 12]),
+    )
+
+    assert linked and not any(linked), "la rejilla no debe enlazar artefactos de modelo"
+    assert (output / "evidence_best_full" / "modelo.txt").read_text(encoding="utf-8") == "True"
+
+
+def test_the_three_diagnostics_are_written_without_touching_any_decision(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Los diagnósticos se calculan solos al elegir ganador y no tocan nada que decida.
+
+    Aquí fallan a propósito —la evidencia sintética no tiene con qué calcularlos—, y ese es
+    justamente el contrato que importa: un diagnóstico roto deja constancia en su artefacto y **no**
+    tumba un estudio cuya rejilla ya ha costado horas.
+    """
+    def fake_evaluation(
+        values: dict[str, Any], profile: str, evidence_dir: Path, retain_dir: Path | None = None,
+        *, include_model_artifacts: bool = False,
+    ) -> dict[str, Any]:
+        if retain_dir is not None:
+            retain_dir.mkdir(parents=True, exist_ok=True)
+        return {"summary": {"information_ratio": float(values["target_size"]), "confirmation": {}},
+                "rank_ic": {}}
+
+    monkeypatch.setattr("module.studies.runner.run_profile_evaluation", fake_evaluation)
+    monkeypatch.setattr(
+        "module.studies.portfolio_study.selection_evidence",
+        lambda evidence_dir, workspace: (workspace.mkdir(parents=True, exist_ok=True), workspace)[1],
+    )
+    monkeypatch.setattr(
+        "module.studies.portfolio_study._profiles_with_winner",
+        lambda values, evidence_dir, selection_dir, output_dir, profiles=None: [],
+    )
+
+    output = tmp_path / "portfolio_study"
+    output.mkdir()
+    for name in ("winner.json", "decisions.json"):
+        (output / name).write_text('{"intacto": true}', encoding="utf-8")
+
+    winner = run_portfolio_study(
+        {"target_size": 8}, tmp_path / "evidence", output, definition=_definition([8, 12]),
+    )
+
+    assert set(winner["diagnostics"]) == {"cost_sensitivity", "capacity", "portfolio_narrative"}
+    for name, state in winner["diagnostics"].items():
+        assert state["available"] is False, "sin panel real no hay diagnóstico que calcular"
+        payload = json.loads((output / f"{name}.json").read_text(encoding="utf-8"))
+        assert payload["available"] is False and payload["error"]
+    # Y nada de lo que decide ha sido tocado.
+    for name in ("winner.json", "decisions.json"):
+        assert json.loads((output / name).read_text(encoding="utf-8")) == {"intacto": True}
+
+
+def _definition(sizes: list[int]) -> dict[str, dict[str, Any]]:
+    return {
+        "target_size": {"values": sizes},
+        "max_cash_weight": {"values": [0.0]},
+        "sizing_mode": {"values": ["equal"]},
+        "minimum_holding_period": {"values": ["none"]},
+        "coverage_percentile_floor": {"values": [0.0]},
+        "rebalance_drift_tolerance": {"values": [0.0]},
+    }
+
+
+def test_robustness_and_attribution_are_inherited_from_the_source_study(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Un Portfolio Study se explora igual que un Model Study, sin inventarse evidencia propia.
+
+    Robustez y atribución son las del modelo cuyos scores reutiliza —no reentrena nada—, así que
+    servirlas desde el study de origen es honesto. Lo que no sería honesto es servirlas sin decir de
+    dónde vienen, ni pisar el artefacto propio de un estudio que sí lo tenga.
+
+    El origen se resuelve con `safe_study_path`, así que la herencia queda confinada a la raíz de
+    studies: un identificador que apunte fuera no puede sacar ficheros de ningún otro sitio.
+    """
+    import module.storage.studies as storage
+    from module.web.queries import _inherited
+
+    monkeypatch.setattr(storage, "STUDIES_ROOT", tmp_path)
+    portfolio, origin = tmp_path / "study-cartera", tmp_path / "study-origen"
+    portfolio.mkdir()
+    origin.mkdir()
+    (portfolio / "portfolio_winner.json").write_text(
+        json.dumps({"source_study_id": origin.name}), encoding="utf-8",
+    )
+    (origin / "robustness.json").write_text(json.dumps({"permutation": {"p_value": 0.0001}}), encoding="utf-8")
+
+    payload = _inherited(portfolio, "robustness")
+    assert payload["inherited_from_study_id"] == origin.name
+    assert payload["permutation"]["p_value"] == pytest.approx(0.0001)
+
+    # Con artefacto propio no se hereda nada: el suyo manda.
+    (portfolio / "robustness.json").write_text(json.dumps({"propio": True}), encoding="utf-8")
+    assert _inherited(portfolio, "robustness") is None
+    # Y una vista que no se hereda nunca entra por este camino.
+    assert _inherited(portfolio, "learning") is None
+
+
+def test_a_study_without_an_origin_inherits_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Un Model Study no puede recibir la robustez de otro estudio por esta vía."""
+    import module.storage.studies as storage
+    from module.web.queries import _inherited
+
+    monkeypatch.setattr(storage, "STUDIES_ROOT", tmp_path)
+    study = tmp_path / "study-modelo"
+    study.mkdir()
+    assert _inherited(study, "robustness") is None

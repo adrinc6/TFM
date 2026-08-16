@@ -610,15 +610,17 @@
   }
 
   async function renderPortfolioRunPage() {
-    // Vista de run para la evidencia de cartera del Portfolio Study. Reutiliza las mismas pestañas
-    // que un run normal, salvo las de modelo (aprendizaje, resumen predictivo): un perfil no
-    // reentrena nada, así que esos artefactos no existen y no se ofrecen.
+    // Vista de la evidencia del Portfolio Study, con EXACTAMENTE las mismas pestañas que un run del
+    // Model Study. Antes ofrecía solo dos porque los artefactos de modelo no estaban aquí; ahora la
+    // evidencia del ganador los enlaza (no se reentrena nada, son los mismos ficheros), así que ya
+    // no hay motivo para una vista reducida. El ganador añade además sus tres diagnósticos, que
+    // solo este estudio calcula.
     clearInterval(state.timer);
     setBackNavigation("← Portfolio Study", renderStudyPage);
     const {source, label} = state.portfolioRun;
-    const views = ["performance", "portfolio"];
-    const runViewLabel = view => ({performance: "Rendimiento", portfolio: "Cartera"}[view] || columnLabel(view));
-    if (!views.includes(state.runView)) state.runView = "performance";
+    const isWinner = source === "portfolio-winner";
+    const views = isWinner ? [...RUN_VIEWS, ...PORTFOLIO_DIAGNOSTIC_VIEWS] : RUN_VIEWS;
+    if (!views.includes(state.runView)) state.runView = "summary";
     const query = `source=${encodeURIComponent(source)}`;
     let summary = {};
     try {
@@ -646,18 +648,135 @@
   }
 
   async function renderPortfolioRunContent(source) {
-    const body = document.getElementById("run-content");
-    const params = [
-      state.runView === "portfolio" && state.snapshot ? `snapshot=${encodeURIComponent(state.snapshot)}` : "",
-      `source=${encodeURIComponent(source)}`,
-    ].filter(Boolean).join("&");
-    const data = await api(`/api/studies/${state.selectedStudy}/analysis/portfolio?${params}`);
-    if (state.runView === "performance") {
-      body.innerHTML = `${groupedMetrics(data.summary?.summary || data.summary || {})}${equity(data.equity)}${table(data.annual)}`;
-      bindInteractiveCharts(body);
+    if (state.runView === "summary") {
+      const body = document.getElementById("run-content");
+      const data = await api(
+        `/api/studies/${state.selectedStudy}/analysis/portfolio?source=${encodeURIComponent(source)}`);
+      const payload = data.summary || {};
+      body.innerHTML = `<h2>Resumen de la cartera</h2>${groupedMetrics(payload.summary || {})}
+        <h3>Resultados por era</h3>${table(payload.eras || [])}
+        <h3>Señal predictiva del modelo que la alimenta</h3>
+        <p class="muted">Es la del ganador del Model Study: esta cartera reutiliza sus scores
+        congelados y no reentrena nada.</p>${objectTable(payload.rank_ic || {})}`;
       return;
     }
-    renderPortfolioSnapshot(data, renderPortfolioRunPage);
+    return renderEvidenceContent({retained: source, rerender: renderPortfolioRunPage});
+  }
+
+  // --- Diagnósticos del ganador de cartera -----------------------------------------------------
+
+  const DIAGNOSTIC_ENDPOINT = {costs: "portfolio-costs", capacity: "portfolio-capacity", narrative: "portfolio-narrative"};
+
+  async function renderDiagnosticView(body, view) {
+    let data;
+    try {
+      data = await api(`/api/studies/${state.selectedStudy}/analysis/${DIAGNOSTIC_ENDPOINT[view]}`);
+    } catch {
+      body.innerHTML = `<article class="detail"><h2>Diagnóstico no disponible</h2>
+        <p>Este estudio no ha dejado el artefacto correspondiente. Los tres diagnósticos se calculan
+        automáticamente al elegir la cartera ganadora; si falta, la consola del estudio dice por qué.</p></article>`;
+      return;
+    }
+    if (data && data.available === false) {
+      body.innerHTML = `<article class="detail"><h2>Diagnóstico no disponible</h2>
+        <p>${esc(data.error || "El artefacto se escribió vacío.")}</p></article>`;
+      return;
+    }
+    const views = {costs: costsView, capacity: capacityView, narrative: narrativeView};
+    body.innerHTML = views[view](data);
+    bindInteractiveCharts(body);
+  }
+
+  function caveats(items) {
+    if (!items || !items.length) return "";
+    return `<h3>Salvedades</h3><ul class="muted">${items.map(item => `<li>${esc(item)}</li>`).join("")}</ul>`;
+  }
+
+  function breakEvenText(block) {
+    if (!block) return "—";
+    if (block.available) {
+      return `${fmt(block.bps_per_trade)} pb por operación (${fmt(block.pct_per_trade)} %, ${fmt(block.round_trip_bps)} pb ida y vuelta)`;
+    }
+    if (block.beyond_ladder) return `por encima de ${fmt(block.last_cost_bps)} pb: fuera de la escalera medida`;
+    if (block.never_positive) return "no hay: el exceso ya es negativo sin coste alguno";
+    return "—";
+  }
+
+  function costsView(data) {
+    const rows = [...(data.frozen_path || []), ...(data.resimulated || [])];
+    const breakEven = data.break_even || {};
+    const summary = [
+      ["Ruta congelada · selección", breakEvenText(breakEven.frozen_path?.selection)],
+      ["Ruta congelada · era reservada", breakEvenText(breakEven.frozen_path?.confirmation)],
+      ["Resimulada · selección", breakEvenText(breakEven.resimulated?.selection)],
+      ["Resimulada · era reservada", breakEvenText(breakEven.resimulated?.confirmation)],
+    ];
+    return `<h2>¿Hasta dónde aguanta el supuesto de coste?</h2>
+      <p class="muted">El equilibrio es el coste por operación al que el exceso geométrico
+      <b>contra el índice</b> se anula. La familia de <b>ruta congelada</b> mantiene las decisiones ya
+      tomadas y por eso subestima el margen; la <b>resimulada</b> deja que la cartera opere menos al
+      encarecerse, así que aguanta al menos tanto. La diferencia entre ambas mide cuánto protege la
+      doctrina de umbrales económicos.</p>
+      <p>Coste adoptado: <b>${fmt(data.adopted_cost_bps)}</b> pb por operación
+      (${fmt(data.commission_bps)} de comisión + ${fmt(data.slippage_bps)} de slippage).</p>
+      <h3>Equilibrio</h3>
+      ${table(summary.map(([escenario, equilibrio]) => ({escenario, equilibrio})))}
+      <h3>Margen sobre el coste adoptado</h3>${objectTable(data.margin_over_adopted || {})}
+      <h3>Exceso frente al coste · ventana de selección</h3>
+      ${multiLineChart(rows, "cost_bps", "family", "selection_geometric_excess_return",
+        {percent: true, yLabel: "Exceso geométrico"})}
+      <details><summary>Curva completa</summary>${table(rows)}</details>
+      ${caveats(data.caveats)}`;
+  }
+
+  function capacityView(data) {
+    const windows = data.windows || {};
+    const blocks = Object.entries(windows).map(([name, block]) => {
+      if (!block || block.available === false) {
+        return `<h3>${esc(columnLabel(name))}</h3><p class="muted">${esc(block?.reason || "Sin datos.")}</p>`;
+      }
+      return `<h3>${esc(columnLabel(name))}</h3>
+        <p>Patrimonio máximo ejecutable: ${Object.entries(block.maximum_aum_usd || {})
+          .map(([threshold, value]) => `<b>${esc(threshold)}</b> del volumen diario → ${fmt(value)} USD`).join(" · ")}</p>
+        <p class="muted">Cobertura de volumen de las órdenes: ${fmt(block.volume_coverage)} ·
+        ${block.orders_with_volume} de ${block.orders} órdenes con volumen medido.</p>
+        <h4>Participación por patrimonio</h4>${table(block.ladder)}
+        <h4>Los nombres que atan el límite</h4>${table(block.binding_names)}`;
+    }).join("");
+    return `<h2>¿Hasta qué patrimonio es ejecutable la cartera?</h2>
+      <p class="muted">Se mide la <b>participación</b>: qué fracción del volumen negociado habitual
+      representaría cada orden a un patrimonio dado. No se modela impacto de mercado, que sería un
+      trabajo aparte; la participación es observable y el impacto sería una hipótesis.</p>
+      ${blocks}${caveats(data.caveats)}`;
+  }
+
+  function narrativeView(data) {
+    const windows = data.windows || {};
+    const blocks = Object.entries(windows).map(([name, block]) => {
+      if (!block || !block.available) {
+        return `<h3>${esc(columnLabel(name))}</h3><p class="muted">Sin posiciones en esta ventana.</p>`;
+      }
+      const sectors = block.sector_exposure || {};
+      return `<h3>${esc(columnLabel(name))}</h3>
+        <h4>Estructura</h4>${objectTable(block.concentration || {})}
+        <h4>Permanencia de una posición</h4>${objectTable(block.holding_duration || {})}
+        <h4>Las que más tiempo estuvieron en cartera</h4>${table(block.most_held)}
+        <h4>Las que más aportaron</h4>${table(block.best_contributors)}
+        <h4>Las que más restaron</h4>${table(block.worst_contributors)}
+        <h4>Mejores operaciones cerradas</h4>${table(block.best_round_trips)}
+        <h4>Peores operaciones cerradas</h4>${table(block.worst_round_trips)}
+        <h4>Vendidas que luego subieron</h4>
+        <p class="muted">El coste de oportunidad de salir, medido contra el índice en los meses
+        siguientes.</p>${table(block.sold_and_recovered)}
+        <h4>Exposición por sector</h4>
+        <p class="muted">El sector procede de una foto <b>actual</b> de Finnhub, no de una serie
+        point-in-time: solo agrupa, nunca es señal.</p>${table(sectors.sectors)}`;
+    }).join("");
+    return `<h2>Qué hizo la cartera</h2>
+      <p class="muted">Todo este bloque es descriptivo y posterior a la congelación del ganador:
+      ninguna cifra participó en ninguna selección. El mapa de posiciones completo está en la
+      pestaña <b>Cartera</b>, snapshot a snapshot.</p>
+      ${blocks}${caveats(data.caveats)}`;
   }
 
   async function studyAction(action) {
@@ -710,13 +829,24 @@
     bindInteractiveCharts(body);
   }
 
+  // Un run del Model Study y el ganador del Portfolio Study se exploran con LAS MISMAS pestañas.
+  // El Portfolio Study no reentrena nada —reutiliza los scores congelados del modelo—, así que su
+  // evidencia enlaza los mismos artefactos y ninguna vista queda vacía. Las tres últimas son
+  // diagnósticos que solo el Portfolio Study calcula, y se ofrecen únicamente donde existen.
+  const RUN_VIEWS = ["summary", "performance", "learning", "portfolio", "stocks"];
+  const PORTFOLIO_DIAGNOSTIC_VIEWS = ["costs", "capacity", "narrative"];
+  const RUN_VIEW_LABELS = {
+    summary: "Resumen", performance: "Rendimiento", learning: "Aprendizaje", portfolio: "Cartera",
+    stocks: "Acciones", costs: "Costes", capacity: "Capacidad", narrative: "Narrativa",
+  };
+  const runViewLabel = view => RUN_VIEW_LABELS[view] || columnLabel(view);
+
   async function renderRunPage() {
     clearInterval(state.timer);
     setBackNavigation("← Study", renderStudyPage);
     const run = await api(`/api/studies/${state.selectedStudy}/runs/${state.selectedRun}`);
     const summary = run.result?.summary || {};
-    const views = ["summary", "performance", "learning", "portfolio", "stocks"];
-    const runViewLabel = view => ({summary: "Resumen", performance: "Rendimiento", learning: "Aprendizaje", portfolio: "Cartera", stocks: "Acciones"}[view] || columnLabel(view));
+    const views = RUN_VIEWS;
     app.innerHTML = `<section class="entity-header run-header"><div class="entity-main">
       <div><p class="eyebrow">${esc(run.phase)} · ${esc(run.variable_id)}</p><h2>${esc(run.run_id)}</h2>
       <p>${esc(run.logical_key)}. Evalúa ${esc(run.value)} dentro de la fase ${esc(run.phase)}.</p></div></div>
@@ -752,11 +882,21 @@
         <p>Los candidatos normales conservan configuración, Rank-IC, eras y decisión. Las vistas pesadas se guardan únicamente en el run de evidencia del ganador y en el baseline, salvo que el Study se lance guardando la evidencia de todos los runs.</p></article>`;
       return;
     }
-    const map = {performance: "portfolio", learning: "learning", portfolio: "portfolio", stocks: "stocks"};
-    const sourceQuery = isBaseline ? "source=baseline" : retained ? `source=${encodeURIComponent(retained)}` : "";
+    return renderEvidenceContent({isBaseline, retained, rerender: renderRunPage});
+  }
+
+  // Render compartido por los runs del Model Study y por la evidencia del Portfolio Study. Existe
+  // una sola vez precisamente para que las dos se vean igual: cualquier mejora aquí llega a ambas.
+  async function renderEvidenceContent({isBaseline = false, retained = "", rerender}) {
+    const body = document.getElementById("run-content");
     if (state.runView === "stocks") {
       return renderStockBrowser(isBaseline, retained);
     }
+    const sourceQuery = isBaseline ? "source=baseline" : retained ? `source=${encodeURIComponent(retained)}` : "";
+    if (PORTFOLIO_DIAGNOSTIC_VIEWS.includes(state.runView)) {
+      return renderDiagnosticView(body, state.runView);
+    }
+    const map = {performance: "portfolio", learning: "learning", portfolio: "portfolio"};
     const params = [
       state.runView === "portfolio" && state.snapshot ? `snapshot=${encodeURIComponent(state.snapshot)}` : "",
       sourceQuery,
@@ -775,7 +915,7 @@
       <details><summary>Tabla de pesos</summary>${table(data.weights)}</details>
       <h3>Evidencia de features</h3>${table(data.features)}`;
     if (state.runView === "learning") bindInteractiveCharts(body);
-    if (state.runView === "portfolio") renderPortfolioSnapshot(data);
+    if (state.runView === "portfolio") renderPortfolioSnapshot(data, rerender);
   }
 
   function renderPortfolioSnapshot(data, rerender = renderRunPage) {
@@ -1152,6 +1292,22 @@
     weight_after: "Peso nuevo", entry_price: "Precio de compra", valuation_price: "Precio actual",
     buy_price: "Precio de compra", sell_price: "Precio de venta", realized_pnl_pct: "P&L realizado neto",
     unrealized_pnl_pct: "P&L no realizado", notional: "Nocional", commission_amount: "Comisión", slippage_amount: "Slippage",
+    // Diagnósticos del ganador de cartera: costes, capacidad y narrativa.
+    cost_bps: "Coste por operación (pb)", family: "Familia", selection: "Ventana de selección",
+    confirmation: "Era reservada", snapshots_held: "Snapshots en cartera",
+    months_held_total: "Meses en cartera", share_of_period: "Fracción del periodo",
+    episodes: "Episodios", mean_weight: "Peso medio", max_weight: "Peso máximo",
+    longest_streak_snapshots: "Racha más larga", gross_contribution: "Contribución bruta",
+    cost_contribution: "Coste imputado", net_contribution: "Contribución neta",
+    first_snapshot: "Primer snapshot", last_snapshot: "Último snapshot",
+    exit_snapshot: "Snapshot de salida", post_exit_return: "Retorno tras vender",
+    post_exit_benchmark_return: "Retorno del índice", post_exit_excess: "Exceso tras vender",
+    aum_usd: "Patrimonio (USD)", median_participation: "Participación mediana",
+    p95_participation: "Participación p95", max_participation: "Participación máxima",
+    median_dollar_volume: "Volumen diario mediano", reference_aum_usd: "Patrimonio de referencia",
+    sector: "Sector", position_snapshots: "Snapshots con posición",
+    max_single_weight: "Peso máximo de una posición", mean_portfolio_weight: "Peso medio en cartera",
+    escenario: "Escenario", equilibrio: "Equilibrio",
   };
   const SIDE_LABELS = {buy: "Compra", sell: "Venta"};
   const REASON_LABELS = {

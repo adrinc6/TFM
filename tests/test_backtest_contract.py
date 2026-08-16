@@ -199,3 +199,59 @@ def test_a_delisted_position_is_not_rescued_at_par() -> None:
     result = run_backtest(scores, prices, benchmark, _settings(target_size=2))
     assert DELISTING_RETURN < 0
     assert result.summary["delisted_positions"] >= 1
+
+
+def test_contributions_sum_exactly_to_the_gross_return_of_each_period() -> None:
+    """La identidad que convierte la atribución por acción en contabilidad y no en estimación.
+
+    Los pesos invertidos más el efectivo suman uno por construcción, así que la suma de
+    contribuciones **es** el retorno bruto del periodo. Si esta identidad se rompe, cualquier
+    afirmación del tipo «esta acción aportó tanto» pasa a ser una reconstrucción aproximada, y el
+    capítulo de cartera del TFM se apoyaría en un número que no cuadra con la curva que lo acompaña.
+    """
+    scores, prices, benchmark = _panel(months=48)
+    result = run_backtest(scores, prices, benchmark, _settings(
+        target_size=3, max_cash_weight=0.25, exit_expected_alpha_bps=250.0,
+    ))
+    summed = result.contributions.groupby("snapshot_date")["contribution"].sum()
+    gross = result.equity.set_index("snapshot_date")["gross_return"]
+    aligned = gross.to_frame("gross").join(summed.rename("summed")).fillna(0.0)
+    assert np.allclose(aligned["gross"], aligned["summed"], rtol=0, atol=1e-12)
+
+
+def test_contributions_flag_delisting_and_neutralisation_where_they_happen() -> None:
+    """Las dos convenciones del motor quedan marcadas, no disueltas en el agregado.
+
+    Una posición excluida de cotización y una neutralizada por retorno imposible entran ambas en la
+    contabilidad, pero significan cosas distintas: la primera es una pérdida asumida y la segunda un
+    dato que no nos creemos. Sin la marca no hay forma de auditar cuánta de la rentabilidad reportada
+    descansa sobre cada convención.
+    """
+    scores, prices, benchmark = _panel(months=24, tickers=("A", "B", "C"))
+    # `C` desaparece del panel a mitad de serie: exclusión de cotización.
+    dates = sorted(prices["snapshot_date"].unique())
+    survivors = prices.loc[~(prices["ticker"].eq("C") & prices["snapshot_date"].gt(dates[11]))]
+    result = run_backtest(scores, survivors, benchmark, _settings(
+        target_size=3, max_cash_weight=0.5,
+    ))
+    contributions = result.contributions
+    delisted = contributions.loc[contributions["delisted"]]
+    assert not delisted.empty
+    assert (delisted["ticker"] == "C").all()
+    assert np.allclose(delisted["applied_return"], DELISTING_RETURN)
+    # Y la contribución de esa posición es su peso previo por la pérdida asumida.
+    assert np.allclose(delisted["contribution"], delisted["prior_weight"] * DELISTING_RETURN)
+
+
+def test_neutralised_positions_contribute_nothing_and_say_so() -> None:
+    """Un retorno imposible se neutraliza a cero y la fila lo declara."""
+    scores, prices, benchmark = _panel(months=18, tickers=("A", "B"))
+    result = run_backtest(scores, prices, benchmark, _settings(
+        target_size=2, max_monthly_position_return=0.001, max_cash_weight=0.0,
+    ))
+    neutralized = result.contributions.loc[result.contributions["neutralized"]]
+    assert not neutralized.empty
+    assert np.allclose(neutralized["applied_return"], 0.0)
+    assert np.allclose(neutralized["contribution"], 0.0)
+    # El retorno bruto sí queda registrado, que es lo que permite auditar cuánto se neutralizó.
+    assert (neutralized["raw_return"].abs() > 0.001).all()
