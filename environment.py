@@ -242,7 +242,7 @@ class Settings:
     sizing_mode: str = SIZING_MODE
     meta_weight_min: float = META_WEIGHT_MIN
     # Versiones explícitas para invalidar materializaciones y caché tras cambios científicos.
-    dataset_code_version: int = 1
+    dataset_code_version: int = 2
     features_code_version: int = 2
     # El fit de las familias y la combinación meta tienen versiones separadas: cambiar la
     # combinación no debe invalidar los fits LightGBM ya calculados.

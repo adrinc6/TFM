@@ -1,12 +1,13 @@
 # Plan pendiente
 
-> Trabajo planificado y **no hecho**, con su justificación. Lo que se va completando sale de aquí y
-> entra en `docs/bitacora.md`. Aquí tampoco se copian cifras: se dice qué medir y con qué artefacto.
+> **En qué fijarse** cuando termine el relanzamiento, y **qué llevar al manuscrito**. Aquí ya no hay
+> trabajo de implementación: todo lo que se podía automatizar se calcula solo al lanzar la cadena.
+> Aquí tampoco se copian cifras: se dice qué mirar, en qué artefacto y qué decide.
 
-**Estado a 2026-08-15.** Hecho todo lo que debía preceder al relanzamiento: reorganización
-documental, auditoría de resolución de tickers, denominador de cobertura del universo y corrección
-de los dos filtros de EDGAR que excluían a los emisores extranjeros. **El siguiente paso lo ejecuta
-el usuario**: relanzar la cadena. Todo lo de abajo va después.
+**Estado a 2026-08-16.** El código está listo y no queda nada que programar antes de relanzar. Los
+tres diagnósticos del capítulo económico —costes, capacidad y narrativa de cartera— se calculan
+automáticamente cuando el Portfolio Study elige ganador, así que al terminar la cadena las cifras
+están completas. **El siguiente paso lo ejecuta el usuario**: relanzar.
 
 ---
 
@@ -15,9 +16,13 @@ el usuario**: relanzar la cadena. Todo lo de abajo va después.
 Regla del repositorio: no se ejecuta un estudio real sin autorización explícita.
 
 ```powershell
-python main.py ingest      # regenera data/raw con el panel corregido
+python main.py ingest      # regenera data/raw y el panel corregido
 python main.py serve       # y lanzar la cadena desde el dashboard
 ```
+
+> **La ingesta es obligatoria, no opcional.** El panel incorpora ahora `median_dollar_volume_21d`
+> y `dataset_code_version` ha subido a 2, de modo que el `dataset_hash` cambia. Sin reingesta no hay
+> volumen y el diagnóstico de capacidad se declarará no disponible.
 
 Tres condiciones que el relanzamiento debe cumplir:
 
@@ -26,179 +31,174 @@ Tres condiciones que el relanzamiento debe cumplir:
    «Empates técnicos y versión de catálogo».
 2. **Encadenadas**: el ganador de cada pasada es el `baseline` de la siguiente, manteniendo en
    `values` el abanico a reexplorar.
-3. **Portfolio Study al final**, sobre el ganador ya congelado.
+3. **Portfolio Study al final**, sobre el ganador ya congelado. Es quien dispara los diagnósticos.
 
-Antes de nada, comprobar la ingesta: `data/raw/universe_coverage.json` debe traer ahora el bloque
+Antes de nada, comprobar la ingesta: `data/raw/universe_coverage.json` debe traer el bloque
 `ticker_resolution`, y sus recuentos deben sumar el universo histórico. Si no suman, hay tickers
 perdiéndose sin dejar registro de fallo, y eso es un defecto que hay que resolver antes de gastar
 horas de cómputo.
 
 ---
 
-## Paso 1 — Leer la auditoría de tickers y decidir si hace falta el backfill XBRL
+## Paso 1 — En qué fijarse cuando termine
 
-**Esto es una decisión, no una tarea**, y el paso 0 la habilita.
+Un bloque por artefacto: la pregunta que responde y qué decide. Todos cuelgan de
+`results/studies/<study_id>/`.
 
-`universe_coverage.json` → `ticker_resolution` reparte el universo histórico por motivo de
-exclusión. La pregunta que responde: **¿cuánto del agujero de cobertura es mortalidad real y cuánto
-es fallo de resolución?**
+### 1.1 `universe_coverage.json` → `ticker_resolution` · **la única decisión que sigue abierta**
 
-- Si domina `missing_cik`, hay que mirar una muestra a mano: un símbolo que no resuelve puede ser un
-  cambio de ticker o una absorción, y en ambos casos **los filings siguen en EDGAR**. Entonces la
-  mejora que toca es resolver mejor el CIK histórico, no descargar más fundamentales.
+**La pregunta**: ¿cuánto del agujero de cobertura es mortalidad real y cuánto es fallo de
+resolución?
+
+- Si domina `missing_cik`, mirar una muestra a mano: un símbolo que no resuelve puede ser un cambio
+  de ticker o una absorción, y en ambos casos **los filings siguen en EDGAR**. Entonces lo que toca
+  es resolver mejor el CIK histórico, no descargar más fundamentales.
 - Si domina `no_metric_period_match`, el problema es cobertura de Finnhub sobre empresas que sí
-  resuelven, y entonces **sí** tiene sentido el backfill XBRL de abajo.
+  resuelven, y entonces **sí** tiene sentido el backfill XBRL.
 - Si domina `missing_price`, el problema está en Yahoo y ninguna de las dos vías lo arregla.
 
-**No emprender el backfill sin haber leído esta tabla.** El comentario que decía que los ~491
-ausentes eran «en su mayoría quebrados o absorbidos» era una interpretación sin medir, y toda la
-justificación del backfill descansaba sobre ella.
+**No emprender el backfill sin haber leído esta tabla.** La afirmación de que los ausentes eran «en
+su mayoría quebrados o absorbidos» era una interpretación sin medir, y toda la justificación del
+backfill descansaba sobre ella.
 
-### Backfill de fundamentales desde EDGAR XBRL, si la auditoría lo justifica
+Si la auditoría lo justifica, lo que habría que añadir es `company_facts(cik)`
+(`/api/xbrl/companyfacts/CIK##########.json`) a `EdgarClient` —que ya tiene rate limiting, caché y
+resolución de CIK— casando las series XBRL con las métricas por `period`. Antes de decidirlo hay que
+saber que **XBRL es obligatorio desde ~2009-2011: no recupera 2003-2008**. El resultado honesto sería
+un panel que empieza hacia 2010 con cobertura casi completa en lugar de uno que empieza en 2003 con
+cobertura parcial. Es un intercambio, no una mejora pura, y obliga a repetir el paso 0.
 
-Añadir `company_facts(cik)` (`/api/xbrl/companyfacts/CIK##########.json`) a `EdgarClient`, que ya
-tiene rate limiting, caché y resolución de CIK, y mapear las series XBRL a las métricas que hoy
-vienen de Finnhub casando por `period` como ya hace `module/data/ingest/pipeline.py`.
+### 1.2 `cost_sensitivity.json` · ¿aguanta el supuesto de coste?
 
-Lo que hay que saber antes de decidirlo:
+**La pregunta**: ¿hasta qué coste por operación sigue batiendo al índice?
 
-- **XBRL es obligatorio desde ~2009-2011: no recupera 2003-2008.** El resultado honesto sería un
-  panel que empieza hacia 2010 con cobertura casi completa, en lugar de uno que empieza en 2003 con
-  cobertura parcial. Es un intercambio, no una mejora pura.
-- Con un lookback de 8 años y la primera cohorte de selección en 2015, el entrenamiento necesita
-  datos desde 2007: habría que recortar la ventana de selección o aceptar menos lookback.
-- Cambia el `dataset_hash` otra vez, así que obliga a repetir el paso 0.
+Mirar `break_even.frozen_path.selection` y `break_even.resimulated.selection`, y el bloque
+`margin_over_adopted`. La frase que habilita es del tipo *«el sistema bate al índice mientras operar
+cueste menos de X pb (Y %) por operación»*.
+
+Tres lecturas obligadas:
+
+- **El resimulado debe salir mayor o igual que el congelado.** Si sale al revés hay un error de
+  signo en los umbrales, y el test de contrato debería haberlo cazado antes.
+- **Si aparece `beyond_ladder`**, el equilibrio cae fuera de la escalera medida y hay que ampliar
+  `COST_LADDER_BPS` antes de citar nada. No se extrapola.
+- **Si el margen es amplio**, la limitación de costes constantes baja de severidad en el capítulo de
+  limitaciones en vez de quedar abierta. Es el objetivo de todo el diagnóstico.
+
+### 1.3 `capacity.json` · ¿hasta qué patrimonio es ejecutable?
+
+**La pregunta**: ¿a partir de cuánto dinero la cartera deja de poder operarse como se simuló?
+
+Mirar `windows.selection.maximum_aum_usd` bajo los dos umbrales y, antes que nada,
+`volume_coverage`: **si la cobertura es baja, el límite está calculado sobre pocas órdenes y no se
+cita**. `binding_names` dice qué acciones lo atan, que es lo que hace la cifra explicable.
+
+### 1.4 `portfolio_narrative.json` · ¿qué hizo la cartera?
+
+**La pregunta**: más allá de cuánto ganó, ¿qué tuvo, cuánto tiempo y en qué se equivocó?
+
+Es el material de la sección de cartera del paso 2. Al leerlo, comprobar que la historia es
+coherente con el resto: si la permanencia mediana es de un solo snapshot, la cartera rota mucho más
+de lo que sugiere el turnover reportado y hay que explicarlo; si un puñado de nombres concentra casi
+toda la contribución, el resultado depende de pocas apuestas y eso debe decirse junto al alfa.
+
+`sold_and_recovered` es el bloque incómodo a propósito: las ventas que luego subieron. Se lee con el
+resultado ya conocido, así que señala dónde falló la doctrina de umbrales, **no** una regla que se
+pueda añadir sin volver a ajustar sobre el resultado.
+
+### 1.5 `robustness.json` y `attribution.json` · ¿sigue en pie la lectura?
+
+**La pregunta**: ¿el Deflated Sharpe y las carteras aleatorias aguantan tras encadenar tres pasadas?
+
+Es el punto que ya se debilitó en la cadena derogada. Si el DSR vuelve a bajar y el percentil frente
+a carteras aleatorias no supera el umbral, la afirmación «no es suerte» se enuncia con esa cautela,
+no se omite.
+
+### 1.6 `report.md` del Portfolio Study · el resumen con procedencia
+
+Reúne lo anterior con la ruta de cada cifra. Es el punto de partida para redactar y el que conviene
+leer primero.
 
 ---
 
-## Paso 2 — Diagnósticos sobre los scores congelados del nuevo ganador
+## Paso 2 — Qué añadir al manuscrito
 
-Los dos reutilizan el patrón que ya existe: `run_profile_evaluation`
-(`module/studies/runner.py`) y `selection_evidence` (`module/studies/portfolio_study.py`) leen
-`agent_scores.parquet` congelado y solo rehacen el backtest, sin reentrenar.
+> **Encargo cerrado.** Esto se le pasa a un agente cuando la cadena haya terminado. El manuscrito
+> está congelado y el exportador (`latex/scripts/export_study_assets.py`) **no** se ha tocado, así
+> que el encargo incluye generar las figuras y tablas nuevas. Procedimiento general en
+> `latex/plan_tfm.md`. Ninguna cifra entra en el `.tex` sin poder señalar el artefacto exacto.
 
-### 2.1 Sensibilidad a costes ← **el mejor valor por esfuerzo de esta lista**
+### 2.0 Antes que nada: la migración completa
 
-Hoy los costes son constantes (comisión y slippage fijos) sobre una cartera de rotación alta, y esa
-es la cifra más atacable del capítulo económico. La limitación figura con severidad Media y **sin
-ninguna cifra que la acote**. Lo que falta no es un supuesto de coste mejor, sino decir **hasta
-dónde aguanta el que hay**.
+Todas las cifras del manuscrito proceden de la cadena derogada y **ninguna sobrevive**: cambian el
+`dataset_hash`, los `study_id`, los ganadores y las ~175 cifras escritas a mano en la prosa. Hay que
+regenerar activos (`--study-id <NUEVO>`), sustituir identificadores (macro `\studyid` en
+`latex/main.tex` y `latex/assets/a_reproducibilidad.tex`), reescribir la prosa capítulo a capítulo y
+revalidar las cinco afirmaciones vertebradoras de `t01_afirmaciones.tex`. Los activos huérfanos del
+study anterior se borran a mano; `latex/scripts/verify_latex_assets.py` los detecta.
 
-Entregable: tres escenarios sobre la cartera que el TFM adopta —la **ganadora del Portfolio
-Study**, no la del catálogo por defecto—:
+Sigue vigente lo ya anotado en `docs/cambios_latex.md` sobre la tabla de cobertura anual y la
+corrección del error factual sobre el tamaño del universo.
 
-| Escenario | Qué responde |
+### 2.1 Sección de cartera · capítulo 7 · **material nuevo**
+
+Es lo que hoy falta: el TFM reporta la cartera como una curva y unas métricas agregadas, y no dice
+**qué hizo**. Respaldo: `portfolio_narrative.json`, `portfolio_narrative_holdings.parquet`,
+`evidence_best_full/positions.parquet`, `orders.parquet` y `contributions.parquet`.
+
+**Figuras a generar**
+
+| Figura | Qué muestra | De dónde sale |
+|---|---|---|
+| Mapa de posiciones | Qué acciones tuvo la cartera en cada snapshot y con qué peso | `positions.parquet` (ya es la tabla larga snapshot × ticker × peso) |
+| Exposición sectorial | Peso por sector a lo largo del tiempo | `portfolio_narrative.json` → `sector_exposure` |
+| Distribución de permanencia | Cuánto dura una posición en esta cartera | `holding_duration` |
+| Exceso frente al coste | La curva de las dos familias con `c*` marcado | `cost_sensitivity.json` |
+
+**Tablas a generar**
+
+| Tabla | Contenido |
 |---|---|
-| **Bruto** (coste 0) | Cuánto vale la señal antes de fricciones. Cota superior que nadie realiza |
-| **Estándar** (5 + 10 pb) | El resultado que ya se reporta |
-| **Equilibrio** (`c*`) | El coste que anula el exceso geométrico contra el S&P 500 |
+| Las más presentes | Meses en cartera, episodios, peso medio, contribución neta |
+| Mayores y menores contribuciones | Las que hicieron el resultado y las que lo restaron |
+| Mejores y peores operaciones cerradas | Con fecha de entrada, salida, permanencia y motivo |
+| Ventas que luego subieron | Coste de oportunidad de salir, medido contra el índice |
+| Capacidad por umbral | Patrimonio máximo al 5 % y al 10 % del volumen diario |
 
-`c*` se publica en puntos básicos, en porcentaje y en ida y vuelta, para que la frase final sea:
-*«el sistema bate al índice mientras operar cueste menos de X pb (Y %) por operación»*. El
-equilibrio se define **contra el índice**, no contra rentabilidad absoluta: la alternativa real de un
-inversor es comprar el índice, no quedarse en efectivo.
+**Prosa: qué afirma cada figura y qué no.** Tres salvedades son obligatorias y no se pueden omitir
+por brevedad:
 
-#### Los dos hechos que determinan el diseño
+1. **El sector no es point-in-time**: procede de una foto actual de Finnhub y solo agrupa.
+2. **El nocional diario es aproximado**: precio ajustado por splits y dividendos, volumen solo por
+   splits.
+3. **La cartera es la mejor de 1.728 evaluadas**, así que sus cifras dentro de la ventana de
+   selección son una cota superior optimista.
 
-**1. El coste es exactamente `turnover × tasa`.** En `_price_orders`
-([module/evaluation/backtest.py](../module/evaluation/backtest.py)) el drag total es
-`Σ(notional × tasa) / value`, y como `notional = |Δw| × value` y `turnover = Σ|Δw|`, sale
-`drag = turnover × tasa` sin aproximación. `equity.parquet` ya persiste `turnover_pct` y `cost_drag`
-por snapshot, así que **sobre la ruta de operaciones ya ejecutada la curva de costes entera se
-obtiene en forma cerrada, con cero cómputo**.
+Y una cuarta específica de las peores decisiones: se leen con el resultado ya conocido.
 
-**2. Pero el coste entra dos veces.** Además de la contabilidad, alimenta los umbrales de decisión:
-`round_trip` en [module/evaluation/portfolio.py](../module/evaluation/portfolio.py) fija
-`entry_threshold` y `rotation_threshold`. Poner el coste a cero **no es la misma cartera sin
-comisiones**: los umbrales se desploman y operaría mucho más. Y al revés, con costes altos la
-cartera opera menos y se protege sola.
+### 2.2 Sensibilidad a costes → baja la severidad de una limitación
 
-Por eso un solo número sería engañoso y hacen falta **dos familias**:
+`t09_limitaciones.tex` y el capítulo económico. La fila de costes constantes figura hoy con severidad
+Media y **sin ninguna cifra que la acote**. Pasa a tener `c*` y `c**` y el margen sobre el coste
+adoptado. Enunciar el equilibrio siempre **contra el índice** y con las dos familias, nunca con un
+solo número: el congelado es conservador y el resimulado es el realista.
 
-- **Ruta congelada** (forma cerrada): mismas decisiones, distinto coste. Es la comparación pura, y su
-  `c*` es **conservador**, porque un gestor que pagase más operaría menos.
-- **Resimulada**: la cartera vuelve a decidir con cada coste, de modo que su `c**` ≥ `c*`. Cuesta
-  ~5-6 s por peldaño reutilizando los scores congelados.
+### 2.3 Capacidad y liquidez → responde a la crítica de capacidad
 
-**La diferencia entre ambas es en sí misma un resultado**: mide cuánto protege la doctrina de
-umbrales económicos, que existe precisamente para que cada operación pague su coste.
+Limitaciones y conclusiones. Con el patrimonio máximo medido, la crítica deja de ser una objeción
+abierta y pasa a ser un límite declarado. Decir explícitamente que se mide participación y no impacto
+de mercado.
 
-#### Orden de magnitud esperado (estimación, no resultado)
+### 2.4 Columna de volumen en el panel
 
-Con las cifras de la cadena **derogada** —exceso ≈ 6,97 %/año, rotación ≈ 3,24/año— el equilibrio de
-ruta congelada saldría en `0,0697 / 3,24 ≈ 215 pb` por operación, frente a los 15 pb asumidos: un
-margen de ~14×. Si se confirma tras el relanzamiento, el titular honesto es que **el resultado es
-robusto al supuesto de coste por un margen amplio**, y la limitación baja de severidad en vez de
-quedar abierta. Es una estimación de servilleta sobre cifras derogadas: sirve para dimensionar el
-barrido, no para citarla.
+`03_datos_y_universo.tex` describe el panel point-in-time y debe incluir `median_dollar_volume_21d`:
+qué es, para qué está (capacidad, nunca señal) y su salvedad de ajuste.
 
-De ahí una consecuencia práctica: **el catálogo no puede expresar el barrido**, porque sus valores
-dan entre 5 y 30 pb por operación —ni el cero ni nada cercano a 215—. La escalera va como constante
-de diagnóstico, con el precedente de `SEED_ENSEMBLE` y de los `iterations` del bootstrap, que
-tampoco son variables del catálogo porque no se optimizan. No hace falta tocar el catálogo cerrado:
-`settings_from_values` ([module/studies/config.py](../module/studies/config.py)) no valida contra él
-—la validación ocurre antes, al definir el study— así que basta pasar los costes en el `values` del
-backtest.
+### 2.5 Artefactos nuevos en el anexo de reproducibilidad
 
-#### Implementación
-
-Módulo nuevo `module/research/cost_sensitivity.py`:
-
-- `COST_LADDER_BPS`: peldaños de coste **por operación** (comisión + slippage), de 0 hasta pasado el
-  equilibrio esperado.
-- `frozen_path_curve(equity)`: forma cerrada. Para cada peldaño sustituye `cost_drag` por
-  `turnover_pct × tasa`, capitaliza y devuelve exceso geométrico e IR.
-- `break_even_bps(...)`: interpola el coste donde el exceso geométrico cruza cero.
-- Todo **por ventana**: selección y era reservada, siempre por separado.
-
-Enganche en [module/studies/portfolio_study.py](../module/studies/portfolio_study.py), justo después
-de la llamada a `run_profile_evaluation` que reevalúa la combinación ganadora sobre la serie completa
-y deja `evidence_best_full/`:
-
-- **Familia congelada**: leer `evidence_best_full/equity.parquet`. Coste cero.
-- **Familia resimulada**: `run_profile_evaluation({**config, "commission_bps": c,
-  "slippage_bps": s}, "balanced", evidence_dir)` por peldaño, sin `retain_dir`.
-- Escribir `cost_sensitivity.json` junto a `portfolio_winner.json`.
-
-#### Salvedades que deben viajar dentro del propio artefacto
-
-1. El escenario bruto es una cota que **ningún inversor realiza**.
-2. El equilibrio de ruta congelada es **conservador** por construcción.
-3. El exceso de la ventana de selección ya es una **cota superior optimista** (la cartera es la mejor
-   de la rejilla), así que `c*` hereda ese optimismo.
-4. Los costes **nunca seleccionan**: elegir el coste sería elegir el mundo que más conviene. La
-   validación del Portfolio Study ya lo impide y debe seguir impidiéndolo.
-
-#### Verificación
-
-Tests en `tests/test_cost_sensitivity_contract.py`:
-
-- **La identidad `drag = turnover × tasa`**, que es el supuesto que sostiene toda la forma cerrada.
-  Si falla, la curva entera es ficción.
-- **Autoconsistencia**: evaluada en el coste adoptado, la forma cerrada debe reproducir
-  **exactamente** el exceso que ya reporta el ganador. Es lo que prueba que la familia congelada no
-  se ha desviado del motor, y el motivo de que este diagnóstico no se implementara antes del
-  relanzamiento: sin un Portfolio Study vigente no hay contra qué comprobarlo.
-- **`c**` ≥ `c*`**: la resimulada aguanta al menos tanto como la congelada, porque opera menos al
-  encarecerse. Si sale al revés, hay un error de signo en los umbrales.
-- Exceso bruto > exceso estándar, y monotonía decreciente del exceso con el coste.
-- Selección y era reservada se calculan por separado y no se mezclan.
-- `cost_sensitivity.json` no escribe en `winner.json`, `decisions.json` ni `portfolio_winner.json`.
-
-### 2.2 Capacidad y liquidez
-
-Los OHLCV ya traen volumen. Calcular por snapshot el nocional operado como fracción del volumen
-medio de 21 días, y reportar el patrimonio a partir del cual la cartera deja de ser ejecutable.
-Responde a la crítica de capacidad sin tener que modelar impacto de mercado, que sería un trabajo
-aparte.
-
----
-
-## Paso 3 — Cerrar la deuda con el manuscrito
-
-Todo lo acumulado en `docs/cambios_latex.md`, siguiendo el procedimiento de `latex/plan_tfm.md`. Va
-al final a propósito: corregir hoy la redacción de unas cifras que el relanzamiento va a sustituir
-sería trabajo perdido.
+`a_reproducibilidad.tex` enumera los artefactos citables. Añadir `contributions.parquet`,
+`cost_sensitivity.json`, `capacity.json`, `portfolio_narrative.json`,
+`portfolio_narrative_holdings.parquet` y el `report.md` del Portfolio Study.
 
 ---
 
@@ -210,4 +210,11 @@ sería trabajo perdido.
 - **Ampliar el catálogo o la rejilla de carteras.** Cada configuración adicional empeora el Deflated
   Sharpe, que ya es la limitación de severidad más alta.
 - **Extender el universo fuera del S&P 500.** Es otro trabajo, no una corrección de este.
-- **Optimizar comisión o slippage.** Sería elegir el mundo en el que la estrategia luce mejor.
+- **Optimizar comisión o slippage.** Sería elegir el mundo en el que la estrategia luce mejor. Por
+  eso la sensibilidad a costes es un diagnóstico y nunca un criterio de selección.
+- **Reejecutar el ganador al cerrar el Portfolio Study.** Se evaluó y se descartó: ese estudio no
+  reentrena, así que sus artefactos de modelo son los mismos del Model Study de origen y se enlazan.
+  Reejecutarlos gastaría un entrenamiento completo para obtener una copia que podría no coincidir.
+- **Preparar ya el exportador de LaTeX para la sección de cartera.** Generar activos para un capítulo
+  que todavía no existe sería código muerto si el capítulo cambia de forma. El encargo del paso 2 lo
+  incluye.

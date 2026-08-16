@@ -45,6 +45,7 @@ from __future__ import annotations
 
 import itertools
 import json
+import logging
 import shutil
 import time
 from pathlib import Path
@@ -53,6 +54,8 @@ from typing import Any, Mapping
 import pandas as pd
 
 from module.studies.catalog import BY_ID, SELECTION_UNTIL_YEAR
+
+log = logging.getLogger(__name__)
 
 
 # Las seis variables que gobiernan riesgo y, por tanto, el Information Ratio. El orden fija el de
@@ -323,7 +326,7 @@ def run_portfolio_study(
         shutil.rmtree(confirmation_evidence, ignore_errors=True)
     full = run_profile_evaluation(
         {**dict(winner_values), **best["combination"]}, "balanced", evidence_dir,
-        retain_dir=confirmation_evidence,
+        retain_dir=confirmation_evidence, include_model_artifacts=True,
     )
     full_summary = full.get("summary", {})
 
@@ -355,7 +358,82 @@ def run_portfolio_study(
     (output_dir / "portfolio_winner.json").write_text(
         json.dumps(winner, ensure_ascii=False, indent=2) + "\n", encoding="utf-8",
     )
+    winner["diagnostics"] = run_diagnostics(
+        confirmation_evidence, evidence_dir, winner["configuration"], output_dir,
+    )
     return winner
+
+
+def run_diagnostics(
+    winner_evidence: Path, evidence_dir: Path, configuration: Mapping[str, Any], output_dir: Path,
+) -> dict[str, Any]:
+    """Costes, capacidad y narrativa de cartera sobre el ganador ya congelado.
+
+    Se calculan **aquí y automáticamente** porque son parte del informe, no un análisis aparte que
+    haya que acordarse de lanzar: en cuanto la cadena termina, las cifras del capítulo económico
+    están completas. Los tres son posteriores a la elección y ninguno escribe en `winner.json`,
+    `decisions.json` ni `portfolio_winner.json`.
+
+    Un fallo en un diagnóstico **no tumba el estudio**: la rejilla ya ha corrido —horas de cómputo— y
+    su ganador ya está en disco. El error se registra en el propio artefacto, que es donde se va a
+    buscar, en vez de perderse en un traceback que aborta un trabajo ya terminado.
+    """
+    from module.research import capacity, cost_sensitivity, portfolio_narrative
+    from module.studies.config import settings_from_values
+
+    status: dict[str, Any] = {}
+
+    def panel() -> Path:
+        """Ruta al dataset preparado, exigida solo por quien la necesita.
+
+        La sensibilidad a costes se calcula entera sobre la evidencia de cartera, así que no debe
+        caerse porque falte la referencia al panel: solo capacidad y narrativa la necesitan.
+        """
+        path = evidence_dir / "dataset_reference.json"
+        if not path.exists():
+            raise FileNotFoundError(
+                f"No hay {path}: sin referencia al panel no se puede localizar el dataset preparado."
+            )
+        return Path(json.loads(path.read_text(encoding="utf-8"))["prepared_path"])
+
+    def attempt(name: str, action: Any) -> None:
+        log.info("Diagnóstico %s del ganador de cartera", name)
+        try:
+            action()
+        except Exception as error:
+            log.exception("Diagnóstico %s fallido", name)
+            status[name] = {"available": False, "error": str(error)}
+            (output_dir / f"{name}.json").write_text(
+                json.dumps({"available": False, "error": str(error)}, ensure_ascii=False, indent=2)
+                + "\n",
+                encoding="utf-8",
+            )
+        else:
+            status[name] = {"available": True}
+
+    # La familia congelada sale de la curva del ganador; la resimulada vuelve a simular sobre los
+    # scores del Model Study de origen, que es donde viven con seguridad.
+    attempt("cost_sensitivity", lambda: cost_sensitivity.write_cost_sensitivity(
+        output_dir / "cost_sensitivity.json",
+        cost_sensitivity.build_cost_sensitivity(
+            winner_evidence, configuration, simulation_dir=evidence_dir,
+        ),
+    ))
+    attempt("capacity", lambda: capacity.write_capacity(
+        output_dir / "capacity.json", capacity.build_capacity(winner_evidence, panel()),
+    ))
+
+    def narrative() -> None:
+        from module.modeling.features import load_sector_map
+
+        settings = settings_from_values(dict(configuration), profile="balanced")
+        payload, holdings = portfolio_narrative.build_portfolio_narrative(
+            winner_evidence, panel(), configuration, load_sector_map(settings),
+        )
+        portfolio_narrative.write_portfolio_narrative(output_dir, payload, holdings)
+
+    attempt("portfolio_narrative", narrative)
+    return status
 
 
 def _profiles_with_winner(
@@ -386,7 +464,9 @@ def _profiles_with_winner(
             selection = _selection_summary(
                 run_profile_evaluation(dict(values), profile, selection_dir),
             )
-            full = run_profile_evaluation(dict(values), profile, evidence_dir, retain_dir=retain)
+            full = run_profile_evaluation(
+                dict(values), profile, evidence_dir, retain_dir=retain, include_model_artifacts=True,
+            )
         except ValueError as exc:
             # Un perfil exige los rangos de agentes que pondera; si el ganador se entrenó sin
             # alguno, el perfil no es aplicable y se registra como tal en vez de romper el estudio.
@@ -416,8 +496,9 @@ def execute_portfolio_study(study_id: str) -> dict[str, Any]:
     Toma el ganador del Model Study de referencia, recorre la rejilla y deja en el directorio la
     comparación de todas las combinaciones más la evidencia de la mejor.
     """
+    from module.storage.evidence import write_portfolio_report
     from module.storage.studies import (
-        append_event, read_study, safe_study_path, update_study,
+        append_event, read_study, safe_study_path, update_study, write_storage_manifest,
     )
 
     study = read_study(study_id)
@@ -462,11 +543,25 @@ def execute_portfolio_study(study_id: str) -> dict[str, Any]:
         profiles=study.get("profiles"),
     )
     winner["source_study_id"] = source_id
+    winner["study_id"] = study_id
     winner["baseline_summary"] = baseline_summary
     winner["improvement"] = improvement(baseline_summary, winner["winner_summary"])
     (directory / "portfolio_winner.json").write_text(
         json.dumps(winner, ensure_ascii=False, indent=2) + "\n", encoding="utf-8",
     )
+
+    # Los diagnósticos ya están en disco; se anuncia cuál salió y cuál no, porque un artefacto que
+    # falló en silencio es peor que uno que falta.
+    for name, state in (winner.get("diagnostics") or {}).items():
+        level = "info" if state.get("available") else "warning"
+        message = (
+            f"Diagnóstico {name} escrito." if state.get("available")
+            else f"Diagnóstico {name} no disponible: {state.get('error')}"
+        )
+        append_event(study_id, level, f"diagnostic_{name}", message)
+
+    write_portfolio_report(directory / "report.md", {**winner, **_diagnostic_payloads(directory)})
+    write_storage_manifest(study_id)
     update_study(
         study_id, status="succeeded", phase="completed", progress=1.0,
         completed_runs=winner["combinations"], heartbeat=_now(),
@@ -477,6 +572,22 @@ def execute_portfolio_study(study_id: str) -> dict[str, Any]:
         f"{winner['winner_summary'].get(SELECTION_METRIC)}.",
     )
     return winner
+
+
+def _diagnostic_payloads(directory: Path) -> dict[str, Any]:
+    """Lee de disco los tres diagnósticos para componer el informe.
+
+    Se releen en vez de arrastrarlos en memoria para que el informe describa exactamente lo que hay
+    en los artefactos, que es lo que el manuscrito va a citar. Un diagnóstico ausente deja su bloque
+    vacío en vez de romper el informe.
+    """
+    payloads: dict[str, Any] = {}
+    for name in ("cost_sensitivity", "capacity", "portfolio_narrative"):
+        path = directory / f"{name}.json"
+        payloads[name] = (
+            json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+        )
+    return payloads
 
 
 def _evaluate(values: Mapping[str, Any], evidence_dir: Path, retain: Path | None) -> dict[str, Any]:

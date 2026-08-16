@@ -21,6 +21,18 @@ ANALYSIS_VIEWS = {
     "portfolio", "stocks", "report", "attribution",
     # Vistas propias del Portfolio Study (cartesiano de cartera por Information Ratio).
     "portfolio-winner", "portfolio-grid", "portfolio-profiles",
+    # Diagnósticos que el Portfolio Study calcula sobre su ganador ya congelado.
+    "portfolio-costs", "portfolio-capacity", "portfolio-narrative",
+}
+
+# Artefactos que un Portfolio Study no produce porque **no reentrena nada**: su robustez y su
+# atribución son, exactamente, las del Model Study cuyos scores reutiliza. En vez de dejar la vista
+# vacía se sirve la del study de origen, declarando la procedencia para que no se lea como evidencia
+# propia. Así un Portfolio Study se explora igual que un Model Study, que es lo que espera quien
+# abre el panel.
+INHERITED_VIEWS = {
+    "robustness": "robustness.json",
+    "attribution": "attribution.json",
 }
 
 # Columnas de `positions.parquet` que sí se muestran: `market_value`, `entry_cost` y `units` son
@@ -138,6 +150,18 @@ def analysis(study_id: str, view: str, query: dict[str, list[str]]) -> dict[str,
         return {"rows": _parquet(directory / "portfolio_grid.parquet")}
     if view == "portfolio-profiles":
         return {"rows": _parquet(directory / "portfolio_profiles.parquet")}
+    if view == "portfolio-costs":
+        return _json(directory / "cost_sensitivity.json")
+    if view == "portfolio-capacity":
+        return _json(directory / "capacity.json")
+    if view == "portfolio-narrative":
+        return {
+            **_json(directory / "portfolio_narrative.json"),
+            "holdings": _parquet(directory / "portfolio_narrative_holdings.parquet"),
+        }
+    inherited = _inherited(directory, view)
+    if inherited is not None:
+        return inherited
     source = query.get("source", [None])[0]
     evidence = _evidence_dir(directory, study_id, source)
     profile = query.get("profile", [None])[0]
@@ -186,6 +210,24 @@ def analysis(study_id: str, view: str, query: dict[str, list[str]]) -> dict[str,
         ticker = query.get("ticker", [""])[0].strip().upper()
         return _stock(evidence, ticker, query)
     return {"markdown": (directory / "report.md").read_text(encoding="utf-8") if (directory / "report.md").exists() else ""}
+
+
+def _inherited(directory: Path, view: str) -> dict[str, Any] | None:
+    """Sirve `robustness` y `attribution` desde el Model Study de origen, si aquí no existen.
+
+    Devuelve `None` cuando no aplica —vista distinta, artefacto propio presente o study sin
+    origen—, de modo que el flujo normal siga su curso sin ramas adicionales.
+    """
+    name = INHERITED_VIEWS.get(view)
+    if name is None or (directory / name).exists():
+        return None
+    source_id = _json(directory / "portfolio_winner.json").get("source_study_id")
+    if not source_id:
+        return None
+    source = safe_study_path(str(source_id))
+    if not (source / name).exists():
+        return None
+    return {**_json(source / name), "inherited_from_study_id": str(source_id)}
 
 
 def _project_columns(rows: list[dict[str, Any]], columns: list[str]) -> list[dict[str, Any]]:

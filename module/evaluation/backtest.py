@@ -27,6 +27,13 @@ from module.studies.catalog import KNOWN_STRESS_YEARS, SELECTION_UNTIL_YEAR
 # la versión anterior, es el supuesto más favorable posible y sesga el resultado al alza.
 DELISTING_RETURN = -0.30
 
+# Contrato de `contributions.parquet`: qué aportó cada posición al retorno bruto de cada periodo.
+# Fijar las columnas aquí evita que un backtest sin posiciones devuelva un marco sin esquema.
+CONTRIBUTION_COLUMNS = [
+    "snapshot_date", "ticker", "prior_weight", "raw_return", "applied_return", "contribution",
+    "delisted", "neutralized", "liquidated",
+]
+
 
 @dataclass
 class BacktestResult:
@@ -34,6 +41,7 @@ class BacktestResult:
     orders: pd.DataFrame
     equity: pd.DataFrame
     annual_metrics: pd.DataFrame
+    contributions: pd.DataFrame = field(default_factory=pd.DataFrame)
     summary: dict = field(default_factory=dict)
 
 
@@ -61,11 +69,12 @@ def run_backtest(
     equity_rows: list[dict] = []
     corrupt: list[dict] = []
     delisted: list[dict] = []
+    contribution_rows: list[dict] = []
     cash_weight = 0.0
     for index, date in enumerate(snapshots):
         stock_return, drifted, cash_weight = _mark_to_market(
             state.holdings, cash_weight, previous_prices, prices_by_date, date,
-            settings.max_monthly_position_return, corrupt, delisted,
+            settings.max_monthly_position_return, corrupt, delisted, contribution_rows,
         )
         state.holdings = drifted
         price = benchmark_by_date.get(date, previous_benchmark)
@@ -111,7 +120,7 @@ def run_backtest(
         equity_rows.append({"snapshot_date": date, "period_start_portfolio_value": value, "period_start_benchmark_value": benchmark_value / (1 + benchmark_return) if 1 + benchmark_return else benchmark_value, "portfolio_value": value_after, "benchmark_value": benchmark_value, "portfolio_return": value_after / value - 1, "benchmark_return": benchmark_return, "excess_return": value_after / value - 1 - benchmark_return, "turnover_pct": turnover, "gross_return": stock_return, "cost_drag": drag, "positions_value": sum(position_values.values()), "cash_weight": cash_weight, "invested_weight": sum(target.values()), "cumulative_costs": state.costs_paid})
         value, previous_benchmark = value_after, price
     equity = pd.DataFrame(equity_rows)
-    annual = _annual_metrics(equity, settings)
+    annual = annual_metrics(equity, settings)
     summary = _summary(equity, annual, settings)
     summary.update({
         "corrupt_returns_neutralized": len(corrupt),
@@ -119,7 +128,10 @@ def run_backtest(
         "portfolio_policy": "expected_alpha_bps",
         "sizing_mode": settings.sizing_mode,
     })
-    return BacktestResult(pd.DataFrame(positions_rows), pd.DataFrame(orders_rows), equity, annual, summary)
+    return BacktestResult(
+        pd.DataFrame(positions_rows), pd.DataFrame(orders_rows), equity, annual,
+        pd.DataFrame(contribution_rows, columns=CONTRIBUTION_COLUMNS), summary,
+    )
 
 
 def _prices(prices: pd.DataFrame) -> dict[str, dict[str, float]]:
@@ -136,14 +148,14 @@ def _capped(weights: dict[str, float]) -> dict[str, float]:
     return {ticker: weight / total for ticker, weight in weights.items()}
 
 
-def _periods_per_year(settings: Settings) -> float:
+def periods_per_year(settings: Settings) -> float:
     return 12.0 / max(int(settings.snapshot_step_months), 1)
 
 
 def _mark_to_market(
     holdings: dict[str, float], cash_weight: float, previous: dict[str, float],
     prices: dict[str, dict[str, float]], date: str, maximum: float,
-    corrupt: list[dict], delisted: list[dict],
+    corrupt: list[dict], delisted: list[dict], contributions: list[dict] | None = None,
 ) -> tuple[float, dict[str, float], float]:
     """Revaloriza la cartera y devuelve (retorno, pesos nuevos, efectivo nuevo).
 
@@ -156,6 +168,13 @@ def _mark_to_market(
     ``DELISTING_RETURN``. La alternativa —marcarla plana— regala al backtest un rescate del 100 % en
     exactamente los casos en que una acción suele estar colapsando. Esa posición ya no es negociable,
     así que se liquida contra efectivo: no se puede seguir valorando algo sin precio.
+
+    ``contributions`` recoge, posición a posición, el retorno que efectivamente se aplicó y lo que
+    aportó a la cartera. Se emite **aquí** y no se reconstruye después porque este es el único sitio
+    donde se conocen las dos convenciones que lo determinan —la exclusión de cotización y la
+    neutralización de retornos corruptos—; recalcularlas fuera crearía una segunda verdad. Como los
+    pesos invertidos y el efectivo suman uno por construcción, la suma de contribuciones **es**
+    exactamente el retorno bruto del periodo, sin aproximación.
     """
     if not holdings:
         return 0.0, {}, min(max(cash_weight, 0.0), 1.0)
@@ -171,9 +190,22 @@ def _mark_to_market(
             delisted.append({"snapshot_date": date, "ticker": ticker, "assumed_return": change})
         else:
             change = 0.0
+        raw_change, neutralized = change, False
         if abs(change) > maximum:
             corrupt.append({"snapshot_date": date, "ticker": ticker, "position_return": change})
-            change = 0.0
+            change, neutralized = 0.0, True
+        if contributions is not None:
+            contributions.append({
+                "snapshot_date": date,
+                "ticker": ticker,
+                "prior_weight": float(weight),
+                "raw_return": float(raw_change),
+                "applied_return": float(change),
+                "contribution": float(weight * change),
+                "delisted": bool(old and old > 0 and not tradable),
+                "neutralized": neutralized,
+                "liquidated": not tradable,
+            })
         value = weight * (1 + change)
         if tradable:
             grown[ticker] = value
@@ -248,8 +280,8 @@ def _information_ratio(excess: np.ndarray, periods_per_year: float) -> float:
     return float(np.mean(excess) / tracking * np.sqrt(periods_per_year))
 
 
-def _annual_metrics(equity: pd.DataFrame, settings: Settings) -> pd.DataFrame:
-    periods = _periods_per_year(settings)
+def annual_metrics(equity: pd.DataFrame, settings: Settings) -> pd.DataFrame:
+    periods = periods_per_year(settings)
     rows = []
     for year, group in equity.assign(year=pd.to_datetime(equity.snapshot_date).dt.year).groupby("year"):
         portfolio_return = group.portfolio_value.iloc[-1] / group.period_start_portfolio_value.iloc[0] - 1
@@ -269,7 +301,7 @@ def _annual_metrics(equity: pd.DataFrame, settings: Settings) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def _window_metrics(equity: pd.DataFrame, annual: pd.DataFrame, periods_per_year: float) -> dict:
+def window_metrics(equity: pd.DataFrame, annual: pd.DataFrame, periods: float) -> dict:
     """Métricas económicas de una ventana temporal. Una sola definición, aplicada a cada segmento."""
     if equity.empty or annual.empty:
         return {}
@@ -285,13 +317,13 @@ def _window_metrics(equity: pd.DataFrame, annual: pd.DataFrame, periods_per_year
         "cagr_benchmark": float(benchmark_cagr),
         # Exceso geométrico real: el cociente de acumulados, no la resta de dos CAGR.
         "geometric_excess_return": float((1 + cagr) / (1 + benchmark_cagr) - 1),
-        "information_ratio": _information_ratio(excess, periods_per_year),
+        "information_ratio": _information_ratio(excess, periods),
         "max_drawdown": float(drawdown.max()),
         "beat_rate": float((annual.alpha > 0).mean()),
         "mean_annual_alpha": float(annual.alpha.mean()),
         "median_annual_alpha": float(annual.alpha.median()),
         "worst_year_alpha": float(annual.alpha.min()),
-        "annualized_turnover": float(equity["turnover_pct"].mean() * periods_per_year),
+        "annualized_turnover": float(equity["turnover_pct"].mean() * periods),
         "mean_cash_weight": float(equity["cash_weight"].mean()),
         "total_cost_drag": float(equity["cost_drag"].sum()),
         "n_periods": len(equity),
@@ -300,17 +332,17 @@ def _window_metrics(equity: pd.DataFrame, annual: pd.DataFrame, periods_per_year
 
 def _summary(equity: pd.DataFrame, annual: pd.DataFrame, settings: Settings) -> dict:
     """Métricas de la ventana de selección en la raíz; confirmación y curva completa aparte."""
-    periods = _periods_per_year(settings)
+    periods = periods_per_year(settings)
     years = pd.to_datetime(equity.snapshot_date).dt.year
     selection = equity.loc[years.le(SELECTION_UNTIL_YEAR)]
     stress = equity.loc[years.isin(KNOWN_STRESS_YEARS)]
     annual_selection = annual.loc[annual["year"].le(SELECTION_UNTIL_YEAR)]
     annual_stress = annual.loc[annual["year"].isin(KNOWN_STRESS_YEARS)]
     return {
-        **_window_metrics(selection, annual_selection, periods),
+        **window_metrics(selection, annual_selection, periods),
         "selection_until_year": SELECTION_UNTIL_YEAR,
-        "confirmation": _window_metrics(stress, annual_stress, periods),
-        "full_curve": _window_metrics(equity, annual, periods),
+        "confirmation": window_metrics(stress, annual_stress, periods),
+        "full_curve": window_metrics(equity, annual, periods),
         "commission_bps": settings.commission_bps,
         "slippage_bps": settings.slippage_bps,
         "target_size": settings.target_size,

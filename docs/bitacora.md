@@ -1,5 +1,85 @@
 # Bitácora
 
+## 2026-08-16 · Todo lo calculable se calcula solo; el plan pendiente pasa a ser agenda de lectura
+
+`docs/plan_pendiente.md` mezclaba trabajo de implementación con decisiones que solo pueden tomarse
+una vez relanzada la cadena. Eso obligaba a volver a programar justo entre la ejecución y la
+redacción, que es cuando lo único que debería quedar es mirar cifras y escribir. Se invierte la
+relación: **se implementa ahora todo lo que puede automatizarse** y el plan queda reducido a en qué
+fijarse y qué llevar al manuscrito.
+
+**Los tres diagnósticos ya no son un análisis aparte que haya que acordarse de lanzar.** Al elegir
+la cartera ganadora, el Portfolio Study calcula y escribe por su cuenta `cost_sensitivity.json`,
+`capacity.json` y `portfolio_narrative.json`. Un fallo en cualquiera de ellos deja constancia en su
+propio artefacto pero **no tumba el estudio**: la rejilla ya ha costado horas y su ganador ya está en
+disco, así que abortar por un diagnóstico secundario sería destruir trabajo terminado.
+
+**La sensibilidad a costes se implementa tal como se especificó el 2026-08-15**, sin cambios de
+diseño. Lo que sí se descubrió al implementarla es que la autoconsistencia es más fuerte de lo
+esperado: la forma cerrada evaluada en el coste adoptado no reproduce el resultado del motor con
+tolerancia, lo reproduce **bit a bit**, porque repite la misma aritmética de capitalización. El test
+de contrato exige igualdad exacta en vez de aproximada, y una diferencia de cualquier tamaño
+delataría una fórmula distinta y no un redondeo.
+
+**Capacidad obligaba a decidir de dónde sale el volumen.** El panel no lo llevaba: la ingesta raw sí
+trae volumen diario, pero solo `adj_close` llegaba al artefacto de precios. Se añade
+`median_dollar_volume_21d` al panel point-in-time en vez de leer el raw en tiempo de análisis, que
+era la alternativa barata. El motivo es que el raw se puede re-descargar y cambiar, mientras que el
+panel es el artefacto con disciplina PIT y hash de dataset; una cifra de capacidad respaldada por un
+fichero que puede mutar no es trazable. **Cambia el `dataset_hash`**, y por eso se hace ahora: el
+usuario aún no ha relanzado, así que el coste es cero. Bumpeado `dataset_code_version` a 2 para que
+el core se reconstruya deliberadamente en vez de reutilizar un directorio cacheado sin la columna.
+
+Se declara la salvedad: el precio está ajustado por splits y dividendos y el volumen solo por
+splits, así que el nocional diario es una aproximación. Y una decisión de diseño que evita el sesgo
+cómodo: una orden sobre un ticker **sin** volumen medido se cuenta como cobertura incompleta, nunca
+como ejecutable. Tratarla como líquida dejaría que los huecos del panel subieran la capacidad
+estimada precisamente donde menos se sabe.
+
+**La atribución por acción se emite desde el motor, no se reconstruye.** Para poder decir «esta
+acción aportó tanto» hacía falta el retorno aplicado posición a posición, y reconstruirlo fuera
+exigía reimplementar la exclusión de cotización y la neutralización de retornos imposibles: una
+segunda verdad que se desviaría en silencio. El backtest emite ahora `contributions.parquet` desde
+`_mark_to_market`, que es el único sitio donde ambas convenciones se conocen. Como los pesos
+invertidos y el efectivo suman uno por construcción, la suma de contribuciones **es** el retorno
+bruto del periodo sin aproximación, y eso queda fijado como contrato.
+
+**La narrativa de cartera es material nuevo del TFM**, no una vista del panel: los nombres más
+presentes, la contribución bruta y neta por acción, las mejores y peores operaciones cerradas, las
+ventas que luego subieron —el coste de oportunidad de salir— y la exposición sectorial. Al
+implementarla apareció un error de fidelidad que habría contaminado el capítulo: un **recorte de
+rebalanceo** también emite una orden de venta con resultado realizado, pero la posición sigue
+abierta. Contarlo como operación cerrada habría ensuciado a la vez los aciertos y los errores, así
+que solo cuenta como cerrada la venta que deja el peso a cero.
+
+El sector se incluye con la salvedad **dentro** del artefacto: procede de una foto actual de
+Finnhub, no de una serie point-in-time, igual que el uso que ya hace la neutralización. Solo agrupa,
+nunca es señal.
+
+**El Portfolio Study se ve ahora igual que un Model Study.** Su ganador ofrecía dos pestañas frente
+a las cinco de un run, y el motivo era que los artefactos de modelo no estaban en su evidencia. Pero
+este estudio **no reentrena nada**: esos artefactos son los mismos ficheros del Model Study de
+origen. Se enlazan con hardlink —coste de disco cero— en vez de reejecutar el ganador, que es la
+alternativa que se consideró y se descartó: gastaría un entrenamiento completo para producir una
+copia que, ante cualquier no-determinismo, podría no coincidir con la evidencia que sí alimentó la
+decisión. El enlace se activa solo en la reevaluación final y en los perfiles, nunca en la rejilla.
+
+Con eso desaparece la causa de la asimetría y se unifica el render del dashboard en un solo camino:
+mismas pestañas, mismo contenido. Robustez y atribución, que un Portfolio Study no produce, se
+sirven desde el study de origen declarando la procedencia. El ganador añade tres pestañas propias
+—costes, capacidad y narrativa— y el estudio gana `report.md` y manifiesto de almacenamiento, que
+hasta ahora solo escribía el Model Study.
+
+**Lo del manuscrito queda solo en `docs/plan_pendiente.md`**, por decisión explícita del usuario:
+redactado como encargo cerrado para pasárselo a un agente cuando la cadena termine, en vez de
+repartido entre dos ficheros que se desincronizan. Es una desviación consciente de la convención que
+reserva `docs/cambios_latex.md` para la deuda con el manuscrito. El exportador de LaTeX **no** se
+toca: generar activos para un capítulo que aún no existe sería código muerto si el capítulo cambia
+de forma.
+
+**Verificación**: 134 pruebas en verde (38 nuevas), `ruff` sin errores añadidos y `node --check`
+limpio. No se ha ejecutado ningún estudio real.
+
 ## 2026-08-15 · Especificado el análisis de sensibilidad a costes
 
 Queda diseñado, no implementado, en `docs/plan_pendiente.md` (paso 2.1). El supuesto de coste fijo

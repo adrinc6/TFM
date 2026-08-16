@@ -8,6 +8,7 @@ from bisect import bisect_right
 from collections.abc import Iterable, Mapping
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from environment import Settings
@@ -78,7 +79,12 @@ ASSET_PRICE_COLUMNS = [
     "price",
     "price_as_of_date",
     "price_age_days",
+    "median_dollar_volume_21d",
 ]
+
+# Sesiones que entran en el volumen negociado de referencia. Un mes bursátil: suficiente para que
+# un día anómalo no domine y corto para que siga describiendo la liquidez del momento.
+DOLLAR_VOLUME_SESSIONS = 21
 
 # Tolerancia al emparejar un trimestre con el del año anterior: absorbe los cierres
 # fiscales que se mueven unos días entre ejercicios, sin llegar a saltarse un trimestre.
@@ -182,7 +188,9 @@ def build_point_in_time_dataset(settings: Settings) -> pd.DataFrame:
     benchmark = _benchmark_frame(price_by_ticker.get(settings.benchmark_ticker), snapshots)
     if benchmark.empty:
         log.warning("No hay precios PIT para el benchmark %s.", settings.benchmark_ticker)
-    asset_prices = _asset_price_frame(price_by_ticker, snapshots, settings.benchmark_ticker)
+    asset_prices = _asset_price_frame(
+        price_by_ticker, snapshots, settings.benchmark_ticker, _dollar_volume_index(prices),
+    )
 
     output_dir = settings.processed_output_dir
     write_parquet(panel, output_dir / "panel_point_in_time.parquet")
@@ -265,6 +273,49 @@ def _price_index(prices: pd.DataFrame) -> dict[str, tuple[list[pd.Timestamp], li
     return result
 
 
+def _dollar_volume_index(prices: pd.DataFrame) -> dict[str, tuple[list[pd.Timestamp], list[float]]]:
+    """Nocional negociado por sesión y ticker, para dimensionar capacidad.
+
+    El precio esta ajustado por splits y dividendos y el volumen solo por splits, asi que el
+    producto es una **aproximación** del nocional: sirve para saber si una orden cabe en el mercado,
+    no como dato de mercado citable. La salvedad viaja en `docs/metodologia.md`.
+
+    Si la ingesta raw no trae volumen, se devuelve un índice vacío y la columna queda a nulo. Es
+    deliberado: un cero se leería como «sin liquidez» y un ausente como «no medido», y solo lo
+    segundo es cierto.
+    """
+    if "volume" not in prices.columns:
+        return {}
+    frame = prices[["ticker", "date", "adj_close", "volume"]].copy()
+    frame["date"] = pd.to_datetime(frame["date"])
+    for column in ("adj_close", "volume"):
+        frame[column] = pd.to_numeric(frame[column], errors="coerce")
+    frame.dropna(subset=["ticker", "date", "adj_close", "volume"], inplace=True)
+    frame = frame.loc[frame["adj_close"].gt(0) & frame["volume"].ge(0)]
+    frame["dollar_volume"] = frame["adj_close"] * frame["volume"]
+    result: dict[str, tuple[list[pd.Timestamp], list[float]]] = {}
+    for ticker, group in frame.sort_values("date").groupby("ticker"):
+        deduped = group.drop_duplicates("date", keep="last")
+        result[ticker] = (list(deduped["date"]), list(deduped["dollar_volume"]))
+    return result
+
+
+def _median_dollar_volume(
+    dates: list[pd.Timestamp], values: list[float], target: pd.Timestamp
+) -> float | None:
+    """Mediana del nocional de las últimas `DOLLAR_VOLUME_SESSIONS` sesiones hasta el snapshot.
+
+    Estrictamente hacia atrás, con el mismo `bisect_right` que `_observed_price`: una sesión
+    posterior al snapshot no puede alterar el valor. Mediana y no media porque un único día de
+    volumen extraordinario —una entrada en el índice, una fusión— inflaría la capacidad estimada.
+    """
+    end = bisect_right(dates, target)
+    if end <= 0:
+        return None
+    window = values[max(0, end - DOLLAR_VOLUME_SESSIONS):end]
+    return float(np.median(window)) if window else None
+
+
 def _benchmark_frame(
     series: tuple[list[pd.Timestamp], list[float]] | None, snapshots: list[pd.Timestamp]
 ) -> pd.DataFrame:
@@ -295,11 +346,14 @@ def _asset_price_frame(
     price_by_ticker: dict[str, tuple[list[pd.Timestamp], list[float]]],
     snapshots: list[pd.Timestamp],
     benchmark_ticker: str,
+    dollar_volume_by_ticker: dict[str, tuple[list[pd.Timestamp], list[float]]] | None = None,
 ) -> pd.DataFrame:
+    volume_by_ticker = dollar_volume_by_ticker or {}
     rows: list[dict[str, Any]] = []
     for ticker, (dates, values) in price_by_ticker.items():
         if ticker == benchmark_ticker:
             continue
+        volume_dates, volume_values = volume_by_ticker.get(ticker, ([], []))
         for snapshot in snapshots:
             price, as_of, age_days = _observed_price(dates, values, snapshot)
             if price is None:
@@ -311,6 +365,9 @@ def _asset_price_frame(
                     "price": price,
                     "price_as_of_date": as_of.date().isoformat() if as_of is not None else None,
                     "price_age_days": age_days,
+                    "median_dollar_volume_21d": _median_dollar_volume(
+                        volume_dates, volume_values, snapshot
+                    ),
                 }
             )
     return pd.DataFrame(rows, columns=ASSET_PRICE_COLUMNS)

@@ -63,6 +63,18 @@ Controles de ausencia de lookahead:
 3. El meta solo consume cohortes OOS trimestrales cerradas.
 4. 2025–2026 se separa antes de cualquier selector.
 
+### Volumen negociado de referencia
+
+El artefacto de precios publica `median_dollar_volume_21d`: la mediana de `precio × volumen` en las
+21 sesiones anteriores o iguales al snapshot, con la misma disciplina hacia atrás que el resto del
+panel —una sesión posterior no puede alterarlo—. Existe para dimensionar capacidad y no como
+variable predictiva: ningún agente la ve.
+
+Mediana y no media porque un único día de volumen extraordinario —una entrada en el índice, una
+fusión— inflaría la liquidez estimada justo donde más engaña. **Salvedad obligatoria**: el precio
+está ajustado por splits y dividendos y el volumen solo por splits, así que el nocional es una
+aproximación. Sirve para saber si una orden cabe en el mercado, no como dato de mercado citable.
+
 ## 3. Optimización secuencial
 
 El usuario no manipula un selector de modo separado. Marca directamente valores del catálogo:
@@ -320,6 +332,71 @@ selección y que el resultado de la era reservada se reporta **junto** al de sel
 lugar. Y una consecuencia que no se puede suavizar: la cartera adoptada es la mejor de la rejilla, de
 modo que sus cifras **dentro** de la ventana de selección son una cota superior optimista, no una
 estimación insesgada.
+
+### La evidencia del ganador es completa, y no se recalcula
+
+El Portfolio Study **no reentrena nada**, así que los artefactos de modelo de su ganador —scores,
+diagnósticos de Rank-IC, pesos del meta-agente, atribución de features— **son los mismos ficheros**
+del Model Study de origen. Se enlazan a `evidence_best_full/` en lugar de recalcularse: reejecutar el
+ganador costaría un entrenamiento completo para producir una copia que, ante cualquier
+no-determinismo, podría no coincidir con la evidencia que sí alimentó la decisión.
+
+La consecuencia práctica es que el ganador de cartera **se explora igual que un run del Model
+Study**, con las mismas vistas de aprendizaje, cartera y acciones. El enlace se activa solo en la
+reevaluación final y en los ocho perfiles, nunca durante la rejilla: enlazar y borrar en cientos de
+combinaciones desechables sería coste de E/S sin beneficio.
+
+Las vistas que un Portfolio Study no puede producir por sí mismo —robustez y atribución— se sirven
+desde el Model Study de origen declarando la procedencia. Es honesto por el mismo motivo: esa
+robustez y esa atribución son, exactamente, las del modelo cuyos scores reutiliza.
+
+## 5 quater. Diagnósticos automáticos del ganador de cartera
+
+Al elegir la combinación ganadora se calculan **solos** tres diagnósticos, de modo que cuando la
+cadena termina las cifras del capítulo económico ya están completas y no queda análisis pendiente de
+lanzar a mano. Los tres son posteriores a la elección y ninguno escribe en `winner.json`,
+`decisions.json` ni `portfolio_winner.json`. Si uno falla, deja constancia en su propio artefacto y
+**no tumba el estudio**: la rejilla ya ha costado horas y su ganador ya está en disco.
+
+**1. Sensibilidad a costes** (`cost_sensitivity.json`). Responde a la pregunta que la limitación de
+costes constantes dejaba abierta: *hasta dónde aguanta el supuesto*. Publica el escenario bruto
+(coste cero, cota que nadie realiza), el estándar y el **equilibrio** `c*`: el coste por operación al
+que el exceso geométrico **contra el índice** se anula. Se define contra el índice y no contra
+rentabilidad absoluta porque la alternativa real de un inversor es comprar el índice, no quedarse en
+efectivo.
+
+Se calculan **dos familias**, por el motivo que ya explica la sección «El coste entra dos veces»:
+
+- *Ruta congelada*: mismas decisiones, distinto coste. Como `drag = turnover × tasa` exactamente, la
+  curva entera sale en forma cerrada desde `equity.parquet`, con cero cómputo. Su `c*` es
+  **conservador**, porque un gestor que pagase más operaría menos.
+- *Resimulada*: la cartera vuelve a decidir con cada coste, ya que el coste alimenta
+  `entry_threshold` y `rotation_threshold`. Su `c**` es mayor o igual, y **la diferencia entre ambas
+  es en sí misma un resultado**: mide cuánto protege la doctrina de umbrales económicos.
+
+La escalera de costes es una constante de diagnóstico, no una variable del catálogo, con el mismo
+precedente que el ensemble de semillas y las iteraciones del bootstrap: no se optimiza. Y no podría
+expresarla, porque sus valores van de 5 a 30 pb y el equilibrio esperado está un orden de magnitud
+por encima.
+
+**2. Capacidad y liquidez** (`capacity.json`). A partir de qué patrimonio la cartera deja de ser
+ejecutable. Se mide **participación** —qué fracción del volumen negociado habitual representaría cada
+orden a un patrimonio dado— y no impacto de mercado, que exigiría supuestos que este panel no puede
+sostener: la participación es observable, el impacto sería una hipótesis. Se publican dos umbrales,
+5 % y 10 % del volumen diario, porque no hay uno canónico. Una orden sobre un ticker sin volumen
+medido se cuenta como cobertura incompleta, **nunca** como ejecutable: un hueco del panel no puede
+subir la capacidad estimada.
+
+**3. Narrativa de cartera** (`portfolio_narrative.json` y `portfolio_narrative_holdings.parquet`).
+Qué tuvo la cartera, cuánto tiempo, cuánto aportó cada nombre y en qué se equivocó: los más
+presentes, la contribución bruta y neta por acción, las mejores y peores operaciones **cerradas** (un
+recorte de rebalanceo no cuenta: la posición siguió abierta), las ventas que luego subieron —el coste
+de oportunidad de salir—, la permanencia, la concentración y la exposición sectorial. El mapa de
+posiciones no genera artefacto nuevo: `positions.parquet` ya es esa tabla en formato largo.
+
+Todo el bloque es descriptivo y posterior a la congelación del ganador. Mirar las peores decisiones
+para cambiar la estrategia sería ajustar sobre el resultado conocido, y por eso el propio artefacto
+lo advierte.
 
 ## 6. Cartera dinámica
 
@@ -589,6 +666,18 @@ protege sola. Por eso el efecto del coste tiene dos lecturas legítimas —sobre
 congelada y sobre una cartera que vuelve a decidir— y la distancia entre ambas mide cuánto protege
 esta doctrina de umbrales. El diseño del diagnóstico está en `docs/plan_pendiente.md`.
 
+### Qué aportó cada posición
+
+El backtest emite, posición a posición y snapshot a snapshot, el retorno que efectivamente se aplicó
+y lo que aportó a la cartera (`contributions.parquet`). Se emite **desde el motor** y no se
+reconstruye después porque solo ahí se conocen las dos convenciones que lo determinan —la exclusión
+de cotización y la neutralización de retornos imposibles—; recalcularlas fuera crearía una segunda
+verdad que se desviaría en silencio.
+
+Como los pesos invertidos y el efectivo suman uno por construcción, **la suma de contribuciones es
+exactamente el retorno bruto del periodo**, sin aproximación. Esa identidad es un test de contrato, y
+es lo que convierte la atribución por acción en contabilidad en vez de en una estimación.
+
 ### De dónde sale la rotación
 
 La causa raíz del turnover es estructural: se re-decide con la cadencia de snapshot sobre una señal
@@ -766,6 +855,12 @@ Ninguna cifra vive en este documento ni en ningún otro `.md`. Viven en los arte
 | `robustness.json` | Semillas, bootstrap, exclusión de eras, permutación, placebos, carteras aleatorias |
 | `attribution.json` | Regresión factorial, Rank-IC neutralizado, Deflated Sharpe, cobertura del universo |
 | `portfolio_grid.parquet` | Una fila por combinación de cartera evaluada |
+| `evidence/contributions.parquet` | Qué aportó cada posición al retorno bruto de cada periodo |
+| `cost_sensitivity.json` | Curva de exceso frente al coste y equilibrio `c*`, por familia y ventana |
+| `capacity.json` | Participación sobre el volumen diario y patrimonio máximo ejecutable |
+| `portfolio_narrative.json` | Presencia, contribución, decisiones, permanencia y sectores de la cartera |
+| `portfolio_narrative_holdings.parquet` | Una fila por acción: tiempo en cartera y contribución neta |
+| `report.md` (Portfolio Study) | Informe de la cartera ganadora con la procedencia de cada cifra |
 
 Toda afirmación numérica cita el `study_id` y la ruta del artefacto. Copiar cifras a un documento
 crea una segunda verdad que se desincroniza en cuanto se relanza un study, que es exactamente lo que
