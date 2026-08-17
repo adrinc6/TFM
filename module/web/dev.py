@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from module.studies.catalog import PROFILE_NAMES, public_catalog
-from module.studies.config import retention_budget
+from module.studies.config import post_winner_budget, retention_budget
 
 
 STUDY_ID = "study-demo-001"
@@ -32,6 +32,7 @@ def get(path: str, query: dict[str, list[str]]) -> dict[str, Any] | list[dict[st
 def post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
     if path == "/api/studies/preflight":
         retain_all = bool(payload.get("retain_all_runs", False))
+        post_winner = bool(payload.get("post_winner_diagnostics", True))
         budget = {
             "predictive_evaluations": 16, "expensive_fits": 9,
             "meta_recombinations": 3, "portfolio_diagnostics": 8,
@@ -42,11 +43,12 @@ def post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
         return {
             "valid": True,
             "definition": payload.get("definition", {}),
-            # La fixture aplica el mismo ajuste que el preflight real para que la casilla de
-            # evidencia completa muestre su coste también en /dev.
-            "budget": retention_budget(budget, retain_all),
+            # La fixture aplica los mismos ajustes que el preflight real, y en el mismo orden, para
+            # que las casillas muestren su coste también en /dev.
+            "budget": retention_budget(post_winner_budget(budget, post_winner), retain_all),
             "run_scope": "dev",
             "retain_all_runs": retain_all,
+            "post_winner_diagnostics": post_winner,
         }, 200
     if path == "/api/studies":
         return {"study_id": STUDY_ID, "status": "queued", "worker_pid": 12345}, 202

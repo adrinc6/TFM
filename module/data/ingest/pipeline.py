@@ -81,10 +81,14 @@ def download_raw_data(settings: Settings) -> None:
     finnhub = FinnhubClient(FINNHUB_API_KEY) if FINNHUB_API_KEY else None
     yahoo = YahooClient()
     edgar = EdgarClient(EDGAR_USER_AGENT, RAW_JSON_DIR / "edgar", force_download=False)
-    cik_by_ticker = edgar.ticker_to_cik()
     tickers = settings.tickers
     output_dir = settings.raw_output_dir
     RAW_JSON_DIR.mkdir(parents=True, exist_ok=True)
+    # Antes de recorrer 1200 tickers: una descarga sin fundamentales produce un panel vacío tras
+    # horas de trabajo, porque el panel exige precio Y fundamentales. Fallar en segundos es mejor
+    # que descubrirlo al final.
+    _require_sources_reachable(finnhub)
+    cik_by_ticker = edgar.ticker_to_cik()
 
     log.info(
         "Preparando datos crudos: tickers=%s scope=%s",
@@ -253,12 +257,16 @@ def download_raw_data(settings: Settings) -> None:
                 if not matched_count:
                     failures.append(_failure(ticker, "edgar", "no_metric_period_match"))
 
+            # Las noticias son la tercera llamada a Finnhub por ticker —un tercio del cuello de
+            # botella de la ingesta— y ningún consumidor las lee: no hay agente de sentimiento
+            # (`AGENT_NAMES` = quality, value, growth, momentum, risk) ni feature que las use.
+            # Se descargan solo si se piden explícitamente.
             company_news = _cached_json(
                 _json_path("finnhub", ticker, f"company_news_{settings.data_start_date}_{settings.end_date}"),
                 lambda: _require_finnhub(finnhub).company_news(
                     ticker, settings.data_start_date, settings.end_date
                 ),
-            )
+            ) if settings.download_news else None
             if company_news:
                 coverage["news"] += 1
                 news.extend(
@@ -269,7 +277,7 @@ def download_raw_data(settings: Settings) -> None:
                     }
                     for item in company_news[:25]
                 )
-            else:
+            elif settings.download_news:
                 failures.append(_failure(ticker, "company_news", "missing"))
         except Exception as exc:
             log.exception("[%s] fallo al descargar datos crudos", ticker)
@@ -375,6 +383,26 @@ def _blank_diagnostic(ticker: str) -> dict[str, Any]:
         "in_panel": False,
         "exclusion_reason": "",
     }
+
+
+def _require_sources_reachable(finnhub: FinnhubClient | None) -> None:
+    """Comprueba contra un ticker conocido que las fuentes obligatorias responden.
+
+    El panel exige precio **y** fundamentales, así que una ingesta con Finnhub caído recorre las
+    ~1200 descargas para terminar sin un solo ticker utilizable. La sonda cuesta dos peticiones.
+    """
+    if finnhub is None:
+        raise RuntimeError(
+            "Falta FINNHUB_API_KEY: sin fundamentales el panel queda vacío. "
+            "Defínela en el fichero .env antes de lanzar la ingesta."
+        )
+    if finnhub.company_profile2("AAPL") is None:
+        raise RuntimeError(
+            "Finnhub no responde para un símbolo de control (AAPL). La ingesta se detiene aquí "
+            "porque sin fundamentales ningún ticker llegaría al panel. Revisa la conectividad "
+            "(cortafuegos/antivirus/VPN pueden bloquear finnhub.io) y la validez de la clave; "
+            "los precios de Yahoo ya descargados quedan en caché y no se repetirán."
+        )
 
 
 def _load_alias_cik() -> dict[str, str]:

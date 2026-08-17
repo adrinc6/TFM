@@ -32,16 +32,17 @@ La selección secuencial recorre las fases en orden y cada una hereda al incumbe
 Eso significa que el resultado depende del punto de partida: una variable decidida en la primera
 fase se decide con los valores por defecto de todas las demás, y no vuelve a revisarse aunque las
 decisiones posteriores cambien el contexto en que aquella elección tenía sentido. La primera pasada
-lo dejó claro en cifras: su ganador se apartaba en \textbf{ocho variables} del baseline recomendado
+lo dejó claro en cifras: su ganador se apartaba en \textbf{nueve variables} del baseline recomendado
 del catálogo, de modo que la mayoría de sus decisiones se habían tomado partiendo de una
 configuración que el propio estudio acabó descartando.
 
 La respuesta fue encadenar los estudios. El ganador de cada pasada se convierte en el baseline de la
 siguiente, que vuelve a recorrer las fases desde ese punto. Es un ascenso por coordenadas: cada
 pasada sólo puede mejorar o confirmar, porque el incumbente se conserva cuando no hay evidencia
-suficiente para desplazarlo. La primera modificó ocho variables respecto de su punto de partida; la
-segunda, una sola (\artefacto{meta\_method}, de acotado a libre); la tercera, dos
-(\artefacto{execution\_lag\_days} y \artefacto{target\_size}). El procedimiento se queda sin cambios
+suficiente para desplazarlo. La primera modificó nueve variables respecto de su punto de partida; la
+segunda, dos (\artefacto{max\_features\_per\_agent} y \artefacto{lgbm\_min\_child\_samples}); la
+tercera, otras dos (\artefacto{lgbm\_learning\_rate} y \artefacto{market\_regime\_feature}). El
+procedimiento se queda sin cambios
 que hacer, que es lo que debe ocurrir si converge en lugar de explorar al azar, y es la razón de
 detenerse en tres. Las Tablas~\ref{tab:cadena} y~\ref{tab:cadena-config} del
 Capítulo~\ref{chap:resultados} recogen qué obtuvo y qué cambió cada pasada.
@@ -58,7 +59,7 @@ en ninguna de las tres pasadas.
 El catálogo cerrado se recorre en cuatro fases: temporal, representación, modelo y meta. Se parte
 de un \textit{baseline}; en cada fase se modifica una variable y se comparan sus candidatos con el
 incumbente acumulado. Así, el coste científico es una suma de alternativas, no una búsqueda
-cartesiana opaca. La pasada de referencia ejecutó 71 configuraciones, y cada una queda registrada
+cartesiana opaca. La pasada de referencia ejecutó 48 configuraciones, y cada una queda registrada
 junto con la elección que motivó.
 
 Un candidato debe tener observaciones suficientes, no caer por debajo de $-0,02$ en ninguna era
@@ -101,14 +102,15 @@ costado adoptarla. Esa es la columna que se tabula, ordenada de mayor a menor co
   \caption*{El coste es el Rank-IC de la mejor alternativa menos el del ganador; un coste
   \emph{positivo} indica que la alternativa medía mejor y que el ganador se decidió por otra vía, lo
   que sólo ocurre en los empates técnicos. No debe confundirse con la \emph{ventaja pareada}, que
-  promedia la diferencia cohorte a cohorte: en \artefacto{meta\_method} el coste es $-0{,}0085$ y la
-  ventaja pareada $+0{,}00827$.}
+  promedia la diferencia cohorte a cohorte: en \artefacto{meta\_method} el coste es $-0{,}0071$ y la
+  ventaja pareada $+0{,}00699$.}
 \end{table}
 
-Leída así, la tabla separa con claridad tres grupos. Cuatro decisiones eran caras de equivocar:
-neutralizar por sector habría costado $-0{,}0429$ de Rank-IC, aplicar pesos de recencia $-0{,}0373$,
-acortar el horizonte a seis meses $-0{,}0322$ y reducir el conjunto de variables a \texttt{core}
-$-0{,}0290$. Son las decisiones estructurales, y las cuatro se resolvieron con holgura.
+Leída así, la tabla separa con claridad tres grupos. Cinco decisiones eran caras de equivocar:
+cambiar el objetivo de regresión de rango a \textit{ranking} habría costado $-0{,}0768$ de Rank-IC,
+neutralizar por sector $-0{,}0514$, reducir el conjunto de variables a \texttt{core} $-0{,}0443$,
+acortar el horizonte a seis meses $-0{,}0379$ y aplicar pesos de recencia $-0{,}0332$. Son las
+decisiones estructurales, y las cinco se resolvieron con holgura.
 
 Un segundo grupo, el más numeroso, tiene costes por debajo de 0,005: los hiperparámetros de LightGBM
 (profundidad, número de árboles, tasa de aprendizaje), la winsorización o el número máximo de
@@ -124,9 +126,11 @@ dos debe presentarse como hallazgo empírico, y por eso figuran con su regla al 
 \subsection*{Por qué la escalera es plana}
 
 El resultado de la tercera pasada es contundente y va en contra de la intuición habitual sobre este
-tipo de búsquedas: \textbf{las diecisiete decisiones confirmaron su valor de partida}, dieciséis de
-ellas con una ventaja pareada exactamente nula. La única comparación que midió una diferencia
-apreciable fue \artefacto{meta\_method}, donde la variante libre obtuvo 0,1090 frente a 0,1005 de la
+tipo de búsquedas: \textbf{dieciséis de las dieciocho decisiones confirmaron su valor de partida}, y
+las dos que lo cambiaron lo hicieron por márgenes mínimos --- \artefacto{market\_regime\_feature}
+por no inferioridad, sin demostrar ser mejor, y \artefacto{lgbm\_learning\_rate} con una ventaja
+media de tres diezmilésimas de Rank-IC. Entre las confirmadas, la comparación que midió mayor
+diferencia fue \artefacto{meta\_method}, donde la variante libre obtuvo 0,1067 frente a 0,0996 de la
 acotada; también ahí el procedimiento conservó el valor que ya traía.
 
 Esa planitud es exactamente lo que cabía esperar de una cadena que ha convergido: la pasada de
@@ -136,7 +140,7 @@ que partía del baseline del catálogo, presentaba un perfil muy distinto.
 
 Este patrón es una defensa parcial frente a la objeción de sobreajuste por multiplicidad. Un
 protocolo que aceptase cualquier mejora aparente habría desplazado al incumbente muchas veces,
-persiguiendo diferencias dentro del ruido. Que las diecisiete decisiones terminen en «no cambiar»
+persiguiendo diferencias dentro del ruido. Que dieciséis de las dieciocho decisiones terminen en «no cambiar»
 indica que las puertas de elegibilidad están operando. No elimina el problema --- el
 Deflated Sharpe del Capítulo~\ref{chap:resultados} sigue penalizando por las configuraciones
 ensayadas, y la cadena eleva ese recuento en lugar de reducirlo ---, pero acota su alcance: la
@@ -234,7 +238,7 @@ toman finalmente se decide con el procedimiento de la Sección~\ref{sec:portfoli
 presenta en el Capítulo~\ref{chap:resultados-economicos}.
 
 Las restantes condiciones de simulación sí son constantes del entorno y no se optimizan: comisión de
-5 pb, \textit{slippage} de 10 pb y SPY como benchmark, nunca como posición. Los umbrales se expresan
+10 pb, \textit{slippage} de 20 pb y SPY como benchmark, nunca como posición. Los umbrales se expresan
 en puntos básicos anuales de alfa esperado para poder compararlos entre horizontes. Una rotación
 requiere que la diferencia esperada cubra el coste de ida y vuelta y un margen de 50 pb; una compra
 nueva usa histéresis. Estas reglas pretenden preservar señal y controlar rotación, no volver a
@@ -247,10 +251,11 @@ posterior.
 \section{Ejemplo de decisión y coste}
 
 \begin{ejemplo}[Cuándo se rota y cuándo no]
-Con horizonte de doce meses, comisión de 5 pb y \textit{slippage} de 10 pb, una rotación completa
-cuesta 30 pb. Si la peor posición tuviese alfa esperado 60 pb, una candidata externa 250 pb y el
-margen de rotación fuese 50 pb, la mejora de 190 pb superaría los 80 pb exigidos y se rotaría. Si la
-candidata ofreciese 120 pb, la mejora no cubriría coste y margen, y se conservaría la posición.
+Con horizonte de doce meses, comisión de 10 pb y \textit{slippage} de 20 pb, una rotación completa
+--- vender una posición y comprar otra --- cuesta 60 pb. Si la peor posición tuviese alfa esperado
+60 pb, una candidata externa 250 pb y el margen de rotación fuese 50 pb, la mejora de 190 pb
+superaría los 110 pb exigidos entre coste y margen, y se rotaría. Si la candidata ofreciese 150 pb,
+la mejora de 90 pb no cubriría esos 110 pb y se conservaría la posición.
 \end{ejemplo}
 
 El ranking ordena preferencias; la operación necesita además una ventaja neta. Las cifras anteriores

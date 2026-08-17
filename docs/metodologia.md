@@ -37,7 +37,19 @@ la identidad del dataset resuelta antes de materializarlo.
 La composición del índice es point-in-time y se intenta descargar **todo** ticker que perteneció al
 S&P 500 en algún momento, no solo los vivos (`historical_universe`), con una guarda contra símbolos
 reciclados: si el primer precio disponible es posterior a la última fecha en el índice, esos datos
-son de otra empresa que reutilizó el símbolo y se descartan (`is_recycled_ticker`).
+son de otra empresa que reutilizó el símbolo (`is_recycled_ticker`). La serie se **trunca al periodo
+de pertenencia** en vez de descartarse entera, porque un símbolo reciclado conserva historia legítima
+mientras la empresa estuvo en el índice, y es justo la que el panel necesita.
+
+La regla compara una fecha de *pertenencia* con una de *disponibilidad*, así que lleva dos
+salvaguardas contra el falso positivo: no se aplica cuando el ticker salió del índice antes de que
+empiece la ventana de descarga —ahí el primer precio observable es tardío por construcción, no por
+reciclaje— y exige un margen de 30 días, porque reasignar un símbolo lleva meses y un hueco de
+semanas es historia truncada por el proveedor.
+
+La **ventana de descarga (1990) es distinta del inicio del panel (2003)**: se baja más historia de la
+que el panel usa, para resolver el universo y alimentar medias móviles y momentum a 12 meses del
+primer snapshot, sin mover el periodo evaluado. Ambas fechas entran en la huella del dataset.
 
 Eso elimina el sesgo de supervivencia **de la composición**, pero no el de la **cobertura de datos**,
 que es donde de verdad vive. Una empresa entra en el panel solo si tiene precio observable y un
@@ -49,11 +61,47 @@ un índice más pequeño, y confundir ambas cosas convierte una limitación hone
 
 Por eso la cobertura se **mide y se publica**, no se declara: `universe_coverage.json` registra, por
 año, los miembros del índice, cuántos son elegibles para el panel y el motivo de exclusión de cada
-uno de los demás (`recycled_ticker`, `missing_price`, `missing_fundamental_or_report`), y añade un
-recuento de resolución sobre el universo histórico completo. Un ticker que no resuelve **no es
-prueba de que la empresa muriera**: puede haber cambiado de símbolo, presentar formularios de emisor
-extranjero o llevar una clase de acción con puntuación distinta. Esas cuatro causas son separables y
-se cuentan por separado, precisamente para que la mortalidad real no se sobreestime.
+uno de los demás, y `ticker_diagnostics.csv` baja al detalle con **una fila por cada ticker del
+universo** (estado del precio, cobertura de fundamentales, CIK, informes y motivo de exclusión). Un
+ticker que no resuelve **no es prueba de que la empresa muriera**: puede haber cambiado de símbolo,
+presentar formularios de emisor extranjero o que el proveedor de precios haya retirado el símbolo.
+Esas causas son separables y se cuentan por separado, precisamente para que la mortalidad real no se
+sobreestime — de ahí que `symbol_withdrawn` (el proveedor no sirve el símbolo) y `download_failed`
+(avería reintentable) no se confundan con `missing_price` (sin serie observable).
+
+#### Qué dijo la medición, y por qué importa para leer los resultados
+
+La causa dominante de exclusión **no es la mortalidad**: solo el 5,5 % de los excluidos llevan el
+marcador `Q` de quiebra. Es la retirada de símbolos por el proveedor, que purga lo que deja de
+cotizar. Por eso la exclusión depende de la **antigüedad de la salida del índice**: 1,2 % entre los
+que siguen en él y 94,4 % entre los que salieron hace más de veinte años. Los 503 miembros actuales
+están casi todos en el panel; el agujero son los tickers históricos.
+
+La consecuencia es un **sesgo de supervivencia que infla los resultados y decae con el tiempo**: en
+1998 los miembros incluidos sobreviven hasta hoy un 42 pp más que los del índice real, y en 2026 la
+diferencia es nula. Como el entrenamiento es rolling, el exceso baja de 26 pp (evaluando 2015) a
+8 pp (evaluando 2026).
+
+Dos cautelas que se derivan y gobiernan la lectura:
+
+1. **No vale el argumento «casi todas las ausentes fueron adquiridas con prima, luego el sesgo es
+   conservador».** Cuenta cabezas en lugar de permanencia: una adquirida rinde una vez y desaparece,
+   una superviviente compone durante todo el periodo. Se comprobó y es falso.
+2. **Lo medido es la composición, no el retorno de las excluidas** (solo 35 de 563 tienen alguna
+   fila de precio), así que el sesgo **no se cuantifica en puntos de rentabilidad**.
+
+Por eso la limitación no se responde acortando la ventana de entrenamiento —de 8 a 4 años se pierde
+la mitad de las filas para quitar 2,3 pp— sino **leyendo el rendimiento era por era**, que ya se
+calcula y no requiere código nuevo:
+
+- `SELECTION_ERAS = ((2015,2018), (2019,2021), (2022,2024))` en el catálogo, pre-registradas.
+- `agent_era_matrix()` (exportador LaTeX) da el **Rank-IC medio por agente y era**. Es la lectura
+  que responde a esta pregunta: el sesgo vale ~26 pp en 2015-2018 y ~8 pp en 2022-2024, así que un
+  Rank-IC estable entre eras indica que el sesgo **no** está impulsando el resultado, y una ventaja
+  concentrada en 2015-2018 lo delataría.
+- `bootstrap_and_eras()` (`robustness.py`) responde una pregunta **distinta y complementaria**:
+  recalcula el Rank-IC **excluyendo** cada era, para ver si el resultado depende de una sola. No
+  sustituye a la lectura anterior; conviene no confundirlas al redactar.
 
 Controles de ausencia de lookahead:
 
@@ -282,6 +330,25 @@ empate y, con ella, el baseline de todas las pasadas siguientes. Una cadena cuya
 compartan versión de catálogo es por tanto **condicional a esa versión** en su trayectoria, aunque
 todas sus cifras sean correctas. La regla operativa es simple: **todas las pasadas de una cadena
 corren bajo la misma versión de catálogo**, y la versión se declara junto al `study_id`.
+
+### Los diagnósticos posteriores al ganador son opcionales por pasada
+
+En una cadena, las pasadas intermedias existen **solo para elegir configuración**: su ganador es el
+punto de partida de la siguiente y su cartera no se publica. Todo lo que el runner hace después de
+congelar el ganador —carteras diagnósticas, perfiles, robustez y atribución— es explicación del
+ganador, no parte de la decisión, así que en esas pasadas es trabajo cuya salida se descarta.
+
+Por eso el lanzamiento admite un interruptor, **`post_winner_diagnostics`, activado por defecto**,
+que al desactivarse termina el Study en cuanto escribe `winner.json`. No toca la selección: el
+recorrido predictivo, los candidatos y la regla de decisión son idénticos con y sin él. Lo único que
+cambia es qué se explica después, y el presupuesto lo declara antes de lanzar.
+
+La razón de fondo no es el coste, sino la era reservada. `attribution.json` contiene la confirmación
+2025–2026, que por doctrina se evalúa **exactamente una vez** y se publica sea cual sea el
+resultado. Ejecutarla en una pasada intermedia la gastaría sobre una configuración destinada al
+descarte, y repetirla en cada pasada convertiría la única defensa contra la multiplicidad en otra
+variable más sobre la que se ha mirado muchas veces. La regla operativa: **la confirmación fuera de
+muestra se ejecuta en la última pasada de la cadena**, no en las intermedias.
 
 ## 5 ter. El Portfolio Study
 
@@ -664,7 +731,7 @@ produce «la misma cartera sin comisiones»**, sino una cartera distinta, porque
 desploman y se opera mucho más. Y al revés, una cartera que afronta costes altos opera menos y se
 protege sola. Por eso el efecto del coste tiene dos lecturas legítimas —sobre la ruta de operaciones
 congelada y sobre una cartera que vuelve a decidir— y la distancia entre ambas mide cuánto protege
-esta doctrina de umbrales. El diseño del diagnóstico está en `docs/plan_pendiente.md`.
+esta doctrina de umbrales. El diseño del diagnóstico está en `docs/plan_latex.md`.
 
 ### Qué aportó cada posición
 
@@ -873,6 +940,6 @@ TFM debe proceder de Studies completos, identificar configuración y hashes, sep
 estrés conocido y discutir multiplicidad, solapamiento temporal, costes, universo y sesgos
 residuales.
 
-El manuscrito LaTeX es el informe formal y **está congelado entre migraciones**: no se edita como
-parte de un cambio de código. Lo que el manuscrito tendrá que recoger se acumula en
-`docs/cambios_latex.md`, y lo planificado y todavía no hecho en `docs/plan_pendiente.md`.
+El manuscrito LaTeX es el informe formal y **está congelado entre actualizaciones**: no se edita como
+parte de un cambio de código. Lo que el manuscrito tendrá que recoger, y el trabajo planificado sobre
+él, se acumulan en `docs/plan_latex.md`.

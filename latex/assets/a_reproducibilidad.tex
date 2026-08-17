@@ -9,31 +9,26 @@ Studies} en los que el ganador de cada pasada es el \textit{baseline} de la sigu
 permiten localizar cualquier cifra citada en el texto.
 
 \begin{description}[leftmargin=3.2cm,style=nextline,font=\normalfont\ttfamily]
-  \item[Model Study 1] \studyidA{} · ganador \artefacto{run-6eaa47a0597b} · catálogo v6
-  \item[Model Study 2] \studyidB{} · ganador \artefacto{run-2dc586be8653} · catálogo v6
-  \item[Model Study 3] \studyidC{} · ganador \artefacto{run-f134d7eb9e06} · catálogo v7
-  \item[Portfolio Study] \studyportfolio{} · 1.728 carteras evaluadas
+  \item[Model Study 1] \studyidA{} · ganador \artefacto{run-803c214fd2ac}
+  \item[Model Study 2] \studyidB{} · ganador \artefacto{run-95dcffb1640f}
+  \item[Model Study 3] \studyidC{} · ganador \artefacto{run-1bb331e23a18}
+  \item[Portfolio Study] \studyportfolio{} · 1.440 carteras evaluadas
 \end{description}
 
 El Model Study 3 es el estudio de referencia del documento: de él sale toda la evidencia predictiva.
 Sus identificadores de datos son los siguientes.
 
 \begin{description}[leftmargin=3.2cm,style=nextline,font=\normalfont\ttfamily]
-  \item[dataset\_hash] \artefacto{b9134b218e3bf7fc\ldots{}a69df0a92653fbd3}
-  \item[evaluation\_key] \artefacto{0088d08579c1e65f\ldots{}5dbf2fa71de0a27f}
-  \item[catalog\_hash] \artefacto{845d55249866f2f0\ldots{}049f59a8b1a92e7}
-  \item[catalog\_version] 7
+  \item[dataset\_hash] \artefacto{b5db6211d03fcd56\ldots{}f182071e5887cd9}
+  \item[evaluation\_key] \artefacto{f7152472aeddb96c\ldots{}ac3933d8eb36167d}
+  \item[catalog\_hash] \artefacto{930f1f8c106d3928\ldots{}9b9c48857e31910152}
 \end{description}
 
-Las tres pasadas emplearon la misma ventana de selección --- 117 cohortes mensuales entre 2015 y
-2024 --- y reservaron 2025--2026 sin que interviniera en ninguna decisión. La métrica de selección
-fue \texttt{rank\_ic\_only} en los tres casos y \texttt{information\_ratio} en el Portfolio Study,
-cuya rejilla se calculó además sobre una serie recortada en 2024 para que ninguna de las 1.728
-combinaciones pudiera observar la era reservada.
-
-Las pasadas 1 y 2 corrieron bajo la versión 6 del catálogo y la tercera bajo la 7, de modo que no
-son estrictamente comparables entre sí en sus reglas de desempate. El alcance de esa discrepancia se
-analiza en la Sección~\ref{sec:reproducibilidad}.
+Las cuatro ejecuciones emplearon el mismo catálogo cerrado y la misma ventana de selección --- 117
+cohortes mensuales entre 2015 y 2024 ---, y reservaron 2025--2026 sin que interviniera en ninguna
+decisión. La métrica de selección fue \texttt{rank\_ic\_only} en las tres pasadas predictivas y
+\texttt{information\_ratio} en el Portfolio Study, cuya rejilla se calculó además sobre una serie
+recortada en 2024 para que ninguna de las 1.440 combinaciones pudiera observar la era reservada.
 
 \section{Regeneración de figuras y tablas}
 
@@ -43,11 +38,11 @@ persistidos mediante un único comando, ejecutado desde la raíz del repositorio
 \begin{quote}
 \ttfamily
 python latex/scripts/export\_study\_assets.py \\
-\hspace*{2em}--study-id study-20260814-095144-5ec17b78 \\
-\hspace*{2em}--chain-study-id study-20260812-163136-1b104667 \\
-\hspace*{2em}--chain-study-id study-20260813-103456-aa733655 \\
-\hspace*{2em}--chain-study-id study-20260814-095144-5ec17b78 \\
-\hspace*{2em}--portfolio-study-id study-20260814-135754-fdbdf2c5
+\hspace*{2em}--study-id study-20260817-094411-568bd37e \\
+\hspace*{2em}--chain-study-id study-20260816-182345-3cc1a5fb \\
+\hspace*{2em}--chain-study-id study-20260817-021135-b5926b62 \\
+\hspace*{2em}--chain-study-id study-20260817-094411-568bd37e \\
+\hspace*{2em}--portfolio-study-id study-20260817-212856-f86ca822
 \end{quote}
 
 Los tres \texttt{--chain-study-id} se declaran en orden de ejecución y el último coincide con
@@ -64,9 +59,9 @@ artefactos consumidos, separando las fuentes predictivas de las económicas. Ese
 tabla de correspondencia entre cada salida del manuscrito y su origen: ninguna cifra generada por
 script entra en el documento sin quedar registrada allí.
 
-Dos elementos son la excepción y conviene declararlo: las Tablas~\ref{tab:defectos}
-y~\ref{tab:versiones} del Anexo~\ref{anexo:desarrollo} se transcriben de la bitácora del proyecto
-y no de un artefacto del estudio, porque documentan el proceso de desarrollo y no una medición.
+Un elemento es la excepción y conviene declararlo: la Tabla~\ref{tab:defectos} del
+Anexo~\ref{anexo:desarrollo} se transcribe de la bitácora del proyecto y no de un artefacto del
+estudio, porque documenta el proceso de desarrollo y no una medición.
 
 Hay una segunda salvedad, sobre qué se puede regenerar y qué no. El repositorio versiona los
 artefactos en formato JSON --- \artefacto{winner.json}, \artefacto{decisions.json},

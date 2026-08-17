@@ -29,7 +29,7 @@ meta\_recency\_weighting & Meta-agente & Sí & off, linear, exponential & off \\
 rotation\_edge\_bps & Cartera informativa & No & 25.0, 50.0, 100.0 & 50.0 \\
 train\_lookback\_years & Temporal & Sí & 4, 8, 12 & 8 \\
 max\_cash\_weight & Cartera informativa & No & 0.0, 0.1, 0.25 & 0.25 \\
-minimum\_holding\_period & Cartera informativa & No & none, quarter horizon, half horizon, full horizon & none \\
+minimum\_holding\_period & Cartera informativa & No & none, quarter horizon, half horizon, full horizon & half horizon \\
 coverage\_percentile\_floor & Cartera informativa & No & 0.0, 60.0, 80.0 & 60.0 \\
 execution\_lag\_days & Temporal & Sí & 30, 45, 60 & 60 \\
 lgbm\_learning\_rate & Modelo & Sí & 0.03, 0.05, 0.1 & 0.03 \\
@@ -40,10 +40,10 @@ price\_only\_strictness\_multiplier & Cartera informativa & No & 1.0, 1.5, 2.0 &
 recency\_weighting & Temporal & Sí & off, linear, exponential & off \\
 winsorization & Representación & Sí & 0.0, 0.01, 0.025 & 0.0 \\
 price\_only\_sell\_only & Cartera informativa & No & False, True & False \\
-max\_features\_per\_agent & Representación & Sí & 8, 12, 20 & 20 \\
+max\_features\_per\_agent & Representación & Sí & 8, 12, 20 & 12 \\
 objective & Temporal & Sí & rank regression, ranking & rank regression \\
 sizing\_mode & Cartera informativa & No & equal, alpha proportional & alpha proportional \\
-commission\_bps & Cartera informativa & No & 0.0, 5.0, 10.0 & 5.0 \\
+commission\_bps & Cartera informativa & No & 0.0, 5.0, 10.0 & 10.0 \\
 feature\_weighting\_mode & Representación & Sí & model native, oos stability prune & oos stability prune \\
-slippage\_bps & Cartera informativa & No & 5.0, 10.0, 20.0 & 10.0 \\
+slippage\_bps & Cartera informativa & No & 5.0, 10.0, 20.0 & 20.0 \\
 \end{longtable}

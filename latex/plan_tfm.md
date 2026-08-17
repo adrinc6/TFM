@@ -6,9 +6,10 @@
 > (las cifras trazables). Aquí se decide cómo se **cuenta** el proyecto, no cómo se construye. Se
 > actualiza cada vez que se cierra un capítulo o cambia una decisión de estructura.
 >
-> **El manuscrito está congelado entre migraciones**: los cambios de código no lo editan, sino que
-> se acumulan en `docs/cambios_latex.md`. Ese fichero es el punto de partida de la próxima
-> migración.
+> **El manuscrito está congelado entre actualizaciones**: los cambios de código no lo editan, sino
+> que se acumulan en `docs/plan_latex.md`. Ese fichero es el punto de partida de la próxima
+> actualización: dice **qué** escribir y dónde; este plan cubre el **cómo** (formato, estructura y
+> convenciones).
 
 ## Estado del proyecto a 2026-08-14
 
@@ -17,11 +18,11 @@ terminado y su evidencia está completa en disco.
 
 | Campo | Valor |
 |---|---|
-| Model Study 1 | `study-20260812-163136-1b104667` · ganador `run-6eaa47a0597b` · catálogo v6 |
-| Model Study 2 | `study-20260813-103456-aa733655` · ganador `run-2dc586be8653` · catálogo v6 |
-| **Model Study 3 (referencia)** | **`study-20260814-095144-5ec17b78`** · ganador `run-f134d7eb9e06` · catálogo **v7** |
-| **Portfolio Study** | **`study-20260814-135754-fdbdf2c5`** · 1.728 carteras por Information Ratio |
-| Hash de dataset | `b9134b218e3bf7fc156372d61e02056ecfa6036777e0fe84a69df0a92653fbd3` |
+| Model Study 1 | `study-20260816-182345-3cc1a5fb` · ganador `run-803c214fd2ac` |
+| Model Study 2 | `study-20260817-021135-b5926b62` · ganador `run-95dcffb1640f` |
+| **Model Study 3 (referencia)** | **`study-20260817-094411-568bd37e`** · ganador `run-1bb331e23a18` |
+| **Portfolio Study** | **`study-20260817-212856-f86ca822`** · 1.440 carteras por Information Ratio |
+| Hash de dataset | `b5db6211d03fcd56815afb316514215234e7300adf88f5a07f182071e5887cd9` |
 | Selección | 2015–2024, 117 cohortes mensuales, sólo Rank-IC pareado |
 | Era reservada | 2025–2026 (6 cohortes, hasta 2025-06-29), sin participación en ninguna decisión |
 
@@ -37,36 +38,46 @@ regla que la sustituye:
 > La evidencia **predictiva** sale del Model Study 3; la **económica**, del ganador del Portfolio
 > Study. Ninguna cifra del study `b4d7a8d8` sobrevive en el documento.
 
-**Aviso de reproducibilidad (hay que declararlo en el TFM).** La cadena no corrió entera bajo la
-misma versión de catálogo: los studies 1 y 2 usaron `CATALOG_VERSION` 6 y el study 3 la 7, que
-invierte el desempate por simplicidad de `execution_lag_days`. Los tres son evidencia válida y
-trazable —los hashes de dataset y de evaluación lo acreditan—, pero las tablas deben **citar la
-versión de catálogo junto al `study_id`** y el capítulo de limitaciones debe recogerlo. El Portfolio
-Study no reentrena nada: reutiliza los scores congelados del ganador del study 3.
+**Aviso de procedencia (hay que declararlo en el TFM).** Las tres pasadas corrieron bajo el mismo
+catálogo, así que la antigua limitación por versiones heterogéneas desaparece y **no se menciona el
+versionado en el manuscrito**. Lo que sí hay que declarar es otra cosa: las pasadas 1 y 2 corrieron
+con los diagnósticos posteriores al ganador desactivados, de modo que **no tienen** `robustness.json`
+ni `attribution.json`. Ninguna tabla de robustez o atribución puede citarlas: solo el Model Study 3.
+El Portfolio Study no reentrena nada, reutiliza los scores congelados del ganador del study 3.
 
 ### Los cinco resultados que vertebran el documento
 
 Cifras de la **ventana de selección** (2015–2024) del Model Study 3, salvo indicación contraria. Las
 cifras económicas son de la **cartera ganadora** del Portfolio Study. Cuidado al citar: los
-artefactos también contienen la ventana completa (123 cohortes), donde el meta da 0,1058 y `risk`
-0,1197.
+artefactos también contienen la ventana completa (123 cohortes), donde el meta da 0,1033 y `risk`
+0,1175.
 
-1. **El sistema aprende.** ✅ El meta aprendido alcanza Rank-IC 0,1090 frente a 0,0675 de la
-   ponderación ingenua (+61 %). *Matiz obligatorio:* `risk` por separado llega a 0,1227, es decir,
-   **bate al meta**, y el propio meta acaba asignándole **más del 95 %** del peso (variante
+1. **El sistema aprende.** ✅ El meta aprendido alcanza Rank-IC 0,1067 frente a 0,0690 de la
+   ponderación ingenua (+55 %). *Matiz obligatorio:* `risk` por separado llega a 0,1201, es decir,
+   **bate al meta**, y el propio meta acaba asignándole el grueso del peso (variante
    `stacked_rolling_free`, sin tope). La tesis multi-agente se matiza, no se da por demostrada.
-2. **Lo aprendido es señal real.** ✅ Rank-IC 0,1090, IC-IR 0,851, $t$ de Newey-West 3,46 y 74,36 %
-   de cohortes positivas. Neutralización de estilo: retiene 86,62 %.
-3. **No es suerte.** ⚠️ **Se debilita.** La permutación sigue en $p=0{,}0001$, pero las carteras
-   aleatorias del escenario general dejan al modelo en el percentil 0,761 —no supera el umbral de
-   0,95— y el Deflated Sharpe baja a 0,682. Encadenar estudios compra Rank-IC y encarece el DSR.
-4. **Bate al S&P 500 en la era reservada.** ✅ **pero sólo con la cartera optimizada.** Con ella:
-   exceso **+2,56 %**, IR **+0,304**, 1 de 2 años. Con la cartera del catálogo: **−11,29 %**, IR
-   **−1,167**, 0 de 2 años. El Rank-IC de esa era es **+0,0441** en ambos casos (no depende de la
-   cartera).
-5. **El perfil `balanced` es el mejor.** ✅ en selección, con IR 0,844 frente a 0,570 del segundo
-   (`defensive`). ⚠️ En la era reservada el orden se invierte casi por completo —`momentum`, el peor
-   en selección, es el mejor allí con IR 1,889— sobre 6 cohortes: es régimen, no hallazgo.
+2. **Lo aprendido es señal real.** ✅ Rank-IC 0,1067, IC-IR 0,833, $t$ de Newey-West 3,33 y 76,07 %
+   de cohortes positivas. Neutralización de estilo: retiene 87,21 %.
+3. **No es suerte.** ⚠️ **Se debilita.** La permutación sigue en $p=0{,}0001$, pero el Deflated
+   Sharpe baja a **0,573** sobre 46 configuraciones. Encadenar estudios compra Rank-IC y encarece el
+   DSR. *Ojo con la base:* el DSR penaliza por las configuraciones **predictivas**, no por la rejilla
+   de cartera, que se aplica después sobre un modelo ya congelado.
+4. **Bate al S&P 500 en la era reservada.** ⚠️ **Matizado:** con la cartera optimizada el exceso pasa
+   a ser positivo (**+0,24 %**, IR **+0,109**, 1 de 2 años) frente al IR **−1,795** de la cartera del
+   catálogo, que no batía ningún año. Es un **cambio de signo, no una superioridad demostrada**: en la
+   era reservada la cartera empata con el índice. El Rank-IC de esa era es **+0,0364** en ambos casos
+   (no depende de la cartera).
+5. **El perfil `balanced` es el mejor.** ✅ en selección, con IR 0,841 frente a 0,342 del segundo
+   (`value`). `balanced` **es** la cartera ganadora de la rejilla, no un perfil aparte. En la era
+   reservada solo `balanced` y `momentum` conservan exceso positivo, mientras los estilos más
+   marcados caen por debajo del −15 %: cuanto más se aparta un perfil de la ordenación aprendida, más
+   depende del régimen.
+
+**Hallazgo nuevo que atraviesa todo (2026-08-17).** El Rank-IC por era **sube** (0,0949 → 0,0543 →
+0,1739) mientras el Information Ratio **cae** hasta volverse negativo (1,103 → 0,478 → −0,204). Sirve
+para descartar que el sesgo de cobertura del panel fabrique la capacidad predictiva —es máxima donde
+el panel está más completo— y **no** sirve para extender esa tranquilidad al resultado económico.
+Las dos series se enuncian juntas o no se enuncian.
 
 ### El marco narrativo vigente: dos objetivos (2026-08-15)
 
@@ -82,7 +93,7 @@ cómo se ejecutó realmente el trabajo:
 
 La clave del marco: durante los tres Model Studies **la cartera es secundaria porque todavía no se
 había optimizado** —se mantuvo la configuración por defecto del catálogo precisamente para que
-ninguna decisión predictiva pudiera apoyarse en ella—. Por eso el −11,29 % de la era reservada con
+ninguna decisión predictiva pudiera apoyarse en ella—. Por eso el IR de −1,795 de la era reservada con
 esa cartera no es el fracaso del trabajo: es el punto de partida del Objetivo 2 y la medida de
 cuánto depende el resultado de la gestión.
 
@@ -92,23 +103,23 @@ actualizó —sus cinco objetivos operativos eran panel, agentes, meta, selecci�
 del Objetivo 1—. El realineamiento afecta a `00_resumen.tex` (ES y EN), `01_introduccion.tex`
 (dos objetivos, H1–H4 y sexto objetivo operativo), `07_resultados_economicos.tex`,
 `09_conclusiones.tex` y `t01_afirmaciones.tex`. Los matices declarados se conservan sin excepción:
-DSR 0,682, seis cohortes reservadas, la ganadora es la mejor de 1.728 y `risk` bate al meta.
+DSR 0,573, seis cohortes reservadas, la ganadora es la mejor de 1.440 y `risk` bate al meta.
 
 ---
 
 Contraste que sostiene el Objetivo 2: el mismo modelo, la misma señal
-y el mismo panel producen fuera de la ventana de decisión un exceso de −11,29 % o de +2,56 % según
+y el mismo panel producen fuera de la ventana de decisión un IR de −1,795 o de +0,109 según
 cómo se construya la cartera. La capacidad predictiva no era el cuello de botella: lo era su
 traducción a posiciones, hasta el punto de decidir el signo del resultado. Se enuncia con la cautela
 que imponen 6 cohortes cerradas y ~1,41 años de cartera, y declarando que la ganadora es la mejor de
-1.728 evaluadas.
+1.440 evaluadas.
 
 ## Cómo se trabaja este plan
 
 1. El autor pide un capítulo o una sección concreta.
 2. Antes de escribir, se relee este plan, los capítulos `.tex` ya redactados (para mantener
    terminología y notación consistentes) y el estado real del proyecto: `docs/metodologia.md`,
-   `docs/cambios_latex.md`, el código, los tests y los artefactos del study de referencia.
+   `docs/plan_latex.md`, el código, los tests y los artefactos del study de referencia.
 3. Un capítulo solo se escribe con datos y resultados que existen. **Ninguna cifra entra en el `.tex`
    sin que se pueda señalar el artefacto exacto de donde sale.** Nada de cifras inventadas ni
    redondeadas «de memoria».

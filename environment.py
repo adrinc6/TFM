@@ -188,6 +188,16 @@ META_WEIGHT_MIN = 0.10
 
 RUN_SCOPE = os.getenv("RUN_SCOPE", "full").strip().lower()
 
+# Procesos que recorren en paralelo la rejilla del Portfolio Study. Es un ajuste **operativo**, no
+# científico: la rejilla es un cartesiano cuyas combinaciones son independientes entre sí, así que
+# repartirlas no cambia ni qué se evalúa ni cuál gana, solo cuánto se tarda. Por eso vive aquí y no
+# en `Settings`, que es la configuración que define el experimento.
+#
+# El valor por defecto es deliberadamente inferior al número de núcleos: cada worker es un proceso
+# con su propio panel en memoria (~0,2-0,4 GB), de modo que el límite práctico es la RAM y no la CPU.
+# `1` restaura el recorrido secuencial exacto.
+PORTFOLIO_GRID_WORKERS = max(1, int(os.getenv("PORTFOLIO_GRID_WORKERS", "6")))
+
 FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
 EDGAR_USER_AGENT = os.getenv(
     "EDGAR_USER_AGENT", "TFM Academic Research adri4nc2001@gmail.com"
@@ -205,6 +215,9 @@ class Settings:
     data_start_date: str = DATA_START_DATE
     panel_start_date: str = PANEL_START_DATE
     end_date: str = DATA_END_DATE
+    # Tercera llamada a Finnhub por ticker (un tercio del tiempo de ingesta) sin ningún consumidor:
+    # no hay agente de sentimiento ni feature que lea `news.parquet`. Se activa si algún día lo hay.
+    download_news: bool = False
     run_scope: str = RUN_SCOPE
     benchmark_ticker: str = BENCHMARK_TICKER
     execution_year: int = EXECUTION_YEAR

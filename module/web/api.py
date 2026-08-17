@@ -12,7 +12,8 @@ from urllib.parse import parse_qs, urlparse
 from environment import PROJECT_ROOT
 from module.studies.catalog import public_catalog
 from module.studies.config import (
-    initial_values, retention_budget, validate_definition, validate_portfolio_definition,
+    initial_values, post_winner_budget, retention_budget, validate_definition,
+    validate_portfolio_definition,
 )
 from module.storage.studies import (
     create_run, create_study, list_studies, read_study, safe_study_path, update_study,
@@ -37,7 +38,9 @@ def _json_safe(value: Any) -> Any:
 
 
 def study_preflight(payload: dict) -> dict:
-    allowed = {"name", "note", "definition", "run_scope", "retain_all_runs"}
+    allowed = {
+        "name", "note", "definition", "run_scope", "retain_all_runs", "post_winner_diagnostics",
+    }
     unknown = set(payload) - allowed
     if unknown:
         raise ValueError(f"Campos desconocidos: {sorted(unknown)}.")
@@ -48,12 +51,19 @@ def study_preflight(payload: dict) -> dict:
     retain_all = payload.get("retain_all_runs", False)
     if not isinstance(retain_all, bool):
         raise ValueError("retain_all_runs debe ser booleano.")
+    post_winner = payload.get("post_winner_diagnostics", True)
+    if not isinstance(post_winner, bool):
+        raise ValueError("post_winner_diagnostics debe ser booleano.")
+    # El recorte por diagnósticos va primero: `retention_budget` cuenta los runs que retendrán
+    # evidencia a partir de `total_runs`, así que debe ver el total ya reducido.
+    budget = post_winner_budget(budget, post_winner)
     return {
         "valid": True,
         "definition": definition,
         "budget": retention_budget(budget, retain_all),
         "run_scope": scope,
         "retain_all_runs": retain_all,
+        "post_winner_diagnostics": post_winner,
     }
 
 
@@ -148,6 +158,7 @@ def launch_study(payload: dict) -> dict:
         "note": str(payload.get("note") or ""),
         "run_scope": preflight["run_scope"],
         "retain_all_runs": preflight["retain_all_runs"],
+        "post_winner_diagnostics": preflight["post_winner_diagnostics"],
         "configuration": preflight["definition"],
         "budget": preflight["budget"],
         "catalog_version": catalog["version"],

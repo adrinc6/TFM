@@ -43,19 +43,31 @@ periodos en los que otras empresas ya habían sido expulsadas, adquiridas o queb
 ha documentado que esta selección puede inflar de forma material las conclusiones de rendimiento
 (Brown et al., 1992).
 
-La corrección no equivale a eliminar todo sesgo de supervivencia. Las fuentes gratuitas pueden no
-ofrecer la misma profundidad para firmas retiradas, algunos fundamentales históricos se han
-restatado y la disponibilidad puede variar por año. La diferencia es metodológica: el trabajo mide
-esa cobertura, expone sus huecos y evita tratarlos como si no existieran. La
-Tabla~\ref{tab:cobertura-anual}, más adelante en este capítulo, hace visible tanto el crecimiento
-del número de tickers como la fracción de filas que realmente puede usar el pipeline.
+La corrección no equivale a eliminar todo sesgo de supervivencia. Las fuentes gratuitas no ofrecen la
+misma profundidad para firmas retiradas, algunos fundamentales históricos se han restatado y la
+disponibilidad varía por año. La diferencia es metodológica: el trabajo mide esa cobertura, expone
+sus huecos y evita tratarlos como si no existieran. Las Tablas~\ref{tab:cobertura-anual}
+y~\ref{tab:resolucion-universo}, más adelante en este capítulo, cuantifican qué fracción del índice
+llega al panel cada año y por qué motivo falta cada uno de los tickers ausentes.
 
 Un caso adicional es la reutilización de símbolos. Un ticker puede corresponder a una empresa
 histórica y, años después, a otra distinta. CPQ dejó de pertenecer al índice en 2002, pero una serie
 de precios descargada posteriormente no necesariamente representa a Compaq; MOB presenta un caso
 análogo. Si se unieran esas series por ticker sin comprobar el intervalo de pertenencia, se crearía
 una historia de precios inexistente. La guarda de reciclaje compara la primera fecha de precio con
-el intervalo de membresía y excluye los símbolos incompatibles.
+el intervalo de membresía y, cuando detecta reutilización, \emph{recorta} la serie al periodo de
+pertenencia en lugar de descartar el símbolo entero: lo que sobra es la vida de la otra empresa, no
+la de la histórica. La regla lleva dos salvaguardas para no castigar de más: no se aplica si el
+ticker abandonó el índice antes del inicio de la ventana de descarga --- en ese caso no hay solape
+posible que comprobar --- y exige un margen de treinta días antes de declarar reutilización, de modo
+que un desfase administrativo entre la baja del índice y la última cotización no cuente como una
+empresa distinta.
+
+Conviene separar dos fechas que es fácil confundir. Los precios se descargan desde 1990, mientras
+que el panel evaluado empieza en 2003. Esa historia adicional no se usa para evaluar nada: sirve
+para resolver la pertenencia al índice y para alimentar medias móviles, volatilidades y momentum,
+que necesitan pasado antes de producir su primer valor válido. Ampliar la descarga no mueve, por
+tanto, el periodo sobre el que se mide el modelo.
 
 \section{Identidad, materialización y trazabilidad}
 
@@ -64,7 +76,7 @@ cadencia, horizonte, lag y versiones de transformación. Si dos evaluaciones res
 identidad, pueden reutilizar la materialización; si cualquiera de esos elementos cambia, se crea un
 dataset distinto. Los resultados no contienen una copia del panel: conservan la referencia y su
 hash, que para el panel de este trabajo es
-\texttt{b9134b218e3bf7fc\ldots{}a69df0a92653fbd3}. Esta elección reduce duplicación y permite
+\texttt{b5db6211d03fcd56\ldots{}f182071e5887cd9}. Esta elección reduce duplicación y permite
 reconstruir de qué datos procedió un resultado.
 
 La identidad de evaluación incluye además el hash del dataset. Sin esa condición, dos estudios con
@@ -92,15 +104,37 @@ los años que sólo se usan como historia de entrenamiento y nunca como cohortes
 
 \input{assets/t03_cobertura_anual.tex}
 
-Dos observaciones sobre esa tabla. La primera es que el número de \textit{tickers} distintos crece
-de 278 en 2003 a más de 500 en los años recientes, lo que refleja que la reconstrucción de la
-pertenencia histórica es más completa cuanto más cerca está del presente: es una limitación de la
-fuente, no una propiedad del índice, que ha tenido alrededor de quinientos componentes durante todo
-el periodo. La segunda es que la fracción de filas utilizables no baja del 99,4\,\% en ningún año.
-Esto último debe leerse con cuidado: mide qué proporción de las filas efectivamente
-construidas supera los controles de calidad, no qué proporción de las empresas que existieron
-llegaron a construirse. El sesgo de supervivencia que preocupa no se manifiesta como filas
-defectuosas sino como empresas ausentes, y esa ausencia no es observable desde el propio panel.
+La tabla tiene dos columnas que miden cosas distintas y conviene no confundirlas, porque la
+confusión hace parecer que todo está en orden. La \emph{cobertura} es la fracción de los miembros
+reales del índice que llega al panel, y crece del 49,0\,\% en 2003 al 99,2\,\% en 2026. La
+\emph{fracción utilizable} no baja del 99,4\,\% en ningún año, pero mide otra cosa: qué proporción
+de las filas efectivamente construidas supera los controles de calidad. Solo la primera habla del
+sesgo de supervivencia, que no se manifiesta como filas defectuosas sino como empresas ausentes.
+
+El índice, conviene subrayarlo, ha tenido alrededor de quinientos componentes durante todo el
+periodo: la cobertura creciente no describe un índice que crece, sino una reconstrucción histórica
+que se degrada cuanto más atrás se mira.
+
+Esa ausencia sí es observable, y está medida. El pipeline registra una fila por cada uno de los
+1.206 \textit{tickers} que alguna vez pertenecieron al índice, con el motivo por el que entra o no
+en el panel; la Tabla~\ref{tab:resolucion-universo} resume ese reparto.
+
+\begin{table}[H]
+  \centering
+  \footnotesize
+  \caption{Resolución del universo histórico: por qué falta cada \textit{ticker} ausente.}
+  \label{tab:resolucion-universo}
+  \input{assets/t03_resolucion_universo.tex}
+  \caption*{Sobre los 563 \textit{tickers} del universo histórico que no llegan al panel.}
+\end{table}
+
+El reparto desmiente la lectura intuitiva. La causa dominante no es la mortalidad empresarial sino
+la retirada de símbolos por parte del proveedor de precios: el 36,8\,\% de los ausentes son símbolos
+que su API ya no reconoce, y solo el 5,5\,\% de los excluidos llevan marcador de quiebra. Un dato
+adicional lo confirma: los 563 ausentes \emph{sí} tienen fundamentales descargados, de modo que el
+cuello de botella es exclusivamente el precio y la exclusión no señala empresas sin información
+contable. El Capítulo~\ref{chap:limitaciones} recoge la dirección y la magnitud del sesgo que esto
+introduce.
 
 \section{Observabilidad temporal: qué se sabía y cuándo}
 \label{sec:observabilidad}
@@ -241,7 +275,7 @@ protocolo. Lo que interesa medir aquí es otra cosa: cuánta señal tiene cada v
 \emph{por separado}, antes de cualquier modelo.
 
 La respuesta es que muy poca, y ese es justamente el punto. Los Rank-IC univariantes son diminutos
-frente al 0,1090 del sistema completo: el mayor de todos, \artefacto{gap\_21d}, llega a 0,0538, y la
+frente al 0,1067 del sistema completo: el mayor de todos, \artefacto{gap\_21d}, llega a 0,0540, y la
 mayoría se queda un orden de magnitud por debajo. No es una contradicción sino el argumento a favor
 de combinar: ninguna variable aislada ordena el mercado, y la capacidad predictiva aparece al
 agregar muchas señales débiles mediante modelos no lineales y una ponderación aprendida. La

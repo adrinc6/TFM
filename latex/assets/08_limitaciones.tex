@@ -21,7 +21,7 @@ Capítulos~\ref{chap:resultados} y~\ref{chap:resultados-economicos}; la tabla la
 verlas juntas y ordenadas. Quedan dos precisiones que ninguna fila puede expresar por sí sola.
 
 La primera es que la multiplicidad se agravó \emph{deliberadamente}, dos veces: al encadenar tres
-Model Studies y al recorrer un cartesiano de 1.728 carteras. No es un descuido sino una decisión que
+Model Studies y al recorrer un cartesiano de 1.440 carteras. No es un descuido sino una decisión que
 asume su precio, y ese precio está declarado. Pero sus dos alcances son distintos y conviene no
 confundirlos: la multiplicidad predictiva contamina la métrica que el trabajo reporta como resultado
 principal, mientras que la de la rejilla de cartera no puede tocar el Rank-IC y se limita a
@@ -37,9 +37,17 @@ la incógnita sin resolverla: el trabajo no explica \emph{por qué} unas variabl
 negociación a semanas ordenan retornos a doce meses, y una señal cuyo mecanismo no se comprende es
 más frágil ante un cambio de régimen que una respaldada por una hipótesis económica contrastada.
 
+Hay una tercera precisión, y es la que más condiciona las conclusiones: el orden predictivo y el
+pago económico no se mueven en la misma dirección a lo largo del periodo. El Rank-IC es mayor en la
+era más reciente, mientras que el Information Ratio de la cartera cae y se vuelve negativo en esa
+misma era. La Sección~\ref{sec:eras} desarrolla la lectura; aquí basta con enunciar su consecuencia
+para el alcance del trabajo: la evidencia de que el modelo \emph{ordena} es más sólida que la de que
+esa ordenación \emph{se cobra}.
+
 Todo ello conduce a una lectura disciplinada: la investigación demuestra una ordenación predictiva
-robusta bajo un protocolo concreto y sugiere utilidad económica, pero requiere más cohortes
-cerradas, universos adicionales y un catálogo más estrecho antes de extrapolarla.
+robusta bajo un protocolo concreto, pero su traducción económica es más frágil de lo que sugieren
+las cifras agregadas de la ventana de selección, y requiere más cohortes cerradas, universos
+adicionales y un catálogo más estrecho antes de extrapolarla.
 
 \section{Amenazas a la validez interna}
 
@@ -50,19 +58,49 @@ hoy disponible con una fecha de filing antigua no garantiza que sea idéntica a 
 el mercado ese día. La mitigación consiste en conservar periodo, filing y lag de ejecución, y en no
 presentar la fuente como una cinta histórica perfecta.
 
+\subsection*{El sesgo de supervivencia por cobertura del proveedor}
+
 La pertenencia histórica al índice limita el sesgo de supervivencia de composición, pero no elimina
-la cobertura desigual de empresas retiradas ni la posible pérdida de fundamentales antiguos. El
-estudio mide la fracción de filas utilizables y protege contra tickers reciclados; una réplica con
-una fuente comercial point-in-time sería una prueba adicional de robustez. Esta limitación afecta
-principalmente a la generalización, no a la trazabilidad del panel que sí se evaluó.
+la cobertura desigual de las empresas retiradas. A diferencia de la versión habitual de esta
+salvedad, aquí no es una posibilidad genérica: está medida, y conviene declarar las tres cosas que
+se saben de ella.
+
+La \textbf{causa} no es la mortalidad empresarial. De los 563 \textit{tickers} históricos que no
+llegan al panel, solo el 5,5\,\% llevan marcador de quiebra; la fracción mayor son símbolos que el
+proveedor de precios ha retirado de su API al dejar de cotizar. La probabilidad de estar ausente
+crece con el tiempo transcurrido desde la salida del índice --- del 1,2\,\% entre los miembros
+actuales al 94,4\,\% entre los que salieron hace más de veinte años ---, que es exactamente la firma
+de una fuente que poda su histórico, no la de un sector que quiebra.
+
+La \textbf{dirección} es optimista, no conservadora. Las empresas que sí llegan al panel sobreviven
+hasta hoy con mucha más frecuencia que los miembros reales del índice de su año: en 1998 lo hacen el
+77,7\,\% frente al 35,5\,\%, un exceso de 42 puntos porcentuales que se reduce a cero en 2026. Como
+el entrenamiento es una ventana móvil, el exceso que afecta a cada evaluación decae de 26,2 puntos
+al evaluar 2015 a 8,0 al evaluar 2026.
+
+Conviene además desactivar un argumento tentador y falso: que, como buena parte de las ausentes
+fueron adquiridas con prima, el sesgo sería conservador. Ese razonamiento cuenta cabezas en vez de
+permanencia. Una empresa adquirida rinde una vez y desaparece del panel; una superviviente compone
+durante todo el periodo, y es esa composición la que infla el resultado.
+
+Queda por declarar el \textbf{límite de lo demostrable}. Lo medido es la composición del universo,
+no el retorno de las empresas ausentes, que en su mayoría carecen precisamente de la serie de
+precios que permitiría calcularlo. El sesgo, por tanto, \emph{no se cuantifica en puntos de
+rentabilidad} y este trabajo no lo insinúa. Un dato acota su alcance en la dirección contraria: los
+563 ausentes tienen fundamentales descargados, así que la exclusión no selecciona empresas opacas
+sino símbolos sin precio. La lectura por eras de la Sección~\ref{sec:eras} es la comprobación
+empírica de si este sesgo mueve o no el resultado predictivo; una réplica con una fuente comercial
+point-in-time sería la prueba definitiva.
 
 \section{Amenazas económicas}
 
-Los costes son constantes, 5 pb de comisión y 10 pb de \textit{slippage}. Esto demuestra que el
-resultado no requiere coste cero, pero no modela impacto de mercado, \textit{bid--ask} dinámico,
-capacidad ni fiscalidad. Dado el turnover del 324\,\% anualizado, una especificación dependiente de
-liquidez podría modificar apreciablemente la cartera sin alterar el Rank-IC, y la cartera adoptada
---- ocho posiciones, sin efectivo --- es más sensible a esa especificación que la de partida.
+Los costes son constantes, 10 pb de comisión y 20 pb de \textit{slippage}, y no modelan impacto de
+mercado, \textit{bid--ask} dinámico ni fiscalidad. La sensibilidad medida acota esta limitación
+mejor de lo que suele acotarse: el exceso de la cartera no se agota hasta unos 295 puntos básicos
+por operación, casi diez veces el coste adoptado, de modo que el resultado no depende de haber
+elegido una comisión benévola. Esa holgura, sin embargo, se calcula sobre la ventana de selección,
+donde la cartera es la mejor de la rejilla; en la era reservada el exceso ya es negativo con coste
+cero, así que allí no hay margen que agotar y la pregunta por los costes no llega a plantearse.
 
 El universo estadounidense de gran capitalización limita además la extrapolación a pequeñas
 empresas, otros países o regímenes de liquidez diferentes.
@@ -96,20 +134,23 @@ estimador, no en una medición pareada.
 La tercera afectaba a las variables de cartera, que en versiones anteriores de este trabajo tomaban
 su valor del catálogo recomendado y no de una medición, de modo que las cifras económicas debían
 leerse como una cota inferior. El Portfolio Study resuelve esa limitación y la sustituye por otra de
-naturaleza distinta: la cartera ya no es arbitraria, pero es la mejor de 1.728 evaluadas sobre la
+naturaleza distinta: la cartera ya no es arbitraria, pero es la mejor de 1.440 evaluadas sobre la
 ventana de selección, y por tanto sus cifras dentro de esa ventana son ahora una cota \emph{superior}
 optimista en lugar de una inferior conservadora. La comprobación de la era reservada es la única
 lectura de esas cifras que no está sujeta a ese sesgo, y descansa sobre poco más de un año de datos.
 
-\section{Reproducibilidad y versiones de catálogo}
+\section{Decisiones con margen escaso}
 
-Las tres pasadas de la cadena no corrieron bajo la misma versión del catálogo, lo que las hace no
-estrictamente comparables en sus reglas de desempate; el Anexo~\ref{anexo:catalogo} detalla qué
-cambió y por qué no altera ninguna medición de Rank-IC.
+Conviene declarar cuánta evidencia sostiene realmente cada decisión de la pasada de referencia.
+De sus dieciocho decisiones, dieciséis conservaron el valor heredado porque ninguna alternativa
+consiguió desplazarlo, y solo dos lo cambiaron. De esas dos, una
+--- \artefacto{market\_regime\_feature} --- se resolvió por \emph{no inferioridad}: el candidato no
+demostró ser mejor, sino que no era peor, y ganó por la preferencia declarada de antemano hacia la
+configuración más simple. La otra --- \artefacto{lgbm\_learning\_rate} --- sí dominó al valor
+previo, pero con una ventaja media de tres diezmilésimas de Rank-IC y acertando en el 50,5\,\% de
+las 111 cohortes emparejadas, que es un margen muy fino.
 
-Lo que sí condiciona la lectura de los resultados es la consecuencia: dos de las diecisiete
-decisiones de la pasada de referencia se resolvieron por empate técnico, es decir, por una
-preferencia declarada de antemano y no por medición. Sus valores finales
---- \artefacto{execution\_lag\_days} y \artefacto{lgbm\_min\_child\_samples} --- no deben
-presentarse como hallazgos empíricos. En el segundo caso, además, la alternativa medía
-\emph{ligeramente mejor} que el valor elegido.
+La lectura correcta es doble. Que la cadena apenas mueva el ganador indica convergencia y no
+fragilidad: el protocolo no está persiguiendo ruido de una pasada a otra. Pero ninguno de esos dos
+valores debe presentarse como un hallazgo empírico del trabajo, porque la medición que los respalda
+no distingue con holgura entre las alternativas.

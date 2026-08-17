@@ -6,8 +6,7 @@
 Limitación & Evidencia que la cuantifica & Severidad \\
 \midrule
 Multiplicidad de configuraciones &
-Deflated Sharpe 0,682 sobre tres pasadas encadenadas más 1.728 carteras, por debajo del umbral
-0,95 &
+Deflated Sharpe 0,573 sobre 46 configuraciones evaluadas, por debajo del umbral 0,95 &
 Alta \\
 \addlinespace
 Solapamiento de cohortes &
@@ -20,40 +19,44 @@ Potencia de la era reservada &
 2 años por encima del índice &
 Alta \\
 \addlinespace
+Divergencia entre orden predictivo y pago económico &
+El Rank-IC por era sube (0,0949 $\to$ 0,0543 $\to$ 0,1739) mientras el IR cae y se vuelve negativo
+(1,103 $\to$ 0,478 $\to$ $-0{,}204$): ordenar bien no basta para cobrar &
+Alta \\
+\addlinespace
 Cartera elegida sobre la ventana de selección &
-La ganadora es la mejor de 1.728: su IR de 0,844 en 2015--2024 es una cota superior optimista, no
+La ganadora es la mejor de 1.440: su IR de 0,841 en 2015--2024 es una cota superior optimista, no
 una estimación insesgada &
 Alta \\
 \addlinespace
 Dominio de un solo agente &
-\textit{risk} aislado 0,1227 frente a 0,1090 del meta, que además le asigna más del 95\,\% del
-peso; la neutralización retiene 86,62\,\% &
+\textit{risk} aislado 0,1201 frente a 0,1067 del meta, que además le asigna el 68,6\,\% del peso
+medio; la neutralización por factores retiene 87,21\,\% &
 Media \\
 \addlinespace
 Mecanismo de la señal sin explicar &
-El agente dominante se apoya en \texttt{gap\_21d} y \texttt{range\_63d} (78\,\% de las
-observaciones), microestructura a semanas que ordena retornos a doce meses &
+El agente dominante se apoya en \texttt{gap\_21d} y \texttt{range\_63d} (36\,\% de las
+atribuciones locales), microestructura a semanas que ordena retornos a doce meses &
 Media \\
 \addlinespace
 Alfa factorial no significativo en selección &
-Alfa 0,27\,\% por periodo, $t=1{,}44$, $R^2=0{,}017$ &
+Alfa 0,20\,\% por periodo, $t=1{,}02$, $R^2=0{,}015$ &
 Media \\
 \addlinespace
 Costes constantes &
-5 pb de comisión y 10 pb de \textit{slippage}, sin impacto de mercado ni capacidad, sobre un
-turnover del 324\,\% &
-Media \\
-\addlinespace
-Universo restringido &
-S\&P 500 estadounidense; 278 \textit{tickers} en 2003 frente a más de 500 en años recientes &
-Media \\
-\addlinespace
-Versiones de catálogo heterogéneas &
-Pasadas 1 y 2 bajo catálogo v6, pasada 3 bajo v7, que invierte un desempate por simplicidad &
+10 pb de comisión y 20 pb de \textit{slippage}, sin impacto de mercado ni fiscalidad. El equilibrio
+resimulado está en 295 pb por operación, 9,8 veces el coste adoptado &
 Baja \\
 \addlinespace
+Cobertura incompleta del universo &
+El panel resuelve 643 de los 1.206 \textit{tickers} históricos: 49,0\,\% de los miembros del índice
+en 2003 y 99,2\,\% en 2026. El proveedor retira los símbolos que dejan de cotizar, y solo el
+5,5\,\% de los ausentes son quiebras &
+Media \\
+\addlinespace
 Salvaguarda \textit{a priori} en la curva de alfa &
-No se activa en ninguna fila: la calibración usa horizonte (80\,\%) o era (20\,\%) &
+Se activa en el 4,1\,\% de las filas; el resto calibra con ventana de horizonte (68,2\,\%), de era
+(18,0\,\%) o sin corrección (9,6\,\%) &
 Baja \\
 \addlinespace
 Factores no construibles &

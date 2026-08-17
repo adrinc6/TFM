@@ -230,6 +230,33 @@ def portfolio_budget(definition: Mapping[str, dict[str, Any]]) -> dict[str, Any]
     }
 
 
+def post_winner_budget(budget: Mapping[str, Any], post_winner_diagnostics: bool) -> dict[str, Any]:
+    """Descuenta del presupuesto los diagnósticos posteriores al ganador cuando se desactivan.
+
+    Un Study cuyo único fin es elegir configuración termina al congelar el ganador: carteras
+    diagnósticas, perfiles, robustez y atribución no llegan a ejecutarse. El presupuesto debe
+    declararlo antes de lanzar, porque `total_runs` es también el denominador del progreso
+    (ver runner.py) y anunciar runs que nunca ocurren dejaría la barra corta para siempre.
+    """
+    payload = dict(budget)
+    payload["post_winner_diagnostics"] = bool(post_winner_diagnostics)
+    if post_winner_diagnostics:
+        return payload
+    skipped = (
+        int(payload.get("portfolio_diagnostics", 0))
+        + int(payload.get("profiles", 0))
+        + int(payload.get("robustness_groups", 0))
+    )
+    payload["total_runs"] = max(1, int(payload.get("total_runs", 0)) - skipped)
+    payload["estimated_minutes"] = max(
+        0, int(payload.get("estimated_minutes", 0)) - int(payload.get("portfolio_diagnostics", 0)) * 2 - 30,
+    )
+    payload["portfolio_diagnostics"] = 0
+    payload["profiles"] = 0
+    payload["robustness_groups"] = 0
+    return payload
+
+
 def retention_budget(budget: Mapping[str, Any], retain_all_runs: bool) -> dict[str, Any]:
     """Ajusta el presupuesto cuando se conserva la evidencia completa de todos los runs.
 
@@ -268,6 +295,13 @@ def ordered_predictive_variables(definition: Mapping[str, dict[str, Any]]) -> li
 
 
 def diagnostic_portfolio_variables(definition: Mapping[str, dict[str, Any]]) -> list[str]:
+    """Variables de cartera a barrer como diagnóstico tras congelar el ganador.
+
+    Devuelve la lista vacía mientras el catálogo fije las variables de cartera (`modes` == `fixed`),
+    que es el caso desde que su optimización pasó al Portfolio Study. Se conserva porque la fase
+    sigue existiendo en el runner y porque el modo `diagnostic` puede reactivarse sin tocar el
+    recorrido.
+    """
     return [
         spec.id for spec in VARIABLES
         if not spec.predictive and definition[spec.id]["mode"] == "diagnostic"

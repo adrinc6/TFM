@@ -131,3 +131,37 @@ def test_meta_candidates_map_to_exact_weight_contracts() -> None:
     values["meta_method"] = "stacked_rolling_bounded"
     bounded = settings_from_values(values)
     assert (bounded.meta_weight_min, bounded.meta_weight_cap) == (0.10, 0.50)
+
+
+def test_portfolio_variables_are_fixed_in_the_model_study() -> None:
+    """El Model Study no barre reglas de cartera: solo admite elegir un valor.
+
+    Optimiza Rank-IC, que mide la ordenación transversal de scores y es anterior a cualquier
+    decisión de cartera: `target_size` o `commission_bps` no pueden cambiarlo. Barrerlas gastaba un
+    run por variable para reproducir el mismo Rank-IC, y quien las optimiza es el Portfolio Study.
+    """
+    from module.studies.catalog import VARIABLES
+
+    definition = recommended_definition()
+    portfolio = [spec for spec in VARIABLES if not spec.predictive]
+    assert portfolio, "el catálogo debe declarar variables de cartera"
+    for spec in portfolio:
+        assert spec.modes == ("fixed",), spec.id
+        assert definition[spec.id]["mode"] == "fixed", spec.id
+        assert len(definition[spec.id]["values"]) == 1, spec.id
+
+
+def test_the_model_study_rejects_sweeping_a_portfolio_variable() -> None:
+    """Pedir un barrido de cartera falla en validación, no en mitad del estudio."""
+    with pytest.raises(ConfigurationError):
+        validate_definition({"target_size": {"mode": "diagnostic", "values": [12, 5]}})
+    with pytest.raises(ConfigurationError):
+        validate_definition({"target_size": {"mode": "fixed", "values": [12, 5]}})
+
+
+def test_a_model_study_budget_has_no_portfolio_runs() -> None:
+    """El presupuesto ya no reserva runs de cartera: eran 12 que nunca movían al ganador."""
+    from module.studies.config import evaluation_budget
+
+    budget = evaluation_budget(recommended_definition())
+    assert budget["portfolio_diagnostics"] == 0

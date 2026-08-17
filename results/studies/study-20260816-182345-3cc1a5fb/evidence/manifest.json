@@ -1,0 +1,59 @@
+{
+  "run_scope": "full",
+  "run_dir": "C:\\Users\\PC\\AppData\\Local\\Temp\\evaluation-bde5cf4d10-kmr8cvr0\\agents\\lightgbm-075828196450",
+  "inputs": {
+    "features": "3d8cb254a40a73ce73ff81de16ca034a9a407dc676f22456e2e160619a4ba20d",
+    "targets": "82f9d1d9cc8004d6633aa84cf806426683b42e90727b0afa247a80a5d67eca29"
+  },
+  "config": {
+    "execution_year": 2015,
+    "execution_quarter": 1,
+    "execution_lag_days": 60,
+    "train_lookback_years": 8,
+    "target_horizon_months": 12,
+    "objective": "rank_regression",
+    "lgbm_n_estimators": 100,
+    "lgbm_max_depth": 3,
+    "lgbm_learning_rate": 0.05,
+    "lgbm_min_child_samples": 50,
+    "random_seed": 42,
+    "seed_ensemble": 5,
+    "meta_type": "stacked_oos",
+    "meta_history_quarters": 16,
+    "meta_weight_cap": 1.0,
+    "fundamental_momentum": true,
+    "market_regime_feature": true,
+    "enabled_feature_blocks": [
+      "quality_core",
+      "quality_efficiency",
+      "financial_strength",
+      "value_core",
+      "value_cashflow",
+      "growth_acceleration",
+      "fundamental_stability",
+      "momentum_core",
+      "momentum_trend",
+      "price_risk",
+      "market_liquidity"
+    ],
+    "missing_policy": "median_train_only_with_indicator"
+  },
+  "active_agents": [
+    "growth",
+    "momentum",
+    "quality",
+    "risk",
+    "value"
+  ],
+  "versions": {
+    "lightgbm": "4.6.0"
+  },
+  "predictions": 301295,
+  "agents_fit": [
+    {
+      "family": "lightgbm",
+      "key": "4c1c03912d01f6fdd58c727f89ed2312180a869400392c644f32c7055b16a975",
+      "source": "cached"
+    }
+  ]
+}

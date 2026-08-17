@@ -160,6 +160,50 @@ def test_full_scientific_route_only_changes_storage_not_selection() -> None:
     assert on["budget"]["estimated_incremental_bytes"] > off["budget"]["estimated_incremental_bytes"]
 
 
+def test_post_winner_diagnostics_are_optional_and_on_by_default() -> None:
+    """Apagar los diagnósticos posteriores recorta el presupuesto sin tocar la selección.
+
+    Un Study cuyo único fin es elegir configuración termina al congelar el ganador: así no gasta la
+    única evaluación de la era reservada 2025-26 sobre una configuración que se va a descartar.
+    """
+    on = study_preflight({"definition": None})
+    off = study_preflight({"definition": None, "post_winner_diagnostics": False})
+    # El defecto es ejecutarlos: apagarlos es la excepción y hay que pedirlo.
+    assert on["post_winner_diagnostics"] is True
+    assert off["post_winner_diagnostics"] is False
+    # La ciencia de la selección no cambia: mismos candidatos y mismas evaluaciones predictivas.
+    assert off["definition"] == on["definition"]
+    assert off["budget"]["predictive_evaluations"] == on["budget"]["predictive_evaluations"]
+    # Lo que desaparece del presupuesto es exactamente lo que ya no se ejecuta.
+    assert off["budget"]["profiles"] == 0
+    assert off["budget"]["robustness_groups"] == 0
+    assert off["budget"]["portfolio_diagnostics"] == 0
+    assert off["budget"]["total_runs"] < on["budget"]["total_runs"]
+    assert off["budget"]["estimated_minutes"] < on["budget"]["estimated_minutes"]
+
+
+def test_retention_counts_only_the_runs_that_will_actually_execute() -> None:
+    """Sin diagnósticos posteriores, la evidencia completa se cuenta sobre el total ya recortado.
+
+    El orden importa: `retention_budget` deriva cuántos runs retienen evidencia de `total_runs`, así
+    que debe verlo después del recorte y no prometer disco para runs que nunca se ejecutan.
+    """
+    from module.studies.catalog import recommended_definition
+
+    definition = recommended_definition()
+    with_diagnostics = study_preflight({"definition": definition, "retain_all_runs": True})
+    without = study_preflight({
+        "definition": definition, "retain_all_runs": True, "post_winner_diagnostics": False,
+    })
+    for budget in (with_diagnostics["budget"], without["budget"]):
+        assert budget["retained_run_evidence"] == budget["total_runs"] - 2
+    assert without["budget"]["retained_run_evidence"] < with_diagnostics["budget"]["retained_run_evidence"]
+    assert (
+        without["budget"]["estimated_incremental_bytes"]
+        < with_diagnostics["budget"]["estimated_incremental_bytes"]
+    )
+
+
 def test_retained_run_evidence_is_confined_to_its_study(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(studies, "STUDIES_ROOT", tmp_path / "studies")
     study_id, directory = studies.create_study({

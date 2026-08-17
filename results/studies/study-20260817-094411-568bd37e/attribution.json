@@ -1,0 +1,595 @@
+{
+  "factor_regression": {
+    "factors": [
+      "value",
+      "momentum",
+      "low_volatility",
+      "quality",
+      "growth"
+    ],
+    "selection": {
+      "applicable": true,
+      "beta": [
+        0.001976013541178769,
+        0.030276960828031378,
+        -0.06627802531190094,
+        0.011979721042788515,
+        0.09339339445482155,
+        -0.05669156251867514
+      ],
+      "standard_errors": [
+        0.0019412535849234601,
+        0.06361648659146173,
+        0.06658134979834572,
+        0.030894833155204526,
+        0.1434347317701054,
+        0.1709925935666499
+      ],
+      "t_statistics": [
+        1.0179059328081959,
+        0.4759294712778903,
+        -0.9954443025357183,
+        0.3877580753586435,
+        0.6511211984870637,
+        -0.33154396536232295
+      ],
+      "n_observations": 117,
+      "lags": 12,
+      "r_squared": 0.015294620026632622,
+      "alpha_per_period": 0.001976013541178769,
+      "alpha_t_stat": 1.0179059328081959,
+      "loadings": {
+        "value": 0.030276960828031378,
+        "momentum": -0.06627802531190094,
+        "low_volatility": 0.011979721042788515,
+        "quality": 0.09339339445482155,
+        "growth": -0.05669156251867514
+      },
+      "loading_t_stats": {
+        "value": 0.4759294712778903,
+        "momentum": -0.9954443025357183,
+        "low_volatility": 0.3877580753586435,
+        "quality": 0.6511211984870637,
+        "growth": -0.33154396536232295
+      }
+    },
+    "confirmation": {
+      "applicable": true,
+      "beta": [
+        -0.009101195653437387,
+        -0.09535226482985183,
+        0.26945776834158364,
+        0.19269938160908126,
+        0.07941469578145452,
+        0.0897278898237536
+      ],
+      "standard_errors": [
+        0.0027803711199040895,
+        0.07208993151575195,
+        0.11216257820703598,
+        0.03336573634418699,
+        0.2383891187024171,
+        0.14637225127273004
+      ],
+      "t_statistics": [
+        -3.273374402533478,
+        -1.322684913482224,
+        2.4023856499108227,
+        5.7753672696227945,
+        0.3331305397398967,
+        0.6130116128129157
+      ],
+      "n_observations": 17,
+      "lags": 12,
+      "r_squared": 0.2685989380816154,
+      "alpha_per_period": -0.009101195653437387,
+      "alpha_t_stat": -3.273374402533478,
+      "loadings": {
+        "value": -0.09535226482985183,
+        "momentum": 0.26945776834158364,
+        "low_volatility": 0.19269938160908126,
+        "quality": 0.07941469578145452,
+        "growth": 0.0897278898237536
+      },
+      "loading_t_stats": {
+        "value": -1.322684913482224,
+        "momentum": 2.4023856499108227,
+        "low_volatility": 5.7753672696227945,
+        "quality": 0.3331305397398967,
+        "growth": 0.6130116128129157
+      }
+    },
+    "full": {
+      "applicable": true,
+      "beta": [
+        0.0008350849247027928,
+        -0.0054773771691380545,
+        -0.08172323692669414,
+        0.03336437561852149,
+        0.06737506663461384,
+        -0.06507116975308788
+      ],
+      "standard_errors": [
+        0.0018720987236482587,
+        0.0687218892673623,
+        0.05157196355470417,
+        0.02698224072288212,
+        0.12726865031281945,
+        0.13111241596070014
+      ],
+      "t_statistics": [
+        0.44606884997785706,
+        -0.07970353009109421,
+        -1.5846446653133048,
+        1.2365309449717807,
+        0.5293924817227933,
+        -0.4963005927111619
+      ],
+      "n_observations": 134,
+      "lags": 12,
+      "r_squared": 0.017965535256968757,
+      "alpha_per_period": 0.0008350849247027928,
+      "alpha_t_stat": 0.44606884997785706,
+      "loadings": {
+        "value": -0.0054773771691380545,
+        "momentum": -0.08172323692669414,
+        "low_volatility": 0.03336437561852149,
+        "quality": 0.06737506663461384,
+        "growth": -0.06507116975308788
+      },
+      "loading_t_stats": {
+        "value": -0.07970353009109421,
+        "momentum": -1.5846446653133048,
+        "low_volatility": 1.2365309449717807,
+        "quality": 0.5293924817227933,
+        "growth": -0.4963005927111619
+      }
+    },
+    "interpretation": "Un alfa positivo con t de Newey-West por encima de 2 indica que el exceso de la cartera no se explica por la exposición a las réplicas de valor, momentum, baja volatilidad, calidad y crecimiento. Un alfa no significativo con una carga alta en baja volatilidad indicaría que el sistema reproduce ese factor conocido en lugar de aprender una ordenación propia."
+  },
+  "factor_proxies": {
+    "method": "diferencial tercil superior menos tercil inferior, rebalanceado por snapshot",
+    "available": [
+      "growth",
+      "low_volatility",
+      "momentum",
+      "quality",
+      "value"
+    ],
+    "unavailable": {
+      "size": "El panel no incluye capitalización bursátil ni número de acciones en circulación.",
+      "investment": "El panel no incluye crecimiento de activos totales point-in-time."
+    }
+  },
+  "neutralized_rank_ic": {
+    "applicable": true,
+    "controls": [
+      "factor_pe",
+      "factor_pb",
+      "factor_ps",
+      "factor_ev_ebitda",
+      "factor_relative_return_12m",
+      "factor_momentum_12_1",
+      "factor_realized_vol_63d",
+      "factor_realized_vol_126d",
+      "factor_beta_252d",
+      "factor_roe",
+      "factor_roic",
+      "factor_operating_margin",
+      "factor_eps_growth_yoy",
+      "factor_sales_per_share_growth_yoy"
+    ],
+    "raw_mean_rank_ic": 0.11352927362334224,
+    "neutralized_mean_rank_ic": 0.09900820135727599,
+    "retained_fraction": 0.8720940264777609,
+    "n_cohorts": 117
+  },
+  "ic_significance": {
+    "selection": {
+      "applicable": true,
+      "mean_rank_ic": 0.10672412615794699,
+      "ic_ir": 0.8325206711239354,
+      "newey_west_t": 3.332370820581188,
+      "n_cohorts": 117,
+      "effective_independent_observations": 9
+    },
+    "confirmation": {
+      "applicable": true,
+      "mean_rank_ic": 0.03637107567835527,
+      "ic_ir": 0.4423410754261367,
+      "newey_west_t": 1.7147055526853445,
+      "n_cohorts": 6,
+      "effective_independent_observations": 1
+    }
+  },
+  "deflated_sharpe": {
+    "applicable": true,
+    "observed_sharpe_per_period": 0.015925666730941385,
+    "expected_max_sharpe_under_null": 0.0,
+    "deflated_sharpe_probability": 0.5730696959064038,
+    "n_trials": 46,
+    "n_observations": 135,
+    "skew": -0.09573881500157932,
+    "kurtosis": 4.035870320736036,
+    "interpretation": "La probabilidad es la confianza de que el Sharpe observado supere al máximo esperado por azar tras probar n_trials configuraciones. Por debajo de 0,95 el resultado no resiste la corrección por multiplicidad."
+  },
+  "baselines": {
+    "applicable": true,
+    "baselines": [
+      {
+        "baseline": "garp_score",
+        "mean_rank_ic": 0.011928428182177523,
+        "positive_fraction": 0.6221374045801527,
+        "n_cohorts": 262
+      },
+      {
+        "baseline": "growth_score",
+        "mean_rank_ic": 0.0021810961875533257,
+        "positive_fraction": 0.5190839694656488,
+        "n_cohorts": 262
+      },
+      {
+        "baseline": "momentum_score",
+        "mean_rank_ic": -0.00018165418491450158,
+        "positive_fraction": 0.5267175572519084,
+        "n_cohorts": 262
+      },
+      {
+        "baseline": "quality_score",
+        "mean_rank_ic": 0.002391599841858618,
+        "positive_fraction": 0.5229007633587787,
+        "n_cohorts": 262
+      },
+      {
+        "baseline": "value_score",
+        "mean_rank_ic": 0.002638657610456896,
+        "positive_fraction": 0.48854961832061067,
+        "n_cohorts": 262
+      }
+    ]
+  },
+  "universe_coverage": [
+    {
+      "year": 2003,
+      "distinct_tickers": 277,
+      "sp500_members": 494,
+      "panel_coverage_fraction": 0.5607287449392713,
+      "usable_rows": 2752,
+      "total_rows": 2752,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2004,
+      "distinct_tickers": 284,
+      "sp500_members": 495,
+      "panel_coverage_fraction": 0.5737373737373738,
+      "usable_rows": 3369,
+      "total_rows": 3370,
+      "usable_fraction": 0.9997032640949555
+    },
+    {
+      "year": 2005,
+      "distinct_tickers": 294,
+      "sp500_members": 497,
+      "panel_coverage_fraction": 0.5915492957746479,
+      "usable_rows": 3430,
+      "total_rows": 3430,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2006,
+      "distinct_tickers": 307,
+      "sp500_members": 497,
+      "panel_coverage_fraction": 0.6177062374245473,
+      "usable_rows": 3565,
+      "total_rows": 3576,
+      "usable_fraction": 0.9969239373601789
+    },
+    {
+      "year": 2007,
+      "distinct_tickers": 325,
+      "sp500_members": 497,
+      "panel_coverage_fraction": 0.6539235412474849,
+      "usable_rows": 3702,
+      "total_rows": 3717,
+      "usable_fraction": 0.9959644874899112
+    },
+    {
+      "year": 2008,
+      "distinct_tickers": 342,
+      "sp500_members": 498,
+      "panel_coverage_fraction": 0.6867469879518072,
+      "usable_rows": 3869,
+      "total_rows": 3891,
+      "usable_fraction": 0.9943459264970445
+    },
+    {
+      "year": 2009,
+      "distinct_tickers": 346,
+      "sp500_members": 499,
+      "panel_coverage_fraction": 0.6933867735470942,
+      "usable_rows": 3994,
+      "total_rows": 4010,
+      "usable_fraction": 0.9960099750623441
+    },
+    {
+      "year": 2010,
+      "distinct_tickers": 347,
+      "sp500_members": 497,
+      "panel_coverage_fraction": 0.6981891348088531,
+      "usable_rows": 4101,
+      "total_rows": 4102,
+      "usable_fraction": 0.999756216479766
+    },
+    {
+      "year": 2011,
+      "distinct_tickers": 355,
+      "sp500_members": 497,
+      "panel_coverage_fraction": 0.7142857142857143,
+      "usable_rows": 4140,
+      "total_rows": 4140,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2012,
+      "distinct_tickers": 365,
+      "sp500_members": 497,
+      "panel_coverage_fraction": 0.7344064386317908,
+      "usable_rows": 4254,
+      "total_rows": 4254,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2013,
+      "distinct_tickers": 373,
+      "sp500_members": 497,
+      "panel_coverage_fraction": 0.7505030181086519,
+      "usable_rows": 4365,
+      "total_rows": 4365,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2014,
+      "distinct_tickers": 375,
+      "sp500_members": 499,
+      "panel_coverage_fraction": 0.751503006012024,
+      "usable_rows": 4419,
+      "total_rows": 4419,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2015,
+      "distinct_tickers": 392,
+      "sp500_members": 502,
+      "panel_coverage_fraction": 0.7808764940239044,
+      "usable_rows": 4564,
+      "total_rows": 4565,
+      "usable_fraction": 0.9997809419496166
+    },
+    {
+      "year": 2016,
+      "distinct_tickers": 413,
+      "sp500_members": 506,
+      "panel_coverage_fraction": 0.8162055335968379,
+      "usable_rows": 4800,
+      "total_rows": 4800,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2017,
+      "distinct_tickers": 429,
+      "sp500_members": 505,
+      "panel_coverage_fraction": 0.8495049504950495,
+      "usable_rows": 4971,
+      "total_rows": 4971,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2018,
+      "distinct_tickers": 435,
+      "sp500_members": 505,
+      "panel_coverage_fraction": 0.8613861386138614,
+      "usable_rows": 5050,
+      "total_rows": 5050,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2019,
+      "distinct_tickers": 448,
+      "sp500_members": 505,
+      "panel_coverage_fraction": 0.8871287128712871,
+      "usable_rows": 5148,
+      "total_rows": 5148,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2020,
+      "distinct_tickers": 457,
+      "sp500_members": 505,
+      "panel_coverage_fraction": 0.904950495049505,
+      "usable_rows": 5335,
+      "total_rows": 5335,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2021,
+      "distinct_tickers": 467,
+      "sp500_members": 505,
+      "panel_coverage_fraction": 0.9247524752475248,
+      "usable_rows": 5448,
+      "total_rows": 5448,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2022,
+      "distinct_tickers": 479,
+      "sp500_members": 503,
+      "panel_coverage_fraction": 0.952286282306163,
+      "usable_rows": 5594,
+      "total_rows": 5594,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2023,
+      "distinct_tickers": 491,
+      "sp500_members": 503,
+      "panel_coverage_fraction": 0.9761431411530815,
+      "usable_rows": 5738,
+      "total_rows": 5738,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2024,
+      "distinct_tickers": 501,
+      "sp500_members": 503,
+      "panel_coverage_fraction": 0.9960238568588469,
+      "usable_rows": 5828,
+      "total_rows": 5828,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2025,
+      "distinct_tickers": 510,
+      "sp500_members": 503,
+      "panel_coverage_fraction": 1.0139165009940359,
+      "usable_rows": 5905,
+      "total_rows": 5905,
+      "usable_fraction": 1.0
+    },
+    {
+      "year": 2026,
+      "distinct_tickers": 510,
+      "sp500_members": 503,
+      "panel_coverage_fraction": 1.0139165009940359,
+      "usable_rows": 2998,
+      "total_rows": 2998,
+      "usable_fraction": 1.0
+    }
+  ],
+  "transfer": {
+    "applicable": true,
+    "by_year": [
+      {
+        "year": 2015,
+        "turnover": 1.0,
+        "excess": 0.029294727847021473,
+        "cost": 0.003
+      },
+      {
+        "year": 2016,
+        "turnover": 3.3671375698922983,
+        "excess": 0.07826962697229145,
+        "cost": 0.010101412709676894
+      },
+      {
+        "year": 2017,
+        "turnover": 4.522169106916425,
+        "excess": 0.039247601055222736,
+        "cost": 0.013566507320749273
+      },
+      {
+        "year": 2018,
+        "turnover": 1.6440023184710537,
+        "excess": 0.08400348070157804,
+        "cost": 0.004932006955413161
+      },
+      {
+        "year": 2019,
+        "turnover": 3.2007513114018296,
+        "excess": 0.1246672406639101,
+        "cost": 0.009602253934205489
+      },
+      {
+        "year": 2020,
+        "turnover": 2.187418702489089,
+        "excess": -0.09078372966297554,
+        "cost": 0.006562256107467268
+      },
+      {
+        "year": 2021,
+        "turnover": 1.101668571661317,
+        "excess": 0.03860772097874765,
+        "cost": 0.0033050057149839507
+      },
+      {
+        "year": 2022,
+        "turnover": 0.7783557501893446,
+        "excess": 0.04153537264145424,
+        "cost": 0.0023350672505680335
+      },
+      {
+        "year": 2023,
+        "turnover": 4.024307751638269,
+        "excess": -0.018363211876184615,
+        "cost": 0.012072923254914809
+      },
+      {
+        "year": 2024,
+        "turnover": 1.765468920361709,
+        "excess": -0.08976109978894808,
+        "cost": 0.005296406761085127
+      }
+    ],
+    "cost_per_unit_turnover": 0.003,
+    "signal_top_minus_bottom_mean": 0.0792940251262815,
+    "realized_cumulative_excess": 0.23671772953211745
+  },
+  "confirmation_2025_2026": {
+    "mean_rank_ic": 0.03637107567835527,
+    "rank_ic_positive_fraction": 0.6666666666666666,
+    "rank_ic_std": 0.0822240522052278,
+    "ic_ir": 0.4423410754261367,
+    "n_cohorts": 6,
+    "rank_ic_by_cohort": [
+      {
+        "date": "2025-01-29",
+        "rank_ic": 0.13946453971309938
+      },
+      {
+        "date": "2025-03-01",
+        "rank_ic": 0.049269920177665766
+      },
+      {
+        "date": "2025-04-01",
+        "rank_ic": 0.11490136635967875
+      },
+      {
+        "date": "2025-04-29",
+        "rank_ic": 0.021850260772115347
+      },
+      {
+        "date": "2025-05-30",
+        "rank_ic": -0.03894735258440588
+      },
+      {
+        "date": "2025-06-29",
+        "rank_ic": -0.06831228036802167
+      }
+    ],
+    "annual_metrics": [
+      {
+        "year": 2025,
+        "portfolio_return": 0.036922760342382066,
+        "benchmark_return": 0.18166279022397647,
+        "alpha": -0.12248843839295298,
+        "beats_benchmark": false,
+        "max_drawdown_year": 0.06549740210302668,
+        "information_ratio_year": -1.6657728883355742,
+        "mean_cash_weight": 0.25,
+        "turnover": 0.6770171675460865
+      },
+      {
+        "year": 2026,
+        "portfolio_return": 0.027689755358254242,
+        "benchmark_return": 0.08431889693805283,
+        "alpha": -0.05222554152630787,
+        "beats_benchmark": false,
+        "max_drawdown_year": 0.053623873838161695,
+        "information_ratio_year": -2.175631119805467,
+        "mean_cash_weight": 0.25,
+        "turnover": 1.3053075813624695
+      }
+    ],
+    "role": "confirmacion_fuera_de_muestra_no_usada_en_seleccion"
+  }
+}

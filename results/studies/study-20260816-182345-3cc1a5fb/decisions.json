@@ -1,0 +1,1749 @@
+{
+  "decisions": [
+    {
+      "variable_id": "snapshot_step_months",
+      "winner_candidate_id": "predictive:snapshot_step_months:6b86b273ff34",
+      "winner_value": 1,
+      "selection_rule": "robust_rank_ic",
+      "selection_metric": "rank_ic_only",
+      "selection_rule_text": "Un candidato es elegible si (a) tiene observaciones suficientes, (b) ninguna era disponible cae por debajo de -0.02, y (c) supera la puerta pareada: o bien domina al incumbent (diferencia media positiva y mejor en más de la mitad de las fechas emparejadas), o bien es no inferior (límite inferior del IC al 90% por encima de -0.01). Si el emparejamiento no es aplicable —rejillas de snapshots disjuntas— no hay evidencia pareada y solo el incumbent es elegible. El orden entre elegibles lo fija la diferencia pareada contra el incumbent, no la mediana entre eras.",
+      "era_floor": -0.02,
+      "non_inferiority_margin": -0.01,
+      "paired_bootstrap_draws": 2000,
+      "paired_confidence": 0.9,
+      "known_stress_excluded": true,
+      "candidates": [
+        {
+          "candidate_id": "predictive:baseline",
+          "value": 3,
+          "is_incumbent": true,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "n_dates": 40,
+            "fraction_a_better": 0.0,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12,
+            "same_evaluation": true
+          },
+          "paired_advantage": 0.0,
+          "median_era_rank_ic": 0.04317067218673213,
+          "mean_rank_ic": 0.04985152364673056,
+          "positive_fraction": 0.65,
+          "rank_ic_std": 0.12702611888492502,
+          "observations": 40,
+          "value_complexity_rank": 1,
+          "reason": "Incumbent: referencia de la comparación, elegible por definición."
+        },
+        {
+          "candidate_id": "predictive:snapshot_step_months:6b86b273ff34",
+          "value": 1,
+          "is_incumbent": false,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": true,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.013590697229287518,
+            "ci_low": -4.686016777673776e-05,
+            "ci_high": 0.03267904035955064,
+            "n_dates": 40,
+            "fraction_a_better": 0.6,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": 0.013590697229287518,
+          "median_era_rank_ic": 0.0711527340632156,
+          "mean_rank_ic": 0.06589655981185057,
+          "positive_fraction": 0.6923076923076923,
+          "rank_ic_std": 0.10806517162944684,
+          "observations": 117,
+          "value_complexity_rank": 0,
+          "reason": "Domina al incumbent: ventaja media +0.0136 y mejor en el 60.0% de las 40 cohortes emparejadas."
+        },
+        {
+          "candidate_id": "predictive:snapshot_step_months:e7f6c011776e",
+          "value": 6,
+          "is_incumbent": false,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": true,
+            "paired_bootstrap_non_inferior": false,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.00967617017430259,
+            "ci_low": -0.023225582760781384,
+            "ci_high": 0.003489932895719249,
+            "n_dates": 20,
+            "fraction_a_better": 0.6,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": 0.00967617017430259,
+          "median_era_rank_ic": 0.049053615346504126,
+          "mean_rank_ic": 0.04206434233505963,
+          "positive_fraction": 0.65,
+          "rank_ic_std": 0.12420980531623442,
+          "observations": 20,
+          "value_complexity_rank": 2,
+          "reason": "Domina al incumbent: ventaja media +0.0097 y mejor en el 60.0% de las 20 cohortes emparejadas."
+        }
+      ]
+    },
+    {
+      "variable_id": "target_horizon_months",
+      "winner_candidate_id": "predictive:snapshot_step_months:6b86b273ff34",
+      "winner_value": 12,
+      "selection_rule": "robust_rank_ic",
+      "selection_metric": "rank_ic_only",
+      "selection_rule_text": "Un candidato es elegible si (a) tiene observaciones suficientes, (b) ninguna era disponible cae por debajo de -0.02, y (c) supera la puerta pareada: o bien domina al incumbent (diferencia media positiva y mejor en más de la mitad de las fechas emparejadas), o bien es no inferior (límite inferior del IC al 90% por encima de -0.01). Si el emparejamiento no es aplicable —rejillas de snapshots disjuntas— no hay evidencia pareada y solo el incumbent es elegible. El orden entre elegibles lo fija la diferencia pareada contra el incumbent, no la mediana entre eras.",
+      "era_floor": -0.02,
+      "non_inferiority_margin": -0.01,
+      "paired_bootstrap_draws": 2000,
+      "paired_confidence": 0.9,
+      "known_stress_excluded": true,
+      "candidates": [
+        {
+          "candidate_id": "predictive:target_horizon_months:e7f6c011776e",
+          "value": 6,
+          "is_incumbent": false,
+          "eligible": false,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": false,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": -0.016627152186679615,
+            "ci_low": -0.04767291829778872,
+            "ci_high": -0.0018371967020625196,
+            "n_dates": 111,
+            "fraction_a_better": 0.43243243243243246,
+            "distinguishable_from_zero": true,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": -0.016627152186679615,
+          "median_era_rank_ic": 0.04788102564610662,
+          "mean_rank_ic": 0.05028022373335657,
+          "positive_fraction": 0.6837606837606838,
+          "rank_ic_std": 0.1263808790650847,
+          "observations": 117,
+          "value_complexity_rank": 1,
+          "reason": "no domina al incumbent ni es no inferior"
+        },
+        {
+          "candidate_id": "predictive:snapshot_step_months:6b86b273ff34",
+          "value": 12,
+          "is_incumbent": true,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "n_dates": 111,
+            "fraction_a_better": 0.0,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12,
+            "same_evaluation": true
+          },
+          "paired_advantage": 0.0,
+          "median_era_rank_ic": 0.0711527340632156,
+          "mean_rank_ic": 0.06589655981185057,
+          "positive_fraction": 0.6923076923076923,
+          "rank_ic_std": 0.10806517162944684,
+          "observations": 117,
+          "value_complexity_rank": 2,
+          "reason": "Incumbent: referencia de la comparación, elegible por definición."
+        }
+      ]
+    },
+    {
+      "variable_id": "train_lookback_years",
+      "winner_candidate_id": "predictive:snapshot_step_months:6b86b273ff34",
+      "winner_value": 8,
+      "selection_rule": "robust_rank_ic",
+      "selection_metric": "rank_ic_only",
+      "selection_rule_text": "Un candidato es elegible si (a) tiene observaciones suficientes, (b) ninguna era disponible cae por debajo de -0.02, y (c) supera la puerta pareada: o bien domina al incumbent (diferencia media positiva y mejor en más de la mitad de las fechas emparejadas), o bien es no inferior (límite inferior del IC al 90% por encima de -0.01). Si el emparejamiento no es aplicable —rejillas de snapshots disjuntas— no hay evidencia pareada y solo el incumbent es elegible. El orden entre elegibles lo fija la diferencia pareada contra el incumbent, no la mediana entre eras.",
+      "era_floor": -0.02,
+      "non_inferiority_margin": -0.01,
+      "paired_bootstrap_draws": 2000,
+      "paired_confidence": 0.9,
+      "known_stress_excluded": true,
+      "candidates": [
+        {
+          "candidate_id": "predictive:snapshot_step_months:6b86b273ff34",
+          "value": 8,
+          "is_incumbent": true,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "n_dates": 111,
+            "fraction_a_better": 0.0,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12,
+            "same_evaluation": true
+          },
+          "paired_advantage": 0.0,
+          "median_era_rank_ic": 0.0711527340632156,
+          "mean_rank_ic": 0.06589655981185057,
+          "positive_fraction": 0.6923076923076923,
+          "rank_ic_std": 0.10806517162944684,
+          "observations": 117,
+          "value_complexity_rank": 1,
+          "reason": "Incumbent: referencia de la comparación, elegible por definición."
+        },
+        {
+          "candidate_id": "predictive:train_lookback_years:6b51d431df5d",
+          "value": 12,
+          "is_incumbent": false,
+          "eligible": false,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": false,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": -0.01081830109635205,
+            "ci_low": -0.026012446112035344,
+            "ci_high": 0.0028528453341917065,
+            "n_dates": 111,
+            "fraction_a_better": 0.43243243243243246,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": -0.01081830109635205,
+          "median_era_rank_ic": 0.05692208338316091,
+          "mean_rank_ic": 0.055079879155854175,
+          "positive_fraction": 0.6324786324786325,
+          "rank_ic_std": 0.11716556514025286,
+          "observations": 117,
+          "value_complexity_rank": 2,
+          "reason": "no domina al incumbent ni es no inferior"
+        },
+        {
+          "candidate_id": "predictive:train_lookback_years:4b227777d4dd",
+          "value": 4,
+          "is_incumbent": false,
+          "eligible": false,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": false,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": -0.019167144086152832,
+            "ci_low": -0.03579548136634342,
+            "ci_high": 0.015424920233518854,
+            "n_dates": 111,
+            "fraction_a_better": 0.44144144144144143,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": -0.019167144086152832,
+          "median_era_rank_ic": 0.041301663836962065,
+          "mean_rank_ic": 0.04734322857104144,
+          "positive_fraction": 0.6752136752136753,
+          "rank_ic_std": 0.13235644135517588,
+          "observations": 117,
+          "value_complexity_rank": 0,
+          "reason": "no domina al incumbent ni es no inferior"
+        }
+      ]
+    },
+    {
+      "variable_id": "execution_lag_days",
+      "winner_candidate_id": "predictive:snapshot_step_months:6b86b273ff34",
+      "winner_value": 60,
+      "selection_rule": "robust_rank_ic",
+      "selection_metric": "rank_ic_only",
+      "selection_rule_text": "Un candidato es elegible si (a) tiene observaciones suficientes, (b) ninguna era disponible cae por debajo de -0.02, y (c) supera la puerta pareada: o bien domina al incumbent (diferencia media positiva y mejor en más de la mitad de las fechas emparejadas), o bien es no inferior (límite inferior del IC al 90% por encima de -0.01). Si el emparejamiento no es aplicable —rejillas de snapshots disjuntas— no hay evidencia pareada y solo el incumbent es elegible. El orden entre elegibles lo fija la diferencia pareada contra el incumbent, no la mediana entre eras.",
+      "era_floor": -0.02,
+      "non_inferiority_margin": -0.01,
+      "paired_bootstrap_draws": 2000,
+      "paired_confidence": 0.9,
+      "known_stress_excluded": true,
+      "candidates": [
+        {
+          "candidate_id": "predictive:execution_lag_days:811786ad1ae7",
+          "value": 45,
+          "is_incumbent": false,
+          "eligible": false,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": false,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": -0.010634119880270637,
+            "ci_low": -0.02853996831442494,
+            "ci_high": 0.008700459488332936,
+            "n_dates": 111,
+            "fraction_a_better": 0.46846846846846846,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": -0.010634119880270637,
+          "median_era_rank_ic": 0.04462809928987335,
+          "mean_rank_ic": 0.05396921460926061,
+          "positive_fraction": 0.6752136752136753,
+          "rank_ic_std": 0.10962626757312377,
+          "observations": 117,
+          "value_complexity_rank": 1,
+          "reason": "no domina al incumbent ni es no inferior"
+        },
+        {
+          "candidate_id": "predictive:snapshot_step_months:6b86b273ff34",
+          "value": 60,
+          "is_incumbent": true,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "n_dates": 111,
+            "fraction_a_better": 0.0,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12,
+            "same_evaluation": true
+          },
+          "paired_advantage": 0.0,
+          "median_era_rank_ic": 0.0711527340632156,
+          "mean_rank_ic": 0.06589655981185057,
+          "positive_fraction": 0.6923076923076923,
+          "rank_ic_std": 0.10806517162944684,
+          "observations": 117,
+          "value_complexity_rank": 0,
+          "reason": "Incumbent: referencia de la comparación, elegible por definición."
+        },
+        {
+          "candidate_id": "predictive:execution_lag_days:624b60c58c9d",
+          "value": 30,
+          "is_incumbent": false,
+          "eligible": false,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": false,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": -0.0018438750110047878,
+            "ci_low": -0.011575873632894801,
+            "ci_high": 0.006122410870759407,
+            "n_dates": 108,
+            "fraction_a_better": 0.5,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": -0.0018438750110047878,
+          "median_era_rank_ic": 0.050413836362079745,
+          "mean_rank_ic": 0.06219036702961623,
+          "positive_fraction": 0.6837606837606838,
+          "rank_ic_std": 0.11023687858793263,
+          "observations": 117,
+          "value_complexity_rank": 2,
+          "reason": "no domina al incumbent ni es no inferior"
+        }
+      ]
+    },
+    {
+      "variable_id": "recency_weighting",
+      "winner_candidate_id": "predictive:snapshot_step_months:6b86b273ff34",
+      "winner_value": "off",
+      "selection_rule": "robust_rank_ic",
+      "selection_metric": "rank_ic_only",
+      "selection_rule_text": "Un candidato es elegible si (a) tiene observaciones suficientes, (b) ninguna era disponible cae por debajo de -0.02, y (c) supera la puerta pareada: o bien domina al incumbent (diferencia media positiva y mejor en más de la mitad de las fechas emparejadas), o bien es no inferior (límite inferior del IC al 90% por encima de -0.01). Si el emparejamiento no es aplicable —rejillas de snapshots disjuntas— no hay evidencia pareada y solo el incumbent es elegible. El orden entre elegibles lo fija la diferencia pareada contra el incumbent, no la mediana entre eras.",
+      "era_floor": -0.02,
+      "non_inferiority_margin": -0.01,
+      "paired_bootstrap_draws": 2000,
+      "paired_confidence": 0.9,
+      "known_stress_excluded": true,
+      "candidates": [
+        {
+          "candidate_id": "predictive:snapshot_step_months:6b86b273ff34",
+          "value": "off",
+          "is_incumbent": true,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "n_dates": 111,
+            "fraction_a_better": 0.0,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12,
+            "same_evaluation": true
+          },
+          "paired_advantage": 0.0,
+          "median_era_rank_ic": 0.0711527340632156,
+          "mean_rank_ic": 0.06589655981185057,
+          "positive_fraction": 0.6923076923076923,
+          "rank_ic_std": 0.10806517162944684,
+          "observations": 117,
+          "value_complexity_rank": 0,
+          "reason": "Incumbent: referencia de la comparación, elegible por definición."
+        },
+        {
+          "candidate_id": "predictive:recency_weighting:4dd109ad15a2",
+          "value": "linear",
+          "is_incumbent": false,
+          "eligible": false,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": false,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": -0.032025792849845115,
+            "ci_low": -0.055620801710194304,
+            "ci_high": -0.007595160884493378,
+            "n_dates": 111,
+            "fraction_a_better": 0.3333333333333333,
+            "distinguishable_from_zero": true,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": -0.032025792849845115,
+          "median_era_rank_ic": 0.029202409453385474,
+          "mean_rank_ic": 0.033971408471902706,
+          "positive_fraction": 0.5897435897435898,
+          "rank_ic_std": 0.1302560161140839,
+          "observations": 117,
+          "value_complexity_rank": 1,
+          "reason": "no domina al incumbent ni es no inferior"
+        },
+        {
+          "candidate_id": "predictive:recency_weighting:aa3b80b60ce1",
+          "value": "exponential",
+          "is_incumbent": false,
+          "eligible": false,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": false,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": -0.032877405697919526,
+            "ci_low": -0.05735053958909428,
+            "ci_high": -0.008802067773802262,
+            "n_dates": 111,
+            "fraction_a_better": 0.3063063063063063,
+            "distinguishable_from_zero": true,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": -0.032877405697919526,
+          "median_era_rank_ic": 0.03346028834025745,
+          "mean_rank_ic": 0.03297333200223283,
+          "positive_fraction": 0.5811965811965812,
+          "rank_ic_std": 0.13134508585171492,
+          "observations": 117,
+          "value_complexity_rank": 2,
+          "reason": "no domina al incumbent ni es no inferior"
+        }
+      ]
+    },
+    {
+      "variable_id": "objective",
+      "winner_candidate_id": "predictive:snapshot_step_months:6b86b273ff34",
+      "winner_value": "rank_regression",
+      "selection_rule": "robust_rank_ic",
+      "selection_metric": "rank_ic_only",
+      "selection_rule_text": "Un candidato es elegible si (a) tiene observaciones suficientes, (b) ninguna era disponible cae por debajo de -0.02, y (c) supera la puerta pareada: o bien domina al incumbent (diferencia media positiva y mejor en más de la mitad de las fechas emparejadas), o bien es no inferior (límite inferior del IC al 90% por encima de -0.01). Si el emparejamiento no es aplicable —rejillas de snapshots disjuntas— no hay evidencia pareada y solo el incumbent es elegible. El orden entre elegibles lo fija la diferencia pareada contra el incumbent, no la mediana entre eras.",
+      "era_floor": -0.02,
+      "non_inferiority_margin": -0.01,
+      "paired_bootstrap_draws": 2000,
+      "paired_confidence": 0.9,
+      "known_stress_excluded": true,
+      "candidates": [
+        {
+          "candidate_id": "predictive:snapshot_step_months:6b86b273ff34",
+          "value": "rank_regression",
+          "is_incumbent": true,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "n_dates": 111,
+            "fraction_a_better": 0.0,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12,
+            "same_evaluation": true
+          },
+          "paired_advantage": 0.0,
+          "median_era_rank_ic": 0.0711527340632156,
+          "mean_rank_ic": 0.06589655981185057,
+          "positive_fraction": 0.6923076923076923,
+          "rank_ic_std": 0.10806517162944684,
+          "observations": 117,
+          "value_complexity_rank": 0,
+          "reason": "Incumbent: referencia de la comparación, elegible por definición."
+        },
+        {
+          "candidate_id": "predictive:objective:1fa627e35abd",
+          "value": "ranking",
+          "is_incumbent": false,
+          "eligible": false,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": false,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": false,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": -0.0679054202678372,
+            "ci_low": -0.1394820827951255,
+            "ci_high": 0.02032627067368554,
+            "n_dates": 111,
+            "fraction_a_better": 0.3153153153153153,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": -0.0679054202678372,
+          "median_era_rank_ic": -0.018340545430971467,
+          "mean_rank_ic": -0.008601940206363809,
+          "positive_fraction": 0.42735042735042733,
+          "rank_ic_std": 0.16745468974498284,
+          "observations": 117,
+          "value_complexity_rank": 1,
+          "reason": "era por debajo del suelo; no domina al incumbent ni es no inferior"
+        }
+      ]
+    },
+    {
+      "variable_id": "feature_preset",
+      "winner_candidate_id": "predictive:feature_preset:5cf7504d9781",
+      "winner_value": "all",
+      "selection_rule": "robust_rank_ic",
+      "selection_metric": "rank_ic_only",
+      "selection_rule_text": "Un candidato es elegible si (a) tiene observaciones suficientes, (b) ninguna era disponible cae por debajo de -0.02, y (c) supera la puerta pareada: o bien domina al incumbent (diferencia media positiva y mejor en más de la mitad de las fechas emparejadas), o bien es no inferior (límite inferior del IC al 90% por encima de -0.01). Si el emparejamiento no es aplicable —rejillas de snapshots disjuntas— no hay evidencia pareada y solo el incumbent es elegible. El orden entre elegibles lo fija la diferencia pareada contra el incumbent, no la mediana entre eras.",
+      "era_floor": -0.02,
+      "non_inferiority_margin": -0.01,
+      "paired_bootstrap_draws": 2000,
+      "paired_confidence": 0.9,
+      "known_stress_excluded": true,
+      "candidates": [
+        {
+          "candidate_id": "predictive:snapshot_step_months:6b86b273ff34",
+          "value": "core",
+          "is_incumbent": true,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "n_dates": 111,
+            "fraction_a_better": 0.0,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12,
+            "same_evaluation": true
+          },
+          "paired_advantage": 0.0,
+          "median_era_rank_ic": 0.0711527340632156,
+          "mean_rank_ic": 0.06589655981185057,
+          "positive_fraction": 0.6923076923076923,
+          "rank_ic_std": 0.10806517162944684,
+          "observations": 117,
+          "value_complexity_rank": 0,
+          "reason": "Incumbent: referencia de la comparación, elegible por definición."
+        },
+        {
+          "candidate_id": "predictive:feature_preset:5cf7504d9781",
+          "value": "all",
+          "is_incumbent": false,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": true,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.03186091623256043,
+            "ci_low": -0.006622515345927133,
+            "ci_high": 0.07065695225553446,
+            "n_dates": 111,
+            "fraction_a_better": 0.6756756756756757,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": 0.03186091623256043,
+          "median_era_rank_ic": 0.09162343114043574,
+          "mean_rank_ic": 0.09823681354944515,
+          "positive_fraction": 0.717948717948718,
+          "rank_ic_std": 0.13597107116504276,
+          "observations": 117,
+          "value_complexity_rank": 1,
+          "reason": "Domina al incumbent: ventaja media +0.0319 y mejor en el 67.6% de las 111 cohortes emparejadas."
+        }
+      ]
+    },
+    {
+      "variable_id": "fundamental_momentum",
+      "winner_candidate_id": "predictive:feature_preset:5cf7504d9781",
+      "winner_value": true,
+      "selection_rule": "robust_rank_ic",
+      "selection_metric": "rank_ic_only",
+      "selection_rule_text": "Un candidato es elegible si (a) tiene observaciones suficientes, (b) ninguna era disponible cae por debajo de -0.02, y (c) supera la puerta pareada: o bien domina al incumbent (diferencia media positiva y mejor en más de la mitad de las fechas emparejadas), o bien es no inferior (límite inferior del IC al 90% por encima de -0.01). Si el emparejamiento no es aplicable —rejillas de snapshots disjuntas— no hay evidencia pareada y solo el incumbent es elegible. El orden entre elegibles lo fija la diferencia pareada contra el incumbent, no la mediana entre eras.",
+      "era_floor": -0.02,
+      "non_inferiority_margin": -0.01,
+      "paired_bootstrap_draws": 2000,
+      "paired_confidence": 0.9,
+      "known_stress_excluded": true,
+      "candidates": [
+        {
+          "candidate_id": "predictive:fundamental_momentum:fcbcf165908d",
+          "value": false,
+          "is_incumbent": false,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": -0.0033545944706108045,
+            "ci_low": -0.008198931967305603,
+            "ci_high": 0.0007134498688046267,
+            "n_dates": 111,
+            "fraction_a_better": 0.36936936936936937,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": -0.0033545944706108045,
+          "median_era_rank_ic": 0.09201792318655845,
+          "mean_rank_ic": 0.09514074260787132,
+          "positive_fraction": 0.717948717948718,
+          "rank_ic_std": 0.1421367587620064,
+          "observations": 117,
+          "value_complexity_rank": 0,
+          "reason": "Elegible por suficiencia, estabilidad entre eras y no inferioridad pareada."
+        },
+        {
+          "candidate_id": "predictive:feature_preset:5cf7504d9781",
+          "value": true,
+          "is_incumbent": true,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "n_dates": 111,
+            "fraction_a_better": 0.0,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12,
+            "same_evaluation": true
+          },
+          "paired_advantage": 0.0,
+          "median_era_rank_ic": 0.09162343114043574,
+          "mean_rank_ic": 0.09823681354944515,
+          "positive_fraction": 0.717948717948718,
+          "rank_ic_std": 0.13597107116504276,
+          "observations": 117,
+          "value_complexity_rank": 1,
+          "reason": "Incumbent: referencia de la comparación, elegible por definición."
+        }
+      ]
+    },
+    {
+      "variable_id": "market_regime_feature",
+      "winner_candidate_id": "predictive:feature_preset:5cf7504d9781",
+      "winner_value": true,
+      "selection_rule": "robust_rank_ic",
+      "selection_metric": "rank_ic_only",
+      "selection_rule_text": "Un candidato es elegible si (a) tiene observaciones suficientes, (b) ninguna era disponible cae por debajo de -0.02, y (c) supera la puerta pareada: o bien domina al incumbent (diferencia media positiva y mejor en más de la mitad de las fechas emparejadas), o bien es no inferior (límite inferior del IC al 90% por encima de -0.01). Si el emparejamiento no es aplicable —rejillas de snapshots disjuntas— no hay evidencia pareada y solo el incumbent es elegible. El orden entre elegibles lo fija la diferencia pareada contra el incumbent, no la mediana entre eras.",
+      "era_floor": -0.02,
+      "non_inferiority_margin": -0.01,
+      "paired_bootstrap_draws": 2000,
+      "paired_confidence": 0.9,
+      "known_stress_excluded": true,
+      "candidates": [
+        {
+          "candidate_id": "predictive:feature_preset:5cf7504d9781",
+          "value": true,
+          "is_incumbent": true,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "n_dates": 111,
+            "fraction_a_better": 0.0,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12,
+            "same_evaluation": true
+          },
+          "paired_advantage": 0.0,
+          "median_era_rank_ic": 0.09162343114043574,
+          "mean_rank_ic": 0.09823681354944515,
+          "positive_fraction": 0.717948717948718,
+          "rank_ic_std": 0.13597107116504276,
+          "observations": 117,
+          "value_complexity_rank": 1,
+          "reason": "Incumbent: referencia de la comparación, elegible por definición."
+        },
+        {
+          "candidate_id": "predictive:market_regime_feature:fcbcf165908d",
+          "value": false,
+          "is_incumbent": false,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": -4.7627474305933745e-05,
+            "ci_low": -0.0024413576803738245,
+            "ci_high": 0.002401269532292571,
+            "n_dates": 111,
+            "fraction_a_better": 0.46846846846846846,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": -4.7627474305933745e-05,
+          "median_era_rank_ic": 0.09217254956833243,
+          "mean_rank_ic": 0.09778764548728155,
+          "positive_fraction": 0.7264957264957265,
+          "rank_ic_std": 0.1336764049223056,
+          "observations": 117,
+          "value_complexity_rank": 0,
+          "reason": "Elegible por suficiencia, estabilidad entre eras y no inferioridad pareada."
+        }
+      ]
+    },
+    {
+      "variable_id": "neutralize_by_sector",
+      "winner_candidate_id": "predictive:feature_preset:5cf7504d9781",
+      "winner_value": false,
+      "selection_rule": "robust_rank_ic",
+      "selection_metric": "rank_ic_only",
+      "selection_rule_text": "Un candidato es elegible si (a) tiene observaciones suficientes, (b) ninguna era disponible cae por debajo de -0.02, y (c) supera la puerta pareada: o bien domina al incumbent (diferencia media positiva y mejor en más de la mitad de las fechas emparejadas), o bien es no inferior (límite inferior del IC al 90% por encima de -0.01). Si el emparejamiento no es aplicable —rejillas de snapshots disjuntas— no hay evidencia pareada y solo el incumbent es elegible. El orden entre elegibles lo fija la diferencia pareada contra el incumbent, no la mediana entre eras.",
+      "era_floor": -0.02,
+      "non_inferiority_margin": -0.01,
+      "paired_bootstrap_draws": 2000,
+      "paired_confidence": 0.9,
+      "known_stress_excluded": true,
+      "candidates": [
+        {
+          "candidate_id": "predictive:feature_preset:5cf7504d9781",
+          "value": false,
+          "is_incumbent": true,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "n_dates": 111,
+            "fraction_a_better": 0.0,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12,
+            "same_evaluation": true
+          },
+          "paired_advantage": 0.0,
+          "median_era_rank_ic": 0.09162343114043574,
+          "mean_rank_ic": 0.09823681354944515,
+          "positive_fraction": 0.717948717948718,
+          "rank_ic_std": 0.13597107116504276,
+          "observations": 117,
+          "value_complexity_rank": 0,
+          "reason": "Incumbent: referencia de la comparación, elegible por definición."
+        },
+        {
+          "candidate_id": "predictive:neutralize_by_sector:b5bea41b6c62",
+          "value": true,
+          "is_incumbent": false,
+          "eligible": false,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": false,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": -0.040453324537416215,
+            "ci_low": -0.07437138780385565,
+            "ci_high": -0.01335215239563498,
+            "n_dates": 111,
+            "fraction_a_better": 0.32432432432432434,
+            "distinguishable_from_zero": true,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": -0.040453324537416215,
+          "median_era_rank_ic": 0.06563740251269749,
+          "mean_rank_ic": 0.05552936234697143,
+          "positive_fraction": 0.7350427350427351,
+          "rank_ic_std": 0.11707370738985381,
+          "observations": 117,
+          "value_complexity_rank": 1,
+          "reason": "no domina al incumbent ni es no inferior"
+        }
+      ]
+    },
+    {
+      "variable_id": "winsorization",
+      "winner_candidate_id": "predictive:feature_preset:5cf7504d9781",
+      "winner_value": 0.0,
+      "selection_rule": "robust_rank_ic",
+      "selection_metric": "rank_ic_only",
+      "selection_rule_text": "Un candidato es elegible si (a) tiene observaciones suficientes, (b) ninguna era disponible cae por debajo de -0.02, y (c) supera la puerta pareada: o bien domina al incumbent (diferencia media positiva y mejor en más de la mitad de las fechas emparejadas), o bien es no inferior (límite inferior del IC al 90% por encima de -0.01). Si el emparejamiento no es aplicable —rejillas de snapshots disjuntas— no hay evidencia pareada y solo el incumbent es elegible. El orden entre elegibles lo fija la diferencia pareada contra el incumbent, no la mediana entre eras.",
+      "era_floor": -0.02,
+      "non_inferiority_margin": -0.01,
+      "paired_bootstrap_draws": 2000,
+      "paired_confidence": 0.9,
+      "known_stress_excluded": true,
+      "candidates": [
+        {
+          "candidate_id": "predictive:feature_preset:5cf7504d9781",
+          "value": 0.0,
+          "is_incumbent": true,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "n_dates": 111,
+            "fraction_a_better": 0.0,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12,
+            "same_evaluation": true
+          },
+          "paired_advantage": 0.0,
+          "median_era_rank_ic": 0.09162343114043574,
+          "mean_rank_ic": 0.09823681354944515,
+          "positive_fraction": 0.717948717948718,
+          "rank_ic_std": 0.13597107116504276,
+          "observations": 117,
+          "value_complexity_rank": 0,
+          "reason": "Incumbent: referencia de la comparación, elegible por definición."
+        },
+        {
+          "candidate_id": "predictive:winsorization:312b95ee5a34",
+          "value": 0.01,
+          "is_incumbent": false,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": -0.0010869190789909243,
+            "ci_low": -0.0027801441096325093,
+            "ci_high": 0.000802576675803044,
+            "n_dates": 111,
+            "fraction_a_better": 0.44144144144144143,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": -0.0010869190789909243,
+          "median_era_rank_ic": 0.09081169512101908,
+          "mean_rank_ic": 0.09705616571165752,
+          "positive_fraction": 0.7264957264957265,
+          "rank_ic_std": 0.13612951010193744,
+          "observations": 117,
+          "value_complexity_rank": 1,
+          "reason": "Elegible por suficiencia, estabilidad entre eras y no inferioridad pareada."
+        },
+        {
+          "candidate_id": "predictive:winsorization:98fcc7a319ae",
+          "value": 0.025,
+          "is_incumbent": false,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": -0.0028173872654771513,
+            "ci_low": -0.009943280378785802,
+            "ci_high": 0.0034923946453263473,
+            "n_dates": 111,
+            "fraction_a_better": 0.4774774774774775,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": -0.0028173872654771513,
+          "median_era_rank_ic": 0.09752945621346769,
+          "mean_rank_ic": 0.09494962307097282,
+          "positive_fraction": 0.7094017094017094,
+          "rank_ic_std": 0.1409373016275653,
+          "observations": 117,
+          "value_complexity_rank": 2,
+          "reason": "Elegible por suficiencia, estabilidad entre eras y no inferioridad pareada."
+        }
+      ]
+    },
+    {
+      "variable_id": "max_features_per_agent",
+      "winner_candidate_id": "predictive:max_features_per_agent:f5ca38f748a1",
+      "winner_value": 20,
+      "selection_rule": "robust_rank_ic",
+      "selection_metric": "rank_ic_only",
+      "selection_rule_text": "Un candidato es elegible si (a) tiene observaciones suficientes, (b) ninguna era disponible cae por debajo de -0.02, y (c) supera la puerta pareada: o bien domina al incumbent (diferencia media positiva y mejor en más de la mitad de las fechas emparejadas), o bien es no inferior (límite inferior del IC al 90% por encima de -0.01). Si el emparejamiento no es aplicable —rejillas de snapshots disjuntas— no hay evidencia pareada y solo el incumbent es elegible. El orden entre elegibles lo fija la diferencia pareada contra el incumbent, no la mediana entre eras.",
+      "era_floor": -0.02,
+      "non_inferiority_margin": -0.01,
+      "paired_bootstrap_draws": 2000,
+      "paired_confidence": 0.9,
+      "known_stress_excluded": true,
+      "candidates": [
+        {
+          "candidate_id": "predictive:feature_preset:5cf7504d9781",
+          "value": 8,
+          "is_incumbent": true,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "n_dates": 111,
+            "fraction_a_better": 0.0,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12,
+            "same_evaluation": true
+          },
+          "paired_advantage": 0.0,
+          "median_era_rank_ic": 0.09162343114043574,
+          "mean_rank_ic": 0.09823681354944515,
+          "positive_fraction": 0.717948717948718,
+          "rank_ic_std": 0.13597107116504276,
+          "observations": 117,
+          "value_complexity_rank": 0,
+          "reason": "Incumbent: referencia de la comparación, elegible por definición."
+        },
+        {
+          "candidate_id": "predictive:max_features_per_agent:6b51d431df5d",
+          "value": 12,
+          "is_incumbent": false,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": true,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.002601660146642027,
+            "ci_low": -0.0013559181480491973,
+            "ci_high": 0.008842572041366074,
+            "n_dates": 111,
+            "fraction_a_better": 0.5495495495495496,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": 0.002601660146642027,
+          "median_era_rank_ic": 0.09062214443226337,
+          "mean_rank_ic": 0.10054232337331212,
+          "positive_fraction": 0.7435897435897436,
+          "rank_ic_std": 0.1306241057055442,
+          "observations": 117,
+          "value_complexity_rank": 1,
+          "reason": "Domina al incumbent: ventaja media +0.0026 y mejor en el 55.0% de las 111 cohortes emparejadas."
+        },
+        {
+          "candidate_id": "predictive:max_features_per_agent:f5ca38f748a1",
+          "value": 20,
+          "is_incumbent": false,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": true,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.0032938599113621018,
+            "ci_low": -0.0009347732903007541,
+            "ci_high": 0.01011456563553367,
+            "n_dates": 111,
+            "fraction_a_better": 0.5315315315315315,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": 0.0032938599113621018,
+          "median_era_rank_ic": 0.09115680857185762,
+          "mean_rank_ic": 0.10112340502979811,
+          "positive_fraction": 0.7435897435897436,
+          "rank_ic_std": 0.13220087171052258,
+          "observations": 117,
+          "value_complexity_rank": 2,
+          "reason": "Domina al incumbent: ventaja media +0.0033 y mejor en el 53.2% de las 111 cohortes emparejadas."
+        }
+      ]
+    },
+    {
+      "variable_id": "feature_weighting_mode",
+      "winner_candidate_id": "predictive:max_features_per_agent:f5ca38f748a1",
+      "winner_value": "oos_stability_prune",
+      "selection_rule": "robust_rank_ic",
+      "selection_metric": "rank_ic_only",
+      "selection_rule_text": "Un candidato es elegible si (a) tiene observaciones suficientes, (b) ninguna era disponible cae por debajo de -0.02, y (c) supera la puerta pareada: o bien domina al incumbent (diferencia media positiva y mejor en más de la mitad de las fechas emparejadas), o bien es no inferior (límite inferior del IC al 90% por encima de -0.01). Si el emparejamiento no es aplicable —rejillas de snapshots disjuntas— no hay evidencia pareada y solo el incumbent es elegible. El orden entre elegibles lo fija la diferencia pareada contra el incumbent, no la mediana entre eras.",
+      "era_floor": -0.02,
+      "non_inferiority_margin": -0.01,
+      "paired_bootstrap_draws": 2000,
+      "paired_confidence": 0.9,
+      "known_stress_excluded": true,
+      "candidates": [
+        {
+          "candidate_id": "predictive:max_features_per_agent:f5ca38f748a1",
+          "value": "oos_stability_prune",
+          "is_incumbent": true,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "n_dates": 111,
+            "fraction_a_better": 0.0,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12,
+            "same_evaluation": true
+          },
+          "paired_advantage": 0.0,
+          "median_era_rank_ic": 0.09115680857185762,
+          "mean_rank_ic": 0.10112340502979811,
+          "positive_fraction": 0.7435897435897436,
+          "rank_ic_std": 0.13220087171052258,
+          "observations": 117,
+          "value_complexity_rank": 1,
+          "reason": "Incumbent: referencia de la comparación, elegible por definición."
+        },
+        {
+          "candidate_id": "predictive:feature_weighting_mode:114b2132f57e",
+          "value": "model_native",
+          "is_incumbent": false,
+          "eligible": false,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": false,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.003854368016190047,
+            "ci_low": -0.011527817788710313,
+            "ci_high": 0.014520847929719163,
+            "n_dates": 111,
+            "fraction_a_better": 0.45045045045045046,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": 0.003854368016190047,
+          "median_era_rank_ic": 0.09912138528656246,
+          "mean_rank_ic": 0.10365287718877204,
+          "positive_fraction": 0.7350427350427351,
+          "rank_ic_std": 0.14540399518649286,
+          "observations": 117,
+          "value_complexity_rank": 0,
+          "reason": "no domina al incumbent ni es no inferior"
+        }
+      ]
+    },
+    {
+      "variable_id": "lgbm_max_depth",
+      "winner_candidate_id": "predictive:max_features_per_agent:f5ca38f748a1",
+      "winner_value": 3,
+      "selection_rule": "robust_rank_ic",
+      "selection_metric": "rank_ic_only",
+      "selection_rule_text": "Un candidato es elegible si (a) tiene observaciones suficientes, (b) ninguna era disponible cae por debajo de -0.02, y (c) supera la puerta pareada: o bien domina al incumbent (diferencia media positiva y mejor en más de la mitad de las fechas emparejadas), o bien es no inferior (límite inferior del IC al 90% por encima de -0.01). Si el emparejamiento no es aplicable —rejillas de snapshots disjuntas— no hay evidencia pareada y solo el incumbent es elegible. El orden entre elegibles lo fija la diferencia pareada contra el incumbent, no la mediana entre eras.",
+      "era_floor": -0.02,
+      "non_inferiority_margin": -0.01,
+      "paired_bootstrap_draws": 2000,
+      "paired_confidence": 0.9,
+      "known_stress_excluded": true,
+      "candidates": [
+        {
+          "candidate_id": "predictive:max_features_per_agent:f5ca38f748a1",
+          "value": 3,
+          "is_incumbent": true,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "n_dates": 111,
+            "fraction_a_better": 0.0,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12,
+            "same_evaluation": true
+          },
+          "paired_advantage": 0.0,
+          "median_era_rank_ic": 0.09115680857185762,
+          "mean_rank_ic": 0.10112340502979811,
+          "positive_fraction": 0.7435897435897436,
+          "rank_ic_std": 0.13220087171052258,
+          "observations": 117,
+          "value_complexity_rank": 0,
+          "reason": "Incumbent: referencia de la comparación, elegible por definición."
+        },
+        {
+          "candidate_id": "predictive:lgbm_max_depth:4b227777d4dd",
+          "value": 4,
+          "is_incumbent": false,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": -0.0013333872260227987,
+            "ci_low": -0.007257388496941399,
+            "ci_high": 0.006356595509410111,
+            "n_dates": 111,
+            "fraction_a_better": 0.40540540540540543,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": -0.0013333872260227987,
+          "median_era_rank_ic": 0.08294666651596994,
+          "mean_rank_ic": 0.09941112461153373,
+          "positive_fraction": 0.7521367521367521,
+          "rank_ic_std": 0.12300808479142061,
+          "observations": 117,
+          "value_complexity_rank": 1,
+          "reason": "Elegible por suficiencia, estabilidad entre eras y no inferioridad pareada."
+        },
+        {
+          "candidate_id": "predictive:lgbm_max_depth:e7f6c011776e",
+          "value": 6,
+          "is_incumbent": false,
+          "eligible": false,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": false,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": -0.007350613018195783,
+            "ci_low": -0.019906409082376484,
+            "ci_high": 0.0077825286572092735,
+            "n_dates": 111,
+            "fraction_a_better": 0.35135135135135137,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": -0.007350613018195783,
+          "median_era_rank_ic": 0.06817954316902847,
+          "mean_rank_ic": 0.09305533220765384,
+          "positive_fraction": 0.7606837606837606,
+          "rank_ic_std": 0.11430416136554149,
+          "observations": 117,
+          "value_complexity_rank": 2,
+          "reason": "no domina al incumbent ni es no inferior"
+        }
+      ]
+    },
+    {
+      "variable_id": "lgbm_n_estimators",
+      "winner_candidate_id": "predictive:max_features_per_agent:f5ca38f748a1",
+      "winner_value": 100,
+      "selection_rule": "robust_rank_ic",
+      "selection_metric": "rank_ic_only",
+      "selection_rule_text": "Un candidato es elegible si (a) tiene observaciones suficientes, (b) ninguna era disponible cae por debajo de -0.02, y (c) supera la puerta pareada: o bien domina al incumbent (diferencia media positiva y mejor en más de la mitad de las fechas emparejadas), o bien es no inferior (límite inferior del IC al 90% por encima de -0.01). Si el emparejamiento no es aplicable —rejillas de snapshots disjuntas— no hay evidencia pareada y solo el incumbent es elegible. El orden entre elegibles lo fija la diferencia pareada contra el incumbent, no la mediana entre eras.",
+      "era_floor": -0.02,
+      "non_inferiority_margin": -0.01,
+      "paired_bootstrap_draws": 2000,
+      "paired_confidence": 0.9,
+      "known_stress_excluded": true,
+      "candidates": [
+        {
+          "candidate_id": "predictive:max_features_per_agent:f5ca38f748a1",
+          "value": 100,
+          "is_incumbent": true,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "n_dates": 111,
+            "fraction_a_better": 0.0,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12,
+            "same_evaluation": true
+          },
+          "paired_advantage": 0.0,
+          "median_era_rank_ic": 0.09115680857185762,
+          "mean_rank_ic": 0.10112340502979811,
+          "positive_fraction": 0.7435897435897436,
+          "rank_ic_std": 0.13220087171052258,
+          "observations": 117,
+          "value_complexity_rank": 0,
+          "reason": "Incumbent: referencia de la comparación, elegible por definición."
+        },
+        {
+          "candidate_id": "predictive:lgbm_n_estimators:26d228663f13",
+          "value": 400,
+          "is_incumbent": false,
+          "eligible": false,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": false,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": -0.005824614110977099,
+            "ci_low": -0.017897488362172392,
+            "ci_high": 0.007777526967749662,
+            "n_dates": 111,
+            "fraction_a_better": 0.3963963963963964,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": -0.005824614110977099,
+          "median_era_rank_ic": 0.07147335113963778,
+          "mean_rank_ic": 0.09431001614969572,
+          "positive_fraction": 0.7692307692307693,
+          "rank_ic_std": 0.11165950720379988,
+          "observations": 117,
+          "value_complexity_rank": 2,
+          "reason": "no domina al incumbent ni es no inferior"
+        },
+        {
+          "candidate_id": "predictive:lgbm_n_estimators:27badc983df1",
+          "value": 200,
+          "is_incumbent": false,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": -0.00066130772082001,
+            "ci_low": -0.005924522628364806,
+            "ci_high": 0.0057623365535964186,
+            "n_dates": 111,
+            "fraction_a_better": 0.45045045045045046,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": -0.00066130772082001,
+          "median_era_rank_ic": 0.08434140765269271,
+          "mean_rank_ic": 0.09989204439571779,
+          "positive_fraction": 0.7606837606837606,
+          "rank_ic_std": 0.12151296125598668,
+          "observations": 117,
+          "value_complexity_rank": 1,
+          "reason": "Elegible por suficiencia, estabilidad entre eras y no inferioridad pareada."
+        }
+      ]
+    },
+    {
+      "variable_id": "lgbm_learning_rate",
+      "winner_candidate_id": "predictive:max_features_per_agent:f5ca38f748a1",
+      "winner_value": 0.05,
+      "selection_rule": "robust_rank_ic",
+      "selection_metric": "rank_ic_only",
+      "selection_rule_text": "Un candidato es elegible si (a) tiene observaciones suficientes, (b) ninguna era disponible cae por debajo de -0.02, y (c) supera la puerta pareada: o bien domina al incumbent (diferencia media positiva y mejor en más de la mitad de las fechas emparejadas), o bien es no inferior (límite inferior del IC al 90% por encima de -0.01). Si el emparejamiento no es aplicable —rejillas de snapshots disjuntas— no hay evidencia pareada y solo el incumbent es elegible. El orden entre elegibles lo fija la diferencia pareada contra el incumbent, no la mediana entre eras.",
+      "era_floor": -0.02,
+      "non_inferiority_margin": -0.01,
+      "paired_bootstrap_draws": 2000,
+      "paired_confidence": 0.9,
+      "known_stress_excluded": true,
+      "candidates": [
+        {
+          "candidate_id": "predictive:max_features_per_agent:f5ca38f748a1",
+          "value": 0.05,
+          "is_incumbent": true,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "n_dates": 111,
+            "fraction_a_better": 0.0,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12,
+            "same_evaluation": true
+          },
+          "paired_advantage": 0.0,
+          "median_era_rank_ic": 0.09115680857185762,
+          "mean_rank_ic": 0.10112340502979811,
+          "positive_fraction": 0.7435897435897436,
+          "rank_ic_std": 0.13220087171052258,
+          "observations": 117,
+          "value_complexity_rank": 1,
+          "reason": "Incumbent: referencia de la comparación, elegible por definición."
+        },
+        {
+          "candidate_id": "predictive:lgbm_learning_rate:773a15ec53a8",
+          "value": 0.03,
+          "is_incumbent": false,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": -0.0021956844851658175,
+            "ci_low": -0.007714242391494704,
+            "ci_high": 0.0025083988299236604,
+            "n_dates": 111,
+            "fraction_a_better": 0.45045045045045046,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": -0.0021956844851658175,
+          "median_era_rank_ic": 0.09138336775074174,
+          "mean_rank_ic": 0.09906619029487067,
+          "positive_fraction": 0.7264957264957265,
+          "rank_ic_std": 0.139884641984558,
+          "observations": 117,
+          "value_complexity_rank": 0,
+          "reason": "Elegible por suficiencia, estabilidad entre eras y no inferioridad pareada."
+        },
+        {
+          "candidate_id": "predictive:lgbm_learning_rate:14be4b45f18e",
+          "value": 0.1,
+          "is_incumbent": false,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": -0.00158351718725974,
+            "ci_low": -0.006855370075133402,
+            "ci_high": 0.005565768016202568,
+            "n_dates": 111,
+            "fraction_a_better": 0.44144144144144143,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": -0.00158351718725974,
+          "median_era_rank_ic": 0.08473602301053616,
+          "mean_rank_ic": 0.09901443636421468,
+          "positive_fraction": 0.7606837606837606,
+          "rank_ic_std": 0.12158120537349819,
+          "observations": 117,
+          "value_complexity_rank": 2,
+          "reason": "Elegible por suficiencia, estabilidad entre eras y no inferioridad pareada."
+        }
+      ]
+    },
+    {
+      "variable_id": "lgbm_min_child_samples",
+      "winner_candidate_id": "predictive:max_features_per_agent:f5ca38f748a1",
+      "winner_value": 50,
+      "selection_rule": "robust_rank_ic",
+      "selection_metric": "rank_ic_only",
+      "selection_rule_text": "Un candidato es elegible si (a) tiene observaciones suficientes, (b) ninguna era disponible cae por debajo de -0.02, y (c) supera la puerta pareada: o bien domina al incumbent (diferencia media positiva y mejor en más de la mitad de las fechas emparejadas), o bien es no inferior (límite inferior del IC al 90% por encima de -0.01). Si el emparejamiento no es aplicable —rejillas de snapshots disjuntas— no hay evidencia pareada y solo el incumbent es elegible. El orden entre elegibles lo fija la diferencia pareada contra el incumbent, no la mediana entre eras.",
+      "era_floor": -0.02,
+      "non_inferiority_margin": -0.01,
+      "paired_bootstrap_draws": 2000,
+      "paired_confidence": 0.9,
+      "known_stress_excluded": true,
+      "candidates": [
+        {
+          "candidate_id": "predictive:max_features_per_agent:f5ca38f748a1",
+          "value": 50,
+          "is_incumbent": true,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "n_dates": 111,
+            "fraction_a_better": 0.0,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12,
+            "same_evaluation": true
+          },
+          "paired_advantage": 0.0,
+          "median_era_rank_ic": 0.09115680857185762,
+          "mean_rank_ic": 0.10112340502979811,
+          "positive_fraction": 0.7435897435897436,
+          "rank_ic_std": 0.13220087171052258,
+          "observations": 117,
+          "value_complexity_rank": 1,
+          "reason": "Incumbent: referencia de la comparación, elegible por definición."
+        },
+        {
+          "candidate_id": "predictive:lgbm_min_child_samples:ad5736686512",
+          "value": 100,
+          "is_incumbent": false,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": -0.0016781182591436169,
+            "ci_low": -0.004263148060293246,
+            "ci_high": 0.00013734305458662326,
+            "n_dates": 111,
+            "fraction_a_better": 0.3963963963963964,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": -0.0016781182591436169,
+          "median_era_rank_ic": 0.0857541342883828,
+          "mean_rank_ic": 0.09922288947902437,
+          "positive_fraction": 0.7435897435897436,
+          "rank_ic_std": 0.1323002404723857,
+          "observations": 117,
+          "value_complexity_rank": 2,
+          "reason": "Elegible por suficiencia, estabilidad entre eras y no inferioridad pareada."
+        },
+        {
+          "candidate_id": "predictive:lgbm_min_child_samples:f5ca38f748a1",
+          "value": 20,
+          "is_incumbent": false,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": -0.00017064161961147988,
+            "ci_low": -0.0020453816628343453,
+            "ci_high": 0.0015356980155818935,
+            "n_dates": 111,
+            "fraction_a_better": 0.4864864864864865,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": -0.00017064161961147988,
+          "median_era_rank_ic": 0.08938546586239712,
+          "mean_rank_ic": 0.10070779602205757,
+          "positive_fraction": 0.7350427350427351,
+          "rank_ic_std": 0.13422251990895134,
+          "observations": 117,
+          "value_complexity_rank": 0,
+          "reason": "Elegible por suficiencia, estabilidad entre eras y no inferioridad pareada."
+        }
+      ]
+    },
+    {
+      "variable_id": "meta_method",
+      "winner_candidate_id": "predictive:meta_method:77edb68eeef9",
+      "winner_value": "stacked_rolling_free",
+      "selection_rule": "robust_rank_ic",
+      "selection_metric": "rank_ic_only",
+      "selection_rule_text": "Un candidato es elegible si (a) tiene observaciones suficientes, (b) ninguna era disponible cae por debajo de -0.02, y (c) supera la puerta pareada: o bien domina al incumbent (diferencia media positiva y mejor en más de la mitad de las fechas emparejadas), o bien es no inferior (límite inferior del IC al 90% por encima de -0.01). Si el emparejamiento no es aplicable —rejillas de snapshots disjuntas— no hay evidencia pareada y solo el incumbent es elegible. El orden entre elegibles lo fija la diferencia pareada contra el incumbent, no la mediana entre eras.",
+      "era_floor": -0.02,
+      "non_inferiority_margin": -0.01,
+      "paired_bootstrap_draws": 2000,
+      "paired_confidence": 0.9,
+      "known_stress_excluded": true,
+      "candidates": [
+        {
+          "candidate_id": "predictive:meta_method:874ed18a6ac1",
+          "value": "equal",
+          "is_incumbent": false,
+          "eligible": false,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": false,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": -0.02732795098125199,
+            "ci_low": -0.037932133975909985,
+            "ci_high": -0.012243417447847868,
+            "n_dates": 111,
+            "fraction_a_better": 0.21621621621621623,
+            "distinguishable_from_zero": true,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": -0.02732795098125199,
+          "median_era_rank_ic": 0.07872687811776492,
+          "mean_rank_ic": 0.07262649072100581,
+          "positive_fraction": 0.6153846153846154,
+          "rank_ic_std": 0.12538758254681656,
+          "observations": 117,
+          "value_complexity_rank": 0,
+          "reason": "no domina al incumbent ni es no inferior"
+        },
+        {
+          "candidate_id": "predictive:meta_method:77edb68eeef9",
+          "value": "stacked_rolling_free",
+          "is_incumbent": false,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": true,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.003890750629331382,
+            "ci_low": -0.005364618908403082,
+            "ci_high": 0.009429925450428716,
+            "n_dates": 111,
+            "fraction_a_better": 0.5315315315315315,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12
+          },
+          "paired_advantage": 0.003890750629331382,
+          "median_era_rank_ic": 0.09104939489304462,
+          "mean_rank_ic": 0.1050922526177485,
+          "positive_fraction": 0.7606837606837606,
+          "rank_ic_std": 0.12449115129258984,
+          "observations": 117,
+          "value_complexity_rank": 1,
+          "reason": "Domina al incumbent: ventaja media +0.0039 y mejor en el 53.2% de las 111 cohortes emparejadas."
+        },
+        {
+          "candidate_id": "predictive:max_features_per_agent:f5ca38f748a1",
+          "value": "stacked_rolling_bounded",
+          "is_incumbent": true,
+          "eligible": true,
+          "gates": {
+            "observations_sufficient": true,
+            "all_available_eras_above_floor": true,
+            "paired_dominates_incumbent": false,
+            "paired_bootstrap_non_inferior": true,
+            "paired_applicable": true
+          },
+          "paired_bootstrap_90": {
+            "mean_diff": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "n_dates": 111,
+            "fraction_a_better": 0.0,
+            "distinguishable_from_zero": false,
+            "applicable": true,
+            "block_size": 12,
+            "same_evaluation": true
+          },
+          "paired_advantage": 0.0,
+          "median_era_rank_ic": 0.09115680857185762,
+          "mean_rank_ic": 0.10112340502979811,
+          "positive_fraction": 0.7435897435897436,
+          "rank_ic_std": 0.13220087171052258,
+          "observations": 117,
+          "value_complexity_rank": 2,
+          "reason": "Incumbent: referencia de la comparación, elegible por definición."
+        }
+      ]
+    }
+  ]
+}

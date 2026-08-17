@@ -46,13 +46,16 @@ from __future__ import annotations
 import itertools
 import json
 import logging
+import multiprocessing
 import shutil
 import time
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 from typing import Any, Mapping
 
 import pandas as pd
 
+from environment import PORTFOLIO_GRID_WORKERS
 from module.studies.catalog import BY_ID, SELECTION_UNTIL_YEAR
 
 log = logging.getLogger(__name__)
@@ -100,6 +103,31 @@ def portfolio_grid(
             values = list(BY_ID[variable_id].values)
         axes.append([(variable_id, value) for value in values])
     return [dict(combination) for combination in itertools.product(*axes)]
+
+
+def _evaluate_combination(
+    task: tuple[int, dict[str, Any], dict[str, Any], str, str],
+) -> tuple[int, dict[str, Any], dict[str, Any], dict[str, Any], float]:
+    """Evalúa una combinación en su propio proceso. Debe ser picklable y no tocar estado del estudio.
+
+    Recibe y devuelve solo datos planos porque cruza una frontera de proceso. En particular **no
+    escribe** en `study.json` ni en `events.jsonl`: esos ficheros se actualizan por lectura-
+    modificación-escritura y varios procesos compitiendo por ellos se pisarían las actualizaciones.
+    El padre conserva en exclusiva esa escritura, igual que la comparación del mejor.
+
+    Cada tarea recibe además un `staging` propio, derivado del índice: la ruta única compartida que
+    usaba el recorrido secuencial haría que dos workers se borrasen la evidencia mutuamente.
+    """
+    from module.studies.runner import run_profile_evaluation
+
+    index, combination, values, selection_dir, staging = task
+    staging_path = Path(staging)
+    if staging_path.exists():
+        shutil.rmtree(staging_path, ignore_errors=True)
+    started = time.perf_counter()
+    payload = run_profile_evaluation(values, "balanced", Path(selection_dir), retain_dir=staging_path)
+    elapsed = time.perf_counter() - started
+    return index, combination, _selection_summary(payload), dict(payload.get("rank_ic", {})), elapsed
 
 
 def _metric(summary: Mapping[str, Any]) -> float:
@@ -247,15 +275,19 @@ def run_portfolio_study(
     definition: Mapping[str, Mapping[str, Any]] | None = None,
     progress: Any | None = None,
     profiles: list[str] | None = None,
+    workers: int | None = None,
 ) -> dict[str, Any]:
     """Recorre la rejilla, elige por IR y conserva la evidencia solo del mejor.
 
     `winner_values` es la configuración completa del ganador del Model Study; las seis variables de
     cartera se sobrescriben en cada iteración y el resto se mantiene intacto, de modo que el modelo
     evaluado es siempre el mismo.
-    """
-    from module.studies.runner import run_profile_evaluation
 
+    `workers` reparte la rejilla entre procesos. No altera el resultado —cada combinación es
+    independiente y el ganador se elige con el mismo criterio sobre el mismo conjunto—, solo el
+    tiempo. Con `1` el recorrido es el secuencial de siempre.
+    """
+    workers = PORTFOLIO_GRID_WORKERS if workers is None else max(1, int(workers))
     output_dir.mkdir(parents=True, exist_ok=True)
     best_evidence = output_dir / "evidence_best"
     grid_path = output_dir / "portfolio_grid.parquet"
@@ -273,46 +305,74 @@ def run_portfolio_study(
     # ver la era reservada porque su simulación no llega hasta ahí.
     selection_dir = selection_evidence(evidence_dir, output_dir / "_selection_evidence")
 
+    # Las combinaciones pendientes son independientes entre sí —el cartesiano no es greedy: ninguna
+    # parte del resultado de otra—, así que se reparten entre procesos. La reducción (comparar,
+    # promover la evidencia y volcar la rejilla) se queda **entera en el padre**: es la parte con
+    # estado compartido y paralelizarla sería una carrera sobre el sistema de ficheros.
+    pending = [
+        (index, combination)
+        for index, combination in enumerate(grid, start=1)
+        if combination_key(combination) not in done
+    ]
     for index, combination in enumerate(grid, start=1):
-        if combination_key(combination) in done:
-            if progress is not None and best is not None:
-                progress(index, len(grid), combination, best["score"], best)
-            continue
-        values = {**dict(winner_values), **combination}
-        started = time.perf_counter()
-        # Cada combinación se evalúa en una carpeta temporal propia; solo la del mejor vigente
-        # sobrevive, y se sustituye en cuanto otra la supera.
-        staging = output_dir / "_staging"
-        if staging.exists():
-            shutil.rmtree(staging, ignore_errors=True)
-        payload = run_profile_evaluation(values, "balanced", selection_dir, retain_dir=staging)
-        elapsed = time.perf_counter() - started
-        summary = _selection_summary(payload)
+        if combination_key(combination) in done and progress is not None and best is not None:
+            progress(index, len(grid), combination, best["score"], best)
+
+    staging_root = output_dir / "_staging"
+    shutil.rmtree(staging_root, ignore_errors=True)
+    staging_root.mkdir(parents=True, exist_ok=True)
+    tasks = [
+        (
+            index,
+            dict(combination),
+            {**dict(winner_values), **combination},
+            str(selection_dir),
+            str(staging_root / f"c{index:06d}"),
+        )
+        for index, combination in pending
+    ]
+
+    def reduce_one(
+        index: int, combination: dict[str, Any], summary: dict[str, Any],
+        rank_ic: dict[str, Any], elapsed: float,
+    ) -> None:
+        """Integra el resultado de una combinación. Solo la llama el padre, en serie."""
+        nonlocal best, completed
         rows.append(_row(combination, summary, elapsed))
         done.add(combination_key(combination))
         score = _metric(summary)
-
+        staging = staging_root / f"c{index:06d}"
         if best is None or score > best["score"]:
             if best_evidence.exists():
                 shutil.rmtree(best_evidence, ignore_errors=True)
             staging.replace(best_evidence)
             best = {
-                "score": score,
-                "combination": dict(combination),
-                "summary": dict(summary),
-                "rank_ic": dict(payload.get("rank_ic", {})),
+                "score": score, "combination": dict(combination),
+                "summary": dict(summary), "rank_ic": dict(rank_ic),
             }
         else:
             shutil.rmtree(staging, ignore_errors=True)
-
+        completed += 1
         # Volcado periódico: si el proceso muere entre dos volcados solo se pierde ese tramo, y la
         # evidencia del mejor ya está en disco, así que reanudar reconstruye el estado.
-        if index % GRID_CHECKPOINT_EVERY == 0:
+        if completed % GRID_CHECKPOINT_EVERY == 0:
             pd.DataFrame(rows).to_parquet(grid_path, index=False)
-
         if progress is not None:
-            progress(index, len(grid), combination, score, best)
+            progress(len(done), len(grid), combination, score, best)
 
+    completed = 0
+    if tasks and workers > 1:
+        # `spawn` es el único modo en Windows y evita heredar estado del padre; el coste de arranque
+        # se amortiza porque cada worker atiende cientos de combinaciones.
+        context = multiprocessing.get_context("spawn")
+        with ProcessPoolExecutor(max_workers=workers, mp_context=context) as pool:
+            for result in pool.map(_evaluate_combination, tasks, chunksize=1):
+                reduce_one(*result)
+    else:
+        for task in tasks:
+            reduce_one(*_evaluate_combination(task))
+
+    shutil.rmtree(staging_root, ignore_errors=True)
     pd.DataFrame(rows).to_parquet(grid_path, index=False)
 
     if best is None:
@@ -321,6 +381,8 @@ def run_portfolio_study(
     # Ya elegida la combinación, y solo ella, se reevalúa sobre la serie completa. Es la primera y
     # única vez que 2025-2026 se calcula en todo el estudio: como comprobación del ganador, nunca
     # como criterio para elegirlo.
+    from module.studies.runner import run_profile_evaluation
+
     confirmation_evidence = output_dir / "evidence_best_full"
     if confirmation_evidence.exists():
         shutil.rmtree(confirmation_evidence, ignore_errors=True)

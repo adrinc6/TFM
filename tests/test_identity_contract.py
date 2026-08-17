@@ -49,6 +49,9 @@ def test_every_scientific_setting_belongs_to_exactly_one_fingerprint() -> None:
     operational = {
         "workspace_dir", "lgbm_n_jobs", "profile", "tickers", "dev_mode",
         "raw_output_dir", "processed_output_dir",
+        # `news.parquet` no lo lee ningún consumidor: no entra en el panel ni en las features, así
+        # que descargarlo o no es una decisión de tiempo de ingesta, no de ciencia.
+        "download_news",
     }
     # El backtest se recalcula siempre a partir de los scores, así que sus parámetros no participan
     # en ninguna caché de fit; su identidad la fija `evaluation_key` a través de `values`.

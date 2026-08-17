@@ -20,7 +20,7 @@ documento final proceden del ganador del Portfolio Study (\studyportfolio), bajo
   eras.
   \item[evidence/meta\_weights.parquet] 675 $\times$ 6. Peso asignado a cada agente en cada fecha,
   con el estado que indica si fue aprendido o de reparto uniforme.
-  \item[evidence/agent\_local\_attribution.parquet] 1.309.618 $\times$ 10. Contribución de cada
+  \item[evidence/agent\_local\_attribution.parquet] 1.306.960 $\times$ 10. Contribución de cada
   variable a la puntuación de cada acción en cada fecha. Es el artefacto más voluminoso del estudio
   y sostiene la Sección~\ref{sec:atribucion-local}. El manuscrito lo explota sólo de forma agregada:
   queda disponible el detalle por acción, que permitiría explicar decisiones concretas de cartera.
@@ -35,7 +35,7 @@ documento final proceden del ganador del Portfolio Study (\studyportfolio), bajo
 \end{description}
 
 Otros artefactos se persisten para auditoría sin que ninguna cifra del cuerpo los cite:
-puntuaciones por agente y snapshot (60.380 filas), coeficientes del modelo por fecha de reajuste,
+puntuaciones por agente y snapshot (60.259 filas), coeficientes del modelo por fecha de reajuste,
 diagnósticos de cobertura por variable, calibración de alfa esperado frente a realizado y la
 evidencia de cartera del propio Model Study, que el documento no usa porque la sustituye la del
 Portfolio Study.
@@ -46,13 +46,21 @@ Portfolio Study.
   \item[evidence\_best\_full/] Evidencia económica completa del ganador sobre la serie entera ---
   patrimonio, órdenes, posiciones y métricas anuales ---. \textbf{Es la fuente de todas las cifras
   económicas del documento.}
-  \item[portfolio\_grid.parquet] 1.728 $\times$ 19. Una fila por cartera evaluada, con sus seis
+  \item[portfolio\_grid.parquet] 1.440 $\times$ 19. Una fila por cartera evaluada, con sus seis
   coordenadas y sus métricas medidas sobre la serie recortada en 2024. De las descartadas se
   conserva únicamente esta fila de resumen.
   \item[portfolio\_winner.json] Combinación ganadora, su resumen de selección, su confirmación sobre
   la serie completa y la declaración explícita del año de corte de la rejilla.
   \item[portfolio\_profiles.parquet] Los ocho perfiles evaluados con la cartera ganadora, cada uno
   medido dos veces: sobre la serie recortada y sobre la completa.
+  \item[cost\_sensitivity.json] La escalera completa de costes con las dos familias --- ruta
+  congelada y resimulada ---, el punto de equilibrio de cada una y sus salvedades declaradas.
+  Sostiene la Sección~\ref{sec:sensibilidad-costes}.
+  \item[capacity.json] Participación sobre el volumen mediano de cada orden para siete niveles de
+  patrimonio, con la cobertura de volumen alcanzada. Sostiene la Sección~\ref{sec:capacidad}.
+  \item[portfolio\_narrative.json, portfolio\_narrative\_holdings.parquet] Qué tuvo la cartera en
+  cada momento: exposición sectorial, permanencia de las posiciones y detalle de las que más y menos
+  contribuyeron. El manuscrito lo explota de forma agregada.
 \end{description}
 
 \section{Los catorce controles de neutralización}

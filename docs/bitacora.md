@@ -1,5 +1,166 @@
 # Bitácora
 
+## 2026-08-17 · Tabla de posiciones completa en el dashboard
+
+La fila sintética `$$CASH$$` se inserta antes de las acciones para mostrar el efectivo. La tabla
+genérica tomaba sus cabeceras exclusivamente de esa primera fila y ocultaba, por ello, los campos
+ya presentes en `positions.parquet`: fecha y precio de entrada, precio de valoración, P&L no
+realizado, meses en cartera, percentil y meta-rank. Ahora reúne las columnas de todas las filas,
+por lo que el efectivo conserva celdas vacías donde no aplican y las posiciones muestran el detalle
+completo. No se regeneran artefactos ni se relanza ningún Study: los datos ya estaban persistidos.
+
+## 2026-08-16 · La documentación pasa de cuatro ficheros a tres: nace `docs/plan_latex.md`
+
+`cambios_latex.md` y `plan_pendiente.md` se solapaban y llegaron a contradecirse. El primero
+acumulaba ocho entradas fechadas, una de ellas **rectificada** —la dirección del sesgo de
+supervivencia— de modo que quien abriera solo ese fichero podía leer la versión equivocada. El
+segundo mezclaba «en qué fijarse al terminar la cadena» con un encargo de escritura del capítulo 7
+que en la práctica era trabajo de manuscrito. Ambos estaban redactados como historia («qué cambió
+respecto a antes»), que es la forma más difícil de ejecutar.
+
+**Se fusionan en `docs/plan_latex.md`**, escrito **en presente**: qué dice hoy el proyecto, qué hay
+que escribir en el manuscrito y dónde. Sin versiones, sin «antes decía», sin cadena derogada.
+
+Es un **plan vivo**, no un encargo de un solo uso: además del plan de actualización es el destino de
+toda deuda futura con el manuscrito (sección «Deuda nueva»), que es el papel que tenía
+`cambios_latex.md` y que la regla 8 de `CLAUDE.md` sigue exigiendo.
+
+Separa lo que **ya está decidido** (Bloque A: cobertura del universo, error factual sobre el tamaño
+del índice, sesgo medido, guarda de reciclaje) de lo que **espera a los estudios** (Bloque B: siete
+lecturas con su artefacto y qué decide cada una) y del **material nuevo** (Bloque C: el capítulo de
+cartera). El Bloque A queda planificado pero **no redactado**: el manuscrito sigue congelado y se
+escribe todo de una vez.
+
+**Tres hallazgos concretos** quedan señalados con fichero y línea, porque son los que hacen el plan
+accionable:
+
+1. `03_datos_y_universo.tex:103` afirma que la ausencia de empresas «no es observable desde el propio
+   panel». **Ya no es cierto**: `ticker_diagnostics.csv` la mide ticker a ticker. Es una mejora, no
+   una rebaja.
+2. `t09_limitaciones.tex:48` y `03:95-99` contienen un **error factual** —«278 tickers en 2003 frente
+   a más de 500»— que insinúa que el índice creció, cuando el S&P 500 tiene ~500 miembros desde 1957.
+3. `08_limitaciones.tex:53-57` enuncia el sesgo como posibilidad vaga, cuando ahora está medido con
+   causa, dirección y decaimiento.
+
+Se documenta además una distinción que no estaba en ningún sitio y que causaba errores: de las **24
+tablas `t*.tex`, 18 se generan y 6 se escriben a mano**. `latex/plan_tfm.md` daba a entender que
+todas eran generadas, y `asset_manifest.json` no sirve para distinguirlas porque se construye con un
+glob.
+
+**Regla de gobierno actualizada** en `CLAUDE.md` y `AGENTS.md`: `docs/` pasa a contener
+`metodologia.md`, `bitacora.md` y `plan_latex.md`. Las menciones a los ficheros borrados en las
+entradas **anteriores** de esta bitácora no se tocan: es un registro cronológico y reescribirlo sería
+falsear lo que se decidió en su momento.
+
+## 2026-08-16 · El sesgo de cobertura es optimista, y la ventana de entrenamiento se queda como está
+
+Con la ingesta terminada (643 tickers en panel de 1206) se midió la **dirección** del sesgo de
+cobertura, no solo su tamaño. La conclusión invierte lo que esta bitácora afirmaba esa misma mañana.
+
+**El agujero no está repartido: está en quien ya salió del índice.** La exclusión por antigüedad de
+la salida, leída de `data/raw/ticker_diagnostics.csv`:
+
+| Antigüedad de la salida | Tickers | Fuera del panel |
+|---|---|---|
+| Aún en el índice | 516 | **1,2 %** |
+| < 2 años | 41 | 39 % |
+| 2-5 años | 62 | 61 % |
+| 5-10 años | 122 | 71 % |
+| 10-20 años | 216 | 84 % |
+| > 20 años | 249 | **94,4 %** |
+
+De los **503 miembros actuales del S&P 500, 502 están en el panel (99,8 %)**; el único ausente es
+`EA`. Todo el agujero son los 703 tickers históricos, de los que se cae el 80 %. Verificado que la
+causa es el proveedor: la búsqueda de símbolos de Yahoo (`/v1/finance/search`) **no encuentra**
+`BK`, `EA`, `MMC`, `GPS`, `WBA`, `HOLX` ni `CMA` como equity —ninguna coincidencia exacta— mientras
+`AAPL` devuelve `EQUITY`. No es el rango de fechas (falla igual con 1990 o con 2024), no es
+autenticación (cookies y crumb válidos, la página de quote responde 200) y no es la longitud del
+símbolo (la exclusión es 40-48 % en todas). Yahoo purga de su API los símbolos que dejan de cotizar,
+y cuanto más antigua es la baja, más probable es la purga.
+
+**La dirección del sesgo: optimista.** Comparando la supervivencia hasta hoy de los miembros
+*incluidos* frente a los del índice *real* de cada año:
+
+| Año | Cobertura | Siguen hoy (incluidos) | Siguen hoy (índice real) | Exceso |
+|---|---|---|---|---|
+| 1998 | 45,7 % | 77,7 % | 35,5 % | **+42,2 pp** |
+| 2003 | 55,3 % | 79,5 % | 44,1 % | +35,4 pp |
+| 2008 | 63,2 % | 79,3 % | 50,3 % | +29,0 pp |
+| 2013 | 72,4 % | 83,9 % | 61,0 % | +22,9 pp |
+| 2018 | 82,2 % | 87,3 % | 71,9 % | +15,3 pp |
+| 2026 | 99,8 % | 100 % | 100 % | 0 pp |
+
+Es la definición literal de sesgo de supervivencia: el panel de los años antiguos está poblado de
+forma desproporcionada por empresas que llegaron hasta hoy. **Infla, no desinfla.**
+
+**El sesgo se apaga solo, porque el entrenamiento es rolling.** No es un defecto constante:
+
+| Evaluando | Entrena con | Exceso medio |
+|---|---|---|
+| 2015 | 2007-2014 | 26,2 pp |
+| 2018 | 2010-2017 | 22,1 pp |
+| 2021 | 2013-2020 | 17,4 pp |
+| 2024 | 2016-2023 | 11,6 pp |
+| 2026 | 2018-2025 | **8,0 pp** |
+
+**Decisión: no se toca la ventana de entrenamiento.** Se evaluó acortarla para reducir el sesgo y no
+compensa, porque el sesgo no está concentrado en los años que se recortarían:
+
+| Ventana | Filas de entrenamiento | Exceso medio |
+|---|---|---|
+| 10 años | 39.264 | 27,7 pp |
+| **8 años (vigente)** | **32.388** | **26,2 pp** |
+| 6 años | 24.972 | 25,0 pp |
+| 4 años | 16.992 | 23,9 pp |
+
+Pasar de 8 a 4 años cuesta **la mitad de los datos** para quitar **2,3 pp**: con ~17.000 filas, cinco
+agentes y un meta-agente, el sobreajuste sube mucho más de lo que baja el sesgo. Mover el ancla OOS
+de 2015 a 2019 sí lo reduciría (de 26 a ~14 pp), pero dejaría **7 años de OOS en vez de 11** con
+2025-2026 ya reservados como estrés, sacrificando potencia estadística donde más se necesita.
+
+Hay además una razón de método que pesa igual: ancla, lookback y paso pertenecen al catálogo cerrado
+y están pre-registrados. Cambiarlos **después** de haber visto la cobertura sería elegir la ventana
+en función de lo observado, que es justo lo que el pre-registro existe para impedir.
+
+**Qué se hace en su lugar: leer lo que ya se calcula.** No hace falta código nuevo, y conviene
+dejarlo dicho porque se estuvo a punto de pedir como trabajo pendiente algo que ya existe:
+
+- `SELECTION_ERAS = ((2015,2018), (2019,2021), (2022,2024))` está en el catálogo y **pre-registrada**,
+  y coincide casi exactamente con el corte que pedía este análisis.
+- `agent_era_matrix()` ya produce el **Rank-IC medio por agente y era**. Esa es la lectura que
+  contrasta el sesgo: vale ~26 pp en 2015-2018 y ~8 pp en 2022-2024, de modo que un Rank-IC estable
+  entre eras es evidencia **a favor** de que el sesgo no impulsa el resultado, y una ventaja
+  concentrada en 2015-2018 lo delataría.
+- `bootstrap_and_eras()` mide otra cosa: el Rank-IC **excluyendo** cada era, es decir si el resultado
+  depende de una sola. Es complementario, no equivalente, y mezclarlos en la prosa sería un error.
+
+**Alcance de lo demostrado, sin estirarlo.** Se ha medido la **composición** (quién sobrevive), no el
+**retorno** de las excluidas: solo 35 de las 563 tienen alguna fila de precio, así que la magnitud
+del sesgo en puntos de rentabilidad **no es cuantificable** con estos datos. Lo demostrado es que el
+panel antiguo está sesgado hacia supervivientes, y que ese sesgo decae hasta ~8 pp al final del OOS.
+
+## 2026-08-16 · Las reglas de cartera se fijan en el Model Study: no pueden mover el Rank-IC
+
+El Model Study barría las **12 variables de cartera** en modo `diagnostic` (un valor alternativo
+cada una) después de congelar el ganador. Eran **12 runs por estudio que no podían cambiar nada**.
+
+**El motivo es estructural, no de coste.** El Model Study optimiza Rank-IC, que mide la correlación
+entre la ordenación transversal de scores y el retorno futuro. Esa ordenación se produce **antes**
+de que exista cartera alguna: `target_size`, `commission_bps` o `sizing_mode` deciden qué se compra
+con los scores ya calculados, así que ningún valor suyo altera el Rank-IC. Barrerlas reproducía la
+misma cifra doce veces.
+
+**Qué cambia.** Las variables con `predictive=False` pasan a admitir un único modo, `fixed`: se
+elige un valor y no se barre. `recommended_definition()` las deja fijas en su valor recomendado, y
+`validate_definition` rechaza tanto `mode="diagnostic"` como `fixed` con más de un valor, de forma
+que un barrido de cartera falla en validación en vez de a mitad del estudio. En el dashboard se
+eligen con radio en lugar de casillas. Quien las optimiza sigue siendo el **Portfolio Study**, que
+sí evalúa carteras y las mide por IR.
+
+**Efecto medido**: `total_runs` de 39 a **27**, y los minutos estimados de 305 a **281**.
+`portfolio_comparison.parquet` se sigue escribiendo, ahora vacío; `diagnostic_portfolio_variables`
+devuelve lista vacía y se conserva por si el modo se reactiva.
+
 ## 2026-08-16 · Por qué el panel usa 630 de 1206 tickers: no es mortalidad empresarial
 
 El panel usa **630 de los 1206** tickers del universo histórico. Se comprobó si la pérdida era
@@ -20,14 +181,20 @@ descartados, incluidos delistados: `BK` (1985-2025), `EA` (1986-2026), `ATVI` (1
 en cuanto falla el precio, **antes** de pedir perfil, fundamentales y EDGAR. Por eso `metrics=665`
 frente a `report_dates=630`: los fundamentales ni se intentan.
 
-**3. El sesgo NO es de supervivencia clásico, y esto cambia el argumento del TFM.** Solo **29 de los
-376** `missing_price` (**7,7 %**) llevan el sufijo `Q` de quiebra (`ENRNQ`, `LEHMQ`, `WAMUQ`,
-`AAMRQ`, `EKDKQ`, `NRTLQ`). El **92,3 % restante no quebró**: son adquisiciones (`ATVI`→Microsoft,
-`CELG`→BMS, `MON`→Bayer, `XLNX`→AMD, `PXD`→Exxon, `ANSS`→Synopsys, `JNPR`→HPE) o empresas
-**cotizando hoy con normalidad** (`BK`, `MMC`, `EA`, `FI`). Un sesgo de supervivencia puro elimina
-perdedores e **infla** el rendimiento; aquí lo que falta son sobre todo **adquiridas, que se cierran
-con prima**, es decir ganadoras. La dirección neta del sesgo es **ambigua y probablemente
-conservadora**, y es de *disponibilidad de datos del proveedor*, no de mortalidad.
+**3. La causa de la exclusión no es la mortalidad, sino la retirada del símbolo por el proveedor.**
+Solo **29 de los 376** `missing_price` (**7,7 %**) llevan el sufijo `Q` de quiebra (`ENRNQ`,
+`LEHMQ`, `WAMUQ`, `AAMRQ`, `EKDKQ`, `NRTLQ`). El **92,3 % restante no quebró**: son adquisiciones
+(`ATVI`→Microsoft, `CELG`→BMS, `MON`→Bayer, `XLNX`→AMD, `PXD`→Exxon, `ANSS`→Synopsys, `JNPR`→HPE) o
+empresas **cotizando hoy con normalidad** (`BK`, `MMC`, `EA`, `FI`).
+
+> **Rectificación (misma fecha, tras medirlo).** Esta entrada afirmaba que, al ser casi todas
+> adquisiciones cerradas con prima, la dirección neta del sesgo era «ambigua y probablemente
+> conservadora». **Es incorrecto y se corrige**: la medición de composición del 2026-08-16 («El
+> sesgo de cobertura es optimista») demuestra que el sesgo es **optimista** en los años antiguos.
+> El error fue contar *cabezas* (cuántas ausentes fueron ganadoras) en lugar de *permanencia*: una
+> adquirida con prima rinde una vez y desaparece, mientras que una superviviente compone retorno
+> durante todo el periodo, y el panel antiguo está poblado de supervivientes en exceso. Se deja
+> escrito el razonamiento equivocado, y no solo la conclusión, porque es un error fácil de repetir.
 
 **4. Los cambios de ticker no pierden la empresa.** Yahoo conserva el histórico completo bajo el
 símbolo sucesor, y el sucesor **ya está en el panel**: `RTN`→`RTX` (9199 filas desde 1990),
@@ -2002,3 +2169,138 @@ desapareció sin reconciliación.
    consultar cartera, agentes, parámetros PIT, puntuaciones de factores y evolución temporal.
 
 Las cifras del smoke sirven para validar el flujo, no como evidencia económica o científica del TFM.
+
+## 2026-08-17 — Los diagnósticos posteriores al ganador pasan a ser opcionales
+
+**Qué pasó.** Se canceló a media fase `model` el Model Study `study-20260816-182345-3cc1a5fb`
+(23 de 48 runs). Es la primera de tres pasadas previstas y su único fin es elegir configuración, de
+modo que perfiles, robustez, carteras diagnósticas y atribución no aportan nada: su salida se
+descarta al encadenar la siguiente pasada.
+
+**Qué se decidió.** Un único interruptor de lanzamiento, `post_winner_diagnostics`, **marcado por
+defecto**, que cubre en bloque los cuatro diagnósticos. Al desactivarlo el Study termina en cuanto
+congela el ganador y se marca `succeeded`, para que siga sirviendo de origen a un Portfolio Study.
+Se descartó separarlo en varios botones: en la práctica las pasadas intermedias los apagan todos.
+
+El motivo determinante no fue el coste sino metodológico. `attribution.json` contiene la
+confirmación 2025–2026, que se evalúa exactamente una vez; ejecutarla en las pasadas 1 y 2 la habría
+gastado sobre configuraciones destinadas al descarte. Queda reservada para la última pasada de la
+cadena y para el Portfolio Study.
+
+**Qué se ejecutó.** El Study en curso se parcheó en disco en vez de relanzarse, conservando sus 23
+runs: `post_winner_diagnostics: false`, `current_run_id` a `null` y presupuesto recortado de 48 a 30
+runs. `resume` relee `study.json` sin revalidar el payload, así que el flag se respeta al reanudar.
+Se limpió el estado que dejó la cancelación: el lock huérfano de `agents_fit` (propiedad del PID
+21520, ya inexistente; su directorio de caché nunca llegó a materializarse) y el run
+`run-e71d7f5940e9`, que quedó `running` y pasa a `failed` para no aparecer colgado —el runner solo
+reutiliza runs `succeeded`, así que se reintentará solo. Los directorios de `data/cache/evaluations/`
+sin `manifest.json` se dejaron intactos: ese es su formato normal, no caché corrupta.
+
+**Verificación.** `pytest` 143 pasan, con dos contratos nuevos en `tests/test_workflow_contract.py`:
+que el defecto es ejecutarlos y que apagarlos recorta el presupuesto sin tocar `definition` ni
+`predictive_evaluations`. Queda fallando `test_cost_sensitivity_contract`, **anterior e
+independiente** de este cambio (falla igual con los cambios en stash); mismo caso para el aviso de
+ruff sobre `AGENT_NAMES` en `module/studies/catalog.py`.
+
+---
+
+## 2026-08-17 · El manuscrito LaTeX se actualiza con la cadena nueva
+
+**Qué pasó.** Terminaron los cuatro estudios que sostienen el trabajo y el manuscrito citaba una
+cadena que ya no existe en disco. Se ejecuta el plan de `docs/plan_latex.md`, que hasta ahora
+describía qué escribir sin escribirlo: el manuscrito deja de estar congelado para esta actualización,
+por orden explícita del usuario.
+
+Cadena adoptada: Model Studies `study-20260816-182345-3cc1a5fb` → `study-20260817-021135-b5926b62`
+→ `study-20260817-094411-568bd37e` (referencia predictiva) y Portfolio Study
+`study-20260817-212856-f86ca822` (referencia económica, 1.440 carteras).
+
+**Bloqueo encontrado.** El exportador crasheaba con esta cadena. `load_chain()` leía
+`attribution.json` de las tres pasadas y las dos intermedias corrieron con `post_winner_diagnostics`
+desactivado, así que no lo tienen. Es la deuda anotada en `plan_latex.md` §10 materializada como
+error. Se hizo tolerante: si falta el artefacto, la columna queda vacía. `num()` y `pct()` devuelven
+ahora `—` ante un valor ausente, que es la lectura correcta —esa pasada nunca produjo ese
+diagnóstico— y el capítulo 6 lo explica en vez de disimularlo.
+
+**Qué se decidió.** Tres cosas con el usuario. Primera, arreglar el exportador en vez de renunciar a
+las tablas de cadena. Segunda, **eliminar por completo la limitación de versiones de catálogo**: las
+tres pasadas corrieron bajo el mismo catálogo, así que la limitación desaparece, y el usuario pidió
+además no mencionar versiones en ninguna parte. Sale la fila de `t09_limitaciones.tex`, la sección de
+`08_limitaciones.tex`, la mención de `a_reproducibilidad.tex`, la sección «El libro de versiones» de
+`d_auditoria_desarrollo.tex` y la tabla `t08_versiones_catalogo.tex`, que se borra —dejarla sin
+`\input` haría fallar la comprobación de huérfanos—. Tercera, `presentacion.tex` entra en el alcance:
+tenía trece cifras caducadas y `plan_latex.md` no la mencionaba nunca.
+
+**Hallazgos que cambian el relato, no solo las cifras.** La rejilla ganadora **opera menos** que la
+de partida: tenencia mínima de un horizonte completo, deriva relajada a 0,4 y rotación a la mitad,
+con más Information Ratio y menos caída máxima. El capítulo 7 pasa de explicar una rotación alta a
+explicar por qué conviene una baja. La descomposición por eras da un desenlace que el plan no
+contemplaba: el Rank-IC **sube** hacia la era menos sesgada mientras el Information Ratio cae y se
+vuelve negativo. Se añade una subsección al capítulo 6 y una fila de limitaciones para enunciar las
+dos series juntas: sirve para descartar que la cobertura del panel fabrique la capacidad predictiva,
+y no sirve para extender esa tranquilidad al resultado económico. Además, el Deflated Sharpe cambia
+de base (46 configuraciones, no la rejilla de cartera), de modo que el argumento se rederivó en vez
+de renumerarse; y la estabilidad económica entre semillas pasa a ser **verdadera**, al contrario que
+antes.
+
+**Añadidos.** Tabla nueva `t03_resolucion_universo.tex`, con su función en el exportador: el reparto
+de los 563 tickers ausentes por motivo. Sustituye la afirmación de que la ausencia «no es observable
+desde el propio panel», que ya era falsa. Las descripciones se escriben en el código y no se leen de
+`universe_coverage.json`, que las tiene mal codificadas y habría hecho fallar la comprobación de
+mojibake. El capítulo 7 gana dos secciones que faltaban, sensibilidad a costes y capacidad, ambas
+con sus salvedades: el equilibrio resimulado no existe en la era reservada porque allí el exceso ya
+es negativo con coste cero, y omitirlo mientras se cita el margen de selección sería reporte
+selectivo.
+
+**Verificación.** `verify_latex_assets.py` en verde. Barrido de veinte patrones de cifras caducadas
+en prosa y presentación, incluidas las escritas con letra en el guion hablado, hasta cero
+resultados, más control positivo de las nuevas. `ruff` limpio y `pytest` 143 pasan.
+
+Se corrigieron de paso dos defectos ajenos a esta tarea pero que la bloqueaban. Los cuatro contratos
+de `test_portfolio_study_contract.py` fallaban desde que la rejilla se paralelizó: sustituyen la
+evaluación con `monkeypatch`, que solo existe en el proceso padre, así que los hijos ejecutaban el
+backtest real. Fijan `workers=1`. Y el aviso de `ruff` sobre `AGENT_NAMES` se resolvió marcándolo
+como reexportación explícita: no es un import muerto, media base de código lo lee desde ahí.
+
+Queda fallando `test_cost_sensitivity_contract`, **anterior e independiente** de este cambio
+(comprobado con los cambios en stash).
+
+---
+
+## 2026-08-17 · El Objetivo 2 se enmarca como juego de suma cero
+
+**Qué pasó.** El manuscrito planteaba los dos objetivos como si se midieran contra el mismo listón, y
+no es así. El Objetivo 1 se juega contra el azar —o hay ordenación con Rank-IC positivo fuera de
+muestra, o no—, mientras que el Objetivo 2 se juega contra el mercado, que es un juego de suma cero.
+Faltaba decirlo, y sin ello la prudencia del capítulo 7 parecía humildad retórica en vez de la
+lectura correcta de un problema competitivo.
+
+**Qué se añadió.** Sección nueva «Contra qué se compite: un juego de suma cero» al inicio del
+capítulo 7, con el argumento de Sharpe (1991): el mercado es la suma de quienes lo componen, de modo
+que el conjunto de la gestión activa posee por construcción la cartera de mercado; antes de costes su
+media *es* el índice, y después de costes queda por debajo. Suma cero antes, suma negativa después.
+Se acompaña de dos cifras que fijan la altura del listón: el 93 % de los fondos estadounidenses de
+gran capitalización queda por detrás del S&P 500 a veinte años (SPIVA, S&P Dow Jones Indices, 2026), y
+el inversor medio pierde alrededor de un punto porcentual anual frente al índice por su propio
+comportamiento (QAIB, DALBAR, 2025).
+
+El marco se propaga a introducción, resumen (ES y EN), conclusiones y presentación, donde ocupa una
+diapositiva propia antes del acto 2. Tres entradas nuevas en la bibliografía.
+
+**Por qué importa para la defensa.** Da su tamaño real a lo conseguido y a lo no conseguido. Que la
+cartera optimizada pase de destruir valor a empatar con el índice en la era reservada no es
+espectacular, pero sitúa al sistema en el lado correcto de una distribución donde la mayoría de los
+profesionales está en el equivocado. Y explica por qué el trabajo separa los dos objetivos: que un
+modelo aprenda es comprobable con estadística; que ese aprendizaje se cobre exige ganar un juego que
+la mayoría pierde, y ninguna cantidad de Rank-IC lo garantiza. Es coherente con el hallazgo de las
+eras: el orden mejora mientras el pago se deteriora.
+
+**Acotación declarada, para no usar el argumento de más.** La aritmética de Sharpe es exacta sobre el
+conjunto, no sobre cada participante: no dice que batir al índice sea imposible, sino que requiere
+que otro no lo consiga. Su versión estricta tiene objeciones publicadas —el universo de gestores
+activos no coincide exactamente con el índice, y las carteras pasivas no son estáticas—, y el
+capítulo las menciona sin apoyarse en ellas, porque no alteran la conclusión práctica.
+
+**Verificación.** `verify_latex_assets.py` en verde: las referencias cruzadas resuelven y no hay
+comandos de bibliografía prohibidos —las citas usan el formato autor-año del proyecto, no `\cite`—.
+Sin mojibake. Las cifras se comprobaron contra fuente primaria antes de escribirlas.

@@ -8,9 +8,9 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 from module.evaluation.profiles import PROFILE_NAMES
-# Fuente única de los nombres de agente: el catálogo de features es quien decide qué agentes
-# existen, porque es donde se declara qué factores recibe cada uno.
-from module.modeling.catalog import AGENT_NAMES
+# Reexportado a propósito: el catálogo de features es quien decide qué agentes existen, porque es
+# donde se declara qué factores recibe cada uno, y el resto del proyecto los lee desde aquí.
+from module.modeling.catalog import AGENT_NAMES as AGENT_NAMES
 
 
 CATALOG_VERSION = 7
@@ -81,7 +81,14 @@ class VariableSpec:
 
     @property
     def modes(self) -> tuple[str, ...]:
-        return ("fixed", "optimize") if self.predictive else ("fixed", "diagnostic")
+        """Modos admitidos en el Model Study.
+
+        Las variables de cartera solo admiten `fixed`: se elige un valor y no se barre. El Model
+        Study optimiza Rank-IC, una propiedad de la ordenación transversal de scores, y ninguna
+        regla de cartera la altera. Barrerlas gastaba un run por variable para obtener siempre el
+        mismo Rank-IC. Su optimización es competencia del Portfolio Study.
+        """
+        return ("fixed", "optimize") if self.predictive else ("fixed",)
 
     def public(self) -> dict[str, Any]:
         payload = asdict(self)
@@ -419,28 +426,15 @@ def recommended_definition() -> dict[str, dict[str, Any]]:
         definition[identifier] = {
             "mode": "optimize", "values": values, "baseline": BY_ID[identifier].recommended,
         }
-    # Las variables de cartera se barren como diagnóstico con el ganador predictivo ya congelado:
-    # nunca modifican la selección. Una variable dependiente se deja fija cuando su controlador es
-    # el que se está barriendo, porque comparar sus valores bajo dos regímenes distintos del
-    # controlador mezclaría dos preguntas en un único resultado.
-    swept = {
-        variable.id for variable in VARIABLES
-        if not variable.predictive and len(variable.values) > 1
-    }
+    # Las variables de cartera quedan FIJAS en su valor recomendado. El Model Study optimiza
+    # Rank-IC, que se calcula sobre la ordenación transversal de scores y no depende de cómo se
+    # construya después la cartera: barrerlas aquí añadía un run por variable sin poder cambiar
+    # nunca el ganador. Quién las optimiza es el Portfolio Study, que sí evalúa carteras.
     for variable in VARIABLES:
         if variable.predictive:
             continue
-        controllers_swept = any(controller in swept for controller, _ in variable.depends_on)
-        if controllers_swept:
-            definition[variable.id] = {
-                "mode": "fixed", "values": [variable.recommended], "baseline": variable.recommended,
-            }
-            continue
-        alternatives = [value for value in variable.values if value != variable.recommended]
         definition[variable.id] = {
-            "mode": "diagnostic",
-            "values": [variable.recommended, *alternatives[:1]],
-            "baseline": variable.recommended,
+            "mode": "fixed", "values": [variable.recommended], "baseline": variable.recommended,
         }
     return definition
 

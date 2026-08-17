@@ -8,6 +8,9 @@
     selectedStudy: null, selectedRun: null, section: "summary", eventSequence: 0, timer: null,
     snapshot: null, stockTicker: null, stockView: "portfolio", stockParameter: null,
     retainAllRuns: false,
+    // Los diagnósticos posteriores al ganador vienen marcados: apagarlos es la excepción, para los
+    // Studies que solo sirven para elegir configuración.
+    postWinnerDiagnostics: true,
     // Optimizador activo en Inicio: "model" elige el modelo por Rank-IC; "portfolio" no toca el
     // modelo y elige las variables de cartera por Information Ratio sobre un ganador ya congelado.
     optimizer: "model",
@@ -91,14 +94,16 @@
     const columnCount = Math.min(4, variable.value_options.length);
     return `<div class="variable-row" data-variable="${esc(variable.id)}">
       <div class="variable-copy"><strong>${esc(variable.label)}</strong><p>${esc(variable.description)}</p>
-        <small>${selection.values.length === 1 ? "Fixed" : variable.predictive ? "Optimize" : "Diagnóstico"} · Coste: ${esc(variable.cost)} · Baseline: ${esc(selection.baseline)}</small></div>
+        <small>${variable.predictive ? (selection.values.length === 1 ? "Fixed" : "Optimize") : "Fijo · se optimiza en el Portfolio Study"} · Coste: ${esc(variable.cost)} · Baseline: ${esc(selection.baseline)}</small></div>
       <div class="value-choices columns-${columnCount}">${variable.value_options.map(option => {
         const checked = selection.values.some(value => JSON.stringify(value) === JSON.stringify(option.value));
         const isBaseline = JSON.stringify(selection.baseline) === JSON.stringify(option.value);
-        return `<label class="value-choice ${isBaseline ? "is-baseline" : ""}"><input type="checkbox"
+        // Las variables de cartera admiten un solo valor: no alteran el Rank-IC que optimiza el
+        // Model Study, así que se eligen con radio en vez de barrerse con casillas.
+        return `<label class="value-choice ${isBaseline ? "is-baseline" : ""}"><input type="${variable.predictive ? "checkbox" : "radio"}"
           name="value-${esc(variable.id)}" data-value='${esc(JSON.stringify(option.value))}' ${checked ? "checked" : ""}>
           <span><b>${esc(option.label)}</b><small>${esc(option.description)}</small></span>
-          ${checked ? `<label class="baseline-pick" title="Usar como baseline"><input type="radio"
+          ${checked && variable.predictive ? `<label class="baseline-pick" title="Usar como baseline"><input type="radio"
             name="baseline-${esc(variable.id)}" data-value='${esc(JSON.stringify(option.value))}' ${isBaseline ? "checked" : ""}>
             <small>Baseline</small></label>` : ""}</label>`;
       }).join("")}</div>
@@ -149,12 +154,24 @@
           ? ` (${state.budget.retained_run_evidence} runs más con evidencia, ${gigabytes(state.budget.estimated_incremental_bytes)} en total)`
           : ""}.</small></span>
       </label>
+      <label class="study-option ${state.postWinnerDiagnostics ? "is-on" : ""}">
+        <input type="checkbox" id="post-winner" ${state.postWinnerDiagnostics ? "checked" : ""}>
+        <span><b>Ejecutar los diagnósticos posteriores al ganador</b>
+        <small>Carteras diagnósticas, perfiles, robustez y atribución. Al desmarcarlo el Study
+        termina en cuanto congela el ganador: útil cuando solo sirve para elegir configuración,
+        porque la atribución gasta la única evaluación de la era reservada 2025-26. No cambia cómo
+        se elige el ganador.</small></span>
+      </label>
       ${stages}<div class="actions"><button id="launch" class="primary">Lanzar Study</button></div>`;
     bindConfiguration();
     renderOptimizerSwitch(true);
     document.getElementById("launch").onclick = launch;
     document.getElementById("retain-all").onchange = event => {
       state.retainAllRuns = event.target.checked;
+      preflight().then(renderHome).catch(error => notify(error.message, true));
+    };
+    document.getElementById("post-winner").onchange = event => {
+      state.postWinnerDiagnostics = event.target.checked;
       preflight().then(renderHome).catch(error => notify(error.message, true));
     };
   }
@@ -375,6 +392,15 @@
       row.querySelectorAll(`input[name="value-${id}"]`).forEach(input => input.onchange = () => {
         const value = JSON.parse(input.dataset.value);
         const selection = state.definition[id];
+        const spec = state.catalog.variables.find(item => item.id === id);
+        if (!spec.predictive) {
+          // Radio: sustituye la elección en vez de acumular valores.
+          selection.values = [value];
+          selection.baseline = value;
+          selection.mode = "fixed";
+          preflight().then(renderHome).catch(error => notify(error.message, true));
+          return;
+        }
         if (input.checked) selection.values.push(value);
         else if (selection.values.length === 1) {
           input.checked = true;
@@ -383,8 +409,7 @@
           selection.values = selection.values.filter(item => JSON.stringify(item) !== JSON.stringify(value));
           if (JSON.stringify(selection.baseline) === JSON.stringify(value)) selection.baseline = selection.values[0];
         }
-        const spec = state.catalog.variables.find(item => item.id === id);
-        selection.mode = selection.values.length === 1 ? "fixed" : spec.predictive ? "optimize" : "diagnostic";
+        selection.mode = selection.values.length === 1 ? "fixed" : "optimize";
         preflight().then(renderHome).catch(error => notify(error.message, true));
       });
       row.querySelectorAll(`input[name="baseline-${id}"]`).forEach(input => input.onchange = () => {
@@ -399,6 +424,7 @@
       method: "POST", body: JSON.stringify({
         definition: state.definition, run_scope: dev ? "dev" : "full",
         retain_all_runs: state.retainAllRuns,
+        post_winner_diagnostics: state.postWinnerDiagnostics,
       }),
     });
     state.definition = response.definition; state.budget = response.budget;
@@ -411,6 +437,7 @@
         note: document.getElementById("study-note").value,
         definition: state.definition, run_scope: dev ? "dev" : "full",
         retain_all_runs: state.retainAllRuns,
+        post_winner_diagnostics: state.postWinnerDiagnostics,
       };
       const result = await api("/api/studies", {method: "POST", body: JSON.stringify(payload)});
       state.selectedStudy = result.study_id;
@@ -425,13 +452,14 @@
     // El conmutador solo tiene sentido en Inicio, que es donde se configura qué lanzar.
     renderOptimizerSwitch(false);
     state.studies = await api("/api/studies");
-    const now = Date.now();
     const rows = state.studies.map(study => ({
       study_id: study.study_id, nombre: study.name, estado: study.status, etapa: study.phase,
       progreso: `${Math.round((study.progress || 0) * 100)} %`,
       runs_completados: study.completed_runs || 0, runs_restantes: study.runs_remaining || 0,
-      tiempo: duration(Math.max(0, now - Date.parse(study.created_at || now))),
-      rank_ic_max: study.max_rank_ic ?? "—", actualizado: study.updated_at,
+      tiempo: studyDuration(study),
+      rank_ic_max: study.max_rank_ic ?? "—",
+      // La hora sin fecha solo informa mientras el Study sigue vivo.
+      actualizado: ["queued", "running"].includes(study.status) ? study.updated_at : "—",
     }));
     app.innerHTML = `<section class="page-title"><p class="eyebrow">Ejecuciones persistentes</p><h2>Studies</h2>
       <p>Selecciona un Study para entrar en su página propia.</p></section>
@@ -456,7 +484,7 @@
     const sectionLabel = {runs: "Runs", decisions: "Decisiones", console: "Consola", robustness: "Robustez", attribution: "Atribución", profiles: "Perfiles"};
     app.innerHTML = `<section class="entity-header run-header">
       <div class="entity-top">
-        <div class="entity-main"><div><p class="eyebrow">${esc(study.study_id)}${study.retain_all_runs ? " · evidencia de todos los runs" : ""}</p>
+        <div class="entity-main"><div><p class="eyebrow">${esc(study.study_id)}${study.retain_all_runs ? " · evidencia de todos los runs" : ""}${study.post_winner_diagnostics === false ? " · termina en el ganador" : ""}</p>
           <h2>${esc(study.name)}</h2><p>${esc(study.note || "Sin nota.")}</p></div></div>
         <div class="entity-actions inline">
           ${active ? '<button id="pause-study">Pausar</button>' : ""}
@@ -467,7 +495,7 @@
       </div>
       <div class="entity-cards">${[
         ["Estado", study.status], ["Etapa", study.phase], ["Progreso", `${Math.round((study.progress || 0) * 100)} %`],
-        ["Runs", `${study.completed_runs || 0}/${total}`], ["Tiempo", duration(Date.now() - Date.parse(study.created_at))],
+        ["Runs", `${study.completed_runs || 0}/${total}`], ["Tiempo", studyDuration(study)],
         ["Rank-IC máx.", best > -Infinity ? fmt(best, "rank_ic") : "—"],
       ].map(([label, value]) => `<span><b>${esc(value)}</b>${label}</span>`).join("")}</div>
       <div class="entity-actions">${["runs", "decisions", "console", "robustness", "attribution", "profiles"].map(section =>
@@ -528,7 +556,7 @@
         ["Estado", study.status], ["Etapa", study.phase],
         ["Progreso", `${Math.round((study.progress || 0) * 100)} %`],
         ["Combinaciones", `${done}/${total}`],
-        ["Tiempo", duration(Date.now() - Date.parse(study.created_at))],
+        ["Tiempo", studyDuration(study)],
         [winner ? "IR ganador" : "Mejor IR vigente",
           Number.isFinite(Number(best?.information_ratio)) ? fmt(best.information_ratio) : "—"],
         ["Mejora de IR", delta ? `${delta.delta >= 0 ? "+" : ""}${fmt(delta.delta)}` : "—"],
@@ -1393,7 +1421,10 @@
   }
   function table(rows) {
     if (!rows?.length) return "<p class='muted'>Sin datos.</p>";
-    const columns = Object.keys(rows[0]).slice(0, 14);
+    // La primera fila puede ser una fila sintética (por ejemplo $$CASH$$ en cartera) y no
+    // necesariamente contiene todas las columnas de las posiciones reales. Conservamos el orden
+    // de aparición, pero reunimos las claves de todas las filas para no ocultar información.
+    const columns = [...new Set(rows.flatMap(row => Object.keys(row)))].slice(0, 14);
     return `<div class="table-wrap"><table><thead><tr>${columns.map(key => `<th>${esc(columnLabel(key))}</th>`).join("")}</tr></thead><tbody>${rows.slice(0, 500).map(row => `<tr>${columns.map(key => `<td class="${tone(row[key], key)}">${esc(fmt(typeof row[key] === "object" ? JSON.stringify(row[key]) : row[key], key))}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
   }
   function studySelectionTable(rows) {
@@ -1418,6 +1449,14 @@
     return `<table class="runs-table"><thead><tr>${columns.map(key => `<th>${esc(columnLabel(key))}</th>`).join("")}<th></th></tr></thead><tbody>${rows.map(row =>
       `<tr>${columns.map(key => `<td class="${tone(row[key], key)}">${esc(display(row[key], key))}</td>`).join("")}
       <td class="action-cell">${row.applicable === false ? "—" : `<button data-portfolio-profile="${esc(row.profile)}">Ver run</button>`}</td></tr>`).join("")}</tbody></table>`;
+  }
+  // Un Study vivo se mide contra el reloj; uno terminado, contra su última actualización.
+  function studyDuration(study) {
+    const now = Date.now();
+    const start = Date.parse(study.created_at || "");
+    const active = ["queued", "running"].includes(study.status);
+    const end = active ? now : Date.parse(study.updated_at || study.created_at || "");
+    return duration(Math.max(0, (Number.isFinite(end) ? end : now) - (Number.isFinite(start) ? start : now)));
   }
   function duration(milliseconds) {
     const seconds = Math.floor(milliseconds / 1000);

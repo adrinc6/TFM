@@ -64,11 +64,12 @@ Antes de cambiar ciencia, ejecución, almacenamiento o dashboard, leer `docs/met
 
 ## Documentación
 
-`docs/` contiene exactamente cuatro ficheros: `metodologia.md`, `bitacora.md`, `cambios_latex.md` y
-`plan_pendiente.md`. No se crean más.
+`docs/` contiene exactamente tres ficheros: `metodologia.md`, `bitacora.md` y `plan_latex.md`. No se
+crean más.
 
 - Cambios metodológicos: actualizar `docs/metodologia.md`.
 - Decisiones, fallos, correcciones y ejecuciones: añadir entrada en `docs/bitacora.md`.
+- Lo que el manuscrito tendrá que recoger, y el trabajo planificado sobre él: `docs/plan_latex.md`.
 - **Las cifras viven en los artefactos de `results/studies/<study_id>/`** (`winner.json`,
   `evidence/summary.json`, `robustness.json`, `attribution.json`, `decisions.json`,
   `portfolio_grid.parquet`) y se leen de ahí. **No se duplican en ningún documento.** Toda
@@ -78,9 +79,10 @@ Antes de cambiar ciencia, ejecución, almacenamiento o dashboard, leer `docs/met
 ## El manuscrito LaTeX no se toca
 
 `latex/main.tex`, `latex/presentacion.tex` y `latex/assets/*` quedan congelados entre migraciones.
-Un cambio que afecte al manuscrito **no lo edita**: añade una entrada a `docs/cambios_latex.md` con
-qué cambió, a qué capítulos, tablas o figuras afecta, y qué artefacto lo respalda. `latex/scripts/`
-sí es código editable, pero el exportador no se ejecuta como parte de un cambio.
+Un cambio que afecte al manuscrito **no lo edita**: añade una entrada a la sección «Deuda nueva» de
+`docs/plan_latex.md` con qué cambió, a qué capítulos, tablas o figuras afecta, y qué artefacto lo
+respalda. `latex/scripts/` sí es código editable, pero el exportador no se ejecuta como parte de un
+cambio.
 
 ## UTF-8
 

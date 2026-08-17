@@ -105,9 +105,12 @@ def test_only_the_winner_keeps_evidence_and_it_is_the_best_by_ir(
         "rebalance_drift_tolerance": {"values": [0.0]},
     }
     output = tmp_path / "portfolio_study"
+    # `workers=1` en todas las pruebas de este fichero: la evaluación real se sustituye por un doble
+    # con `monkeypatch`, que solo existe en este proceso. Con la rejilla repartida entre procesos
+    # hijos, cada uno importaría el módulo de verdad y ejecutaría el backtest completo.
     winner = run_portfolio_study(
         {"target_size": 8, "commission_bps": 5.0}, tmp_path / "evidence", output,
-        definition=definition,
+        definition=definition, workers=1,
     )
 
     assert winner["winner_combination"]["target_size"] == 12
@@ -210,14 +213,16 @@ def test_resume_skips_already_evaluated_combinations(
         "rebalance_drift_tolerance": {"values": [0.0]},
     }
     output = tmp_path / "estudio"
-    run_portfolio_study({"target_size": 8}, tmp_path / "evidence", output, definition=definition)
+    run_portfolio_study(
+        {"target_size": 8}, tmp_path / "evidence", output, definition=definition, workers=1,
+    )
     first_pass = list(evaluated)
     assert sorted(first_pass) == [8, 12, 16]
 
     # Segunda pasada sobre el mismo directorio: no debe reevaluar ninguna combinación de la rejilla.
     evaluated.clear()
     winner = run_portfolio_study(
-        {"target_size": 8}, tmp_path / "evidence", output, definition=definition,
+        {"target_size": 8}, tmp_path / "evidence", output, definition=definition, workers=1,
     )
     assert evaluated == [], "la reanudación repitió combinaciones ya evaluadas"
     # Y el ganador reconstruido desde el artefacto sigue siendo el correcto.
@@ -372,7 +377,7 @@ def test_the_winner_keeps_a_complete_evidence_directory_but_the_grid_does_not(
     output = tmp_path / "portfolio_study"
     run_portfolio_study(
         {"target_size": 8}, tmp_path / "evidence", output,
-        definition=_definition([8, 12]),
+        definition=_definition([8, 12]), workers=1,
     )
 
     assert linked and not any(linked), "la rejilla no debe enlazar artefactos de modelo"
@@ -414,6 +419,7 @@ def test_the_three_diagnostics_are_written_without_touching_any_decision(
 
     winner = run_portfolio_study(
         {"target_size": 8}, tmp_path / "evidence", output, definition=_definition([8, 12]),
+        workers=1,
     )
 
     assert set(winner["diagnostics"]) == {"cost_sensitivity", "capacity", "portfolio_narrative"}

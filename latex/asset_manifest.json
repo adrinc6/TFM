@@ -1,12 +1,12 @@
 {
-  "study_id": "study-20260814-095144-5ec17b78",
+  "study_id": "study-20260817-094411-568bd37e",
   "chain_study_ids": [
-    "study-20260812-163136-1b104667",
-    "study-20260813-103456-aa733655",
-    "study-20260814-095144-5ec17b78"
+    "study-20260816-182345-3cc1a5fb",
+    "study-20260817-021135-b5926b62",
+    "study-20260817-094411-568bd37e"
   ],
-  "portfolio_study_id": "study-20260814-135754-fdbdf2c5",
-  "generated_at": "2026-08-15T02:37:05.250802+00:00",
+  "portfolio_study_id": "study-20260817-212856-f86ca822",
+  "generated_at": "2026-08-17T20:32:32.576493+00:00",
   "sources": [
     "catalog_snapshot.json",
     "winner.json",
@@ -23,12 +23,15 @@
     "evidence/agent_local_attribution.parquet"
   ],
   "economic_sources": [
-    "study-20260814-135754-fdbdf2c5/portfolio_grid.parquet",
-    "study-20260814-135754-fdbdf2c5/portfolio_winner.json",
-    "study-20260814-135754-fdbdf2c5/portfolio_profiles.parquet",
-    "study-20260814-135754-fdbdf2c5/evidence_best_full/equity.parquet",
-    "study-20260814-135754-fdbdf2c5/evidence_best_full/annual_metrics.parquet",
-    "study-20260814-135754-fdbdf2c5/evidence_best_full/orders.parquet"
+    "study-20260817-212856-f86ca822/portfolio_grid.parquet",
+    "study-20260817-212856-f86ca822/portfolio_winner.json",
+    "study-20260817-212856-f86ca822/portfolio_profiles.parquet",
+    "study-20260817-212856-f86ca822/evidence_best_full/equity.parquet",
+    "study-20260817-212856-f86ca822/evidence_best_full/annual_metrics.parquet",
+    "study-20260817-212856-f86ca822/evidence_best_full/orders.parquet"
+  ],
+  "panel_sources": [
+    "data/raw/universe_coverage.json"
   ],
   "figures": [
     "f05_atribucion_anual.png",
@@ -48,6 +51,7 @@
     "t01_afirmaciones.tex",
     "t03_cobertura_anual.tex",
     "t03_features_top.tex",
+    "t03_resolucion_universo.tex",
     "t04_tests_contrato.tex",
     "t05_agentes.tex",
     "t05_atribucion.tex",

@@ -1,0 +1,249 @@
+{
+  "volume_source": "asset_price_point_in_time.parquet::median_dollar_volume_21d",
+  "volume_available": true,
+  "participation_thresholds": [
+    0.05,
+    0.1
+  ],
+  "governing_percentile": 95,
+  "aum_ladder_usd": [
+    1000000.0,
+    10000000.0,
+    50000000.0,
+    100000000.0,
+    500000000.0,
+    1000000000.0,
+    5000000000.0
+  ],
+  "windows": {
+    "selection": {
+      "available": true,
+      "orders": 143,
+      "orders_with_volume": 143,
+      "volume_coverage": 1.0,
+      "ladder": [
+        {
+          "aum_usd": 1000000.0,
+          "median_participation": 0.00040864372390432205,
+          "p95_participation": 0.002464320054893505,
+          "max_participation": 0.029647102739582994
+        },
+        {
+          "aum_usd": 10000000.0,
+          "median_participation": 0.004086437239043221,
+          "p95_participation": 0.024643200548935047,
+          "max_participation": 0.2964710273958299
+        },
+        {
+          "aum_usd": 50000000.0,
+          "median_participation": 0.020432186195216105,
+          "p95_participation": 0.12321600274467524,
+          "max_participation": 1.4823551369791497
+        },
+        {
+          "aum_usd": 100000000.0,
+          "median_participation": 0.04086437239043221,
+          "p95_participation": 0.2464320054893505,
+          "max_participation": 2.9647102739582993
+        },
+        {
+          "aum_usd": 500000000.0,
+          "median_participation": 0.20432186195216107,
+          "p95_participation": 1.2321600274467523,
+          "max_participation": 14.823551369791497
+        },
+        {
+          "aum_usd": 1000000000.0,
+          "median_participation": 0.40864372390432213,
+          "p95_participation": 2.4643200548935047,
+          "max_participation": 29.647102739582994
+        },
+        {
+          "aum_usd": 5000000000.0,
+          "median_participation": 2.0432186195216104,
+          "p95_participation": 12.321600274467523,
+          "max_participation": 148.235513697915
+        }
+      ],
+      "maximum_aum_usd": {
+        "5%": 20289572.330798868,
+        "10%": 40579144.661597736
+      },
+      "binding_names": [
+        {
+          "ticker": "NWS",
+          "orders": 3,
+          "max_participation": 29.647102739582994,
+          "median_dollar_volume": 5356974.768257141,
+          "reference_aum_usd": 1000000000.0
+        },
+        {
+          "ticker": "KDP",
+          "orders": 4,
+          "max_participation": 9.821747476216617,
+          "median_dollar_volume": 16148090.904808044,
+          "reference_aum_usd": 1000000000.0
+        },
+        {
+          "ticker": "GRMN",
+          "orders": 3,
+          "max_participation": 3.170111068551036,
+          "median_dollar_volume": 48598299.83291626,
+          "reference_aum_usd": 1000000000.0
+        },
+        {
+          "ticker": "HP",
+          "orders": 5,
+          "max_participation": 2.663266832590584,
+          "median_dollar_volume": 61275975.6980896,
+          "reference_aum_usd": 1000000000.0
+        },
+        {
+          "ticker": "ROP",
+          "orders": 5,
+          "max_participation": 2.651556315178322,
+          "median_dollar_volume": 72042966.61376953,
+          "reference_aum_usd": 1000000000.0
+        },
+        {
+          "ticker": "ROK",
+          "orders": 2,
+          "max_participation": 2.480094532521256,
+          "median_dollar_volume": 73396036.23313904,
+          "reference_aum_usd": 1000000000.0
+        },
+        {
+          "ticker": "GWW",
+          "orders": 2,
+          "max_participation": 1.8006698981463074,
+          "median_dollar_volume": 92977043.03283691,
+          "reference_aum_usd": 1000000000.0
+        },
+        {
+          "ticker": "AON",
+          "orders": 4,
+          "max_participation": 1.6860781470233033,
+          "median_dollar_volume": 104733214.40582275,
+          "reference_aum_usd": 1000000000.0
+        },
+        {
+          "ticker": "LH",
+          "orders": 6,
+          "max_participation": 1.491371460000716,
+          "median_dollar_volume": 95011549.69054413,
+          "reference_aum_usd": 1000000000.0
+        },
+        {
+          "ticker": "PH",
+          "orders": 2,
+          "max_participation": 1.409513699914949,
+          "median_dollar_volume": 100785792.98095703,
+          "reference_aum_usd": 1000000000.0
+        }
+      ]
+    },
+    "confirmation": {
+      "available": true,
+      "orders": 10,
+      "orders_with_volume": 10,
+      "volume_coverage": 1.0,
+      "ladder": [
+        {
+          "aum_usd": 1000000.0,
+          "median_participation": 2.5884410929550056e-05,
+          "p95_participation": 0.00046937264780967474,
+          "max_participation": 0.0005823909997401727
+        },
+        {
+          "aum_usd": 10000000.0,
+          "median_participation": 0.00025884410929550054,
+          "p95_participation": 0.004693726478096748,
+          "max_participation": 0.005823909997401727
+        },
+        {
+          "aum_usd": 50000000.0,
+          "median_participation": 0.001294220546477503,
+          "p95_participation": 0.023468632390483735,
+          "max_participation": 0.029119549987008633
+        },
+        {
+          "aum_usd": 100000000.0,
+          "median_participation": 0.002588441092955006,
+          "p95_participation": 0.04693726478096747,
+          "max_participation": 0.058239099974017265
+        },
+        {
+          "aum_usd": 500000000.0,
+          "median_participation": 0.01294220546477503,
+          "p95_participation": 0.23468632390483737,
+          "max_participation": 0.29119549987008636
+        },
+        {
+          "aum_usd": 1000000000.0,
+          "median_participation": 0.02588441092955006,
+          "p95_participation": 0.46937264780967475,
+          "max_participation": 0.5823909997401727
+        },
+        {
+          "aum_usd": 5000000000.0,
+          "median_participation": 0.12942205464775028,
+          "p95_participation": 2.3468632390483735,
+          "max_participation": 2.911954998700863
+        }
+      ],
+      "maximum_aum_usd": {
+        "5%": 106525167.65372837,
+        "10%": 213050335.30745673
+      },
+      "binding_names": [
+        {
+          "ticker": "MTCH",
+          "orders": 2,
+          "max_participation": 0.5823909997401727,
+          "median_dollar_volume": 116589363.79909515,
+          "reference_aum_usd": 1000000000.0
+        },
+        {
+          "ticker": "ALGN",
+          "orders": 3,
+          "max_participation": 0.33123910656128897,
+          "median_dollar_volume": 169311551.8157959,
+          "reference_aum_usd": 1000000000.0
+        },
+        {
+          "ticker": "CCL",
+          "orders": 1,
+          "max_participation": 0.15741416771167432,
+          "median_dollar_volume": 398271167.88196564,
+          "reference_aum_usd": 1000000000.0
+        },
+        {
+          "ticker": "AMAT",
+          "orders": 1,
+          "max_participation": 0.056634413819175486,
+          "median_dollar_volume": 2122933851.248169,
+          "reference_aum_usd": 1000000000.0
+        },
+        {
+          "ticker": "AAPL",
+          "orders": 2,
+          "max_participation": 0.007752387398347364,
+          "median_dollar_volume": 10391620590.714264,
+          "reference_aum_usd": 1000000000.0
+        },
+        {
+          "ticker": "META",
+          "orders": 1,
+          "max_participation": 0.0067267914834183,
+          "median_dollar_volume": 9319974399.420166,
+          "reference_aum_usd": 1000000000.0
+        }
+      ]
+    }
+  },
+  "caveats": [
+    "El nocional diario es aproximado: el precio está ajustado por splits y dividendos y el volumen solo por splits.",
+    "Se mide participación sobre el volumen habitual, no impacto de mercado. Por debajo del umbral la ejecución es creíble; no se afirma que sea gratuita.",
+    "Una orden sin volumen medido se cuenta como cobertura incompleta, nunca como ejecutable: un hueco del panel no puede subir la capacidad estimada."
+  ]
+}

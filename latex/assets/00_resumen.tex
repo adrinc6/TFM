@@ -26,29 +26,42 @@ congelar el ganador, y nunca influyen en su selección.
 
 La configuración final procede de una cadena de tres estudios en la que el ganador de cada pasada es
 el punto de partida de la siguiente, seguida de un cuarto que optimiza la construcción de cartera
-por Information Ratio recorriendo 1.728 combinaciones sobre una serie recortada, de modo que ninguna
+por Information Ratio recorriendo 1.440 combinaciones sobre una serie recortada, de modo que ninguna
 puede observar la era reservada.
 
-El sistema alcanza un Rank-IC medio de 0,1090 en la ventana de selección, frente a 0,0130 del mejor
-\textit{baseline} determinista, y la ponderación aprendida por el meta-agente supera en un 61\,\% a
+El sistema alcanza un Rank-IC medio de 0,1067 en la ventana de selección, frente a 0,0119 del mejor
+\textit{baseline} determinista, y la ponderación aprendida por el meta-agente supera en un 55\,\% a
 la uniforme, aunque el agente de riesgo por separado ordena algo mejor que la combinación. Siete
 contrastes de robustez respaldan la existencia de señal --- entre ellos permutación con
-$p=0{,}0001$, placebos de etiqueta y neutralización de estilo, que conserva el 86,62\,\% ---,
-mientras que el Deflated Sharpe de 0,682 no alcanza su umbral y se reporta como tal: encadenar
+$p=0{,}0001$, placebos de etiqueta y neutralización de estilo, que conserva el 87,21\,\% ---,
+mientras que el Deflated Sharpe de 0,573 no alcanza su umbral y se reporta como tal: encadenar
 estudios compra Rank-IC al precio de encarecer cualquier afirmación de rentabilidad ajustada por
 selección.
 
+La descomposición por eras añade el matiz que gobierna la lectura del trabajo: el Rank-IC es mayor
+en la era más reciente (0,1739 en 2022--2024 frente a 0,0949 en 2015--2018), mientras que el
+Information Ratio de la cartera recorre el camino inverso hasta volverse negativo. Que la capacidad
+de ordenar sea máxima donde el panel está más completo descarta que proceda del sesgo de cobertura;
+que el pago económico decaiga en esa misma era impide extender esa conclusión a la rentabilidad.
+
+Los dos objetivos no se miden contra el mismo listón, y el trabajo lo declara: el primero es una
+afirmación sobre el modelo, mientras que el segundo se juega contra el mercado, donde batir a un
+índice es un problema de suma cero antes de costes y de suma negativa después (Sharpe, 1991) y donde
+el 93\,\% de los fondos estadounidenses de gran capitalización queda por detrás del S\&P 500 a
+veinte años (S\&P Dow Jones Indices, 2026).
+
 El segundo objetivo se resuelve sobre esa señal ya congelada, sin reentrenar nada, y las variables
-de cartera resultan pesar de forma muy desigual: el número de posiciones y el tope de efectivo
-mueven el Information Ratio mediano en 0,300 y 0,202, mientras que otras dos son prácticamente
-inertes. La cartera elegida eleva el Information Ratio de 0,339 a 0,844 y el exceso geométrico del
-2,61 al 6,97\,\%. En la era reservada la diferencia es de signo: con la construcción por defecto la
-señal pierde un 11,29\,\% frente al índice, con Information Ratio $-1{,}167$ y ningún año por
-encima; con la optimizada --- el mismo modelo, la misma señal y el mismo panel --- obtiene un exceso
-del 2,56\,\% con Information Ratio $+0{,}304$. El Rank-IC de esa era es positivo en ambos casos
-($+0{,}0441$), porque no depende de la cartera: la capacidad predictiva era idéntica y lo que cambió
-fue su traducción a posiciones. La conclusión se enuncia con la cautela que imponen seis cohortes
-cerradas, 1,41 años de cartera en esa ventana y el hecho de que la ganadora es la mejor de 1.728.
+de cartera resultan pesar de forma muy desigual: el número de posiciones y la tenencia mínima mueven
+el Information Ratio mediano en 0,208 y 0,164, mientras que el reparto de pesos es prácticamente
+inerte. La cartera elegida eleva el Information Ratio de 0,312 a 0,841 y el exceso geométrico del
+2,12 al 5,91\,\%, y lo hace \emph{operando menos}: la rotación cae del 242 al 135\,\% anual. En la
+era reservada la diferencia es de signo: con la construcción por defecto la señal obtiene un
+Information Ratio de $-1{,}795$ sin batir al índice ningún año; con la optimizada --- el mismo
+modelo, la misma señal y el mismo panel --- alcanza un exceso del 0,24\,\% con Information Ratio
+$+0{,}109$. El Rank-IC de esa era es positivo en ambos casos ($+0{,}0364$), porque no depende de la
+cartera: la capacidad predictiva era idéntica y lo que cambió fue su traducción a posiciones. La
+conclusión se enuncia con la cautela que imponen seis cohortes cerradas, 1,41 años de cartera en esa
+ventana y el hecho de que la ganadora es la mejor de 1.440.
 
 \vspace{1em}
 \noindent\textbf{Palabras clave:} aprendizaje automático, selección de acciones, \textit{point-in-time},
@@ -76,29 +89,41 @@ frozen, and never influence its selection.
 
 The final configuration comes from a chain of three studies in which the winner of each pass becomes
 the starting point of the next, followed by a fourth that optimises portfolio construction by
-Information Ratio over 1,728 combinations evaluated on a series truncated at 2024, so that none of
+Information Ratio over 1,440 combinations evaluated on a series truncated at 2024, so that none of
 them can observe the reserved era.
 
-The system attains a mean Rank-IC of 0.1090 in the selection window, against 0.0130 for the best
+The system attains a mean Rank-IC of 0.1067 in the selection window, against 0.0119 for the best
 deterministic baseline, and the meta-agent's learned weighting outperforms uniform weighting by
-61\,\%, although the risk agent on its own ranks slightly better than the combination. Seven
+55\,\%, although the risk agent on its own ranks slightly better than the combination. Seven
 robustness tests support the existence of signal --- among them permutation with $p=0.0001$, label
-placebos and style neutralisation, which retains 86.62\,\% --- while the Deflated Sharpe of 0.682
+placebos and style neutralisation, which retains 87.21\,\% --- while the Deflated Sharpe of 0.573
 falls short of its threshold and is reported as such: chaining studies buys Rank-IC at the price of
 making any selection-adjusted profitability claim more expensive.
 
+The era breakdown adds the nuance that governs how this work should be read: Rank-IC is highest in
+the most recent era (0.1739 in 2022--2024 against 0.0949 in 2015--2018), while the portfolio's
+Information Ratio travels the opposite way until it turns negative. That ranking ability peaks where
+the panel is most complete rules out coverage bias as its source; that the economic payoff decays in
+that same era prevents extending the conclusion to profitability.
+
+The two objectives are not measured against the same bar, and the work says so: the first is a claim
+about the model, whereas the second is played against the market, where beating an index is a
+zero-sum game before costs and a negative-sum one after them (Sharpe, 1991), and where 93\,\% of
+U.S. large-cap funds trail the S\&P 500 over twenty years (S\&P Dow Jones Indices, 2026).
+
 The second objective is settled over that already-frozen signal, retraining nothing, and the
-portfolio variables turn out to weigh very unevenly: the number of positions and the cash cap move
-the median Information Ratio by 0.300 and 0.202, whereas two others are practically inert. The
-selected portfolio lifts the Information Ratio from 0.339 to 0.844 and the geometric excess from
-2.61 to 6.97\,\%. In the reserved era the difference is one of sign: under the default construction
-the signal loses 11.29\,\% against the index, with an Information Ratio of $-1.167$ and no year
-above it; under the optimised one --- same model, same signal, same panel --- it achieves a
-2.56\,\% excess return with an Information Ratio of $+0.304$. The Rank-IC of that era is positive in
-both cases ($+0.0441$), because it does not depend on the portfolio: predictive capacity was
-identical and what changed was its translation into positions. The conclusion is stated with the
-caution imposed by six closed cohorts, 1.41 years of portfolio in that window, and the fact that the
-winner is the best of 1,728 evaluated.
+portfolio variables turn out to weigh very unevenly: the number of positions and the minimum holding
+period move the median Information Ratio by 0.208 and 0.164, whereas position sizing is practically
+inert. The selected portfolio lifts the Information Ratio from 0.312 to 0.841 and the geometric
+excess from 2.12 to 5.91\,\%, and it does so by \emph{trading less}: turnover falls from 242 to
+135\,\% a year. In the reserved era the difference is one of sign: under the default construction the
+signal posts an Information Ratio of $-1.795$ with no year above the index; under the optimised one
+--- same model, same signal, same panel --- it achieves a 0.24\,\% excess return with an Information
+Ratio of $+0.109$. The Rank-IC of that era is positive in both cases ($+0.0364$), because it does not
+depend on the portfolio: predictive capacity was identical and what changed was its translation into
+positions. The conclusion is stated with the caution imposed by six closed cohorts, 1.41 years of
+portfolio in that window, and the fact that the
+winner is the best of 1,440 evaluated.
 
 \vspace{1em}
 \noindent\textbf{Keywords:} machine learning, stock selection, point-in-time data, Rank-IC,

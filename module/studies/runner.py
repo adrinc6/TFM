@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import hashlib
 import json
 import logging
@@ -148,6 +149,32 @@ def run_evaluation(
         shutil.rmtree(work, ignore_errors=True)
 
 
+@functools.lru_cache(maxsize=8)
+def _cached_parquet(resolved: str, stamp: tuple[int, int]) -> pd.DataFrame:
+    """Lectura memoizada de un Parquet de solo lectura, con la ruta y su mtime/tamaño como clave.
+
+    La rejilla del Portfolio Study evalúa cientos de combinaciones contra **los mismos cinco
+    ficheros**: la evidencia del ganador se congela antes del bucle y el panel preparado no cambia.
+    Releerlos en cada iteración era E/S pura repetida sin resultado distinto.
+
+    ``stamp`` (mtime_ns, tamaño) entra en la clave para que reescribir un artefacto invalide la
+    entrada en vez de servir un marco obsoleto; sin él, un estudio encadenado podría leer la
+    evidencia del estudio anterior. Los consumidores del backtest no mutan lo que reciben, así que
+    el marco se comparte sin copia; los dos que sí lo transforman —``apply_profile`` con perfil de
+    estilo y ``_meta_diagnostics``— ya copian por su cuenta.
+    """
+    return pd.read_parquet(resolved)
+
+
+def _read_frozen_parquet(path: Path) -> pd.DataFrame:
+    """Envuelve `_cached_parquet` resolviendo ruta y sello; ante un `stat` fallido, lee directo."""
+    try:
+        info = path.stat()
+    except OSError:
+        return pd.read_parquet(path)
+    return _cached_parquet(str(path.resolve()), (info.st_mtime_ns, info.st_size))
+
+
 def run_profile_evaluation(
     values: Mapping[str, Any], profile: str, evidence_dir: Path, retain_dir: Path | None = None,
     *, include_model_artifacts: bool = False,
@@ -168,12 +195,19 @@ def run_profile_evaluation(
     runtime = settings_from_values(values, profile=profile)
     reference = json.loads((evidence_dir / "dataset_reference.json").read_text(encoding="utf-8"))
     prepared = Path(reference["prepared_path"])
-    scores = pd.read_parquet(evidence_dir / "agent_scores.parquet")
-    diagnostics = pd.read_parquet(evidence_dir / "rank_ic_diagnostics.parquet")
-    prices = pd.read_parquet(prepared / "asset_price_point_in_time.parquet")
-    benchmark = pd.read_parquet(prepared / "benchmark_point_in_time.parquet")
-    targets = pd.read_parquet(prepared / "targets_forward.parquet")
+    read_started = time.perf_counter()
+    scores = _read_frozen_parquet(evidence_dir / "agent_scores.parquet")
+    diagnostics = _read_frozen_parquet(evidence_dir / "rank_ic_diagnostics.parquet")
+    prices = _read_frozen_parquet(prepared / "asset_price_point_in_time.parquet")
+    benchmark = _read_frozen_parquet(prepared / "benchmark_point_in_time.parquet")
+    targets = _read_frozen_parquet(prepared / "targets_forward.parquet")
+    read_elapsed = time.perf_counter() - read_started
+    backtest_started = time.perf_counter()
     result = run_backtest(scores, prices, benchmark, runtime, targets)
+    log.debug(
+        "Perfil %s: lectura %.3fs, backtest %.3fs", profile, read_elapsed,
+        time.perf_counter() - backtest_started,
+    )
     summary = {
         "dataset_hash": reference["dataset_hash"], "profile": profile,
         "summary": result.summary,
@@ -400,6 +434,11 @@ def execute_model_study(study_id: str) -> dict[str, Any]:
     # Ruta científica completa: la regla 5 (descartados solo con resumen) se levanta a petición
     # explícita y cada run conserva su evidencia entera bajo runs_evidence/<run_id>.
     retain_all = bool(study.get("retain_all_runs"))
+    # Los studies que solo sirven para elegir configuración paran en el ganador: lo posterior es
+    # diagnóstico informativo y, en el caso de la atribución, gastaría la única evaluación de la era
+    # reservada 2025-26 sobre una configuración que se va a descartar. El defecto es True para que
+    # los studies ya existentes en disco, que no llevan la clave, conserven su recorrido al reanudar.
+    post_winner = bool(study.get("post_winner_diagnostics", True))
     directory = safe_study_path(study_id)
     runs_evidence = directory / "runs_evidence"
     evidence = directory / "evidence"
@@ -582,99 +621,110 @@ def execute_model_study(study_id: str) -> dict[str, Any]:
     }
     write_winner(directory / "winner.json", winner_payload)
 
-    append_event(study_id, "info", "post_selection", "Ganador congelado; comienzan diagnósticos informativos.")
-    portfolio_rows = []
-    for variable_id in diagnostic_portfolio_variables(definition):
-        base = values[variable_id]
-        for value in definition[variable_id]["values"]:
-            if value == base:
-                continue
-            override = {variable_id: value}
-            result = execute(
-                f"portfolio:{variable_id}:{_key_value(value)}",
-                "portfolio", variable_id, value, values, overrides=override,
-            )
-            portfolio_rows.append({
-                "variable_id": variable_id,
-                "base_value": json.dumps(base, ensure_ascii=False),
-                "diagnostic_value": json.dumps(value, ensure_ascii=False),
-                **result["summary"],
-            })
-    write_parquet(pd.DataFrame(portfolio_rows), directory / "portfolio_comparison.parquet")
+    # Los diagnósticos posteriores al ganador son opcionales: un study cuyo único fin es elegir
+    # configuración termina aquí. Se mantienen las claves vacías para que el informe y el payload
+    # final sigan teniendo la misma forma con y sin diagnósticos.
+    robustness: dict[str, Any] = {}
+    attribution: dict[str, Any] = {}
+    if not post_winner:
+        append_event(
+            study_id, "info", "post_selection",
+            "Ganador congelado; los diagnósticos posteriores quedan desactivados en este Study.",
+        )
+    else:
+        append_event(study_id, "info", "post_selection", "Ganador congelado; comienzan diagnósticos informativos.")
+        portfolio_rows = []
+        for variable_id in diagnostic_portfolio_variables(definition):
+            base = values[variable_id]
+            for value in definition[variable_id]["values"]:
+                if value == base:
+                    continue
+                override = {variable_id: value}
+                result = execute(
+                    f"portfolio:{variable_id}:{_key_value(value)}",
+                    "portfolio", variable_id, value, values, overrides=override,
+                )
+                portfolio_rows.append({
+                    "variable_id": variable_id,
+                    "base_value": json.dumps(base, ensure_ascii=False),
+                    "diagnostic_value": json.dumps(value, ensure_ascii=False),
+                    **result["summary"],
+                })
+        write_parquet(pd.DataFrame(portfolio_rows), directory / "portfolio_comparison.parquet")
 
-    profile_rows = []
-    profiles_root = evidence / "profiles"
-    for profile in PROFILE_NAMES:
-        logical = f"profile:{profile}"
-        run = create_run(
-            study_id, logical_key=logical, phase="profiles",
-            variable_id="profile", value=profile, configuration=values,
-            attempt=1,
-        ) if not find_run(study_id, logical) else find_run(study_id, logical)
-        if run["status"] == "succeeded" and run.get("result"):
-            result = run["result"]
-        else:
-            update_run(study_id, run["run_id"], status="running", stage="backtest", progress=0.1)
-            append_event(study_id, "info", "profile_started", f"Perfil {profile}.", run_id=run["run_id"])
-            retain_profile = profiles_root / profile
-            result = run_profile_evaluation(values, profile, evidence, retain_profile)
-            # El perfil siempre materializa su cartera; se registra la ruta para que las vistas
-            # pesadas del run la encuentren igual que las de cualquier otro run con evidencia.
-            update_run(
-                study_id, run["run_id"], status="succeeded", stage="completed", progress=1.0,
-                result=result, evidence_path=_evidence_path(retain_profile, directory),
-            )
-            completed += 1
-        profile_rows.append(_profile_comparison_row(profile, result))
-    write_parquet(pd.DataFrame(profile_rows), directory / "profile_comparison.parquet")
+        profile_rows = []
+        profiles_root = evidence / "profiles"
+        for profile in PROFILE_NAMES:
+            logical = f"profile:{profile}"
+            run = create_run(
+                study_id, logical_key=logical, phase="profiles",
+                variable_id="profile", value=profile, configuration=values,
+                attempt=1,
+            ) if not find_run(study_id, logical) else find_run(study_id, logical)
+            if run["status"] == "succeeded" and run.get("result"):
+                result = run["result"]
+            else:
+                update_run(study_id, run["run_id"], status="running", stage="backtest", progress=0.1)
+                append_event(study_id, "info", "profile_started", f"Perfil {profile}.", run_id=run["run_id"])
+                retain_profile = profiles_root / profile
+                result = run_profile_evaluation(values, profile, evidence, retain_profile)
+                # El perfil siempre materializa su cartera; se registra la ruta para que las vistas
+                # pesadas del run la encuentren igual que las de cualquier otro run con evidencia.
+                update_run(
+                    study_id, run["run_id"], status="succeeded", stage="completed", progress=1.0,
+                    result=result, evidence_path=_evidence_path(retain_profile, directory),
+                )
+                completed += 1
+            profile_rows.append(_profile_comparison_row(profile, result))
+        write_parquet(pd.DataFrame(profile_rows), directory / "profile_comparison.parquet")
 
-    dev = dev_scope
-    diagnostics = pd.read_parquet(evidence / "rank_ic_diagnostics.parquet")
-    scores = pd.read_parquet(evidence / "agent_scores.parquet")
-    reference = json.loads((evidence / "dataset_reference.json").read_text(encoding="utf-8"))
-    prepared = validate_dataset_reference(reference["dataset_hash"])
-    targets = pd.read_parquet(prepared / "targets_forward.parquet")
-    robustness = _robustness_base(
-        diagnostics, scores, targets, prepared, evidence, values, winner_result, dev=dev,
-    )
-    for seed in (7, 2026):
-        result = execute(f"robustness:seed:{seed}", "robustness", "seed", seed, values, seed=seed)
-        robustness["seeds"].append({"seed": seed, "summary": result["summary"]})
-    robustness["seed_dispersion"] = _seed_dispersion(winner_result, robustness["seeds"])
-    placebo_count = 2 if dev else 5
-    for seed in range(101, 101 + placebo_count):
-        shuffled = _shuffle_targets(targets, seed)
-        temporary = Path(tempfile.mkdtemp(prefix=f"placebo-{seed}-"))
-        try:
-            target_path = temporary / "targets_forward.parquet"
-            write_parquet(shuffled, target_path)
-            result = execute(
-                f"robustness:placebo:{seed}", "robustness", "label_placebo", seed,
-                values, seed=seed, target_override=target_path,
-                target_identity=f"placebo-{seed}",
-            )
-        finally:
-            shutil.rmtree(temporary, ignore_errors=True)
-        robustness["label_placebos"].append({"seed": seed, "summary": result["summary"]})
-    write_json(robustness, directory / "robustness.json")
+        dev = dev_scope
+        diagnostics = pd.read_parquet(evidence / "rank_ic_diagnostics.parquet")
+        scores = pd.read_parquet(evidence / "agent_scores.parquet")
+        reference = json.loads((evidence / "dataset_reference.json").read_text(encoding="utf-8"))
+        prepared = validate_dataset_reference(reference["dataset_hash"])
+        targets = pd.read_parquet(prepared / "targets_forward.parquet")
+        robustness = _robustness_base(
+            diagnostics, scores, targets, prepared, evidence, values, winner_result, dev=dev,
+        )
+        for seed in (7, 2026):
+            result = execute(f"robustness:seed:{seed}", "robustness", "seed", seed, values, seed=seed)
+            robustness["seeds"].append({"seed": seed, "summary": result["summary"]})
+        robustness["seed_dispersion"] = _seed_dispersion(winner_result, robustness["seeds"])
+        placebo_count = 2 if dev else 5
+        for seed in range(101, 101 + placebo_count):
+            shuffled = _shuffle_targets(targets, seed)
+            temporary = Path(tempfile.mkdtemp(prefix=f"placebo-{seed}-"))
+            try:
+                target_path = temporary / "targets_forward.parquet"
+                write_parquet(shuffled, target_path)
+                result = execute(
+                    f"robustness:placebo:{seed}", "robustness", "label_placebo", seed,
+                    values, seed=seed, target_override=target_path,
+                    target_identity=f"placebo-{seed}",
+                )
+            finally:
+                shutil.rmtree(temporary, ignore_errors=True)
+            robustness["label_placebos"].append({"seed": seed, "summary": result["summary"]})
+        write_json(robustness, directory / "robustness.json")
 
-    # Atribución: se ejecuta con el ganador ya congelado y fuera de todo bucle de decisión, de modo
-    # que la era reservada 2025-26 se evalúa exactamente una vez y su resultado se publica sea cual
-    # sea. El protocolo está pre-registrado en docs/bitacora.md antes de la ejecución.
-    append_event(study_id, "info", "attribution_started", "Atribución de factores y confirmación fuera de muestra.")
-    from module.research.attribution import build_attribution, write_attribution
+        # Atribución: se ejecuta con el ganador ya congelado y fuera de todo bucle de decisión, de
+        # modo que la era reservada 2025-26 se evalúa exactamente una vez y su resultado se publica
+        # sea cual sea. El protocolo está pre-registrado en docs/bitacora.md antes de la ejecución.
+        append_event(study_id, "info", "attribution_started", "Atribución de factores y confirmación fuera de muestra.")
+        from module.research.attribution import build_attribution, write_attribution
 
-    attribution = build_attribution(
-        evidence, prepared, values,
-        candidate_ic_series=[
-            [row["rank_ic"] for row in run.get("result", {}).get("rank_ic_by_cohort", [])
-             if row.get("rank_ic") is not None]
-            for run in list_runs(study_id)
-            if run.get("status") == "succeeded" and run.get("result")
-        ],
-    )
-    attribution["confirmation_2025_2026"] = winner_result.get("confirmation_2025_2026", {})
-    write_attribution(directory / "attribution.json", attribution)
+        attribution = build_attribution(
+            evidence, prepared, values,
+            candidate_ic_series=[
+                [row["rank_ic"] for row in run.get("result", {}).get("rank_ic_by_cohort", [])
+                 if row.get("rank_ic") is not None]
+                for run in list_runs(study_id)
+                if run.get("status") == "succeeded" and run.get("result")
+            ],
+        )
+        attribution["confirmation_2025_2026"] = winner_result.get("confirmation_2025_2026", {})
+        write_attribution(directory / "attribution.json", attribution)
 
     update_study(
         study_id, status="succeeded", phase="completed", progress=1.0,

@@ -1,0 +1,1094 @@
+{
+  "enabled_blocks": [
+    "quality_core",
+    "value_core",
+    "growth_acceleration",
+    "momentum_core",
+    "price_risk"
+  ],
+  "enabled_agents": [
+    "quality",
+    "value",
+    "growth",
+    "momentum",
+    "risk"
+  ],
+  "features": [
+    {
+      "name": "factor_roe",
+      "block": "quality_core",
+      "agents": [
+        "quality"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.9089245105108437,
+        "univariate_rank_ic": 0.02540296754469073,
+        "model_importance_mean": 76.73333333333333,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_roic",
+      "block": "quality_core",
+      "agents": [
+        "quality"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.9089245105108437,
+        "univariate_rank_ic": 0.02630444575351859,
+        "model_importance_mean": 77.2,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_roa",
+      "block": "quality_core",
+      "agents": [
+        "quality"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.9446170059348827,
+        "univariate_rank_ic": 0.018498161998729265,
+        "model_importance_mean": 82.48148148148148,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_rotc",
+      "block": "quality_core",
+      "agents": [
+        "quality"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.8657440789838593,
+        "univariate_rank_ic": 0.03134857593812371,
+        "model_importance_mean": 168.3421052631579,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_net_margin",
+      "block": "quality_core",
+      "agents": [
+        "quality"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.8897886738033168,
+        "univariate_rank_ic": -0.009491898354199854,
+        "model_importance_mean": 62.142857142857146,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_operating_margin",
+      "block": "quality_core",
+      "agents": [
+        "quality"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.8897886738033168,
+        "univariate_rank_ic": -0.004540914922644721,
+        "model_importance_mean": 61.791666666666664,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_gross_margin",
+      "block": "quality_core",
+      "agents": [
+        "quality"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.7682345110655056,
+        "univariate_rank_ic": 0.0005989805871493748,
+        "model_importance_mean": 123.875,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_pretax_margin",
+      "block": "quality_core",
+      "agents": [
+        "quality"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.8917299905707471,
+        "univariate_rank_ic": -0.0068036899165581505,
+        "model_importance_mean": 67.32,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_fcf_margin",
+      "block": "quality_core",
+      "agents": [
+        "quality"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.7094680792057241,
+        "univariate_rank_ic": 0.015311054603067049,
+        "model_importance_mean": 140.83870967741936,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_asset_turnover",
+      "block": "quality_efficiency",
+      "agents": [
+        "quality"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.8879860225192745,
+        "univariate_rank_ic": 0.03414617464210539,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_inventory_turnover",
+      "block": "quality_efficiency",
+      "agents": [
+        "quality"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.6426867824061234,
+        "univariate_rank_ic": -0.0002619573046935247,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_receivables_turnover",
+      "block": "quality_efficiency",
+      "agents": [
+        "quality"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.7938044262022298,
+        "univariate_rank_ic": -0.014923260927479316,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_current_ratio",
+      "block": "quality_efficiency",
+      "agents": [
+        "quality"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.8646347551167564,
+        "univariate_rank_ic": -0.0006795662249615598,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_quick_ratio",
+      "block": "quality_efficiency",
+      "agents": [
+        "quality"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.8646347551167564,
+        "univariate_rank_ic": 0.010041151173637106,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_cash_ratio",
+      "block": "quality_efficiency",
+      "agents": [
+        "quality"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.8971934106162294,
+        "univariate_rank_ic": 0.0023813232827058347,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_debt_equity",
+      "block": "financial_strength",
+      "agents": [
+        "quality"
+      ],
+      "direction": -1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.9099229019912364,
+        "univariate_rank_ic": 0.001226706200070647,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_debt_assets",
+      "block": "financial_strength",
+      "agents": [
+        "quality"
+      ],
+      "direction": -1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.9457263298019857,
+        "univariate_rank_ic": 0.012686171666579257,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_debt_capital",
+      "block": "financial_strength",
+      "agents": [
+        "quality"
+      ],
+      "direction": -1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.945116201675079,
+        "univariate_rank_ic": -0.004113862013840786,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_long_debt_equity",
+      "block": "financial_strength",
+      "agents": [
+        "quality"
+      ],
+      "direction": -1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.8657718120805369,
+        "univariate_rank_ic": 0.00031544020176313517,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_long_debt_assets",
+      "block": "financial_strength",
+      "agents": [
+        "quality"
+      ],
+      "direction": -1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.9015752398912863,
+        "univariate_rank_ic": 0.010607682969157897,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_long_debt_capital",
+      "block": "financial_strength",
+      "agents": [
+        "quality"
+      ],
+      "direction": -1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.9009651117643797,
+        "univariate_rank_ic": -0.004864686931003196,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_net_debt_equity",
+      "block": "financial_strength",
+      "agents": [
+        "quality"
+      ],
+      "direction": -1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.8662155416273781,
+        "univariate_rank_ic": 0.007151847874233043,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_net_debt_capital",
+      "block": "financial_strength",
+      "agents": [
+        "quality"
+      ],
+      "direction": -1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.9014088413112208,
+        "univariate_rank_ic": 0.007010179433666192,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_sga_to_sales",
+      "block": "financial_strength",
+      "agents": [
+        "quality"
+      ],
+      "direction": -1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.8073659104775639,
+        "univariate_rank_ic": 0.010688573077757706,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_pe",
+      "block": "value_core",
+      "agents": [
+        "value"
+      ],
+      "direction": -1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.8732320150868046,
+        "univariate_rank_ic": 0.01247692518391902,
+        "model_importance_mean": 118.175,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_pb",
+      "block": "value_core",
+      "agents": [
+        "value"
+      ],
+      "direction": -1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.9078706528370958,
+        "univariate_rank_ic": -0.018508245925987946,
+        "model_importance_mean": 100.625,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_ptbv",
+      "block": "value_core",
+      "agents": [
+        "value"
+      ],
+      "direction": -1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.6424649176327029,
+        "univariate_rank_ic": -0.00678506571931993,
+        "model_importance_mean": 75.38709677419355,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_ps",
+      "block": "value_core",
+      "agents": [
+        "value"
+      ],
+      "direction": -1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.8885684175495036,
+        "univariate_rank_ic": 0.028412766423302444,
+        "model_importance_mean": 91.5,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_pfcf",
+      "block": "value_core",
+      "agents": [
+        "value"
+      ],
+      "direction": -1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.7618836319263409,
+        "univariate_rank_ic": 0.016704931921816556,
+        "model_importance_mean": 98.14634146341463,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_ev_ebitda",
+      "block": "value_core",
+      "agents": [
+        "value"
+      ],
+      "direction": -1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.8686005879416495,
+        "univariate_rank_ic": 0.017082964071012643,
+        "model_importance_mean": 85.54545454545455,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_ev_revenue",
+      "block": "value_core",
+      "agents": [
+        "value"
+      ],
+      "direction": -1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.8877641577458539,
+        "univariate_rank_ic": 0.029852223343099487,
+        "model_importance_mean": 98.4,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_earnings_yield",
+      "block": "value_cashflow",
+      "agents": [
+        "value"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.8732320150868046,
+        "univariate_rank_ic": 0.01247692518391902,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_fcf_yield",
+      "block": "value_cashflow",
+      "agents": [
+        "value"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.7618836319263409,
+        "univariate_rank_ic": 0.016704931921816556,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_eps_growth_yoy",
+      "block": "growth_acceleration",
+      "agents": [
+        "growth"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.9019080370514172,
+        "univariate_rank_ic": -0.0046888721991990255,
+        "model_importance_mean": 167.57692307692307,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_sales_per_share_growth_yoy",
+      "block": "growth_acceleration",
+      "agents": [
+        "growth"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.8897886738033168,
+        "univariate_rank_ic": 0.011186462332002002,
+        "model_importance_mean": 181.75675675675674,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_ebitda_growth_yoy",
+      "block": "growth_acceleration",
+      "agents": [
+        "growth"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {}
+    },
+    {
+      "name": "factor_fcf_per_share_growth_yoy",
+      "block": "growth_acceleration",
+      "agents": [
+        "growth"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {}
+    },
+    {
+      "name": "factor_eps_growth_acceleration",
+      "block": "growth_acceleration",
+      "agents": [
+        "growth"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.8819679405402407,
+        "univariate_rank_ic": -0.007881396201639829,
+        "model_importance_mean": 83.21428571428571,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_sales_growth_acceleration",
+      "block": "growth_acceleration",
+      "agents": [
+        "growth"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.8692939153585889,
+        "univariate_rank_ic": -0.018558687224957706,
+        "model_importance_mean": 174.56,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_ebitda_growth_acceleration",
+      "block": "growth_acceleration",
+      "agents": [
+        "growth"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.8814132786066893,
+        "univariate_rank_ic": -0.008571484802373333,
+        "model_importance_mean": 122.78571428571429,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_fcf_growth_acceleration",
+      "block": "growth_acceleration",
+      "agents": [
+        "growth"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.9189638915081259,
+        "univariate_rank_ic": 0.0027550748228612216,
+        "model_importance_mean": 227.5121951219512,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_roe_trend",
+      "block": "fundamental_stability",
+      "agents": [
+        "growth"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.8726773531532531,
+        "univariate_rank_ic": -0.00749176516442823,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_roic_trend",
+      "block": "fundamental_stability",
+      "agents": [
+        "growth"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.8726773531532531,
+        "univariate_rank_ic": -0.01426243864323787,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_margin_stability",
+      "block": "fundamental_stability",
+      "agents": [
+        "growth"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.8618059792556437,
+        "univariate_rank_ic": 0.034330214644234316,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_roe_stability",
+      "block": "fundamental_stability",
+      "agents": [
+        "growth"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.8821898053136613,
+        "univariate_rank_ic": -0.016653575898636815,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_cash_conversion",
+      "block": "fundamental_stability",
+      "agents": [
+        "growth"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.8255865549947307,
+        "univariate_rank_ic": 0.03547765242432861,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_relative_return_3m",
+      "block": "momentum_core",
+      "agents": [
+        "momentum"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.9983082811026679,
+        "univariate_rank_ic": -0.00871140268437403,
+        "model_importance_mean": 123.0,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_relative_return_6m",
+      "block": "momentum_core",
+      "agents": [
+        "momentum"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.9969493593654668,
+        "univariate_rank_ic": -0.012387694231217414,
+        "model_importance_mean": 112.17647058823529,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_relative_return_12m",
+      "block": "momentum_core",
+      "agents": [
+        "momentum"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.9942315158910644,
+        "univariate_rank_ic": -0.026338834122844882,
+        "model_importance_mean": 98.25,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_momentum_12_1",
+      "block": "momentum_core",
+      "agents": [
+        "momentum"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.9941760496977092,
+        "univariate_rank_ic": -0.01803035692249747,
+        "model_importance_mean": 118.28571428571429,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_mom_acceleration",
+      "block": "momentum_core",
+      "agents": [
+        "momentum"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.9942315158910644,
+        "univariate_rank_ic": 0.01626044405173665,
+        "model_importance_mean": 268.9,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_mom_reversal_1m",
+      "block": "momentum_core",
+      "agents": [
+        "momentum"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.99908480780964,
+        "univariate_rank_ic": 0.026665294436330707,
+        "model_importance_mean": 200.44117647058823,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_ma_price_vs_sma6",
+      "block": "momentum_trend",
+      "agents": [
+        "momentum"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.9993621387764158,
+        "univariate_rank_ic": -0.016135855826082433,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_ma_price_vs_sma12",
+      "block": "momentum_trend",
+      "agents": [
+        "momentum"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.9993621387764158,
+        "univariate_rank_ic": -0.006708484596799338,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_ma_distance_to_high12",
+      "block": "momentum_trend",
+      "agents": [
+        "momentum"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.9993621387764158,
+        "univariate_rank_ic": -0.006497760359011386,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_mom_volatility",
+      "block": "momentum_trend",
+      "agents": [
+        "momentum"
+      ],
+      "direction": 1,
+      "source": "finnhub_series",
+      "diagnostics": {
+        "coverage": 0.9983082811026679,
+        "univariate_rank_ic": 0.02889794092142588,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_realized_vol_63d",
+      "block": "price_risk",
+      "agents": [
+        "risk"
+      ],
+      "direction": -1,
+      "source": "ohlcv",
+      "diagnostics": {
+        "coverage": 0.99908480780964,
+        "univariate_rank_ic": -0.018272340877660487,
+        "model_importance_mean": 95.8695652173913,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_realized_vol_126d",
+      "block": "price_risk",
+      "agents": [
+        "risk"
+      ],
+      "direction": -1,
+      "source": "ohlcv",
+      "diagnostics": {
+        "coverage": 0.9988352099395419,
+        "univariate_rank_ic": -0.01647963540816373,
+        "model_importance_mean": 119.0,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_downside_vol_63d",
+      "block": "price_risk",
+      "agents": [
+        "risk"
+      ],
+      "direction": -1,
+      "source": "ohlcv",
+      "diagnostics": {
+        "coverage": 0.9956736369182982,
+        "univariate_rank_ic": -0.021693124829225783,
+        "model_importance_mean": 81.4,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_beta_252d",
+      "block": "price_risk",
+      "agents": [
+        "risk"
+      ],
+      "direction": -1,
+      "source": "ohlcv",
+      "diagnostics": {
+        "coverage": 0.9983082811026679,
+        "univariate_rank_ic": -0.04101719462948467,
+        "model_importance_mean": 117.875,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_drawdown_252d",
+      "block": "price_risk",
+      "agents": [
+        "risk"
+      ],
+      "direction": -1,
+      "source": "ohlcv",
+      "diagnostics": {
+        "coverage": 0.99908480780964,
+        "univariate_rank_ic": 0.0188263201547827,
+        "model_importance_mean": 187.2173913043478,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_max_drawdown_252d",
+      "block": "price_risk",
+      "agents": [
+        "risk"
+      ],
+      "direction": -1,
+      "source": "ohlcv",
+      "diagnostics": {
+        "coverage": 0.9988629430362195,
+        "univariate_rank_ic": 0.009782885175903182,
+        "model_importance_mean": 212.23076923076923,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_range_21d",
+      "block": "price_risk",
+      "agents": [
+        "risk"
+      ],
+      "direction": -1,
+      "source": "ohlcv",
+      "diagnostics": {
+        "coverage": 0.9993344056797382,
+        "univariate_rank_ic": 0.026534443748964208,
+        "model_importance_mean": 145.675,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_range_63d",
+      "block": "price_risk",
+      "agents": [
+        "risk"
+      ],
+      "direction": -1,
+      "source": "ohlcv",
+      "diagnostics": {
+        "coverage": 0.99908480780964,
+        "univariate_rank_ic": 0.023374249020525057,
+        "model_importance_mean": 174.23684210526315,
+        "model_importance_positive_fraction": 1.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_volume_relative",
+      "block": "market_liquidity",
+      "agents": [
+        "risk"
+      ],
+      "direction": -1,
+      "source": "ohlcv",
+      "diagnostics": {
+        "coverage": 0.9990293416162849,
+        "univariate_rank_ic": 0.006572335949025933,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_volume_volatility",
+      "block": "market_liquidity",
+      "agents": [
+        "risk"
+      ],
+      "direction": -1,
+      "source": "ohlcv",
+      "diagnostics": {
+        "coverage": 0.9981418825226025,
+        "univariate_rank_ic": -0.0036488992477032452,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_amihud_illiquidity",
+      "block": "market_liquidity",
+      "agents": [
+        "risk"
+      ],
+      "direction": -1,
+      "source": "ohlcv",
+      "diagnostics": {
+        "coverage": 0.9983637472960231,
+        "univariate_rank_ic": 0.008258063532547792,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    },
+    {
+      "name": "factor_gap_21d",
+      "block": "market_liquidity",
+      "agents": [
+        "risk"
+      ],
+      "direction": -1,
+      "source": "ohlcv",
+      "diagnostics": {
+        "coverage": 0.9993344056797382,
+        "univariate_rank_ic": 0.05518451364589053,
+        "model_importance_mean": 0.0,
+        "model_importance_positive_fraction": 0.0,
+        "selection_status": "candidate"
+      }
+    }
+  ]
+}

@@ -74,11 +74,20 @@ class Paths:
     tables: Path
 
 
-def pct(value: float, digits: int = 2) -> str:
+def pct(value: float | None, digits: int = 2) -> str:
+    if value is None or pd.isna(value):
+        return "—"
     return f"{100 * float(value):.{digits}f}".replace(".", ",") + r"\%"
 
 
-def num(value: float, digits: int = 4) -> str:
+def num(value: float | None, digits: int = 4) -> str:
+    """Número con coma decimal; ``—`` si la cifra no existe.
+
+    Una celda vacía no es un fallo: una pasada que corrió sin diagnósticos posteriores al ganador
+    nunca produjo ese número, y escribirlo como ausente es más honesto que omitir la fila.
+    """
+    if value is None or pd.isna(value):
+        return "—"
     return f"{float(value):.{digits}f}".replace(".", ",")
 
 
@@ -148,12 +157,18 @@ def load_chain(study_ids: list[str]) -> pd.DataFrame:
     ``newey_west_t`` no está en ``summary.json`` —vive en ``attribution.json``, bajo
     ``ic_significance/selection``— y las cifras de la era reservada salen de ``confirmation``, que
     solo existe porque el ganador se reevaluó sobre la serie completa.
+
+    ``attribution.json`` solo existe si la pasada corrió con diagnósticos posteriores al ganador.
+    Las pasadas intermedias de una cadena suelen desactivarlos —la era de confirmación se evalúa una
+    sola vez y se reserva a la pasada final—, así que su ausencia es el caso normal y no un error:
+    las columnas que dependen de él quedan vacías para esa fila.
     """
     rows = []
     for order, study_id in enumerate(study_ids, start=1):
         study = ROOT / "results" / "studies" / study_id
         summary = read_json(study / "evidence" / "summary.json")["summary"]
-        attribution = read_json(study / "attribution.json")
+        attribution_path = study / "attribution.json"
+        attribution = read_json(attribution_path) if attribution_path.exists() else {}
         winner = read_json(study / "winner.json")
         meta = read_json(study / "study.json")
         confirmation = summary.get("confirmation", {})
@@ -165,7 +180,9 @@ def load_chain(study_ids: list[str]) -> pd.DataFrame:
                 "catalog_version": meta.get("catalog_version"),
                 "mean_rank_ic": summary.get("mean_rank_ic"),
                 "ic_ir": summary.get("ic_ir"),
-                "newey_west_t": attribution["ic_significance"]["selection"]["newey_west_t"],
+                "newey_west_t": (
+                    attribution.get("ic_significance", {}).get("selection", {}).get("newey_west_t")
+                ),
                 "positive_fraction": summary.get("rank_ic_positive_fraction"),
                 "transfer_coefficient": summary.get("transfer_coefficient"),
                 "information_ratio": summary.get("information_ratio"),
@@ -328,6 +345,60 @@ def write_tables_predictive(paths: Paths, diag: pd.DataFrame, features: pd.DataF
         "dentro de él y no dice nada sobre los que faltan.",
         "tab:cobertura-anual",
         "lrrrrr",
+    )
+
+
+# Descripción de cada motivo de exclusión. Se escriben aquí y no se leen de
+# `universe_coverage.json` porque ese fichero conserva sus descripciones mal codificadas, y el
+# verificador de activos rechaza cualquier mojibake que llegue al manuscrito.
+RESOLUTION_LABELS = {
+    "symbol_withdrawn": "El proveedor de precios no reconoce el símbolo: lo retiró de su API",
+    "missing_price": "Sin serie de precios observable",
+    "recycled_ticker": "Símbolo reutilizado después por otra empresa",
+    "no_metric_period_match": "Sin fundamentales que casen con el periodo contable",
+    "missing_reports": "Sin informes en la fuente de fundamentales",
+    "missing_cik": "Sin identificador CIK con el que resolver la empresa",
+    "download_failed": "La descarga falló por red o límite de peticiones: reintentable",
+    "download_error": "La descarga terminó en error no recuperable",
+    "missing_fundamentals": "Sin fundamentales descargados",
+}
+
+
+def write_tables_universe_resolution(paths: Paths) -> None:
+    """Reparto del universo histórico por motivo de exclusión.
+
+    Es la tabla que convierte una disculpa en una medición: el panel no calla qué empresas faltan,
+    dice por qué falta cada una. Se lee de `data/raw/`, no de un estudio, porque describe el panel y
+    no depende de qué modelo se entrene encima.
+    """
+    source = ROOT / "data" / "raw" / "universe_coverage.json"
+    # `errors="replace"` porque el fichero trae descripciones mal codificadas; solo se usan los
+    # campos numéricos y el identificador del motivo, que son ASCII.
+    resolution = json.loads(source.read_text(encoding="utf-8", errors="replace"))["ticker_resolution"]
+    excluded = int(resolution["excluded"])
+
+    reasons = sorted(resolution["by_reason"], key=lambda item: -int(item["tickers"]))
+    rows = [
+        [
+            tex(item["reason"]),
+            RESOLUTION_LABELS.get(item["reason"], tex(item["reason"])),
+            f"{int(item['tickers']):,}".replace(",", "."),
+            pct(int(item["tickers"]) / excluded, 1),
+        ]
+        for item in reasons
+        if int(item["tickers"]) > 0
+    ]
+    rows.append([
+        r"\textbf{Total}",
+        r"\textbf{Tickers del universo que no llegan al panel}",
+        r"\textbf{" + f"{excluded:,}".replace(",", ".") + "}",
+        r"\textbf{100,0\%}",
+    ])
+    table(
+        paths.tables / "t03_resolucion_universo.tex",
+        ["Motivo", "Qué significa", "Tickers", "\\% de excluidos"],
+        rows,
+        "llrr",
     )
 
 
@@ -1249,6 +1320,7 @@ def main() -> None:
 
     write_tables(paths, summary, robustness, attribution, diag, annual, decisions)
     write_tables_predictive(paths, diag, features, attribution)
+    write_tables_universe_resolution(paths)
     write_tables_robustness(paths, summary, robustness, attribution, portfolio)
     _write_tables_orders_and_tails(paths, orders, tails)
 
@@ -1289,6 +1361,9 @@ def main() -> None:
             if portfolio
             else ["evidence/equity.parquet", "evidence/annual_metrics.parquet", "evidence/orders.parquet"]
         ),
+        # Fuentes que describen el panel y no un estudio: viven en `data/raw/` y son las mismas
+        # cualquiera que sea el modelo entrenado encima.
+        "panel_sources": ["data/raw/universe_coverage.json"],
         "figures": sorted(path.name for path in paths.figures.glob("f*.png")),
         "tables": sorted(path.name for path in paths.tables.glob("t*.tex")),
     }

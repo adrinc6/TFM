@@ -407,7 +407,7 @@ rompe la regla.}
     \end{column}
     \begin{column}{0.40\textwidth}
       {\color{teal}\textbf{Objetivo 2 · Portfolio Study}}\\[0.3em]
-      {\small 1.728 carteras\\
+      {\small 1.440 carteras\\
       {\color{slate}sobre la señal \textbf{ya congelada}, sin reentrenar nada.
       Se decide por \textbf{IR}.}}
     \end{column}
@@ -456,7 +456,7 @@ mercado.}
       \cifracolor{0}{azar puro:\\ mi orden no dice nada}{slate}
     \end{column}
     \begin{column}{0.30\textwidth}
-      \cifracolor{0,0130}{el mejor criterio clásico,\\medido en este mismo panel}{navy}
+      \cifracolor{0,0119}{el mejor criterio clásico,\\medido en este mismo panel}{navy}
     \end{column}
     \begin{column}{0.30\textwidth}
       \cifracolor{1}{orden perfecto:\\ imposible en la práctica}{slate}
@@ -483,7 +483,7 @@ Y aquí está lo contraintuitivo, que conviene decir antes de enseñar cifras: l
 escala útil es mucho más baja de lo que uno esperaría. Para no depender de lo que
 diga la literatura, pongo como referencia una cifra medida en este mismo trabajo:
 el mejor criterio clásico que probé como baseline, sobre el mismo panel y con las
-mismas restricciones, saca 0,0130. Eso es lo que hay que batir. Suena ridículo si
+mismas restricciones, saca 0,0119. Eso es lo que hay que batir. Suena ridículo si
 uno viene de otros dominios del aprendizaje automático, donde una correlación de
 0,03 sería una tomadura de pelo. Pero aquí se aplica sobre quinientas acciones,
 todos los meses, durante años: un sesgo pequeño y persistente en el orden es
@@ -504,9 +504,9 @@ de las que suben menos.}
   \end{center}
   \vspace{-0.25cm}
   \begin{columns}[t,onlytextwidth]
-    \begin{column}{0.30\textwidth}\cifra{0,0675}{repartir por igual}\end{column}
-    \begin{column}{0.30\textwidth}\cifra{0,1090}{lo que aprende \ \textbf{+61\,\%}}\end{column}
-    \begin{column}{0.30\textwidth}\cifracolor{0,1227}{\texttt{risk} por separado}{rojo}\end{column}
+    \begin{column}{0.30\textwidth}\cifra{0,0690}{repartir por igual}\end{column}
+    \begin{column}{0.30\textwidth}\cifra{0,1067}{lo que aprende \ \textbf{+55\,\%}}\end{column}
+    \begin{column}{0.30\textwidth}\cifracolor{0,1201}{\texttt{risk} por separado}{rojo}\end{column}
   \end{columns}
 \end{frame}
 
@@ -530,11 +530,11 @@ de que se equivoque primero, con datos reales y en tiempo real, y se corrija
 después, es la evidencia más directa de que hay aprendizaje y de que no está
 puesto a mano.
 
-Los números de abajo. Repartir por igual da 0,0675. Lo que aprende da 0,1090: un
+Los números de abajo. Repartir por igual da 0,0690. Lo que aprende da 0,1067: un
 sesenta y uno por ciento mejor. El árbitro aporta.
 
 Y ahora el matiz, que lo digo yo antes de que me lo pregunten: «risk» por su
-cuenta da 0,1227. Bate a la combinación. Es decir, el meta-agente aprende —eso
+cuenta da 0,1201. Bate a la combinación. Es decir, el meta-agente aprende —eso
 está demostrado— pero acaba funcionando más como un selector que como un
 combinador, y con estos datos no puedo presentar la arquitectura multi-agente
 como demostrada. Volveré a esto en las limitaciones.}
@@ -565,7 +565,7 @@ como demostrada. Volveré a esto en las limitaciones.}
       «riesgo», \textbf{ni siquiera} está entre las tres primeras.\\[0.55em]
       El agente dominante lee \textbf{microestructura de precio a semanas},
       no la prima clásica de baja volatilidad.\\[0.55em]
-      Por eso la neutralización por estilos conserva el \textbf{86,62\,\%} de la
+      Por eso la neutralización por estilos conserva el \textbf{87,21\,\%} de la
       señal: no es un factor conocido disfrazado.}
     \end{column}
   \end{columns}
@@ -600,9 +600,9 @@ literatura. Si lo fuera, la neutralización se lo habría comido casi entero.}
 \begin{frame}{La ordenación es buena, y no sólo dentro de muestra}
   \vspace{0.35cm}
   \begin{columns}[t,onlytextwidth]
-    \begin{column}{0.24\textwidth}\cifra{0,1090}{Rank-IC del sistema}\end{column}
-    \begin{column}{0.24\textwidth}\cifra{$\approx$\,8$\times$}{el mejor criterio clásico se queda en 0,0130}\end{column}
-    \begin{column}{0.24\textwidth}\cifra{3,46}{$t$ de Newey--West}\end{column}
+    \begin{column}{0.24\textwidth}\cifra{0,1067}{Rank-IC del sistema}\end{column}
+    \begin{column}{0.24\textwidth}\cifra{$\approx$\,8$\times$}{el mejor criterio clásico se queda en 0,0119}\end{column}
+    \begin{column}{0.24\textwidth}\cifra{3,33}{$t$ de Newey--West}\end{column}
     \begin{column}{0.24\textwidth}\cifra{74\,\%}{de los meses acierta el sentido}\end{column}
   \end{columns}
   \vspace{0.45cm}
@@ -613,18 +613,18 @@ literatura. Si lo fuera, la neutralización se lo habría comido casi entero.}
       $+0{,}0441$}}}}
   \end{center}
   \vspace{0.35cm}
-  {\centering\small\color{slate}Baja respecto al 0,1090 de la ventana de
+  {\centering\small\color{slate}Baja respecto al 0,1067 de la ventana de
   selección, como era de esperar; pero \textbf{no se hunde ni cambia de signo}.\par}
 \end{frame}
 
 \note{[60 s] Estos son los números del objetivo uno.
 
-El sistema saca un Rank-IC de 0,1090. Con la escala que expliqué hace dos
-diapositivas, eso es unas ocho veces el 0,0130 del mejor criterio clásico que
+El sistema saca un Rank-IC de 0,1067. Con la escala que expliqué hace dos
+diapositivas, eso es unas nueve veces el 0,0119 del mejor criterio clásico que
 probé como baseline —una combinación de crecimiento a precio razonable—, medido
 sobre el mismo panel y con las mismas restricciones temporales.
 
-La t de Newey-West es 3,46. Uso Newey-West precisamente porque las cohortes
+La t de Newey-West es 3,33. Uso Newey-West precisamente porque las cohortes
 mensuales se solapan y los errores están autocorrelacionados; con la corrección
 puesta, sigue siendo claramente distinguible de cero. Y acierta el sentido de la
 ordenación en el setenta y cuatro por ciento de los meses, o sea, no vive de dos
@@ -634,8 +634,8 @@ Pero lo que de verdad importa es la caja dorada. En la era reservada, esa que
 apartamos el primer día y que no participó en ninguna decisión, el Rank-IC sigue
 siendo positivo: más cero coma cero cuatro cuatro uno.
 
-Y lo digo con la honestidad que toca: baja bastante respecto al 0,1090. Eso es lo
-normal y lo esperable —una parte de ese 0,1090 es ajuste al periodo de selección.
+Y lo digo con la honestidad que toca: baja bastante respecto al 0,1067. Eso es lo
+normal y lo esperable —una parte de ese 0,1067 es ajuste al periodo de selección.
 Lo relevante es que no se hunde ni cambia de signo. Ordena fuera de muestra.}
 
 % =====================================================================
@@ -649,13 +649,13 @@ Lo relevante es que no se hunde ni cambia de signo. Ordena fuera de muestra.}
     \toprule
     Señal & 2015--2018 & 2019--2021 & 2022--2024 & \textbf{2025--2026} \\
     \midrule
-    \texttt{risk}      & 0,1300 & 0,0554 & 0,1808 & \textbf{0,0616} \\
-    meta final         & 0,0999 & 0,0506 & 0,1788 & \textbf{0,0441} \\
-    meta equiponderado & 0,0829 & 0,0145 & 0,1012 & $-0{,}0735$ \\
-    \texttt{value}     & 0,0147 & 0,0287 & 0,0321 & $-0{,}0953$ \\
-    \texttt{growth}    & 0,0459 & 0,0143 & 0,0094 & $-0{,}1333$ \\
-    \texttt{quality}   & 0,0026 & $-0{,}0089$ & 0,0367 & $-0{,}0487$ \\
-    \texttt{momentum}  & 0,0391 & $-0{,}0477$ & 0,0004 & $-0{,}0080$ \\
+    \texttt{risk}      & 0,1238 & 0,0577 & 0,1778 & \textbf{0,0669} \\
+    meta final         & 0,0949 & 0,0543 & 0,1739 & \textbf{0,0364} \\
+    meta equiponderado & 0,0811 & 0,0184 & 0,1045 & $-0{,}0868$ \\
+    \texttt{value}     & 0,0205 & 0,0330 & 0,0347 & $-0{,}1284$ \\
+    \texttt{growth}    & 0,0493 & 0,0193 & 0,0137 & $-0{,}1476$ \\
+    \texttt{quality}   & 0,0018 & $-0{,}0110$ & 0,0399 & $-0{,}0533$ \\
+    \texttt{momentum}  & 0,0331 & $-0{,}0450$ & 0,0019 & $-0{,}0009$ \\
     \bottomrule
   \end{tabular}
   \end{center}
@@ -707,11 +707,11 @@ negativo en esa era: arrastra a los tres que fallan.}
     Placebos de etiqueta (5)                & entre $-0{,}0081$ y $+0{,}0013$   & $\checkmark$ \\
     \textit{Bootstrap} por bloques          & IC 95\,\% $[0{,}0425;\,0{,}1723]$ & $\checkmark$ \\
     Exclusión de eras completas             & 0,0780 -- 0,1350                  & $\checkmark$ \\
-    Estabilidad entre semillas              & rango 0,0015, no cruza cero       & $\checkmark$ \\
-    Carteras aleatorias (riesgo emparejado) & percentil 96,8                    & $\checkmark$ \\
-    Neutralización de estilo (14 controles) & retiene 86,62\,\%                 & $\checkmark$ \\
+    Estabilidad entre semillas              & rango 0,0023, no cruza cero       & $\checkmark$ \\
+    Carteras aleatorias (riesgo emparejado) & percentil 97,3                    & $\checkmark$ \\
+    Neutralización de estilo (14 controles) & retiene 87,21\,\%                 & $\checkmark$ \\
     \addlinespace
-    \textbf{\textit{Deflated Sharpe}}       & \textbf{0,682} (umbral 0,95)      & {\color{rojo}\textbf{--}} \\
+    \textbf{\textit{Deflated Sharpe}}       & \textbf{0,573} (umbral 0,95)      & {\color{rojo}\textbf{--}} \\
     \bottomrule
   \end{tabular}
   \end{center}
@@ -737,23 +737,23 @@ pegado a cero. Es el control negativo del sistema completo.
 
 El bootstrap por bloques respeta la estructura temporal, y el intervalo al noventa
 y cinco por ciento no toca el cero. Quitar eras enteras: el resultado se mueve
-entre 0,078 y 0,135, o sea, no depende de un periodo concreto. Cambiar la semilla
+entre 0,077 y 0,130, o sea, no depende de un periodo concreto. Cambiar la semilla
 del aleatorio apenas mueve nada. Contra carteras aleatorias con el mismo riesgo,
 queda en el percentil noventa y siete. Y la neutralización de estilo, que ya
-comenté, conserva el ochenta y seis por ciento.
+comenté, conserva el ochenta y siete por ciento.
 
 Siete de ocho superados.
 
 Y el octavo no, y lo digo yo antes de que me lo pregunten. El Deflated Sharpe
 penaliza el ratio por cuántas configuraciones distintas he probado antes de
 quedarme con una. Yo he encadenado tres estudios completos, así que he probado
-muchísimas. Se queda en 0,682 frente a un umbral de 0,95. Es el precio declarado
+muchísimas. Se queda en 0,573 frente a un umbral de 0,95. Es el precio declarado
 de haber buscado, y lo reporto como falla, no lo escondo.}
 
 % =====================================================================
 % 13 · La cadena  (65 s)
 % =====================================================================
-\begin{frame}{La cadena de estudios: mejora dentro, se degrada fuera}
+\begin{frame}{La cadena de estudios: converge dentro, no se cobra fuera}
   \vspace{0.25cm}
   \begin{columns}[c,onlytextwidth]
     \begin{column}{0.50\textwidth}
@@ -762,25 +762,26 @@ de haber buscado, y lo reporto como falla, no lo escondo.}
         \toprule
         & Study 1 & Study 2 & Study 3 \\
         \midrule
-        Rank-IC          & 0,1000 & 0,1074 & 0,1090 \\
-        IC-IR            & 0,735  & 0,835  & 0,851 \\
-        $t$ Newey--West  & 2,95   & 3,36   & 3,46 \\
-        IR (selección)   & 0,189  & 0,294  & 0,339 \\
+        Rank-IC          & 0,1051 & 0,1059 & 0,1067 \\
+        IC-IR            & 0,844  & 0,858  & 0,833 \\
+        IR (selección)   & 0,156  & 0,138  & 0,312 \\
         \addlinespace
-        \textbf{IR (reservada)} & \textbf{$+0{,}898$} & \textbf{$+0{,}476$} & \textbf{$-1{,}167$} \\
+        \textbf{IR (reservada)} & \textbf{$-2{,}348$} & \textbf{$-1{,}010$} & \textbf{$-1{,}795$} \\
         \bottomrule
       \end{tabular}
       \par\vspace{0.35cm}
-      {\footnotesize\color{slate}La cadena \textbf{converge}: 8 $\rightarrow$ 1
+      {\footnotesize\color{slate}La cadena \textbf{converge}: 9 $\rightarrow$ 2
       $\rightarrow$ 2 variables cambiadas.\par}
     \end{column}
     \begin{column}{0.47\textwidth}
-      {\small Todo mejora \textbf{monótonamente} dentro de la ventana de
-      selección\ldots\\[0.5em]
-      \ldots\ y el IR se degrada \textbf{monótonamente} fuera de ella.\\[0.5em]
-      Esa divergencia es la firma del \textbf{sobreajuste por búsqueda}.\\[0.5em]
+      {\small El Rank-IC mejora dentro de la ventana de selección, pero por
+      milésimas\ldots\\[0.5em]
+      \ldots\ y el IR de la era reservada es \textbf{negativo en las tres
+      pasadas}.\\[0.5em]
+      Con la cartera por defecto, la señal \textbf{no se cobraba}.\\[0.5em]
       {\color{teal}\textbf{Y es exactamente lo que motivó el objetivo 2:}} el
-      Rank-IC no se degradó. Sólo el IR. Luego el problema no estaba en la señal.}
+      Rank-IC aguantaba fuera de muestra. Sólo fallaba el IR. Luego el problema no
+      estaba en la señal.}
     \end{column}
   \end{columns}
 \end{frame}
@@ -789,18 +790,19 @@ de haber buscado, y lo reporto como falla, no lo escondo.}
 honestidad exige, así que la enseño entera.
 
 Las columnas son los tres estudios encadenados. Leyendo hacia abajo: dentro de la
-ventana de selección todo mejora de forma monótona. El Rank-IC sube de 0,1000 a
-0,1090, la t sube, el IR de selección sube de 0,189 a 0,339. Visto así, la cadena
-funcionó.
+ventana de selección el Rank-IC mejora, de 0,1051 a 0,1067. Pero fijaos en la
+magnitud: son milésimas. La cadena converge, y esa pequeñez es justamente la
+señal de que había que pararla.
 
-Pero mira la última fila, que es el Information Ratio en la era reservada: más
-0,898, más 0,476, menos 1,167. Se degrada monótonamente. Cada estudio que mejoró
-las métricas de dentro empeoró el resultado económico de fuera.
+Ahora mirad la última fila, que es el Information Ratio en la era reservada:
+menos 2,3, menos 1,0, menos 1,8. Negativo en las tres. Con la cartera que traía
+el catálogo por defecto, esta señal no ganaba dinero fuera de muestra. Ninguna de
+las tres pasadas lo arregló, porque ninguna tocaba la cartera.
 
-Esa divergencia tiene nombre: sobreajuste por búsqueda. Al encadenar estudios,
-cada iteración exprime un poco más el periodo de selección. Es la misma causa por
-la que el Deflated Sharpe no pasa el umbral. No lo descubro yo en el turno de
-preguntas: está en la memoria y está aquí.
+Lo digo tal cual porque es el punto donde el trabajo podía haberse quedado en un
+retrato de sobreajuste. Y en parte lo es: encadenar estudios exprime el periodo de
+selección, y es la misma causa por la que el Deflated Sharpe no pasa el umbral. No
+lo descubro en el turno de preguntas: está en la memoria y está aquí.
 
 Y ahora la observación que da sentido a toda la segunda mitad del trabajo, que es
 el texto en verde. Lo que se degradó fue el Information Ratio. El Rank-IC, no: ese
@@ -811,8 +813,8 @@ sino en la traducción a posiciones.
 Eso es literalmente lo que motivó el segundo objetivo. No es una idea que se me
 ocurriera después: es una respuesta a este resultado.
 
-Un apunte de diseño: la cadena converge. En el primer estudio cambiaron ocho
-variables respecto al punto de partida; en el segundo, una; en el tercero, dos. No
+Un apunte de diseño: la cadena converge. En el primer estudio cambiaron nueve
+variables respecto al punto de partida; en el segundo, dos; en el tercero, dos. No
 está oscilando.}
 
 % =====================================================================
@@ -823,11 +825,63 @@ está oscilando.}
 % =====================================================================
 % 14 · La pregunta que faltaba  (40 s)
 % =====================================================================
+\begin{frame}{Contra qué se compite: un juego de suma cero}
+  \vspace{0.6cm}
+  \begin{center}
+    {\Large El mercado \textbf{son} los inversores.}\\[0.5cm]
+    {\large Lo que uno gana sobre el índice, otro lo pierde.}\\[0.2cm]
+    {\small\color{slate}Suma cero antes de costes; suma \textbf{negativa} después
+    (Sharpe, 1991).}\\[1.0cm]
+  \end{center}
+  \begin{columns}[c,onlytextwidth]
+    \begin{column}{0.46\textwidth}
+      \cifra{93\,\%}{de los fondos de gran capitalización \textbf{no} baten al
+      S\&P 500 a 20 años}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \cifracolor{$\approx$\,1\,pp}{al año pierde el inversor medio frente al
+      índice, por su propio comportamiento}{slate}
+    \end{column}
+  \end{columns}
+  \vspace{0.5cm}
+  {\centering\footnotesize\color{slate}SPIVA (S\&P Dow Jones Indices, 2026) ·
+  QAIB (DALBAR, 2025)\par}
+\end{frame}
+
+\note{[45 s] Antes de enseñar un solo número económico quiero dejar claro contra
+qué se compite, porque cambia lo que significa todo lo que viene después.
+
+El objetivo uno se mide contra un listón absoluto: o el modelo ordena mejor que el
+azar, o no. Es una pregunta sobre el modelo, y se responde con estadística.
+
+El objetivo dos no. Batir al índice es un juego de suma cero, y esto no es una
+opinión, es aritmética. Sharpe lo formuló en el noventa y uno: el mercado es la
+suma de todos los que están dentro, así que el conjunto de la gestión activa
+posee, por definición, la cartera de mercado. Antes de costes, la media de los
+activos es exactamente el índice. Para que yo lo supere, alguien tiene que quedar
+por debajo en la misma cantidad. Y como operar cuesta dinero, después de costes el
+agregado queda por debajo: pasa a ser suma negativa.
+
+Las dos cifras de abajo son el correlato empírico. A veinte años, el noventa y
+tres por ciento de los fondos de gran capitalización estadounidenses no bate al
+S\&P 500. Y no es solo cosa de profesionales: el inversor medio, medido por sus
+flujos reales de entrada y salida, pierde alrededor de un punto porcentual al año
+contra el índice por su propio comportamiento —comprar caro y vender barato.
+
+¿Por qué lo cuento? Porque marca el tono de la segunda mitad. Voy a enseñar
+resultados económicos, y quiero que se lean sabiendo que el listón está alto y que
+la mayoría no lo alcanza. Si al final mi conclusión es modesta, no es falsa
+modestia: es que aquí lo extraordinario sería lo contrario.}
+
+% =====================================================================
+% 14 bis · La pregunta que faltaba  (40 s)
+% =====================================================================
 \begin{frame}{Pero la cartera nunca se había optimizado}
   \vspace{0.9cm}
   \begin{center}
     {\Large Tengo una señal que ordena bien\ldots}\\[0.7cm]
-    {\Large\ldots\ y una cartera que pierde un $-11{,}29\,\%$ fuera de muestra.}\\[1.0cm]
+    {\Large\ldots\ y una cartera con Information Ratio $-1{,}795$ fuera de
+    muestra.}\\[1.0cm]
     {\Large\color{teal}\textbf{¿Da igual cómo convierta el orden en cartera?}}\\[0.9cm]
     {\small\color{slate}En los tres estudios anteriores la cartera era la que
     venía por defecto en el catálogo.\\ Nadie la había tocado, porque no era el
@@ -838,9 +892,9 @@ está oscilando.}
 \note{[40 s] Y aquí empieza la segunda mitad.
 
 La situación es exactamente esta: tengo una señal que ordena bien, incluso fuera
-de muestra, y al mismo tiempo tengo una cartera que en la era reservada pierde un
-once coma tres por ciento contra el índice. Las dos cosas son verdad a la vez, y
-esa aparente contradicción es el trabajo.
+de muestra, y al mismo tiempo tengo una cartera que en la era reservada da un
+Information Ratio de menos uno con ocho, sin batir al índice ni un año. Las dos
+cosas son verdad a la vez, y esa aparente contradicción es el trabajo.
 
 ¿Por qué puede pasar? Porque una ordenación no se puede comprar entera. Yo puedo
 ordenar quinientas acciones perfectamente, pero una cartera real compra unas pocas
@@ -866,13 +920,13 @@ Así que la pregunta del objetivo dos es: ¿da igual cómo la construya?}
         \toprule
         Variable de cartera & Mueve el IR \\
         \midrule
-        Número de posiciones      & \textbf{0,300} \\
-        Tope de efectivo          & \textbf{0,202} \\
-        Suelo de cobertura        & 0,107 \\
+        Número de posiciones      & \textbf{0,208} \\
+        Tenencia mínima           & \textbf{0,164} \\
+        Tope de efectivo          & \textbf{0,139} \\
         \addlinespace
-        Tenencia mínima           & 0,039 \\
-        Tolerancia de deriva      & {\color{slate}0,016} \\
-        Reparto de pesos          & {\color{slate}0,009} \\
+        Suelo de cobertura        & 0,076 \\
+        Tolerancia de deriva      & {\color{slate}0,017} \\
+        Reparto de pesos          & {\color{slate}0,005} \\
         \bottomrule
       \end{tabular}
       \par\vspace{0.35cm}
@@ -884,12 +938,12 @@ Así que la pregunta del objetivo dos es: ¿da igual cómo la construya?}
       unidad de riesgo asumido. Es la métrica del objetivo 2.}
       \vspace{0.45cm}
 
-      {\small \textbf{Dos variables mandan} y dos son prácticamente
-      \textbf{inertes}. Un factor 30 entre la primera y la última.}
+      {\small \textbf{Tres variables mandan} y dos son prácticamente
+      \textbf{inertes}. Un factor 40 entre la primera y la última.}
       \vspace{0.4cm}
 
-      {\small El resultado útil no es «la cartera importa», sino \textbf{qué dos
-      decisiones concretas} se llevan casi todo.}
+      {\small La segunda que más manda es \textbf{cuánto tiempo se conserva} una
+      posición --- y gana el máximo: la cartera mejora \textbf{operando menos}.}
     \end{column}
   \end{columns}
 \end{frame}
@@ -907,31 +961,36 @@ En la tabla está, para cada variable de construcción de cartera, cuánto mueve
 Information Ratio entre su mejor y su peor valor, medido con la mediana sobre
 todas las demás combinaciones.
 
-El número de posiciones lo mueve tres décimas. Eso es enorme: es del mismo orden
+El número de posiciones lo mueve dos décimas. Eso es enorme: es del mismo orden
 que el IR total de la cartera por defecto. Cuántas acciones compras es, con
-diferencia, la decisión más cara del sistema. El tope de efectivo, dos décimas.
+diferencia, la decisión más cara del sistema. Después, la tenencia mínima —cuánto
+tiempo estoy obligado a conservar lo que compro— y el tope de efectivo.
 
-Y abajo, dos variables que son prácticamente inertes: la tolerancia de deriva —
-cuánto dejo que un peso se desvíe antes de reequilibrar — y cómo reparto los pesos
-entre las posiciones. Nueve y dieciséis milésimas. Hay un factor treinta entre la
-primera variable y la última.
+Y abajo, dos que son prácticamente inertes: la tolerancia de deriva y cómo reparto
+los pesos entre las posiciones. Cinco y diecisiete milésimas. Hay un factor
+cuarenta entre la primera variable y la última.
+
+Fijaos en la segunda fila, porque es el hilo de todo el acto dos: la segunda
+variable más importante es cuánto tiempo aguanto una posición, y el valor ganador
+es el máximo, un horizonte completo. La cartera mejora por operar menos, no por
+operar mejor.
 
 Y esto es lo que quiero subrayar: el resultado útil no es la frase abstracta «la
-cartera importa». Es saber qué dos decisiones concretas se llevan casi todo, y
-cuáles no merece la pena discutir. Eso es accionable.}
+cartera importa». Es saber qué decisiones concretas se llevan casi todo, y cuáles
+no merece la pena discutir. Eso es accionable.}
 
 % =====================================================================
 % 16 · La rejilla  (60 s)
 % =====================================================================
-\begin{frame}{1.728 carteras sobre la misma señal, una ganadora}
+\begin{frame}{1.440 carteras sobre la misma señal, una ganadora}
   \begin{columns}[c,onlytextwidth]
     \begin{column}{0.61\textwidth}
       \includegraphics[width=\linewidth]{assets/f08_cartera_rejilla.png}
     \end{column}
     \begin{column}{0.36\textwidth}
-      \cifrachica{0,339 $\rightarrow$ \textbf{0,844}}{Information Ratio}
+      \cifrachica{0,312 $\rightarrow$ \textbf{0,841}}{Information Ratio}
       \vspace{0.3cm}
-      \cifrachica{2,61\,\% $\rightarrow$ \textbf{6,97\,\%}}{exceso sobre el índice}
+      \cifrachica{2,12\,\% $\rightarrow$ \textbf{5,91\,\%}}{exceso sobre el índice}
       \vspace{0.4cm}
       {\centering\footnotesize\color{slate}Sin reentrenar el modelo:\\
       la misma señal, mejor gestionada.\par}
@@ -942,7 +1001,7 @@ cuáles no merece la pena discutir. Eso es accionable.}
   \end{columns}
 \end{frame}
 
-\note{[60 s] Así que monté una rejilla completa: mil setecientas veintiocho
+\note{[60 s] Así que monté una rejilla completa: mil cuatrocientas cuarenta
 carteras, todas sobre exactamente la misma señal ya congelada. Sin reentrenar
 absolutamente nada del modelo. Lo único que cambia entre un punto y otro del
 gráfico son las reglas de construcción de la cartera.
@@ -955,15 +1014,16 @@ misma señal exacta, hay carteras que dan Information Ratio negativo y carteras 
 rozan el 0,85. Ese eje vertical es, gráficamente, el objetivo dos entero. La señal
 es una constante en este gráfico; toda esa variación la produce la cartera.
 
-La ganadora pasa el Information Ratio de 0,339 a 0,844, y el exceso sobre el
-índice del dos coma seis al siete por ciento.
+La ganadora pasa el Information Ratio de 0,312 a 0,841, y el exceso sobre el
+índice del dos al seis por ciento.
 
 Y un detalle metodológico que está en la esquina y que defiendo: la rejilla es
 cartesiana, no secuencial. Evalúo todas las combinaciones, no una variable cada
 vez. Es mucho más caro, pero es necesario porque las variables interactúan: si
-hubiera optimizado variable a variable habría elegido cinco posiciones, que es lo
-mejor en solitario, y la cartera ganadora usa ocho. Optimizando por separado no la
-habría encontrado nunca.}
+hubiera optimizado variable a variable habría elegido un suelo de cobertura de
+sesenta y pesos iguales, que es lo mejor en solitario, y la cartera ganadora usa
+suelo cero y pesos proporcionales al alfa. Optimizando por separado no la habría
+encontrado nunca.}
 
 % =====================================================================
 % 17 · La cartera ganadora en detalle  (55 s)
@@ -976,51 +1036,55 @@ habría encontrado nunca.}
     \toprule
     Métrica & Cartera por defecto & Cartera ganadora & Era reservada \\
     \midrule
-    Information Ratio        & 0,339     & \textbf{0,844}    & \textbf{0,304} \\
-    Exceso geométrico        & 2,61\,\%  & \textbf{6,97\,\%} & \textbf{2,56\,\%} \\
-    Rotación anualizada      & 3,58      & 3,24              & 3,91 \\
-    Máxima caída             & 26,97\,\% & 28,40\,\%         & 12,09\,\% \\
-    Años que baten al índice & 70\,\%    & 80\,\%            & 50\,\% \\
+    Information Ratio        & 0,312     & \textbf{0,841}    & \textbf{0,109} \\
+    Exceso geométrico        & 2,12\,\%  & \textbf{5,91\,\%} & \textbf{0,24\,\%} \\
+    Rotación anualizada      & 2,42      & \textbf{1,35}     & 0,35 \\
+    Máxima caída             & 25,21\,\% & \textbf{22,83\,\%} & 16,08\,\% \\
+    Años que baten al índice & 70\,\%    & \textbf{100\,\%}  & 50\,\% \\
     \bottomrule
   \end{tabular}
   \end{center}
   \vspace{0.35cm}
   {\footnotesize\color{slate}\textbf{Configuración ganadora:} 8 posiciones ·
-  \textbf{efectivo 0\,\%} (antes 25\,\%) · reparto proporcional al alfa ·
-  \textbf{tenencia mínima medio horizonte} (antes ninguna) · suelo de cobertura
-  percentil 60 · \textbf{deriva 0,1} (antes 0,25). En negrita, lo único que
-  cambió: el número de posiciones ya era 8.\\
-  \textbf{Costes:} 5 pb de comisión + 10 pb de \textit{slippage}, constantes.\par}
+  \textbf{efectivo máx.\ 10\,\%} (antes 25\,\%) · reparto proporcional al alfa ·
+  \textbf{tenencia mínima un horizonte completo} (antes ninguna) · sin suelo de
+  cobertura · \textbf{deriva 0,4} (antes 0,25). En negrita, lo que cambió: las
+  tres modificaciones hacen que la cartera \textbf{opere menos}.\\
+  \textbf{Costes:} 10 pb de comisión + 20 pb de \textit{slippage}, constantes.\par}
 \end{frame}
 
 \note{[55 s] Aquí está la cartera ganadora abierta en canal, porque un Information
 Ratio suelto no dice qué tipo de cartera es.
 
-Leyendo la columna del medio: ocho posiciones, sin efectivo, pesos proporcionales
-al alfa estimado. Conviene precisar qué cambió de verdad respecto a la cartera por
+Leyendo la columna del medio: ocho posiciones, pesos proporcionales al alfa
+estimado. Conviene precisar qué cambió de verdad respecto a la cartera por
 defecto, porque no es la concentración: las dos tienen ocho posiciones. Lo que
-cambia son tres cosas —renuncia al efectivo, del veinticinco por ciento a cero;
-obliga a mantener cada posición medio horizonte; y estrecha la corrección de
-deriva.
+cambia son tres cosas, y las tres van en la misma dirección —baja el tope de
+efectivo del veinticinco al diez por ciento, obliga a mantener cada posición un
+horizonte completo, y relaja la corrección de deriva hasta el cuarenta por ciento.
 
-Eso explica la fila de la máxima caída: veintiocho por ciento, un punto y medio
-peor que la cartera por defecto. Al quitar el colchón de caja, la optimización no
-ha reducido el riesgo de caída, lo ha aceptado a cambio de numerador. Hay que
-decirlo.
+Dicho de otra manera: la cartera ganadora opera menos. Y ese es el hallazgo. La
+rotación cae de dos coma cuatro veces al año a una coma tres, casi la mitad. Para
+una señal a doce meses, reaccionar cada mes costaba más de lo que valía.
 
-La rotación es de tres coma dos veces al año, es decir, la cartera se renueva
-entera unas tres veces por año. Sobre eso aplico cinco puntos básicos de comisión
-y diez de slippage, constantes. Y aquí hago una limitación explícita: con esa
-rotación y ocho posiciones, no modelar el impacto de mercado ni la capacidad es
-una simplificación que importa. Con volúmenes pequeños es razonable; con volúmenes
-grandes, no.
+Eso explica también la fila de la máxima caída: veintitrés por ciento, dos puntos
+y medio mejor que la cartera por defecto, y eso a pesar de llevar menos efectivo.
+Al no deshacer posiciones a mitad de horizonte, deja de cristalizar caídas
+transitorias.
 
-Bate al índice en el ochenta por ciento de los años de la ventana de selección,
-frente al setenta de la cartera por defecto.
+Sobre esa rotación aplico diez puntos básicos de comisión y veinte de slippage,
+constantes. Y aquí hago una limitación explícita: no modelar el impacto de mercado
+es una simplificación que importa. La medí: por encima de unos cincuenta millones
+de patrimonio, esta cartera deja de ser ejecutable con holgura.
+
+Bate al índice los diez años de la ventana de selección, frente a siete de diez de
+la cartera por defecto. Con la salvedad de siempre: es la mejor de mil
+cuatrocientas cuarenta, y batir todos los años es justo lo que una búsqueda amplia
+tiende a encontrar.
 
 Y la última columna, que es la que cuenta: la era reservada. Ahí baja a cincuenta
-por ciento de años, con un IR de 0,304. Baja, como todo lo de fuera de muestra,
-pero se mantiene positivo.}
+por ciento de años, con un IR de 0,109. Es un empate con el índice, no una
+victoria. Pero venía de menos 1,8.}
 
 % =====================================================================
 % 18 · Fuera de muestra  (70 s)
@@ -1056,30 +1120,31 @@ pero se mantiene positivo.}
 \note{[70 s] Y este es el contraste que cierra el trabajo, en la era reservada,
 que no intervino en ninguna decisión.
 
-Con la cartera que venía por defecto, la señal perdía un once coma veintinueve por
-ciento frente al índice, con un Information Ratio de menos uno con dieciséis. Es
-un mal resultado y no lo escondo: es el que aparecía al final de la cadena de
-estudios.
+Con la cartera que venía por defecto, la señal daba un Information Ratio de menos
+uno con ocho, sin batir al índice ni un solo año. Es un mal resultado y no lo
+escondo: es el que aparecía al final de la cadena de estudios.
 
 Con la cartera optimizada —mismo modelo, misma señal, mismo panel, sin reentrenar
-absolutamente nada— gana un dos coma cincuenta y seis por ciento, con Information
-Ratio más cero coma tres.
+absolutamente nada— el exceso pasa a ser positivo, un cero coma veinticuatro por
+ciento, con Information Ratio más cero coma once.
 
-Y ahora la caja gris de abajo, que es para mí el dato más importante de toda la
-defensa: el Rank-IC de esa era es exactamente el mismo en los dos casos, más cero
-coma cero cuatro cuatro uno. Idéntico. Porque el Rank-IC mide el orden, y el orden
-no cambia: es la misma señal.
+Quiero ser muy claro con la magnitud, porque es fácil venderlo de más: eso es
+empatar con el índice, no batirlo. Lo que cambia es el signo, no la escala. Un
+cero coma dos por ciento en año y medio no demuestra rentabilidad.
 
-O sea: la capacidad predictiva era idéntica en los dos escenarios. Uno pierde un
-once por ciento y el otro gana dos y medio. Todo el diferencial —casi catorce
-puntos— lo produce la construcción de la cartera, no el modelo.
+Pero ahora la caja gris de abajo, que es para mí el dato importante: el Rank-IC de
+esa era es exactamente el mismo en los dos casos, más cero coma cero tres seis
+cuatro. Idéntico. Porque el Rank-IC mide el orden, y el orden no cambia: es la
+misma señal.
+
+O sea: la capacidad predictiva era idéntica en los dos escenarios. Uno destruye
+valor y el otro no. Todo el diferencial lo produce la construcción de la cartera,
+no el modelo. Esa es la afirmación que defiendo, y es metodológica: si hubiera
+reportado solo mi cartera por defecto, habría concluido que la señal no sirve
+fuera de muestra, y me habría equivocado.
 
 A la izquierda tienen la curva de la cartera ganadora contra el S\&P 500, con la
-banda dorada marcando la era reservada. Se ve que no gana por un salto puntual.
-
-Con esto el objetivo dos queda respondido: sí, las variables de cartera importan,
-importan muchísimo, y optimizando por Information Ratio se construye una que
-además confirma fuera de la ventana de decisión.}
+banda dorada marcando la era reservada.}
 
 % =====================================================================
 % 19 · Limitaciones  (55 s)
@@ -1090,9 +1155,9 @@ además confirma fuera de la ventana de decisión.}
   \begin{itemize}\setlength{\itemsep}{0.5em}
     \item La era reservada son \textbf{6 cohortes}, algo más de un año de
       cartera. Poca potencia estadística: es una confirmación, no una validación.
-    \item La cartera ganadora es \textbf{la mejor de 1.728}: su 0,844 es una
+    \item La cartera ganadora es \textbf{la mejor de 1.440}: su 0,841 es una
       \textbf{cota superior optimista}, no una estimación insesgada.
-    \item El \textit{Deflated Sharpe} se queda en \textbf{0,682}. No hay
+    \item El \textit{Deflated Sharpe} se queda en \textbf{0,573}. No hay
       afirmación de rentabilidad ajustada por selección.
     \item \texttt{risk} domina el meta-agente: la arquitectura multi-agente
       \textbf{no} queda demostrada. El meta actúa como selector, no como
@@ -1114,12 +1179,12 @@ Uno: la era reservada son seis cohortes, poco más de un año de cartera. Es poc
 potencia estadística. Yo la llamo confirmación, no validación, y la diferencia
 importa: seis cohortes no permiten descartar que el resultado sea afortunado.
 
-Dos: la cartera ganadora es la mejor de mil setecientas veintiocho. Su 0,844 es
+Dos: la cartera ganadora es la mejor de mil cuatrocientas cuarenta. Su 0,841 es
 una cota superior optimista, no una estimación insesgada de lo que haría mañana.
 Lo que sostiene el objetivo dos no es ese número, es la dispersión que enseñé en
 el gráfico de la rejilla.
 
-Tres: el Deflated Sharpe se queda en 0,682. No hago ninguna afirmación de
+Tres: el Deflated Sharpe se queda en 0,573. No hago ninguna afirmación de
 rentabilidad ajustada por selección, y esa es la consecuencia directa de haber
 encadenado estudios.
 
@@ -1144,7 +1209,7 @@ Nada de esto es una recomendación de inversión. La contribución es metodológ
       {\color{navy}\textbf{Objetivo 1 \ $\checkmark$}}\\[0.35em]
       {\small El sistema \textbf{aprende a ordenar} y la ordenación resiste fuera
       de muestra.}\\[0.35em]
-      {\footnotesize\color{slate}Rank-IC 0,1090 · $t=3{,}46$ · $p=0{,}0001$\\
+      {\footnotesize\color{slate}Rank-IC 0,1067 · $t=3{,}46$ · $p=0{,}0001$\\
       Reservada: $+0{,}0441$\\
       Matiz: \texttt{risk} solo ordena algo mejor.}
     \end{column}
@@ -1152,9 +1217,9 @@ Nada de esto es una recomendación de inversión. La contribución es metodológ
       {\color{teal}\textbf{Objetivo 2 \ $\checkmark$}}\\[0.35em]
       {\small \textbf{Las variables de cartera importan}, y optimizando por IR se
       construye una buena.}\\[0.35em]
-      {\footnotesize\color{slate}IR 0,339 $\rightarrow$ 0,844\\
+      {\footnotesize\color{slate}IR 0,312 $\rightarrow$ 0,841\\
       Reservada: $-11{,}29\,\% \rightarrow +2{,}56\,\%$\\
-      Matiz: la mejor de 1.728, sobre 6 cohortes.}
+      Matiz: la mejor de 1.440, sobre 6 cohortes.}
     \end{column}
   \end{columns}
   \vspace{0.7cm}
@@ -1168,16 +1233,17 @@ Nada de esto es una recomendación de inversión. La contribución es metodológ
 \note{[55 s] Resumo, y con esto termino.
 
 Objetivo uno: sí, un sistema de aprendizaje automático aprende a ordenar acciones,
-y esa ordenación aguanta fuera de muestra. Rank-IC de 0,1090 dentro, positivo
+y esa ordenación aguanta fuera de muestra. Rank-IC de 0,1067 dentro, positivo
 fuera, siete de ocho contrastes de robustez superados. Con el matiz de que el
 agente de riesgo por su cuenta ordena algo mejor que la combinación, así que la
 arquitectura multi-agente no queda demostrada.
 
 Objetivo dos: sí, las variables de construcción de cartera afectan al resultado, y
 mucho. Hay dos que se llevan casi todo, y optimizando por Information Ratio se
-construye una cartera que multiplica el ratio por dos y medio y que convierte un
-menos once por ciento fuera de muestra en un más dos y medio. Con el matiz de que
-es la mejor de mil setecientas veintiocho y se confirma sobre seis cohortes.
+construye una cartera que multiplica el ratio por dos coma siete y que convierte
+un Information Ratio negativo fuera de muestra en uno ligeramente positivo. Con el
+matiz de que es la mejor de mil cuatrocientas cuarenta, que fuera de muestra
+empata y no bate, y que se confirma sobre seis cohortes.
 
 Y si me tengo que quedar con una sola frase, es la de la caja: ninguna afirmación
 sobre la utilidad de un sistema predictivo es interpretable sin declarar con qué

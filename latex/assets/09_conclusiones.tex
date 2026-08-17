@@ -2,29 +2,29 @@
 \label{chap:conclusiones}
 
 \textbf{El primer objetivo queda cumplido.} El sistema aprende una ordenación transversal fuera de
-muestra: su Rank-IC medio es 0,1090, supera los baselines deterministas --- el mejor se queda en
-0,0130 --- y se mantiene positivo tras placebos, permutación, bootstrap, exclusión de eras, semillas
+muestra: su Rank-IC medio es 0,1067, supera los baselines deterministas --- el mejor se queda en
+0,0119 --- y se mantiene positivo tras placebos, permutación, bootstrap, exclusión de eras, semillas
 y neutralización por estilo. En la era reservada, que no intervino en ninguna decisión, el Rank-IC
-sigue siendo positivo ($+0{,}0441$). El meta-agente aporta valor frente al promedio equiponderado
+sigue siendo positivo ($+0{,}0364$). El meta-agente aporta valor frente al promedio equiponderado
 porque aprende a reponderar especialistas a partir de cohortes cerradas, si bien el agente de riesgo
 por separado ordena algo mejor que la combinación, lo que impide presentar la arquitectura
 multi-agente como demostrada por estos datos.
 
 \textbf{El segundo objetivo también queda cumplido, y es el que más margen aportó.} Sobre esa señal
-ya congelada, la rejilla de 1.728 configuraciones muestra que las variables de construcción de
+ya congelada, la rejilla de 1.440 configuraciones muestra que las variables de construcción de
 cartera afectan al resultado de forma material y muy desigual: el número de posiciones mueve el
-Information Ratio mediano en 0,300 y el tope de efectivo en 0,202, mientras que la tolerancia de
-deriva y el reparto de pesos son prácticamente inertes (0,016 y 0,009). Optimizar por Information
-Ratio eleva el ratio de 0,339 a 0,844 y el exceso geométrico del 2,61 al 6,97\,\%, sin reentrenar
-nada. La mejora obtenida sin tocar el modelo es mayor que la acumulada por las tres pasadas
+Information Ratio mediano en 0,208 y la tenencia mínima en 0,164, mientras que la tolerancia de
+deriva y el reparto de pesos son prácticamente inertes (0,017 y 0,005). Optimizar por Information
+Ratio eleva el ratio de 0,312 a 0,841 y el exceso geométrico del 2,12 al 5,91\,\%, sin reentrenar
+nada, y reduciendo la rotación a la mitad. La mejora obtenida sin tocar el modelo es mayor que la acumulada por las tres pasadas
 predictivas juntas.
 
 El contraste en la era reservada mide exactamente esa distancia. Con la construcción de cartera
 recomendada por el catálogo --- la que estuvo vigente, sin optimizar, durante todo el trabajo
-predictivo --- la señal perdía un 11,29\,\% frente al índice, con Information Ratio $-1{,}167$ y
-ningún año por encima. Con la cartera elegida por el estudio de optimización --- mismo modelo, misma
-señal, mismo panel, sin reentrenar nada --- obtiene un exceso del 2,56\,\% con Information Ratio
-$+0{,}304$. El Rank-IC de esa era es positivo en ambos casos, porque no depende de la cartera: la
+predictivo --- la señal obtenía un Information Ratio de $-1{,}795$ sin batir al índice ningún
+año. Con la cartera elegida por el estudio de optimización --- mismo modelo, misma
+señal, mismo panel, sin reentrenar nada --- obtiene un exceso del 0,24\,\% con Information Ratio
+$+0{,}109$. El Rank-IC de esa era es positivo en ambos casos, porque no depende de la cartera: la
 capacidad de ordenar era idéntica y lo único que cambió fue su gestión.
 
 De ahí se sigue la conclusión que este trabajo defiende: en un sistema de esta clase, la
@@ -33,13 +33,40 @@ decidir el signo del resultado fuera de muestra. Ninguna afirmación sobre la ut
 sistema predictivo es interpretable sin declarar con qué cartera se midió, y una evaluación que
 reporte únicamente capacidad predictiva puede estar ocultando tanto un éxito como un fracaso.
 
+Hay un segundo hallazgo, de signo contrario al anterior y por eso mismo obligado. La descomposición
+por eras muestra que el orden predictivo y el pago económico no se mueven juntos: el Rank-IC crece
+hacia la era más reciente mientras el Information Ratio de la cartera cae hasta volverse negativo en
+esa misma era. Es una buena noticia y una advertencia a la vez. Buena, porque descarta que la
+capacidad predictiva proceda del sesgo de cobertura del panel --- si así fuera, sería máxima en los
+años peor cubiertos, y ocurre lo contrario ---. Advertencia, porque el trabajo no puede extender esa
+tranquilidad al resultado económico, cuyo mejor tramo coincide justamente con los años de cobertura
+más pobre. La evidencia de que el sistema \emph{ordena} es, en definitiva, más sólida que la de que
+esa ordenación \emph{se cobra}.
+
 Nada de esto es una promesa de inversión, y las razones son explícitas: el Deflated Sharpe cae a
-0,682 --- encadenar estudios compra Rank-IC al precio de encarecer cualquier afirmación de
+0,573 --- encadenar estudios compra Rank-IC al precio de encarecer cualquier afirmación de
 rentabilidad ajustada por selección ---, la era reservada aporta seis cohortes cerradas y algo más
-de un año de cartera, y la cartera ganadora es la mejor de 1.728 evaluadas. La contribución
+de un año de cartera, y la cartera ganadora es la mejor de 1.440 evaluadas. La contribución
 defendible del TFM sigue siendo metodológica: demuestra cómo separar señal, selección, robustez y
 cartera de forma que preguntas como ésta puedan formularse y responderse sin contaminar la
 evidencia.
+
+Conviene cerrar recordando contra qué se medía el segundo objetivo, porque es lo que da su tamaño
+real a lo conseguido y a lo no conseguido. Batir a un índice es un juego de suma cero antes de
+costes y de suma negativa después (Sharpe, 1991): el conjunto de los inversores es el mercado, así
+que la ventaja de uno es la desventaja de otro, y a veinte años el 93\,\% de los fondos
+estadounidenses de gran capitalización no lo consigue (S\&P Dow Jones Indices, 2026). Sobre ese
+fondo, que la cartera optimizada pase de destruir valor a empatar con el índice en la única ventana
+que no participó en ninguna decisión no es un resultado espectacular, pero tampoco es trivial: sitúa
+al sistema en el lado correcto de una distribución donde la mayoría de los participantes
+profesionales están en el equivocado, con la salvedad --- declarada y no menor --- de que año y
+medio de datos no distingue habilidad de suerte.
+
+Ese contraste es también la razón de que este trabajo insista en separar los dos objetivos. Que un
+modelo aprenda a ordenar es comprobable con evidencia estadística y aquí se comprueba. Que esa
+ordenación se convierta en rentabilidad sostenida exige ganar un juego que la mayoría pierde, y
+ninguna cantidad de Rank-IC lo garantiza: el propio trabajo lo muestra al medir un orden que mejora
+entre eras mientras el pago económico se deteriora.
 
 La prioridad futura no es añadir complejidad al modelo. Es acumular cohortes reservadas suficientes
 para someter el hallazgo anterior a una prueba con potencia real, replicar el protocolo en otros
@@ -57,11 +84,13 @@ cerradas, por lo que su comportamiento no se reduce a fijar de antemano el espec
 
 \textbf{Objetivo 2.} Las variables de construcción de cartera afectan al resultado de forma medible
 y desigual, y optimizarlas por Information Ratio produce una cartera claramente mejor que la de
-partida. Con esa cartera el sistema supera a SPY en la ventana de selección y también en la era
-reservada, neto de los costes modelados; con la cartera de partida no lo hacía en la era reservada.
+partida. Con esa cartera el sistema supera a SPY en la ventana de selección y deja de perder frente
+a él en la era reservada, neto de los costes modelados; con la cartera de partida sí perdía. El
+matiz importa: en la era reservada el resultado pasa de negativo a aproximadamente empatado, no a
+una superioridad demostrada.
 La respuesta económica es, aun así, mucho más acotada que la predictiva: el Deflated Sharpe y el
 tamaño de la muestra efectiva impiden transformar la observación en una promesa de superioridad
-ajustada por riesgo, y la cartera elegida es la mejor de 1.728, de modo que su Information Ratio es
+ajustada por riesgo, y la cartera elegida es la mejor de 1.440, de modo que su Information Ratio es
 una cota superior optimista. La formulación defendible es que el ranking tiene evidencia predictiva
 robusta, que su implementación puede ser económicamente compatible con esa señal bajo restricciones
 declaradas, y que la distancia entre «puede serlo» y «lo es» la recorre la construcción de cartera y
