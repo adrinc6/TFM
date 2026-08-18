@@ -85,7 +85,7 @@ cartera es mejor \emph{dado} ese entorno, no a cuál sería la mejor sin restric
 La diferencia de magnitud entre ambos recorridos justifica por sí sola la elección. El producto
 cartesiano de las treinta y tres rejillas asciende a $1{,}9 \times 10^{14}$ combinaciones; incluso
 restringido a las veintiuna variables predictivas son $5{,}4 \times 10^{8}$. El recorrido secuencial
-evaluó 48 configuraciones en la pasada de referencia. Esa reducción no es sólo computacional: cada
+evaluó 46 configuraciones en la pasada de referencia. Esa reducción no es sólo computacional: cada
 configuración adicional ensayada incrementa la probabilidad de encontrar una ganadora por azar, y es
 exactamente lo que el Deflated Sharpe del Capítulo~\ref{chap:resultados} penaliza. Un barrido
 cartesiano sobre las variables predictivas habría hecho imposible cualquier afirmación estadística
@@ -94,13 +94,3 @@ sobre el resultado.
 Ese argumento vale para el plano predictivo y no se extiende al de cartera, donde las seis variables
 generan 1.440 combinaciones: cinco órdenes de magnitud menos, y sobre una señal que ya no puede
 cambiar. El razonamiento completo está en la Sección~\ref{sec:seleccion-secuencial}.
-
-\section{Versiones de catálogo empleadas}
-
-El catálogo es un objeto versionado y la cadena no corrió entera bajo la misma versión. Las dos
-primeras pasadas usaron la versión 6 y la tercera la versión 7. El único cambio entre ambas afecta
-al orden de preferencia por simplicidad de \artefacto{execution\_lag\_days}, que pasó a preferir el
-retardo mayor. La corrección se introdujo al detectar que el orden anterior favorecía
-sistemáticamente, en caso de empate técnico, la alternativa con más riesgo de anticipación. Como
-sólo interviene cuando la evidencia no distingue entre candidatos, no altera ninguna medición de
-Rank-IC, pero se declara porque afecta a la comparabilidad estricta entre pasadas.

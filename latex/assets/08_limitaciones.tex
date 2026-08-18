@@ -118,13 +118,14 @@ figurar aquí porque afectan a la interpretación de las cifras y no serían vis
 que sólo viera el resultado final; su origen y la disyuntiva técnica que las motivó se documentan en
 el Anexo~\ref{anexo:desarrollo}.
 
-La primera es la salvaguarda de la curva de alfa: una recta fija entre $-10$\,\% y $+10$\,\% que se
-aplicaría si ninguna ventana de la cascada produjese una pendiente creciente. En el estudio de
-referencia \textbf{no se activa en ninguna fila}: la calibración usa la ventana de horizonte en el
-80\,\% de los casos y la de era en el 20\,\% restante. Deja de ser, por tanto, una limitación
-material de estas cifras y pasa a ser una decisión de diseño discutible que conviene declarar ---
-un supuesto \emph{a priori} que se dispararía precisamente cuando la evidencia indica que no hay
-señal ---, pero que ninguna cifra de este trabajo utiliza.
+La primera es la salvaguarda de la curva de alfa: una recta fija entre $-10$\,\% y $+10$\,\% que
+sustituye a la calibración empírica cuando ninguna ventana de la cascada produce una pendiente
+creciente. Su defecto no es de magnitud sino de dirección: es un supuesto \emph{a priori} que se
+dispara \textbf{precisamente cuando la evidencia indica que no hay señal que calibrar}, de modo que
+allí donde interviene la expectativa de alfa no procede de los datos sino de la recta declarada. El
+diseño la prefiere a no tener alfa esperada en absoluto ---sin ella la cartera no podría decidir
+umbrales en esos tramos---, pero conviene declararla como lo que es: una decisión de diseño
+discutible, no una medición.
 
 La segunda es que la calibración isotónica que precedió a esa salvaguarda se retiró sin conservarla
 como opción del catálogo, de modo que este trabajo \emph{no puede} ofrecer una comparación empírica

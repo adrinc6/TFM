@@ -326,7 +326,8 @@ señal de doce. La Tabla~\ref{tab:ordenes} lo descompone por motivo declarado de
   \caption{Descomposición del flujo de cartera por motivo de orden.}
   \label{tab:ordenes}
   \input{assets/t07_ordenes_motivo.tex}
-  \caption*{El flujo es la suma de $|\Delta w|$ de cada orden. El coste agrega comisión y
+  \caption*{Cubre la serie completa: 143 órdenes de la ventana de selección y 10 de la era
+  reservada. El flujo es la suma de $|\Delta w|$ de cada orden y el coste agrega comisión y
   \textit{slippage} efectivamente cargados.}
 \end{table}
 
@@ -355,8 +356,6 @@ eligió, es precisamente la mitigación disponible desde el lado de la cartera: 
 cambie de opinión, pero impide actuar sobre ese cambio antes de que la tesis original haya tenido
 tiempo de cumplirse.
 
-El \texttt{rebalance}, en cambio, depende de \artefacto{rebalance\_drift\_tolerance}, que sí es una
-variable de cartera y sí se optimizó. La rejilla eligió 0,1 sobre una escala que llega a 0,4, es
 \subsection*{Rotación, coste y exceso año a año}
 
 La Tabla~\ref{tab:anual} permite comprobar que el turnover no compra rentabilidad. No hay relación

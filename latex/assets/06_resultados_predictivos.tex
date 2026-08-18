@@ -142,8 +142,8 @@ claro de decisión que mejora la métrica de selección a costa de una propiedad
 diseño que ninguna métrica del protocolo estaba midiendo. El riesgo que la restricción cubría sigue
 existiendo y queda asumido: la señal del sistema es, en la práctica, la del agente \textit{risk}, de
 modo que su comportamiento futuro depende de que ese especialista siga funcionando. La era reservada
-permite una primera comprobación --- el Rank-IC se mantiene positivo en $+0{,}0441$ ---, pero seis
-cohortes no bastan para descartar que la concentración sea frágil. Queda recogido como limitación en
+permite una primera comprobación --- el Rank-IC de \textit{risk} se mantiene positivo en
+$+0{,}0669$ y el del meta en $+0{,}0364$ ---, pero seis cohortes no bastan para descartar que la concentración sea frágil. Queda recogido como limitación en
 el Capítulo~\ref{chap:limitaciones}.
 
 Una advertencia de lectura afecta a todo el capítulo. Los artefactos contienen dos ventanas para
@@ -174,7 +174,7 @@ título informativo.
 La tabla contiene tres lecturas que el promedio agregado no permite. La primera es que \textit{risk}
 es la única señal positiva en las cuatro eras; ninguna otra lo consigue. La segunda es que el meta
 aprendido supera al equiponderado en las tres eras de selección, no sólo en promedio, lo que
-refuerza que la mejora del 68\,\% no procede de un único subperiodo afortunado. La tercera es la más
+refuerza que la mejora del 55\,\% no procede de un único subperiodo afortunado. La tercera es la más
 incómoda y se reporta precisamente por serlo: en la era reservada los cuatro agentes distintos de
 \textit{risk} se vuelven negativos a la vez --- \textit{growth} llega a $-0{,}1476$ --- y sólo
 \textit{risk} aguanta en positivo, con 0,0669. El meta aprendido conserva un Rank-IC positivo de
@@ -280,8 +280,8 @@ datos no la respaldan.}
 
 Las dos variables que mandan son \artefacto{gap\_21d} y \artefacto{range\_63d} --- microestructura
 del precio a corto plazo: huecos de apertura y amplitud del rango de negociación ---, que juntas
-encabezan el 78\,\% de las observaciones. Las medidas que uno esperaría de una estrategia de baja
-volatilidad aparecen después y con menos peso: \artefacto{max\_drawdown\_252d} encabeza el 4,2\,\% y
+encabezan el 81,5\,\% de las observaciones. Las medidas que uno esperaría de una estrategia de baja
+volatilidad aparecen después y con menos peso: \artefacto{max\_drawdown\_252d} encabeza el 2,4\,\% y
 \artefacto{beta\_252d}, el candidato más obvio, ni siquiera está entre las tres primeras. El agente
 no está comprando acciones defensivas en el sentido factorial clásico; está leyendo la estructura
 reciente de negociación.
@@ -383,14 +383,15 @@ modo que la ventaja no procede exclusivamente de acertar la cola inferior --- qu
 \textit{long-only} no puede explotar.
 
 La cuarta fila obliga a un matiz que conviene no dejar al lector. En la era reservada el decil
-superior obtiene $-7{,}67$\,\% frente al $-1{,}85$\,\% del universo: \textbf{pierde contra el
+superior obtiene $-11{,}52$\,\% frente al $-2{,}14$\,\% del universo: \textbf{pierde contra el
 panel}, al revés que en las tres eras anteriores. Y sin embargo la diferencia entre el decil
-superior y el inferior sigue siendo de $+11{,}33$ puntos, la segunda mayor de la tabla. Las dos
-cosas juntas dicen algo preciso: la ordenación siguió funcionando --- separa lo bueno de lo malo
-igual de bien ---, pero el nivel de toda la cola alta cayó por debajo del panel. Es coherente con
-el Rank-IC positivo de esa era y con que la cartera adoptada, que compra en ese decil, batiese al
-índice: lo hizo eligiendo dentro de él, no porque el decil entero fuese ganador. Sobre seis
-cohortes, en todo caso, ninguna de las dos lecturas admite más peso del que aquí se le da.
+superior y el inferior se mantiene en $+6{,}27$ puntos, la segunda mayor de la tabla. Las dos
+cosas juntas dicen algo preciso: la ordenación siguió separando lo bueno de lo malo --- aunque con
+menos holgura que los $+13{,}74$ puntos de 2022--2024 ---, pero el nivel de toda la cola alta cayó
+por debajo del panel. Es coherente con el Rank-IC positivo de esa era y con que la cartera
+adoptada, que compra en ese decil, batiese al índice: lo hizo eligiendo dentro de él, no porque el
+decil entero fuese ganador. Sobre seis cohortes, en todo caso, ninguna de las dos lecturas admite
+más peso del que aquí se le da.
 
 \section{¿Es la señal una réplica de factores conocidos?}
 
@@ -554,7 +555,7 @@ Queda establecido que la ordenación existe. El Rank-IC de 0,1067 con $t$ de New
 un artefacto de la agregación: ninguna de 9.999 permutaciones lo alcanza, los cinco placebos de
 etiqueta quedan un orden de magnitud por debajo, el intervalo bootstrap por bloques excluye cero,
 la conclusión sobrevive a eliminar cualquier era completa y las tres semillas coinciden dentro de
-0,0015. Queda establecido también que no se agota en controles conocidos: la neutralización por
+0,0023. Queda establecido también que no se agota en controles conocidos: la neutralización por
 catorce variables de estilo retiene el 87,21\,\% de la señal, y la atribución local explica por qué
 --- el agente dominante lee microestructura de precio a corto plazo, no la prima de baja volatilidad
 que su nombre sugiere.
@@ -565,7 +566,7 @@ No queda establecido que la arquitectura multi-agente esté justificada por esto
 multiplicidad: el Deflated Sharpe de 0,573 no alcanza su umbral, y encadenar tres estudios ha
 encarecido esa exigencia en lugar de aliviarla. Y no queda establecido que la señal se mantenga
 fuera de la ventana de decisión con la fuerza que muestra dentro: en la era reservada el Rank-IC
-sigue siendo positivo, $+0{,}0441$, pero descansa sobre seis cohortes.
+sigue siendo positivo, $+0{,}0364$, pero descansa sobre seis cohortes.
 
 Con esto queda contestada la primera pregunta del trabajo. La segunda es independiente y no se
 deduce de la anterior: si una cartera real puede expresar esa ordenación sin destruirla por el

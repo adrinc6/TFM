@@ -16,8 +16,8 @@ cartera afectan al resultado de forma material y muy desigual: el número de pos
 Information Ratio mediano en 0,208 y la tenencia mínima en 0,164, mientras que la tolerancia de
 deriva y el reparto de pesos son prácticamente inertes (0,017 y 0,005). Optimizar por Information
 Ratio eleva el ratio de 0,312 a 0,841 y el exceso geométrico del 2,12 al 5,91\,\%, sin reentrenar
-nada, y reduciendo la rotación a la mitad. La mejora obtenida sin tocar el modelo es mayor que la acumulada por las tres pasadas
-predictivas juntas.
+nada, y reduciendo la rotación a la mitad. La mejora obtenida sin tocar el modelo es mayor que la
+acumulada por las tres pasadas predictivas juntas.
 
 El contraste en la era reservada mide exactamente esa distancia. Con la construcción de cartera
 recomendada por el catálogo --- la que estuvo vigente, sin optimizar, durante todo el trabajo
@@ -123,9 +123,8 @@ ranking concreto no se replica.
 La segunda contribución es la propia agenda de transferencia, que este trabajo no se limita a
 proponer sino que ejecuta: estudiar tamaño de cartera, reparto de pesos, efectivo, tenencia mínima,
 suelo de cobertura y rebalanceo sin reabrir la selección predictiva, y hacerlo sobre una serie
-recortada para que la ventana reservada siga siendo una comprobación y no un criterio. El resultado
-justifica el esfuerzo: la mejora obtenida sin tocar el modelo es mayor que la acumulada por las tres
-pasadas predictivas juntas.
+recortada para que la ventana reservada siga siendo una comprobación y no un criterio. El balance
+del Objetivo 2, al principio de este capítulo, es lo que justifica el esfuerzo.
 
 El trabajo futuro debe reducir la multiplicidad con un catálogo pre-registrado, esperar etiquetas
 reservadas hasta disponer de potencia estadística real, y replicar el protocolo en otros universos y
@@ -145,11 +144,12 @@ atacar lo que queda.
   algo más de un año de cartera; con tres o cuatro años acumulados podría contrastarse de verdad si
   la optimización generaliza o si su éxito fuera de muestra fue afortunado.
   \item \textbf{Resolver el conflicto entre cadencia y rotación.} La cadencia mensual ganó su
-  decisión con una ventaja clara, pero explica algo más de un tercio del flujo de órdenes:
-  re-decidir cada mes sobre una señal a doce meses. Separar la frecuencia de \emph{evaluación} de
-  la de \emph{ejecución} permitiría conservar las 117 cohortes sin pagar esa parte de la rotación.
-  Una fracción comparable procede de la corrección de deriva de pesos, cuya variable apenas mueve
-  el Information Ratio, de modo que relajarla es la vía más barata de reducir fricción.
+  decisión con una ventaja clara, pero es el origen del 71,5\,\% del flujo de órdenes: el sistema
+  re-decide cada mes sobre una señal a doce meses. Separar la frecuencia de \emph{evaluación} de la
+  de \emph{ejecución} permitiría conservar las 117 cohortes sin pagar esa parte de la rotación. Es
+  además la única palanca que queda abierta por ese lado: la corrección de deriva de pesos, que
+  aportaba la segunda partida de flujo, ya se relajó al máximo que el catálogo permite y con ello
+  cayó a una sexta parte del total.
   \item \textbf{Reducir el catálogo antes de volver a ejecutar.} El Deflated Sharpe penaliza por
   todas las configuraciones ensayadas, y encadenar pasadas eleva ese recuento. Un catálogo
   pre-registrado más estrecho, que fije de antemano las variables cuyo valor no se espera que

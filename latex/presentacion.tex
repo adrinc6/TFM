@@ -551,9 +551,9 @@ como demostrada. Volveré a esto en las limitaciones.}
         \toprule
         Variable de \texttt{risk} & Qué mide & Encabeza \\
         \midrule
-        \texttt{gap\_21d}            & huecos de apertura, 21 d & 51,2\,\% \\
-        \texttt{range\_63d}          & rango de negociación, 63 d & 26,8\,\% \\
-        \texttt{max\_drawdown\_252d} & caída máxima, 252 d & 4,2\,\% \\
+        \texttt{gap\_21d}            & huecos de apertura, 21 d & 47,8\,\% \\
+        \texttt{range\_63d}          & rango de negociación, 63 d & 33,7\,\% \\
+        \texttt{max\_drawdown\_252d} & caída máxima, 252 d & 2,4\,\% \\
         \addlinespace
         \texttt{beta\_252d}          & \textit{el candidato obvio} & {\color{rojo}no está} \\
         \bottomrule
@@ -601,16 +601,16 @@ literatura. Si lo fuera, la neutralización se lo habría comido casi entero.}
   \vspace{0.35cm}
   \begin{columns}[t,onlytextwidth]
     \begin{column}{0.24\textwidth}\cifra{0,1067}{Rank-IC del sistema}\end{column}
-    \begin{column}{0.24\textwidth}\cifra{$\approx$\,8$\times$}{el mejor criterio clásico se queda en 0,0119}\end{column}
+    \begin{column}{0.24\textwidth}\cifra{$\approx$\,9$\times$}{el mejor criterio clásico se queda en 0,0119}\end{column}
     \begin{column}{0.24\textwidth}\cifra{3,33}{$t$ de Newey--West}\end{column}
-    \begin{column}{0.24\textwidth}\cifra{74\,\%}{de los meses acierta el sentido}\end{column}
+    \begin{column}{0.24\textwidth}\cifra{76\,\%}{de los meses acierta el sentido}\end{column}
   \end{columns}
   \vspace{0.45cm}
   \begin{center}
     \colorbox{gold!18}{\parbox{0.9\linewidth}{\centering
       {\color{gold}\textbf{En la era reservada}} --- que no participó en ninguna
       decisión --- {\color{gold}\textbf{el Rank-IC sigue siendo positivo:
-      $+0{,}0441$}}}}
+      $+0{,}0364$}}}}
   \end{center}
   \vspace{0.35cm}
   {\centering\small\color{slate}Baja respecto al 0,1067 de la ventana de
@@ -627,12 +627,12 @@ sobre el mismo panel y con las mismas restricciones temporales.
 La t de Newey-West es 3,33. Uso Newey-West precisamente porque las cohortes
 mensuales se solapan y los errores están autocorrelacionados; con la corrección
 puesta, sigue siendo claramente distinguible de cero. Y acierta el sentido de la
-ordenación en el setenta y cuatro por ciento de los meses, o sea, no vive de dos
+ordenación en el setenta y seis por ciento de los meses, o sea, no vive de dos
 o tres meses excepcionales.
 
 Pero lo que de verdad importa es la caja dorada. En la era reservada, esa que
 apartamos el primer día y que no participó en ninguna decisión, el Rank-IC sigue
-siendo positivo: más cero coma cero cuatro cuatro uno.
+siendo positivo: más cero coma cero tres seis cuatro.
 
 Y lo digo con la honestidad que toca: baja bastante respecto al 0,1067. Eso es lo
 normal y lo esperable —una parte de ese 0,1067 es ajuste al periodo de selección.
@@ -704,9 +704,9 @@ negativo en esa era: arrastra a los tres que fallan.}
     Contraste & Resultado & \\
     \midrule
     Permutación (9.999 réplicas)            & $p=0{,}0001$                      & $\checkmark$ \\
-    Placebos de etiqueta (5)                & entre $-0{,}0081$ y $+0{,}0013$   & $\checkmark$ \\
-    \textit{Bootstrap} por bloques          & IC 95\,\% $[0{,}0425;\,0{,}1723]$ & $\checkmark$ \\
-    Exclusión de eras completas             & 0,0780 -- 0,1350                  & $\checkmark$ \\
+    Placebos de etiqueta (5)                & entre $-0{,}0099$ y $+0{,}0042$   & $\checkmark$ \\
+    \textit{Bootstrap} por bloques          & IC 95\,\% $[0{,}0397;\,0{,}1715]$ & $\checkmark$ \\
+    Exclusión de eras completas             & 0,0769 -- 0,1300                  & $\checkmark$ \\
     Estabilidad entre semillas              & rango 0,0023, no cruza cero       & $\checkmark$ \\
     Carteras aleatorias (riesgo emparejado) & percentil 97,3                    & $\checkmark$ \\
     Neutralización de estilo (14 controles) & retiene 87,21\,\%                 & $\checkmark$ \\
@@ -1098,17 +1098,17 @@ victoria. Pero venía de menos 1,8.}
     \begin{column}{0.39\textwidth}
       \colorbox{rojo!12}{\parbox{\dimexpr\linewidth-2\fboxsep\relax}{\centering
         {\footnotesize\color{slate}Cartera por defecto}\\[0.2em]
-        {\Large\color{rojo}\textbf{$-11{,}29$\,\%}}\\[0.15em]
-        {\scriptsize\color{slate}IR $-1{,}167$}\par}}
+        {\Large\color{rojo}\textbf{$-12{,}23$\,\%}}\\[0.15em]
+        {\scriptsize\color{slate}IR $-1{,}795$}\par}}
       \vspace{0.3cm}
       \colorbox{verde!12}{\parbox{\dimexpr\linewidth-2\fboxsep\relax}{\centering
         {\footnotesize\color{slate}Cartera optimizada}\\[0.2em]
-        {\Large\color{verde}\textbf{$+2{,}56$\,\%}}\\[0.15em]
-        {\scriptsize\color{slate}IR $+0{,}304$}\par}}
+        {\Large\color{verde}\textbf{$+0{,}24$\,\%}}\\[0.15em]
+        {\scriptsize\color{slate}IR $+0{,}109$}\par}}
       \vspace{0.35cm}
       \colorbox{light}{\parbox{\dimexpr\linewidth-2\fboxsep\relax}{\centering
         {\scriptsize Rank-IC en ambos casos:}\\[0.15em]
-        {\small\color{navy}\textbf{$+0{,}0441$}}\\[0.1em]
+        {\small\color{navy}\textbf{$+0{,}0364$}}\\[0.1em]
         {\scriptsize\color{slate}idéntico. No depende de la cartera.}\par}}
     \end{column}
   \end{columns}
@@ -1162,8 +1162,9 @@ banda dorada marcando la era reservada.}
     \item \texttt{risk} domina el meta-agente: la arquitectura multi-agente
       \textbf{no} queda demostrada. El meta actúa como selector, no como
       combinador.
-    \item No se modela \textbf{impacto de mercado ni capacidad}, y la cartera
-      rota 3,2 veces al año sobre 8 posiciones.
+    \item No se modela \textbf{impacto de mercado}: la capacidad se mide como
+      participación sobre el volumen habitual, y acota la estrategia a un
+      patrimonio pequeño. La cartera rota 1,35 veces al año sobre 8 posiciones.
   \end{itemize}
   \vspace{0.35cm}
   \begin{center}
@@ -1209,8 +1210,8 @@ Nada de esto es una recomendación de inversión. La contribución es metodológ
       {\color{navy}\textbf{Objetivo 1 \ $\checkmark$}}\\[0.35em]
       {\small El sistema \textbf{aprende a ordenar} y la ordenación resiste fuera
       de muestra.}\\[0.35em]
-      {\footnotesize\color{slate}Rank-IC 0,1067 · $t=3{,}46$ · $p=0{,}0001$\\
-      Reservada: $+0{,}0441$\\
+      {\footnotesize\color{slate}Rank-IC 0,1067 · $t=3{,}33$ · $p=0{,}0001$\\
+      Reservada: $+0{,}0364$\\
       Matiz: \texttt{risk} solo ordena algo mejor.}
     \end{column}
     \begin{column}{0.47\textwidth}
@@ -1218,7 +1219,7 @@ Nada de esto es una recomendación de inversión. La contribución es metodológ
       {\small \textbf{Las variables de cartera importan}, y optimizando por IR se
       construye una buena.}\\[0.35em]
       {\footnotesize\color{slate}IR 0,312 $\rightarrow$ 0,841\\
-      Reservada: $-11{,}29\,\% \rightarrow +2{,}56\,\%$\\
+      Reservada: $-12{,}23\,\% \rightarrow +0{,}24\,\%$\\
       Matiz: la mejor de 1.440, sobre 6 cohortes.}
     \end{column}
   \end{columns}
