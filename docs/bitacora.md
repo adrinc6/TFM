@@ -2304,3 +2304,49 @@ capítulo las menciona sin apoyarse en ellas, porque no alteran la conclusión p
 **Verificación.** `verify_latex_assets.py` en verde: las referencias cruzadas resuelven y no hay
 comandos de bibliografía prohibidos —las citas usan el formato autor-año del proyecto, no `\cite`—.
 Sin mojibake. Las cifras se comprobaron contra fuente primaria antes de escribirlas.
+
+---
+
+## 2026-08-18 · Auditoría de cifras del manuscrito y relato de la cartera
+
+**Qué pasó.** Al revisar si el LaTeX estaba bien formado —legible de seguido, coherente y sin
+repetirse— se cruzó cada cifra de la prosa contra los artefactos de los cuatro estudios del
+manifiesto. Aparecieron quince desviaciones. Cuatro se ven a simple vista al leer el PDF:
+
+- El capítulo 7 tenía una **frase cortada a mitad** («…que llega a 0,4, es») que desembocaba
+  directamente en un `\subsection*`, y que además atribuía a la rejilla una tolerancia de deriva de
+  0,1 cuando la ganadora usa 0,4 y el propio capítulo lo dice bien tres veces más.
+- El Rank-IC de la era reservada figuraba como **+0,0441** en el capítulo 6 y en la presentación.
+  Ese valor no existe en ninguna pasada de la cadena, que dan 0,0420, 0,0416 y 0,0364.
+- La cola superior de la era reservada citaba tres cifras que no coinciden con su propia tabla.
+- `t01_afirmaciones.tex` llevaba un **tabulador en lugar de la barra** de `\textit`, de modo que
+  habría impreso «extit{balanced}» en la tabla de las cinco afirmaciones.
+
+El resto: rango entre semillas, mejora del meta sobre el equiponderado —55 % en la ventana de
+selección, 68 % en la completa, y el capítulo declara usar la primera—, atribución local, número de
+configuraciones, «un único Model Study» en el resumen, y una propuesta de trabajo futuro que
+recomendaba relajar una variable que la rejilla ya había llevado a su valor más laxo.
+
+**Qué se descubrió de paso.** El anexo B declaraba que la cadena corrió bajo dos versiones de
+catálogo. Los cuatro `catalog_snapshot.json` registran la misma versión y el mismo hash: la
+limitación no existía. La advertencia del anexo D pasa a declarar el hecho comprobado, que es mejor
+noticia que la que daba. Y `latex/guion_defensa.md` era íntegramente de un estudio anterior.
+
+**Qué se añadió.** El capítulo 7 reportaba la cartera como una curva y unas métricas agregadas sin
+decir qué tuvo dentro, cuando `portfolio_narrative.json` lo tenía calculado desde el Portfolio
+Study. Sección nueva «Qué compró la cartera»: cuarenta y dos acciones en 49 episodios con
+permanencia mediana de quince meses, la contribución por acción, las dos operaciones que explican la
+doctrina de umbrales —AAPL con 44 meses y AZO vendida con pérdida, que sube 19,3 puntos sobre el
+índice y se recompra tres años después— y el reparto sectorial, que en la era reservada colapsa a
+dos sectores. Cinco figuras nuevas y una tabla.
+
+**Por qué importa para la defensa.** Un tribunal que abra la memoria por el capítulo 7 se encontraba
+una frase sin terminar, y quien comparase dos páginas del capítulo 6 encontraba dos valores para la
+misma magnitud. Eso pesa más que cualquier resultado. Y la pregunta que un tribunal hace de forma
+natural ante una curva de patrimonio —«¿qué compró?»— ahora tiene respuesta, con sus cinco
+salvedades y con la concentración del resultado declarada como limitación en vez de escondida.
+
+**Verificación.** `verify_latex_assets.py` en verde tras cada fase. Las figuras nuevas se generan
+desde los JSON versionados, así que son reproducibles desde un clon; las cifras corregidas se
+buscaron después en todo `latex/`, incluidas `presentacion.tex` y `guion_defensa.md`, donde varias
+van escritas con letra. No se pudo compilar el PDF: falta la distribución LaTeX en el entorno.

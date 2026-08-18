@@ -28,7 +28,9 @@
     "study-20260817-212856-f86ca822/portfolio_profiles.parquet",
     "study-20260817-212856-f86ca822/evidence_best_full/equity.parquet",
     "study-20260817-212856-f86ca822/evidence_best_full/annual_metrics.parquet",
-    "study-20260817-212856-f86ca822/evidence_best_full/orders.parquet"
+    "study-20260817-212856-f86ca822/evidence_best_full/orders.parquet",
+    "study-20260817-212856-f86ca822/cost_sensitivity.json",
+    "study-20260817-212856-f86ca822/portfolio_narrative.json"
   ],
   "panel_sources": [
     "data/raw/universe_coverage.json"
@@ -36,12 +38,17 @@
   "figures": [
     "f05_atribucion_anual.png",
     "f05_pesos_anual.png",
+    "f06_orden_vs_pago.png",
     "f07_aleatorias.png",
     "f07_bootstrap.png",
+    "f07_contribucion_accion.png",
+    "f07_costes_escalera.png",
     "f07_drawdown.png",
     "f07_equity.png",
+    "f07_operaciones.png",
     "f07_permutacion.png",
     "f07_rankic_serie.png",
+    "f07_sectores.png",
     "f07_semillas.png",
     "f08_cartera_marginales.png",
     "f08_cartera_rejilla.png",
@@ -62,6 +69,7 @@
     "t06_decisiones.tex",
     "t07_anual.tex",
     "t07_baselines.tex",
+    "t07_cartera_relato.tex",
     "t07_cola.tex",
     "t07_ordenes_motivo.tex",
     "t07_robustez.tex",
@@ -71,7 +79,6 @@
     "t08_defectos_validez.tex",
     "t08_perfiles_cartera.tex",
     "t08_perfiles_def.tex",
-    "t08_versiones_catalogo.tex",
     "t09_limitaciones.tex"
   ]
 }

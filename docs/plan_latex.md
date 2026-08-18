@@ -18,8 +18,8 @@ El manuscrito (`latex/main.tex`, `latex/presentacion.tex`, `latex/assets/*.tex`)
 los cambios de código no lo editan. `latex/scripts/*.py` y `latex/plan_tfm.md` sí son editables, pero
 el exportador no se ejecuta como parte de un cambio corriente.
 
-**Última actualización del manuscrito: 2026-08-17**, con la cadena de estudios que recoge §8. Desde
-entonces vuelve a estar congelado y la deuda se acumula en §10.
+**Última actualización del manuscrito: 2026-08-18**, con la auditoría de cifras y el relato de
+cartera que recogen §11 y §12. Desde entonces vuelve a estar congelado y la deuda se acumula en §10.
 
 Dos avisos de alcance que este documento no traía y que costaron tiempo:
 
@@ -38,14 +38,18 @@ aquí.
 
 ## 1. Estado del manuscrito
 
-15 capítulos y anexos en `latex/assets/`, 24 tablas `t*.tex` y 12 figuras `f*.png`. La cuenta se
-mantiene tras la actualización de 2026-08-17: entra `t03_resolucion_universo.tex` y sale
-`t08_versiones_catalogo.tex`.
+15 capítulos y anexos en `latex/assets/`, **25 tablas** `t*.tex` y **17 figuras** `f*.png` tras la
+actualización de 2026-08-18: entra `t07_cartera_relato.tex` y entran cinco figuras nuevas
+(`f06_orden_vs_pago`, `f07_contribucion_accion`, `f07_operaciones`, `f07_sectores`,
+`f07_costes_escalera`). El manifiesto ya no declara `t08_versiones_catalogo.tex`, que se había
+borrado del disco en la pasada anterior y sobrevivía como entrada fantasma.
 
 La distinción que más errores evita, y que no está recogida en ningún otro sitio:
 
-**19 tablas se generan solas** al ejecutar `export_study_assets.py` y se refrescan sin intervención.
-**5 se escriben a mano** y no las actualiza nadie por ti:
+**20 tablas se generan solas** al ejecutar `export_study_assets.py` y se refrescan sin intervención.
+**5 se escriben a mano** y no las actualiza nadie por ti. La auditoría de 2026-08-18 encontró que las
+cinco manuales llevaban cifras que contradecían al capítulo que las cita: son las que hay que releer
+cada vez que cambie un estudio.
 
 | Tabla manual | De dónde sale su contenido |
 |---|---|
@@ -55,8 +59,10 @@ La distinción que más errores evita, y que no está recogida en ningún otro s
 | `t08_perfiles_def.tex` | Transcrito de `PROFILE_WEIGHTS` (`module/evaluation/profiles.py`) |
 | `t09_limitaciones.tex` | Compuesto a mano desde los artefactos citados en el capítulo 8 |
 
-`latex/asset_manifest.json` lista las 24 juntas porque se construye con un glob de `t*.tex`, no
-rastreando autoría: **no sirve** para saber cuáles son generadas.
+`latex/asset_manifest.json` las lista todas juntas porque se construye con un glob de `t*.tex`, no
+rastreando autoría: **no sirve** para saber cuáles son generadas. Y como el glob describe el disco en
+el momento del export, una tabla borrada a mano sobrevive en el manifiesto hasta la siguiente
+ejecución.
 
 `latex/scripts/verify_latex_assets.py` exige que toda tabla esté referenciada con `\input` y toda
 figura citada. Un activo huérfano hace fallar la comprobación.
@@ -438,20 +444,57 @@ La entrada de arriba queda **resuelta**. El exportador tolera ahora la ausencia 
 celdas van vacías, en vez de disimularlo. La regla de procedencia por `study_id` está en
 `a_reproducibilidad.tex` y en el anexo de evidencia.
 
-### Pendiente — El relato de la cartera
+### 2026-08-18 — Saldada: el relato de la cartera está en el manuscrito
 
-Lo único del Bloque C que no entró. `portfolio_narrative.json` y
-`portfolio_narrative_holdings.parquet` permiten decir **qué tuvo** la cartera: mapa de posiciones,
-exposición sectorial, permanencia, mayores y menores contribuciones. Requiere funciones nuevas en el
-exportador y sus `\input`.
+Lo único del Bloque C que faltaba. El capítulo 7 tiene ahora una sección propia, «Qué compró la
+cartera», entre la curva de patrimonio y el análisis de rotación, con tres figuras y una tabla
+generadas por el exportador desde `portfolio_narrative.json`. Las cuatro salvedades obligatorias de
+§5 están en el texto, y se añadió una quinta que el material hizo evidente: la concentración del
+resultado en un solo nombre, que además entra como fila propia en la tabla de limitaciones.
 
-Se dejó fuera a propósito, no por falta de tiempo: el criterio acordado es que cada figura responda
-una pregunta que el texto plantee, y el capítulo 7 todavía no plantea esas preguntas. Escribir
-primero el argumento y luego la figura, no al revés.
+El criterio que había mantenido esto fuera —que cada figura responda a una pregunta que el texto
+plantee— se cumplió escribiendo primero el argumento: cuántos nombres pasaron por la cartera y
+cuánto duraron, de dónde salió el resultado, qué dicen las dos operaciones extremas sobre la
+doctrina de umbrales, y dónde estuvo invertida.
 
-Las **cuatro salvedades** de §5 siguen siendo obligatorias cuando ese material entre: sector no
-point-in-time, nocional aproximado, cartera = mejor de la rejilla, y peores decisiones leídas con el
-resultado ya conocido.
+### 2026-08-18 — Deuda nueva: la poda que compensa las figuras nuevas
+
+**Qué falta.** El recuento de activos sube de 24+12 a 25+17. Las dos podas que lo compensarían no
+pudieron ejecutarse porque necesitan `.parquet` que el clon no tiene:
+
+- Fusionar `f07_equity` y `f07_drawdown` en una figura de dos paneles con eje X compartido. Son
+  anverso y reverso de la misma serie y el capítulo 7 las comenta seguidas. Requiere
+  `evidence_best_full/equity.parquet`.
+- Convertir `t07_cola.tex` en figura de barras por era. Es una tabla que se lee como forma: lo que
+  importa es que el decil superior bate al universo en las tres eras de selección y deja de hacerlo
+  en la reservada. Requiere `evidence/rank_tail_diagnostics.parquet`.
+
+**Además**, al compilar conviene mirar la densidad del capítulo 7: si queda demasiado cargado,
+`f07_costes_escalera` es la primera que se retira, porque su sección se sostiene en prosa.
+
+### 2026-08-18 — Deuda nueva: el reparto de la salvaguarda de la curva de alfa
+
+**Qué cambió.** `08_limitaciones.tex` afirmaba que la salvaguarda «no se activa en ninguna fila»
+(calibración 80 % horizonte / 20 % era) y `t09_limitaciones.tex` que se activa en el 4,1 %
+(68,2 / 18,0 / 9,6). Son incompatibles y **ningún artefacto JSON publicado los dirime**: el
+diagnóstico de calibración vive en un `.parquet` de la evidencia.
+
+**Qué se hizo.** Reformular ambas menciones sobre lo que sí es comprobable —el mecanismo y su
+carácter *a priori*— en vez de elegir una de las dos cifras sin poder verificarla.
+
+**Qué falta.** Al volver a ejecutar el exportador con la evidencia completa, medir el reparto real y
+decidir si merece volver a la tabla. Si el reparto entra, tiene que entrar en los dos sitios.
+
+### 2026-08-18 — Aviso: existe un Portfolio Study posterior que no es el del manuscrito
+
+`results/studies/study-20260817-231905-9ac87639` es un Portfolio Study ejecutado **después** del
+adoptado, sobre el mismo `source_study_id`, con 640 combinaciones en vez de 1.440 y un ganador
+distinto (`sizing_mode: equal`, `coverage_percentile_floor: 60`). Su `portfolio_narrative.json` es
+más rico —50 acciones distintas en selección, 13 en confirmación—.
+
+El manuscrito está anclado a `study-20260817-212856-f86ca822` y así debe seguir salvo decisión
+expresa. Queda escrito para que nadie mezcle cifras de los dos: son carteras diferentes y sus
+relatos no son comparables.
 
 ---
 
