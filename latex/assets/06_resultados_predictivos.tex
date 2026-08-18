@@ -193,22 +193,20 @@ insuficiente para concluir que la capacidad predictiva se haya degradado.
 
 Hay un resultado en esta descomposición que no puede quedar repartido entre dos capítulos, porque
 separarlo es justamente lo que lo haría engañoso. Las dos series se mueven en direcciones opuestas a
-lo largo de la ventana de selección:
+lo largo de la ventana de selección, y la Figura~\ref{fig:orden-vs-pago} las enfrenta.
 
-\begin{center}
-\small
-\begin{tabular}{lrrr}
-\toprule
- & 2015--2018 & 2019--2021 & 2022--2024 \\
-\midrule
-Rank-IC del meta & 0,0949 & 0,0543 & 0,1739 \\
-Information Ratio de la cartera & 1,103 & 0,478 & $-0{,}204$ \\
-Alfa medio anual & $+5{,}78$\,\% & $+2{,}25$\,\% & $-2{,}37$\,\% \\
-\bottomrule
-\end{tabular}
-\end{center}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.92\textwidth]{assets/f06_orden_vs_pago.png}
+  \caption{Rank-IC medio del meta-agente y Information Ratio de la cartera, era a era de la ventana
+  de selección. Las dos escalas son distintas a propósito: lo que importa es la dirección de cada
+  serie, no su nivel.}
+  \label{fig:orden-vs-pago}
+\end{figure}
 
-El Rank-IC es más alto en la era más reciente, mientras que el pago económico decae hasta volverse
+El alfa medio anual acompaña al Information Ratio y no al Rank-IC: $+5{,}78$\,\% en 2015--2018,
+$+2{,}25$\,\% en 2019--2021 y $-2{,}37$\,\% en 2022--2024. El Rank-IC es más alto en la era más
+reciente, mientras que el pago económico decae hasta volverse
 negativo en esa misma era. No es una contradicción: cada métrica mide una cosa distinta. El Rank-IC
 evalúa la calidad del \emph{orden transversal} --- si las acciones que el modelo pone arriba rinden
 más que las que pone abajo ---, y el Information Ratio evalúa el \emph{pago ajustado por riesgo} de
