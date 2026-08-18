@@ -73,12 +73,12 @@ la cobertura desigual de las empresas retiradas. A diferencia de la versión hab
 salvedad, aquí no es una posibilidad genérica: está medida, y conviene declarar las tres cosas que
 se saben de ella.
 
-La \textbf{causa} no es la mortalidad empresarial. De los 563 \textit{tickers} históricos que no
-llegan al panel, solo el 5,5\,\% llevan marcador de quiebra; la fracción mayor son símbolos que el
-proveedor de precios ha retirado de su API al dejar de cotizar. La probabilidad de estar ausente
-crece con el tiempo transcurrido desde la salida del índice --- del 1,2\,\% entre los miembros
-actuales al 94,4\,\% entre los que salieron hace más de veinte años ---, que es exactamente la firma
-de una fuente que poda su histórico, no la de un sector que quiebra.
+La \textbf{causa} está medida en el Capítulo~\ref{chap:datos} y no es la mortalidad empresarial sino
+la retirada de símbolos por parte del proveedor de precios. Falta ahí un dato que remata el
+diagnóstico: la probabilidad de estar ausente crece con el tiempo transcurrido desde la salida del
+índice --- del 1,2\,\% entre los miembros actuales al 94,4\,\% entre los que salieron hace más de
+veinte años ---, que es exactamente la firma de una fuente que poda su histórico, no la de un sector
+que quiebra.
 
 La \textbf{dirección} es optimista, no conservadora. Las empresas que sí llegan al panel sobreviven
 hasta hoy con mucha más frecuencia que los miembros reales del índice de su año: en 1998 lo hacen el
@@ -94,9 +94,9 @@ durante todo el periodo, y es esa composición la que infla el resultado.
 Queda por declarar el \textbf{límite de lo demostrable}. Lo medido es la composición del universo,
 no el retorno de las empresas ausentes, que en su mayoría carecen precisamente de la serie de
 precios que permitiría calcularlo. El sesgo, por tanto, \emph{no se cuantifica en puntos de
-rentabilidad} y este trabajo no lo insinúa. Un dato acota su alcance en la dirección contraria: los
-563 ausentes tienen fundamentales descargados, así que la exclusión no selecciona empresas opacas
-sino símbolos sin precio. La lectura por eras de la Sección~\ref{sec:eras} es la comprobación
+rentabilidad} y este trabajo no lo insinúa. Un dato acota su alcance en la dirección contraria, y ya
+apareció al resolver el universo: los ausentes tienen sus fundamentales descargados, así que la
+exclusión no selecciona empresas opacas sino símbolos sin precio. La lectura por eras de la Sección~\ref{sec:eras} es la comprobación
 empírica de si este sesgo mueve o no el resultado predictivo; una réplica con una fuente comercial
 point-in-time sería la prueba definitiva.
 
