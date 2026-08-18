@@ -16,8 +16,8 @@ cartera afectan al resultado de forma material y muy desigual: el número de pos
 Information Ratio mediano en 0,208 y la tenencia mínima en 0,164, mientras que la tolerancia de
 deriva y el reparto de pesos son prácticamente inertes (0,017 y 0,005). Optimizar por Information
 Ratio eleva el ratio de 0,312 a 0,841 y el exceso geométrico del 2,12 al 5,91\,\%, sin reentrenar
-nada, y reduciendo la rotación a la mitad. La mejora obtenida sin tocar el modelo es mayor que la acumulada por las tres pasadas
-predictivas juntas.
+nada, y reduciendo la rotación a la mitad. La mejora obtenida sin tocar el modelo es mayor que la
+acumulada por las tres pasadas predictivas juntas.
 
 El contraste en la era reservada mide exactamente esa distancia. Con la construcción de cartera
 recomendada por el catálogo --- la que estuvo vigente, sin optimizar, durante todo el trabajo
@@ -43,19 +43,19 @@ tranquilidad al resultado económico, cuyo mejor tramo coincide justamente con l
 más pobre. La evidencia de que el sistema \emph{ordena} es, en definitiva, más sólida que la de que
 esa ordenación \emph{se cobra}.
 
-Nada de esto es una promesa de inversión, y las razones son explícitas: el Deflated Sharpe cae a
-0,573 --- encadenar estudios compra Rank-IC al precio de encarecer cualquier afirmación de
-rentabilidad ajustada por selección ---, la era reservada aporta seis cohortes cerradas y algo más
-de un año de cartera, y la cartera ganadora es la mejor de 1.440 evaluadas. La contribución
+Nada de esto es una promesa de inversión, y las razones son explícitas y ya están cuantificadas: el
+Deflated Sharpe cae a 0,573, la era reservada aporta seis cohortes cerradas y algo más de un año de
+cartera, y la cartera ganadora es la mejor de 1.440 evaluadas. Las tres apuntan en la misma
+dirección --- el resultado descansa sobre menos evidencia independiente de la que aparenta --- y
+ninguna se resuelve con más trabajo sobre los mismos datos. La contribución
 defendible del TFM sigue siendo metodológica: demuestra cómo separar señal, selección, robustez y
 cartera de forma que preguntas como ésta puedan formularse y responderse sin contaminar la
 evidencia.
 
 Conviene cerrar recordando contra qué se medía el segundo objetivo, porque es lo que da su tamaño
-real a lo conseguido y a lo no conseguido. Batir a un índice es un juego de suma cero antes de
-costes y de suma negativa después (Sharpe, 1991): el conjunto de los inversores es el mercado, así
-que la ventaja de uno es la desventaja de otro, y a veinte años el 93\,\% de los fondos
-estadounidenses de gran capitalización no lo consigue (S\&P Dow Jones Indices, 2026). Sobre ese
+real a lo conseguido y a lo no conseguido. La Sección~\ref{sec:suma-cero} lo desarrolla: batir a un
+índice es un juego de suma negativa después de costes, y a veinte años la gran mayoría de los fondos
+de gran capitalización no lo consigue. Sobre ese
 fondo, que la cartera optimizada pase de destruir valor a empatar con el índice en la única ventana
 que no participó en ninguna decisión no es un resultado espectacular, pero tampoco es trivial: sitúa
 al sistema en el lado correcto de una distribución donde la mayoría de los participantes
@@ -123,9 +123,8 @@ ranking concreto no se replica.
 La segunda contribución es la propia agenda de transferencia, que este trabajo no se limita a
 proponer sino que ejecuta: estudiar tamaño de cartera, reparto de pesos, efectivo, tenencia mínima,
 suelo de cobertura y rebalanceo sin reabrir la selección predictiva, y hacerlo sobre una serie
-recortada para que la ventana reservada siga siendo una comprobación y no un criterio. El resultado
-justifica el esfuerzo: la mejora obtenida sin tocar el modelo es mayor que la acumulada por las tres
-pasadas predictivas juntas.
+recortada para que la ventana reservada siga siendo una comprobación y no un criterio. El balance
+del Objetivo 2, al principio de este capítulo, es lo que justifica el esfuerzo.
 
 El trabajo futuro debe reducir la multiplicidad con un catálogo pre-registrado, esperar etiquetas
 reservadas hasta disponer de potencia estadística real, y replicar el protocolo en otros universos y
@@ -145,11 +144,12 @@ atacar lo que queda.
   algo más de un año de cartera; con tres o cuatro años acumulados podría contrastarse de verdad si
   la optimización generaliza o si su éxito fuera de muestra fue afortunado.
   \item \textbf{Resolver el conflicto entre cadencia y rotación.} La cadencia mensual ganó su
-  decisión con una ventaja clara, pero explica algo más de un tercio del flujo de órdenes:
-  re-decidir cada mes sobre una señal a doce meses. Separar la frecuencia de \emph{evaluación} de
-  la de \emph{ejecución} permitiría conservar las 117 cohortes sin pagar esa parte de la rotación.
-  Una fracción comparable procede de la corrección de deriva de pesos, cuya variable apenas mueve
-  el Information Ratio, de modo que relajarla es la vía más barata de reducir fricción.
+  decisión con una ventaja clara, pero es el origen del 71,5\,\% del flujo de órdenes: el sistema
+  re-decide cada mes sobre una señal a doce meses. Separar la frecuencia de \emph{evaluación} de la
+  de \emph{ejecución} permitiría conservar las 117 cohortes sin pagar esa parte de la rotación. Es
+  además la única palanca que queda abierta por ese lado: la corrección de deriva de pesos, que
+  aportaba la segunda partida de flujo, ya se relajó al máximo que el catálogo permite y con ello
+  cayó a una sexta parte del total.
   \item \textbf{Reducir el catálogo antes de volver a ejecutar.} El Deflated Sharpe penaliza por
   todas las configuraciones ensayadas, y encadenar pasadas eleva ese recuento. Un catálogo
   pre-registrado más estrecho, que fije de antemano las variables cuyo valor no se espera que

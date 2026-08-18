@@ -236,6 +236,18 @@ def save(fig: plt.Figure, output: Path) -> None:
     plt.close(fig)
 
 
+def comma_ticks(*axes: mpl.axis.Axis) -> None:
+    """Coma decimal en las marcas de los ejes, como en el resto del documento.
+
+    La mayoría de las figuras del manuscrito tienen marcas enteras y el problema no se ve; en
+    cuanto un eje toma valores fraccionarios, matplotlib escribe «0.20» y la anotación de al lado
+    «0,20». Es el mismo mojibake tipográfico que el proyecto persigue en el texto.
+    """
+    formatter = mpl.ticker.FuncFormatter(lambda value, _: f"{value:g}".replace(".", ","))
+    for axis in axes:
+        axis.set_major_formatter(formatter)
+
+
 def legend_below(ax: plt.Axes, ncol: int | None = None, anchor: float = -0.16) -> None:
     """Leyenda horizontal centrada debajo del gráfico, para no solaparse con los datos."""
     handles, labels = ax.get_legend_handles_labels()
@@ -653,7 +665,7 @@ def _grid_sort_key(value: object) -> tuple[int, float, str]:
 def load_portfolio(study_id: str) -> dict:
     """Artefactos del Portfolio Study: rejilla completa, ganador y perfiles.
 
-    La rejilla se midió sobre la serie recortada en 2024 —ninguna de las 1.728 combinaciones pudo
+    La rejilla se midió sobre la serie recortada en 2024 —ninguna de las combinaciones pudo
     ver la era reservada—, mientras que ``portfolio_winner.json`` guarda además la confirmación del
     ganador sobre la serie completa. Son cifras de ventanas distintas y no deben mezclarse.
     """
@@ -793,6 +805,201 @@ def write_tables_chain(paths: Paths, chain: pd.DataFrame, changes: list[dict]) -
         ["Pasada", "Cambios", "Variables modificadas respecto del punto de partida"],
         change_rows,
         "lrp{0.62\\linewidth}",
+    )
+
+
+# --- Relato de la cartera ---------------------------------------------------------------------
+# `portfolio_narrative.json` responde a una pregunta que la curva de patrimonio no contesta: qué
+# acciones tuvo la cartera, cuánto tiempo y con qué resultado. Es material descriptivo y posterior a
+# la congelación del ganador —ninguna de estas cifras participó en ninguna selección—, y por eso el
+# propio artefacto viaja con sus salvedades en `caveats`.
+
+# Cuántos nombres entran en cada figura. Quince caben en el JSON; diez se leen en A4.
+NARRATIVE_TOP_N = 10
+
+
+def load_portfolio_narrative(study_id: str) -> dict | None:
+    """Relato de la cartera ganadora, si el Portfolio Study llegó a producirlo.
+
+    Devuelve ``None`` en vez de fallar: el bloque narrativo es un diagnóstico opcional y una pasada
+    que no lo generó sigue siendo una pasada válida. Sus figuras simplemente no se emiten.
+    """
+    path = ROOT / "results" / "studies" / study_id / "portfolio_narrative.json"
+    if not path.is_file():
+        return None
+    payload = read_json(path)
+    windows = payload.get("windows", {})
+    return payload if windows.get("selection", {}).get("available") else None
+
+
+def draw_stock_contributions(narrative: dict, output: Path) -> None:
+    """Contribución neta acumulada de cada acción, las diez mejores frente a las diez peores.
+
+    La contribución es la suma de peso por retorno de cada periodo, descontado el coste imputable a
+    las órdenes de ese nombre. No es comparable con el exceso geométrico anualizado de la cartera:
+    responde a de dónde salió el resultado, no a cuánto rindió.
+    """
+    window = narrative["windows"]["selection"]
+    best = window["best_contributors"][:NARRATIVE_TOP_N]
+    worst = window["worst_contributors"][:NARRATIVE_TOP_N]
+    # De menor a mayor para que la barra más larga quede arriba al invertir el eje.
+    rows = sorted(best + worst, key=lambda row: row["net_contribution"])
+    labels = [row["ticker"] for row in rows]
+    values = [100 * row["net_contribution"] for row in rows]
+    colors = [NAVY if value >= 0 else RED for value in values]
+
+    fig, ax = plt.subplots(figsize=(7.2, 4.6))
+    positions = np.arange(len(rows))
+    ax.barh(positions, values, color=colors, height=0.72)
+    ax.set_yticks(positions)
+    ax.set_yticklabels(labels, fontsize=7.5)
+    ax.axvline(0, color=SLATE, linewidth=0.9)
+    for position, value in zip(positions, values):
+        offset = 0.4 if value >= 0 else -0.4
+        ax.annotate(
+            f"{value:+.1f}".replace(".", ","), (value, position), xytext=(offset * 4, 0),
+            textcoords="offset points", va="center", ha="left" if value >= 0 else "right", fontsize=7,
+        )
+    ax.set(
+        title="De dónde salió el resultado: contribución neta por acción (2015-2024)",
+        xlabel="Contribución neta acumulada (puntos porcentuales)",
+    )
+    comma_ticks(ax.xaxis)
+    ax.margins(x=0.14)
+    ax.grid(axis="y", visible=False)
+    save(fig, output)
+
+
+def draw_round_trips(narrative: dict, output: Path) -> None:
+    """Vida de las posiciones cerradas: cuándo se compraron, cuánto duraron y con qué resultado.
+
+    Se toman las mejores y las peores operaciones de la ventana de selección. El eje es el
+    calendario, de modo que se ve a la vez la duración y el momento: la tenencia mínima de un
+    horizonte completo se lee directamente en la longitud de las barras.
+    """
+    window = narrative["windows"]["selection"]
+    half = NARRATIVE_TOP_N // 2
+    trips = window["best_round_trips"][:half] + window["worst_round_trips"][:half]
+    # Ordenadas por entrada: el eje vertical cuenta la historia en el orden en que ocurrió.
+    trips = sorted(trips, key=lambda row: row["entry_date"], reverse=True)
+    entries = [np.datetime64(row["entry_date"]) for row in trips]
+    exits = [np.datetime64(row["snapshot_date"]) for row in trips]
+
+    fig, ax = plt.subplots(figsize=(7.2, 4.0))
+    positions = np.arange(len(trips))
+    for position, row, start, end in zip(positions, trips, entries, exits):
+        gain = row["realized_pnl_pct"] >= 0
+        ax.barh(
+            position, (end - start).astype("timedelta64[D]").astype(int), left=start,
+            color=GREEN if gain else RED, alpha=0.85, height=0.62,
+        )
+        ax.annotate(
+            f"{100 * row['realized_pnl_pct']:+.0f} % · {row['months_held']} m".replace(".", ","),
+            (end, position), xytext=(5, 0), textcoords="offset points",
+            va="center", fontsize=7, color=GREEN if gain else RED,
+        )
+    ax.set_yticks(positions)
+    ax.set_yticklabels([row["ticker"] for row in trips], fontsize=8)
+    ax.set(title="Las cinco mejores y las cinco peores operaciones cerradas")
+    ax.grid(axis="y", visible=False)
+    ax.margins(x=0.16)
+    save(fig, output)
+
+
+def draw_sector_exposure(narrative: dict, output: Path) -> None:
+    """Peso medio de cartera por sector, en la ventana de selección y en la era reservada.
+
+    El sector no es point-in-time: procede de una foto actual del proveedor y sólo sirve para
+    agrupar. La figura describe dónde estuvo invertida la cartera, no una decisión sectorial: el
+    sistema nunca ve el sector.
+    """
+    windows = narrative["windows"]
+    selection = {row["sector"]: row["mean_portfolio_weight"] for row in windows["selection"]["sector_exposure"]["sectors"]}
+    confirmation = {row["sector"]: row["mean_portfolio_weight"] for row in windows["confirmation"]["sector_exposure"]["sectors"]}
+    # Se ordena por la ventana larga y se recorta: la cola de sectores anecdóticos no dice nada.
+    sectors = sorted(selection, key=selection.get, reverse=True)[:NARRATIVE_TOP_N]
+    sectors.reverse()
+
+    fig, ax = plt.subplots(figsize=(7.2, 4.2))
+    positions = np.arange(len(sectors))
+    ax.barh(positions - 0.19, [100 * selection.get(s, 0.0) for s in sectors], height=0.36, color=NAVY, label="Selección 2015-2024")
+    ax.barh(positions + 0.19, [100 * confirmation.get(s, 0.0) for s in sectors], height=0.36, color=GOLD, label="Era reservada 2025-2026")
+    ax.set_yticks(positions)
+    ax.set_yticklabels(sectors, fontsize=7.5)
+    ax.set(title="Dónde estuvo invertida la cartera", xlabel="Peso medio de cartera (%)")
+    comma_ticks(ax.xaxis)
+    ax.grid(axis="y", visible=False)
+    legend_below(ax, 2, anchor=-0.14)
+    save(fig, output)
+
+
+def draw_cost_ladder(cost: dict, output: Path) -> None:
+    """Exceso sobre el índice a medida que encarece operar, con el equilibrio de cada familia.
+
+    Las dos familias contestan a preguntas distintas. La ruta congelada mantiene las decisiones
+    tomadas con el coste real y sólo recalcula la factura, de modo que obliga a pagar operaciones
+    que un gestor no habría hecho a ese precio: es la variante conservadora. La resimulada deja que
+    el gestor opere menos según encarece, que es lo que ocurriría de verdad.
+    """
+    fig, ax = plt.subplots(figsize=(7.2, 3.6))
+    families = [
+        ("resimulated", "Resimulada: el gestor opera menos", NAVY),
+        ("frozen_path", "Ruta congelada: mismas decisiones", SLATE),
+    ]
+    for key, label, color in families:
+        rungs = sorted(cost[key], key=lambda row: row["cost_bps"])
+        ax.plot(
+            [row["cost_bps"] for row in rungs],
+            [100 * row["selection_geometric_excess_return"] for row in rungs],
+            color=color, linewidth=1.8, marker="o", markersize=3, label=label,
+        )
+        breakeven = cost["break_even"][key]["selection"]
+        if breakeven.get("available"):
+            ax.axvline(breakeven["bps_per_trade"], color=color, linewidth=1.0, linestyle=":")
+            ax.annotate(
+                f"{breakeven['bps_per_trade']:.0f} pb", (breakeven["bps_per_trade"], 0),
+                xytext=(4, 10), textcoords="offset points", fontsize=7.5, color=color,
+            )
+    ax.axhline(0, color=RED, linewidth=1.0)
+    ax.axvline(cost["adopted_cost_bps"], color=GOLD, linewidth=1.4)
+    ax.annotate(
+        f"coste adoptado: {cost['adopted_cost_bps']:.0f} pb", (cost["adopted_cost_bps"], 0),
+        xytext=(6, -22), textcoords="offset points", fontsize=7.5, color=GOLD,
+    )
+    ax.set(
+        title="Cuánto coste soportaría el resultado antes de desaparecer",
+        xlabel="Coste por operación (puntos básicos)", ylabel="Exceso geométrico 2015-2024 (%)",
+    )
+    comma_ticks(ax.xaxis, ax.yaxis)
+    legend_below(ax, 2, anchor=-0.22)
+    save(fig, output)
+
+
+def write_tables_portfolio_narrative(paths: Paths, narrative: dict) -> None:
+    """Las acciones más presentes en la cartera, con permanencia, peso y contribución.
+
+    Se reportan los episodios además de los meses porque son cosas distintas: dos episodios
+    separados por años significan que el sistema vendió y volvió a comprar el mismo nombre, que es
+    justamente lo que una cartera con tenencia mínima puede hacer y una regla estática no.
+    """
+    window = narrative["windows"]["selection"]
+    rows = [
+        [
+            tex(row["ticker"]),
+            str(int(row["months_held_total"])),
+            str(int(row["episodes"])),
+            pct(row["mean_weight"], 1),
+            pct(row["max_weight"], 1),
+            # Dos decimales: con uno solo, una contribución nula se imprimiría como «-0,0 %».
+            pct(row["net_contribution"], 2),
+        ]
+        for row in window["most_held"][:NARRATIVE_TOP_N]
+    ]
+    table(
+        paths.tables / "t07_cartera_relato.tex",
+        ["Acción", "Meses", "Episodios", "Peso medio", "Peso máx.", "Contrib. neta"],
+        rows,
+        "lrrrrr",
     )
 
 
@@ -957,6 +1164,53 @@ def draw_rank_ic(summary: dict, output: Path) -> None:
     ax.axvspan(pd.Timestamp("2025-01-01"), frame["date"].max(), color=GOLD, alpha=0.13, label="Era reservada")
     ax.set(title="Rank-IC por cohorte", ylabel="Rank-IC")
     legend_below(ax, ncol=4)
+    save(fig, output)
+
+
+def draw_order_vs_payoff(summary: dict, output: Path) -> None:
+    """Rank-IC frente a Information Ratio, era a era: el orden mejora mientras el pago empeora.
+
+    Es el hallazgo que gobierna la lectura del trabajo, y separarlo en dos cifras sueltas es
+    justamente lo que lo haría invisible. Las dos series miden cosas distintas —la calidad del
+    orden transversal y el pago ajustado por riesgo de operarlo con una cartera concreta— y por eso
+    pueden divergir sin contradecirse.
+    """
+    eras = summary["eras"]
+    labels = [row["era"] for row in eras]
+    positions = np.arange(len(eras))
+
+    fig, ax = plt.subplots(figsize=(7.2, 3.6))
+    ax.bar(positions, [row["rank_ic"] for row in eras], width=0.5, color=NAVY, label="Rank-IC del meta")
+    ax.set(ylabel="Rank-IC medio", xlabel="")
+    ax.set_xticks(positions)
+    ax.set_xticklabels(labels)
+    ax.set_ylim(0, max(row["rank_ic"] for row in eras) * 1.35)
+    for position, row in zip(positions, eras):
+        ax.annotate(
+            num(row["rank_ic"]), (position, row["rank_ic"]), xytext=(0, 4),
+            textcoords="offset points", ha="center", fontsize=7.5, color=NAVY,
+        )
+
+    twin = ax.twinx()
+    twin.grid(visible=False)
+    twin.spines["right"].set_visible(True)
+    twin.plot(
+        positions, [row["information_ratio"] for row in eras],
+        color=RED, linewidth=2, marker="o", markersize=5, label="Information Ratio de la cartera",
+    )
+    twin.axhline(0, color=RED, linewidth=0.8, linestyle=":")
+    twin.set_ylabel("Information Ratio")
+    for position, row in zip(positions, eras):
+        twin.annotate(
+            num(row["information_ratio"], 3), (position, row["information_ratio"]), xytext=(0, 8),
+            textcoords="offset points", ha="center", fontsize=7.5, color=RED,
+        )
+
+    comma_ticks(ax.yaxis, twin.yaxis)
+    ax.set_title("El orden mejora mientras el pago empeora")
+    handles = ax.get_legend_handles_labels()[0] + twin.get_legend_handles_labels()[0]
+    labels_all = ax.get_legend_handles_labels()[1] + twin.get_legend_handles_labels()[1]
+    ax.legend(handles, labels_all, ncol=2, loc="upper center", bbox_to_anchor=(0.5, -0.10), frameon=False)
     save(fig, output)
 
 
@@ -1295,6 +1549,7 @@ def main() -> None:
     orders = pd.read_parquet(economic / "orders.parquet")
 
     draw_rank_ic(summary, paths.figures / "f07_rankic_serie.png")
+    draw_order_vs_payoff(summary, paths.figures / "f06_orden_vs_pago.png")
     draw_equity(equity, paths.figures / "f07_equity.png")
     draw_drawdown(equity, paths.figures / "f07_drawdown.png")
     # Activos añadidos para la versión extendida del manuscrito.
@@ -1330,6 +1585,18 @@ def main() -> None:
         draw_portfolio_grid(portfolio["grid"], portfolio["winner"], paths.figures / "f08_cartera_rejilla.png")
         draw_portfolio_marginals(portfolio["grid"], paths.figures / "f08_cartera_marginales.png")
         write_tables_portfolio_study(paths, portfolio, summary["summary"])
+
+        # Diagnósticos descriptivos del Portfolio Study. Son opcionales por pasada: si el estudio no
+        # los generó, el manuscrito pierde estas figuras pero ninguna otra cifra cambia.
+        cost_path = portfolio["study"] / "cost_sensitivity.json"
+        if cost_path.is_file():
+            draw_cost_ladder(read_json(cost_path), paths.figures / "f07_costes_escalera.png")
+        narrative = load_portfolio_narrative(args.portfolio_study_id)
+        if narrative is not None:
+            draw_stock_contributions(narrative, paths.figures / "f07_contribucion_accion.png")
+            draw_round_trips(narrative, paths.figures / "f07_operaciones.png")
+            draw_sector_exposure(narrative, paths.figures / "f07_sectores.png")
+            write_tables_portfolio_narrative(paths, narrative)
     write_tables_catalog(paths, catalog, winner, decisions)
 
     # El manifiesto declara de qué estudio sale cada familia de artefactos: lo predictivo del Model
@@ -1357,6 +1624,8 @@ def main() -> None:
                 f"{args.portfolio_study_id}/evidence_best_full/equity.parquet",
                 f"{args.portfolio_study_id}/evidence_best_full/annual_metrics.parquet",
                 f"{args.portfolio_study_id}/evidence_best_full/orders.parquet",
+                f"{args.portfolio_study_id}/cost_sensitivity.json",
+                f"{args.portfolio_study_id}/portfolio_narrative.json",
             ]
             if portfolio
             else ["evidence/equity.parquet", "evidence/annual_metrics.parquet", "evidence/orders.parquet"]

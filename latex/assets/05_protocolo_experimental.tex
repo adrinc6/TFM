@@ -59,7 +59,7 @@ en ninguna de las tres pasadas.
 El catálogo cerrado se recorre en cuatro fases: temporal, representación, modelo y meta. Se parte
 de un \textit{baseline}; en cada fase se modifica una variable y se comparan sus candidatos con el
 incumbente acumulado. Así, el coste científico es una suma de alternativas, no una búsqueda
-cartesiana opaca. La pasada de referencia ejecutó 48 configuraciones, y cada una queda registrada
+cartesiana opaca. La pasada de referencia ejecutó 46 configuraciones, y cada una queda registrada
 junto con la elección que motivó.
 
 Un candidato debe tener observaciones suficientes, no caer por debajo de $-0,02$ en ninguna era
@@ -67,6 +67,10 @@ disponible y superar una puerta pareada: dominar al incumbente (ventaja media po
 más de la mitad de cohortes) o ser no inferior con límite inferior bootstrap al 90\% superior a
 $-0,01$. Las diferencias se calculan por periodo mensual, lo que permite comparar lags distintos
 sin confundir el desplazamiento de sus fechas de ejecución con ausencia de evidencia.
+
+La Figura~\ref{fig:protocolo} separa gráficamente las dos mitades del protocolo, y esa separación es
+la garantía que sostiene todo lo demás: sólo las cuatro fases superiores pueden mover al ganador, y
+todo lo económico ocurre a la derecha de la señal ya congelada.
 
 \begin{figure}[H]
   \centering

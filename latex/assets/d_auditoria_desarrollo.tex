@@ -264,19 +264,19 @@ un cero.
 \section{Advertencia de reproducibilidad}
 \label{sec:reproducibilidad}
 
-Hay una consecuencia de este historial que debe declararse sin rodeos. La cadena de estudios de la
-que procede toda la evidencia de este trabajo no se ejecutó entera bajo la misma versión del
-catálogo: \studyidA{} y \studyidB{} corrieron bajo la versión 6, y \studyidC{} bajo la versión 7,
-que invierte el desempate por simplicidad de \artefacto{execution\_lag\_days}.
+Este historial de correcciones plantea una pregunta legítima, y conviene contestarla con el
+artefacto delante: ¿corrió toda la cadena bajo el mismo catálogo, o alguna de las correcciones que
+acaba de describirse cae en medio? Las cuatro instantáneas ---la de las tres pasadas y la del
+Portfolio Study--- registran la misma versión y el mismo hash de catálogo, de modo que ninguna
+corrección del desarrollo atraviesa la cadena adoptada y \textbf{las pasadas son estrictamente
+comparables entre sí}. No es una valoración del autor: se comprueba abriendo los cuatro
+\artefacto{catalog\_snapshot.json} y contrastando su campo de hash.
 
-Los artefactos siguen siendo válidos y trazables: conservan sus identificadores, sus hashes de
-conjunto de datos y su instantánea de catálogo, y cualquier cifra de este documento puede
-verificarse contra ellos. Pero las tres pasadas \textbf{no son estrictamente comparables entre sí}
-en lo que respecta a las reglas de desempate, y por eso toda tabla que las compare cita la versión
-de catálogo junto al identificador del estudio.
+Que la comprobación salga limpia no era el desenlace por defecto. Los defectos de este anexo se
+corrigieron a lo largo de varias semanas y varios de ellos cambiaron el catálogo; que la cadena
+final quepa entera dentro de una sola versión es consecuencia de haberla relanzado desde cero
+después de la última corrección, no de que el catálogo no se moviera.
 
-La discrepancia afecta a una regla de desempate, no a una medición. El desempate solo interviene
-cuando dos alternativas difieren menos de 0,002 en ventaja pareada, es decir, cuando la evidencia
-\emph{no} distingue entre ellas; de ahí que su efecto sea seleccionar entre opciones
-empíricamente equivalentes y no alterar ninguna cifra de Rank-IC. Aun así se declara, porque el
-lector no tiene por qué fiarse de esa valoración sin conocer el hecho.
+Lo que sí queda declarado es el alcance de esa garantía: cubre la comparabilidad \emph{entre las
+pasadas de la cadena}, no la comparabilidad con estudios anteriores del desarrollo, que corrieron
+bajo catálogos distintos y cuyas cifras no aparecen en este documento por esa misma razón.

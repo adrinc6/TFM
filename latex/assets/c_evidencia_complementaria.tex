@@ -58,9 +58,13 @@ Portfolio Study.
   Sostiene la Sección~\ref{sec:sensibilidad-costes}.
   \item[capacity.json] Participación sobre el volumen mediano de cada orden para siete niveles de
   patrimonio, con la cobertura de volumen alcanzada. Sostiene la Sección~\ref{sec:capacidad}.
-  \item[portfolio\_narrative.json, portfolio\_narrative\_holdings.parquet] Qué tuvo la cartera en
-  cada momento: exposición sectorial, permanencia de las posiciones y detalle de las que más y menos
-  contribuyeron. El manuscrito lo explota de forma agregada.
+  \item[portfolio\_narrative.json, portfolio\_narrative\_holdings.parquet] Qué tuvo la cartera:
+  concentración, permanencia de las posiciones, exposición sectorial, las que más y menos
+  contribuyeron, las operaciones cerradas con su resultado realizado y las ventas que subieron
+  después. Sostiene la Sección~\ref{sec:relato-cartera}, que lo explota por acción. El JSON está
+  versionado y recorta cada lista a quince nombres; el \artefacto{.parquet} guarda la tabla completa.
+  Todo el bloque es descriptivo y posterior a la congelación del ganador: ninguna de sus cifras
+  participó en decisión alguna, y el propio artefacto viaja con esa declaración.
 \end{description}
 
 \section{Los catorce controles de neutralización}

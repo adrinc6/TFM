@@ -313,6 +313,154 @@ esta misma ventana, y batir todos los años es precisamente el tipo de regularid
 amplia tiende a encontrar por construcción. El único año adverso de toda la serie es 2026, ya en la
 era reservada, y se analiza más adelante.
 
+\section{Qué compró la cartera}
+\label{sec:relato-cartera}
+
+Hasta aquí la cartera se ha descrito por sus métricas agregadas. Falta la pregunta que un lector se
+hace al ver la curva de patrimonio: \emph{qué} tuvo dentro. Esta sección la contesta con el mismo
+criterio que el resto del capítulo --- cada cifra procede del relato persistido por el Portfolio
+Study y ninguna participó en decisión alguna ---, y conviene decir de entrada qué clase de evidencia
+es. Todo lo que sigue es \textbf{descriptivo}: explica de dónde salió un resultado ya medido, no lo
+sostiene. Ningún contraste de este trabajo se apoya en ello.
+
+\subsection*{Cuarenta y dos acciones en diez años}
+
+La cartera mantuvo exactamente ocho posiciones en los 117 \textit{snapshots} de la ventana de
+selección, sin una sola desviación y sin efectivo en ninguno de ellos, con un índice de
+Herfindahl medio de 0,131 --- el de una cartera de ocho nombres repartidos de forma razonablemente
+equilibrada ---. Por ella pasaron \textbf{42 acciones distintas} en 49 episodios de tenencia.
+
+Ese recuento es en sí mismo un resultado sobre la doctrina de cartera. Con 117 oportunidades de
+cambiar de opinión y ocho huecos que llenar, una regla que reaccionase a cada \textit{snapshot}
+habría desfilado por cientos de nombres; ésta se quedó en 42. La permanencia mediana de un episodio
+es de \textbf{15 meses}, la media de 18,1 y la más larga de 45, y \emph{ningún} episodio duró un
+solo \textit{snapshot}. La tenencia mínima de un horizonte completo, que la rejilla eligió, no es
+por tanto una etiqueta de la configuración: se lee directamente en la vida de las posiciones.
+
+\subsection*{De dónde salió el resultado}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.94\textwidth]{assets/f07_contribucion_accion.png}
+  \caption{Contribución neta acumulada de cada acción a la rentabilidad de la cartera, las diez
+  mayores frente a las diez menores, en la ventana de selección.}
+  \label{fig:contribucion-accion}
+\end{figure}
+
+La Figura~\ref{fig:contribucion-accion} descompone la rentabilidad por nombre. La contribución de
+una acción es la suma, periodo a periodo, de su peso por su retorno, descontado el coste de las
+órdenes que la movieron; es una descomposición de la rentabilidad \emph{de la cartera}, no de su
+exceso sobre el índice, de modo que sus cifras no son comparables con el 5,91\,\% de exceso
+geométrico anualizado y no deben leerse como tal.
+
+Con esa advertencia puesta, el reparto es muy desigual y conviene declararlo antes de que lo haga
+un lector: \textbf{AAPL aporta 27,8 puntos porcentuales}, casi el doble que la segunda, y las
+siguientes cuatro --- ORLY con 16,8, AXP con 12,4, BA con 11,8 y ROP con 10,9 --- completan un grupo
+de cinco nombres que suma algo más de la mitad de lo que aportan las quince mayores. En el otro extremo, la peor posición de
+diez años es ALGN con $-4{,}2$ puntos: la cola izquierda es corta, y eso es coherente con una
+cartera que nunca llegó a tener una pérdida catastrófica en un nombre.
+
+Esa concentración es una \textbf{limitación, no un mérito}, y así se recoge en el
+Capítulo~\ref{chap:limitaciones}. Que una sola acción pese tanto en el resultado significa que la
+evidencia económica de la ventana de selección descansa sobre menos observaciones independientes de
+lo que sugieren los diez años de serie.
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{Las diez acciones más presentes en la cartera durante la ventana de selección.}
+  \label{tab:cartera-relato}
+  \input{assets/t07_cartera_relato.tex}
+  \caption*{«Episodios» cuenta las veces que la acción entró en cartera: dos episodios significan
+  que se vendió y se recompró más tarde. La contribución neta es a la rentabilidad de la cartera,
+  no a su exceso sobre el índice.}
+\end{table}
+
+La Tabla~\ref{tab:cartera-relato} añade el matiz que la figura no da: presencia y contribución no
+coinciden. VRSK es la tercera por permanencia y aporta 5,9 puntos; SPGI es la sexta y aporta
+esencialmente cero. AXP, en cambio, contribuye 12,4 en apenas quince meses. Estar mucho tiempo en
+cartera no es lo mismo que haber sido una buena posición.
+
+\subsection*{Dos historias que explican la doctrina de umbrales}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.94\textwidth]{assets/f07_operaciones.png}
+  \caption{Las cinco mejores y las cinco peores operaciones cerradas de la ventana de selección:
+  cuándo se abrió cada posición, cuánto duró y con qué resultado realizado.}
+  \label{fig:operaciones}
+\end{figure}
+
+La Figura~\ref{fig:operaciones} sitúa en el calendario las diez operaciones extremas, y dos de ellas
+merecen contarse porque ilustran, mejor que cualquier métrica agregada, qué hace y qué no hace la
+regla de rotación.
+
+La primera es la \textbf{mejor operación de toda la serie}. El sistema compró AAPL el 30 de octubre
+de 2019 a 58,36 dólares y la vendió el 30 de julio de 2023 a 192,96: \textbf{44 meses en cartera y
+un $+228{,}7$\,\%} realizado. No se vendió por una regla de toma de beneficios --- el sistema no
+tiene ninguna --- sino porque otra acción superó su ventaja neta esperada, que es el único motivo
+por el que esta cartera vende algo que sigue queriendo tener.
+
+La segunda es más instructiva porque incluye un error. El sistema compró AZO en agosto de 2016 y la
+vendió trece meses después con un \textbf{$-21{,}9$\,\%}, desplazada por un candidato mejor. En los
+doce meses siguientes AZO subió un 26,7\,\% frente al 6,2\,\% del índice: la venta costó
+\textbf{19,3 puntos de exceso} que la cartera no llegó a cobrar. Tres años más tarde, en septiembre
+de 2020, el sistema volvió a comprar la misma acción y la mantuvo 33 meses para un
+\textbf{$+113{,}3$\,\%}. La misma empresa fue la peor y la tercera mejor operación del periodo, sin
+que ninguna regla especial intervenga: sólo la señal cambiando de opinión dos veces.
+
+Conviene extraer de ahí la lección correcta y no la tentadora. La lectura correcta es que los
+umbrales de rotación tienen un coste medible en ventas prematuras, y que la tenencia mínima de un
+horizonte completo --- que en 2016 todavía no estaba en la configuración --- es precisamente la
+mitigación que la rejilla acabó eligiendo. La lectura \emph{incorrecta} sería convertir estos casos
+en una regla nueva: se leen con el resultado ya conocido, y añadir un filtro que los hubiera
+evitado es ajustar sobre el resultado, exactamente lo que este trabajo se ha propuesto no hacer.
+
+\subsection*{Dónde estuvo invertida}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.94\textwidth]{assets/f07_sectores.png}
+  \caption{Peso medio de cartera por sector, en la ventana de selección y en la era reservada. El
+  sector no es \textit{point-in-time}: procede de una foto actual del proveedor y sólo agrupa.}
+  \label{fig:sectores}
+\end{figure}
+
+La Figura~\ref{fig:sectores} responde a una pregunta que el sistema nunca se plantea: ninguna
+variable del catálogo codifica el sector, de modo que el reparto sectorial es una \emph{consecuencia}
+de la señal y no una decisión. En la ventana de selección la cartera se apoya sobre todo en
+Technology (21,6\,\% de peso medio), Retail (13,4\,\%) y Financial Services (11,2\,\%), un reparto
+amplio para una cartera de ocho nombres.
+
+En la era reservada el cuadro cambia por completo, y es el dato más incómodo de esta sección. Sólo
+nueve acciones distintas pasan por la cartera en los 18 \textit{snapshots}, ocho de ellas presentes
+en todos, y el peso se concentra en \textbf{dos sectores que suman dos tercios} --- Media el
+33,9\,\% y Financial Services el 33,0\,\% --- mientras Technology cae del 21,6 al 2,9\,\%. La
+concentración no es una decisión de exposición: es lo que ocurre cuando una serie de año y medio se
+combina con una tenencia mínima de doce meses, de modo que casi nada llega a rotar.
+
+Ese mismo mecanismo acota lo que la era reservada puede demostrar. Se cerró en ella \textbf{una sola
+operación} --- MTCH, con un $-28{,}9$\,\% tras 31 meses, que además subió un 25,2\,\% en el año
+siguiente a su venta ---, y una única posición, AMAT, aporta 21,3 de los puntos de rentabilidad de
+la ventana. El exceso del 0,24\,\% de la era reservada, que el resto del capítulo trata como su
+lectura más honesta, descansa por tanto sobre un puñado de nombres y prácticamente ninguna decisión
+de rotación. Es una confirmación de que la señal no se hunde fuera de muestra; no es una muestra de
+comportamiento de la cartera.
+
+\subsection*{Cuatro salvedades que acompañan a esta sección}
+
+\begin{enumerate}[leftmargin=*,itemsep=0.35em]
+  \item \textbf{El sector no es \textit{point-in-time}.} Procede de una foto actual del proveedor de
+  perfiles, de modo que una empresa que cambió de clasificación aparece con la de hoy en todo el
+  histórico. Sirve para agrupar y describir, nunca para atribuir.
+  \item \textbf{La cartera es la mejor de 1.440.} Todo lo descrito aquí dentro de la ventana de
+  selección hereda ese sesgo optimista, igual que el resto de las cifras del capítulo.
+  \item \textbf{Las peores decisiones se leen con el resultado ya conocido.} Señalan dónde falló la
+  doctrina de umbrales, no una regla que se pueda añadir sin volver a ajustar sobre el resultado.
+  \item \textbf{La contribución por acción no es exceso.} Descompone la rentabilidad de la cartera,
+  no su diferencia con el índice, y su suma no reconstruye el 5,91\,\% de exceso geométrico.
+\end{enumerate}
+
 \section{Órdenes, rotación y costes}
 \label{sec:rotacion}
 
@@ -326,7 +474,8 @@ señal de doce. La Tabla~\ref{tab:ordenes} lo descompone por motivo declarado de
   \caption{Descomposición del flujo de cartera por motivo de orden.}
   \label{tab:ordenes}
   \input{assets/t07_ordenes_motivo.tex}
-  \caption*{El flujo es la suma de $|\Delta w|$ de cada orden. El coste agrega comisión y
+  \caption*{Cubre la serie completa: 143 órdenes de la ventana de selección y 10 de la era
+  reservada. El flujo es la suma de $|\Delta w|$ de cada orden y el coste agrega comisión y
   \textit{slippage} efectivamente cargados.}
 \end{table}
 
@@ -355,8 +504,6 @@ eligió, es precisamente la mitigación disponible desde el lado de la cartera: 
 cambie de opinión, pero impide actuar sobre ese cambio antes de que la tesis original haya tenido
 tiempo de cumplirse.
 
-El \texttt{rebalance}, en cambio, depende de \artefacto{rebalance\_drift\_tolerance}, que sí es una
-variable de cartera y sí se optimizó. La rejilla eligió 0,1 sobre una escala que llega a 0,4, es
 \subsection*{Rotación, coste y exceso año a año}
 
 La Tabla~\ref{tab:anual} permite comprobar que el turnover no compra rentabilidad. No hay relación
@@ -409,6 +556,21 @@ real y sólo se recalcula la factura, el equilibrio sube a 447 puntos básicos: 
 conservadora, porque obliga a pagar operaciones que un gestor racional no habría hecho a ese precio.
 Ambas cifras dicen lo mismo con distinto margen: el resultado no depende de haber supuesto costes
 optimistas.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.94\textwidth]{assets/f07_costes_escalera.png}
+  \caption{Exceso geométrico de la ventana de selección a medida que encarece operar, con el
+  equilibrio de cada familia y el coste adoptado señalados.}
+  \label{fig:costes-escalera}
+\end{figure}
+
+La Figura~\ref{fig:costes-escalera} muestra las dos escaleras juntas, y su diferencia de forma es
+informativa. La ruta congelada decae en línea recta, como debe: pagar más por las mismas
+operaciones resta una cantidad proporcional. La resimulada, en cambio, es \emph{irregular}, porque a
+cada escalón el gestor simulado toma decisiones distintas y una cartera con menos operaciones no es
+una versión encogida de la anterior sino otra cartera. Esa irregularidad es la razón de reportar los
+dos equilibrios y no sólo el más favorable.
 
 Dos salvedades acotan la afirmación. La primera es que ese margen se mide sobre la ventana de
 selección, donde la cartera es la mejor de 1.440, de modo que el equilibrio hereda ese sesgo

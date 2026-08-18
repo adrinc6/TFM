@@ -265,6 +265,28 @@ Del par tabla+figura solo sobrevive uno salvo en `t08_cartera_influencia` +
 `f08_cartera_marginales`, donde el texto argumenta explícitamente que la figura aporta la *forma*
 (dispersión) que las medianas no pueden dar.
 
+### Revisión del 2026-08-18: 25 tablas y 17 figuras
+
+El recuento sube por primera vez, y conviene declarar bajo qué criterio, porque el de la poda sigue
+vigente. Entran seis activos: cinco figuras y una tabla.
+
+- **`f06_orden_vs_pago.png`** no es un activo nuevo en sentido estricto: sustituye a un `tabular`
+  suelto dentro de un `center` que llevaba las tres cifras del hallazgo central del capítulo 6 sin
+  caption, sin label y fuera del índice de tablas. Convertirlo en figura arregla la maquetación y
+  además da imagen al resultado que gobierna la lectura del trabajo.
+- **`f07_costes_escalera.png`** cubre una sección que sólo existía en prosa. La forma de las dos
+  familias —recta la congelada, irregular la resimulada— es un argumento que ninguna cifra suelta
+  puede dar.
+- **`f07_contribucion_accion.png`, `f07_operaciones.png`, `f07_sectores.png` y
+  `t07_cartera_relato.tex`** sostienen la sección nueva «Qué compró la cartera». Cada una responde a
+  una pregunta que el texto plantea antes de enseñarla, que es la condición que el plan del
+  manuscrito exige a este material.
+
+Sigue pendiente la poda que compensa la subida, y no se ejecutó aquí por falta de los `.parquet` en
+el clon: fusionar `f07_equity` y `f07_drawdown` en una figura de dos paneles —son anverso y reverso
+de la misma serie— y convertir `t07_cola.tex` en figura de barras por era. Queda anotado en
+`docs/plan_latex.md`.
+
 El comando de regeneración está en `assets/a_reproducibilidad.tex` y el manifiesto resultante,
 `latex/asset_manifest.json`, registra ambas familias de fuentes por separado.
 

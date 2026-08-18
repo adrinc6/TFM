@@ -80,14 +80,33 @@ cada uno.
 El aprendizaje es observable, no una afirmación inferida de la rentabilidad final. Durante los
 primeros meses el meta reparte 0,20 a cada agente, porque aún no existe ninguna cohorte cerrada con
 la que estimar la calidad de nadie. En cuanto las hay, empieza a ponderar, y el peso se desplaza
-hacia \textit{risk} a medida que se cierran más --- la
-Figura~\ref{fig:pesos-anual} recoge esa trayectoria año a año. Al final de la serie el reparto es
+hacia \textit{risk} a medida que se cierran más, con la trayectoria año a año que recoge la
+Figura~\ref{fig:pesos-anual}. Al final de la serie el reparto es
 prácticamente degenerado --- 0,955 para \textit{risk} y 0,045 para \textit{value}, con los tres
 agentes restantes en cero ---, de modo que el meta-agente no aprendió a combinar cinco especialistas
 sino a descartar cuatro.
 
-Ese desenlace merece leerse con cuidado, porque es el resultado esperable del método y no una
-anomalía. La configuración ganadora emplea \texttt{stacked\_rolling\_free}, es decir, un apilado sin
+\subsection*{La trayectoria del peso aprendido}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.94\textwidth]{assets/f05_pesos_anual.png}
+  \caption{Peso medio anual asignado por el meta-agente a cada especialista. 2015 corresponde
+  íntegramente al reparto uniforme por ausencia de cohortes cerradas.}
+  \label{fig:pesos-anual}
+\end{figure}
+
+La Figura~\ref{fig:pesos-anual} describe un aprendizaje reconocible, y su primer tramo es el más
+informativo. En 2015 el reparto es uniforme por construcción. En 2016 el meta concentra en
+\textit{momentum}, que acabará siendo el peor especialista de todo el periodo: es un error, y es
+exactamente lo que cabe esperar de un sistema que decide con dos años de datos. En 2017 corrige
+hacia \textit{risk} (0,45 de media anual), en 2018 lo eleva a 0,66 y a partir de 2020 lo sitúa por
+encima de 0,83, alcanzando 0,997 en 2023. Que el sistema se equivoque primero y se corrija después,
+sin que nadie intervenga, es la evidencia más directa de que el aprendizaje es real y no una
+etiqueta.
+
+Que el reparto acabe así merece leerse con cuidado, porque es el resultado esperable del método y no
+una anomalía. La configuración ganadora emplea \texttt{stacked\_rolling\_free}, es decir, un apilado sin
 tope por agente; enfrentado a un especialista que domina de forma consistente, el procedimiento
 converge a él. La primera pasada de la cadena usaba la variante acotada; la segunda adoptó la libre
 y la tercera volvió a medir ambas y la ratificó, con $+0{,}00827$ de ventaja pareada sobre la
@@ -107,9 +126,9 @@ añade, por tanto, información útil y no sólo reescala los scores.
   \caption*{Desviación e IC-IR se calculan sobre cohortes cerradas de la ventana de selección.}
 \end{table}
 
-Hay, sin embargo, un resultado que este trabajo debe reportar aunque incomode a su propia
-arquitectura: \textbf{el agente \textit{risk} por separado ordena mejor que el meta-agente}. Su
-Rank-IC es 0,1201 con IC-IR 0,966 y 81,20\,\% de cohortes positivas, frente a 0,1067, 0,833 y
+La Tabla~\ref{tab:agentes} reúne las siete señales, y contiene un resultado que este trabajo debe
+reportar aunque incomode a su propia arquitectura: \textbf{el agente \textit{risk} por separado
+ordena mejor que el meta-agente}. Su Rank-IC es 0,1201 con IC-IR 0,966 y 81,20\,\% de cohortes positivas, frente a 0,1067, 0,833 y
 76,07\,\% del meta. La diferencia es pequeña, pero va en la dirección contraria a la que
 justificaría la complejidad añadida, y no puede atribuirse al tope de los pesos: con la variante
 libre el meta puede concentrarse cuanto quiera y aun así ordena algo peor.
@@ -142,8 +161,8 @@ claro de decisión que mejora la métrica de selección a costa de una propiedad
 diseño que ninguna métrica del protocolo estaba midiendo. El riesgo que la restricción cubría sigue
 existiendo y queda asumido: la señal del sistema es, en la práctica, la del agente \textit{risk}, de
 modo que su comportamiento futuro depende de que ese especialista siga funcionando. La era reservada
-permite una primera comprobación --- el Rank-IC se mantiene positivo en $+0{,}0441$ ---, pero seis
-cohortes no bastan para descartar que la concentración sea frágil. Queda recogido como limitación en
+permite una primera comprobación --- el Rank-IC de \textit{risk} se mantiene positivo en
+$+0{,}0669$ y el del meta en $+0{,}0364$ ---, pero seis cohortes no bastan para descartar que la concentración sea frágil. Queda recogido como limitación en
 el Capítulo~\ref{chap:limitaciones}.
 
 Una advertencia de lectura afecta a todo el capítulo. Los artefactos contienen dos ventanas para
@@ -174,7 +193,7 @@ título informativo.
 La tabla contiene tres lecturas que el promedio agregado no permite. La primera es que \textit{risk}
 es la única señal positiva en las cuatro eras; ninguna otra lo consigue. La segunda es que el meta
 aprendido supera al equiponderado en las tres eras de selección, no sólo en promedio, lo que
-refuerza que la mejora del 68\,\% no procede de un único subperiodo afortunado. La tercera es la más
+refuerza que la mejora del 55\,\% no procede de un único subperiodo afortunado. La tercera es la más
 incómoda y se reporta precisamente por serlo: en la era reservada los cuatro agentes distintos de
 \textit{risk} se vuelven negativos a la vez --- \textit{growth} llega a $-0{,}1476$ --- y sólo
 \textit{risk} aguanta en positivo, con 0,0669. El meta aprendido conserva un Rank-IC positivo de
@@ -193,22 +212,20 @@ insuficiente para concluir que la capacidad predictiva se haya degradado.
 
 Hay un resultado en esta descomposición que no puede quedar repartido entre dos capítulos, porque
 separarlo es justamente lo que lo haría engañoso. Las dos series se mueven en direcciones opuestas a
-lo largo de la ventana de selección:
+lo largo de la ventana de selección, y la Figura~\ref{fig:orden-vs-pago} las enfrenta.
 
-\begin{center}
-\small
-\begin{tabular}{lrrr}
-\toprule
- & 2015--2018 & 2019--2021 & 2022--2024 \\
-\midrule
-Rank-IC del meta & 0,0949 & 0,0543 & 0,1739 \\
-Information Ratio de la cartera & 1,103 & 0,478 & $-0{,}204$ \\
-Alfa medio anual & $+5{,}78$\,\% & $+2{,}25$\,\% & $-2{,}37$\,\% \\
-\bottomrule
-\end{tabular}
-\end{center}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.92\textwidth]{assets/f06_orden_vs_pago.png}
+  \caption{Rank-IC medio del meta-agente y Information Ratio de la cartera, era a era de la ventana
+  de selección. Las dos escalas son distintas a propósito: lo que importa es la dirección de cada
+  serie, no su nivel.}
+  \label{fig:orden-vs-pago}
+\end{figure}
 
-El Rank-IC es más alto en la era más reciente, mientras que el pago económico decae hasta volverse
+El alfa medio anual acompaña al Information Ratio y no al Rank-IC: $+5{,}78$\,\% en 2015--2018,
+$+2{,}25$\,\% en 2019--2021 y $-2{,}37$\,\% en 2022--2024. El Rank-IC es más alto en la era más
+reciente, mientras que el pago económico decae hasta volverse
 negativo en esa misma era. No es una contradicción: cada métrica mide una cosa distinta. El Rank-IC
 evalúa la calidad del \emph{orden transversal} --- si las acciones que el modelo pone arriba rinden
 más que las que pone abajo ---, y el Information Ratio evalúa el \emph{pago ajustado por riesgo} de
@@ -232,25 +249,6 @@ afirmaciones conviven y el trabajo se queda con la primera, que es la que sostie
 predictiva, sin extenderla a la segunda. La era reservada añade un indicio en la misma dirección
 --- Rank-IC de $+0{,}0364$ sobre seis cohortes ---, coherente con un decaimiento, pero con una
 observación independiente efectiva no zanja nada.
-
-\subsection*{La trayectoria del peso aprendido}
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.94\textwidth]{assets/f05_pesos_anual.png}
-  \caption{Peso medio anual asignado por el meta-agente a cada especialista. 2015 corresponde
-  íntegramente al reparto uniforme por ausencia de cohortes cerradas.}
-  \label{fig:pesos-anual}
-\end{figure}
-
-La Figura~\ref{fig:pesos-anual} describe un aprendizaje reconocible, y su primer tramo es el más
-informativo. En 2015 el reparto es uniforme por construcción. En 2016 el meta concentra en
-\textit{momentum}, que acabará siendo el peor especialista de todo el periodo: es un error, y es
-exactamente lo que cabe esperar de un sistema que decide con dos años de datos. En 2017 corrige
-hacia \textit{risk} (0,45 de media anual), en 2018 lo eleva a 0,66 y a partir de 2020 lo sitúa por
-encima de 0,83, alcanzando 0,997 en 2023. Que el sistema se equivoque primero y se corrija después,
-sin que nadie intervenga, es la evidencia más directa de que el aprendizaje es real y no una
-etiqueta.
 
 \section{Qué mira realmente cada agente}
 \label{sec:atribucion-local}
@@ -280,8 +278,8 @@ datos no la respaldan.}
 
 Las dos variables que mandan son \artefacto{gap\_21d} y \artefacto{range\_63d} --- microestructura
 del precio a corto plazo: huecos de apertura y amplitud del rango de negociación ---, que juntas
-encabezan el 78\,\% de las observaciones. Las medidas que uno esperaría de una estrategia de baja
-volatilidad aparecen después y con menos peso: \artefacto{max\_drawdown\_252d} encabeza el 4,2\,\% y
+encabezan el 81,5\,\% de las observaciones. Las medidas que uno esperaría de una estrategia de baja
+volatilidad aparecen después y con menos peso: \artefacto{max\_drawdown\_252d} encabeza el 2,4\,\% y
 \artefacto{beta\_252d}, el candidato más obvio, ni siquiera está entre las tres primeras. El agente
 no está comprando acciones defensivas en el sentido factorial clásico; está leyendo la estructura
 reciente de negociación.
@@ -322,6 +320,7 @@ agentes, no una muestra --- pero la asociación es sugerente y apunta en la mism
 resto del capítulo: repartir la atención entre muchas variables débiles ordena peor que concentrarla
 en unas pocas con contenido.
 \section{Capacidad predictiva fuera de muestra}
+\label{sec:capacidad-predictiva}
 
 En la ventana de selección 2015--2024, el sistema alcanza Rank-IC medio 0,1067, IC-IR 0,833 y
 76,07\% de cohortes positivas. Son 117 cohortes mensuales, aunque el horizonte de doce meses las
@@ -383,16 +382,18 @@ modo que la ventaja no procede exclusivamente de acertar la cola inferior --- qu
 \textit{long-only} no puede explotar.
 
 La cuarta fila obliga a un matiz que conviene no dejar al lector. En la era reservada el decil
-superior obtiene $-7{,}67$\,\% frente al $-1{,}85$\,\% del universo: \textbf{pierde contra el
+superior obtiene $-11{,}52$\,\% frente al $-2{,}14$\,\% del universo: \textbf{pierde contra el
 panel}, al revés que en las tres eras anteriores. Y sin embargo la diferencia entre el decil
-superior y el inferior sigue siendo de $+11{,}33$ puntos, la segunda mayor de la tabla. Las dos
-cosas juntas dicen algo preciso: la ordenación siguió funcionando --- separa lo bueno de lo malo
-igual de bien ---, pero el nivel de toda la cola alta cayó por debajo del panel. Es coherente con
-el Rank-IC positivo de esa era y con que la cartera adoptada, que compra en ese decil, batiese al
-índice: lo hizo eligiendo dentro de él, no porque el decil entero fuese ganador. Sobre seis
-cohortes, en todo caso, ninguna de las dos lecturas admite más peso del que aquí se le da.
+superior y el inferior se mantiene en $+6{,}27$ puntos, la segunda mayor de la tabla. Las dos
+cosas juntas dicen algo preciso: la ordenación siguió separando lo bueno de lo malo --- aunque con
+menos holgura que los $+13{,}74$ puntos de 2022--2024 ---, pero el nivel de toda la cola alta cayó
+por debajo del panel. Es coherente con el Rank-IC positivo de esa era y con que la cartera
+adoptada, que compra en ese decil, batiese al índice: lo hizo eligiendo dentro de él, no porque el
+decil entero fuese ganador. Sobre seis cohortes, en todo caso, ninguna de las dos lecturas admite
+más peso del que aquí se le da.
 
 \section{¿Es la señal una réplica de factores conocidos?}
+\label{sec:replica-factores}
 
 Dos contrastes independientes preguntan lo mismo desde ángulos distintos: ¿es la señal una réplica
 de estilos ya conocidos?
@@ -421,31 +422,14 @@ sí misma. La conclusión prudente es que la evidencia es compatible con una se�
 distinta de los factores implementados, no que se haya descubierto una prima nueva y causal.
 
 Conviene precisar el alcance del segundo contraste, porque se calcula sobre la serie de retornos de
-la cartera de referencia del Model Study, que no es la que el trabajo adopta. Eso lo hace válido para la pregunta que aquí se formula --- si la señal
-se explica por estilos conocidos, algo que no depende de cuántas posiciones se compren --- pero no
+la cartera de referencia del Model Study, que no es la que el trabajo adopta. Eso lo hace válido
+para la pregunta que aquí se formula --- si la señal se explica por estilos conocidos, algo que no
+depende de cuántas posiciones se compren --- pero no
 para describir la cartera final, cuyas cifras se presentan íntegramente en el
 Capítulo~\ref{chap:resultados-economicos} desde su propia evidencia.
 
-El Deflated Sharpe de 0,573, inferior al umbral de 0,95, es la limitación empírica más importante del
-trabajo. El estadístico corrige el Sharpe observado por el número de configuraciones ensayadas: con
-46 evaluaciones detrás y 135 observaciones de retorno, la probabilidad de que el Sharpe medido supere
-al máximo esperable por azar no llega a seis de cada diez. Dicho sin tecnicismos, la rentabilidad
-histórica de este trabajo no es distinguible de la que produciría buscar lo bastante entre
-alternativas razonables.
-
-Conviene precisar qué parte de la búsqueda pesa aquí, porque el trabajo la agravó dos veces y no de
-la misma manera. Encadenar tres Model Studies aumenta el número de configuraciones predictivas
-ensayadas y es lo que entra en este estadístico. La rejilla de cartera, en cambio, no toca el
-Rank-IC ni el modelo: se aplica después, sobre un modelo ya congelado, y su efecto se declara aparte
-en el Capítulo~\ref{chap:resultados-economicos} como una cota superior sobre el Information Ratio.
-Sumar ambas búsquedas en un solo reproche confundiría dos objetos distintos.
-
-Este resultado no contradice el test de permutación del Rank-IC: examinan cosas diferentes. El
-primero limita una afirmación de \emph{rentabilidad ajustada por riesgo}; el segundo apoya que el
-\emph{ranking} no se comporta como ruido puro. Que uno se debilite mientras el otro se mantiene es
-exactamente el patrón esperable cuando se busca más, y coincide con lo que muestra la lectura por
-eras: la evidencia de que el sistema ordena resiste, y la de que ese orden se cobra se encarece.
 \section{Robustez: aprendizaje y no suerte}
+\label{sec:robustez}
 
 La Tabla~\ref{tab:robustez} resume ocho contrastes predefinidos. Siete respaldan la capacidad
 predictiva; el Deflated Sharpe no alcanza su umbral de 0,95. Reportar este último resultado evita
@@ -545,6 +529,28 @@ para que la diferencia sea visible.
   \label{fig:aleatorias}
 \end{figure}
 
+\subsection*{El contraste que no supera: Deflated Sharpe}
+
+El Deflated Sharpe de 0,573, inferior al umbral de 0,95, es la limitación empírica más importante del
+trabajo. El estadístico corrige el Sharpe observado por el número de configuraciones ensayadas: con
+46 evaluaciones detrás y 135 observaciones de retorno, la probabilidad de que el Sharpe medido supere
+al máximo esperable por azar no llega a seis de cada diez. Dicho sin tecnicismos, la rentabilidad
+histórica de este trabajo no es distinguible de la que produciría buscar lo bastante entre
+alternativas razonables.
+
+Conviene precisar qué parte de la búsqueda pesa aquí, porque el trabajo la agravó dos veces y no de
+la misma manera. Encadenar tres Model Studies aumenta el número de configuraciones predictivas
+ensayadas y es lo que entra en este estadístico. La rejilla de cartera, en cambio, no toca el
+Rank-IC ni el modelo: se aplica después, sobre un modelo ya congelado, y su efecto se declara aparte
+en el Capítulo~\ref{chap:resultados-economicos} como una cota superior sobre el Information Ratio.
+Sumar ambas búsquedas en un solo reproche confundiría dos objetos distintos.
+
+Este resultado no contradice el test de permutación del Rank-IC: examinan cosas diferentes. El
+primero limita una afirmación de \emph{rentabilidad ajustada por riesgo}; el segundo apoya que el
+\emph{ranking} no se comporta como ruido puro. Que uno se debilite mientras el otro se mantiene es
+exactamente el patrón esperable cuando se busca más, y coincide con lo que muestra la lectura por
+eras: la evidencia de que el sistema ordena resiste, y la de que ese orden se cobra se encarece.
+
 \section*{Qué queda establecido y qué no}
 
 Conviene recapitular el balance del capítulo, porque su conclusión es afirmativa pero con un
@@ -554,7 +560,7 @@ Queda establecido que la ordenación existe. El Rank-IC de 0,1067 con $t$ de New
 un artefacto de la agregación: ninguna de 9.999 permutaciones lo alcanza, los cinco placebos de
 etiqueta quedan un orden de magnitud por debajo, el intervalo bootstrap por bloques excluye cero,
 la conclusión sobrevive a eliminar cualquier era completa y las tres semillas coinciden dentro de
-0,0015. Queda establecido también que no se agota en controles conocidos: la neutralización por
+0,0023. Queda establecido también que no se agota en controles conocidos: la neutralización por
 catorce variables de estilo retiene el 87,21\,\% de la señal, y la atribución local explica por qué
 --- el agente dominante lee microestructura de precio a corto plazo, no la prima de baja volatilidad
 que su nombre sugiere.
@@ -565,7 +571,7 @@ No queda establecido que la arquitectura multi-agente esté justificada por esto
 multiplicidad: el Deflated Sharpe de 0,573 no alcanza su umbral, y encadenar tres estudios ha
 encarecido esa exigencia en lugar de aliviarla. Y no queda establecido que la señal se mantenga
 fuera de la ventana de decisión con la fuerza que muestra dentro: en la era reservada el Rank-IC
-sigue siendo positivo, $+0{,}0441$, pero descansa sobre seis cohortes.
+sigue siendo positivo, $+0{,}0364$, pero descansa sobre seis cohortes.
 
 Con esto queda contestada la primera pregunta del trabajo. La segunda es independiente y no se
 deduce de la anterior: si una cartera real puede expresar esa ordenación sin destruirla por el
