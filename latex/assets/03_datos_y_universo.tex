@@ -138,9 +138,6 @@ introduce.
 
 \section{Observabilidad temporal: qué se sabía y cuándo}
 \label{sec:observabilidad}
-% `chap:metodologia` se conserva aquí: era la etiqueta del antiguo capítulo de diseño
-% point-in-time, hoy integrado en este capítulo, y varias referencias cruzadas la usan.
-\label{chap:metodologia}
 
 La regla metodológica que gobierna todo lo anterior puede enunciarse en una frase, y el resto de
 esta sección la desarrolla y la demuestra.
@@ -149,7 +146,9 @@ La regla metodológica central es simple: una variable fundamental puede entrar 
 snapshot \(\tsnap\) sólo si su fecha real de publicación \(\tfiled\), más el lag de ejecución, no
 supera \(\tsnap\). El horizonte \(\hlabel\) se usa exclusivamente para construir el retorno futuro;
 su etiqueta no entra ni en el ajuste ni en el meta-agente hasta que \texttt{label\_end\_date} ya ha
-pasado. Así se bloquea el \textit{lookahead bias} desde la ingesta hasta la evaluación.
+pasado. Así se bloquea el \textit{lookahead bias} desde la ingesta hasta la evaluación. La
+Figura~\ref{fig:observabilidad} ordena las cuatro fechas que intervienen y las dos distancias que
+las separan.
 
 \begin{figure}[H]
 \centering
@@ -161,6 +160,7 @@ pasado. Así se bloquea el \textit{lookahead bias} desde la ingesta hasta la eva
 \end{tikzpicture}
 \caption{Observabilidad temporal. La señal sólo puede usar información publicada antes del
 snapshot; el retorno futuro se reserva como etiqueta.}
+\label{fig:observabilidad}
 \end{figure}
 
 Formalmente, si todo registro $x$ usado para predecir en \(\tsnap\) cumple
