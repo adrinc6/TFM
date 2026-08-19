@@ -1,220 +1,77 @@
-\chapter{Introducción y motivación}
+\chapter{Introducción}
+\label{chap:introduccion}
 
-La selección de acciones mediante aprendizaje automático plantea un problema metodológico antes que
-uno de ingeniería: una estrategia puede parecer rentable por azar, por información futura o por
-haber probado muchas variantes. Este trabajo estudia si un sistema de cinco agentes especializados
-puede aprender una ordenación transversal de acciones que mantenga poder predictivo fuera de muestra
-cuando los datos se cierran temporalmente y la selección no utiliza rentabilidad.
+\section*{Pregunta de apertura}
 
-La pregunta de investigación es: \emph{¿puede un sistema de agentes especializados aprender una
-ordenación transversal de acciones con valor predictivo fuera de muestra, medida con Rank-IC, y esa
-ordenación traducirse en utilidad económica neta de costes?} Tiene por tanto dos mitades, y el
-trabajo las aborda como dos objetivos sucesivos: primero, \textbf{que el sistema aprenda a ordenar};
-después, ya con la señal congelada, \textbf{que esa ordenación se sepa gestionar}. La respuesta se
-formula con precisión: la evidencia respalda ambos objetivos, pero no establece con igual fuerza que
-el Sharpe resista la penalización por multiplicidad.
+¿Puede un sistema aprender a ordenar acciones fuera de muestra y convertir después ese orden en una
+cartera útil? La pregunta parece única, pero contiene dos problemas. Ordenar exige que las acciones
+con mayor puntuación obtengan, en promedio, mejores retornos futuros que las de menor puntuación.
+Invertir exige además elegir cuántas comprar, cuánto asignar, cuándo vender y cuánto efectivo
+mantener. Una señal puede resolver el primer problema y fracasar en el segundo.
 
-La contribución es doble. Primero, impone una cadena point-in-time desde la publicación del
-fundamental hasta el cierre de etiqueta. Segundo, separa selección por Rank-IC, robustez y cartera:
-el rendimiento no puede escoger el modelo. Los Capítulos~\ref{chap:agentes}--\ref{chap:resultados}
-desarrollan esta cadena y el Capítulo~\ref{chap:limitaciones} fija el alcance exacto de sus
-conclusiones.
+Esa separación organiza todo el trabajo. El modelo se selecciona únicamente por su capacidad de
+ordenación transversal. Las reglas de cartera se estudian después, con la señal congelada. Así, una
+mejora económica no puede reescribirse retrospectivamente como mejora predictiva y la era
+2025--2026 permanece reservada desde el inicio.
 
-\section*{Las cinco preguntas que vertebran el documento}
-\addcontentsline{toc}{section}{Las cinco preguntas que vertebran el documento}
+\section{Problema y relevancia}
 
-El trabajo se organiza en torno a cinco preguntas concretas. Se enuncian aquí como preguntas y no
-como conclusiones, porque cada una necesita evidencia propia y ninguna se responde con un sí o un no
-sin matices. Las tres primeras desarrollan el Objetivo 1, la cuarta el Objetivo 2 y la quinta fija
-hasta dónde llega lo afirmable en ambos.
+La selección cuantitativa de acciones combina tres dificultades. Primero, la información disponible
+cambia con el tiempo: usar hoy la composición actual de un índice o un dato fundamental antes de su
+publicación produce una ventaja inexistente. Segundo, probar muchas configuraciones aumenta la
+probabilidad de elegir ruido. Tercero, el resultado observado depende de una cadena de decisiones
+posteriores al modelo. Evaluar solo la rentabilidad final no permite saber en qué eslabón apareció la
+mejora o el fallo.
 
-\begin{enumerate}[leftmargin=*,itemsep=0.45em]
-  \item \textbf{¿Aprende el sistema a ponderar a sus especialistas?} Es decir, ¿la combinación
-  aprendida ordena mejor que repartir el peso por igual, y lo hace usando sólo información que
-  estaba disponible en cada fecha?
-  \item \textbf{¿Es señal lo que aprende, o ruido con buena apariencia?} Un Rank-IC positivo puede
-  surgir por azar, por un defecto de la maquinaria o por haber probado muchas configuraciones. La
-  pregunta exige contrastes que intenten activamente destruir el resultado.
-  \item \textbf{¿Se sostiene fuera de la ventana en la que se decidió?} Toda la selección ocurre
-  sobre 2015--2024; 2025--2026 se reserva desde el principio y no participa en ninguna decisión.
-  \item \textbf{¿Importa cómo se convierte la señal en cartera, y se puede optimizar?} Una
-  ordenación no se compra entera: una cartera real toma unas pocas acciones, paga costes y rota. La
-  pregunta es doble --- si esas decisiones de construcción mueven el resultado y cuánto, y si
-  optimizarlas por Information Ratio produce una cartera mejor que la del catálogo.
-  \item \textbf{¿Cuánto de todo esto puede afirmarse, y con qué fuerza?} La distancia entre
-  «la evidencia es favorable» y «queda demostrado» es el objeto último del trabajo.
-\end{enumerate}
+El sistema estudiado afronta esas dificultades con un panel \textit{point-in-time}, cohortes
+cerradas y una única ruta experimental. Cinco agentes ---\texttt{quality}, \texttt{value},
+\texttt{growth}, \texttt{momentum} y \texttt{risk}--- producen rankings especializados; un
+meta-agente aprende a combinarlos con información que ya estaba cerrada en cada fecha. La selección
+secuencial modifica una variable cada vez y conserva únicamente cambios respaldados por Rank-IC
+robusto. Después se calculan atribución, robustez, carteras y perfiles como evidencia informativa.
 
-Una convención se mantiene en todo el documento y conviene anunciarla: ningún resultado favorable se
-presenta sin su principal salvedad en el mismo párrafo o en el inmediatamente siguiente. El objeto
-de estudio es precisamente la facilidad con la que un sistema de este tipo produce evidencia
-convincente y falsa, de modo que ocultar los matices contradiría el propósito del trabajo. Las cinco
-preguntas se responden, una por una y con sus reservas, en el
-Capítulo~\ref{chap:conclusiones}.
+\section{Dos objetivos}
 
-El orden en que se producen las cosas es el que impone esa disciplina, y conviene tenerlo a la vista
-desde el principio: la Figura~\ref{fig:flujo} lo resume en una línea. Nada de lo económico ---
-cartera, costes, perfiles --- ocurre antes de que el ganador predictivo esté congelado.
+\textbf{Objetivo 1.} Determinar si el sistema aprende una ordenación transversal con capacidad
+predictiva fuera de muestra y si esa capacidad resiste cambios de régimen y controles contra azar,
+fuga temporal y factores conocidos. Este objetivo no presupone que el meta-agente deba superar a
+todos los especialistas: esa comparación forma parte del resultado.
 
-\begin{figure}[H]
-\centering
-\begin{tikzpicture}[node distance=6mm,>=Latex,every node/.style={font=\small,align=center}]
-\node[draw,rounded corners,fill=blue!8,minimum width=25mm] (c) {Catálogo cerrado};
-\node[draw,rounded corners,fill=teal!10,right=of c,minimum width=27mm] (s) {Model Study};
-\node[draw,rounded corners,fill=orange!12,right=of s,minimum width=30mm] (r) {Selección\\Rank-IC};
-\node[draw,rounded corners,fill=green!10,right=of r,minimum width=27mm] (w) {Ganador};
-\node[draw,rounded corners,fill=gray!15,below=of w,minimum width=40mm] (e) {Robustez, cartera y perfiles};
-\draw[->,thick](c)--(s); \draw[->,thick](s)--(r); \draw[->,thick](r)--(w); \draw[->,thick](w)--(e);
-\end{tikzpicture}
-\caption{Flujo científico único del TFM. La evidencia económica se produce después de congelar el
-ganador predictivo.}
-\label{fig:flujo}
-\end{figure}
+\textbf{Objetivo 2.} Medir cuánto alteran las reglas de cartera la traducción económica de una señal
+ya congelada. Este objetivo se divide al interpretar, no al ejecutar: (2a) comprobar si las reglas
+generan diferencias materiales dentro de la ventana de selección; y (2b) observar si la cartera
+elegida conserva el resultado en la era reservada. La primera afirmación puede sostenerse con toda la
+rejilla; la segunda queda limitada por el reducido número de cohortes reservadas.
 
-\section{El problema: predecir no es maximizar retrospectivamente}
+Los cinco criterios que permiten juzgar ambos objetivos son: integridad temporal de datos y
+etiquetas; mejora predictiva medible y comparable; robustez frente a explicaciones nulas;
+separación entre señal y cartera; y límites explícitos sobre cobertura, multiplicidad y capacidad.
+No son nuevas preguntas de investigación, sino condiciones que una respuesta defendible debe
+satisfacer.
 
-En un problema de clasificación convencional es frecuente comparar modelos con una métrica única y
-elegir el mayor valor observado. En mercados financieros esa práctica es insuficiente. Los retornos
-son ruidosos, los datos tienen una dependencia temporal fuerte y el investigador suele disponer de
-muchas decisiones plausibles: universo, fecha de rebalanceo, horizonte, transformaciones, modelo,
-costes y tamaño de cartera. Si se usa la misma historia para escoger cada una de esas decisiones y
-para celebrar el resultado final, la rentabilidad puede reflejar la exploración acumulada y no una
-relación económica estable. Este fenómeno, habitualmente llamado \textit{backtest overfitting}, es
-uno de los motivos por los que un buen gráfico de rendimiento no basta como evidencia
-(López de Prado et al., 2014; Harvey et al., 2016).
+\section{Aportación}
 
-Un ejemplo simplificado ilustra el problema. Supóngase que un investigador prueba veinte reglas
-aleatorias para formar una cartera de doce acciones durante diez años. Aunque ninguna regla tenga
-información sobre el futuro, es probable que una presente el mejor CAGR por pura variabilidad. Si se
-publica sólo esa ganadora y se omiten las diecinueve alternativas, el lector observará una curva
-ascendente y podría atribuirle habilidad. La conclusión cambia si se pregunta qué métrica eligió la
-regla, cuántas alternativas se probaron, qué datos estaban disponibles en cada fecha y si la
-estrategia se sostuvo tras congelar todas las decisiones.
+La aportación no consiste en presentar una cartera como recomendación de inversión. Consiste en un
+procedimiento auditable para separar aprendizaje predictivo e implementación económica, junto con
+un caso empírico completo. El trabajo muestra qué aprendió el sistema, qué especialista concentra la
+información, qué contrastes supera, qué reglas de cartera mueven el resultado y qué cambia cuando la
+misma señal se evalúa en una ventana que no intervino en ninguna decisión.
 
-Este trabajo adopta esa segunda pregunta. No intenta identificar retrospectivamente la cartera más
-rentable del S\&P 500 ni construir una recomendación de inversión. El objeto científico es una
-ordenación: dadas las acciones disponibles en una fecha, ¿asigna el sistema puntuaciones más altas,
-en promedio, a las que después obtienen retornos excedentes mayores? Esta formulación permite
-evaluar todo el universo transversal y no sólo las pocas posiciones finalmente compradas. También
-permite distinguir el aprendizaje del ranking de las fricciones de una implementación concreta.
+La distinción numérica también es importante. El sistema emplea \NumPredictores{} predictores
+declarados; el catálogo contiene \NumParametrosCatalogo{} parámetros científicos y de cartera; y la
+auditoría de variables produce \NumDiagnosticos{} diagnósticos porque incluye columnas derivadas.
+Son tres objetos distintos, no tres versiones del mismo recuento.
 
-\section{Pregunta y objetivos}
+\section{Recorrido del documento}
 
-La pregunta de investigación se descompone en \textbf{dos objetivos} que se abordan en ese orden y
-con evidencia separada.
+El capítulo siguiente sitúa la pregunta en la literatura. Después se presentan datos y agentes, se
+formaliza el protocolo, se evalúa la señal y se estudia su traducción a cartera. Limitaciones y
+conclusiones cierran el argumento; los anexos conservan únicamente lo necesario para reproducir el
+estudio y verificar el catálogo cerrado.
 
-\begin{description}[leftmargin=*,itemsep=0.4em]
-  \item[Objetivo 1 — que el sistema aprenda a ordenar.] Establecer si un sistema de agentes
-  especializados aprende una ordenación transversal con valor predictivo fuera de muestra, medida
-  con Rank-IC. Lo responden los tres \textit{Model Studies} encadenados.
-  \item[Objetivo 2 — que la ordenación se sepa gestionar.] Establecer si las variables de
-  construcción de cartera afectan de forma material al resultado y si, optimizando por Information
-  Ratio, se obtiene una cartera mejor que la que el catálogo recomienda por defecto. Lo responde el
-  \textit{Portfolio Study}.
-\end{description}
+\section*{Respuesta y transición}
 
-El orden no es arbitrario ni retórico. Durante los tres Model Studies \textbf{la cartera es una capa
-secundaria y sin optimizar}: se mantiene la configuración por defecto del catálogo precisamente para
-que ninguna decisión predictiva pueda apoyarse en ella. Sólo cuando el ganador predictivo está
-congelado se convierte la construcción de cartera en objeto de estudio por derecho propio.
-
-Los dos objetivos, además, no se juegan contra el mismo tipo de rival, y conviene advertirlo desde el
-principio. El Objetivo 1 se mide contra un listón absoluto: o el sistema ordena mejor que el azar, o
-no. El Objetivo 2 se mide contra el mercado, y batir a un índice es un problema de \textbf{suma cero}
-antes de costes y de suma negativa después (Sharpe, 1991). No es una dificultad retórica: a veinte
-años, el 93\,\% de los fondos estadounidenses de gran capitalización queda por detrás del S\&P 500
-(S\&P Dow Jones Indices, 2026). La Sección~\ref{sec:suma-cero} desarrolla el argumento, su
-aritmética y el alcance exacto que admite.
-
-De esa asimetría se sigue el tono del trabajo. Demostrar que un modelo \emph{aprende} es una
-afirmación sobre el modelo y se resuelve con evidencia estadística; demostrar que ese aprendizaje
-\emph{se cobra} es una afirmación sobre un mercado competitivo en el que la mayoría de los
-participantes profesionales no lo consigue, y exige un grado de prueba muy superior. Este TFM aspira
-a lo primero con contundencia y trata lo segundo con la cautela que merece.
-
-Las cinco preguntas del apartado anterior son la forma falsable de estos dos objetivos: las tres
-primeras desarrollan el Objetivo 1 --- que exista una ordenación, que sea señal y no ruido, y que se
-sostenga fuera de la ventana en que se decidió ---, la cuarta el Objetivo 2 y la quinta acota lo
-afirmable en ambos. Cada una lleva asociada una hipótesis nula concreta, que el
-Capítulo~\ref{chap:resultados} y el Capítulo~\ref{chap:resultados-economicos} intentan rechazar con
-evidencia propia.
-
-La hipótesis nula sigue siendo científicamente útil. Si el Rank-IC no superase los contrastes, el
-resultado no sería un fracaso del TFM: sería evidencia contra la afirmación de que esta arquitectura
-aprende una ordenación estable bajo las restricciones propuestas. Este criterio es importante porque
-reduce el incentivo a modificar el protocolo hasta obtener una rentabilidad atractiva.
-
-\section{Contribución del trabajo}
-
-La primera contribución es de diseño temporal. Un fundamental se asocia a su fecha real de
-publicación regulatoria y no a su cierre fiscal. De este modo, una observación no entra en el modelo
-antes de que un inversor real pudiera conocerla. La segunda es de diseño experimental: la selección
-del ganador sólo utiliza Rank-IC pareado hasta 2024. Durante esa fase la cartera, sus costes, el
-efectivo y los perfiles son una capa posterior meramente diagnóstica; sólo cuando el ganador está
-congelado pasa la construcción de cartera a ser objeto de estudio. La tercera es de auditabilidad: el
-estudio conserva configuración, decisiones, cohortes, pesos del meta, posiciones, órdenes y
-artefactos de robustez.
-
-La arquitectura de agentes también responde a una cuestión interpretativa. El mercado puede premiar
-en un régimen la rentabilidad y solidez de un negocio, y en otro la exposición a riesgo, el valor o
-la tendencia. En lugar de pedir a un único modelo que mezcle toda esa información sin estructura,
-el sistema mantiene especialistas y permite observar qué peso aprende el combinador. Así se puede
-examinar no sólo \emph{si} hay señal, sino \emph{cómo} cambia la evidencia disponible para cada
-especialidad.
-
-\section{Del ranking a una decisión económica}
-
-Conviene separar tres conceptos que a menudo se confunden. El \textbf{score} es la salida continua de
-un agente para una acción; el \textbf{rango} ordena los scores dentro de cada snapshot; y el
-\textbf{Rank-IC} es la correlación de Spearman entre ese rango y el retorno excedente observado al
-cierre de la etiqueta. Si $r_{i,t}$ es el rango de la acción $i$ en la fecha $t$ y $y_{i,t+h}$ su
-retorno excedente futuro, la métrica por cohorte es
-
-\[
-\rankic_t=\rho_{\mathrm{Spearman}}\!\left(r_{i,t}, y_{i,t+h}\right).
-\]
-
-Un Rank-IC positivo no promete que todas las posiciones individuales ganen ni que la cartera supere
-al benchmark cada año. Significa que, de media, el orden relativo contiene información. La cartera
-añade restricciones: sólo puede comprar, mantiene un número reducido de posiciones, paga costes y
-puede conservar efectivo cuando la calibración de alfa no justifica una entrada. Por eso un sistema
-puede exhibir un Rank-IC sólido y un IR de cartera moderado. El
-Capítulo~\ref{chap:resultados-economicos} mide esa pérdida de transmisión y muestra que cambiar
-únicamente las reglas de cartera, sin tocar el modelo, basta para invertir el signo del resultado
-fuera de muestra: es la contribución central de este trabajo.
-
-\section{Alcance y organización del documento}
-
-El alcance empírico se limita a acciones que pertenecieron históricamente al S\&P 500, a fuentes
-gratuitas y a una cartera \textit{long-only}. SPY actúa sólo como benchmark. No se modela impacto de
-mercado dependiente del volumen, no se afirma causalidad económica y no se extrapolan resultados a
-otros mercados sin replicación. Estas restricciones se desarrollan como amenazas a la validez en el
-Capítulo~\ref{chap:limitaciones}.
-
-El documento sigue el orden en que se construyó el argumento, de modo que cada paso pueda entenderse
-cuando aparece y sin necesidad de adelantarse.
-
-El Capítulo~\ref{chap:estado-arte} sitúa el estudio en la literatura de factores y aprendizaje
-automático, y cierra explicando qué exige esa literatura de un diseño experimental honesto. El
-Capítulo~\ref{chap:datos} responde a la pregunta previa a cualquier modelo --- qué información
-existía realmente en cada fecha ---, describiendo universo, fuentes, observabilidad temporal y la
-separación entre la ventana de selección y la era reservada.
-
-Sobre esa base, el Capítulo~\ref{chap:agentes} explica cómo se transforma la información disponible
-en una ordenación transversal, y el Capítulo~\ref{chap:diseno-experimental} cómo se decide qué
-configuración usar y cómo esa ordenación se convierte en una cartera. Ninguno de los dos presenta
-resultados: describen mecanismo y protocolo.
-
-Los dos capítulos siguientes contienen la evidencia, separada según a qué pregunta responde. El
-Capítulo~\ref{chap:resultados} examina si la ordenación aprendida existe y resiste contrastes
-adversariales; el Capítulo~\ref{chap:resultados-economicos} examina qué ocurre al convertirla en
-posiciones y qué parte de ese resultado es genuinamente fuera de muestra. El
-Capítulo~\ref{chap:limitaciones} delimita el alcance de ambas y el
-Capítulo~\ref{chap:conclusiones} responde a la pregunta de investigación.
-
-Los anexos permiten reproducir activos, configuración y evidencia auxiliar sin interrumpir la
-lectura central. El Anexo~\ref{anexo:desarrollo} recoge íntegra la historia del desarrollo: los
-defectos que aparecieron, cómo se corrigieron y qué decisiones se tomaron contra la recomendación
-técnica. Está al final porque recorrer errores ya corregidos interrumpe la explicación del sistema
-final, pero su lectura es la que explica por qué muchas de las reglas del
-Capítulo~\ref{chap:diseno-experimental} son como son.
+El problema de investigación queda planteado como una cadena causal, no como una única cifra de
+rentabilidad. Para que esa cadena sea creíble, el siguiente capítulo delimita qué aportan Rank-IC,
+la validación temporal y la teoría de construcción de carteras, y qué hueco concreto cubre este
+trabajo.

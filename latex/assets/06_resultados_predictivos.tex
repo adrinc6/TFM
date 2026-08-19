@@ -27,7 +27,7 @@ y se diferencian únicamente en ese punto de partida.
   \small
   \caption{Las tres pasadas de la cadena y su ganador.}
   \label{tab:cadena}
-  \input{assets/t06_cadena.tex}
+  {\setlength{\tabcolsep}{5.8pt}\input{assets/t06_cadena.tex}}
   \caption*{Rank-IC, IC-IR y $t$ de Newey--West son de la ventana de selección; IR y exceso
   corresponden a la cartera \emph{por defecto} de cada estudio, no a la optimizada del
   Capítulo~\ref{chap:resultados-economicos}.}
@@ -239,8 +239,10 @@ Esta lectura tiene una consecuencia directa sobre el sesgo de cobertura descrito
 Capítulo~\ref{chap:limitaciones}, y es la razón por la que se reporta aquí. El sesgo de
 supervivencia es máximo en 2015--2018 y mínimo en 2022--2024, así que si estuviera fabricando la
 capacidad predictiva, el Rank-IC debería ser mayor en la primera era y desvanecerse en la última.
-Ocurre lo contrario. Eso permite afirmar que \textbf{la ordenación predictiva no es un artefacto de
-la cobertura del panel}, porque es más fuerte precisamente donde el panel está más completo.
+Ocurre lo contrario. Eso \textbf{contradice una explicación simple y monotónica basada en la
+cobertura del panel}: la ordenación es más fuerte precisamente donde el panel está más completo.
+No permite descartar otras vías por las que la disponibilidad histórica pueda favorecer el
+resultado.
 
 Lo que \emph{no} permite afirmar es que el resultado económico esté libre de ese sesgo. El alfa es
 negativo en la era menos sesgada y positivo en la más sesgada, que es el patrón contrario: si algo
@@ -278,7 +280,8 @@ datos no la respaldan.}
 
 Las dos variables que mandan son \artefacto{gap\_21d} y \artefacto{range\_63d} --- microestructura
 del precio a corto plazo: huecos de apertura y amplitud del rango de negociación ---, que juntas
-encabezan el 81,5\,\% de las observaciones. Las medidas que uno esperaría de una estrategia de baja
+encabezan el \DosVariablesRisk{} de las observaciones (\GapShareRisk{} y \RangeShareRisk{},
+respectivamente). Las medidas que uno esperaría de una estrategia de baja
 volatilidad aparecen después y con menos peso: \artefacto{max\_drawdown\_252d} encabeza el 2,4\,\% y
 \artefacto{beta\_252d}, el candidato más obvio, ni siquiera está entre las tres primeras. El agente
 no está comprando acciones defensivas en el sentido factorial clásico; está leyendo la estructura
@@ -365,23 +368,22 @@ sugiere.
 
 El Rank-IC resume la calidad de toda la ordenación transversal, pero la cartera sólo compra el
 extremo superior. Conviene por tanto comprobar si la ventaja se concentra donde efectivamente se
-utiliza. La Tabla~\ref{tab:cola} descompone el comportamiento de la cola por era.
+utiliza. La Figura~\ref{fig:cola-eras} compara el exceso de las diez primeras acciones, el del decil
+superior y la separación entre extremos en cada era.
 
-\begin{table}[H]
+\begin{figure}[H]
   \centering
-  \small
-  \caption{Comportamiento de la cola superior de la ordenación, por era.}
-  \label{tab:cola}
-  \input{assets/t07_cola.tex}
-  \caption*{«Top 10» es el exceso medio de las diez primeras posiciones; «Universo» el de todo el
-  panel. Diagnóstico, no criterio de selección.}
-\end{table}
+  \includegraphics[width=0.91\textwidth]{assets/f07_cola_eras.png}
+  \caption{Comportamiento de la cola superior de la ordenación, por era. Diagnóstico, no criterio
+  de selección.}
+  \label{fig:cola-eras}
+\end{figure}
 
 La lectura relevante es que el decil superior bate al universo en las tres eras de selección, de
 modo que la ventaja no procede exclusivamente de acertar la cola inferior --- que una cartera
 \textit{long-only} no puede explotar.
 
-La cuarta fila obliga a un matiz que conviene no dejar al lector. En la era reservada el decil
+La era reservada obliga a un matiz que conviene no dejar al lector. En ella el decil
 superior obtiene $-11{,}52$\,\% frente al $-2{,}14$\,\% del universo: \textbf{pierde contra el
 panel}, al revés que en las tres eras anteriores. Y sin embargo la diferencia entre el decil
 superior y el inferior se mantiene en $+6{,}27$ puntos, la segunda mayor de la tabla. Las dos
@@ -399,7 +401,7 @@ Dos contrastes independientes preguntan lo mismo desde ángulos distintos: ¿es 
 de estilos ya conocidos?
 
 El primero neutraliza. Regresando la señal contra catorce controles de valoración, rentabilidad,
-crecimiento, volatilidad y beta --- listados en el Anexo~\ref{anexo:evidencia} --- y recalculando
+crecimiento, volatilidad y beta --- catorce controles en total --- y recalculando
 después el Rank-IC, éste baja de 0,1135 a 0,0990. Conviene declarar de dónde sale ese 0,1135, porque
 no coincide con el 0,1067 del resto del capítulo: el contraste se calcula sobre las mismas 117
 cohortes de selección, pero sólo sobre las filas en que los catorce controles están disponibles, y
@@ -460,19 +462,9 @@ cerrada, una fuga temporal, un artefacto de la validación ---, los placebos deb
 magnitud comparable a la observada. Quedan entre $-0{,}0099$ y $+0{,}0042$, es decir, indistinguibles
 de cero y un orden de magnitud por debajo del sistema.
 
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.94\textwidth]{assets/f07_permutacion.png}
-  \caption{Situación del Rank-IC observado frente al rango de los placebos de etiqueta y al
-  resultado del contraste de permutación.}
-  \label{fig:permutacion}
-\end{figure}
-
-La Figura~\ref{fig:permutacion} representa la distribución nula completa: el estudio persiste los
-estadísticos de las 9.999 permutaciones, no sólo el $p$-valor resultante, de modo que puede verse
-dónde cae el Rank-IC observado dentro de la nube de permutaciones y no únicamente que la supera. El
-$p$-valor del texto se recalcula exactamente desde esas réplicas. El Anexo~\ref{anexo:evidencia}
-detalla qué se guarda de cada contraste.
+El estudio persiste la distribución nula completa, no sólo el $p$-valor resultante. La auditoría
+recalcula el estadístico desde esas réplicas, pero la figura individual se omite porque repetiría el
+veredicto ya recogido en la tabla de robustez.
 
 El \textit{bootstrap} por bloques y la exclusión de eras responden a una tercera objeción: que una
 media positiva esté dominada por meses correlacionados o por un subperiodo excepcional. Manteniendo
@@ -498,19 +490,13 @@ inicialización afortunada del \textit{boosting}. En las tres semillas ensayadas
 es 0,0023 y no cruza cero. El exceso geométrico tampoco lo cruza esta vez --- va de $+0{,}63$\,\% a
 $+2{,}12$\,\% ---, de modo que el estudio registra la estabilidad de la conclusión económica como
 \emph{verdadera}. Conviene no leer más de lo que dice: que ninguna de las tres semillas deje de
-batir al índice descarta que el resultado sea un accidente de la inicialización, pero el rango es
+batir al índice reduce la posibilidad de que el resultado sea un accidente de la inicialización,
+pero el rango es
 amplio en términos relativos --- el mejor triplica al peor --- y el Information Ratio se mueve entre
 0,122 y 0,312. La ordenación es estable; su traducción a rentabilidad conserva el signo, no la
-magnitud. La Figura~\ref{fig:semillas} muestra esa dispersión, y el conjunto de semillas se
-introdujo durante el desarrollo precisamente para poder medirla, según se documenta en el
-Anexo~\ref{anexo:desarrollo}.
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.92\textwidth]{assets/f07_semillas.png}
-  \caption{Dispersión de las métricas principales entre las tres semillas ensayadas.}
-  \label{fig:semillas}
-\end{figure}
+magnitud. El conjunto de semillas se introdujo durante el desarrollo precisamente para poder medir
+esa dispersión, según se documenta en el Anexo~\ref{anexo:desarrollo}; una figura individual no
+añadiría una conclusión distinta a la tabla resumen.
 
 El último contraste enfrenta la cartera del modelo a 1.000 carteras aleatorias de ocho posiciones
 --- el mismo tamaño, para que la comparación sea legítima --- y pagando los mismos costes. Con
@@ -518,20 +504,12 @@ riesgo emparejado, el modelo ocupa el percentil 97,3 (CAGR 15,02\,\% frente a un
 del 8,54\,\%). En el escenario general baja al percentil 75,0, pero ese nulo no se usa como prueba
 en ninguna dirección: su percentil 95 de CAGR llega al 75,68\,\%, dominado por carteras que por azar
 concentraron alguna superviviente extraordinaria, y una distribución con esa cola no es un
-\textit{benchmark} informativo. La Figura~\ref{fig:aleatorias} muestra los dos escenarios juntos
-para que la diferencia sea visible.
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.92\textwidth]{assets/f07_aleatorias.png}
-  \caption{Cartera del modelo frente a 1.000 carteras aleatorias, en el escenario general y con
-  riesgo emparejado.}
-  \label{fig:aleatorias}
-\end{figure}
+\textit{benchmark} informativo. La tabla de robustez conserva ambos escenarios; el gráfico separado
+se retira porque repetía el mismo veredicto.
 
 \subsection*{El contraste que no supera: Deflated Sharpe}
 
-El Deflated Sharpe de 0,573, inferior al umbral de 0,95, es la limitación empírica más importante del
+El Deflated Sharpe de \ProbabilidadDSR{}, inferior al umbral de 0,95, es la limitación empírica más importante del
 trabajo. El estadístico corrige el Sharpe observado por el número de configuraciones ensayadas: con
 46 evaluaciones detrás y 135 observaciones de retorno, la probabilidad de que el Sharpe medido supere
 al máximo esperable por azar no llega a seis de cada diez. Dicho sin tecnicismos, la rentabilidad

@@ -102,7 +102,7 @@ costado adoptarla. Esa es la columna que se tabula, ordenada de mayor a menor co
   \small
   \caption{Qué alternativa se rechazó en cada decisión y cuánto habría costado adoptarla.}
   \label{tab:decisiones}
-  \input{assets/t06_decisiones.tex}
+  \resizebox{\textwidth}{!}{\input{assets/t06_decisiones.tex}}
   \caption*{El coste es el Rank-IC de la mejor alternativa menos el del ganador; un coste
   \emph{positivo} indica que la alternativa medía mejor y que el ganador se decidió por otra vía, lo
   que sólo ocurre en los empates técnicos. No debe confundirse con la \emph{ventaja pareada}, que
@@ -266,8 +266,8 @@ El ranking ordena preferencias; la operación necesita además una ventaja neta.
 son inventadas para ilustrar la regla: los costes sí son los de la simulación, pero los alfas no
 proceden de ninguna medición.
 
-Las entradas nuevas incorporan histéresis y el efectivo rinde 0\%. Bajo la política
-\texttt{opportunity\_cash}, una plaza puede permanecer en efectivo sólo si respeta el tope declarado
+Las entradas nuevas incorporan histéresis y el efectivo rinde 0\%. Bajo la política de efectivo, una
+plaza puede permanecer en caja sólo si respeta el tope declarado
 y el suelo de diversificación; con el tope fijado en cero, esa misma plaza debe reinvertirse
 necesariamente. Un mínimo de tenencia, si se activa, bloquea ventas por rotación o caída de alfa
 hasta cumplir la fracción de horizonte configurada. Estas reglas controlan fricción y estabilidad;
@@ -334,9 +334,9 @@ y un procedimiento que las recorriera de una en una obtendría una respuesta que
 que se pregunte.
 
 Dos ejemplos concretos lo muestran. El suelo efectivo de diversificación no lo fija ninguna variable
-por separado, sino \artefacto{target\_size} y \artefacto{max\_cash\_weight} conjuntamente: el peso
+por separado, sino \texttt{target\_\allowbreak size} y \texttt{max\_cash\_\allowbreak weight} conjuntamente: el peso
 máximo por posición depende de cuántas posiciones caben y de cuánta caja se tolera. Y
-\artefacto{coverage\_percentile\_floor} hace cosas \emph{opuestas} según el tope de efectivo: con
+\texttt{coverage\_percentile\_\allowbreak floor} hace cosas \emph{opuestas} según el tope de efectivo: con
 tope cero, la plaza que deja una posición vendida por suelo se recompra necesariamente, de modo que
 el suelo actúa como un mecanismo de sustitución; con tope positivo, esa misma plaza puede quedarse
 en caja, y entonces el suelo actúa como un mecanismo de reducción de exposición. La misma variable,

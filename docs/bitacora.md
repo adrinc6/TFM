@@ -2350,3 +2350,39 @@ salvedades y con la concentración del resultado declarada como limitación en v
 desde los JSON versionados, así que son reproducibles desde un clon; las cifras corregidas se
 buscaron después en todo `latex/`, incluidas `presentacion.tex` y `guion_defensa.md`, donde varias
 van escritas con letra. No se pudo compilar el PDF: falta la distribución LaTeX en el entorno.
+
+---
+
+## 2026-08-18 · Migración editorial completa y defensa de veinte diapositivas
+
+**Qué se hizo.** Se ejecutó la migración editorial del manuscrito sin rebajar la profundidad de las
+explicaciones. La poda se limitó a redundancias: índices secundarios, inventarios repetidos,
+historia de desarrollo sin efecto sobre la validez y figuras que duplicaban el mismo argumento. Los
+capítulos de resultados mantienen el desarrollo técnico y ahora separan explícitamente qué queda
+demostrado, qué es evidencia preliminar y qué no puede atribuirse al diseño multiagente.
+
+El exportador genera `study_macros.tex` con las cifras decisivas y admite `--audit`. Solo acepta la
+cadena `study-20260816-182345-3cc1a5fb` → `study-20260817-021135-b5926b62` →
+`study-20260817-094411-568bd37e` y el Portfolio Study
+`study-20260817-212856-f86ca822`; cualquier mezcla con el estudio posterior se rechaza. La
+comparación económica parte de la configuración real del ganador del Model Study. Los respaldos son
+`winner.json`, `evidence/summary.json`, `robustness.json`, `attribution.json`, `decisions.json`,
+`portfolio_grid.parquet`, `portfolio_narrative.json` y `asset_manifest.json` dentro de esos estudios
+y de `latex/`.
+
+**Resultados de maquetación.** XeLaTeX produjo una memoria de 74 páginas y una presentación de 20
+diapositivas. El guion suma 18:35. Se renderizaron y revisaron visualmente todas las páginas y
+diapositivas; no quedan tablas o figuras cortadas, páginas accidentales, referencias sin resolver,
+desbordamientos ni mojibake. La composición de cartera de la defensa se amplió para que sus tres
+paneles puedan leerse a distancia.
+
+**Incidencia de validación.** La suite descubrió una diferencia de una ULP entre el coste persistido
+por el motor y la reconstrucción de la ruta congelada en el coste adoptado. La identidad económica
+no cambiaba, pero fallaba el contrato de igualdad bit a bit. `_repriced` reutiliza ahora el
+`cost_drag` persistido únicamente cuando la tasa solicitada coincide con la adoptada; los demás
+peldaños siguen recalculándose. La prueba aislada vuelve a pasar sin cambiar ningún resultado
+publicado.
+
+**Verificación final.** `verify_latex_assets.py`, la auditoría de cifras, compilación de ambos PDF,
+recuento de páginas y diapositivas, `py_compile`, `ruff`, `node --check` y la suite completa del
+repositorio quedan en verde.

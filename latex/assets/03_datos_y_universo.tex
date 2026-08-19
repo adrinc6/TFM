@@ -102,7 +102,7 @@ congelado, cuya interpretación se mantiene deliberadamente prudente en el Capí
 La Tabla~\ref{tab:cobertura-anual} documenta la cobertura año a año desde 2003, es decir, incluyendo
 los años que sólo se usan como historia de entrenamiento y nunca como cohortes de evaluación.
 
-\input{assets/t03_cobertura_anual.tex}
+{\setlength{\tabcolsep}{3.9pt}\input{assets/t03_cobertura_anual.tex}}
 
 La tabla tiene dos columnas que miden cosas distintas y conviene no confundirlas, porque la
 confusión hace parecer que todo está en orden. La \emph{cobertura} es la fracción de los miembros
@@ -236,35 +236,11 @@ serie se construyen sólo con publicaciones pasadas. Las transformaciones que us
 medias, estabilidad o momentum fundamental, agrupan por ticker y desplazan el pasado antes de
 calcular una ventana. El meta-agente filtra explícitamente cohortes no cerradas.
 
-La batería de tests de contrato cubre estos invariantes. La Tabla~\ref{tab:contratos} los agrupa por
-fichero, con el número de comprobaciones de cada uno y el invariante que protege.
-
-\begin{table}[H]
-  \centering
-  \footnotesize
-  \caption{Batería de contratos que protege los invariantes metodológicos.}
-  \label{tab:contratos}
-  \input{assets/t04_tests_contrato.tex}
-  \caption*{Recuento de funciones de prueba por fichero de contratos.}
-\end{table}
-
-Un test sintético no es evidencia económica, pero sí evidencia de que el mecanismo rechaza estados
-que violarían la metodología declarada. La distribución de esos 75 contratos es en sí misma
-informativa: el 53\,\% se concentra en las reglas económicas y en la contabilidad del
-\textit{backtest}, que es donde el desarrollo encontró la mayoría de los defectos documentados en el
-Anexo~\ref{anexo:desarrollo}.
-
-Conviene ser preciso sobre el alcance de esta batería. Los contratos comprueban que el código
-respeta las reglas declaradas; no comprueban que las reglas sean correctas. La
-Proposición~\ref{prop:sin-fuga} es un argumento sobre el diseño, y los contratos verifican que la
-implementación no lo contradiga --- por ejemplo, que el meta-agente filtre efectivamente las
-cohortes no cerradas ---, pero ninguna prueba unitaria puede garantizar que la fuente de datos
-respete las fechas de publicación que declara. Esa parte queda como una limitación de datos y se
-discute en el Capítulo~\ref{chap:limitaciones}.
-
-La historia de esta batería refuerza el punto. Pasó de 15 a 75 contratos a lo largo del desarrollo,
-y prácticamente cada añadido procede de un defecto concreto que llegó a manifestarse; el
-Anexo~\ref{anexo:desarrollo} los documenta uno a uno.
+Los contratos automáticos protegen cuatro invariantes: pertenencia histórica y fechas de
+publicación, cierre de etiquetas antes de entrenar, separación de la era reservada y contabilidad
+económica coherente con órdenes y costes. Un test sintético no es evidencia económica; prueba que el
+código rechaza estados incompatibles con el método declarado. Tampoco garantiza que la fuente diga
+la verdad sobre sus fechas, limitación que se trata en el Capítulo~\ref{chap:limitaciones}.
 
 \section{El catálogo de variables y su reparto entre agentes}
 
@@ -275,7 +251,7 @@ protocolo. Lo que interesa medir aquí es otra cosa: cuánta señal tiene cada v
 \emph{por separado}, antes de cualquier modelo.
 
 La respuesta es que muy poca, y ese es justamente el punto. Los Rank-IC univariantes son diminutos
-frente al 0,1067 del sistema completo: el mayor de todos, \artefacto{gap\_21d}, llega a 0,0540, y la
+frente al \RankICSeleccion{} del sistema completo: el mayor de todos, \artefacto{gap\_21d}, llega a 0,0540, y la
 mayoría se queda un orden de magnitud por debajo. No es una contradicción sino el argumento a favor
 de combinar: ninguna variable aislada ordena el mercado, y la capacidad predictiva aparece al
 agregar muchas señales débiles mediante modelos no lineales y una ponderación aprendida. La
@@ -287,8 +263,9 @@ Tabla~\ref{tab:features-top} muestra los extremos de esa distribución.
   \caption{Variables con mayor y menor Rank-IC univariante.}
   \label{tab:features-top}
   \input{assets/t03_features_top.tex}
-  \caption*{Doce primeras y cinco últimas de las 73 variables con diagnóstico, ordenadas por
-  Rank-IC univariante. Los diagnósticos cubren 73 variables frente a las 68 que declara el catálogo,
+  \caption*{Doce primeras y cinco últimas de las \NumDiagnosticos{} variables con diagnóstico,
+  ordenadas por Rank-IC univariante. Los diagnósticos cubren \NumDiagnosticos{} variables frente a
+  las \NumPredictores{} que declara el catálogo,
   porque añaden componentes derivados de otras; y ninguna aparece marcada como podada, de modo que la
   tabla describe el catálogo declarado y no qué variables sobrevivieron a la poda por estabilidad.}
 \end{table}

@@ -31,11 +31,7 @@ del listón. El \textit{scorecard} SPIVA (S\&P Dow Jones Indices, 2026), que com
 su índice de referencia, encuentra que a veinte años el \textbf{93\,\%} de los fondos
 estadounidenses de gran capitalización queda por debajo del S\&P 500, y que la proporción de
 rezagados \emph{crece} con el horizonte: lo que a un año parece habilidad tiende a no sobrevivir a
-una década. El problema tampoco es solo institucional. Los informes QAIB (DALBAR, 2025), que estiman
-el rendimiento del inversor medio a partir de los flujos reales de entrada y salida de los fondos,
-sitúan esa rentabilidad alrededor de un punto porcentual anual por debajo del índice a veinte años;
-compuesta, esa diferencia explica buena parte de la brecha entre lo que rinde un fondo y lo que
-acaba ganando quien lo compra.
+una década.
 
 De ahí que la afirmación que este capítulo puede permitirse sea deliberadamente modesta. Superar al
 índice de forma sostenida es, en el mejor de los casos, ganarle una posición a otro participante en
@@ -95,19 +91,15 @@ Sección~\ref{sec:portfolio-study}: producto cartesiano de las seis variables, o
 Information Ratio y medido sobre la serie recortada en 2024, de modo que ninguna combinación pudo
 ver la era reservada.
 
-\begin{table}[H]
+\begin{figure}[H]
   \centering
-  \small
-  \caption{Cuánto separa cada variable de cartera el Information Ratio.}
-  \label{tab:cartera-influencia}
-  \input{assets/t08_cartera_influencia.tex}
-  \caption*{Para cada variable se toma la mediana del IR de todas las carteras que comparten un
-  valor, con las otras cinco variando libremente, y se comparan el mejor y el peor. No se tabulan las
-  mejores carteras individuales porque se diferencian en un decimal y repiten la misma configuración
-  con variaciones menores.}
-\end{table}
+  \includegraphics[width=0.93\textwidth]{assets/f08_cartera_influencia.png}
+  \caption{Cuánto separa cada variable de cartera el Information Ratio mediano. Cada línea compara
+  el mejor y el peor valor con las otras cinco variables variando libremente.}
+  \label{fig:cartera-influencia}
+\end{figure}
 
-La Tabla~\ref{tab:cartera-influencia} ordena las seis variables por cuánto importan, y el resultado
+La Figura~\ref{fig:cartera-influencia} ordena las seis variables por cuánto importan, y el resultado
 es desigual. Las dos que gobiernan la exposición separan el Information Ratio de forma decisiva
 --- 0,208 el número de posiciones y 0,139 el tope de efectivo ---, la tenencia mínima aporta 0,164
 y el suelo de cobertura 0,076. Las dos restantes se mueven por debajo de 0,02: el reparto de pesos
@@ -134,21 +126,10 @@ carteras mediocres, de modo que rotar poco no es en sí mismo una virtud ni rota
 Lo que sí separa la nube con claridad es el tope de efectivo, cuya banda superior se agrupa en los
 topes bajos.
 
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.96\textwidth]{assets/f08_cartera_marginales.png}
-  \caption{Efecto marginal de cada variable sobre el Information Ratio. Cada caja resume todas las
-  carteras que comparten ese valor, con las cinco variables restantes variando libremente.}
-  \label{fig:cartera-marginales}
-\end{figure}
-
-La Figura~\ref{fig:cartera-marginales} traduce a distribuciones lo que la tabla resume en medianas,
-y añade una información que la tabla no puede dar: la \emph{forma} del efecto. Las dos variables de
-exposición desplazan la distribución del IR de forma inequívoca, mientras que la tolerancia de
-deriva apenas la mueve: sus cuatro cajas son casi indistinguibles, lo que significa que esa variable
-es, a efectos del Information Ratio, prácticamente inerte. Es una conclusión que el barrido de una
-variable cada vez no podía alcanzar, porque no distinguía entre «este valor es mejor» y «esta
-variable da igual».
+El rango ordenado añade una lectura que la nube no da: las variables de exposición desplazan la
+mediana con claridad, mientras que la tolerancia de deriva y el reparto de pesos apenas la mueven.
+Así se distingue entre «este valor es mejor» y «esta variable cambia poco el resultado», sin obligar
+al lector a comparar seis boxplots pequeños.
 
 Cada caja resume un \emph{conjunto} de carteras, no una cartera: al fijar una coordenada las otras
 cinco siguen variando. Una mediana alta significa que ese valor tiende a funcionar bien acompañado
@@ -167,8 +148,9 @@ tolera hasta un 10\,\% de efectivo, retiene cada posición un horizonte completo
 cobertura y deja correr la deriva hasta el 40\,\% antes de reequilibrar. Conviene precisar en qué se
 diferencia de la cartera del modelo, porque es lo que convierte la comparación en un experimento
 legible: comparten el número de posiciones y el reparto de pesos, y difieren en tres cosas ---
-reduce el efectivo máximo del 25\,\% al 10\,\%, impone una tenencia mínima de un horizonte completo
-donde antes no había ninguna, y \emph{relaja} la corrección de deriva de 0,25 a 0,4.
+reduce el efectivo máximo del \EfectivoModelo{} al \EfectivoCartera{}, amplía la tenencia mínima de
+medio horizonte a un horizonte completo y \emph{relaja} la corrección de deriva de
+\DerivaModelo{} a \DerivaCartera{}.
 
 Las tres diferencias apuntan en la misma dirección y conviene nombrarla, porque es el hallazgo de
 esta sección: la cartera ganadora \textbf{opera menos}. Mantiene lo que compra durante todo el
@@ -210,20 +192,21 @@ su Information Ratio en la era reservada es $-2{,}348$, $-1{,}010$ y $-1{,}795$,
 tres. La mejor pasada de la cadena en selección pierde frente al índice en la era reservada sin
 batirlo ni un solo año. Leído así, el trabajo parecería el retrato de un sobreajuste.
 
-El hallazgo de este capítulo es que esa degradación \textbf{no procedía del modelo}. Con la cartera
+El hallazgo de este capítulo es que la cartera era el \textbf{cuello de botella observable}. Con la cartera
 optimizada, la misma señal, sin reentrenar nada y sin tocar una sola variable predictiva, deja de
 perder en la era reservada: obtiene un exceso de $+0{,}24$\,\% y un Information Ratio de $+0{,}109$,
-batiendo al índice en uno de los dos años en lugar de en ninguno. La ordenación transversal siempre
-había sido válida fuera de muestra --- su Rank-IC en esa era es $+0{,}0364$, positivo aunque menor
-que en selección ---; lo que fallaba era la maquinaria que la convertía en posiciones, que rotaba
+batiendo al índice en uno de los dos años en lugar de en ninguno. La ordenación transversal se
+mantuvo positiva fuera de muestra ---su Rank-IC en esa era es \RankICReservado{}, aunque menor que
+en selección---; la política original no conseguía convertirla en un resultado comparable y rotaba
 demasiado deprisa para una señal a doce meses.
 
 Conviene medir la afirmación por lo que es. El cambio de signo es el resultado: se pasa de destruir
 valor a igualar al índice, no a superarlo con holgura. Un exceso del 0,24\,\% en 1,41 años no es una
 demostración de rentabilidad, y presentarlo como tal sería exactamente el tipo de lectura que este
 capítulo trata de evitar. Lo que queda demostrado, en las condiciones medidas, es más modesto y más
-útil: la hipótesis «la señal no se traslada fuera de muestra» no se sostiene, porque su fracaso
-dependía de una decisión de cartera y no de la señal.
+útil: la conclusión sobre utilidad económica cambia con la cartera aun manteniendo fija la señal.
+No queda demostrado que la cartera elegida generalice, ni que toda la debilidad económica anterior
+fuera ajena al modelo.
 
 Dos cautelas explícitas, que el trabajo no oculta. La primera es de tamaño muestral: la era
 reservada abarca seis cohortes y 1,41 años de cartera, de modo que «bate en la mitad de los años»
@@ -268,23 +251,16 @@ llegue a expresarse, y no debe compararse directamente con la de la ventana de s
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.96\textwidth]{assets/f07_equity.png}
-  \caption{Curva de patrimonio de la cartera ganadora y SPY. La región dorada es confirmación
-  reservada, no selección.}
-  \label{fig:equity}
+  \includegraphics[width=0.91\textwidth]{assets/f07_equity_drawdown.png}
+  \caption{Patrimonio y drawdown de la cartera ganadora frente a SPY. La región dorada es
+  confirmación reservada, no selección.}
+  \label{fig:equity-drawdown}
 \end{figure}
 
-La curva de la Figura~\ref{fig:equity} permite una lectura que las medias agregadas no dan: la
+La Figura~\ref{fig:equity-drawdown} permite una lectura que las medias agregadas no dan: la
 ventaja no se construye en un salto sino de forma acumulativa, y el tramo dorado --- la era
-reservada --- no rompe la trayectoria. La Figura~\ref{fig:drawdown} muestra el reverso de esa misma
-serie.
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.92\textwidth]{assets/f07_drawdown.png}
-  \caption{Drawdown acumulado de la cartera ganadora y SPY.}
-  \label{fig:drawdown}
-\end{figure}
+reservada --- no rompe la trayectoria. El panel inferior muestra el reverso de la misma serie sin
+obligar al lector a saltar a otra figura.
 
 El \textit{drawdown} máximo de 22,83\,\% es 2,38 puntos \emph{menor} que el de la cartera del
 modelo, y merece subrayarse porque contradice lo que cabría esperar: la cartera ganadora reduce el
@@ -341,13 +317,13 @@ por tanto una etiqueta de la configuración: se lee directamente en la vida de l
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.94\textwidth]{assets/f07_contribucion_accion.png}
-  \caption{Contribución neta acumulada de cada acción a la rentabilidad de la cartera, las diez
-  mayores frente a las diez menores, en la ventana de selección.}
-  \label{fig:contribucion-accion}
+  \includegraphics[width=\textwidth]{assets/f07_cartera_narrativa.png}
+  \caption{Qué compró la cartera: contribución concentrada, episodios extremos y exposición
+  sectorial. El sector es una foto actual y sólo tiene valor descriptivo.}
+  \label{fig:cartera-narrativa}
 \end{figure}
 
-La Figura~\ref{fig:contribucion-accion} descompone la rentabilidad por nombre. La contribución de
+El primer panel de la Figura~\ref{fig:cartera-narrativa} descompone la rentabilidad por nombre. La contribución de
 una acción es la suma, periodo a periodo, de su peso por su retorno, descontado el coste de las
 órdenes que la movieron; es una descomposición de la rentabilidad \emph{de la cartera}, no de su
 exceso sobre el índice, de modo que sus cifras no son comparables con el 5,91\,\% de exceso
@@ -383,15 +359,7 @@ cartera no es lo mismo que haber sido una buena posición.
 
 \subsection*{Dos historias que explican la doctrina de umbrales}
 
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.94\textwidth]{assets/f07_operaciones.png}
-  \caption{Las cinco mejores y las cinco peores operaciones cerradas de la ventana de selección:
-  cuándo se abrió cada posición, cuánto duró y con qué resultado realizado.}
-  \label{fig:operaciones}
-\end{figure}
-
-La Figura~\ref{fig:operaciones} sitúa en el calendario las diez operaciones extremas, y dos de ellas
+El segundo panel de la Figura~\ref{fig:cartera-narrativa} sitúa en el calendario las operaciones extremas, y dos de ellas
 merecen contarse porque ilustran, mejor que cualquier métrica agregada, qué hace y qué no hace la
 regla de rotación.
 
@@ -418,15 +386,7 @@ evitado es ajustar sobre el resultado, exactamente lo que este trabajo se ha pro
 
 \subsection*{Dónde estuvo invertida}
 
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.94\textwidth]{assets/f07_sectores.png}
-  \caption{Peso medio de cartera por sector, en la ventana de selección y en la era reservada. El
-  sector no es \textit{point-in-time}: procede de una foto actual del proveedor y sólo agrupa.}
-  \label{fig:sectores}
-\end{figure}
-
-La Figura~\ref{fig:sectores} responde a una pregunta que el sistema nunca se plantea: ninguna
+El tercer panel de la Figura~\ref{fig:cartera-narrativa} responde a una pregunta que el sistema nunca se plantea: ninguna
 variable del catálogo codifica el sector, de modo que el reparto sectorial es una \emph{consecuencia}
 de la señal y no una decisión. En la ventana de selección la cartera se apoya sobre todo en
 Technology (21,6\,\% de peso medio), Retail (13,4\,\%) y Financial Services (11,2\,\%), un reparto
@@ -486,7 +446,7 @@ de una misma operación --- concentra el 71,5\,\% del flujo. El \texttt{rebalanc
 \emph{qué} se tiene sino sólo el peso de lo que ya se tiene, se queda en el 17,6\,\%, y el resto son
 compras iniciales y motivos residuales.
 
-Ese reparto es en sí mismo un resultado, y conviene contrastarlo con la Tabla~\ref{tab:cartera-influencia}.
+Ese reparto es en sí mismo un resultado, y conviene contrastarlo con la Figura~\ref{fig:cartera-influencia}.
 La rejilla eligió una tolerancia de deriva de 0,4, la más laxa disponible, y con ella el
 \texttt{rebalance} deja de ser una partida de flujo comparable a la rotación para convertirse en una
 sexta parte de ella. La cartera, en otras palabras, dejó de gastar dinero en corregir pesos y lo
@@ -557,20 +517,10 @@ conservadora, porque obliga a pagar operaciones que un gestor racional no habrí
 Ambas cifras dicen lo mismo con distinto margen: el resultado no depende de haber supuesto costes
 optimistas.
 
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.94\textwidth]{assets/f07_costes_escalera.png}
-  \caption{Exceso geométrico de la ventana de selección a medida que encarece operar, con el
-  equilibrio de cada familia y el coste adoptado señalados.}
-  \label{fig:costes-escalera}
-\end{figure}
-
-La Figura~\ref{fig:costes-escalera} muestra las dos escaleras juntas, y su diferencia de forma es
-informativa. La ruta congelada decae en línea recta, como debe: pagar más por las mismas
-operaciones resta una cantidad proporcional. La resimulada, en cambio, es \emph{irregular}, porque a
-cada escalón el gestor simulado toma decisiones distintas y una cartera con menos operaciones no es
-una versión encogida de la anterior sino otra cartera. Esa irregularidad es la razón de reportar los
-dos equilibrios y no sólo el más favorable.
+La ruta congelada decae linealmente al pagar más por las mismas operaciones. La resimulada es
+irregular porque el gestor opera menos a medida que el coste aumenta: cada escalón es otra cartera,
+no una versión encogida de la anterior. Esa diferencia justifica reportar los dos equilibrios, pero
+no requiere una figura adicional.
 
 Dos salvedades acotan la afirmación. La primera es que ese margen se mide sobre la ventana de
 selección, donde la cartera es la mejor de 1.440, de modo que el equilibrio hereda ese sesgo
@@ -623,16 +573,9 @@ de antemano. El resultado sustituye al \texttt{meta\_rank} y la cartera lo consu
 Los pesos pueden ser \emph{negativos} cuando el estilo apuesta en contra de un agente --- es el caso
 del \texttt{contrarian} frente al momentum ---, y conviene tener presente una convención del
 catálogo: en \texttt{risk} el rango alto significa \emph{menos} riesgo, de modo que un peso positivo
-prioriza baja volatilidad y uno negativo la tolera. La Tabla~\ref{tab:perfiles-def} recoge los ocho
-con sus pesos.
-
-\begin{table}[H]
-  \centering
-  \footnotesize
-  \caption{Los ocho perfiles: qué hipótesis de estilo representa cada uno.}
-  \label{tab:perfiles-def}
-  \input{assets/t08_perfiles_def.tex}
-\end{table}
+prioriza baja volatilidad y uno negativo la tolera. Los ocho perfiles cubren la señal sin sesgo
+(\texttt{balanced}) y siete inclinaciones predefinidas hacia valor, crecimiento, calidad,
+\textit{momentum}, defensa, GARP y comportamiento contrario.
 
 Como la reordenación cambia qué acciones se compran, el alfa esperado deja de corresponder al orden
 vigente. Por eso la calibración de percentil a rentabilidad \textbf{se recalcula sobre el ranking
@@ -641,16 +584,9 @@ sus umbrales en puntos básicos decidirían sobre posiciones ajenas.
 
 \subsection*{Qué le pasó a cada estilo}
 
-La Tabla~\ref{tab:perfiles-cartera} evalúa los ocho con la cartera ya ganadora, dentro y fuera de la
-ventana de selección.
-
-\begin{table}[H]
-  \centering
-  \small
-  \caption{Los ocho perfiles de inversor evaluados con la cartera ganadora.}
-  \label{tab:perfiles-cartera}
-  \input{assets/t08_perfiles_cartera.tex}
-\end{table}
+Los ocho perfiles se evalúan con la cartera ya ganadora dentro y fuera de la ventana de selección.
+La comparación detallada se resume aquí por su conclusión, porque ordenar ocho variantes con solo
+seis cohortes reservadas daría una precisión aparente.
 
 El resultado principal es que \textbf{ninguno de los siete estilos mejora a la señal sin reordenar}.
 El perfil \texttt{balanced} --- que es, por construcción, no imponer ningún sesgo --- domina la
@@ -665,7 +601,7 @@ agente desplaza el peso. Los que se apoyan en agentes de Rank-IC próximo a cero
 mientras que \texttt{value} (0,342) y \texttt{growth} (0,294), que ponderan agentes algo mejores,
 conservan una parte del exceso. Ninguno se acerca a no reordenar nada.
 
-Hay además un coste operativo que la tabla hace visible: \texttt{momentum} rota 1,64 veces al año
+Hay además un coste operativo visible: \texttt{momentum} rota 1,64 veces al año
 --- la cifra más alta de los ocho, frente al 1,35 de \texttt{balanced} --- para terminar con un
 exceso del 0,43\,\%. La reordenación no sólo no aporta señal: cuesta fricción.
 

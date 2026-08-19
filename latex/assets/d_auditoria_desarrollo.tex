@@ -1,282 +1,37 @@
-\chapter{Auditoría del desarrollo y decisiones metodológicas}
+\chapter{Auditoría del desarrollo}
 \label{anexo:desarrollo}
 
-Los capítulos centrales presentan el sistema tal como quedó. Este anexo documenta cómo llegó a ser
-así: qué defectos aparecieron, cómo se detectaron y qué decisiones se tomaron --- incluidas las que
-se adoptaron contra la recomendación técnica.
-
-Se recoge aquí, y no en el hilo principal, por una razón de lectura: recorrer cronológicamente
-errores ya corregidos interrumpe la explicación del sistema final. Pero omitirlo sería peor. Buena
-parte de las reglas que el Capítulo~\ref{chap:diseno-experimental} presenta como decisiones de
-diseño existen porque algo falló antes, y varias de esas historias son transferibles a cualquier
-trabajo de aprendizaje automático aplicado a datos financieros.
-
-El anexo tiene dos mitades. La primera cubre la integridad temporal y el protocolo de selección; la
-segunda, la construcción de cartera y la calibración de alfa.
-
-\section{El estudio como unidad científica}
-
-El diseño original separaba la investigación en dos fases, una exploratoria y otra confirmatoria,
-con hipótesis formuladas entre ambas. Se eliminó en julio de 2026 y se sustituyó por un único
-\textit{Model Study} automático.
-
-El motivo inmediato fue operativo. Un estudio iniciado el 24 de julio completó un ajuste costoso y
-falló después, al consultar un campo de configuración que ya había sido eliminado del código. El
-error vivía sólo en memoria, y el proceso desapareció sin dejar reconciliación posible: no había
-forma de saber, desde los artefactos, qué se había llegado a calcular. El problema de fondo era que
-la arquitectura admitía demasiadas rutas --- escenarios, experimentos, ejecuciones sueltas ---, y
-cada ruta era una oportunidad para que un estado parcial quedara sin registrar.
-
-La reconstrucción impuso una regla que el resto del trabajo hereda: existe un único tipo de unidad
-científica, se ejecuta entera o falla, y todo lo que produce queda persistido con identidad propia.
-Los estados posibles de una ejecución se hicieron explícitos, se añadió un latido para detectar
-procesos muertos y una reconciliación por identificador de proceso al arrancar. La consecuencia
-práctica para este documento es que cada cifra del Capítulo~\ref{chap:resultados} puede rastrearse
-hasta un fichero concreto de un estudio concreto.
-
-Durante la validación de esa reconstrucción aparecieron ocho incidencias que conviene mencionar
-porque ilustran cuántas formas hay de que una ejecución «funcione» sin ser válida. La más
-instructiva es la segunda: el primer \textit{smoke} técnicamente exitoso produjo puntuaciones
-constantes. La causa era que el mínimo de cincuenta observaciones por hoja impedía que los árboles
-dividieran un conjunto de sesenta y cinco filas, de modo que el modelo devolvía siempre el mismo
-valor. El proceso terminó sin error, escribió sus artefactos y se declaró correcto. No se aceptó
-como validación. Es un recordatorio de que la ausencia de excepción no es evidencia de corrección.
-
-\section{De un estudio aislado a una cadena de estudios}
-
-La regla anterior --- una única unidad científica, ejecutada entera --- resolvió la trazabilidad,
-pero dejó al descubierto una limitación distinta, que sólo se hizo visible al mirar los resultados
-de la primera pasada completa: su ganador se apartaba en ocho variables del baseline del catálogo,
-de modo que la mayoría de sus decisiones se habían tomado partiendo de una configuración que el
-propio estudio acabó descartando. De ahí nació la cadena de estudios, cuyo funcionamiento y coste
-metodológico describe la Sección~\ref{sec:cadena-studies} del
-Capítulo~\ref{chap:diseno-experimental}.
-
-\section{Variables declaradas que no se calculaban}
-
-El hallazgo científicamente más relevante de la limpieza de julio fue de otra naturaleza. El
-catálogo de \textit{features} declaraba dos bloques de \textit{momentum} multi-horizonte, presentes
-en todos los conjuntos de variables reales. Pero esas columnas sólo se calculaban si dos
-interruptores concretos estaban activados, y esos dos interruptores \emph{nunca existieron en el
-catálogo cerrado}: no eran alcanzables desde ningún estudio real.
-
-La consecuencia es que un estudio previamente documentado se ejecutó sin las columnas de
-\textit{momentum} multi-horizonte que su propia configuración declaraba usar. Nada falló, ninguna
-prueba se puso en rojo y los resultados eran perfectamente plausibles. El defecto era invisible
-porque el sistema declaraba una cosa y computaba otra, y ambas descripciones eran internamente
-coherentes.
-
-La lección --- declarar no es computar --- motivó una comprobación que hoy forma parte de la
-batería de contratos: que el catálogo declarado y el conjunto de columnas efectivamente calculadas
-coincidan. En la misma limpieza se retiró un sesgo de régimen fijado por constantes en el código, no
-aprendido de los datos, que contradecía frontalmente el propósito del trabajo.
-
-\section{Cuando la puerta estadística penalizaba al mejor}
-
-La corrección de validez de finales de julio es la más extensa del registro: doce defectos
-identificados y medidos, recogidos en la Tabla~\ref{tab:defectos}.
+Este anexo conserva solo los defectos que pudieron cambiar la validez o la interpretación del
+estudio. La historia completa permanece en la bitácora del repositorio; repetirla aquí añadiría
+cronología, no evidencia. La Tabla~\ref{tab:defectos} resume síntoma, riesgo y corrección.
 
 \begin{table}[H]
   \centering
   \footnotesize
-  \caption{Defectos de validez detectados y efecto medido de su corrección.}
+  \caption{Defectos del desarrollo con impacto sobre la validez.}
   \label{tab:defectos}
-  \input{assets/t08_defectos_validez.tex}
-  \caption*{Transcrita del registro de desarrollo del proyecto, no de un artefacto del estudio.}
+  \resizebox{\textwidth}{!}{\input{assets/t08_defectos_validez.tex}}
 \end{table}
 
-El primero de la lista merece detalle porque afecta al corazón del protocolo. La regla de selección
-admite un candidato si demuestra no ser inferior al incumbente, y esa no inferioridad se evaluaba
-con un intervalo de confianza sobre la diferencia pareada. El defecto era que el intervalo se
-ensanchaba con la magnitud de la diferencia: cuanto \emph{mejor} era un retador, más ancho su
-intervalo y más difícil superar el umbral. La puerta penalizaba exactamente a los candidatos que
-debía premiar.
+\section*{Tres lecciones reutilizables}
 
-El síntoma que lo delató no fue un error, sino una regularidad sospechosa: ningún retador resultaba
-elegible, en ninguna variable, pese a que algunos dominaban con claridad. Al corregirlo,
-\texttt{feature\_preset} pasó de \texttt{core} (Rank-IC 0,0730) a \texttt{all} (0,0958), con una
-ventaja pareada de $+0{,}0216$. Es decir, el sistema había estado descartando una mejora
-sustancial y real por un defecto en su criterio de admisión.
+\textbf{1. Declarar no equivale a calcular.} Varias opciones del catálogo llegaron a existir en la
+interfaz antes de modificar realmente las variables consumidas por el modelo. El sistema podía
+terminar sin error y producir métricas plausibles. La corrección fue convertir la correspondencia
+entre configuración declarada, datos preparados y evaluación en un contrato automático.
 
-Dos defectos más de esa lista tienen implicaciones directas para la lectura del
-Capítulo~\ref{chap:resultados}. La clave de evaluación no incluía el identificador del conjunto de
-datos, de modo que la misma clave llegó a aparecer asociada a CAGR 0,1468 y 0,1692: dos resultados
-distintos indexados como si fueran el mismo. Y el exceso geométrico se calculaba como una resta de
-CAGR en lugar de un cociente de acumulados, lo que introduce un sesgo que crece con el horizonte.
-Ambas correcciones cambian cifras publicadas, y por eso los estudios anteriores a esta versión del
-catálogo quedaron derogados como evidencia.
+\textbf{2. Un resultado plausible puede esconder un fallo semántico.} Una puerta de no inferioridad
+penalizaba candidatos superiores por tener intervalos más anchos; una calibración degenerada podía
+emitir expectativas constantes; y una posición sin puntuación detenía una rotación completa. Ninguno
+de esos casos necesitaba lanzar una excepción. Los diagnósticos deben comprobar invariantes y no solo
+que el proceso finalice.
 
-De la misma revisión salió una observación que motivó introducir un conjunto de semillas: el Rank-IC
-variaba apenas $\pm 0{,}001$ entre inicializaciones, pero el exceso sobre el índice \emph{cambiaba
-de signo} (una semilla daba $-0{,}51$ puntos y otra $+3{,}11$). La conclusión predictiva era
-estable; la económica, no. Esa asimetría es la que la Figura~\ref{fig:semillas} documenta hoy con
-tres semillas.
+\textbf{3. Toda decisión económica necesita contrafactual y contabilidad.} Una venta solo es
+interpretable si existe un destino mejor después de costes, y una comisión solo puede cobrarse si la
+orden se ejecuta. Esta regla obligó a unir señal, orden, posición y coste en el mismo registro y
+evitó que un backtest aparentemente conservador destruyera valor mediante operaciones inexistentes.
 
-\section{Dos correcciones que cambiaron el significado de una variable}
-
-Dos defectos de esta etapa comparten una misma naturaleza: no producían errores, sino que hacían que
-un parámetro significase algo distinto de lo que el catálogo declaraba.
-
-El primero apareció al investigar posiciones con más de ochenta meses de antigüedad y percentil
-actual muy bajo que nunca se vendían. El meta-agente no olvidaba el régimen antiguo: su Rank-IC
-acumuló siete trimestres negativos consecutivos --- una racha más larga que la de la crisis
-sanitaria --- y los cinco agentes se invirtieron a la vez, patrón compatible con una rotación de
-factores y no con un error de signo. La causa era que el ajuste usaba una ventana rectangular, de
-modo que una cohorte de cuatro años atrás pesaba lo mismo que la más reciente. De ahí salió la
-ponderación por recencia como variable del catálogo. Ese diagnóstico encadenaba además un segundo
-problema, de naturaleza estadística, que documenta la Sección~\ref{sec:isotonica}.
-
-El segundo afectaba a la comparabilidad entre configuraciones. Los umbrales de cartera se expresaban
-en puntos básicos referidos al horizonte y no al año, de modo que 250 puntos básicos equivalían a un
-10\,\% anual con horizonte de tres meses y a un 2,5\,\% con horizonte de doce: el mismo número
-imponía exigencias muy distintas según el valor de otra variable. La corrección fue expresarlos en
-puntos básicos anuales y convertirlos por composición geométrica, rechazando el prorrateo lineal por
-ser el mismo atajo aritmético ya corregido antes en el CAGR y en el \textit{information ratio}.
-
-Cada uno de estos cambios rompe la comparabilidad con los resultados anteriores a él, y por eso la
-evidencia que sostiene este trabajo procede de una única cadena ejecutada bajo el catálogo ya
-estabilizado: mezclar mediciones de antes y de después de una corrección sería comparar reglas
-distintas.
-
-El número de contratos de prueba pasó de 15 a 75 a lo largo del desarrollo, y casi todos los
-añadidos proceden de un defecto concreto: cada corrección de esta lista dejó tras de sí una prueba
-que impide su reaparición. Esa es, probablemente, la parte más reutilizable del trabajo.
-
-\section*{Segunda parte: la construcción de cartera}
-\addcontentsline{toc}{section}{Segunda parte: la construcción de cartera}
-
-Las secciones anteriores cubren el plano predictivo. Las que siguen documentan los defectos y
-decisiones de la traducción económica, cuyo diseño final describe el
-Capítulo~\ref{chap:diseno-experimental}.
-
-\section{Toda venta necesita un destino mejor}
-
-El rediseño de la cartera partió de tres defectos que, vistos por separado, parecían independientes,
-y que compartían una única raíz: las ventas se decidían sin mirar a dónde iba el dinero.
-
-El primero era el más grave en términos contables. Bajo la política de efectivo oportunista, si
-ningún candidato superaba el umbral, la lógica vendía la cartera entera y devolvía una cartera
-objetivo vacía. El \textit{backtest} interpretaba «vacía» como «mantener» y resucitaba las
-posiciones --- pero ya había cargado los costes de unas ventas que nunca se ejecutaron. La cartera
-pagaba por replegarse sin replegarse.
-
-El segundo producía el efecto contrario y contribuyó de forma decisiva al 877\,\% de rotación anual
-que se observaba entonces. Bajo la política de permanecer siempre invertido, las doce posiciones se
-vendían por umbral y el relleno obligatorio \emph{recompraba exactamente las mismas en el mismo
-snapshot}: una ida y vuelta completa, con sus costes, para acabar donde se estaba.
-
-El tercero era la ausencia de un límite de concentración: con un único candidato admisible y un tope
-de efectivo del 20\,\%, el 80\,\% de la cartera acababa en un solo valor.
-
-La regla que los resuelve a los tres es la que gobierna hoy la cartera: una venta sólo se emite si
-el destino del dinero es mejor que la posición, después de costes. El destino puede ser otro valor
---- y entonces debe superar el umbral de rotación --- o el efectivo, que exige un tope declarado y
-respeta un suelo de diversificación. Se añadió además histéresis entre el umbral de entrada y el de
-salida, para que una posición no oscile dentro y fuera por variaciones mínimas.
-
-\section{El colapso de la calibración isotónica}
-\label{sec:isotonica}
-
-El diagnóstico de posiciones que nunca se vendían pese a un percentil muy bajo, descrito más arriba,
-encadenaba dos problemas distintos. Aquel apartado documentó el primero, de naturaleza predictiva
---- una ventana rectangular que no olvidaba el régimen antiguo. Éste es el segundo, más sutil, y
-bloqueaba la cartera por completo.
-
-La calibración de percentil a alfa esperada usaba una regresión isotónica creciente. Cuando la
-relación real entre percentil y retorno futuro es \emph{decreciente}, la única curva creciente que
-minimiza el error es una constante. El resultado fue que la alfa esperada era idéntica para los
-quinientos cuatro valores del universo. Con una alfa plana no existe ventaja calculable entre dos
-posiciones, y el bucle de rotación se interrumpía sin emitir ninguna orden. No era un fallo de
-implementación: era el comportamiento correcto de un estimador aplicado fuera de su supuesto.
-
-El diagnóstico de ese episodio contiene una lección estadística que merece registrarse por sí misma.
-El primer análisis por deciles, hecho con la \emph{media} del retorno excedente, sugería que la
-ordenación estaba invertida en todo el histórico. Era un artefacto del estimador: la distribución
-tiene una cola derecha extrema, y unos pocos valores multiplicadores situados en el decil bajo
-bastaban para que su media (${+}3552$ puntos básicos) contradijera a su mediana (${-}146$). Con la
-mediana, o con una media winsorizada, la curva histórica \emph{sí} es creciente, de forma coherente
-con el Rank-IC positivo. La inversión era real, pero sólo en el régimen reciente. Un diagnóstico
-apresurado habría llevado a reescribir el sistema entero para corregir un problema que no existía.
-
-La isotónica se sustituyó por una recta de percentil a retorno anualizado real con una cascada de
-ventanas, que acepta la primera ventana con pendiente creciente. La estimación se hace sobre veinte
-ventiles, pero la evaluación se realiza en el rango continuo: produce quinientos cuatro valores de
-alfa distintos donde la isotónica producía uno. Es la cascada que el
-Capítulo~\ref{chap:diseno-experimental} describe en «De rango a alfa esperado».
-
-\section{Una posición sin puntuación detenía toda la rotación}
-
-Un episodio concreto ilustra por qué las casuísticas de datos incompletos merecen tratamiento
-explícito. En una ejecución, una posición estaba en el percentil 4,96 con un retorno esperado
-de $-9{,}01$\,\% anual, mientras otro valor fuera de la cartera estaba en el percentil 100 con
-$+10{,}00$\,\%: una ventaja de 1.901 puntos básicos, muy por encima de cualquier umbral de rotación.
-El intercambio no se produjo.
-
-La causa era que una tercera posición, de una empresa que había salido del índice años antes, no
-tenía fila puntuable en esa fecha. El bucle la seleccionaba como peor posición, no podía calcular su
-ventaja y se detenía --- bloqueando de paso todas las rotaciones posteriores, incluida la que sí era
-claramente rentable. La corrección fue tratar la ausencia de puntuación como un mandato de venta,
-no como una decisión económica: una posición sin puntuación actual se vende, ignorando el mínimo de
-tenencia, y no se recompra en ese mismo snapshot.
-
-\section{Dos decisiones tomadas contra la recomendación técnica}
-
-El registro documenta dos decisiones que se adoptaron en contra de la recomendación técnica. Se
-recogen aquí con ambos lados del argumento, porque omitirlas presentaría el protocolo como más
-limpio de lo que es.
-
-La primera fue sustituir la calibración isotónica sin conservarla como opción del catálogo. A favor:
-el colapso es demostrable y deja la cartera inoperativa, de modo que mantener la opción habría
-significado conservar una rama que se sabe rota. En contra: cambia el ganador sin pasar por la
-selección secuencial por Rank-IC, que es precisamente la regla 4 del protocolo, y renuncia a poder
-comparar ambas formulaciones con evidencia. El autor asumió el riesgo y pidió eliminar la
-alternativa.
-
-La segunda es más incómoda. Cuando ninguna de las tres ventanas de la cascada produce una pendiente
-creciente, el sistema aplica una salvaguarda: una recta fija entre $-10$\,\% y $+10$\,\%. En contra
-de esa elección se argumentó que es un supuesto \emph{a priori}, del mismo tipo que el sesgo de
-régimen fijado por constantes que este proyecto ya había eliminado, y que se activa precisamente
-cuando las tres ventanas coinciden en que la ordenación no discrimina a favor --- es decir, cuando
-la evidencia disponible dice que no hay señal, el sistema inventa una. La recomendación técnica fue
-usar una curva plana, equivalente a repartir por igual. Se prefirió la recta fija.
-
-La mitigación consiste en registrar, para cada fila, qué ventana produjo su alfa, y esa trazabilidad
-permite ahora cerrar la discusión con una medición en lugar de un argumento. En el estudio de
-referencia, \artefacto{evidence/signal\_calibration.parquet} reparte sus 60.380 filas entre la
-ventana de horizonte (43.639, el 80\,\%) y la de era (10.905, el 20\,\%). Las 5.836 filas restantes
-corresponden a 2015 y 2016, no tienen alfa calculada y reflejan el arranque del sistema, cuando
-todavía no hay cohortes cerradas con las que estimar nada.
-
-Es decir: \textbf{la salvaguarda no llega a activarse ni una sola vez}. La objeción que se le hizo
-sigue siendo correcta como crítica de diseño --- un supuesto \emph{a priori} que se dispara justo
-cuando la evidencia dice que no hay señal es una mala idea ---, pero en esta configuración es una
-rama muerta y ninguna cifra de cartera de este trabajo depende de ella. Se documenta porque la
-decisión se tomó contra la recomendación técnica y porque una versión anterior de este documento,
-construida sobre otro estudio, sí reportaba una activación frecuente.
-
-Durante esa misma revisión se descubrió que la ruta de calibración de alfa \emph{no tenía ninguna
-cobertura de pruebas}. Un renombrado había dejado una llamada rota en esa ruta que la batería
-existente no detectaba. Se añadió un contrato específico que cubre justamente lo que puede fallar en
-silencio: que cada rango produzca una alfa distinta y monótona, que una relación decreciente caiga a
-la salvaguarda, y que la ausencia de cohortes cerradas produzca un valor no disponible en lugar de
-un cero.
-
-\section{Advertencia de reproducibilidad}
-\label{sec:reproducibilidad}
-
-Este historial de correcciones plantea una pregunta legítima, y conviene contestarla con el
-artefacto delante: ¿corrió toda la cadena bajo el mismo catálogo, o alguna de las correcciones que
-acaba de describirse cae en medio? Las cuatro instantáneas ---la de las tres pasadas y la del
-Portfolio Study--- registran la misma versión y el mismo hash de catálogo, de modo que ninguna
-corrección del desarrollo atraviesa la cadena adoptada y \textbf{las pasadas son estrictamente
-comparables entre sí}. No es una valoración del autor: se comprueba abriendo los cuatro
-\artefacto{catalog\_snapshot.json} y contrastando su campo de hash.
-
-Que la comprobación salga limpia no era el desenlace por defecto. Los defectos de este anexo se
-corrigieron a lo largo de varias semanas y varios de ellos cambiaron el catálogo; que la cadena
-final quepa entera dentro de una sola versión es consecuencia de haberla relanzado desde cero
-después de la última corrección, no de que el catálogo no se moviera.
-
-Lo que sí queda declarado es el alcance de esa garantía: cubre la comparabilidad \emph{entre las
-pasadas de la cadena}, no la comparabilidad con estudios anteriores del desarrollo, que corrieron
-bajo catálogos distintos y cuyas cifras no aparecen en este documento por esa misma razón.
+La consecuencia para el TFM es directa: los artefactos finales no se aceptan por parecer razonables,
+sino porque los contratos permiten reconstruir qué dato estaba disponible, qué decisión se tomó y
+qué efecto contable produjo. Las correcciones anteriores explican la necesidad de esa disciplina;
+no se presentan como evidencia económica adicional.

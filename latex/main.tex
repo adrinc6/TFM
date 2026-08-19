@@ -15,11 +15,16 @@
 % Con XeLaTeX NO se cargan inputenc ni fontenc: el motor ya lee UTF-8 y
 % fontspec selecciona una fuente OpenType con acentos, eñes y símbolos.
 \usepackage{fontspec}
-\setmainfont{Latin Modern Roman}   % fuente estándar de LaTeX, disponible en Overleaf
+\setmainfont{lmroman10-regular.otf}[
+  BoldFont=lmroman10-bold.otf,
+  ItalicFont=lmroman10-italic.otf,
+  BoldItalicFont=lmroman10-bolditalic.otf
+] % fuente estándar de LaTeX, disponible en Overleaf y en el paquete TeX
 \usepackage[spanish,es-tabla,es-noquoting]{babel}
 
 % --- Geometría y tipografía ------------------------------------------
 \usepackage[a4paper,margin=2.5cm]{geometry}
+\setlength{\emergencystretch}{1.5em}
 
 % --- Matemáticas y notación ------------------------------------------
 \usepackage{amsmath}
@@ -79,6 +84,9 @@
 \newcommand{\studyid}{\studyidC}
 % Ruta a un artefacto persistido. Homogeneiza las menciones a ficheros.
 \newcommand{\artefacto}[1]{\texttt{#1}}
+% Cifras compartidas por memoria y defensa. Este fichero lo genera el exportador directamente a
+% partir de los cuatro estudios adoptados y su auditoría detecta cualquier transcripción manual.
+\input{assets/study_macros.tex}
 
 % --- Metadatos -------------------------------------------------------
 % Portada provisional. Sustituir por la portada oficial del máster cuando
@@ -96,8 +104,6 @@
 \input{assets/00_resumen}
 
 \tableofcontents
-\listoffigures
-\listoftables
 
 % Orden narrativo: problema -> datos observables -> sistema -> protocolo -> resultados
 % predictivos -> resultados economicos -> limites -> conclusion. La historia del desarrollo
@@ -116,7 +122,6 @@
 \appendix
 \input{assets/a_reproducibilidad}
 \input{assets/b_catalogo_protocolo}
-\input{assets/c_evidencia_complementaria}
 \input{assets/d_auditoria_desarrollo}
 
 \end{document}

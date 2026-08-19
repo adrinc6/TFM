@@ -72,14 +72,14 @@ seis de las doce variables de cartera y cambió tres de ellas ---
 \artefacto{max\_cash\_weight} de 0,25 a 0,0, \artefacto{minimum\_holding\_period} de
 \texttt{none} a \texttt{half\_horizon} y \artefacto{rebalance\_drift\_tolerance} de 0,25 a 0,1 ---,
 mientras que \artefacto{target\_size}, \artefacto{sizing\_mode} y
-\artefacto{coverage\_percentile\_floor} coincidieron con los de partida. La configuración adoptada
+\path{coverage_percentile_floor} coincidieron con los de partida. La configuración adoptada
 se presenta en la Sección~\ref{sec:cartera-ganadora}. Se tabula aquí el ganador del Model Study
 porque este anexo documenta el catálogo del protocolo predictivo, no la gestión de cartera.
 
 \paragraph{Por qué seis de las doce.} Las otras seis variables de cartera ---
-\artefacto{commission\_bps}, \artefacto{slippage\_bps}, \artefacto{exit\_expected\_alpha\_bps},
-\artefacto{rotation\_edge\_bps}, \artefacto{price\_only\_strictness\_multiplier} y
-\artefacto{price\_only\_sell\_only} --- declaran rejilla pero no entran en el cartesiano, y la razón
+\path{commission_bps}, \path{slippage_bps}, \path{exit_expected_alpha_bps},
+\path{rotation_edge_bps}, \path{price_only_strictness_multiplier} y
+\path{price_only_sell_only} --- declaran rejilla pero no entran en el cartesiano, y la razón
 es que no describen una decisión del gestor sino el entorno en el que opera. Las dos primeras son
 condiciones de mercado: optimizarlas equivaldría a elegir cuánto se quiere pagar por operar, que no
 es una elección disponible. Las cuatro restantes gobiernan umbrales de la mecánica de rotación cuyo

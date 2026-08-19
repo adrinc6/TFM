@@ -500,3 +500,35 @@ relatos no son comparables.
 
 Cada cambio de código posterior que afecte al manuscrito añade aquí una entrada: qué cambió, a qué
 capítulo, tabla o figura afecta y qué artefacto lo respalda. Sin cifras.
+
+### 2026-08-18 — Saldada: migración editorial, visual y de la defensa
+
+**Qué se cerró.** La migración autorizada ya está incorporada a `main.tex`, `presentacion.tex` y
+los activos. Se mantuvo la profundidad de los capítulos técnicos y se podaron únicamente
+repeticiones, inventarios y visuales que contaban dos veces la misma historia. Resumen e
+introducción presentan una sola taxonomía de objetivos; resultados predictivos y económicos
+conservan el razonamiento completo, pero distinguen con más precisión evidencia, interpretación y
+límite; conclusiones separa capacidad de ordenación, sensibilidad a la cartera y generalización
+económica.
+
+**Deudas visuales saldadas.** Patrimonio y drawdown forman una figura de dos paneles; la cola por
+eras es un gráfico; la influencia de cartera se resume en un visual ordenado; contribución,
+operaciones y sector forman una narración conjunta; se retiraron la escalera de costes y los
+gráficos individuales de semillas y carteras aleatorias. El inventario de evidencia se integró en
+reproducibilidad y la auditoría del desarrollo quedó reducida a defectos con efecto sobre la validez
+y tres lecciones reutilizables.
+
+**Control interno.** `latex/assets/study_macros.tex` se genera desde los tres Model Studies
+adoptados y el Portfolio Study adoptado. El modo `--audit` rechaza identificadores distintos,
+recalcula las macros sin escribir y contrasta macros, manifiesto y activos. El cuerpo del manuscrito
+usa esas macros sin mostrar al lector rutas de artefactos junto a cada cifra. La evidencia procede
+de `winner.json`, `evidence/summary.json`, `robustness.json`, `attribution.json`, `decisions.json`,
+`portfolio_grid.parquet` y `portfolio_narrative.json` bajo
+`results/studies/study-20260817-094411-568bd37e/` y
+`results/studies/study-20260817-212856-f86ca822/`; la cadena se completa con
+`study-20260816-182345-3cc1a5fb` y `study-20260817-021135-b5926b62`.
+
+**Defensa.** La presentación queda cerrada en veinte diapositivas y un guion de 18:35. Los títulos
+formulan conclusiones defendibles, la métrica exacta de la cartera es la única tabla y los gráficos
+de eras, cadena, sensibilidad y composición sostienen la explicación oral sin texto esencial en
+tamaños reducidos.

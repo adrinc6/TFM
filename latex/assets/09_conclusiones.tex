@@ -1,198 +1,108 @@
 \chapter{Conclusiones y trabajo futuro}
 \label{chap:conclusiones}
 
-\textbf{El primer objetivo queda cumplido.} El sistema aprende una ordenación transversal fuera de
-muestra: su Rank-IC medio es 0,1067, supera los baselines deterministas --- el mejor se queda en
-0,0119 --- y se mantiene positivo tras placebos, permutación, bootstrap, exclusión de eras, semillas
-y neutralización por estilo. En la era reservada, que no intervino en ninguna decisión, el Rank-IC
-sigue siendo positivo ($+0{,}0364$). El meta-agente aporta valor frente al promedio equiponderado
-porque aprende a reponderar especialistas a partir de cohortes cerradas, si bien el agente de riesgo
-por separado ordena algo mejor que la combinación, lo que impide presentar la arquitectura
-multi-agente como demostrada por estos datos.
+Este capítulo responde a los dos objetivos con la fuerza que permite cada evidencia. La separación
+entre señal y cartera se mantiene hasta el final: una conclusión predictiva no se transforma en una
+promesa económica, y una mejora de cartera no se atribuye retrospectivamente al modelo.
 
-\textbf{El segundo objetivo también queda cumplido, y es el que más margen aportó.} Sobre esa señal
-ya congelada, la rejilla de 1.440 configuraciones muestra que las variables de construcción de
-cartera afectan al resultado de forma material y muy desigual: el número de posiciones mueve el
-Information Ratio mediano en 0,208 y la tenencia mínima en 0,164, mientras que la tolerancia de
-deriva y el reparto de pesos son prácticamente inertes (0,017 y 0,005). Optimizar por Information
-Ratio eleva el ratio de 0,312 a 0,841 y el exceso geométrico del 2,12 al 5,91\,\%, sin reentrenar
-nada, y reduciendo la rotación a la mitad. La mejora obtenida sin tocar el modelo es mayor que la
-acumulada por las tres pasadas predictivas juntas.
+\section{Objetivo 1: capacidad de ordenación}
 
-El contraste en la era reservada mide exactamente esa distancia. Con la construcción de cartera
-recomendada por el catálogo --- la que estuvo vigente, sin optimizar, durante todo el trabajo
-predictivo --- la señal obtenía un Information Ratio de $-1{,}795$ sin batir al índice ningún
-año. Con la cartera elegida por el estudio de optimización --- mismo modelo, misma
-señal, mismo panel, sin reentrenar nada --- obtiene un exceso del 0,24\,\% con Information Ratio
-$+0{,}109$. El Rank-IC de esa era es positivo en ambos casos, porque no depende de la cartera: la
-capacidad de ordenar era idéntica y lo único que cambió fue su gestión.
+La evidencia es favorable y robusta. El sistema alcanza Rank-IC medio \RankICSeleccion{} sobre
+\CohortesSeleccion{} cohortes, con \FraccionICPositiva{} positivas, IC-IR \ICIRSeleccion{} y $t$ de
+Newey--West \TNeweyWest{}. El test de permutación produce $p=\PValorPermutacion{}$ con
+\NumPermutaciones{} réplicas; el bootstrap por bloques excluye cero; y la señal conserva el signo al
+retirar eras completas, cambiar semillas, barajar etiquetas y neutralizar estilos conocidos. En la
+era reservada el Rank-IC sigue siendo positivo (\RankICReservado{}).
 
-De ahí se sigue la conclusión que este trabajo defiende: en un sistema de esta clase, la
-construcción de cartera no es un detalle de implementación posterior sino una variable capaz de
-decidir el signo del resultado fuera de muestra. Ninguna afirmación sobre la utilidad práctica de un
-sistema predictivo es interpretable sin declarar con qué cartera se midió, y una evaluación que
-reporte únicamente capacidad predictiva puede estar ocultando tanto un éxito como un fracaso.
+La formulación defendible es que el sistema aprende una ordenación transversal fuera de muestra
+dentro del universo, periodo y protocolo estudiados. No demuestra, sin embargo, que la arquitectura
+multiagente sea necesaria. El meta aprende a concentrar peso utilizando cohortes cerradas y supera
+al promedio equiponderado, pero el especialista \texttt{risk} alcanza por sí solo Rank-IC
+\RankICRisk{}, ligeramente superior al meta. El resultado describe un meta que selecciona al mejor
+especialista más que una combinación cuya superioridad haya quedado establecida.
 
-Hay un segundo hallazgo, de signo contrario al anterior y por eso mismo obligado. La descomposición
-por eras muestra que el orden predictivo y el pago económico no se mueven juntos: el Rank-IC crece
-hacia la era más reciente mientras el Information Ratio de la cartera cae hasta volverse negativo en
-esa misma era. Es una buena noticia y una advertencia a la vez. Buena, porque descarta que la
-capacidad predictiva proceda del sesgo de cobertura del panel --- si así fuera, sería máxima en los
-años peor cubiertos, y ocurre lo contrario ---. Advertencia, porque el trabajo no puede extender esa
-tranquilidad al resultado económico, cuyo mejor tramo coincide justamente con los años de cobertura
-más pobre. La evidencia de que el sistema \emph{ordena} es, en definitiva, más sólida que la de que
-esa ordenación \emph{se cobra}.
+La atribución local añade comprensión, no causalidad. \texttt{gap\_21d} y \texttt{range\_63d}
+encabezan juntas \DosVariablesRisk{} de las observaciones de \texttt{risk}; no son simplemente beta
+o volatilidad anual. El trabajo identifica así qué variables sostienen el mecanismo observado, pero
+no puede distinguir si recogen liquidez, microestructura o una prima económica estable.
 
-Nada de esto es una promesa de inversión, y las razones son explícitas y ya están cuantificadas: el
-Deflated Sharpe cae a 0,573, la era reservada aporta seis cohortes cerradas y algo más de un año de
-cartera, y la cartera ganadora es la mejor de 1.440 evaluadas. Las tres apuntan en la misma
-dirección --- el resultado descansa sobre menos evidencia independiente de la que aparenta --- y
-ninguna se resuelve con más trabajo sobre los mismos datos. La contribución
-defendible del TFM sigue siendo metodológica: demuestra cómo separar señal, selección, robustez y
-cartera de forma que preguntas como ésta puedan formularse y responderse sin contaminar la
-evidencia.
+La lectura por eras también exige precisión. Que el Rank-IC sea mayor en el tramo donde el panel
+histórico está más completo contradice una explicación simple y monotónica basada en la peor
+cobertura temprana. No descarta que la disponibilidad del proveedor influya por otras vías. Por eso
+la cobertura sigue siendo una amenaza alta y la réplica con otra fuente es trabajo futuro.
 
-Conviene cerrar recordando contra qué se medía el segundo objetivo, porque es lo que da su tamaño
-real a lo conseguido y a lo no conseguido. La Sección~\ref{sec:suma-cero} lo desarrolla: batir a un
-índice es un juego de suma negativa después de costes, y a veinte años la gran mayoría de los fondos
-de gran capitalización no lo consigue. Sobre ese
-fondo, que la cartera optimizada pase de destruir valor a empatar con el índice en la única ventana
-que no participó en ninguna decisión no es un resultado espectacular, pero tampoco es trivial: sitúa
-al sistema en el lado correcto de una distribución donde la mayoría de los participantes
-profesionales están en el equivocado, con la salvedad --- declarada y no menor --- de que año y
-medio de datos no distingue habilidad de suerte.
+\section{Objetivo 2a: sensibilidad a la construcción de cartera}
 
-Ese contraste es también la razón de que este trabajo insista en separar los dos objetivos. Que un
-modelo aprenda a ordenar es comprobable con evidencia estadística y aquí se comprueba. Que esa
-ordenación se convierta en rentabilidad sostenida exige ganar un juego que la mayoría pierde, y
-ninguna cantidad de Rank-IC lo garantiza: el propio trabajo lo muestra al medir un orden que mejora
-entre eras mientras el pago económico se deteriora.
+Este subobjetivo queda respaldado por la rejilla completa. Manteniendo fijos modelo, señal, datos y
+ventana, \NumCarteras{} combinaciones producen diferencias amplias de Information Ratio. El número
+de posiciones separa las medianas en \InfluenciaPosiciones{}, la tenencia mínima en
+\InfluenciaTenencia{} y el tope de efectivo en \InfluenciaEfectivo{}; la tolerancia de deriva y el
+reparto de pesos mueven mucho menos el resultado.
 
-La prioridad futura no es añadir complejidad al modelo. Es acumular cohortes reservadas suficientes
-para someter el hallazgo anterior a una prueba con potencia real, replicar el protocolo en otros
-universos y regímenes, y estudiar costes dependientes de liquidez que pongan a prueba una cartera
-concentrada en ocho posiciones.
+La cartera elegida eleva el Information Ratio de \IRModelo{} a \IRCartera{} y el exceso geométrico
+de \ExcesoModelo{} a \ExcesoCartera{}. Al mismo tiempo, reduce la rotación de \TurnoverModelo{} a
+\TurnoverCartera{} veces al año y la máxima caída de \MDDModelo{} a \MDDCartera{}. No mejora por
+reaccionar más, sino por respetar el horizonte de doce meses: amplía la tenencia mínima de medio
+horizonte a uno completo y tolera más deriva antes de reequilibrar.
 
-\section{Respuesta a la pregunta de investigación}
+La magnitud de \IRCartera{} no debe aislarse de cómo fue obtenida. Es la mejor cifra de la rejilla y,
+por tanto, una cota superior optimista. El hallazgo robusto del Objetivo 2a es la dispersión entre
+políticas y el orden de importancia de las reglas, no el nivel exacto de la ganadora.
 
-La respuesta es afirmativa con condiciones en los dos objetivos.
+\section{Objetivo 2b: comportamiento en la era reservada}
 
-\textbf{Objetivo 1.} Dentro del universo, periodo y protocolo definidos, los cinco agentes y su meta
-producen una ordenación transversal con Rank-IC positivo, superior a los baselines incluidos y
-estable frente a contrastes adversariales. El meta parte de pesos iguales y aprende de cohortes
-cerradas, por lo que su comportamiento no se reduce a fijar de antemano el especialista ganador.
+La comparación reservada es alentadora, pero preliminar. Con la cartera original, la señal produce
+un exceso de \ExcesoModeloReservado{} e IR \IRModeloReservado{}. Con la política optimizada, sin
+reentrenar ni cambiar el ranking, pasa a exceso \ExcesoCarteraReservado{} e IR
+\IRCarteraReservado{}. El cambio de signo demuestra que la conclusión económica depende de la
+cartera utilizada para medirla.
 
-\textbf{Objetivo 2.} Las variables de construcción de cartera afectan al resultado de forma medible
-y desigual, y optimizarlas por Information Ratio produce una cartera claramente mejor que la de
-partida. Con esa cartera el sistema supera a SPY en la ventana de selección y deja de perder frente
-a él en la era reservada, neto de los costes modelados; con la cartera de partida sí perdía. El
-matiz importa: en la era reservada el resultado pasa de negativo a aproximadamente empatado, no a
-una superioridad demostrada.
-La respuesta económica es, aun así, mucho más acotada que la predictiva: el Deflated Sharpe y el
-tamaño de la muestra efectiva impiden transformar la observación en una promesa de superioridad
-ajustada por riesgo, y la cartera elegida es la mejor de 1.440, de modo que su Information Ratio es
-una cota superior optimista. La formulación defendible es que el ranking tiene evidencia predictiva
-robusta, que su implementación puede ser económicamente compatible con esa señal bajo restricciones
-declaradas, y que la distancia entre «puede serlo» y «lo es» la recorre la construcción de cartera y
-no el modelo.
+No demuestra generalización económica. La ventana contiene \CohortesReservadas{} cohortes cerradas
+y \AnosCarteraReservada{} años de cartera; batir al índice en la mitad de los años significa uno de
+dos. Además, la propia tenencia mínima reduce la rotación observable durante una serie tan corta.
+El resultado es compatible con dejar de destruir valor y aproximadamente empatar al índice, no con
+una ventaja sostenida.
 
-La Tabla~\ref{tab:afirmaciones} recoge las cinco preguntas de la introducción convertidas ya en
-afirmaciones, cada una con la cifra que la sostiene y con la salvedad sin la cual no debe citarse.
-Ninguna de las cinco se sostiene sin su matiz, y esa es precisamente la conclusión de conjunto: hay
-evidencia favorable en todas ellas y demostración concluyente en ninguna.
+La formulación final distingue así dos afirmaciones. Está demostrado que las reglas de cartera
+alteran materialmente el resultado de selección. Está sugerido, pero no confirmado, que la política
+elegida traduzca mejor la señal en una ventana nueva.
 
-\begin{table}[H]
-  \centering
-  \footnotesize
-  \caption{Las cinco afirmaciones del trabajo, con su evidencia y su salvedad.}
-  \label{tab:afirmaciones}
-  \input{assets/t01_afirmaciones.tex}
-  \caption*{Las cifras predictivas proceden del Model Study de referencia y las económicas de la
-  cartera ganadora del Portfolio Study; se desarrollan en los
-  Capítulos~\ref{chap:resultados} y~\ref{chap:resultados-economicos}.}
-\end{table}
+\section{Contribución defendible}
 
-\section{Contribución y agenda}
+La contribución principal es un procedimiento auditable que separa información observable,
+selección predictiva, pruebas de robustez e implementación económica. Esa disciplina permite
+localizar una divergencia que una rentabilidad final habría ocultado: el orden transversal puede
+mejorar mientras el pago de una cartera concreta empeora, y dos carteras pueden producir
+conclusiones opuestas sobre la misma señal.
 
-La contribución principal es un protocolo auditable: separa fecha de publicación y cierre fiscal,
-etiqueta futura y entrada de entrenamiento, selección predictiva y cartera, y evidencia de selección
-y confirmación reservada. Los artefactos permiten reconstruir configuraciones, pesos, decisiones,
-figuras y tablas. Esta disciplina es transferible a otros problemas de ML financiero incluso si el
-ranking concreto no se replica.
+De ahí se sigue la tesis del trabajo: \textbf{ninguna afirmación práctica sobre un sistema
+predictivo es interpretable sin declarar con qué cartera se midió}. La frase no convierte a la
+cartera ganadora en recomendación de inversión. Obliga a tratar tamaño, efectivo, tenencia,
+rebalanceo y costes como parte de la evaluación científica.
 
-La segunda contribución es la propia agenda de transferencia, que este trabajo no se limita a
-proponer sino que ejecuta: estudiar tamaño de cartera, reparto de pesos, efectivo, tenencia mínima,
-suelo de cobertura y rebalanceo sin reabrir la selección predictiva, y hacerlo sobre una serie
-recortada para que la ventana reservada siga siendo una comprobación y no un criterio. El balance
-del Objetivo 2, al principio de este capítulo, es lo que justifica el esfuerzo.
+La evidencia económica tiene además una dependencia interna que las métricas agregadas no muestran.
+La cartera pasó por \NumAccionesCartera{} acciones, pero AAPL aporta \ContribucionAAPL{} puntos
+porcentuales acumulados; en la era reservada casi no llega a rotar. Esas concentraciones reducen el
+número de experiencias independientes que realmente sostienen el resultado y explican por qué la
+conclusión económica debe ser más prudente que la predictiva.
 
-El trabajo futuro debe reducir la multiplicidad con un catálogo pre-registrado, esperar etiquetas
-reservadas hasta disponer de potencia estadística real, y replicar el protocolo en otros universos y
-regímenes. Debe también someter la cartera ganadora a costes dependientes de liquidez, porque una
-cartera de ocho posiciones sin efectivo es más sensible a esa especificación que la que se evaluaba
-antes. Cada extensión debe preservar la observabilidad temporal que hace interpretables los
-resultados actuales.
+\section{Tres prioridades futuras}
 
-\section{Agenda ordenada por prioridad}
-
-La evidencia acumulada no sólo señala dónde está el cuello de botella: indica en qué orden conviene
-atacar lo que queda.
-
-\begin{enumerate}[leftmargin=*,itemsep=0.4em]
-  \item \textbf{Someter la cartera ganadora a una era reservada con potencia.} Es la prioridad
-  absoluta, porque de ella depende el hallazgo central. Hoy descansa sobre seis cohortes cerradas y
-  algo más de un año de cartera; con tres o cuatro años acumulados podría contrastarse de verdad si
-  la optimización generaliza o si su éxito fuera de muestra fue afortunado.
-  \item \textbf{Resolver el conflicto entre cadencia y rotación.} La cadencia mensual ganó su
-  decisión con una ventaja clara, pero es el origen del 71,5\,\% del flujo de órdenes: el sistema
-  re-decide cada mes sobre una señal a doce meses. Separar la frecuencia de \emph{evaluación} de la
-  de \emph{ejecución} permitiría conservar las 117 cohortes sin pagar esa parte de la rotación. Es
-  además la única palanca que queda abierta por ese lado: la corrección de deriva de pesos, que
-  aportaba la segunda partida de flujo, ya se relajó al máximo que el catálogo permite y con ello
-  cayó a una sexta parte del total.
-  \item \textbf{Reducir el catálogo antes de volver a ejecutar.} El Deflated Sharpe penaliza por
-  todas las configuraciones ensayadas, y encadenar pasadas eleva ese recuento. Un catálogo
-  pre-registrado más estrecho, que fije de antemano las variables cuyo valor no se espera que
-  cambie, elevaría la probabilidad deflactada sin necesidad de mejorar el modelo.
-  \item \textbf{Probar costes dependientes de liquidez sobre la cartera ganadora.} Ocho posiciones
-  sin efectivo es una configuración más expuesta al impacto de mercado que la evaluada
-  anteriormente, y los costes constantes de esta simulación podrían estar favoreciéndola.
-  \item \textbf{Contrastar por qué funciona la microestructura de precio.} La atribución local de la
-  Sección~\ref{sec:atribucion-local} descarta la explicación más obvia del predominio de
-  \textit{risk} --- no se apoya en la prima de baja volatilidad, sino en huecos y rangos de
-  negociación a corto plazo --- pero eso desplaza la pregunta en lugar de cerrarla. Que esas
-  variables ordenen retornos a doce meses es un resultado que este trabajo describe y no explica, y
-  que merece un diseño específico: podría reflejar una prima de liquidez, un efecto de
-  microestructura o un artefacto del universo de gran capitalización.
+\begin{enumerate}[leftmargin=*,itemsep=0.5em]
+  \item \textbf{Acumular una era reservada con potencia real.} Es la única forma de comprobar si el
+  cambio de signo económico persiste sin volver a utilizar 2015--2024. Más búsqueda sobre la misma
+  ventana aumentaría la multiplicidad, no la evidencia independiente.
+  \item \textbf{Replicar el protocolo con otra fuente y otro universo.} Una base histórica comercial
+  completamente \textit{point-in-time} permitiría medir la sensibilidad a cobertura y comprobar si
+  la ordenación se sostiene fuera de la gran capitalización estadounidense.
+  \item \textbf{Modelar costes dependientes de liquidez y capacidad.} Una cartera de
+  \PosicionesCartera{} posiciones requiere una función de impacto que complemente comisión y
+  \textit{slippage} constantes y acote con precisión el patrimonio al que el resultado es aplicable.
 \end{enumerate}
 
-Obsérvese que ninguna de las cinco prioridades consiste en usar un modelo más potente. La
-experiencia de este trabajo apunta en la dirección contraria: la mejora más grande que obtuvo no
-vino de mejorar la señal, sino de dejar de desperdiciarla al construir la cartera.
+\section*{Respuesta final}
 
-\section{Qué aprendería quien repitiera este trabajo}
-
-Algunas lecciones del desarrollo, documentadas en el Anexo~\ref{anexo:desarrollo}, son
-independientes del dominio financiero y probablemente más reutilizables que el resultado empírico.
-
-La primera es que declarar no es computar. Un catálogo puede describir variables que el código nunca
-calcula, y el sistema seguirá produciendo resultados plausibles: la comprobación de que lo declarado
-coincide con lo computado debe ser automática, porque no es observable a simple vista.
-
-La segunda es que una puerta estadística puede fallar en la dirección contraria a la esperada. La
-regla de no inferioridad de este proyecto penalizaba a los candidatos superiores porque su intervalo
-era más ancho, y el síntoma no fue un error sino una regularidad sospechosa: nadie resultaba
-elegible nunca.
-
-La tercera es que la ausencia de excepción no es evidencia de corrección. Un modelo que devuelve una
-constante, una calibración que colapsa, una política de cartera que cobra costes de operaciones no
-ejecutadas: todos terminaron su ejecución con éxito aparente y escribieron sus artefactos.
-
-La cuarta es sobre estimadores. Un diagnóstico por deciles basado en la media sugirió durante un
-tiempo que la ordenación estaba invertida en todo el histórico; con la mediana, la conclusión se
-invertía. Antes de rediseñar un sistema conviene comprobar que el estadístico empleado para
-diagnosticarlo sea robusto a la distribución que realmente tienen los datos.
-
-La quinta, y la más incómoda, es que conviene registrar las decisiones tomadas en contra de la
-recomendación técnica, con ambos lados del argumento. No mejoran el resultado, pero son
-precisamente las que un lector externo no podría reconstruir desde el código.
+El TFM encuentra evidencia sólida de capacidad de ordenación y evidencia sólida de que la
+construcción de cartera importa. No encuentra evidencia suficiente para afirmar que cinco agentes
+sean necesarios ni que la cartera elegida generalice económicamente. Esa frontera entre lo
+demostrado, lo sugerido y lo pendiente es el resultado que puede defenderse.

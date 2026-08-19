@@ -85,7 +85,19 @@ def _repriced(equity: pd.DataFrame, rate: float) -> pd.DataFrame:
     """
     frame = equity.copy()
     gross = frame["gross_return"].to_numpy(dtype=float)
-    drag = frame["turnover_pct"].to_numpy(dtype=float) * rate
+    turnover = frame["turnover_pct"].to_numpy(dtype=float)
+    drag = turnover * rate
+    # En el peldaño adoptado se conserva el drag que calculó el motor orden a orden. Aunque
+    # ``turnover × tasa`` es la misma identidad, sumar nocionales y sumar pesos puede diferir una
+    # ULP por el orden de las operaciones de coma flotante. Reutilizar la columna persistida en ese
+    # único peldaño hace que la reconstrucción sea bit a bit la curva original; el resto de tasas se
+    # sigue recalculando en forma cerrada.
+    original_drag = frame["cost_drag"].to_numpy(dtype=float)
+    active = turnover != 0.0
+    if active.any() and np.allclose(
+        original_drag[active] / turnover[active], rate, rtol=0.0, atol=np.finfo(float).eps,
+    ):
+        drag = original_drag.copy()
     start = np.empty(len(frame), dtype=float)
     after = np.empty(len(frame), dtype=float)
     value = float(frame["period_start_portfolio_value"].iloc[0])

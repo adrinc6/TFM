@@ -1,130 +1,63 @@
-% =====================================================================
-% Resumen (ES) y abstract (EN). Van antes del índice, sin numerar.
-% Las cifras citadas aquí proceden del Study \studyid y deben coincidir
-% con las de los capítulos de agentes, diseño experimental y resultados.
-% =====================================================================
 \chapter*{Resumen}
 \addcontentsline{toc}{chapter}{Resumen}
 
-Este trabajo persigue dos objetivos sucesivos. El primero, evaluar si un sistema de cinco agentes
-especializados, combinados por un meta-agente que aprende sus pesos, es capaz de aprender una
-ordenación transversal de acciones que conserve capacidad predictiva fuera de muestra. El segundo,
-ya con esa señal congelada, determinar si las variables de construcción de cartera afectan de forma
-material al resultado y si optimizarlas por Information Ratio produce una cartera mejor que la
-recomendada por defecto. La pregunta se plantea deliberadamente en términos de predicción y no de
-rentabilidad retrospectiva: no se busca la cartera más rentable de la historia conocida, sino medir
-si existe señal y cómo se gestiona esa señal una vez existe.
+Este Trabajo Fin de Máster estudia dos preguntas que conviene separar. La primera es si un sistema
+de aprendizaje automático formado por cinco agentes especializados puede ordenar acciones de mejor
+a peor y conservar esa capacidad fuera de muestra. La segunda es cuánto depende el resultado
+económico de las reglas que convierten esa ordenación en una cartera. El sistema trabaja con un
+universo histórico del S\&P 500, fundamentales fechados por su publicación y cohortes cerradas. Tres
+Model Studies encadenados seleccionan el modelo exclusivamente por Rank-IC; después, con la señal
+congelada, un Portfolio Study compara \NumCarteras{} configuraciones mediante Information Ratio.
 
-El universo es la composición histórica del S\&P 500 sobre un panel \textit{point-in-time}
-construido a partir de fechas reales de publicación, de modo que ninguna decisión utiliza
-información no disponible en su fecha. Sobre un catálogo cerrado de variables se ejecutan
-\textit{Model Studies} que optimizan de forma secuencial por Rank-IC, dejando 2025--2026 como era
-reservada que no interviene en ninguna decisión. Durante esa fase la cartera permanece en la
-configuración por defecto del catálogo, sin optimizar, precisamente para que ninguna decisión
-predictiva pueda apoyarse en ella. La cartera y los ocho perfiles de inversión se abordan después de
-congelar el ganador, y nunca influyen en su selección.
+En 2015--2024, el ganador alcanza un Rank-IC medio de \RankICSeleccion{} sobre
+\CohortesSeleccion{} cohortes, con \FraccionICPositiva{} positivas, $t$ de Newey--West
+\TNeweyWest{} y $p=\PValorPermutacion{}$ en \NumPermutaciones{} permutaciones. La era reservada
+2025--2026 mantiene Rank-IC positivo (\RankICReservado{}), pero solo contiene
+\CohortesReservadas{} cohortes. Además, el agente \texttt{risk} supera ligeramente al meta-agente,
+por lo que la evidencia favorece la capacidad de ordenación, pero no demuestra que la arquitectura
+multiagente sea necesaria.
 
-La configuración final procede de una cadena de tres estudios en la que el ganador de cada pasada es
-el punto de partida de la siguiente, seguida de un cuarto que optimiza la construcción de cartera
-por Information Ratio recorriendo 1.440 combinaciones sobre una serie recortada, de modo que ninguna
-puede observar la era reservada.
+La construcción de cartera altera materialmente el resultado. En selección, el Information Ratio
+pasa de \IRModelo{} a \IRCartera{} y la rotación baja de \TurnoverModelo{} a
+\TurnoverCartera{} veces al año. En la era reservada, la misma señal pasa de un exceso de
+\ExcesoModeloReservado{} con la cartera original a \ExcesoCarteraReservado{} con la optimizada.
+Ese cambio de signo es alentador, pero no confirma generalización económica: la cartera es la mejor
+de \NumCarteras{} alternativas y la confirmación cubre solo \AnosCarteraReservada{} años. La
+contribución principal es, por tanto, metodológica: una señal predictiva y su implementación
+económica deben evaluarse por separado y toda conclusión práctica debe declarar la cartera con la
+que se midió.
 
-El sistema alcanza un Rank-IC medio de 0,1067 en la ventana de selección, frente a 0,0119 del mejor
-\textit{baseline} determinista, y la ponderación aprendida por el meta-agente supera en un 55\,\% a
-la uniforme, aunque el agente de riesgo por separado ordena algo mejor que la combinación. Siete
-contrastes de robustez respaldan la existencia de señal --- entre ellos permutación con
-$p=0{,}0001$, placebos de etiqueta y neutralización de estilo, que conserva el 87,21\,\% ---,
-mientras que el Deflated Sharpe de 0,573 no alcanza su umbral y se reporta como tal: encadenar
-estudios compra Rank-IC al precio de encarecer cualquier afirmación de rentabilidad ajustada por
-selección.
+\noindent\textbf{Palabras clave:} aprendizaje automático, selección de acciones, Rank-IC,
+\textit{point-in-time}, construcción de cartera, validación fuera de muestra.
 
-La descomposición por eras añade el matiz que gobierna la lectura del trabajo: el Rank-IC es mayor
-en la era más reciente (0,1739 en 2022--2024 frente a 0,0949 en 2015--2018), mientras que el
-Information Ratio de la cartera recorre el camino inverso hasta volverse negativo. Que la capacidad
-de ordenar sea máxima donde el panel está más completo descarta que proceda del sesgo de cobertura;
-que el pago económico decaiga en esa misma era impide extender esa conclusión a la rentabilidad.
-
-Los dos objetivos no se miden contra el mismo listón, y el trabajo lo declara: el primero es una
-afirmación sobre el modelo, mientras que el segundo se juega contra el mercado, donde batir a un
-índice es un problema de suma cero antes de costes y de suma negativa después (Sharpe, 1991) y donde
-el 93\,\% de los fondos estadounidenses de gran capitalización queda por detrás del S\&P 500 a
-veinte años (S\&P Dow Jones Indices, 2026).
-
-El segundo objetivo se resuelve sobre esa señal ya congelada, sin reentrenar nada, y las variables
-de cartera resultan pesar de forma muy desigual: el número de posiciones y la tenencia mínima mueven
-el Information Ratio mediano en 0,208 y 0,164, mientras que el reparto de pesos es prácticamente
-inerte. La cartera elegida eleva el Information Ratio de 0,312 a 0,841 y el exceso geométrico del
-2,12 al 5,91\,\%, y lo hace \emph{operando menos}: la rotación cae del 242 al 135\,\% anual. En la
-era reservada la diferencia es de signo: con la construcción por defecto la señal obtiene un
-Information Ratio de $-1{,}795$ sin batir al índice ningún año; con la optimizada --- el mismo
-modelo, la misma señal y el mismo panel --- alcanza un exceso del 0,24\,\% con Information Ratio
-$+0{,}109$. El Rank-IC de esa era es positivo en ambos casos ($+0{,}0364$), porque no depende de la
-cartera: la capacidad predictiva era idéntica y lo que cambió fue su traducción a posiciones. La
-conclusión se enuncia con la cautela que imponen seis cohortes cerradas, 1,41 años de cartera en esa
-ventana y el hecho de que la ganadora es la mejor de 1.440.
-
-\vspace{1em}
-\noindent\textbf{Palabras clave:} aprendizaje automático, selección de acciones, \textit{point-in-time},
-Rank-IC, sistemas multiagente, sobreajuste de \textit{backtest}.
-
+\clearpage
 \chapter*{Abstract}
 \addcontentsline{toc}{chapter}{Abstract}
 
-This work pursues two successive objectives. The first is to evaluate whether a system of five
-specialised agents, combined by a meta-agent that learns their weights, can learn a cross-sectional
-ranking of stocks that retains out-of-sample predictive power. The second, once that signal is
-frozen, is to determine whether portfolio-construction variables materially affect the outcome and
-whether optimising them by Information Ratio yields a better portfolio than the one recommended by
-default. The question is deliberately framed in terms of prediction rather than retrospective
-profitability: the goal is not to find the most profitable portfolio in known history, but to
-measure whether signal exists and how that signal is managed once it does.
+This Master's Thesis addresses two questions that should not be conflated. First, can a machine
+learning system built from five specialised agents rank equities and preserve that ability out of
+sample? Second, how strongly does the economic outcome depend on the rules that translate the
+ranking into a portfolio? The system uses a historical S\&P 500 universe, filing-dated fundamentals,
+and closed cohorts. Three chained Model Studies select the predictive model exclusively through
+Rank-IC. Once the signal is frozen, a Portfolio Study compares \NumCarteras{} portfolio
+configurations using the Information Ratio.
 
-The universe is the historical composition of the S\&P 500 over a point-in-time panel built from
-actual publication dates, so that no decision uses information unavailable at its date. Model
-Studies are run over a closed catalogue of variables, optimising sequentially by Rank-IC and
-holding out 2025--2026 as a reserved era that takes part in no decision. Throughout that phase the
-portfolio stays at the catalogue's default, unoptimised, precisely so that no predictive decision
-can lean on it. The portfolio and the eight investor profiles are addressed only after the winner is
-frozen, and never influence its selection.
+Over 2015--2024, the selected model obtains a mean Rank-IC of \RankICSeleccion{} across
+\CohortesSeleccion{} cohorts, with a Newey--West statistic of \TNeweyWest{} and a permutation
+$p$-value of \PValorPermutacion{}. The reserved 2025--2026 period remains positive
+(\RankICReservado{}), but contains only \CohortesReservadas{} closed cohorts. The standalone
+\texttt{risk} specialist also ranks slightly better than the meta-agent, so the evidence supports
+predictive ranking ability without establishing that the multi-agent architecture is necessary.
 
-The final configuration comes from a chain of three studies in which the winner of each pass becomes
-the starting point of the next, followed by a fourth that optimises portfolio construction by
-Information Ratio over 1,440 combinations evaluated on a series truncated at 2024, so that none of
-them can observe the reserved era.
+Portfolio construction materially changes the observed outcome. In the selection window, the
+Information Ratio rises from \IRModelo{} to \IRCartera{} while annual turnover falls from
+\TurnoverModelo{} to \TurnoverCartera{}. In the reserved period, the same frozen signal changes
+from \ExcesoModeloReservado{} excess return under the original portfolio to
+\ExcesoCarteraReservado{} under the selected portfolio. The sign reversal is encouraging but does
+not establish economic generalisation: the portfolio is the best of \NumCarteras{} alternatives and
+the reserved evaluation spans only \AnosCarteraReservada{} years. The main contribution is therefore
+methodological: predictive ranking and economic implementation must be evaluated separately, and
+any practical claim must state the portfolio through which the signal was measured.
 
-The system attains a mean Rank-IC of 0.1067 in the selection window, against 0.0119 for the best
-deterministic baseline, and the meta-agent's learned weighting outperforms uniform weighting by
-55\,\%, although the risk agent on its own ranks slightly better than the combination. Seven
-robustness tests support the existence of signal --- among them permutation with $p=0.0001$, label
-placebos and style neutralisation, which retains 87.21\,\% --- while the Deflated Sharpe of 0.573
-falls short of its threshold and is reported as such: chaining studies buys Rank-IC at the price of
-making any selection-adjusted profitability claim more expensive.
-
-The era breakdown adds the nuance that governs how this work should be read: Rank-IC is highest in
-the most recent era (0.1739 in 2022--2024 against 0.0949 in 2015--2018), while the portfolio's
-Information Ratio travels the opposite way until it turns negative. That ranking ability peaks where
-the panel is most complete rules out coverage bias as its source; that the economic payoff decays in
-that same era prevents extending the conclusion to profitability.
-
-The two objectives are not measured against the same bar, and the work says so: the first is a claim
-about the model, whereas the second is played against the market, where beating an index is a
-zero-sum game before costs and a negative-sum one after them (Sharpe, 1991), and where 93\,\% of
-U.S. large-cap funds trail the S\&P 500 over twenty years (S\&P Dow Jones Indices, 2026).
-
-The second objective is settled over that already-frozen signal, retraining nothing, and the
-portfolio variables turn out to weigh very unevenly: the number of positions and the minimum holding
-period move the median Information Ratio by 0.208 and 0.164, whereas position sizing is practically
-inert. The selected portfolio lifts the Information Ratio from 0.312 to 0.841 and the geometric
-excess from 2.12 to 5.91\,\%, and it does so by \emph{trading less}: turnover falls from 242 to
-135\,\% a year. In the reserved era the difference is one of sign: under the default construction the
-signal posts an Information Ratio of $-1.795$ with no year above the index; under the optimised one
---- same model, same signal, same panel --- it achieves a 0.24\,\% excess return with an Information
-Ratio of $+0.109$. The Rank-IC of that era is positive in both cases ($+0.0364$), because it does not
-depend on the portfolio: predictive capacity was identical and what changed was its translation into
-positions. The conclusion is stated with the caution imposed by six closed cohorts, 1.41 years of
-portfolio in that window, and the fact that the
-winner is the best of 1,440 evaluated.
-
-\vspace{1em}
-\noindent\textbf{Keywords:} machine learning, stock selection, point-in-time data, Rank-IC,
-multi-agent systems, backtest overfitting.
+\noindent\textbf{Keywords:} machine learning, equity selection, Rank-IC, point-in-time data,
+portfolio construction, out-of-sample validation.
