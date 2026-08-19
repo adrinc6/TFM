@@ -11,7 +11,7 @@
 > actualización: dice **qué** escribir y dónde; este plan cubre el **cómo** (formato, estructura y
 > convenciones).
 
-## Estado del proyecto a 2026-08-14
+## Estado del proyecto a 2026-08-19
 
 **El TFM pasa a redactarse sobre una cadena de cuatro estudios, no sobre uno solo.** Todos han
 terminado y su evidencia está completa en disco.
@@ -196,12 +196,12 @@ este documento es qué estudios alimentan cada parte y qué activos deben existi
 | # | Fichero | Pregunta que responde | Evidencia que lo alimenta |
 |---|---|---|---|
 | 0 | `00_resumen.tex` | — | Todos; se redacta al final |
-| 1 | `01_introduccion.tex` | ¿Qué se pregunta y por qué? | Ninguna cifra: plantea las cinco preguntas |
-| 2 | `02_estado_del_arte.tex` | ¿Qué se sabe y qué puede fallar? | Bibliografía manual, sin fichero `.bib` |
-| 3 | `03_datos_y_universo.tex` | ¿Qué información existía en cada fecha? | `dataset_reference.json`, `universe_coverage`, features, tests |
-| 4 | `04_agentes_y_meta_agente.tex` | ¿Cómo se genera la ordenación? | Sólo arquitectura; sin resultados |
-| 5 | `05_protocolo_experimental.tex` | ¿Cómo se decide sin mirar la respuesta? | `decisions.json`, catálogo, diseño del Portfolio Study |
-| 6 | `06_resultados_predictivos.tex` | ¿Existe la señal y resiste? | `summary.json`, `robustness.json`, `attribution.json`, atribución local |
+| 1 | `01_introduccion.tex` | ¿Qué se pregunta y por qué? | SPIVA Report 1a y planteamiento de los dos objetivos |
+| 2 | `02_estado_del_arte.tex` | ¿Qué se sabe y qué puede fallar? | Bibliografía primaria ampliada, sin fichero `.bib` |
+| 3 | `03_datos_y_universo.tex` | ¿Qué información existía y cuál fue la muestra efectiva? | `dataset_reference.json`, `universe_coverage`, `agent_scores`, features, tests |
+| 4 | `04_agentes_y_meta_agente.tex` | ¿Cómo se genera la ordenación? | Arquitectura, objetivo ordinal y relojes temporales; sin resultados |
+| 5 | `05_protocolo_experimental.tex` | ¿Cómo se decide y se calibra sin mirar la respuesta? | `decisions.json`, calibración, catálogo y diseño del Portfolio Study |
+| 6 | `06_resultados_predictivos.tex` | ¿Existe la señal, qué usa y resiste? | `summary.json`, `robustness.json`, atribución local, estabilidad y factores |
 | 7 | `07_resultados_economicos.tex` | ¿Sobrevive al convertirse en cartera? | `portfolio_grid`, `evidence_best_full/`, `portfolio_profiles` |
 | 8 | `08_limitaciones.tex` | ¿Hasta dónde llega lo anterior? | `attribution.json`, `docs/bitacora.md` |
 | 9 | `09_conclusiones.tex` | ¿Cuál es la respuesta? | `t01_afirmaciones.tex` (escrita a mano) |
@@ -249,46 +249,41 @@ calculan sobre la cartera del Model Study porque el Portfolio Study no reejecuta
 robustez. Se conservan porque miden el procedimiento de búsqueda y no una cartera concreta, y
 porque presentarlos con la cartera menos favorable es conservador: no inflan ninguna afirmación.
 
-### Inventario de activos (2026-08-15)
+### Inventario de activos (2026-08-19)
 
-**24 tablas y 12 figuras.** El criterio de poda fue: un activo se queda si el texto lo analiza y
-dice algo que la prosa no diga ya. Se eliminaron 21 —13 de ellos no estaban referenciados en ningún
-sitio— junto con las 17 funciones del generador que los producían.
+**21 tablas y 22 figuras.** Un activo se conserva si permite consultar valores exactos o reconocer
+una relación que la prosa no comunica con igual claridad. No se duplica tabla y gráfico cuando
+cuentan lo mismo; el diagrama anual de turnover es la excepción deliberada porque muestra una
+relación que la tabla anual no contiene.
 
-En la revisión del 2026-08-15 se retiraron tres más, aplicando el mismo criterio ahora que el texto
-está auditado: la tabla de bloques de features (repetía el argumento de la de extremos y exigía tres
-párrafos de advertencias), la figura de salud de la señal (no sostenía ninguna afirmación, y la
-variable que decía justificar corrió en modo `fixed`) y la figura de la cola por cohorte (el propio
-texto la describía como ruidosa y su mensaje ya está en la tabla, con precisión por era).
+La migración visual incorpora siete figuras:
 
-Del par tabla+figura solo sobrevive uno salvo en `t08_cartera_influencia` +
-`f08_cartera_marginales`, donde el texto argumenta explícitamente que la figura aporta la *forma*
-(dispersión) que las medianas no pueden dar.
+- `f01_spiva_horizontes.png`: dificultad competitiva antes de formular los objetivos.
+- `f03_cobertura_anual.png`: cobertura canónica y ventanas del experimento; sustituye a
+  `t03_cobertura_anual.tex`.
+- `f07_alpha_turnover_anual.png`: relación entre rotación y exceso anual.
+- `f07_costes_escalera.png`: rutas congelada y resimulada frente al coste.
+- `f07_capacidad.png`: participación P95 y umbrales de patrimonio, solo en selección.
+- `f07_perfiles_pesos.png`: pesos firmados, con `balanced` como meta puro.
+- `f07_perfiles_resultados.png`: exceso agregado y anual de los perfiles, con reserva separada.
 
-### Revisión del 2026-08-18: 25 tablas y 17 figuras
+La ampliación explicativa posterior incorpora cuatro figuras y tres tablas generadas:
 
-El recuento sube por primera vez, y conviene declarar bajo qué criterio, porque el de la poda sigue
-vigente. Entran seis activos: cinco figuras y una tabla.
+- `f03_muestra_oos.png` y `t03_muestra_oos.tex`: cohorte realmente puntuada, filas de
+  entrenamiento y disponibilidad de variables, sin confundirlas con cobertura del índice.
+- `f05_calibracion_alfa.png` y `t05_calibracion_estados.tex`: estados causales de calibración y
+  traducción del ranking a alfa esperado.
+- `f06_estabilidad_features.png`: persistencia anual de las variables más usadas por agente.
+- `f06_atribucion_factorial.png`: cargas con incertidumbre y señal conservada tras neutralización.
+- `tB_diccionario_features.tex`: diccionario auditable de las 68 variables declaradas.
 
-- **`f06_orden_vs_pago.png`** no es un activo nuevo en sentido estricto: sustituye a un `tabular`
-  suelto dentro de un `center` que llevaba las tres cifras del hallazgo central del capítulo 6 sin
-  caption, sin label y fuera del índice de tablas. Convertirlo en figura arregla la maquetación y
-  además da imagen al resultado que gobierna la lectura del trabajo.
-- **`f07_costes_escalera.png`** cubre una sección que sólo existía en prosa. La forma de las dos
-  familias —recta la congelada, irregular la resimulada— es un argumento que ninguna cifra suelta
-  puede dar.
-- **`f07_contribucion_accion.png`, `f07_operaciones.png`, `f07_sectores.png` y
-  `t07_cartera_relato.tex`** sostienen la sección nueva «Qué compró la cartera». Cada una responde a
-  una pregunta que el texto plantea antes de enseñarla, que es la condición que el plan del
-  manuscrito exige a este material.
+Las tablas de catálogo, decisiones, métricas completas, limitaciones y auditoría siguen siendo
+tablas porque allí importa localizar una cifra. Los diagramas temporales y de arquitectura se
+mantienen porque explican mecanismos, no resultados.
 
-Sigue pendiente la poda que compensa la subida, y no se ejecutó aquí por falta de los `.parquet` en
-el clon: fusionar `f07_equity` y `f07_drawdown` en una figura de dos paneles —son anverso y reverso
-de la misma serie— y convertir `t07_cola.tex` en figura de barras por era. Queda anotado en
-`docs/plan_latex.md`.
-
-El comando de regeneración está en `assets/a_reproducibilidad.tex` y el manifiesto resultante,
-`latex/asset_manifest.json`, registra ambas familias de fuentes por separado.
+`latex/asset_manifest.json` registra por separado estudios, panel, ocho series anuales de perfiles
+y la fuente bibliográfica SPIVA. El comando de regeneración permanece en
+`assets/a_reproducibilidad.tex`; `--audit` comprueba activos y procedencia obligatoria.
 
 ## Convenciones de escritura
 

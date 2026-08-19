@@ -1,9 +1,11 @@
 \chapter{Auditoría del desarrollo}
 \label{anexo:desarrollo}
 
-Este anexo conserva solo los defectos que pudieron cambiar la validez o la interpretación del
-estudio. La historia completa permanece en la bitácora del repositorio; repetirla aquí añadiría
-cronología, no evidencia. La Tabla~\ref{tab:defectos} resume síntoma, riesgo y corrección.
+Este anexo conserva sólo los defectos que pudieron cambiar la validez o la interpretación del
+estudio. No es una cronología del código ni una lista de incidencias menores. Su propósito es
+mostrar qué tipos de error eran capaces de producir resultados plausibles, cómo se detectaron y qué
+contrato quedó después para impedir su regreso. La historia completa permanece en la bitácora del
+repositorio.
 
 \begin{table}[H]
   \centering
@@ -13,25 +15,126 @@ cronología, no evidencia. La Tabla~\ref{tab:defectos} resume síntoma, riesgo y
   \resizebox{\textwidth}{!}{\input{assets/t08_defectos_validez.tex}}
 \end{table}
 
-\section*{Tres lecciones reutilizables}
+\section{Caso 1: una regla estadística correcta en apariencia}
 
-\textbf{1. Declarar no equivale a calcular.} Varias opciones del catálogo llegaron a existir en la
-interfaz antes de modificar realmente las variables consumidas por el modelo. El sistema podía
-terminar sin error y producir métricas plausibles. La corrección fue convertir la correspondencia
-entre configuración declarada, datos preparados y evaluación en un contrato automático.
+La puerta de no inferioridad debía admitir candidatos cuya desventaja plausible no superase el
+margen fijado. La primera implementación construía el intervalo sobre una transformación que
+ensanchaba el castigo conforme aumentaba la ventaja del candidato. El síntoma no era un fallo de
+ejecución: todos los runs terminaban, las métricas parecían razonables y el ledger registraba
+decisiones. Sin embargo, ningún retador podía resultar elegible incluso cuando dominaba al
+incumbente.
 
-\textbf{2. Un resultado plausible puede esconder un fallo semántico.} Una puerta de no inferioridad
-penalizaba candidatos superiores por tener intervalos más anchos; una calibración degenerada podía
-emitir expectativas constantes; y una posición sin puntuación detenía una rotación completa. Ninguno
-de esos casos necesitaba lanzar una excepción. Los diagnósticos deben comprobar invariantes y no solo
-que el proceso finalice.
+El efecto material se observó en \texttt{feature\_preset}. La versión defectuosa retenía
+\texttt{core} con Rank-IC 0,0730; corregida la comparación, \texttt{all} alcanzó 0,0958 y una ventaja
+pareada de $+0{,}0216$. La corrección no consistió en elegir manualmente el segundo valor, sino en
+reescribir la puerta para que el objeto estadístico fuese la serie de diferencias emparejadas por
+cohorte. Cuando dos rejillas se desplazan por un retardo de ejecución, el emparejamiento se hace por
+periodo mensual común; si no existe bloque comparable, el resultado es no aplicable, nunca un
+intervalo artificial igual a cero.
 
-\textbf{3. Toda decisión económica necesita contrafactual y contabilidad.} Una venta solo es
-interpretable si existe un destino mejor después de costes, y una comisión solo puede cobrarse si la
-orden se ejecuta. Esta regla obligó a unir señal, orden, posición y coste en el mismo registro y
-evitó que un backtest aparentemente conservador destruyera valor mediante operaciones inexistentes.
+De este caso salen tres contratos. El signo de una ventaja debe conservarse al construir su
+intervalo; un candidato estrictamente mejor no puede volverse menos elegible sólo porque su
+incertidumbre absoluta aumente; y toda decisión del ledger debe incluir tamaño de muestra, fracción
+de victorias y límites del intervalo. Los tests usan ejemplos dominantes, inferiores y sin
+solapamiento temporal, porque un único caso central no habría descubierto la inversión semántica.
 
-La consecuencia para el TFM es directa: los artefactos finales no se aceptan por parecer razonables,
-sino porque los contratos permiten reconstruir qué dato estaba disponible, qué decisión se tomó y
-qué efecto contable produjo. Las correcciones anteriores explican la necesidad de esa disciplina;
-no se presentan como evidencia económica adicional.
+\section{Caso 2: configuración declarada que no cambia la ciencia}
+
+Una opción puede aparecer en el catálogo, viajar por la API y quedar guardada en el run sin alterar
+el dataframe que consume el modelo. Eso ocurrió con una ablación fundamental: seis factores de
+precio se incorporaban al agente \textit{momentum} fuera del condicional que debía retirarlos. La
+interfaz decía que se había eliminado una familia de información, pero el candidato seguía
+recibiéndola.
+
+El riesgo es mayor que una etiqueta incorrecta. Si la ablación conserva la variable, una conclusión
+de «la información de precio no importa» sería imposible de refutar desde las métricas: los dos
+modelos serían casi el mismo. Por ello, la corrección se verificó en la frontera entre configuración
+y matriz de diseño, no sólo en el objeto de configuración. Cada preset debe producir una lista
+exacta de columnas; una variable sólo puede llegar a un agente si su bloque y su asignación la
+autorizan; y el manifiesto de variables efectivas queda ligado a la evaluación.
+
+La misma lógica detectó que \texttt{subsample=0.8} no activaba el \textit{bagging} de LightGBM sin
+\texttt{subsample\_freq}. El parámetro existía y el entrenamiento era válido, pero la hipótesis que
+se creía evaluar no estaba operando. La solución añadió la frecuencia y un test que inspecciona la
+configuración efectiva del estimador. La lección es general: auditar el valor declarado sólo prueba
+la interfaz; auditar el consumidor prueba el experimento.
+
+\section{Caso 3: identidades y ventanas que mezclaban evidencias}
+
+La primera \texttt{evaluation\_key} no incorporaba el hash del dataset. Dos paneles distintos podían
+compartir clave y recuperar una evaluación anterior; el indicio fue encontrar bajo la misma
+identidad CAGR 0,1468 y 0,1692. Añadir el hash separó ambas ejecuciones y convirtió un supuesto
+implícito --- que los datos no habían cambiado --- en una condición verificable de caché.
+
+Un problema relacionado afectaba a las métricas: CAGR, drawdown y alfa se calculaban sobre la curva
+completa y mezclaban selección con 2025--2026. Aunque la reserva no eligiera el modelo, una cifra
+agregada hacía imposible saber qué parte pertenecía a evidencia disponible durante el desarrollo y
+qué parte era confirmación. La salida se segmentó en selección, reserva y curva completa, y el
+manuscrito usa cada una sólo para la pregunta correspondiente.
+
+También se corrigió \texttt{geometric\_excess\_return}. Restar dos CAGR parece una aproximación
+natural, pero no mide el crecimiento relativo acumulado que el nombre promete. La definición
+adoptada compara los factores de riqueza:
+\[
+ \alpha_{\mathrm{geom}}=
+ \left(\frac{W_T^{\mathrm{cartera}}}{W_T^{\mathrm{SPY}}}\right)^{1/Y}-1.
+\]
+Con esta identidad, encadenar subperiodos y comparar costes tiene una interpretación consistente.
+Un test de contabilidad reconstruye el patrimonio desde retornos y comprueba que el exceso generado
+coincide con el persistido.
+
+\section{Caso 4: una simulación que termina no es una simulación válida}
+
+Los defectos de cartera más peligrosos no lanzaban excepciones. Una posición sin precio podía
+marcarse plana, una venta podía pagar costes sin ejecutarse o una señal ausente podía bloquear una
+rotación completa. Cada caso produce una curva suave y aparentemente conservadora, pero altera el
+contrafactual económico.
+
+La convención final trata una desaparición sin precio con una penalización tipo CRSP del
+$-30$\,\% y liquida contra efectivo; una comisión sólo aparece si existe orden ejecutada; y cada
+venta registra la alternativa a la que se reasigna el capital. Si el destino no supera la posición
+después de costes, no se vende. Así, orden, posición, efectivo y coste pueden reconciliarse en la
+misma fecha.
+
+La prueba de carteras aleatorias mostró otro ejemplo. El nulo inicial alcanzaba un percentil 95 de
+CAGR del 107\,\% porque aceptaba historias incompletas y no aplicaba las mismas guardas ni costes que
+el modelo. No era una evidencia de que el modelo fuese malo: era un contrafactual distinto. El nulo
+corregido exige cobertura anual completa, aplica la misma convención de datos y paga las mismas
+fricciones. Aun así se reporta el escenario general para enseñar su cola, pero la inferencia usa el
+emparejado por riesgo, que responde a una pregunta comparable.
+
+\section{Matriz de contratos que quedó en el sistema}
+
+\begin{table}[H]
+  \centering
+  \small
+  \begin{tabularx}{\textwidth}{p{3.0cm}X X}
+    \toprule
+    Frontera & Invariante & Fallo que evita \\
+    \midrule
+    Catálogo--API & Rechazo de claves y combinaciones desconocidas & Hipótesis no declaradas. \\
+    Configuración--datos & Columnas efectivas iguales a las autorizadas & Ablaciones ficticias. \\
+    Datos--label & Publicación y cierre anteriores al entrenamiento & Fuga temporal. \\
+    Evaluación--caché & Dataset, catálogo y clave coincidentes & Reutilización entre paneles. \\
+    Selección--reserva & Ningún artefacto de rejilla contiene 2025--2026 & Mirada anticipada. \\
+    Orden--contabilidad & Patrimonio reconstruible desde operaciones & Costes o ventas fantasma. \\
+    Evidencia--LaTeX & Activo y fuente declarados en el manifiesto & Mezcla de estudios. \\
+    \bottomrule
+  \end{tabularx}
+  \caption{Contratos de validación derivados de los defectos materiales.}
+  \label{tab:contratos-validacion}
+\end{table}
+
+\section*{Qué valor aporta esta auditoría}
+
+Las correcciones no son evidencia económica y no aumentan el Rank-IC. Su valor está en delimitar qué
+puede creerse del resultado: el modelo recibió las variables que declaraba; las filas pertenecían al
+tiempo que les correspondía; la búsqueda comparó candidatos bajo una regla coherente; y la cartera
+pagó sólo operaciones que ocurrieron. Al publicar también los fallos, el proyecto evita presentar la
+versión final como si hubiese surgido sin iteración y convierte errores particulares en controles
+reutilizables.
+
+La conclusión más importante es que la plausibilidad no sirve como prueba. Un número financiero
+puede parecer razonable y, aun así, medir otro universo, otra ventana o una hipótesis que nunca se
+activó. Por eso los artefactos finales no se aceptan por su aspecto, sino porque permiten reconstruir
+qué dato estaba disponible, qué decisión se tomó y qué efecto contable produjo.

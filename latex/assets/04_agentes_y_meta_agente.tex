@@ -75,6 +75,59 @@ combinar agentes cuyas escalas no son comparables entre sí.
   \label{fig:arquitectura}
 \end{figure}
 
+\subsection{Qué predice el modelo}
+
+El objetivo supervisado no es el retorno en euros ni una probabilidad de subida. Para cada fecha
+$t$, se calcula el retorno total a doce meses $R_{i,t\rightarrow t+12}$ de cada acción $i$ cuya
+etiqueta ya puede cerrarse y se transforma en percentil transversal:
+\[
+ y_{i,t}=\frac{\operatorname{rank}_{j\in\mathcal U_t}
+ \left(R_{j,t\rightarrow t+12}\right)-1}{|\mathcal U_t|-1}.
+\]
+Así, $y=1$ identifica la mejor acción de su cohorte y $y=0$ la peor. Esta definición alinea
+directamente el entrenamiento con el Rank-IC empleado para seleccionar: el sistema aprende
+ordenación relativa, no trata de acertar el nivel absoluto de rentabilidad. También reduce la
+dependencia de la escala de cada año, aunque no elimina la dependencia entre acciones que comparten
+cohorte.
+
+Cada agente $a$ estima una función no lineal
+$\hat y^{(a)}_{i,t}=f_a(X^{(a)}_{i,t};\theta_{a,t})$, donde
+$X^{(a)}_{i,t}$ contiene únicamente las variables permitidas a ese especialista y disponibles en
+$t$. El subíndice temporal de $\theta$ importa: no existe un único árbol ajustado una vez sobre toda
+la historia, sino una sucesión de modelos. Una predicción publicada en $t$ queda ligada a la versión
+entrenada con la última información cerrada antes de $t$.
+
+\subsection{Dos relojes que nunca se confunden}
+
+La implementación mantiene separados el reloj de publicación de la señal y el reloj de cierre de la
+etiqueta. En una fecha dada puede puntuarse una empresa con información observable, pero esa misma
+fila no puede usarse para entrenar hasta que transcurran los doce meses necesarios para conocer su
+resultado. La Figura~\ref{fig:dos-relojes} representa esa asimetría.
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[>=Latex,every node/.style={font=\small},x=1.45cm,y=1cm]
+    \draw[->,thick] (0,1.35) -- (8.4,1.35) node[right] {tiempo};
+    \foreach \x/\lab in {0/$t-8a$,3.8/$t-12m$,5.5/$t$,8/$t+12m$}
+      {\draw (\x,1.18)--(\x,1.52) node[above=2pt]{\lab};}
+    \draw[very thick,blue!65] (0,0.85)--(3.8,0.85)
+      node[midway,below]{labels cerrados para entrenar};
+    \draw[very thick,teal!70!black] (0,0.25)--(5.5,0.25)
+      node[midway,below]{variables observables para puntuar en $t$};
+    \draw[very thick,orange!80!black,dashed] (5.5,-0.35)--(8,-0.35)
+      node[midway,below]{retorno aún desconocido};
+    \draw[->,thick] (5.5,0.15)--(5.5,-0.55);
+  \end{tikzpicture}
+  \caption{Separación entre el reloj de predicción y el de aprendizaje. La señal se emite en $t$;
+  su etiqueta sólo entra en un ajuste posterior cuando el horizonte anual ha cerrado.}
+  \label{fig:dos-relojes}
+\end{figure}
+
+Esta separación impide una fuga menos visible que usar un precio futuro: permitir que una fila
+reciente, cuyas características sí se conocen pero cuyo retorno anual todavía no, intervenga en la
+selección de variables o en el meta. El cierre de cohortes es por tanto una condición previa común
+al entrenamiento, a la poda y a la calibración; no una corrección aplicada después.
+
 \section{Qué aprende cada especialista}
 
 La especialización no asigna una conclusión previa al modelo; asigna un vocabulario económico para
@@ -106,6 +159,38 @@ Los scores se convierten a rangos porcentuales dentro de cada cohorte. Esta oper
 escala numérica de un agente domine al resto: si \textit{risk} produce valores entre 0,4 y 0,6 y
 \textit{value} entre $-2$ y $3$, ambos pasan a expresar posición relativa en su sección transversal.
 El meta combina después esos rangos, no sus unidades originales.
+
+Antes del ajuste, los extremos se tratan con reglas declaradas y los valores ausentes se imputan
+usando únicamente estadísticas obtenidas en el corte de entrenamiento. Una variable no se conserva
+porque explique retrospectivamente toda la muestra: su disponibilidad y su contribución deben
+sostenerse en los pliegues temporales permitidos. Con ello, la poda reduce dimensión sin convertir
+el conjunto reservado en un selector informal. El diccionario completo de variables, direcciones,
+bloques y agentes figura en el Apéndice~\ref{anexo:catalogo}.
+
+Sean $z^{(a)}_{i,t}$ los cinco rangos producidos. Cuando existen suficientes cohortes cerradas, el
+meta resuelve una regresión regularizada sobre predicciones verdaderamente fuera de muestra:
+\[
+ \widehat{\boldsymbol w}_t=
+ \arg\min_{\boldsymbol w}
+ \sum_{(i,s)\in\mathcal C_t}
+ \left(y_{i,s}-w_0-\sum_{a=1}^{5}w_a z^{(a)}_{i,s}\right)^2
+ +\lambda\lVert\boldsymbol w\rVert_2^2,
+\]
+donde $\mathcal C_t$ contiene sólo cohortes cerradas anteriores a $t$. Los coeficientes de agentes
+se restringen a ser no negativos y después se normalizan para sumar uno. La variante acotada añade
+$0{,}10\leq w_a\leq0{,}50$; la libre conserva únicamente no negatividad y normalización. El
+intercepto sirve al ajuste, pero no altera la ordenación transversal final.
+
+La regularización cumple aquí una función concreta: evita que agentes correlacionados intercambien
+pesos extremos ante pequeñas perturbaciones. No garantiza, sin embargo, estabilidad económica. Si
+un agente acumula más información ordinal que los demás, la versión libre puede concentrarse en él;
+esa posibilidad es una hipótesis contrastada por el protocolo y se estudia después mediante pesos,
+ablaciones y neutralización factorial.
+
+Cuando $\mathcal C_t$ todavía no tiene la longitud mínima exigida, no se ajusta una regresión
+frágil. El sistema utiliza el reparto igualitario y registra el estado de arranque. Esta conducta es
+parte del contrato reproducible: dos ejecuciones con el mismo catálogo y la misma instantánea no
+pueden decidir de manera distinta si ya existe historia suficiente.
 
 \section{Ejemplo de combinación}
 

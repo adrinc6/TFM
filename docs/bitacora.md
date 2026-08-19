@@ -2386,3 +2386,74 @@ publicado.
 **Verificación final.** `verify_latex_assets.py`, la auditoría de cifras, compilación de ambos PDF,
 recuento de páginas y diapositivas, `py_compile`, `ruff`, `node --check` y la suite completa del
 repositorio quedan en verde.
+
+## 2026-08-19 · Migración visual del manuscrito y la defensa
+
+**Decisión.** Se abre una migración editorial explícita para convertir comparaciones relevantes que
+solo estaban en prosa en evidencia visual, sin cambiar configuración científica, API ni artefactos
+persistidos. El manuscrito y la defensa vuelven a quedar congelados al cerrarla.
+
+**Contexto competitivo.** La dificultad de superar al S\&P 500 aparece en la introducción, antes de
+los dos objetivos, con el Report 1a de `SPIVA U.S. Scorecard Year-End 2025`. El capítulo 7 conserva
+la aritmética de suma cero de Sharpe y remite al gráfico inicial. Se corrige una afirmación factual:
+los porcentajes por horizonte no son monótonos, aunque siguen siendo elevados y el corte de veinte
+años es el más exigente.
+
+**Corrección de procedencia.** Se elimina `t03_cobertura_anual.tex`. Se generaba desde la cobertura
+incluida en `attribution.json`, que podía superar el 100 %, mientras el panel publica su fuente
+canónica en `data/raw/universe_coverage.json`. La nueva figura lee exclusivamente ese fichero y
+mantiene separadas cobertura del índice y calidad de las filas construidas.
+
+**Nuevos activos.** El exportador genera siete figuras: horizontes SPIVA, cobertura anual,
+turnover frente a exceso, escalera de costes, capacidad y dos vistas de perfiles. Los pesos se
+importan de `PROFILE_WEIGHTS`; `balanced` se representa como meta puro y los pesos negativos no se
+ocultan. Las ganancias anuales de perfiles se interpretan como exceso frente a SPY. Selección y
+reserva permanecen diferenciadas y la reserva de perfiles se etiqueta como seis cohortes, no como
+un ranking fiable.
+
+**Manifiesto y auditoría.** `asset_manifest.json` declara `literature_sources.spiva`, la cobertura
+canónica, `capacity.json` y las ocho rutas `profiles/<perfil>/annual_metrics.parquet`. El modo
+`--audit` exige las dieciocho figuras y comprueba que esas fuentes estén declaradas.
+
+**Defensa.** SPIVA entra después de la portada y los perfiles después del resultado reservado. Se
+elimina la transición «La cartera pasa a ser el segundo objetivo» y se fusionan las conclusiones.
+El resultado son veinte diapositivas narradas, un objetivo de 18:15 y una reserva sin numerar sobre
+los pesos de perfiles después de «Gracias».
+
+**Verificación final.** La regeneración de activos y `export_study_assets.py --audit` quedan en
+verde con los cuatro estudios adoptados; `verify_latex_assets.py` no detecta activos huérfanos,
+referencias rotas ni fuentes sin declarar. XeLaTeX, instalado con autorización para cerrar la
+migración, compiló dos veces ambos documentos: la memoria tiene 77 páginas y la defensa 21 páginas
+físicas, correspondientes a veinte diapositivas narradas y una reserva. Se renderizaron e
+inspeccionaron visualmente todas las páginas y diapositivas, sin etiquetas truncadas,
+solapamientos ni desbordamientos. Las búsquedas finales no encuentran rutas absolutas, referencias
+al activo retirado, afirmaciones de monotonía ni patrones de mojibake. La suite termina con 144
+pruebas superadas; `python -m ruff check .` y `node --check app/js/app.js` también quedan en verde.
+Los cuatro estudios adoptados constan como finalizados y no queda ningún worker activo. No se
+ejecutó un Study nuevo ni un smoke científico porque la migración es exclusivamente editorial y no
+modifica ciencia ni resultados persistidos.
+
+## 2026-08-19 · Ampliación explicativa sin generar PDF
+
+**Decisión.** Se autoriza una nueva pasada editorial sobre `docs/` y `latex/`, pero se prohíbe
+compilar, renderizar o generar los PDF. No cambia la ciencia, el catálogo ni los estudios adoptados.
+
+**Manuscrito.** Se añade glosario, lista de figuras y lista de tablas. El estado del arte incorpora
+literatura primaria sobre factores, aprendizaje automático, data snooping, sesgo de exclusión,
+restricciones y costes. Datos separa cobertura del índice, muestra puntuada y disponibilidad de
+variables. Arquitectura formaliza el label ordinal, los dos relojes temporales y la Ridge del meta.
+Protocolo desarrolla la calibración causal, los estados de respaldo, la precedencia de cartera y la
+distinción única entre 46 configuraciones predictivas y 1.440 carteras. Resultados añade estabilidad
+de variables y exposición factorial con incertidumbre. El catálogo publica el diccionario de 68
+variables y los anexos amplían ciclo de vida, custodia y contratos derivados de defectos materiales.
+
+**Procedencia.** Los nuevos activos leen `evidence/agent_scores.parquet`,
+`evidence/signal_calibration.parquet`, `evidence/model_feature_attribution.parquet`,
+`feature_catalog.json` y `attribution.json` del Model Study de referencia
+`study-20260817-094411-568bd37e`. `asset_manifest.json` registra las fuentes y el modo `--audit`
+comprueba cuatro figuras y tres tablas nuevas.
+
+**Validación realizada.** El exportador y su auditoría terminaron correctamente, así como
+`verify_latex_assets.py`. Los cuatro PNG nuevos se inspeccionaron directamente. Queda expresamente
+pendiente cualquier comprobación dependiente de paginación o distancia de lectura, porque en esta
+intervención no se genera ningún PDF.

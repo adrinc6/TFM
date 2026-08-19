@@ -311,6 +311,22 @@ sistema reasigna atención dentro del agente aunque el reparto entre agentes est
 suaviza --- sin eliminarla --- la objeción de que depender de un único especialista equivale a
 depender de un único factor.
 
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.98\textwidth]{assets/f06_estabilidad_features.png}
+  \caption{Persistencia temporal de las variables más relevantes dentro de cada agente. Cada celda
+  normaliza la magnitud del coeficiente dentro del agente y la fecha de reentrenamiento; el objetivo
+  es comparar continuidad, no niveles entre especialistas.}
+  \label{fig:estabilidad-features}
+\end{figure}
+
+La Figura~\ref{fig:estabilidad-features} amplía la fotografía de tres variables de la
+Tabla~\ref{tab:atribucion}. Una variable puede ser importante en promedio por dominar un intervalo
+corto, mientras otra puede aportar menos intensidad pero sobrevivir a muchos reentrenamientos. El
+mapa permite distinguir ambos casos y muestra por qué la atribución anual y la estabilidad del
+modelo son diagnósticos complementarios: la primera explica predicciones concretas; la segunda
+pregunta si el vocabulario aprendido se recompone por completo cada vez que avanza la ventana.
+
 Conviene declarar el alcance de todo esto. La atribución local es \emph{descriptiva}: dice qué
 variables movieron la puntuación, no que esas variables causen el retorno. Ningún contraste de este
 capítulo se apoya en ella, y su papel es explicar un resultado ya medido por otros medios, no
@@ -418,6 +434,20 @@ significativo de forma aislada. Los factores de tamaño e inversión no son cons
 fuentes disponibles y se declaran no replicables en lugar de sustituirse por un sucedáneo no
 auditable.
 
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.96\textwidth]{assets/f06_atribucion_factorial.png}
+  \caption{Dos lecturas de solapamiento factorial en selección. Izquierda: cargas y sus intervalos
+  Newey--West; derecha: Rank-IC antes y después de neutralizar catorce controles de estilo.}
+  \label{fig:atribucion-factorial}
+\end{figure}
+
+La visualización evita una inferencia que una lista de coeficientes favorece: escoger la carga de
+mayor valor absoluto y tratarla como exposición demostrada. Todas las barras de incertidumbre
+cruzan cero. En cambio, la neutralización sí muestra una reducción medible, pero pequeña frente a la
+señal retenida. La evidencia apunta por tanto a solapamiento parcial, no a identidad factorial ni a
+independencia completa.
+
 Las dos mitades deben leerse juntas, porque acotan la afirmación por ambos lados: no hay evidencia
 suficiente para atribuir la señal a un factor clásico, ni tampoco para afirmar que genere alfa por
 sí misma. La conclusión prudente es que la evidencia es compatible con una señal parcialmente
@@ -516,12 +546,9 @@ al máximo esperable por azar no llega a seis de cada diez. Dicho sin tecnicismo
 histórica de este trabajo no es distinguible de la que produciría buscar lo bastante entre
 alternativas razonables.
 
-Conviene precisar qué parte de la búsqueda pesa aquí, porque el trabajo la agravó dos veces y no de
-la misma manera. Encadenar tres Model Studies aumenta el número de configuraciones predictivas
-ensayadas y es lo que entra en este estadístico. La rejilla de cartera, en cambio, no toca el
-Rank-IC ni el modelo: se aplica después, sobre un modelo ya congelado, y su efecto se declara aparte
-en el Capítulo~\ref{chap:resultados-economicos} como una cota superior sobre el Information Ratio.
-Sumar ambas búsquedas en un solo reproche confundiría dos objetos distintos.
+El recuento de 46 corresponde a la búsqueda predictiva. La Sección~\ref{sec:dos-multiplicidades}
+estableció por qué las 1.440 carteras constituyen otra multiplicidad y no se suman a este
+estadístico; aquí basta aplicar aquella regla al interpretar el resultado.
 
 Este resultado no contradice el test de permutación del Rank-IC: examinan cosas diferentes. El
 primero limita una afirmación de \emph{rentabilidad ajustada por riesgo}; el segundo apoya que el

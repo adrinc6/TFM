@@ -26,12 +26,12 @@ alguien lo supere, otro debe quedarse por debajo en la misma medida. Es un juego
 cero antes de costes}, y como operar cuesta, pasa a ser de \textbf{suma negativa después}. No hay
 ninguna versión de este problema en la que todos los participantes ganen.
 
-Ese marco tiene un correlato empírico que conviene declarar con cifras, porque fija la altura real
-del listón. El \textit{scorecard} SPIVA (S\&P Dow Jones Indices, 2026), que compara fondos frente a
-su índice de referencia, encuentra que a veinte años el \textbf{93\,\%} de los fondos
-estadounidenses de gran capitalización queda por debajo del S\&P 500, y que la proporción de
-rezagados \emph{crece} con el horizonte: lo que a un año parece habilidad tiende a no sobrevivir a
-una década.
+Ese marco tiene un correlato empírico que ya anticipó la
+Figura~\ref{fig:spiva-horizontes}. El \textit{scorecard} SPIVA (S\&P Dow Jones Indices, 2026)
+encuentra que a veinte años el \textbf{92,89\,\%} de los fondos estadounidenses de gran
+capitalización queda por debajo del S\&P 500. Los porcentajes no crecen de forma estrictamente
+monótona con el horizonte, pero permanecen muy elevados en todos los cortes y culminan por encima
+del 92\,\% a veinte años.
 
 De ahí que la afirmación que este capítulo puede permitirse sea deliberadamente modesta. Superar al
 índice de forma sostenida es, en el mejor de los casos, ganarle una posición a otro participante en
@@ -480,6 +480,14 @@ el triple de Information Ratio. La mejora no se compró rotando más, sino justa
 coherente con lo que muestra la Figura~\ref{fig:cartera-rejilla}: en la nube de las 1.440 carteras,
 las mejores combinaciones no son las más activas.
 
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.94\textwidth]{assets/f07_alpha_turnover_anual.png}
+  \caption{Turnover y exceso anual frente a SPY. Los años 2025--2026 se distinguen porque son la
+  era reservada y no participaron en la selección.}
+  \label{fig:alpha-turnover-anual}
+\end{figure}
+
 \subsection*{Cuánta señal llega a materializarse}
 \label{sec:transferencia}
 
@@ -515,12 +523,21 @@ medida que operar se encarece. Si en cambio se congela la ruta de decisiones tom
 real y sólo se recalcula la factura, el equilibrio sube a 447 puntos básicos: es la variante
 conservadora, porque obliga a pagar operaciones que un gestor racional no habría hecho a ese precio.
 Ambas cifras dicen lo mismo con distinto margen: el resultado no depende de haber supuesto costes
-optimistas.
+optimistas. La Figura~\ref{fig:costes-escalera} permite ver tanto la caída lineal de la ruta
+congelada como la respuesta irregular de una cartera que vuelve a decidir en cada peldaño.
 
 La ruta congelada decae linealmente al pagar más por las mismas operaciones. La resimulada es
 irregular porque el gestor opera menos a medida que el coste aumenta: cada escalón es otra cartera,
-no una versión encogida de la anterior. Esa diferencia justifica reportar los dos equilibrios, pero
-no requiere una figura adicional.
+no una versión encogida de la anterior.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.94\textwidth]{assets/f07_costes_escalera.png}
+  \caption{Exceso geométrico frente al coste por operación en selección. Se muestran la ruta
+  congelada y la cartera resimulada, el coste adoptado y sus puntos de equilibrio. La reserva no se
+  mezcla con esta curva porque parte prácticamente sin margen.}
+  \label{fig:costes-escalera}
+\end{figure}
 
 Dos salvedades acotan la afirmación. La primera es que ese margen se mide sobre la ventana de
 selección, donde la cartera es la mejor de 1.440, de modo que el equilibrio hereda ese sesgo
@@ -537,11 +554,19 @@ con el volumen diario mediano del título, para las 143 órdenes de la ventana d
 ellas con volumen observable.
 
 Tomando como referencia el percentil 95 de participación --- no la mediana, que escondería
-precisamente las órdenes problemáticas --- y un umbral de participación del 5\,\%, la estrategia es
-ejecutable con holgura hasta unos \textbf{10 millones de dólares} de patrimonio (2,5\,\% de
-participación en el percentil 95) y empieza a comprometerse a partir de unos 50 millones, donde ese
-percentil alcanza el 12,3\,\%. Por encima de 100 millones deja de ser creíble sin trocear las
-órdenes o rebajar la concentración.
+precisamente las órdenes problemáticas ---, la estrategia alcanza un 5\,\% de participación con
+\textbf{20,3 millones de dólares} de patrimonio y un 10\,\% con \textbf{40,6 millones}. Por
+encima de esos tamaños la ejecución exige trocear órdenes, aceptar más impacto o rebajar la
+concentración.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.94\textwidth]{assets/f07_capacidad.png}
+  \caption{Participación P95 sobre volumen diario frente al patrimonio, en escala logarítmica. Los
+  umbrales del 5\,\% y 10\,\% se calculan sobre las 143 órdenes de selección; la reserva se excluye
+  porque solo contiene diez órdenes.}
+  \label{fig:capacidad}
+\end{figure}
 
 Es una limitación de escala, no de validez: acota a qué tamaño de cartera aplica el resultado, y ese
 tamaño es el de un inversor individual o un fondo pequeño, no el de una gestora institucional.
@@ -582,11 +607,30 @@ vigente. Por eso la calibración de percentil a rentabilidad \textbf{se recalcul
 nuevo}: si no se hiciera, el perfil operaría con expectativas referidas a un orden que ya no usa, y
 sus umbrales en puntos básicos decidirían sobre posiciones ajenas.
 
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.96\textwidth]{assets/f07_perfiles_pesos.png}
+  \caption{Pesos firmados de los ocho perfiles. \texttt{balanced} conserva el meta puro; los pesos
+  negativos de \texttt{momentum} y \texttt{contrarian} expresan una inclinación explícita en contra
+  del agente correspondiente.}
+  \label{fig:perfiles-pesos}
+\end{figure}
+
 \subsection*{Qué le pasó a cada estilo}
 
 Los ocho perfiles se evalúan con la cartera ya ganadora dentro y fuera de la ventana de selección.
 La comparación detallada se resume aquí por su conclusión, porque ordenar ocho variantes con solo
 seis cohortes reservadas daría una precisión aparente.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.98\textwidth]{assets/f07_perfiles_resultados.png}
+  \caption{Resultados informativos de los perfiles: exceso geométrico agregado en selección y
+  reserva, y exceso anual frente a SPY. La separación de 2025--2026 recuerda que los perfiles no se
+  seleccionaron y que la reserva contiene solo seis cohortes; la figura no constituye un ranking
+  fiable de estilos.}
+  \label{fig:perfiles-resultados}
+\end{figure}
 
 El resultado principal es que \textbf{ninguno de los siete estilos mejora a la señal sin reordenar}.
 El perfil \texttt{balanced} --- que es, por construcción, no imponer ningún sesgo --- domina la

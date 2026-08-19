@@ -1,4 +1,4 @@
-% Defensa del TFM: 20 diapositivas totales, guion objetivo 18:35.
+% Defensa del TFM: 20 diapositivas narradas y una reserva sin numerar.
 \documentclass[aspectratio=169,11pt]{beamer}
 
 \usepackage{fontspec}
@@ -82,7 +82,24 @@
 \note{[0:20] Este trabajo separa dos preguntas que suelen confundirse: si el modelo aprende a
 ordenar acciones y si una cartera real consigue cobrar esa ordenación. La defensa sigue esa cadena.}
 
-% 2 · 0:50
+% 2 · 0:45
+\begin{frame}{Batir al mercado es un listón excepcionalmente alto}
+  \vspace{-0.15cm}
+  \begin{center}
+    \includegraphics[height=0.58\textheight,keepaspectratio]{assets/f01_spiva_horizontes.png}
+  \end{center}
+  \vspace{-0.22cm}
+  \matiz{No hay progresión estrictamente monótona, pero a veinte años el 92,89\,\% queda por debajo.}
+\end{frame}
+\note{[0:45] Antes de formular los objetivos conviene fijar el listón económico. SPIVA compara
+fondos estadounidenses de gran capitalización con el S\&P 500: la mayoría no lo supera en ninguno
+de los horizontes publicados y a veinte años falla el 92,89 por ciento. No es una serie monótona,
+pero sí persistentemente alta. El segundo objetivo intenta cobrar señal en ese entorno.
+[Sources]
+- https://www.spglobal.com/spdji/en/documents/spiva/spiva-us-year-end-2025.pdf — Report 1a,
+  All Large-Cap Funds frente al S\&P 500, rentabilidad absoluta; datos a 31-12-2025.}
+
+% 3 · 0:50
 \begin{frame}{Dos objetivos, dos métricas}
   \vspace{0.35cm}
   \begin{columns}[t,onlytextwidth]
@@ -311,27 +328,7 @@ No afirmo una rentabilidad ajustada por multiplicidad.}
 el pago económico de la cartera original cae. Eso contradice una explicación simple basada solo en
 peor cobertura temprana y justifica estudiar la cartera sin reabrir el modelo.}
 
-% 12 · 0:50
 \setacto{teal}
-\begin{frame}{La cartera pasa a ser el segundo objetivo}
-  \vspace{0.5cm}
-  \begin{center}
-    {\fontsize{24}{28}\selectfont\color{navy}\textbf{Una ordenación no se puede comprar entera.}}
-  \end{center}
-  \vspace{0.7cm}
-  \begin{columns}[t,onlytextwidth]
-    \begin{column}{0.30\textwidth}\cifra{cuántas}{posiciones}\end{column}
-    \begin{column}{0.30\textwidth}\cifra{cuándo}{comprar y vender}\end{column}
-    \begin{column}{0.30\textwidth}\cifra{cuánto}{peso y efectivo}\end{column}
-  \end{columns}
-  \vspace{0.5cm}
-  \begin{center}{\large Mismo modelo · misma señal · distintas reglas}\end{center}
-\end{frame}
-\note{[0:50] La cartera compra ocho o veinte nombres, paga costes y decide cuándo salir. En los
-Model Studies esas reglas eran las recomendadas del catálogo, no el objeto de selección. El segundo
-objetivo mide si esas decisiones cambian materialmente el resultado.}
-
-% 13 · 0:55
 \begin{frame}{Tres reglas concentran casi toda la sensibilidad de la cartera}
   \begin{columns}[c,onlytextwidth]
     \begin{column}{0.66\textwidth}
@@ -432,42 +429,27 @@ optimizada, mismo ranking y sin reentrenar, el exceso pasa a 0,24 e IR 0,109. Ca
 escala: es compatible con empatar. La rejilla demuestra que la cartera importa; este único periodo
 no demuestra que la ganadora generalice.}
 
-% 18 · 1:10
-\setacto{slate}
-\begin{frame}{Qué queda demostrado y qué no}
-  \begin{columns}[t,onlytextwidth]
-    \begin{column}{0.47\textwidth}
-      {\color{verde}\Large\textbf{Sí}}\\[0.35cm]
-      \begin{itemize}\setlength{\itemsep}{0.45em}
-        \item Existe ordenación predictiva favorable y robusta.
-        \item Las reglas de cartera alteran materialmente el resultado.
-        \item La implementación puede cambiar el signo con señal fija.
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.47\textwidth}
-      {\color{rojo}\Large\textbf{No todavía}}\\[0.35cm]
-      \begin{itemize}\setlength{\itemsep}{0.45em}
-        \item Necesidad de cinco agentes.
-        \item Rentabilidad ajustada por multiplicidad.
-        \item Generalización económica de la cartera elegida.
-      \end{itemize}
-    \end{column}
-  \end{columns}
+% 18 · 0:55
+\begin{frame}{Los perfiles muestran sensibilidad, no una clasificación de estilos}
+  \vspace{-0.25cm}
+  \begin{center}
+    \includegraphics[width=0.74\linewidth]{assets/f07_perfiles_resultados.png}
+  \end{center}
 \end{frame}
-\note{[1:10] El objetivo uno queda apoyado dentro del universo y protocolo, con risk ligeramente por
-encima del meta. El objetivo 2a queda demostrado por la dispersión de 1.440 carteras. El 2b sigue
-siendo preliminar por selección y tamaño muestral. Esta separación evita vender el resultado más de
-lo que permite la evidencia.}
+\note{[0:55] Los ocho perfiles no reentrenan el modelo: reordenan las acciones que la señal ya
+considera buenas. Balanced, que conserva el meta puro, domina en selección. En reserva solo balanced
+y momentum mantienen un exceso ligeramente positivo, pero hay seis cohortes: el mapa sirve para ver
+sensibilidad al estilo, no para ordenar ocho estrategias ni elegir una retrospectivamente.}
 
 % 19 · 1:15
 \setacto{navy}
-\begin{frame}{La señal y la cartera deben defenderse por separado}
+\begin{frame}{Qué queda demostrado y qué no}
   \vspace{0.25cm}
   \begin{columns}[t,onlytextwidth]
     \begin{column}{0.30\textwidth}
       {\color{navy}\Large\textbf{1}}\\[0.25cm]
       {\large Ordenación favorable y robusta.}\\[0.3cm]
-      {\color{slate}Sin demostrar la necesidad multiagente.}
+      {\color{slate}Sin demostrar la necesidad de cinco agentes.}
     \end{column}
     \begin{column}{0.30\textwidth}
       {\color{teal}\Large\textbf{2a}}\\[0.25cm]
@@ -476,8 +458,8 @@ lo que permite la evidencia.}
     \end{column}
     \begin{column}{0.30\textwidth}
       {\color{gold}\Large\textbf{2b}}\\[0.25cm]
-      {\large La reserva es alentadora.}\\[0.3cm]
-      {\color{slate}Aún no confirma generalización.}
+      {\large La reserva es solo direccional.}\\[0.3cm]
+      {\color{slate}No confirma generalización económica.}
     \end{column}
   \end{columns}
   \vspace{0.85cm}
@@ -489,9 +471,10 @@ lo que permite la evidencia.}
 \end{frame}
 \note{[1:15] La contribución es metodológica. Una buena señal puede parecer inútil con una cartera
 inadecuada, y una buena cartera puede maquillar una señal débil. Este trabajo separa selección,
-robustez e implementación y declara qué queda apoyado, qué es preliminar y qué no se demuestra.}
+robustez e implementación. El objetivo uno queda apoyado; el 2a, demostrado por la dispersión de
+1.440 carteras; y el 2b sigue siendo preliminar por selección, multiplicidad y tamaño muestral.}
 
-% 20 · 0:20 — total objetivo 18:35
+% 20 · 0:20 — total objetivo 18:15
 {\setbeamertemplate{footline}{}
 \begin{frame}[plain]
   \vspace{2.0cm}
@@ -503,5 +486,16 @@ robustez e implementación y declara qué queda apoyado, qué es preliminar y qu
   \end{minipage}
 \end{frame}}
 \note{[0:20] Muchas gracias. Quedo a vuestra disposición para preguntas.}
+
+% Reserva · sin numeración
+{\setbeamertemplate{footline}{}
+\begin{frame}[plain,noframenumbering]{Reserva · Cómo se construyen los perfiles}
+  \vspace{-0.15cm}
+  \begin{center}
+    \includegraphics[height=0.78\textheight,keepaspectratio]{assets/f07_perfiles_pesos.png}
+  \end{center}
+\end{frame}}
+\note{Diapositiva de reserva. Balanced es meta puro; los demás perfiles aplican pesos fijos y
+firmados. Los pesos negativos hacen explícita una inclinación contra momentum o contra riesgo.}
 
 \end{document}

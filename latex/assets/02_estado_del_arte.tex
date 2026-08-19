@@ -29,6 +29,23 @@ en promedio puede atravesar años adversos. El propio efecto tamaño de Banz se 
 notable en las décadas posteriores a su publicación, un recordatorio de que una regularidad
 documentada no es una garantía de rendimiento futuro.
 
+La ampliación posterior del catálogo factorial hace más importante esa cautela. Novy-Marx (2013)
+mostró que la rentabilidad bruta contiene información comparable a valor; Fama y French (2015)
+incorporaron rentabilidad e inversión a su modelo de cinco factores; y Hou et al. (2015) organizaron
+varias anomalías mediante una lectura basada en inversión. Frazzini y Pedersen (2014), por su parte,
+relacionaron la baja beta con restricciones al apalancamiento. Estas extensiones no producen una
+lista indiscutible de primas: producen familias de explicaciones que comparten variables, cambian de
+magnitud con la muestra y pueden describir una misma acción de formas distintas.
+
+La literatura de replicación convirtió esa proliferación en una pregunta empírica. McLean y Pontiff
+(2016) compararon 97 predictores antes y después de su publicación y documentaron una caída apreciable
+fuera de muestra y otra adicional cuando el mercado pudo explotar el hallazgo. Hou et al. (2020)
+reevaluaron 452 anomalías bajo procedimientos homogéneos y mostraron que muchas dejan de superar
+umbrales más exigentes o dependen de microcapitalizaciones. La implicación para este trabajo no es
+que toda regularidad sea falsa, sino que una señal aprendida debe demostrar estabilidad temporal,
+resistir controles conocidos y declarar qué parte de su aparente éxito procede de haber buscado entre
+alternativas.
+
 Para este TFM los factores cumplen tres papeles. Primero, orientan la división de features entre
 agentes: rentabilidad y solvencia para \textit{quality}; ratios de valoración para \textit{value};
 aceleración de resultados para \textit{growth}; tendencias para \textit{momentum}; y medidas de
@@ -50,6 +67,28 @@ mejorar la predicción transversal cuando el conjunto de señales es amplio y el
 la estructura temporal. LightGBM, usado aquí en cada agente, pertenece a la familia de árboles
 potenciados: construye de forma secuencial árboles débiles que corrigen errores de los anteriores y
 puede manejar relaciones no monotónicas (Ke et al., 2017).
+
+Ese resultado forma parte de una literatura más amplia que intenta reducir dimensionalidad sin
+suponer que cada característica actúa linealmente y de forma aislada. Kelly et al. (2019) vinculan
+características y covarianzas mediante componentes principales instrumentados; Freyberger et al.
+(2020) combinan selección regularizada y funciones no paramétricas; y Feng et al. (2020) estudian
+qué factores aportan información incremental dentro de un catálogo amplio. Sus métodos son
+distintos, pero convergen en dos ideas relevantes aquí: la no linealidad puede importar y añadir
+predictores no garantiza añadir información.
+
+La elección de árboles potenciados no se presenta por ello como una conclusión universal. Frente a
+un modelo lineal, ganan capacidad para representar umbrales e interacciones, pero pierden una
+interpretación directa de coeficientes. Frente a una red profunda, ofrecen una complejidad más
+contenida y una atribución local más manejable para el tamaño del panel. El catálogo conserva una
+alternativa lineal regularizada y una formulación de ranking directo precisamente para que estas
+preferencias puedan contrastarse en vez de asumirse.
+
+Hay además una diferencia entre predecir retornos y ordenar acciones. Un error pequeño en unidades
+de retorno puede convivir con un orden transversal pobre, y una transformación monótona del score
+puede alterar el error cuadrático sin cambiar ninguna decisión de selección. Este trabajo sigue la
+segunda pregunta: cada agente aprende una representación continua, pero el protocolo juzga el orden
+que induce. Esa elección acerca el objetivo estadístico al uso final sin hacer que la cartera entre
+prematuramente en la selección.
 
 Esa flexibilidad tiene un coste epistemológico. Un modelo flexible puede encontrar patrones espurios
 con facilidad, especialmente si se prueban parámetros hasta maximizar una métrica final. Por ello la
@@ -94,6 +133,20 @@ evidencia. El Deflated Sharpe Ratio (Bailey y López de Prado, 2014) es útil po
 selección entre configuraciones, pero
 no sustituye a la disciplina de congelar una era reservada ni a contrastes de permutación y placebo.
 
+White (2000) y Hansen (2005) formalizan dos respuestas relacionadas al problema de escoger el mejor
+modelo después de comparar muchos: el \textit{Reality Check} y el test de capacidad predictiva
+superior. Bailey et al. (2017) expresan la misma preocupación como probabilidad de sobreajuste del
+backtest. Ninguna corrección reconstruye una hipótesis verdaderamente previa después de observar los
+datos; por eso el catálogo cerrado, el ledger de decisiones y la reserva cumplen una función que no
+puede reemplazarse con un único $p$-valor.
+
+El sesgo de supervivencia tampoco se reduce a incluir o excluir empresas quebradas. Shumway (1997)
+mostró que omitir retornos de exclusión puede distorsionar la medición. En este proyecto el problema
+adopta otra forma: la pertenencia histórica se conoce, pero el proveedor gratuito deja de servir
+precios de numerosos símbolos retirados. El universo correcto y el panel observable son, por tanto,
+dos poblaciones diferentes. Esta distinción justifica que la cobertura se mida contra los miembros
+reales del índice y no contra las filas que el propio pipeline consiguió construir.
+
 En síntesis, la contribución del TFM no consiste en proponer un sexto factor. Consiste en evaluar una
 arquitectura de aprendizaje con una separación explícita entre datos disponibles, modelo elegido,
 robustez y cartera. Ese posicionamiento condiciona todos los capítulos posteriores.
@@ -121,6 +174,20 @@ proporción de esa señal llega efectivamente a la cartera.
 \[
   \text{IR} \;\approx\; \text{IC} \times \sqrt{\text{amplitud}} \times \text{TC}
 \]
+
+Clarke et al. (2002) muestran por qué las restricciones reducen ese coeficiente de transferencia:
+una señal puede contener información que una cartera \textit{long-only}, concentrada o sometida a
+límites de rotación no consigue expresar. El punto es central en este TFM. El Rank-IC evalúa toda la
+sección transversal, incluida la mitad inferior que una cartera sin posiciones cortas nunca puede
+monetizar, mientras que la cartera mantiene ocho nombres y puede retenerlos doce meses. El salto
+entre ambas métricas no es una conversión automática, sino un segundo problema de decisión.
+
+Los costes añaden otra ruptura. Amihud (2002) relaciona iliquidez y retornos, y Novy-Marx y Velikov
+(2016) muestran que el turnover puede consumir buena parte de las anomalías más intensivas en
+negociación. Restar una comisión fija al final no basta cuando el coste también debe cambiar la
+decisión de operar. Por eso esta memoria distingue la ruta congelada ---qué habría costado ejecutar
+las mismas órdenes--- de la ruta resimulada, en la que un coste mayor eleva los umbrales y puede
+evitar la operación.
 
 Su utilidad aquí es que separa tres causas distintas de un mal resultado que una cifra de
 rentabilidad confundiría: que la señal no ordene, que se tomen pocas decisiones independientes o que
@@ -151,3 +218,12 @@ Ratio, siguiendo la distinción entre calidad de señal e implementación que fo
 Sección~\ref{sec:seleccion-secuencial}. Lo que ninguna de las dos evita es la multiplicidad frente a
 la afirmación económica, y por eso el trabajo reporta el Deflated Sharpe (Bailey y López de Prado,
 2014) aun sabiendo que su propia estrategia de búsqueda lo empeora.
+
+La posición final puede resumirse en cuatro decisiones. Primera, el objeto primario es una
+ordenación, no una predicción puntual de rentabilidad. Segunda, todo aprendizaje y toda combinación
+se realizan con información PIT y etiquetas cerradas. Tercera, el modelo se elige sin observar su
+cartera y la cartera se optimiza después sin poder reescribir el modelo. Cuarta, la evidencia
+negativa ---un agente que supera al meta, un Deflated Sharpe insuficiente o una reserva débil--- se
+conserva con el mismo rango que los contrastes favorables. La contribución no consiste en eliminar
+las tensiones de la literatura, sino en construir un protocolo en el que cada una deje una huella
+auditable.

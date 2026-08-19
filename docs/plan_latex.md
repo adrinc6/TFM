@@ -18,8 +18,8 @@ El manuscrito (`latex/main.tex`, `latex/presentacion.tex`, `latex/assets/*.tex`)
 los cambios de código no lo editan. `latex/scripts/*.py` y `latex/plan_tfm.md` sí son editables, pero
 el exportador no se ejecuta como parte de un cambio corriente.
 
-**Última actualización del manuscrito: 2026-08-18**, con la auditoría de cifras y el relato de
-cartera que recogen §11 y §12. Desde entonces vuelve a estar congelado y la deuda se acumula en §10.
+**Última actualización del manuscrito: 2026-08-19**, con la migración visual del informe y la
+defensa. Desde entonces vuelve a estar congelado y la deuda se acumula en §10.
 
 Dos avisos de alcance que este documento no traía y que costaron tiempo:
 
@@ -38,15 +38,13 @@ aquí.
 
 ## 1. Estado del manuscrito
 
-15 capítulos y anexos en `latex/assets/`, **25 tablas** `t*.tex` y **17 figuras** `f*.png` tras la
-actualización de 2026-08-18: entra `t07_cartera_relato.tex` y entran cinco figuras nuevas
-(`f06_orden_vs_pago`, `f07_contribucion_accion`, `f07_operaciones`, `f07_sectores`,
-`f07_costes_escalera`). El manifiesto ya no declara `t08_versiones_catalogo.tex`, que se había
-borrado del disco en la pasada anterior y sobrevivía como entrada fantasma.
+15 capítulos y anexos en `latex/assets/`, **18 tablas** `t*.tex` y **18 figuras** `f*.png` tras la
+actualización de 2026-08-19. La tabla anual de cobertura fue sustituida por una figura leída de la
+fuente canónica; el manifiesto declara además SPIVA y las ocho series anuales de perfiles.
 
 La distinción que más errores evita, y que no está recogida en ningún otro sitio:
 
-**20 tablas se generan solas** al ejecutar `export_study_assets.py` y se refrescan sin intervención.
+**13 tablas se generan solas** al ejecutar `export_study_assets.py` y se refrescan sin intervención.
 **5 se escriben a mano** y no las actualiza nadie por ti. La auditoría de 2026-08-18 encontró que las
 cinco manuales llevaban cifras que contradecían al capítulo que las cita: son las que hay que releer
 cada vez que cambie un estudio.
@@ -528,7 +526,55 @@ de `winner.json`, `evidence/summary.json`, `robustness.json`, `attribution.json`
 `results/studies/study-20260817-212856-f86ca822/`; la cadena se completa con
 `study-20260816-182345-3cc1a5fb` y `study-20260817-021135-b5926b62`.
 
-**Defensa.** La presentación queda cerrada en veinte diapositivas y un guion de 18:35. Los títulos
+**Defensa.** La presentación queda cerrada en veinte diapositivas narradas, una reserva sin numerar
+y un guion de 18:15. Los títulos
 formulan conclusiones defendibles, la métrica exacta de la cartera es la única tabla y los gráficos
 de eras, cadena, sensibilidad y composición sostienen la explicación oral sin texto esencial en
 tamaños reducidos.
+
+### 2026-08-19 — Saldada: contexto competitivo y comparaciones visuales
+
+**Qué se incorporó.** La introducción presenta antes de los objetivos el porcentaje de fondos
+large-cap que no supera al S\&P 500 a varios horizontes, con procedencia SPIVA declarada. El capítulo
+7 conserva la aritmética de Sharpe y remite a esa figura; ya no afirma una progresión monótona.
+
+La cobertura anual se lee exclusivamente de `data/raw/universe_coverage.json` y sustituye a
+`t03_cobertura_anual.tex`, cuya fuente mezclaba poblaciones y podía producir coberturas superiores
+al 100 %. En resultados económicos entran relaciones visuales que la prosa no permitía reconocer:
+turnover frente a exceso anual, escalera de costes, capacidad, pesos firmados de perfiles y
+resultados agregados/anuales de perfiles.
+
+**Procedencia.** El Portfolio Study adoptado aporta `evidence_best_full/annual_metrics.parquet`,
+`cost_sensitivity.json`, `capacity.json`, `portfolio_profiles.parquet` y las ocho rutas
+`profiles/<perfil>/annual_metrics.parquet`. `PROFILE_WEIGHTS` se importa del código vigente, no se
+duplica. `asset_manifest.json` añade `literature_sources.spiva`, la fuente canónica del panel y cada
+serie anual de perfil; `--audit` exige todas ellas y los dieciocho gráficos.
+
+**Defensa.** Queda congelada en veinte diapositivas narradas y una reserva sin numerar. SPIVA aparece
+después de la portada, perfiles después del resultado reservado y la transición de cartera se
+elimina; las dos conclusiones anteriores se funden en una síntesis. El guion objetivo es 18:15.
+
+**Estado de la deuda.** Esta migración no deja deuda nueva: cualquier cambio posterior vuelve a
+anotarse aquí sin editar el manuscrito hasta la siguiente migración autorizada.
+
+### 2026-08-19 — Saldada: ampliación explicativa y trazabilidad de la muestra
+
+**Criterio editorial.** Se amplía lo que aportaba valor probatorio y se conserva la frontera entre
+capítulos: muestra efectiva en datos; objetivo, relojes y meta en arquitectura; calibración,
+precedencia y multiplicidad en protocolo; estabilidad interna y factores en resultados. El capítulo
+económico no repite esos mecanismos. La bibliografía se refuerza con trabajos primarios sobre
+factores, aprendizaje estadístico, sesgo de selección, liquidez y costes.
+
+**Activos nuevos.** `agent_scores.parquet`, `signal_calibration.parquet` y
+`model_feature_attribution.parquet` alimentan `f03_muestra_oos.png`,
+`f05_calibracion_alfa.png`, `f06_estabilidad_features.png`, `f06_atribucion_factorial.png` y tres
+tablas generadas. El diccionario de 68 variables procede directamente de `feature_catalog.json`.
+El manifiesto y `--audit` exigen estas fuentes y salidas.
+
+**Valor del proyecto que se hace visible.** Los anexos explican el ciclo de vida de Study y run, la
+cadena de custodia de la evidencia y cuatro familias de defectos materiales que originaron contratos
+automáticos. Esta ingeniería se presenta como garantía de validez, no como resultado económico.
+
+**Límite de esta intervención.** Se regeneraron sólo PNG, cuerpos de tabla, macros y manifiesto. Por
+indicación expresa no se ejecutó XeLaTeX, no se creó ningún PDF y no se hizo inspección paginada; la
+validación se limita a fuentes, activos, auditoría estática y pruebas del proyecto.

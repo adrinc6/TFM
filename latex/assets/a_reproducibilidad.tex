@@ -30,6 +30,80 @@ decisión. La métrica de selección fue \texttt{rank\_ic\_only} en las tres pas
 \texttt{information\_ratio} en el Portfolio Study, cuya rejilla se calculó además sobre una serie
 recortada en 2024 para que ninguna de las 1.440 combinaciones pudiera observar la era reservada.
 
+\section{Ciclo de vida de una ejecución}
+
+La reproducibilidad no depende únicamente de fijar una semilla. Una ejecución puede fallar después
+de horas de cálculo, ser cancelada, reanudarse o convivir con otras; si esos estados no forman parte
+del diseño, dos resultados nominalmente iguales pueden haber recorrido historias distintas. El
+sistema separa por ello la entidad \emph{Study}, que contiene la pregunta y el catálogo, de cada
+\emph{run}, que contiene una evaluación concreta.
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[node distance=7mm and 8mm,>=Latex,every node/.style={font=\small,align=center}]
+    \node[draw,rounded corners,fill=blue!8,minimum width=23mm] (c) {Catálogo\\validado};
+    \node[draw,rounded corners,fill=teal!10,right=of c,minimum width=23mm] (s) {Study y run\\persistidos};
+    \node[draw,rounded corners,fill=orange!12,right=of s,minimum width=23mm] (w) {Worker\\aislado};
+    \node[draw,rounded corners,fill=yellow!15,right=of w,minimum width=25mm] (e) {Eventos y\\artefactos};
+    \node[draw,rounded corners,fill=green!10,right=of e,minimum width=24mm] (f) {Run\\finalizado};
+    \draw[->,thick] (c)--(s);
+    \draw[->,thick] (s)--(w);
+    \draw[->,thick] (w)--(e);
+    \draw[->,thick] (e)--(f);
+    \draw[->,thick,dashed] (w.south) -- ++(0,-0.55) -|
+      node[pos=0.75,below]{error o cancelación persistidos} (s.south);
+  \end{tikzpicture}
+  \caption{Ciclo de vida operativo. El registro existe antes del cálculo; un artefacto parcial no
+  adquiere nunca el estado de caché válida.}
+  \label{fig:ciclo-study}
+\end{figure}
+
+La API crea Study y run antes de lanzar el proceso hijo. Desde ese momento cada transición
+relevante se escribe tanto en el registro del run como en \texttt{events.jsonl}: inicio de fase,
+progreso, finalización, excepción y cancelación. Si el worker termina con error, se persisten mensaje
+y \textit{traceback}; si se cierra el servidor, se terminan sus workers. Reanudar consulta primero
+el estado persistido y no repite runs completos ni duplica decisiones del ledger.
+
+El aislamiento en proceso hijo tiene una función científica además de operativa. Evita que un estado
+en memoria --- una semilla, una caché o un dataframe mutado --- sobreviva de una configuración a la
+siguiente. El coste es mayor comunicación y una gestión explícita de cancelación, pero el beneficio
+es que el resultado depende de entradas persistidas, no del orden accidental en el que se pulsaron
+botones.
+
+\section{Cadena de custodia de la evidencia}
+
+Cada nivel responde a una pregunta diferente y tiene un consumidor definido:
+
+\begin{table}[H]
+  \centering
+  \small
+  \begin{tabularx}{\textwidth}{p{3.1cm}X X}
+    \toprule
+    Nivel & Contenido & Función en la auditoría \\
+    \midrule
+    Catálogo & Rejillas, restricciones y fases & Demuestra qué podía elegirse antes de medir. \\
+    \texttt{winner.json} & Configuración adoptada y procedencia & Une cada valor final con el run que lo produjo. \\
+    \texttt{decisions.json} & Incumbente, candidatos y puerta pareada & Reconstruye por qué cambió o no cada decisión. \\
+    Evidencia predictiva & Scores, Rank-IC, atribución y robustez & Sostiene las afirmaciones sobre ordenación. \\
+    Evidencia de cartera & Órdenes, posiciones, costes y rejilla & Sostiene las afirmaciones económicas. \\
+    Manifiesto LaTeX & Fuente de cada tabla, macro y figura & Impide que el manuscrito mezcle estudios. \\
+    \bottomrule
+  \end{tabularx}
+  \caption{Niveles de persistencia y propósito de cada uno.}
+  \label{tab:cadena-custodia}
+\end{table}
+
+El hash del dataset identifica los datos materializados, el hash del catálogo identifica el espacio
+de decisiones y la \texttt{evaluation\_key} une ambos con la configuración evaluada. Una caché sólo
+es reutilizable cuando los tres coinciden y el artefacto está completo. Esta condición evita dos
+formas de contaminación difíciles de detectar: atribuir a un catálogo nuevo un resultado antiguo y
+usar como terminado un directorio que quedó a medias tras una interrupción.
+
+La cadena también separa procedencia de interpretación. Los JSON y Parquet contienen observaciones;
+las macros formatean cifras; los capítulos explican su significado. El exportador puede transformar
+los dos primeros niveles, pero no decide qué resultado es favorable ni reabre el catálogo. De ese
+modo, regenerar una figura cambia su presentación, no la ciencia que representa.
+
 \section{Regeneración de figuras y tablas}
 
 Las figuras y tablas del manuscrito no se dibujan a mano: se generan desde los artefactos

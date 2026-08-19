@@ -1,0 +1,50 @@
+\chapter*{Glosario de métricas y abreviaturas}
+\addcontentsline{toc}{chapter}{Glosario de métricas y abreviaturas}
+
+La memoria combina términos de aprendizaje automático, econometría y gestión de carteras. Este
+glosario fija su significado antes de utilizarlos y evita redefinirlos en capítulos distintos.
+
+\begin{description}[leftmargin=3.2cm,style=nextline,itemsep=0.45em]
+  \item[Alfa] Retorno de la cartera que excede al benchmark. En esta memoria puede designar el
+  exceso realizado o, cuando se indica expresamente, el exceso esperado que gobierna una orden.
+  \item[Amplitud] Número aproximado de decisiones independientes sobre las que puede expresarse una
+  señal. Doce cohortes mensuales solapadas a horizonte anual no equivalen a doce observaciones
+  independientes.
+  \item[Benchmark] Referencia contra la que se mide la cartera. SPY se usa como representación
+  invertible del S\&P 500, pero nunca puede ser una posición de la estrategia.
+  \item[CAGR] Tasa de crecimiento anual compuesta. Resume el crecimiento geométrico del patrimonio
+  y no informa por sí sola de su volatilidad ni de su recorrido.
+  \item[Cohorte] Sección transversal de acciones puntuada en una misma fecha y evaluada contra el
+  retorno que se realiza al final del horizonte declarado.
+  \item[DSR] \textit{Deflated Sharpe Ratio}. Probabilidad de que el Sharpe observado supere lo
+  esperable por azar después de considerar multiplicidad, asimetría y curtosis.
+  \item[Drawdown] Caída desde un máximo previo del patrimonio. El máximo drawdown es la peor de esas
+  pérdidas durante una ventana.
+  \item[HHI] Índice de Herfindahl--Hirschman aplicado a los pesos de cartera. Aumenta cuando el
+  patrimonio se concentra en menos posiciones.
+  \item[IC-IR] Media temporal del Rank-IC dividida por su desviación estándar. Mide estabilidad de
+  la capacidad de ordenar, no rentabilidad de cartera.
+  \item[Information Ratio (IR)] Media del exceso de retorno dividida por su volatilidad. A
+  diferencia del IC-IR, pertenece a la capa económica y depende de la cartera.
+  \item[OOS] \textit{Out of sample}. Observaciones posteriores a las usadas para ajustar el modelo.
+  En esta memoria también se distingue dentro de OOS entre selección y reserva.
+  \item[P95] Percentil 95. En capacidad es la participación sobre volumen que no supera el 95\,\%
+  de las órdenes; evita que un único extremo gobierne la estimación.
+  \item[PIT] \textit{Point in time}. Información asociada a la fecha en que era observable, no a
+  la fecha económica a la que se refiere ni a una versión revisada conocida después.
+  \item[Rank-IC] Correlación de Spearman entre el ranking emitido y el retorno futuro excedente
+  dentro de una cohorte. Es la métrica que selecciona el modelo.
+  \item[Reserva] Periodo 2025--2026 aislado de toda selección. Sus pocas cohortes cerradas permiten
+  una comprobación preliminar, no una estimación precisa de generalización.
+  \item[Slippage] Diferencia adversa entre el precio de referencia y el de ejecución. Se suma a la
+  comisión para calcular el coste de una operación.
+  \item[Snapshot] Fecha en la que el sistema reconstruye el universo observable, emite rankings y
+  decide la cartera.
+  \item[Turnover] Suma anualizada de cambios absolutos de peso. Una cifra de 1,35 equivale a mover
+  nocionalmente un 135\,\% del patrimonio en un año, no a cerrar la cartera 1,35 veces.
+  \item[Ventana de selección] Cohortes de 2015--2024 sobre las que se comparan configuraciones. La
+  era reservada queda fuera de todas esas decisiones.
+  \item[Walk-forward] Esquema que avanza cronológicamente: ajusta con historia disponible, predice
+  la fecha siguiente y repite sin permitir que el futuro vuelva al entrenamiento.
+\end{description}
+

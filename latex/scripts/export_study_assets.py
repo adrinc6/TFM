@@ -46,6 +46,22 @@ ADOPTED_MODEL_STUDIES = (
 )
 ADOPTED_PORTFOLIO_STUDY = "study-20260817-212856-f86ca822"
 
+SPIVA_SOURCE = {
+    "title": "SPIVA U.S. Scorecard Year-End 2025",
+    "url": "https://www.spglobal.com/spdji/en/documents/spiva/spiva-us-year-end-2025.pdf",
+    "table": "Report 1a",
+    "data_as_of": "2025-12-31",
+    "series": "All Large-Cap Funds frente al S&P 500, rentabilidad absoluta",
+}
+SPIVA_UNDERPERFORMANCE = {
+    1: 78.78,
+    3: 66.84,
+    5: 88.96,
+    10: 85.59,
+    15: 89.93,
+    20: 92.89,
+}
+
 # Paleta sobria, apta para impresión y distinguible con daltonismo.
 NAVY = "#16324F"
 TEAL = "#007C83"
@@ -318,7 +334,7 @@ def longtable(path: Path, columns: list[str], rows: list[list[str]], caption: st
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
-def write_tables_predictive(paths: Paths, diag: pd.DataFrame, features: pd.DataFrame, attribution: dict) -> None:
+def write_tables_predictive(paths: Paths, diag: pd.DataFrame, features: pd.DataFrame) -> None:
     """Tablas sobre datos, features y capacidad predictiva por agente."""
     matrix = agent_era_matrix(diag)
     rows = [
@@ -354,36 +370,6 @@ def write_tables_predictive(paths: Paths, diag: pd.DataFrame, features: pd.DataF
         rows,
         "lllrr",
     )
-
-    # `usable_fraction` mide calidad dentro del panel; `panel_coverage_fraction` mide cuánto del
-    # índice llega a él. Sin la segunda, la tabla luce 100 % mientras falta media lista del S&P 500.
-    coverage = pd.DataFrame(attribution["universe_coverage"])
-    rows = [
-        [
-            str(int(row.year)),
-            str(int(row.sp500_members)) if getattr(row, "sp500_members", 0) else "—",
-            str(int(row.distinct_tickers)),
-            pct(row.panel_coverage_fraction, 1)
-            if getattr(row, "panel_coverage_fraction", None) is not None else "—",
-            f"{int(row.usable_rows):,}".replace(",", "."),
-            pct(row.usable_fraction, 2),
-        ]
-        for row in coverage.itertuples()
-    ]
-    longtable(
-        paths.tables / "t03_cobertura_anual.tex",
-        [
-            "Año", "Miembros S\\&P 500", "Tickers del panel", "Cobertura",
-            "Filas utilizables", "Fracción utilizable",
-        ],
-        rows,
-        "Cobertura anual del universo y calidad del panel. «Cobertura» es la fracción de los "
-        "miembros reales del índice que llega al panel; «fracción utilizable» mide la calidad "
-        "dentro de él y no dice nada sobre los que faltan.",
-        "tab:cobertura-anual",
-        "lrrrrr",
-    )
-
 
 # Descripción de cada motivo de exclusión. Se escriben aquí y no se leen de
 # `universe_coverage.json` porque ese fichero conserva sus descripciones mal codificadas, y el
@@ -696,13 +682,538 @@ def load_portfolio(study_id: str) -> dict:
     if not winner_path.is_file() or not grid_path.is_file():
         raise FileNotFoundError(f"El Portfolio Study {study_id} no tiene artefactos completos.")
     profiles_path = study / "portfolio_profiles.parquet"
+    profile_annual = {}
+    if profiles_path.is_file():
+        for profile in pd.read_parquet(profiles_path)["profile"].tolist():
+            annual_path = study / "profiles" / str(profile) / "annual_metrics.parquet"
+            if not annual_path.is_file():
+                raise FileNotFoundError(f"Falta la serie anual del perfil {profile}: {annual_path}")
+            profile_annual[str(profile)] = pd.read_parquet(annual_path)
     return {
         "study_id": study_id,
         "study": study,
         "grid": pd.read_parquet(grid_path),
         "winner": read_json(winner_path),
         "profiles": pd.read_parquet(profiles_path) if profiles_path.is_file() else None,
+        "profile_annual": profile_annual,
+        "cost": read_json(study / "cost_sensitivity.json"),
+        "capacity": read_json(study / "capacity.json"),
     }
+
+
+def draw_spiva_horizons(output: Path) -> None:
+    """Fondos large-cap que no superan al S&P 500 según el Report 1a de SPIVA."""
+    horizons = list(SPIVA_UNDERPERFORMANCE)
+    values = list(SPIVA_UNDERPERFORMANCE.values())
+    positions = np.arange(len(horizons))
+    colors = [TEAL if horizon < 20 else GOLD for horizon in horizons]
+    fig, ax = plt.subplots(figsize=(7.2, 3.7))
+    bars = ax.bar(positions, values, color=colors, width=0.66)
+    for bar, value in zip(bars, values):
+        ax.annotate(
+            f"{value:.2f}%".replace(".", ","),
+            (bar.get_x() + bar.get_width() / 2, value),
+            xytext=(0, 5), textcoords="offset points", ha="center", fontsize=8, color=NAVY,
+        )
+    ax.set(
+        title="La mayoría de los fondos large-cap no supera al S&P 500",
+        ylabel="Fondos por debajo del índice (%)", xlabel="Horizonte de evaluación",
+        xticks=positions, ylim=(0, 100),
+    )
+    ax.set_xticklabels([f"{h} año" if h == 1 else f"{h} años" for h in horizons])
+    ax.axhline(50, color=SLATE, linewidth=0.8, linestyle="--")
+    ax.grid(axis="x", visible=False)
+    save(fig, output)
+
+
+def draw_universe_coverage(coverage: dict, output: Path) -> None:
+    """Cobertura canónica del índice; no mezcla la calidad interna de las filas del panel."""
+    frame = pd.DataFrame(coverage["years"])
+    frame = frame.loc[frame["year"].between(2003, 2026)].copy()
+    fig, ax = plt.subplots(figsize=(7.2, 3.8))
+    ax.axvspan(2014.5, 2024.5, color=TEAL, alpha=0.09, label="Selección 2015–2024")
+    ax.axvspan(2024.5, 2026.5, color=GOLD, alpha=0.17, label="Reserva 2025–2026")
+    ax.plot(frame["year"], frame["coverage_pct"], color=NAVY, linewidth=2.2, marker="o", markersize=3)
+    first, last = frame.iloc[0], frame.iloc[-1]
+    for row in (first, last):
+        ax.annotate(
+            f"{row.coverage_pct:.1f}%".replace(".", ","),
+            (row.year, row.coverage_pct), xytext=(0, 8), textcoords="offset points",
+            ha="center", fontsize=8, fontweight="bold", color=NAVY,
+        )
+    ax.annotate(
+        "Entrenamiento móvil: 8 años anteriores a cada cohorte",
+        xy=(2014.0, 91.5), xytext=(2004.0, 94.0),
+        arrowprops={"arrowstyle": "->", "color": SLATE, "linewidth": 1,
+                    "connectionstyle": "arc3,rad=-0.08"},
+        ha="left", va="center", fontsize=7.8, color=SLATE,
+    )
+    ax.set(
+        title="Cobertura real del universo histórico",
+        xlabel="Año", ylabel="Miembros del S&P 500 presentes en el panel (%)",
+        xlim=(2002.5, 2026.5), ylim=(45, 102),
+    )
+    ax.set_xticks([2003, 2006, 2009, 2012, 2015, 2018, 2021, 2024, 2026])
+    legend_below(ax, 2)
+    ax.grid(axis="x", visible=False)
+    save(fig, output)
+
+
+def sample_summary(scores: pd.DataFrame) -> list[dict[str, object]]:
+    """Resume la población que recibió una predicción fuera de muestra.
+
+    No usa el panel preparado: la unidad que interesa al lector es una predicción realmente emitida
+    por el ganador. La reserva contiene 18 snapshots puntuados, aunque solo seis cohortes tienen ya
+    etiqueta cerrada; esa diferencia se conserva y se explica en el capítulo de datos.
+    """
+    frame = scores.copy()
+    frame["snapshot_date"] = pd.to_datetime(frame["snapshot_date"])
+    windows = (
+        ("Selección 2015--2024", frame.loc[frame["snapshot_date"].dt.year <= 2024]),
+        ("Reserva 2025--2026", frame.loc[frame["snapshot_date"].dt.year >= 2025]),
+        ("Total OOS", frame),
+    )
+    rows: list[dict[str, object]] = []
+    for label, subset in windows:
+        cohort_sizes = subset.groupby("snapshot_date").size()
+        rows.append(
+            {
+                "window": label,
+                "rows": int(len(subset)),
+                "snapshots": int(subset["snapshot_date"].nunique()),
+                "tickers": int(subset["ticker"].nunique()),
+                "cohort_min": int(cohort_sizes.min()),
+                "cohort_median": float(cohort_sizes.median()),
+                "cohort_max": int(cohort_sizes.max()),
+                "training_min": int(subset["training_rows"].min()),
+                "training_median": float(
+                    subset.groupby("snapshot_date")["training_rows"].first().median()
+                ),
+                "training_max": int(subset["training_rows"].max()),
+            }
+        )
+    return rows
+
+
+def draw_oos_sample(scores: pd.DataFrame, features: pd.DataFrame, output: Path) -> None:
+    """Tamaño de las secciones transversales y cobertura de variables por bloque."""
+    frame = scores.copy()
+    frame["snapshot_date"] = pd.to_datetime(frame["snapshot_date"])
+    cohort_sizes = frame.groupby("snapshot_date").size()
+
+    declared = features.loc[
+        features["agents"].ne("—") & features["coverage"].notna()
+    ].copy()
+    declared["block_label"] = declared["block"].map(lambda value: tex_free(value))
+    block_order = (
+        declared.groupby("block_label")["coverage"].median().sort_values().index.tolist()
+    )
+    coverage_by_block = [
+        100 * declared.loc[declared["block_label"] == block, "coverage"].to_numpy()
+        for block in block_order
+    ]
+
+    fig, (ax_time, ax_cov) = plt.subplots(
+        1, 2, figsize=(7.2, 4.5), gridspec_kw={"width_ratios": [1.12, 1]}
+    )
+    ax_time.plot(cohort_sizes.index, cohort_sizes.values, color=NAVY, linewidth=1.8)
+    reserve_start = pd.Timestamp("2025-01-01")
+    ax_time.axvspan(reserve_start, cohort_sizes.index.max(), color=GOLD, alpha=0.15, lw=0)
+    ax_time.axvline(reserve_start, color=GOLD, linewidth=1.2, linestyle="--")
+    ax_time.set_title("Acciones puntuadas por snapshot")
+    ax_time.set_ylabel("Número de acciones")
+    ax_time.set_xlabel("Fecha de predicción")
+    ax_time.annotate(
+        "reserva",
+        xy=(pd.Timestamp("2025-03-01"), float(cohort_sizes.loc[cohort_sizes.index >= reserve_start].median())),
+        color=GOLD,
+        fontsize=8,
+    )
+
+    ax_cov.boxplot(
+        coverage_by_block,
+        vert=False,
+        tick_labels=block_order,
+        patch_artist=True,
+        boxprops={"facecolor": LIGHT, "edgecolor": TEAL},
+        medianprops={"color": NAVY, "linewidth": 1.4},
+        whiskerprops={"color": TEAL},
+        capprops={"color": TEAL},
+        flierprops={"marker": ".", "markerfacecolor": RED, "markeredgecolor": RED},
+    )
+    ax_cov.axvline(80, color=RED, linestyle="--", linewidth=1.0, label="80 %")
+    ax_cov.set_xlim(55, 101)
+    ax_cov.set_xlabel("Filas con dato disponible (%)")
+    ax_cov.set_title("Cobertura de variables por bloque")
+    ax_cov.legend(loc="lower right", frameon=False)
+    ax_cov.grid(axis="y", visible=False)
+    fig.suptitle("Muestra realmente evaluada y disponibilidad de sus predictores", y=1.01)
+    fig.tight_layout()
+    save(fig, output)
+
+
+def write_sample_table(paths: Paths, scores: pd.DataFrame) -> None:
+    rows = []
+    for item in sample_summary(scores):
+        cohort = (
+            f"{integer(item['cohort_min'])} / "
+            f"{num(item['cohort_median'], 1)} / {integer(item['cohort_max'])}"
+        )
+        training = (
+            f"{integer(item['training_min'])} / "
+            f"{integer(round(float(item['training_median'])))} / {integer(item['training_max'])}"
+        )
+        rows.append(
+            [
+                str(item["window"]), integer(item["rows"]), integer(item["snapshots"]),
+                integer(item["tickers"]), cohort, training,
+            ]
+        )
+    table(
+        paths.tables / "t03_muestra_oos.tex",
+        ["Ventana", "Predicciones", "Snapshots", "Empresas", "Cohorte mín./med./máx.",
+         "Filas train mín./med./máx."],
+        rows,
+        "lrrrrr",
+    )
+
+
+def calibration_state_rows(calibration: pd.DataFrame) -> list[dict[str, object]]:
+    frame = calibration.copy()
+    frame["snapshot_date"] = pd.to_datetime(frame["snapshot_date"])
+    by_date = frame.sort_values("snapshot_date").groupby("snapshot_date", as_index=False).first()
+    labels = {"none": "Sin calibración", "fallback": "Salvaguarda", "era": "Era",
+              "horizon": "Horizonte"}
+    rows: list[dict[str, object]] = []
+    for window, subset in (
+        ("Selección 2015--2024", by_date.loc[by_date["snapshot_date"].dt.year <= 2024]),
+        ("Reserva 2025--2026", by_date.loc[by_date["snapshot_date"].dt.year >= 2025]),
+    ):
+        counts = subset["alpha_curve_window"].fillna("none").value_counts()
+        total = int(len(subset))
+        for key in ("none", "fallback", "era", "horizon"):
+            count = int(counts.get(key, 0))
+            rows.append(
+                {"window": window, "source": labels[key], "count": count,
+                 "share": count / total if total else 0.0}
+            )
+    return rows
+
+
+def draw_signal_calibration(
+    calibration: pd.DataFrame, scores: pd.DataFrame, output: Path,
+) -> None:
+    """Fuente causal de la curva y traducción observada de percentil a alfa esperado."""
+    frame = calibration.copy()
+    frame["snapshot_date"] = pd.to_datetime(frame["snapshot_date"])
+    ranks = scores[["ticker", "snapshot_date", "meta_rank"]].copy()
+    ranks["snapshot_date"] = pd.to_datetime(ranks["snapshot_date"])
+    frame = frame.merge(ranks, on=["ticker", "snapshot_date"], how="left", validate="one_to_one")
+    by_date = frame.sort_values("snapshot_date").groupby("snapshot_date", as_index=False).first()
+    source_order = ["none", "fallback", "era", "horizon"]
+    colors = {"none": SLATE, "fallback": RED, "era": GOLD, "horizon": TEAL}
+    labels = {"none": "sin calibración", "fallback": "salvaguarda", "era": "era",
+              "horizon": "horizonte"}
+
+    fig, (ax_time, ax_curve) = plt.subplots(2, 1, figsize=(7.2, 5.1), height_ratios=[0.85, 2.15])
+    for level, key in enumerate(source_order):
+        points = by_date.loc[by_date["alpha_curve_window"].fillna("none") == key]
+        ax_time.scatter(points["snapshot_date"], np.full(len(points), level), s=18,
+                        color=colors[key], label=labels[key])
+    ax_time.axvspan(pd.Timestamp("2025-01-01"), by_date["snapshot_date"].max(),
+                    color=GOLD, alpha=0.10, lw=0)
+    ax_time.set_yticks(range(len(source_order)), [labels[key] for key in source_order])
+    ax_time.set_title("Qué historia pudo usar la calibración en cada fecha")
+    ax_time.set_xlabel("")
+    ax_time.grid(axis="y", visible=False)
+
+    selection = frame.loc[frame["snapshot_date"].dt.year <= 2024].copy()
+    selection["ventile"] = pd.cut(selection["meta_rank"], np.linspace(0, 1, 21), labels=False,
+                                   include_lowest=True)
+    for key in ("fallback", "era", "horizon"):
+        subset = selection.loc[selection["alpha_curve_window"] == key]
+        curve = subset.groupby("ventile", observed=True).agg(
+            rank=("meta_rank", "median"), alpha=("expected_excess_return", "median")
+        ).dropna()
+        ax_curve.plot(100 * curve["rank"], 100 * curve["alpha"], marker="o", markersize=3,
+                      linewidth=1.7, color=colors[key], label=labels[key])
+    ax_curve.axhline(0, color=SLATE, linewidth=0.8)
+    ax_curve.set_xlabel("Percentil del ranking final")
+    ax_curve.set_ylabel("Exceso anual esperado (%)")
+    ax_curve.set_title("Traducción observada del ranking en selección")
+    ax_curve.legend(frameon=False, ncol=3, loc="upper left")
+    fig.tight_layout()
+    save(fig, output)
+
+
+def write_calibration_table(paths: Paths, calibration: pd.DataFrame) -> None:
+    rows = [
+        [str(item["window"]), str(item["source"]), integer(item["count"]), pct(item["share"], 1)]
+        for item in calibration_state_rows(calibration)
+    ]
+    table(
+        paths.tables / "t05_calibracion_estados.tex",
+        ["Ventana", "Fuente de la curva", "Snapshots", "Peso en la ventana"],
+        rows,
+        "llrr",
+    )
+
+
+def draw_feature_stability(model_attribution: pd.DataFrame, output: Path) -> None:
+    """Importancia relativa anual de las tres variables dominantes de cada agente."""
+    frame = model_attribution.copy()
+    frame["model_retrain_date"] = pd.to_datetime(frame["model_retrain_date"])
+    frame["year"] = frame["model_retrain_date"].dt.year
+    totals = frame.groupby(["agent", "model_retrain_date"])["coefficient"].transform("sum")
+    frame["relative_importance"] = frame["coefficient"].div(totals.replace(0, np.nan))
+    annual = frame.groupby(["agent", "feature", "year"], as_index=False)["relative_importance"].mean()
+    top = (
+        annual.groupby(["agent", "feature"])["relative_importance"].mean()
+        .sort_values(ascending=False).groupby(level=0).head(3).reset_index()[["agent", "feature"]]
+    )
+    selected = annual.merge(top, on=["agent", "feature"], how="inner")
+    selected["label"] = selected["agent"] + " · " + selected["feature"].map(tex_free)
+    label_order = [
+        label for agent in sorted(selected["agent"].unique())
+        for label in selected.loc[selected["agent"] == agent]
+            .groupby("label")["relative_importance"].mean().sort_values(ascending=False).index
+    ]
+    years = sorted(selected["year"].unique())
+    matrix = selected.pivot(index="label", columns="year", values="relative_importance").reindex(
+        index=label_order, columns=years
+    )
+
+    fig, ax = plt.subplots(figsize=(7.2, 5.7))
+    image = ax.imshow(100 * matrix.to_numpy(), aspect="auto", cmap="YlGnBu", vmin=0)
+    ax.set_xticks(range(len(years)), years, rotation=45, ha="right")
+    ax.set_yticks(range(len(label_order)), label_order)
+    ax.set_title("Persistencia de las variables más usadas por cada agente")
+    ax.set_xlabel("Año de reentrenamiento")
+    ax.grid(False)
+    bar = fig.colorbar(image, ax=ax, pad=0.02)
+    bar.set_label("Importancia relativa dentro del agente (%)")
+    fig.tight_layout()
+    save(fig, output)
+
+
+def draw_factor_attribution(attribution: dict, output: Path) -> None:
+    """Cargas de estilo y señal que sobrevive a la neutralización, solo en selección."""
+    regression = attribution["factor_regression"]["selection"]
+    factors = attribution["factor_regression"]["factors"]
+    loadings = np.asarray([regression["loadings"][name] for name in factors], dtype=float)
+    errors = np.asarray(regression["standard_errors"][1:], dtype=float)
+    neutral = attribution["neutralized_rank_ic"]
+
+    fig, (ax_forest, ax_rank) = plt.subplots(
+        1, 2, figsize=(7.2, 3.5), gridspec_kw={"width_ratios": [1.5, 0.8]}
+    )
+    y = np.arange(len(factors))
+    ax_forest.errorbar(loadings, y, xerr=1.96 * errors, fmt="o", color=NAVY, ecolor=TEAL,
+                       capsize=3, linewidth=1.4)
+    ax_forest.axvline(0, color=SLATE, linewidth=0.9)
+    ax_forest.set_yticks(y, [tex_free(name) for name in factors])
+    ax_forest.invert_yaxis()
+    ax_forest.set_xlabel("Carga estimada (IC 95 % Newey--West)")
+    ax_forest.set_title("Exposición a estilos")
+
+    rank_values = [neutral["raw_mean_rank_ic"], neutral["neutralized_mean_rank_ic"]]
+    bars = ax_rank.bar(["Bruto", "Neutralizado"], rank_values, color=[NAVY, GOLD], width=0.62)
+    ax_rank.set_ylim(0, max(rank_values) * 1.32)
+    ax_rank.set_ylabel("Rank-IC medio")
+    ax_rank.set_title("Señal conservada")
+    for bar, value in zip(bars, rank_values, strict=True):
+        ax_rank.text(bar.get_x() + bar.get_width() / 2, value + 0.003, f"{value:.4f}".replace(".", ","),
+                     ha="center", va="bottom", fontsize=8)
+    ax_rank.grid(axis="x", visible=False)
+    fig.tight_layout()
+    save(fig, output)
+
+
+def write_feature_dictionary(paths: Paths, features: pd.DataFrame) -> None:
+    declared = features.loc[features["origin"].eq("catálogo")].copy()
+    declared = declared.sort_values(["agents", "block", "feature"])
+    source_labels = {
+        "finnhub_series": "Finnhub PIT", "price_series": "Precios PIT",
+        "derived": "Derivada", "finnhub_metric": "Finnhub PIT",
+    }
+    rows = []
+    for row in declared.itertuples():
+        direction = "+" if float(row.direction or 0) > 0 else "−" if float(row.direction or 0) < 0 else "—"
+        rows.append([
+            tex(row.feature), tex(row.agents), tex(str(row.block).replace("_", " ")),
+            tex(source_labels.get(str(row.source), tex_free(row.source))), direction,
+            pct(row.coverage, 1), num(row.univariate_rank_ic),
+        ])
+    longtable(
+        paths.tables / "tB_diccionario_features.tex",
+        ["Variable", "Agente", "Bloque", "Fuente", "Dir.", "Cobertura", "Rank-IC"],
+        rows,
+        "Diccionario completo de las 68 variables declaradas.",
+        "tab:diccionario-features",
+        r"p{4.0cm}p{1.7cm}p{3.0cm}p{2.0cm}rrr",
+    )
+
+
+def draw_alpha_turnover_annual(annual: pd.DataFrame, output: Path) -> None:
+    """Relación anual entre rotación y exceso, con la reserva fuera de selección."""
+    frame = annual.copy()
+    reserved = frame["year"].astype(int) >= 2025
+    fig, ax = plt.subplots(figsize=(7.2, 4.0))
+    ax.scatter(frame.loc[~reserved, "turnover"], 100 * frame.loc[~reserved, "alpha"],
+               color=TEAL, s=48, label="Selección 2015–2024", zorder=3)
+    ax.scatter(frame.loc[reserved, "turnover"], 100 * frame.loc[reserved, "alpha"],
+               color=GOLD, edgecolor=NAVY, linewidth=0.7, s=65,
+               label="Reserva 2025–2026", zorder=4)
+    label_offsets = {2017: (4, 10), 2019: (10, 4), 2020: (4, 7), 2022: (12, 4), 2025: (12, 9)}
+    for row in frame.itertuples():
+        ax.annotate(str(int(row.year)), (row.turnover, 100 * row.alpha),
+                    xytext=label_offsets.get(int(row.year), (4, 4)),
+                    textcoords="offset points", fontsize=7.4, color=NAVY)
+    ax.axhline(0, color=SLATE, linewidth=0.9)
+    ax.set(
+        title="Rotar más no garantiza un mayor exceso anual",
+        xlabel="Turnover anual (veces la cartera)", ylabel="Exceso anual frente a SPY (%)",
+    )
+    comma_ticks(ax.xaxis, ax.yaxis)
+    legend_below(ax, 2)
+    save(fig, output)
+
+
+def draw_cost_ladder(cost: dict, output: Path) -> None:
+    """Exceso geométrico de selección al variar el coste por operación."""
+    fig, ax = plt.subplots(figsize=(7.2, 4.0))
+    styles = (("frozen_path", "Ruta congelada", NAVY, "o"),
+              ("resimulated", "Cartera resimulada", TEAL, "s"))
+    for key, label, color, marker in styles:
+        frame = pd.DataFrame(cost[key])
+        ax.plot(frame["cost_bps"], 100 * frame["selection_geometric_excess_return"],
+                color=color, marker=marker, markersize=3.8, linewidth=1.8, label=label)
+        point = cost["break_even"][key]["selection"]
+        if point.get("available"):
+            x = float(point["bps_per_trade"])
+            ax.scatter([x], [0], color=color, s=35, zorder=5)
+            ax.annotate(f"Equilibrio {x:.0f} pb", (x, 0), xytext=(0, 10),
+                        textcoords="offset points", ha="center", fontsize=7.3, color=color)
+    adopted = float(cost["adopted_cost_bps"])
+    ax.axvline(adopted, color=GOLD, linewidth=1.3, linestyle="--", label=f"Coste adoptado: {adopted:.0f} pb")
+    ax.axhline(0, color=SLATE, linewidth=0.9)
+    ax.set(
+        title="Margen frente a costes en la ventana de selección",
+        xlabel="Coste por operación (puntos básicos)", ylabel="Exceso geométrico frente a SPY (%)",
+    )
+    comma_ticks(ax.xaxis, ax.yaxis)
+    legend_below(ax, 3, anchor=-0.20)
+    save(fig, output)
+
+
+def draw_capacity(capacity: dict, output: Path) -> None:
+    """Capacidad en selección: participación P95 frente al patrimonio simulado."""
+    window = capacity["windows"]["selection"]
+    frame = pd.DataFrame(window["ladder"])
+    frame = frame.loc[frame["aum_usd"] <= 1e8].copy()
+    fig, ax = plt.subplots(figsize=(7.2, 4.0))
+    ax.plot(frame["aum_usd"], 100 * frame["p95_participation"], color=NAVY,
+            marker="o", markersize=4, linewidth=2)
+    for threshold, color in ((5, TEAL), (10, GOLD)):
+        aum = float(window["maximum_aum_usd"][f"{threshold}%"])
+        ax.axhline(threshold, color=color, linestyle="--", linewidth=1)
+        ax.scatter([aum], [threshold], color=color, s=45, zorder=4)
+        offset = (8, -13) if threshold == 5 else (8, 7)
+        ax.annotate(f"{threshold}% → {aum / 1e6:.1f} M USD".replace(".", ","),
+                    (aum, threshold), xytext=offset, textcoords="offset points",
+                    fontsize=7.6, color=color)
+    ax.set_xscale("log")
+    ax.set(
+        title="Capacidad estimada de la cartera en selección",
+        xlabel="Patrimonio de la cartera (USD, escala logarítmica)",
+        ylabel="Participación P95 sobre volumen diario (%)",
+        ylim=(-0.8, 27),
+    )
+    ax.xaxis.set_major_formatter(mpl.ticker.FuncFormatter(
+        lambda value, _: f"{value / 1e9:g}B" if value >= 1e9 else f"{value / 1e6:g}M"
+    ))
+    comma_ticks(ax.yaxis)
+    ax.text(0.01, 0.96, "Selección: 143 órdenes con volumen · reserva excluida (10 órdenes)",
+            transform=ax.transAxes, va="top", fontsize=7.2, color=SLATE)
+    save(fig, output)
+
+
+def draw_profile_weights(output: Path) -> None:
+    """Matriz firmada de pesos de los perfiles; balanced conserva el meta puro."""
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from module.evaluation.profiles import PROFILE_WEIGHTS
+
+    columns = ("meta", "quality", "value", "growth", "momentum", "risk")
+    profiles = tuple(PROFILE_WEIGHTS)
+    values = np.array([
+        [PROFILE_WEIGHTS[profile].get(f"{column}_rank", 0.0) for column in columns]
+        for profile in profiles
+    ])
+    fig, ax = plt.subplots(figsize=(7.2, 4.2))
+    norm = mpl.colors.TwoSlopeNorm(vmin=-0.75, vcenter=0, vmax=1.0)
+    image = ax.imshow(values, cmap=mpl.colors.LinearSegmentedColormap.from_list(
+        "signed", [RED, "#F7F7F7", TEAL]), norm=norm, aspect="auto")
+    for row in range(values.shape[0]):
+        for column in range(values.shape[1]):
+            value = values[row, column]
+            label = "—" if value == 0 else f"{value:+.0%}".replace("+", "")
+            ax.text(column, row, label, ha="center", va="center", fontsize=8,
+                    color="white" if abs(value) >= 0.45 else NAVY)
+    ax.set(
+        title="Cómo reordena cada perfil la señal aprendida",
+        xticks=np.arange(len(columns)), yticks=np.arange(len(profiles)),
+    )
+    ax.set_xticklabels(columns)
+    ax.set_yticklabels(profiles)
+    ax.grid(False)
+    colorbar = fig.colorbar(image, ax=ax, fraction=0.035, pad=0.02)
+    colorbar.set_label("Peso firmado")
+    colorbar.ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter(1.0))
+    save(fig, output)
+
+
+def draw_profile_results(profiles: pd.DataFrame, annual_by_profile: dict[str, pd.DataFrame], output: Path) -> None:
+    """Resultado agregado y exceso anual de los ocho perfiles, sin convertirlo en selector."""
+    order = profiles.sort_values("geometric_excess_return", ascending=False)["profile"].tolist()
+    ordered = profiles.set_index("profile").loc[order]
+    fig, (left, right) = plt.subplots(1, 2, figsize=(7.2, 4.0), gridspec_kw={"width_ratios": [0.9, 1.6]})
+    positions = np.arange(len(order))
+    left.barh(positions + 0.18, 100 * ordered["geometric_excess_return"], height=0.34,
+              color=TEAL, label="Selección")
+    left.barh(positions - 0.18, 100 * ordered["confirmation_excess"], height=0.34,
+              color=GOLD, label="Reserva")
+    left.axvline(0, color=SLATE, linewidth=0.8)
+    left.set(yticks=positions, xlabel="Exceso geométrico (%)", title="Resultado agregado")
+    left.set_yticklabels(order)
+    left.invert_yaxis()
+    left.legend(frameon=False, loc="upper left", fontsize=7.2)
+    comma_ticks(left.xaxis)
+
+    years = sorted({int(year) for frame in annual_by_profile.values() for year in frame["year"]})
+    matrix = np.array([
+        [100 * float(annual_by_profile[profile].set_index("year").loc[year, "alpha"]) for year in years]
+        for profile in order
+    ])
+    limit = max(5, float(np.nanpercentile(np.abs(matrix), 95)))
+    image = right.imshow(matrix, cmap=mpl.colors.LinearSegmentedColormap.from_list(
+        "alpha", [RED, "#F7F7F7", TEAL]), vmin=-limit, vmax=limit, aspect="auto")
+    right.set(title="Exceso anual frente a SPY", xticks=np.arange(len(years)), yticks=np.arange(len(order)))
+    right.set_xticklabels(years, rotation=45, ha="right", fontsize=7)
+    right.set_yticklabels([])
+    separator = years.index(2025) - 0.5
+    right.axvline(separator, color=GOLD, linewidth=2)
+    right.text(separator + 0.15, -0.7, "reserva", color=GOLD, fontsize=7.2, fontweight="bold")
+    right.grid(False)
+    colorbar = fig.colorbar(image, ax=right, fraction=0.05, pad=0.03)
+    colorbar.set_label("Exceso anual (%)")
+    comma_ticks(colorbar.ax.yaxis)
+    fig.suptitle("Perfiles informativos: sensibilidad de la misma señal, no un ranking de estilos", fontsize=11)
+    fig.text(0.5, 0.01, "La reserva contiene seis cohortes; los perfiles no participaron en la selección.",
+             ha="center", fontsize=7.3, color=SLATE)
+    fig.tight_layout(rect=(0, 0.045, 1, 0.93))
+    fig.savefig(output, format="png", dpi=300, facecolor="white", bbox_inches="tight", pad_inches=0.03)
+    plt.close(fig)
 
 
 def draw_portfolio_grid(grid: pd.DataFrame, winner: dict, output: Path) -> None:
@@ -1491,6 +2002,9 @@ def main() -> None:
     weights = pd.read_parquet(paths.evidence / "meta_weights.parquet")
     diag = pd.read_parquet(paths.evidence / "rank_ic_diagnostics.parquet")
     tails = pd.read_parquet(paths.evidence / "rank_tail_diagnostics.parquet")
+    scores = pd.read_parquet(paths.evidence / "agent_scores.parquet")
+    calibration = pd.read_parquet(paths.evidence / "signal_calibration.parquet")
+    model_attribution = pd.read_parquet(paths.evidence / "model_feature_attribution.parquet")
     features = load_features(paths)
 
     # La evidencia predictiva sale siempre del Model Study; la económica, del ganador del Portfolio
@@ -1501,12 +2015,12 @@ def main() -> None:
     equity = pd.read_parquet(economic / "equity.parquet")
     annual = pd.read_parquet(economic / "annual_metrics.parquet")
     orders = pd.read_parquet(economic / "orders.parquet")
+    coverage = read_json(ROOT / "data" / "raw" / "universe_coverage.json")
 
     chain = load_chain(list(args.chain_study_id))
     changes = chain_configuration_changes(chain)
     attribution_summary = load_agent_attribution(paths)
-    cost_path = portfolio["study"] / "cost_sensitivity.json"
-    cost = read_json(cost_path) if cost_path.is_file() else None
+    cost = portfolio["cost"]
     narrative = load_portfolio_narrative(args.portfolio_study_id)
     macros = macro_content(
         build_result_macros(
@@ -1529,18 +2043,55 @@ def main() -> None:
             if manifest.get(key) != expected:
                 raise SystemExit(f"AUDITORÍA FALLIDA: {key}={manifest.get(key)!r}, esperado {expected!r}.")
         required_assets = {
+            "f01_spiva_horizontes.png", "f03_cobertura_anual.png",
+            "f03_muestra_oos.png", "f06_estabilidad_features.png",
+            "f05_calibracion_alfa.png", "f06_atribucion_factorial.png",
             "f05_atribucion_anual.png", "f05_pesos_anual.png", "f06_orden_vs_pago.png",
-            "f07_cola_eras.png", "f07_equity_drawdown.png", "f07_bootstrap.png",
-            "f07_cartera_narrativa.png", "f07_rankic_serie.png",
+            "f07_alpha_turnover_anual.png", "f07_bootstrap.png", "f07_capacidad.png",
+            "f07_cartera_narrativa.png", "f07_cola_eras.png", "f07_costes_escalera.png",
+            "f07_equity_drawdown.png", "f07_perfiles_pesos.png", "f07_perfiles_resultados.png",
+            "f07_rankic_serie.png",
             "f08_cartera_influencia.png", "f08_cartera_rejilla.png",
             "f09_seleccion_vs_reservada.png",
         }
         missing = sorted(name for name in required_assets if not (paths.figures / name).is_file())
         if missing:
             raise SystemExit(f"AUDITORÍA FALLIDA: faltan activos {missing!r}.")
+        declared_figures = set(manifest.get("figures", []))
+        if not required_assets.issubset(declared_figures):
+            undeclared = sorted(required_assets - declared_figures)
+            raise SystemExit(f"AUDITORÍA FALLIDA: activos no declarados {undeclared!r}.")
+        required_profile_sources = {
+            f"{args.portfolio_study_id}/profiles/{profile}/annual_metrics.parquet"
+            for profile in portfolio["profile_annual"]
+        }
+        if not required_profile_sources.issubset(set(manifest.get("economic_sources", []))):
+            raise SystemExit("AUDITORÍA FALLIDA: faltan las fuentes anuales de perfiles.")
+        expected_spiva = json.loads(json.dumps(
+            SPIVA_SOURCE | {"underperformance_pct": SPIVA_UNDERPERFORMANCE}
+        ))
+        if manifest.get("literature_sources", {}).get("spiva") != expected_spiva:
+            raise SystemExit("AUDITORÍA FALLIDA: la procedencia SPIVA no coincide.")
+        if manifest.get("panel_sources") != ["data/raw/universe_coverage.json"]:
+            raise SystemExit("AUDITORÍA FALLIDA: la cobertura no declara su fuente canónica.")
+        required_predictive_sources = {
+            "evidence/agent_scores.parquet", "evidence/signal_calibration.parquet",
+            "evidence/model_feature_attribution.parquet",
+        }
+        if not required_predictive_sources.issubset(set(manifest.get("sources", []))):
+            raise SystemExit("AUDITORÍA FALLIDA: faltan fuentes de muestra, calibración o estabilidad.")
         print("Auditoría LaTeX correcta: macros, activos e identificadores coinciden.")
         return
 
+    draw_spiva_horizons(paths.figures / "f01_spiva_horizontes.png")
+    draw_universe_coverage(coverage, paths.figures / "f03_cobertura_anual.png")
+    draw_oos_sample(scores, features, paths.figures / "f03_muestra_oos.png")
+    write_sample_table(paths, scores)
+    draw_signal_calibration(calibration, scores, paths.figures / "f05_calibracion_alfa.png")
+    write_calibration_table(paths, calibration)
+    draw_feature_stability(model_attribution, paths.figures / "f06_estabilidad_features.png")
+    draw_factor_attribution(attribution, paths.figures / "f06_atribucion_factorial.png")
+    write_feature_dictionary(paths, features)
     draw_rank_ic(summary, paths.figures / "f07_rankic_serie.png")
     draw_order_vs_payoff(summary, paths.figures / "f06_orden_vs_pago.png")
     draw_equity_and_drawdown(equity, paths.figures / "f07_equity_drawdown.png")
@@ -1560,7 +2111,7 @@ def main() -> None:
     draw_bootstrap_forest(robustness, paths.figures / "f07_bootstrap.png")
 
     write_tables(paths, summary, robustness, attribution, diag, annual, decisions)
-    write_tables_predictive(paths, diag, features, attribution)
+    write_tables_predictive(paths, diag, features)
     write_tables_universe_resolution(paths)
     write_tables_robustness(paths, summary, robustness, attribution, portfolio)
     _write_tables_orders_and_tails(paths, orders, tails)
@@ -1569,6 +2120,14 @@ def main() -> None:
     # el esquema de la rejilla tiene seis coordenadas simultáneas y el objetivo pasa a ser el IR.
     draw_portfolio_grid(portfolio["grid"], portfolio["winner"], paths.figures / "f08_cartera_rejilla.png")
     draw_portfolio_influence(portfolio["grid"], paths.figures / "f08_cartera_influencia.png")
+    draw_alpha_turnover_annual(annual, paths.figures / "f07_alpha_turnover_anual.png")
+    draw_cost_ladder(cost, paths.figures / "f07_costes_escalera.png")
+    draw_capacity(portfolio["capacity"], paths.figures / "f07_capacidad.png")
+    draw_profile_weights(paths.figures / "f07_perfiles_pesos.png")
+    draw_profile_results(
+        portfolio["profiles"], portfolio["profile_annual"],
+        paths.figures / "f07_perfiles_resultados.png",
+    )
     write_tables_portfolio_study(paths, portfolio, summary["summary"])
     if narrative is not None:
         draw_portfolio_narrative(narrative, paths.figures / "f07_cartera_narrativa.png")
@@ -1588,6 +2147,8 @@ def main() -> None:
             "catalog_snapshot.json", "winner.json",
             "evidence/summary.json", "robustness.json", "attribution.json", "decisions.json",
             "evidence/meta_weights.parquet", "evidence/rank_ic_diagnostics.parquet",
+            "evidence/agent_scores.parquet", "evidence/signal_calibration.parquet",
+            "evidence/model_feature_attribution.parquet",
             "profile_comparison.parquet",
             "evidence/rank_tail_diagnostics.parquet",
             "evidence/feature_catalog.json", "evidence/feature_diagnostics.parquet",
@@ -1602,7 +2163,11 @@ def main() -> None:
                 f"{args.portfolio_study_id}/evidence_best_full/annual_metrics.parquet",
                 f"{args.portfolio_study_id}/evidence_best_full/orders.parquet",
                 f"{args.portfolio_study_id}/cost_sensitivity.json",
+                f"{args.portfolio_study_id}/capacity.json",
                 f"{args.portfolio_study_id}/portfolio_narrative.json",
+            ] + [
+                f"{args.portfolio_study_id}/profiles/{profile}/annual_metrics.parquet"
+                for profile in portfolio["profile_annual"]
             ]
             if portfolio
             else ["evidence/equity.parquet", "evidence/annual_metrics.parquet", "evidence/orders.parquet"]
@@ -1610,6 +2175,9 @@ def main() -> None:
         # Fuentes que describen el panel y no un estudio: viven en `data/raw/` y son las mismas
         # cualquiera que sea el modelo entrenado encima.
         "panel_sources": ["data/raw/universe_coverage.json"],
+        "literature_sources": {
+            "spiva": SPIVA_SOURCE | {"underperformance_pct": SPIVA_UNDERPERFORMANCE},
+        },
         "figures": sorted(path.name for path in paths.figures.glob("f*.png")),
         "tables": sorted(path.name for path in paths.tables.glob("t*.tex")),
         "numeric_macros": "study_macros.tex",

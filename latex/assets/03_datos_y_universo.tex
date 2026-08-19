@@ -46,7 +46,7 @@ ha documentado que esta selección puede inflar de forma material las conclusion
 La corrección no equivale a eliminar todo sesgo de supervivencia. Las fuentes gratuitas no ofrecen la
 misma profundidad para firmas retiradas, algunos fundamentales históricos se han restatado y la
 disponibilidad varía por año. La diferencia es metodológica: el trabajo mide esa cobertura, expone
-sus huecos y evita tratarlos como si no existieran. Las Tablas~\ref{tab:cobertura-anual}
+sus huecos y evita tratarlos como si no existieran. La Figura~\ref{fig:cobertura-anual}
 y~\ref{tab:resolucion-universo}, más adelante en este capítulo, cuantifican qué fracción del índice
 llega al panel cada año y por qué motivo falta cada uno de los tickers ausentes.
 
@@ -99,17 +99,24 @@ doce meses deja varias etiquetas abiertas y reduce la información independiente
 exigente que una fila adicional en la tabla de selección: es una comprobación externa del modelo ya
 congelado, cuya interpretación se mantiene deliberadamente prudente en el Capítulo~\ref{chap:resultados}.
 
-La Tabla~\ref{tab:cobertura-anual} documenta la cobertura año a año desde 2003, es decir, incluyendo
-los años que sólo se usan como historia de entrenamiento y nunca como cohortes de evaluación.
+La Figura~\ref{fig:cobertura-anual} documenta la cobertura año a año desde 2003, incluyendo la
+historia que alimenta las ventanas móviles de entrenamiento y nunca actúa como cohorte de
+evaluación.
 
-{\setlength{\tabcolsep}{3.9pt}\input{assets/t03_cobertura_anual.tex}}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.96\textwidth]{assets/f03_cobertura_anual.png}
+  \caption{Cobertura real del universo histórico y ventanas del experimento. La serie procede
+  exclusivamente de \texttt{data/raw/universe\_coverage.json}; selección y reserva se distinguen
+  visualmente, mientras el entrenamiento utiliza ventanas móviles de ocho años.}
+  \label{fig:cobertura-anual}
+\end{figure}
 
-La tabla tiene dos columnas que miden cosas distintas y conviene no confundirlas, porque la
-confusión hace parecer que todo está en orden. La \emph{cobertura} es la fracción de los miembros
-reales del índice que llega al panel, y crece del 49,0\,\% en 2003 al 99,2\,\% en 2026. La
-\emph{fracción utilizable} no baja del 99,4\,\% en ningún año, pero mide otra cosa: qué proporción
-de las filas efectivamente construidas supera los controles de calidad. Solo la primera habla del
-sesgo de supervivencia, que no se manifiesta como filas defectuosas sino como empresas ausentes.
+La \emph{cobertura} es la fracción de los miembros reales del índice que llega al panel, y crece
+del 49,0\,\% en 2003 al 99,2\,\% en 2026. No debe confundirse con la calidad de las filas ya
+construidas: esa segunda medición condiciona qué observaciones son utilizables dentro del panel,
+pero no dice nada sobre las empresas que faltan. Solo la cobertura del índice habla aquí del sesgo
+de supervivencia, que no se manifiesta como filas defectuosas sino como empresas ausentes.
 
 El índice, conviene subrayarlo, ha tenido alrededor de quinientos componentes durante todo el
 periodo: la cobertura creciente no describe un índice que crece, sino una reconstrucción histórica
@@ -135,6 +142,55 @@ adicional lo confirma: los 563 ausentes \emph{sí} tienen fundamentales descarga
 cuello de botella es exclusivamente el precio y la exclusión no señala empresas sin información
 contable. El Capítulo~\ref{chap:limitaciones} recoge la dirección y la magnitud del sesgo que esto
 introduce.
+
+\section{La muestra que el modelo realmente evalúa}
+\label{sec:muestra-oos}
+
+La cobertura histórica anterior responde a la pregunta de cuántas empresas del índice se
+reconstruyen. No responde, por sí sola, a cuántas observaciones llegan a cada predicción ni a qué
+fracción de variables está disponible dentro de esas observaciones. Para separar ambos conceptos,
+la Figura~\ref{fig:muestra-oos} describe el panel que consume el modelo después de aplicar
+observabilidad, cierre de etiqueta y requisitos mínimos de precio.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.97\textwidth]{assets/f03_muestra_oos.png}
+  \caption{Tamaño de las cohortes evaluadas y distribución de cobertura de las variables por
+  bloque. El panel izquierdo cuenta acciones efectivamente puntuadas en cada snapshot; el derecho
+  resume disponibilidad dentro de ese panel, no cobertura del índice.}
+  \label{fig:muestra-oos}
+\end{figure}
+
+El resultado son 60.259 pares acción--snapshot puntuados en 135 fechas mensuales y 606 símbolos
+distintos. La ventana de selección reúne 51.356 observaciones en 117 snapshots: una cohorte típica
+contiene 439 acciones, con un intervalo observado de 377 a 489. La reserva añade 8.903
+observaciones en 18 snapshots, con una mediana de 494,5 acciones. Esta última cifra no implica
+dieciocho evaluaciones económicas independientes: por el horizonte a doce meses, al cierre del
+estudio solo seis cohortes reservadas disponen de retorno realizado completo. La distinción entre
+\emph{puntuación emitida} y \emph{label cerrado} evita inflar la evidencia reservada.
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{Dimensión efectiva de la muestra fuera de muestra.}
+  \label{tab:muestra-oos}
+  \input{assets/t03_muestra_oos.tex}
+\end{table}
+
+El panel de disponibilidad de la Figura~\ref{fig:muestra-oos} se calcula sobre los diagnósticos de
+73 series construidas; el catálogo científico declara 68 variables de entrada porque algunas
+columnas auxiliares existen para control y trazabilidad, no para entrenar. La cobertura media de
+esos diagnósticos ronda el 91\,\%, aunque siete caen por debajo del 80\,\%. El pipeline no interpreta
+la ausencia como cero económico: conserva el indicador de disponibilidad, imputa solo con
+información del corte de entrenamiento y permite que las reglas de poda decidan si una variable
+puede sostenerse fuera de muestra.
+
+Esta descripción también acota qué significa «más datos». Cada reentrenamiento utiliza únicamente
+labels ya cerrados de su ventana móvil de ocho años; en la muestra observada, el conjunto de
+entrenamiento pasa aproximadamente de 9.879 a 13.236 filas. Las decenas de miles de filas no son
+ensayos independientes porque acciones de una misma fecha comparten estado de mercado y las
+ventanas consecutivas se solapan. Por ello, la inferencia posterior se agrega por cohorte y por era,
+en lugar de tratar cada acción--mes como una repetición independiente.
 
 \section{Observabilidad temporal: qué se sabía y cuándo}
 \label{sec:observabilidad}

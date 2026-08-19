@@ -1,26 +1,25 @@
-% =====================================================================
-% Bibliografía manual.
-%
-% Se escribe a mano, como un capítulo más, en lugar de generarse con
-% biblatex + biber. El motivo es práctico: la cadena biblatex/biber
-% impedía compilar el documento, y con este repertorio breve el coste de
-% mantenerlas manualmente es menor que el de depurar el motor de citas.
-% Los datos bibliográficos completos (DOI, volumen, páginas) se escriben
-% directamente en cada entrada de la lista.
-%
-% Convención: autor-año, orden alfabético por primer apellido, sangría
-% francesa. Las citas del texto son de la forma «Autor (año)» o
-% «(Autor, año)» y deben coincidir con las entradas de esta lista.
-% =====================================================================
+% Bibliografía manual, ordenada alfabéticamente.
 \chapter{Bibliografía}
 \label{chap:bibliografia}
 
 \begin{list}{}{%
   \setlength{\leftmargin}{2em}%
   \setlength{\itemindent}{-2em}%
-  \setlength{\itemsep}{0.6em}%
+  \setlength{\itemsep}{0.55em}%
   \setlength{\parsep}{0pt}%
 }
+
+\item Amihud, Y. (2002). Illiquidity and Stock Returns: Cross-Section and Time-Series Effects.
+  \textit{Journal of Financial Markets}, 5(1), 31--56.
+  \url{https://doi.org/10.1016/S1386-4181(01)00024-6}
+
+\item Ang, A., Hodrick, R. J., Xing, Y., y Zhang, X. (2006). The Cross-Section of Volatility and
+  Expected Returns. \textit{The Journal of Finance}, 61(1), 259--299.
+  \url{https://doi.org/10.1111/j.1540-6261.2006.00836.x}
+
+\item Arnott, R. D., Harvey, C. R., y Markowitz, H. (2019). A Backtesting Protocol in the Era of
+  Machine Learning. \textit{The Journal of Financial Data Science}, 1(1), 64--74.
+  \url{https://doi.org/10.3905/jfds.2019.1.064}
 
 \item Asness, C. S., Frazzini, A., y Pedersen, L. H. (2019). Quality Minus Junk.
   \textit{Review of Accounting Studies}, 24(1), 34--112.
@@ -30,6 +29,10 @@
   Selection Bias, Backtest Overfitting, and Non-Normality.
   \textit{The Journal of Portfolio Management}, 40(5), 94--107.
   \url{https://doi.org/10.3905/jpm.2014.40.5.094}
+
+\item Bailey, D. H., Borwein, J. M., López de Prado, M., y Zhu, Q. J. (2017). The Probability of
+  Backtest Overfitting. \textit{Journal of Computational Finance}, 20(4), 39--69.
+  \url{https://doi.org/10.21314/JCF.2017.322}
 
 \item Banz, R. W. (1981). The Relationship between Return and Market Value of Common Stocks.
   \textit{Journal of Financial Economics}, 9(1), 3--18.
@@ -43,6 +46,9 @@
   \textit{The Journal of Finance}, 52(1), 57--82.
   \url{https://doi.org/10.1111/j.1540-6261.1997.tb03808.x}
 
+\item Clarke, R., de Silva, H., y Thorley, S. (2002). Portfolio Constraints and the Fundamental Law
+  of Active Management. \textit{Financial Analysts Journal}, 58(5), 48--66.
+
 \item Fama, E. F., y French, K. R. (1992). The Cross-Section of Expected Stock Returns.
   \textit{The Journal of Finance}, 47(2), 427--465.
   \url{https://doi.org/10.1111/j.1540-6261.1992.tb04398.x}
@@ -50,6 +56,22 @@
 \item Fama, E. F., y French, K. R. (1993). Common Risk Factors in the Returns on Stocks and Bonds.
   \textit{Journal of Financial Economics}, 33(1), 3--56.
   \url{https://doi.org/10.1016/0304-405X(93)90023-5}
+
+\item Fama, E. F., y French, K. R. (2015). A Five-Factor Asset Pricing Model.
+  \textit{Journal of Financial Economics}, 116(1), 1--22.
+  \url{https://doi.org/10.1016/j.jfineco.2014.10.010}
+
+\item Feng, G., Giglio, S., y Xiu, D. (2020). Taming the Factor Zoo: A Test of New Factors.
+  \textit{The Journal of Finance}, 75(3), 1327--1370.
+  \url{https://doi.org/10.1111/jofi.12883}
+
+\item Frazzini, A., y Pedersen, L. H. (2014). Betting Against Beta.
+  \textit{Journal of Financial Economics}, 111(1), 1--25.
+  \url{https://doi.org/10.1016/j.jfineco.2013.10.005}
+
+\item Freyberger, J., Neuhierl, A., y Weber, M. (2020). Dissecting Characteristics Nonparametrically.
+  \textit{The Review of Financial Studies}, 33(5), 2326--2377.
+  \url{https://doi.org/10.1093/rfs/hhz123}
 
 \item Grinold, R. C. (1989). The Fundamental Law of Active Management.
   \textit{The Journal of Portfolio Management}, 15(3), 30--37.
@@ -59,35 +81,73 @@
   \textit{The Review of Financial Studies}, 33(5), 2223--2273.
   \url{https://doi.org/10.1093/rfs/hhaa009}
 
+\item Hansen, P. R. (2005). A Test for Superior Predictive Ability.
+  \textit{Journal of Business \& Economic Statistics}, 23(4), 365--380.
+  \url{https://doi.org/10.1198/073500105000000063}
+
 \item Harvey, C. R., Liu, Y., y Zhu, H. (2016). \ldots{} and the Cross-Section of Expected Returns.
   \textit{The Review of Financial Studies}, 29(1), 5--68.
   \url{https://doi.org/10.1093/rfs/hhv059}
 
-\item Jegadeesh, N., y Titman, S. (1993). Returns to Buying Winners and Selling Losers: Implications
-  for Stock Market Efficiency. \textit{The Journal of Finance}, 48(1), 65--91.
+\item Hou, K., Xue, C., y Zhang, L. (2015). Digesting Anomalies: An Investment Approach.
+  \textit{The Review of Financial Studies}, 28(3), 650--705.
+  \url{https://doi.org/10.1093/rfs/hhu068}
+
+\item Hou, K., Xue, C., y Zhang, L. (2020). Replicating Anomalies.
+  \textit{The Review of Financial Studies}, 33(5), 2019--2133.
+  \url{https://doi.org/10.1093/rfs/hhy131}
+
+\item Jegadeesh, N., y Titman, S. (1993). Returns to Buying Winners and Selling Losers:
+  Implications for Stock Market Efficiency. \textit{The Journal of Finance}, 48(1), 65--91.
   \url{https://doi.org/10.1111/j.1540-6261.1993.tb04702.x}
 
 \item Ke, G., Meng, Q., Finley, T., Wang, T., Chen, W., Ma, W., Ye, Q., y Liu, T.-Y. (2017).
   LightGBM: A Highly Efficient Gradient Boosting Decision Tree.
-  \textit{Advances in Neural Information Processing Systems (NeurIPS)}, 30, 3146--3154.
+  \textit{Advances in Neural Information Processing Systems}, 30, 3146--3154.
+
+\item Kelly, B. T., Pruitt, S., y Su, Y. (2019). Characteristics Are Covariances: A Unified Model of
+  Risk and Return. \textit{Journal of Financial Economics}, 134(3), 501--524.
+  \url{https://doi.org/10.1016/j.jfineco.2019.05.001}
 
 \item López de Prado, M. (2018). \textit{Advances in Financial Machine Learning}.
   Hoboken, NJ: John Wiley \& Sons.
 
-\item López de Prado, M., Bailey, D. H., Borwein, J. M., y Zhu, Q. J. (2014). Pseudo-Mathematics and
-  Financial Charlatanism: The Effects of Backtest Overfitting on Out-of-Sample Performance.
+\item López de Prado, M., Bailey, D. H., Borwein, J. M., y Zhu, Q. J. (2014). Pseudo-Mathematics
+  and Financial Charlatanism: The Effects of Backtest Overfitting on Out-of-Sample Performance.
   \textit{Notices of the American Mathematical Society}, 61(5), 458--471.
   \url{https://doi.org/10.1090/noti1105}
 
-\item Newey, W. K., y West, K. D. (1987). A Simple, Positive Semi-Definite, Heteroskedasticity and
-  Autocorrelation Consistent Covariance Matrix. \textit{Econometrica}, 55(3), 703--708.
+\item McLean, R. D., y Pontiff, J. (2016). Does Academic Research Destroy Stock Return
+  Predictability? \textit{The Journal of Finance}, 71(1), 5--32.
+  \url{https://doi.org/10.1111/jofi.12365}
+
+\item Newey, W. K., y West, K. D. (1987). A Simple, Positive Semi-Definite,
+  Heteroskedasticity and Autocorrelation Consistent Covariance Matrix.
+  \textit{Econometrica}, 55(3), 703--708.
   \url{https://doi.org/10.2307/1913610}
 
+\item Novy-Marx, R. (2013). The Other Side of Value: The Gross Profitability Premium.
+  \textit{Journal of Financial Economics}, 108(1), 1--28.
+  \url{https://doi.org/10.1016/j.jfineco.2013.01.003}
+
+\item Novy-Marx, R., y Velikov, M. (2016). A Taxonomy of Anomalies and Their Trading Costs.
+  \textit{The Review of Financial Studies}, 29(1), 104--147.
+  \url{https://doi.org/10.1093/rfs/hhv063}
+
 \item S\&P Dow Jones Indices (2026). \textit{SPIVA U.S. Scorecard: Year-End 2025}.
+  Tabla 1a; datos a 31 de diciembre de 2025.
   \url{https://www.spglobal.com/spdji/en/documents/spiva/spiva-us-year-end-2025.pdf}
 
 \item Sharpe, W. F. (1991). The Arithmetic of Active Management.
   \textit{Financial Analysts Journal}, 47(1), 7--9.
   \url{https://doi.org/10.2469/faj.v47.n1.7}
+
+\item Shumway, T. (1997). The Delisting Bias in CRSP Data.
+  \textit{The Journal of Finance}, 52(1), 327--340.
+  \url{https://doi.org/10.1111/j.1540-6261.1997.tb03818.x}
+
+\item White, H. (2000). A Reality Check for Data Snooping.
+  \textit{Econometrica}, 68(5), 1097--1126.
+  \url{https://doi.org/10.1111/1468-0262.00152}
 
 \end{list}

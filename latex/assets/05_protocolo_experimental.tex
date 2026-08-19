@@ -223,12 +223,60 @@ Todo lo anterior ocurre en el plano predictivo y termina con una configuración 
 de aquí el problema cambia de naturaleza: ya no se trata de ordenar mejor, sino de convertir una
 ordenación en posiciones concretas sin destruir por el camino la ventaja que contiene.
 
-El primer paso es que la cartera necesita una magnitud económica, no sólo un percentil. Sobre cohortes cerradas se estima
-una relación entre ventiles de \texttt{meta\_rank} y retorno excedente anualizado. Se usan veinte
-grupos para no ajustar una curva a medias de muy pocas acciones, aunque la función se evalúa sobre
-el rango continuo. Si la pendiente no es creciente, la evidencia se amplía en cascada a dieciséis
-trimestres y al histórico completo; la salvaguarda final queda registrada como supuesto y no se
-presenta como estimación empírica.
+El primer paso es que la cartera necesita una magnitud económica, no sólo un percentil. Sobre
+cohortes cerradas se estima una relación entre ventiles de \texttt{meta\_rank} y retorno excedente
+anualizado. Se usan veinte grupos para que cada tramo conserve suficientes acciones y para no
+confundir una ordenación ordinal con una precisión individual inexistente.
+
+\subsection*{Calibración causal y estados de respaldo}
+
+Para cada fecha de inversión $t$, el calibrador sólo recibe cohortes cuyo retorno a doce meses ya
+terminó antes de $t$. Primero calcula, para cada ventila $q$, el exceso medio observado
+$\bar r^{\,e}_{q,t}$ y ajusta una función monótona que traduce rango en alfa esperado:
+\[
+ \widehat{\alpha}_{i,t}=g_t\!\left(\operatorname{rank}_{i,t}\right).
+\]
+La monotonía no obliga a que el mercado pague una cantidad concreta; impone únicamente la
+coherencia mínima de que una acción mejor ordenada no reciba menos alfa esperado que otra peor
+ordenada. La magnitud procede de la historia cerrada y se expresa en puntos básicos anuales, de
+modo que los umbrales operativos mantienen el mismo significado cuando cambia el horizonte.
+
+La estimación más local usa cohortes recientes del mismo horizonte. Si no existe historia
+suficiente o la relación no puede estimarse de forma estable, se amplía primero a dieciséis
+trimestres; si sigue sin ser viable, se utiliza todo el histórico cerrado. Sólo cuando tampoco esa
+información existe se activa una salvaguarda determinista. Los cuatro estados son
+\texttt{horizon}, \texttt{era}, \texttt{none} y \texttt{fallback}; cada snapshot registra cuál se
+empleó. Esta cascada evita dos errores opuestos: fingir precisión local con muy pocas observaciones
+y mezclar silenciosamente un supuesto con una estimación.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.98\textwidth]{assets/f05_calibracion_alfa.png}
+  \caption{Trazabilidad de la calibración. Arriba, fuente empleada en cada snapshot; abajo,
+  relación entre ventila del ranking y alfa anual esperado para cortes representativos. La franja
+  reservada se muestra para verificar aplicación, nunca para elegir el calibrador.}
+  \label{fig:calibracion-alfa}
+\end{figure}
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{Frecuencia de los estados de calibración por ventana.}
+  \label{tab:calibracion-estados}
+  \input{assets/t05_calibracion_estados.tex}
+\end{table}
+
+En selección, 72 de los 117 snapshots usan la estimación del mismo horizonte, 24 amplían a la era,
+15 quedan sin calibración empírica suficiente y seis activan la salvaguarda de arranque. En la
+reserva, los 18 snapshots aplican la estimación de horizonte obtenida con historia anterior. Este
+recuento importa más que una curva elegida como ejemplo: hace visible cuándo el sistema aprendió
+una escala económica y cuándo todavía operaba con una regla de seguridad.
+
+La calibración no crea información predictiva adicional. Dos acciones conservan el orden que les
+dio el meta-agente; $g_t$ sólo cuantifica la distancia económica necesaria para comparar una
+candidata con costes, efectivo y una posición existente. Por eso sus parámetros no participan en
+la selección por Rank-IC y su calidad se juzga después mediante turnover, costes y estabilidad de
+la cartera.
 
 \section{Construcción de cartera}
 
@@ -251,6 +299,41 @@ optimizar el modelo por rentabilidad.
 La era 2025--2026 fue aislada antes de aplicar la selección. Sus observaciones no participan ni en
 los pesos del meta ni en la elección de parámetros; su papel es exclusivamente de confirmación
 posterior.
+
+\subsection*{Precedencia de las reglas operativas}
+
+Las seis variables no se aplican como filtros independientes. En cada rebalanceo existe una
+precedencia explícita que impide contradicciones: primero se actualizan señales y restricciones de
+tenencia; después se evalúan ventas económicamente elegibles; a continuación se comparan destinos
+para el capital liberado; finalmente se ajustan tamaños sólo si la deriva justifica pagar el coste.
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[node distance=8mm and 10mm,>=Latex,every node/.style={font=\small,align=center}]
+    \node[draw,rounded corners,fill=blue!8,minimum width=28mm,minimum height=10mm] (s) {Señal y alfa\\actualizados};
+    \node[draw,rounded corners,fill=orange!12,right=of s,minimum width=31mm,minimum height=10mm] (h) {¿Tenencia mínima\\cumplida?};
+    \node[draw,rounded corners,fill=yellow!15,right=of h,minimum width=34mm,minimum height=10mm] (v) {¿Vender mejora\\después de costes?};
+    \node[draw,rounded corners,fill=teal!10,below=of v,minimum width=34mm,minimum height=10mm] (d) {Mejor destino:\\acción o efectivo};
+    \node[draw,rounded corners,fill=green!10,left=of d,minimum width=31mm,minimum height=10mm] (r) {Ajuste por deriva\\si compensa};
+    \node[draw,rounded corners,fill=gray!12,left=of r,minimum width=28mm,minimum height=10mm] (p) {Cartera\\resultante};
+    \draw[->,thick] (s)--(h);
+    \draw[->,thick] (h)--node[above]{sí}(v);
+    \draw[->,thick] (v)--node[right]{sí}(d);
+    \draw[->,thick] (d)--(r);
+    \draw[->,thick] (r)--(p);
+    \draw[->,thick,dashed] (h.south) |- node[pos=0.25,left]{no} (p.north);
+    \draw[->,thick,dashed] (v.north) -- ++(0,0.55) -| node[pos=0.25,above]{no} (p.north);
+  \end{tikzpicture}
+  \caption{Orden de decisión de la cartera. La permanencia por tiempo se comprueba antes que la
+  economía de la venta; una venta sólo ocurre si existe un destino netamente mejor.}
+  \label{fig:precedencia-cartera}
+\end{figure}
+
+Esta jerarquía aclara una diferencia importante: el mínimo de tenencia puede impedir cualquier
+venta por tiempo, mientras que el suelo de cobertura o un alfa negativo sólo hacen que una venta
+sea candidata. Incluso entonces debe existir un destino superior después de costes. SPY no puede
+ser ese destino porque sólo actúa como benchmark; el efectivo sí puede serlo, pero únicamente
+dentro del tope \texttt{max\_cash\_weight}.
 
 \section{Ejemplo de decisión y coste}
 
@@ -345,6 +428,26 @@ con el mismo valor, significa dos cosas distintas según el valor de otra.
 Un ascenso por coordenadas sobre variables que interactúan así converge a un óptimo local que
 depende del punto de partida. El cartesiano no tiene ese problema. Tiene otro, la multiplicidad de
 comparaciones, que se declara abiertamente en el Capítulo~\ref{chap:limitaciones}.
+
+\subsection{Dos búsquedas y dos multiplicidades}
+\label{sec:dos-multiplicidades}
+
+El proyecto contiene dos recuentos que no deben sumarse ni intercambiarse. La pasada predictiva de
+referencia evaluó 46 configuraciones del Model Study. Esas comparaciones podían afectar qué señal
+se congelaba y, por tanto, forman el universo de intentos que penaliza la inferencia predictiva y el
+Deflated Sharpe asociado al resultado económico de esa señal.
+
+El Portfolio Study evaluó 1.440 combinaciones de seis reglas sobre la selección hasta 2024. Es una
+multiplicidad distinta: la señal, sus pesos y su Rank-IC permanecían idénticos en las 1.440 celdas.
+Este recuento obliga a tratar el Information Ratio ganador como seleccionado y a reservar
+2025--2026 para una única reevaluación, pero no aumenta retrospectivamente el número de modelos
+predictivos. Mezclar ambos números produciría dos errores: atribuir a la cartera capacidad de elegir
+el modelo y presentar el máximo de la rejilla como una estimación no condicionada por búsqueda.
+
+La regla de lectura queda así fijada una sola vez. El Capítulo~\ref{chap:resultados} juzga la señal
+con la multiplicidad de Model Study; el Capítulo~\ref{chap:resultados-economicos} interpreta la
+cartera seleccionada frente a su distribución de 1.440 alternativas y luego mira una sola reserva.
+Las secciones posteriores remiten a esta distinción en lugar de redefinirla.
 
 \subsection*{Los perfiles quedan fuera de la rejilla}
 

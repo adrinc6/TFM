@@ -99,3 +99,30 @@ sobre el resultado.
 Ese argumento vale para el plano predictivo y no se extiende al de cartera, donde las seis variables
 generan 1.440 combinaciones: cinco órdenes de magnitud menos, y sobre una señal que ya no puede
 cambiar. El razonamiento completo está en la Sección~\ref{sec:seleccion-secuencial}.
+
+\section{Diccionario de variables predictivas}
+\label{sec:diccionario-features}
+
+El catálogo de parámetros anterior dice \emph{cómo} puede entrenarse el sistema; no enumera
+\emph{qué} información recibe. La Tabla~\ref{tab:diccionario-features} completa esa segunda capa de
+auditabilidad con las 68 variables declaradas: nombre persistido, bloque económico, agentes que
+pueden consumirla, dirección económica orientativa y fuente.
+
+La dirección no es una regla de trading ni una restricción monotónica impuesta al LightGBM. Indica
+la lectura convencional usada para revisar signos, construir baselines y detectar errores de
+ingeniería. El modelo puede aprender que una relación cambia por región del espacio de variables o
+por interacción con otra característica. Del mismo modo, pertenecer a varios agentes no duplica la
+columna en el panel: cada especialista recibe la misma observación puntual dentro de su propio
+vocabulario.
+
+\begin{landscape}
+\footnotesize
+\input{assets/tB_diccionario_features.tex}
+\end{landscape}
+
+La tabla se genera directamente desde \texttt{feature\_catalog.json}; no es una transcripción
+manual. Por ello cumple dos funciones. Para el lector, hace explícito qué significan nombres
+abreviados como \texttt{gap\_21d} o \texttt{range\_63d}. Para la auditoría, permite comprobar que
+una variable citada en atribución existe en el catálogo y que ningún predictor improvisado aparece
+sólo en el resultado. Los diagnósticos auxiliares que no entrenan modelos se conservan fuera de
+esta lista para no confundir control de calidad con información predictiva.
