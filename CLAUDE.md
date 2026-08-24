@@ -33,10 +33,13 @@ nueva» de `docs/plan_latex.md` explicando qué cambió, a qué capítulos, tabl
 artefacto lo respalda. Cuando el usuario ordene la actualización, ese fichero es el contexto de
 partida.
 
-Sí son editables `latex/scripts/*.py` (es código) y `latex/plan_tfm.md` (es documentación, cubre
-formato y convenciones), pero el exportador **no se ejecuta** como parte del cambio. Entre
-actualizaciones el manuscrito está desactualizado a propósito: `docs/plan_latex.md` es el registro de
-esa deuda.
+Sí son editables `latex/scripts/*.py` y `latex/build.py` (es código) y `latex/COMO_COMPILAR.md`
+(es documentación: cubre cómo compilar, las convenciones de escritura y las decisiones de formato),
+pero el exportador **no se ejecuta** como parte del cambio. Entre actualizaciones el manuscrito está
+desactualizado a propósito: `docs/plan_latex.md` es el registro de esa deuda.
+
+Para compilar, regenerar activos o verificar el proyecto: `python latex/build.py`, que lleva
+interruptores `True`/`False` al principio del fichero para elegir qué se hace en cada ejecución.
 
 ## Arquitectura
 

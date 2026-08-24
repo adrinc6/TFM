@@ -102,12 +102,12 @@ costado adoptarla. Esa es la columna que se tabula, ordenada de mayor a menor co
   \small
   \caption{Qué alternativa se rechazó en cada decisión y cuánto habría costado adoptarla.}
   \label{tab:decisiones}
-  \resizebox{\textwidth}{!}{\input{assets/t06_decisiones.tex}}
+  \resizebox{\textwidth}{!}{\input{tables/t05_decisiones.tex}}
   \caption*{El coste es el Rank-IC de la mejor alternativa menos el del ganador; un coste
   \emph{positivo} indica que la alternativa medía mejor y que el ganador se decidió por otra vía, lo
-  que sólo ocurre en los empates técnicos. No debe confundirse con la \emph{ventaja pareada}, que
-  promedia la diferencia cohorte a cohorte: en \artefacto{meta\_method} el coste es $-0{,}0071$ y la
-  ventaja pareada $+0{,}00699$.}
+  que ocurre en dos filas y se comenta más abajo. No debe confundirse con la \emph{ventaja pareada},
+  que promedia la diferencia cohorte a cohorte: en \artefacto{meta\_method} el coste es $-0{,}0071$ y
+  la ventaja pareada $+0{,}00699$.}
 \end{table}
 
 Leída así, la tabla separa con claridad tres grupos. Cinco decisiones eran caras de equivocar:
@@ -116,16 +116,32 @@ neutralizar por sector $-0{,}0514$, reducir el conjunto de variables a \texttt{c
 acortar el horizonte a seis meses $-0{,}0379$ y aplicar pesos de recencia $-0{,}0332$. Son las
 decisiones estructurales, y las cinco se resolvieron con holgura.
 
-Un segundo grupo, el más numeroso, tiene costes por debajo de 0,005: los hiperparámetros de LightGBM
-(profundidad, número de árboles, tasa de aprendizaje), la winsorización o el número máximo de
-variables por agente. Ahí la evidencia apenas distingue entre alternativas, y conviene decirlo
-abiertamente: el sistema no debe su capacidad predictiva al ajuste fino del modelo.
+Un segundo grupo, el más numeroso ---diez de las dieciocho filas---, tiene costes de $0{,}005$ o
+menos: los hiperparámetros de LightGBM (profundidad y número de árboles, ambos exactamente
+$-0{,}0050$; tasa de aprendizaje y mínimo de observaciones por hoja, por debajo de $0{,}0005$), el
+lag de ejecución, la winsorización, el número máximo de variables por agente y la regla de
+ponderación de variables. Ahí la evidencia apenas distingue entre alternativas, y conviene decirlo
+abiertamente: el sistema no debe su capacidad predictiva al ajuste fino del modelo. Entre los dos
+extremos quedan tres decisiones intermedias ---la cadencia de snapshots ($-0{,}0176$), la ventana de
+entrenamiento ($-0{,}0120$) y la variante del meta-agente ($-0{,}0071$)---, y las tres también
+confirmaron el valor que ya traían.
 
-El tercer grupo son las dos decisiones resueltas por empate técnico, que la última columna marca de
-forma explícita. En \artefacto{execution\_lag\_days} la alternativa de 30 días quedó $0{,}0005$ por
-debajo del ganador y en \artefacto{lgbm\_min\_child\_samples} el valor 50 medía $0{,}0004$
-\emph{mejor}. Es decir, en el segundo caso el ganador no es el valor que mejor midió. Ninguna de las
-dos debe presentarse como hallazgo empírico, y por eso figuran con su regla al lado.
+El tercer grupo son las \textbf{cuatro} decisiones que la última columna marca como empate técnico:
+\artefacto{execution\_lag\_days}, \artefacto{winsorization}, \artefacto{market\_regime\_feature} y
+\artefacto{lgbm\_learning\_rate}. Ninguna de las cuatro debe presentarse como hallazgo empírico, y
+por eso figuran con su regla al lado.
+
+Dos filas merecen además una lectura aparte, porque son aquellas en las que \textbf{el ganador no es
+el valor que mejor midió}. En \artefacto{winsorization} la alternativa de $0{,}025$ obtuvo $0{,}1068$
+frente al $0{,}1063$ del incumbente ---coste $+0{,}0005$---, la diferencia quedó dentro del umbral de
+empate técnico y se impuso la preferencia declarada por la opción más simple, que aquí es no
+winsorizar. En \artefacto{feature\_weighting\_mode} ocurre algo distinto y más instructivo:
+\texttt{model\_native} medía $0{,}1065$ frente a $0{,}1063$ ---coste $+0{,}0002$--- y su ventaja
+pareada era incluso positiva ($+0{,}0017$), pero ganaba en el $49{,}6$\,\% de las cohortes, es decir,
+en menos de la mitad. No superó por tanto la puerta de dominancia y el incumbente se conservó. Es el
+ejemplo más claro de por qué la regla mira la serie de diferencias emparejadas y no el promedio
+agregado: una media favorable construida sobre menos de la mitad de las fechas no es evidencia de
+superioridad.
 
 \subsection*{Por qué la escalera es plana}
 
@@ -133,9 +149,10 @@ El resultado de la tercera pasada es contundente y va en contra de la intuición
 tipo de búsquedas: \textbf{dieciséis de las dieciocho decisiones confirmaron su valor de partida}, y
 las dos que lo cambiaron lo hicieron por márgenes mínimos --- \artefacto{market\_regime\_feature}
 por no inferioridad, sin demostrar ser mejor, y \artefacto{lgbm\_learning\_rate} con una ventaja
-media de tres diezmilésimas de Rank-IC. Entre las confirmadas, la comparación que midió mayor
-diferencia fue \artefacto{meta\_method}, donde la variante libre obtuvo 0,1067 frente a 0,0996 de la
-acotada; también ahí el procedimiento conservó el valor que ya traía.
+media de tres diezmilésimas de Rank-IC. Entre las confirmadas, la más relevante para la arquitectura
+es \artefacto{meta\_method}, donde la variante libre obtuvo 0,1067 frente a 0,0996 de la acotada;
+también ahí el procedimiento conservó el valor que ya traía, porque la variante libre venía heredada
+de la primera pasada de la cadena.
 
 Esa planitud es exactamente lo que cabía esperar de una cadena que ha convergido: la pasada de
 referencia parte del ganador de la anterior, de modo que casi todas las variables llegan ya en su
@@ -199,22 +216,24 @@ Capítulo~\ref{chap:limitaciones}.
 
 \section{Ejemplo de comparación pareada}
 
-\begin{ejemplo}[Mecánica de la comparación]
-Un candidato y el incumbente producen Rank-IC sobre las mismas 40 cohortes. En cada fecha se resta
-el Rank-IC del incumbente al del candidato y se re-muestrean bloques de doce cohortes para preservar
-la dependencia inducida por el horizonte anual. Si la ventaja media resultase 0,0208, con el
-candidato mejor en el 57,5\,\% de las cohortes y un intervalo \textit{bootstrap} al 90\,\% de
-$[0{,}0108;\,0{,}0372]$, habría evidencia de dominancia.
+\begin{ejemplo}[Mecánica de la comparación, sobre un caso real]
+Así se decidió la cadencia mensual frente al baseline trimestral en la primera pasada de la cadena.
+En cada fecha se resta el Rank-IC del incumbente al del candidato y se re-muestrean bloques de doce
+cohortes para preservar la dependencia inducida por el horizonte anual. La cadencia mensual obtuvo
+una ventaja media de $+0{,}0136$ sobre 40 fechas emparejadas, siendo mejor en el $60{,}0$\,\% de
+ellas, con un intervalo \textit{bootstrap} al 90\,\% de $[-0{,}0000;\,0{,}0327]$.
 \end{ejemplo}
 
-Las cifras del ejemplo son ilustrativas, pero corresponden al orden de magnitud de un caso real: así
-se decidió la cadencia mensual frente al baseline trimestral en la primera pasada de la cadena, con
-una ventaja pareada de $+0{,}0208$.
+El caso muestra que las dos puertas no son la misma. La cadencia mensual desplazó a la trimestral por
+\emph{dominancia} ---ventaja media positiva y mejor en más de la mitad de las fechas---, no por el
+intervalo, cuyo límite inferior rozaba cero. Un procedimiento que exigiera además un intervalo
+estrictamente positivo habría conservado la cadencia trimestral, y con ella habría perdido las 117
+cohortes mensuales sobre las que descansa el resto del trabajo.
 
 La rentabilidad de cartera no influye en este paso. Un CAGR alto puede surgir de concentración,
 exposición accidental a una acción extrema o efectivo, sin demostrar que se ordene mejor el
-universo. El horizonte de seis meses ilustra un rechazo medido: su ventaja pareada fue $-0,0265$ y
-el intervalo $[-0,0552;-0,0109]$. Mostrar este resultado evita presentar la selección como una
+universo. El horizonte de seis meses ilustra un rechazo medido: en la pasada de referencia su ventaja pareada
+fue $-0{,}0375$ y el intervalo $[-0{,}0777;\,-0{,}0124]$, íntegramente negativo. Mostrar este resultado evita presentar la selección como una
 confirmación automática de la configuración preferida.
 
 \section{De rango a alfa esperado}
@@ -251,7 +270,7 @@ y mezclar silenciosamente un supuesto con una estimación.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.98\textwidth]{assets/f05_calibracion_alfa.png}
+  \includegraphics[width=0.98\textwidth]{figures/f05_calibracion_alfa.png}
   \caption{Trazabilidad de la calibración. Arriba, fuente empleada en cada snapshot; abajo,
   relación entre ventila del ranking y alfa anual esperado para cortes representativos. La franja
   reservada se muestra para verificar aplicación, nunca para elegir el calibrador.}
@@ -263,7 +282,7 @@ y mezclar silenciosamente un supuesto con una estimación.
   \small
   \caption{Frecuencia de los estados de calibración por ventana.}
   \label{tab:calibracion-estados}
-  \input{assets/t05_calibracion_estados.tex}
+  \input{tables/t05_calibracion_estados.tex}
 \end{table}
 
 En selección, 72 de los 117 snapshots usan la estimación del mismo horizonte, 24 amplían a la era,

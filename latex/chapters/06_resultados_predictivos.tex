@@ -27,9 +27,11 @@ y se diferencian únicamente en ese punto de partida.
   \small
   \caption{Las tres pasadas de la cadena y su ganador.}
   \label{tab:cadena}
-  {\setlength{\tabcolsep}{5.8pt}\input{assets/t06_cadena.tex}}
-  \caption*{Rank-IC, IC-IR y $t$ de Newey--West son de la ventana de selección; IR y exceso
-  corresponden a la cartera \emph{por defecto} de cada estudio, no a la optimizada del
+  {\setlength{\tabcolsep}{5.8pt}\input{tables/t06_cadena.tex}}
+  \caption*{Rank-IC, IC-IR y $t$ de Newey--West son de la ventana de selección. «Transf.» es el
+  coeficiente de transferencia introducido en el Capítulo~\ref{chap:estado-arte}: la fracción de la
+  señal disponible que llega a expresarse en posiciones. IR y exceso corresponden a la cartera
+  \emph{por defecto} de cada estudio, no a la optimizada del
   Capítulo~\ref{chap:resultados-economicos}.}
 \end{table}
 
@@ -45,17 +47,17 @@ optimizada del Capítulo~\ref{chap:resultados-economicos}, y descansa sobre poco
 datos. Lo que sí deja claro es que ninguna de las tres pasadas compró su mejora predictiva a costa de
 la era reservada, sencillamente porque esa era nunca intervino en ninguna decisión.
 
-Las dos columnas centrales de la tabla aparecen vacías para las dos primeras pasadas, y la ausencia
-es deliberada: los diagnósticos posteriores al ganador son opcionales por pasada y se reservan a la
-última. Evaluar la era de confirmación en las pasadas intermedias la habría gastado sobre
-configuraciones que después se descartaron.
+La columna del estadístico $t$ de Newey--West aparece vacía para las dos primeras pasadas, y la
+ausencia es deliberada: los diagnósticos posteriores al ganador son opcionales por pasada y se
+reservan a la última. Evaluar la era de confirmación en las pasadas intermedias la habría gastado
+sobre configuraciones que después se descartaron.
 
 \begin{table}[H]
   \centering
   \small
   \caption{Qué cambió cada pasada respecto de su punto de partida.}
   \label{tab:cadena-config}
-  \input{assets/t06_cadena_config.tex}
+  \input{tables/t06_cadena_config.tex}
   \caption*{Cada pasada se compara con su configuración de partida. El Anexo~\ref{anexo:catalogo}
   reproduce el catálogo completo con el valor final de las treinta y tres variables.}
 \end{table}
@@ -69,10 +71,26 @@ dieciséis de las dieciocho decisiones conservaron el valor heredado.
 La configuración ganadora resultante emplea cadencia mensual de snapshots, horizonte de etiqueta de
 doce meses, el preset de variables \texttt{all} con un máximo de doce por agente, sin neutralización
 sectorial ni ponderación por recencia, y un meta-agente \texttt{stacked\_rolling\_free}, es decir,
-sin tope por agente. Esa última elección procede de la segunda pasada y gobierna buena parte de lo
+sin tope por agente. Esa última elección procede de la primera pasada y gobierna buena parte de lo
 que sigue; la tercera volvió a compararla con la variante acotada y la confirmó. La
 Sección~\ref{sec:cadena-studies} documenta por qué se encadenaron los estudios y qué se aprendió en
 cada uno.
+
+La Tabla~\ref{tab:ganador} la recoge entera, para que ninguna cifra de este capítulo obligue a ir a
+buscar con qué sistema se obtuvo.
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{La configuración predictiva ganadora, variable a variable.}
+  \label{tab:ganador}
+  \input{tables/t06_ganador.tex}
+  \caption*{Las veintiuna variables predictivas del catálogo y el valor con el que quedó congelado
+  el sistema. Las doce variables de cartera se omiten aquí porque en esta fase conservaban el valor
+  por defecto: las que el trabajo adopta se deciden después y se presentan en el
+  Capítulo~\ref{chap:resultados-economicos}. El Anexo~\ref{anexo:catalogo} añade, para cada una, la
+  rejilla completa de valores que estaban disponibles y no se eligieron.}
+\end{table}
 
 \section{La evidencia de que el meta aprende}
 \label{sec:meta-aprende}
@@ -90,7 +108,7 @@ sino a descartar cuatro.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.94\textwidth]{assets/f05_pesos_anual.png}
+  \includegraphics[width=0.94\textwidth]{figures/f06_pesos_anual.png}
   \caption{Peso medio anual asignado por el meta-agente a cada especialista. 2015 corresponde
   íntegramente al reparto uniforme por ausencia de cohortes cerradas.}
   \label{fig:pesos-anual}
@@ -100,18 +118,18 @@ La Figura~\ref{fig:pesos-anual} describe un aprendizaje reconocible, y su primer
 informativo. En 2015 el reparto es uniforme por construcción. En 2016 el meta concentra en
 \textit{momentum}, que acabará siendo el peor especialista de todo el periodo: es un error, y es
 exactamente lo que cabe esperar de un sistema que decide con dos años de datos. En 2017 corrige
-hacia \textit{risk} (0,45 de media anual), en 2018 lo eleva a 0,66 y a partir de 2020 lo sitúa por
-encima de 0,83, alcanzando 0,997 en 2023. Que el sistema se equivoque primero y se corrija después,
-sin que nadie intervenga, es la evidencia más directa de que el aprendizaje es real y no una
+hacia \textit{risk} (0,43 de media anual), en 2018 lo eleva a 0,63 y desde 2020 nunca vuelve a
+bajar de 0,79, con un máximo anual de 0,97 en 2023. Que el sistema se equivoque primero y se corrija
+después, sin que nadie intervenga, es la evidencia más directa de que el aprendizaje es real y no una
 etiqueta.
 
 Que el reparto acabe así merece leerse con cuidado, porque es el resultado esperable del método y no
 una anomalía. La configuración ganadora emplea \texttt{stacked\_rolling\_free}, es decir, un apilado sin
 tope por agente; enfrentado a un especialista que domina de forma consistente, el procedimiento
-converge a él. La primera pasada de la cadena usaba la variante acotada; la segunda adoptó la libre
-y la tercera volvió a medir ambas y la ratificó, con $+0{,}00827$ de ventaja pareada sobre la
-acotada. Se ganó Rank-IC, por tanto, a costa de que la arquitectura multi-agente quede en la
-práctica reducida a uno.
+converge a él. La cadena arrancó del baseline acotado que recomienda el catálogo: fue la primera
+pasada la que adoptó la libre, con $+0{,}00389$ de ventaja pareada; la segunda no reabrió esa
+variable y la tercera volvió a medir ambas y la ratificó, ahora con $+0{,}00699$. Se ganó Rank-IC,
+por tanto, a costa de que la arquitectura multi-agente quede en la práctica reducida a uno.
 
 El contraste relevante conserva exactamente los mismos cinco agentes y cambia sólo la regla de
 combinación. En la ventana de selección, el meta aprendido alcanza Rank-IC 0,1067 frente a 0,0690
@@ -122,7 +140,7 @@ añade, por tanto, información útil y no sólo reescala los scores.
   \centering
   \caption{Capacidad predictiva de los agentes y combinadores en 2015--2024.}
   \label{tab:agentes}
-  \input{assets/t05_agentes.tex}
+  \input{tables/t06_agentes.tex}
   \caption*{Desviación e IC-IR se calculan sobre cohortes cerradas de la ventana de selección.}
 \end{table}
 
@@ -184,7 +202,7 @@ título informativo.
   \small
   \caption{Rank-IC medio por señal y era.}
   \label{tab:rankic-era}
-  \input{assets/t05_rankic_era.tex}
+  \input{tables/t06_rankic_era.tex}
   \caption*{Las tres primeras columnas son ventana de selección; la cuarta es la era reservada y no
   intervino en ninguna decisión.}
 \end{table}
@@ -216,7 +234,7 @@ lo largo de la ventana de selección, y la Figura~\ref{fig:orden-vs-pago} las en
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.92\textwidth]{assets/f06_orden_vs_pago.png}
+  \includegraphics[width=0.92\textwidth]{figures/f06_orden_vs_pago.png}
   \caption{Rank-IC medio del meta-agente y Information Ratio de la cartera, era a era de la ventana
   de selección. Las dos escalas son distintas a propósito: lo que importa es la dirección de cada
   serie, no su nivel.}
@@ -258,7 +276,7 @@ observación independiente efectiva no zanja nada.
 Lo anterior describe el vocabulario que cada agente \emph{recibe}. Qué hace con él es una pregunta
 distinta y comprobable: el estudio persiste, para cada acción, fecha, agente y variable, la
 contribución local de esa variable a la puntuación resultante
---- 1.309.618 contribuciones en total. La
+--- 1.306.960 contribuciones en total. La
 Tabla~\ref{tab:atribucion} resume las tres variables de mayor peso en cada agente.
 
 \begin{table}[H]
@@ -266,7 +284,7 @@ Tabla~\ref{tab:atribucion} resume las tres variables de mayor peso en cada agent
   \small
   \caption{Variables que más contribuyen a la puntuación de cada agente.}
   \label{tab:atribucion}
-  \input{assets/t05_atribucion.tex}
+  \input{tables/t06_atribucion.tex}
   \caption*{«Contrib. media» es la magnitud media de la contribución local; «Encabeza», la fracción
   de observaciones en las que esa variable fue la primera por importancia. No se reporta el signo
   medio porque se cancela entre acciones y no admite lectura direccional.}
@@ -296,7 +314,7 @@ explicación mecánica.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.92\textwidth]{assets/f05_atribucion_anual.png}
+  \includegraphics[width=0.92\textwidth]{figures/f06_atribucion_anual.png}
   \caption{Variable que encabeza la atribución de \textit{risk} en cada año, como fracción de las
   observaciones.}
   \label{fig:atribucion-anual}
@@ -304,16 +322,18 @@ explicación mecánica.
 
 La Figura~\ref{fig:atribucion-anual} añade un matiz importante sobre la concentración del
 meta-agente. Aunque \textit{risk} acabe recibiendo más del 95\,\% del peso, no es una apuesta fija:
-la variable que lo gobierna cambia con el régimen. \artefacto{range\_63d} domina entre 2017 y 2020
---- el tramo de mayor turbulencia, incluido el desplome de 2020 --- y después se desvanece, mientras
-\artefacto{gap\_21d} crece hasta encabezar entre el 64 y el 77\,\% de las observaciones desde 2023. El
+la variable que lo gobierna cambia con el régimen. \artefacto{range\_63d} encabeza desde el
+inicio de la serie hasta 2020 --- el tramo de mayor turbulencia, con un máximo del 66\,\% en 2019 e
+incluido el desplome de 2020 --- y después se desvanece hasta el 1\,\% en 2024, mientras
+\artefacto{gap\_21d} crece desde el 25\,\% de 2015 hasta el 79\,\% de 2024 y se mantiene por encima
+del 70\,\% en la era reservada. El
 sistema reasigna atención dentro del agente aunque el reparto entre agentes esté congelado, lo que
 suaviza --- sin eliminarla --- la objeción de que depender de un único especialista equivale a
 depender de un único factor.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.98\textwidth]{assets/f06_estabilidad_features.png}
+  \includegraphics[width=0.98\textwidth]{figures/f06_estabilidad_features.png}
   \caption{Persistencia temporal de las variables más relevantes dentro de cada agente. Cada celda
   normaliza la magnitud del coeficiente dentro del agente y la fecha de reentrenamiento; el objetivo
   es comparar continuidad, no niveles entre especialistas.}
@@ -333,7 +353,7 @@ capítulo se apoya en ella, y su papel es explicar un resultado ya medido por ot
 sostenerlo.
 
 Una última observación, sobre la amplitud del vocabulario. \textit{Quality} llega a encabezar con
-29 variables distintas, casi el triple que \textit{momentum} (10) o \textit{risk} (12), y es a la
+28 variables distintas, más del doble que \textit{momentum} (10) o \textit{risk} (12), y es a la
 vez uno de los peores agentes por Rank-IC (0,0096). No hay aquí evidencia causal --- son cinco
 agentes, no una muestra --- pero la asociación es sugerente y apunta en la misma dirección que el
 resto del capítulo: repartir la atención entre muchas variables débiles ordena peor que concentrarla
@@ -355,7 +375,7 @@ la era reservada marcada en dorado.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.96\textwidth]{assets/f07_rankic_serie.png}
+  \includegraphics[width=0.96\textwidth]{figures/f06_rankic_serie.png}
   \caption{Rank-IC por cohorte. La banda dorada identifica la era reservada, que no intervino en
   ninguna decisión.}
   \label{fig:rankic-serie}
@@ -371,7 +391,10 @@ ordena mejor los retornos futuros que las fórmulas fijas.
   \centering
   \caption{Sistema frente a baselines deterministas.}
   \label{tab:baselines}
-  \input{assets/t07_baselines.tex}
+  \input{tables/t06_baselines.tex}
+  \caption*{Los baselines no requieren entrenamiento, de modo que se evalúan sobre las 262 cohortes
+  que el panel admite desde 2003; el sistema, que necesita ventana móvil, aporta las 117 de la
+  ventana de selección. La comparación es de nivel de Rank-IC, no sobre la misma ventana.}
 \end{table}
 
 Conviene recordar aquí la heterogeneidad que ya mostró la Tabla~\ref{tab:rankic-era}: la señal se
@@ -389,7 +412,7 @@ superior y la separación entre extremos en cada era.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.91\textwidth]{assets/f07_cola_eras.png}
+  \includegraphics[width=0.91\textwidth]{figures/f06_cola_eras.png}
   \caption{Comportamiento de la cola superior de la ordenación, por era. Diagnóstico, no criterio
   de selección.}
   \label{fig:cola-eras}
@@ -417,8 +440,7 @@ Dos contrastes independientes preguntan lo mismo desde ángulos distintos: ¿es 
 de estilos ya conocidos?
 
 El primero neutraliza. Regresando la señal contra catorce controles de valoración, rentabilidad,
-crecimiento, volatilidad y beta --- catorce controles en total --- y recalculando
-después el Rank-IC, éste baja de 0,1135 a 0,0990. Conviene declarar de dónde sale ese 0,1135, porque
+crecimiento, volatilidad y beta, y recalculando después el Rank-IC, éste baja de 0,1135 a 0,0990. Conviene declarar de dónde sale ese 0,1135, porque
 no coincide con el 0,1067 del resto del capítulo: el contraste se calcula sobre las mismas 117
 cohortes de selección, pero sólo sobre las filas en que los catorce controles están disponibles, y
 sobre ese subconjunto el Rank-IC bruto es algo mayor. Lo que importa es que las dos cifras se miden
@@ -436,7 +458,7 @@ auditable.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.96\textwidth]{assets/f06_atribucion_factorial.png}
+  \includegraphics[width=0.96\textwidth]{figures/f06_atribucion_factorial.png}
   \caption{Dos lecturas de solapamiento factorial en selección. Izquierda: cargas y sus intervalos
   Newey--West; derecha: Rank-IC antes y después de neutralizar catorce controles de estilo.}
   \label{fig:atribucion-factorial}
@@ -472,7 +494,7 @@ rentabilidad ajustada por multiplicidad no tienen la misma fuerza.
   \centering
   \caption{Resumen de contrastes de robustez.}
   \label{tab:robustez}
-  \input{assets/t07_robustez.tex}
+  \input{tables/t06_robustez.tex}
   \caption*{Los contrastes de señal no dependen de la cartera; el Deflated Sharpe y las carteras
   aleatorias, que sí, están calculados sobre la cartera del Model Study.}
 \end{table}
@@ -505,7 +527,7 @@ Figura~\ref{fig:bootstrap} reúne ambos contrastes.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.94\textwidth]{assets/f07_bootstrap.png}
+  \includegraphics[width=0.94\textwidth]{figures/f06_bootstrap.png}
   \caption{Intervalos de confianza del Rank-IC y estabilidad ante la exclusión de eras completas.}
   \label{fig:bootstrap}
 \end{figure}

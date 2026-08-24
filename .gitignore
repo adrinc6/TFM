@@ -34,3 +34,7 @@ data/cache/
 
 # Binarios de informes
 *.pdf
+
+# Carpeta de trabajo de latex/build.py: PDF intermedios y registros de compilacion.
+# Los PDF definitivos se copian a latex/ y esos si se versionan.
+latex/build/

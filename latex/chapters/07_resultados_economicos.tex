@@ -6,50 +6,28 @@ intentan explicarla por azar. Eso no basta para afirmar que sirva de algo. Una s
 bien el universo y perder su ventaja al convertirse en posiciones, porque una cartera real no puede
 comprar la ordenación entera: compra unas pocas acciones, paga costes y rota.
 
-Este capítulo aborda el \textbf{Objetivo 2}: si las variables de construcción de cartera afectan de
-forma material al resultado y si optimizarlas por Information Ratio produce una cartera mejor que la
-del catálogo. Conviene abrirlo con dos advertencias: una sobre contra qué se compite, y otra sobre
-cómo deben leerse las cifras.
+Este capítulo aborda el \textbf{Objetivo 2}: si el orden aprendido puede cobrarse frente al índice, y
+cuánto de esa respuesta depende de las reglas con las que se construye la cartera.
 
-\section{Contra qué se compite: un juego de suma cero}
+\section{Contra qué se compite}
 \label{sec:suma-cero}
 
-El Objetivo 1 se responde contra un listón absoluto: o existe una ordenación con Rank-IC positivo
-fuera de muestra, o no existe. El Objetivo 2 no funciona así, y conviene decirlo antes de presentar
-ninguna cifra económica, porque cambia qué significa cada resultado del capítulo.
+La Sección~\ref{sec:suma-cero-intro} estableció el listón y no hace falta reconstruirlo: batir al
+índice es un juego de suma cero antes de costes y de suma negativa después, y el
+\textit{scorecard} SPIVA de la Figura~\ref{fig:spiva-horizontes} muestra que a veinte años el
+92,89\,\% de los fondos estadounidenses de gran capitalización no lo consigue. Lo que importa
+recordar aquí es la consecuencia para la lectura de las cifras que siguen.
 
-Batir a un índice es un problema \emph{relativo}, y de una clase muy concreta. El argumento lo
-formuló Sharpe (1991) y es aritmético, no empírico: el mercado es la suma de quienes lo componen, de
-modo que el conjunto de los gestores activos posee, por construcción, la cartera de mercado. Antes de
-costes, el rendimiento medio ponderado de la gestión activa es exactamente el del índice; para que
-alguien lo supere, otro debe quedarse por debajo en la misma medida. Es un juego de \textbf{suma
-cero antes de costes}, y como operar cuesta, pasa a ser de \textbf{suma negativa después}. No hay
-ninguna versión de este problema en la que todos los participantes ganen.
+La primera es que la afirmación que este capítulo puede permitirse es deliberadamente modesta:
+superar al índice de forma sostenida significa ganarle la posición a otro participante en un juego
+donde la mayoría pierde, y demostrarlo exige mucha más evidencia que demostrar que un modelo ordena.
 
-Ese marco tiene un correlato empírico que ya anticipó la
-Figura~\ref{fig:spiva-horizontes}. El \textit{scorecard} SPIVA (S\&P Dow Jones Indices, 2026)
-encuentra que a veinte años el \textbf{92,89\,\%} de los fondos estadounidenses de gran
-capitalización queda por debajo del S\&P 500. Los porcentajes no crecen de forma estrictamente
-monótona con el horizonte, pero permanecen muy elevados en todos los cortes y culminan por encima
-del 92\,\% a veinte años.
-
-De ahí que la afirmación que este capítulo puede permitirse sea deliberadamente modesta. Superar al
-índice de forma sostenida es, en el mejor de los casos, ganarle una posición a otro participante en
-un juego donde la mayoría pierde; y demostrarlo exige mucha más evidencia que demostrar que un modelo
-ordena. La lógica de la suma cero explica además por qué este trabajo separa los dos objetivos en
-lugar de fundirlos en uno: que el sistema \emph{aprenda} es una afirmación sobre el modelo, y se
-resuelve con Rank-IC y contrastes adversariales; que ese aprendizaje \emph{se cobre} es una
-afirmación sobre un mercado competitivo, y ninguna cantidad de Rank-IC la garantiza por sí sola. El
-capítulo anterior mostró precisamente eso: el orden mejora entre eras mientras el pago económico se
-deteriora.
-
-Conviene también acotar el argumento para no usarlo de más. La aritmética de Sharpe es exacta sobre
-el conjunto de los participantes, no sobre cada uno: no dice que sea imposible batir al índice, sino
-que hacerlo requiere que otro no lo consiga, lo que convierte cualquier ventaja sostenida en una
-afirmación extraordinaria. Su versión estricta ha recibido además objeciones —el universo de los
-gestores activos no coincide exactamente con el índice, y las carteras pasivas no son perfectamente
-estáticas—, pero ninguna de ellas altera la conclusión práctica que aquí importa: el listón de
-referencia es alto, está medido y la mayoría no lo alcanza.
+La segunda es que un buen Rank-IC no compra un buen resultado económico. Que el sistema
+\emph{aprenda} es una afirmación sobre el modelo y se resuelve con contrastes adversariales; que ese
+aprendizaje \emph{se cobre} es una afirmación sobre un mercado competitivo. El capítulo anterior
+mostró que las dos pueden divergir: el orden mejora entre eras mientras el pago económico se
+deteriora. Este capítulo mide qué separa una de otra, y encuentra que buena parte de esa distancia
+está en la construcción de cartera.
 
 \section{Cómo debe leerse este capítulo}
 \label{sec:advertencia-economica}
@@ -93,7 +71,7 @@ ver la era reservada.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.93\textwidth]{assets/f08_cartera_influencia.png}
+  \includegraphics[width=0.93\textwidth]{figures/f07_cartera_influencia.png}
   \caption{Cuánto separa cada variable de cartera el Information Ratio mediano. Cada línea compara
   el mejor y el peor valor con las otras cinco variables variando libremente.}
   \label{fig:cartera-influencia}
@@ -105,15 +83,23 @@ es desigual. Las dos que gobiernan la exposición separan el Information Ratio d
 y el suelo de cobertura 0,076. Las dos restantes se mueven por debajo de 0,02: el reparto de pesos
 (0,005) y la tolerancia de deriva (0,017) son, a efectos del IR, prácticamente indiferentes.
 
-La tabla contiene además un argumento a favor del método. Si se eligiera cada variable por su mejor
-valor marginal se adoptarían un suelo de cobertura de 60 y un reparto equiponderado; la cartera
-ganadora usa suelo 0 y reparto proporcional al alfa. Es decir, \emph{optimizar variable a variable no
-habría encontrado la cartera ganadora}, que es exactamente la razón por la que esta búsqueda es
-cartesiana y no secuencial.
+Cada extremo de esas barras resume un \emph{conjunto} de carteras, no una cartera: al fijar una
+coordenada, las otras cinco siguen variando y lo que se compara son medianas de familias enteras.
+Un extremo alto significa que ese valor tiende a funcionar bien acompañado de casi cualquier cosa, no
+que baste con adoptarlo. La lectura correcta separa por tanto dos preguntas que una sola cifra
+confundiría: «este valor es mejor» y «esta variable cambia el resultado».
+
+De ahí sale un argumento a favor del método. Si se eligiera cada variable por su mejor valor
+marginal se adoptarían un suelo de cobertura de 60 y un reparto equiponderado; la cartera ganadora
+usa suelo 0 y reparto proporcional al alfa. Acompañado del resto de sus coordenadas, prescindir del
+filtro de cobertura funciona mejor, aunque promediando sobre todos los contextos ocurra lo
+contrario. Es decir, \emph{optimizar variable a variable no habría encontrado la cartera ganadora}:
+un ascenso por coordenadas habría fijado el suelo 60 en su paso y nunca habría vuelto sobre ello. Esa
+es exactamente la razón por la que esta búsqueda es cartesiana y no secuencial.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.94\textwidth]{assets/f08_cartera_rejilla.png}
+  \includegraphics[width=0.94\textwidth]{figures/f07_cartera_rejilla.png}
   \caption{Las carteras evaluadas en el plano rotación--Information Ratio. Cada punto es una cartera
   completa, con las seis coordenadas fijadas a la vez; el color codifica el tope de efectivo y el
   círculo negro señala la ganadora.}
@@ -124,20 +110,8 @@ La nube de la Figura~\ref{fig:cartera-rejilla} deja ver de entrada que el Inform
 una función de la rotación: para casi cualquier nivel de turnover existen carteras buenas y
 carteras mediocres, de modo que rotar poco no es en sí mismo una virtud ni rotar mucho un defecto.
 Lo que sí separa la nube con claridad es el tope de efectivo, cuya banda superior se agrupa en los
-topes bajos.
-
-El rango ordenado añade una lectura que la nube no da: las variables de exposición desplazan la
-mediana con claridad, mientras que la tolerancia de deriva y el reparto de pesos apenas la mueven.
-Así se distingue entre «este valor es mejor» y «esta variable cambia poco el resultado», sin obligar
-al lector a comparar seis boxplots pequeños.
-
-Cada caja resume un \emph{conjunto} de carteras, no una cartera: al fijar una coordenada las otras
-cinco siguen variando. Una mediana alta significa que ese valor tiende a funcionar bien acompañado
-de casi cualquier cosa, no que baste con adoptarlo. De ahí la aparente contradicción entre el
-suelo de cobertura 60 que maximiza la mediana y el suelo 0 de la ganadora: acompañado del resto de
-sus coordenadas, prescindir del filtro funciona mejor, aunque promediando sobre todos los contextos
-ocurra lo contrario. Un ascenso por coordenadas habría fijado 60 en su paso y nunca habría vuelto
-sobre ello.
+topes bajos. Las dos figuras son por tanto complementarias: la anterior dice qué regla importa, y
+ésta dónde cae la ganadora dentro de todo lo que era alcanzable.
 
 \section{La cartera ganadora}
 \label{sec:cartera-ganadora}
@@ -164,7 +138,7 @@ madurase. La Tabla~\ref{tab:cartera-ganadora} enfrenta las dos.
   \small
   \caption{La cartera ganadora frente a la cartera del modelo.}
   \label{tab:cartera-ganadora}
-  \input{assets/t08_cartera_ganadora.tex}
+  \input{tables/t07_cartera_ganadora.tex}
   \caption*{Las dos primeras columnas se miden sobre 2015--2024; la última, sobre la era reservada,
   que no intervino en la elección.}
 \end{table}
@@ -179,7 +153,7 @@ aparece en la última columna.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.92\textwidth]{assets/f09_seleccion_vs_reservada.png}
+  \includegraphics[width=0.92\textwidth]{figures/f07_seleccion_vs_reservada.png}
   \caption{Information Ratio dentro y fuera de la ventana de selección, pasada a pasada de la
   cadena, con la cartera por defecto del catálogo.}
   \label{fig:seleccion-vs-reservada}
@@ -231,7 +205,7 @@ pagada por una señal que necesita doce meses para expresarse.
   \small
   \caption{Las tres ventanas de evaluación, con su papel declarado.}
   \label{tab:tres-ventanas}
-  \input{assets/t07_selec_conf_full.tex}
+  \input{tables/t07_selec_conf_full.tex}
   \caption*{Cifras de la cartera adoptada, no de la que el catálogo recomienda. Selección: se
   tomaron decisiones sobre ella. Confirmación: reservada, ninguna decisión la utilizó. Curva
   completa: descriptiva, no probatoria.}
@@ -251,7 +225,7 @@ llegue a expresarse, y no debe compararse directamente con la de la ventana de s
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.91\textwidth]{assets/f07_equity_drawdown.png}
+  \includegraphics[width=0.91\textwidth]{figures/f07_equity_drawdown.png}
   \caption{Patrimonio y drawdown de la cartera ganadora frente a SPY. La región dorada es
   confirmación reservada, no selección.}
   \label{fig:equity-drawdown}
@@ -277,7 +251,7 @@ riesgo: es consecuencia de la señal, no de una política de exposición, que el
   \scriptsize
   \caption{Resultado anual de la cartera ganadora.}
   \label{tab:anual}
-  \input{assets/t07_anual.tex}
+  \input{tables/t07_anual.tex}
   \caption*{Turnover anualizado; efectivo medio.}
 \end{table}
 
@@ -317,7 +291,7 @@ por tanto una etiqueta de la configuración: se lee directamente en la vida de l
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{assets/f07_cartera_narrativa.png}
+  \includegraphics[width=\textwidth]{figures/f07_cartera_narrativa.png}
   \caption{Qué compró la cartera: contribución concentrada, episodios extremos y exposición
   sectorial. El sector es una foto actual y sólo tiene valor descriptivo.}
   \label{fig:cartera-narrativa}
@@ -346,7 +320,7 @@ lo que sugieren los diez años de serie.
   \small
   \caption{Las diez acciones más presentes en la cartera durante la ventana de selección.}
   \label{tab:cartera-relato}
-  \input{assets/t07_cartera_relato.tex}
+  \input{tables/t07_cartera_relato.tex}
   \caption*{«Episodios» cuenta las veces que la acción entró en cartera: dos episodios significan
   que se vendió y se recompró más tarde. La contribución neta es a la rentabilidad de la cartera,
   no a su exceso sobre el índice.}
@@ -393,8 +367,8 @@ Technology (21,6\,\% de peso medio), Retail (13,4\,\%) y Financial Services (11,
 amplio para una cartera de ocho nombres.
 
 En la era reservada el cuadro cambia por completo, y es el dato más incómodo de esta sección. Sólo
-nueve acciones distintas pasan por la cartera en los 18 \textit{snapshots}, ocho de ellas presentes
-en todos, y el peso se concentra en \textbf{dos sectores que suman dos tercios} --- Media el
+nueve acciones distintas pasan por la cartera en los 18 \textit{snapshots}, siete de ellas
+presentes en todos, y el peso se concentra en \textbf{dos sectores que suman dos tercios} --- Media el
 33,9\,\% y Financial Services el 33,0\,\% --- mientras Technology cae del 21,6 al 2,9\,\%. La
 concentración no es una decisión de exposición: es lo que ocurre cuando una serie de año y medio se
 combina con una tenencia mínima de doce meses, de modo que casi nada llega a rotar.
@@ -433,7 +407,7 @@ señal de doce. La Tabla~\ref{tab:ordenes} lo descompone por motivo declarado de
   \small
   \caption{Descomposición del flujo de cartera por motivo de orden.}
   \label{tab:ordenes}
-  \input{assets/t07_ordenes_motivo.tex}
+  \input{tables/t07_ordenes_motivo.tex}
   \caption*{Cubre la serie completa: 143 órdenes de la ventana de selección y 10 de la era
   reservada. El flujo es la suma de $|\Delta w|$ de cada orden y el coste agrega comisión y
   \textit{slippage} efectivamente cargados.}
@@ -482,7 +456,7 @@ las mejores combinaciones no son las más activas.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.94\textwidth]{assets/f07_alpha_turnover_anual.png}
+  \includegraphics[width=0.94\textwidth]{figures/f07_alpha_turnover_anual.png}
   \caption{Turnover y exceso anual frente a SPY. Los años 2025--2026 se distinguen porque son la
   era reservada y no participaron en la selección.}
   \label{fig:alpha-turnover-anual}
@@ -514,25 +488,32 @@ sabía.
 
 Declarar unos costes concretos invita a una objeción legítima: ¿se eligieron benévolos? La respuesta
 no puede ser una afirmación sino una medición, y consiste en subir el coste hasta que el exceso
-desaparezca. Con el coste adoptado --- 30 puntos básicos por operación entre comisión y
-\textit{slippage} ---, el exceso de la cartera sobre el índice no se agota hasta unos \textbf{295
-puntos básicos por operación}, es decir, cerca de diez veces lo que paga.
+desaparezca. Con el coste adoptado --- \CosteAdoptado{} puntos básicos por operación entre comisión y
+\textit{slippage} ---, el exceso de la cartera sobre el índice no se agota hasta unos
+\textbf{\CosteEquilibrio{} puntos básicos por operación}, es decir, \MargenCoste{} veces lo que
+paga.
 
 Ese cálculo resimula la cartera a cada nivel de coste, de modo que el gestor simulado opera menos a
-medida que operar se encarece. Si en cambio se congela la ruta de decisiones tomada con el coste
-real y sólo se recalcula la factura, el equilibrio sube a 447 puntos básicos: es la variante
-conservadora, porque obliga a pagar operaciones que un gestor racional no habría hecho a ese precio.
-Ambas cifras dicen lo mismo con distinto margen: el resultado no depende de haber supuesto costes
-optimistas. La Figura~\ref{fig:costes-escalera} permite ver tanto la caída lineal de la ruta
-congelada como la respuesta irregular de una cartera que vuelve a decidir en cada peldaño.
+medida que operar se encarece. Es la cifra que el texto cita porque es la \emph{menor} de las dos: si
+en cambio se congela la ruta de decisiones tomada con el coste real y sólo se recalcula la factura,
+el equilibrio sube a \CosteEquilibrioCongelado{} puntos básicos, \MargenCosteCongelado{} veces el
+coste adoptado. La
+Figura~\ref{fig:costes-escalera} muestra las dos familias.
 
-La ruta congelada decae linealmente al pagar más por las mismas operaciones. La resimulada es
-irregular porque el gestor opera menos a medida que el coste aumenta: cada escalón es otra cartera,
-no una versión encogida de la anterior.
+Conviene explicar por qué la ruta congelada aguanta \emph{más} y no menos, porque la intuición
+sugiere lo contrario. Cada peldaño de la curva resimulada es una cartera distinta: al cambiar el
+coste cambian los umbrales, cambian las órdenes y cambia la composición. Sólo una de esas carteras
+---la del coste adoptado--- fue elegida por la rejilla; las demás son configuraciones que nadie
+optimizó. De ahí que la resimulada llegue a quedar por debajo de la congelada incluso con coste cero
+(\ExcesoBrutoResimulado{} frente a \ExcesoBrutoCongelado{} de exceso geométrico) y que su curva sea
+irregular en vez de decreciente. No es que operar gratis empeore el resultado: es que la ruta de
+decisiones que produce el coste cero no es la que la rejilla seleccionó. La lectura defendible es por
+tanto la conservadora, y es la que el texto adopta: el margen es de \emph{al menos}
+\CosteEquilibrio{} puntos básicos por operación.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.94\textwidth]{assets/f07_costes_escalera.png}
+  \includegraphics[width=0.94\textwidth]{figures/f07_costes_escalera.png}
   \caption{Exceso geométrico frente al coste por operación en selección. Se muestran la ruta
   congelada y la cartera resimulada, el coste adoptado y sus puntos de equilibrio. La reserva no se
   mezcla con esta curva porque parte prácticamente sin margen.}
@@ -541,9 +522,13 @@ no una versión encogida de la anterior.
 
 Dos salvedades acotan la afirmación. La primera es que ese margen se mide sobre la ventana de
 selección, donde la cartera es la mejor de 1.440, de modo que el equilibrio hereda ese sesgo
-optimista. La segunda es más contundente y se reporta por serlo: \textbf{en la era reservada no
-existe equilibrio que calcular}, porque allí el exceso ya es prácticamente nulo con coste cero. No
-hay margen que agotar donde no hay margen.
+optimista. La segunda es más contundente y se reporta por serlo: \textbf{en la era reservada
+prácticamente no hay margen}. Con la ruta congelada, el exceso reservado a coste cero es de apenas
+\ExcesoBrutoReservado{} y se agota en \CosteEquilibrioReservado{} puntos básicos por operación
+---\MargenCosteReservado{} veces el coste adoptado, frente a las \MargenCosteCongelado{} de la
+ventana de selección---; y en la variante resimulada ni siquiera
+puede calcularse un equilibrio, porque a coste cero el exceso ya es negativo. Dicho de otro modo: el
+resultado reservado empata con el índice y no tiene holgura que gastar en fricción.
 
 \subsection*{Hasta qué patrimonio es ejecutable}
 \label{sec:capacidad}
@@ -561,7 +546,7 @@ concentración.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.94\textwidth]{assets/f07_capacidad.png}
+  \includegraphics[width=0.94\textwidth]{figures/f07_capacidad.png}
   \caption{Participación P95 sobre volumen diario frente al patrimonio, en escala logarítmica. Los
   umbrales del 5\,\% y 10\,\% se calculan sobre las 143 órdenes de selección; la reserva se excluye
   porque solo contiene diez órdenes.}
@@ -609,7 +594,7 @@ sus umbrales en puntos básicos decidirían sobre posiciones ajenas.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.96\textwidth]{assets/f07_perfiles_pesos.png}
+  \includegraphics[width=0.96\textwidth]{figures/f07_perfiles_pesos.png}
   \caption{Pesos firmados de los ocho perfiles. \texttt{balanced} conserva el meta puro; los pesos
   negativos de \texttt{momentum} y \texttt{contrarian} expresan una inclinación explícita en contra
   del agente correspondiente.}
@@ -624,7 +609,7 @@ seis cohortes reservadas daría una precisión aparente.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.98\textwidth]{assets/f07_perfiles_resultados.png}
+  \includegraphics[width=0.98\textwidth]{figures/f07_perfiles_resultados.png}
   \caption{Resultados informativos de los perfiles: exceso geométrico agregado en selección y
   reserva, y exceso anual frente a SPY. La separación de 2025--2026 recuerda que los perfiles no se
   seleccionaron y que la reserva contiene solo seis cohortes; la figura no constituye un ranking

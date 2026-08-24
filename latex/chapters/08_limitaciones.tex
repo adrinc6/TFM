@@ -11,7 +11,7 @@ severidad.
   \footnotesize
   \caption{Limitaciones, evidencia que las cuantifica y severidad asignada.}
   \label{tab:limitaciones}
-  \input{assets/t09_limitaciones.tex}
+  \input{tables/t08_limitaciones.tex}
   \caption*{La severidad es un juicio del autor sobre cuánto condiciona cada limitación las
   conclusiones, no una medida estadística.}
 \end{table}
@@ -105,11 +105,13 @@ point-in-time sería la prueba definitiva.
 
 Los costes son constantes, 10 pb de comisión y 20 pb de \textit{slippage}, y no modelan impacto de
 mercado, \textit{bid--ask} dinámico ni fiscalidad. La sensibilidad medida acota esta limitación
-mejor de lo que suele acotarse: el exceso de la cartera no se agota hasta unos 295 puntos básicos
-por operación, casi diez veces el coste adoptado, de modo que el resultado no depende de haber
-elegido una comisión benévola. Esa holgura, sin embargo, se calcula sobre la ventana de selección,
-donde la cartera es la mejor de la rejilla; en la era reservada el exceso ya es negativo con coste
-cero, así que allí no hay margen que agotar y la pregunta por los costes no llega a plantearse.
+mejor de lo que suele acotarse: el exceso de la cartera no se agota hasta unos \CosteEquilibrio{}
+puntos básicos por operación, \MargenCoste{} veces el coste adoptado, de modo que el resultado no
+depende de haber elegido una comisión benévola. Esa holgura, sin embargo, se calcula sobre la ventana
+de selección, donde la cartera es la mejor de la rejilla. En la era reservada se reduce a
+\CosteEquilibrioReservado{} puntos básicos con las decisiones congeladas y desaparece por completo al
+resimular la cartera, porque allí el resultado empata con el índice: no hay margen que gastar en
+fricción.
 
 El universo estadounidense de gran capitalización limita además la extrapolación a pequeñas
 empresas, otros países o regímenes de liquidez diferentes.

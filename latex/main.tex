@@ -5,9 +5,11 @@
 % XeLaTeX es UTF-8 nativo (NO se usa inputenc) y gestiona las fuentes con
 % fontspec. La bibliografía es autor-año escrita a mano, sin biblatex ni biber.
 %
-% Estructura y convenciones: ver latex/plan_tfm.md.
-% Cada capítulo es un fichero en assets/ que se incorpora con \input al final.
-% Capítulos, tablas y figuras conviven sueltos en assets/, sin subcarpetas.
+% Estructura, convenciones y compilación: ver latex/COMO_COMPILAR.md.
+% Para compilar: python latex/build.py
+% Los recursos se separan por tipo: chapters/ (un .tex por capítulo o anexo, escritos a
+% mano), figures/ (los PNG que genera el exportador) y tables/ (los cuerpos de tabla y
+% study_macros.tex, también generados). Cada uno se incorpora con su prefijo de carpeta.
 % =====================================================================
 \documentclass[11pt,a4paper]{report}
 
@@ -50,7 +52,7 @@
 \usepackage{pdflscape}   % el catálogo cerrado de 33 variables va apaisado
 \usepackage{enumitem}    % listas compactas en limitaciones y anexos
 \usepackage{tikz}
-\usetikzlibrary{arrows.meta,positioning,shapes.geometric}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,calc}
 \usepackage{siunitx}
 \sisetup{output-decimal-marker={,},group-separator={.},group-minimum-digits=4}
 
@@ -58,7 +60,7 @@
 \usepackage{csquotes}   % lo usa babel para las comillas españolas
 % NO se usa biblatex ni biber: la cadena biblatex+biber impedía compilar el
 % documento. Con quince referencias, la bibliografía se escribe a mano como un
-% capítulo más (assets/10_bibliografia.tex) y las citas del texto son autor-año
+% capítulo más (chapters/10_bibliografia.tex) y las citas del texto son autor-año
 % en texto plano: «Autor (año)» o «(Autor, año)». El proyecto no contiene
 % ningún fichero .bib ni lo necesita.
 
@@ -86,11 +88,11 @@
 \newcommand{\artefacto}[1]{\texttt{#1}}
 % Cifras compartidas por memoria y defensa. Este fichero lo genera el exportador directamente a
 % partir de los cuatro estudios adoptados y su auditoría detecta cualquier transcripción manual.
-\input{assets/study_macros.tex}
+\input{tables/study_macros.tex}
 
 % --- Metadatos -------------------------------------------------------
 % Portada provisional. Sustituir por la portada oficial del máster cuando
-% se decida (queda pendiente en latex/plan_tfm.md).
+% se decida (queda pendiente en latex/COMO_COMPILAR.md, sección 7).
 \title{Aprendizaje automático aplicado a la selección de acciones:\\
        medición honesta del aprendizaje fuera de muestra}
 \author{Adrián Núñez}
@@ -101,30 +103,30 @@
 
 \maketitle
 
-\input{assets/00_resumen}
+\input{chapters/00_resumen}
 
 \tableofcontents
 \listoffigures
 \listoftables
-\input{assets/00_glosario}
+\input{chapters/00_glosario}
 
 % Orden narrativo: problema -> datos observables -> sistema -> protocolo -> resultados
 % predictivos -> resultados economicos -> limites -> conclusion. La historia del desarrollo
 % se recoge integra en el Anexo D para no interrumpir ese hilo.
-\input{assets/01_introduccion}
-\input{assets/02_estado_del_arte}
-\input{assets/03_datos_y_universo}
-\input{assets/04_agentes_y_meta_agente}
-\input{assets/05_protocolo_experimental}
-\input{assets/06_resultados_predictivos}
-\input{assets/07_resultados_economicos}
-\input{assets/08_limitaciones}
-\input{assets/09_conclusiones}
-\input{assets/10_bibliografia}
+\input{chapters/01_introduccion}
+\input{chapters/02_estado_del_arte}
+\input{chapters/03_datos_y_universo}
+\input{chapters/04_agentes_y_meta_agente}
+\input{chapters/05_protocolo_experimental}
+\input{chapters/06_resultados_predictivos}
+\input{chapters/07_resultados_economicos}
+\input{chapters/08_limitaciones}
+\input{chapters/09_conclusiones}
+\input{chapters/10_bibliografia}
 
 \appendix
-\input{assets/a_reproducibilidad}
-\input{assets/b_catalogo_protocolo}
-\input{assets/d_auditoria_desarrollo}
+\input{chapters/a_reproducibilidad}
+\input{chapters/b_catalogo_protocolo}
+\input{chapters/d_auditoria_desarrollo}
 
 \end{document}

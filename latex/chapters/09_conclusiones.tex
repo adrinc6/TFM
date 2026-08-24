@@ -31,7 +31,14 @@ histórico está más completo contradice una explicación simple y monotónica 
 cobertura temprana. No descarta que la disponibilidad del proveedor influya por otras vías. Por eso
 la cobertura sigue siendo una amenaza alta y la réplica con otra fuente es trabajo futuro.
 
-\section{Objetivo 2a: sensibilidad a la construcción de cartera}
+\section{Objetivo 2: cobrar el orden frente al mercado}
+
+El segundo objetivo se juzga contra un listón relativo y de suma cero, no absoluto, y la respuesta
+llega en dos mitades que conviene no fundir: las reglas de cartera sí alteran materialmente el
+resultado, y la cartera elegida deja de perder frente al índice en la era reservada sin llegar a
+superarlo con holgura.
+
+\subsection*{2a: sensibilidad a la construcción de cartera}
 
 Este subobjetivo queda respaldado por la rejilla completa. Manteniendo fijos modelo, señal, datos y
 ventana, \NumCarteras{} combinaciones producen diferencias amplias de Information Ratio. El número
@@ -49,7 +56,7 @@ La magnitud de \IRCartera{} no debe aislarse de cómo fue obtenida. Es la mejor 
 por tanto, una cota superior optimista. El hallazgo robusto del Objetivo 2a es la dispersión entre
 políticas y el orden de importancia de las reglas, no el nivel exacto de la ganadora.
 
-\section{Objetivo 2b: comportamiento en la era reservada}
+\subsection*{2b: comportamiento en la era reservada}
 
 La comparación reservada es alentadora, pero preliminar. Con la cartera original, la señal produce
 un exceso de \ExcesoModeloReservado{} e IR \IRModeloReservado{}. Con la política optimizada, sin
@@ -66,6 +73,13 @@ una ventaja sostenida.
 La formulación final distingue así dos afirmaciones. Está demostrado que las reglas de cartera
 alteran materialmente el resultado de selección. Está sugerido, pero no confirmado, que la política
 elegida traduzca mejor la señal en una ventana nueva.
+
+Sobre el objetivo tal como se enunció ---batir al índice--- la respuesta defendible es, por tanto,
+negativa en su versión fuerte y afirmativa sólo en una versión débil: el sistema no demuestra
+superar al mercado fuera de la ventana en la que se eligieron sus reglas, pero sí demuestra que
+llegar a esa frontera dependía de la implementación tanto como del modelo. En un juego de suma cero,
+pasar de destruir valor a empatar con el índice sin reentrenar nada es un resultado sobre dónde
+estaba el cuello de botella, no una demostración de ventaja competitiva.
 
 \section{Contribución defendible}
 

@@ -1,0 +1,67 @@
+\chapter*{Resumen}
+\addcontentsline{toc}{chapter}{Resumen}
+
+Este Trabajo Fin de Máster estudia dos preguntas que conviene separar. La primera es si un sistema
+de aprendizaje automático formado por cinco agentes especializados puede ordenar acciones de mejor a
+peor y conservar esa capacidad fuera de muestra. La segunda es si esa ordenación puede cobrarse
+frente al índice ---un objetivo de suma cero antes de costes, en el que la mayoría de los fondos
+profesionales fracasa--- y cuánto depende esa respuesta de las reglas que convierten el orden en una
+cartera. El sistema trabaja con un universo histórico del S\&P 500, fundamentales fechados por su
+publicación y cohortes cerradas. Tres Model Studies encadenados seleccionan el modelo exclusivamente
+por Rank-IC; después, con la señal congelada, un Portfolio Study compara \NumCarteras{}
+configuraciones mediante Information Ratio.
+
+En 2015--2024, el ganador alcanza un Rank-IC medio de \RankICSeleccion{} sobre
+\CohortesSeleccion{} cohortes, con \FraccionICPositiva{} positivas, $t$ de Newey--West
+\TNeweyWest{} y $p=\PValorPermutacion{}$ en \NumPermutaciones{} permutaciones. La era reservada
+2025--2026 mantiene Rank-IC positivo (\RankICReservado{}), pero solo contiene
+\CohortesReservadas{} cohortes. Además, el agente \texttt{risk} supera ligeramente al meta-agente,
+por lo que la evidencia favorece la capacidad de ordenación, pero no demuestra que la arquitectura
+multiagente sea necesaria.
+
+La respuesta a la segunda pregunta resulta depender de la cartera hasta cambiar de signo. En
+selección, el Information Ratio pasa de \IRModelo{} a \IRCartera{} y la rotación baja de
+\TurnoverModelo{} a \TurnoverCartera{} veces al año. En la era reservada, la misma señal congelada
+pasa de un exceso de \ExcesoModeloReservado{} con la cartera original a \ExcesoCarteraReservado{}
+con la optimizada: de destruir valor a igualar al índice. Ese cambio de signo es alentador, pero no
+confirma que el sistema bata al mercado: la cartera es la mejor de \NumCarteras{} alternativas y la
+confirmación cubre solo \AnosCarteraReservada{} años. La contribución principal es, por tanto,
+metodológica: una señal predictiva y su implementación económica deben evaluarse por separado y toda
+conclusión práctica debe declarar la cartera con la que se midió.
+
+\noindent\textbf{Palabras clave:} aprendizaje automático, selección de acciones, Rank-IC,
+\textit{point-in-time}, construcción de cartera, validación fuera de muestra.
+
+\clearpage
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+This Master's Thesis addresses two questions that should not be conflated. First, can a machine
+learning system built from five specialised agents rank equities and preserve that ability out of
+sample? Second, can that ranking actually be monetised against the index ---a zero-sum objective
+before costs, at which most professional funds fail--- and how strongly does the answer depend on the
+rules that translate the ranking into a portfolio? The system uses a historical S\&P 500 universe,
+filing-dated fundamentals, and closed cohorts. Three chained Model Studies select the predictive
+model exclusively through Rank-IC. Once the signal is frozen, a Portfolio Study compares
+\NumCarteras{} portfolio configurations using the Information Ratio.
+
+Over 2015--2024, the selected model obtains a mean Rank-IC of \RankICSeleccion{} across
+\CohortesSeleccion{} cohorts, with a Newey--West statistic of \TNeweyWest{} and a permutation
+$p$-value of \PValorPermutacion{}. The reserved 2025--2026 period remains positive
+(\RankICReservado{}), but contains only \CohortesReservadas{} closed cohorts. The standalone
+\texttt{risk} specialist also ranks slightly better than the meta-agent, so the evidence supports
+predictive ranking ability without establishing that the multi-agent architecture is necessary.
+
+The answer to the second question turns out to depend on the portfolio to the point of changing
+sign. In the selection window, the Information Ratio rises from \IRModelo{} to \IRCartera{} while
+annual turnover falls from \TurnoverModelo{} to \TurnoverCartera{}. In the reserved period, the same
+frozen signal moves from \ExcesoModeloReservado{} excess return under the original portfolio to
+\ExcesoCarteraReservado{} under the selected one: from destroying value to matching the index. The
+sign reversal is encouraging but does not establish that the system beats the market: the portfolio
+is the best of \NumCarteras{} alternatives and the reserved evaluation spans only
+\AnosCarteraReservada{} years. The main contribution is therefore methodological: predictive ranking
+and economic implementation must be evaluated separately, and any practical claim must state the
+portfolio through which the signal was measured.
+
+\noindent\textbf{Keywords:} machine learning, equity selection, Rank-IC, point-in-time data,
+portfolio construction, out-of-sample validation.

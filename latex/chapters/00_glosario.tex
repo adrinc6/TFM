@@ -12,22 +12,38 @@ glosario fija su significado antes de utilizarlos y evita redefinirlos en capít
   independientes.
   \item[Benchmark] Referencia contra la que se mide la cartera. SPY se usa como representación
   invertible del S\&P 500, pero nunca puede ser una posición de la estrategia.
+  \item[Bootstrap por bloques] Remuestreo que conserva tramos consecutivos de cohortes en lugar de
+  extraerlas una a una. Con etiquetas solapadas a doce meses, romper esa dependencia produciría
+  intervalos artificialmente estrechos.
+  \item[Coeficiente de transferencia] Fracción de la señal disponible que llega efectivamente a la
+  cartera. Es el término de la ley fundamental de la gestión activa que las restricciones
+  \textit{long-only}, la concentración y los costes reducen.
   \item[CAGR] Tasa de crecimiento anual compuesta. Resume el crecimiento geométrico del patrimonio
   y no informa por sí sola de su volatilidad ni de su recorrido.
   \item[Cohorte] Sección transversal de acciones puntuada en una misma fecha y evaluada contra el
-  retorno que se realiza al final del horizonte declarado.
+  retorno que se realiza al final del horizonte declarado. Está \emph{cerrada} cuando ese horizonte
+  ya ha transcurrido y su retorno es observable; solo entonces puede entrar en un entrenamiento o en
+  un diagnóstico.
   \item[DSR] \textit{Deflated Sharpe Ratio}. Probabilidad de que el Sharpe observado supere lo
   esperable por azar después de considerar multiplicidad, asimetría y curtosis.
   \item[Drawdown] Caída desde un máximo previo del patrimonio. El máximo drawdown es la peor de esas
   pérdidas durante una ventana.
+  \item[Empate técnico] Situación en la que dos alternativas difieren menos de 0,002 en ventaja
+  pareada. La regla declarada de antemano la resuelve por simplicidad, no por magnitud, de modo que
+  su resultado no debe presentarse como un hallazgo empírico.
   \item[HHI] Índice de Herfindahl--Hirschman aplicado a los pesos de cartera. Aumenta cuando el
   patrimonio se concentra en menos posiciones.
   \item[IC-IR] Media temporal del Rank-IC dividida por su desviación estándar. Mide estabilidad de
   la capacidad de ordenar, no rentabilidad de cartera.
   \item[Information Ratio (IR)] Media del exceso de retorno dividida por su volatilidad. A
   diferencia del IC-IR, pertenece a la capa económica y depende de la cartera.
+  \item[No inferioridad] Puerta alternativa a la dominancia: un candidato es admisible si el límite
+  inferior de su intervalo \textit{bootstrap} pareado al 90\,\% supera el margen declarado. Prueba
+  que no es peor, no que sea mejor.
   \item[OOS] \textit{Out of sample}. Observaciones posteriores a las usadas para ajustar el modelo.
   En esta memoria también se distingue dentro de OOS entre selección y reserva.
+  \item[Placebo de etiqueta] Ejecución completa del sistema con el retorno futuro barajado dentro de
+  cada cohorte. Si la maquinaria fabricase señal por sí misma, el placebo la mostraría.
   \item[P95] Percentil 95. En capacidad es la participación sobre volumen que no supera el 95\,\%
   de las órdenes; evita que un único extremo gobierne la estimación.
   \item[PIT] \textit{Point in time}. Información asociada a la fecha en que era observable, no a
@@ -40,8 +56,14 @@ glosario fija su significado antes de utilizarlos y evita redefinirlos en capít
   comisión para calcular el coste de una operación.
   \item[Snapshot] Fecha en la que el sistema reconstruye el universo observable, emite rankings y
   decide la cartera.
+  \item[Suma cero] Propiedad aritmética del problema de batir a un índice: antes de costes, el
+  conjunto de la gestión activa obtiene exactamente el rendimiento del mercado, de modo que el
+  exceso de un participante es el defecto de otro.
   \item[Turnover] Suma anualizada de cambios absolutos de peso. Una cifra de 1,35 equivale a mover
   nocionalmente un 135\,\% del patrimonio en un año, no a cerrar la cartera 1,35 veces.
+  \item[Ventila] Cada uno de los veinte tramos en que se divide una cohorte ordenada por
+  \texttt{meta\_rank}. Son la unidad sobre la que se estima la curva que traduce rango en alfa
+  esperada.
   \item[Ventana de selección] Cohortes de 2015--2024 sobre las que se comparan configuraciones. La
   era reservada queda fuera de todas esas decisiones.
   \item[Walk-forward] Esquema que avanza cronológicamente: ajusta con historia disponible, predice

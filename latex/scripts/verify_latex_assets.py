@@ -14,19 +14,24 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 LATEX = ROOT / "latex"
-ASSETS = LATEX / "assets"
+# El proyecto separa por tipo: los capítulos y anexos en chapters/, los PNG en figures/ y los
+# cuerpos de tabla —más study_macros.tex, que genera el mismo exportador— en tables/. Cada uno de
+# los tres directorios tiene su propia regla de comprobación más abajo.
+CHAPTERS = LATEX / "chapters"
+FIGURES = LATEX / "figures"
+TABLES = LATEX / "tables"
 # Documentos maestros: la memoria y la presentación de defensa. Ambos viven en
-# latex/ y comparten las figuras de assets/, así que se validan igual.
+# latex/ y comparten las figuras de figures/, así que se validan igual.
 MAESTROS = ("main.tex", "presentacion.tex")
 INCLUDE = re.compile(r"\\includegraphics(?:\[[^]]*\])?\{([^}]+)\}")
-TABLE = re.compile(r"\\input\{(assets/t[^}]+\.tex)\}")
-CHAPTER = re.compile(r"\\input\{(assets/[^}]+)\}")
+TABLE = re.compile(r"\\input\{(tables/[^}]+\.tex)\}")
+CHAPTER = re.compile(r"\\input\{(chapters/[^}]+)\}")
 # El documento no usa biblatex: la bibliografía es un capítulo manual. Si
 # reaparece cualquiera de estos comandos, la compilación vuelve a romperse.
 BIB_COMMAND = re.compile(r"\\(?:textcite|parencite|autocite|cite|printbibliography|addbibresource)\b")
 LABEL = re.compile(r"\\label\{([^}]+)\}")
 REF = re.compile(r"\\(?:ref|eqref|autoref)\{([^}]+)\}")
-MOJIBAKE = ("Ã", "Â", "�")
+MOJIBAKE = ("Ã", "Â", "\ufffd")
 
 
 def fail(message: str, errors: list[str]) -> None:
@@ -35,13 +40,12 @@ def fail(message: str, errors: list[str]) -> None:
 
 def main() -> int:
     errors: list[str] = []
-    # Capítulos, tablas y figuras conviven sueltos en assets/, sin subcarpetas
-    # dentro de assets/. Los documentos maestros viven un nivel por encima, en
-    # latex/, así que todo \input y \includegraphics debe llevar el prefijo
-    # "assets/". La presentación se coloca junto a main.tex precisamente para
-    # poder reutilizar esas mismas rutas sin duplicar ninguna figura.
+    # Los documentos maestros viven en latex/ y los recursos un nivel por debajo, así que toda
+    # ruta debe llevar su prefijo de carpeta: chapters/, figures/ o tables/. La presentación se
+    # coloca junto a main.tex precisamente para poder reutilizar esas mismas rutas sin duplicar
+    # ninguna figura.
     tex_files = [LATEX / nombre for nombre in MAESTROS if (LATEX / nombre).is_file()]
-    tex_files.extend(sorted(ASSETS.glob("*.tex")))
+    tex_files.extend(sorted(CHAPTERS.glob("*.tex")))
     used_graphics: set[str] = set()
     used_tables: set[str] = set()
     labels: set[str] = set()
@@ -58,8 +62,8 @@ def main() -> int:
             )
         for graphic in INCLUDE.findall(content):
             used_graphics.add(graphic)
-            if not graphic.startswith("assets/"):
-                fail(f"Ruta de figura sin prefijo assets/ en {path.name}: {graphic}", errors)
+            if not graphic.startswith("figures/"):
+                fail(f"Ruta de figura sin prefijo figures/ en {path.name}: {graphic}", errors)
             if Path(graphic).is_absolute() or ":" in graphic:
                 fail(f"Ruta absoluta de figura en {path.name}: {graphic}", errors)
             if not (LATEX / graphic).is_file():
@@ -76,7 +80,10 @@ def main() -> int:
                 fail(f"Capítulo inexistente: {chapter}", errors)
         references.extend((path.name, key) for key in REF.findall(content))
 
-    for path in tex_files:
+    # Los cuerpos de longtable traen su propio caption y su propio label, porque longtable no
+    # puede ir dentro de un entorno table flotante. Sin mirar tables/, esas etiquetas
+    # parecerian inexistentes y toda referencia cruzada a ellas se marcaria como rota.
+    for path in [*tex_files, *sorted(TABLES.glob("*.tex"))]:
         labels.update(LABEL.findall(path.read_text(encoding="utf-8")))
 
     # Una \ref sin \label compila pero imprime «??» en el PDF. Sin compilador
@@ -85,15 +92,26 @@ def main() -> int:
         if key not in labels:
             fail(f"Referencia sin destino en {origin}: \\ref{{{key}}}", errors)
 
-    # Activos generados pero no insertados en ningún capítulo.
-    for figure in sorted(ASSETS.glob("f*.png")):
-        if f"assets/{figure.name}" not in used_graphics:
+    # Activos generados pero no insertados en ningún capítulo. `study_macros.tex` es la excepción
+    # declarada: lo consumen main.tex y presentacion.tex directamente, no un capítulo.
+    for figure in sorted(FIGURES.glob("*.png")):
+        if f"figures/{figure.name}" not in used_graphics:
             fail(f"Figura huérfana (generada pero no insertada): {figure.name}", errors)
-    for table in sorted(ASSETS.glob("t*.tex")):
-        if f"assets/{table.name}" not in used_tables:
+    for table in sorted(TABLES.glob("*.tex")):
+        if table.name == "study_macros.tex":
+            continue
+        if f"tables/{table.name}" not in used_tables:
             fail(f"Tabla huérfana (generada pero no insertada): {table.name}", errors)
 
-    pdfs = list(ASSETS.glob("*.pdf"))
+    # Cada carpeta admite un solo tipo de fichero: es lo que hace que el árbol se explique solo.
+    for figure in sorted(FIGURES.iterdir()):
+        if figure.is_file() and figure.suffix != ".png":
+            fail(f"figures/ solo admite PNG: {figure.name}", errors)
+    for table in sorted(TABLES.iterdir()):
+        if table.is_file() and table.suffix != ".tex":
+            fail(f"tables/ solo admite .tex: {table.name}", errors)
+
+    pdfs = list(FIGURES.glob("*.pdf"))
     if pdfs:
         fail("Hay figuras PDF: " + ", ".join(path.name for path in pdfs), errors)
     if errors:

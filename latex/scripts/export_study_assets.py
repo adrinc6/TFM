@@ -28,6 +28,7 @@ from pathlib import Path
 
 import matplotlib as mpl
 mpl.use("Agg")
+import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -118,8 +119,14 @@ def num(value: float | None, digits: int = 4) -> str:
 
 
 def integer(value: int | float) -> str:
-    """Entero con separador de millares español, apto para texto LaTeX."""
-    return f"{int(value):,}".replace(",", ".")
+    """Entero con separador de millares español, apto para texto LaTeX.
+
+    Redondea en vez de truncar: los recuentos ya son enteros y no cambian, pero una magnitud
+    continua como el equilibrio de costes (294,79 pb) se imprimía como 294 mientras el texto la
+    citaba como 295, y esa discrepancia de una unidad entre macro y prosa es exactamente la clase de
+    desajuste que la auditoría no puede detectar.
+    """
+    return f"{round(float(value)):,}".replace(",", ".")
 
 
 def macro_content(values: dict[str, str]) -> str:
@@ -183,9 +190,14 @@ def load_paths(study_id: str) -> Paths:
     evidence = study / "evidence"
     if not (study / "winner.json").is_file() or not evidence.is_dir():
         raise FileNotFoundError(f"No se encontraron artefactos completos para {study_id}.")
-    assets = LATEX / "assets"
-    assets.mkdir(parents=True, exist_ok=True)
-    return Paths(study, evidence, assets, assets)
+    # El proyecto separa los activos por tipo: los PNG en figures/ y los cuerpos de tabla —junto
+    # con study_macros.tex, que sale del mismo paso— en tables/. Los capítulos viven en chapters/
+    # y no los genera este script.
+    figures = LATEX / "figures"
+    tables = LATEX / "tables"
+    for carpeta in (figures, tables):
+        carpeta.mkdir(parents=True, exist_ok=True)
+    return Paths(study, evidence, figures, tables)
 
 
 def load_chain(study_ids: list[str]) -> pd.DataFrame:
@@ -341,7 +353,7 @@ def write_tables_predictive(paths: Paths, diag: pd.DataFrame, features: pd.DataF
         [tex(str(name).replace("_", " "))] + [num(matrix.loc[name, era]) for era in matrix.columns]
         for name in matrix.index
     ]
-    table(paths.tables / "t05_rankic_era.tex", ["Señal"] + list(matrix.columns), rows)
+    table(paths.tables / "t06_rankic_era.tex", ["Señal"] + list(matrix.columns), rows)
 
     # El agregado por bloque se retiró del manuscrito: repetía el argumento de la
     # tabla de extremos —los Rank-IC univariantes son diminutos— y obligaba a tres
@@ -601,21 +613,36 @@ def draw_attribution_by_year(summary: dict[str, pd.DataFrame], agent: str, outpu
     frame = summary["by_year"]
     frame = frame[frame["agent"] == agent]
     pivot = frame.pivot_table(index="year", columns="feature", values="size", aggfunc="sum").fillna(0)
-    pivot = pivot.loc[:, pivot.sum().nlargest(top).index]
-    shares = pivot.div(pivot.sum(axis=1).where(lambda total: total > 0), axis=0).fillna(0)
+    # La base es el total de observaciones del agente en el año, no la suma de las cuatro variables
+    # mostradas. Normalizar sobre el subconjunto inflaba las cuotas y hacía que la figura y el texto
+    # hablasen de porcentajes distintos con el mismo nombre.
+    totals = pivot.sum(axis=1)
+    leaders = pivot.sum().nlargest(top).index
+    shares = pivot.loc[:, leaders].div(totals.where(lambda total: total > 0), axis=0).fillna(0)
+    shares["otras"] = (1 - shares.sum(axis=1)).clip(lower=0)
     fig, ax = plt.subplots(figsize=(7.2, 3.6))
+    labels = shares.index.astype(str)
     bottom = np.zeros(len(shares))
-    for column, color in zip(shares.columns, [NAVY, TEAL, GOLD, RED, GREEN]):
+    for column, color in zip(shares.columns, [NAVY, TEAL, GOLD, RED, GREEN, SLATE]):
         values = shares[column].to_numpy()
-        ax.bar(shares.index.astype(str), values, bottom=bottom, color=color,
+        ax.bar(labels, values, bottom=bottom, color=color,
                label=column.replace("factor_", "").replace("_", " "))
         bottom += values
+    # La era reservada se marca igual que en el resto del capítulo, para que no se lea como una
+    # continuación de la ventana de selección.
+    reserved = [position for position, year in enumerate(shares.index) if int(year) >= 2025]
+    if reserved:
+        separator = min(reserved) - 0.5
+        ax.axvline(separator, color=GOLD, linewidth=2.2, zorder=5)
+        ax.text(separator + 0.12, 1.02, "reserva", ha="left", va="bottom",
+                fontsize=8, color=GOLD, fontweight="bold")
     ax.set(
         title=f"Qué variable encabeza la atribución de {agent}, año a año",
         ylabel="Cuota de las observaciones del año",
+        ylim=(0, 1),
     )
     ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter(1, decimals=0))
-    legend_below(ax, 2, anchor=-0.20)
+    legend_below(ax, 3, anchor=-0.20)
     save(fig, output)
 
 
@@ -645,7 +672,7 @@ def write_tables_attribution(paths: Paths, summary: dict[str, pd.DataFrame], top
                 str(int(vocab.iloc[0])) if position == 0 and len(vocab) else "",
             ])
     table(
-        paths.tables / "t05_atribucion.tex",
+        paths.tables / "t06_atribucion.tex",
         ["Agente", "Variable", "Contrib. media", "Encabeza", "Variables distintas"],
         rows,
         "llrrr",
@@ -1050,7 +1077,7 @@ def write_feature_dictionary(paths: Paths, features: pd.DataFrame) -> None:
         rows,
         "Diccionario completo de las 68 variables declaradas.",
         "tab:diccionario-features",
-        r"p{4.0cm}p{1.7cm}p{3.0cm}p{2.0cm}rrr",
+        r"p{5.2cm}p{2.4cm}p{2.6cm}p{1.8cm}rrr",
     )
 
 
@@ -1082,6 +1109,7 @@ def draw_alpha_turnover_annual(annual: pd.DataFrame, output: Path) -> None:
 def draw_cost_ladder(cost: dict, output: Path) -> None:
     """Exceso geométrico de selección al variar el coste por operación."""
     fig, ax = plt.subplots(figsize=(7.2, 4.0))
+    max_cost = float(max(cost["ladder_bps"]))
     styles = (("frozen_path", "Ruta congelada", NAVY, "o"),
               ("resimulated", "Cartera resimulada", TEAL, "s"))
     for key, label, color, marker in styles:
@@ -1092,8 +1120,15 @@ def draw_cost_ladder(cost: dict, output: Path) -> None:
         if point.get("available"):
             x = float(point["bps_per_trade"])
             ax.scatter([x], [0], color=color, s=35, zorder=5)
-            ax.annotate(f"Equilibrio {x:.0f} pb", (x, 0), xytext=(0, 10),
-                        textcoords="offset points", ha="center", fontsize=7.3, color=color)
+            # Una etiqueta por encima y otra por debajo del eje, alineadas hacia dentro cuando el
+            # equilibrio cae cerca del extremo derecho: si no, «Equilibrio 447 pb» se sale del lienzo.
+            dy = 26 if key == "resimulated" else -30
+            ha = "right" if x > 0.78 * max_cost else "center"
+            ax.annotate(f"Equilibrio {x:.0f} pb", (x, 0), xytext=(0, dy),
+                        textcoords="offset points", ha=ha, fontsize=7.3, color=color,
+                        bbox=dict(facecolor="white", edgecolor=color, linewidth=0.6,
+                                  boxstyle="round,pad=0.25", alpha=0.92))
+    ax.set_xlim(-max_cost * 0.04, max_cost * 1.06)
     adopted = float(cost["adopted_cost_bps"])
     ax.axvline(adopted, color=GOLD, linewidth=1.3, linestyle="--", label=f"Coste adoptado: {adopted:.0f} pb")
     ax.axhline(0, color=SLATE, linewidth=0.9)
@@ -1200,7 +1235,7 @@ def draw_profile_results(profiles: pd.DataFrame, annual_by_profile: dict[str, pd
         "alpha", [RED, "#F7F7F7", TEAL]), vmin=-limit, vmax=limit, aspect="auto")
     right.set(title="Exceso anual frente a SPY", xticks=np.arange(len(years)), yticks=np.arange(len(order)))
     right.set_xticklabels(years, rotation=45, ha="right", fontsize=7)
-    right.set_yticklabels([])
+    right.set_yticklabels(order, fontsize=7)
     separator = years.index(2025) - 0.5
     right.axvline(separator, color=GOLD, linewidth=2)
     right.text(separator + 0.15, -0.7, "reserva", color=GOLD, fontsize=7.2, fontweight="bold")
@@ -1406,7 +1441,14 @@ def draw_portfolio_narrative(narrative: dict, output: Path) -> None:
         row["sector"]: row["mean_portfolio_weight"]
         for row in confirmation["sector_exposure"]["sectors"]
     }
-    sectors = sorted(selection_sector, key=selection_sector.get, reverse=True)[:6]
+    # Los sectores se ordenan por el mayor de los dos pesos, no solo por el de selección: con el
+    # criterio anterior «Media», que es el primer sector de la era reservada con un 33,9 %, no
+    # llegaba a aparecer en la figura que el texto cita para justamente esa afirmación.
+    weight = {
+        name: max(selection_sector.get(name, 0.0), confirmation_sector.get(name, 0.0))
+        for name in set(selection_sector) | set(confirmation_sector)
+    }
+    sectors = sorted(weight, key=weight.get, reverse=True)[:6]
     sectors.reverse()
 
     fig, axes = plt.subplots(1, 3, figsize=(10.2, 3.7))
@@ -1431,6 +1473,10 @@ def draw_portfolio_narrative(narrative: dict, output: Path) -> None:
     ax.set_yticks(positions)
     ax.set_yticklabels([row["ticker"] for row in trips])
     ax.set_title("Episodios extremos")
+    # Una marca cada dos años: con una por año las etiquetas se solapaban hasta ser ilegibles.
+    ax.xaxis.set_major_locator(mdates.YearLocator(2))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+    ax.tick_params(axis="x", labelsize=7.5)
     ax.grid(axis="y", visible=False)
 
     ax = axes[2]
@@ -1534,7 +1580,7 @@ def write_tables_portfolio_study(paths: Paths, portfolio: dict, baseline: dict) 
         ],
     ]
     table(
-        paths.tables / "t08_cartera_ganadora.tex",
+        paths.tables / "t07_cartera_ganadora.tex",
         ["Métrica", "Cartera del modelo", "Cartera ganadora", "Diferencia", "Era reservada"],
         metric_rows,
         "lrrrr",
@@ -1557,7 +1603,7 @@ def write_tables_catalog(paths: Paths, catalog: dict, winner: dict, decisions: d
             ]
         )
     longtable(
-        paths.tables / "t06_catalogo.tex",
+        paths.tables / "tB_catalogo.tex",
         ["Variable", "Etapa", "Predictiva", "Valores del catálogo", "Ganador"],
         rows,
         "Catálogo cerrado completo: las 33 variables, su rejilla y el valor del ganador.",
@@ -1566,6 +1612,45 @@ def write_tables_catalog(paths: Paths, catalog: dict, winner: dict, decisions: d
         # conserva el valor del formato vertical: hay que usar \linewidth para
         # aprovechar el ancho real de la página girada.
         "lllp{0.34\\linewidth}l",
+    )
+
+
+def write_tables_winner(paths: Paths, catalog: dict, winner: dict) -> None:
+    """La configuración predictiva ganadora, entera y en una sola tabla.
+
+    El anexo del catálogo ya la contiene, pero mezclada con la rejilla completa y en una página
+    apaisada: el lector del capítulo de resultados tenía que saltar al final del documento para
+    saber con qué configuración se obtuvieron las cifras que está leyendo. Aquí van solo las
+    veintiuna variables predictivas y su valor final, en dos bloques para que quepan sin partir la
+    página. Las de cartera se omiten a propósito: en esta fase conservaban el valor por defecto y no
+    son las que el trabajo adopta.
+    """
+    configuration = winner["configuration"]
+    stage_labels = {stage["id"]: stage["label"] for stage in catalog["stages"]}
+    # Se ordena por etapa y no por el campo `order` global: el protocolo se recorre por fases, y
+    # agrupar las variables como se decidieron es lo que permite leer la tabla de un vistazo.
+    stage_rank = {stage: index for index, stage in enumerate(catalog["stage_order"])}
+    predictive = sorted(
+        (variable for variable in catalog["variables"] if variable["predictive"]),
+        key=lambda item: (stage_rank.get(item["stage"], 99), item["order"], item["id"]),
+    )
+    entries = [
+        (
+            stage_labels.get(variable["stage"], variable["stage"]),
+            tex(variable["id"]),
+            tex(tex_free(configuration.get(variable["id"], "—"))),
+        )
+        for variable in predictive
+    ]
+    rows = []
+    for index, (stage, name, value) in enumerate(entries):
+        previous = entries[index - 1][0] if index else None
+        rows.append([stage if stage != previous else "", name, value])
+    table(
+        paths.tables / "t06_ganador.tex",
+        ["Etapa del protocolo", "Variable", "Valor del ganador"],
+        rows,
+        "lll",
     )
 
 
@@ -1722,7 +1807,7 @@ def draw_bootstrap_forest(robustness: dict, output: Path) -> None:
 def build_robustness_rows(robustness: dict, attribution: dict) -> list[dict]:
     """Deriva los ocho contrastes de robustez desde los artefactos persistidos.
 
-    Ninguna cifra ni veredicto se escribe a mano: tanto la tabla ``t07_robustez``
+    Ninguna cifra ni veredicto se escribe a mano: tanto la tabla ``t06_robustez``
     como la figura ``f07_robustez`` consumen esta lista, de modo que si el study
     se regenera ambas salidas se actualizan solas. Los umbrales de veredicto son
     los declarados en ``docs/metodologia.md``.
@@ -1786,18 +1871,18 @@ def write_tables(paths: Paths, summary: dict, robustness: dict, attribution: dic
     agents = selection.groupby("agent")["rank_ic"].agg(["mean", "std", "count", lambda s: (s > 0).mean()])
     agents.columns = ["mean", "std", "count", "positive"]
     rows = [[tex(i), num(r["mean"]), num(r["std"]), pct(r["positive"]), num(r["mean"] / r["std"], 3)] for i, r in agents.sort_values("mean", ascending=False).iterrows()]
-    table(paths.tables / "t05_agentes.tex", ["Señal", "Rank-IC", "Desv.", "Positivas", "IC-IR"], rows)
+    table(paths.tables / "t06_agentes.tex", ["Señal", "Rank-IC", "Desv.", "Positivas", "IC-IR"], rows)
 
     base = attribution["baselines"]["baselines"]
     rows = [[tex(v["baseline"]), num(v["mean_rank_ic"]), pct(v["positive_fraction"])] for v in base]
     rows.insert(0, ["Sistema (meta final)", num(summary["summary"]["mean_rank_ic"]), pct(summary["summary"]["rank_ic_positive_fraction"])])
-    table(paths.tables / "t07_baselines.tex", ["Señal", "Rank-IC", "Cohortes positivas"], rows)
+    table(paths.tables / "t06_baselines.tex", ["Señal", "Rank-IC", "Cohortes positivas"], rows)
 
     robust_rows = [
         [row["name"], row["detail"], "Supera" if row["passes"] else "No supera"]
         for row in build_robustness_rows(robustness, attribution)
     ]
-    table(paths.tables / "t07_robustez.tex", ["Contraste", "Resultado", "Veredicto"], robust_rows, "llc")
+    table(paths.tables / "t06_robustez.tex", ["Contraste", "Resultado", "Veredicto"], robust_rows, "llc")
 
     annual_rows = [[str(int(r.year)), pct(r.portfolio_return), pct(r.benchmark_return), pct(r.alpha), pct(r.max_drawdown_year), num(r.information_ratio_year, 3), pct(r.mean_cash_weight), pct(r.turnover)] for r in annual.itertuples()]
     table(paths.tables / "t07_anual.tex", ["Año", "Cartera", "SPY", "Alfa", "MDD", "IR", "Efectivo", "Turnover"], annual_rows)
@@ -1852,7 +1937,7 @@ def write_tables_decisions(paths: Paths, decisions: dict) -> None:
         for row in rows
     ]
     table(
-        paths.tables / "t06_decisiones.tex",
+        paths.tables / "t05_decisiones.tex",
         ["Variable", "Ganador", "Mejor alternativa", "Su Rank-IC", "Coste", "Regla"],
         table_rows,
         "lllrrl",
@@ -1953,8 +2038,32 @@ def build_result_macros(
         values[macro] = num(influence[variable]["spread"], 3)
     if cost is not None:
         values["CosteAdoptado"] = integer(cost["adopted_cost_bps"])
+        break_even = cost["break_even"]
         values["CosteEquilibrio"] = integer(
-            cost["break_even"]["resimulated"]["selection"]["bps_per_trade"]
+            break_even["resimulated"]["selection"]["bps_per_trade"]
+        )
+        values["CosteEquilibrioCongelado"] = integer(
+            break_even["frozen_path"]["selection"]["bps_per_trade"]
+        )
+        # El equilibrio de la era reservada solo existe en la ruta congelada: al resimular, el
+        # exceso ya es negativo con coste cero y no hay margen que agotar.
+        reserved = break_even["frozen_path"]["confirmation"]
+        if reserved.get("available"):
+            values["CosteEquilibrioReservado"] = integer(reserved["bps_per_trade"])
+        margins = cost["margin_over_adopted"]
+        values["MargenCoste"] = num(margins["resimulated_selection"], 1)
+        values["MargenCosteCongelado"] = num(margins["frozen_path_selection"], 1)
+        values["MargenCosteReservado"] = num(margins["frozen_path_confirmation"], 1)
+        zero = {row["family"]: row for row in cost["frozen_path"] + cost["resimulated"]
+                if float(row["cost_bps"]) == 0.0}
+        values["ExcesoBrutoCongelado"] = pct(
+            zero["frozen_path"]["selection_geometric_excess_return"]
+        )
+        values["ExcesoBrutoResimulado"] = pct(
+            zero["resimulated"]["selection_geometric_excess_return"]
+        )
+        values["ExcesoBrutoReservado"] = pct(
+            zero["frozen_path"]["confirmation_geometric_excess_return"]
         )
     if narrative is not None:
         window = narrative["windows"]["selection"]
@@ -2042,17 +2151,23 @@ def main() -> None:
         for key, expected in expected_ids.items():
             if manifest.get(key) != expected:
                 raise SystemExit(f"AUDITORÍA FALLIDA: {key}={manifest.get(key)!r}, esperado {expected!r}.")
+        required_tables = {"t06_ganador.tex"}
+        missing_tables = sorted(name for name in required_tables if not (paths.tables / name).is_file())
+        if missing_tables:
+            raise SystemExit(f"AUDITORÍA FALLIDA: faltan tablas {missing_tables!r}.")
+        if not required_tables.issubset(set(manifest.get("tables", []))):
+            raise SystemExit("AUDITORÍA FALLIDA: la tabla del ganador no está declarada.")
         required_assets = {
             "f01_spiva_horizontes.png", "f03_cobertura_anual.png",
             "f03_muestra_oos.png", "f06_estabilidad_features.png",
             "f05_calibracion_alfa.png", "f06_atribucion_factorial.png",
-            "f05_atribucion_anual.png", "f05_pesos_anual.png", "f06_orden_vs_pago.png",
-            "f07_alpha_turnover_anual.png", "f07_bootstrap.png", "f07_capacidad.png",
-            "f07_cartera_narrativa.png", "f07_cola_eras.png", "f07_costes_escalera.png",
+            "f06_atribucion_anual.png", "f06_pesos_anual.png", "f06_orden_vs_pago.png",
+            "f07_alpha_turnover_anual.png", "f06_bootstrap.png", "f07_capacidad.png",
+            "f07_cartera_narrativa.png", "f06_cola_eras.png", "f07_costes_escalera.png",
             "f07_equity_drawdown.png", "f07_perfiles_pesos.png", "f07_perfiles_resultados.png",
-            "f07_rankic_serie.png",
-            "f08_cartera_influencia.png", "f08_cartera_rejilla.png",
-            "f09_seleccion_vs_reservada.png",
+            "f06_rankic_serie.png",
+            "f07_cartera_influencia.png", "f07_cartera_rejilla.png",
+            "f07_seleccion_vs_reservada.png",
         }
         missing = sorted(name for name in required_assets if not (paths.figures / name).is_file())
         if missing:
@@ -2092,24 +2207,25 @@ def main() -> None:
     draw_feature_stability(model_attribution, paths.figures / "f06_estabilidad_features.png")
     draw_factor_attribution(attribution, paths.figures / "f06_atribucion_factorial.png")
     write_feature_dictionary(paths, features)
-    draw_rank_ic(summary, paths.figures / "f07_rankic_serie.png")
+    draw_rank_ic(summary, paths.figures / "f06_rankic_serie.png")
     draw_order_vs_payoff(summary, paths.figures / "f06_orden_vs_pago.png")
     draw_equity_and_drawdown(equity, paths.figures / "f07_equity_drawdown.png")
-    draw_tail_by_era(tails, paths.figures / "f07_cola_eras.png")
+    draw_tail_by_era(tails, paths.figures / "f06_cola_eras.png")
     # Activos añadidos para la versión extendida del manuscrito.
-    draw_meta_weights_annual(weights, paths.figures / "f05_pesos_anual.png")
+    draw_meta_weights_annual(weights, paths.figures / "f06_pesos_anual.png")
 
     # Explicabilidad: qué variables mueven a cada agente y si eso cambia con el régimen. Se agrega
     # una sola vez porque el artefacto de origen tiene 1,3 millones de filas.
-    draw_attribution_by_year(attribution_summary, "risk", paths.figures / "f05_atribucion_anual.png")
+    draw_attribution_by_year(attribution_summary, "risk", paths.figures / "f06_atribucion_anual.png")
     write_tables_attribution(paths, attribution_summary)
 
     # Activos de la cadena de studies encadenados. Solo se generan si se declara la cadena: sin
     # ella el manuscrito documentaría un study suelto y estas figuras no tendrían nada que contar.
-    draw_selection_vs_reserved(chain, paths.figures / "f09_seleccion_vs_reservada.png")
+    draw_selection_vs_reserved(chain, paths.figures / "f07_seleccion_vs_reservada.png")
     write_tables_chain(paths, chain, changes)
-    draw_bootstrap_forest(robustness, paths.figures / "f07_bootstrap.png")
+    draw_bootstrap_forest(robustness, paths.figures / "f06_bootstrap.png")
 
+    write_tables_winner(paths, catalog, winner)
     write_tables(paths, summary, robustness, attribution, diag, annual, decisions)
     write_tables_predictive(paths, diag, features)
     write_tables_universe_resolution(paths)
@@ -2118,8 +2234,8 @@ def main() -> None:
 
     # Activos de la rejilla de cartera. Sustituyen al barrido diagnóstico de una variable cada vez:
     # el esquema de la rejilla tiene seis coordenadas simultáneas y el objetivo pasa a ser el IR.
-    draw_portfolio_grid(portfolio["grid"], portfolio["winner"], paths.figures / "f08_cartera_rejilla.png")
-    draw_portfolio_influence(portfolio["grid"], paths.figures / "f08_cartera_influencia.png")
+    draw_portfolio_grid(portfolio["grid"], portfolio["winner"], paths.figures / "f07_cartera_rejilla.png")
+    draw_portfolio_influence(portfolio["grid"], paths.figures / "f07_cartera_influencia.png")
     draw_alpha_turnover_annual(annual, paths.figures / "f07_alpha_turnover_anual.png")
     draw_cost_ladder(cost, paths.figures / "f07_costes_escalera.png")
     draw_capacity(portfolio["capacity"], paths.figures / "f07_capacidad.png")

@@ -1,0 +1,27 @@
+\begin{tabular}{lll}
+\toprule
+Etapa del protocolo & Variable & Valor del ganador \\
+\midrule
+Temporal & snapshot\_step\_months & 1 \\
+ & target\_horizon\_months & 12 \\
+ & train\_lookback\_years & 8 \\
+ & execution\_lag\_days & 60 \\
+ & recency\_weighting & off \\
+ & objective & rank regression \\
+Representación & feature\_preset & all \\
+ & fundamental\_momentum & True \\
+ & market\_regime\_feature & False \\
+ & neutralize\_by\_sector & False \\
+ & winsorization & 0.0 \\
+ & max\_features\_per\_agent & 12 \\
+ & feature\_weighting\_mode & oos stability prune \\
+Modelo & model\_family & lightgbm \\
+ & lgbm\_max\_depth & 3 \\
+ & lgbm\_n\_estimators & 100 \\
+ & lgbm\_learning\_rate & 0.03 \\
+ & lgbm\_min\_child\_samples & 20 \\
+Meta-agente & meta\_method & stacked rolling free \\
+ & meta\_history\_quarters & 16 \\
+ & meta\_recency\_weighting & off \\
+\bottomrule
+\end{tabular}

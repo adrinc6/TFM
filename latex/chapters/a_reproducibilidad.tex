@@ -127,12 +127,15 @@ decisiones, robustez y atribución --- y del segundo todo lo \emph{económico} -
 carteras, patrimonio, órdenes, métricas anuales y perfiles ---, leído de la evidencia del ganador
 sobre la serie completa.
 
-El script escribe los PNG a 300\,ppp y los cuerpos de tabla en \artefacto{latex/assets/}, junto al
-resto de capítulos. También genera \artefacto{study\_macros.tex}, consumido por memoria y defensa,
-y actualiza \artefacto{latex/asset\_manifest.json} con la lista de
-artefactos consumidos, separando las fuentes predictivas de las económicas. Ese manifiesto es la
-tabla de correspondencia entre cada salida del manuscrito y su origen: ninguna cifra generada por
-script entra en el documento sin quedar registrada allí.
+El script escribe los PNG a 300\,ppp en \artefacto{latex/figures/} y los cuerpos de tabla en
+\artefacto{latex/tables/}; los capítulos, que no genera nadie, viven aparte en
+\artefacto{latex/chapters/}. También genera \artefacto{study\_macros.tex}, que consumen tanto la
+memoria como la defensa.
+
+Por último actualiza el manifiesto \artefacto{asset\_manifest.json} con la lista de artefactos
+consumidos, separando las fuentes predictivas de las económicas. Ese manifiesto es la tabla de
+correspondencia entre cada salida del manuscrito y su origen: ninguna cifra generada por script
+entra en el documento sin quedar registrada allí.
 
 La correspondencia se concentra en cuatro familias: configuración y decisiones del ganador;
 resúmenes predictivos, atribución y robustez; rejilla, ganador y evidencia económica de cartera; y
@@ -150,8 +153,8 @@ artefactos en formato JSON --- \artefacto{winner.json}, \artefacto{decisions.jso
 citadas en el texto y permiten verificarlas directamente. Los \artefacto{.parquet}, en cambio,
 quedan excluidos por tamaño, de modo que las tablas y figuras que se construyen a partir de ellos
 --- cobertura, agentes, atribución local, colas, órdenes, métricas anuales, rejilla de carteras y
-perfiles --- se conservan ya generadas en \artefacto{latex/assets/} pero no pueden recalcularse
-desde un clon del repositorio sin volver a ejecutar el estudio. Se declara porque el comando
+perfiles --- se conservan ya generadas en \artefacto{latex/figures/} y \artefacto{latex/tables/}
+pero no pueden recalcularse desde un clon del repositorio sin volver a ejecutar el estudio. Se declara porque el comando
 anterior sólo es reproducible en su totalidad sobre la instalación donde corrieron los estudios.
 
 Un segundo script comprueba que el proyecto sea portable antes de subirlo:

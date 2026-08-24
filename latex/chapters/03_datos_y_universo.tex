@@ -105,7 +105,7 @@ evaluación.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.96\textwidth]{assets/f03_cobertura_anual.png}
+  \includegraphics[width=0.96\textwidth]{figures/f03_cobertura_anual.png}
   \caption{Cobertura real del universo histórico y ventanas del experimento. La serie procede
   exclusivamente de \texttt{data/raw/universe\_coverage.json}; selección y reserva se distinguen
   visualmente, mientras el entrenamiento utiliza ventanas móviles de ocho años.}
@@ -131,14 +131,17 @@ en el panel; la Tabla~\ref{tab:resolucion-universo} resume ese reparto.
   \footnotesize
   \caption{Resolución del universo histórico: por qué falta cada \textit{ticker} ausente.}
   \label{tab:resolucion-universo}
-  \input{assets/t03_resolucion_universo.tex}
+  \input{tables/t03_resolucion_universo.tex}
   \caption*{Sobre los 563 \textit{tickers} del universo histórico que no llegan al panel.}
 \end{table}
 
 El reparto desmiente la lectura intuitiva. La causa dominante no es la mortalidad empresarial sino
 la retirada de símbolos por parte del proveedor de precios: el 36,8\,\% de los ausentes son símbolos
-que su API ya no reconoce, y solo el 5,5\,\% de los excluidos llevan marcador de quiebra. Un dato
-adicional lo confirma: los 563 ausentes \emph{sí} tienen fundamentales descargados, de modo que el
+que su API ya no reconoce. La mortalidad se mide aparte, por el sufijo \texttt{Q} con el que se
+marca a una empresa en concurso, y alcanza a 31 de los 563 excluidos, un 5,5\,\%; que ese porcentaje
+coincida con el de la fila \artefacto{no\_metric\_period\_match} de la tabla es una casualidad
+aritmética y no la misma medición. Un dato adicional lo confirma: los 563 ausentes \emph{sí} tienen
+fundamentales descargados, de modo que el
 cuello de botella es exclusivamente el precio y la exclusión no señala empresas sin información
 contable. El Capítulo~\ref{chap:limitaciones} recoge la dirección y la magnitud del sesgo que esto
 introduce.
@@ -154,7 +157,7 @@ observabilidad, cierre de etiqueta y requisitos mínimos de precio.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.97\textwidth]{assets/f03_muestra_oos.png}
+  \includegraphics[width=0.97\textwidth]{figures/f03_muestra_oos.png}
   \caption{Tamaño de las cohortes evaluadas y distribución de cobertura de las variables por
   bloque. El panel izquierdo cuenta acciones efectivamente puntuadas en cada snapshot; el derecho
   resume disponibilidad dentro de ese panel, no cobertura del índice.}
@@ -174,12 +177,13 @@ estudio solo seis cohortes reservadas disponen de retorno realizado completo. La
   \small
   \caption{Dimensión efectiva de la muestra fuera de muestra.}
   \label{tab:muestra-oos}
-  \input{assets/t03_muestra_oos.tex}
+  
+  \resizebox{\textwidth}{!}{\input{tables/t03_muestra_oos.tex}}
 \end{table}
 
 El panel de disponibilidad de la Figura~\ref{fig:muestra-oos} se calcula sobre los diagnósticos de
-73 series construidas; el catálogo científico declara 68 variables de entrada porque algunas
-columnas auxiliares existen para control y trazabilidad, no para entrenar. La cobertura media de
+73 series construidas; el catálogo científico declara \NumPredictores{} variables de entrada porque
+algunas columnas auxiliares existen para control y trazabilidad, no para entrenar. La cobertura media de
 esos diagnósticos ronda el 91\,\%, aunque siete caen por debajo del 80\,\%. El pipeline no interpreta
 la ausencia como cero económico: conserva el indicador de disponibilidad, imputa solo con
 información del corte de entrenamiento y permite que las reglas de poda decidan si una variable
@@ -318,12 +322,13 @@ Tabla~\ref{tab:features-top} muestra los extremos de esa distribución.
   \small
   \caption{Variables con mayor y menor Rank-IC univariante.}
   \label{tab:features-top}
-  \input{assets/t03_features_top.tex}
-  \caption*{Doce primeras y cinco últimas de las \NumDiagnosticos{} variables con diagnóstico,
-  ordenadas por Rank-IC univariante. Los diagnósticos cubren \NumDiagnosticos{} variables frente a
-  las \NumPredictores{} que declara el catálogo,
-  porque añaden componentes derivados de otras; y ninguna aparece marcada como podada, de modo que la
-  tabla describe el catálogo declarado y no qué variables sobrevivieron a la poda por estabilidad.}
+  \input{tables/t03_features_top.tex}
+  \caption*{Doce primeras y cinco últimas de las 73 series con diagnóstico calculado, ordenadas por
+  Rank-IC univariante. Esas 73 no coinciden con las \NumPredictores{} que declara el catálogo: 66 son
+  comunes, siete son componentes derivados que el catálogo no declara por separado y dos variables
+  declaradas no llegan a tener diagnóstico, de modo que la unión de ambas listas ---la que audita el
+  exportador--- suma \NumDiagnosticos{} filas. Ninguna aparece marcada como podada, así que la tabla
+  describe el catálogo declarado y no qué variables sobrevivieron a la poda por estabilidad.}
 \end{table}
 
 Dos observaciones anticipan resultados posteriores. La variable que encabeza la lista,

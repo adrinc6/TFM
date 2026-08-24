@@ -1,0 +1,165 @@
+\chapter{Introducción}
+\label{chap:introduccion}
+
+\section*{Pregunta de apertura}
+
+¿Puede un sistema aprender a ordenar acciones fuera de muestra y convertir después ese orden en una
+cartera útil? La pregunta parece única, pero contiene dos problemas. Ordenar exige que las acciones
+con mayor puntuación obtengan, en promedio, mejores retornos futuros que las de menor puntuación.
+Invertir exige además elegir cuántas comprar, cuánto asignar, cuándo vender y cuánto efectivo
+mantener. Una señal puede resolver el primer problema y fracasar en el segundo.
+
+Esa separación organiza todo el trabajo. El modelo se selecciona únicamente por su capacidad de
+ordenación transversal. Las reglas de cartera se estudian después, con la señal congelada. Así, una
+mejora económica no puede reescribirse retrospectivamente como mejora predictiva y la era
+2025--2026 permanece reservada desde el inicio.
+
+\section{Problema y relevancia}
+
+La selección cuantitativa de acciones combina tres dificultades. Primero, la información disponible
+cambia con el tiempo: usar hoy la composición actual de un índice o un dato fundamental antes de su
+publicación produce una ventaja inexistente. Segundo, probar muchas configuraciones aumenta la
+probabilidad de elegir ruido. Tercero, el resultado observado depende de una cadena de decisiones
+posteriores al modelo. Evaluar solo la rentabilidad final no permite saber en qué eslabón apareció la
+mejora o el fallo.
+
+El sistema estudiado afronta esas dificultades con un panel \textit{point-in-time}, cohortes
+cerradas y una única ruta experimental. Cinco agentes ---\texttt{quality}, \texttt{value},
+\texttt{growth}, \texttt{momentum} y \texttt{risk}--- producen rankings especializados; un
+meta-agente aprende a combinarlos con información que ya estaba cerrada en cada fecha. La selección
+secuencial modifica una variable cada vez y conserva únicamente cambios respaldados por Rank-IC
+robusto. Después se calculan atribución, robustez, carteras y perfiles como evidencia informativa.
+
+El segundo objetivo parte, además, de un listón competitivo especialmente alto. El \textit{SPIVA
+U.S. Scorecard Year-End 2025} compara fondos estadounidenses de gran capitalización con el S\&P
+500 y muestra que la mayoría queda por debajo del índice en todos los horizontes publicados. La
+Figura~\ref{fig:spiva-horizontes} no presenta una progresión monótona ---el porcentaje baja entre
+uno y tres años y también entre cinco y diez---, pero sí una persistencia muy elevada: a veinte
+años, el 92,89\,\% no supera al índice.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.94\textwidth]{figures/f01_spiva_horizontes.png}
+  \caption{Fondos estadounidenses de gran capitalización que quedan por debajo del S\&P 500 a
+  distintos horizontes. Fuente: S\&P Dow Jones Indices, \textit{SPIVA U.S. Scorecard Year-End
+  2025}, Report 1a, rentabilidad absoluta; datos a 31 de diciembre de 2025.}
+  \label{fig:spiva-horizontes}
+\end{figure}
+
+Esa persistencia no es una casualidad estadística: tiene una explicación aritmética, y conviene
+enunciarla antes de formular el segundo objetivo porque determina qué se puede llegar a demostrar.
+
+\subsection*{Por qué batir al índice es un juego de suma cero}
+\label{sec:suma-cero-intro}
+
+El argumento lo formuló Sharpe (1991) y es aritmético, no empírico: el mercado es la suma de quienes
+lo componen, de modo que el conjunto de los gestores activos posee, por construcción, la cartera de
+mercado. Antes de costes, el rendimiento medio ponderado de la gestión activa es exactamente el del
+índice; para que alguien lo supere, otro debe quedarse por debajo en la misma medida. Es un juego de
+\textbf{suma cero antes de costes}, y como operar cuesta, pasa a ser de \textbf{suma negativa
+después}. No hay ninguna versión de este problema en la que todos los participantes ganen.
+
+Conviene acotar el argumento para no usarlo de más. La aritmética de Sharpe es exacta sobre el
+conjunto de los participantes, no sobre cada uno: no dice que sea imposible batir al índice, sino que
+hacerlo requiere que otro no lo consiga, lo que convierte cualquier ventaja sostenida en una
+afirmación extraordinaria. Su versión estricta ha recibido además objeciones ---el universo de los
+gestores activos no coincide exactamente con el índice, y las carteras pasivas no son perfectamente
+estáticas---, pero ninguna de ellas altera la conclusión práctica que aquí importa: el listón de
+referencia es alto, está medido y la mayoría no lo alcanza.
+
+La dificultad no convierte el objetivo económico en imposible, pero sí cambia el estándar de
+evidencia: no basta con encontrar una cartera que funcionó en el periodo observado. Hay que separar
+la capacidad de ordenar de la capacidad de cobrar esa ventaja, descontar costes y comprobar qué
+sucede fuera de la ventana en la que se eligieron las reglas.
+
+\section{Dos objetivos}
+
+\textbf{Objetivo 1. ¿Aprende el sistema a ordenar acciones?} Determinar si aprende una ordenación
+transversal con capacidad predictiva fuera de muestra, y si esa capacidad resiste cambios de régimen
+y controles contra azar, fuga temporal y factores conocidos. Es una afirmación sobre el modelo, se
+mide con Rank-IC y se responde contra un listón absoluto: o existe una ordenación con Rank-IC
+positivo fuera de muestra, o no existe. Este objetivo no presupone que el meta-agente deba superar a
+todos los especialistas: esa comparación forma parte del resultado.
+
+\textbf{Objetivo 2. ¿Puede cobrarse esa ordenación frente al mercado?} Comprobar si el orden
+aprendido se traduce en una cartera que supere al índice una vez descontados los costes. A diferencia
+del primero, es una afirmación sobre un mercado competitivo y de suma cero, y por tanto se responde
+contra un listón relativo: superarlo significa ganarle la posición a otro participante en un juego
+donde la mayoría pierde. Ninguna cantidad de Rank-IC lo garantiza por sí sola.
+
+La respuesta a ese segundo objetivo depende de algo que este trabajo no esperaba encontrar en el
+centro del argumento, y de ahí que se enuncie en dos mitades. \textbf{(2a)} Con la señal ya
+congelada, ¿generan las reglas de construcción de cartera diferencias materiales en el resultado
+económico? \textbf{(2b)} ¿Conserva la cartera elegida ese resultado en la era reservada? La primera
+mitad puede sostenerse con toda la rejilla de alternativas; la segunda queda limitada por el reducido
+número de cohortes reservadas. Adelantar la conclusión ayuda a leer el resto: la misma señal, con la
+misma información y el mismo panel, produce resultados de signo opuesto según cómo se construya la
+cartera, de modo que el segundo objetivo no puede responderse sin declarar con cuál se midió.
+
+Los cinco criterios que permiten juzgar ambos objetivos son: integridad temporal de datos y
+etiquetas; mejora predictiva medible y comparable; robustez frente a explicaciones nulas;
+separación entre señal y cartera; y límites explícitos sobre cobertura, multiplicidad y capacidad.
+No son nuevas preguntas de investigación, sino condiciones que una respuesta defendible debe
+satisfacer.
+
+\section{Aportación}
+
+La aportación no consiste en presentar una cartera como recomendación de inversión. Consiste en un
+procedimiento auditable para separar aprendizaje predictivo e implementación económica, junto con
+un caso empírico completo. El trabajo muestra qué aprendió el sistema, qué especialista concentra la
+información, qué contrastes supera, qué reglas de cartera mueven el resultado y qué cambia cuando la
+misma señal se evalúa en una ventana que no intervino en ninguna decisión.
+
+La distinción numérica también es importante, porque tres recuentos parecidos conviven en el
+trabajo y no son intercambiables. El sistema emplea \NumPredictores{} predictores declarados; el
+catálogo contiene \NumParametrosCatalogo{} parámetros científicos y de cartera; y la auditoría de
+variables reúne \NumDiagnosticos{} filas, porque cruza esos predictores con las 73 series a las que
+el \textit{pipeline} calcula diagnósticos y conserva las de ambos lados. Son tres objetos distintos,
+no tres versiones del mismo recuento.
+
+\section{Recorrido del documento}
+
+El capítulo siguiente sitúa la pregunta en la literatura. Después se presentan datos y agentes, se
+formaliza el protocolo, se evalúa la señal y se estudia su traducción a cartera. Limitaciones y
+conclusiones cierran el argumento; los anexos conservan únicamente lo necesario para reproducir el
+estudio y verificar el catálogo cerrado. La Figura~\ref{fig:mapa-argumento} resume esa cadena: qué
+objetivo responde cada estudio, con qué métrica se decide y en qué capítulo se lee.
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[
+      >=Latex, font=\small, align=center, node distance=7mm and 10mm,
+      obj/.style={draw,rounded corners,minimum width=54mm,minimum height=12mm,fill=blue!8},
+      objdos/.style={obj,fill=teal!12},
+      paso/.style={draw,rounded corners,minimum width=54mm,minimum height=11mm,fill=gray!8},
+      capitulo/.style={draw,rounded corners,minimum width=54mm,minimum height=8mm,font=\footnotesize},
+      cierre/.style={draw,rounded corners,minimum width=118mm,minimum height=8mm,fill=orange!10,
+        font=\footnotesize}]
+    \node[obj] (o1) {\textbf{Objetivo 1}\\¿Aprende a ordenar acciones?};
+    \node[objdos,right=10mm of o1] (o2) {\textbf{Objetivo 2}\\¿Puede cobrarse frente al índice?};
+    \node[paso,below=of o1] (m1) {Tres \textit{Model Studies} encadenados\\decididos por Rank-IC};
+    \node[paso,below=of o2] (m2) {Un \textit{Portfolio Study} sobre la señal\\congelada, por Information Ratio};
+    \node[capitulo,below=of m1] (c1) {Capítulos 3 a 6};
+    \node[capitulo,below=of m2] (c2) {Capítulos 5 y 7};
+    \node[cierre,below=9mm of $(c1)!0.5!(c2)$] (fin)
+      {Capítulo 8: hasta dónde llega la evidencia \quad · \quad Capítulo 9: la respuesta};
+    \draw[->,thick] (o1)--(m1);
+    \draw[->,thick] (o2)--(m2);
+    \draw[->,thick] (m1)--(c1);
+    \draw[->,thick] (m2)--(c2);
+    \draw[->,thick] (c1.south) -- ++(0,-4.5mm) -| (fin.north west);
+    \draw[->,thick] (c2.south) -- ++(0,-4.5mm) -| (fin.north east);
+    \draw[->,dashed,thick] (o1)--node[above,font=\footnotesize]{sólo si}(o2);
+  \end{tikzpicture}
+  \caption{Mapa del argumento. Cada objetivo tiene su propia métrica de decisión y su propia
+  evidencia; el segundo sólo tiene sentido si el primero se responde afirmativamente, y ninguno de
+  los dos utiliza la era reservada 2025--2026 para decidir nada.}
+  \label{fig:mapa-argumento}
+\end{figure}
+
+\section*{Respuesta y transición}
+
+El problema de investigación queda planteado como una cadena causal, no como una única cifra de
+rentabilidad. Para que esa cadena sea creíble, el siguiente capítulo delimita qué aportan Rank-IC,
+la validación temporal y la teoría de construcción de carteras, y qué hueco concreto cubre este
+trabajo.

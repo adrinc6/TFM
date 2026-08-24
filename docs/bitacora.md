@@ -1,5 +1,55 @@
 # Bitácora
 
+## 2026-08-24 · Auditoría de cifras del manuscrito: la prosa era el punto ciego
+
+**El hallazgo que importa.** `verify_latex_assets.py` y `export_study_assets.py --audit` pasaban los
+dos limpios, y las macros de `study_macros.tex` eran correctas una a una contra sus artefactos. Aun
+así el manuscrito contenía **veinticinco cifras incorrectas**, todas escritas a mano en párrafos. La
+lección es concreta y reutilizable: la automatización cubre lo que se genera, y precisamente por eso
+lo escrito a mano deja de revisarse.
+
+**Cinco de esas cifras no coinciden con ninguna de las tres pasadas adoptadas**, lo que apunta al
+study derogado `b4d7a8d8` que `latex/plan_tfm.md` prohíbe expresamente; no puede probarse, porque
+sus artefactos ya no están en disco. Sobrevivieron porque estaban en prosa ilustrativa —una ventaja pareada de +0,0208 para
+la cadencia mensual, cuando la real es +0,0136; un intervalo de horizonte que no coincide con
+ninguna de las tres pasadas— y ningún grep de identificadores las alcanza.
+
+**Los tres defectos de mayor alcance:**
+
+1. `b_catalogo_protocolo.tex` describía cuatro transiciones de cartera falsas y contradecía
+   directamente al capítulo 7 y a las macros. Decía `max_cash_weight` 0,25→0,0 (es 0,25→0,10),
+   `minimum_holding_period` `none`→`half_horizon` (es `half_horizon`→`full_horizon`) y que
+   `coverage_percentile_floor` coincidió (cambió de 60 a 0).
+2. El capítulo 7 explicaba la escalera de costes al revés. La ruta congelada tiene un equilibrio
+   **mayor** (447 pb) que la resimulada (295 pb) y a coste cero da más exceso (6,34 % frente a
+   3,10 %), porque cada peldaño resimulado es una cartera distinta y solo la del coste adoptado fue
+   optimizada. El texto la llamaba «la variante conservadora».
+3. El capítulo 7 describía `f08_cartera_influencia` como una tabla de *boxplots*. Es un gráfico de
+   rangos desde hace dos migraciones: el texto se quedó describiendo la figura anterior.
+
+**Corregido también:** los pesos anuales del meta (0,45/0,66/0,83/0,997 frente a los reales
+0,43/0,63/0,79/0,97), el recuento de contribuciones locales (1.309.618 → 1.306.960), el vocabulario
+de `quality` (29 → 28 variables), la cuota anual de `gap_21d`, el reparto de reglas de decisión
+(quince y dos → catorce y cuatro sobre dieciocho) y la atribución de `stacked_rolling_free` a la
+segunda pasada cuando lo decidió la primera.
+
+**Cambio de marco, autorizado por el usuario.** El Objetivo 2 se reformula como «¿puede cobrarse esa
+ordenación frente al índice?», que es un juego de suma cero, con la sensibilidad a la cartera como
+el hallazgo que lo responde en vez de como el objetivo. La aritmética de Sharpe sube a la
+introducción. Ninguna cifra ni conclusión cambia; sí cambia qué se dice estar demostrando, y las
+conclusiones ahora declaran que batir al mercado **no** queda demostrado.
+
+**Reorganización.** `latex/assets/` se divide en `chapters/`, `figures/` y `tables/`, y quince
+activos se renombran para que el prefijo coincida con el capítulo que los cita. El desajuste
+anterior —`f07_*` usado en el capítulo 6, `t08_*` en el 7— es la causa mecánica de varios de los
+defectos de arriba.
+
+**Primera compilación real del repositorio.** No había ni un `.log` en `latex/`. Con MiKTeX 25.12 y
+XeLaTeX: memoria 102 páginas, defensa 33, cero errores, cero referencias sin destino, un único
+*overfull* de 0,8 pt. Se corrigieron por el camino un estilo TikZ llamado `cap` —clave reservada de
+pgfkeys— y tres tablas que se salían del margen. La guía de compilación, instalación y
+desinstalación queda en `latex/COMO_COMPILAR.md`.
+
 ## 2026-08-17 · Tabla de posiciones completa en el dashboard
 
 La fila sintética `$$CASH$$` se inserta antes de las acciones para mostrar el efectivo. La tabla
@@ -2457,3 +2507,71 @@ comprueba cuatro figuras y tres tablas nuevas.
 `verify_latex_assets.py`. Los cuatro PNG nuevos se inspeccionaron directamente. Queda expresamente
 pendiente cualquier comprobación dependiente de paginación o distancia de lectura, porque en esta
 intervención no se genera ningún PDF.
+
+
+## 2026-08-24 · La defensa se reescribe como relato con incógnita
+
+**Decisión.** Se rehace `latex/presentacion.tex` por completo con tres requisitos del usuario:
+contarla como un cuento que plantea los problemas al principio y los va resolviendo, una nota de
+ponente por diapositiva con todo lo que hay que decir, y **ninguna transición**. No cambia ninguna
+cifra: todas siguen viniendo de `tables/study_macros.tex` y de los cuatro estudios adoptados.
+
+**Las transiciones eran el defecto medible.** Los ocho `\pause` del fichero anterior hacían que
+beamer emitiera páginas idénticas a la anterior salvo por un elemento revelado; la diapositiva de la
+arquitectura tenía tres seguidos y por sí sola producía cuatro páginas casi iguales. Las 20
+diapositivas numeradas generaban así unas 29 páginas proyectadas. Ahora no hay ningún `\pause`,
+`\onslide` ni `\only`: cada revelación con contenido propio pasó a ser una diapositiva propia. La
+comprobación es mecánica y queda escrita en la cabecera del fichero:
+`grep -v "^%" presentacion.tex | grep -c "pause\|onslide\|only<"` debe dar 0.
+
+**Estructura.** 25 diapositivas numeradas y 4 de reserva, frente a 20 y 5. La antigua número 4
+adelantaba las tres cifras del resultado antes de argumentar nada; ahora plantea las **tres
+preguntas** sin respuesta, y cada interrogante se sustituye por su cifra en la diapositiva donde
+queda demostrado —la 11, la 18 y la 21, tituladas «Pregunta N, resuelta»—. La 24 las reúne ya
+resueltas. Las dos usan la misma macro `\pregunta`, de modo que no pueden descuadrarse entre sí.
+Suben al hilo principal el sesgo de cobertura (15) y los costes y el margen (23), que estaban en
+reserva pese a que el guion anticipaba las dos preguntas.
+
+**Notas.** 25 notas para 25 diapositivas numeradas, en prosa continua legible de corrido, sin
+marcas de apoyo. La nota de SPIVA conserva su bloque `[Sources]`, que es la única referencia externa
+citada en la defensa.
+
+**Validación realizada.** Cero transiciones vivas; 25 notas y 25 diapositivas numeradas; 29 páginas
+en el PDF, que son exactamente 25 más 4 de reserva; cero errores de LaTeX. Los desbordamientos
+verticales bajaron de 12 —el peor de 57,4 pt— a 2, ambos por debajo de 0,6 pt y por tanto invisibles.
+En el modo `--notas` la nota de cierre desbordaba su media página en 39,7 pt, es decir, se habría
+cortado al proyectar: se recortó la parte que solo repetía en voz alta las respuestas ya escritas en
+pantalla. Se revisó el PDF paginado comprobando título y número de las 29 páginas y buscando
+particiones de palabra defectuosas; se corrigió la única encontrada. `verify_latex_assets.py`,
+`python -m pytest -q` con 144 pruebas y `python -m ruff check .` quedan en verde. No se ejecutó
+ningún Study: la intervención es exclusivamente editorial.
+
+
+## 2026-08-24 · `build.py` deja de depender de Perl
+
+**Síntoma.** `python latex/build.py` fallaba en PowerShell con «latexmk no llegó a producir un
+registro», mientras que la misma orden funcionaba desde Git Bash.
+
+**Causa.** `latexmk` no es un binario: es un script de Perl. MiKTeX lo instala igualmente, de modo
+que `shutil.which("latexmk")` lo encontraba y el guardián daba el paso por bueno; al ejecutarlo,
+MiKTeX abortaba con «could not find the script engine 'perl'». Git Bash trae su propio intérprete
+—`/usr/bin/perl`, Perl 5.36— y PowerShell no. Todas las compilaciones anteriores se habían
+verificado desde Bash, así que el fallo nunca se manifestó.
+
+**Corrección.** `exige_latexmk()` pasa a ser `exige_motor()`, que comprueba `xelatex`, el binario
+que de verdad hace falta. Se añade `hay_latexmk()`, que exige latexmk **y** perl a la vez. `compila`
+usa latexmk cuando ambos están, y si no llama a `xelatex` directamente repitiendo mientras el
+registro pida otra pasada, con un tope de cuatro y un mínimo de dos. Es la vía sin Perl y no
+requiere instalar nada.
+
+**Segundo defecto encontrado de paso.** `COPIAR_PDF_AL_REPO` estaba en `False`, así que las
+compilaciones dejaban los PDF en `latex/build/` mientras `latex/TFM.pdf` y `latex/presentacion.pdf`
+seguían siendo los de cinco horas antes. Abrirlos daba la impresión de que el script no hacía nada:
+`latex/presentacion.pdf` tenía todavía 33 páginas y la diapositiva 4 antigua. Se devuelve a `True`.
+
+**Validación realizada.** Con `latex/build/` borrado por completo, `python latex/build.py` termina
+en PowerShell con código 0: memoria de 102 páginas, defensa de 29 y defensa con notas de 29, más la
+copia al repositorio. La ruta sin latexmk resuelve bien las referencias cruzadas y el índice: cero
+apariciones de `??` en las 102 páginas de la memoria. `python -m ruff check .` y las 144 pruebas
+quedan en verde. `COMO_COMPILAR.md` recoge el diagnóstico en §2 y tres filas nuevas en la tabla de
+problemas frecuentes, incluida la del PDF que parece no actualizarse.
