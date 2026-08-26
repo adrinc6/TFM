@@ -11,8 +11,8 @@ más de esa información.
 
 Los interruptores se pueden sobrescribir sin editar el fichero, para una ejecución suelta::
 
-    python latex/build.py --solo-memoria      # compila main.tex y nada más
-    python latex/build.py --solo-defensa      # compila presentacion.tex y nada más
+    python latex/build.py --solo-memoria      # compila TFM.tex y nada más
+    python latex/build.py --solo-defensa      # compila TFM_ppt.tex y nada más
     python latex/build.py --activos           # regenera figuras, tablas y macros, y verifica
     python latex/build.py --todo              # regenera, verifica y compila las dos
     python latex/build.py --notas             # la defensa con las notas del ponente
@@ -51,17 +51,17 @@ AUDITAR_ACTIVOS = False
 VERIFICAR_PROYECTO = True
 
 # --- Compilación ------------------------------------------------------
-COMPILAR_MEMORIA = True   # main.tex          -> TFM.pdf
-COMPILAR_DEFENSA = True   # presentacion.tex  -> presentacion.pdf
+COMPILAR_MEMORIA = True   # TFM.tex      -> TFM.pdf
+COMPILAR_DEFENSA = True   # TFM_ppt.tex  -> TFM_ppt.pdf
 
 # Compila además una versión de la defensa con el guion del ponente intercalado, pensada para la
-# segunda pantalla. Sale como presentacion_notas.pdf y no sustituye a la normal.
+# segunda pantalla. Sale como TFM_ppt_notes.pdf y no sustituye a la normal.
 DEFENSA_CON_NOTAS = True
 
 # --- Salida -----------------------------------------------------------
-# Copia los PDF resultantes a latex/TFM.pdf y latex/presentacion.pdf, que es donde se buscan. No
-# están versionados —`.gitignore` excluye `*.pdf`—, así que esto es comodidad, no un requisito.
-# Con False se quedan solo en la carpeta de trabajo.
+# Copia los PDF resultantes a latex/TFM.pdf, latex/TFM_ppt.pdf y latex/TFM_ppt_notes.pdf, que es
+# donde se buscan y donde el repositorio los versiona: `.gitignore` solo excluye la carpeta de
+# trabajo `latex/build/`. Con False se quedan solo en esa carpeta de trabajo.
 COPIAR_PDF_AL_REPO = True
 
 # Borra .aux, .log, .toc, .fls y compañía al terminar. La carpeta de trabajo se conserva igualmente
@@ -170,21 +170,21 @@ def verifica(detallada: bool) -> None:
 
 
 def prepara_defensa_con_notas() -> Path:
-    """Copia la defensa activando las notas del ponente, sin tocar el original.
+    """Deriva la defensa con notas del ponente a partir de la normal, sin tocar el original.
 
-    El manuscrito está congelado, de modo que la opción de beamer no se descomenta en el fichero
-    real: se descomenta en una copia que vive en la carpeta de trabajo. Se compila con el
-    directorio de trabajo en latex/, así que las rutas `figures/` y `tables/` siguen resolviendo.
+    Las dos versiones se diferencian en una sola línea —la opción de beamer que manda el guion a
+    la segunda pantalla—, de modo que TFM_ppt_notes.tex no se escribe a mano: se regenera aquí
+    desde TFM_ppt.tex cada vez que se compila, y así no puede quedarse desincronizado. Vive en
+    latex/ junto al original, con lo que las rutas `figures/` y `tables/` siguen resolviendo.
     """
-    original = (LATEX / "presentacion.tex").read_text(encoding="utf-8")
+    original = (LATEX / "TFM_ppt.tex").read_text(encoding="utf-8")
     marca = "% \\setbeameroption{show notes on second screen=right}"
     if marca not in original:
         aborta(
-            "presentacion.tex no contiene la línea comentada de las notas",
+            "TFM_ppt.tex no contiene la línea comentada de las notas",
             f"Se esperaba encontrar: {marca}",
         )
-    TRABAJO.mkdir(parents=True, exist_ok=True)
-    destino = TRABAJO / "presentacion_notas.tex"
+    destino = LATEX / "TFM_ppt_notes.tex"
     destino.write_text(original.replace(marca, marca[2:]), encoding="utf-8")
     return destino
 
@@ -290,8 +290,8 @@ def opciones() -> argparse.Namespace:
     )
     parser.add_argument("--todo", action="store_true", help="regenerar activos, verificar y compilar las dos")
     parser.add_argument("--activos", action="store_true", help="regenerar activos y verificar, sin compilar")
-    parser.add_argument("--solo-memoria", action="store_true", help="compilar solo main.tex")
-    parser.add_argument("--solo-defensa", action="store_true", help="compilar solo presentacion.tex")
+    parser.add_argument("--solo-memoria", action="store_true", help="compilar solo TFM.tex")
+    parser.add_argument("--solo-defensa", action="store_true", help="compilar solo TFM_ppt.tex")
     parser.add_argument("--notas", action="store_true", help="añadir la defensa con notas del ponente")
     parser.add_argument("--limpiar", action="store_true", help="borrar auxiliares y terminar")
     parser.add_argument("--detallada", action="store_true", help="mostrar la salida completa de cada paso")
@@ -355,25 +355,24 @@ def main() -> int:
         exige_motor()
     if tareas["memoria"]:
         rotulo("Compilando la memoria")
-        producidos.append((compila(LATEX / "main.tex", "memoria", tareas["detallada"]), "TFM.pdf"))
+        producidos.append((compila(LATEX / "TFM.tex", "memoria", tareas["detallada"]), "TFM.pdf"))
     if tareas["defensa"]:
         rotulo("Compilando la defensa")
         producidos.append(
-            (compila(LATEX / "presentacion.tex", "defensa", tareas["detallada"]), "presentacion.pdf")
+            (compila(LATEX / "TFM_ppt.tex", "defensa", tareas["detallada"]), "TFM_ppt.pdf")
         )
     if tareas["notas"]:
         rotulo("Compilando la defensa con notas del ponente")
         fuente = prepara_defensa_con_notas()
-        producidos.append((compila(fuente, "defensa con notas", tareas["detallada"]), None))
+        producidos.append(
+            (compila(fuente, "defensa con notas", tareas["detallada"]), "TFM_ppt_notes.pdf")
+        )
 
     if tareas["copiar"] and producidos:
         rotulo("Copiando los PDF al repositorio")
         for pdf, nombre in producidos:
-            if nombre is None:
-                bien(f"{pdf.name} se queda en build/ (no forma parte del repositorio)")
-                continue
             shutil.copy2(pdf, LATEX / nombre)
-            bien(f"latex/{nombre} actualizado (no versionado: .gitignore excluye *.pdf)")
+            bien(f"latex/{nombre} actualizado")
 
     if tareas["limpiar"]:
         rotulo("Limpiando auxiliares")

@@ -8,7 +8,7 @@
 % No hay \pause, \onslide ni \only en todo el fichero, y es deliberado: cada uno de ellos emite una
 % página PDF idéntica a la anterior salvo por un elemento revelado. Donde antes había una revelación
 % con contenido propio, ahora hay una diapositiva propia. La comprobación es mecánica:
-%   grep -v "^%" presentacion.tex | grep -c "pause\|onslide\|only<"   debe dar 0
+%   grep -v "^%" TFM_ppt.tex | grep -c "pause\|onslide\|only<"   debe dar 0
 %
 % Cada diapositiva numerada lleva exactamente una \note{} con el guion literal, en prosa seguida y
 % legible de corrido. Las cifras nunca se escriben a mano: proceden de tables/study_macros.tex, que
@@ -43,7 +43,7 @@
 
 % Descomentar para proyectar con el guion en la segunda pantalla. `build.py --notas` lo hace
 % sobre una copia, de modo que el fichero original se queda como está.
-% \setbeameroption{show notes on second screen=right}
+\setbeameroption{show notes on second screen=right}
 
 \setbeamertemplate{navigation symbols}{}
 \setbeamercolor{background canvas}{bg=white}

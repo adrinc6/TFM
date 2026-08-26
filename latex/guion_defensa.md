@@ -1,11 +1,11 @@
 # Guion de defensa
 
-> El guion hablado vive en los `\note{}` de `presentacion.tex`, junto a la diapositiva que
+> El guion hablado vive en los `\note{}` de `TFM_ppt.tex`, junto a la diapositiva que
 > acompaña. Este documento conserva el reparto de tiempo, el orden de recorte y el mapa de
 > preguntas. Las cifras económicas se leen de los activos y artefactos adoptados; no se mantienen
 > aquí como una segunda fuente.
 >
-> Para proyectar con las notas en la segunda pantalla, descomentar en `presentacion.tex`:
+> Para proyectar con las notas en la segunda pantalla, descomentar en `TFM_ppt.tex`:
 > `\setbeameroption{show notes on second screen=right}`.
 
 ## Estructura

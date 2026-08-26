@@ -78,7 +78,7 @@ crean más.
 
 ## El manuscrito LaTeX no se toca
 
-`latex/main.tex`, `latex/presentacion.tex` y `latex/assets/*` quedan congelados entre migraciones.
+`latex/TFM.tex`, `latex/TFM_ppt.tex` y `latex/assets/*` quedan congelados entre migraciones.
 Un cambio que afecte al manuscrito **no lo edita**: añade una entrada a la sección «Deuda nueva» de
 `docs/plan_latex.md` con qué cambió, a qué capítulos, tablas o figuras afecta, y qué artefacto lo
 respalda. `latex/scripts/` sí es código editable, pero el exportador no se ejecuta como parte de un

@@ -14,7 +14,7 @@
 > Regla de oro: **ninguna cifra entra en un `.tex` sin poder señalar el artefacto exacto** que la
 > respalda (`study_id` y ruta).
 
-El manuscrito (`latex/main.tex`, `latex/presentacion.tex`, `latex/assets/*.tex`) está **congelado**:
+El manuscrito (`latex/TFM.tex`, `latex/TFM_ppt.tex`, `latex/assets/*.tex`) está **congelado**:
 los cambios de código no lo editan. `latex/scripts/*.py`, `latex/build.py` y
 `latex/COMO_COMPILAR.md` sí son editables, pero
 el exportador no se ejecuta como parte de un cambio corriente.
@@ -26,11 +26,11 @@ en §10.
 
 Dos avisos de alcance que este documento no traía y que costaron tiempo:
 
-- **`latex/presentacion.tex` cuenta como manuscrito.** Tiene sus propias cifras, y varias están
+- **`latex/TFM_ppt.tex` cuenta como manuscrito.** Tiene sus propias cifras, y varias están
   escritas **con letra** en el guion hablado («mil cuatrocientas cuarenta», «diez puntos básicos de
   comisión»), donde ningún `grep` numérico las encuentra.
 - **Los identificadores de estudio viven en tres sitios** que se desincronizan solos: las macros de
-  `main.tex`, el bloque literal de comando de `a_reproducibilidad.tex` —que el exportador **no**
+  `TFM.tex`, el bloque literal de comando de `a_reproducibilidad.tex` —que el exportador **no**
   toca— y `asset_manifest.json`, que sí se regenera. El `dataset_hash` es un literal más, sin macro.
 
 Este plan cubre **qué escribir y dónde**. El **cómo** del formato —notación, estructura de carpetas,
@@ -144,7 +144,7 @@ Inventario por concepto, para poder ir a por ellas sin releer el manuscrito ente
 | IR y exceso de la cartera | `00_resumen` (×4), `07` (×4), `09`, `t01` |
 | Era reservada (cohortes, años, IR) | `00_resumen` (×3), `06` (×2), `07` (×3), `09` (×2), `t01`, `t09` |
 | Nº de tickers y cobertura | `03` (×2), `t09` |
-| `study_id` | Macros en `main.tex` **y** bloque literal en `a_reproducibilidad.tex:46-50` |
+| `study_id` | Macros en `TFM.tex` **y** bloque literal en `a_reproducibilidad.tex:46-50` |
 | `dataset_hash` | `03_datos_y_universo` |
 
 El bloque de `a_reproducibilidad.tex:46-50` reproduce la línea de comandos con los identificadores
@@ -194,7 +194,7 @@ lo que se concluyó.
 
 Las siete lecturas del Bloque B, resueltas:
 
-1. **Identificadores.** Macros de `main.tex`, bloque literal de `a_reproducibilidad.tex` y
+1. **Identificadores.** Macros de `TFM.tex`, bloque literal de `a_reproducibilidad.tex` y
    `dataset_hash` de `03_datos_y_universo.tex`, los tres actualizados.
 2. **Ganador y cadena.** La cadena converge (9 → 2 → 2 variables) y mejora por milésimas: esa
    pequeñez es el argumento para detenerla, y así se enuncia.
@@ -253,8 +253,17 @@ Cada cambio de código que afecte al manuscrito añade aquí una entrada: qué c
 tabla o figura afecta y qué artefacto lo respalda. **Sin cifras.** Cuando una entrada se resuelve, se
 borra de aquí y su historia queda en `docs/bitacora.md`: este fichero dice qué falta, no qué se hizo.
 
-A 2026-08-24 no hay deuda de contenido pendiente. Queda un aviso permanente y dos decisiones
-editoriales abiertas.
+A 2026-08-24 no hay deuda de contenido pendiente. Queda un aviso permanente, dos decisiones
+editoriales abiertas y un cambio de nombres de fichero sin efecto sobre el contenido.
+
+### Sin deuda de contenido — los ficheros del manuscrito cambiaron de nombre (2026-08-26)
+
+`main.tex` pasa a `TFM.tex`, `presentacion.tex` a `TFM_ppt.tex` y `presentacion_notas.tex` a
+`TFM_ppt_notes.tex`, con sus PDF a juego (`TFM.pdf`, `TFM_ppt.pdf`, `TFM_ppt_notes.pdf`); el
+duplicado `main.pdf` desaparece. **No cambia ni una línea de prosa, ni una cifra, ni una figura,
+ni una tabla**: solo los nombres de los dos documentos maestros y los comentarios que se citaban a
+sí mismos. No hay nada que reescribir en la próxima actualización del manuscrito; la entrada está
+aquí para que quien vuelva sepa por qué las rutas de este plan ya no dicen `main.tex`.
 
 ### Aviso permanente — existe un Portfolio Study posterior que no es el del manuscrito
 

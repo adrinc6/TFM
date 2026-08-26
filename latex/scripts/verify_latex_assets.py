@@ -22,7 +22,7 @@ FIGURES = LATEX / "figures"
 TABLES = LATEX / "tables"
 # Documentos maestros: la memoria y la presentación de defensa. Ambos viven en
 # latex/ y comparten las figuras de figures/, así que se validan igual.
-MAESTROS = ("main.tex", "presentacion.tex")
+MAESTROS = ("TFM.tex", "TFM_ppt.tex")
 INCLUDE = re.compile(r"\\includegraphics(?:\[[^]]*\])?\{([^}]+)\}")
 TABLE = re.compile(r"\\input\{(tables/[^}]+\.tex)\}")
 CHAPTER = re.compile(r"\\input\{(chapters/[^}]+)\}")
@@ -42,7 +42,7 @@ def main() -> int:
     errors: list[str] = []
     # Los documentos maestros viven en latex/ y los recursos un nivel por debajo, así que toda
     # ruta debe llevar su prefijo de carpeta: chapters/, figures/ o tables/. La presentación se
-    # coloca junto a main.tex precisamente para poder reutilizar esas mismas rutas sin duplicar
+    # coloca junto a TFM.tex precisamente para poder reutilizar esas mismas rutas sin duplicar
     # ninguna figura.
     tex_files = [LATEX / nombre for nombre in MAESTROS if (LATEX / nombre).is_file()]
     tex_files.extend(sorted(CHAPTERS.glob("*.tex")))
@@ -93,7 +93,7 @@ def main() -> int:
             fail(f"Referencia sin destino en {origin}: \\ref{{{key}}}", errors)
 
     # Activos generados pero no insertados en ningún capítulo. `study_macros.tex` es la excepción
-    # declarada: lo consumen main.tex y presentacion.tex directamente, no un capítulo.
+    # declarada: lo consumen TFM.tex y TFM_ppt.tex directamente, no un capítulo.
     for figure in sorted(FIGURES.glob("*.png")):
         if f"figures/{figure.name}" not in used_graphics:
             fail(f"Figura huérfana (generada pero no insertada): {figure.name}", errors)
