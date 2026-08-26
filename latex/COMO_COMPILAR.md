@@ -1,6 +1,6 @@
 # Cómo compilar el TFM
 
-Guía práctica para generar `TFM.pdf` y `presentacion.pdf` desde cero, regenerar las figuras y las
+Guía práctica para generar `TFM.pdf` y `TFM_ppt.pdf` desde cero, regenerar las figuras y las
 tablas, y desinstalarlo todo cuando el proyecto termine.
 
 El documento se compila con **XeLaTeX**, no con pdfLaTeX. No es opcional: el preámbulo usa
@@ -26,9 +26,9 @@ Qué hace en cada ejecución se elige con los interruptores `True`/`False` del b
 | `REGENERAR_ACTIVOS` | Rehace figuras, cuerpos de tabla y macros desde los estudios. Necesita los `.parquet` (ver §3) |
 | `AUDITAR_ACTIVOS` | Comprueba que macros, manifiesto y activos coinciden con los estudios adoptados. No escribe |
 | `VERIFICAR_PROYECTO` | Rutas, UTF-8, referencias cruzadas y activos huérfanos |
-| `COMPILAR_MEMORIA` | `main.tex` → `TFM.pdf` |
-| `COMPILAR_DEFENSA` | `presentacion.tex` → `presentacion.pdf` |
-| `DEFENSA_CON_NOTAS` | Además, una copia con el guion del ponente para la segunda pantalla |
+| `COMPILAR_MEMORIA` | `TFM.tex` → `TFM.pdf` |
+| `COMPILAR_DEFENSA` | `TFM_ppt.tex` → `TFM_ppt.pdf` |
+| `DEFENSA_CON_NOTAS` | Además, `TFM_ppt_notes.tex` → `TFM_ppt_notes.pdf`, con el guion del ponente para la segunda pantalla |
 | `COPIAR_PDF_AL_REPO` | Deja los PDF en `latex/`; con `False` se quedan en `latex/build/` |
 | `LIMPIAR_AUXILIARES` | Borra `.aux`, `.log`, `.toc`… al terminar |
 | `SALIDA_DETALLADA` | Muestra la salida completa de cada paso en vez del resumen |
@@ -37,8 +37,8 @@ Para una ejecución suelta sin editar el fichero:
 
 ```powershell
 python latex/build.py --todo            # regenera, verifica y compila las dos
-python latex/build.py --solo-memoria    # solo main.tex
-python latex/build.py --solo-defensa    # solo presentacion.tex
+python latex/build.py --solo-memoria    # solo TFM.tex
+python latex/build.py --solo-defensa    # solo TFM_ppt.tex
 python latex/build.py --activos         # regenera y verifica, sin compilar
 python latex/build.py --notas           # añade la defensa con notas del ponente
 python latex/build.py --limpiar         # borra auxiliares y termina
@@ -102,7 +102,7 @@ falla y hay que añadirlo con `tlmgr install <paquete>`.
 Subir la carpeta `latex/` completa y configurar:
 
 - *Menu* → *Compiler*: **XeLaTeX**
-- *Menu* → *Main document*: `main.tex` para la memoria, `presentacion.tex` para la defensa
+- *Menu* → *Main document*: `TFM.tex` para la memoria, `TFM_ppt.tex` para la defensa
 
 Las rutas de los recursos son relativas (`chapters/`, `figures/`, `tables/`), de modo que funcionan
 igual en local y en Overleaf sin tocar nada.
@@ -115,13 +115,13 @@ Lo normal es no hacerlo a mano: `python latex/build.py` (§0) se encarga. Lo que
 equivalente manual, por si hace falta diagnosticar.
 
 El documento necesita **al menos dos pasadas**: la primera escribe el índice, la lista de figuras,
-la de tablas y las etiquetas de referencia cruzada en `main.aux`, y la segunda las coloca. Con una
+la de tablas y las etiquetas de referencia cruzada en `TFM.aux`, y la segunda las coloca. Con una
 sola pasada el índice sale vacío y las referencias aparecen como `??`.
 
 ```powershell
 cd latex
-xelatex -interaction=nonstopmode main.tex
-xelatex -interaction=nonstopmode main.tex
+xelatex -interaction=nonstopmode TFM.tex
+xelatex -interaction=nonstopmode TFM.tex
 ```
 
 ### Cuidado con `latexmk` en PowerShell
@@ -149,9 +149,10 @@ pantalla:
 python latex/build.py --solo-defensa --notas
 ```
 
-Sale `latex/build/presentacion_notas.pdf`, con cada página al doble de ancho: la diapositiva a la
-izquierda y el guion a la derecha. El script descomenta la opción de beamer **sobre una copia**, de
-modo que `presentacion.tex` se queda intacto. A mano, el equivalente es descomentar esta línea del
+Sale `latex/TFM_ppt_notes.pdf`, con cada página al doble de ancho: la diapositiva a la izquierda y
+el guion a la derecha. El script no edita la defensa: **regenera `TFM_ppt_notes.tex` desde
+`TFM_ppt.tex`** con la opción de beamer descomentada, de modo que `TFM_ppt.tex` se queda intacto y
+la versión con notas no puede desincronizarse. A mano, el equivalente es descomentar esta línea del
 preámbulo:
 
 ```latex
@@ -202,8 +203,9 @@ latex/
   build.py              hace todo: compila, regenera y verifica. Empieza por aquí
   COMO_COMPILAR.md      este documento
   guion_defensa.md      tiempos y mapa de preguntas de la defensa
-  main.tex              memoria
-  presentacion.tex      defensa (Beamer 16:9)
+  TFM.tex               memoria
+  TFM_ppt.tex           defensa (Beamer 16:9)
+  TFM_ppt_notes.tex     defensa con las notas del ponente. Lo regenera build.py --notas
   chapters/             un .tex por capítulo y anexo. Escritos a mano
   figures/              solo PNG. Generados
   tables/               solo .tex: cuerpos de tabla y study_macros.tex. Generados
@@ -291,10 +293,10 @@ antiguo `plan_tfm.md` que no estaba ya en otro sitio.
 | Granularidad | Capitulado clásico: 9 capítulos, bibliografía y tres anexos. |
 | Referencias | **Autor-año escritas a mano** en `chapters/10_bibliografia.tex`. No se usa `biblatex` ni `biber`: esa cadena impedía compilar. El proyecto no contiene ningún `.bib`. |
 | Figuras y tablas | Generadas desde los artefactos de los estudios, nunca dibujadas a mano. |
-| Defensa | `presentacion.tex`, Beamer 16:9. Vive junto a `main.tex` para reutilizar `figures/` sin duplicar ningún PNG; en Overleaf sólo se cambia *Main document*. |
+| Defensa | `TFM_ppt.tex`, Beamer 16:9. Vive junto a `TFM.tex` para reutilizar `figures/` sin duplicar ningún PNG; en Overleaf sólo se cambia *Main document*. |
 
 Queda pendiente de decidir, sin que bloquee nada: la portada oficial de la universidad (hay una
-provisional en `main.tex`).
+provisional en `TFM.tex`).
 
 ### Convenciones de escritura
 
@@ -304,7 +306,7 @@ provisional en `main.tex`).
   sola al cambiar de estudio.
 - Notación consistente entre capítulos: snapshot \(\tsnap\), publicación \(\tfiled\), horizonte
   \(\hlabel\), coeficiente de información por rango \(\rankic\). Se fija en el preámbulo de
-  `main.tex` y se reutiliza sin redefinir.
+  `TFM.tex` y se reutiliza sin redefinir.
 - Términos en inglés sin traducción asentada (*lookahead bias*, *walk-forward*, *rank-IC*) en
   cursiva la primera vez y así el resto del documento.
 - **Cada resultado positivo va acompañado de su matiz** en el mismo párrafo o en el inmediatamente

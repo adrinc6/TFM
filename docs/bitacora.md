@@ -2575,3 +2575,44 @@ copia al repositorio. La ruta sin latexmk resuelve bien las referencias cruzadas
 apariciones de `??` en las 102 páginas de la memoria. `python -m ruff check .` y las 144 pruebas
 quedan en verde. `COMO_COMPILAR.md` recoge el diagnóstico en §2 y tres filas nuevas en la tabla de
 problemas frecuentes, incluida la del PDF que parece no actualizarse.
+
+
+## 2026-08-26 · Los documentos maestros del LaTeX pasan a llamarse como sus entregables
+
+**Síntoma.** `latex/` arrastraba nombres que ya no describían lo que contenían. El maestro se
+llamaba `main.tex` pero su PDF era `TFM.pdf`, de modo que fuente y entregable no coincidían. Y
+había dos PDF idénticos, `main.pdf` y `TFM.pdf`, con el mismo md5 y 3,4 MB cada uno: uno de los dos
+sobraba y nadie sabía cuál era el bueno.
+
+**Decisión.** Tres familias, tres nombres, coherentes entre `.tex` y `.pdf`: `TFM.tex`/`TFM.pdf`
+para la memoria, `TFM_ppt.tex`/`TFM_ppt.pdf` para la defensa y `TFM_ppt_notes.tex`/
+`TFM_ppt_notes.pdf` para la defensa con el guion del ponente. `main.pdf` se borra por duplicado.
+Los PDF **no se recompilan**: el nombre del fichero no vive dentro del PDF, así que el renombrado
+conserva el contenido intacto y evita 3,4 MB de binario nuevo en el historial por un cambio que no
+altera ni una página.
+
+**Alcance sobre el manuscrito congelado.** De `TFM.tex` y `TFM_ppt.tex` solo se tocan las líneas de
+comentario que citaban el nombre antiguo del propio fichero: la de Overleaf en el preámbulo de la
+memoria y la del `grep` de verificación de la defensa. Ni una línea de prosa, ni una cifra.
+
+**Cambio de fondo en `build.py`.** `presentacion_notas.tex` era una copia byte a byte de la defensa
+salvo una línea —la opción de beamer que manda las notas a la segunda pantalla— y estaba versionada
+a mano, mientras `build.py` generaba la suya en `latex/build/`: dos copias con el mismo contenido y
+ningún mecanismo que las mantuviera iguales. Ahora `prepara_defensa_con_notas()` regenera
+`latex/TFM_ppt_notes.tex` en su sitio desde `TFM_ppt.tex` en cada compilación con `--notas`, de modo
+que el fichero versionado es siempre el derivado vigente. Además el PDF con notas pasa a copiarse a
+`latex/TFM_ppt_notes.pdf` en vez de quedarse en la carpeta de trabajo, que era la razón por la que
+el versionado envejecía sin que nadie lo notara. Se corrige de paso el comentario que afirmaba que
+`.gitignore` excluye los `*.pdf`: no lo hace, solo ignora `latex/build/`, y los PDF de `latex/` sí
+están versionados.
+
+**Rastro.** `MAESTROS` de `verify_latex_assets.py` pasa a `("TFM.tex", "TFM_ppt.tex")`;
+`TFM_ppt_notes.tex` queda fuera a propósito, porque es un derivado y contarlo duplicaría figuras y
+etiquetas sin comprobar nada nuevo. `COMO_COMPILAR.md`, `guion_defensa.md`, `CLAUDE.md`, `AGENTS.md`
+y `docs/plan_latex.md` actualizan sus rutas. Las entradas anteriores de esta bitácora **no se
+reescriben**: dicen lo que se hizo entonces, con los nombres de entonces.
+
+**Validación realizada.** `python latex/scripts/verify_latex_assets.py`, `python -m pytest -q`,
+`python -m ruff check .` y `node --check app/js/app.js` en verde; el md5 de los tres PDF es el mismo
+antes y después del renombrado. La compilación completa no se ejecuta aquí —el contenedor no tiene
+XeLaTeX— y queda para la máquina donde se compila el manuscrito.

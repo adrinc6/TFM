@@ -27,7 +27,7 @@ se desincroniza.
 
 ## El manuscrito LaTeX está congelado
 
-`latex/main.tex`, `latex/presentacion.tex` y `latex/assets/*.tex` **no se editan** como parte de un
+`latex/TFM.tex`, `latex/TFM_ppt.tex` y `latex/assets/*.tex` **no se editan** como parte de un
 cambio, ni se regeneran sus figuras y tablas. En su lugar se añade una entrada a la sección «Deuda
 nueva» de `docs/plan_latex.md` explicando qué cambió, a qué capítulos, tablas o figuras afecta y qué
 artefacto lo respalda. Cuando el usuario ordene la actualización, ese fichero es el contexto de
