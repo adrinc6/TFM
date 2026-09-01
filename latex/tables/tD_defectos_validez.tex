@@ -1,10 +1,21 @@
 % Fuente: docs/bitacora.md, entrada 2026-07-28 «Corrección de validez, alfa neto y limpieza».
 % Tabla transcrita del registro de desarrollo, no generada por script: su origen es la
 % bitácora del proyecto y no un artefacto del Study.
-\begin{tabularx}{\textwidth}{XX}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{7.7cm}>{\raggedright\arraybackslash}p{7.7cm}@{}}
+\caption{Defectos del desarrollo con impacto sobre la validez.}\label{tab:defectos}\\
 \toprule
 Defecto detectado & Efecto medido de la corrección \\
 \midrule
+\endfirsthead
+\toprule
+Defecto detectado & Efecto medido de la corrección \\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r}{\footnotesize Continúa en la página siguiente}\\
+\endfoot
+\bottomrule
+\endlastfoot
 La puerta de no inferioridad penalizaba a los candidatos \textbf{superiores}: cuanto mayor la
 diferencia, más ancho el intervalo &
 \texttt{feature\_preset} pasa de \texttt{core} (Rank-IC 0,0730) a \texttt{all} (0,0958), con
@@ -43,5 +54,4 @@ Convención de exclusión tipo CRSP ($-30$\,\%) y liquidación contra efectivo \
 \addlinespace
 Nulo de carteras aleatorias con percentil 95 de CAGR del 107\,\% &
 Exige cobertura anual completa, aplica la guarda de datos y paga los mismos costes \\
-\bottomrule
-\end{tabularx}
+\end{longtable}

@@ -30,7 +30,9 @@ decisión. La métrica de selección fue \texttt{rank\_ic\_only} en las tres pas
 \texttt{information\_ratio} en el Portfolio Study, cuya rejilla se calculó además sobre una serie
 recortada en 2024 para que ninguna de las 1.440 combinaciones pudiera observar la era reservada.
 
-\section{Ciclo de vida de una ejecución}
+\section{Cómo se persiste y se audita la evidencia}
+
+\subsection{Ciclo de vida de una ejecución}
 
 La reproducibilidad no depende sólo de fijar una semilla. Una ejecución puede fallar tras horas de
 cálculo, cancelarse o reanudarse, y si esos estados no forman parte del diseño, dos resultados
@@ -48,11 +50,12 @@ en memoria ---una semilla, una caché, un dataframe mutado--- sobreviva de una c
 siguiente. El resultado depende así de entradas persistidas y no del orden accidental en que se
 ejecutaron las cosas.
 
-\section{Cadena de custodia de la evidencia}
+\subsection{Cadena de custodia de la evidencia}
 
-Cada nivel responde a una pregunta diferente y tiene un consumidor definido:
+Cada nivel responde a una pregunta diferente y tiene un consumidor definido, según recoge la
+Tabla~\ref{tab:cadena-custodia}:
 
-\begin{table}[H]
+\begin{table}[htbp]
   \centering
   \small
   \begin{tabularx}{\textwidth}{p{3.1cm}X X}

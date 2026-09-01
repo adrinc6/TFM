@@ -332,6 +332,41 @@ provisional en `TFM.tex`).
 - **Ninguna página apaisada.** Las tablas anchas se ajustan con anchos de columna, cuerpo menor o
   partiendo por bloques; `pdflscape` ya no se carga.
 
+### Estructura de encabezados
+
+| Nivel | Comando | Numerado | En el índice |
+|---|---|---|---|
+| Sección | `\section` | Sí (3.1) | Sí |
+| Subsección | `\subsection` | Sí (3.1.1) | Sí |
+| Subsubsección | `\subsubsection*` | No | No |
+
+- **Máximo 5 secciones por capítulo.** Si hacen falta más divisiones, se agrupan por tema y las
+  piezas bajan a subsección.
+- **Nada de `\section*` ni `\subsection*`** dentro de un capítulo numerado: una división que no
+  aparece en el índice no se puede encontrar. Las subsubsecciones sí van sin numerar, y se usan con
+  moderación (hay siete en todo el documento).
+- **Tamaño mínimo**: una sección no baja de ~15 líneas de contenido ni una subsección de ~12. Lo que
+  no llegue, se fusiona con lo contiguo en vez de quedarse como encabezado suelto.
+- Ninguna sección debe repetir el título de su capítulo.
+
+### Figuras y tablas
+
+Toda figura y tabla debe estar **citada desde la prosa** (`Figura~\ref{...}`, `Tabla~\ref{...}`) en
+el punto donde se explica. Un activo que aparece sin que ningún párrafo lo anuncie interrumpe la
+lectura. `verify_latex_assets.py` detecta activos generados que no se insertan, pero **no** detecta
+que una figura insertada haya perdido su cita: eso se revisa a mano al cerrar una pasada.
+
+**Posicionamiento: `[htbp]`, nunca `[H]`.** `[H]` obliga a colocar el flotante exactamente donde
+está en el fuente, así que si no cabe en lo que queda de página LaTeX deja el resto en blanco. Con
+`[htbp]` puede adelantarlo o retrasarlo al hueco más próximo y el texto fluye. Que una figura quede
+uno o dos párrafos por encima o por debajo de donde se cita es preferible a una página medio vacía.
+Los parámetros de la política de flotantes están fijados en el preámbulo de `TFM.tex`.
+
+**Tablas que no caben en una página: `longtable`.** Un `tabularx` no se puede partir, de modo que una
+tabla más alta que la caja de texto arrastra el hueco a la página anterior. `longtable` se parte
+repitiendo la cabecera, pero **no puede ir dentro de un entorno flotante**: se inserta directamente,
+con su `\caption` y su `\label` dentro del propio entorno.
+
 ### Extensión
 
 El cuerpo (capítulos 1 a 9) no debe pasar de **60 páginas** y los anexos de **15**. Es una

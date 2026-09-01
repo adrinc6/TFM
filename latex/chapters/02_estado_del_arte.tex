@@ -1,7 +1,9 @@
 \chapter{Estado del arte}
 \label{chap:estado-arte}
 
-\section{De las anomalías a las variables explicativas}
+\section{De los factores al aprendizaje automático}
+
+\subsection{Las regularidades que orientan el diseño}
 
 Los retornos esperados de una acción no son independientes de sus características observables. Sobre
 esa idea se construyó la literatura de factores: el tamaño (Banz, 1981), el valor (Fama y French,
@@ -29,7 +31,7 @@ factor puro: una empresa de alta calidad puede presentar a la vez baja volatilid
 persistente y valoración elevada. La especialización organiza la entrada del modelo, no impone que
 el mercado recompense cada bloque por separado.
 
-\section{Aprendizaje automático en \textit{asset pricing}}
+\subsection{Qué añade el aprendizaje automático y qué arriesga}
 
 Los métodos de aprendizaje automático amplían la capacidad de modelar no linealidades e
 interacciones entre características. Gu et al. (2020) muestran que estos modelos pueden
@@ -68,7 +70,7 @@ El diseño \textit{walk-forward}, las etiquetas cerradas y la era reservada son 
 exigencia. La Tabla~\ref{tab:posicionamiento} enfrenta las cuatro líneas de literatura que este
 trabajo cruza con el riesgo metodológico de cada una y con lo que aquí se hace al respecto.
 
-\begin{table}[H]
+\begin{table}[htbp]
 \centering
 \small
 \caption{Posicionamiento metodológico del estudio frente a líneas de literatura relevantes.}
@@ -87,7 +89,7 @@ Inferencia con múltiples pruebas & Penalización del \textit{data snooping} & P
 López de Prado et al. (2014).}
 \end{table}
 
-\section{Sesgos que condicionan la evidencia}
+\section{Sesgos que condicionan cualquier evidencia}
 
 El \textit{lookahead bias} aparece cuando una variable incorpora información que no era conocida en
 la fecha de decisión. En fundamentales, usar la fecha de cierre fiscal en lugar de la fecha de filing
@@ -113,7 +115,9 @@ precios de numerosos símbolos retirados. El universo correcto y el panel observ
 dos poblaciones diferentes. Esta distinción justifica que la cobertura se mida contra los miembros
 reales del índice y no contra las filas que el propio pipeline consiguió construir.
 
-\section{Medición de señal, amplitud y transferencia: Rank-IC como criterio de selección}
+\section{Medir la señal: Rank-IC, amplitud y transferencia}
+
+\subsection{Por qué la métrica es una correlación de rangos}
 
 La métrica que selecciona el sistema es la correlación de rangos, no el error de una predicción
 puntual. El motivo es práctico: para elegir acciones importa más acertar cuál de dos empresas irá
@@ -126,8 +130,9 @@ etiquetas a doce meses se solapan entre fechas consecutivas, el número de obser
 mayor de lo que realmente es, lo que obliga a trabajar por bloques y con errores estándar
 corregidos.
 
-La literatura de gestión activa distingue además la calidad de una señal de la capacidad de
-aprovecharla, y lo resume en una relación clásica ---la ley fundamental de Grinold (1989)--- que
+\subsection{De la señal a la cartera: la ley fundamental}
+
+La literatura de gestión activa distingue la calidad de una señal de la capacidad de aprovecharla, y lo resume en una relación clásica ---la ley fundamental de Grinold (1989)--- que
 este trabajo emplea como marco conceptual y no como identidad exacta. Dice que el resultado que un
 gestor puede alcanzar depende de tres cosas: cómo de buena es su señal, cuántas decisiones
 independientes puede tomar con ella, y qué parte de esa señal consigue llevar realmente a la

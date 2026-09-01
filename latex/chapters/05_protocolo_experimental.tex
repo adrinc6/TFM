@@ -37,7 +37,9 @@ y con ello la probabilidad de que la mejor cifra observada deba parte de su tama
 búsqueda. La cadena no evita el sobreajuste: lo sistematiza y lo hace visible. Lo que protege al
 resultado es la era reservada, que no participó en ninguna de las tres pasadas.
 
-\section{Optimización secuencial y regla de decisión}
+\section{Cómo se elige una configuración}
+
+\subsection{Optimización secuencial por fases}
 
 El catálogo cerrado se recorre en cuatro fases: temporal, representación, modelo y meta. Se parte
 de un \textit{baseline}; en cada fase se modifica una variable y se comparan sus candidatos con el
@@ -45,7 +47,7 @@ incumbente acumulado. Así, el coste científico es una suma de alternativas, no
 cartesiana opaca. La pasada de referencia ejecutó 46 configuraciones, y cada una queda registrada
 junto con la elección que motivó.
 
-\subsection*{Cuándo una alternativa sustituye a la que ya estaba}
+\subsection{Cuándo una alternativa sustituye a la que ya estaba}
 \label{sec:regla-decision}
 
 En cada paso hay una configuración \emph{en el cargo}, el incumbente, y una alternativa que aspira a
@@ -77,13 +79,13 @@ Y cuando la diferencia es minúscula ---por debajo de 0,002--- se declara empate
 preferencia fijada de antemano hacia la opción más simple o más prudente. Eso no es una medición, y
 por eso los valores que salen de un empate no se presentan en este trabajo como hallazgos empíricos.
 
-Un caso real del propio estudio ilustra por qué la regla mira la serie y no el promedio. La regla de
+Un caso real del propio estudio muestra por qué la regla mira la serie y no el promedio. La regla de
 ponderación de variables tenía una alternativa que medía \emph{mejor} ---0,1065 frente a 0,1063--- y
-cuya ventaja pareada era incluso positiva, y aun así no ganó: era superior en el 49,6\,\% de las
-cohortes, es decir, en menos de la mitad. No superó la puerta de dominancia y el incumbente se
+cuya ventaja pareada era incluso positiva. Aun así no ganó: era superior en el 49,6\,\% de las
+cohortes, es decir, en menos de la mitad. No superó la puerta de dominancia y el valor vigente se
 conservó.
 
-Esa separación es la garantía que sostiene todo lo demás: sólo las cuatro fases predictivas pueden
+Esa disciplina es la garantía que sostiene todo lo demás: sólo las cuatro fases predictivas pueden
 mover al ganador, y todo lo económico ocurre después de congelar la señal.
 
 La Tabla~\ref{tab:decisiones} hace auditable esa traza. Lo que tabula no es el Rank-IC acumulado
@@ -91,7 +93,7 @@ tras cada paso ---que apenas se mueve, por lo que se explica más abajo--- sino 
 alternativa que se descartó}: cuánto Rank-IC habría costado adoptarla, ordenado de mayor a menor
 coste.
 
-\begin{table}[H]
+\begin{table}[htbp]
   \centering
   \small
   \caption{Qué alternativa se rechazó en cada decisión y cuánto habría costado adoptarla.}
@@ -145,7 +147,7 @@ puede comprobarse que cada valor final pertenecía a su rejilla declarada y que 
 ajena aparece en la configuración. Doce de esas treinta y tres son de cartera: se ejecutan después
 de congelar el ganador y no pueden modificarlo.
 
-\section{Por qué la selección predictiva es secuencial}
+\subsection{Por qué la selección predictiva es secuencial}
 \label{sec:seleccion-secuencial}
 
 Una búsqueda cartesiana de todos los valores posibles permitiría encontrar combinaciones muy
@@ -174,7 +176,9 @@ habría perdido las 117 cohortes mensuales sobre las que descansa el resto del t
 contrario, el horizonte de seis meses fue rechazado con holgura: ventaja pareada de $-0{,}0375$ y un
 intervalo íntegramente negativo.
 
-\section{De rango a alfa esperado}
+\section{De la ordenación a las posiciones}
+
+\subsection{De rango a alfa esperado}
 
 A partir de aquí el problema cambia de naturaleza: ya no se trata de ordenar mejor, sino de
 convertir una ordenación en posiciones sin destruir por el camino la ventaja que contiene. El primer
@@ -183,7 +187,7 @@ una acción es la tercera mejor no dice si merece la pena pagar por comprarla. S
 cerradas se estima por eso una relación entre el tramo del ranking y el retorno excedente anual,
 usando veinte grupos para que cada tramo conserve suficientes acciones.
 
-\subsection*{Calibración causal y estados de respaldo}
+\subsubsection*{Calibración causal y estados de respaldo}
 
 En cada fecha de inversión el calibrador sólo mira cohortes cuyo retorno a doce meses ya terminó.
 Para cada tramo del ranking calcula el exceso medio que se observó, y con esos veinte puntos ajusta
@@ -201,7 +205,7 @@ amplía a dieciséis trimestres y, si tampoco basta, a todo el histórico cerrad
 de las tres es viable se activa una salvaguarda fija. Cada observación registra cuál de los cuatro
 estados empleó, lo que evita mezclar silenciosamente un supuesto con una estimación.
 
-\begin{table}[H]
+\begin{table}[htbp]
   \centering
   \small
   \caption{Frecuencia de los estados de calibración por ventana.}
@@ -209,8 +213,9 @@ estados empleó, lo que evita mezclar silenciosamente un supuesto con una estima
   \input{tables/t05_calibracion_estados.tex}
 \end{table}
 
-En selección, 72 de las 117 observaciones usan la estimación del mismo horizonte, 24 amplían a la
-era, 15 quedan sin calibración empírica suficiente y seis activan la salvaguarda de arranque; en la
+El reparto figura en la Tabla~\ref{tab:calibracion-estados}. En selección, 72 de las 117
+observaciones usan la estimación del mismo horizonte, 24 amplían a la era, 15 quedan sin calibración
+empírica suficiente y seis activan la salvaguarda de arranque; en la
 reserva, las 18 aplican la estimación de horizonte obtenida con historia anterior. El recuento hace
 visible cuándo el sistema aprendió una escala económica y cuándo operaba con una regla de seguridad.
 
@@ -219,7 +224,7 @@ meta-agente, y la curva sólo cuantifica la distancia económica necesaria para 
 costes, efectivo y una posición existente. Por eso sus parámetros no participan en la selección por
 Rank-IC.
 
-\section{Construcción de cartera}
+\subsection{Construcción de cartera y precedencia de reglas}
 
 Seis variables gobiernan cómo se traduce el ranking en posiciones: cuántas acciones se mantienen a
 la vez, cómo se reparte el peso entre ellas, cuánto efectivo se tolera, cuánto tiempo debe retenerse
@@ -238,7 +243,7 @@ La era 2025--2026 fue aislada antes de aplicar la selección. Sus observaciones 
 los pesos del meta ni en la elección de parámetros; su papel es exclusivamente de confirmación
 posterior.
 
-\subsection*{Precedencia de las reglas operativas}
+\subsubsection*{Precedencia de las reglas operativas}
 
 Las seis variables no se aplican como filtros independientes: en cada rebalanceo hay una precedencia
 explícita que impide contradicciones. Primero se actualizan señales y restricciones de permanencia;
@@ -250,7 +255,7 @@ mientras que el suelo de cobertura o un alfa negativo sólo convierten una posic
 venderse. Incluso entonces debe existir un destino mejor después de costes. El índice no puede ser
 ese destino, porque sólo actúa como referencia; el efectivo sí, pero dentro de su tope.
 
-\section{Ejemplo de decisión y coste}
+\subsection{Ejemplo de decisión y coste}
 
 \begin{ejemplo}[Cuándo se rota y cuándo no]
 Con horizonte de doce meses, comisión de 10 pb y \textit{slippage} de 20 pb, una rotación completa
@@ -283,7 +288,7 @@ de cada cartera en la era reservada y luego ignorarlo ---si existiera, bastaría
 de que ese resultado \emph{no llega a calcularse}. Sólo la ganadora, ya elegida, se reevalúa después
 sobre la serie completa, como comprobación y nunca como criterio.
 
-\subsection*{Qué es el Information Ratio y por qué se optimiza éste}
+\subsection{Qué es el Information Ratio y por qué se optimiza éste}
 
 El criterio de selección deja de ser el exceso geométrico y pasa a ser el \emph{Information Ratio}:
 el exceso medio sobre el índice dividido por la volatilidad de ese exceso. Premia la
@@ -313,7 +318,7 @@ resultados:
   cuánto se corrige el peso de lo que ya se tiene.
 \end{itemize}
 
-\subsection*{Por qué cartesiano y no secuencial}
+\subsection{Por qué cartesiano y no secuencial}
 
 Aquí se hace lo contrario que en el plano predictivo, y no por comodidad: las seis variables
 \textbf{interactúan}, de modo que recorrerlas de una en una daría una respuesta que depende del

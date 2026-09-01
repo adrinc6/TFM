@@ -7,13 +7,9 @@ mostrar qué tipos de error eran capaces de producir resultados plausibles, cóm
 contrato quedó después para impedir su regreso. La historia completa permanece en la bitácora del
 repositorio.
 
-\begin{table}[H]
-  \centering
-  \footnotesize
-  \caption{Defectos del desarrollo con impacto sobre la validez.}
-  \label{tab:defectos}
-  \resizebox{\textwidth}{!}{\input{tables/tD_defectos_validez.tex}}
-\end{table}
+{\footnotesize
+\input{tables/tD_defectos_validez.tex}
+}
 
 \section{Cuatro defectos que producían resultados plausibles}
 
@@ -62,7 +58,7 @@ evidencia contra el modelo sino un contrafactual distinto.
 
 \section{Matriz de contratos que quedó en el sistema}
 
-\begin{table}[H]
+\begin{table}[htbp]
   \centering
   \small
   \begin{tabularx}{\textwidth}{p{3.0cm}X X}
@@ -82,7 +78,8 @@ evidencia contra el modelo sino un contrafactual distinto.
   \label{tab:contratos-validacion}
 \end{table}
 
-Estas correcciones no aumentan el Rank-IC ni son evidencia económica. Su valor está en delimitar qué
+La Tabla~\ref{tab:contratos-validacion} recoge los contratos que quedaron en el sistema tras esas
+correcciones. Ninguna de ellas aumenta el Rank-IC ni es evidencia económica. Su valor está en delimitar qué
 puede creerse del resultado: el modelo recibió las variables que declaraba, las filas pertenecían al
 tiempo que les correspondía, la búsqueda comparó candidatos bajo una regla coherente y la cartera
 pagó sólo operaciones que ocurrieron. La conclusión de fondo es que la plausibilidad no sirve como

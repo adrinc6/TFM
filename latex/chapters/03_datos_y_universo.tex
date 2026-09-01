@@ -6,7 +6,9 @@ realmente en cada fecha. De su respuesta depende que la evaluación no conceda a
 imposible ---conocer un dato antes de que existiera--- y, por tanto, que todo lo que venga después
 signifique algo.
 
-\section{Fuentes y función de cada fuente}
+\section{Fuentes y universo histórico}
+
+\subsection{De dónde sale cada dato}
 
 Ninguna fuente aislada da todo lo necesario para una evaluación temporalmente honesta. Yahoo Finance
 aporta los precios ajustados con los que se valoran posiciones y se calculan retornos; Finnhub, los
@@ -24,7 +26,7 @@ conjunto de entrenamiento disponible y se conserva un indicador de que faltaba, 
 modelo pueda aprender que la falta de cobertura es informativa sin recibir una estimación calculada
 con el futuro.
 
-\section{Universo dinámico y pertenencia histórica}
+\subsection{Un universo que cambia con el tiempo}
 
 El universo no es la lista actual del S\&P 500. Para cada fecha se consulta qué tickers pertenecían
 al índice en ese momento y se construye la sección transversal sólo con ellos. Esta decisión evita
@@ -54,19 +56,9 @@ para resolver la pertenencia al índice y para alimentar medias móviles, volati
 que necesitan pasado antes de producir su primer valor válido. Ampliar la descarga no mueve, por
 tanto, el periodo sobre el que se mide el modelo.
 
-\section{Identidad, materialización y trazabilidad}
+\section{El panel que el modelo evalúa}
 
-El panel se materializa una vez bajo una identidad que resume fuentes, rango temporal, universo,
-cadencia, horizonte, retardo de observación y versiones de transformación. Si cualquiera de esos
-elementos cambia, se crea un panel distinto. Los resultados no guardan una copia de los datos, sino
-esa referencia, y la clave con la que se recupera una evaluación en caché incluye la identidad del
-panel: sin esa condición, dos estudios con parámetros iguales pero datos distintos podrían compartir
-resultado por error. No es un detalle administrativo, sino lo que impide que una métrica calculada
-sobre un panel se atribuya a otro. Los identificadores concretos figuran en el
-Anexo~\ref{anexo:reproducibilidad}, junto a las rutas de los artefactos que alimentan cada tabla y
-cada figura.
-
-\section{Ventanas temporales del experimento}
+\subsection{Ventanas del experimento y cobertura del índice}
 
 El modelo necesita historia anterior para entrenarse. Con una ventana móvil de ocho años y primera
 observación evaluada en 2015, el entrenamiento procede siempre de periodos previos cuyas etiquetas
@@ -77,7 +69,7 @@ La Figura~\ref{fig:cobertura-anual} documenta la cobertura año a año desde 200
 historia que alimenta las ventanas móviles de entrenamiento y nunca actúa como cohorte de
 evaluación.
 
-\begin{figure}[H]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=0.96\textwidth]{figures/f03_cobertura_anual.png}
   \caption{Cobertura real del universo histórico y ventanas del experimento. La serie procede
@@ -98,7 +90,7 @@ Esa ausencia sí es observable, y está medida. El pipeline registra una fila po
 1.206 \textit{tickers} que alguna vez pertenecieron al índice, con el motivo por el que entra o no
 en el panel; la Tabla~\ref{tab:resolucion-universo} resume ese reparto.
 
-\begin{table}[H]
+\begin{table}[htbp]
   \centering
   \footnotesize
   \caption{Resolución del universo histórico: por qué falta cada \textit{ticker} ausente.}
@@ -118,14 +110,14 @@ cuello de botella es exclusivamente el precio y la exclusión no señala empresa
 contable. El Capítulo~\ref{chap:limitaciones} recoge la dirección y la magnitud del sesgo que esto
 introduce.
 
-\section{La muestra que el modelo realmente evalúa}
+\subsection{Dimensión efectiva de la muestra}
 \label{sec:muestra-oos}
 
 Cuántas empresas del índice se reconstruyen no dice cuántas observaciones llegan a cada predicción.
 La Figura~\ref{fig:muestra-oos} describe el panel que consume el modelo tras aplicar observabilidad,
 cierre de etiqueta y requisitos mínimos de precio.
 
-\begin{figure}[H]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=0.97\textwidth]{figures/f03_muestra_oos.png}
   \caption{Tamaño de las cohortes evaluadas y distribución de cobertura de las variables por
@@ -134,15 +126,15 @@ cierre de etiqueta y requisitos mínimos de precio.
   \label{fig:muestra-oos}
 \end{figure}
 
-El resultado son 60.259 pares acción--snapshot puntuados en 135 fechas mensuales y 606 símbolos
-distintos. La ventana de selección reúne 51.356 observaciones en 117 snapshots: una cohorte típica
+La Tabla~\ref{tab:muestra-oos} resume esa dimensión: 60.259 pares acción--snapshot puntuados en 135
+fechas mensuales y 606 símbolos distintos. La ventana de selección reúne 51.356 observaciones en 117 snapshots: una cohorte típica
 contiene 439 acciones, con un intervalo observado de 377 a 489. La reserva añade 8.903
 observaciones en 18 snapshots, con una mediana de 494,5 acciones. Esta última cifra no implica
 dieciocho evaluaciones económicas independientes: por el horizonte a doce meses, al cierre del
 estudio solo seis cohortes reservadas disponen de retorno realizado completo. La distinción entre
 \emph{puntuación emitida} y \emph{label cerrado} evita inflar la evidencia reservada.
 
-\begin{table}[H]
+\begin{table}[htbp]
   \centering
   \small
   \caption{Dimensión efectiva de la muestra fuera de muestra.}
@@ -162,8 +154,22 @@ de miles de filas no son ensayos independientes: las acciones de una misma fecha
 mercado y las ventanas consecutivas se solapan. Por eso toda la inferencia posterior se agrega por
 cohorte y por era, en lugar de tratar cada acción--mes como una repetición.
 
+\subsection{Identidad y trazabilidad del panel}
+
+El panel se materializa una vez bajo una identidad que resume fuentes, rango temporal, universo,
+cadencia, horizonte, retardo de observación y versiones de transformación. Si cualquiera de esos
+elementos cambia, se crea un panel distinto. Los resultados no guardan una copia de los datos, sino
+esa referencia, y la clave con la que se recupera una evaluación en caché incluye la identidad del
+panel: sin esa condición, dos estudios con parámetros iguales pero datos distintos podrían compartir
+resultado por error. No es un detalle administrativo, sino lo que impide que una métrica calculada
+sobre un panel se atribuya a otro. Los identificadores concretos figuran en el
+Anexo~\ref{anexo:reproducibilidad}, junto a las rutas de los artefactos que alimentan cada tabla y
+cada figura.
+
 \section{Observabilidad temporal: qué se sabía y cuándo}
 \label{sec:observabilidad}
+
+\subsection{Qué puede verse y cuándo se mira}
 
 Dos mecanismos distintos gobiernan qué información llega a una decisión, y no conviene
 confundirlos porque responden a preguntas diferentes: uno decide \emph{qué} puede verse, y el otro
@@ -190,7 +196,7 @@ evidencia no distingue entre los tres.
 
 La Figura~\ref{fig:observabilidad} ordena las fechas que intervienen.
 
-\begin{figure}[H]
+\begin{figure}[htbp]
 \centering
 \begin{tikzpicture}[>=Latex,every node/.style={font=\small}]
 \draw[->,thick] (0,0) -- (12.4,0);
@@ -209,7 +215,7 @@ La implementación aplica el filtro antes de construir las variables, y los test
 pertenencia al universo, fechas de publicación, cierre de etiquetas, meta-agente y órdenes de
 cartera.
 
-\section{De un cierre contable a una señal invertible}
+\subsection{De un cierre contable a una señal invertible}
 
 Una fecha de cierre fiscal no es una fecha de disponibilidad. Una empresa puede cerrar su trimestre
 el 31 de diciembre y publicar su informe semanas o meses después; quien construyese una señal el 15
@@ -234,7 +240,7 @@ información que ningún inversor tenía. El diseño conserva cada dato hasta qu
 mantiene disponible en observaciones posteriores mediante un relleno hacia delante, nunca hacia
 atrás.
 
-\section{Construcción de labels y cierre de cohortes}
+\subsection{Cierre de cohortes y ausencia de fuga temporal}
 
 El target compara el precio de una acción en el snapshot con el precio de su snapshot futuro a
 horizonte \(\hlabel\), y se expresa como retorno excedente respecto al benchmark. El cálculo usa
@@ -247,8 +253,6 @@ abrirse una posición, pero su retorno a doce meses no puede enseñar nada al me
 2016. Las primeras fechas del meta carecen por tanto de evidencia suficiente y usan pesos iguales.
 No es una carencia de la implementación, sino la manifestación correcta de una restricción de
 información.
-
-\section{Proposición de ausencia de fuga temporal}
 
 \begin{proposicion}[Ausencia de fuga temporal]
 \label{prop:sin-fuga}
@@ -273,9 +277,7 @@ ampliar el conjunto de informes admisibles pero nunca permite ver uno publicado 
 proposición no demuestra que los datos sean perfectos ni que el modelo generalice; demuestra algo
 anterior, que la evaluación no concede al algoritmo una ventaja imposible.
 
-\section{Controles implementados}
-
-La disciplina temporal se aplica en varias capas: la pertenencia al índice se resuelve en cada
+La disciplina temporal se aplica, por último, en varias capas: la pertenencia al índice se resuelve en cada
 observación, los precios se unen hacia atrás, los informes se ordenan por publicación y periodo, y
 las transformaciones que usan historia desplazan el pasado antes de calcular cualquier ventana.
 Cuatro contratos automáticos lo verifican ---pertenencia histórica y fechas de publicación, cierre
@@ -299,7 +301,7 @@ contradicción, sino el argumento a favor de combinar: ninguna variable aislada 
 la capacidad predictiva aparece al agregar muchas señales débiles. La Tabla~\ref{tab:features-top}
 muestra los extremos de esa distribución.
 
-\begin{table}[H]
+\begin{table}[htbp]
   \centering
   \small
   \caption{Variables con mayor y menor Rank-IC univariante.}

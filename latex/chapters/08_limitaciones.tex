@@ -5,15 +5,12 @@ Cada limitación se enuncia aquí junto a la cifra que permite dimensionarla: un
 puede cuantificarse no dice cuánto hay que descontar de las conclusiones. La
 Tabla~\ref{tab:limitaciones} las reúne ordenadas por severidad.
 
-\begin{table}[H]
-  \centering
-  \footnotesize
-  \caption{Limitaciones, evidencia que las cuantifica y severidad asignada.}
-  \label{tab:limitaciones}
-  \input{tables/t08_limitaciones.tex}
-  \caption*{La severidad es un juicio del autor sobre cuánto condiciona cada limitación las
-  conclusiones, no una medida estadística.}
-\end{table}
+{\footnotesize
+\input{tables/t08_limitaciones.tex}
+}
+
+\noindent\footnotesize{La severidad es un juicio del autor sobre cuánto condiciona cada limitación
+las conclusiones, no una medida estadística.}\normalsize
 
 Cuatro de esas filas merecen una precisión que la tabla no puede contener.
 
@@ -45,6 +42,8 @@ ordenación \emph{se cobra}.
 
 \section{Amenazas a la validez interna}
 
+\subsection{Fechas, restatements y calidad de la fuente}
+
 El diseño point-in-time reduce de forma directa el \textit{lookahead bias}, pero depende de la
 calidad de las fechas de filing y de la correspondencia entre métricas de Finnhub y periodos
 contables. Los restatements históricos pueden ser invisibles en años tempranos: que una cifra esté
@@ -52,7 +51,7 @@ hoy disponible con una fecha de filing antigua no garantiza que sea idéntica a 
 el mercado ese día. La mitigación consiste en conservar periodo, filing y lag de ejecución, y en no
 presentar la fuente como una cinta histórica perfecta.
 
-\subsection*{El sesgo de supervivencia por cobertura del proveedor}
+\subsection{El sesgo de supervivencia por cobertura del proveedor}
 
 La pertenencia histórica al índice limita el sesgo de supervivencia de composición, pero no elimina
 la cobertura desigual de las empresas retiradas. A diferencia de la versión habitual de esta
@@ -84,7 +83,7 @@ exclusión no selecciona empresas opacas sino símbolos sin precio---, y la lect
 comprobación empírica de si mueve o no el resultado predictivo. Una réplica con una fuente comercial
 \textit{point-in-time} sería la prueba definitiva.
 
-\section{Amenazas económicas}
+\section{Amenazas económicas y de generalización}
 
 Los costes son constantes, 10 pb de comisión y 20 pb de \textit{slippage}, y no modelan impacto de
 mercado, \textit{bid--ask} dinámico ni fiscalidad. La sensibilidad medida acota esta limitación
@@ -104,7 +103,9 @@ Sharpe, el solapamiento limita la precisión, la cobertura limita la generalizac
 limita la transferencia de señal. Ninguna permite ignorar los placebos, la permutación o la
 estabilidad por eras.
 
-\section{Limitaciones heredadas del proceso de desarrollo}
+\section{Limitaciones heredadas del desarrollo}
+
+\subsection{Tres decisiones que condicionan las cifras}
 
 Tres limitaciones no proceden del diseño sino de decisiones tomadas durante el desarrollo. Merecen
 figurar aquí porque afectan a la interpretación de las cifras y no serían visibles para un lector
@@ -133,7 +134,7 @@ ventana de selección, y por tanto sus cifras dentro de esa ventana son ahora un
 optimista en lugar de una inferior conservadora. La comprobación de la era reservada es la única
 lectura de esas cifras que no está sujeta a ese sesgo, y descansa sobre poco más de un año de datos.
 
-\section{Decisiones con margen escaso}
+\subsection{Decisiones con margen escaso}
 
 De las dieciocho decisiones de la pasada de referencia, dieciséis conservaron el valor heredado y
 sólo dos lo cambiaron. Una de esas dos ---la variable de régimen de mercado--- ganó por no

@@ -2716,3 +2716,73 @@ tocaron los capítulos que ya se leían bien.
 **Validación realizada.** Las métricas se mantienen exactas: **89 páginas**, cuerpo en **60** y
 anexos en **14**, sin páginas apaisadas ni desbordamientos. `verify_latex_assets.py`,
 `python -m pytest -q` (144 pruebas), `python -m ruff check .` y `node --check app/js/app.js` en verde.
+
+## 2026-09-02 · Reestructuración de secciones: el índice como objeto de diseño
+
+**El problema.** El manuscrito estaba corregido de contenido y ajustado en extensión, pero su
+estructura de encabezados no se había tocado nunca. El capítulo 3 tenía **once secciones**, el 5 y el
+7 siete cada uno, y el 9 siete encabezados de nivel sección. Varias de ellas no daban para sección
+—«Identidad, materialización y trazabilidad» 11 líneas, «Controles implementados» 10, «Aportación»
+8—: eran párrafos ascendidos a encabezado. Y las subdivisiones internas eran `subsection*`, invisibles
+en el índice, salvo una `subsection` numerada suelta en el capítulo 5.
+
+**Criterio adoptado.** Máximo **5 secciones por capítulo**. Secciones y subsecciones **numeradas** y
+visibles en el índice; subsubsecciones sin numerar y con moderación (quedan siete en todo el
+documento). Ninguna sección por debajo de ~15 líneas de contenido ni subsección por debajo de ~12: lo
+que no llegaba, se fusionó con lo contiguo.
+
+**Lo que cambió, capítulo a capítulo.** El 3 pasa de once secciones a cuatro: las tres que trataban
+de lo mismo —construcción de labels, proposición de no fuga y controles implementados— se funden en
+«Cierre de cohortes y ausencia de fuga temporal», y se corrige un título que engañaba («Ventanas
+temporales del experimento» eran 51 líneas sobre cobertura del universo, no sobre ventanas). El 5 va
+de siete a cuatro, con la regla de decisión —99 líneas colgando de una sección de 7— convertida en
+subsección propia. El 7 va de siete a cinco, agrupando rotación, costes y capacidad, y perfiles con
+era reservada. El 9, de siete encabezados a cuatro. Los anexos A y B pierden una sección cada uno.
+
+**Dos correcciones que sólo se ven compilando.** En el capítulo 7 los tres paneles de la misma figura
+habían quedado repartidos entre dos subsecciones distintas: el tercero se devolvió junto a los otros
+dos. Y el capítulo 6 tenía una sección con el mismo título que el propio capítulo («Qué aprendió el
+sistema»), que en el índice se leía como una repetición; pasa a «Qué aprendieron los agentes y el
+meta».
+
+**Auditoría de figuras y tablas.** Al revisar que los activos encajaran con la prosa reorganizada
+aparecieron **once figuras y tablas que el texto ya no citaba** —varias habían perdido su mención en
+la pasada de recorte anterior, y aparecían en el PDF sin que ningún párrafo las anunciara—. Todas
+tienen ya su cita en el punto donde se explican: tabla de la cadena, baselines, cartera ganadora,
+caso Apple, muestra OOS, estados de calibración, SPIVA, cadena de custodia, contratos de validación,
+atribución factorial y resultados de perfiles.
+
+**Validación realizada.** 89 páginas, **cuerpo en 60 y anexos en 14**, sin páginas apaisadas, **cero
+desbordamientos, cero etiquetas duplicadas y cero referencias sin resolver** en el log.
+`verify_latex_assets.py`, `pytest` (144 pruebas), `ruff` y `node --check` en verde.
+
+## 2026-09-02 · Los huecos en blanco eran `[H]`: política de flotantes y dos tablas partibles
+
+**El síntoma.** El capítulo 8 abría con cinco líneas de texto y el resto de la página en blanco. No
+era un caso aislado: catorce páginas del cuerpo tenían menos de 28 líneas, y dos de ellas tres y seis
+líneas respectivamente.
+
+**La causa.** Los **40 flotantes del documento estaban declarados `[H]`**, el especificador del
+paquete `float` que significa «exactamente aquí». Cuando una figura o tabla no cabe en lo que queda
+de página, `[H]` no permite a LaTeX adelantarla ni retrasarla: la empuja entera a la página siguiente
+y deja el hueco. La tabla de limitaciones, además, medía 73 líneas de fuente dentro de un `tabularx`,
+que no se puede partir: ocupaba más que la caja de texto de una página.
+
+**Lo que se hizo.** Los 38 flotantes restantes pasan de `[H]` a `[htbp]`, de modo que LaTeX puede
+colocarlos en el hueco más próximo. Se ajustan además los parámetros de la política de flotantes en
+el preámbulo (`topfraction` 0,9, `textfraction` 0,1, `floatpagefraction` 0,8 y contadores de
+flotantes por página) para que prefiera acompañar el flotante con texto antes que reservarle una
+página. Y las dos tablas manuales que no caben en una página ---limitaciones y defectos del
+desarrollo--- se convierten de `tabularx` a **`longtable`**, que se parte entre páginas repitiendo la
+cabecera; al hacerlo salen de su entorno flotante, porque `longtable` no puede ir dentro de uno. La
+tabla de limitaciones necesitó además fijar el ancho de su primera columna, que era `l` y desbordaba
+el margen en 97 pt.
+
+**Resultado.** De 89 a **85 páginas** sin tocar una sola palabra de la prosa, y de catorce páginas
+escasas a nueve. La página del capítulo 8 pasa de 6 líneas a 62. Las nueve que quedan son colas
+naturales de capítulo ---final de conclusiones, de bibliografía y de glosario---, que no son un
+defecto de composición. El cuerpo baja a **56 páginas**, con margen respecto al límite de 60.
+
+**Validación realizada.** 85 páginas, cuerpo 56 y anexos 14, sin páginas apaisadas y con el log
+limpio: cero desbordamientos, cero etiquetas duplicadas y cero referencias sin resolver.
+`verify_latex_assets.py`, `pytest` (144), `ruff` y `node --check` en verde.

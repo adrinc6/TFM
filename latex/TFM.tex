@@ -47,6 +47,20 @@
 \usepackage{caption}
 \usepackage{float}
 \usepackage{xcolor}
+
+% --- Política de flotantes -------------------------------------------
+% Las figuras y tablas se declaran [htbp], no [H]: colocarlas «exactamente aquí» obliga a LaTeX a
+% dejar el resto de la página en blanco cuando el flotante no cabe en lo que queda. Con [htbp]
+% puede adelantarlas o retrasarlas al hueco más próximo y el texto fluye sin cortes.
+% Estos parámetros amplían lo que LaTeX considera aceptable, para que prefiera acompañar el
+% flotante con texto antes que reservarle una página entera.
+\renewcommand{\topfraction}{0.9}        % hasta 90 % de la página puede ser flotante superior
+\renewcommand{\bottomfraction}{0.7}     % ídem en la parte inferior
+\renewcommand{\textfraction}{0.1}       % basta un 10 % de texto para no aislar el flotante
+\renewcommand{\floatpagefraction}{0.8}  % una página sólo es «de flotantes» si los llena al 80 %
+\setcounter{topnumber}{3}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{4}
 \usepackage{multirow}    % celdas agrupadas (catálogo de features por bloque)
 \usepackage{makecell}    % cabeceras a dos líneas en las tablas anchas
 \usepackage{enumitem}    % listas compactas en limitaciones y anexos

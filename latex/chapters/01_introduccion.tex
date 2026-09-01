@@ -1,7 +1,9 @@
 \chapter{Introducción}
 \label{chap:introduccion}
 
-\section*{Pregunta de apertura}
+\section{El problema y su dificultad}
+
+\subsection{Dos problemas en una misma pregunta}
 
 ¿Puede un sistema aprender a ordenar acciones fuera de muestra y convertir después ese orden en una
 cartera útil? La pregunta parece única, pero contiene dos problemas. Ordenar exige que las acciones
@@ -23,7 +25,7 @@ que declararlo desde ya: ese tramo es corto y, con un horizonte de doce meses, d
 observaciones completas, así que sirve para comprobar si el sistema se sostiene, no para estimar con
 precisión cuánto.
 
-\section{Problema y relevancia}
+\subsection{Por qué es difícil}
 
 La selección cuantitativa de acciones combina tres dificultades. Primero, la información disponible
 cambia con el tiempo: usar hoy la composición actual de un índice o un dato fundamental antes de su
@@ -41,10 +43,10 @@ robusto. Después se calculan atribución, robustez, carteras y perfiles como ev
 
 El segundo objetivo parte, además, de un listón competitivo muy alto. El \textit{SPIVA U.S.
 Scorecard Year-End 2025} compara fondos estadounidenses de gran capitalización con el S\&P 500 y
-muestra que la mayoría queda por debajo del índice en todos los horizontes publicados: a veinte
-años, el 92,89\,\% no lo supera.
+muestra que la mayoría queda por debajo del índice en todos los horizontes publicados
+(Figura~\ref{fig:spiva-horizontes}): a veinte años, el 92,89\,\% no lo supera.
 
-\begin{figure}[H]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=0.94\textwidth]{figures/f01_spiva_horizontes.png}
   \caption{Fondos estadounidenses de gran capitalización que quedan por debajo del S\&P 500 a
@@ -55,7 +57,7 @@ años, el 92,89\,\% no lo supera.
 
 Esa persistencia no es una casualidad estadística: tiene una explicación aritmética.
 
-\subsection*{Por qué batir al índice es un juego de suma cero}
+\subsection{Por qué batir al índice es un juego de suma cero}
 \label{sec:suma-cero-intro}
 
 El argumento lo formuló Sharpe (1991) y es aritmético, no empírico: el mercado es la suma de quienes
@@ -96,12 +98,16 @@ número de cohortes reservadas. La respuesta, adelantada aquí, es que la misma 
 resultados de signo opuesto según cómo se construya la cartera: el segundo objetivo no puede
 responderse sin declarar con cuál se midió.
 
-\section{Aportación}
+\section{Aportación y recorrido del documento}
 
 La aportación no consiste en presentar una cartera como recomendación de inversión. Consiste en un
 procedimiento auditable para separar aprendizaje predictivo e implementación económica, junto con
 un caso empírico completo. El trabajo muestra qué aprendió el sistema, qué especialista concentra la
 información, qué contrastes supera, qué reglas de cartera mueven el resultado y qué cambia cuando la
 misma señal se evalúa en una ventana que no intervino en ninguna decisión.
+
+El documento sigue ese mismo orden. Los capítulos 2 a 5 preparan la respuesta ---la literatura, los
+datos disponibles, el sistema y el protocolo que lo decide---; el 6 contesta a la primera pregunta y
+el 7 a la segunda; el 8 delimita hasta dónde llega la evidencia y el 9 la resume.
 
 

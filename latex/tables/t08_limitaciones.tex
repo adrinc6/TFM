@@ -1,10 +1,21 @@
 % Tabla compuesta: cada fila enlaza una limitación con la cifra concreta que la
 % cuantifica. Las cifras proceden de los artefactos citados en el capítulo:
 % lo predictivo del Model Study 3 y lo económico del ganador del Portfolio Study.
-\begin{tabularx}{\textwidth}{lXl}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{4.6cm}>{\raggedright\arraybackslash}p{9.0cm}l@{}}
+\caption{Limitaciones, evidencia que las cuantifica y severidad asignada.}\label{tab:limitaciones}\\
 \toprule
 Limitación & Evidencia que la cuantifica & Severidad \\
 \midrule
+\endfirsthead
+\toprule
+Limitación & Evidencia que la cuantifica & Severidad \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\footnotesize Continúa en la página siguiente}\\
+\endfoot
+\bottomrule
+\endlastfoot
 Multiplicidad de configuraciones &
 Deflated Sharpe 0,573 sobre 46 configuraciones evaluadas, por debajo del umbral 0,95 &
 Alta \\
@@ -69,5 +80,4 @@ Baja \\
 Factores no construibles &
 Tamaño e inversión declarados no replicables en la regresión factorial &
 Baja \\
-\bottomrule
-\end{tabularx}
+\end{longtable}

@@ -76,6 +76,8 @@ entrenamiento, la poda y la calibración, no una corrección posterior.
 
 \section{Entrenamiento y combinación de rangos}
 
+\subsection{Cómo se entrena cada especialista}
+
 La especialización no asigna una conclusión previa al modelo, sino un vocabulario económico con el
 que formular hipótesis: el agente de calidad recibe ratios como ROE, ROIC, márgenes o endeudamiento,
 pero no la regla «ROIC alto implica comprar», que tendría que aprender de la historia disponible. La
@@ -103,6 +105,8 @@ porque explique retrospectivamente toda la muestra: su disponibilidad y su contr
 sostenerse en los pliegues temporales permitidos. Con ello, la poda reduce dimensión sin convertir
 el conjunto reservado en un selector informal. El diccionario completo de variables, direcciones,
 bloques y agentes figura en el Apéndice~\ref{anexo:catalogo}.
+
+\subsection{Cómo se combinan los cinco rangos}
 
 La pregunta que el meta-agente resuelve en cada fecha es sencilla de enunciar: qué combinación de
 los cinco rangos habría acertado mejor el orden real en las cohortes que ya cerraron. Formalmente,
