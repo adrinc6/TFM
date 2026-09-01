@@ -314,5 +314,26 @@ provisional en `TFM.tex`).
   tribunal premia el matiz declarado y penaliza el matiz encontrado.
 - Distinguir siempre y explícitamente el papel de cada cifra: **selección**, **confirmación fuera de
   muestra** o **diagnóstico**. Nunca mezclar los tres en una misma tabla sin etiquetarlos.
-- Los decimales en español con coma; los identificadores, rutas y nombres de variables en
-  `\texttt{}` y sin traducir.
+- Los decimales en español con coma; las rutas de fichero en `\texttt{}` y sin traducir.
+- **Los nombres de variable del código no aparecen en la prosa.** En el texto se nombra el concepto
+  («el tope de efectivo», «la variante libre del meta-agente», «el retardo de observación»); los
+  identificadores viven en las tablas, los anexos y los pies de figura que los rotulan. El
+  Anexo C traduce cada parámetro del catálogo a lenguaje llano.
+- **Cada cosa se explica una vez, en su sitio.** Si un concepto ya tiene su capítulo —la suma cero
+  en el 1, la multiplicidad en el 5, la concentración de la cartera en el 7—, los demás lo citan en
+  media línea en vez de volver a argumentarlo. Los términos se definen en el glosario y después se
+  usan sin redefinir.
+- **Las introducciones y los cierres de capítulo no hablan del documento.** Nada de «este capítulo
+  responde en el orden que un lector necesita», «el documento sigue el orden lógico» ni resúmenes de
+  lo que se acaba de leer. Se entra en materia y se sale de ella.
+- **No sobrejustificar.** A veces una frase basta. Se elimina la justificación de segundo orden (por
+  qué se justifica lo que se acaba de justificar) y la explicación de por qué *no* se hizo algo que
+  nadie ha propuesto.
+- **Ninguna página apaisada.** Las tablas anchas se ajustan con anchos de columna, cuerpo menor o
+  partiendo por bloques; `pdflscape` ya no se carga.
+
+### Extensión
+
+El cuerpo (capítulos 1 a 9) no debe pasar de **60 páginas** y los anexos de **15**. Es una
+restricción dura: si entra contenido nuevo, sale otro. Al cerrar una revisión conviene comprobarlo
+sobre el PDF, porque el reparto por capítulo no se ve de otro modo.

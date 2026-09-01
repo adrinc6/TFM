@@ -521,33 +521,93 @@ def _write_tables_orders_and_tails(paths: Paths, orders: pd.DataFrame, _tails: p
     rows.append([r"\textbf{Total}", r"\textbf{" + str(int(grouped["count"].sum())) + "}", r"\textbf{100,0\%}", r"\textbf{" + num(grouped["commission"].sum() + grouped["slippage"].sum(), 2) + "}"])
     table(paths.tables / "t07_ordenes_motivo.tex", ["Motivo de la orden", "Órdenes", "\\% del flujo", "Coste"], rows, "lrrr")
 
-def draw_tail_by_era(tails: pd.DataFrame, output: Path) -> None:
-    """Resume visualmente si la cola superior cobra por era."""
-    frame = tails.copy()
-    frame["prediction_date"] = pd.to_datetime(frame["prediction_date"])
-    frame["era"] = frame["prediction_date"].dt.year.map(era_of)
-    grouped = frame.groupby("era", sort=False).agg(
-        top10=("top_10_excess_mean", "mean"),
-        top_decile=("top_decile_excess_mean", "mean"),
-        spread=("top_minus_bottom", "mean"),
+
+
+def draw_bootstrap_forest(robustness: dict, output: Path) -> None:
+    boot = robustness["bootstrap_and_era_exclusion"]
+    rows: list[tuple[str, float, float | None, float | None]] = [
+        ("Media de selección\n(IC 95 %)", boot["interval_95"]["mean"], boot["interval_95"]["ci_low"], boot["interval_95"]["ci_high"]),
+        ("Media de selección\n(IC 90 %)", boot["interval_90"]["mean"], boot["interval_90"]["ci_low"], boot["interval_90"]["ci_high"]),
+    ]
+    for entry in boot["era_exclusions"]:
+        rows.append((f"Excluyendo {entry['excluded_era']}\n({entry['n_cohorts']} cohortes)", entry["mean_rank_ic"], None, None))
+    positions = range(len(rows))
+    fig, ax = plt.subplots(figsize=(7.2, 3.6))
+    for index, (_, mean, low, high) in zip(positions, rows):
+        if low is not None:
+            ax.plot([low, high], [index, index], color=SLATE, linewidth=2.4, solid_capstyle="round", zorder=2)
+        ax.scatter(mean, index, color=NAVY, s=60, zorder=3)
+    ax.axvline(0, color=RED, linewidth=1.2, linestyle="--")
+    ax.set(title="Intervalos y estabilidad del Rank-IC", xlabel="Rank-IC medio", yticks=list(positions))
+    ax.set_yticklabels([row[0] for row in rows], fontsize=8)
+    ax.invert_yaxis()
+    save(fig, output)
+
+
+def draw_capacity(capacity: dict, output: Path) -> None:
+    """Capacidad en selección: participación P95 frente al patrimonio simulado."""
+    window = capacity["windows"]["selection"]
+    frame = pd.DataFrame(window["ladder"])
+    frame = frame.loc[frame["aum_usd"] <= 1e8].copy()
+    fig, ax = plt.subplots(figsize=(7.2, 4.0))
+    ax.plot(frame["aum_usd"], 100 * frame["p95_participation"], color=NAVY,
+            marker="o", markersize=4, linewidth=2)
+    for threshold, color in ((5, TEAL), (10, GOLD)):
+        aum = float(window["maximum_aum_usd"][f"{threshold}%"])
+        ax.axhline(threshold, color=color, linestyle="--", linewidth=1)
+        ax.scatter([aum], [threshold], color=color, s=45, zorder=4)
+        offset = (8, -13) if threshold == 5 else (8, 7)
+        ax.annotate(f"{threshold}% → {aum / 1e6:.1f} M USD".replace(".", ","),
+                    (aum, threshold), xytext=offset, textcoords="offset points",
+                    fontsize=7.6, color=color)
+    ax.set_xscale("log")
+    ax.set(
+        title="Capacidad estimada de la cartera en selección",
+        xlabel="Patrimonio de la cartera (USD, escala logarítmica)",
+        ylabel="Participación P95 sobre volumen diario (%)",
+        ylim=(-0.8, 27),
     )
-    labels = list(grouped.index)
-    positions = np.arange(len(labels))
-    width = 0.24
-    fig, ax = plt.subplots(figsize=(7.2, 3.5))
-    for offset, column, label, color in (
-        (-width, "top10", "Top 10", NAVY),
-        (0, "top_decile", "Decil superior", TEAL),
-        (width, "spread", "Superior menos inferior", GOLD),
-    ):
-        ax.bar(positions + offset, 100 * grouped[column], width=width, label=label, color=color)
-    ax.axhline(0, color=SLATE, linewidth=0.8)
-    ax.set_xticks(positions)
-    ax.set_xticklabels(labels)
-    ax.set(title="El buen orden no garantiza que la cola superior pague en cada era",
-           ylabel="Exceso medio (%)")
+    ax.xaxis.set_major_formatter(mpl.ticker.FuncFormatter(
+        lambda value, _: f"{value / 1e9:g}B" if value >= 1e9 else f"{value / 1e6:g}M"
+    ))
     comma_ticks(ax.yaxis)
-    legend_below(ax, 3, anchor=-0.18)
+    ax.text(0.01, 0.96, "Selección: 143 órdenes con volumen · reserva excluida (10 órdenes)",
+            transform=ax.transAxes, va="top", fontsize=7.2, color=SLATE)
+    save(fig, output)
+
+
+def draw_profile_weights(output: Path) -> None:
+    """Matriz firmada de pesos de los perfiles; balanced conserva el meta puro."""
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from module.evaluation.profiles import PROFILE_WEIGHTS
+
+    columns = ("meta", "quality", "value", "growth", "momentum", "risk")
+    profiles = tuple(PROFILE_WEIGHTS)
+    values = np.array([
+        [PROFILE_WEIGHTS[profile].get(f"{column}_rank", 0.0) for column in columns]
+        for profile in profiles
+    ])
+    fig, ax = plt.subplots(figsize=(7.2, 4.2))
+    norm = mpl.colors.TwoSlopeNorm(vmin=-0.75, vcenter=0, vmax=1.0)
+    image = ax.imshow(values, cmap=mpl.colors.LinearSegmentedColormap.from_list(
+        "signed", [RED, "#F7F7F7", TEAL]), norm=norm, aspect="auto")
+    for row in range(values.shape[0]):
+        for column in range(values.shape[1]):
+            value = values[row, column]
+            label = "—" if value == 0 else f"{value:+.0%}".replace("+", "")
+            ax.text(column, row, label, ha="center", va="center", fontsize=8,
+                    color="white" if abs(value) >= 0.45 else NAVY)
+    ax.set(
+        title="Cómo reordena cada perfil la señal aprendida",
+        xticks=np.arange(len(columns)), yticks=np.arange(len(profiles)),
+    )
+    ax.set_xticklabels(columns)
+    ax.set_yticklabels(profiles)
+    ax.grid(False)
+    colorbar = fig.colorbar(image, ax=ax, fraction=0.035, pad=0.02)
+    colorbar.set_label("Peso firmado")
+    colorbar.ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter(1.0))
     save(fig, output)
 
 
@@ -927,50 +987,6 @@ def calibration_state_rows(calibration: pd.DataFrame) -> list[dict[str, object]]
     return rows
 
 
-def draw_signal_calibration(
-    calibration: pd.DataFrame, scores: pd.DataFrame, output: Path,
-) -> None:
-    """Fuente causal de la curva y traducción observada de percentil a alfa esperado."""
-    frame = calibration.copy()
-    frame["snapshot_date"] = pd.to_datetime(frame["snapshot_date"])
-    ranks = scores[["ticker", "snapshot_date", "meta_rank"]].copy()
-    ranks["snapshot_date"] = pd.to_datetime(ranks["snapshot_date"])
-    frame = frame.merge(ranks, on=["ticker", "snapshot_date"], how="left", validate="one_to_one")
-    by_date = frame.sort_values("snapshot_date").groupby("snapshot_date", as_index=False).first()
-    source_order = ["none", "fallback", "era", "horizon"]
-    colors = {"none": SLATE, "fallback": RED, "era": GOLD, "horizon": TEAL}
-    labels = {"none": "sin calibración", "fallback": "salvaguarda", "era": "era",
-              "horizon": "horizonte"}
-
-    fig, (ax_time, ax_curve) = plt.subplots(2, 1, figsize=(7.2, 5.1), height_ratios=[0.85, 2.15])
-    for level, key in enumerate(source_order):
-        points = by_date.loc[by_date["alpha_curve_window"].fillna("none") == key]
-        ax_time.scatter(points["snapshot_date"], np.full(len(points), level), s=18,
-                        color=colors[key], label=labels[key])
-    ax_time.axvspan(pd.Timestamp("2025-01-01"), by_date["snapshot_date"].max(),
-                    color=GOLD, alpha=0.10, lw=0)
-    ax_time.set_yticks(range(len(source_order)), [labels[key] for key in source_order])
-    ax_time.set_title("Qué historia pudo usar la calibración en cada fecha")
-    ax_time.set_xlabel("")
-    ax_time.grid(axis="y", visible=False)
-
-    selection = frame.loc[frame["snapshot_date"].dt.year <= 2024].copy()
-    selection["ventile"] = pd.cut(selection["meta_rank"], np.linspace(0, 1, 21), labels=False,
-                                   include_lowest=True)
-    for key in ("fallback", "era", "horizon"):
-        subset = selection.loc[selection["alpha_curve_window"] == key]
-        curve = subset.groupby("ventile", observed=True).agg(
-            rank=("meta_rank", "median"), alpha=("expected_excess_return", "median")
-        ).dropna()
-        ax_curve.plot(100 * curve["rank"], 100 * curve["alpha"], marker="o", markersize=3,
-                      linewidth=1.7, color=colors[key], label=labels[key])
-    ax_curve.axhline(0, color=SLATE, linewidth=0.8)
-    ax_curve.set_xlabel("Percentil del ranking final")
-    ax_curve.set_ylabel("Exceso anual esperado (%)")
-    ax_curve.set_title("Traducción observada del ranking en selección")
-    ax_curve.legend(frameon=False, ncol=3, loc="upper left")
-    fig.tight_layout()
-    save(fig, output)
 
 
 def write_calibration_table(paths: Paths, calibration: pd.DataFrame) -> None:
@@ -985,42 +1001,6 @@ def write_calibration_table(paths: Paths, calibration: pd.DataFrame) -> None:
         "llrr",
     )
 
-
-def draw_feature_stability(model_attribution: pd.DataFrame, output: Path) -> None:
-    """Importancia relativa anual de las tres variables dominantes de cada agente."""
-    frame = model_attribution.copy()
-    frame["model_retrain_date"] = pd.to_datetime(frame["model_retrain_date"])
-    frame["year"] = frame["model_retrain_date"].dt.year
-    totals = frame.groupby(["agent", "model_retrain_date"])["coefficient"].transform("sum")
-    frame["relative_importance"] = frame["coefficient"].div(totals.replace(0, np.nan))
-    annual = frame.groupby(["agent", "feature", "year"], as_index=False)["relative_importance"].mean()
-    top = (
-        annual.groupby(["agent", "feature"])["relative_importance"].mean()
-        .sort_values(ascending=False).groupby(level=0).head(3).reset_index()[["agent", "feature"]]
-    )
-    selected = annual.merge(top, on=["agent", "feature"], how="inner")
-    selected["label"] = selected["agent"] + " · " + selected["feature"].map(tex_free)
-    label_order = [
-        label for agent in sorted(selected["agent"].unique())
-        for label in selected.loc[selected["agent"] == agent]
-            .groupby("label")["relative_importance"].mean().sort_values(ascending=False).index
-    ]
-    years = sorted(selected["year"].unique())
-    matrix = selected.pivot(index="label", columns="year", values="relative_importance").reindex(
-        index=label_order, columns=years
-    )
-
-    fig, ax = plt.subplots(figsize=(7.2, 5.7))
-    image = ax.imshow(100 * matrix.to_numpy(), aspect="auto", cmap="YlGnBu", vmin=0)
-    ax.set_xticks(range(len(years)), years, rotation=45, ha="right")
-    ax.set_yticks(range(len(label_order)), label_order)
-    ax.set_title("Persistencia de las variables más usadas por cada agente")
-    ax.set_xlabel("Año de reentrenamiento")
-    ax.grid(False)
-    bar = fig.colorbar(image, ax=ax, pad=0.02)
-    bar.set_label("Importancia relativa dentro del agente (%)")
-    fig.tight_layout()
-    save(fig, output)
 
 
 def draw_factor_attribution(attribution: dict, output: Path) -> None:
@@ -1071,39 +1051,19 @@ def write_feature_dictionary(paths: Paths, features: pd.DataFrame) -> None:
             tex(source_labels.get(str(row.source), tex_free(row.source))), direction,
             pct(row.coverage, 1), num(row.univariate_rank_ic),
         ])
+    # La tabla va en página vertical: se prescinde de la columna «Fuente», que sólo toma dos
+    # valores y se declara en el pie, para que las siete columnas quepan sin girar la página.
     longtable(
         paths.tables / "tB_diccionario_features.tex",
-        ["Variable", "Agente", "Bloque", "Fuente", "Dir.", "Cobertura", "Rank-IC"],
-        rows,
+        ["Variable", "Agente", "Bloque", "Dir.", "Cobertura", "Rank-IC"],
+        [row[:3] + row[4:] for row in rows],
         "Diccionario completo de las 68 variables declaradas.",
         "tab:diccionario-features",
-        r"p{5.2cm}p{2.4cm}p{2.6cm}p{1.8cm}rrr",
+        "@{}>{\\raggedright\\arraybackslash}p{4.9cm}>{\\raggedright\\arraybackslash}p{1.8cm}"
+        ">{\\raggedright\\arraybackslash}p{2.8cm}crr@{}",
     )
 
 
-def draw_alpha_turnover_annual(annual: pd.DataFrame, output: Path) -> None:
-    """Relación anual entre rotación y exceso, con la reserva fuera de selección."""
-    frame = annual.copy()
-    reserved = frame["year"].astype(int) >= 2025
-    fig, ax = plt.subplots(figsize=(7.2, 4.0))
-    ax.scatter(frame.loc[~reserved, "turnover"], 100 * frame.loc[~reserved, "alpha"],
-               color=TEAL, s=48, label="Selección 2015–2024", zorder=3)
-    ax.scatter(frame.loc[reserved, "turnover"], 100 * frame.loc[reserved, "alpha"],
-               color=GOLD, edgecolor=NAVY, linewidth=0.7, s=65,
-               label="Reserva 2025–2026", zorder=4)
-    label_offsets = {2017: (4, 10), 2019: (10, 4), 2020: (4, 7), 2022: (12, 4), 2025: (12, 9)}
-    for row in frame.itertuples():
-        ax.annotate(str(int(row.year)), (row.turnover, 100 * row.alpha),
-                    xytext=label_offsets.get(int(row.year), (4, 4)),
-                    textcoords="offset points", fontsize=7.4, color=NAVY)
-    ax.axhline(0, color=SLATE, linewidth=0.9)
-    ax.set(
-        title="Rotar más no garantiza un mayor exceso anual",
-        xlabel="Turnover anual (veces la cartera)", ylabel="Exceso anual frente a SPY (%)",
-    )
-    comma_ticks(ax.xaxis, ax.yaxis)
-    legend_below(ax, 2)
-    save(fig, output)
 
 
 def draw_cost_ladder(cost: dict, output: Path) -> None:
@@ -1141,71 +1101,8 @@ def draw_cost_ladder(cost: dict, output: Path) -> None:
     save(fig, output)
 
 
-def draw_capacity(capacity: dict, output: Path) -> None:
-    """Capacidad en selección: participación P95 frente al patrimonio simulado."""
-    window = capacity["windows"]["selection"]
-    frame = pd.DataFrame(window["ladder"])
-    frame = frame.loc[frame["aum_usd"] <= 1e8].copy()
-    fig, ax = plt.subplots(figsize=(7.2, 4.0))
-    ax.plot(frame["aum_usd"], 100 * frame["p95_participation"], color=NAVY,
-            marker="o", markersize=4, linewidth=2)
-    for threshold, color in ((5, TEAL), (10, GOLD)):
-        aum = float(window["maximum_aum_usd"][f"{threshold}%"])
-        ax.axhline(threshold, color=color, linestyle="--", linewidth=1)
-        ax.scatter([aum], [threshold], color=color, s=45, zorder=4)
-        offset = (8, -13) if threshold == 5 else (8, 7)
-        ax.annotate(f"{threshold}% → {aum / 1e6:.1f} M USD".replace(".", ","),
-                    (aum, threshold), xytext=offset, textcoords="offset points",
-                    fontsize=7.6, color=color)
-    ax.set_xscale("log")
-    ax.set(
-        title="Capacidad estimada de la cartera en selección",
-        xlabel="Patrimonio de la cartera (USD, escala logarítmica)",
-        ylabel="Participación P95 sobre volumen diario (%)",
-        ylim=(-0.8, 27),
-    )
-    ax.xaxis.set_major_formatter(mpl.ticker.FuncFormatter(
-        lambda value, _: f"{value / 1e9:g}B" if value >= 1e9 else f"{value / 1e6:g}M"
-    ))
-    comma_ticks(ax.yaxis)
-    ax.text(0.01, 0.96, "Selección: 143 órdenes con volumen · reserva excluida (10 órdenes)",
-            transform=ax.transAxes, va="top", fontsize=7.2, color=SLATE)
-    save(fig, output)
 
 
-def draw_profile_weights(output: Path) -> None:
-    """Matriz firmada de pesos de los perfiles; balanced conserva el meta puro."""
-    if str(ROOT) not in sys.path:
-        sys.path.insert(0, str(ROOT))
-    from module.evaluation.profiles import PROFILE_WEIGHTS
-
-    columns = ("meta", "quality", "value", "growth", "momentum", "risk")
-    profiles = tuple(PROFILE_WEIGHTS)
-    values = np.array([
-        [PROFILE_WEIGHTS[profile].get(f"{column}_rank", 0.0) for column in columns]
-        for profile in profiles
-    ])
-    fig, ax = plt.subplots(figsize=(7.2, 4.2))
-    norm = mpl.colors.TwoSlopeNorm(vmin=-0.75, vcenter=0, vmax=1.0)
-    image = ax.imshow(values, cmap=mpl.colors.LinearSegmentedColormap.from_list(
-        "signed", [RED, "#F7F7F7", TEAL]), norm=norm, aspect="auto")
-    for row in range(values.shape[0]):
-        for column in range(values.shape[1]):
-            value = values[row, column]
-            label = "—" if value == 0 else f"{value:+.0%}".replace("+", "")
-            ax.text(column, row, label, ha="center", va="center", fontsize=8,
-                    color="white" if abs(value) >= 0.45 else NAVY)
-    ax.set(
-        title="Cómo reordena cada perfil la señal aprendida",
-        xticks=np.arange(len(columns)), yticks=np.arange(len(profiles)),
-    )
-    ax.set_xticklabels(columns)
-    ax.set_yticklabels(profiles)
-    ax.grid(False)
-    colorbar = fig.colorbar(image, ax=ax, fraction=0.035, pad=0.02)
-    colorbar.set_label("Peso firmado")
-    colorbar.ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter(1.0))
-    save(fig, output)
 
 
 def draw_profile_results(profiles: pd.DataFrame, annual_by_profile: dict[str, pd.DataFrame], output: Path) -> None:
@@ -1608,10 +1505,10 @@ def write_tables_catalog(paths: Paths, catalog: dict, winner: dict, decisions: d
         rows,
         "Catálogo cerrado completo: las 33 variables, su rejilla y el valor del ganador.",
         "tab:catalogo",
-        # La tabla se incluye dentro de un entorno landscape, donde \textwidth
-        # conserva el valor del formato vertical: hay que usar \linewidth para
-        # aprovechar el ancho real de la página girada.
-        "lllp{0.34\\linewidth}l",
+        # Página vertical: anchos fijos, con la columna de valores en \raggedright para que las
+        # rejillas largas partan de línea en vez de desbordar el margen.
+        "@{}>{\\raggedright\\arraybackslash}p{3.9cm}>{\\raggedright\\arraybackslash}p{2.1cm}c"
+        ">{\\raggedright\\arraybackslash}p{4.4cm}>{\\raggedright\\arraybackslash}p{2.2cm}@{}",
     )
 
 
@@ -1783,25 +1680,6 @@ def draw_meta_weights_annual(weights: pd.DataFrame, output: Path) -> None:
     save(fig, output)
 
 
-def draw_bootstrap_forest(robustness: dict, output: Path) -> None:
-    boot = robustness["bootstrap_and_era_exclusion"]
-    rows: list[tuple[str, float, float | None, float | None]] = [
-        ("Media de selección\n(IC 95 %)", boot["interval_95"]["mean"], boot["interval_95"]["ci_low"], boot["interval_95"]["ci_high"]),
-        ("Media de selección\n(IC 90 %)", boot["interval_90"]["mean"], boot["interval_90"]["ci_low"], boot["interval_90"]["ci_high"]),
-    ]
-    for entry in boot["era_exclusions"]:
-        rows.append((f"Excluyendo {entry['excluded_era']}\n({entry['n_cohorts']} cohortes)", entry["mean_rank_ic"], None, None))
-    positions = range(len(rows))
-    fig, ax = plt.subplots(figsize=(7.2, 3.6))
-    for index, (_, mean, low, high) in zip(positions, rows):
-        if low is not None:
-            ax.plot([low, high], [index, index], color=SLATE, linewidth=2.4, solid_capstyle="round", zorder=2)
-        ax.scatter(mean, index, color=NAVY, s=60, zorder=3)
-    ax.axvline(0, color=RED, linewidth=1.2, linestyle="--")
-    ax.set(title="Intervalos y estabilidad del Rank-IC", xlabel="Rank-IC medio", yticks=list(positions))
-    ax.set_yticklabels([row[0] for row in rows], fontsize=8)
-    ax.invert_yaxis()
-    save(fig, output)
 
 
 def build_robustness_rows(robustness: dict, attribution: dict) -> list[dict]:
@@ -2113,7 +1991,6 @@ def main() -> None:
     tails = pd.read_parquet(paths.evidence / "rank_tail_diagnostics.parquet")
     scores = pd.read_parquet(paths.evidence / "agent_scores.parquet")
     calibration = pd.read_parquet(paths.evidence / "signal_calibration.parquet")
-    model_attribution = pd.read_parquet(paths.evidence / "model_feature_attribution.parquet")
     features = load_features(paths)
 
     # La evidencia predictiva sale siempre del Model Study; la económica, del ganador del Portfolio
@@ -2159,12 +2036,13 @@ def main() -> None:
             raise SystemExit("AUDITORÍA FALLIDA: la tabla del ganador no está declarada.")
         required_assets = {
             "f01_spiva_horizontes.png", "f03_cobertura_anual.png",
-            "f03_muestra_oos.png", "f06_estabilidad_features.png",
-            "f05_calibracion_alfa.png", "f06_atribucion_factorial.png",
+            "f03_muestra_oos.png",
+            # Sólo las usa la defensa; la memoria dejó de citarlas.
+            "f06_bootstrap.png", "f07_capacidad.png", "f07_perfiles_pesos.png",
+            "f06_atribucion_factorial.png",
             "f06_atribucion_anual.png", "f06_pesos_anual.png", "f06_orden_vs_pago.png",
-            "f07_alpha_turnover_anual.png", "f06_bootstrap.png", "f07_capacidad.png",
-            "f07_cartera_narrativa.png", "f06_cola_eras.png", "f07_costes_escalera.png",
-            "f07_equity_drawdown.png", "f07_perfiles_pesos.png", "f07_perfiles_resultados.png",
+            "f07_cartera_narrativa.png", "f07_costes_escalera.png",
+            "f07_equity_drawdown.png", "f07_perfiles_resultados.png",
             "f06_rankic_serie.png",
             "f07_cartera_influencia.png", "f07_cartera_rejilla.png",
             "f07_seleccion_vs_reservada.png",
@@ -2202,15 +2080,13 @@ def main() -> None:
     draw_universe_coverage(coverage, paths.figures / "f03_cobertura_anual.png")
     draw_oos_sample(scores, features, paths.figures / "f03_muestra_oos.png")
     write_sample_table(paths, scores)
-    draw_signal_calibration(calibration, scores, paths.figures / "f05_calibracion_alfa.png")
     write_calibration_table(paths, calibration)
-    draw_feature_stability(model_attribution, paths.figures / "f06_estabilidad_features.png")
     draw_factor_attribution(attribution, paths.figures / "f06_atribucion_factorial.png")
+    draw_bootstrap_forest(robustness, paths.figures / "f06_bootstrap.png")
     write_feature_dictionary(paths, features)
     draw_rank_ic(summary, paths.figures / "f06_rankic_serie.png")
     draw_order_vs_payoff(summary, paths.figures / "f06_orden_vs_pago.png")
     draw_equity_and_drawdown(equity, paths.figures / "f07_equity_drawdown.png")
-    draw_tail_by_era(tails, paths.figures / "f06_cola_eras.png")
     # Activos añadidos para la versión extendida del manuscrito.
     draw_meta_weights_annual(weights, paths.figures / "f06_pesos_anual.png")
 
@@ -2223,7 +2099,6 @@ def main() -> None:
     # ella el manuscrito documentaría un study suelto y estas figuras no tendrían nada que contar.
     draw_selection_vs_reserved(chain, paths.figures / "f07_seleccion_vs_reservada.png")
     write_tables_chain(paths, chain, changes)
-    draw_bootstrap_forest(robustness, paths.figures / "f06_bootstrap.png")
 
     write_tables_winner(paths, catalog, winner)
     write_tables(paths, summary, robustness, attribution, diag, annual, decisions)
@@ -2236,7 +2111,6 @@ def main() -> None:
     # el esquema de la rejilla tiene seis coordenadas simultáneas y el objetivo pasa a ser el IR.
     draw_portfolio_grid(portfolio["grid"], portfolio["winner"], paths.figures / "f07_cartera_rejilla.png")
     draw_portfolio_influence(portfolio["grid"], paths.figures / "f07_cartera_influencia.png")
-    draw_alpha_turnover_annual(annual, paths.figures / "f07_alpha_turnover_anual.png")
     draw_cost_ladder(cost, paths.figures / "f07_costes_escalera.png")
     draw_capacity(portfolio["capacity"], paths.figures / "f07_capacidad.png")
     draw_profile_weights(paths.figures / "f07_perfiles_pesos.png")

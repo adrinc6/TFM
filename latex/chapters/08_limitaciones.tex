@@ -1,10 +1,9 @@
 \chapter{Limitaciones y amenazas a la validez}
 \label{chap:limitaciones}
 
-Este capítulo no es una disculpa genérica. Cada limitación se enuncia junto a la cifra concreta que
-permite dimensionarla, porque una limitación que no puede cuantificarse no orienta al lector sobre
-cuánto debe descontar de las conclusiones. La Tabla~\ref{tab:limitaciones} las reúne ordenadas por
-severidad.
+Cada limitación se enuncia aquí junto a la cifra que permite dimensionarla: una salvedad que no
+puede cuantificarse no dice cuánto hay que descontar de las conclusiones. La
+Tabla~\ref{tab:limitaciones} las reúne ordenadas por severidad.
 
 \begin{table}[H]
   \centering
@@ -16,47 +15,33 @@ severidad.
   conclusiones, no una medida estadística.}
 \end{table}
 
-Cada una de esas limitaciones aparece ya, con su cifra, junto al resultado que acota en los
-Capítulos~\ref{chap:resultados} y~\ref{chap:resultados-economicos}; la tabla las reúne para poder
-verlas juntas y ordenadas. Quedan dos precisiones que ninguna fila puede expresar por sí sola.
+Cuatro de esas filas merecen una precisión que la tabla no puede contener.
 
-La primera es que la multiplicidad se agravó \emph{deliberadamente}, dos veces: al encadenar tres
-Model Studies y al recorrer un cartesiano de 1.440 carteras. No es un descuido sino una decisión que
-asume su precio, y ese precio está declarado. Pero sus dos alcances son distintos y conviene no
-confundirlos: la multiplicidad predictiva contamina la métrica que el trabajo reporta como resultado
-principal, mientras que la de la rejilla de cartera no puede tocar el Rank-IC y se limita a
-convertir el Information Ratio de la ventana de selección en una cota superior optimista. Ninguna de
-las dos anula el contraste de permutación, que es independiente del número de configuraciones
+La \textbf{multiplicidad} se agravó dos veces y a propósito: al encadenar tres Model Studies y al
+recorrer 1.440 carteras. Sus dos alcances no deben confundirse. La predictiva contamina la métrica
+que el trabajo reporta como resultado principal; la de la rejilla no puede tocar el Rank-IC y se
+limita a convertir el Information Ratio de la ventana de selección en una cota superior optimista.
+Ninguna de las dos anula el contraste de permutación, que no depende del número de configuraciones
 ensayadas.
 
-La segunda afecta al predominio de \textit{risk}, y la atribución local de la
-Sección~\ref{sec:atribucion-local} lo matiza en un sentido y lo agrava en otro. Lo matiza porque ese
-agente no resulta ser una réplica de la prima de baja volatilidad y porque reasigna atención entre
-sus variables según el régimen, de modo que no es una apuesta congelada. Lo agrava porque desplaza
-la incógnita sin resolverla: el trabajo no explica \emph{por qué} unas variables de estructura de
-negociación a semanas ordenan retornos a doce meses, y una señal cuyo mecanismo no se comprende es
-más frágil ante un cambio de régimen que una respaldada por una hipótesis económica contrastada.
+El \textbf{predominio del agente de riesgo} queda matizado y agravado a la vez por su atribución
+local. Matizado, porque ese agente no resulta ser una réplica de la prima de baja volatilidad y
+reasigna atención entre sus variables según el régimen. Agravado, porque desplaza la incógnita sin
+resolverla: el trabajo no explica \emph{por qué} unas variables de estructura de negociación a
+semanas ordenan retornos a doce meses, y una señal cuyo mecanismo no se comprende es más frágil ante
+un cambio de régimen que una respaldada por una hipótesis económica.
 
-Hay una tercera que la Sección~\ref{sec:relato-cartera} hace visible y ninguna métrica agregada
-delata: el resultado económico se apoya en muy pocos nombres. De las 42 acciones que pasaron por la
-cartera en diez años, la primera aporta 27,8 puntos de contribución neta ---casi el doble que la
-segunda--- y las cinco primeras suman algo más de la mitad de lo que aportan las quince mayores; en
-la era reservada, donde la tenencia mínima impide casi toda rotación, una sola posición aporta 21,3
-de los puntos de la ventana. La consecuencia es que el
-número de apuestas efectivamente independientes es bastante menor que los diez años de serie, y que
-el resultado sería sensible a sustituir un puñado de posiciones por otras.
+La \textbf{concentración en pocos nombres} no la delata ninguna métrica agregada: de las 42 acciones
+que pasaron por la cartera, la primera aporta 27,8 puntos de contribución neta y las cinco primeras
+suman algo más de la mitad de lo que aportan las quince mayores; en la era reservada una sola
+posición aporta 21,3 de los puntos de la ventana. El número de apuestas realmente independientes es
+por tanto bastante menor que los diez años de serie.
 
-Hay una cuarta precisión, y es la que más condiciona las conclusiones: el orden predictivo y el
-pago económico no se mueven en la misma dirección a lo largo del periodo. El Rank-IC es mayor en la
-era más reciente, mientras que el Information Ratio de la cartera cae y se vuelve negativo en esa
-misma era. La Sección~\ref{sec:eras} desarrolla la lectura; aquí basta con enunciar su consecuencia
-para el alcance del trabajo: la evidencia de que el modelo \emph{ordena} es más sólida que la de que
-esa ordenación \emph{se cobra}.
-
-Todo ello conduce a una lectura disciplinada: la investigación demuestra una ordenación predictiva
-robusta bajo un protocolo concreto, pero su traducción económica es más frágil de lo que sugieren
-las cifras agregadas de la ventana de selección, y requiere más cohortes cerradas, universos
-adicionales y un catálogo más estrecho antes de extrapolarla.
+Y la que más condiciona las conclusiones: \textbf{el orden predictivo y el pago económico no se
+mueven en la misma dirección}. El Rank-IC es mayor en la era más reciente, mientras que el
+Information Ratio cae y se vuelve negativo en esa misma era. La consecuencia para el alcance del
+trabajo es que la evidencia de que el modelo \emph{ordena} es más sólida que la de que esa
+ordenación \emph{se cobra}.
 
 \section{Amenazas a la validez interna}
 
@@ -71,8 +56,7 @@ presentar la fuente como una cinta histórica perfecta.
 
 La pertenencia histórica al índice limita el sesgo de supervivencia de composición, pero no elimina
 la cobertura desigual de las empresas retiradas. A diferencia de la versión habitual de esta
-salvedad, aquí no es una posibilidad genérica: está medida, y conviene declarar las tres cosas que
-se saben de ella.
+salvedad, aquí no es una posibilidad genérica sino algo medido, y se sabe de ella tres cosas.
 
 La \textbf{causa} está medida en el Capítulo~\ref{chap:datos} y no es la mortalidad empresarial sino
 la retirada de símbolos por parte del proveedor de precios. Falta ahí un dato que remata el
@@ -87,19 +71,18 @@ hasta hoy con mucha más frecuencia que los miembros reales del índice de su a�
 el entrenamiento es una ventana móvil, el exceso que afecta a cada evaluación decae de 26,2 puntos
 al evaluar 2015 a 8,0 al evaluar 2026.
 
-Conviene además desactivar un argumento tentador y falso: que, como buena parte de las ausentes
-fueron adquiridas con prima, el sesgo sería conservador. Ese razonamiento cuenta cabezas en vez de
-permanencia. Una empresa adquirida rinde una vez y desaparece del panel; una superviviente compone
-durante todo el periodo, y es esa composición la que infla el resultado.
+Podría objetarse que, como muchas de las ausentes fueron adquiridas con prima, el sesgo sería
+conservador. Ese razonamiento cuenta cabezas en vez de permanencia: una empresa adquirida rinde una
+vez y desaparece, mientras que una superviviente compone durante todo el periodo, y es esa
+composición la que infla el resultado.
 
 Queda por declarar el \textbf{límite de lo demostrable}. Lo medido es la composición del universo,
-no el retorno de las empresas ausentes, que en su mayoría carecen precisamente de la serie de
-precios que permitiría calcularlo. El sesgo, por tanto, \emph{no se cuantifica en puntos de
-rentabilidad} y este trabajo no lo insinúa. Un dato acota su alcance en la dirección contraria, y ya
-apareció al resolver el universo: los ausentes tienen sus fundamentales descargados, así que la
-exclusión no selecciona empresas opacas sino símbolos sin precio. La lectura por eras de la Sección~\ref{sec:eras} es la comprobación
-empírica de si este sesgo mueve o no el resultado predictivo; una réplica con una fuente comercial
-point-in-time sería la prueba definitiva.
+no el retorno de las empresas ausentes, que carecen precisamente de la serie de precios que
+permitiría calcularlo: el sesgo \emph{no se cuantifica en puntos de rentabilidad}. Un dato acota su
+alcance en la dirección contraria ---los ausentes sí tienen fundamentales descargados, así que la
+exclusión no selecciona empresas opacas sino símbolos sin precio---, y la lectura por eras es la
+comprobación empírica de si mueve o no el resultado predictivo. Una réplica con una fuente comercial
+\textit{point-in-time} sería la prueba definitiva.
 
 \section{Amenazas económicas}
 
@@ -114,13 +97,12 @@ resimular la cartera, porque allí el resultado empata con el índice: no hay ma
 fricción.
 
 El universo estadounidense de gran capitalización limita además la extrapolación a pequeñas
-empresas, otros países o regímenes de liquidez diferentes.
+empresas, otros países o regímenes de liquidez distintos.
 
-La lectura correcta es específica, y conviene enunciarla porque cada limitación acota una afirmación
-distinta: la multiplicidad limita el Sharpe, el solapamiento limita la precisión, la cobertura limita
-la generalización y la cartera limita la transferencia de señal. Ninguna de estas salvedades permite
-ignorar los placebos, la permutación o la estabilidad por eras; cada conclusión debe mantenerse
-dentro del alcance de la evidencia que realmente la respalda.
+Cada limitación acota una afirmación diferente, y conviene no mezclarlas: la multiplicidad limita el
+Sharpe, el solapamiento limita la precisión, la cobertura limita la generalización y la cartera
+limita la transferencia de señal. Ninguna permite ignorar los placebos, la permutación o la
+estabilidad por eras.
 
 \section{Limitaciones heredadas del proceso de desarrollo}
 
@@ -135,7 +117,7 @@ creciente. Su defecto no es de magnitud sino de dirección: es un supuesto \emph
 dispara \textbf{precisamente cuando la evidencia indica que no hay señal que calibrar}, de modo que
 allí donde interviene la expectativa de alfa no procede de los datos sino de la recta declarada. El
 diseño la prefiere a no tener alfa esperada en absoluto ---sin ella la cartera no podría decidir
-umbrales en esos tramos---, pero conviene declararla como lo que es: una decisión de diseño
+umbrales en esos tramos---, pero hay que declararla como lo que es: una decisión de diseño
 discutible, no una medición.
 
 La segunda es que la calibración isotónica que precedió a esa salvaguarda se retiró sin conservarla
@@ -153,16 +135,10 @@ lectura de esas cifras que no está sujeta a ese sesgo, y descansa sobre poco m�
 
 \section{Decisiones con margen escaso}
 
-Conviene declarar cuánta evidencia sostiene realmente cada decisión de la pasada de referencia.
-De sus dieciocho decisiones, dieciséis conservaron el valor heredado porque ninguna alternativa
-consiguió desplazarlo, y solo dos lo cambiaron. De esas dos, una
---- \artefacto{market\_regime\_feature} --- se resolvió por \emph{no inferioridad}: el candidato no
-demostró ser mejor, sino que no era peor, y ganó por la preferencia declarada de antemano hacia la
-configuración más simple. La otra --- \artefacto{lgbm\_learning\_rate} --- sí dominó al valor
-previo, pero con una ventaja media de tres diezmilésimas de Rank-IC y acertando en el 50,5\,\% de
-las 111 cohortes emparejadas, que es un margen muy fino.
-
-La lectura correcta es doble. Que la cadena apenas mueva el ganador indica convergencia y no
-fragilidad: el protocolo no está persiguiendo ruido de una pasada a otra. Pero ninguno de esos dos
-valores debe presentarse como un hallazgo empírico del trabajo, porque la medición que los respalda
-no distingue con holgura entre las alternativas.
+De las dieciocho decisiones de la pasada de referencia, dieciséis conservaron el valor heredado y
+sólo dos lo cambiaron. Una de esas dos ---la variable de régimen de mercado--- ganó por no
+inferioridad, es decir, sin demostrar ser mejor; la otra ---la tasa de aprendizaje--- sí dominó al
+valor previo, pero con una ventaja media de tres diezmilésimas de Rank-IC y acertando en el
+50,5\,\% de las cohortes emparejadas. Que la cadena apenas mueva al ganador indica convergencia y no
+fragilidad, pero ninguno de esos dos valores puede presentarse como un hallazgo empírico: la
+medición que los respalda no distingue con holgura entre las alternativas.

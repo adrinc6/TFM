@@ -1,0 +1,158 @@
+\chapter{Qué significa cada variable del catálogo}
+\label{anexo:variables}
+
+El Anexo~\ref{anexo:catalogo} reproduce el catálogo cerrado con su rejilla y el valor del ganador,
+pero una tabla no dice qué representa cada parámetro ni por qué está ahí. Este anexo lo explica, en
+el mismo orden en que el protocolo recorre las etapas, y distingue en cada caso si la variable se
+optimizó, se fijó de antemano o se estresó aparte.
+
+Conviene aclarar antes tres recuentos parecidos que conviven en el trabajo y no son intercambiables.
+El sistema emplea \NumPredictores{} \emph{variables de entrada} ---los datos que los agentes miran
+para puntuar una acción---. El catálogo contiene \NumParametrosCatalogo{} \emph{parámetros}, que son
+los de este anexo: no describen una empresa, sino cómo se entrena y se opera el sistema. Y la
+auditoría de variables reúne \NumDiagnosticos{} filas porque cruza esas entradas con todas las
+series a las que el sistema calcula diagnósticos, conservando las de ambos lados.
+
+\section{Temporal: cuándo se mira y cuánto futuro se predice}
+
+Seis parámetros fijan el reloj del sistema. Tres de ellos se optimizaron.
+
+\begin{description}[leftmargin=0cm,style=nextline,itemsep=0.5em]
+  \item[Cadencia de observación] Cada cuántos meses se vuelve a mirar el universo, puntuar todas las
+  acciones y decidir la cartera. Mirar más a menudo produce más cohortes con las que decidir, pero
+  también más oportunidades de operar sobre una señal que aún no ha madurado. El ganador observa
+  cada mes.
+  \item[Horizonte de la etiqueta] Cuántos meses de retorno futuro aprende a ordenar el modelo. Es la
+  definición de «bueno» que el sistema persigue: con horizonte de doce meses, la mejor acción es la
+  que más rinde en el año siguiente, no la que sube mañana. \emph{Se optimizó}; ganó el horizonte
+  anual frente al semestral.
+  \item[Años de historia por ajuste] Cuánto pasado entra en cada reentrenamiento. Más historia da
+  más filas pero mezcla regímenes más antiguos, quizá ya irrelevantes. \emph{Se optimizó}; ganaron
+  ocho años.
+  \item[Retardo de observación] Días entre el fin de un mes y el día en que el sistema mira el
+  mercado. No es lo que impide usar información futura ---de eso se encarga el filtro por fecha de
+  publicación, explicado en el Capítulo~\ref{chap:datos}--- sino lo que fija cuándo se mira, y con
+  ello cuántos informes del trimestre ya se han publicado. \emph{Se optimizó} entre 45 y 60 días,
+  con la particularidad de que el desempate favorece deliberadamente al retardo mayor, por ser el
+  más conservador. Ganaron 60.
+  \item[Ponderación por recencia] Si las observaciones recientes pesan más que las antiguas dentro
+  del entrenamiento. \emph{Se optimizó}; ganó no ponderar, es decir, tratar por igual toda la
+  ventana.
+  \item[Objetivo de aprendizaje] Si el modelo aprende regresando el rango continuo o resolviendo un
+  problema de ranking directo. Se fijó en la regresión del rango.
+\end{description}
+
+\section{Representación: qué ve el modelo}
+
+Siete parámetros gobiernan qué información llega a los agentes y en qué forma. Dos se optimizaron.
+
+\begin{description}[leftmargin=0cm,style=nextline,itemsep=0.5em]
+  \item[Conjunto de variables] Cuántos bloques temáticos se activan: un subconjunto reducido de
+  cinco o los once disponibles. \emph{Se optimizó}; ganó el conjunto amplio.
+  \item[Momentum fundamental] Si además del valor de un ratio se añade su \emph{cambio} desde el
+  informe anterior, calculado siempre con datos ya publicados. \emph{Se optimizó}; ganó incluirlo.
+  \item[Régimen de mercado] Si cada observación incorpora contexto sobre el estado general del
+  mercado en esa fecha, común a todas las acciones. Ganó no incluirlo, y por no inferioridad: el
+  candidato no demostró ser mejor, sólo que no era peor.
+  \item[Neutralización sectorial] Si cada empresa se compara con las de su propio sector antes de
+  aprender, en lugar de con todo el universo. Se fijó en no neutralizar; hacerlo habría costado
+  Rank-IC de forma apreciable.
+  \item[Winsorización] Si los valores extremos de cada variable se recortan a un percentil antes de
+  entrenar, para que un dato anómalo no domine el ajuste. Se fijó en no recortar.
+  \item[Máximo de variables por agente] Cuántas variables conserva cada especialista tras la poda.
+  Limitarlo reduce varianza y facilita la interpretación, a costa de perder información. El ganador
+  conserva doce.
+  \item[Regla de ponderación de variables] Si la importancia de cada variable la decide el propio
+  modelo o una poda basada en su estabilidad fuera de muestra. Ganó la poda por estabilidad, aunque
+  por muy poco: la alternativa medía ligeramente mejor pero no superaba la puerta de dominancia.
+\end{description}
+
+\section{Modelo: cómo aprende cada agente}
+
+Cinco parámetros describen el estimador. Ninguno se optimizó en la pasada de referencia, y el
+capítulo de protocolo explica por qué eso importa: el sistema no debe su capacidad predictiva al
+ajuste fino del modelo.
+
+\begin{description}[leftmargin=0cm,style=nextline,itemsep=0.5em]
+  \item[Familia de modelo] Qué algoritmo usan los cinco agentes. El catálogo ofrece árboles
+  potenciados o una alternativa lineal regularizada; el ganador usa árboles.
+  \item[Profundidad máxima] Cuántas divisiones encadenadas puede tener cada árbol, es decir, cuán
+  específicas pueden ser las interacciones que aprende. El ganador usa tres, un valor bajo.
+  \item[Número de árboles] Cuántos árboles se encadenan, cada uno corrigiendo los errores del
+  anterior. El ganador usa cien.
+  \item[Tasa de aprendizaje] Cuánto corrige cada árbol nuevo. Valores bajos aprenden más despacio
+  pero suelen generalizar mejor.
+  \item[Mínimo de observaciones por hoja] Cuántas acciones debe haber al menos en cada rama final.
+  Subirlo impide que el modelo construya reglas sobre un puñado de casos.
+\end{description}
+
+\section{Meta-agente: cómo se combinan los cinco}
+
+Tres parámetros gobiernan la capa de combinación, y el primero es la decisión más consecuente de
+todo el catálogo.
+
+\begin{description}[leftmargin=0cm,style=nextline,itemsep=0.5em]
+  \item[Método de combinación] Tres opciones: repartir por igual entre los cinco agentes, o aprender
+  los pesos con una regresión regularizada en su variante \emph{acotada} ---donde ningún agente
+  puede pesar menos del 10\,\% ni más del 50\,\%--- o \emph{libre}, sin tope alguno. \emph{Se
+  optimizó}; ganó la libre, y esa elección explica que el sistema acabe concentrando más del 95\,\%
+  del peso en un solo especialista.
+  \item[Cohortes de historia] Cuántas cohortes trimestrales ya cerradas mira el combinador para
+  estimar los pesos. El ganador usa dieciséis.
+  \item[Ponderación por recencia del combinador] Si las cohortes recientes pesan más que las
+  antiguas al aprender esos pesos. Se fijó en no ponderar.
+\end{description}
+
+\section{Cartera: cómo se convierte el orden en posiciones}
+
+Doce parámetros gobiernan la gestión. Ninguno puede modificar la señal, porque se aplican después de
+congelarla, y se dividen en dos grupos que conviene no mezclar.
+
+\subsection*{Las seis que el Portfolio Study optimiza}
+
+Son las decisiones de gestión propiamente dichas: lo que un gestor elegiría.
+
+\begin{description}[leftmargin=0cm,style=nextline,itemsep=0.5em]
+  \item[Número de posiciones] Cuántas acciones se mantienen a la vez. Pocas concentran la señal y
+  hacen el resultado volátil; muchas lo estabilizan a costa de parecerse al índice. El ganador
+  mantiene ocho.
+  \item[Tope de efectivo] Cuánto patrimonio puede quedar sin invertir cuando ninguna candidata
+  supera el umbral. Con cero, la cartera está siempre invertida al 100\,\%. El ganador tolera hasta
+  un 10\,\%, aunque en la práctica nunca lo usa.
+  \item[Reparto de pesos] Si todas las posiciones pesan lo mismo o el peso sigue al alfa esperado,
+  con un tope de dos a uno entre la mayor y la menor. El ganador reparte en proporción al alfa.
+  \item[Permanencia mínima] Cuánto debe conservarse una posición antes de poder venderla por
+  cualquier motivo, expresado como fracción del horizonte del modelo. El ganador exige un horizonte
+  completo, es decir, doce meses.
+  \item[Suelo de cobertura] Percentil por debajo del cual una posición deja de pertenecer a la
+  cartera y se vende entera. El ganador desactiva la regla.
+  \item[Tolerancia a la deriva] Cuánto pueden desviarse los pesos de su objetivo antes de emitir una
+  orden que los corrija. No cambia qué se tiene, sólo cada cuánto se ajusta. El ganador tolera hasta
+  un 40\,\%, el valor más laxo disponible.
+\end{description}
+
+\subsection*{Las seis que se fijan y se estresan aparte}
+
+No describen una decisión del gestor sino el entorno en el que opera, y por eso quedan fuera de la
+optimización. Optimizar un coste equivaldría a elegir el mundo en el que la estrategia luce mejor.
+
+\begin{description}[leftmargin=0cm,style=nextline,itemsep=0.5em]
+  \item[Comisión] Coste fijo aplicado sobre el nocional de cada operación. Se fija en 10 puntos
+  básicos y su efecto se mide en el análisis de sensibilidad a costes.
+  \item[\textit{Slippage}] Diferencia adversa estimada entre el precio de referencia y el de
+  ejecución, también sobre el nocional. Se fija en 20 puntos básicos.
+  \item[Alfa mínimo de salida] Alfa esperado anual por debajo del cual una posición pasa a ser
+  candidata a venderse.
+  \item[Margen de rotación] Ventaja adicional que una candidata externa debe ofrecer por encima del
+  coste de ida y vuelta para justificar una sustitución.
+  \item[Endurecimiento sin fundamentales nuevos] Multiplicador que sube los umbrales en las
+  observaciones en las que no ha aparecido ningún informe nuevo, cuando la señal se apoya sólo en
+  precios.
+  \item[Sólo venta sin fundamentales nuevos] Si en esas mismas observaciones se permite deshacer una
+  posición mala pero se prohíbe comprar su reemplazo.
+\end{description}
+
+Los cuatro últimos gobiernan la mecánica de rotación, cuyo efecto ya está mediado por las seis
+variables que sí se recorren. Fijarlos es una decisión declarada de antemano, y acota lo que puede
+afirmarse: la rejilla responde a qué cartera es mejor \emph{dado} este entorno, no a cuál sería la
+mejor sin restricciones.

@@ -2,37 +2,27 @@
 \label{chap:datos}
 
 Antes de presentar ningún modelo hay que responder a una pregunta más básica: qué información existía
-realmente en cada fecha. Este capítulo la responde en el orden en que un lector la necesita ---
-primero qué empresas componen el universo, después de dónde salen los datos, luego cuándo pasaron a
-ser observables, y por último cómo se separan las ventanas de evaluación --- y cierra con la
-demostración formal de que la señal no puede incorporar información futura. Sólo entonces tiene
-sentido construir el sistema de predicción del Capítulo~\ref{chap:agentes}.
+realmente en cada fecha. De su respuesta depende que la evaluación no conceda al sistema una ventaja
+imposible ---conocer un dato antes de que existiera--- y, por tanto, que todo lo que venga después
+signifique algo.
 
 \section{Fuentes y función de cada fuente}
 
-Ninguna fuente aislada proporciona todos los elementos necesarios para una evaluación temporalmente
-honesta. Yahoo Finance aporta series de precios ajustados que permiten valorar posiciones y calcular
-retornos. Finnhub aporta ratios y series fundamentales con los que se construyen las variables de
-calidad, valor, crecimiento y parte del riesgo. SEC EDGAR proporciona la fecha de filing de los
-10-K y 10-Q; esta fecha establece cuándo el mercado pudo conocer un estado financiero. Por último,
-el historial de composición del índice determina qué empresas forman parte del universo invertible
-en cada instante. SPY interviene sólo como \textit{benchmark} --- es el índice contra el que se mide
-el exceso --- y queda excluido explícitamente de las posiciones, de modo que la cartera nunca puede
-comprar el propio índice que intenta batir.
+Ninguna fuente aislada da todo lo necesario para una evaluación temporalmente honesta. Yahoo Finance
+aporta los precios ajustados con los que se valoran posiciones y se calculan retornos; Finnhub, los
+ratios y series fundamentales; SEC EDGAR, la fecha en que cada informe se hizo público, que es la
+que determina cuándo el mercado pudo conocerlo; y el historial de composición del índice, qué
+empresas eran invertibles en cada instante. SPY interviene sólo como referencia contra la que se
+mide el exceso y queda excluido de las posiciones, de modo que la cartera nunca puede comprar el
+índice que intenta batir.
 
-Esta combinación introduce una jerarquía de confianza. Los precios se usan con la última cotización
-disponible antes del snapshot. Los fundamentales no se usan sólo por existir en la descarga: deben
-estar asociados a un periodo y a un filing elegible. Los perfiles de Finnhub, como el sector, nunca
-entran como señal predictiva; sólo se pueden usar para agrupaciones auxiliares cuando la
-configuración solicita neutralización. Esta restricción reduce el riesgo de que una columna moderna
-de perfil introduzca información retrospectiva.
-
-La falta de un dato no se interpreta como un retorno nulo ni se sustituye con una media global que
-mezcle fechas futuras. El pipeline aplica una imputación basada en la mediana del conjunto de
-entrenamiento disponible e incorpora indicadores de ausencia. De esta manera el modelo puede
-aprender que la falta de cobertura es informativa, pero no recibe una estimación calculada con el
-futuro. Una observación sin precio suficiente o sin fundamental elegible puede quedar fuera de la
-cohorte; esa exclusión se registra en la cobertura anual.
+De ahí sale una jerarquía de confianza. Los precios se usan con la última cotización anterior a la
+observación. Los fundamentales no valen por existir en la descarga: deben tener un periodo y una
+publicación elegibles. Y los perfiles de empresa, como el sector, nunca entran como señal
+predictiva. La ausencia de un dato tampoco se interpreta como un cero: se imputa con la mediana del
+conjunto de entrenamiento disponible y se conserva un indicador de que faltaba, de modo que el
+modelo pueda aprender que la falta de cobertura es informativa sin recibir una estimación calculada
+con el futuro.
 
 \section{Universo dinámico y pertenencia histórica}
 
@@ -46,22 +36,17 @@ ha documentado que esta selección puede inflar de forma material las conclusion
 La corrección no equivale a eliminar todo sesgo de supervivencia. Las fuentes gratuitas no ofrecen la
 misma profundidad para firmas retiradas, algunos fundamentales históricos se han restatado y la
 disponibilidad varía por año. La diferencia es metodológica: el trabajo mide esa cobertura, expone
-sus huecos y evita tratarlos como si no existieran. La Figura~\ref{fig:cobertura-anual}
-y~\ref{tab:resolucion-universo}, más adelante en este capítulo, cuantifican qué fracción del índice
-llega al panel cada año y por qué motivo falta cada uno de los tickers ausentes.
+sus huecos y evita tratarlos como si no existieran. Más adelante en este capítulo, la
+Figura~\ref{fig:cobertura-anual} cuantifica qué fracción del índice llega al panel cada año, y la
+Tabla~\ref{tab:resolucion-universo} desglosa por qué motivo falta cada uno de los \textit{tickers}
+ausentes.
 
-Un caso adicional es la reutilización de símbolos. Un ticker puede corresponder a una empresa
-histórica y, años después, a otra distinta. CPQ dejó de pertenecer al índice en 2002, pero una serie
-de precios descargada posteriormente no necesariamente representa a Compaq; MOB presenta un caso
-análogo. Si se unieran esas series por ticker sin comprobar el intervalo de pertenencia, se crearía
-una historia de precios inexistente. La guarda de reciclaje compara la primera fecha de precio con
-el intervalo de membresía y, cuando detecta reutilización, \emph{recorta} la serie al periodo de
-pertenencia en lugar de descartar el símbolo entero: lo que sobra es la vida de la otra empresa, no
-la de la histórica. La regla lleva dos salvaguardas para no castigar de más: no se aplica si el
-ticker abandonó el índice antes del inicio de la ventana de descarga --- en ese caso no hay solape
-posible que comprobar --- y exige un margen de treinta días antes de declarar reutilización, de modo
-que un desfase administrativo entre la baja del índice y la última cotización no cuente como una
-empresa distinta.
+Un caso adicional es la reutilización de símbolos: un \textit{ticker} puede corresponder a una
+empresa histórica y, años después, a otra distinta. CPQ dejó de pertenecer al índice en 2002, pero
+una serie de precios descargada hoy con ese símbolo no representa necesariamente a Compaq. Unirlas
+sin comprobar el intervalo de pertenencia fabricaría una historia de precios inexistente, así que el
+\textit{pipeline} recorta cada serie al periodo en que la empresa estuvo realmente en el índice, con
+un margen de treinta días para no confundir un desfase administrativo con una empresa distinta.
 
 Conviene separar dos fechas que es fácil confundir. Los precios se descargan desde 1990, mientras
 que el panel evaluado empieza en 2003. Esa historia adicional no se usa para evaluar nada: sirve
@@ -71,33 +56,22 @@ tanto, el periodo sobre el que se mide el modelo.
 
 \section{Identidad, materialización y trazabilidad}
 
-El dataset se materializa una vez bajo una identidad que resume fuentes, rango temporal, universo,
-cadencia, horizonte, lag y versiones de transformación. Si dos evaluaciones resuelven la misma
-identidad, pueden reutilizar la materialización; si cualquiera de esos elementos cambia, se crea un
-dataset distinto. Los resultados no contienen una copia del panel: conservan la referencia y su
-hash, que para el panel de este trabajo es
-\texttt{b5db6211d03fcd56\ldots{}f182071e5887cd9}. Esta elección reduce duplicación y permite
-reconstruir de qué datos procedió un resultado.
-
-La identidad de evaluación incluye además el hash del dataset. Sin esa condición, dos estudios con
-parámetros nominalmente iguales pero datos distintos podrían compartir por error una clave de caché.
-Por tanto, la trazabilidad no es un detalle administrativo: impide que una métrica calculada sobre
-un panel se atribuya a otro. En los anexos se conserva el hash de dataset, la clave de evaluación,
-el identificador del estudio y las rutas de los artefactos que alimentan cada tabla y figura.
+El panel se materializa una vez bajo una identidad que resume fuentes, rango temporal, universo,
+cadencia, horizonte, retardo de observación y versiones de transformación. Si cualquiera de esos
+elementos cambia, se crea un panel distinto. Los resultados no guardan una copia de los datos, sino
+esa referencia, y la clave con la que se recupera una evaluación en caché incluye la identidad del
+panel: sin esa condición, dos estudios con parámetros iguales pero datos distintos podrían compartir
+resultado por error. No es un detalle administrativo, sino lo que impide que una métrica calculada
+sobre un panel se atribuya a otro. Los identificadores concretos figuran en el
+Anexo~\ref{anexo:reproducibilidad}, junto a las rutas de los artefactos que alimentan cada tabla y
+cada figura.
 
 \section{Ventanas temporales del experimento}
 
-El modelo necesita historia anterior para entrenarse. Con una ventana móvil de ocho años y primer
-snapshot de la evaluación en 2015, la información de entrenamiento procede de periodos anteriores,
-siempre que sus etiquetas ya hayan cerrado. La ventana de selección se extiende de 2015 a 2024 y
-contiene 117 cohortes mensuales. Los datos de 2025--2026 se separan como era reservada antes de
-elegir variables, pesos o reglas de cartera. Así, observar un buen resultado reservado no permite
-volver atrás para retocar el ganador.
-
-Esta separación no convierte automáticamente 2025--2026 en una prueba definitiva. El horizonte de
-doce meses deja varias etiquetas abiertas y reduce la información independiente. Su función es más
-exigente que una fila adicional en la tabla de selección: es una comprobación externa del modelo ya
-congelado, cuya interpretación se mantiene deliberadamente prudente en el Capítulo~\ref{chap:resultados}.
+El modelo necesita historia anterior para entrenarse. Con una ventana móvil de ocho años y primera
+observación evaluada en 2015, el entrenamiento procede siempre de periodos previos cuyas etiquetas
+ya cerraron. La ventana de selección va de 2015 a 2024 y contiene 117 cohortes mensuales; los datos
+de 2025--2026 quedan reservados, según la decisión explicada en el Capítulo~\ref{chap:introduccion}.
 
 La Figura~\ref{fig:cobertura-anual} documenta la cobertura año a año desde 2003, incluyendo la
 historia que alimenta las ventanas móviles de entrenamiento y nunca actúa como cohorte de
@@ -112,15 +86,13 @@ evaluación.
   \label{fig:cobertura-anual}
 \end{figure}
 
-La \emph{cobertura} es la fracción de los miembros reales del índice que llega al panel, y crece
-del 49,0\,\% en 2003 al 99,2\,\% en 2026. No debe confundirse con la calidad de las filas ya
-construidas: esa segunda medición condiciona qué observaciones son utilizables dentro del panel,
-pero no dice nada sobre las empresas que faltan. Solo la cobertura del índice habla aquí del sesgo
-de supervivencia, que no se manifiesta como filas defectuosas sino como empresas ausentes.
-
-El índice, conviene subrayarlo, ha tenido alrededor de quinientos componentes durante todo el
-periodo: la cobertura creciente no describe un índice que crece, sino una reconstrucción histórica
-que se degrada cuanto más atrás se mira.
+La \emph{cobertura} es la fracción de los miembros reales del índice que llega al panel, y crece del
+49,0\,\% en 2003 al 99,2\,\% en 2026. Como el índice ha tenido alrededor de quinientos componentes
+durante todo el periodo, esa progresión no describe un índice que crece sino una reconstrucción
+histórica que se degrada cuanto más atrás se mira. Es la única de las dos mediciones de cobertura
+que habla del sesgo de supervivencia, porque ese sesgo no se manifiesta como filas defectuosas sino
+como empresas ausentes; la disponibilidad de variables \emph{dentro} de las filas ya construidas es
+otra cosa, y se mide más adelante.
 
 Esa ausencia sí es observable, y está medida. El pipeline registra una fila por cada uno de los
 1.206 \textit{tickers} que alguna vez pertenecieron al índice, con el motivo por el que entra o no
@@ -139,8 +111,8 @@ El reparto desmiente la lectura intuitiva. La causa dominante no es la mortalida
 la retirada de símbolos por parte del proveedor de precios: el 36,8\,\% de los ausentes son símbolos
 que su API ya no reconoce. La mortalidad se mide aparte, por el sufijo \texttt{Q} con el que se
 marca a una empresa en concurso, y alcanza a 31 de los 563 excluidos, un 5,5\,\%; que ese porcentaje
-coincida con el de la fila \artefacto{no\_metric\_period\_match} de la tabla es una casualidad
-aritmética y no la misma medición. Un dato adicional lo confirma: los 563 ausentes \emph{sí} tienen
+coincida con el de la última fila de la tabla es una casualidad aritmética y no la misma medición.
+Un dato adicional lo confirma: los 563 ausentes \emph{sí} tienen
 fundamentales descargados, de modo que el
 cuello de botella es exclusivamente el precio y la exclusión no señala empresas sin información
 contable. El Capítulo~\ref{chap:limitaciones} recoge la dirección y la magnitud del sesgo que esto
@@ -149,11 +121,9 @@ introduce.
 \section{La muestra que el modelo realmente evalúa}
 \label{sec:muestra-oos}
 
-La cobertura histórica anterior responde a la pregunta de cuántas empresas del índice se
-reconstruyen. No responde, por sí sola, a cuántas observaciones llegan a cada predicción ni a qué
-fracción de variables está disponible dentro de esas observaciones. Para separar ambos conceptos,
-la Figura~\ref{fig:muestra-oos} describe el panel que consume el modelo después de aplicar
-observabilidad, cierre de etiqueta y requisitos mínimos de precio.
+Cuántas empresas del índice se reconstruyen no dice cuántas observaciones llegan a cada predicción.
+La Figura~\ref{fig:muestra-oos} describe el panel que consume el modelo tras aplicar observabilidad,
+cierre de etiqueta y requisitos mínimos de precio.
 
 \begin{figure}[H]
   \centering
@@ -181,74 +151,88 @@ estudio solo seis cohortes reservadas disponen de retorno realizado completo. La
   \resizebox{\textwidth}{!}{\input{tables/t03_muestra_oos.tex}}
 \end{table}
 
-El panel de disponibilidad de la Figura~\ref{fig:muestra-oos} se calcula sobre los diagnósticos de
-73 series construidas; el catálogo científico declara \NumPredictores{} variables de entrada porque
-algunas columnas auxiliares existen para control y trazabilidad, no para entrenar. La cobertura media de
-esos diagnósticos ronda el 91\,\%, aunque siete caen por debajo del 80\,\%. El pipeline no interpreta
-la ausencia como cero económico: conserva el indicador de disponibilidad, imputa solo con
-información del corte de entrenamiento y permite que las reglas de poda decidan si una variable
-puede sostenerse fuera de muestra.
+El panel derecho de la Figura~\ref{fig:muestra-oos} mide la segunda cobertura, la de las variables
+dentro de las filas ya construidas: ronda el 91\,\% de media, aunque siete series caen por debajo
+del 80\,\%. La ausencia no se interpreta como un cero económico, sino que se conserva como indicador
+y se imputa únicamente con información del corte de entrenamiento.
 
-Esta descripción también acota qué significa «más datos». Cada reentrenamiento utiliza únicamente
-labels ya cerrados de su ventana móvil de ocho años; en la muestra observada, el conjunto de
-entrenamiento pasa aproximadamente de 9.879 a 13.236 filas. Las decenas de miles de filas no son
-ensayos independientes porque acciones de una misma fecha comparten estado de mercado y las
-ventanas consecutivas se solapan. Por ello, la inferencia posterior se agrega por cohorte y por era,
-en lugar de tratar cada acción--mes como una repetición independiente.
+Conviene además acotar qué significa aquí «más datos». Cada reentrenamiento usa sólo etiquetas ya
+cerradas de su ventana de ocho años, de unas 9.879 a unas 13.236 filas según la fecha. Esas decenas
+de miles de filas no son ensayos independientes: las acciones de una misma fecha comparten estado de
+mercado y las ventanas consecutivas se solapan. Por eso toda la inferencia posterior se agrega por
+cohorte y por era, en lugar de tratar cada acción--mes como una repetición.
 
 \section{Observabilidad temporal: qué se sabía y cuándo}
 \label{sec:observabilidad}
 
-La regla metodológica que gobierna todo lo anterior puede enunciarse en una frase, y el resto de
-esta sección la desarrolla y la demuestra.
+Dos mecanismos distintos gobiernan qué información llega a una decisión, y no conviene
+confundirlos porque responden a preguntas diferentes: uno decide \emph{qué} puede verse, y el otro
+\emph{cuándo} se mira.
 
-La regla metodológica central es simple: una variable fundamental puede entrar en la señal de un
-snapshot \(\tsnap\) sólo si su fecha real de publicación \(\tfiled\), más el lag de ejecución, no
-supera \(\tsnap\). El horizonte \(\hlabel\) se usa exclusivamente para construir el retorno futuro;
-su etiqueta no entra ni en el ajuste ni en el meta-agente hasta que \texttt{label\_end\_date} ya ha
-pasado. Así se bloquea el \textit{lookahead bias} desde la ingesta hasta la evaluación. La
-Figura~\ref{fig:observabilidad} ordena las cuatro fechas que intervienen y las dos distancias que
-las separan.
+\paragraph{Qué puede verse: el filtro por fecha de publicación.} En cada fecha de observación
+\(\tsnap\) el sistema sólo puede usar el último informe cuya fecha real de publicación en SEC EDGAR,
+\(\tfiled\), sea anterior o igual a \(\tsnap\). No es un supuesto sobre cuánto suelen tardar las
+empresas: es un filtro sobre la fecha que EDGAR registra para cada documento. Si un informe se hizo
+público el 28 de febrero, para el sistema no existe ni un día antes, por mucho que el trimestre al
+que se refiere hubiera terminado dos meses atrás. Este filtro no tiene ningún parámetro que
+ajustar, y es lo que impide el \textit{lookahead bias}. La etiqueta obedece a la misma lógica en el
+otro extremo: el horizonte \(\hlabel\) sirve para construir el retorno futuro, y esa etiqueta no
+entra en ningún ajuste hasta que su fecha de cierre ha pasado.
+
+\paragraph{Cuándo se mira: el retardo de observación.} El sistema no observa el mercado el último
+día de cada mes, sino sesenta días después. Ese retardo sí es una variable del catálogo, que ofrecía
+treinta, cuarenta y cinco o sesenta días. Su papel no es proteger de la fuga temporal ---de eso se
+encarga el filtro anterior--- sino fijar el día en que se mira: observar tarde hace que la mayoría
+de los informes del trimestre ya se hayan publicado, de modo que la sección transversal llega más
+completa y una empresa que publica pronto no obtiene ventaja de calendario sobre otra que publica
+tarde. Al ser la opción conservadora, el protocolo prefiere el retardo mayor incluso cuando la
+evidencia no distingue entre los tres.
+
+La Figura~\ref{fig:observabilidad} ordena las fechas que intervienen.
 
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}[>=Latex,every node/.style={font=\small}]
-\draw[->,thick] (0,0) -- (12,0);
-\foreach \x/\l in {1/Cierre fiscal,4/\(\tfiled\),6/\(\tsnap\),10/Fin de etiqueta} {\draw (\x,.12)--(\x,-.12) node[below=4pt,align=center]{\l};}
-\draw[<->,teal,thick] (4,.55)--node[above]{lag de ejecución} (6,.55);
-\draw[<->,orange!80!black,thick] (6,1.1)--node[above]{horizonte \(\hlabel\)} (10,1.1);
+\draw[->,thick] (0,0) -- (12.4,0);
+\foreach \x/\l in {0.7/Cierre fiscal,3.1/Fin de mes,4.9/Publicación \(\tfiled\),7.2/Observación \(\tsnap\),11/Fin de etiqueta}
+  {\draw (\x,.12)--(\x,-.12) node[below=4pt,align=center,font=\footnotesize]{\l};}
+\draw[<->,teal,thick] (3.1,.62)--node[above,font=\footnotesize]{retardo de observación: 60 días} (7.2,.62);
+\draw[<->,orange!80!black,thick] (7.2,1.25)--node[above,font=\footnotesize]{horizonte \(\hlabel\)} (11,1.25);
 \end{tikzpicture}
-\caption{Observabilidad temporal. La señal sólo puede usar información publicada antes del
-snapshot; el retorno futuro se reserva como etiqueta.}
+\caption{Las fechas que intervienen en una decisión. El retardo de observación separa el fin de mes
+del día en que se mira el mercado; sólo puede usarse lo publicado antes de ese día, y el retorno
+futuro se reserva como etiqueta.}
 \label{fig:observabilidad}
 \end{figure}
 
-Formalmente, si todo registro $x$ usado para predecir en \(\tsnap\) cumple
-\(\tfiled(x)+\mathrm{lag}\leq\tsnap\), entonces no existe $x$ con información posterior a
-\(\tsnap\) en el conjunto de entrada. La implementación aplica esta condición antes de construir
-features, y los tests de contrato cubren pertenencia al universo, fechas de publicación, etiquetas,
-meta-agente y órdenes de cartera.
+La implementación aplica el filtro antes de construir las variables, y los tests de contrato cubren
+pertenencia al universo, fechas de publicación, cierre de etiquetas, meta-agente y órdenes de
+cartera.
 
 \section{De un cierre contable a una señal invertible}
 
 Una fecha de cierre fiscal no es una fecha de disponibilidad. Una empresa puede cerrar su trimestre
-el 31 de diciembre y publicar su 10-K semanas o meses después. Un inversor que construyese una señal
-el 15 de enero no conocería todavía esa información, aunque hoy una base de datos pueda mostrarla
-asociada al trimestre terminado. El error consiste en confundir la fecha económica a la que se
-refiere el ratio con la fecha informativa en la que se hizo público.
+el 31 de diciembre y publicar su informe semanas o meses después; quien construyese una señal el 15
+de enero no conocería todavía esa información, aunque hoy una base de datos la muestre asociada al
+trimestre terminado. Confundir la fecha económica a la que el dato se refiere con la fecha en que se
+hizo público es el error que el filtro por publicación evita. Un ejemplo con fechas concretas
+muestra cómo actúan los dos mecanismos a la vez.
 
-El pipeline utiliza la fecha \(\tfiled\) de EDGAR y añade un lag de ejecución. El lag no pretende
-fingir que todos los fundamentales llegan tarde la misma cantidad de días; es un margen operativo
-uniforme posterior a una publicación que ya ocurrió. El ganador emplea 60 días. Esta elección es
-conservadora: sacrifica actualidad para reducir el riesgo de que la señal dependa de la hora de
-publicación, del procesamiento de la fuente o de una revisión tardía.
+\begin{ejemplo}[Cuándo puede usarse un informe]
+Una empresa cierra su trimestre el 31 de diciembre de 2019 y publica su informe anual el 28 de
+febrero de 2020.
 
-Considérese un ejemplo. Si un 10-K se refiere al cierre del 31 de diciembre, se presenta el 28 de
-febrero y se aplica un lag de 60 días, sólo puede alimentar snapshots posteriores al 29 de abril. Un
-procedimiento que usase el cierre fiscal lo habría incorporado cuatro meses antes; uno que aplicase
-un retardo fijo desde el cierre también fallaría en empresas con plazos de filing inusualmente
-largos. El diseño conserva el dato hasta que es observable y lo mantiene disponible en snapshots
-posteriores mediante un relleno temporal hacia delante, nunca hacia atrás.
+En la observación del 30 de enero de 2020 ---sesenta días después del cierre de noviembre--- ese
+informe todavía no se había publicado, así que el sistema no puede verlo y utiliza el del trimestre
+anterior. En la siguiente, el 1 de marzo de 2020 ---sesenta días después del cierre de enero---, el
+informe ya es público y entra en la señal. Ninguna observación anterior al 28 de febrero puede
+usarlo, por mucho que el trimestre al que se refiere hubiera terminado dos meses antes.
+\end{ejemplo}
+
+Un procedimiento que fechara el dato por su cierre fiscal lo habría incorporado dos meses antes, en
+información que ningún inversor tenía. El diseño conserva cada dato hasta que es observable y lo
+mantiene disponible en observaciones posteriores mediante un relleno hacia delante, nunca hacia
+atrás.
 
 \section{Construcción de labels y cierre de cohortes}
 
@@ -268,39 +252,37 @@ información.
 
 \begin{proposicion}[Ausencia de fuga temporal]
 \label{prop:sin-fuga}
-Sea $\mathcal{I}_t$ el conjunto de entradas utilizado para generar la señal en
-\(\tsnap=t\). Si para cada fundamental $x\in\mathcal{I}_t$ se cumple
-$\tfiled(x)+L\leq t$, si cada precio se obtiene en una fecha no posterior a $t$, y si cada etiqueta
-de entrenamiento satisface $\texttt{label\_end\_date}\leq t$, entonces la señal es medible con la
-información disponible en $t$.
+Sea $\mathcal{I}_t$ el conjunto de entradas utilizado para generar la señal en la fecha de
+observación \(\tsnap=t\). Si cada fundamental $x\in\mathcal{I}_t$ cumple $\tfiled(x)\leq t$, si cada
+precio se obtiene en una fecha no posterior a $t$, y si cada etiqueta de entrenamiento ha cerrado en
+$t$ o antes, entonces la señal es medible con la información disponible en $t$.
 \end{proposicion}
 
 \begin{proof}
-Por la primera condición, ningún fundamental de entrada se publicó después
-de $t-L$ y, por tanto, tampoco después de $t$. Por la segunda, ningún precio usado como predictor
-es posterior a $t$. Por la tercera, todos los retornos que intervienen en ajuste o combinación ya
-han concluido en $t$. Las transformaciones posteriores (rangos, winsorización y modelos) son
-funciones de estas entradas, por lo que tampoco pueden incorporar un dato posterior. En
-consecuencia, la señal pertenece a la sigma-álgebra de información observable en $t$.
+Por la primera condición, ningún fundamental de entrada se publicó después de $t$. Por la segunda,
+ningún precio usado como predictor es posterior a $t$. Por la tercera, todos los retornos que
+intervienen en el ajuste o en la combinación ya han concluido en $t$. Las transformaciones
+posteriores ---rangos, winsorización y modelos--- son funciones de estas entradas, por lo que
+tampoco pueden incorporar un dato posterior. En consecuencia, la señal pertenece a la sigma-álgebra
+de información observable en $t$.
 \end{proof}
 
-La proposición no demuestra que los datos sean perfectos ni que el modelo generalice; demuestra algo
-anterior: que la evaluación no concede al algoritmo una ventaja imposible. La validez de las fuentes,
-la estabilidad de la señal y los costes siguen siendo cuestiones empíricas independientes.
+El retardo de observación no aparece en el enunciado, y esa ausencia es deliberada: la garantía no
+depende de él. Retrasar la fecha de observación sólo desplaza $t$ hacia adelante, lo que puede
+ampliar el conjunto de informes admisibles pero nunca permite ver uno publicado después. La
+proposición no demuestra que los datos sean perfectos ni que el modelo generalice; demuestra algo
+anterior, que la evaluación no concede al algoritmo una ventaja imposible.
 
 \section{Controles implementados}
 
-La disciplina temporal se aplica en varias capas. La pertenencia al índice se resuelve por snapshot;
-los precios se unen hacia atrás; los informes se ordenan por filing y periodo; y las variables de
-serie se construyen sólo con publicaciones pasadas. Las transformaciones que usan historia, como
-medias, estabilidad o momentum fundamental, agrupan por ticker y desplazan el pasado antes de
-calcular una ventana. El meta-agente filtra explícitamente cohortes no cerradas.
-
-Los contratos automáticos protegen cuatro invariantes: pertenencia histórica y fechas de
-publicación, cierre de etiquetas antes de entrenar, separación de la era reservada y contabilidad
-económica coherente con órdenes y costes. Un test sintético no es evidencia económica; prueba que el
-código rechaza estados incompatibles con el método declarado. Tampoco garantiza que la fuente diga
-la verdad sobre sus fechas, limitación que se trata en el Capítulo~\ref{chap:limitaciones}.
+La disciplina temporal se aplica en varias capas: la pertenencia al índice se resuelve en cada
+observación, los precios se unen hacia atrás, los informes se ordenan por publicación y periodo, y
+las transformaciones que usan historia desplazan el pasado antes de calcular cualquier ventana.
+Cuatro contratos automáticos lo verifican ---pertenencia histórica y fechas de publicación, cierre
+de etiquetas antes de entrenar, aislamiento de la era reservada y contabilidad coherente con órdenes
+y costes---, aunque su alcance es limitado: prueban que el código rechaza estados incompatibles con
+el método declarado, no que la fuente diga la verdad sobre sus fechas, limitación que recoge el
+Capítulo~\ref{chap:limitaciones}.
 
 \section{El catálogo de variables y su reparto entre agentes}
 
@@ -311,11 +293,11 @@ protocolo. Lo que interesa medir aquí es otra cosa: cuánta señal tiene cada v
 \emph{por separado}, antes de cualquier modelo.
 
 La respuesta es que muy poca, y ese es justamente el punto. Los Rank-IC univariantes son diminutos
-frente al \RankICSeleccion{} del sistema completo: el mayor de todos, \artefacto{gap\_21d}, llega a 0,0540, y la
-mayoría se queda un orden de magnitud por debajo. No es una contradicción sino el argumento a favor
-de combinar: ninguna variable aislada ordena el mercado, y la capacidad predictiva aparece al
-agregar muchas señales débiles mediante modelos no lineales y una ponderación aprendida. La
-Tabla~\ref{tab:features-top} muestra los extremos de esa distribución.
+frente al \RankICSeleccion{} del sistema completo: el mayor de todos ---los huecos de apertura a un
+mes--- llega a 0,0540, y la mayoría se queda un orden de magnitud por debajo. No es una
+contradicción, sino el argumento a favor de combinar: ninguna variable aislada ordena el mercado, y
+la capacidad predictiva aparece al agregar muchas señales débiles. La Tabla~\ref{tab:features-top}
+muestra los extremos de esa distribución.
 
 \begin{table}[H]
   \centering
@@ -331,9 +313,8 @@ Tabla~\ref{tab:features-top} muestra los extremos de esa distribución.
   describe el catálogo declarado y no qué variables sobrevivieron a la poda por estabilidad.}
 \end{table}
 
-Dos observaciones anticipan resultados posteriores. La variable que encabeza la lista,
-\artefacto{gap\_21d}, es de liquidez de mercado y pertenece al agente \textit{risk}: la misma que el
-Capítulo~\ref{chap:resultados} encontrará dominando la atribución local de ese agente. Y la que
-cierra por el extremo negativo es \artefacto{beta\_252d}, el candidato obvio si la señal fuese una
-réplica de la prima de baja volatilidad. Esa jerarquía ya está en los datos antes de cualquier
-modelo.
+Dos observaciones anticipan resultados posteriores. La variable que encabeza la lista es de liquidez
+de mercado y pertenece al agente de riesgo: la misma que el Capítulo~\ref{chap:resultados}
+encontrará dominando su atribución. Y la que cierra por el extremo negativo es la beta a un año, el
+candidato obvio si la señal fuese una réplica de la prima de baja volatilidad. Esa jerarquía ya está
+en los datos antes de cualquier modelo.

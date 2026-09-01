@@ -9,65 +9,33 @@ comprar la ordenación entera: compra unas pocas acciones, paga costes y rota.
 Este capítulo aborda el \textbf{Objetivo 2}: si el orden aprendido puede cobrarse frente al índice, y
 cuánto de esa respuesta depende de las reglas con las que se construye la cartera.
 
-\section{Contra qué se compite}
-\label{sec:suma-cero}
-
-La Sección~\ref{sec:suma-cero-intro} estableció el listón y no hace falta reconstruirlo: batir al
-índice es un juego de suma cero antes de costes y de suma negativa después, y el
-\textit{scorecard} SPIVA de la Figura~\ref{fig:spiva-horizontes} muestra que a veinte años el
-92,89\,\% de los fondos estadounidenses de gran capitalización no lo consigue. Lo que importa
-recordar aquí es la consecuencia para la lectura de las cifras que siguen.
-
-La primera es que la afirmación que este capítulo puede permitirse es deliberadamente modesta:
-superar al índice de forma sostenida significa ganarle la posición a otro participante en un juego
-donde la mayoría pierde, y demostrarlo exige mucha más evidencia que demostrar que un modelo ordena.
-
-La segunda es que un buen Rank-IC no compra un buen resultado económico. Que el sistema
-\emph{aprenda} es una afirmación sobre el modelo y se resuelve con contrastes adversariales; que ese
-aprendizaje \emph{se cobre} es una afirmación sobre un mercado competitivo. El capítulo anterior
-mostró que las dos pueden divergir: el orden mejora entre eras mientras el pago económico se
-deteriora. Este capítulo mide qué separa una de otra, y encuentra que buena parte de esa distancia
-está en la construcción de cartera.
-
-\section{Cómo debe leerse este capítulo}
-\label{sec:advertencia-economica}
-
-\begin{quote}
-\textbf{La cartera que aquí se evalúa fue elegida por su Information Ratio sobre 2015--2024.} Sus
-cifras en esa ventana describen la configuración seleccionada, pero \emph{no} son una confirmación
-independiente: están contaminadas por la propia selección, igual que las cifras predictivas del
-capítulo anterior lo están por la suya. La única lectura económica genuinamente fuera de muestra es
-la de 2025--2026, que no intervino en ninguna elección y se presenta al final del capítulo.
-\end{quote}
-
-De ahí dos distinciones que el resto del capítulo respeta sin excepción.
-
-\paragraph{Tres ventanas, tres estatus.} La ventana de \emph{selección} (2015--2024) es donde se
-tomaron todas las decisiones: sus cifras describen el sistema, pero están contaminadas por esa
-selección. La ventana de \emph{confirmación} (2025--2026) no intervino en ninguna decisión, de modo
-que sus cifras son honestamente fuera de muestra, pero son pocas. La \emph{curva completa} mezcla
-ambos regímenes y sirve para describir la serie histórica, no como evidencia.
-
-\paragraph{Dos carteras, no una.} Conviven la cartera que el catálogo recomienda --- vigente y sin
-optimizar durante todo el trabajo predictivo ---, empleada como punto de partida y referencia de
-contraste, y la que la rejilla eligió, que es la que el documento adopta. Producen resultados de
-\emph{signo opuesto} en la era reservada, y ese contraste es la respuesta al Objetivo 2: mide cuánto
-de la utilidad económica depende de la construcción de cartera y no del modelo. Toda tabla declara
-con cuál se calculó.
-
-\section{Gestión de cartera: la rejilla completa}
+\section{De la señal a la cartera: qué se optimizó y cómo}
 \label{sec:cartera-rejilla}
 
-Las variables de cartera del catálogo no son predictivas: se ejecutan \emph{después} de congelar el
-ganador y nunca influyen en su selección. Esa separación, impuesta por el protocolo, tiene una
-consecuencia metodológica valiosa. Como todas las carteras parten exactamente del mismo modelo, de
-la misma señal y del mismo panel, sus diferencias sólo pueden atribuirse a la regla de construcción
-de cartera. Es un experimento controlado en sentido estricto.
+Un buen Rank-IC no compra un buen resultado económico. Que el sistema \emph{aprenda} es una
+afirmación sobre el modelo; que ese aprendizaje \emph{se cobre} lo es sobre un mercado competitivo y
+de suma cero, donde superar al índice significa ganarle la posición a otro participante. Este
+capítulo mide qué separa una cosa de la otra, y encuentra que buena parte de esa distancia está en
+la construcción de cartera.
 
-Las 1.440 carteras de esta sección son las del Portfolio Study descrito en la
-Sección~\ref{sec:portfolio-study}: producto cartesiano de las seis variables, optimizado por
-Information Ratio y medido sobre la serie recortada en 2024, de modo que ninguna combinación pudo
-ver la era reservada.
+Antes de las cifras conviene fijar dos distinciones que el capítulo respeta sin excepción.
+
+\paragraph{Tres ventanas, tres estatus.} En la de \emph{selección} (2015--2024) se tomaron todas las
+decisiones, así que sus cifras describen el sistema pero están contaminadas por esa selección. La de
+\emph{confirmación} (2025--2026) no intervino en ninguna, de modo que es honestamente fuera de
+muestra, pero contiene pocos datos. La \emph{curva completa} mezcla ambos regímenes y sólo sirve
+para describir la serie.
+
+\paragraph{Dos carteras, no una.} Conviven la que el catálogo recomienda ---vigente y sin optimizar
+durante todo el trabajo predictivo, empleada como punto de partida--- y la que la rejilla eligió,
+que es la que el documento adopta. Producen resultados de \emph{signo opuesto} en la era reservada,
+y ese contraste es la respuesta al Objetivo 2. Toda tabla declara con cuál se calculó.
+
+Las 1.440 carteras que siguen son las del Portfolio Study: el producto cartesiano de las seis
+variables de gestión, medido sobre una serie recortada en 2024 para que ninguna combinación pudiera
+ver la era reservada. Como todas parten del mismo modelo, la misma señal y el mismo panel, sus
+diferencias sólo pueden atribuirse a la regla de construcción de cartera. Es un experimento
+controlado en sentido estricto.
 
 \begin{figure}[H]
   \centering
@@ -83,19 +51,16 @@ es desigual. Las dos que gobiernan la exposición separan el Information Ratio d
 y el suelo de cobertura 0,076. Las dos restantes se mueven por debajo de 0,02: el reparto de pesos
 (0,005) y la tolerancia de deriva (0,017) son, a efectos del IR, prácticamente indiferentes.
 
-Cada extremo de esas barras resume un \emph{conjunto} de carteras, no una cartera: al fijar una
-coordenada, las otras cinco siguen variando y lo que se compara son medianas de familias enteras.
-Un extremo alto significa que ese valor tiende a funcionar bien acompañado de casi cualquier cosa, no
-que baste con adoptarlo. La lectura correcta separa por tanto dos preguntas que una sola cifra
-confundiría: «este valor es mejor» y «esta variable cambia el resultado».
+Cada extremo de esas barras resume un \emph{conjunto} de carteras, no una: al fijar una coordenada,
+las otras cinco siguen variando. Un extremo alto significa que ese valor tiende a funcionar bien
+acompañado de casi cualquier cosa, no que baste con adoptarlo.
 
-De ahí sale un argumento a favor del método. Si se eligiera cada variable por su mejor valor
-marginal se adoptarían un suelo de cobertura de 60 y un reparto equiponderado; la cartera ganadora
-usa suelo 0 y reparto proporcional al alfa. Acompañado del resto de sus coordenadas, prescindir del
-filtro de cobertura funciona mejor, aunque promediando sobre todos los contextos ocurra lo
-contrario. Es decir, \emph{optimizar variable a variable no habría encontrado la cartera ganadora}:
-un ascenso por coordenadas habría fijado el suelo 60 en su paso y nunca habría vuelto sobre ello. Esa
-es exactamente la razón por la que esta búsqueda es cartesiana y no secuencial.
+Esa diferencia tiene una consecuencia concreta. Si se eligiera cada variable por su mejor valor
+marginal se adoptarían un suelo de cobertura de 60 y un reparto equiponderado, y la cartera ganadora
+usa suelo 0 y reparto proporcional al alfa: acompañado del resto de sus coordenadas, prescindir del
+filtro funciona mejor, aunque promediando sobre todos los contextos ocurra lo contrario.
+\emph{Optimizar variable a variable no habría encontrado la cartera ganadora}, y ésa es exactamente
+la razón por la que esta búsqueda es cartesiana.
 
 \begin{figure}[H]
   \centering
@@ -119,19 +84,20 @@ topes bajos. Las dos figuras son por tanto complementarias: la anterior dice qu�
 
 La cartera elegida concentra en ocho posiciones, reparte el peso en proporción al alfa esperado,
 tolera hasta un 10\,\% de efectivo, retiene cada posición un horizonte completo, no aplica suelo de
-cobertura y deja correr la deriva hasta el 40\,\% antes de reequilibrar. Conviene precisar en qué se
-diferencia de la cartera del modelo, porque es lo que convierte la comparación en un experimento
-legible: comparten el número de posiciones y el reparto de pesos, y difieren en tres cosas ---
-reduce el efectivo máximo del \EfectivoModelo{} al \EfectivoCartera{}, amplía la tenencia mínima de
-medio horizonte a un horizonte completo y \emph{relaja} la corrección de deriva de
-\DerivaModelo{} a \DerivaCartera{}.
+cobertura y deja correr la deriva hasta el 40\,\% antes de reequilibrar.
 
-Las tres diferencias apuntan en la misma dirección y conviene nombrarla, porque es el hallazgo de
-esta sección: la cartera ganadora \textbf{opera menos}. Mantiene lo que compra durante todo el
-horizonte de la señal y no persigue la deriva de los pesos, de modo que su rotación cae del 242\,\%
-al 135\,\% anualizado. Que eso mejore el Information Ratio dice algo concreto sobre la señal: es una
-señal a doce meses, y la maquinaria que la traducía en posiciones la estaba deshaciendo antes de que
-madurase. La Tabla~\ref{tab:cartera-ganadora} enfrenta las dos.
+Frente a la cartera de partida comparte el número de posiciones y el reparto de pesos, y difiere en
+tres cosas: reduce el efectivo máximo del \EfectivoModelo{} al \EfectivoCartera{}, amplía la
+permanencia mínima de medio horizonte a uno completo y \emph{relaja} la corrección de deriva de
+\DerivaModelo{} a \DerivaCartera{}. Que sólo cambien tres reglas es lo que convierte la comparación
+en un experimento legible.
+
+Las tres diferencias apuntan en la misma dirección, y ése es el hallazgo de la sección: la cartera
+ganadora \textbf{opera menos}. Mantiene lo que compra durante todo el horizonte de la señal y no
+persigue la deriva de los pesos, de modo que su rotación cae del 242\,\% al 135\,\% anualizado.
+
+Que eso mejore el resultado dice algo concreto: la señal es a doce meses, y la maquinaria que la
+traducía en posiciones la estaba deshaciendo antes de que madurase.
 
 \begin{table}[H]
   \centering
@@ -160,34 +126,23 @@ aparece en la última columna.
 \end{figure}
 
 La Figura~\ref{fig:seleccion-vs-reservada} documenta el problema que la optimización de cartera vino
-a resolver, y conviene leerla antes que la solución. Con la cartera \emph{por defecto} del catálogo,
-las tres pasadas de la cadena mejoran dentro de la ventana de selección pero fracasan fuera de ella:
-su Information Ratio en la era reservada es $-2{,}348$, $-1{,}010$ y $-1{,}795$, negativo en las
-tres. La mejor pasada de la cadena en selección pierde frente al índice en la era reservada sin
-batirlo ni un solo año. Leído así, el trabajo parecería el retrato de un sobreajuste.
+a resolver. Con la cartera \emph{por defecto}, las tres pasadas de la cadena mejoran dentro de la
+ventana de selección pero fracasan fuera: su Information Ratio en la era reservada es negativo en
+las tres, y la mejor de ellas no bate al índice ni un solo año. Leído así, el trabajo parecería el
+retrato de un sobreajuste.
 
-El hallazgo de este capítulo es que la cartera era el \textbf{cuello de botella observable}. Con la cartera
-optimizada, la misma señal, sin reentrenar nada y sin tocar una sola variable predictiva, deja de
-perder en la era reservada: obtiene un exceso de $+0{,}24$\,\% y un Information Ratio de $+0{,}109$,
-batiendo al índice en uno de los dos años en lugar de en ninguno. La ordenación transversal se
-mantuvo positiva fuera de muestra ---su Rank-IC en esa era es \RankICReservado{}, aunque menor que
-en selección---; la política original no conseguía convertirla en un resultado comparable y rotaba
-demasiado deprisa para una señal a doce meses.
+El hallazgo del capítulo es que la cartera era el \textbf{cuello de botella}. Con la optimizada, la
+misma señal ---sin reentrenar nada ni tocar una sola variable predictiva--- deja de perder en la era
+reservada: exceso de $+0{,}24$\,\% e Information Ratio de $+0{,}109$, batiendo al índice en uno de
+los dos años. La ordenación se mantuvo positiva fuera de muestra; la política original no conseguía
+convertirla en resultado y rotaba demasiado deprisa para una señal a doce meses.
 
-Conviene medir la afirmación por lo que es. El cambio de signo es el resultado: se pasa de destruir
-valor a igualar al índice, no a superarlo con holgura. Un exceso del 0,24\,\% en 1,41 años no es una
-demostración de rentabilidad, y presentarlo como tal sería exactamente el tipo de lectura que este
-capítulo trata de evitar. Lo que queda demostrado, en las condiciones medidas, es más modesto y más
-útil: la conclusión sobre utilidad económica cambia con la cartera aun manteniendo fija la señal.
-No queda demostrado que la cartera elegida generalice, ni que toda la debilidad económica anterior
-fuera ajena al modelo.
-
-Dos cautelas explícitas, que el trabajo no oculta. La primera es de tamaño muestral: la era
-reservada abarca seis cohortes y 1,41 años de cartera, de modo que «bate en la mitad de los años»
-significa uno de dos, y ningún contraste construido sobre esa cantidad de datos es concluyente. La
-segunda es de multiplicidad: la cartera ganadora es la mejor de 1.440, y aunque ninguna de ellas
-pudo ver la era reservada durante la selección, que la ganadora generalice no queda demostrado por
-un único periodo de confirmación.
+Conviene medir la afirmación por lo que es: se pasa de destruir valor a igualar al índice, no a
+superarlo con holgura, y un exceso del 0,24\,\% en 1,41 años no demuestra rentabilidad. Lo
+demostrado es más modesto y más útil: la conclusión sobre utilidad económica cambia con la cartera
+aun manteniendo fija la señal. Dos cautelas lo acotan: la era reservada son seis cohortes, de modo
+que «bate la mitad de los años» significa uno de dos; y la ganadora es la mejor de 1.440, así que su
+generalización no queda demostrada por un único periodo de confirmación.
 
 \section{Resultados económicos completos}
 \label{sec:economia-completa}
@@ -211,17 +166,13 @@ pagada por una señal que necesita doce meses para expresarse.
   completa: descriptiva, no probatoria.}
 \end{table}
 
-Dos observaciones sobre la tabla condicionan su lectura. La primera es que el efectivo medio es
-\textbf{cero en las tres ventanas}: la cartera ganadora renuncia por completo a la liquidez, de modo
-que su resultado no puede atribuirse a haber estado fuera del mercado en los momentos oportunos.
-Está siempre invertida, y su exceso procede íntegramente de qué acciones eligió.
-
-La segunda es que el turnover \emph{cae} en la era reservada, del 135\,\% al 35\,\% anualizado. No
-es un cambio de comportamiento del sistema sino una consecuencia mecánica de la tenencia mínima que
-la cartera ganadora impone: con un horizonte completo de permanencia obligatoria y sólo 1,41 años de
-serie, buena parte de las posiciones abiertas al principio del periodo todavía no ha podido
-venderse. La cifra, por tanto, describe una ventana demasiado corta para que la regla de rotación
-llegue a expresarse, y no debe compararse directamente con la de la ventana de selección.
+Dos observaciones condicionan la lectura de la tabla. El efectivo medio es \textbf{cero en las tres
+ventanas}: la cartera renuncia por completo a la liquidez, así que su resultado no puede atribuirse
+a haber estado fuera del mercado en los momentos oportunos, y su exceso procede íntegramente de qué
+acciones eligió. Y el turnover \emph{cae} en la era reservada, del 135\,\% al 35\,\%, no por un
+cambio de comportamiento sino por la permanencia mínima: con doce meses obligatorios y sólo 1,41
+años de serie, buena parte de las posiciones aún no ha podido venderse. Esa cifra describe una
+ventana demasiado corta para que la regla llegue a expresarse.
 
 \begin{figure}[H]
   \centering
@@ -231,19 +182,14 @@ llegue a expresarse, y no debe compararse directamente con la de la ventana de s
   \label{fig:equity-drawdown}
 \end{figure}
 
-La Figura~\ref{fig:equity-drawdown} permite una lectura que las medias agregadas no dan: la
-ventaja no se construye en un salto sino de forma acumulativa, y el tramo dorado --- la era
-reservada --- no rompe la trayectoria. El panel inferior muestra el reverso de la misma serie sin
-obligar al lector a saltar a otra figura.
-
-El \textit{drawdown} máximo de 22,83\,\% es 2,38 puntos \emph{menor} que el de la cartera del
-modelo, y merece subrayarse porque contradice lo que cabría esperar: la cartera ganadora reduce el
-colchón de efectivo del 25\,\% al 10\,\% --- y en la práctica lo deja en cero --- y aun así cae
-menos. La mejora no se compró aceptando más riesgo de caída. La explicación está en la tenencia
-mínima: al no deshacer posiciones a mitad de horizonte, la cartera evita cristalizar caídas
-transitorias que la versión más activa sí realizaba. Aun así, que el \textit{drawdown} de una
-cartera de ocho nombres sea comparable al de un índice de quinientos no debe leerse como control de
-riesgo: es consecuencia de la señal, no de una política de exposición, que el sistema no tiene.
+La Figura~\ref{fig:equity-drawdown} muestra que la ventaja no se construye en un salto sino de forma
+acumulativa, y que el tramo reservado no rompe la trayectoria. El \textit{drawdown} máximo, 22,83\,\%,
+es 2,38 puntos \emph{menor} que el de la cartera del modelo pese a que ésta mantenía un colchón de
+efectivo mayor: la mejora no se compró aceptando más riesgo de caída, y la explicación está en la
+permanencia mínima, que evita cristalizar caídas transitorias que la versión más activa sí
+realizaba. Aun así, que la caída de una cartera de ocho nombres sea comparable a la de un índice de
+quinientos no debe leerse como control de riesgo: es consecuencia de la señal, no de una política de
+exposición, que el sistema no tiene.
 
 
 \begin{table}[H]
@@ -258,20 +204,17 @@ riesgo: es consecuencia de la señal, no de una política de exposición, que el
 El detalle anual desmiente que el exceso agregado proceda de un año excepcional. La cartera bate al
 índice en \textbf{los diez años} de la ventana de selección, con un alfa medio de 5,77\,\% y un peor
 año de $+0{,}14$\,\%: la distribución está desplazada por completo, no arrastrada por una cola.
-Conviene, eso sí, recordar de dónde sale ese pleno: la cartera es la mejor de 1.440 evaluadas sobre
-esta misma ventana, y batir todos los años es precisamente el tipo de regularidad que una búsqueda
-amplia tiende a encontrar por construcción. El único año adverso de toda la serie es 2026, ya en la
-era reservada, y se analiza más adelante.
+Batir todos los años es, eso sí, precisamente el tipo de regularidad que una búsqueda amplia tiende
+a encontrar por construcción, y esta cartera salió de una. El único año adverso de la serie es 2026,
+ya en la era reservada.
 
-\section{Qué compró la cartera}
+\section{Por qué el sistema compró lo que compró}
 \label{sec:relato-cartera}
 
-Hasta aquí la cartera se ha descrito por sus métricas agregadas. Falta la pregunta que un lector se
-hace al ver la curva de patrimonio: \emph{qué} tuvo dentro. Esta sección la contesta con el mismo
-criterio que el resto del capítulo --- cada cifra procede del relato persistido por el Portfolio
-Study y ninguna participó en decisión alguna ---, y conviene decir de entrada qué clase de evidencia
-es. Todo lo que sigue es \textbf{descriptivo}: explica de dónde salió un resultado ya medido, no lo
-sostiene. Ningún contraste de este trabajo se apoya en ello.
+Hasta aquí la cartera se ha descrito por sus métricas agregadas. Queda la pregunta que sigue a la
+curva de patrimonio: qué tuvo dentro y por qué. Todo lo que sigue es \textbf{descriptivo} ---explica
+de dónde salió un resultado ya medido, no lo sostiene--- y ningún contraste del trabajo se apoya en
+ello.
 
 \subsection*{Cuarenta y dos acciones en diez años}
 
@@ -297,23 +240,20 @@ por tanto una etiqueta de la configuración: se lee directamente en la vida de l
   \label{fig:cartera-narrativa}
 \end{figure}
 
-El primer panel de la Figura~\ref{fig:cartera-narrativa} descompone la rentabilidad por nombre. La contribución de
-una acción es la suma, periodo a periodo, de su peso por su retorno, descontado el coste de las
-órdenes que la movieron; es una descomposición de la rentabilidad \emph{de la cartera}, no de su
-exceso sobre el índice, de modo que sus cifras no son comparables con el 5,91\,\% de exceso
-geométrico anualizado y no deben leerse como tal.
+El primer panel de la Figura~\ref{fig:cartera-narrativa} descompone la rentabilidad por nombre. La
+contribución de una acción suma, periodo a periodo, su peso por su retorno, descontando el coste de
+las órdenes que la movieron: descompone la rentabilidad \emph{de la cartera}, no su exceso sobre el
+índice, así que sus cifras no son comparables con el 5,91\,\% de exceso geométrico.
 
-Con esa advertencia puesta, el reparto es muy desigual y conviene declararlo antes de que lo haga
-un lector: \textbf{AAPL aporta 27,8 puntos porcentuales}, casi el doble que la segunda, y las
-siguientes cuatro --- ORLY con 16,8, AXP con 12,4, BA con 11,8 y ROP con 10,9 --- completan un grupo
-de cinco nombres que suma algo más de la mitad de lo que aportan las quince mayores. En el otro extremo, la peor posición de
-diez años es ALGN con $-4{,}2$ puntos: la cola izquierda es corta, y eso es coherente con una
-cartera que nunca llegó a tener una pérdida catastrófica en un nombre.
+El reparto es muy desigual. \textbf{AAPL aporta 27,8 puntos porcentuales}, casi el doble que la
+segunda, y con ORLY, AXP, BA y ROP forma un grupo de cinco nombres que suma algo más de la mitad de
+lo que aportan las quince mayores. En el otro extremo, la peor posición de diez años pierde 4,2
+puntos: la cola izquierda es corta, coherente con una cartera que nunca sufrió una pérdida
+catastrófica en un nombre.
 
-Esa concentración es una \textbf{limitación, no un mérito}, y así se recoge en el
-Capítulo~\ref{chap:limitaciones}. Que una sola acción pese tanto en el resultado significa que la
-evidencia económica de la ventana de selección descansa sobre menos observaciones independientes de
-lo que sugieren los diez años de serie.
+Esa concentración es una \textbf{limitación, no un mérito}: que una sola acción pese tanto significa
+que la evidencia económica descansa sobre menos apuestas independientes de lo que sugieren los diez
+años de serie.
 
 \begin{table}[H]
   \centering
@@ -326,37 +266,28 @@ lo que sugieren los diez años de serie.
   no a su exceso sobre el índice.}
 \end{table}
 
-La Tabla~\ref{tab:cartera-relato} añade el matiz que la figura no da: presencia y contribución no
+La Tabla~\ref{tab:cartera-relato} añade un matiz que la figura no da: presencia y contribución no
 coinciden. VRSK es la tercera por permanencia y aporta 5,9 puntos; SPGI es la sexta y aporta
-esencialmente cero. AXP, en cambio, contribuye 12,4 en apenas quince meses. Estar mucho tiempo en
+esencialmente cero, mientras que AXP contribuye 12,4 en apenas quince meses. Estar mucho tiempo en
 cartera no es lo mismo que haber sido una buena posición.
 
-\subsection*{Dos historias que explican la doctrina de umbrales}
+\subsection*{Una venta prematura, y lo que costó}
 
-El segundo panel de la Figura~\ref{fig:cartera-narrativa} sitúa en el calendario las operaciones extremas, y dos de ellas
-merecen contarse porque ilustran, mejor que cualquier métrica agregada, qué hace y qué no hace la
-regla de rotación.
+El segundo panel de la Figura~\ref{fig:cartera-narrativa} sitúa en el calendario las operaciones
+extremas, y una de ellas ilustra mejor que cualquier métrica qué \emph{no} hace la regla de
+rotación. El sistema compró AZO en agosto de 2016 y la vendió trece meses después con un
+$-21{,}9$\,\%, desplazada por un candidato mejor. En los doce meses siguientes AZO subió un
+26,7\,\% frente al 6,2\,\% del índice: la venta costó \textbf{19,3 puntos de exceso} que la cartera
+no llegó a cobrar. Tres años más tarde el sistema volvió a comprar la misma acción y la mantuvo 33
+meses para un $+113{,}3$\,\%, de modo que la misma empresa fue la peor y la tercera mejor operación
+del periodo sin que ninguna regla especial interviniera: sólo la señal cambiando de opinión dos
+veces.
 
-La primera es la \textbf{mejor operación de toda la serie}. El sistema compró AAPL el 30 de octubre
-de 2019 a 58,36 dólares y la vendió el 30 de julio de 2023 a 192,96: \textbf{44 meses en cartera y
-un $+228{,}7$\,\%} realizado. No se vendió por una regla de toma de beneficios --- el sistema no
-tiene ninguna --- sino porque otra acción superó su ventaja neta esperada, que es el único motivo
-por el que esta cartera vende algo que sigue queriendo tener.
-
-La segunda es más instructiva porque incluye un error. El sistema compró AZO en agosto de 2016 y la
-vendió trece meses después con un \textbf{$-21{,}9$\,\%}, desplazada por un candidato mejor. En los
-doce meses siguientes AZO subió un 26,7\,\% frente al 6,2\,\% del índice: la venta costó
-\textbf{19,3 puntos de exceso} que la cartera no llegó a cobrar. Tres años más tarde, en septiembre
-de 2020, el sistema volvió a comprar la misma acción y la mantuvo 33 meses para un
-\textbf{$+113{,}3$\,\%}. La misma empresa fue la peor y la tercera mejor operación del periodo, sin
-que ninguna regla especial intervenga: sólo la señal cambiando de opinión dos veces.
-
-Conviene extraer de ahí la lección correcta y no la tentadora. La lectura correcta es que los
-umbrales de rotación tienen un coste medible en ventas prematuras, y que la tenencia mínima de un
-horizonte completo --- que en 2016 todavía no estaba en la configuración --- es precisamente la
-mitigación que la rejilla acabó eligiendo. La lectura \emph{incorrecta} sería convertir estos casos
-en una regla nueva: se leen con el resultado ya conocido, y añadir un filtro que los hubiera
-evitado es ajustar sobre el resultado, exactamente lo que este trabajo se ha propuesto no hacer.
+La lección es que los umbrales de rotación tienen un coste medible en ventas prematuras, y que la
+permanencia mínima de un horizonte completo ---que en 2016 aún no estaba en la configuración--- es
+la mitigación que la rejilla acabó eligiendo. Lo que no puede hacerse es convertir el caso en una
+regla nueva: se lee con el resultado ya conocido, y añadir un filtro que lo hubiera evitado sería
+ajustar sobre el resultado.
 
 \subsection*{Dónde estuvo invertida}
 
@@ -381,19 +312,77 @@ lectura más honesta, descansa por tanto sobre un puñado de nombres y práctica
 de rotación. Es una confirmación de que la señal no se hunde fuera de muestra; no es una muestra de
 comportamiento de la cartera.
 
-\subsection*{Cuatro salvedades que acompañan a esta sección}
+Dos salvedades acompañan a toda esta sección. El \textbf{sector no es \textit{point-in-time}}:
+procede de una foto actual del proveedor de perfiles, así que una empresa que cambió de
+clasificación aparece con la de hoy en todo el histórico, y sirve para describir pero nunca para
+atribuir. Y la \textbf{cartera es la mejor de 1.440}, de modo que todo lo descrito dentro de la
+ventana de selección hereda ese sesgo optimista.
 
-\begin{enumerate}[leftmargin=*,itemsep=0.35em]
-  \item \textbf{El sector no es \textit{point-in-time}.} Procede de una foto actual del proveedor de
-  perfiles, de modo que una empresa que cambió de clasificación aparece con la de hoy en todo el
-  histórico. Sirve para agrupar y describir, nunca para atribuir.
-  \item \textbf{La cartera es la mejor de 1.440.} Todo lo descrito aquí dentro de la ventana de
-  selección hereda ese sesgo optimista, igual que el resto de las cifras del capítulo.
-  \item \textbf{Las peores decisiones se leen con el resultado ya conocido.} Señalan dónde falló la
-  doctrina de umbrales, no una regla que se pueda añadir sin volver a ajustar sobre el resultado.
-  \item \textbf{La contribución por acción no es exceso.} Descompone la rentabilidad de la cartera,
-  no su diferencia con el índice, y su suma no reconstruye el 5,91\,\% de exceso geométrico.
-\end{enumerate}
+
+\subsection*{Un caso concreto: por qué el sistema compró Apple}
+\label{sec:caso-apple}
+
+Las métricas agregadas dicen que la cartera funcionó; no dicen por qué compró lo que compró. Esta
+sección reconstruye una decisión completa, la de la acción que más tiempo estuvo en cartera, con los
+datos que el sistema tenía delante ese día y ninguno posterior.
+
+\paragraph{La decisión.} El 30 de octubre de 2019 la cartera vendió Centene y compró Apple. No fue
+una compra en un hueco vacío: fue una \textbf{sustitución}. La regla exige que la ventaja esperada
+del entrante supere a la del peor de los ocho que ya estaban, y por un margen que cubra el coste de
+la operación. Apple esperaba un exceso anual de \textbf{632 puntos básicos} y Centene, de
+\textbf{$-150$}: una diferencia de casi ocho puntos porcentuales, muy por encima del umbral exigido.
+
+\paragraph{Por qué Apple encabezaba el orden.} Los cinco especialistas la vieron de forma muy
+distinta, y el meta-agente había aprendido, con quince cohortes ya cerradas, a quién hacer caso.
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{Apple el 30 de octubre de 2019: cómo la vio cada agente y cuánto pesaba cada uno.}
+  \label{tab:caso-apple}
+  \begin{tabularx}{0.86\textwidth}{Xcc}
+    \toprule
+    Agente & Percentil de Apple & Peso del agente \\
+    \midrule
+    Riesgo      & 0,998 & 0,723 \\
+    Crecimiento & 0,950 & 0,193 \\
+    Tendencia   & 0,666 & 0,084 \\
+    Valor       & 0,765 & 0,000 \\
+    Calidad     & 0,456 & 0,000 \\
+    \bottomrule
+  \end{tabularx}
+  \caption*{Percentiles dentro de su cohorte, de 434 acciones. Los pesos son los que el meta-agente
+  había aprendido en esa fecha con cohortes cerradas anteriores.}
+\end{table}
+
+La combinación deja a Apple en el percentil 1,000: la primera de las 434 acciones de esa fecha, y
+también la de mayor alfa esperado del universo. Lo interpretable no es tanto que quedase primera
+como \emph{por qué}: su nota mediocre en calidad no le costó nada, porque el sistema había aprendido
+que ese agente no ordenaba bien ---su Rank-IC acumulado era de 0,004--- y le había retirado todo el
+peso. Y esos pesos no los eligió nadie: salieron de la evidencia disponible en 2019.
+
+\paragraph{Qué miró el agente decisivo.} Dentro del agente de riesgo, que aportaba casi tres cuartas
+partes de la decisión, la puntuación de Apple se apoya en la amplitud de su rango de negociación a
+tres meses ($+0{,}038$), en los huecos de apertura del último mes ($+0{,}026$) y en su iliquidez
+medida a la Amihud ($+0{,}013$). Su volatilidad realizada aporta un orden de magnitud menos. Es la
+misma lectura que el Capítulo~\ref{chap:resultados} hace de forma agregada, aquí sobre un caso
+único: el sistema no compró Apple por ser una empresa defensiva, sino por la estructura reciente de
+su negociación. En calidad, de hecho, casi todas las contribuciones fueron negativas salvo el margen
+de flujo de caja libre.
+
+\paragraph{Por qué la mantuvo, y por qué la vendió.} El sistema no tiene ninguna regla de toma de
+beneficios. Apple se mantuvo 44 meses porque siguió encabezando el orden ---volvió al percentil
+1,000 en once observaciones posteriores--- y porque la permanencia mínima de un horizonte completo
+impide deshacer una posición antes de que su tesis haya tenido tiempo de cumplirse; su peso llegó a
+0,242 en agosto de 2020. Se vendió el 30 de julio de 2023 exactamente por el mismo motivo por el que
+se compró: su alfa esperado había caído a 283 puntos básicos y otras candidatas la desplazaron. El
+resultado realizado fue de $+228{,}7$\,\%.
+
+Dos salvedades acompañan al caso, y son las mismas que gobiernan el capítulo. Es la mejor operación
+de toda la serie y se cuenta con el resultado ya conocido, de modo que ilustra el mecanismo pero no
+lo valida. Y el reparto de pesos de esa fecha ---casi tres cuartas partes en un solo especialista---
+es la concentración que el capítulo anterior reporta como límite del trabajo, no como virtud: esta
+decisión salió bien, pero descansaba casi por completo en que un único agente siguiera funcionando.
 
 \section{Órdenes, rotación y costes}
 \label{sec:rotacion}
@@ -414,29 +403,26 @@ señal de doce. La Tabla~\ref{tab:ordenes} lo descompone por motivo declarado de
 \end{table}
 
 
-El desglose revela que la rotación tiene una fuente dominante y clara. El cambio de opinión de la
-señal --- \texttt{net\_edge\_over\_worst} y \texttt{displaced\_by\_net\_edge}, que son las dos caras
-de una misma operación --- concentra el 71,5\,\% del flujo. El \texttt{rebalance}, que no cambia
-\emph{qué} se tiene sino sólo el peso de lo que ya se tiene, se queda en el 17,6\,\%, y el resto son
-compras iniciales y motivos residuales.
+El desglose revela una fuente dominante y clara: el cambio de opinión de la señal ---una acción que
+sustituye a otra, contabilizada por sus dos caras--- concentra el 71,5\,\% del flujo. El simple
+ajuste del peso de lo que ya se tiene se queda en el 17,6\,\%, y el resto son compras iniciales y
+motivos residuales.
 
-Ese reparto es en sí mismo un resultado, y conviene contrastarlo con la Figura~\ref{fig:cartera-influencia}.
-La rejilla eligió una tolerancia de deriva de 0,4, la más laxa disponible, y con ella el
-\texttt{rebalance} deja de ser una partida de flujo comparable a la rotación para convertirse en una
-sexta parte de ella. La cartera, en otras palabras, dejó de gastar dinero en corregir pesos y lo
+Ese reparto es en sí mismo un resultado. La rejilla eligió la tolerancia a la deriva más laxa
+disponible, y con ella el reajuste de pesos deja de ser una partida comparable a la rotación para
+convertirse en una sexta parte de ella: la cartera dejó de gastar dinero en corregir pesos y lo
 reservó para cambiar de opinión cuando la señal se lo pedía.
 
-Queda entonces una sola fuente relevante, y es estructural: el sistema \emph{re-decide todos los
-meses} sobre una señal cuyo horizonte es de \emph{doce}, de modo que cada snapshot vuelve a comparar
-las posiciones con todo el universo y basta una diferencia neta que supere el umbral para que se
-ejecute un intercambio que la señal, a doce meses vista, quizá no habría pedido. Su palanca es
-\artefacto{snapshot\_step\_months}, pero es una variable \emph{predictiva}: cambiarla obligaría a
-rehacer la selección secuencial completa. Queda así un conflicto real entre dos objetivos legítimos
---- más cohortes para decidir mejor frente a menos rotación para implementar mejor --- que este
-trabajo documenta pero no resuelve. La tenencia mínima de un horizonte completo, que la rejilla sí
-eligió, es precisamente la mitigación disponible desde el lado de la cartera: no impide que la señal
-cambie de opinión, pero impide actuar sobre ese cambio antes de que la tesis original haya tenido
-tiempo de cumplirse.
+Queda entonces una sola fuente relevante, y es estructural: el sistema \emph{re-decide cada mes}
+sobre una señal cuyo horizonte es de \emph{doce}, así que en cada observación vuelve a comparar sus
+posiciones con todo el universo y basta una diferencia neta suficiente para ejecutar un intercambio
+que la señal, a doce meses vista, quizá no habría pedido. La palanca sería observar con menos
+frecuencia, pero eso es una variable \emph{predictiva}: cambiarla obligaría a rehacer la selección
+entera. Hay aquí un conflicto real entre dos objetivos legítimos ---más cohortes para decidir mejor
+frente a menos rotación para implementar mejor--- que este trabajo documenta sin resolver. La
+permanencia mínima de un horizonte completo es la mitigación disponible desde el lado de la cartera:
+no impide que la señal cambie de opinión, sino actuar sobre ese cambio antes de que la tesis
+original haya tenido tiempo de cumplirse.
 
 \subsection*{Rotación, coste y exceso año a año}
 
@@ -454,34 +440,17 @@ el triple de Information Ratio. La mejora no se compró rotando más, sino justa
 coherente con lo que muestra la Figura~\ref{fig:cartera-rejilla}: en la nube de las 1.440 carteras,
 las mejores combinaciones no son las más activas.
 
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.94\textwidth]{figures/f07_alpha_turnover_anual.png}
-  \caption{Turnover y exceso anual frente a SPY. Los años 2025--2026 se distinguen porque son la
-  era reservada y no participaron en la selección.}
-  \label{fig:alpha-turnover-anual}
-\end{figure}
-
 \subsection*{Cuánta señal llega a materializarse}
 \label{sec:transferencia}
 
-La ley fundamental de la gestión activa, introducida en el Capítulo~\ref{chap:estado-arte},
-descompone el resultado de una cartera en calidad de señal, amplitud y coeficiente de transferencia.
-Este trabajo no dispone de ese coeficiente para la cartera adoptada --- el Portfolio Study no
-recalcula la atribución sobre su ganadora ---, pero sí tiene dos observaciones que sostienen el
-mismo argumento sin necesidad de esa cifra.
-
-La primera es que en la cadena de Model Studies la transferencia se movió de forma irregular (0,130,
-0,099 y 0,264): la última pasada duplicó con creces la fracción de señal que llegaba a la cartera,
-pero la segunda la había reducido, de modo que la mejora no fue un progreso sostenido sino un salto
-en el último tramo. Lo relevante es que, aun en el mejor caso, apenas una cuarta parte de lo que el
-sistema ordenaba llegaba a expresarse en posiciones: eso identificó la implementación como la
-palanca disponible y motivó el Portfolio Study.
-
-La segunda es que el salto de Information Ratio de 0,312 a 0,841 \textbf{sobre la misma señal
-congelada} mide esa misma magnitud por otra vía: como el numerador predictivo no cambió --- no se
-reentrenó nada ---, todo el incremento procede de que la cartera desperdicia menos de lo que ya
-sabía.
+El coeficiente de transferencia mide qué fracción de la señal llega a expresarse en posiciones. No
+está disponible para la cartera adoptada, porque el Portfolio Study no recalcula la atribución sobre
+su ganadora, pero dos observaciones sostienen el mismo argumento. En la cadena de Model Studies se
+movió de forma irregular ---0,130, 0,099 y 0,264---, de modo que incluso en el mejor caso apenas una
+cuarta parte de lo que el sistema ordenaba llegaba a la cartera: eso identificó la implementación
+como la palanca disponible. Y el salto de Information Ratio de 0,312 a 0,841 \textbf{sobre la misma
+señal congelada} mide lo mismo por otra vía: como no se reentrenó nada, todo el incremento procede
+de que la cartera desperdicia menos de lo que ya sabía.
 
 \subsection*{Cuánto coste soportaría el resultado}
 \label{sec:sensibilidad-costes}
@@ -500,16 +469,12 @@ el equilibrio sube a \CosteEquilibrioCongelado{} puntos básicos, \MargenCosteCo
 coste adoptado. La
 Figura~\ref{fig:costes-escalera} muestra las dos familias.
 
-Conviene explicar por qué la ruta congelada aguanta \emph{más} y no menos, porque la intuición
-sugiere lo contrario. Cada peldaño de la curva resimulada es una cartera distinta: al cambiar el
-coste cambian los umbrales, cambian las órdenes y cambia la composición. Sólo una de esas carteras
----la del coste adoptado--- fue elegida por la rejilla; las demás son configuraciones que nadie
-optimizó. De ahí que la resimulada llegue a quedar por debajo de la congelada incluso con coste cero
-(\ExcesoBrutoResimulado{} frente a \ExcesoBrutoCongelado{} de exceso geométrico) y que su curva sea
-irregular en vez de decreciente. No es que operar gratis empeore el resultado: es que la ruta de
-decisiones que produce el coste cero no es la que la rejilla seleccionó. La lectura defendible es por
-tanto la conservadora, y es la que el texto adopta: el margen es de \emph{al menos}
-\CosteEquilibrio{} puntos básicos por operación.
+Que la ruta congelada aguante \emph{más} parece contraintuitivo, pero tiene una explicación simple:
+cada peldaño de la curva resimulada es una cartera distinta, porque al cambiar el coste cambian los
+umbrales y con ellos las órdenes, y sólo una de esas carteras ---la del coste adoptado--- fue la que
+la rejilla eligió. De ahí que la resimulada quede por debajo incluso con coste cero
+(\ExcesoBrutoResimulado{} frente a \ExcesoBrutoCongelado{}). El texto adopta por eso la lectura
+conservadora: el margen es de \emph{al menos} \CosteEquilibrio{} puntos básicos por operación.
 
 \begin{figure}[H]
   \centering
@@ -534,31 +499,15 @@ resultado reservado empata con el índice y no tiene holgura que gastar en fricc
 \label{sec:capacidad}
 
 Una cartera de ocho posiciones que rota el 135\,\% anual sólo es realizable si sus órdenes caben en
-el volumen que negocian esas acciones. La capacidad se estima comparando el nocional de cada orden
-con el volumen diario mediano del título, para las 143 órdenes de la ventana de selección, todas
-ellas con volumen observable.
+el volumen que negocian esas acciones. Comparando el nocional de cada una de las 143 órdenes de
+selección con el volumen diario mediano del título, y tomando como referencia el percentil 95 de
+participación ---no la mediana, que escondería las órdenes problemáticas---, la estrategia alcanza
+un 5\,\% de participación con \textbf{20,3 millones de dólares} de patrimonio y un 10\,\% con
+\textbf{40,6 millones}.
 
-Tomando como referencia el percentil 95 de participación --- no la mediana, que escondería
-precisamente las órdenes problemáticas ---, la estrategia alcanza un 5\,\% de participación con
-\textbf{20,3 millones de dólares} de patrimonio y un 10\,\% con \textbf{40,6 millones}. Por
-encima de esos tamaños la ejecución exige trocear órdenes, aceptar más impacto o rebajar la
-concentración.
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.94\textwidth]{figures/f07_capacidad.png}
-  \caption{Participación P95 sobre volumen diario frente al patrimonio, en escala logarítmica. Los
-  umbrales del 5\,\% y 10\,\% se calculan sobre las 143 órdenes de selección; la reserva se excluye
-  porque solo contiene diez órdenes.}
-  \label{fig:capacidad}
-\end{figure}
-
-Es una limitación de escala, no de validez: acota a qué tamaño de cartera aplica el resultado, y ese
-tamaño es el de un inversor individual o un fondo pequeño, no el de una gestora institucional.
-Conviene además leerla con dos cautelas: el nocional diario es aproximado --- el precio está
-ajustado por \textit{splits} y dividendos y el volumen sólo por \textit{splits} --- y lo que se mide
-es participación sobre el volumen habitual, no impacto de mercado. Por debajo del umbral la
-ejecución es creíble; no se afirma que sea gratuita.
+Es una limitación de escala, no de validez: acota el resultado al tamaño de un inversor individual o
+un fondo pequeño, no al de una gestora institucional. Y se lee con dos cautelas: el nocional diario
+es aproximado, y lo que se mide es participación sobre el volumen habitual, no impacto de mercado.
 
 \section{Los ocho perfiles de inversor}
 \label{sec:perfiles}
@@ -569,6 +518,12 @@ real rara vez opera así: tiene un estilo, y ese estilo le hace preferir unas em
 responden a una pregunta concreta: ¿habría mejorado el resultado alguien que, teniendo esta misma
 señal y esta misma gestión, la hubiera filtrado según su criterio?
 
+Los perfiles no compitieron en la rejilla del Portfolio Study, y la razón es que no son variables de
+cartera: un perfil reordena la señal, de modo que opera en el plano predictivo. Meterlos en la
+rejilla habría equivalido a elegir el estilo de inversor por su rentabilidad conocida. Lo que sí se
+hace es reevaluar los ocho con la cartera ya ganadora, como diagnóstico; \textbf{ningún perfil se
+selecciona por su Information Ratio}.
+
 \subsection*{Qué es exactamente un perfil}
 
 Un perfil no es un modelo distinto ni una cartera distinta: es una \textbf{reordenación de la señal
@@ -578,28 +533,17 @@ Primero acota el universo. Sólo son elegibles las acciones que el meta-agente s
 percentil 60, de modo que ningún perfil puede comprar algo que el sistema considere malo: todos
 eligen dentro del mismo conjunto de candidatas.
 
-Después reordena ese conjunto combinando los rangos de los cinco agentes con pesos fijos, declarados
-de antemano. El resultado sustituye al \texttt{meta\_rank} y la cartera lo consume igual que antes.
-Los pesos pueden ser \emph{negativos} cuando el estilo apuesta en contra de un agente --- es el caso
-del \texttt{contrarian} frente al momentum ---, y conviene tener presente una convención del
-catálogo: en \texttt{risk} el rango alto significa \emph{menos} riesgo, de modo que un peso positivo
-prioriza baja volatilidad y uno negativo la tolera. Los ocho perfiles cubren la señal sin sesgo
-(\texttt{balanced}) y siete inclinaciones predefinidas hacia valor, crecimiento, calidad,
-\textit{momentum}, defensa, GARP y comportamiento contrario.
+Después reordena ese conjunto combinando los rangos de los cinco agentes con pesos fijos declarados
+de antemano, y el resultado sustituye al orden del meta-agente. Los pesos pueden ser
+\emph{negativos} cuando el estilo apuesta en contra de un agente, como hace el perfil contrario
+frente a la tendencia. Hay que tener presente que en el agente de riesgo un rango alto significa
+\emph{menos} riesgo, de modo que un peso positivo prioriza baja volatilidad. Los ocho perfiles son
+la señal sin sesgo ---el equilibrado--- y siete inclinaciones hacia valor, crecimiento, calidad,
+tendencia, defensa, crecimiento a precio razonable y comportamiento contrario.
 
-Como la reordenación cambia qué acciones se compran, el alfa esperado deja de corresponder al orden
-vigente. Por eso la calibración de percentil a rentabilidad \textbf{se recalcula sobre el ranking
-nuevo}: si no se hiciera, el perfil operaría con expectativas referidas a un orden que ya no usa, y
-sus umbrales en puntos básicos decidirían sobre posiciones ajenas.
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.96\textwidth]{figures/f07_perfiles_pesos.png}
-  \caption{Pesos firmados de los ocho perfiles. \texttt{balanced} conserva el meta puro; los pesos
-  negativos de \texttt{momentum} y \texttt{contrarian} expresan una inclinación explícita en contra
-  del agente correspondiente.}
-  \label{fig:perfiles-pesos}
-\end{figure}
+Como la reordenación cambia qué acciones se compran, la calibración de percentil a rentabilidad se
+recalcula sobre el ranking nuevo: de lo contrario el perfil operaría con expectativas referidas a un
+orden que ya no usa.
 
 \subsection*{Qué le pasó a cada estilo}
 
@@ -618,31 +562,24 @@ seis cohortes reservadas daría una precisión aparente.
 \end{figure}
 
 El resultado principal es que \textbf{ninguno de los siete estilos mejora a la señal sin reordenar}.
-El perfil \texttt{balanced} --- que es, por construcción, no imponer ningún sesgo --- domina la
-ventana de selección con un Information Ratio de 0,841 frente al 0,342 del siguiente, y un estilo
-llega incluso a exceso negativo. La ordenación aprendida ya contiene, por tanto, lo que los perfiles
-intentan imponer desde fuera, y filtrarla según un gusto previo sólo puede quitarle información.
+El perfil equilibrado ---que por construcción no impone ningún sesgo--- domina la ventana de
+selección con un Information Ratio de 0,841 frente al 0,342 del siguiente, y un estilo llega incluso
+a exceso negativo. La ordenación aprendida ya contiene lo que los perfiles intentan imponer desde
+fuera, y filtrarla según un gusto previo sólo puede quitarle información.
 
-Lo interesante es que el orden entre ellos \emph{no es arbitrario}: un perfil no añade información,
-sólo cambia el peso relativo de la que ya existe, de modo que su resultado depende de hacia qué
-agente desplaza el peso. Los que se apoyan en agentes de Rank-IC próximo a cero --- \texttt{garp}
-(IR 0,026), \texttt{quality} (0,033) y \texttt{contrarian} (0,059) --- se quedan pegados al índice,
-mientras que \texttt{value} (0,342) y \texttt{growth} (0,294), que ponderan agentes algo mejores,
-conservan una parte del exceso. Ninguno se acerca a no reordenar nada.
+El orden entre ellos, además, no es arbitrario: como un perfil no añade información sino que cambia
+el peso relativo de la que ya existe, su resultado depende de hacia qué agente lo desplaza. Los que
+se apoyan en agentes de Rank-IC próximo a cero se quedan pegados al índice, mientras que los que
+ponderan agentes algo mejores ---valor, con 0,342, y crecimiento, con 0,294--- conservan parte del
+exceso. Hay incluso un coste operativo visible: el perfil de tendencia rota 1,64 veces al año, la
+cifra más alta de los ocho, para terminar con un exceso del 0,43\,\%.
 
-Hay además un coste operativo visible: \texttt{momentum} rota 1,64 veces al año
---- la cifra más alta de los ocho, frente al 1,35 de \texttt{balanced} --- para terminar con un
-exceso del 0,43\,\%. La reordenación no sólo no aporta señal: cuesta fricción.
-
-La era reservada añade una lectura que conviene reportar por lo que dice sobre el riesgo de estos
-sesgos. \texttt{balanced} y \texttt{momentum} son los dos únicos perfiles que conservan exceso
-positivo en 2025--2026 ($+0{,}24$\,\% y $+0{,}36$\,\%), mientras que \texttt{defensive} y
-\texttt{contrarian} se hunden por debajo del $-15$\,\%. Que los estilos más definidos sean también
-los que peor resisten un cambio de régimen es coherente con el resto del capítulo: cuanto más se
-aparta un perfil de la ordenación aprendida, más depende su resultado de que el régimen le
-acompañe. La tentación de convertir esto en un ranking de estilos debe resistirse ---- seis cohortes
-no ordenan ocho estrategias ----, pero sí respalda la decisión de protocolo de no elegir perfil por
-su rentabilidad.
+La era reservada añade una lectura sobre el riesgo de estos sesgos. El equilibrado y el de tendencia
+son los dos únicos que conservan exceso positivo en 2025--2026, mientras que el defensivo y el
+contrario se hunden por debajo del $-15$\,\%. Que los estilos más definidos sean los que peor
+resisten un cambio de régimen es coherente con el resto del capítulo, aunque seis cohortes no
+ordenan ocho estrategias: no es un ranking de estilos, sino un respaldo a la decisión de no elegir
+perfil por su rentabilidad.
 
 \section{Años adversos y significado de la era reservada}
 \label{sec:era-reservada}
@@ -657,26 +594,24 @@ Ese matiz importa porque delimita qué tipo de riesgo tiene el sistema. El compo
 al 18,38\,\% del índice, batiéndolo por 4,01 puntos. No hay evidencia, por tanto, de que el sistema
 falle específicamente en las caídas.
 
-Aun así, conviene enunciar la limitación de diseño que subyace: el sistema decide \emph{qué}
-comprar, no \emph{cuánto} estar expuesto. La política de efectivo es lo más parecido a una palanca
-de exposición que tiene, y la cartera ganadora la deja en cero en la práctica. El resultado es una
-cartera que participa íntegramente de los movimientos del mercado y aspira a superarlos en términos
-relativos, no a amortiguarlos.
+Hay detrás una limitación de diseño que merece enunciarse: el sistema decide \emph{qué} comprar, no
+\emph{cuánto} estar expuesto. La política de efectivo es lo más parecido a una palanca de exposición
+que tiene, y la cartera ganadora la deja en cero en la práctica. El resultado es una cartera que
+participa íntegramente de los movimientos del mercado y aspira a superarlos en términos relativos,
+no a amortiguarlos.
 
 La era reservada ofrece el contraste decisivo del trabajo, y su lectura depende por completo de qué
-cartera se use para materializar la señal. Con la cartera optimizada, el CAGR es 19,46\,\% frente a
-19,18\,\% de SPY, el exceso geométrico 0,24\,\%, el IR 0,109 y se bate al índice en uno de los dos
-años. Con la cartera por defecto, la misma señal daba un IR de $-1{,}795$ sin batir al índice ningún
-año. El Rank-IC de la era, $+0{,}0364$ sobre seis cohortes con el 66,67\,\% de ellas positivas, es
-idéntico en ambos casos porque no depende de la cartera: es la señal, y la señal se sostuvo, aunque
-más débil que el 0,1067 de la ventana de selección.
+cartera materialice la señal. Con la optimizada, el CAGR es 19,46\,\% frente a 19,18\,\% del índice,
+el exceso geométrico 0,24\,\% y el Information Ratio 0,109; con la cartera por defecto, la misma
+señal daba $-1{,}795$ sin batir al índice ningún año. El Rank-IC de la era, $+0{,}0364$, es idéntico
+en ambos casos porque no depende de la cartera: es la señal, y la señal se sostuvo, aunque más débil
+que en selección.
 
-Debe informarse junto a su debilidad estadística, que es considerable: sólo seis cohortes tienen
-etiqueta cerrada, varias observaciones futuras no han madurado y el número de observaciones
-independientes efectivas es aproximadamente uno. El trabajo no convierte esa combinación en una
-demostración. Lo que afirma es más modesto y más defendible: en la única ventana que no participó en
-ninguna decisión, la ordenación aprendida siguió siendo positiva, y su traducción a rentabilidad
-dependió de la construcción de cartera hasta el punto de cambiar de signo.
+Su debilidad estadística es considerable ---seis cohortes cerradas y aproximadamente una observación
+independiente efectiva---, y el trabajo no convierte esa combinación en una demostración. Lo que
+afirma es más modesto: en la única ventana que no participó en ninguna decisión, la ordenación
+siguió siendo positiva, y su traducción a rentabilidad dependió de la construcción de cartera hasta
+el punto de cambiar de signo.
 
 \subsection*{Qué se sigue de todo esto para el diseño de cartera}
 
@@ -686,18 +621,9 @@ grado sino de signo: la rejilla evaluó las seis reglas que gobiernan esa traduc
 selección predictiva, y encontró una configuración que multiplica por 2,7 el Information Ratio de la
 ventana de selección y cambia el signo del resultado en la era reservada.
 
-Vale la pena nombrar en qué consiste esa configuración, porque el mensaje es contraintuitivo y
-uniforme: la cartera ganadora \emph{opera menos} que la de partida. Mantiene cada posición un
-horizonte completo, tolera que los pesos se desvíen hasta un 40\,\% antes de corregirlos y renuncia
-a filtrar por cobertura. Rota la mitad, cae menos y gana casi el triple de Information Ratio. Para
-una señal a doce meses, la fricción de reaccionar cada mes costaba más que el error de no reaccionar.
-
 La implicación excede al caso concreto. En este sistema, la construcción de cartera no era un
 detalle de implementación sino la variable que decidía si la señal servía para algo, de lo que se
 sigue una exigencia metodológica: \textbf{ninguna conclusión sobre la utilidad práctica de un
-sistema predictivo es interpretable sin declarar con qué cartera se midió}. Un trabajo que reportase
-únicamente el resultado de su cartera por defecto habría concluido que la señal no se traslada fuera
-de muestra, y se habría equivocado.
-
-Con esto se cierra la evidencia. El Capítulo~\ref{chap:limitaciones} delimita hasta dónde llega, y
-el Capítulo~\ref{chap:conclusiones} responde a la pregunta con la que se abrió el trabajo.
+sistema predictivo es interpretable sin declarar con qué cartera se midió}. Un trabajo que hubiera
+reportado únicamente el resultado de su cartera por defecto habría concluido que la señal no se
+traslada fuera de muestra, y se habría equivocado.

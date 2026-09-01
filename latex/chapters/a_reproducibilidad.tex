@@ -32,43 +32,21 @@ recortada en 2024 para que ninguna de las 1.440 combinaciones pudiera observar l
 
 \section{Ciclo de vida de una ejecución}
 
-La reproducibilidad no depende únicamente de fijar una semilla. Una ejecución puede fallar después
-de horas de cálculo, ser cancelada, reanudarse o convivir con otras; si esos estados no forman parte
-del diseño, dos resultados nominalmente iguales pueden haber recorrido historias distintas. El
-sistema separa por ello la entidad \emph{Study}, que contiene la pregunta y el catálogo, de cada
-\emph{run}, que contiene una evaluación concreta.
+La reproducibilidad no depende sólo de fijar una semilla. Una ejecución puede fallar tras horas de
+cálculo, cancelarse o reanudarse, y si esos estados no forman parte del diseño, dos resultados
+nominalmente iguales pueden haber recorrido historias distintas. El sistema separa por eso el
+\emph{Study}, que contiene la pregunta y el catálogo, de cada \emph{run}, que contiene una
+evaluación concreta.
 
-\begin{figure}[H]
-  \centering
-  \begin{tikzpicture}[node distance=7mm and 8mm,>=Latex,every node/.style={font=\small,align=center}]
-    \node[draw,rounded corners,fill=blue!8,minimum width=23mm] (c) {Catálogo\\validado};
-    \node[draw,rounded corners,fill=teal!10,right=of c,minimum width=23mm] (s) {Study y run\\persistidos};
-    \node[draw,rounded corners,fill=orange!12,right=of s,minimum width=23mm] (w) {Worker\\aislado};
-    \node[draw,rounded corners,fill=yellow!15,right=of w,minimum width=25mm] (e) {Eventos y\\artefactos};
-    \node[draw,rounded corners,fill=green!10,right=of e,minimum width=24mm] (f) {Run\\finalizado};
-    \draw[->,thick] (c)--(s);
-    \draw[->,thick] (s)--(w);
-    \draw[->,thick] (w)--(e);
-    \draw[->,thick] (e)--(f);
-    \draw[->,thick,dashed] (w.south) -- ++(0,-0.55) -|
-      node[pos=0.75,below]{error o cancelación persistidos} (s.south);
-  \end{tikzpicture}
-  \caption{Ciclo de vida operativo. El registro existe antes del cálculo; un artefacto parcial no
-  adquiere nunca el estado de caché válida.}
-  \label{fig:ciclo-study}
-\end{figure}
+El registro existe antes del cálculo: Study y run se crean antes de lanzar el proceso, y desde ahí
+cada transición relevante ---inicio de fase, progreso, finalización, error y cancelación--- queda
+escrita. Reanudar consulta primero el estado persistido, de modo que no se repiten ejecuciones
+completas ni se duplican decisiones ya tomadas.
 
-La API crea Study y run antes de lanzar el proceso hijo. Desde ese momento cada transición
-relevante se escribe tanto en el registro del run como en \texttt{events.jsonl}: inicio de fase,
-progreso, finalización, excepción y cancelación. Si el worker termina con error, se persisten mensaje
-y \textit{traceback}; si se cierra el servidor, se terminan sus workers. Reanudar consulta primero
-el estado persistido y no repite runs completos ni duplica decisiones del ledger.
-
-El aislamiento en proceso hijo tiene una función científica además de operativa. Evita que un estado
-en memoria --- una semilla, una caché o un dataframe mutado --- sobreviva de una configuración a la
-siguiente. El coste es mayor comunicación y una gestión explícita de cancelación, pero el beneficio
-es que el resultado depende de entradas persistidas, no del orden accidental en el que se pulsaron
-botones.
+Aislar cada evaluación en su propio proceso tiene además una función científica: evita que un estado
+en memoria ---una semilla, una caché, un dataframe mutado--- sobreviva de una configuración a la
+siguiente. El resultado depende así de entradas persistidas y no del orden accidental en que se
+ejecutaron las cosas.
 
 \section{Cadena de custodia de la evidencia}
 
@@ -93,16 +71,11 @@ Cada nivel responde a una pregunta diferente y tiene un consumidor definido:
   \label{tab:cadena-custodia}
 \end{table}
 
-El hash del dataset identifica los datos materializados, el hash del catálogo identifica el espacio
-de decisiones y la \texttt{evaluation\_key} une ambos con la configuración evaluada. Una caché sólo
-es reutilizable cuando los tres coinciden y el artefacto está completo. Esta condición evita dos
-formas de contaminación difíciles de detectar: atribuir a un catálogo nuevo un resultado antiguo y
-usar como terminado un directorio que quedó a medias tras una interrupción.
-
-La cadena también separa procedencia de interpretación. Los JSON y Parquet contienen observaciones;
-las macros formatean cifras; los capítulos explican su significado. El exportador puede transformar
-los dos primeros niveles, pero no decide qué resultado es favorable ni reabre el catálogo. De ese
-modo, regenerar una figura cambia su presentación, no la ciencia que representa.
+La identidad del panel señala qué datos se usaron, la del catálogo qué espacio de decisiones estaba
+disponible, y la clave de evaluación une ambas con la configuración concreta. Una caché sólo es
+reutilizable cuando las tres coinciden y el artefacto está completo, lo que evita dos formas de
+contaminación difíciles de detectar: atribuir a un catálogo nuevo un resultado antiguo, y dar por
+terminado un directorio que quedó a medias tras una interrupción.
 
 \section{Regeneración de figuras y tablas}
 
@@ -119,59 +92,28 @@ python latex/scripts/export\_study\_assets.py \\
 \hspace*{2em}--portfolio-study-id study-20260817-212856-f86ca822
 \end{quote}
 
-Los tres \texttt{--chain-study-id} se declaran en orden de ejecución y el último coincide con
-\texttt{--study-id}: de ellos salen las figuras y tablas de la cadena. La separación entre
-\texttt{--study-id} y \texttt{--portfolio-study-id} es deliberada y hace explícita la procedencia de
-cada activo: del primero sale todo lo \emph{predictivo} --- Rank-IC, agentes, meta-agente,
-decisiones, robustez y atribución --- y del segundo todo lo \emph{económico} --- rejilla de
-carteras, patrimonio, órdenes, métricas anuales y perfiles ---, leído de la evidencia del ganador
-sobre la serie completa.
+Los tres identificadores de cadena van en orden de ejecución y el último coincide con el estudio de
+referencia. La separación entre el estudio predictivo y el de cartera hace explícita la procedencia
+de cada activo: del primero sale todo lo predictivo ---Rank-IC, agentes, meta-agente, decisiones,
+robustez y atribución--- y del segundo todo lo económico ---rejilla de carteras, patrimonio,
+órdenes, métricas anuales y perfiles---.
 
-El script escribe los PNG a 300\,ppp en \artefacto{latex/figures/} y los cuerpos de tabla en
-\artefacto{latex/tables/}; los capítulos, que no genera nadie, viven aparte en
-\artefacto{latex/chapters/}. También genera \artefacto{study\_macros.tex}, que consumen tanto la
-memoria como la defensa.
+El script escribe las figuras y los cuerpos de tabla en sus carpetas, genera el fichero de macros
+numéricas que consumen la memoria y la defensa, y actualiza el manifiesto de activos con la lista de
+artefactos consumidos, separando las fuentes predictivas de las económicas. Ese manifiesto es la
+tabla de correspondencia entre cada salida del manuscrito y su origen: ninguna cifra generada por
+script entra en el documento sin quedar registrada allí, y por eso no se imprime una ruta junto a
+cada cifra. La única excepción es la Tabla~\ref{tab:defectos} del Anexo~\ref{anexo:desarrollo}, que
+se transcribe de la bitácora del proyecto porque documenta el desarrollo y no una medición.
 
-Por último actualiza el manifiesto \artefacto{asset\_manifest.json} con la lista de artefactos
-consumidos, separando las fuentes predictivas de las económicas. Ese manifiesto es la tabla de
-correspondencia entre cada salida del manuscrito y su origen: ninguna cifra generada por script
-entra en el documento sin quedar registrada allí.
+Una salvedad sobre qué se puede regenerar. El repositorio versiona los artefactos en formato JSON,
+que sostienen la mayoría de las cifras citadas y permiten verificarlas directamente; los ficheros
+Parquet quedan excluidos por tamaño, de modo que las tablas y figuras construidas a partir de ellos
+se conservan ya generadas pero no pueden recalcularse desde un clon del repositorio sin volver a
+ejecutar el estudio.
 
-La correspondencia se concentra en cuatro familias: configuración y decisiones del ganador;
-resúmenes predictivos, atribución y robustez; rejilla, ganador y evidencia económica de cartera; y
-diagnósticos del panel. No se imprime una ruta junto a cada cifra porque interrumpiría la lectura: la
-trazabilidad se verifica aquí y mediante el manifiesto.
-
-Un elemento es la excepción y conviene declararlo: la Tabla~\ref{tab:defectos} del
-Anexo~\ref{anexo:desarrollo} se transcribe de la bitácora del proyecto y no de un artefacto del
-estudio, porque documenta el proceso de desarrollo y no una medición.
-
-Hay una segunda salvedad, sobre qué se puede regenerar y qué no. El repositorio versiona los
-artefactos en formato JSON --- \artefacto{winner.json}, \artefacto{decisions.json},
-\artefacto{robustness.json}, \artefacto{attribution.json}, \artefacto{portfolio\_winner.json} y los
-\artefacto{summary.json} de cada evidencia ---, que son los que sostienen la mayoría de las cifras
-citadas en el texto y permiten verificarlas directamente. Los \artefacto{.parquet}, en cambio,
-quedan excluidos por tamaño, de modo que las tablas y figuras que se construyen a partir de ellos
---- cobertura, agentes, atribución local, colas, órdenes, métricas anuales, rejilla de carteras y
-perfiles --- se conservan ya generadas en \artefacto{latex/figures/} y \artefacto{latex/tables/}
-pero no pueden recalcularse desde un clon del repositorio sin volver a ejecutar el estudio. Se declara porque el comando
-anterior sólo es reproducible en su totalidad sobre la instalación donde corrieron los estudios.
-
-Un segundo script comprueba que el proyecto sea portable antes de subirlo:
-
-\begin{quote}
-\small\nolinkurl{python latex/scripts/verify_latex_assets.py}
-\end{quote}
-
-El exportador dispone además de un modo de auditoría que no escribe archivos. Recalcula en memoria
-las macros decisivas y falla si difieren de los estudios adoptados, si falta un activo o si los
-identificadores del manifiesto no coinciden:
-
-\begin{quote}
-\small\nolinkurl{python latex/scripts/export_study_assets.py} [mismos identificadores] \texttt{--audit}
-\end{quote}
-
-Verifica que no haya \textit{mojibake}, que todas las rutas de figura sean relativas y existan, que
-cada tabla incluida exista, que toda referencia cruzada tenga destino, que no queden figuras ni
-tablas generadas sin insertar y que no reaparezca ningún comando de bibliografía.
+Otros dos comandos completan la verificación: uno comprueba que el proyecto sea portable ---rutas
+relativas, recursos existentes, referencias cruzadas con destino, ausencia de \textit{mojibake} y de
+activos huérfanos--- y otro recalcula en memoria las macros decisivas, sin escribir nada, y falla si
+difieren de los estudios adoptados.
 

@@ -9,54 +9,43 @@ reproduce íntegro. Cualquier lector puede verificar dos cosas: que el valor gan
 pertenece a la rejilla declarada para ella, y que la configuración final no contiene ninguna
 variable ajena al catálogo.
 
-\section{Regla de selección}
+\section{Regla de selección, en su forma exacta}
 
-Un candidato desplaza al incumbente sólo si supera, en este orden, tres filtros.
+La Sección~\ref{sec:regla-decision} explica en qué consiste desplazar al incumbente; aquí quedan los
+umbrales concretos, para que la traza sea verificable. Un candidato debe superar tres filtros en
+este orden:
 
 \begin{enumerate}[leftmargin=*,itemsep=0.35em]
-  \item \textbf{Elegibilidad.} Debe tener observaciones suficientes y no caer por debajo de $-0{,}02$
-  de Rank-IC en ninguna era disponible. Una configuración que fracase por completo en un régimen
-  queda excluida aunque su promedio sea favorable.
-  \item \textbf{Puerta pareada.} Debe cumplir una de dos condiciones: \emph{dominar} al incumbente
-  --- ventaja media positiva y mejor en más de la mitad de las cohortes --- o ser \emph{no inferior},
-  con límite inferior del \textit{bootstrap} pareado al 90\,\% por encima de $-0{,}01$. Las
-  diferencias se emparejan por periodo mensual, de modo que dos configuraciones con retardos de
-  ejecución distintos puedan compararse sin confundir el desplazamiento de sus fechas con ausencia
-  de evidencia.
-  \item \textbf{Desempate.} Entre candidatos elegibles se ordena por ventaja pareada. Una diferencia
-  inferior a 0,002 se declara empate técnico y se resuelve por simplicidad, no por magnitud. Si
-  persiste el empate se recurre, en orden, al Rank-IC medio, a la fracción de cohortes positivas, a
-  la variabilidad, a la complejidad y, finalmente, a conservar el incumbente.
+  \item \textbf{Elegibilidad.} Observaciones suficientes y ningún Rank-IC por debajo de $-0{,}02$ en
+  ninguna era disponible.
+  \item \textbf{Puerta pareada.} O \emph{dominancia} ---ventaja media positiva y mejor en más de la
+  mitad de las cohortes--- o \emph{no inferioridad}, con el límite inferior del \textit{bootstrap}
+  pareado al 90\,\% por encima de $-0{,}01$. Las diferencias se emparejan por periodo mensual, de
+  modo que dos configuraciones cuyas rejillas de observación estén desplazadas puedan compararse sin
+  confundir ese desplazamiento con ausencia de evidencia.
+  \item \textbf{Desempate.} Una diferencia inferior a 0,002 es empate técnico y se resuelve por
+  simplicidad. Si persiste, se recurre en orden al Rank-IC medio, a la fracción de cohortes
+  positivas, a la variabilidad, a la complejidad y, finalmente, a conservar el incumbente.
 \end{enumerate}
 
-La última cláusula importa: ante evidencia indistinguible, el protocolo \emph{no cambia}. Es lo que
-explica que dieciséis de las dieciocho decisiones de la pasada de referencia terminen confirmando
-el valor de partida, según la traza del Capítulo~\ref{chap:diseno-experimental}. La relación
-completa de candidatos, puertas de elegibilidad, ventajas pareadas e intervalos está en
-\artefacto{decisions.json}: catorce decisiones se resolvieron por \texttt{robust\_rank\_ic} y cuatro
-por \texttt{tie\_simplicity}.
-
-Esas dieciocho decisiones no cubren las veintiuna variables predictivas del catálogo, y la diferencia
-conviene declararla. Tres --- \artefacto{model\_family}, \artefacto{meta\_history\_quarters} y
-\artefacto{meta\_recency\_weighting} --- se ejecutaron en modo \texttt{fixed} en la pasada de
-referencia, es decir, con un único valor alcanzable de su rejilla, de modo que no había comparación
-que hacer. Sus valores finales son los que la tabla recoge, pero provienen de una decisión declarada
-de antemano y no de una medición pareada, exactamente igual que los cuatro empates técnicos.
-
-Las variables de cartera no participan en ninguno de estos filtros. Se ejecutan después de congelar
-el ganador y se reportan como diagnóstico, según se detalla en la
-Sección~\ref{sec:cartera-rejilla}.
+De las dieciocho decisiones de la pasada de referencia, catorce se resolvieron por comparación
+robusta y cuatro por empate. Esas dieciocho no cubren las veintiuna variables predictivas: tres
+---la familia de modelo y los dos parámetros de historia del meta-agente--- se ejecutaron con un
+único valor alcanzable, de modo que no había comparación que hacer. Sus valores finales provienen de
+una decisión declarada de antemano y no de una medición, igual que los cuatro empates.
 
 \section{El catálogo completo}
 
 La Tabla~\ref{tab:catalogo} reproduce las treinta y tres variables con su etapa, su rejilla de
-valores admisibles y el valor que adoptó el ganador. Va apaisada porque la columna de valores es la
-que hace auditable el catálogo: sin ella no podría comprobarse que una alternativa estaba disponible
-y no se eligió.
+valores admisibles y el valor que adoptó el ganador. La columna de valores es la que hace auditable
+el catálogo: sin ella no podría comprobarse que una alternativa estaba disponible y no se eligió.
+El Anexo~\ref{anexo:variables} explica qué significa cada una.
 
-\begin{landscape}
+% Los nombres de variable llevan guiones bajos y no parten solos: se permite hacerlo tras el
+% guión para que la columna no desborde el margen de una página vertical.
+{\footnotesize\renewcommand{\_}{\textunderscore\allowbreak}
 \input{tables/tB_catalogo.tex}
-\end{landscape}
+}
 
 Las cuatro primeras etapas --- temporal, representación, modelo y meta --- son predictivas y pueden
 modificar al ganador. La quinta, cartera, no. El coste declarado de cada variable indica qué debe
@@ -64,40 +53,22 @@ recalcularse al cambiarla: un ajuste completo, únicamente la recombinación del
 \textit{backtest}. Ese coste es lo que hace viable recorrer el catálogo de forma secuencial en lugar
 de cartesiana.
 
-\paragraph{Qué ganador recoge la última columna.} La columna «Ganador» es la del \textbf{Model
-Study 3}, incluidas sus variables de cartera, que en esa fase conservaban el valor por defecto del
-catálogo. No es, por tanto, la cartera que el trabajo adopta: el Portfolio Study reoptimizó después
-seis de las doce variables de cartera y cambió \textbf{cuatro} de ellas ---
-\artefacto{max\_cash\_weight} de 0,25 a 0,10; \artefacto{minimum\_holding\_period} de
-\texttt{half\_horizon} a \texttt{full\_horizon}; \path{coverage_percentile_floor} de 60 a 0; y
-\artefacto{rebalance\_drift\_tolerance} de 0,25 a 0,40 ---, mientras que \artefacto{target\_size} y
-\artefacto{sizing\_mode} coincidieron con los de partida. La configuración adoptada se presenta en la
-Sección~\ref{sec:cartera-ganadora}. Se tabula aquí el ganador del Model Study porque este anexo
-documenta el catálogo del protocolo predictivo, no la gestión de cartera.
+\paragraph{Qué ganador recoge la última columna.} Es el del \textbf{Model Study 3}, incluidas sus
+variables de cartera, que en esa fase conservaban el valor por defecto. No es, por tanto, la cartera
+que el trabajo adopta: el Portfolio Study reoptimizó después seis de las doce y cambió cuatro ---el
+tope de efectivo del 25 al 10\,\%, la permanencia mínima de medio horizonte a uno completo, el suelo
+de cobertura del percentil 60 a ninguno y la tolerancia a la deriva de 0,25 a 0,40---, mientras que
+el número de posiciones y el reparto de pesos coincidieron con los de partida. La configuración
+adoptada se presenta en la Sección~\ref{sec:cartera-ganadora}; aquí se tabula el ganador predictivo
+porque este anexo documenta el catálogo del protocolo, no la gestión de cartera.
 
-\paragraph{Por qué seis de las doce.} Las otras seis variables de cartera ---
-\path{commission_bps}, \path{slippage_bps}, \path{exit_expected_alpha_bps},
-\path{rotation_edge_bps}, \path{price_only_strictness_multiplier} y
-\path{price_only_sell_only} --- declaran rejilla pero no entran en el cartesiano, y la razón
-es que no describen una decisión del gestor sino el entorno en el que opera. Las dos primeras son
-condiciones de mercado: optimizarlas equivaldría a elegir cuánto se quiere pagar por operar, que no
-es una elección disponible. Las cuatro restantes gobiernan umbrales de la mecánica de rotación cuyo
-efecto ya está mediado por las seis que sí se recorren. Fijarlas es una decisión declarada de
-antemano, no una medición, y como tal acota lo que puede afirmarse: el barrido responde a qué
-cartera es mejor \emph{dado} ese entorno, no a cuál sería la mejor sin restricciones.
-
-La diferencia de magnitud entre ambos recorridos justifica por sí sola la elección. El producto
-cartesiano de las treinta y tres rejillas asciende a $4{,}6 \times 10^{14}$ combinaciones; incluso
-restringido a las veintiuna variables predictivas son $5{,}4 \times 10^{8}$. El recorrido secuencial
-evaluó 46 configuraciones en la pasada de referencia. Esa reducción no es sólo computacional: cada
-configuración adicional ensayada incrementa la probabilidad de encontrar una ganadora por azar, y es
-exactamente lo que el Deflated Sharpe del Capítulo~\ref{chap:resultados} penaliza. Un barrido
-cartesiano sobre las variables predictivas habría hecho imposible cualquier afirmación estadística
-sobre el resultado.
-
-Ese argumento vale para el plano predictivo y no se extiende al de cartera, donde las seis variables
-generan 1.440 combinaciones: cinco órdenes de magnitud menos, y sobre una señal que ya no puede
-cambiar. El razonamiento completo está en la Sección~\ref{sec:seleccion-secuencial}.
+La magnitud de ambos recorridos justifica por sí sola la elección de procedimiento. El producto
+cartesiano de las treinta y tres rejillas asciende a $4{,}6 \times 10^{14}$ combinaciones, y aun
+restringido a las veintiuna predictivas son $5{,}4 \times 10^{8}$; el recorrido secuencial evaluó
+46. Esa reducción no es sólo computacional: cada configuración ensayada incrementa la probabilidad
+de encontrar una ganadora por azar, que es exactamente lo que el Deflated Sharpe penaliza. En el
+plano de la cartera, en cambio, las seis variables generan 1.440 combinaciones ---cinco órdenes de
+magnitud menos--- sobre una señal que ya no puede cambiar.
 
 \section{Diccionario de variables predictivas}
 \label{sec:diccionario-features}
@@ -114,14 +85,12 @@ por interacción con otra característica. Del mismo modo, pertenecer a varios a
 columna en el panel: cada especialista recibe la misma observación puntual dentro de su propio
 vocabulario.
 
-\begin{landscape}
-\footnotesize
+{\scriptsize\renewcommand{\_}{\textunderscore\allowbreak}
 \input{tables/tB_diccionario_features.tex}
-\end{landscape}
+}
 
-La tabla se genera directamente desde \texttt{feature\_catalog.json}; no es una transcripción
-manual. Por ello cumple dos funciones. Para el lector, hace explícito qué significan nombres
-abreviados como \texttt{gap\_21d} o \texttt{range\_63d}. Para la auditoría, permite comprobar que
-una variable citada en atribución existe en el catálogo y que ningún predictor improvisado aparece
-sólo en el resultado. Los diagnósticos auxiliares que no entrenan modelos se conservan fuera de
-esta lista para no confundir control de calidad con información predictiva.
+La tabla se genera directamente desde el catálogo de variables del sistema, no es una transcripción
+manual, y cumple dos funciones: hace explícito qué significan los nombres abreviados que aparecen en
+la atribución, y permite comprobar que ninguna variable citada en el resultado falta del catálogo.
+Los diagnósticos auxiliares que no entrenan modelos quedan fuera de esta lista para no confundir
+control de calidad con información predictiva.

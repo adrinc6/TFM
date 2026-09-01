@@ -1,33 +1,20 @@
 \chapter{Sistema de predicción: agentes y meta-agente}
 \label{chap:agentes}
 
-El capítulo anterior estableció qué información existía en cada fecha. Éste explica cómo se
-transforma esa información en una ordenación transversal de acciones. Es un capítulo de
-arquitectura: describe el mecanismo, las alternativas que el catálogo ofrece en cada punto y las
-restricciones que ninguna de ellas puede violar. No presenta todavía qué configuración se eligió ni
-qué aprendió el sistema, y la omisión es deliberada.
-
-La razón no es cosmética. Adelantar aquí los valores ganadores obligaría a justificar por qué ésos y
-no otros, y esa justificación depende de una regla de decisión que todavía no se ha explicado; el
-lector tendría que aceptarlos provisionalmente y volver atrás después. El documento sigue en su
-lugar el orden lógico del argumento: primero el mecanismo y sus grados de libertad (este capítulo),
-después la regla que elige entre ellos (Capítulo~\ref{chap:diseno-experimental}) y sólo entonces lo
-que resultó de aplicarla (Capítulo~\ref{chap:resultados}).
-
-Este capítulo describe la parte propiamente predictiva del sistema. La hipótesis no es que una sola
-familia de ratios domine de forma estable todos los regímenes, sino que distintas vistas económicas
-del universo aportan información con persistencia desigual. Por ello se entrenan cinco agentes
-especializados ---\textit{quality}, \textit{value}, \textit{growth}, \textit{momentum} y
-\textit{risk}--- y un combinador que aprende cómo ponderarlos sin conocer a priori cuál será el
-más útil.
+La hipótesis de partida no es que una sola familia de ratios domine de forma estable todos los
+regímenes, sino que distintas vistas económicas del universo aportan información con persistencia
+desigual. De ahí los cinco agentes especializados ---calidad, valor, crecimiento, tendencia y
+riesgo--- y un combinador que aprende a ponderarlos sin saber de antemano cuál será el más útil.
+Este capítulo describe ese mecanismo y las alternativas que el catálogo ofrece en cada punto; qué
+valores se eligieron finalmente depende de una regla de decisión que se explica en el capítulo
+siguiente.
 
 \section{Arquitectura y aprendizaje \textit{walk-forward}}
 
-Cada agente recibe sólo los bloques de variables asignados a su especialidad. \textit{Quality}
-resume rentabilidad, márgenes, eficiencia y solidez financiera; \textit{value} utiliza ratios de
-precio y flujos; \textit{growth} mide aceleración y estabilidad de fundamentales; \textit{momentum}
-recoge tendencias de precio y de fundamentales; y \textit{risk} representa riesgo de precio y
-liquidez. Esta separación tiene dos fines: conserva interpretabilidad económica y evita que el
+Cada agente recibe sólo los bloques de variables asignados a su especialidad. El de calidad resume
+rentabilidad, márgenes, eficiencia y solidez financiera; el de valor utiliza ratios de precio y
+flujos; el de crecimiento mide aceleración y estabilidad de fundamentales; el de tendencia recoge
+momentum de precio y de fundamentales; y el de riesgo representa riesgo de precio y liquidez. Esta separación tiene dos fines: conserva interpretabilidad económica y evita que el
 meta-agente confunda cinco copias del mismo predictor.
 
 En cada fecha de snapshot se ajusta un LightGBM por agente sobre una ventana móvil de ocho años. El
@@ -41,54 +28,34 @@ Las cinco puntuaciones se convierten en rangos transversales y pasan al meta-age
 Ridge positiva sobre cohortes trimestrales ya cerradas. Mientras no existan etiquetas cerradas
 suficientes, el meta reparte por construcción pesos iguales de 0,20.
 
-El catálogo ofrece dos variantes de esa combinación, y la elección entre ellas es una hipótesis de
-diseño, no un detalle de implementación. \texttt{stacked\_rolling\_bounded} acota el peso de cada
-agente entre 0,10 y 0,50: representa la hipótesis de que la arquitectura multi-agente sólo tiene
-sentido si ningún especialista puede apagar a los demás, e impide por construcción que una ventaja
-transitoria degenere el reparto. \texttt{stacked\_rolling\_free} no impone tope alguno: representa
-la hipótesis contraria, que si un especialista domina de forma consistente lo correcto es dejar que
-el procedimiento converja a él.
+El catálogo ofrece dos variantes de esa combinación, y elegir entre ellas es una hipótesis de diseño,
+no un detalle de implementación. La variante \textbf{acotada} obliga a que ningún agente pese menos
+del 10\,\% ni más del 50\,\%: representa la idea de que una arquitectura de cinco especialistas sólo
+tiene sentido si ninguno puede apagar a los demás. La variante \textbf{libre} no impone tope alguno,
+y representa la idea contraria: si un especialista domina de forma consistente, lo correcto es dejar
+que el procedimiento converja hacia él.
 
-Las dos son defendibles a priori y miden cosas distintas. La acotada protege una propiedad
-cualitativa del diseño --- que sigan siendo cinco agentes --- que ninguna métrica del protocolo
-evalúa; la libre maximiza el criterio que el protocolo sí mide. Ésa es exactamente la clase de
-disyuntiva que obliga a tener una regla de decisión declarada de antemano, y por eso la variante del
-meta-agente figura en el catálogo cerrado como una variable más.
+Las dos son defendibles y miden cosas distintas. La acotada protege una propiedad cualitativa del
+diseño ---que sigan siendo cinco agentes--- que ninguna métrica del protocolo evalúa; la libre
+maximiza el criterio que el protocolo sí mide. Por eso la variante figura en el catálogo cerrado
+como una variable más, y no como una preferencia del autor.
 
-La Figura~\ref{fig:arquitectura} resume el recorrido completo, de las variables al ranking final.
 Conviene fijarse en que el meta no ve las puntuaciones sino los \emph{rangos}: es lo que permite
 combinar agentes cuyas escalas no son comparables entre sí.
 
-\begin{figure}[H]
-  \centering
-  \begin{tikzpicture}[node distance=9mm and 12mm, >=Latex, every node/.style={font=\small}]
-    \node[draw,rounded corners,fill=blue!8,minimum width=25mm,minimum height=10mm] (f) {Variables PIT};
-    \node[draw,rounded corners,fill=teal!10,right=of f,minimum width=31mm,minimum height=22mm,align=center] (a) {Cinco agentes\\LightGBM};
-    \node[draw,rounded corners,fill=orange!12,right=of a,minimum width=32mm,minimum height=16mm,align=center] (m) {Meta apilado\\sobre rangos};
-    \node[draw,rounded corners,fill=green!10,right=of m,minimum width=26mm,minimum height=10mm,align=center] (s) {Ranking final};
-    \draw[->,thick] (f) -- (a);
-    \draw[->,thick] (a) -- (m);
-    \draw[->,thick] (m) -- (s);
-  \end{tikzpicture}
-  \caption{Arquitectura predictiva. Las variables sólo están disponibles cuando ya se publicaron;
-  los agentes se ajustan \textit{walk-forward} y el meta aprende con cohortes cuya etiqueta ya cerró.}
-  \label{fig:arquitectura}
-\end{figure}
-
 \subsection{Qué predice el modelo}
 
-El objetivo supervisado no es el retorno en euros ni una probabilidad de subida. Para cada fecha
-$t$, se calcula el retorno total a doce meses $R_{i,t\rightarrow t+12}$ de cada acción $i$ cuya
-etiqueta ya puede cerrarse y se transforma en percentil transversal:
+El sistema no aprende a predecir cuánto subirá una acción, sino en qué puesto quedará. Para cada
+fecha se toma el retorno a doce meses de todas las acciones cuya etiqueta ya puede cerrarse, se
+ordenan de peor a mejor y se convierte esa posición en un número entre 0 y 1:
 \[
  y_{i,t}=\frac{\operatorname{rank}_{j\in\mathcal U_t}
  \left(R_{j,t\rightarrow t+12}\right)-1}{|\mathcal U_t|-1}.
 \]
-Así, $y=1$ identifica la mejor acción de su cohorte y $y=0$ la peor. Esta definición alinea
-directamente el entrenamiento con el Rank-IC empleado para seleccionar: el sistema aprende
-ordenación relativa, no trata de acertar el nivel absoluto de rentabilidad. También reduce la
-dependencia de la escala de cada año, aunque no elimina la dependencia entre acciones que comparten
-cohorte.
+Un valor de 1 identifica la mejor acción de su fecha y un 0 la peor. Aprender el puesto en vez del
+nivel tiene dos ventajas: alinea el entrenamiento con la métrica que después decide el ganador, y
+hace al sistema inmune a que un año entero suba o baje. No elimina, en cambio, la dependencia entre
+acciones que comparten fecha, que es la razón de agregar toda la inferencia por cohorte.
 
 Cada agente $a$ estima una función no lineal
 $\hat y^{(a)}_{i,t}=f_a(X^{(a)}_{i,t};\theta_{a,t})$, donde
@@ -99,53 +66,23 @@ entrenada con la última información cerrada antes de $t$.
 
 \subsection{Dos relojes que nunca se confunden}
 
-La implementación mantiene separados el reloj de publicación de la señal y el reloj de cierre de la
-etiqueta. En una fecha dada puede puntuarse una empresa con información observable, pero esa misma
-fila no puede usarse para entrenar hasta que transcurran los doce meses necesarios para conocer su
-resultado. La Figura~\ref{fig:dos-relojes} representa esa asimetría.
-
-\begin{figure}[H]
-  \centering
-  \begin{tikzpicture}[>=Latex,every node/.style={font=\small},x=1.45cm,y=1cm]
-    \draw[->,thick] (0,1.35) -- (8.4,1.35) node[right] {tiempo};
-    \foreach \x/\lab in {0/$t-8a$,3.8/$t-12m$,5.5/$t$,8/$t+12m$}
-      {\draw (\x,1.18)--(\x,1.52) node[above=2pt]{\lab};}
-    \draw[very thick,blue!65] (0,0.85)--(3.8,0.85)
-      node[midway,below]{labels cerrados para entrenar};
-    \draw[very thick,teal!70!black] (0,0.25)--(5.5,0.25)
-      node[midway,below]{variables observables para puntuar en $t$};
-    \draw[very thick,orange!80!black,dashed] (5.5,-0.35)--(8,-0.35)
-      node[midway,below]{retorno aún desconocido};
-    \draw[->,thick] (5.5,0.15)--(5.5,-0.55);
-  \end{tikzpicture}
-  \caption{Separación entre el reloj de predicción y el de aprendizaje. La señal se emite en $t$;
-  su etiqueta sólo entra en un ajuste posterior cuando el horizonte anual ha cerrado.}
-  \label{fig:dos-relojes}
-\end{figure}
-
-Esta separación impide una fuga menos visible que usar un precio futuro: permitir que una fila
-reciente, cuyas características sí se conocen pero cuyo retorno anual todavía no, intervenga en la
-selección de variables o en el meta. El cierre de cohortes es por tanto una condición previa común
-al entrenamiento, a la poda y a la calibración; no una corrección aplicada después.
-
-\section{Qué aprende cada especialista}
-
-La especialización no asigna una conclusión previa al modelo; asigna un vocabulario económico para
-formular hipótesis. El agente \textit{quality} recibe ratios como ROE, ROIC, ROA, márgenes, rotación
-de activos, liquidez y endeudamiento. Un ROIC alto puede indicar un uso eficiente del capital, pero
-el modelo no recibe la regla ``ROIC alto implica comprar''; aprende una relación condicionada a la
-historia disponible. \textit{Value} combina valoraciones relativas y flujos de caja; \textit{growth}
-busca aceleración, persistencia y estabilidad de resultados; \textit{momentum} incorpora tendencia
-de precio y de fundamentales; y \textit{risk} resume volatilidad, riesgo de precio y liquidez.
-
-La amplitud de ese vocabulario es también una variable del catálogo. El preset \texttt{core} activa
-un subconjunto reducido de bloques y el preset \texttt{all} los once disponibles; en ambos casos una
-poda por estabilidad fuera de muestra limita cuántas variables conserva cada agente. La disyuntiva
-es la habitual: un conjunto demasiado reducido amputa información relevante, y uno arbitrariamente
-amplio aumenta la varianza y dificulta la interpretación. La poda forma parte del catálogo y opera
-con datos ya observables; no es una selección manual posterior a ver el resultado.
+La implementación mantiene separados el reloj con el que se emite una señal y el reloj con el que se
+aprende de ella. En una fecha dada puede puntuarse una empresa con información ya observable, pero
+esa misma fila no puede entrar en un entrenamiento hasta que transcurran los doce meses que hacen
+falta para conocer su resultado. Eso impide una fuga menos visible que usar un precio futuro: que
+una fila reciente, cuyas características se conocen pero cuyo retorno no, intervenga en la selección
+de variables o en el meta. El cierre de cohortes es por tanto una condición previa del
+entrenamiento, la poda y la calibración, no una corrección posterior.
 
 \section{Entrenamiento y combinación de rangos}
+
+La especialización no asigna una conclusión previa al modelo, sino un vocabulario económico con el
+que formular hipótesis: el agente de calidad recibe ratios como ROE, ROIC, márgenes o endeudamiento,
+pero no la regla «ROIC alto implica comprar», que tendría que aprender de la historia disponible. La
+amplitud de ese vocabulario es también una variable del catálogo, que ofrece un conjunto reducido de
+bloques o los once disponibles; en ambos casos una poda por estabilidad fuera de muestra limita
+cuántas variables conserva cada agente. Un conjunto demasiado estrecho amputa información y uno
+demasiado amplio añade varianza, así que la elección se mide en vez de decidirse a priori.
 
 En cada snapshot el modelo recibe sólo la historia permitida. Si la fecha es abril de 2020 y la
 ventana es de ocho años, el conjunto comienza aproximadamente en abril de 2012; una fila de finales
@@ -156,8 +93,8 @@ interacciones aprendidas, y sus valores no se fijan aquí por criterio general s
 Capítulo~\ref{chap:diseno-experimental}.
 
 Los scores se convierten a rangos porcentuales dentro de cada cohorte. Esta operación evita que la
-escala numérica de un agente domine al resto: si \textit{risk} produce valores entre 0,4 y 0,6 y
-\textit{value} entre $-2$ y $3$, ambos pasan a expresar posición relativa en su sección transversal.
+escala numérica de un agente domine al resto: si el de riesgo produce valores entre 0,4 y 0,6 y el
+de valor entre $-2$ y $3$, ambos pasan a expresar posición relativa en su sección transversal.
 El meta combina después esos rangos, no sus unidades originales.
 
 Antes del ajuste, los extremos se tratan con reglas declaradas y los valores ausentes se imputan
@@ -167,8 +104,10 @@ sostenerse en los pliegues temporales permitidos. Con ello, la poda reduce dimen
 el conjunto reservado en un selector informal. El diccionario completo de variables, direcciones,
 bloques y agentes figura en el Apéndice~\ref{anexo:catalogo}.
 
-Sean $z^{(a)}_{i,t}$ los cinco rangos producidos. Cuando existen suficientes cohortes cerradas, el
-meta resuelve una regresión regularizada sobre predicciones verdaderamente fuera de muestra:
+La pregunta que el meta-agente resuelve en cada fecha es sencilla de enunciar: qué combinación de
+los cinco rangos habría acertado mejor el orden real en las cohortes que ya cerraron. Formalmente,
+busca los pesos $\boldsymbol w$ que minimizan el error de esa combinación, con un término adicional
+que penaliza los pesos grandes:
 \[
  \widehat{\boldsymbol w}_t=
  \arg\min_{\boldsymbol w}
@@ -176,16 +115,14 @@ meta resuelve una regresión regularizada sobre predicciones verdaderamente fuer
  \left(y_{i,s}-w_0-\sum_{a=1}^{5}w_a z^{(a)}_{i,s}\right)^2
  +\lambda\lVert\boldsymbol w\rVert_2^2,
 \]
-donde $\mathcal C_t$ contiene sólo cohortes cerradas anteriores a $t$. Los coeficientes de agentes
-se restringen a ser no negativos y después se normalizan para sumar uno. La variante acotada añade
-$0{,}10\leq w_a\leq0{,}50$; la libre conserva únicamente no negatividad y normalización. El
-intercepto sirve al ajuste, pero no altera la ordenación transversal final.
+donde $z^{(a)}_{i,t}$ son los cinco rangos y $\mathcal C_t$ contiene sólo cohortes cerradas
+anteriores a $t$. Los pesos no pueden ser negativos y se normalizan para sumar uno; la variante
+acotada añade además que ninguno baje de 0,10 ni pase de 0,50.
 
-La regularización cumple aquí una función concreta: evita que agentes correlacionados intercambien
-pesos extremos ante pequeñas perturbaciones. No garantiza, sin embargo, estabilidad económica. Si
-un agente acumula más información ordinal que los demás, la versión libre puede concentrarse en él;
-esa posibilidad es una hipótesis contrastada por el protocolo y se estudia después mediante pesos,
-ablaciones y neutralización factorial.
+Ese término de penalización tiene una función concreta: cuando dos agentes dicen cosas parecidas,
+impide que sus pesos salten bruscamente de uno a otro ante cambios pequeños en los datos. Lo que no
+puede evitar es que, si un agente resulta consistentemente mejor, la variante libre acabe
+concentrándose en él. Eso es una hipótesis que el protocolo contrasta, no un defecto a corregir.
 
 Cuando $\mathcal C_t$ todavía no tiene la longitud mínima exigida, no se ajusta una regresión
 frágil. El sistema utiliza el reparto igualitario y registra el estado de arranque. Esta conducta es
@@ -199,31 +136,19 @@ Una empresa presenta rangos quality 0,80, value 0,55, growth 0,70, momentum 0,45
 arranque, los pesos iguales producen $(0,80+0,55+0,70+0,45+0,90)/5=0,68$: queda algo por encima de
 la mediana del universo, y ninguna de sus cinco vistas pesa más que otra.
 
-Si la evidencia ya cerrada indicase que \textit{risk} ordena mejor que los demás y el meta le
+Si la evidencia ya cerrada indicase que el agente de riesgo ordena mejor que los demás y el meta le
 asignara 0,70, repartiendo 0,075 entre los cuatro restantes, el score pasaría a
 $0{,}70\times0{,}90 + 0{,}075\times(0{,}80+0{,}55+0{,}70+0{,}45) = 0{,}82$.
 \end{ejemplo}
 
-Los rangos del ejemplo son inventados; lo que ilustra el cálculo es real. La empresa mejora de
-posición, y conviene fijarse en por qué: no porque nadie haya decidido que el riesgo importa, sino
-porque su fortaleza en la dimensión que mejor ha venido ordenando gana relevancia según datos ya
-observados.
+Los rangos del ejemplo son inventados, pero el cálculo es el real, y muestra qué está en juego entre
+las dos variantes. Con la acotada, ese peso de 0,70 sería imposible: el tope del 50\,\% limita
+cuánto puede desplazarse la puntuación hacia el especialista dominante. Con la libre nada lo impide
+mientras la evidencia lo respalde, hasta el extremo de que la puntuación final acabe siendo, en la
+práctica, la de un solo agente.
 
-Aquí se ve con claridad qué está en juego entre las dos variantes del meta. Con la acotada, ese 0,70
-sería imposible: el tope de 0,50 limitaría cuánto puede desplazarse el score hacia el especialista
-dominante. Con la libre, nada impide que el peso siga creciendo mientras la evidencia lo respalde,
-hasta el extremo de que el score final acabe siendo, en la práctica, el de un solo agente. Cuál de
-las dos conductas es preferible no puede decidirse aquí, porque depende de qué muestren los datos, y
-ése es justamente el trabajo del protocolo.
-
-Conviene cerrar delimitando qué permite afirmar esta arquitectura. Los pesos del meta hacen
-\emph{atribuible} el resultado a agentes concretos, pero no permiten inferir causalidad financiera:
-que un especialista reciba peso alto no demuestra que su lectura económica sea la causa del retorno.
-Puede reflejar interacciones entre variables, características del universo elegido o límites de los
-datos disponibles. Por eso el trabajo no se detiene en los pesos y añade después estabilidad por
-eras, neutralización por estilo y atribución local dentro de cada agente.
-
-Con esto queda descrita la arquitectura completa: qué recibe cada agente, cómo se entrena, cómo se
-combinan sus salidas y qué alternativas ofrece el catálogo en cada punto. Falta lo esencial para que
-todo ello produzca un sistema concreto: la regla que elige entre esas alternativas sin mirar la
-respuesta económica. El capítulo siguiente la describe.
+Conviene delimitar qué permite afirmar esta arquitectura. Los pesos hacen \emph{atribuible} el
+resultado a agentes concretos, pero no permiten inferir causalidad: que un especialista reciba peso
+alto no demuestra que su lectura económica sea la causa del retorno, y puede reflejar interacciones
+entre variables o límites de los datos. Por eso el trabajo no se detiene en los pesos y añade
+después estabilidad por eras, neutralización por estilo y atribución local dentro de cada agente.

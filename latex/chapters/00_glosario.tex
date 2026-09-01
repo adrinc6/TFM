@@ -2,56 +2,94 @@
 \addcontentsline{toc}{chapter}{Glosario de métricas y abreviaturas}
 
 La memoria combina términos de aprendizaje automático, econometría y gestión de carteras. Este
-glosario fija su significado antes de utilizarlos y evita redefinirlos en capítulos distintos.
+glosario fija su significado una sola vez; los capítulos los emplean después sin volver a
+definirlos.
 
 \begin{description}[leftmargin=3.2cm,style=nextline,itemsep=0.45em]
-  \item[Alfa] Retorno de la cartera que excede al benchmark. En esta memoria puede designar el
-  exceso realizado o, cuando se indica expresamente, el exceso esperado que gobierna una orden.
+  \item[Agente especialista] Modelo que aprende a ordenar el universo mirando sólo una familia de
+  variables. Son cinco: calidad, valor, crecimiento, tendencia y riesgo.
+  \item[Alfa] Retorno de la cartera que excede al benchmark. Puede designar el exceso realizado o,
+  cuando se indica, el exceso esperado que gobierna una orden.
   \item[Amplitud] Número aproximado de decisiones independientes sobre las que puede expresarse una
   señal. Doce cohortes mensuales solapadas a horizonte anual no equivalen a doce observaciones
   independientes.
+  \item[Atribución local] Descomposición de la puntuación de una acción en la aportación de cada
+  variable que la produjo. Describe qué miró el modelo; no demuestra que esa variable cause el
+  retorno.
+  \item[Baseline determinista] Fórmula fija de uno o varios factores, sin entrenamiento, calculada
+  sobre el mismo panel. Sirve de listón para saber cuánto añade el sistema aprendido.
   \item[Benchmark] Referencia contra la que se mide la cartera. SPY se usa como representación
   invertible del S\&P 500, pero nunca puede ser una posición de la estrategia.
   \item[Bootstrap por bloques] Remuestreo que conserva tramos consecutivos de cohortes en lugar de
   extraerlas una a una. Con etiquetas solapadas a doce meses, romper esa dependencia produciría
   intervalos artificialmente estrechos.
+  \item[CAGR] Tasa de crecimiento anual compuesta. Resume el crecimiento geométrico del patrimonio
+  y no informa por sí sola de su volatilidad ni de su recorrido.
   \item[Coeficiente de transferencia] Fracción de la señal disponible que llega efectivamente a la
   cartera. Es el término de la ley fundamental de la gestión activa que las restricciones
   \textit{long-only}, la concentración y los costes reducen.
-  \item[CAGR] Tasa de crecimiento anual compuesta. Resume el crecimiento geométrico del patrimonio
-  y no informa por sí sola de su volatilidad ni de su recorrido.
   \item[Cohorte] Sección transversal de acciones puntuada en una misma fecha y evaluada contra el
   retorno que se realiza al final del horizonte declarado. Está \emph{cerrada} cuando ese horizonte
-  ya ha transcurrido y su retorno es observable; solo entonces puede entrar en un entrenamiento o en
-  un diagnóstico.
+  ya ha transcurrido y su retorno es observable; sólo entonces puede entrar en un entrenamiento o en
+  un diagnóstico. Emitir una puntuación y disponer de su etiqueta cerrada son, por tanto, cosas
+  distintas: en una ventana reciente hay muchas más puntuaciones que cohortes cerradas.
+  \item[Dominancia] La más exigente de las dos formas en que un candidato puede desplazar al
+  incumbente: ventaja media favorable \emph{y} mejor en más de la mitad de las fechas comparadas.
   \item[DSR] \textit{Deflated Sharpe Ratio}. Probabilidad de que el Sharpe observado supere lo
-  esperable por azar después de considerar multiplicidad, asimetría y curtosis.
+  esperable por azar después de considerar el número de configuraciones ensayadas, la asimetría y la
+  curtosis.
   \item[Drawdown] Caída desde un máximo previo del patrimonio. El máximo drawdown es la peor de esas
   pérdidas durante una ventana.
   \item[Empate técnico] Situación en la que dos alternativas difieren menos de 0,002 en ventaja
   pareada. La regla declarada de antemano la resuelve por simplicidad, no por magnitud, de modo que
   su resultado no debe presentarse como un hallazgo empírico.
+  \item[Episodio de tenencia] Cada tramo continuo en que una acción permanece en cartera. Una misma
+  acción comprada, vendida y recomprada más tarde produce dos episodios.
+  \item[Fecha de publicación] Día en que un estado financiero se hizo público, según el registro de
+  SEC EDGAR. No debe confundirse con el cierre fiscal, que es la fecha económica a la que el informe
+  se refiere y que suele ser semanas o meses anterior.
   \item[HHI] Índice de Herfindahl--Hirschman aplicado a los pesos de cartera. Aumenta cuando el
   patrimonio se concentra en menos posiciones.
   \item[IC-IR] Media temporal del Rank-IC dividida por su desviación estándar. Mide estabilidad de
   la capacidad de ordenar, no rentabilidad de cartera.
+  \item[Incumbente] Configuración vigente en cada paso de la selección. Un candidato sólo la
+  sustituye si supera la puerta declarada; ante evidencia indistinguible, el incumbente se conserva.
   \item[Information Ratio (IR)] Media del exceso de retorno dividida por su volatilidad. A
   diferencia del IC-IR, pertenece a la capa económica y depende de la cartera.
+  \item[Lag de observación] Días que transcurren entre el fin de un mes y el día en que el sistema
+  observa el mercado y emite puntuaciones. El ganador emplea sesenta. Fija \emph{cuándo se mira}; no
+  es lo que impide usar información futura, papel que corresponde al filtro por fecha de
+  publicación.
+  \item[Meta-agente] Capa que combina los cinco rangos especializados en un único orden, aprendiendo
+  el peso de cada agente a partir de cohortes ya cerradas.
+  \item[Model Study] Ejecución que recorre el catálogo predictivo y elige una configuración por
+  Rank-IC. El trabajo encadena tres.
+  \item[Neutralización por estilo] Retirar de la señal la parte explicable por un conjunto de
+  controles conocidos y recalcular el Rank-IC sobre el residuo. Mide cuánta señal sobrevive a los
+  factores clásicos.
   \item[No inferioridad] Puerta alternativa a la dominancia: un candidato es admisible si el límite
   inferior de su intervalo \textit{bootstrap} pareado al 90\,\% supera el margen declarado. Prueba
   que no es peor, no que sea mejor.
   \item[OOS] \textit{Out of sample}. Observaciones posteriores a las usadas para ajustar el modelo.
   En esta memoria también se distingue dentro de OOS entre selección y reserva.
+  \item[Perfil de inversor] Reordenación de la señal ya congelada que pondera los cinco agentes con
+  pesos fijos declarados de antemano, para representar un estilo de inversión.
   \item[Placebo de etiqueta] Ejecución completa del sistema con el retorno futuro barajado dentro de
   cada cohorte. Si la maquinaria fabricase señal por sí misma, el placebo la mostraría.
+  \item[Portfolio Study] Ejecución que, con la señal ya congelada, recorre las combinaciones de
+  reglas de cartera y elige una por Information Ratio.
   \item[P95] Percentil 95. En capacidad es la participación sobre volumen que no supera el 95\,\%
   de las órdenes; evita que un único extremo gobierne la estimación.
   \item[PIT] \textit{Point in time}. Información asociada a la fecha en que era observable, no a
   la fecha económica a la que se refiere ni a una versión revisada conocida después.
   \item[Rank-IC] Correlación de Spearman entre el ranking emitido y el retorno futuro excedente
-  dentro de una cohorte. Es la métrica que selecciona el modelo.
+  dentro de una cohorte. Es la métrica que selecciona el modelo. El Rank-IC \emph{univariante} es el
+  de una sola variable, calculado sin modelo alguno.
   \item[Reserva] Periodo 2025--2026 aislado de toda selección. Sus pocas cohortes cerradas permiten
   una comprobación preliminar, no una estimación precisa de generalización.
+  \item[Rotación] Sustitución de una posición por otra porque la señal ha cambiado de opinión. Se
+  distingue del \textit{turnover}, que agrega todo el movimiento de pesos, incluido el simple ajuste
+  de una posición que se conserva.
   \item[Slippage] Diferencia adversa entre el precio de referencia y el de ejecución. Se suma a la
   comisión para calcular el coste de una operación.
   \item[Snapshot] Fecha en la que el sistema reconstruye el universo observable, emite rankings y
@@ -61,12 +99,14 @@ glosario fija su significado antes de utilizarlos y evita redefinirlos en capít
   exceso de un participante es el defecto de otro.
   \item[Turnover] Suma anualizada de cambios absolutos de peso. Una cifra de 1,35 equivale a mover
   nocionalmente un 135\,\% del patrimonio en un año, no a cerrar la cartera 1,35 veces.
-  \item[Ventila] Cada uno de los veinte tramos en que se divide una cohorte ordenada por
-  \texttt{meta\_rank}. Son la unidad sobre la que se estima la curva que traduce rango en alfa
+  \item[Ventaja pareada] Media de la diferencia de Rank-IC entre dos configuraciones, calculada
+  fecha a fecha y no como diferencia de sus promedios. Es el objeto que juzgan las puertas de
+  decisión.
+  \item[Ventila] Cada uno de los veinte tramos en que se divide una cohorte ordenada por el orden
+  final del meta-agente. Son la unidad sobre la que se estima la curva que traduce rango en alfa
   esperada.
   \item[Ventana de selección] Cohortes de 2015--2024 sobre las que se comparan configuraciones. La
   era reservada queda fuera de todas esas decisiones.
   \item[Walk-forward] Esquema que avanza cronológicamente: ajusta con historia disponible, predice
   la fecha siguiente y repite sin permitir que el futuro vuelva al entrenamiento.
 \end{description}
-

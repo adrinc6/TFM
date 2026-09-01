@@ -1,10 +1,6 @@
 \chapter{Conclusiones y trabajo futuro}
 \label{chap:conclusiones}
 
-Este capítulo responde a los dos objetivos con la fuerza que permite cada evidencia. La separación
-entre señal y cartera se mantiene hasta el final: una conclusión predictiva no se transforma en una
-promesa económica, y una mejora de cartera no se atribuye retrospectivamente al modelo.
-
 \section{Objetivo 1: capacidad de ordenación}
 
 La evidencia es favorable y robusta. El sistema alcanza Rank-IC medio \RankICSeleccion{} sobre
@@ -15,16 +11,16 @@ retirar eras completas, cambiar semillas, barajar etiquetas y neutralizar estilo
 era reservada el Rank-IC sigue siendo positivo (\RankICReservado{}).
 
 La formulación defendible es que el sistema aprende una ordenación transversal fuera de muestra
-dentro del universo, periodo y protocolo estudiados. No demuestra, sin embargo, que la arquitectura
-multiagente sea necesaria. El meta aprende a concentrar peso utilizando cohortes cerradas y supera
-al promedio equiponderado, pero el especialista \texttt{risk} alcanza por sí solo Rank-IC
-\RankICRisk{}, ligeramente superior al meta. El resultado describe un meta que selecciona al mejor
+dentro del universo, el periodo y el protocolo estudiados. No demuestra, en cambio, que la
+arquitectura multiagente sea necesaria: el meta aprende a concentrar peso usando cohortes cerradas y
+supera al promedio equiponderado, pero el agente de riesgo alcanza por sí solo un Rank-IC de
+\RankICRisk{}, ligeramente superior. El resultado describe un meta que selecciona al mejor
 especialista más que una combinación cuya superioridad haya quedado establecida.
 
-La atribución local añade comprensión, no causalidad. \texttt{gap\_21d} y \texttt{range\_63d}
-encabezan juntas \DosVariablesRisk{} de las observaciones de \texttt{risk}; no son simplemente beta
-o volatilidad anual. El trabajo identifica así qué variables sostienen el mecanismo observado, pero
-no puede distinguir si recogen liquidez, microestructura o una prima económica estable.
+La atribución local añade comprensión, no causalidad. Los huecos de apertura y la amplitud del rango
+de negociación encabezan juntos \DosVariablesRisk{} de las observaciones de ese agente, y no son
+simplemente beta ni volatilidad anual. El trabajo identifica así qué variables sostienen el
+mecanismo, pero no puede distinguir si recogen liquidez, microestructura o una prima estable.
 
 La lectura por eras también exige precisión. Que el Rank-IC sea mayor en el tramo donde el panel
 histórico está más completo contradice una explicación simple y monotónica basada en la peor
@@ -94,11 +90,11 @@ predictivo es interpretable sin declarar con qué cartera se midió}. La frase n
 cartera ganadora en recomendación de inversión. Obliga a tratar tamaño, efectivo, tenencia,
 rebalanceo y costes como parte de la evaluación científica.
 
-La evidencia económica tiene además una dependencia interna que las métricas agregadas no muestran.
-La cartera pasó por \NumAccionesCartera{} acciones, pero AAPL aporta \ContribucionAAPL{} puntos
-porcentuales acumulados; en la era reservada casi no llega a rotar. Esas concentraciones reducen el
-número de experiencias independientes que realmente sostienen el resultado y explican por qué la
-conclusión económica debe ser más prudente que la predictiva.
+La evidencia económica tiene además una dependencia interna que las métricas agregadas no muestran:
+la cartera pasó por \NumAccionesCartera{} acciones, pero una sola aporta \ContribucionAAPL{} puntos
+porcentuales acumulados. Esa concentración reduce el número de experiencias independientes que
+sostienen el resultado, y es la razón de que la conclusión económica deba ser más prudente que la
+predictiva.
 
 \section{Tres prioridades futuras}
 

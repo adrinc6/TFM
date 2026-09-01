@@ -1,63 +1,33 @@
 \chapter{Estado del arte}
 \label{chap:estado-arte}
 
-Este capítulo recorre la literatura que el trabajo necesita, en el orden en que la va a usar: las
-regularidades factoriales que orientan el diseño de los agentes y sirven de baseline, lo que el
-aprendizaje automático añade y lo que arriesga, los sesgos que condicionan cualquier evidencia de
-esta clase, y por qué la métrica de selección es el Rank-IC y no la rentabilidad. Cierra declarando
-cómo se posiciona el TFM ante las tensiones que esa literatura deja abiertas.
-
 \section{De las anomalías a las variables explicativas}
 
-La literatura de factores parte de una observación sencilla: los retornos esperados no parecen
-independientes de todas las características observables de una empresa. El punto de partida
-histórico suele situarse en Banz (1981), que documentó que las empresas de menor capitalización
-obtenían retornos ajustados por riesgo superiores a los que predecía el modelo de mercado: una
-característica contable y pública, disponible para cualquiera, quedaba asociada a una diferencia
-sistemática de rentabilidad. Los modelos de Fama y French formalizaron después primas asociadas a
-tamaño y valor (Fama y French, 1992, 1993); trabajos
-posteriores mostraron persistencia del momentum (Jegadeesh y Titman, 1993) y una prima ligada
-a calidad (Asness et al., 2019). Carhart (1997) incorporó el momentum como cuarto factor
-al modelo de tres, y su trabajo es relevante aquí por una razón adicional: mostró que buena parte
-de la persistencia aparente en el rendimiento de los fondos de inversión desaparecía al controlar
-por exposiciones factoriales conocidas. Es exactamente la lógica que este TFM aplica a su propia
-señal en el análisis de neutralización de estilo del Capítulo~\ref{chap:resultados}.
+Los retornos esperados de una acción no son independientes de sus características observables. Sobre
+esa idea se construyó la literatura de factores: el tamaño (Banz, 1981), el valor (Fama y French,
+1992, 1993), el momentum (Jegadeesh y Titman, 1993), la calidad (Asness et al., 2019), la
+rentabilidad bruta (Novy-Marx, 2013) o la baja beta (Frazzini y Pedersen, 2014) quedaron asociados a
+diferencias sistemáticas de rentabilidad. De ahí salen las cinco familias en que este trabajo
+reparte sus variables ---calidad, valor, crecimiento, tendencia y riesgo---, y de ahí salen también
+sus baselines: una fórmula determinista de un factor, calculada sobre el mismo panel, es el listón
+mínimo que un sistema aprendido debe superar.
 
-Estas relaciones no deben entenderse como leyes mecánicas.
-Su magnitud cambia con el horizonte, el universo, los costes y el régimen, y una señal que funciona
-en promedio puede atravesar años adversos. El propio efecto tamaño de Banz se debilitó de forma
-notable en las décadas posteriores a su publicación, un recordatorio de que una regularidad
-documentada no es una garantía de rendimiento futuro.
+Esa literatura trae consigo una advertencia que importa más que el catálogo de primas. Las
+regularidades documentadas se debilitan al medirse fuera de la muestra en que se descubrieron, y
+más aún después de publicarse: McLean y Pontiff (2016) lo documentan sobre 97 predictores y Hou et
+al. (2020) sobre 452 anomalías reevaluadas con criterios homogéneos, muchas de las cuales dejan de
+superar umbrales exigentes o dependen de microcapitalizaciones. La implicación no es que toda
+regularidad sea falsa, sino que una señal aprendida tiene que demostrar estabilidad temporal,
+resistir controles conocidos y declarar cuánto de su éxito aparente procede de haber buscado entre
+alternativas. Es el motivo de que este trabajo reserve una era completa y mida robustez antes de
+afirmar nada.
 
-La ampliación posterior del catálogo factorial hace más importante esa cautela. Novy-Marx (2013)
-mostró que la rentabilidad bruta contiene información comparable a valor; Fama y French (2015)
-incorporaron rentabilidad e inversión a su modelo de cinco factores; y Hou et al. (2015) organizaron
-varias anomalías mediante una lectura basada en inversión. Frazzini y Pedersen (2014), por su parte,
-relacionaron la baja beta con restricciones al apalancamiento. Estas extensiones no producen una
-lista indiscutible de primas: producen familias de explicaciones que comparten variables, cambian de
-magnitud con la muestra y pueden describir una misma acción de formas distintas.
-
-La literatura de replicación convirtió esa proliferación en una pregunta empírica. McLean y Pontiff
-(2016) compararon 97 predictores antes y después de su publicación y documentaron una caída apreciable
-fuera de muestra y otra adicional cuando el mercado pudo explotar el hallazgo. Hou et al. (2020)
-reevaluaron 452 anomalías bajo procedimientos homogéneos y mostraron que muchas dejan de superar
-umbrales más exigentes o dependen de microcapitalizaciones. La implicación para este trabajo no es
-que toda regularidad sea falsa, sino que una señal aprendida debe demostrar estabilidad temporal,
-resistir controles conocidos y declarar qué parte de su aparente éxito procede de haber buscado entre
-alternativas.
-
-Para este TFM los factores cumplen tres papeles. Primero, orientan la división de features entre
-agentes: rentabilidad y solvencia para \textit{quality}; ratios de valoración para \textit{value};
-aceleración de resultados para \textit{growth}; tendencias para \textit{momentum}; y medidas de
-volatilidad y liquidez para \textit{risk}. Segundo, sirven de baseline: una fórmula determinista de
-un factor debe compararse contra el sistema aprendido sobre el mismo panel. Tercero, son controles
-de atribución: si la señal desaparece al neutralizar exposiciones conocidas, la interpretación debe
-ser más modesta.
-
-No se afirma que un agente represente un factor puro. Por ejemplo, una empresa de alta calidad puede
-presentar al mismo tiempo baja volatilidad, crecimiento persistente y una valoración elevada. La
-especialización organiza la entrada del modelo; no impone que el mercado recompense cada bloque por
-separado ni evita interacciones posteriores dentro del LightGBM.
+Los factores cumplen aquí un tercer papel además de orientar el reparto y servir de baseline: son
+controles de atribución. Si la señal desaparece al neutralizar exposiciones conocidas, la
+interpretación debe ser más modesta. Conviene precisar, eso sí, que ningún agente representa un
+factor puro: una empresa de alta calidad puede presentar a la vez baja volatilidad, crecimiento
+persistente y valoración elevada. La especialización organiza la entrada del modelo, no impone que
+el mercado recompense cada bloque por separado.
 
 \section{Aprendizaje automático en \textit{asset pricing}}
 
@@ -126,19 +96,15 @@ aún. El sesgo de supervivencia surge cuando se usa la composición actual de un
 el pasado; se eliminan así empresas que salieron del universo y se exagera la calidad de la muestra
 (Brown et al., 1992).
 
-El \textit{data snooping} es distinto: incluso con datos perfectamente cerrados, muchas pruebas
-incrementan la probabilidad de encontrar una aparente ganadora. Harvey et al. (2016) alertan
-del gran número de factores propuestos en la literatura y de la necesidad de elevar el estándar de
-evidencia. El Deflated Sharpe Ratio (Bailey y López de Prado, 2014) es útil porque descuenta la
-selección entre configuraciones, pero
-no sustituye a la disciplina de congelar una era reservada ni a contrastes de permutación y placebo.
-
-White (2000) y Hansen (2005) formalizan dos respuestas relacionadas al problema de escoger el mejor
-modelo después de comparar muchos: el \textit{Reality Check} y el test de capacidad predictiva
-superior. Bailey et al. (2017) expresan la misma preocupación como probabilidad de sobreajuste del
-backtest. Ninguna corrección reconstruye una hipótesis verdaderamente previa después de observar los
-datos; por eso el catálogo cerrado, el ledger de decisiones y la reserva cumplen una función que no
-puede reemplazarse con un único $p$-valor.
+El \textit{data snooping} es distinto: incluso con datos perfectamente cerrados, probar muchas
+alternativas incrementa la probabilidad de encontrar una aparente ganadora. Harvey et al. (2016)
+alertan del gran número de factores propuestos y de la necesidad de elevar el estándar de evidencia,
+y de ahí salen las correcciones que este trabajo emplea ---el Deflated Sharpe Ratio de Bailey y
+López de Prado (2014)--- y las que formalizan la misma preocupación por otras vías: el
+\textit{Reality Check} de White (2000), el test de capacidad predictiva superior de Hansen (2005) o
+la probabilidad de sobreajuste del backtest de Bailey et al. (2017). Ninguna reconstruye una
+hipótesis verdaderamente previa después de observar los datos, y por eso el catálogo cerrado, el
+registro de decisiones y la era reservada cumplen una función que ningún $p$-valor sustituye.
 
 El sesgo de supervivencia tampoco se reduce a incluir o excluir empresas quebradas. Shumway (1997)
 mostró que omitir retornos de exclusión puede distorsionar la medición. En este proyecto el problema
@@ -147,29 +113,25 @@ precios de numerosos símbolos retirados. El universo correcto y el panel observ
 dos poblaciones diferentes. Esta distinción justifica que la cobertura se mida contra los miembros
 reales del índice y no contra las filas que el propio pipeline consiguió construir.
 
-En síntesis, la contribución del TFM no consiste en proponer un sexto factor. Consiste en evaluar una
-arquitectura de aprendizaje con una separación explícita entre datos disponibles, modelo elegido,
-robustez y cartera. Ese posicionamiento condiciona todos los capítulos posteriores.
-
 \section{Medición de señal, amplitud y transferencia: Rank-IC como criterio de selección}
 
-La métrica elegida para seleccionar el sistema es la correlación de rangos y no el error cuadrático
-de una predicción puntual. Para seleccionar acciones importa más ordenar correctamente dos empresas
-que estimar con precisión el retorno porcentual de cada una. La correlación de Spearman es además
-robusta a transformaciones monótonas del score: si un modelo cambia la escala pero no el orden, su
-Rank-IC no cambia. Un Rank-IC no debe presentarse aislado: su estabilidad se describe mediante la
-fracción de cohortes positivas, su dispersión, intervalos por bloques y el IC-IR, definido como la
-media de Rank-IC dividida por su desviación típica. Cuando las etiquetas se solapan, el número
-nominal de cohortes sobrestima la cantidad de información independiente; el uso de correcciones
-Newey--West y bloques de doce meses reconoce precisamente esa dependencia.
+La métrica que selecciona el sistema es la correlación de rangos, no el error de una predicción
+puntual. El motivo es práctico: para elegir acciones importa más acertar cuál de dos empresas irá
+mejor que estimar con precisión cuánto rendirá cada una. Tiene además una propiedad cómoda: si un
+modelo cambia de escala pero conserva el orden, la cifra no se mueve.
 
-La literatura de gestión activa distingue además señal de implementación, y conviene enunciar aquí
-esa relación clásica --- la ley fundamental de la gestión activa de Grinold (1989) ---, aunque este
-trabajo la use como marco conceptual y no como identidad exacta. El \textit{information ratio}
-alcanzable por un gestor depende aproximadamente de tres factores: la calidad de su señal, medida
-por el \textit{information coefficient}; la amplitud, es decir, el número de decisiones
-aproximadamente independientes que puede tomar; y el coeficiente de transferencia, que mide qué
-proporción de esa señal llega efectivamente a la cartera.
+Una sola cifra, eso sí, no basta. Junto a ella se reporta en qué fracción de fechas fue positiva,
+cuánto varía y su cociente entre media y desviación. Y hay una corrección obligada: como las
+etiquetas a doce meses se solapan entre fechas consecutivas, el número de observaciones aparenta ser
+mayor de lo que realmente es, lo que obliga a trabajar por bloques y con errores estándar
+corregidos.
+
+La literatura de gestión activa distingue además la calidad de una señal de la capacidad de
+aprovecharla, y lo resume en una relación clásica ---la ley fundamental de Grinold (1989)--- que
+este trabajo emplea como marco conceptual y no como identidad exacta. Dice que el resultado que un
+gestor puede alcanzar depende de tres cosas: cómo de buena es su señal, cuántas decisiones
+independientes puede tomar con ella, y qué parte de esa señal consigue llevar realmente a la
+cartera.
 
 \[
   \text{IR} \;\approx\; \text{IC} \times \sqrt{\text{amplitud}} \times \text{TC}
@@ -189,51 +151,22 @@ decisión de operar. Por eso esta memoria distingue la ruta congelada ---qué ha
 las mismas órdenes--- de la ruta resimulada, en la que un coste mayor eleva los umbrales y puede
 evitar la operación.
 
-Su utilidad aquí es que separa tres causas distintas de un mal resultado que una cifra de
+La utilidad de esta descomposición es que separa tres causas de un mal resultado que una cifra de
 rentabilidad confundiría: que la señal no ordene, que se tomen pocas decisiones independientes o que
-la cartera no consiga expresar lo que la señal indica. Y tres restricciones de este diseño actúan
-directamente sobre el tercer término: la cartera es \textit{long-only}, de modo que la mitad de la
-información que el Rank-IC mide es por construcción inaccesible; contiene unas pocas decenas de
-posiciones sobre un universo de unos quinientos valores; y paga costes proporcionales a su rotación.
+la cartera no consiga expresar lo que la señal indica. Las tres restricciones de este diseño actúan
+sobre el tercer término: la cartera es \textit{long-only}, de modo que la mitad de la información
+que el Rank-IC mide es por construcción inaccesible; mantiene unas pocas posiciones sobre un
+universo de unos quinientos valores; y paga costes proporcionales a su rotación. De ahí que la
+métrica de selección sea el Rank-IC y no el CAGR: seleccionar por rentabilidad final confundiría los
+tres términos, mientras que medir la señal aislada permite atribuir después cuánto pierde la
+implementación.
 
-De ahí que la métrica de selección sea el Rank-IC y no el CAGR: seleccionar por rentabilidad final
-confundiría los tres términos, mientras que medir la señal aislada permite atribuir después, con un
-experimento controlado, cuánto pierde la implementación. El trabajo usa esta descomposición como
-marco conceptual y no como identidad: el Capítulo~\ref{chap:resultados-economicos} declara que el
-coeficiente de transferencia no está disponible para la cartera adoptada y mide la pérdida de
-transmisión por otra vía.
-
-\section{Posición de este trabajo}
-
-A esas cuatro líneas hay que añadir una quinta que no es metodológica sino estructural, y que fija
-el listón del segundo objetivo: la aritmética de la gestión activa de Sharpe (1991), según la cual el
-conjunto de los gestores activos obtiene, antes de costes, exactamente el rendimiento del índice. La
-Sección~\ref{sec:suma-cero-intro} la enuncia; aquí basta con señalar su consecuencia para la
-literatura revisada. Un trabajo que reporta alfa persistente sobre un índice amplio está afirmando,
-implícitamente, que ese alfa lo pagó otro participante, y el estándar de evidencia debe estar a la
-altura de esa afirmación. Es la razón de fondo por la que la replicación (McLean y Pontiff, 2016;
-Hou et al., 2020) encuentra tanta caída fuera de muestra: una anomalía publicada deja de ser una
-ventaja informativa en el momento en que el resto del mercado puede explotarla.
-
-La tabla anterior resume cómo responde este trabajo a los riesgos de cada línea. Queda una tensión
-que no cabe en una celda y que conviene declarar: la que hay entre señal y utilidad. Buena parte de
-la literatura reporta capacidad predictiva sin llevarla a una cartera con costes, o reporta
-rentabilidad sin aislar la señal. Aquí se hacen ambas cosas, pero en un orden que importa: primero
-la señal, después la cartera, y nunca al revés.
-
-Ese orden permite una decisión metodológica que la literatura suele tratar como contradictoria: la
-búsqueda predictiva es secuencial e iterada, y la de cartera cartesiana y optimizada por Information
-Ratio, siguiendo la distinción entre calidad de señal e implementación que formula López de Prado
-(2018). Por qué ambas cosas son compatibles se argumenta en la
-Sección~\ref{sec:seleccion-secuencial}. Lo que ninguna de las dos evita es la multiplicidad frente a
-la afirmación económica, y por eso el trabajo reporta el Deflated Sharpe (Bailey y López de Prado,
-2014) aun sabiendo que su propia estrategia de búsqueda lo empeora.
-
-La posición final puede resumirse en cuatro decisiones. Primera, el objeto primario es una
-ordenación, no una predicción puntual de rentabilidad. Segunda, todo aprendizaje y toda combinación
-se realizan con información PIT y etiquetas cerradas. Tercera, el modelo se elige sin observar su
-cartera y la cartera se optimiza después sin poder reescribir el modelo. Cuarta, la evidencia
-negativa ---un agente que supera al meta, un Deflated Sharpe insuficiente o una reserva débil--- se
-conserva con el mismo rango que los contrastes favorables. La contribución no consiste en eliminar
-las tensiones de la literatura, sino en construir un protocolo en el que cada una deje una huella
-auditable.
+Hay una quinta línea que no es metodológica sino estructural, y que explica buena parte de lo
+anterior: la aritmética de la gestión activa de Sharpe (1991), según la cual el conjunto de los
+gestores activos obtiene, antes de costes, exactamente el rendimiento del índice. Un trabajo que
+reporta alfa persistente sobre un índice amplio está afirmando, implícitamente, que ese alfa lo pagó
+otro participante. Es la razón de fondo por la que la replicación encuentra tanta caída fuera de
+muestra: una anomalía publicada deja de ser una ventaja informativa en cuanto el resto del mercado
+puede explotarla. La distinción entre calidad de señal e implementación que formula López de Prado
+(2018) es la que este trabajo adopta como orden de trabajo: primero la señal, después la cartera, y
+nunca al revés.

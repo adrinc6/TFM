@@ -2616,3 +2616,103 @@ reescriben**: dicen lo que se hizo entonces, con los nombres de entonces.
 `python -m ruff check .` y `node --check app/js/app.js` en verde; el md5 de los tres PDF es el mismo
 antes y después del renombrado. La compilación completa no se ejecuta aquí —el contenedor no tiene
 XeLaTeX— y queda para la máquina donde se compila el manuscrito.
+
+## 2026-09-01 · Revisión editorial del manuscrito: 18 anotaciones, y una afirmación que el código no sostenía
+
+**El hallazgo que importa.** Entre dieciocho anotaciones de redacción apareció un error de fondo. El
+capítulo 3 afirmaba que un fundamental entra en la señal si su fecha de publicación **más el lag de
+ejecución** no supera la fecha de observación, y la Proposición de ausencia de fuga temporal estaba
+enunciada sobre esa condición. El código no hace eso. `module/data/dataset.py:223-235` suma
+`execution_lag_days` al **fin de mes calendario** para colocar la rejilla de observación, y la
+garantía *point-in-time* real es otra cosa que no usa el lag en absoluto: el filtro
+`bisect_right(filed_dates, snapshot)` de `module/data/dataset.py:450`, sobre la `filingDate` real de
+SEC EDGAR. Son dos mecanismos independientes y el manuscrito los presentaba como uno.
+
+La corrección va en la dirección de describir lo que el sistema hace: el capítulo separa ahora «qué
+puede verse» (el filtro por publicación, sin parámetro, que es lo que impide el *lookahead*) de
+«cuándo se mira» (los 60 días, que fijan el día de observación y con ello cuántos informes del
+trimestre han salido ya). La proposición se reformula sobre la condición que el código cumple
+—\(\tfiled(x)\leq t\), sin \(L\)— y su demostración se simplifica; el ejemplo con fechas y la figura
+de observabilidad se rehacen. La conclusión metodológica no cambia y la garantía es de hecho más
+fuerte de lo que el texto describía, pero la afirmación tal como estaba escrita era falsa.
+
+**Nombre engañoso, anotado sin tocar.** `execution_lag_days` y su descripción en el catálogo
+(«días exigidos entre el cierre fiscal y la disponibilidad operativa de fundamentales») sugieren un
+mecanismo que el código no implementa. No se renombra aquí —tocaría claves de caché y artefactos
+persistidos— y queda anotado en `docs/plan_latex.md`.
+
+**Lo demás es redacción, y tenía tres patrones.** El manuscrito hablaba de sí mismo
+(«este capítulo responde en el orden que un lector necesita», «cómo se posiciona el TFM»),
+sobrejustificaba cada decisión con dos párrafos donde bastaba una frase, y metía identificadores del
+código en la prosa (`stacked_rolling_free`, el hash del dataset suelto en mitad de un párrafo). Se
+eliminan las introducciones y los cierres autorreferenciales de todos los capítulos, se traducen los
+identificadores a lenguaje llano —quedan en tablas, anexos y pies de figura— y el hash baja al
+Anexo A, que es donde vive la lista de reproducibilidad.
+
+**Repetición medida, no intuida.** Un `grep` sobre los capítulos dio los recuentos: «la cartera es
+la mejor de 1.440» se argumentaba cinco veces, la multiplicidad se rederivaba en ocho puntos del
+capítulo 5 y otros cuatro del 6, «seis cohortes reservadas» se explicaba en doce sitios. Cada idea
+pasa a tener un capítulo donde se explica y citas de media línea en el resto. La regla queda escrita
+en `COMO_COMPILAR.md`.
+
+**Reorganización de los capítulos 6 y 7.** El 6 pasa a ordenarse alrededor de la configuración
+ganadora: qué se eligió, qué aprendió el sistema —con la atribución local integrada, no en sección
+aparte—, capacidad fuera de muestra y robustez, absorbiendo ahí la réplica factorial, que es un
+contraste adversarial y no un resultado suelto. El 7 gana una sección nueva, **el caso Apple**, que
+responde a por qué el sistema compró lo que compró: percentiles de los cinco agentes, pesos del meta
+en esa fecha (0,72 en riesgo, cero en calidad y valor), contribuciones locales y el diferencial de
+alfa frente a Centene, la posición que desplazó. Todas las cifras salen de
+`evidence_best_full/orders.parquet`, `evidence/agent_scores.parquet`,
+`evidence/agent_local_attribution.parquet` y `evidence/meta_weights.parquet` del estudio adoptado.
+
+**Anexo C nuevo y páginas apaisadas eliminadas.** Se añade `chapters/c_variables_studies.tex`, que
+explica en prosa qué significa cada uno de los 33 parámetros del catálogo y si se optimiza, se fija
+o se estresa. Las dos tablas que iban giradas —catálogo y diccionario de variables— pasan a vertical
+ajustando anchos de columna y quitando del diccionario la columna «Fuente», que sólo tomaba dos
+valores; `pdflscape` deja de cargarse y el exportador genera ya los anchos nuevos.
+
+**Extensión.** De 102 a 89 páginas: cuerpo (capítulos 1 a 9) en **60** y anexos en **15**, que pasan
+a ser el límite declarado en `COMO_COMPILAR.md`. Se retiran seis figuras cuya conclusión ya estaba en
+el texto en una o dos cifras —estabilidad de variables, bootstrap, cola por eras, capacidad, turnover
+anual, pesos de perfiles y calibración—; tres de ellas las sigue usando la defensa, así que se
+conservan en `figures/` y el exportador las sigue generando, sólo deja de citarlas la memoria.
+También desaparece el Abstract, por decisión del usuario, y el glosario crece de 28 a 42 entradas
+absorbiendo los términos que antes se definían a mitad del cuerpo.
+
+**Validación realizada.** `python latex/build.py --solo-memoria` compila 89 páginas **sin un solo
+desbordamiento** y sin páginas apaisadas (comprobado sobre el `mediabox` del PDF);
+`verify_latex_assets.py` en verde; `python -m pytest -q` con 144 pruebas en verde;
+`python -m ruff check .` y `node --check app/js/app.js` limpios.
+
+## 2026-09-01 · Pasada de legibilidad: bajar el pico de tecnicismo sin tocar el registro
+
+**Qué se buscaba.** La revisión anterior dejó el informe más corto y sin autorreferencias, pero
+seguía teniendo picos de densidad donde el lector tropieza. El criterio de esta pasada no fue partir
+párrafos por longitud —eso es mecánico y no mejora nada— sino **medir dónde se concentran los
+tecnicismos** y bajar un nivel sólo ahí, manteniendo el registro que un TFM de este tipo necesita.
+
+**Cómo se localizaron.** Contando términos duros (Rank-IC, Information Ratio, bootstrap,
+Newey–West, Deflated Sharpe, percentil, decil, transversal, cohorte, neutralización, multiplicidad,
+significación…) por cada cien líneas de cada capítulo. Los picos eran el **resumen (37,9)**, el
+**capítulo 6 (22,5)** y el **capítulo 2 (17,4)**; los capítulos 3 y 7 ya estaban por debajo de 7 y
+no se tocaron.
+
+**Qué se reescribió.** El resumen entero, que era una ráfaga de estadísticos sin respirar y es lo
+primero que lee un tribunal: baja de 37,9 a **3,0** conservando todas sus cifras, ahora explicadas
+en vez de enumeradas. En el capítulo 6, el Deflated Sharpe pasa a decir qué mide antes de dar el
+número, el balance final deja de ser una lista encadenada de cinco contrastes, y la regresión
+factorial se enuncia en palabras. En el 4, las dos fórmulas —el objetivo supervisado y la
+combinación del meta— **se conservan**, pero se dice antes qué buscan. En el 2 se aterriza la ley
+fundamental de la gestión activa.
+
+**La frase que se había escapado.** El capítulo 5 aún abría con «conviene explicarlo antes de entrar
+en la mecánica», que es exactamente lo que la anotación 6 pedía eliminar. Corregida, junto con las
+últimas nueve apariciones de «conviene» usadas como muletilla.
+
+**Lo que no se hizo, a propósito.** No se bajaron a lenguaje llano las fórmulas ni las tablas: un
+tribunal espera verlas, y quitarlas haría el trabajo menos defendible, no más claro. Tampoco se
+tocaron los capítulos que ya se leían bien.
+
+**Validación realizada.** Las métricas se mantienen exactas: **89 páginas**, cuerpo en **60** y
+anexos en **14**, sin páginas apaisadas ni desbordamientos. `verify_latex_assets.py`,
+`python -m pytest -q` (144 pruebas), `python -m ruff check .` y `node --check app/js/app.js` en verde.

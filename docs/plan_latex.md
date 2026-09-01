@@ -19,10 +19,15 @@ los cambios de código no lo editan. `latex/scripts/*.py`, `latex/build.py` y
 `latex/COMO_COMPILAR.md` sí son editables, pero
 el exportador no se ejecuta como parte de un cambio corriente.
 
-**Última actualización del manuscrito: 2026-08-24**, con la auditoría de cifras contra artefactos,
-el realineamiento del Objetivo 2, el rediseño de la defensa y la reorganización de `latex/` en
-`chapters/`, `figures/` y `tables/`. Desde entonces vuelve a estar congelado y la deuda se acumula
-en §10.
+**Última actualización del manuscrito: 2026-09-01**, con la revisión editorial de las 18
+anotaciones: corrección de la explicación del retardo de observación, eliminación del Abstract,
+glosario ampliado, reorganización de los capítulos 6 y 7, caso Apple, Anexo C nuevo, páginas
+apaisadas eliminadas y recorte a 89 páginas. Desde entonces vuelve a estar congelado y la deuda se
+acumula en §6.
+
+**Restricción de extensión, ahora dura.** Cuerpo (capítulos 1 a 9) ≤ **60 páginas**, anexos ≤ **15**.
+Si entra contenido nuevo, sale otro. El reparto por capítulo sólo se ve compilando: no hay forma de
+comprobarlo desde los `.tex`.
 
 Dos avisos de alcance que este documento no traía y que costaron tiempo:
 
@@ -66,6 +71,7 @@ cambie un estudio.
 |---|---|
 | `tD_defectos_validez.tex` | Transcrito de `docs/bitacora.md` |
 | `t08_limitaciones.tex` | Compuesto a mano desde los artefactos citados en el capítulo 8 |
+| Caso Apple (`tab:caso-apple`, inline en el cap. 7) | Escrita a mano en el capítulo desde `agent_scores.parquet` y `meta_weights.parquet` del Model Study 3, fila AAPL / 2019-10-30 |
 
 `latex/asset_manifest.json` las lista todas juntas porque se construye con un glob de `t*.tex`, no
 rastreando autoría: **no sirve** para saber cuáles son generadas. Y como el glob describe el disco en
@@ -256,6 +262,48 @@ borra de aquí y su historia queda en `docs/bitacora.md`: este fichero dice qué
 A 2026-08-24 no hay deuda de contenido pendiente. Queda un aviso permanente, dos decisiones
 editoriales abiertas y un cambio de nombres de fichero sin efecto sobre el contenido.
 
+### Resuelta (2026-09-01) — revisión editorial de las 18 anotaciones
+
+Se aplicaron las dieciocho y se cerró la deuda de contenido. Lo que conviene recordar de esa pasada:
+
+- **El manuscrito describía un mecanismo que el código no implementa.** Ver la entrada del
+  2026-09-01 en `docs/bitacora.md`. Corregido en el capítulo 3.
+- **Seis figuras salieron de la memoria** porque su conclusión cabía en una o dos cifras. Tres de
+  ellas —`f06_bootstrap`, `f07_capacidad`, `f07_perfiles_pesos`— **las sigue usando `TFM_ppt.tex`**,
+  así que siguen en `figures/` y el exportador las sigue generando: sólo dejó de citarlas la
+  memoria. Las otras cuatro —`f06_estabilidad_features`, `f06_cola_eras`, `f07_alpha_turnover_anual`
+  y `f05_calibracion_alfa`— se borraron del disco y del exportador, con sus funciones de dibujo.
+- **Las dos tablas apaisadas pasaron a vertical** cambiando los anchos en el exportador
+  (`export_study_assets.py`, funciones `write_tables_catalog` y `write_feature_dictionary`) y
+  reformateando a mano los `.tex` ya generados, porque el exportador **no se ejecutó**. Si se vuelve
+  a exportar, saldrán ya con los anchos nuevos. El diccionario perdió la columna «Fuente».
+
+### Deuda nueva — el nombre `execution_lag_days` induce a error
+
+`module/studies/catalog.py:142` describe la variable como «días exigidos entre el cierre fiscal y la
+disponibilidad operativa de fundamentales», y sus descripciones por valor hablan de riesgo de
+*lookahead*. El código no hace eso: `module/data/dataset.py:223-235` suma el lag al **fin de mes
+calendario** para colocar la rejilla de observación, y quien impide el *lookahead* es el filtro por
+`filed_date` de `dataset.py:450`, que no usa el lag.
+
+El manuscrito ya está corregido y describe los dos mecanismos por separado. Lo que queda pendiente
+—y **no** es deuda del LaTeX sino del código— es decidir si el parámetro se renombra (a algo como
+`observation_lag_days`) y si su descripción del catálogo se reescribe. No se tocó aquí porque el
+nombre entra en la clave de caché y en los artefactos ya persistidos: cambiarlo invalidaría los
+estudios adoptados. Si algún día se renombra, hay que revisar el capítulo 3 y el Anexo C.
+
+### Deuda nueva — la defensa quedó desalineada con la memoria
+
+`TFM_ppt.tex` **no se tocó** en esta pasada. Los puntos donde ahora difiere del informe:
+
+- La memoria ya no tiene Abstract.
+- El capítulo 3 explica el retardo de observación de otra forma; si la defensa lo menciona, dice lo
+  que el informe ya no dice.
+- Los capítulos 6 y 7 están reorganizados y el 7 tiene una sección nueva (caso Apple) que la
+  defensa podría aprovechar.
+- Existe un Anexo C nuevo.
+- Los identificadores de código ya no aparecen en la prosa de la memoria.
+
 ### Sin deuda de contenido — los ficheros del manuscrito cambiaron de nombre (2026-08-26)
 
 `main.tex` pasa a `TFM.tex`, `presentacion.tex` a `TFM_ppt.tex` y `presentacion_notas.tex` a
@@ -277,14 +325,12 @@ expresa. Queda escrito para que nadie mezcle cifras de los dos: son carteras dif
 relatos no son comparables. El exportador rechaza por construcción cualquier identificador que no
 sea el adoptado, de modo que el aviso protege sobre todo contra la lectura manual de artefactos.
 
-### Decisión editorial abierta — dos figuras que podrían bajar a tabla
+### Decisión editorial cerrada (2026-09-01) — las dos figuras salieron
 
-Ninguna es un error y ninguna bloquea nada; se anotan para revisarlas en la próxima pasada con el
-PDF delante.
+Las dos que quedaban anotadas aquí se retiraron de la memoria al aplicar el límite de extensión, y
+por el motivo que ya estaba escrito: su conclusión cabía en el texto.
 
-- `f07_capacidad.png` sostiene dos cifras (participación del 5\,% y del 10\,%) que caben en una
-  línea de texto. Se conservó porque la escala logarítmica comunica la forma de la restricción, que
-  la prosa no transmite igual.
-- `f05_calibracion_alfa.png` solapa parcialmente con `t05_calibracion_estados.tex`: la tabla ya da
-  el recuento de estados y la figura repite ese panel encima del de la curva. Podría quedarse solo
-  con la curva.
+- `f07_capacidad.png` sostenía dos cifras que ahora van en una frase. **Sigue existiendo** porque la
+  usa `TFM_ppt.tex`, donde la escala logarítmica sí aporta.
+- `f05_calibracion_alfa.png` solapaba con `t05_calibracion_estados.tex`, que ya daba el recuento de
+  estados. **Borrada del disco y del exportador**: no la usa nadie.
