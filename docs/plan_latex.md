@@ -19,15 +19,20 @@ los cambios de código no lo editan. `latex/scripts/*.py`, `latex/build.py` y
 `latex/COMO_COMPILAR.md` sí son editables, pero
 el exportador no se ejecuta como parte de un cambio corriente.
 
-**Última actualización del manuscrito: 2026-09-01**, con la revisión editorial de las 18
-anotaciones: corrección de la explicación del retardo de observación, eliminación del Abstract,
-glosario ampliado, reorganización de los capítulos 6 y 7, caso Apple, Anexo C nuevo, páginas
-apaisadas eliminadas y recorte a 89 páginas. Desde entonces vuelve a estar congelado y la deuda se
-acumula en §6.
+**Última actualización del manuscrito: 2026-09-02**, con la ampliación a partir de evidencia ya
+calculada y sin usar (capacidad de ordenación por agente, orden frente a cola comprada, salud de la
+señal en tiempo real, coste de la búsqueda, ventas prematuras, rejilla completa), cinco diagramas
+nuevos en los capítulos que explican mecanismo, y numeración romana en los preliminares. Desde
+entonces vuelve a estar congelado y la deuda se acumula en §6.
 
-**Restricción de extensión, ahora dura.** Cuerpo (capítulos 1 a 9) ≤ **60 páginas**, anexos ≤ **15**.
-Si entra contenido nuevo, sale otro. El reparto por capítulo sólo se ve compilando: no hay forma de
-comprobarlo desde los `.tex`.
+**Restricción de extensión.** Cuerpo (capítulos 1 a 9) ≈ **70 páginas**, anexos ≤ **15**. Hoy está en
+68 y 14. Si entra contenido nuevo, sale otro. El reparto por capítulo sólo se ve compilando: no hay
+forma de comprobarlo desde los `.tex`.
+
+**Criterio de ampliación, por si vuelve a crecer.** Antes que prosa, apoyo visual: un diagrama o una
+figura explican un mecanismo mejor que tres párrafos y ocupan lo mismo. Y ninguna adición entra sin
+un artefacto detrás ni sin responder a una pregunta que el lector se hace; ampliar por ocupar
+páginas es exactamente lo que este manuscrito ya corrigió una vez.
 
 Dos avisos de alcance que este documento no traía y que costaron tiempo:
 
@@ -277,6 +282,22 @@ Se aplicaron las dieciocho y se cerró la deuda de contenido. Lo que conviene re
   (`export_study_assets.py`, funciones `write_tables_catalog` y `write_feature_dictionary`) y
   reformateando a mano los `.tex` ya generados, porque el exportador **no se ejecutó**. Si se vuelve
   a exportar, saldrán ya con los anchos nuevos. El diccionario perdió la columna «Fuente».
+
+### Material disponible que no llegó a entrar (2026-09-02)
+
+La ampliación a 68 páginas de cuerpo dejó fuera evidencia que sigue calculada y verificada, por si el
+manuscrito vuelve a crecer:
+
+- `attribution["factor_regression"]["confirmation"]` — cargas de estilo significativas en la era
+  reservada. **No se incluyó por método, no por espacio**: 17 observaciones con 12 retardos y alfa
+  significativamente negativo. Si algún día entra, va al capítulo 8 como limitación de la regresión,
+  nunca al 6 como hallazgo.
+- El efecto de los snapshots con resultados trimestrales frescos (Rank-IC 0,1109 frente a 0,0995).
+  Medido y **descartado**: la diferencia no es significativa (p = 0,63) y las cohortes se solapan.
+- `robustness["seeds"]` — dos réplicas con 35 métricas cada una, incluidos sus bloques de
+  confirmación.
+- `robustness["known_stress_not_selection"]` — 2025 y 2026 con su descomposición completa.
+- `portfolio_narrative["worst_contributors"]` de la ventana de confirmación.
 
 ### Deuda nueva — el nombre `execution_lag_days` induce a error
 

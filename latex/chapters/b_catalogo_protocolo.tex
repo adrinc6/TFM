@@ -68,6 +68,26 @@ de encontrar una ganadora por azar, que es exactamente lo que el Deflated Sharpe
 plano de la cartera, en cambio, las seis variables generan 1.440 combinaciones ---cinco órdenes de
 magnitud menos--- sobre una señal que ya no puede cambiar.
 
+\section{Capacidad de las variables por separado}
+
+Antes de cualquier modelo, cada variable ordena muy poco por sí sola. La tabla siguiente recoge los
+extremos de esa distribución, y es la que sostiene el argumento del Capítulo~\ref{chap:datos}: la
+capacidad predictiva del sistema no reside en ninguna variable concreta, sino en combinarlas.
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \caption{Variables con mayor y menor Rank-IC univariante.}
+  \label{tab:features-top}
+  \input{tables/t03_features_top.tex}
+  \caption*{Doce primeras y cinco últimas de las 73 series con diagnóstico calculado, ordenadas por
+  Rank-IC univariante. Esas 73 no coinciden con las \NumPredictores{} que declara el catálogo: 66 son
+  comunes, siete son componentes derivados que el catálogo no declara por separado y dos variables
+  declaradas no llegan a tener diagnóstico, de modo que la unión de ambas listas ---la que audita el
+  exportador--- suma \NumDiagnosticos{} filas. Ninguna aparece marcada como podada, así que la tabla
+  describe el catálogo declarado y no qué variables sobrevivieron a la poda por estabilidad.}
+\end{table}
+
 \section{Diccionario de variables predictivas}
 \label{sec:diccionario-features}
 

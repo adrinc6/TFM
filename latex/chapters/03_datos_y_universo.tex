@@ -148,11 +148,42 @@ dentro de las filas ya construidas: ronda el 91\,\% de media, aunque siete serie
 del 80\,\%. La ausencia no se interpreta como un cero económico, sino que se conserva como indicador
 y se imputa únicamente con información del corte de entrenamiento.
 
+Hay una tercera medición que conviene añadir, porque acota el problema de cobertura por el lado
+favorable y no aparece en ninguna de las dos figuras. Una vez construida una fila del panel, ¿es
+utilizable para puntuar? La respuesta es que sí prácticamente siempre: la fracción de filas usables
+es del \textbf{100\,\% en todos los años de la serie}, incluido 2003, cuando la cobertura del índice
+apenas llegaba al 56\,\%. Dicho de otro modo, el problema de este panel no es que las empresas
+lleguen incompletas, sino que \emph{faltan empresas enteras}. Es una distinción que importa, porque
+las dos carencias tienen consecuencias distintas: filas defectuosas degradarían la calidad de cada
+predicción, mientras que empresas ausentes sesgan la muestra sobre la que se predice. Aquí ocurre lo
+segundo, y el Capítulo~\ref{chap:limitaciones} mide en qué dirección.
+
 Conviene además acotar qué significa aquí «más datos». Cada reentrenamiento usa sólo etiquetas ya
 cerradas de su ventana de ocho años, de unas 9.879 a unas 13.236 filas según la fecha. Esas decenas
 de miles de filas no son ensayos independientes: las acciones de una misma fecha comparten estado de
 mercado y las ventanas consecutivas se solapan. Por eso toda la inferencia posterior se agrega por
 cohorte y por era, en lugar de tratar cada acción--mes como una repetición.
+
+\subsection{Integridad de la simulación: lo que no ocurrió}
+
+Un panel puede estar bien fechado y aun así producir un resultado inflado si la contabilidad de la
+simulación trata mal los casos difíciles: una empresa que desaparece a mitad de camino, un retorno
+absurdo que alguien decide corregir, una posición que se liquida sin registrar el coste. Son errores
+que no lanzan ningún aviso y que producen curvas de patrimonio suaves y creíbles.
+
+El sistema registra una fila por cada posición y fecha ---958 en la ventana de selección, sobre 60
+empresas--- y marca en cada una si hubo exclusión de mercado, si el retorno se neutralizó por
+anómalo y si la posición se liquidó de forma forzosa. \textbf{Las tres marcas están a cero en las 958
+filas}, y el retorno aplicado coincide exactamente con el retorno bruto en todas ellas: ninguna
+intervención, ningún ajuste manual. El peor retorno de una posición individual, un $-38{,}8$\,\% en
+octubre de 2023, se aplicó tal cual.
+
+Conviene leer ese resultado por lo que es, porque admite una lectura demasiado favorable. Que ninguna
+posición de la cartera sufriera una exclusión no significa que el sesgo de supervivencia esté
+resuelto: significa lo contrario de lo que parece. Las empresas que desaparecieron del universo
+nunca llegaron a estar disponibles para comprarlas, precisamente por el problema de cobertura que
+documenta el Capítulo~\ref{chap:limitaciones}. Lo que estas 958 filas descartan es un error de
+contabilidad, no un sesgo de selección.
 
 \subsection{Identidad y trazabilidad del panel}
 
@@ -211,9 +242,8 @@ futuro se reserva como etiqueta.}
 \label{fig:observabilidad}
 \end{figure}
 
-La implementación aplica el filtro antes de construir las variables, y los tests de contrato cubren
-pertenencia al universo, fechas de publicación, cierre de etiquetas, meta-agente y órdenes de
-cartera.
+La implementación aplica ese filtro antes de construir las variables, y un conjunto de pruebas
+automáticas verifica que se cumpla; el final de este capítulo las enumera.
 
 \subsection{De un cierre contable a una señal invertible}
 
@@ -248,11 +278,10 @@ información futura por definición, pero no constituye lookahead si se limita a
 posterior. Cada fila conserva \texttt{label\_end\_date}; antes de entrenar el meta-agente o medir
 un diagnóstico se comprueba que esta fecha sea menor o igual que la fecha actual de decisión.
 
-Esta regla tiene una consecuencia práctica importante. En enero de 2015 puede emitirse un score y
-abrirse una posición, pero su retorno a doce meses no puede enseñar nada al meta hasta enero de
-2016. Las primeras fechas del meta carecen por tanto de evidencia suficiente y usan pesos iguales.
-No es una carencia de la implementación, sino la manifestación correcta de una restricción de
-información.
+Esta regla tiene una consecuencia práctica importante. En enero de 2015 puede emitirse una
+puntuación y abrirse una posición, pero su retorno a doce meses no puede enseñar nada al meta-agente
+hasta enero de 2016, de modo que sus primeras fechas operan sin evidencia con la que ponderar. El
+Capítulo~\ref{chap:agentes} detalla qué hace el sistema mientras tanto.
 
 \begin{proposicion}[Ausencia de fuga temporal]
 \label{prop:sin-fuga}
@@ -298,25 +327,12 @@ La respuesta es que muy poca, y ese es justamente el punto. Los Rank-IC univaria
 frente al \RankICSeleccion{} del sistema completo: el mayor de todos ---los huecos de apertura a un
 mes--- llega a 0,0540, y la mayoría se queda un orden de magnitud por debajo. No es una
 contradicción, sino el argumento a favor de combinar: ninguna variable aislada ordena el mercado, y
-la capacidad predictiva aparece al agregar muchas señales débiles. La Tabla~\ref{tab:features-top}
-muestra los extremos de esa distribución.
-
-\begin{table}[htbp]
-  \centering
-  \small
-  \caption{Variables con mayor y menor Rank-IC univariante.}
-  \label{tab:features-top}
-  \input{tables/t03_features_top.tex}
-  \caption*{Doce primeras y cinco últimas de las 73 series con diagnóstico calculado, ordenadas por
-  Rank-IC univariante. Esas 73 no coinciden con las \NumPredictores{} que declara el catálogo: 66 son
-  comunes, siete son componentes derivados que el catálogo no declara por separado y dos variables
-  declaradas no llegan a tener diagnóstico, de modo que la unión de ambas listas ---la que audita el
-  exportador--- suma \NumDiagnosticos{} filas. Ninguna aparece marcada como podada, así que la tabla
-  describe el catálogo declarado y no qué variables sobrevivieron a la poda por estabilidad.}
-\end{table}
+la capacidad predictiva aparece al agregar muchas señales débiles. La
+Tabla~\ref{tab:features-top}, en el Anexo~\ref{anexo:catalogo}, recoge los extremos de esa
+distribución.
 
 Dos observaciones anticipan resultados posteriores. La variable que encabeza la lista es de liquidez
 de mercado y pertenece al agente de riesgo: la misma que el Capítulo~\ref{chap:resultados}
-encontrará dominando su atribución. Y la que cierra por el extremo negativo es la beta a un año, el
+encontrará encabezando su atribución en casi la mitad de las observaciones. Y la que cierra por el extremo negativo es la beta a un año, el
 candidato obvio si la señal fuese una réplica de la prima de baja volatilidad. Esa jerarquía ya está
 en los datos antes de cualquier modelo.

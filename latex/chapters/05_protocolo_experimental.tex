@@ -2,9 +2,9 @@
 \label{chap:diseno-experimental}
 
 Una arquitectura como la del capítulo anterior no produce un sistema hasta que alguien fija el valor
-de cada una de sus variables. Este capítulo explica cómo se eligieron, comparando Rank-IC y sin que
-la rentabilidad observada intervenga en ninguna decisión predictiva, y cómo la ordenación resultante
-se convierte después en posiciones concretas. Las cifras que aparecen aquí documentan decisiones
+de cada una de sus variables. Esos valores se eligieron comparando Rank-IC y sin que la rentabilidad
+observada interviniera en ninguna decisión predictiva, y la ordenación resultante se convierte
+después en posiciones concretas. Las cifras que aparecen aquí documentan decisiones
 ---qué alternativa se comparó con cuál y qué regla resolvió el empate---; si la señal resultante es
 real y si se traduce en rentabilidad son preguntas distintas, que responden los dos capítulos
 siguientes.
@@ -24,13 +24,37 @@ La primera pasada lo dejó claro. Su ganador se apartaba en \textbf{nueve variab
 partida del catálogo, de modo que casi todas sus decisiones se habían tomado sobre una
 configuración que el propio estudio acabó descartando.
 
-La respuesta fue encadenar los estudios: el ganador de cada pasada se convierte en el punto de
-partida de la siguiente, que vuelve a recorrer las fases desde ahí. Cada pasada sólo puede mejorar o
-confirmar, porque el valor vigente se conserva cuando no hay evidencia suficiente para desplazarlo.
+La respuesta fue encadenar los estudios, según recoge la Figura~\ref{fig:cadena-pasadas}: el ganador
+de cada pasada se convierte en el punto de partida de la siguiente, que vuelve a recorrer las fases
+desde ahí. Cada pasada sólo puede mejorar o confirmar, porque el valor vigente se conserva cuando no
+hay evidencia suficiente para desplazarlo.
 
-El procedimiento se fue quedando sin cambios que hacer: nueve variables modificadas en la primera
-pasada, dos en la segunda y dos en la tercera. Eso es lo que debe ocurrir si converge en lugar de
-explorar al azar, y es la razón de detenerse en tres.
+\begin{figure}[htbp]
+  \centering
+  \begin{tikzpicture}[
+      >=Latex, font=\footnotesize, align=center, node distance=0mm and 6mm,
+      pas/.style={draw,rounded corners,fill=blue!9,minimum width=24mm,minimum height=12mm},
+      ini/.style={draw,rounded corners,fill=gray!14,minimum width=21mm,minimum height=12mm},
+      fin/.style={draw,thick,rounded corners,fill=green!12,minimum width=20mm,minimum height=12mm}]
+    \node[ini] (b) {Punto de partida\\del catálogo};
+    \node[pas,right=of b] (p1) {Pasada 1\\\scriptsize Rank-IC 0,1051};
+    \node[pas,right=of p1] (p2) {Pasada 2\\\scriptsize Rank-IC 0,1059};
+    \node[pas,right=of p2] (p3) {Pasada 3\\\scriptsize Rank-IC 0,1067};
+    \node[fin,right=of p3] (w) {Señal\\congelada};
+    \draw[->,thick] (b)--node[above,font=\scriptsize]{9 cambios}(p1);
+    \draw[->,thick] (p1)--node[above,font=\scriptsize]{2 cambios}(p2);
+    \draw[->,thick] (p2)--node[above,font=\scriptsize]{2 cambios}(p3);
+    \draw[->,thick] (p3)--(w);
+    \node[below=5mm of p2,font=\scriptsize,text=black!70,align=center]
+      {cada pasada arranca del ganador de la anterior y vuelve a recorrer las cuatro fases};
+  \end{tikzpicture}
+  \caption{La cadena de tres pasadas. El número de variables que cada una llega a cambiar se reduce
+  de nueve a dos: el procedimiento se queda sin mejoras que hacer, que es la señal para detenerlo.}
+  \label{fig:cadena-pasadas}
+\end{figure}
+
+Esa desaceleración ---nueve cambios, luego dos, luego dos--- es lo que debe ocurrir si el
+procedimiento converge en lugar de explorar al azar, y es la razón de detenerse en tres.
 
 Encadenar tiene un coste. Multiplica el número de configuraciones evaluadas sobre la misma ventana,
 y con ello la probabilidad de que la mejor cifra observada deba parte de su tamaño a la propia
@@ -85,8 +109,39 @@ cuya ventaja pareada era incluso positiva. Aun así no ganó: era superior en el
 cohortes, es decir, en menos de la mitad. No superó la puerta de dominancia y el valor vigente se
 conservó.
 
-Esa disciplina es la garantía que sostiene todo lo demás: sólo las cuatro fases predictivas pueden
-mover al ganador, y todo lo económico ocurre después de congelar la señal.
+Esa disciplina es la garantía que sostiene todo lo demás, y la Figura~\ref{fig:protocolo} la resume:
+sólo las cuatro fases predictivas pueden mover al ganador, y todo lo económico ocurre después de
+congelar la señal.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{tikzpicture}[
+      >=Latex, font=\footnotesize, align=center, node distance=4mm and 6mm,
+      fase/.style={draw,rounded corners,fill=blue!9,minimum width=24mm,minimum height=9mm},
+      cong/.style={draw,thick,rounded corners,fill=gray!16,minimum width=34mm,minimum height=10mm,
+                   font=\small},
+      eco/.style={draw,rounded corners,fill=yellow!16,minimum width=30mm,minimum height=9mm}]
+    \node[fase] (t) {Temporal};
+    \node[fase,right=of t] (rp) {Representación};
+    \node[fase,right=of rp] (mo) {Modelo};
+    \node[fase,right=of mo] (me) {Meta};
+    \node[cong,below=8mm of rp,xshift=12mm] (w) {Señal congelada};
+    \node[eco,below=8mm of w,xshift=-22mm] (p) {Reglas de cartera};
+    \node[eco,below=8mm of w,xshift=22mm] (d) {Robustez y perfiles};
+    \draw[->] (t)--(rp); \draw[->] (rp)--(mo); \draw[->] (mo)--(me);
+    \draw[->,thick] (me.south) -- ++(0,-4mm) -| (w.north);
+    \draw[->] (w.south) -- ++(0,-3mm) -| (p.north);
+    \draw[->] (w.south) -- ++(0,-3mm) -| (d.north);
+    \node[left=3mm of t,font=\scriptsize,align=right,text=black!70]
+      {deciden\\el ganador};
+    \node[right=3mm of d,font=\scriptsize,align=left,text=black!70]
+      {no pueden\\cambiarlo};
+  \end{tikzpicture}
+  \caption{Las dos mitades del protocolo. Las cuatro fases superiores se deciden por Rank-IC y son
+  las únicas que pueden modificar la configuración; lo que ocurre por debajo trabaja sobre una señal
+  que ya no puede cambiar.}
+  \label{fig:protocolo}
+\end{figure}
 
 La Tabla~\ref{tab:decisiones} hace auditable esa traza. Lo que tabula no es el Rank-IC acumulado
 tras cada paso ---que apenas se mueve, por lo que se explica más abajo--- sino \textbf{la
@@ -176,6 +231,44 @@ habría perdido las 117 cohortes mensuales sobre las que descansa el resto del t
 contrario, el horizonte de seis meses fue rechazado con holgura: ventaja pareada de $-0{,}0375$ y un
 intervalo íntegramente negativo.
 
+\subsection{El coste y el rastro de la búsqueda}
+
+Decir que la pasada evaluó cuarenta y seis configuraciones no permite comprobar nada. El sistema
+guarda por eso un registro con una fila por evaluación, que anota la fase a la que pertenecía, el
+valor probado, la métrica que obtuvo, el motivo por el que se adoptó o se rechazó y el tiempo que
+costó calcularla.
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \caption{Lo que costó recorrer el catálogo, por fase del protocolo.}
+  \label{tab:ledger-fases}
+  \input{tables/t05_ledger_fases.tex}
+  \caption*{Las evaluaciones incluyen al valor vigente de cada comparación, que se mide de nuevo en
+  cada fase; de ahí que sean 48 y no 46.}
+\end{table}
+
+El reparto de la Tabla~\ref{tab:ledger-fases} dice algo sobre dónde se concentró el esfuerzo. Las
+fases temporal y de representación ---las que deciden qué información entra y cómo--- suman 33 de las
+48 evaluaciones, mientras que la del meta-agente se resuelve con tres. Y el rango de Rank-IC que
+recorre cada fase es revelador: en la temporal las alternativas van de 0,0290 a 0,1059, un factor de
+casi cuatro, mientras que en la de modelo apenas se mueven entre 0,0934 y 0,1067. Elegir bien cuándo
+se mira y qué se mira importa mucho más que afinar los hiperparámetros, que es la misma conclusión a
+la que llega la traza de decisiones desde otro ángulo.
+
+El registro sirve además para una comprobación que el protocolo necesita. Guarda, para cada candidato
+rechazado, no sólo su métrica global sino su desglose por era, lo que permite verificar algo
+incómodo: hubo alternativas que se descartaron por su promedio y que sin embargo habrían ganado en
+alguna era concreta. Observar el universo cada trimestre en lugar de cada mes, por ejemplo, medía
+peor en conjunto pero mejor en el primer tramo de la serie. Una regla que hubiera elegido mirando
+subperiodos habría encontrado siempre algún argumento para casi cualquier valor.
+
+Queda por decir lo que este registro no hace. Documenta la búsqueda; no la exculpa. Las 46
+configuraciones distintas que recorrió ---las 48 evaluaciones incluyen la remedición del valor
+vigente, que no añade una alternativa nueva--- son exactamente lo que penaliza el Deflated Sharpe del
+Capítulo~\ref{chap:resultados}, y hacer visible el rastro no reduce la multiplicidad: sólo la vuelve
+contable.
+
 \section{De la ordenación a las posiciones}
 
 \subsection{De rango a alfa esperado}
@@ -246,9 +339,32 @@ posterior.
 \subsubsection*{Precedencia de las reglas operativas}
 
 Las seis variables no se aplican como filtros independientes: en cada rebalanceo hay una precedencia
-explícita que impide contradicciones. Primero se actualizan señales y restricciones de permanencia;
-después se evalúan las ventas económicamente elegibles; a continuación se comparan destinos para el
-capital liberado; y por último se ajustan tamaños, sólo si la deriva justifica pagar el coste.
+explícita que impide contradicciones, y la Figura~\ref{fig:precedencia} la recoge.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{tikzpicture}[
+      >=Latex, font=\footnotesize, align=center, node distance=5mm and 7mm,
+      paso/.style={draw,rounded corners,fill=blue!9,minimum width=30mm,minimum height=10mm},
+      dec/.style={draw,rounded corners,fill=orange!14,minimum width=32mm,minimum height=11mm},
+      fin/.style={draw,rounded corners,fill=gray!14,minimum width=26mm,minimum height=9mm}]
+    \node[paso] (s) {Se actualiza la señal\\y el alfa esperado};
+    \node[dec,right=of s] (h) {¿Cumplió la\\permanencia mínima?};
+    \node[dec,right=of h] (v) {¿Vender mejora\\tras pagar costes?};
+    \node[paso,below=8mm of v] (d) {Se elige destino:\\otra acción o efectivo};
+    \node[paso,left=of d] (r) {Se corrige el peso\\sólo si la deriva compensa};
+    \node[fin,left=of r] (f) {Cartera resultante};
+    \draw[->] (s)--(h);
+    \draw[->] (h)--node[above,font=\scriptsize]{sí}(v);
+    \draw[->] (v)--node[right,font=\scriptsize]{sí}(d);
+    \draw[->] (d)--(r); \draw[->] (r)--(f);
+    \draw[->,dashed] (h.south) |- node[pos=0.28,left,font=\scriptsize]{no} (f.north);
+    \draw[->,dashed] (v.north) -- ++(0,4mm) -| node[pos=0.2,above,font=\scriptsize]{no} (f.north);
+  \end{tikzpicture}
+  \caption{Orden en que la cartera decide. El tiempo mínimo en cartera se comprueba antes que la
+  economía de la venta, y ninguna posición se vende si no hay un destino mejor después de costes.}
+  \label{fig:precedencia}
+\end{figure}
 
 Esa jerarquía aclara una diferencia importante: la permanencia mínima puede impedir cualquier venta,
 mientras que el suelo de cobertura o un alfa negativo sólo convierten una posición en candidata a
@@ -351,5 +467,4 @@ el modelo y presentar el máximo de la rejilla como una estimación no condicion
 La regla de lectura queda así fijada una sola vez. El Capítulo~\ref{chap:resultados} juzga la señal
 con la multiplicidad de Model Study; el Capítulo~\ref{chap:resultados-economicos} interpreta la
 cartera seleccionada frente a su distribución de 1.440 alternativas y luego mira una sola reserva.
-Las secciones posteriores remiten a esta distinción en lugar de redefinirla.
 

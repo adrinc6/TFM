@@ -36,9 +36,11 @@ por tanto bastante menor que los diez años de serie.
 
 Y la que más condiciona las conclusiones: \textbf{el orden predictivo y el pago económico no se
 mueven en la misma dirección}. El Rank-IC es mayor en la era más reciente, mientras que el
-Information Ratio cae y se vuelve negativo en esa misma era. La consecuencia para el alcance del
-trabajo es que la evidencia de que el modelo \emph{ordena} es más sólida que la de que esa
-ordenación \emph{se cobra}.
+Information Ratio de la cartera por defecto cae y se vuelve negativo en esa misma era. La cartera
+adoptada corrige ese deterioro ---no deja ningún año negativo en la ventana de selección---, pero
+que hiciera falta cambiar la cartera para lograrlo es justamente la limitación: la consecuencia para
+el alcance del trabajo es que la evidencia de que el modelo \emph{ordena} es más sólida que la de
+que esa ordenación \emph{se cobra}.
 
 \section{Amenazas a la validez interna}
 
@@ -58,11 +60,33 @@ la cobertura desigual de las empresas retiradas. A diferencia de la versión hab
 salvedad, aquí no es una posibilidad genérica sino algo medido, y se sabe de ella tres cosas.
 
 La \textbf{causa} está medida en el Capítulo~\ref{chap:datos} y no es la mortalidad empresarial sino
-la retirada de símbolos por parte del proveedor de precios. Falta ahí un dato que remata el
-diagnóstico: la probabilidad de estar ausente crece con el tiempo transcurrido desde la salida del
-índice --- del 1,2\,\% entre los miembros actuales al 94,4\,\% entre los que salieron hace más de
-veinte años ---, que es exactamente la firma de una fuente que poda su histórico, no la de un sector
-que quiebra.
+la retirada de símbolos por parte del proveedor de precios. El dato que remata el diagnóstico es
+cómo crece la ausencia con el tiempo transcurrido desde que una empresa salió del índice.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{tikzpicture}[font=\footnotesize]
+    \begin{scope}[x=1.55cm,y=0.042cm]
+      \draw[->] (-0.4,0) -- (6.2,0) node[right,font=\scriptsize] {antigüedad de la salida};
+      \draw[->] (-0.4,0) -- (-0.4,105) node[above,font=\scriptsize,align=center] {fuera del\\panel (\%)};
+      \foreach \y in {0,25,50,75,100}
+        {\draw (-0.45,\y)--(-0.35,\y) node[left,font=\scriptsize] {\y};}
+      \foreach \x/\v/\l in {0/1.2/{aún en\\el índice}, 1/39/{$<$2\\años}, 2/61/{2-5\\años},
+                            3/71/{5-10\\años}, 4/84/{10-20\\años}, 5/94.4/{$>$20\\años}}
+        {\fill[teal!70] (\x-0.28,0) rectangle (\x+0.28,\v);
+         \node[above,font=\scriptsize] at (\x,\v) {\v\,\%};
+         \node[below=1mm,align=center,font=\scriptsize] at (\x,0) {\l};}
+    \end{scope}
+  \end{tikzpicture}
+  \caption{Fracción de empresas que no llegan al panel, según cuánto hace que abandonaron el índice.
+  La progresión es la firma de una fuente que poda su histórico, no la de un sector que quiebra.}
+  \label{fig:ausencia-antiguedad}
+\end{figure}
+
+La Figura~\ref{fig:ausencia-antiguedad} lo muestra sin ambigüedad: entre las empresas que siguen hoy
+en el índice falta el 1,2\,\%, mientras que entre las que salieron hace más de veinte años falta el
+94,4\,\%. Si el problema fuera la mortalidad empresarial, la ausencia no dependería de la
+antigüedad de esa manera.
 
 La \textbf{dirección} es optimista, no conservadora. Las empresas que sí llegan al panel sobreviven
 hasta hoy con mucha más frecuencia que los miembros reales del índice de su año: en 1998 lo hacen el
@@ -102,6 +126,45 @@ Cada limitación acota una afirmación diferente, y conviene no mezclarlas: la m
 Sharpe, el solapamiento limita la precisión, la cobertura limita la generalización y la cartera
 limita la transferencia de señal. Ninguna permite ignorar los placebos, la permutación o la
 estabilidad por eras.
+
+\section{Lo que la cartera dejó de ganar}
+
+Las limitaciones anteriores acotan lo que puede afirmarse del resultado medido. Hay otra que no
+aparece en ninguna métrica agregada, porque no es un error sino el precio de una regla: cada vez que
+la cartera vende una posición para comprar otra mejor, renuncia a lo que la vendida hiciera después.
+
+El sistema registra esos casos. En la ventana de selección hubo quince ventas seguidas de una subida
+apreciable en los doce meses posteriores, y la Tabla~\ref{tab:ventas-prematuras} recoge las ocho
+mayores.
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \caption{Ventas que el mercado desmintió: exceso no cobrado en los doce meses siguientes.}
+  \label{tab:ventas-prematuras}
+  \input{tables/t08_ventas_prematuras.tex}
+  \caption*{Todas se vendieron por el mismo motivo: otra candidata ofrecía mayor ventaja neta
+  esperada.}
+\end{table}
+
+La mayor es Boeing, vendida en octubre de 2017: subió un 37,7\,\% en el año siguiente frente al
+6,2\,\% del índice, de modo que la cartera dejó sobre la mesa casi treinta puntos de exceso. Las tres
+siguientes rondan los veinte. En conjunto son quince episodios, no una anécdota, y todos comparten el
+mismo motivo de venta: apareció una candidata con más ventaja neta esperada.
+
+Hay una asimetría en cómo el trabajo cuenta su propio resultado que este dato ayuda a corregir. El
+Capítulo~\ref{chap:resultados-economicos} dedica una sección a explicar por qué el sistema compró
+Apple y la mantuvo cuarenta y cuatro meses, y esa es la cara favorable. La desfavorable es que las
+posiciones que peor salieron ---la peor resta 4,2 puntos de contribución neta tras dieciocho meses en
+cartera--- se mantuvieron también durante mucho tiempo, porque la misma permanencia mínima que
+protege a las buenas protege a las malas.
+
+Dos salvedades acotan lo que puede leerse aquí, y son importantes. La primera es que estos quince
+casos se identifican \emph{con el resultado ya conocido}: sabemos que subieron porque miramos después.
+No puede derivarse de ellos ninguna regla nueva, porque añadir un filtro que los hubiera evitado sería
+ajustar sobre el resultado. La segunda es de selección: la tabla recoge las ventas que el mercado
+desmintió, no las que acertó, y esas últimas no se listan en ninguna parte. Lo que la tabla mide es el
+coste de la regla de rotación, no su balance neto.
 
 \section{Limitaciones heredadas del desarrollo}
 

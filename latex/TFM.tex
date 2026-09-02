@@ -116,12 +116,19 @@
 
 \maketitle
 
+% Preliminares en numeración romana: el resumen, los índices y el glosario son material previo
+% al trabajo, y numerarlos aparte hace que el Capítulo 1 empiece en la página 1.
+\pagenumbering{roman}
+
 \input{chapters/00_resumen}
 
 \tableofcontents
 \listoffigures
 \listoftables
 \input{chapters/00_glosario}
+
+\cleardoublepage
+\pagenumbering{arabic}
 
 % Orden narrativo: problema -> datos observables -> sistema -> protocolo -> resultados
 % predictivos -> resultados economicos -> limites -> conclusion. La historia del desarrollo

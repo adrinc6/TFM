@@ -24,6 +24,11 @@ resistir controles conocidos y declarar cuánto de su éxito aparente procede de
 alternativas. Es el motivo de que este trabajo reserve una era completa y mida robustez antes de
 afirmar nada.
 
+Ninguna de esas primas, aplicada como fórmula fija sobre el panel de este trabajo, llega a ordenar
+gran cosa: el Capítulo~\ref{chap:resultados} lo mide al comparar el sistema con esos mismos
+\textit{baselines}. No invalida la literatura ---se documentaron sobre universos, periodos y
+horizontes distintos---, pero sí acota qué cabe esperar aquí de una regla sin aprendizaje.
+
 Los factores cumplen aquí un tercer papel además de orientar el reparto y servir de baseline: son
 controles de atribución. Si la señal desaparece al neutralizar exposiciones conocidas, la
 interpretación debe ser más modesta. Conviene precisar, eso sí, que ningún agente representa un
@@ -88,6 +93,13 @@ Inferencia con múltiples pruebas & Penalización del \textit{data snooping} & P
 \caption*{Elaboración propia a partir de Gu et al. (2020), Harvey et al. (2016) y
 López de Prado et al. (2014).}
 \end{table}
+
+A esas cuatro líneas se añade una quinta que no es metodológica sino estructural: la aritmética de
+la gestión activa de Sharpe (1991), enunciada en la Sección~\ref{sec:suma-cero-intro}. Su
+consecuencia para la literatura revisada es que un trabajo que reporte alfa persistente sobre un
+índice amplio está afirmando, implícitamente, que ese alfa lo pagó otro participante. Es la razón de
+fondo por la que la replicación encuentra tanta caída fuera de muestra: una anomalía publicada deja
+de ser una ventaja informativa en cuanto el resto del mercado puede explotarla.
 
 \section{Sesgos que condicionan cualquier evidencia}
 
@@ -166,12 +178,5 @@ métrica de selección sea el Rank-IC y no el CAGR: seleccionar por rentabilidad
 tres términos, mientras que medir la señal aislada permite atribuir después cuánto pierde la
 implementación.
 
-Hay una quinta línea que no es metodológica sino estructural, y que explica buena parte de lo
-anterior: la aritmética de la gestión activa de Sharpe (1991), según la cual el conjunto de los
-gestores activos obtiene, antes de costes, exactamente el rendimiento del índice. Un trabajo que
-reporta alfa persistente sobre un índice amplio está afirmando, implícitamente, que ese alfa lo pagó
-otro participante. Es la razón de fondo por la que la replicación encuentra tanta caída fuera de
-muestra: una anomalía publicada deja de ser una ventaja informativa en cuanto el resto del mercado
-puede explotarla. La distinción entre calidad de señal e implementación que formula López de Prado
-(2018) es la que este trabajo adopta como orden de trabajo: primero la señal, después la cartera, y
-nunca al revés.
+La distinción entre calidad de señal e implementación que formula López de Prado (2018) es la que
+este trabajo adopta como orden de trabajo: primero la señal, después la cartera, y nunca al revés.

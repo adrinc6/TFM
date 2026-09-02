@@ -2786,3 +2786,128 @@ defecto de composición. El cuerpo baja a **56 páginas**, con margen respecto a
 **Validación realizada.** 85 páginas, cuerpo 56 y anexos 14, sin páginas apaisadas y con el log
 limpio: cero desbordamientos, cero etiquetas duplicadas y cero referencias sin resolver.
 `verify_latex_assets.py`, `pytest` (144), `ruff` y `node --check` en verde.
+
+## 2026-09-02 · Ampliación con evidencia ya calculada, y numeración romana en los preliminares
+
+**Punto de partida.** El manuscrito estaba en 56 páginas de cuerpo tras las rondas de recorte y
+reestructuración. El objetivo era llevarlo a ~70 sin inventar contenido, por dos vías: explotar
+evidencia que los estudios ya calculaban y el manuscrito no contaba, y profundizar donde el texto se
+quedaba corto.
+
+**Lo que la auditoría de artefactos encontró.** Cuatro artefactos completos tenían **cero uso**
+---`signal_health.parquet`, `contributions.parquet`, `evaluation_ledger.parquet` y la clave
+`robustness["agent_rank_ic"]`---, tres figuras ya generadas no las citaba ningún capítulo, y de
+`rank_tail_diagnostics.parquet` se usaban 6 de 16 columnas. Y había un desequilibrio claro: **el
+capítulo 4 describía toda la arquitectura del sistema en 3 páginas sin una sola figura ni tabla**.
+
+**Los hallazgos que se incorporan**, todos verificados leyendo los parquet antes de escribirlos:
+
+- **La correlación entre ordenar bien el universo y acertar en las diez que se compran es 0,28**, y
+  hay 16 cohortes de 123 con Rank-IC por encima de 0,10 en las que el top-10 pierde. Es el puente que
+  faltaba entre los capítulos 6 y 7: explica por qué el pago puede deteriorarse mientras el orden
+  mejora, algo que el capítulo 8 afirmaba sin ninguna medición detrás.
+- **El meta aprendido supera al equiponderado en un 68 %** (0,1033 frente a 0,0614). Justifica la
+  capa de combinación en el capítulo que la describe.
+- **Doce meses seguidos, entre julio de 2022 y junio de 2023, en que la memoria corta habría dado
+  señal negativa.** Cambia la pregunta de «¿funcionó?» a «¿habría sabido un gestor que funcionaba?».
+- **El 88,3 % de las 1.440 carteras tiene IR positivo**: la señal funciona con casi cualquier regla
+  razonable, no sólo con la elegida.
+- **Quince ventas prematuras cuantificadas** (Boeing, 29,7 puntos de exceso no cobrado). Convierte
+  una anécdota del capítulo 7 en un patrón medido, y responde a la pregunta simétrica que el
+  documento nunca hacía: qué compró mal y cuánto costó.
+
+**Lo que se descartó, y por qué.** Un aparente «giro factorial» en la era reservada (cargas de baja
+volatilidad con $t=5{,}8$) parecía un hallazgo, pero su regresión tiene **17 observaciones con 12
+retardos** y un alfa significativamente negativo: presentarlo habría sido la sobreinterpretación que
+este trabajo evita. También se midió si el sistema ordena mejor cuando llegan resultados
+trimestrales frescos ---0,1109 frente a 0,0995--- y **no se incluyó**, porque la diferencia no es
+significativa ($p=0{,}63$).
+
+**Cambio de criterio a mitad de trabajo, a petición del usuario: menos prosa y más apoyo visual.**
+Los capítulos que explican mecanismo ---3, 4, 5 y 8--- eran los que menos figuras tenían, y el 5
+tenía **cero** en ocho páginas. Se añaden cuatro diagramas nuevos: la arquitectura de agentes a
+meta-agente, las dos mitades del protocolo, la precedencia de decisión de la cartera, la cadena de
+tres pasadas y el mecanismo del sesgo de cobertura por antigüedad de salida del índice. Dos de ellos
+**sustituyen** párrafos de prosa en vez de sumarse a ellos.
+
+**Corrección conceptual sobre los perfiles.** El texto no dejaba claro qué distingue a un perfil del
+sistema principal, y una primera redacción se pasó de frenada sugiriendo que los perfiles no usan
+aprendizaje. Lo correcto, y así queda: **los cinco agentes siguen siendo los mismos modelos
+entrenados**; lo que un perfil cambia es quién decide el reparto entre ellos ---pesos fijos
+declarados de antemano en vez de aprendidos---. El perfil equilibrado es el único de los ocho que
+emplea el consenso aprendido.
+
+**Numeración de páginas.** Los preliminares ---resumen, índices y glosario--- pasan a numeración
+romana, de modo que **el Capítulo 1 empieza en la página 1**. Efecto secundario a tener presente: las
+referencias a «página X» de entradas anteriores de esta bitácora dejan de ser comparables, y la
+métrica de control pasa a ser «páginas de cuerpo».
+
+**Trabajo en el exportador, contra la política habitual.** `export_study_assets.py` normalmente no se
+ejecuta como parte de un cambio, pero cinco activos nuevos salen de él y **hubo que ejecutarlo**:
+tres tablas (capacidad de ordenación por agente, coste de la búsqueda por fase, ventas prematuras) y
+tres figuras (orden frente a cola, deriva de vocabulario por agente, salud de la señal en tiempo
+real). También se usa por fin el parámetro de colas que `_write_tables_orders_and_tails` ignoraba.
+
+**Validación realizada.** 98 páginas, **cuerpo en 68 y anexos en 14**, preliminares en romanos, sin
+páginas apaisadas y con el log limpio: cero desbordamientos, cero etiquetas duplicadas y cero
+referencias sin resolver. Toda figura y tabla citada desde la prosa, comprobado con el auditor de
+activos. `verify_latex_assets.py`, `pytest` (144 pruebas), `ruff` y `node --check` en verde.
+
+## 2026-09-02 · Auditoría de coherencia: dos contradicciones reales y varios injertos de la ampliación
+
+**Cómo se hizo.** Se leyó el PDF completo (98 páginas) con dos lectores críticos independientes ---uno
+para los capítulos 1-5 y otro para el 6-7--- y **se verificó contra los artefactos cada incoherencia
+numérica señalada** antes de tocar nada. Varias de las supuestas contradicciones resultaron ser
+correctas y bien declaradas; dos no.
+
+**La contradicción más grave era de declaración, no de cálculo.** El capítulo 6 daba una serie de
+alfa por eras que termina en $-2{,}37$\,\% y construía sobre ella toda una subsección, el argumento
+del sesgo de cobertura y una limitación de severidad Alta. La tabla anual del capítulo 7 muestra esos
+mismos años en positivo, y el texto repite dos veces que «la ventana de selección no deja ningún año
+con alfa negativo». Comprobado contra los artefactos: **ambas cifras son correctas**. La del 6 es la
+cartera del Model Study ($-0{,}0237$ en 2022-24) y la del 7 la cartera adoptada ($+0{,}0273$); lo que
+faltaba era que el capítulo 6 dijera de qué cartera hablaba. Corregido, el contraste se refuerza en
+vez de debilitarse: es exactamente lo que motivó el Portfolio Study.
+
+**La segunda: una cifra medida sobre la ventana que el capítulo declara no usar.** La correlación
+entre ordenar bien y acertar en la cola comprada se había calculado sobre 123 cohortes ---es decir,
+**incluyendo la era reservada**--- en un capítulo que declara medir todo sobre las 117 de selección, y
+en un párrafo que a continuación trata la reserva por separado. Recalculada sobre selección es
+**0,22, no 0,28**. Se añade además el denominador que faltaba: 16 de las 62 fechas con Rank-IC por
+encima de 0,10, una de cada cuatro.
+
+**Contenido metido con calzador, retirado.** La sección «Qué aporta cada especialista» del capítulo
+4 ---añadida en la ronda anterior--- se suprime entera: anticipaba resultados en un capítulo
+declarado descriptivo, sus cifras se medían sobre 123 cohortes incluyendo la era reservada, y
+generaba un conflicto (decía que el meta mejora al equiponderado un 68 \% donde el capítulo 6 dice
+55 \%). Queda una remisión de dos frases. Se retiran también la subsección del coeficiente de
+transferencia, que no aportaba ninguna cifra no contada antes, y el adelanto de resultados propios en
+mitad del estado del arte.
+
+**Una contradicción interna en los perfiles.** El de tendencia era, en la misma página, «el que
+acumula las dos peores marcas» y uno de «los dos únicos que conservan exceso positivo» fuera de
+muestra. Verificado: las dos cosas son ciertas. En vez de dejarlas enfrentadas, ahora se nombra la
+tensión, que **refuerza** la tesis de la subsección siguiente ---con seis cohortes el orden entre
+estilos no se transfiere--- en lugar de contradecirla.
+
+**Repetición y reubicaciones.** La frase «no es una carencia de la implementación, sino la
+manifestación correcta de una restricción de información» aparecía **literalmente dos veces** a tres
+páginas: queda sólo donde va con sus cifras. Las dos listas de «contratos automáticos» del capítulo 3
+no coincidían entre sí ---una decía cinco elementos, otra «cuatro contratos» con elementos
+distintos---: se deja una. El párrafo de «la quinta línea» empezaba con un ordinal cuyo antecedente
+estaba dos secciones antes: vuelve junto a la tabla que enumera las cuatro. Y la tabla de Rank-IC
+univariante, cuya nota al pie manejaba cuatro recuentos distintos para concluir que no dice lo que el
+lector esperaría, baja al Anexo B.
+
+**Afirmaciones ajustadas a lo que el dato sostiene.** «AAPL aporta casi el doble que la segunda» era
+un 66 \% más, con la tabla en la misma página. «Casi el triple» y «multiplica por 2,7» describían el
+mismo cociente. El 88,3 \% de carteras con IR positivo gana su matiz de magnitud: la cartera mediana
+se queda en un exceso del 0,98 \%, de modo que «positivo» no significa «apreciable». Y la subsección
+de salud de la señal se rebaja, porque su párrafo final admitía que el cruce a negativo es «en parte
+por construcción» y con ello anulaba el hallazgo que el cuerpo afirmaba.
+
+**Validación realizada.** 97 páginas, cuerpo en 67 y anexos en 15, preliminares en romanos, sin
+páginas apaisadas y con el log limpio: cero desbordamientos, cero etiquetas duplicadas y cero
+referencias sin resolver. Diez comprobaciones de texto sobre el PDF generado confirman que cada
+corrección llegó al documento. `verify_latex_assets.py`, `pytest` (144 pruebas), `ruff` y
+`node --check` en verde.

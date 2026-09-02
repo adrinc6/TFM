@@ -5,9 +5,8 @@ La hipótesis de partida no es que una sola familia de ratios domine de forma es
 regímenes, sino que distintas vistas económicas del universo aportan información con persistencia
 desigual. De ahí los cinco agentes especializados ---calidad, valor, crecimiento, tendencia y
 riesgo--- y un combinador que aprende a ponderarlos sin saber de antemano cuál será el más útil.
-Este capítulo describe ese mecanismo y las alternativas que el catálogo ofrece en cada punto; qué
-valores se eligieron finalmente depende de una regla de decisión que se explica en el capítulo
-siguiente.
+El mecanismo y las alternativas que el catálogo ofrece en cada punto se describen a continuación;
+qué valores se eligieron finalmente depende de una regla de decisión que llega después.
 
 \section{Arquitectura y aprendizaje \textit{walk-forward}}
 
@@ -25,8 +24,25 @@ funcional única (Ke et al., 2017); el entrenamiento temporal evita que el model
 observaciones que habría visto durante el ajuste.
 
 Las cinco puntuaciones se convierten en rangos transversales y pasan al meta-agente, que estima una
-Ridge positiva sobre cohortes trimestrales ya cerradas. Mientras no existan etiquetas cerradas
-suficientes, el meta reparte por construcción pesos iguales de 0,20.
+Ridge positiva sobre cohortes trimestrales ya cerradas.
+
+Ese «ya cerradas» tiene una consecuencia práctica que conviene ver con cifras, porque explica buena
+parte del comportamiento del sistema en sus primeros años. Para juzgar a un especialista hace falta
+saber qué pasó después de que puntuara, y con un horizonte de doce meses eso significa esperar un
+año. Durante ese tiempo el meta-agente no tiene con qué decidir y reparte pesos iguales de 0,20 entre
+los cinco. En la serie evaluada, la primera fecha en que llega a aprender un peso propio es
+\textbf{abril de 2016}: el primer año completo opera a ciegas, con la combinación ingenua.
+
+A partir de ahí los pesos se mueven despacio. El cambio medio entre dos fechas consecutivas es de
+0,04 sumando los cinco agentes, de modo que el reparto es estable y no salta de un especialista a
+otro con cada dato nuevo. Al final de la serie ha llegado a un reparto muy concentrado ---0,955 para
+el agente de riesgo--- pero el camino hasta ahí ocupa varios años, y ese trayecto no es gratuito: el
+Capítulo~\ref{chap:resultados} muestra que buena parte de la distancia entre el meta-agente y su
+mejor especialista se explica precisamente por lo que costó recorrerlo.
+
+No es un defecto de la implementación sino la manifestación correcta de una restricción de
+información. Un sistema que empezara ponderando desde el primer día estaría usando resultados que en
+esa fecha nadie conocía.
 
 El catálogo ofrece dos variantes de esa combinación, y elegir entre ellas es una hipótesis de diseño,
 no un detalle de implementación. La variante \textbf{acotada} obliga a que ningún agente pese menos
@@ -41,7 +57,36 @@ maximiza el criterio que el protocolo sí mide. Por eso la variante figura en el
 como una variable más, y no como una preferencia del autor.
 
 Conviene fijarse en que el meta no ve las puntuaciones sino los \emph{rangos}: es lo que permite
-combinar agentes cuyas escalas no son comparables entre sí.
+combinar agentes cuyas escalas no son comparables entre sí. La Figura~\ref{fig:arquitectura} recorre
+el camino completo.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{tikzpicture}[
+      >=Latex, font=\small, align=center, node distance=6mm and 9mm,
+      dato/.style={draw,rounded corners,fill=blue!8,minimum width=23mm,minimum height=11mm},
+      ag/.style={draw,rounded corners,fill=teal!12,minimum width=27mm,minimum height=8mm,
+                 font=\footnotesize},
+      meta/.style={draw,rounded corners,fill=orange!14,minimum width=26mm,minimum height=15mm},
+      fin/.style={draw,rounded corners,fill=green!12,minimum width=24mm,minimum height=11mm}]
+    \node[dato] (v) {Variables\\disponibles\\en la fecha};
+    \node[ag,right=of v] (a3) {Crecimiento};
+    \node[ag,above=3mm of a3] (a2) {Valor};
+    \node[ag,above=3mm of a2] (a1) {Calidad};
+    \node[ag,below=3mm of a3] (a4) {Tendencia};
+    \node[ag,below=3mm of a4] (a5) {Riesgo};
+    \node[meta,right=of a3] (m) {Meta-agente\\\footnotesize pesos aprendidos\\\footnotesize con lo ya cerrado};
+    \node[fin,right=of m] (r) {Orden final\\del universo};
+    \foreach \a in {a1,a2,a3,a4,a5}{\draw[->] (v) -- (\a); \draw[->] (\a) -- (m);}
+    \draw[->,thick] (m) -- (r);
+    \node[below=7mm of a5,font=\footnotesize,align=center,text=black!70]
+      (nota) {cada agente ve sólo su familia de variables\\y produce un rango, no una puntuación};
+  \end{tikzpicture}
+  \caption{De las variables al orden final. Cada especialista recibe únicamente las variables de su
+  familia; el meta-agente combina los cinco rangos con pesos que aprende de las cohortes ya
+  cerradas.}
+  \label{fig:arquitectura}
+\end{figure}
 
 \subsection{Qué predice el modelo}
 
@@ -133,26 +178,67 @@ frágil. El sistema utiliza el reparto igualitario y registra el estado de arran
 parte del contrato reproducible: dos ejecuciones con el mismo catálogo y la misma instantánea no
 pueden decidir de manera distinta si ya existe historia suficiente.
 
-\section{Ejemplo de combinación}
+Queda por saber si esa capa de combinación aporta algo o bastaría con quedarse con el mejor de los
+cinco especialistas. Es una pregunta empírica y no de diseño, así que se responde con los resultados:
+el Capítulo~\ref{chap:resultados} la contesta comparando el meta aprendido con el reparto
+equiponderado, y también con cada agente por separado.
 
-\begin{ejemplo}[De cinco rangos a un score]
-Una empresa presenta rangos quality 0,80, value 0,55, growth 0,70, momentum 0,45 y risk 0,90. En el
-arranque, los pesos iguales producen $(0,80+0,55+0,70+0,45+0,90)/5=0,68$: queda algo por encima de
-la mediana del universo, y ninguna de sus cinco vistas pesa más que otra.
+\section{Qué mira cada agente y cómo cambia con el tiempo}
+
+Que cada especialista reciba variables distintas no garantiza que acabe usándolas de forma distinta.
+El sistema guarda, para cada uno de los 45 reentrenamientos, qué peso dio cada agente a cada
+variable, lo que permite comprobar si la especialización es real o sólo una etiqueta del diseño.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{figures/f04_deriva_agentes.png}
+  \caption{Izquierda: número de variables distintas que emplea cada especialista en cada
+  reentrenamiento. Derecha: capacidad de ordenación de cada variable por sí sola frente al peso que
+  el modelo acaba dándole.}
+  \label{fig:deriva-agentes}
+\end{figure}
+
+El panel izquierdo de la Figura~\ref{fig:deriva-agentes} confirma que los vocabularios son
+distintos, y no sólo en contenido sino en amplitud. El agente de calidad reparte su atención entre 29
+variables distintas a lo largo de la serie, mientras que el de riesgo se apoya en 12 y el de
+tendencia en 10. Esa diferencia acompaña a los resultados de la sección anterior, aunque con cinco
+agentes no puede establecerse una relación causal: el que reparte la atención entre más variables
+débiles es también el que peor ordena.
+
+El panel derecho responde a una pregunta distinta y más de fondo: \textbf{por qué un modelo no lineal
+y no una fórmula factorial}. Si el sistema estuviera recuperando factores clásicos, las variables con
+más peso en el modelo serían las que mejor ordenan por sí solas, y los puntos se alinearían. No
+ocurre. Buena parte de las variables que más pesan tienen un Rank-IC propio próximo a cero, y alguna
+que el modelo usa intensamente ---la beta a un año--- ordena en sentido \emph{contrario} cuando se
+mira aislada. El modelo no está sumando señales independientes: está aprovechando cómo interactúan.
+
+Esa lectura admite una objeción: que una variable sin capacidad en solitario reciba mucho peso
+también es compatible con que el modelo esté ajustando ruido. Lo que descarta esa posibilidad no es
+esta figura sino los contrastes con etiquetas falsificadas del Capítulo~\ref{chap:resultados}, que
+quedan un orden de magnitud por debajo del sistema real.
+
+Conviene delimitar, en todo caso, qué permite afirmar esta arquitectura. Los pesos hacen
+\emph{atribuible} el resultado a agentes concretos, pero no permiten inferir causalidad: que un
+especialista reciba peso alto no demuestra que su lectura económica sea la causa del retorno, y
+puede reflejar interacciones entre variables o límites de los datos disponibles. Por eso el trabajo
+no se detiene en los pesos y añade después estabilidad por eras, neutralización por estilo y
+atribución local dentro de cada agente.
+
+Un ejemplo aritmético muestra qué está en juego entre las dos variantes.
+
+\begin{ejemplo}[De cinco rangos a una puntuación]
+Una empresa queda en el percentil 0,80 de calidad, 0,55 de valor, 0,70 de crecimiento, 0,45 de
+tendencia y 0,90 de riesgo. En el arranque, con pesos iguales, su puntuación es
+$(0{,}80+0{,}55+0{,}70+0{,}45+0{,}90)/5=0{,}68$: algo por encima de la mediana del universo, sin que
+ninguna de sus cinco vistas pese más que otra.
 
 Si la evidencia ya cerrada indicase que el agente de riesgo ordena mejor que los demás y el meta le
-asignara 0,70, repartiendo 0,075 entre los cuatro restantes, el score pasaría a
+asignara 0,70, repartiendo 0,075 entre los cuatro restantes, la puntuación pasaría a
 $0{,}70\times0{,}90 + 0{,}075\times(0{,}80+0{,}55+0{,}70+0{,}45) = 0{,}82$.
 \end{ejemplo}
 
-Los rangos del ejemplo son inventados, pero el cálculo es el real, y muestra qué está en juego entre
-las dos variantes. Con la acotada, ese peso de 0,70 sería imposible: el tope del 50\,\% limita
-cuánto puede desplazarse la puntuación hacia el especialista dominante. Con la libre nada lo impide
-mientras la evidencia lo respalde, hasta el extremo de que la puntuación final acabe siendo, en la
-práctica, la de un solo agente.
-
-Conviene delimitar qué permite afirmar esta arquitectura. Los pesos hacen \emph{atribuible} el
-resultado a agentes concretos, pero no permiten inferir causalidad: que un especialista reciba peso
-alto no demuestra que su lectura económica sea la causa del retorno, y puede reflejar interacciones
-entre variables o límites de los datos. Por eso el trabajo no se detiene en los pesos y añade
-después estabilidad por eras, neutralización por estilo y atribución local dentro de cada agente.
+Los percentiles del ejemplo son inventados, pero el cálculo es el real. Con la variante acotada ese
+peso de 0,70 sería imposible, porque el tope del 50\,\% limita cuánto puede desplazarse la
+puntuación hacia el especialista dominante; con la libre nada lo impide mientras la evidencia lo
+respalde, hasta el extremo de que la puntuación final acabe siendo, en la práctica, la de un solo
+agente.

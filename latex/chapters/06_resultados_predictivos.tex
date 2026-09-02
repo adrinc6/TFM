@@ -2,10 +2,10 @@
 \label{chap:resultados}
 
 ¿Existe realmente la ordenación que el sistema dice haber aprendido, y resiste los contrastes que
-tratan de explicarla por azar? Ésa es la primera de las dos preguntas empíricas del trabajo, y este
-capítulo la responde con evidencia exclusivamente predictiva. Alguna cifra económica aparecerá
----ciertos contrastes de robustez se construyen sobre carteras---, pero tiene carácter diagnóstico y
-se calcula con una cartera distinta de la que el trabajo acaba adoptando.
+tratan de explicarla por azar? Ésa es la primera de las dos preguntas empíricas del trabajo, y la
+evidencia que sigue es exclusivamente predictiva. Alguna cifra económica aparecerá ---ciertos
+contrastes de robustez se construyen sobre carteras---, pero tiene carácter diagnóstico y se calcula
+con una cartera distinta de la que el trabajo acaba adoptando.
 
 \section{La configuración ganadora y la cadena de estudios}
 \label{sec:configuracion-ganadora}
@@ -219,9 +219,16 @@ concentrarla en unas pocas con contenido.
 \label{sec:capacidad-predictiva}
 
 En la ventana de selección, el sistema alcanza Rank-IC medio 0,1067, IC-IR 0,833, un 76,07\,\% de
-cohortes positivas y un estadístico de Newey--West de 3,33. Son 117 cohortes mensuales, pero el
-horizonte de doce meses las solapa y deja aproximadamente nueve observaciones independientes: ambos
-números deben leerse juntos. La Figura~\ref{fig:rankic-serie} muestra la serie cohorte a cohorte,
+cohortes positivas y un estadístico de Newey--West de 3,33.
+
+Esas 117 cohortes mensuales no son, sin embargo, 117 pruebas independientes. Como cada etiqueta tarda
+doce meses en cerrarse, dos fechas consecutivas comparten once de esos doce meses: miden en gran
+parte el mismo periodo. El estudio calcula por ello cuántas observaciones verdaderamente
+independientes contiene la ventana, y el resultado es \textbf{nueve}. En la era reservada, donde hay
+seis cohortes solapadas, esa cuenta baja a \textbf{una}. Es la cifra que conviene tener presente
+cada vez que aparezca un intervalo de confianza en este capítulo: la muestra efectiva es mucho menor
+de lo que el número de fechas sugiere, y es la razón de que toda la inferencia se agregue por bloques
+y no por cohorte. La Figura~\ref{fig:rankic-serie} muestra la serie cohorte a cohorte,
 con la era reservada marcada en dorado.
 
 \begin{figure}[htbp]
@@ -255,10 +262,10 @@ agregada.
 
 \subsection{La cola superior frente a la ordenación completa}
 
-El Rank-IC resume toda la ordenación, pero la cartera sólo compra el extremo superior, así que
-conviene comprobar si la ventaja se concentra donde se utiliza. El decil superior bate al universo
-en las tres eras de selección, de modo que la ventaja no procede sólo de acertar la cola inferior,
-que una cartera \textit{long-only} no puede explotar.
+El Rank-IC resume toda la ordenación, pero la cartera sólo compra el extremo superior, así que hay
+que comprobar si la ventaja se concentra donde se utiliza. El decil superior bate al universo en las
+tres eras de selección, de modo que la ventaja no procede sólo de acertar la cola inferior, que una
+cartera \textit{long-only} no puede explotar.
 
 La era reservada obliga a un matiz. En ella el decil superior obtiene $-11{,}52$\,\% frente al
 $-2{,}14$\,\% del universo: \textbf{pierde contra el panel}, al revés que antes. Y sin embargo la
@@ -266,6 +273,36 @@ distancia entre el decil superior y el inferior se mantiene en $+6{,}27$ puntos.
 juntas dicen algo preciso: la ordenación siguió separando lo bueno de lo malo, pero el nivel de toda
 la cola alta cayó por debajo del panel. Que la cartera adoptada batiese al índice en esa era se
 explica entonces por elegir \emph{dentro} del decil, no porque el decil entero fuese ganador.
+
+Todo lo anterior mira el decil, que son unas cuarenta y cinco acciones. La cartera compra ocho, y
+ahí aparece el resultado más importante de esta sección: ordenar bien las cuatrocientas y pico
+acciones de una fecha y acertar en las pocas que efectivamente se compran son cosas mucho menos
+relacionadas de lo que el Rank-IC sugiere.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.92\textwidth]{figures/f06_cola_vs_orden.png}
+  \caption{Cada punto es una fecha de decisión: en el eje horizontal, la calidad del orden sobre
+  todo el universo; en el vertical, el exceso que obtuvieron las diez acciones mejor puntuadas.}
+  \label{fig:cola-vs-orden}
+\end{figure}
+
+La correlación entre ambas magnitudes es de \textbf{0,22} sobre las 117 cohortes de selección. Es
+positiva ---ordenar mejor ayuda a comprar mejor--- pero está muy lejos de la equivalencia que el
+Rank-IC podría sugerir. La zona sombreada de la Figura~\ref{fig:cola-vs-orden} contiene el caso
+incómodo: de las 62 fechas en que el sistema ordenó bien el universo, con un Rank-IC por encima de
+0,10, \textbf{en dieciséis las diez acciones que compró perdieron dinero} frente al mercado. Una de
+cada cuatro.
+
+Esa desconexión entre ordenar y cobrar es el puente entre este capítulo y el siguiente, y explica un
+contraste que de otro modo parecería contradictorio: que la capacidad de ordenar mejore entre eras
+mientras el resultado económico se deteriora. No son dos mediciones del mismo fenómeno. El Rank-IC
+premia acertar el orden completo, incluida la mitad inferior que una cartera sin posiciones cortas
+nunca podrá aprovechar; la cartera sólo cobra por lo que ocurre en las primeras.
+
+La cifra debe leerse con la misma prudencia que el resto del capítulo. Con aproximadamente nueve
+observaciones independientes efectivas, una correlación de 0,22 no es una estimación precisa: lo que
+sostiene es la dirección del argumento, no su magnitud exacta.
 
 \subsection{Estabilidad por eras}
 \label{sec:eras}
@@ -311,28 +348,73 @@ Figura~\ref{fig:orden-vs-pago} las enfrenta.
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.92\textwidth]{figures/f06_orden_vs_pago.png}
-  \caption{Rank-IC medio del meta-agente y Information Ratio de la cartera, era a era de la ventana
-  de selección. Las dos escalas son distintas a propósito: lo que importa es la dirección de cada
-  serie, no su nivel.}
+  \caption{Rank-IC medio del meta-agente y pago económico era a era, con la cartera por defecto del
+  catálogo. Las dos escalas son distintas a propósito: lo que importa es la dirección de cada serie,
+  no su nivel.}
   \label{fig:orden-vs-pago}
 \end{figure}
 
-El alfa medio anual acompaña al Information Ratio y no al Rank-IC: $+5{,}78$\,\% en 2015--2018,
-$+2{,}25$\,\% en 2019--2021 y $-2{,}37$\,\% en 2022--2024. No es una contradicción, porque cada
-métrica mide una cosa distinta: el Rank-IC evalúa la calidad del orden transversal y el Information
-Ratio el pago ajustado por riesgo de operarlo con una cartera concreta, que además penaliza que la
-señal sea errática de un mes a otro aunque su media suba. El modelo sigue ordenando, e incluso
-ordena mejor, pero de forma menos constante y sobre una dispersión de retornos que recompensa peor
-el acierto.
+Antes de leer las cifras hay que declarar con qué cartera se miden, porque es determinante: son las
+de la \textbf{cartera por defecto del catálogo}, la que estuvo vigente durante todo el trabajo
+predictivo, no la que el trabajo acaba adoptando. Con ella, el alfa medio anual acompaña al
+Information Ratio y no al Rank-IC: $+5{,}78$\,\% en 2015--2018, $+2{,}25$\,\% en 2019--2021 y
+$-2{,}37$\,\% en 2022--2024.
+
+No es una contradicción, porque cada métrica mide una cosa distinta: el Rank-IC evalúa la calidad
+del orden transversal y el Information Ratio el pago ajustado por riesgo de operarlo con una cartera
+concreta, que además penaliza que la señal sea errática de un mes a otro aunque su media suba. El
+modelo sigue ordenando, e incluso ordena mejor, pero de forma menos constante y sobre una dispersión
+de retornos que recompensa peor el acierto.
+
+Conviene adelantar, eso sí, que ese deterioro \textbf{no es una propiedad de la señal sino de aquella
+cartera}. Con la que el Capítulo~\ref{chap:resultados-economicos} acaba adoptando, la misma señal
+obtiene un alfa medio de $+2{,}73$\,\% en esa última era y ningún año negativo en toda la ventana.
+Que dos carteras den signos opuestos sobre la misma ordenación es precisamente el hallazgo de ese
+capítulo, y la razón de que exista.
 
 Esto tiene una consecuencia directa sobre el sesgo de cobertura. Ese sesgo es máximo en 2015--2018 y
 mínimo en 2022--2024, así que si estuviera fabricando la capacidad predictiva el Rank-IC debería ser
 mayor en la primera era y desvanecerse en la última. Ocurre lo contrario, lo que \textbf{contradice
 una explicación simple basada en la cobertura del panel}. No permite afirmar, en cambio, que el
-resultado \emph{económico} esté libre de ese sesgo: ahí el patrón es el inverso ---alfa negativo en
-la era menos sesgada--- y sugiere que la rentabilidad medida se apoyó en los años de peor cobertura.
+resultado \emph{económico} esté libre de ese sesgo: con la cartera por defecto el patrón es el
+inverso ---su alfa decae hacia la era menos sesgada--- y sugiere que la rentabilidad medida se apoyó
+en los años de peor cobertura.
 El trabajo se queda con la primera lectura, que sostiene su tesis predictiva, y no la extiende a la
 segunda.
+
+\subsection{Qué habría sabido un gestor en cada momento}
+
+Todo lo anterior se mide mirando la serie completa, con el resultado ya conocido. Un gestor que
+hubiera operado este sistema no disponía de esa perspectiva: en cada fecha sólo podía juzgarlo con
+las cohortes que ya habían cerrado. Preguntar qué habría visto entonces es distinto de preguntar si
+el sistema funcionó, y la respuesta resulta menos tranquilizadora.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.92\textwidth]{figures/f06_salud_senal.png}
+  \caption{Capacidad de ordenación calculada en cada fecha usando sólo la información ya cerrada en
+  ese momento, con dos memorias distintas. La franja marca el tramo en que la memoria corta habría
+  dado un veredicto negativo.}
+  \label{fig:salud-senal}
+\end{figure}
+
+La Figura~\ref{fig:salud-senal} recoge esa lectura con dos memorias. Un gestor que hubiera juzgado el
+sistema con toda la historia disponible nunca habría visto una cifra negativa: la serie se mueve
+entre 0,028 y 0,103 durante los ocho años. Pero uno que sólo hubiera mirado los dos últimos años
+---que es un horizonte de evaluación perfectamente razonable, y el que emplea la mayoría de los
+comités de inversión--- habría visto la señal cruzar a terreno negativo y quedarse ahí
+\textbf{durante doce meses seguidos, entre julio de 2022 y junio de 2023}.
+
+Eso no contradice ningún resultado de este capítulo: la capacidad de ordenación existe y las pruebas
+adversariales la respaldan. Y tampoco significa que la señal se rompiera, porque no lo hizo; la
+memoria corta cruza cero en parte por construcción, ya que con menos cohortes la estimación es más
+ruidosa.
+
+Lo que la figura documenta es otra cosa, y es una advertencia sobre la distancia entre demostrar que
+un sistema funciona y poder sostenerlo mientras funciona. Un comité que hubiera revisado el sistema a
+dos años vista habría encontrado doce meses seguidos de lectura negativa ---parte ruido del
+estimador corto, parte una era realmente peor--- justo antes del tramo en que mejor ordenó. El juicio
+que puede hacerse de una señal en tiempo real es bastante más frágil que la señal misma.
 
 \section{Robustez: aprendizaje y no suerte}
 \label{sec:robustez}
@@ -361,8 +443,17 @@ agentes, meta y cartera--- pero con la etiqueta barajada, de modo que si alguna 
 fabricase señal por sí misma, deberían mostrarlo. Quedan entre $-0{,}0099$ y $+0{,}0042$,
 indistinguibles de cero y un orden de magnitud por debajo del sistema.
 
-El \textit{bootstrap} por bloques y la exclusión de eras responden a una tercera objeción: que la
-media positiva esté dominada por meses correlacionados o por un subperiodo excepcional. Con bloques
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.94\textwidth]{figures/f06_bootstrap.png}
+  \caption{Intervalos de confianza del Rank-IC por bloques y estabilidad de la media al excluir cada
+  era completa.}
+  \label{fig:bootstrap}
+\end{figure}
+
+El \textit{bootstrap} por bloques y la exclusión de eras, que reúne la
+Figura~\ref{fig:bootstrap}, responden a una tercera objeción: que la media positiva esté dominada
+por meses correlacionados o por un subperiodo excepcional. Con bloques
 de doce cohortes ---la longitud del horizonte, para no romper la dependencia que el solapamiento
 induce---, el intervalo al 95\,\% es $[0{,}0397;\,0{,}1715]$ y excluye cero; eliminando cualquiera
 de las tres eras, la media permanece entre 0,0769 y 0,1300. El valor más bajo corresponde a excluir
@@ -387,8 +478,13 @@ informativa.
 Dos contrastes independientes preguntan lo mismo desde ángulos distintos: ¿es la señal una réplica
 de estilos ya conocidos?
 
-El primero neutraliza. Regresando la señal contra catorce controles de valoración, rentabilidad,
-crecimiento, volatilidad y beta, y recalculando después el Rank-IC, éste baja de 0,1135 a 0,0990. Conviene declarar de dónde sale ese 0,1135, porque
+El primero neutraliza. Los catorce controles cubren las cinco familias que la literatura considera
+establecidas: cuatro múltiplos de valoración ---precio sobre beneficios, sobre valor contable, sobre
+ventas y valor de empresa sobre EBITDA---, dos medidas de tendencia a doce meses, tres de riesgo
+---volatilidad a tres y seis meses y beta a un año---, tres de rentabilidad ---retorno sobre
+recursos propios, sobre capital invertido y margen operativo--- y dos de crecimiento de beneficios y
+ventas. Regresando la señal contra ellos y recalculando después el Rank-IC, éste baja de 0,1135 a
+0,0990. Conviene declarar de dónde sale ese 0,1135, porque
 no coincide con el 0,1067 del resto del capítulo: el contraste se calcula sobre las mismas 117
 cohortes de selección, pero sólo sobre las filas en que los catorce controles están disponibles, y
 sobre ese subconjunto el Rank-IC bruto es algo mayor. Lo que importa es que las dos cifras se miden

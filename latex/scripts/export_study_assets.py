@@ -498,6 +498,231 @@ def write_tables_robustness(
 
 
 
+def draw_tail_vs_order(tails: pd.DataFrame, output: Path) -> None:
+    """Ordenar bien todo el universo frente a acertar en las diez que se compran.
+
+    Cada punto es una cohorte. El eje horizontal mide la calidad del orden completo y el
+    vertical el exceso que obtuvieron las diez primeras. El cuadrante inferior derecho ---orden
+    bueno, cola que pierde--- es el que explica por qué el pago económico puede deteriorarse
+    mientras el Rank-IC mejora.
+    """
+    frame = tails.dropna(subset=["rank_ic", "top_10_excess_mean"]).copy()
+    # Sólo la ventana de selección: el capítulo declara medir en ella salvo indicación expresa, y
+    # la era reservada se lee aparte unos párrafos antes.
+    frame = frame.loc[pd.to_datetime(frame["prediction_date"]).dt.year <= 2024]
+    correlation = frame["rank_ic"].corr(frame["top_10_excess_mean"])
+    fig, ax = plt.subplots(figsize=(7.0, 4.4))
+    ax.axhline(0.0, color=NAVY, linewidth=0.9)
+    ax.axvline(0.0, color=NAVY, linewidth=0.9)
+    ax.scatter(frame["rank_ic"], 100 * frame["top_10_excess_mean"],
+               color=TEAL, s=30, alpha=0.75, zorder=3)
+    ax.axvspan(0.10, float(frame["rank_ic"].max()) + 0.02, ymin=0.0,
+               ymax=0.5, color=GOLD, alpha=0.12, zorder=1)
+    ax.set(
+        title="Calidad del orden frente al acierto en la cola comprada",
+        xlabel="Rank-IC de la cohorte (orden de todo el universo)",
+        ylabel="Exceso de las diez primeras (%)",
+    )
+    ax.annotate(
+        f"correlación {correlation:.2f}".replace(".", ","),
+        xy=(0.02, 0.94), xycoords="axes fraction", fontsize=9, color=NAVY,
+    )
+    fig.tight_layout()
+    save(fig, output)
+
+
+def draw_signal_health(health: pd.DataFrame, output: Path) -> None:
+    """Lo que un gestor habría sabido en cada fecha, sin mirar el futuro.
+
+    El estudio guarda el Rank-IC encogido calculado sólo con cohortes ya cerradas en cada momento,
+    en dos memorias: toda la historia disponible y los ocho trimestres anteriores. La diferencia
+    entre ambas es lo interesante: la larga nunca fue negativa, la corta sí.
+    """
+    frame = health.copy()
+    frame["snapshot_date"] = pd.to_datetime(frame["snapshot_date"])
+    frame = frame.sort_values("snapshot_date")
+
+    fig, ax = plt.subplots(figsize=(7.4, 4.0))
+    ax.axhline(0.0, color=NAVY, linewidth=1.0)
+    ax.plot(frame["snapshot_date"], frame["shrunk_rank_ic"],
+            color=TEAL, linewidth=1.6, label="Toda la historia disponible")
+    ax.plot(frame["snapshot_date"], frame["shrunk_rank_ic_8q"],
+            color=GOLD, linewidth=1.4, label="Últimos ocho trimestres")
+    negative = frame.loc[frame["shrunk_rank_ic_8q"] < 0]
+    if not negative.empty:
+        ax.axvspan(negative["snapshot_date"].min(), negative["snapshot_date"].max(),
+                   color=GOLD, alpha=0.14, zorder=0)
+    ax.set(
+        title="Capacidad de ordenación observable en cada fecha",
+        xlabel="Fecha de decisión",
+        ylabel="Rank-IC de las cohortes ya cerradas",
+    )
+    ax.tick_params(axis="x", rotation=45)
+    legend_below(ax, 2)
+    fig.tight_layout()
+    save(fig, output)
+
+
+def draw_agent_feature_drift(attribution: pd.DataFrame, features: pd.DataFrame, output: Path) -> None:
+    """Dos preguntas sobre el vocabulario de los agentes, en un solo par de paneles.
+
+    Izquierda: cuántas variables usa cada especialista en cada reentrenamiento, que muestra si la
+    especialización es real o nominal. Derecha: capacidad de una variable por sí sola frente a su
+    peso dentro del modelo; las que se separan de la diagonal son las que sólo aportan combinadas.
+    """
+    frame = attribution.copy()
+    frame["model_retrain_date"] = pd.to_datetime(frame["model_retrain_date"])
+    counts = (
+        frame.loc[frame["coefficient"].abs() > 0]
+        .groupby(["agent", "model_retrain_date"])["feature"].nunique().reset_index()
+    )
+
+    fig, axes = plt.subplots(1, 2, figsize=(9.6, 4.0))
+    for agent in sorted(counts["agent"].unique()):
+        block = counts.loc[counts["agent"].eq(agent)].sort_values("model_retrain_date")
+        axes[0].plot(block["model_retrain_date"], block["feature"],
+                     label=AGENT_LABELS.get(agent, agent), linewidth=1.4)
+    axes[0].set(
+        title="Variables activas por especialista",
+        xlabel="Fecha de reentrenamiento",
+        ylabel="Variables distintas",
+    )
+    axes[0].tick_params(axis="x", rotation=45)
+    legend_below(axes[0], 3)
+
+    diag = features.dropna(subset=["univariate_rank_ic", "model_importance_mean"])
+    axes[1].scatter(diag["univariate_rank_ic"], diag["model_importance_mean"],
+                    color=TEAL, s=26, alpha=0.75, zorder=3)
+    axes[1].axvline(0.0, color=NAVY, linewidth=0.9)
+    axes[1].set(
+        title="Capacidad aislada frente a peso en el modelo",
+        xlabel="Rank-IC de la variable por sí sola",
+        ylabel="Importancia media en el modelo",
+    )
+    fig.tight_layout()
+    save(fig, output)
+
+
+AGENT_LABELS = {
+    "quality": "Calidad",
+    "value": "Valor",
+    "growth": "Crecimiento",
+    "momentum": "Tendencia",
+    "risk": "Riesgo",
+    "meta_final": "Meta aprendido",
+    "meta_equal_weight": "Meta equiponderado",
+}
+
+
+
+
+def write_table_evaluation_ledger(paths: Paths, study_dir: Path) -> None:
+    """Coste y rastro de la búsqueda, agregados por fase del protocolo.
+
+    ``evaluation_ledger.parquet`` guarda una fila por evaluación con su fase, su métrica y el
+    tiempo que costó. Agregarlo convierte «46 configuraciones» en un objeto auditable.
+    """
+    ledger = pd.read_parquet(study_dir / "evaluation_ledger.parquet")
+    labels = {
+        "temporal": "Temporal",
+        "representation": "Representación",
+        "model": "Modelo",
+        "meta": "Meta-agente",
+    }
+    order = ["temporal", "representation", "model", "meta"]
+    rows = []
+    for phase in order:
+        block = ledger.loc[ledger["phase"].eq(phase)]
+        if block.empty:
+            continue
+        rows.append([
+            tex(labels.get(phase, phase)),
+            integer(len(block)),
+            integer(int(block["selected"].sum())),
+            num(block["mean_rank_ic"].min(), 4),
+            num(block["mean_rank_ic"].max(), 4),
+            num(block["elapsed_seconds"].sum() / 3600.0, 1),
+        ])
+    rows.append([
+        r"\textbf{Total}",
+        r"\textbf{" + integer(len(ledger)) + "}",
+        r"\textbf{" + integer(int(ledger["selected"].sum())) + "}",
+        "",
+        "",
+        r"\textbf{" + num(ledger["elapsed_seconds"].sum() / 3600.0, 1) + "}",
+    ])
+    table(
+        paths.tables / "t05_ledger_fases.tex",
+        ["Fase", "Evaluaciones", "Adoptadas", "Rank-IC mín.", "Rank-IC máx.", "Horas"],
+        rows,
+        "lrrrrr",
+    )
+
+
+def write_table_grid_metrics(paths: Paths, portfolio: dict) -> None:
+    """Sitúa la cartera adoptada dentro de la distribución de todas las evaluadas.
+
+    La rejilla guarda trece métricas por cartera y el manuscrito sólo usaba dos. Ver dónde cae la
+    ganadora en cada una separa lo que la señal produce con casi cualquier regla de lo que depende
+    de haber elegido esta.
+    """
+    grid = portfolio["grid"]
+    winner = portfolio["winner"]["winner_summary"]
+    metrics = [
+        ("information_ratio", "Information Ratio", 3, False),
+        ("geometric_excess_return", "Exceso geométrico", 2, True),
+        ("max_drawdown", "Máxima caída", 2, True),
+        ("annualized_turnover", "Rotación anual", 2, False),
+        ("total_cost_drag", "Coste acumulado", 2, True),
+        ("beat_rate", "Años que baten", 0, True),
+    ]
+    rows = []
+    for key, label, digits, as_pct in metrics:
+        series = grid[key].dropna()
+        if series.empty:
+            continue
+        fmt = (lambda v: pct(v, digits)) if as_pct else (lambda v: num(v, digits))
+        rows.append([
+            tex(label),
+            fmt(series.min()),
+            fmt(series.median()),
+            fmt(series.max()),
+            fmt(winner.get(key)),
+        ])
+    table(
+        paths.tables / "t07_rejilla_metricas.tex",
+        ["Métrica", "Mínimo", "Mediana", "Máximo", "Cartera adoptada"],
+        rows,
+        "lrrrr",
+    )
+
+
+def write_table_sold_and_recovered(paths: Paths, narrative: dict | None) -> None:
+    """Ventas que el mercado desmintió: qué exceso dejó de cobrarse tras deshacer la posición."""
+    if narrative is None:
+        return
+    cases = narrative["windows"]["selection"].get("sold_and_recovered", [])
+    if not cases:
+        return
+    ranked = sorted(cases, key=lambda item: -item["post_exit_excess"])[:8]
+    rows = [
+        [
+            tex(case["ticker"]),
+            tex(str(case["exit_snapshot"])[:10]),
+            pct(case["post_exit_return"], 1),
+            pct(case["post_exit_benchmark_return"], 1),
+            pct(case["post_exit_excess"], 1),
+        ]
+        for case in ranked
+    ]
+    table(
+        paths.tables / "t08_ventas_prematuras.tex",
+        ["Acción", "Fecha de venta", "Subida posterior", "Índice", "Exceso no cobrado"],
+        rows,
+        "llrrr",
+    )
+
+
 def _write_tables_orders_and_tails(paths: Paths, orders: pd.DataFrame, _tails: pd.DataFrame) -> None:
     """Motivos de las órdenes; la cola se representa directamente como figura."""
     flows = orders.copy()
@@ -2028,7 +2253,7 @@ def main() -> None:
         for key, expected in expected_ids.items():
             if manifest.get(key) != expected:
                 raise SystemExit(f"AUDITORÍA FALLIDA: {key}={manifest.get(key)!r}, esperado {expected!r}.")
-        required_tables = {"t06_ganador.tex"}
+        required_tables = {"t06_ganador.tex", "t05_ledger_fases.tex"}
         missing_tables = sorted(name for name in required_tables if not (paths.tables / name).is_file())
         if missing_tables:
             raise SystemExit(f"AUDITORÍA FALLIDA: faltan tablas {missing_tables!r}.")
@@ -2037,6 +2262,7 @@ def main() -> None:
         required_assets = {
             "f01_spiva_horizontes.png", "f03_cobertura_anual.png",
             "f03_muestra_oos.png",
+            "f04_deriva_agentes.png", "f06_cola_vs_orden.png", "f06_salud_senal.png",
             # Sólo las usa la defensa; la memoria dejó de citarlas.
             "f06_bootstrap.png", "f07_capacidad.png", "f07_perfiles_pesos.png",
             "f06_atribucion_factorial.png",
@@ -2106,6 +2332,21 @@ def main() -> None:
     write_tables_universe_resolution(paths)
     write_tables_robustness(paths, summary, robustness, attribution, portfolio)
     _write_tables_orders_and_tails(paths, orders, tails)
+
+    # Evidencia que los estudios ya calculaban y el manuscrito no contaba.
+    write_table_evaluation_ledger(paths, paths.study)
+    write_table_sold_and_recovered(paths, narrative)
+    write_table_grid_metrics(paths, portfolio)
+    draw_tail_vs_order(tails, paths.figures / "f06_cola_vs_orden.png")
+    draw_signal_health(
+        pd.read_parquet(paths.evidence / "signal_health.parquet"),
+        paths.figures / "f06_salud_senal.png",
+    )
+    draw_agent_feature_drift(
+        pd.read_parquet(paths.evidence / "model_feature_attribution.parquet"),
+        pd.read_parquet(paths.evidence / "feature_diagnostics.parquet"),
+        paths.figures / "f04_deriva_agentes.png",
+    )
 
     # Activos de la rejilla de cartera. Sustituyen al barrido diagnóstico de una variable cada vez:
     # el esquema de la rejilla tiene seis coordenadas simultáneas y el objetivo pasa a ser el IR.
