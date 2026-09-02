@@ -313,7 +313,11 @@ El manuscrito ya está corregido y describe los dos mecanismos por separado. Lo 
 nombre entra en la clave de caché y en los artefactos ya persistidos: cambiarlo invalidaría los
 estudios adoptados. Si algún día se renombra, hay que revisar el capítulo 3 y el Anexo C.
 
-### Deuda nueva — la defensa quedó desalineada con la memoria
+### Saldada (2026-09-02) — la defensa quedó desalineada con la memoria
+
+> **Saldadas.** La defensa se rehízo el 2026-09-02: recortada a 20 diapositivas y 14:35, con la
+> cuarta barra narrada, la capacidad reencuadrada y `guion_defensa.md` reescrito. Lo que sigue se
+> conserva como registro de qué había que arreglar.
 
 `TFM_ppt.tex` **no se tocó** en esta pasada. Los puntos donde ahora difiere del informe:
 
@@ -325,7 +329,7 @@ estudios adoptados. Si algún día se renombra, hay que revisar el capítulo 3 y
 - Existe un Anexo C nuevo.
 - Los identificadores de código ya no aparecen en la prosa de la memoria.
 
-### Deuda nueva — el repaso de lectura del 2026-09-02 movió figuras y cifras
+### Saldada (2026-09-02) — el repaso de lectura movió figuras y cifras
 
 La memoria quedó actualizada en esa pasada; lo que sigue afecta a `TFM_ppt.tex`, que **no se tocó**.
 

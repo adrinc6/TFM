@@ -2100,6 +2100,11 @@ def build_result_macros(
 
     selection_diag = diag[pd.to_datetime(diag["prediction_date"]).dt.year.le(2024)]
     risk_rank_ic = selection_diag.loc[selection_diag["agent"] == "risk", "rank_ic"].mean()
+    # El promedio ingenuo de los cinco especialistas es el listón que el meta debe batir:
+    # la defensa lo compara con el meta y con el mejor especialista en la misma diapositiva.
+    equal_weight_rank_ic = selection_diag.loc[
+        selection_diag["agent"] == "meta_equal_weight", "rank_ic"
+    ].mean()
     leaders = attribution_summary["by_year"]
     risk_leaders = leaders[leaders["agent"] == "risk"].groupby("feature")["size"].sum()
     risk_total = risk_leaders.sum()
@@ -2113,6 +2118,7 @@ def build_result_macros(
         "NumDiagnosticos": integer(len(features)),
         "RankICSeleccion": num(selection["mean_rank_ic"]),
         "RankICRisk": num(risk_rank_ic),
+        "RankICEquiponderado": num(equal_weight_rank_ic),
         "CohortesSeleccion": integer(significance["n_cohorts"]),
         "FraccionICPositiva": pct(selection["rank_ic_positive_fraction"], 1),
         "ICIRSeleccion": num(selection["ic_ir"], 3),
@@ -2138,6 +2144,11 @@ def build_result_macros(
         "TurnoverCartera": num(winner_summary["annualized_turnover"], 2),
         "MDDCartera": pct(winner_summary["max_drawdown"]),
         "BeatRateCartera": pct(winner_summary["beat_rate"], 0),
+        "CAGRCartera": pct(winner_summary["cagr_portfolio"]),
+        "CAGRIndice": pct(winner_summary["cagr_benchmark"]),
+        "AlfaMedioAnual": pct(winner_summary["mean_annual_alpha"]),
+        "PeorAnoAlfa": pct(winner_summary["worst_year_alpha"]),
+        "CosteAcumulado": pct(winner_summary["total_cost_drag"]),
         "IRCarteraReservado": num(winner_confirmation["information_ratio"], 3),
         "ExcesoCarteraReservado": pct(winner_confirmation["geometric_excess_return"]),
         "TurnoverCarteraReservado": num(winner_confirmation["annualized_turnover"], 2),

@@ -2974,3 +2974,138 @@ referencias sin resolver, ningún capítulo con más de cinco secciones. Diecioc
 texto sobre el PDF generado ---diez de que cada corrección llegó y ocho de que cada error
 desapareció--- más el recuento de citas por autor. `verify_latex_assets.py`, `pytest` (144 pruebas),
 `ruff` y `node --check` en verde.
+
+## 2026-09-02 · La defensa: de 25 diapositivas y 24 minutos a 20 y 14:35
+
+El usuario pidió «unas 25 diapositivas, dinámica, con muchos gráficos, que la historia se cuente
+sola». Al abrir el fichero resultó que eso ya existía: 25 diapositivas narradas, 15 figuras, tres
+actos con barra de progreso y un arco de tres preguntas que se abren en la 4 y se resuelven una a
+una. No había que construir la presentación. Había que arreglar dos cosas.
+
+**El tiempo, que era el problema de fondo.** El reparto declaraba 23:54 y el usuario dispone de
+quince minutos. Pero al medirlo en serio apareció algo peor: las marcas de tiempo eran ficción. Las
+notas sumaban 3.424 palabras, que a ritmo hablado normal son casi 23 minutos, y casi todas
+declaraban entre 170 y 330 palabras por minuto, un ritmo que nadie sostiene. Recortar diapositivas
+no bastaba, porque el texto seguía ahí. Se hicieron las dos cosas: cuatro diapositivas salen del
+hilo ---la señal por eras, el sesgo de cobertura, la concentración en pocos nombres y el margen de
+costes---, dos se funden en una ---los siete contrastes y el Deflated Sharpe--- y **el guion entero
+se reescribe conservando el argumento de cada diapositiva y perdiendo la elaboración**: 3.424
+palabras pasan a 2.167. Las duraciones ya no se estiman a ojo, se calculan a 150 palabras por
+minuto sobre el texto real. Total: **20 diapositivas, ocho de reserva, 14:35**.
+
+Nada se borra: las cuatro que salen del hilo pasan a reserva con su figura intacta, y el guion mapea
+qué reserva responde a qué pregunta previsible.
+
+**El desajuste que se veía en directo.** La figura de selección frente a reserva ganó en la ronda
+anterior una cuarta barra ---la cartera adoptada, +0,109 en la era reservada--- y la nota seguía
+narrando «las tres pasadas […] Information Ratio negativo en las tres». El tribunal habría visto una
+cuarta barra positiva mientras se afirmaba lo contrario, y justo en la diapositiva que resuelve la
+tercera pregunta. Reescrita, el argumento gana: las tres fracasan y la cuarta no, con la misma
+señal y sin reentrenar nada.
+
+**Dos diapositivas sin apoyo visual lo ganan.** La de las cuatro condiciones *point-in-time*, que
+sostiene la credibilidad de todo lo demás y era la más árida de la defensa, ahora abre con una línea
+de tiempo ---cierre fiscal, fecha de publicación, observación, ejecución--- que resuelve de un
+vistazo las dos condiciones que hablan de fechas. Y el matiz incómodo, donde tres cifras sueltas
+comparaban el promedio ingenuo, el meta y el mejor especialista, pasa a tres barras a escala.
+
+**Resincronizaciones menores.** «Casi triplica» pasa a «multiplica por 2,7», como la memoria. La
+fila de rotación rotula su unidad, porque mostraba ratios mientras la nota los leía en por ciento.
+La reserva de capacidad recoge el segundo tramo (40,6 millones) y la formulación de patrimonio
+individual o familiar. Y el promedio ingenuo de los cinco agentes, que estaba escrito a mano, sale
+al macro `\RankICEquiponderado`: su valor, 0,0690, se verificó contra el artefacto antes de moverlo.
+
+Al recortar se perdió el cambio de acto: el pie decía «Acto I» durante todo el Acto II. Restaurado.
+
+**`guion_defensa.md` reescrito.** Describía 20 diapositivas narradas y cinco de reserva en tres
+actos, y el deck tenía 25 y cuatro: llevaba desfasado desde antes de esta ronda. Ahora refleja el
+reparto real, el mapa de las tres preguntas y qué diapositiva de reserva responde a qué pregunta.
+
+**El arranque, reordenado.** La defensa abría con «batir al mercado es un juego de suma cero», lo
+que hacía parecer que ése era el objetivo del trabajo cuando la contribución es metodológica. Se
+intercambian la 2 y la 3: lo primero que ve el tribunal tras el título son los dos objetivos, y el
+listón de mercado viene después, ya subordinado. Además, la diapositiva de SPIVA deja de servir solo
+al objetivo 2 y sirve a los dos: la aritmética de suma cero es el listón del segundo, y que nueve de
+cada diez profesionales fallen es la razón por la que el primero exige la era reservada, los
+contrastes adversariales y la corrección por multiplicidad.
+
+**Validación realizada.** 28 páginas ---20 numeradas y 8 de reserva---, sin desbordamientos, cero
+`\pause`, el pie y la barra de progreso coherentes en /20 y el guion en 15:00. Catorce comprobaciones automáticas sobre
+el PDF generado. `verify_latex_assets.py`, `pytest` (144 pruebas), `ruff` y `node --check` en verde.
+
+## 2026-09-02 · La defensa, ampliada a 25 diapositivas visuales en 15 minutos
+
+Tres peticiones del usuario sobre la defensa recortada esa misma jornada.
+
+**La flecha que pisaba un rectángulo.** En el diagrama del protocolo, la salida del meta se trazaba
+con `(meta.south) |- (freeze.east)`: bajaba y giraba a la izquierda atravesando «Rejilla de
+carteras». Además el flujo quedaba invertido, porque entraba a la señal congelada por la derecha y
+de ahí volvía a salir hacia la derecha. Ahora baja por su propio eje y entra por arriba, y la fila
+inferior se lee de izquierda a derecha como la superior.
+
+**Fuera el agente `risk` del hilo principal.** El usuario no quiere que el resultado incómodo ---el
+mejor especialista por separado ordena algo mejor que la combinación de los cinco--- ocupe una
+diapositiva del recorrido. Se rehacen dos. La que resolvía la pregunta 1 abría el agente `risk` y su
+atribución; ahora responde a lo que la pregunta plantea de verdad, que es si aprender aporta:
+**0,1067 frente a 0,0119 de la mejor fórmula factorial** calculada sobre el mismo panel sin entrenar
+nada, nueve veces mejor, con las otras cuatro indistinguibles de cero. Y la del «matiz incómodo»
+conserva la comparación que sí demuestra aprendizaje ---pesos aprendidos contra reparto uniforme,
+0,0690 a 0,1067--- mientras la comparación completa con `risk` baja a reserva, disponible si el
+tribunal pregunta. No se oculta nada: se deja de abrir con ello.
+
+**De 20 a 25 diapositivas.** Se añaden cinco que cuentan cosas que el hilo no contaba, todas con
+figuras ya generadas que la defensa no usaba: sobre qué datos se mide todo ---60.259 predicciones,
+135 fechas, 606 empresas---; que la señal aparece en tres de cada cuatro fechas y no es homogénea;
+la objeción del factor conocido, respondida con el 87,2 % que sobrevive a neutralizar estilos;
+**qué habría ganado quien la hubiera seguido**, que era el hueco más obvio porque la defensa nunca
+enseñaba la curva de patrimonio; y qué compró, con la concentración declarada como limitación. El
+puente al Acto II deja de ser una afirmación y pasa a ser una medición fecha a fecha: de las 62
+fechas en que el orden fue bueno, en dieciséis las diez acciones compradas perdieron contra el
+mercado.
+
+**El tiempo.** Con 25 diapositivas a ritmo hablado normal la defensa se iba a 20 minutos. El usuario
+mantiene las 25 y prefiere ir más rápido por cada una, así que se reescribe el guion entero: de
+2.956 a 2.099 palabras, **13:55 a 150 palabras por minuto**. Cada nota conserva su afirmación
+central y su cifra; la carga narrativa pasa a las figuras.
+
+Cinco macros nuevas para la curva de patrimonio (`CAGRCartera`, `CAGRIndice`, `AlfaMedioAnual`,
+`PeorAnoAlfa`, `CosteAcumulado`), todas leídas del artefacto del Portfolio Study.
+
+**Un percance que conviene recordar.** Al reasignar las notas con una expresión regular sobre
+`\note{}` se destruyeron veinte marcas de tiempo, porque el patrón cruzaba bloques. Se recuperó del
+snapshot previo y se rehízo la operación bloque a bloque, comprobando después que **cada nota habla
+de la diapositiva a la que acompaña**. Esa comprobación debería ser rutinaria: un guion desplazado
+una posición no se detecta compilando.
+
+**Validación realizada.** 34 páginas ---25 numeradas y 9 de reserva---, sin desbordamientos, cero
+`\pause`, pie y barra de progreso coherentes en /25. Emparejamiento nota-diapositiva verificado una
+a una. `verify_latex_assets.py`, `ruff` y `node --check` en verde.
+
+## 2026-09-02 · Los perfiles suben al hilo: el consenso aprendido gana a los estilos fijos
+
+Dos correcciones sobre la defensa de 25 diapositivas.
+
+**Se aclara qué sobraba del agente `risk`.** La petición anterior no era retirar `risk` de la
+presentación, sino no mostrar que se explica con dos variables ---el hueco de apertura y el rango de
+negociación, que juntas encabezan el 81,5 % de su atribución---, porque deja la señal con aspecto
+mecánico y frágil. La interpretación previa fue excesiva. El estado final: `risk` sigue en el
+diagrama de arquitectura y en la diapositiva donde el meta corrige hacia él y no baja de 0,79 desde
+2020, que es la evidencia de aprendizaje; la comparación completa con las tres barras vive en
+reserva; y lo único que desaparece del recorrido es el desglose por variables, que sigue en la
+memoria con sus salvedades.
+
+**Los perfiles pasan de reserva al hilo, en una sola diapositiva.** Las dos figuras ---los pesos
+fijos de los siete estilos y sus resultados--- estaban sueltas en reserva, sin lectura delante. Ahora
+comparten diapositiva al final del Acto I, con la conclusión enunciada: el consenso aprendido
+obtiene **IR 0,841** y el mejor estilo fijo se queda en **0,342**; en la era reservada, seis de los
+siete se vuelven negativos. Verificado en `portfolio_profiles.parquet`. Es la comparación más limpia
+del trabajo, porque solo cambia quién pondera: mismos cinco agentes entrenados, misma señal, misma
+cartera. Cierra el argumento del primer acto justo antes del puente que enseña que ordenar no es
+cobrar.
+
+La defensa queda en **26 diapositivas y 15:05**, con siete de reserva. El pie y la barra de progreso
+se actualizan a /26, y `guion_defensa.md` recoge el nuevo reparto, el orden de recorte y el mapa de
+reserva renumerado.
+
+**Validación realizada.** 33 páginas, sin desbordamientos, emparejamiento nota-diapositiva
+verificado una a una. `verify_latex_assets.py`, `ruff` y `node --check` en verde.
