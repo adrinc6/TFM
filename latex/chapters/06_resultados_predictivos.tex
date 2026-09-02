@@ -57,7 +57,7 @@ desaceleración es lo que justifica detenerse en tres.
 La configuración ganadora observa el mercado cada mes, aprende a ordenar el retorno de los doce
 meses siguientes, usa el conjunto amplio de variables con un máximo de doce por agente, no
 neutraliza por sector ni pondera por recencia, y combina a los cinco especialistas con la variante
-\textbf{libre} del meta-agente, sin tope por agente. Esa última elección procede de la primera
+libre del meta-agente, sin tope por agente. Esa última elección procede de la primera
 pasada y gobierna buena parte de lo que sigue; la tercera volvió a compararla con la acotada y la
 confirmó. La Tabla~\ref{tab:ganador} la recoge entera.
 
@@ -121,7 +121,7 @@ añade, por tanto, información útil y no sólo reescala los scores.
 \end{table}
 
 La Tabla~\ref{tab:agentes} reúne las siete señales y contiene un resultado que incomoda a la propia
-arquitectura del trabajo: \textbf{el agente de riesgo por separado ordena mejor que el meta-agente}.
+arquitectura del trabajo: el agente de riesgo por separado ordena mejor que el meta-agente.
 Su Rank-IC es 0,1201 con IC-IR 0,966 y 81,20\,\% de cohortes positivas, frente a 0,1067, 0,833 y
 76,07\,\% del meta. La diferencia es pequeña, pero va en la dirección contraria a la que
 justificaría la complejidad añadida, y no puede achacarse al tope de los pesos: con la variante
@@ -181,8 +181,8 @@ las tres de mayor peso en cada agente.
 \end{table}
 
 El resultado más relevante afecta al agente de riesgo, que es el que domina el sistema. La lectura
-natural sería que reproduce la conocida prima de baja volatilidad, y \textbf{los datos no la
-respaldan}. Las dos variables que mandan son los huecos de apertura a un mes y la amplitud del rango
+natural sería que reproduce la conocida prima de baja volatilidad, y los datos no la
+respaldan. Las dos variables que mandan son los huecos de apertura a un mes y la amplitud del rango
 de negociación a tres meses ---microestructura del precio a corto plazo---, que juntas encabezan el
 \DosVariablesRisk{} de las observaciones. Las medidas propias de una estrategia defensiva aparecen
 después y con mucho menos peso: la máxima caída anual encabeza el 2,4\,\% y la beta, el candidato
@@ -210,11 +210,7 @@ agente aunque el reparto entre agentes esté congelado, lo que suaviza ---sin el
 objeción de que depender de un único especialista equivalga a depender de un único factor.
 
 La atribución local es descriptiva: dice qué variables movieron la puntuación, no que causen el
-retorno, y ningún contraste de este capítulo se apoya en ella. Un último dato en la misma dirección:
-el agente de calidad reparte su atención entre 28 variables distintas ---más del doble que tendencia
-o riesgo--- y es a la vez uno de los peores por Rank-IC. Con cinco agentes no hay evidencia causal,
-pero la asociación sugiere que repartir la atención entre muchas variables débiles ordena peor que
-concentrarla en unas pocas con contenido.
+retorno, y ningún contraste de este capítulo se apoya en ella.
 \section{Capacidad predictiva fuera de muestra}
 \label{sec:capacidad-predictiva}
 
@@ -224,8 +220,8 @@ cohortes positivas y un estadístico de Newey--West de 3,33.
 Esas 117 cohortes mensuales no son, sin embargo, 117 pruebas independientes. Como cada etiqueta tarda
 doce meses en cerrarse, dos fechas consecutivas comparten once de esos doce meses: miden en gran
 parte el mismo periodo. El estudio calcula por ello cuántas observaciones verdaderamente
-independientes contiene la ventana, y el resultado es \textbf{nueve}. En la era reservada, donde hay
-seis cohortes solapadas, esa cuenta baja a \textbf{una}. Es la cifra que conviene tener presente
+independientes contiene la ventana, y el resultado es nueve. En la era reservada, donde hay
+seis cohortes solapadas, esa cuenta baja a una. Es la cifra que conviene tener presente
 cada vez que aparezca un intervalo de confianza en este capítulo: la muestra efectiva es mucho menor
 de lo que el número de fechas sugiere, y es la razón de que toda la inferencia se agregue por bloques
 y no por cohorte. La Figura~\ref{fig:rankic-serie} muestra la serie cohorte a cohorte,
@@ -268,7 +264,7 @@ tres eras de selección, de modo que la ventaja no procede sólo de acertar la c
 cartera \textit{long-only} no puede explotar.
 
 La era reservada obliga a un matiz. En ella el decil superior obtiene $-11{,}52$\,\% frente al
-$-2{,}14$\,\% del universo: \textbf{pierde contra el panel}, al revés que antes. Y sin embargo la
+$-2{,}14$\,\% del universo: pierde contra el panel, al revés que antes. Y sin embargo la
 distancia entre el decil superior y el inferior se mantiene en $+6{,}27$ puntos. Las dos cosas
 juntas dicen algo preciso: la ordenación siguió separando lo bueno de lo malo, pero el nivel de toda
 la cola alta cayó por debajo del panel. Que la cartera adoptada batiese al índice en esa era se
@@ -283,15 +279,17 @@ relacionadas de lo que el Rank-IC sugiere.
   \centering
   \includegraphics[width=0.92\textwidth]{figures/f06_cola_vs_orden.png}
   \caption{Cada punto es una fecha de decisión: en el eje horizontal, la calidad del orden sobre
-  todo el universo; en el vertical, el exceso que obtuvieron las diez acciones mejor puntuadas.}
+  todo el universo; en el vertical, el exceso que obtuvieron las diez acciones mejor puntuadas. La
+  banda sombreada aísla el cuadrante incómodo ---orden bueno y, aun así, cola comprada en
+  negativo---, que es el que explica por qué ordenar bien no basta para cobrar.}
   \label{fig:cola-vs-orden}
 \end{figure}
 
-La correlación entre ambas magnitudes es de \textbf{0,22} sobre las 117 cohortes de selección. Es
+La correlación entre ambas magnitudes es de 0,22 sobre las 117 cohortes de selección. Es
 positiva ---ordenar mejor ayuda a comprar mejor--- pero está muy lejos de la equivalencia que el
 Rank-IC podría sugerir. La zona sombreada de la Figura~\ref{fig:cola-vs-orden} contiene el caso
 incómodo: de las 62 fechas en que el sistema ordenó bien el universo, con un Rank-IC por encima de
-0,10, \textbf{en dieciséis las diez acciones que compró perdieron dinero} frente al mercado. Una de
+0,10, en dieciséis las diez acciones que compró perdieron dinero frente al mercado. Una de
 cada cuatro.
 
 Esa desconexión entre ordenar y cobrar es el puente entre este capítulo y el siguiente, y explica un
@@ -355,7 +353,7 @@ Figura~\ref{fig:orden-vs-pago} las enfrenta.
 \end{figure}
 
 Antes de leer las cifras hay que declarar con qué cartera se miden, porque es determinante: son las
-de la \textbf{cartera por defecto del catálogo}, la que estuvo vigente durante todo el trabajo
+de la cartera por defecto del catálogo, la que estuvo vigente durante todo el trabajo
 predictivo, no la que el trabajo acaba adoptando. Con ella, el alfa medio anual acompaña al
 Information Ratio y no al Rank-IC: $+5{,}78$\,\% en 2015--2018, $+2{,}25$\,\% en 2019--2021 y
 $-2{,}37$\,\% en 2022--2024.
@@ -366,16 +364,16 @@ concreta, que además penaliza que la señal sea errática de un mes a otro aunq
 modelo sigue ordenando, e incluso ordena mejor, pero de forma menos constante y sobre una dispersión
 de retornos que recompensa peor el acierto.
 
-Conviene adelantar, eso sí, que ese deterioro \textbf{no es una propiedad de la señal sino de aquella
-cartera}. Con la que el Capítulo~\ref{chap:resultados-economicos} acaba adoptando, la misma señal
+Conviene adelantar, eso sí, que ese deterioro no es una propiedad de la señal sino de aquella
+cartera. Con la que el Capítulo~\ref{chap:resultados-economicos} acaba adoptando, la misma señal
 obtiene un alfa medio de $+2{,}73$\,\% en esa última era y ningún año negativo en toda la ventana.
 Que dos carteras den signos opuestos sobre la misma ordenación es precisamente el hallazgo de ese
 capítulo, y la razón de que exista.
 
 Esto tiene una consecuencia directa sobre el sesgo de cobertura. Ese sesgo es máximo en 2015--2018 y
 mínimo en 2022--2024, así que si estuviera fabricando la capacidad predictiva el Rank-IC debería ser
-mayor en la primera era y desvanecerse en la última. Ocurre lo contrario, lo que \textbf{contradice
-una explicación simple basada en la cobertura del panel}. No permite afirmar, en cambio, que el
+mayor en la primera era y desvanecerse en la última. Ocurre lo contrario, lo que contradice
+una explicación simple basada en la cobertura del panel. No permite afirmar, en cambio, que el
 resultado \emph{económico} esté libre de ese sesgo: con la cartera por defecto el patrón es el
 inverso ---su alfa decae hacia la era menos sesgada--- y sugiere que la rentabilidad medida se apoyó
 en los años de peor cobertura.
@@ -403,7 +401,7 @@ sistema con toda la historia disponible nunca habría visto una cifra negativa: 
 entre 0,028 y 0,103 durante los ocho años. Pero uno que sólo hubiera mirado los dos últimos años
 ---que es un horizonte de evaluación perfectamente razonable, y el que emplea la mayoría de los
 comités de inversión--- habría visto la señal cruzar a terreno negativo y quedarse ahí
-\textbf{durante doce meses seguidos, entre julio de 2022 y junio de 2023}.
+durante doce meses seguidos, entre julio de 2022 y junio de 2023.
 
 Eso no contradice ningún resultado de este capítulo: la capacidad de ordenación existe y las pruebas
 adversariales la respaldan. Y tampoco significa que la señal se rompiera, porque no lo hizo; la
@@ -490,7 +488,7 @@ cohortes de selección, pero sólo sobre las filas en que los catorce controles 
 sobre ese subconjunto el Rank-IC bruto es algo mayor. Lo que importa es que las dos cifras se miden
 sobre la misma muestra, de modo que su cociente sí es interpretable. La pérdida del 12,79\,\% indica
 que parte de la señal comparte información con esos controles, como sería esperable en un sistema
-que usa ratios económicos; la retención del \textbf{87,21\,\%} muestra que no se agota en ellos.
+que usa ratios económicos; la retención del 87,21\,\% muestra que no se agota en ellos.
 
 El segundo, que resume la Figura~\ref{fig:atribucion-factorial} junto al anterior, pregunta lo
 contrario: si los retornos de la estrategia pueden explicarse como una mezcla de cinco estilos

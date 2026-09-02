@@ -3,7 +3,9 @@
 
 Cada limitación se enuncia aquí junto a la cifra que permite dimensionarla: una salvedad que no
 puede cuantificarse no dice cuánto hay que descontar de las conclusiones. La
-Tabla~\ref{tab:limitaciones} las reúne ordenadas por severidad.
+Tabla~\ref{tab:limitaciones} reúne las que condicionan de verdad la lectura del trabajo. No es un
+inventario exhaustivo de todo lo mejorable: recoge aquellas cuya magnitud cambia lo que puede
+afirmarse, y deja fuera las salvedades genéricas que no mueven ninguna conclusión.
 
 {\footnotesize
 \input{tables/t08_limitaciones.tex}
@@ -14,28 +16,28 @@ las conclusiones, no una medida estadística.}\normalsize
 
 Cuatro de esas filas merecen una precisión que la tabla no puede contener.
 
-La \textbf{multiplicidad} se agravó dos veces y a propósito: al encadenar tres Model Studies y al
+La multiplicidad se agravó dos veces y a propósito: al encadenar tres Model Studies y al
 recorrer 1.440 carteras. Sus dos alcances no deben confundirse. La predictiva contamina la métrica
 que el trabajo reporta como resultado principal; la de la rejilla no puede tocar el Rank-IC y se
 limita a convertir el Information Ratio de la ventana de selección en una cota superior optimista.
 Ninguna de las dos anula el contraste de permutación, que no depende del número de configuraciones
 ensayadas.
 
-El \textbf{predominio del agente de riesgo} queda matizado y agravado a la vez por su atribución
+El predominio del agente de riesgo queda matizado y agravado a la vez por su atribución
 local. Matizado, porque ese agente no resulta ser una réplica de la prima de baja volatilidad y
 reasigna atención entre sus variables según el régimen. Agravado, porque desplaza la incógnita sin
 resolverla: el trabajo no explica \emph{por qué} unas variables de estructura de negociación a
 semanas ordenan retornos a doce meses, y una señal cuyo mecanismo no se comprende es más frágil ante
 un cambio de régimen que una respaldada por una hipótesis económica.
 
-La \textbf{concentración en pocos nombres} no la delata ninguna métrica agregada: de las 42 acciones
+La concentración en pocos nombres no la delata ninguna métrica agregada: de las 42 acciones
 que pasaron por la cartera, la primera aporta 27,8 puntos de contribución neta y las cinco primeras
 suman algo más de la mitad de lo que aportan las quince mayores; en la era reservada una sola
 posición aporta 21,3 de los puntos de la ventana. El número de apuestas realmente independientes es
 por tanto bastante menor que los diez años de serie.
 
-Y la que más condiciona las conclusiones: \textbf{el orden predictivo y el pago económico no se
-mueven en la misma dirección}. El Rank-IC es mayor en la era más reciente, mientras que el
+Y la que más condiciona las conclusiones: el orden predictivo y el pago económico no se mueven en
+la misma dirección. El Rank-IC es mayor en la era más reciente, mientras que el
 Information Ratio de la cartera por defecto cae y se vuelve negativo en esa misma era. La cartera
 adoptada corrige ese deterioro ---no deja ningún año negativo en la ventana de selección---, pero
 que hiciera falta cambiar la cartera para lograrlo es justamente la limitación: la consecuencia para
@@ -59,7 +61,7 @@ La pertenencia histórica al índice limita el sesgo de supervivencia de composi
 la cobertura desigual de las empresas retiradas. A diferencia de la versión habitual de esta
 salvedad, aquí no es una posibilidad genérica sino algo medido, y se sabe de ella tres cosas.
 
-La \textbf{causa} está medida en el Capítulo~\ref{chap:datos} y no es la mortalidad empresarial sino
+La causa está medida en el Capítulo~\ref{chap:datos} y no es la mortalidad empresarial sino
 la retirada de símbolos por parte del proveedor de precios. El dato que remata el diagnóstico es
 cómo crece la ausencia con el tiempo transcurrido desde que una empresa salió del índice.
 
@@ -88,7 +90,7 @@ en el índice falta el 1,2\,\%, mientras que entre las que salieron hace más de
 94,4\,\%. Si el problema fuera la mortalidad empresarial, la ausencia no dependería de la
 antigüedad de esa manera.
 
-La \textbf{dirección} es optimista, no conservadora. Las empresas que sí llegan al panel sobreviven
+La dirección es optimista, no conservadora. Las empresas que sí llegan al panel sobreviven
 hasta hoy con mucha más frecuencia que los miembros reales del índice de su año: en 1998 lo hacen el
 77,7\,\% frente al 35,5\,\%, un exceso de 42 puntos porcentuales que se reduce a cero en 2026. Como
 el entrenamiento es una ventana móvil, el exceso que afecta a cada evaluación decae de 26,2 puntos
@@ -99,7 +101,7 @@ conservador. Ese razonamiento cuenta cabezas en vez de permanencia: una empresa 
 vez y desaparece, mientras que una superviviente compone durante todo el periodo, y es esa
 composición la que infla el resultado.
 
-Queda por declarar el \textbf{límite de lo demostrable}. Lo medido es la composición del universo,
+Queda por declarar el límite de lo demostrable. Lo medido es la composición del universo,
 no el retorno de las empresas ausentes, que carecen precisamente de la serie de precios que
 permitiría calcularlo: el sesgo \emph{no se cuantifica en puntos de rentabilidad}. Un dato acota su
 alcance en la dirección contraria ---los ausentes sí tienen fundamentales descargados, así que la
@@ -109,23 +111,16 @@ comprobación empírica de si mueve o no el resultado predictivo. Una réplica c
 
 \section{Amenazas económicas y de generalización}
 
-Los costes son constantes, 10 pb de comisión y 20 pb de \textit{slippage}, y no modelan impacto de
-mercado, \textit{bid--ask} dinámico ni fiscalidad. La sensibilidad medida acota esta limitación
-mejor de lo que suele acotarse: el exceso de la cartera no se agota hasta unos \CosteEquilibrio{}
-puntos básicos por operación, \MargenCoste{} veces el coste adoptado, de modo que el resultado no
-depende de haber elegido una comisión benévola. Esa holgura, sin embargo, se calcula sobre la ventana
-de selección, donde la cartera es la mejor de la rejilla. En la era reservada se reduce a
-\CosteEquilibrioReservado{} puntos básicos con las decisiones congeladas y desaparece por completo al
-resimular la cartera, porque allí el resultado empata con el índice: no hay margen que gastar en
-fricción.
-
-El universo estadounidense de gran capitalización limita además la extrapolación a pequeñas
-empresas, otros países o regímenes de liquidez distintos.
+Dos límites acotan hasta dónde viaja este resultado. El primero es de escala: el
+Capítulo~\ref{chap:resultados-economicos} sitúa el techo de ejecución en unas pocas decenas de
+millones, de modo que las conclusiones económicas se refieren a un patrimonio individual y no a una
+cartera de mayor tamaño. El segundo es de universo: al trabajar sobre grandes capitalizaciones
+estadounidenses, nada de lo medido aquí puede extrapolarse a empresas pequeñas, otros países o
+regímenes de liquidez distintos.
 
 Cada limitación acota una afirmación diferente, y conviene no mezclarlas: la multiplicidad limita el
-Sharpe, el solapamiento limita la precisión, la cobertura limita la generalización y la cartera
-limita la transferencia de señal. Ninguna permite ignorar los placebos, la permutación o la
-estabilidad por eras.
+Sharpe, la cobertura limita la generalización y la cartera limita la transferencia de señal. Ninguna
+permite ignorar los placebos, la permutación o la estabilidad por eras.
 
 \section{Lo que la cartera dejó de ganar}
 
@@ -154,7 +149,7 @@ mismo motivo de venta: apareció una candidata con más ventaja neta esperada.
 
 Hay una asimetría en cómo el trabajo cuenta su propio resultado que este dato ayuda a corregir. El
 Capítulo~\ref{chap:resultados-economicos} dedica una sección a explicar por qué el sistema compró
-Apple y la mantuvo cuarenta y cuatro meses, y esa es la cara favorable. La desfavorable es que las
+Apple y la mantuvo cuarenta y cinco meses seguidos, y esa es la cara favorable. La desfavorable es que las
 posiciones que peor salieron ---la peor resta 4,2 puntos de contribución neta tras dieciocho meses en
 cartera--- se mantuvieron también durante mucho tiempo, porque la misma permanencia mínima que
 protege a las buenas protege a las malas.
@@ -168,28 +163,20 @@ coste de la regla de rotación, no su balance neto.
 
 \section{Limitaciones heredadas del desarrollo}
 
-\subsection{Tres decisiones que condicionan las cifras}
+\subsection{Dos decisiones que condicionan las cifras}
 
-Tres limitaciones no proceden del diseño sino de decisiones tomadas durante el desarrollo. Merecen
+Dos limitaciones no proceden del diseño sino de decisiones tomadas durante el desarrollo. Merecen
 figurar aquí porque afectan a la interpretación de las cifras y no serían visibles para un lector
 que sólo viera el resultado final; su origen y la disyuntiva técnica que las motivó se documentan en
 el Anexo~\ref{anexo:desarrollo}.
 
-La primera es la salvaguarda de la curva de alfa: una recta fija entre $-10$\,\% y $+10$\,\% que
-sustituye a la calibración empírica cuando ninguna ventana de la cascada produce una pendiente
-creciente. Su defecto no es de magnitud sino de dirección: es un supuesto \emph{a priori} que se
-dispara \textbf{precisamente cuando la evidencia indica que no hay señal que calibrar}, de modo que
-allí donde interviene la expectativa de alfa no procede de los datos sino de la recta declarada. El
-diseño la prefiere a no tener alfa esperada en absoluto ---sin ella la cartera no podría decidir
-umbrales en esos tramos---, pero hay que declararla como lo que es: una decisión de diseño
-discutible, no una medición.
+La primera es la salvaguarda de la curva de alfa: cuando ninguna ventana de la cascada produce una
+calibración creciente, una recta fija declarada de antemano sustituye a la calibración empírica. Se
+dispara precisamente cuando la evidencia indica que no hay señal que calibrar, así que allí la
+expectativa de alfa no procede de los datos sino de un supuesto de diseño. El Anexo~\ref{anexo:desarrollo}
+recoge la disyuntiva que la motivó y por qué se prefirió a no tener alfa esperada en absoluto.
 
-La segunda es que la calibración isotónica que precedió a esa salvaguarda se retiró sin conservarla
-como opción del catálogo, de modo que este trabajo \emph{no puede} ofrecer una comparación empírica
-entre ambas formulaciones; la afirmación de que la nueva es mejor descansa en un argumento sobre el
-estimador, no en una medición pareada.
-
-La tercera afectaba a las variables de cartera, que en versiones anteriores de este trabajo tomaban
+La segunda afectaba a las variables de cartera, que en versiones anteriores de este trabajo tomaban
 su valor del catálogo recomendado y no de una medición, de modo que las cifras económicas debían
 leerse como una cota inferior. El Portfolio Study resuelve esa limitación y la sustituye por otra de
 naturaleza distinta: la cartera ya no es arbitraria, pero es la mejor de 1.440 evaluadas sobre la

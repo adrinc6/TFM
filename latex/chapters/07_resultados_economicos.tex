@@ -6,7 +6,7 @@ intentan explicarla por azar. Eso no basta para afirmar que sirva de algo. Una s
 bien el universo y perder su ventaja al convertirse en posiciones, porque una cartera real no puede
 comprar la ordenación entera: compra unas pocas acciones, paga costes y rota.
 
-Este capítulo aborda el \textbf{Objetivo 2}: si el orden aprendido puede cobrarse frente al índice, y
+Este capítulo aborda el Objetivo 2: si el orden aprendido puede cobrarse frente al índice, y
 cuánto de esa respuesta depende de las reglas con las que se construye la cartera.
 
 \section{De la señal a la cartera: qué se optimizó y cómo}
@@ -103,8 +103,8 @@ afortunada? La rejilla guarda trece métricas de cada cartera, y compararlas per
   rejilla.}
 \end{table}
 
-El dato más tranquilizador no está en la tabla sino en el recuento: \textbf{el 88,3\,\% de las
-carteras evaluadas obtiene un Information Ratio positivo}. La señal produce un resultado mejor que el
+El dato más tranquilizador no está en la tabla sino en el recuento: el 88,3\,\% de las
+carteras evaluadas obtiene un Information Ratio positivo. La señal produce un resultado mejor que el
 índice con casi cualquier regla de gestión razonable, y no sólo con la que se eligió: lo que la
 elección aporta es magnitud, no signo.
 
@@ -142,7 +142,7 @@ permanencia mínima de medio horizonte a uno completo y \emph{relaja} la correcc
 en un experimento legible.
 
 La Tabla~\ref{tab:cartera-ganadora} enfrenta las dos. Las tres diferencias apuntan en la misma
-dirección, y ése es el hallazgo de la sección: la cartera ganadora \textbf{opera menos}. Mantiene lo que compra durante todo el horizonte de la señal y no
+dirección, y ése es el hallazgo de la sección: la cartera ganadora opera menos. Mantiene lo que compra durante todo el horizonte de la señal y no
 persigue la deriva de los pesos, de modo que su rotación cae del 242\,\% al 135\,\% anualizado.
 
 Que eso mejore el resultado dice algo concreto: la señal es a doce meses, y la maquinaria que la
@@ -169,18 +169,22 @@ aparece en la última columna.
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.92\textwidth]{figures/f07_seleccion_vs_reservada.png}
-  \caption{Information Ratio dentro y fuera de la ventana de selección, pasada a pasada de la
-  cadena, con la cartera por defecto del catálogo.}
+  \caption{Information Ratio dentro y fuera de la ventana de selección. Las tres primeras columnas
+  son las pasadas de la cadena leídas con la cartera por defecto del catálogo; la cuarta, separada,
+  es esa misma señal del último Model Study con la cartera que eligió el Portfolio Study. Es el
+  único punto de la figura en que la era reservada no es negativa.}
   \label{fig:seleccion-vs-reservada}
 \end{figure}
 
 La Figura~\ref{fig:seleccion-vs-reservada} documenta el problema que la optimización de cartera vino
-a resolver. Con la cartera \emph{por defecto}, las tres pasadas de la cadena mejoran dentro de la
-ventana de selección pero fracasan fuera: su Information Ratio en la era reservada es negativo en
-las tres, y la mejor de ellas no bate al índice ni un solo año. Leído así, el trabajo parecería el
-retrato de un sobreajuste.
+a resolver, y también su desenlace. Con la cartera \emph{por defecto}, las tres pasadas de la cadena
+mejoran dentro de la ventana de selección pero fracasan fuera: su Information Ratio en la era
+reservada es negativo en las tres, y la mejor de ellas no bate al índice ni un solo año. Leídas
+aisladamente, esas tres columnas serían el retrato de un sobreajuste. La cuarta es la que cambia la
+lectura: la misma señal de la tercera pasada, con otra cartera, pasa de $-1{,}795$ a $+0{,}109$ en
+esa misma era. La distancia entre la tercera columna y la cuarta no la produjo ningún reentrenamiento.
 
-El hallazgo del capítulo es que la cartera era el \textbf{cuello de botella}. Con la optimizada, la
+El hallazgo del capítulo es que la cartera era el cuello de botella. Con la optimizada, la
 misma señal ---sin reentrenar nada ni tocar una sola variable predictiva--- deja de perder en la era
 reservada: exceso de $+0{,}24$\,\% e Information Ratio de $+0{,}109$, batiendo al índice en uno de
 los dos años. La ordenación se mantuvo positiva fuera de muestra; la política original no conseguía
@@ -215,8 +219,8 @@ pagada por una señal que necesita doce meses para expresarse.
   completa: descriptiva, no probatoria.}
 \end{table}
 
-Dos observaciones condicionan la lectura de la tabla. El efectivo medio es \textbf{cero en las tres
-ventanas}: la cartera renuncia por completo a la liquidez, así que su resultado no puede atribuirse
+Dos observaciones condicionan la lectura de la tabla. El efectivo medio es cero en las tres
+ventanas: la cartera renuncia por completo a la liquidez, así que su resultado no puede atribuirse
 a haber estado fuera del mercado en los momentos oportunos, y su exceso procede íntegramente de qué
 acciones eligió. Y el turnover \emph{cae} en la era reservada, del 135\,\% al 35\,\%, no por un
 cambio de comportamiento sino por la permanencia mínima: con doce meses obligatorios y sólo 1,41
@@ -251,7 +255,7 @@ exposición, que el sistema no tiene.
 \end{table}
 
 El detalle anual desmiente que el exceso agregado proceda de un año excepcional. La cartera bate al
-índice en \textbf{los diez años} de la ventana de selección, con un alfa medio de 5,77\,\% y un peor
+índice en los diez años de la ventana de selección, con un alfa medio de 5,77\,\% y un peor
 año de $+0{,}14$\,\%: la distribución está desplazada por completo, no arrastrada por una cola.
 Batir todos los años es, eso sí, precisamente el tipo de regularidad que una búsqueda amplia tiende
 a encontrar por construcción, y esta cartera salió de una. El único año adverso de la serie es 2026,
@@ -261,7 +265,7 @@ ya en la era reservada.
 \label{sec:relato-cartera}
 
 Hasta aquí la cartera se ha descrito por sus métricas agregadas. Queda la pregunta que sigue a la
-curva de patrimonio: qué tuvo dentro y por qué. Todo lo que sigue es \textbf{descriptivo} ---explica
+curva de patrimonio: qué tuvo dentro y por qué. Todo lo que sigue es descriptivo ---explica
 de dónde salió un resultado ya medido, no lo sostiene--- y ningún contraste del trabajo se apoya en
 ello.
 
@@ -270,12 +274,12 @@ ello.
 La cartera mantuvo exactamente ocho posiciones en los 117 \textit{snapshots} de la ventana de
 selección, sin una sola desviación y sin efectivo en ninguno de ellos, con un índice de
 Herfindahl medio de 0,131 --- el de una cartera de ocho nombres repartidos de forma razonablemente
-equilibrada ---. Por ella pasaron \textbf{42 acciones distintas} en 49 episodios de tenencia.
+equilibrada ---. Por ella pasaron 42 acciones distintas en 49 episodios de tenencia.
 
 Ese recuento es en sí mismo un resultado sobre la doctrina de cartera. Con 117 oportunidades de
 cambiar de opinión y ocho huecos que llenar, una regla que reaccionase a cada \textit{snapshot}
 habría desfilado por cientos de nombres; ésta se quedó en 42. La permanencia mediana de un episodio
-es de \textbf{15 meses}, la media de 18,1 y la más larga de 45, y \emph{ningún} episodio duró un
+es de 15 meses, la media de 18,1 y la más larga de 45, y \emph{ningún} episodio duró un
 solo \textit{snapshot}. La tenencia mínima de un horizonte completo, que la rejilla eligió, no es
 por tanto una etiqueta de la configuración: se lee directamente en la vida de las posiciones.
 
@@ -294,13 +298,13 @@ contribución de una acción suma, periodo a periodo, su peso por su retorno, de
 las órdenes que la movieron: descompone la rentabilidad \emph{de la cartera}, no su exceso sobre el
 índice, así que sus cifras no son comparables con el 5,91\,\% de exceso geométrico.
 
-El reparto es muy desigual. \textbf{AAPL aporta 27,8 puntos porcentuales}, un 66\,\% más que la
+El reparto es muy desigual. AAPL aporta 27,8 puntos porcentuales, un 66\,\% más que la
 segunda, y con ORLY, AXP, BA y ROP forma un grupo de cinco nombres que suma algo más de la mitad de
 lo que aportan las quince mayores. En el otro extremo, la peor posición de diez años pierde 4,2
 puntos: la cola izquierda es corta, coherente con una cartera que nunca sufrió una pérdida
 catastrófica en un nombre.
 
-Esa concentración es una \textbf{limitación, no un mérito}: que una sola acción pese tanto significa
+Esa concentración es una limitación, no un mérito: que una sola acción pese tanto significa
 que la evidencia económica descansa sobre menos apuestas independientes de lo que sugieren los diez
 años de serie.
 
@@ -337,13 +341,13 @@ apoya sobre todo en Technology (21,6\,\% de peso medio), Retail (13,4\,\%) y Fin
 
 En la era reservada el cuadro cambia por completo, y es el dato más incómodo de esta sección. Sólo
 nueve acciones distintas pasan por la cartera en los 18 \textit{snapshots}, siete de ellas presentes
-en todos, y el peso se concentra en \textbf{dos sectores que suman dos tercios} ---Media el 33,9\,\%
+en todos, y el peso se concentra en dos sectores que suman dos tercios ---Media el 33,9\,\%
 y Financial Services el 33,0\,\%--- mientras Technology cae del 21,6 al 2,9\,\%. La concentración no
 es una decisión de exposición: es lo que ocurre cuando una serie de año y medio se combina con una
 permanencia mínima de doce meses, de modo que casi nada llega a rotar.
 
-Ese mismo mecanismo acota lo que la era reservada puede demostrar. Se cerró en ella \textbf{una sola
-operación} ---MTCH, con un $-28{,}9$\,\% tras 31 meses, que además subió un 25,2\,\% en el año
+Ese mismo mecanismo acota lo que la era reservada puede demostrar. Se cerró en ella una sola
+operación ---MTCH, con un $-28{,}9$\,\% tras 31 meses, que además subió un 25,2\,\% en el año
 siguiente a su venta---, y una única posición, AMAT, aporta 21,3 de los puntos de rentabilidad de la
 ventana. El exceso del 0,24\,\% de esa era, que el resto del capítulo trata como su lectura más
 honesta, descansa por tanto sobre un puñado de nombres y prácticamente ninguna decisión de rotación.
@@ -356,7 +360,7 @@ El segundo panel de la Figura~\ref{fig:cartera-narrativa} sitúa en el calendari
 extremas, y una de ellas ilustra mejor que cualquier métrica qué \emph{no} hace la regla de
 rotación. El sistema compró AZO en agosto de 2016 y la vendió trece meses después con un
 $-21{,}9$\,\%, desplazada por un candidato mejor. En los doce meses siguientes AZO subió un
-26,7\,\% frente al 6,2\,\% del índice: la venta costó \textbf{19,3 puntos de exceso} que la cartera
+26,7\,\% frente al 6,2\,\% del índice: la venta costó 19,3 puntos de exceso que la cartera
 no llegó a cobrar. Tres años más tarde el sistema volvió a comprar la misma acción y la mantuvo 33
 meses para un $+113{,}3$\,\%, de modo que la misma empresa fue la peor y la tercera mejor operación
 del periodo sin que ninguna regla especial interviniera: sólo la señal cambiando de opinión dos
@@ -368,10 +372,10 @@ la mitigación que la rejilla acabó eligiendo. Lo que no puede hacerse es conve
 regla nueva: se lee con el resultado ya conocido, y añadir un filtro que lo hubiera evitado sería
 ajustar sobre el resultado.
 
-Dos salvedades acompañan a toda esta sección. El \textbf{sector no es \textit{point-in-time}}:
+Dos salvedades acompañan a toda esta sección. El sector no es \textit{point-in-time}:
 procede de una foto actual del proveedor de perfiles, así que una empresa que cambió de
 clasificación aparece con la de hoy en todo el histórico, y sirve para describir pero nunca para
-atribuir. Y la \textbf{cartera es la mejor de 1.440}, de modo que todo lo descrito dentro de la
+atribuir. Y la cartera es la mejor de 1.440, de modo que todo lo descrito dentro de la
 ventana de selección hereda ese sesgo optimista.
 
 
@@ -383,10 +387,10 @@ sección reconstruye una decisión completa, la de la acción que más tiempo es
 datos que el sistema tenía delante ese día y ninguno posterior.
 
 \paragraph{La decisión.} El 30 de octubre de 2019 la cartera vendió Centene y compró Apple. No fue
-una compra en un hueco vacío: fue una \textbf{sustitución}. La regla exige que la ventaja esperada
+una compra en un hueco vacío: fue una sustitución. La regla exige que la ventaja esperada
 del entrante supere a la del peor de los ocho que ya estaban, y por un margen que cubra el coste de
-la operación. Apple esperaba un exceso anual de \textbf{632 puntos básicos} y Centene, de
-\textbf{$-150$}: una diferencia de casi ocho puntos porcentuales, muy por encima del umbral exigido.
+la operación. Apple esperaba un exceso anual de 632 puntos básicos y Centene, de
+$-150$: una diferencia de casi ocho puntos porcentuales, muy por encima del umbral exigido.
 
 \paragraph{Por qué Apple encabezaba el orden.} Los cinco especialistas la vieron de forma muy
 distinta, y el meta-agente había aprendido, con quince cohortes ya cerradas, a quién hacer caso. La
@@ -428,8 +432,8 @@ su negociación. En calidad, de hecho, casi todas las contribuciones fueron nega
 de flujo de caja libre.
 
 \paragraph{Por qué la mantuvo, y por qué la vendió.} El sistema no tiene ninguna regla de toma de
-beneficios. Apple se mantuvo 45 meses seguidos ---el episodio más largo de toda la serie, y la razón
-de que la Tabla~\ref{tab:cartera-relato} le sume 65 meses entre sus tres estancias--- porque siguió
+beneficios. Apple se mantuvo 45 meses seguidos ---el episodio más largo de toda la serie, y el grueso
+de los 61 meses que la Tabla~\ref{tab:cartera-relato} le atribuye entre sus dos estancias--- porque siguió
 encabezando el orden ---volvió al percentil
 1,000 en once observaciones posteriores--- y porque la permanencia mínima de un horizonte completo
 impide deshacer una posición antes de que su tesis haya tenido tiempo de cumplirse; su peso llegó a
@@ -514,7 +518,7 @@ Declarar unos costes concretos invita a una objeción legítima: ¿se eligieron 
 no puede ser una afirmación sino una medición, y consiste en subir el coste hasta que el exceso
 desaparezca. Con el coste adoptado --- \CosteAdoptado{} puntos básicos por operación entre comisión y
 \textit{slippage} ---, el exceso de la cartera sobre el índice no se agota hasta unos
-\textbf{\CosteEquilibrio{} puntos básicos por operación}, es decir, \MargenCoste{} veces lo que
+\CosteEquilibrio{} puntos básicos por operación, es decir, \MargenCoste{} veces lo que
 paga.
 
 Ese cálculo resimula la cartera a cada nivel de coste, de modo que el gestor simulado opera menos a
@@ -542,8 +546,8 @@ conservadora: el margen es de \emph{al menos} \CosteEquilibrio{} puntos básicos
 
 Dos salvedades acotan la afirmación. La primera es que ese margen se mide sobre la ventana de
 selección, donde la cartera es la mejor de 1.440, de modo que el equilibrio hereda ese sesgo
-optimista. La segunda es más contundente y se reporta por serlo: \textbf{en la era reservada
-prácticamente no hay margen}. Con la ruta congelada, el exceso reservado a coste cero es de apenas
+optimista. La segunda es más contundente y se reporta por serlo: en la era reservada
+prácticamente no hay margen. Con la ruta congelada, el exceso reservado a coste cero es de apenas
 \ExcesoBrutoReservado{} y se agota en \CosteEquilibrioReservado{} puntos básicos por operación
 ---\MargenCosteReservado{} veces el coste adoptado, frente a las \MargenCosteCongelado{} de la
 ventana de selección---; y en la variante resimulada ni siquiera
@@ -557,8 +561,8 @@ Una cartera de ocho posiciones que rota el 135\,\% anual sólo es realizable si 
 el volumen que negocian esas acciones, y la Figura~\ref{fig:capacidad} sitúa ese límite. Comparando el nocional de cada una de las 143 órdenes de
 selección con el volumen diario mediano del título, y tomando como referencia el percentil 95 de
 participación ---no la mediana, que escondería las órdenes problemáticas---, la estrategia alcanza
-un 5\,\% de participación con \textbf{20,3 millones de dólares} de patrimonio y un 10\,\% con
-\textbf{40,6 millones}.
+un 5\,\% de participación con 20,3 millones de dólares de patrimonio y un 10\,\% con
+40,6 millones.
 
 \begin{figure}[htbp]
   \centering
@@ -568,16 +572,21 @@ un 5\,\% de participación con \textbf{20,3 millones de dólares} de patrimonio 
   \label{fig:capacidad}
 \end{figure}
 
-Ese límite no lo impone la cartera en su conjunto, sino unos pocos nombres poco líquidos. Con un
-patrimonio de mil millones, la peor orden de News Corporation habría supuesto un \textbf{29,6\,\% del
-volumen diario} de la acción, porque su volumen mediano ronda los 5,4 millones de dólares; Keurig Dr
-Pepper llega al 9,8\,\%. El resto de valores implicados se queda por debajo del 3,2\,\%. El sistema
-no elige por liquidez ---ninguna variable del catálogo la penaliza al puntuar---, de modo que basta
-con que dos o tres nombres estrechos entren en la cartera para fijar el techo de todo el conjunto.
+Ese límite no lo impone la cartera en su conjunto, sino unos pocos nombres poco líquidos. La
+peor orden de la serie es la de News Corporation, cuyo volumen mediano ronda los 5,4 millones de
+dólares diarios: con 40 millones de patrimonio esa única orden ya supondría un 1,2\,\% del volumen
+del día, y es la que primero se vuelve incómoda al crecer. Keurig Dr Pepper es la siguiente, y el
+resto de valores implicados queda muy por debajo. El sistema no elige por liquidez ---ninguna
+variable del catálogo la penaliza al puntuar---, de modo que basta con que dos o tres nombres
+estrechos entren en la cartera para fijar el techo de todo el conjunto.
 
-Es una limitación de escala, no de validez: acota el resultado al tamaño de un inversor individual o
-un fondo pequeño, no al de una gestora institucional. Y se lee con dos cautelas: el nocional diario
-es aproximado, y lo que se mide es participación sobre el volumen habitual, no impacto de mercado.
+Conviene situar bien esa cifra, porque delimita a quién se aplica este trabajo. Veinte o cuarenta
+millones no es el tamaño de un fondo: es el de un inversor particular con patrimonio alto o el de un
+patrimonio familiar, y ése es el ámbito en el que las conclusiones económicas de esta memoria tienen
+sentido. La estrategia no está pensada para gestionar volúmenes mayores, y nada de lo medido aquí
+respalda que pudiera hacerlo. Es una limitación de escala, no de validez, y se lee además con dos
+cautelas: el nocional diario es aproximado, y lo que se mide es participación sobre el volumen
+habitual, no impacto de mercado.
 
 En la era reservada esa cifra sube a 106,5 millones, pero por el mismo artefacto ya descrito para el
 turnover: con diez órdenes en año y medio, la capacidad aparente crece porque casi no se opera. La
@@ -597,8 +606,8 @@ señal y esta misma gestión, la hubiera filtrado según su criterio?
 Los perfiles no compitieron en la rejilla del Portfolio Study, y la razón es que no son variables de
 cartera: un perfil reordena la señal, de modo que opera en el plano predictivo. Meterlos en la
 rejilla habría equivalido a elegir el estilo de inversor por su rentabilidad conocida. Lo que sí se
-hace es reevaluar los ocho con la cartera ya ganadora, como diagnóstico; \textbf{ningún perfil se
-selecciona por su Information Ratio}.
+hace es reevaluar los ocho con la cartera ya ganadora, como diagnóstico; ningún perfil se
+selecciona por su Information Ratio.
 
 \subsubsection*{Qué es exactamente un perfil}
 
@@ -607,12 +616,12 @@ los cinco agentes. Y la diferencia decisiva con el sistema del resto del trabajo
 sale ese reparto.
 
 Conviene precisar qué parte del sistema cambia y cuál no, porque es fácil llevarse una impresión
-equivocada. \textbf{Los cinco agentes siguen siendo los mismos modelos entrenados}: cada uno ha
+equivocada. Los cinco agentes siguen siendo los mismos modelos entrenados: cada uno ha
 aprendido de la historia disponible cómo ordenar las acciones dentro de su especialidad, y los rangos
 que produce un perfil salen exactamente de esos modelos. Lo que un perfil cambia no es el aprendizaje
-de los especialistas, sino \textbf{quién decide cuánto pesa cada uno}.
+de los especialistas, sino quién decide cuánto pesa cada uno.
 
-Ahí está la diferencia. El meta-agente \textbf{aprende} ese reparto: mira qué especialista viene
+Ahí está la diferencia. El meta-agente aprende ese reparto: mira qué especialista viene
 acertando en las cohortes ya cerradas y lo ajusta fecha a fecha, sin que nadie decida por él. Un
 perfil lo fija de antemano y no lo revisa nunca: son constantes declaradas antes de ver un solo dato,
 idénticas durante los diez años.
@@ -620,8 +629,8 @@ idénticas durante los diez años.
 Lo que los perfiles simulan, por tanto, es a un inversor con criterio propio que emplea las mismas
 herramientas: alguien que confía en los cinco modelos, pero que decide por convicción hacer más caso
 al de valor, o al de crecimiento, en lugar de dejar que la evidencia acumulada reparta esa atención.
-El perfil equilibrado es el único que no impone ese criterio, de modo que \textbf{es el único de los
-ocho que emplea el consenso aprendido}; los otros siete conservan los modelos y sustituyen sólo la
+El perfil equilibrado es el único que no impone ese criterio, de modo que es el único de los
+ocho que emplea el consenso aprendido; los otros siete conservan los modelos y sustituyen sólo la
 regla que los combina.
 
 El mecanismo opera en dos pasos. Primero acota el universo: sólo son elegibles las acciones que el
@@ -636,8 +645,9 @@ Como la reordenación cambia qué acciones se compran, la calibración de percen
 recalcula sobre el ranking nuevo: de lo contrario el perfil operaría con expectativas referidas a un
 orden que ya no usa.
 
-Esa asimetría es la que da sentido a la comparación que sigue. No enfrenta ocho sistemas distintos,
-sino \textbf{los mismos cinco modelos combinados de ocho maneras}: siete según una convicción previa
+Que el reparto se aprenda o se decida de antemano es, por tanto, la única diferencia entre los
+ocho, y es lo que da sentido a la comparación que sigue. No enfrenta ocho sistemas distintos,
+sino los mismos cinco modelos combinados de ocho maneras: siete según una convicción previa
 y una según la evidencia acumulada. Si aprender el reparto aporta algo por encima de decidirlo a
 mano, debería notarse justo aquí.
 
@@ -671,7 +681,7 @@ aparente.
   \label{fig:perfiles-resultados}
 \end{figure}
 
-El resultado principal es que \textbf{ninguno de los siete estilos mejora a la señal sin reordenar}.
+El resultado principal es que ninguno de los siete estilos mejora a la señal sin reordenar.
 El perfil equilibrado ---que por construcción no impone ningún sesgo--- domina la ventana de
 selección con un Information Ratio de 0,841 frente al 0,342 del siguiente, y un estilo llega incluso
 a exceso negativo. La ordenación aprendida ya contiene lo que los perfiles intentan imponer desde
@@ -707,7 +717,7 @@ rentabilidad observada no habría servido de nada.
 
 Los ocho perfiles permiten además una comprobación que el trabajo aplica a sí mismo. Si se ordenan
 por su resultado en la ventana de selección y se comparan con el que obtienen en la era reservada,
-\textbf{el orden no se conserva}. Sólo dos de los ocho ---el equilibrado y el de tendencia---
+el orden no se conserva. Sólo dos de los ocho ---el equilibrado y el de tendencia---
 mantienen un exceso positivo fuera de muestra. Los demás caen, y el que más cae es precisamente uno
 de los que mejor parecían: el perfil defensivo era el cuarto en selección, con un Information Ratio
 de 0,251, y termina el último de los ocho, con $-2{,}27$.
@@ -763,7 +773,7 @@ ventana de selección y cambia el signo del resultado en la era reservada.
 
 La implicación excede al caso concreto. En este sistema, la construcción de cartera no era un
 detalle de implementación sino la variable que decidía si la señal servía para algo, de lo que se
-sigue una exigencia metodológica: \textbf{ninguna conclusión sobre la utilidad práctica de un
-sistema predictivo es interpretable sin declarar con qué cartera se midió}. Un trabajo que hubiera
+sigue una exigencia metodológica: ninguna conclusión sobre la utilidad práctica de un
+sistema predictivo es interpretable sin declarar con qué cartera se midió. Un trabajo que hubiera
 reportado únicamente el resultado de su cartera por defecto habría concluido que la señal no se
 traslada fuera de muestra, y se habría equivocado.

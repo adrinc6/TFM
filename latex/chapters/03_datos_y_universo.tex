@@ -102,11 +102,10 @@ en el panel; la Tabla~\ref{tab:resolucion-universo} resume ese reparto.
 El reparto desmiente la lectura intuitiva. La causa dominante no es la mortalidad empresarial sino
 la retirada de símbolos por parte del proveedor de precios: el 36,8\,\% de los ausentes son símbolos
 que su API ya no reconoce. La mortalidad se mide aparte, por el sufijo \texttt{Q} con el que se
-marca a una empresa en concurso, y alcanza a 31 de los 563 excluidos, un 5,5\,\%; que ese porcentaje
-coincida con el de la última fila de la tabla es una casualidad aritmética y no la misma medición.
-Un dato adicional lo confirma: los 563 ausentes \emph{sí} tienen
-fundamentales descargados, de modo que el
-cuello de botella es exclusivamente el precio y la exclusión no señala empresas sin información
+marca a una empresa en concurso, y alcanza a 31 de los 563 excluidos, un 5,5\,\%. Un dato adicional
+lo confirma: 528 de los 563 ausentes ---todos salvo los 33 que la tabla atribuye a fundamentales
+inservibles o ausentes, y los 2 sin identificador--- tienen sus fundamentales descargados, de modo
+que el cuello de botella es casi siempre el precio y la exclusión no señala empresas sin información
 contable. El Capítulo~\ref{chap:limitaciones} recoge la dirección y la magnitud del sesgo que esto
 introduce.
 
@@ -151,15 +150,15 @@ y se imputa únicamente con información del corte de entrenamiento.
 Hay una tercera medición que conviene añadir, porque acota el problema de cobertura por el lado
 favorable y no aparece en ninguna de las dos figuras. Una vez construida una fila del panel, ¿es
 utilizable para puntuar? La respuesta es que sí prácticamente siempre: la fracción de filas usables
-es del \textbf{100\,\% en todos los años de la serie}, incluido 2003, cuando la cobertura del índice
-apenas llegaba al 56\,\%. Dicho de otro modo, el problema de este panel no es que las empresas
+es del 100\,\% en todos los años de la serie, incluido 2003, cuando la cobertura del índice
+apenas llegaba al 49\,\%. Dicho de otro modo, el problema de este panel no es que las empresas
 lleguen incompletas, sino que \emph{faltan empresas enteras}. Es una distinción que importa, porque
 las dos carencias tienen consecuencias distintas: filas defectuosas degradarían la calidad de cada
 predicción, mientras que empresas ausentes sesgan la muestra sobre la que se predice. Aquí ocurre lo
 segundo, y el Capítulo~\ref{chap:limitaciones} mide en qué dirección.
 
 Conviene además acotar qué significa aquí «más datos». Cada reentrenamiento usa sólo etiquetas ya
-cerradas de su ventana de ocho años, de unas 9.879 a unas 13.236 filas según la fecha. Esas decenas
+cerradas de su ventana de ocho años, de unas 9.879 a unas 12.787 filas según la fecha. Esas decenas
 de miles de filas no son ensayos independientes: las acciones de una misma fecha comparten estado de
 mercado y las ventanas consecutivas se solapan. Por eso toda la inferencia posterior se agrega por
 cohorte y por era, en lugar de tratar cada acción--mes como una repetición.
@@ -173,8 +172,8 @@ que no lanzan ningún aviso y que producen curvas de patrimonio suaves y creíbl
 
 El sistema registra una fila por cada posición y fecha ---958 en la ventana de selección, sobre 60
 empresas--- y marca en cada una si hubo exclusión de mercado, si el retorno se neutralizó por
-anómalo y si la posición se liquidó de forma forzosa. \textbf{Las tres marcas están a cero en las 958
-filas}, y el retorno aplicado coincide exactamente con el retorno bruto en todas ellas: ninguna
+anómalo y si la posición se liquidó de forma forzosa. Las tres marcas están a cero en las 958
+filas, y el retorno aplicado coincide exactamente con el retorno bruto en todas ellas: ninguna
 intervención, ningún ajuste manual. El peor retorno de una posición individual, un $-38{,}8$\,\% en
 octubre de 2023, se aplicó tal cual.
 

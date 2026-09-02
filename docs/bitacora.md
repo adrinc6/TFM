@@ -2911,3 +2911,66 @@ páginas apaisadas y con el log limpio: cero desbordamientos, cero etiquetas dup
 referencias sin resolver. Diez comprobaciones de texto sobre el PDF generado confirman que cada
 corrección llegó al documento. `verify_latex_assets.py`, `pytest` (144 pruebas), `ruff` y
 `node --check` en verde.
+
+## 2026-09-02 · Repaso de lectura: bibliografía, negritas, cuatro figuras y siete errores de cifra
+
+El usuario leyó el informe completo y trajo dieciséis observaciones. Cuatro eran defectos visuales,
+verificados renderizando a imagen las páginas afectadas del PDF; el resto, decisiones editoriales.
+Los puntos 6, 7, 11 y 16 no traían queja sino un encargo de revisión, y de ahí salió lo más grave.
+
+**Bibliografía de 35 a 21 entradas.** Tres no se citaban en ninguna parte (Ang, Arnott, Carhart) y
+ocho más vivían en enumeraciones de paso del capítulo 2, que existían para citar y no para
+argumentar. Se retiraron esas enumeraciones ---Kelly/Freyberger/Feng y White/Hansen/Bailey 2017--- y
+con ellas sus entradas. Un recuento por autor comprueba que ninguna entrada superviviente queda sin
+citar en el cuerpo.
+
+**Negritas: de 90 a 17.** La regla que fija el usuario es que la negrita marca etiquetas de
+enumeración, no énfasis dentro de un párrafo. Sobreviven los rótulos de lista, los «Objetivo 1 / 2»
+del 1.2 y «Palabras clave». Al auditarlo apareció además que seis `\textbf` del capítulo 5 se habían
+corrompido en una edición previa ---un heredoc convirtió la secuencia en un tabulador literal--- y
+compilaban sin negrita y sin error: reparados.
+
+**Cuatro figuras.** En la 5.1 las etiquetas «9 cambios / 2 cambios» pisaban los rectángulos; tras
+comprobar que no caben ni entre las cajas, ni encima, ni justo debajo, bajan a la banda libre bajo la
+fila, unidas a su flecha por un trazo fino. La 5.3 se rehace como columna vertical de decisión, con
+las dos salidas «no» por el margen derecho: ninguna línea cruza ya una caja. La 6.4 tenía un
+rectángulo sombreado que sólo se explicaba en la prosa: pasa al pie. La 7.5 lucía un asterisco cuya
+nota no existía en ninguna parte: retirado del exportador.
+
+**La figura 7.3 gana la cartera adoptada.** Mostraba las tres pasadas con la cartera por defecto, las
+tres hundiéndose en la era reservada. La cuarta columna ---separada por un hueco, rayada y rotulada
+para que no se lea como una cuarta pasada--- es la misma señal del Study 3 con la cartera del
+Portfolio Study: 0,841 en selección y +0,109 en la reservada, frente a 0,312 y −1,795. Es el único
+punto de la figura donde la era reservada no es negativa, y hace visible de un vistazo la tesis del
+trabajo.
+
+**Siete errores de cifra, todos verificados contra el artefacto antes de tocar nada.** El más
+visible: el capítulo 7 decía que Apple sumaba «65 meses entre sus tres estancias» remitiendo a una
+tabla que dice 61 meses y dos episodios, y el capítulo 8 hablaba de cuarenta y cuatro meses. El más
+serio conceptualmente: el capítulo 9 no mencionaba el Deflated Sharpe ---al que el capítulo 6 dedica
+una subsección y llama «la limitación empírica más importante del trabajo»--- y abría con «la
+evidencia es favorable y robusta»; ahora declara qué impide la multiplicidad y qué no. Además: los
+«563 ausentes sí tienen fundamentales» lo desmentía la tabla de su propia página (35 no los tienen);
+la cobertura de 2003 aparecía como 49,0 % y como 56 % en el mismo capítulo, y el artefacto da 48,99;
+la fila del 5,5 % no era «la última de la tabla» ni su coincidencia era casualidad, porque son los
+mismos 31 tickers; el agente de calidad tenía 29 variables en el capítulo 4 y 28 en el 6, y el
+artefacto da 29; y `\ContribucionAAPL` ya incluye el símbolo de porcentaje, de modo que las
+conclusiones compilaban «27,8 % puntos porcentuales».
+
+**Capítulo 8 podado.** La tabla de limitaciones pasa de 13 filas a 8, con el criterio de utilidad e
+interés que pidió el usuario y no el de severidad: salen solapamiento de cohortes, alfa factorial,
+costes constantes, salvaguarda de la curva de alfa y factores no construibles. Las dos últimas
+siguen documentadas en el Anexo D, así que no se pierde trazabilidad. Cabe ahora en una sola página.
+
+**Capacidad acotada al destinatario real.** El tramo de capacidad razonaba sobre «mil millones» y
+«una gestora institucional». Se reencuadra sobre lo que el artefacto mide: cómodo hasta unos 20
+millones, hasta 40 en el límite, es decir el ámbito de un patrimonio individual. El trabajo futuro
+del capítulo 9 arrastraba el mismo encuadre y se corrige.
+
+**Enlace al repositorio** en el resumen, antes de las palabras clave.
+
+**Validación realizada.** 96 páginas, cuerpo en 69 y log limpio: cero desbordamientos, cero
+referencias sin resolver, ningún capítulo con más de cinco secciones. Dieciocho comprobaciones de
+texto sobre el PDF generado ---diez de que cada corrección llegó y ocho de que cada error
+desapareció--- más el recuento de citas por autor. `verify_latex_assets.py`, `pytest` (144 pruebas),
+`ruff` y `node --check` en verde.

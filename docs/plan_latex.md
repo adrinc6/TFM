@@ -325,6 +325,27 @@ estudios adoptados. Si algún día se renombra, hay que revisar el capítulo 3 y
 - Existe un Anexo C nuevo.
 - Los identificadores de código ya no aparecen en la prosa de la memoria.
 
+### Deuda nueva — el repaso de lectura del 2026-09-02 movió figuras y cifras
+
+La memoria quedó actualizada en esa pasada; lo que sigue afecta a `TFM_ppt.tex`, que **no se tocó**.
+
+- **Figura 7.3 rehecha.** Ahora lleva una cuarta columna con la cartera adoptada (0,841 en selección
+  y +0,109 en la reservada) separada de las tres pasadas. Si la defensa usa
+  `f07_seleccion_vs_reservada.png`, la imagen ha cambiado y su explicación también: el contraste ya
+  no es «las tres se hunden» sino «las tres se hunden y la cuarta no».
+- **Figuras 5.1 y 5.3 rediseñadas** (TikZ, viven en el capítulo, no en `figures/`). Si la defensa
+  reprodujo alguno de esos diagramas, quedó desfasada.
+- **Figura 7.5 sin asterisco** en el rótulo del panel sectorial.
+- **Cifras corregidas que la defensa podría estar citando mal**: Apple son 45 meses en el episodio
+  más largo y 61 en total repartidos en dos episodios (no 44, ni 65 en tres); el agente de calidad
+  usa 29 variables (no 28); la cobertura de 2003 es 49,0 % (no 56 %).
+- **El techo de capacidad** ya no se enuncia contra «mil millones» ni «una gestora institucional»,
+  sino como el ámbito de un patrimonio individual: unos 20 millones cómodo, 40 en el límite.
+- **La tabla de limitaciones tiene 8 filas**, no 13. Si la defensa enumera limitaciones, cinco de
+  las que citaba ya no están en el cuerpo de la memoria.
+- **La bibliografía tiene 21 entradas**, no 35, y el capítulo 2 ya no cita a Kelly, Freyberger,
+  Feng, White, Hansen ni Bailey et al. (2017).
+
 ### Sin deuda de contenido — los ficheros del manuscrito cambiaron de nombre (2026-08-26)
 
 `main.tex` pasa a `TFM.tex`, `presentacion.tex` a `TFM_ppt.tex` y `presentacion_notas.tex` a

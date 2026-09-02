@@ -20,14 +20,9 @@ Multiplicidad de configuraciones &
 Deflated Sharpe 0,573 sobre 46 configuraciones evaluadas, por debajo del umbral 0,95 &
 Alta \\
 \addlinespace
-Solapamiento de cohortes &
-117 cohortes mensuales equivalen a $\approx 9$ observaciones independientes con horizonte de 12
-meses &
-Alta \\
-\addlinespace
 Potencia de la era reservada &
 6 cohortes cerradas y $\approx 1$ observación independiente efectiva; 1,41 años de cartera y 1 de
-2 años por encima del índice. Con tenencia mínima de doce meses, sólo se cierra \textbf{una}
+2 años por encima del índice. Con tenencia mínima de doce meses, sólo se cierra una
 operación en toda la ventana &
 Alta \\
 \addlinespace
@@ -57,28 +52,9 @@ El agente dominante se apoya en \texttt{gap\_21d} y \texttt{range\_63d}, que enc
 81,5\,\% de sus atribuciones locales: microestructura a semanas que ordena retornos a doce meses &
 Media \\
 \addlinespace
-Alfa factorial no significativo en selección &
-Alfa 0,20\,\% por periodo, $t=1{,}02$, $R^2=0{,}015$ &
-Media \\
-\addlinespace
-Costes constantes &
-10 pb de comisión y 20 pb de \textit{slippage}, sin impacto de mercado ni fiscalidad. El equilibrio
-resimulado está en \CosteEquilibrio{} pb por operación, \MargenCoste{} veces el coste adoptado en
-selección, pero baja a \CosteEquilibrioReservado{} pb en la era reservada &
-Baja \\
-\addlinespace
 Cobertura incompleta del universo &
 El panel resuelve 643 de los 1.206 \textit{tickers} históricos: 49,0\,\% de los miembros del índice
 en 2003 y 99,2\,\% en 2026. El proveedor retira los símbolos que dejan de cotizar, y solo el
 5,5\,\% de los ausentes son quiebras &
 Media \\
-\addlinespace
-Salvaguarda \textit{a priori} en la curva de alfa &
-Una recta fija entre $-10$\,\% y $+10$\,\% sustituye a la calibración empírica justo donde la
-cascada no encuentra pendiente creciente, es decir, donde no hay señal que calibrar &
-Baja \\
-\addlinespace
-Factores no construibles &
-Tamaño e inversión declarados no replicables en la regresión factorial &
-Baja \\
 \end{longtable}

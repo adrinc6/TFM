@@ -20,7 +20,7 @@ parte de lo que decidió la anterior, así que el resultado depende del punto de
 variable se elige con todas las demás en su valor por defecto, y ya no se revisa aunque las
 decisiones posteriores cambien el contexto en que aquella elección tenía sentido.
 
-La primera pasada lo dejó claro. Su ganador se apartaba en \textbf{nueve variables} del punto de
+La primera pasada lo dejó claro. Su ganador se apartaba en nueve variables del punto de
 partida del catálogo, de modo que casi todas sus decisiones se habían tomado sobre una
 configuración que el propio estudio acabó descartando.
 
@@ -32,20 +32,27 @@ hay evidencia suficiente para desplazarlo.
 \begin{figure}[htbp]
   \centering
   \begin{tikzpicture}[
-      >=Latex, font=\footnotesize, align=center, node distance=0mm and 6mm,
-      pas/.style={draw,rounded corners,fill=blue!9,minimum width=24mm,minimum height=12mm},
-      ini/.style={draw,rounded corners,fill=gray!14,minimum width=21mm,minimum height=12mm},
-      fin/.style={draw,thick,rounded corners,fill=green!12,minimum width=20mm,minimum height=12mm}]
+      >=Latex, font=\footnotesize, align=center, node distance=0mm and 7mm,
+      pas/.style={draw,rounded corners,fill=blue!9,minimum width=23mm,minimum height=12mm},
+      ini/.style={draw,rounded corners,fill=gray!14,minimum width=20mm,minimum height=12mm},
+      fin/.style={draw,thick,rounded corners,fill=green!12,minimum width=19mm,minimum height=12mm},
+      etiq/.style={font=\scriptsize,text=black!65,inner sep=1pt}]
     \node[ini] (b) {Punto de partida\\del catálogo};
     \node[pas,right=of b] (p1) {Pasada 1\\\scriptsize Rank-IC 0,1051};
     \node[pas,right=of p1] (p2) {Pasada 2\\\scriptsize Rank-IC 0,1059};
     \node[pas,right=of p2] (p3) {Pasada 3\\\scriptsize Rank-IC 0,1067};
     \node[fin,right=of p3] (w) {Señal\\congelada};
-    \draw[->,thick] (b)--node[above,font=\scriptsize]{9 cambios}(p1);
-    \draw[->,thick] (p1)--node[above,font=\scriptsize]{2 cambios}(p2);
-    \draw[->,thick] (p2)--node[above,font=\scriptsize]{2 cambios}(p3);
+    \draw[->,thick] (b)--(p1);
+    \node[etiq] (e1) at ($(b.east)!0.5!(p1.west)+(0,-11mm)$) {9 cambios};
+    \draw[->,thick] (p1)--(p2);
+    \node[etiq] (e2) at ($(p1.east)!0.5!(p2.west)+(0,-11mm)$) {2 cambios};
+    \draw[->,thick] (p2)--(p3);
+    \node[etiq] (e3) at ($(p2.east)!0.5!(p3.west)+(0,-11mm)$) {2 cambios};
     \draw[->,thick] (p3)--(w);
-    \node[below=5mm of p2,font=\scriptsize,text=black!70,align=center]
+    \draw[black!35,line width=0.3pt] (e1.north) -- ($(b.east)!0.5!(p1.west)+(0,-1.5mm)$);
+    \draw[black!35,line width=0.3pt] (e2.north) -- ($(p1.east)!0.5!(p2.west)+(0,-1.5mm)$);
+    \draw[black!35,line width=0.3pt] (e3.north) -- ($(p2.east)!0.5!(p3.west)+(0,-1.5mm)$);
+    \node[below=14mm of p2,font=\scriptsize,text=black!70,align=center]
       {cada pasada arranca del ganador de la anterior y vuelve a recorrer las cuatro fases};
   \end{tikzpicture}
   \caption{La cadena de tres pasadas. El número de variables que cada una llega a cambiar se reduce
@@ -86,12 +93,12 @@ por haber acertado un año excepcional que el incumbente no vivió.
 
 Sobre esa serie, un candidato puede ganar de dos maneras.
 
-La primera es \textbf{ganar claramente}: su diferencia media es favorable \emph{y} además gana en
+La primera es ganar claramente: su diferencia media es favorable \emph{y} además gana en
 más de la mitad de los meses. Hacen falta las dos condiciones, porque una media favorable construida
 sobre menos de la mitad de las fechas no demuestra superioridad: significa que unos pocos meses muy
 buenos compensaron a muchos malos.
 
-La segunda es \textbf{ganar por no ser peor}. Cuando la alternativa es más simple o más
+La segunda es ganar por no ser peor. Cuando la alternativa es más simple o más
 conservadora, basta con demostrar que su desventaja plausible es despreciable, es decir, que ni en
 el peor escenario razonable pierde apenas nada. Prueba que no empeora, no que mejore.
 
@@ -144,8 +151,8 @@ congelar la señal.
 \end{figure}
 
 La Tabla~\ref{tab:decisiones} hace auditable esa traza. Lo que tabula no es el Rank-IC acumulado
-tras cada paso ---que apenas se mueve, por lo que se explica más abajo--- sino \textbf{la
-alternativa que se descartó}: cuánto Rank-IC habría costado adoptarla, ordenado de mayor a menor
+tras cada paso ---que apenas se mueve, por lo que se explica más abajo--- sino la
+alternativa que se descartó: cuánto Rank-IC habría costado adoptarla, ordenado de mayor a menor
 coste.
 
 \begin{table}[htbp]
@@ -170,19 +177,19 @@ decisiones estructurales, y las cinco se resolvieron con holgura.
 Un segundo grupo, el más numeroso ---diez de las dieciocho filas---, tiene costes de $0{,}005$ o
 menos: los cuatro hiperparámetros del modelo, el retardo de observación, la winsorización, el máximo
 de variables por agente y la regla que las pondera. Ahí la evidencia apenas distingue entre
-alternativas, y el resultado merece decirse sin rodeos: \textbf{el sistema no debe su capacidad
-predictiva al ajuste fino del modelo}.
+alternativas, y el resultado merece decirse sin rodeos: el sistema no debe su capacidad
+predictiva al ajuste fino del modelo.
 
 Entre ambos extremos quedan tres decisiones intermedias ---la cadencia de observación, la ventana de
 entrenamiento y la variante del meta-agente---, que también confirmaron el valor que ya traían.
 
-El tercer grupo son las \textbf{cuatro} decisiones que la última columna marca como empate técnico:
+El tercer grupo son las cuatro decisiones que la última columna marca como empate técnico:
 el retardo de observación, la winsorización, la variable de régimen de mercado y la tasa de
 aprendizaje. Ninguna de las cuatro puede presentarse como hallazgo empírico, y por eso figuran con
 su regla al lado.
 
-El dato que resume la pasada es que \textbf{dieciséis de las dieciocho decisiones confirmaron su
-valor de partida}, y las dos que lo cambiaron lo hicieron por márgenes mínimos: la variable de
+El dato que resume la pasada es que dieciséis de las dieciocho decisiones confirmaron su
+valor de partida, y las dos que lo cambiaron lo hicieron por márgenes mínimos: la variable de
 régimen de mercado por no inferioridad, sin demostrar ser mejor, y la tasa de aprendizaje con una
 ventaja media de tres diezmilésimas. Esa planitud es lo esperable de una cadena que ha convergido
 ---la pasada parte del ganador de la anterior, así que casi todas las variables llegan ya en su
@@ -190,7 +197,7 @@ mejor valor conocido--- y es también una defensa parcial frente a la objeción 
 protocolo que aceptase cualquier mejora aparente habría movido al incumbente muchas más veces,
 persiguiendo ruido.
 
-Dos filas merecen lectura aparte porque en ellas \textbf{el ganador no es el valor que mejor midió}.
+Dos filas merecen lectura aparte porque en ellas el ganador no es el valor que mejor midió.
 En la winsorización, la alternativa medía cinco diezmilésimas por encima, la diferencia cayó dentro
 del empate técnico y se impuso la preferencia por la opción más simple, que aquí es no winsorizar.
 La otra es la regla de ponderación de variables, ya comentada al presentar la regla de decisión: la
@@ -212,13 +219,13 @@ el incumbent anterior, de modo que una decisión posterior no puede reabrir sile
 elección temporal. Si dos alternativas difieren menos de 0,002 en ventaja pareada, se prefiere la
 más simple; si tampoco hay evidencia suficiente, se conserva el incumbent.
 
-Ese argumento vale para el plano \textbf{predictivo} por dos motivos. El primero es estadístico: la
+Ese argumento vale para el plano predictivo por dos motivos. El primero es estadístico: la
 selección predictiva se decide sobre el Rank-IC, la misma magnitud que después se reporta como
 resultado principal, de modo que cada comparación adicional infla precisamente la cifra que sostiene
 el trabajo. El segundo es expositivo: una rejilla de miles de puntos devuelve un ganador que nadie
 puede explicar.
 
-Ninguno de los dos se aplica al plano de la \textbf{cartera}, y de ahí que allí el trabajo haga lo
+Ninguno de los dos se aplica al plano de la cartera, y de ahí que allí el trabajo haga lo
 contrario. Las reglas de cartera operan sobre una señal ya congelada, así que optimizarlas no puede
 inflar la métrica predictiva; y su elección no es una escalera de decisiones, sino un problema con
 interacciones fuertes que el apartado del Portfolio Study desarrolla.
@@ -344,25 +351,30 @@ explícita que impide contradicciones, y la Figura~\ref{fig:precedencia} la reco
 \begin{figure}[htbp]
   \centering
   \begin{tikzpicture}[
-      >=Latex, font=\footnotesize, align=center, node distance=5mm and 7mm,
-      paso/.style={draw,rounded corners,fill=blue!9,minimum width=30mm,minimum height=10mm},
-      dec/.style={draw,rounded corners,fill=orange!14,minimum width=32mm,minimum height=11mm},
-      fin/.style={draw,rounded corners,fill=gray!14,minimum width=26mm,minimum height=9mm}]
-    \node[paso] (s) {Se actualiza la señal\\y el alfa esperado};
-    \node[dec,right=of s] (h) {¿Cumplió la\\permanencia mínima?};
-    \node[dec,right=of h] (v) {¿Vender mejora\\tras pagar costes?};
-    \node[paso,below=8mm of v] (d) {Se elige destino:\\otra acción o efectivo};
-    \node[paso,left=of d] (r) {Se corrige el peso\\sólo si la deriva compensa};
-    \node[fin,left=of r] (f) {Cartera resultante};
+      >=Latex, font=\footnotesize, align=center, node distance=6mm,
+      paso/.style={draw,rounded corners,fill=blue!9,minimum width=52mm,minimum height=9mm},
+      dec/.style={draw,rounded corners,fill=orange!14,minimum width=52mm,minimum height=10mm},
+      fin/.style={draw,thick,rounded corners,fill=gray!16,minimum width=52mm,minimum height=9mm},
+      si/.style={font=\scriptsize,text=black!75,right,inner sep=2pt},
+      no/.style={font=\scriptsize,text=black!60,above,inner sep=2pt}]
+    \node[paso]              (s) {Se actualiza la señal y el alfa esperado};
+    \node[dec, below=of s]   (h) {¿Cumplió la permanencia mínima?};
+    \node[dec, below=of h]   (v) {¿Vender mejora tras pagar costes?};
+    \node[paso,below=of v]   (d) {Se elige destino: otra acción o efectivo};
+    \node[paso,below=of d]   (r) {Se corrige el peso sólo si la deriva compensa};
+    \node[fin, below=of r]   (f) {Cartera resultante};
     \draw[->] (s)--(h);
-    \draw[->] (h)--node[above,font=\scriptsize]{sí}(v);
-    \draw[->] (v)--node[right,font=\scriptsize]{sí}(d);
-    \draw[->] (d)--(r); \draw[->] (r)--(f);
-    \draw[->,dashed] (h.south) |- node[pos=0.28,left,font=\scriptsize]{no} (f.north);
-    \draw[->,dashed] (v.north) -- ++(0,4mm) -| node[pos=0.2,above,font=\scriptsize]{no} (f.north);
+    \draw[->] (h)--node[si]{sí}(v);
+    \draw[->] (v)--node[si]{sí}(d);
+    \draw[->] (d)--(r);
+    \draw[->] (r)--(f);
+    % Las dos salidas «no» bajan por el margen derecho: ninguna línea cruza una caja.
+    \draw[->,dashed] (h.east) -- node[no]{no} ($(h.east)+(13mm,0)$) |- (f.east);
+    \draw[->,dashed] (v.east) -- node[no]{no} ($(v.east)+(8mm,0)$)  |- (f.east);
   \end{tikzpicture}
-  \caption{Orden en que la cartera decide. El tiempo mínimo en cartera se comprueba antes que la
-  economía de la venta, y ninguna posición se vende si no hay un destino mejor después de costes.}
+  \caption{Orden en que la cartera decide, de arriba abajo. El tiempo mínimo en cartera se comprueba
+  antes que la economía de la venta, y ninguna posición se vende si no hay un destino mejor después
+  de costes. Las dos flechas discontinuas son las salidas que conservan la posición sin tocarla.}
   \label{fig:precedencia}
 \end{figure}
 
@@ -399,7 +411,7 @@ reservada, y eso se consigue por construcción.
 
 De ahí el \emph{Portfolio Study}. Toma el ganador del último Model Study, no reentrena nada y
 recorre el producto cartesiano de las seis variables midiendo cada combinación sobre una serie
-\textbf{recortada en 2024}. La distinción es fina y decisiva: no se trata de calcular el resultado
+recortada en 2024. La distinción es fina y decisiva: no se trata de calcular el resultado
 de cada cartera en la era reservada y luego ignorarlo ---si existiera, bastaría con mirarlo--- sino
 de que ese resultado \emph{no llega a calcularse}. Sólo la ganadora, ya elegida, se reevalúa después
 sobre la serie completa, como comprobación y nunca como criterio.
@@ -408,7 +420,7 @@ sobre la serie completa, como comprobación y nunca como criterio.
 
 El criterio de selección deja de ser el exceso geométrico y pasa a ser el \emph{Information Ratio}:
 el exceso medio sobre el índice dividido por la volatilidad de ese exceso. Premia la
-\textbf{consistencia}, no el alfa bruto. Una cartera que bate al índice un 2\,\% todos los años
+consistencia, no el alfa bruto. Una cartera que bate al índice un 2\,\% todos los años
 tiene un IR altísimo; otra que alterna $+15$\,\% y $-11$\,\% puede tener el mismo exceso medio y un
 IR pésimo. Para un trabajo cuya pregunta es si una señal se sostiene fuera de muestra, la segunda
 cartera no es equivalente a la primera aunque el promedio coincida, y optimizar por exceso bruto no
@@ -437,7 +449,7 @@ resultados:
 \subsection{Por qué cartesiano y no secuencial}
 
 Aquí se hace lo contrario que en el plano predictivo, y no por comodidad: las seis variables
-\textbf{interactúan}, de modo que recorrerlas de una en una daría una respuesta que depende del
+interactúan, de modo que recorrerlas de una en una daría una respuesta que depende del
 orden en que se pregunte.
 
 El suelo de cobertura lo ilustra bien, porque hace cosas \emph{opuestas} según cuánto efectivo se

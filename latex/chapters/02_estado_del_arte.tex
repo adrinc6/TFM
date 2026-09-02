@@ -6,19 +6,18 @@
 \subsection{Las regularidades que orientan el diseño}
 
 Los retornos esperados de una acción no son independientes de sus características observables. Sobre
-esa idea se construyó la literatura de factores: el tamaño (Banz, 1981), el valor (Fama y French,
-1992, 1993), el momentum (Jegadeesh y Titman, 1993), la calidad (Asness et al., 2019), la
-rentabilidad bruta (Novy-Marx, 2013) o la baja beta (Frazzini y Pedersen, 2014) quedaron asociados a
-diferencias sistemáticas de rentabilidad. De ahí salen las cinco familias en que este trabajo
-reparte sus variables ---calidad, valor, crecimiento, tendencia y riesgo---, y de ahí salen también
-sus baselines: una fórmula determinista de un factor, calculada sobre el mismo panel, es el listón
-mínimo que un sistema aprendido debe superar.
+esa idea se construyó la literatura de factores, que documentó cómo el tamaño, el valor, el momentum
+y la calidad de una empresa quedaban asociados a diferencias sistemáticas de rentabilidad (Banz,
+1981; Fama y French, 1992; Jegadeesh y Titman, 1993; Novy-Marx, 2013). De ahí salen las cinco
+familias en que este trabajo reparte sus variables ---calidad, valor, crecimiento, tendencia y
+riesgo---, y de ahí salen también sus baselines: una fórmula determinista de un factor, calculada
+sobre el mismo panel, es el listón mínimo que un sistema aprendido debe superar.
 
 Esa literatura trae consigo una advertencia que importa más que el catálogo de primas. Las
 regularidades documentadas se debilitan al medirse fuera de la muestra en que se descubrieron, y
-más aún después de publicarse: McLean y Pontiff (2016) lo documentan sobre 97 predictores y Hou et
-al. (2020) sobre 452 anomalías reevaluadas con criterios homogéneos, muchas de las cuales dejan de
-superar umbrales exigentes o dependen de microcapitalizaciones. La implicación no es que toda
+más aún después de publicarse: McLean y Pontiff (2016) y Hou et al. (2020) reevaluaron cientos de
+predictores con criterios homogéneos y encontraron que muchos dejaban de superar umbrales exigentes
+o dependían de empresas muy pequeñas. La implicación no es que toda
 regularidad sea falsa, sino que una señal aprendida tiene que demostrar estabilidad temporal,
 resistir controles conocidos y declarar cuánto de su éxito aparente procede de haber buscado entre
 alternativas. Es el motivo de que este trabajo reserve una era completa y mida robustez antes de
@@ -45,13 +44,9 @@ la estructura temporal. LightGBM, usado aquí en cada agente, pertenece a la fam
 potenciados: construye de forma secuencial árboles débiles que corrigen errores de los anteriores y
 puede manejar relaciones no monotónicas (Ke et al., 2017).
 
-Ese resultado forma parte de una literatura más amplia que intenta reducir dimensionalidad sin
-suponer que cada característica actúa linealmente y de forma aislada. Kelly et al. (2019) vinculan
-características y covarianzas mediante componentes principales instrumentados; Freyberger et al.
-(2020) combinan selección regularizada y funciones no paramétricas; y Feng et al. (2020) estudian
-qué factores aportan información incremental dentro de un catálogo amplio. Sus métodos son
-distintos, pero convergen en dos ideas relevantes aquí: la no linealidad puede importar y añadir
-predictores no garantiza añadir información.
+De esa literatura este trabajo retiene dos ideas y descarta el resto: que la no linealidad puede
+importar, y que añadir predictores no garantiza añadir información. La segunda es la que gobierna el
+diseño, porque justifica podar variables en vez de acumularlas.
 
 La elección de árboles potenciados no se presenta por ello como una conclusión universal. Frente a
 un modelo lineal, ganan capacidad para representar umbrales e interacciones, pero pierden una
@@ -112,13 +107,12 @@ el pasado; se eliminan así empresas que salieron del universo y se exagera la c
 
 El \textit{data snooping} es distinto: incluso con datos perfectamente cerrados, probar muchas
 alternativas incrementa la probabilidad de encontrar una aparente ganadora. Harvey et al. (2016)
-alertan del gran número de factores propuestos y de la necesidad de elevar el estándar de evidencia,
-y de ahí salen las correcciones que este trabajo emplea ---el Deflated Sharpe Ratio de Bailey y
-López de Prado (2014)--- y las que formalizan la misma preocupación por otras vías: el
-\textit{Reality Check} de White (2000), el test de capacidad predictiva superior de Hansen (2005) o
-la probabilidad de sobreajuste del backtest de Bailey et al. (2017). Ninguna reconstruye una
-hipótesis verdaderamente previa después de observar los datos, y por eso el catálogo cerrado, el
-registro de decisiones y la era reservada cumplen una función que ningún $p$-valor sustituye.
+alertan del gran número de factores propuestos y de la necesidad de elevar por ello el estándar de
+evidencia. De ahí sale la corrección que este trabajo emplea, el Deflated Sharpe Ratio de Bailey y
+López de Prado (2014), que descuenta del resultado cuántas configuraciones hubo que probar para
+encontrarlo. Ninguna corrección de este tipo reconstruye, sin embargo, una hipótesis verdaderamente
+previa después de observar los datos, y por eso el catálogo cerrado, el registro de decisiones y la
+era reservada cumplen una función que ningún $p$-valor sustituye.
 
 El sesgo de supervivencia tampoco se reduce a incluir o excluir empresas quebradas. Shumway (1997)
 mostró que omitir retornos de exclusión puede distorsionar la medición. En este proyecto el problema

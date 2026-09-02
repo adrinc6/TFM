@@ -10,6 +10,13 @@ Newey--West \TNeweyWest{}. El test de permutación produce $p=\PValorPermutacion
 retirar eras completas, cambiar semillas, barajar etiquetas y neutralizar estilos conocidos. En la
 era reservada el Rank-IC sigue siendo positivo (\RankICReservado{}).
 
+Un contraste, sin embargo, no se supera, y es el que corrige por haber buscado: el Deflated Sharpe
+se queda en \ProbabilidadDSR{}, por debajo del umbral de 0,95. La consecuencia hay que enunciarla
+con precisión, porque no anula lo anterior. Que la ordenación existe lo sostienen la permutación y
+el bootstrap, que no dependen del número de configuraciones ensayadas; lo que la multiplicidad
+impide es afirmar una \emph{magnitud} ajustada por todo lo que se probó para encontrarla. La
+capacidad de ordenar queda establecida; su tamaño exacto, no.
+
 La formulación defendible es que el sistema aprende una ordenación transversal fuera de muestra
 dentro del universo, el periodo y el protocolo estudiados. No demuestra, en cambio, que la
 arquitectura multiagente sea necesaria: el meta aprende a concentrar peso usando cohortes cerradas y
@@ -85,14 +92,14 @@ localizar una divergencia que una rentabilidad final habría ocultado: el orden 
 mejorar mientras el pago de una cartera concreta empeora, y dos carteras pueden producir
 conclusiones opuestas sobre la misma señal.
 
-De ahí se sigue la tesis del trabajo: \textbf{ninguna afirmación práctica sobre un sistema
-predictivo es interpretable sin declarar con qué cartera se midió}. La frase no convierte a la
+De ahí se sigue la tesis del trabajo: ninguna afirmación práctica sobre un sistema predictivo es
+interpretable sin declarar con qué cartera se midió. La frase no convierte a la
 cartera ganadora en recomendación de inversión. Obliga a tratar tamaño, efectivo, tenencia,
 rebalanceo y costes como parte de la evaluación científica.
 
 La evidencia económica tiene además una dependencia interna que las métricas agregadas no muestran:
-la cartera pasó por \NumAccionesCartera{} acciones, pero una sola aporta \ContribucionAAPL{} puntos
-porcentuales acumulados. Esa concentración reduce el número de experiencias independientes que
+la cartera pasó por \NumAccionesCartera{} acciones, pero una sola aporta \ContribucionAAPL{} de
+contribución neta acumulada. Esa concentración reduce el número de experiencias independientes que
 sostienen el resultado, y es la razón de que la conclusión económica deba ser más prudente que la
 predictiva.
 
@@ -107,7 +114,9 @@ predictiva.
   la ordenación se sostiene fuera de la gran capitalización estadounidense.
   \item \textbf{Modelar costes dependientes de liquidez y capacidad.} Una cartera de
   \PosicionesCartera{} posiciones requiere una función de impacto que complemente comisión y
-  \textit{slippage} constantes y acote con precisión el patrimonio al que el resultado es aplicable.
+  \textit{slippage} constantes. El techo medido aquí ---unas pocas decenas de millones, el ámbito de
+  un patrimonio individual--- procede de la participación sobre el volumen habitual, no de un modelo
+  de impacto, y precisarlo exigiría lo segundo.
 \end{enumerate}
 
 El TFM encuentra evidencia sólida de capacidad de ordenación y evidencia sólida de que la

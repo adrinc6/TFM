@@ -1458,27 +1458,49 @@ def draw_portfolio_influence(grid: pd.DataFrame, output: Path) -> None:
     save(fig, output)
 
 
-def draw_selection_vs_reserved(chain: pd.DataFrame, output: Path) -> None:
-    """El hallazgo central: la ventana de selección mejora y la era reservada se hunde.
+def draw_selection_vs_reserved(chain: pd.DataFrame, output: Path, *,
+                               winner_selection_ir: float,
+                               winner_reserved_ir: float) -> None:
+    """El hallazgo central: con la cartera del catálogo la era reservada se hunde; con la adoptada, no.
 
     Enfrenta, pasada a pasada, el Information Ratio medido en la ventana donde se tomaron las
-    decisiones contra el de la era reservada. La divergencia es el resultado: la tercera pasada es
-    la mejor de la cadena en selección (0,339) y la peor con diferencia fuera de ella (-1,167).
+    decisiones contra el de la era reservada. La cuarta columna, separada de las tres pasadas, es la
+    misma señal del último Model Study leída con la cartera que eligió el Portfolio Study: el
+    contraste entre ambas es lo que sostiene la tesis del trabajo.
     """
     labels = [f"Study {row.order}" for row in chain.itertuples()]
     selection = chain["information_ratio"].astype(float).tolist()
     reserved = chain["confirmation_ir"].astype(float).tolist()
-    positions = np.arange(len(labels))
-    fig, ax = plt.subplots(figsize=(7.2, 3.6))
-    ax.bar(positions - 0.2, selection, width=0.38, color=NAVY, label="Ventana de selección (2015-2024)")
-    ax.bar(positions + 0.2, reserved, width=0.38, color=RED, label="Era reservada (2025-2026)")
-    for index, (left, right) in enumerate(zip(selection, reserved)):
+    positions = list(np.arange(len(labels), dtype=float))
+
+    # La cartera adoptada se dibuja separada por un hueco: no es una cuarta pasada de la cadena
+    # sino la misma señal del Study 3 leída con otras reglas de cartera. Sin esa separación el
+    # lector la interpreta como una pasada más.
+    labels.append("Cartera\nadoptada")
+    selection.append(float(winner_selection_ir))
+    reserved.append(float(winner_reserved_ir))
+    positions.append(len(positions) + 0.55)
+    positions = np.asarray(positions)
+
+    fig, ax = plt.subplots(figsize=(7.6, 3.8))
+    adopted = np.zeros(len(positions), dtype=bool)
+    adopted[-1] = True
+    ax.bar(positions[~adopted] - 0.2, np.asarray(selection)[~adopted], width=0.38,
+           color=NAVY, label="Ventana de selección (2015-2024)")
+    ax.bar(positions[~adopted] + 0.2, np.asarray(reserved)[~adopted], width=0.38,
+           color=RED, label="Era reservada (2025-2026)")
+    ax.bar(positions[-1] - 0.2, selection[-1], width=0.38, color=NAVY,
+           hatch="//", edgecolor="white", linewidth=0)
+    ax.bar(positions[-1] + 0.2, reserved[-1], width=0.38, color=RED,
+           hatch="//", edgecolor="white", linewidth=0)
+    for index, (left, right) in zip(positions, zip(selection, reserved)):
         ax.annotate(num(left, 3), (index - 0.2, left), xytext=(0, 4 if left >= 0 else -11), textcoords="offset points", ha="center", fontsize=7.5)
         ax.annotate(num(right, 3), (index + 0.2, right), xytext=(0, 4 if right >= 0 else -11), textcoords="offset points", ha="center", fontsize=7.5)
+    ax.axvline(positions[-1] - 0.78, color=SLATE, linewidth=0.8, linestyle=":")
     ax.axhline(0, color=SLATE, linewidth=0.9)
     ax.set(title="Information Ratio dentro y fuera de la ventana de selección", ylabel="Information Ratio", xticks=positions)
     ax.set_xticklabels(labels)
-    ax.margins(y=0.22)
+    ax.margins(y=0.24)
     legend_below(ax, 2)
     save(fig, output)
 
@@ -1609,7 +1631,7 @@ def draw_portfolio_narrative(narrative: dict, output: Path) -> None:
             height=0.34, color=GOLD, label="Reservada")
     ax.set_yticks(positions)
     ax.set_yticklabels(sectors, fontsize=7)
-    ax.set_title("Exposición sectorial*")
+    ax.set_title("Exposición sectorial")
     ax.set_xlabel("peso medio (%)")
     comma_ticks(ax.xaxis)
     ax.legend(frameon=False, fontsize=7)
@@ -2323,7 +2345,12 @@ def main() -> None:
 
     # Activos de la cadena de studies encadenados. Solo se generan si se declara la cadena: sin
     # ella el manuscrito documentaría un study suelto y estas figuras no tendrían nada que contar.
-    draw_selection_vs_reserved(chain, paths.figures / "f07_seleccion_vs_reservada.png")
+    draw_selection_vs_reserved(
+        chain,
+        paths.figures / "f07_seleccion_vs_reservada.png",
+        winner_selection_ir=portfolio["winner"]["winner_summary"]["information_ratio"],
+        winner_reserved_ir=portfolio["winner"]["winner_confirmation"]["information_ratio"],
+    )
     write_tables_chain(paths, chain, changes)
 
     write_tables_winner(paths, catalog, winner)
