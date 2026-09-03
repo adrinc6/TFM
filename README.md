@@ -9,6 +9,18 @@ sobrevive fuera de la muestra en la que se eligió.
 
 ---
 
+## Contenido
+
+- [La pregunta, y qué cuenta como respuesta](#la-pregunta-y-qué-cuenta-como-respuesta)
+- [Qué tiene de particular](#qué-tiene-de-particular)
+- [El flujo](#el-flujo)
+- [Arranque rápido](#arranque-rápido)
+- [El repositorio](#el-repositorio)
+- [El manuscrito](#el-manuscrito)
+- [Documentación](#documentación)
+- [Verificación](#verificación)
+- [Estado, límites y licencia](#estado-límites-y-licencia)
+
 ## La pregunta, y qué cuenta como respuesta
 
 La variable central es el **Rank-IC**: la correlación de Spearman entre la puntuación que el sistema

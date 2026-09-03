@@ -9,6 +9,48 @@ Para instalarlo y ejecutarlo, ver [usage.md](usage.md). Para saber qué produce 
 
 ---
 
+## Contenido
+
+- [1. La pregunta de investigación](#1-la-pregunta-de-investigación)
+- [2. Mapa del repositorio](#2-mapa-del-repositorio)
+- [3. `environment.py`: la fuente única de constantes](#3-environmentpy-la-fuente-única-de-constantes)
+- [4. `module/data`: ingesta y panel point-in-time](#4-moduledata-ingesta-y-panel-point-in-time)
+  - [Las tres fuentes, y por qué son tres](#las-tres-fuentes-y-por-qué-son-tres)
+  - [El universo dinámico](#el-universo-dinámico)
+  - [Cobertura del universo: dónde entra realmente el sesgo de supervivencia](#cobertura-del-universo-dónde-entra-realmente-el-sesgo-de-supervivencia)
+  - [El panel y su identidad](#el-panel-y-su-identidad)
+  - [Volumen negociado de referencia](#volumen-negociado-de-referencia)
+  - [`baselines.py`](#baselinespy)
+- [5. `module/modeling`: features, agentes y meta-agente](#5-modulemodeling-features-agentes-y-meta-agente)
+  - [El catálogo de features](#el-catálogo-de-features)
+  - [Los cinco agentes](#los-cinco-agentes)
+  - [El meta-agente](#el-meta-agente)
+  - [Qué hipótesis prueba cada etapa](#qué-hipótesis-prueba-cada-etapa)
+- [6. `module/evaluation`: cartera, backtest y perfiles](#6-moduleevaluation-cartera-backtest-y-perfiles)
+  - [`backtest.py` es contabilidad, no ciencia](#backtestpy-es-contabilidad-no-ciencia)
+  - [La doctrina de cartera](#la-doctrina-de-cartera)
+  - [Perfiles](#perfiles)
+  - [Estadística y diagnósticos de señal](#estadística-y-diagnósticos-de-señal)
+- [7. `module/studies`: el catálogo cerrado y la selección](#7-modulestudies-el-catálogo-cerrado-y-la-selección)
+  - [El catálogo](#el-catálogo)
+  - [El baseline `recommended`](#el-baseline-recommended)
+  - [Optimización secuencial](#optimización-secuencial)
+  - [La regla de selección](#la-regla-de-selección)
+  - [Estudios encadenados](#estudios-encadenados)
+  - [El Portfolio Study](#el-portfolio-study)
+- [8. `module/research`: diagnósticos posteriores](#8-moduleresearch-diagnósticos-posteriores)
+  - [`robustness.py`](#robustnesspy)
+  - [`attribution.py`](#attributionpy)
+  - [`cost_sensitivity.py`](#cost_sensitivitypy)
+  - [`capacity.py`](#capacitypy)
+  - [`portfolio_narrative.py`](#portfolio_narrativepy)
+- [9. `module/storage`: datasets, caché y evidencia](#9-modulestorage-datasets-caché-y-evidencia)
+- [10. `module/web` y `app`: API y dashboard](#10-moduleweb-y-app-api-y-dashboard)
+  - [Ejecución y recuperación](#ejecución-y-recuperación)
+  - [La API](#la-api)
+  - [El dashboard](#el-dashboard)
+- [11. Tests](#11-tests)
+
 ## 1. La pregunta de investigación
 
 El objetivo principal no es encontrar retrospectivamente la cartera con mayor rentabilidad. La

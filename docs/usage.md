@@ -5,6 +5,21 @@ dentro, ver [architecture.md](architecture.md); para saber qué produce, [result
 
 ---
 
+## Contenido
+
+- [1. Requisitos](#1-requisitos)
+- [2. Configuración](#2-configuración)
+- [3. Primer arranque](#3-primer-arranque)
+  - [Antes de esperar horas: los dos caminos cortos](#antes-de-esperar-horas-los-dos-caminos-cortos)
+- [4. Lanzar un Model Study](#4-lanzar-un-model-study)
+  - [Por dónde empezar](#por-dónde-empezar)
+  - [Mientras corre](#mientras-corre)
+  - [Cancelar, pausar y reanudar](#cancelar-pausar-y-reanudar)
+- [5. Lanzar un Portfolio Study](#5-lanzar-un-portfolio-study)
+- [6. Compilar el manuscrito](#6-compilar-el-manuscrito)
+- [7. Verificación](#7-verificación)
+- [8. Problemas frecuentes](#8-problemas-frecuentes)
+
 ## 1. Requisitos
 
 - **Python 3.12** (desarrollado y probado en esa versión).

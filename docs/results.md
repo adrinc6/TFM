@@ -9,6 +9,22 @@ Para la arquitectura del código, ver [architecture.md](architecture.md); para e
 
 ---
 
+## Contenido
+
+- [0. Cómo interpretar estos resultados](#0-cómo-interpretar-estos-resultados)
+- [1. Qué produce una ejecución completa](#1-qué-produce-una-ejecución-completa)
+- [2. Los cuatro estudios que vienen en el repositorio](#2-los-cuatro-estudios-que-vienen-en-el-repositorio)
+  - [Por qué son tres y no uno](#por-qué-son-tres-y-no-uno)
+- [3. Dos recorridos: de una pregunta a su respuesta](#3-dos-recorridos-de-una-pregunta-a-su-respuesta)
+  - [«¿Por qué el modelo usa este lag de publicación y no otro?»](#por-qué-el-modelo-usa-este-lag-de-publicación-y-no-otro)
+  - [«¿Qué compró de verdad la cartera, y cuándo?»](#qué-compró-de-verdad-la-cartera-y-cuándo)
+- [4. Cómo ver todo esto sin ejecutar nada](#4-cómo-ver-todo-esto-sin-ejecutar-nada)
+- [5. Mapa de artefactos](#5-mapa-de-artefactos)
+  - [Model Study](#model-study)
+  - [Portfolio Study](#portfolio-study)
+- [6. Dos advertencias sobre lo que hay en el clon](#6-dos-advertencias-sobre-lo-que-hay-en-el-clon)
+- [7. La regla que gobierna todo](#7-la-regla-que-gobierna-todo)
+
 ## 0. Cómo interpretar estos resultados
 
 Antes de mirar nada, conviene saber qué se puede afirmar y qué no.
