@@ -34,7 +34,8 @@ _load_dotenv(PROJECT_ROOT / ".env")
 # snapshot. Empezaba en 2003-01-01, lo que dejaba 1996-2002 en 0 tickers elegibles: no era que
 # faltaran datos, es que no se descargaban. Además marcaba como `recycled_ticker` a todo símbolo que
 # salió del índice antes de 2003, porque su primer precio observable caía por fuerza después de su
-# última fecha en el índice (83 de 165 falsos positivos). Ver docs/bitacora.md, 2026-08-16.
+# última fecha en el índice (83 de 165 falsos positivos). Ver docs/architecture.md,
+# «Cobertura del universo».
 DATA_START_DATE = "1990-01-01"
 DATA_END_DATE = "2026-07-15"
 # Inicio del panel point-in-time, DISTINTO de la ventana de descarga. Descargar desde 1990 sirve

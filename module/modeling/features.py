@@ -241,7 +241,7 @@ def load_sector_map(settings: Settings) -> dict[str, str]:
 
     El sector es un snapshot actual de Finnhub. Su uso como variable de neutralizacion
     introduce un lookahead residual menor (la industria de una empresa rara vez cambia), que se
-    documenta en la bitacora. No entra en el panel ni se usa como feature predictiva.
+    documenta en docs/architecture.md. No entra en el panel ni se usa como feature predictiva.
     """
     profiles_path = settings.raw_output_dir / "profiles.parquet"
     if not profiles_path.exists():

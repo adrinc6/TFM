@@ -1935,7 +1935,7 @@ def build_robustness_rows(robustness: dict, attribution: dict) -> list[dict]:
     Ninguna cifra ni veredicto se escribe a mano: tanto la tabla ``t06_robustez``
     como la figura ``f07_robustez`` consumen esta lista, de modo que si el study
     se regenera ambas salidas se actualizan solas. Los umbrales de veredicto son
-    los declarados en ``docs/metodologia.md``.
+    los declarados en ``docs/architecture.md``.
     """
     boot = robustness["bootstrap_and_era_exclusion"]
     interval = boot["interval_95"]

@@ -14,7 +14,8 @@ log = logging.getLogger(__name__)
 # Por qué una descarga de precios no devolvió serie. Distinguirlos importa: "el proveedor no
 # reconoce el símbolo" y "la petición falló" producen el mismo síntoma (sin datos) pero significan
 # cosas opuestas. Colapsarlos en `None` convierte una avería de red en mortalidad empresarial
-# aparente y sobreestima el sesgo de supervivencia (ver docs/bitacora.md, 2026-08-16).
+# aparente y sobreestima el sesgo de supervivencia (ver docs/architecture.md,
+# «Cobertura del universo»).
 PRICE_FAILURE_REASONS = (
 	"not_found",  # 404: el proveedor no sirve el símbolo (retirado o inexistente)
 	"bad_request",  # 400: símbolo conocido pero rango no servible

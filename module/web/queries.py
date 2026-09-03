@@ -240,7 +240,7 @@ def _with_cash_row(
     """Antepone una fila sintética `$$CASH$$` con el peso en efectivo del snapshot.
 
     `positions.parquet` no incluye el efectivo (sus pesos solo suman `invested_weight`, nunca
-    1.0 — ver `docs/metodologia.md`, casuísticas de cartera), así que se toma de `equity.parquet`,
+    1.0 — ver `docs/architecture.md`, casuísticas de cartera), así que se toma de `equity.parquet`,
     la única fuente que ya lo calcula por snapshot.
     """
     cash_rows = _records_at_snapshot(equity, snapshot)

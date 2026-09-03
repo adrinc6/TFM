@@ -710,7 +710,7 @@ def execute_model_study(study_id: str) -> dict[str, Any]:
 
         # Atribución: se ejecuta con el ganador ya congelado y fuera de todo bucle de decisión, de
         # modo que la era reservada 2025-26 se evalúa exactamente una vez y su resultado se publica
-        # sea cual sea. El protocolo está pre-registrado en docs/bitacora.md antes de la ejecución.
+        # sea cual sea. El protocolo está descrito en docs/architecture.md, «attribution.py».
         append_event(study_id, "info", "attribution_started", "Atribución de factores y confirmación fuera de muestra.")
         from module.research.attribution import build_attribution, write_attribution
 

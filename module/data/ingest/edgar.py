@@ -9,7 +9,7 @@ EDGAR da la fecha real (`filingDate`) desde 1993, es gratuita, oficial y no nece
 Finnhub solo la da desde 2010, por lo que no sirve para simular desde el año 2000.
 
 La SEC exige un User-Agent identificatorio y limita a ~10 req/s.
-Ver `docs/metodologia.md` («Universo y datos point-in-time»).
+Ver `docs/architecture.md` («Las tres fuentes, y por que son tres»).
 """
 
 from __future__ import annotations

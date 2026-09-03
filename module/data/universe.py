@@ -5,7 +5,7 @@ composición histórica real del índice (un snapshot por día de mercado, 1996-
 señal fechada en 2000 solo puede mirar a las empresas que estaban en el índice en 2000, y no a
 las que entraron después. Eso elimina el sesgo de inclusión anticipada.
 
-Ver `docs/metodologia.md` («Cobertura del universo») para el contexto y las limitaciones: la
+Ver `docs/architecture.md` («Cobertura del universo») para el contexto y las limitaciones: la
 composición PIT elimina el sesgo de supervivencia de composición, pero no el de cobertura de datos.
 """
 
@@ -36,8 +36,8 @@ def _snapshots() -> list[tuple[pd.Timestamp, frozenset[str]]]:
     if not SP500_COMPONENTS_CSV.exists():
         raise FileNotFoundError(
             f"No se encuentra el CSV de composición histórica del S&P 500: {SP500_COMPONENTS_CSV}. "
-            "Es la fuente del universo dinámico (ver docs/metodologia.md, «Universo y datos "
-            "point-in-time»)."
+            "Es la fuente del universo dinámico (ver docs/architecture.md, «El universo "
+            "dinámico»)."
         )
     frame = pd.read_csv(SP500_COMPONENTS_CSV)
     rows = [

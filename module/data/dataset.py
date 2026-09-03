@@ -281,7 +281,7 @@ def _dollar_volume_index(prices: pd.DataFrame) -> dict[str, tuple[list[pd.Timest
 
     El precio esta ajustado por splits y dividendos y el volumen solo por splits, asi que el
     producto es una **aproximación** del nocional: sirve para saber si una orden cabe en el mercado,
-    no como dato de mercado citable. La salvedad viaja en `docs/metodologia.md`.
+    no como dato de mercado citable. La salvedad viaja en `docs/architecture.md`.
 
     Si la ingesta raw no trae volumen, se devuelve un índice vacío y la columna queda a nulo. Es
     deliberado: un cero se leería como «sin liquidez» y un ausente como «no medido», y solo lo

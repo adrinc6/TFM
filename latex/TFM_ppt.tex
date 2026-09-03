@@ -1,18 +1,21 @@
-% Defensa del TFM: 25 diapositivas narradas y cuatro de reserva sin numerar.
+% Defensa del TFM: 32 diapositivas narradas y doce de reserva sin numerar, 21:05 a 150 palabras/min.
 %
-% La defensa se cuenta como un relato con incógnita: la diapositiva 4 abre tres preguntas sin
-% respuesta y cada una se resuelve en la diapositiva donde queda demostrada (11, 18 y 21). La 24
-% las reúne ya resueltas. Los actos —el problema, la señal, la robustez y la cartera— llevan
-% divisor propio, barra de progreso e indicador de acto en el pie.
+% La defensa recorre seis bloques —el problema, cómo aprende, los datos, el sistema, los estudios y
+% los resultados— más un cierre. La diapositiva 4 abre tres preguntas sin respuesta y cada una se
+% resuelve en la diapositiva donde queda demostrada (21, 25 y 30); la 31 las reúne ya resueltas.
+% El pie lleva el nombre del bloque y una barra de progreso; sólo los tres bloques centrales
+% abren con divisor a pantalla completa. El reparto de tiempo y el mapa de preguntas del turno
+% final están en guion_defensa.md, que hay que recalcular si se reescribe cualquier nota.
 %
 % No hay \pause, \onslide ni \only en todo el fichero, y es deliberado: cada uno de ellos emite una
-% página PDF idéntica a la anterior salvo por un elemento revelado. Donde antes había una revelación
-% con contenido propio, ahora hay una diapositiva propia. La comprobación es mecánica:
+% página PDF idéntica a la anterior salvo por un elemento revelado. Donde haría falta una revelación
+% con contenido propio, hay una diapositiva propia. La comprobación es mecánica:
 %   grep -v "^%" TFM_ppt.tex | grep -c "pause\|onslide\|only<"   debe dar 0
 %
 % Cada diapositiva numerada lleva exactamente una \note{} con el guion literal, en prosa seguida y
 % legible de corrido. Las cifras nunca se escriben a mano: proceden de tables/study_macros.tex, que
-% genera el exportador desde los cuatro estudios adoptados.
+% genera el exportador desde los cuatro estudios adoptados. Las figuras son las que ya existen en
+% figures/; los diagramas de mecanismo se dibujan en TikZ aquí mismo y no generan ficheros.
 %
 % Compilar con XeLaTeX. Para la versión con notas del ponente: python latex/build.py --notas
 \documentclass[aspectratio=169,11pt]{beamer}
@@ -53,9 +56,9 @@
 \setbeamerfont{frametitle}{size=\Large,series=\bfseries}
 \setbeamertemplate{itemize item}{\raisebox{0.15ex}{\rule{0.7ex}{0.7ex}}}
 
-% --- Actos -----------------------------------------------------------------
-% El color del acto tiñe la regla del título y la barra de progreso, de modo que el tribunal sabe
-% en qué mitad del argumento está sin necesidad de que se lo digan.
+% --- Bloques ---------------------------------------------------------------
+% El color del bloque tiñe la regla del título y la barra de progreso, de modo que el tribunal sabe
+% en qué parte del argumento está sin necesidad de que se lo digan.
 \newcommand{\acto}{navy}
 \newcommand{\actonombre}{}
 \newcommand{\setacto}[2]{\renewcommand{\acto}{#1}\renewcommand{\actonombre}{#2}}
@@ -70,19 +73,20 @@
 % --- Barra de progreso -----------------------------------------------------
 % Se calcula con primitivas de TeX en lugar de paquetes externos: multiplicar el ancho del papel
 % por el número de diapositiva y dividir entre el total cabe de sobra en un \dimen.
-% El total aparece dos veces —el divisor y el rótulo— y hay que cambiarlas a la vez.
+% El total vive en una sola macro, de modo que añadir o quitar una diapositiva es un cambio único.
+\newcommand{\TotalDiapos}{32}
 \newlength{\barraprogreso}
 \setbeamertemplate{footline}{%
   \setlength{\barraprogreso}{\paperwidth}%
   \multiply\barraprogreso by \insertframenumber\relax
-  \divide\barraprogreso by 26\relax
+  \divide\barraprogreso by \TotalDiapos\relax
   \nointerlineskip
   \hbox to \paperwidth{\color{light}\rule[0pt]{\paperwidth}{2.2pt}\hss}%
   \nointerlineskip
   \hbox to \paperwidth{\color{\acto}\rule[0pt]{\barraprogreso}{2.2pt}\hss}%
   \vspace{1.5pt}
   \hbox to \paperwidth{\hspace*{0.65cm}{\footnotesize\color{slate}\actonombre}\hfill
-    {\footnotesize\color{slate}\insertframenumber/26}\hspace*{0.65cm}}%
+    {\footnotesize\color{slate}\insertframenumber/\TotalDiapos}\hspace*{0.65cm}}%
   \vspace*{0.18cm}}
 
 % --- Piezas reutilizables --------------------------------------------------
@@ -112,7 +116,7 @@
   \par\medskip\noindent
   \colorbox{light}{\parbox{\dimexpr\linewidth-2\fboxsep\relax}{%
     \small{\color{gold}\textbf{Límite.}}~#1}}}
-% Divisor de acto: página entera del color del acto, sin nada que le compita.
+% Divisor de bloque: página entera del color del bloque, sin nada que le compita.
 \newcommand{\divisor}[3]{%
   \begin{frame}[plain]
     \begin{tikzpicture}[remember picture,overlay]
@@ -127,7 +131,7 @@
   \end{frame}}
 
 % --- Las tres preguntas ----------------------------------------------------
-% Una sola macro sirve a la diapositiva 4 (huecos) y a la 24 (resueltas), de modo que las dos filas
+% Una sola macro sirve a la diapositiva 4 (huecos) y a la 29 (resueltas), de modo que las dos filas
 % no pueden descuadrarse entre sí: cambian el color y la respuesta, nunca la geometría.
 %   #1 número · #2 pregunta · #3 respuesta · #4 color de la respuesta · #5 pie
 \newcommand{\pregunta}[5]{%
@@ -144,6 +148,19 @@
   \par\vspace{0.30cm}}
 \newcommand{\incognita}{\textbf{?}}
 
+% --- Piezas de los diagramas -----------------------------------------------
+% Estilos compartidos por los diagramas TikZ de mecanismo, para que los seis se parezcan entre sí.
+\tikzset{
+  caja/.style={draw=slate,line width=0.7pt,rounded corners=2pt,fill=white,
+               align=center,inner sep=4pt,font=\footnotesize},
+  cajac/.style={caja,draw=#1,line width=1.1pt,text=#1},
+  fuente/.style={caja,fill=light,draw=slate,align=left,font=\scriptsize},
+  flecha/.style={-{Stealth[length=4pt]},draw=slate,line width=0.7pt},
+  flechac/.style={flecha,draw=#1,line width=1.0pt},
+  rotulo/.style={font=\scriptsize,text=slate,align=center},
+  hito/.style={circle,fill=#1,inner sep=1.7pt},
+}
+
 \newcommand{\rankic}{\text{rank-IC}}
 \input{tables/study_macros.tex}
 
@@ -154,7 +171,7 @@
 \begin{document}
 
 % =====================================================================
-% ACTO 0 · El problema (diapositivas 1-4)
+% BLOQUE 1 · El problema (diapositivas 1-4)
 % =====================================================================
 \setacto{navy}{El problema}
 
@@ -170,830 +187,1368 @@
     {\small\color{slate}Trabajo Fin de Máster · Defensa}
   \end{minipage}
 \end{frame}}
-\note{[0:25] Buenos días. Mi trabajo se titula «Aprendizaje automático aplicado a la selección de
+\note{[0:24] Buenos días. Mi trabajo se titula «Aprendizaje automático aplicado a la selección de
 acciones», y el subtítulo es la parte que importa: medición honesta del aprendizaje fuera de
 muestra. Hago dos preguntas que en este campo se confunden: si un sistema puede aprender a ordenar
 acciones, y si ese orden puede cobrarse frente al mercado. Separarlas es la contribución.}
 
-% 2 · 0:35
-\begin{frame}{Dos objetivos, dos listones, dos métricas}
-  \vspace{0.30cm}
-  \begin{columns}[t,onlytextwidth]
-    \begin{column}{0.47\textwidth}
-      {\color{navy}\Large\textbf{1 · ¿Aprende?}}\\[0.30cm]
-      {\large ¿Ordena acciones fuera de muestra?}\\[0.40cm]
-      {\color{slate}Listón \textbf{absoluto}: existe o no existe.\\
-      Se decide con \textbf{Rank-IC}.}
+% 2 · 0:50
+\begin{frame}{Por qué casi nadie bate al índice}
+  \vspace{0.15cm}
+  \begin{columns}[T]
+    \begin{column}{0.53\linewidth}
+      \includegraphics[width=\linewidth,height=0.62\textheight,keepaspectratio]{figures/f01_spiva_horizontes.png}
     \end{column}
-    \begin{column}{0.47\textwidth}
-      {\color{teal}\Large\textbf{2 · ¿Se cobra?}}\\[0.30cm]
-      {\large ¿Supera al índice con ese orden?}\\[0.40cm]
-      {\color{slate}Listón \textbf{relativo} y de suma cero.\\
-      Se decide con \textbf{Information Ratio}.}
-    \end{column}
-  \end{columns}
-  \vspace{0.60cm}
-  \begin{center}
-    \colorbox{light}{\parbox{0.90\linewidth}{\centering\large
-      Ordenar bien y ganar dinero son capacidades relacionadas, no equivalentes.}}
-  \end{center}
-\end{frame}
-\note{[0:35] Los dos objetivos, con listones y métricas distintos. El primero pregunta si el sistema
-aprende a ordenar fuera de muestra, y se decide por Rank-IC: su listón es absoluto, la capacidad
-existe o no existe. El segundo pregunta si con ese orden se supera al índice, se decide por
-Information Ratio, y su listón es relativo. Si midiera las dos cosas a la vez correría dos riesgos:
-elegir el modelo por una cartera afortunada, o presentar una señal buena como si ya fuera dinero.}
-
-% 3 · 0:45
-\begin{frame}{Contra qué se mide cada objetivo}
-  \vspace{-0.42cm}
-  \begin{columns}[c,onlytextwidth]
-    \begin{column}{0.55\textwidth}
-      \includegraphics[width=\linewidth]{figures/f01_spiva_horizontes.png}
-    \end{column}
-    \begin{column}{0.41\textwidth}
-      {\color{rojo}\fontsize{20}{22}\selectfont\textbf{92,89\,\%}}
-      {\footnotesize\color{slate} de los fondos \textit{large-cap} pierde contra el índice a veinte
-      años}\\[0.42cm]
-      {\color{teal}\textbf{Para el objetivo 2}}\\[0.12cm]
-      {\small La gestión activa agregada \textbf{es} el mercado: superarlo exige que otro
-      pierda.}\\[0.34cm]
-      {\color{navy}\textbf{Para el objetivo 1}}\\[0.12cm]
-      {\small Si tantos profesionales fallan, una señal que parezca funcionar es \textbf{sospechosa
-      por defecto}: hay que probar que no es suerte.}
+    \begin{column}{0.44\linewidth}
+      \vspace{0.30cm}
+      {\footnotesize Antes de costes, la gestión activa \textbf{es} el mercado: lo que un gestor
+      gana de más, otro lo pierde. Después de costes, el agregado queda por debajo. No es una
+      opinión sobre la habilidad: es aritmética.}
+      \par\medskip
+      {\footnotesize Los datos de SPIVA lo confirman, y el efecto \textbf{crece con el horizonte}.}
+      \titular{92,9\,\%}{rojo}{fondos de gran capitalización que no baten al S\&P 500 a 20 años}
     \end{column}
   \end{columns}
+  \vspace{0.05cm}
+  {\scriptsize\color{slate}\hspace*{0.1cm}SPIVA U.S. Scorecard Year-End 2025, Report 1a · rentabilidad absoluta}
 \end{frame}
-\note{[0:45] Contra qué se mide cada uno. El argumento de Sharpe es aritmético: la gestión activa
-agregada posee la cartera de mercado, así que antes de costes obtiene exactamente el índice, y para
-que uno lo supere otro debe quedarse por debajo. Ése es el listón del objetivo dos. SPIVA lo
-confirma: a veinte años, el 92,89 por ciento de los fondos no supera al S\&P 500. Pero esa cifra
-hace un segundo trabajo, y es el que me importa para el objetivo uno: si nueve de cada diez
-profesionales fallan, cualquier señal que parezca funcionar es sospechosa hasta que se demuestre que
-no es suerte. De ahí sale todo el estándar de evidencia de la primera mitad.}
+\note{[0:49] Empiezo por el listón. Batir al índice es difícil por aritmética antes que por talento: la
+suma de todos los gestores activos es, por construcción, el mercado. Si compro algo que lo hace
+mejor que la media, alguien me lo ha vendido y ese alguien lo ha hecho peor. Antes de costes es
+suma cero, y como la gestión activa cobra comisiones, después de costes el agregado queda por
+debajo necesariamente. El gráfico es el correlato empírico: el porcentaje de fondos que no baten
+al S\&P 500. A un año ya falla casi el ochenta por ciento, y la proporción sube con el horizonte: a
+veinte años, el noventa y dos coma nueve. Y hablamos de profesionales con equipos y datos de pago.}
 
-% 4 · 0:30
-\begin{frame}{Tres preguntas que esta defensa deja resueltas}
-  \vspace{0.25cm}
-  \pregunta{1}{¿El sistema \textbf{aprende} a ordenar acciones fuera de muestra?}
-    {\incognita}{slate}{se resuelve en el Acto I}
-  \pregunta{2}{¿Cuánto pesan las \textbf{reglas de cartera} frente al modelo?}
-    {\incognita}{slate}{se resuelve en el Acto II}
-  \pregunta{3}{¿Sobrevive todo eso en una ventana \textbf{nunca consultada}?}
-    {\incognita}{slate}{se resuelve al final del Acto II}
-  \vspace{0.30cm}
-  \begin{center}
-    \colorbox{light}{\parbox{0.90\linewidth}{\centering
-      Ninguna de las tres se responde con la intuición que uno esperaría.}}
-  \end{center}
-\end{frame}
-\note{[0:30] Tres preguntas que voy a dejar resueltas, y las planteo aquí para que sepáis en qué punto
-estamos. ¿Aprende de verdad a ordenar fuera de muestra? ¿Cuánto pesan las reglas de cartera frente
-al modelo? ¿Y sobrevive todo eso en una ventana que ninguna decisión llegó a consultar? Cada
-interrogante se sustituye por una cifra donde queda demostrado, y al terminar vuelvo aquí con las
-tres respuestas. Ninguna se responde con la intuición que uno esperaría.}
-
-% =====================================================================
-% ACTO I · La señal (diapositivas 5-12)
-% =====================================================================
-\setacto{navy}{Acto I · ¿Aprende?}
-
-% 5 · 0:10
-\divisor{navy}{Acto I}{¿Aprende el sistema a ordenar acciones?}
-\note{[0:10] Primer acto: la señal, y solo la señal. Nada de lo que viene depende de decisiones de
-cartera. Eso llega después, con la señal ya congelada.}
-
-% 6 · 0:30
-\begin{frame}{Cinco especialistas y un meta-agente que aprende a ponderarlos}
-  \vspace{-0.18cm}
-  \begin{columns}[c,onlytextwidth]
-    \begin{column}{0.56\textwidth}
-      \begin{center}
-      \resizebox{\linewidth}{!}{%
-      \begin{tikzpicture}[node distance=0.28cm and 0.28cm,>=Latex,
-        box/.style={draw=navy,rounded corners,minimum width=1.58cm,minimum height=0.60cm,
-          align=center,fill=light,font=\scriptsize\bfseries}]
-        \node[box] (q) {quality};
-        \node[box,right=of q] (v) {value};
-        \node[box,right=of v] (g) {growth};
-        \node[box,right=of g] (m) {momentum};
-        \node[box,right=of m] (r) {risk};
-        \node[box,draw=teal,fill=teal!10,below=0.85cm of g,minimum width=3.0cm] (meta) {meta-agente};
-        \node[box,draw=gold,fill=gold!10,below=0.7cm of meta,minimum width=3.0cm] (rank) {ranking transversal};
-        \foreach \x in {q,v,g,m,r} \draw[->,color=slate] (\x.south) -- (meta.north);
-        \draw[->,thick,color=teal] (meta) -- (rank);
-      \end{tikzpicture}}
-      \end{center}
+% 3 · 0:40
+\begin{frame}{Dos objetivos que no deben confundirse}
+  \vspace{0.35cm}
+  \begin{columns}[T]
+    \begin{column}{0.47\linewidth}
+      \colorbox{light}{\parbox{\dimexpr\linewidth-2\fboxsep\relax}{\vspace{0.12cm}
+        {\footnotesize\color{slate}\MakeUppercase{Objetivo 1 · predictivo}}\par\medskip
+        {\large\color{navy}\textbf{¿Aprende a ordenar acciones fuera de muestra?}}\par\medskip
+        {\footnotesize Se mide con el \textbf{$\rankic$}: la correlación entre el orden predicho y
+        el que ocurre después. Es una pregunta sobre la señal, y se responde \textbf{antes} de
+        construir ninguna cartera.}\vspace{0.12cm}}}
     \end{column}
-    \begin{column}{0.40\textwidth}
-      {\large\color{navy}\textbf{Información disjunta}}\\[0.28cm]
-      Cada agente recibe un bloque \textbf{sin solapamiento} con los demás: si dos agentes
-      coinciden, no es porque compartan variables.\\[0.40cm]
-      {\large\color{teal}\textbf{Pesos aprendidos}}\\[0.28cm]
-      El meta no lleva pesos fijados a mano: los estima con las cohortes ya cerradas.
+    \begin{column}{0.47\linewidth}
+      \colorbox{light}{\parbox{\dimexpr\linewidth-2\fboxsep\relax}{\vspace{0.12cm}
+        {\footnotesize\color{slate}\MakeUppercase{Objetivo 2 · económico}}\par\medskip
+        {\large\color{teal}\textbf{¿Puede cobrarse ese orden frente al índice?}}\par\medskip
+        {\footnotesize Se mide con el \textbf{exceso} sobre el índice y el \textbf{Information
+        Ratio}. Es una pregunta sobre la implementación, y depende de reglas que no tienen nada que
+        ver con el modelo.}\vspace{0.12cm}}}
     \end{column}
   \end{columns}
-  \vspace{0.08cm}
-  \begin{center}
-    {\small\color{slate}\NumPredictores{} predictores · \NumParametrosCatalogo{} parámetros de
-    catálogo · un único ranking transversal de salida}
-  \end{center}
-\end{frame}
-\note{[0:30] La arquitectura: cinco agentes especialistas, cada uno mirando una familia distinta de
-información, y un meta-agente que aprende a ponderar sus cinco rankings. Dos detalles importan. Los
-bloques son disjuntos, ninguna variable aparece en dos agentes, así que si dos coinciden no es
-porque miren lo mismo. Y los pesos del meta no los fijo yo: se estiman con las cohortes ya cerradas.
-Ésa es la parte que aprende.}
-
-% 7 · 0:25
-\begin{frame}{Sobre qué datos se mide todo esto}
-  \vspace{-0.30cm}
-  \begin{center}
-    \includegraphics[height=0.50\textheight,keepaspectratio]{figures/f03_muestra_oos.png}
-  \end{center}
-  \vspace{-0.10cm}
-  \begin{center}
-    {\small\color{navy}
-      \textbf{60.259} predicciones fuera de muestra \quad·\quad
-      \textbf{135} fechas \quad·\quad
-      \textbf{606} empresas distintas}
-  \end{center}
-  \matiz{Cada mes entra quien pertenecía al índice ese mes: 573 empresas en selección y 523 en la
-  reservada, no las que sobrevivieron hasta hoy.}
-\end{frame}
-\note{[0:25] La escala de lo que hay detrás: 60.259 predicciones fuera de muestra, 135 fechas
-mensuales y 606 empresas distintas. Cada barra es una fecha y su altura, cuántas acciones se
-puntuaron. Lo importante es que el universo cambia: cada mes entra quien pertenecía al índice ese
-mes. Si hubiera usado la composición de hoy, el sistema solo vería empresas que sobrevivieron, y eso
-regala rentabilidad.}
-
-% 8 · 0:40
-\begin{frame}{Cuatro condiciones que hacen honesta la evaluación}
-  \vspace{0.10cm}
-  \begin{center}
-    \begin{tikzpicture}[>=Latex, font=\footnotesize,
-        hito/.style={draw,rounded corners,fill=light,minimum height=7.5mm,inner xsep=3mm},
-        veto/.style={draw,rounded corners,fill=rojo!8,draw=rojo!55,minimum height=7.5mm,inner xsep=3mm}]
-      \node[hito]                       (fiscal) {Cierre fiscal};
-      \node[veto,right=8mm of fiscal]   (filing) {Fecha de \textit{filing}};
-      \node[hito,right=8mm of filing]   (obs)    {Observación};
-      \node[veto,right=8mm of obs]      (eje)    {Ejecución};
-      \draw[->,thick,slate] (fiscal)--(filing);
-      \draw[->,thick,slate] (filing)--(obs);
-      \draw[->,thick,slate] (obs)--(eje);
-      \node[below=1.6mm of fiscal,font=\scriptsize,text=slate,align=center]
-        {el dato existe,\\nadie lo sabe};
-      \node[below=1.6mm of filing,font=\scriptsize,text=rojo,align=center]
-        {\textbf{aquí} empieza\\a poder usarse};
-      \node[below=1.6mm of obs,font=\scriptsize,text=slate,align=center]
-        {se puntúa el\\universo del día};
-      \node[below=1.6mm of eje,font=\scriptsize,text=rojo,align=center]
-        {retardo declarado,\\no cero};
-    \end{tikzpicture}
-  \end{center}
-  \vspace{0.30cm}
-  \begin{columns}[t,onlytextwidth]
-    \begin{column}{0.47\textwidth}
-      {\color{navy}\textbf{Universo \textit{point-in-time}}}\\[0.12cm]
-      {\small La composición del S\&P 500 \textbf{de cada fecha}, no la de hoy: si no, el sistema
-      solo vería empresas que sobrevivieron.}
-    \end{column}
-    \begin{column}{0.47\textwidth}
-      {\color{navy}\textbf{Etiquetas solo cuando cierran}}\\[0.12cm]
-      {\small Una observación entrena únicamente si su horizonte de doce meses \textbf{ya
-      terminó}. Nunca se aprende de un futuro a medio ocurrir.}
-    \end{column}
-  \end{columns}
-  \vspace{0.18cm}
-  \begin{center}
-    \colorbox{light}{\parbox{0.90\linewidth}{\centering
-      Las cuatro restan resultado. Están porque sin ellas el resultado no significa nada.}}
-  \end{center}
-\end{frame}
-\note{[0:40] Esta diapositiva sostiene la credibilidad de todo lo demás. La línea de tiempo resuelve
-las dos condiciones que tratan de fechas: un dato existe cuando cierra el trimestre, pero el mercado
-no lo conoce hasta que se publica, así que fecho por el filing de EDGAR y no por el periodo fiscal.
-Y entre observar y operar pasa un tiempo, declarado en vez de supuesto cero. Las otras dos: el
-universo es el de cada fecha, y una etiqueta solo entrena cuando su horizonte de doce meses ha
-cerrado. Las cuatro restan resultado, y están precisamente por eso.}
-
-% 9 · 0:30
-\begin{frame}{Las decisiones terminan antes de abrir la era reservada}
   \vspace{0.40cm}
   \begin{center}
-  \begin{tikzpicture}[>=Latex,node distance=0.35cm]
-    \node[draw,rounded corners,fill=navy!9,minimum width=2.3cm,minimum height=0.9cm] (t) {Temporal};
-    \node[draw,rounded corners,fill=navy!9,right=of t,minimum width=2.3cm,minimum height=0.9cm] (rep) {Representación};
-    \node[draw,rounded corners,fill=navy!9,right=of rep,minimum width=2.3cm,minimum height=0.9cm] (mod) {Modelo};
-    \node[draw,rounded corners,fill=navy!9,right=of mod,minimum width=2.3cm,minimum height=0.9cm] (meta) {Meta};
-    \node[draw,rounded corners,fill=teal!12,below=1.15cm of rep,minimum width=3.2cm,minimum height=0.9cm] (freeze) {Señal congelada};
-    \node[draw,rounded corners,fill=gold!14,right=1.0cm of freeze,minimum width=3.6cm,minimum height=0.9cm] (port) {Rejilla de carteras};
-    \draw[->] (t)--(rep); \draw[->] (rep)--(mod); \draw[->] (mod)--(meta);
-    % La salida del meta baja por su propio eje y entra a la señal congelada por arriba:
-    % así ninguna flecha cruza «Rejilla de carteras», que está a la derecha y más abajo.
-    \draw[->] (meta.south) -- ++(0,-0.45) -| (freeze.north);
-    \draw[->] (freeze)--(port);
+    {\footnotesize Un sistema puede ordenar bien y perder dinero. Y puede ganar dinero por razones
+    que no son su capacidad de ordenar.\\[0.15em]
+    \textbf{\color{navy}Medirlos juntos es la confusión que este trabajo quiere evitar.}}
+  \end{center}
+\end{frame}
+\note{[0:39] De ahí los dos objetivos, que son preguntas distintas con métricas distintas. El primero es
+predictivo: ¿aprende a ordenar acciones y mantiene esa capacidad sobre datos que no ha visto? Se
+mide con el rank-IC, y se responde antes de construir ninguna cartera. El segundo es económico:
+¿ese orden se convierte en dinero? Se mide con el exceso sobre el índice, y depende de reglas que
+no tienen nada que ver con el modelo. Separarlos importa porque un sistema puede ordenar muy bien
+y perder dinero, y puede ganarlo por razones que no son su capacidad de ordenar.}
+
+% 4 · 0:35
+\begin{frame}{Tres preguntas que esta defensa deja resueltas}
+  \vspace{0.75cm}
+  \pregunta{1}{¿El sistema aprende a ordenar acciones, y esa capacidad sobrevive fuera de
+    muestra?}{\incognita}{slate}{Se responde con el $\rankic$ y sus contrastes adversariales}
+  \pregunta{2}{¿Cuánto de la rentabilidad depende del modelo, y cuánto de cómo se construye la
+    cartera?}{\incognita}{slate}{Se responde congelando la señal y variando sólo las reglas}
+  \pregunta{3}{¿Aguanta en una ventana de tiempo que nunca se consultó al
+    decidir?}{\incognita}{slate}{Se responde con los años reservados desde el principio}
+\end{frame}
+\note{[0:30] Concretando: esta defensa deja resueltas tres preguntas. Si el sistema aprende a ordenar y
+esa capacidad sobrevive fuera de muestra. Cuánto de la rentabilidad se debe al modelo y cuánto a
+cómo se construye la cartera encima. Y si aguanta en una ventana de tiempo que no se consultó ni
+una vez al decidir. Las tres están ahora con un interrogante; cada uno se sustituirá por una cifra
+en la diapositiva donde quede demostrado.}
+
+% =====================================================================
+% BLOQUE 2 · Cómo aprende (diapositivas 5-9)
+% =====================================================================
+\setacto{navy}{Cómo aprende}
+
+% 5 · 0:50
+\begin{frame}{Qué significa exactamente «aprender a ordenar»}
+  \vspace{0.10cm}
+  \begin{center}
+  \begin{tikzpicture}
+    % El universo en una fecha
+    \node[rotulo] at (0,3.05) {\textbf{Una fecha $t$}\\universo del índice};
+    \foreach \i/\n in {0/AAPL,1/MSFT,2/ORLY,3/{\ldots},4/XYZ}{
+      \node[caja,minimum width=1.5cm,minimum height=0.44cm] at (0,2.35-0.52*\i) {\n};}
+    % El modelo
+    \node[cajac=navy,minimum width=2.1cm,minimum height=1.5cm] (mod) at (3.3,1.05)
+      {\textbf{Modelo}\\\scriptsize entrenado sólo\\\scriptsize con el pasado};
+    \draw[flecha] (0.85,1.05) -- (mod.west);
+    % Orden predicho
+    \node[rotulo] at (6.6,3.05) {\textbf{Orden predicho}\\en $t$};
+    \foreach \i/\n/\r in {0/ORLY/1,1/AAPL/2,2/XYZ/3,3/{\ldots}/4,4/MSFT/5}{
+      \node[cajac=teal,minimum width=1.5cm,minimum height=0.44cm] at (6.6,2.35-0.52*\i) {\r.~\n};}
+    \draw[flechac=navy] (mod.east) -- (5.75,1.05);
+    % Orden realizado
+    \node[rotulo] at (10.0,3.05) {\textbf{Orden realizado}\\12 meses después};
+    \foreach \i/\n/\r in {0/ORLY/1,1/XYZ/2,2/AAPL/3,3/{\ldots}/4,4/MSFT/5}{
+      \node[caja,minimum width=1.5cm,minimum height=0.44cm] at (10.0,2.35-0.52*\i) {\r.~\n};}
+    \draw[flecha,dashed] (7.45,1.05) -- (9.15,1.05) node[midway,above,rotulo] {espera};
+    % La correlación
+    \node[cajac=gold,minimum width=3.0cm,minimum height=0.75cm] (ic) at (8.3,-0.85)
+      {\textbf{Correlación de rangos}};
+    \draw[flechac=gold] (6.6,0.05) -- (7.4,-0.5);
+    \draw[flechac=gold] (10.0,0.05) -- (9.2,-0.5);
+    \node[rotulo,text=gold,align=left] at (3.4,-0.85)
+      {$+1$ orden perfecto \quad $0$ ruido \quad $-1$ orden invertido\\
+       Se repite en \textbf{cada} fecha y se promedia $\Rightarrow$ $\rankic$};
   \end{tikzpicture}
   \end{center}
-  \vspace{0.45cm}
-  \begin{columns}[c,onlytextwidth]
-    \begin{column}{0.48\textwidth}\cifra{2015--2024}{selección: \CohortesSeleccion{} cohortes, todas las decisiones}\end{column}
-    \begin{column}{0.48\textwidth}\cifracolor{2025--2026}{reservada: ninguna decisión la utilizó}{gold}\end{column}
-  \end{columns}
-\end{frame}
-\note{[0:30] El protocolo. Tres estudios encadenados recorren las cuatro fases cambiando una variable
-cada vez y comparando el Rank-IC sobre las mismas cohortes. Cuando termina, la señal se congela, y
-solo entonces se abre la rejilla de carteras. Todo sobre 2015-2024, 117 cohortes. Y quiero ser
-preciso en cómo se aparta 2025-2026: la serie sobre la que se calcula la rejilla está truncada en
-2024, así que la era reservada no llega a calcularse. Se consulta una vez, al final.}
-
-% 10 · 0:35
-\begin{frame}{El meta se equivoca, se corrige y acaba concentrándose}
-  \vspace{-0.05cm}
-  \begin{columns}[c,onlytextwidth]
-    \begin{column}{0.63\textwidth}
-      \includegraphics[width=\linewidth]{figures/f06_pesos_anual.png}
-    \end{column}
-    \begin{column}{0.33\textwidth}
-      {\color{navy}\textbf{2015}}\\[0.10cm]
-      {\small Pesos iguales por construcción: no hay ninguna cohorte cerrada de la que
-      aprender.}\\[0.35cm]
-      {\color{rojo}\textbf{2016}}\\[0.10cm]
-      {\small Se concentra en \texttt{momentum}, que acabará siendo el peor. \textbf{Se
-      equivoca.}}\\[0.35cm]
-      {\color{verde}\textbf{2017 en adelante}}\\[0.10cm]
-      {\small Corrige hacia \texttt{risk} y desde 2020 nunca baja de 0,79.}
-    \end{column}
-  \end{columns}
-\end{frame}
-\note{[0:35] Ésta es la evidencia más directa de aprendizaje, y hay que leerla de izquierda a derecha.
-En 2015 el reparto es uniforme por construcción: no hay cohortes cerradas de las que aprender. En
-2016 el meta se concentra en momentum, que acabará siendo el peor especialista del periodo: se
-equivoca, y con datos. En 2017 corrige hacia risk, y desde 2020 no baja de 0,79. Equivocarse con la
-información disponible y corregirse cuando llega información nueva, sin que nadie intervenga, es
-exactamente lo que significa aprender.}
-
-% 11 · 0:30
-\begin{frame}{Aprender los pesos aporta sobre repartirlos a partes iguales}
-  \vspace{0.30cm}
-  \begin{center}
-    \begin{tikzpicture}[font=\footnotesize, x=43cm, y=1.15cm]
-      \foreach \v/\y/\c/\lab in {%
-          0.0690/0/slate/{los cinco a partes iguales, \emph{sin} aprender},
-          0.1067/-1/navy/{\textbf{pesos aprendidos con cohortes cerradas}}} {
-        \fill[\c] (0,\y-0.19) rectangle (\v,\y+0.19);
-        \node[right=1.5mm,font=\scriptsize,text=black!75] at (\v,\y) {\lab};
-      }
-      \node[left=1.5mm,font=\small,text=slate] at (0,0)  {\RankICEquiponderado{}};
-      \node[left=1.5mm,font=\small,text=navy]  at (0,-1) {\textbf{\RankICSeleccion{}}};
-      \draw[slate,line width=0.4pt] (0,0.48) -- (0,-1.48);
-    \end{tikzpicture}
-  \end{center}
-  \vspace{0.35cm}
-  \begin{center}
-    \colorbox{light}{\parbox{0.90\linewidth}{\centering
-      Mismos cinco agentes, misma información, misma ventana.\\
-      Lo único que cambia es \textbf{quién decide cuánto pesa cada uno}.}}
-  \end{center}
-\end{frame}
-\note{[0:30] Y cuánto aporta ese aprendizaje. Si ponderamos los cinco agentes a partes iguales, sin
-aprender nada, el Rank-IC es 0,0690. Con los pesos que el meta estima de las cohortes cerradas, sube
-a 0,1067. Mismos agentes, misma información, misma ventana: lo único que cambia es quién decide
-cuánto pesa cada uno. Un cincuenta y cinco por ciento más de capacidad de ordenar sale de aprender
-el reparto en vez de fijarlo.}
-
-% 12 · 0:40
-\begin{frame}{\textcolor{navy}{Pregunta 1, resuelta:} aprende lo que las fórmulas no ven}
-  \vspace{0.10cm}
-  \begin{columns}[c,onlytextwidth]
-    \begin{column}{0.58\textwidth}
-      \begin{tikzpicture}[font=\footnotesize, x=32cm, y=0.73cm]
-        \foreach \v/\y/\c/\lab in {%
-            0.1067/0/navy/{\textbf{Sistema aprendido}},
-            0.0119/-1/slate/{GARP (crecimiento a precio razonable)},
-            0.0026/-2/slate/{Valor},
-            0.0024/-3/slate/{Calidad},
-            0.0022/-4/slate/{Crecimiento},
-            -0.0002/-5/rojo/{Tendencia \textit{(negativa)}}} {
-          \fill[\c] (0,\y-0.20) rectangle (\v,\y+0.20);
-          \node[right=1.2mm,font=\scriptsize,text=black!75] at ({max(\v,0)},\y) {\lab};
-        }
-        \draw[slate,line width=0.4pt] (0,0.45) -- (0,-5.45);
-        \node[left=1.2mm,font=\small,text=navy] at (0,0) {\textbf{\RankICSeleccion{}}};
-        \node[left=1.2mm,font=\scriptsize,text=slate] at (0,-1) {0,0119};
-      \end{tikzpicture}
-    \end{column}
-    \begin{column}{0.38\textwidth}
-      \titular{$\times$9}{navy}{pregunta 1 · ¿aprende?}
-      \vspace{0.05cm}
-      {\footnotesize\color{slate}El sistema ordena \textbf{nueve veces mejor} que la mejor fórmula
-      determinista calculada sobre el mismo panel. Las otras cuatro son indistinguibles de cero, y
-      la de tendencia es negativa.}
-    \end{column}
-  \end{columns}
-  \matiz{Los factores clásicos se documentaron sobre otros universos y horizontes. Lo que esto
-  acota es qué cabe esperar aquí de una regla sin aprendizaje.}
-\end{frame}
-\note{[0:40] Con esto doy por resuelta la primera pregunta. El Rank-IC del sistema es 0,1067, pero una
-cifra sola no dice si aprender aportó algo, así que la comparo contra las cinco fórmulas factoriales
-clásicas calculadas sobre el mismo panel, sin entrenar nada. La mejor, crecimiento a precio
-razonable, alcanza 0,0119: el sistema ordena nueve veces mejor. Las otras cuatro son
-indistinguibles de cero y la de tendencia es negativa. Siendo justo con la literatura, esas primas
-se documentaron sobre otros universos y horizontes; lo que esto acota es qué cabe esperar aquí de
-una regla sin aprendizaje.}
-
-% 13 · 0:30
-\begin{frame}{La señal aparece en tres de cada cuatro fechas}
   \vspace{-0.10cm}
-  \begin{columns}[c,onlytextwidth]
-    \begin{column}{0.64\textwidth}
-      \includegraphics[width=0.98\linewidth]{figures/f06_rankic_serie.png}
-    \end{column}
-    \begin{column}{0.32\textwidth}
-      \cifrachica{\FraccionICPositiva{}}{de las \CohortesSeleccion{} cohortes son positivas}{navy}
-      \vspace{0.15cm}
-      \cifrachica{\ICIRSeleccion{}}{IC-IR: media entre desviación}{navy}
-      \vspace{0.15cm}
-      \cifrachica{\RankICReservado{}}{era reservada}{gold}
-    \end{column}
-  \end{columns}
-  \matiz{Positiva no quiere decir homogénea: la señal es más fuerte en la era reciente, y la banda
-  dorada ---la era reservada--- aporta solo \CohortesReservadas{} cohortes cerradas.}
+  {\small\hspace*{0.1cm}No se predice cuánto sube una acción, sino \textbf{qué acciones lo harán
+  mejor que las demás}. Basta con acertar el orden.}
 \end{frame}
-\note{[0:30] Un promedio puede esconder que la señal funcionó en un tramo y en el resto no, así que
-aquí está fecha a fecha. Es positiva en el 76,1 por ciento de las 117 cohortes, tres de cada cuatro,
-con un IC-IR de 0,833. La banda dorada es la era reservada, donde sigue siendo positiva con solo
-seis cohortes. Pero positiva no es homogénea: la señal es más fuerte en los últimos años, y eso lo
-retomo enseguida.}
+\note{[0:49] Necesito que quede claro qué aprende el sistema, porque la métrica principal sale de aquí.
+En una fecha tengo el universo de acciones. El modelo, entrenado sólo con información anterior,
+las ordena de mejor a peor. Espero doce meses y observo el orden que realmente ocurrió. Y comparo
+los dos órdenes: no las rentabilidades, los órdenes. Esa comparación vale uno si acerté el orden
+exacto, cero si era ruido, menos uno si me equivoqué en todo. Se repite en cada fecha y se
+promedia: eso es el rank-IC. Fíjense en lo que implica: no predigo cuánto sube Apple, predigo si
+lo hará mejor o peor que las demás. Para comprar ocho acciones de quinientas no necesito saber
+cuánto suben, sino cuáles suben más.}
 
-% 14 · 0:35
-\begin{frame}{¿Y si esto ya lo hacían los factores conocidos?}
-  \vspace{-0.15cm}
-  \begin{columns}[c,onlytextwidth]
-    \begin{column}{0.60\textwidth}
-      \includegraphics[width=0.98\linewidth]{figures/f06_atribucion_factorial.png}
-    \end{column}
-    \begin{column}{0.36\textwidth}
-      \titular{87,2\,\%}{navy}{señal que sobrevive}
-      \vspace{0.05cm}
-      {\footnotesize\color{slate}Al neutralizar las exposiciones a los estilos clásicos
-      ---tamaño, valor, calidad, momento--- la capacidad de ordenar \textbf{retiene el 87,2\,\%}.
-      No es un factor conocido con otro nombre.}
-    \end{column}
-  \end{columns}
-  \matiz{El alfa factorial, en cambio, no es significativo ($t=1{,}02$): lo que se sostiene es la
-  \emph{ordenación} residual, no una afirmación de rentabilidad ajustada.}
-\end{frame}
-\note{[0:35] La objeción más razonable es que el sistema esté redescubriendo un factor de toda la vida.
-La medí. Si se neutralizan las exposiciones a los estilos clásicos ---tamaño, valor, calidad,
-momento--- y se recalcula la capacidad de ordenar sobre lo que queda, retiene el 87,2 por ciento.
-Casi toda su capacidad vive fuera de lo que esos factores explican. Con una acotación honesta: el
-alfa de esa regresión no es significativo, con un t de 1,02. Lo que sostengo es la ordenación
-residual, no una rentabilidad ajustada por factores.}
-
-% 15 · 0:55
-\begin{frame}{Ocho contrastes adversariales: siete a favor, uno en contra}
-  \vspace{-0.10cm}
-  \begin{columns}[c,onlytextwidth]
-    \begin{column}{0.52\textwidth}
-      \includegraphics[width=\linewidth]{figures/f06_bootstrap.png}
-    \end{column}
-    \begin{column}{0.44\textwidth}
-      \begin{itemize}\setlength{\itemsep}{0.10em}\small
-        \item[\color{verde}$\checkmark$] $t$ de Newey-West $=\TNeweyWest{}$
-        \item[\color{verde}$\checkmark$] permutación: $p=\PValorPermutacion{}$
-        \item[\color{verde}$\checkmark$] cinco placebos de etiqueta
-        \item[\color{verde}$\checkmark$] \textit{bootstrap} por bloques excluye el cero
-        \item[\color{verde}$\checkmark$] ninguna era sostiene sola el resultado
-        \item[\color{verde}$\checkmark$] estable ante semilla y corte de eras
-        \item[\color{rojo}$\times$] \textbf{Deflated Sharpe \ProbabilidadDSR{}}, umbral 0,95
-      \end{itemize}
-    \end{column}
-  \end{columns}
-  \vspace{-0.10cm}
-  \matiz{Los siete apoyan que \textbf{el orden no es ruido}; el octavo limita la
-  \textbf{rentabilidad ajustada} por las 46 configuraciones probadas. No reclamo la segunda.}
-\end{frame}
-\note{[0:55] Sometí la señal a ocho contrastes diseñados para tumbarla. Siete la respaldan: el t de
-Newey-West sale 3,33, la permutación baraja las etiquetas casi diez mil veces sin alcanzarla, los
-placebos quedan un orden de magnitud por debajo, el bootstrap por bloques excluye el cero, y el
-resultado no depende de ninguna era ni de la semilla. El ranking no es ruido. Pero el octavo falla,
-y lo pongo en la misma pantalla para que no pase desapercibido: el Deflated Sharpe sale 0,573 frente
-al umbral de 0,95. Penaliza por las 46 configuraciones que probé, y encadenar tres estudios encarece
-ese listón en lugar de aliviarlo. Podría haberlo omitido y nadie lo habría echado en falta. La
-consecuencia la quiero delante: la evidencia de ordenación es más fuerte que la de rentabilidad
-ajustada por selección, y no reclamo la segunda.}
-
-% 16 · 1:10
-\begin{frame}{Aprender el reparto gana a decidirlo por convicción}
-  \vspace{-0.20cm}
-  \begin{columns}[c,onlytextwidth]
-    \begin{column}{0.46\textwidth}
-      \centering
-      \includegraphics[width=\linewidth]{figures/f07_perfiles_pesos.png}\\[-0.05cm]
-      {\scriptsize\color{slate}Siete estilos con pesos fijos declarados de antemano}
-    \end{column}
-    \begin{column}{0.50\textwidth}
-      \centering
-      \includegraphics[width=\linewidth]{figures/f07_perfiles_resultados.png}\\[-0.05cm]
-      {\scriptsize\color{slate}Misma señal, misma cartera: solo cambia quién pondera}
-    \end{column}
-  \end{columns}
-  \vspace{0.10cm}
-  \begin{center}
-    \colorbox{light}{\parbox{0.94\linewidth}{\centering
-      El consenso aprendido (\textit{balanced}) obtiene \textbf{IR 0,841}; el mejor estilo fijo se
-      queda en \textbf{0,342}.\\
-      Ninguno de los siete mejora a \textbf{no imponer un estilo}.}}
-  \end{center}
-\end{frame}
-\note{[1:10] Una última comparación sobre el objetivo uno, y me parece la más limpia de todas. Un
-perfil es un inversor con criterio propio: usa los mismos cinco agentes entrenados, pero decide de
-antemano cuánto pesa cada uno en lugar de dejar que la evidencia lo reparta. A la izquierda están
-los siete estilos con sus pesos fijos, declarados antes de ver un solo dato. A la derecha, el
-resultado de aplicarlos sobre la misma señal y la misma cartera: lo único que cambia entre ellos es
-quién decide la ponderación. El consenso aprendido, que es el perfil equilibrado, obtiene un
-Information Ratio de 0,841. El mejor de los siete estilos fijos se queda en 0,342, menos de la
-mitad, y en la era reservada seis de los siete se vuelven negativos. Ninguno mejora a no imponer un
-estilo. Es la evidencia más directa de que aprender el reparto aporta sobre decidirlo por
-convicción, y conviene subrayar que los perfiles no compitieron por ser elegidos: se reevalúan como
-diagnóstico, nunca se selecciona ninguno por su rentabilidad.}
-
-% 17 · 0:45
-\begin{frame}{Ordenar bien el universo no garantiza acertar las que compras}
-  \vspace{-0.15cm}
-  \begin{columns}[c,onlytextwidth]
-    \begin{column}{0.62\textwidth}
-      \includegraphics[width=0.98\linewidth]{figures/f06_cola_vs_orden.png}
-    \end{column}
-    \begin{column}{0.34\textwidth}
-      \cifrachica{0,22}{correlación entre ordenar bien y cobrarlo}{navy}
-      \vspace{0.18cm}
-      {\footnotesize\color{slate}De las \textbf{62 fechas} en que el orden fue bueno
-      ---Rank-IC sobre 0,10---, en \textbf{16} las diez acciones compradas perdieron contra el
-      mercado. Una de cada cuatro.}
-    \end{column}
-  \end{columns}
-  \matiz{La cartera solo toca la cabeza del ranking: la mitad inferior, que el Rank-IC sí mide, es
-  información que una cartera sin posiciones cortas no puede monetizar.}
-\end{frame}
-\note{[0:45] Y aquí la razón concreta de separar los dos objetivos, medida fecha a fecha. Cada
-punto es una fecha: en horizontal, cómo de bien ordenó todo el universo; en vertical, lo que ganaron
-de más las diez que compró. Si ordenar bien garantizase cobrar, habría una diagonal. La correlación
-es 0,22: ayuda, pero no equivale. La banda sombreada es el caso incómodo: de las 62 fechas en que
-ordenó bien, en dieciséis las diez acciones compradas perdieron contra el mercado. Una de cada
-cuatro. La explicación es estructural: el Rank-IC mide toda la sección transversal, y una cartera
-que solo compra no monetiza acertar que algo va a caer.}
-
-% 18 · 0:10
-% =====================================================================
-% ACTO II · La cartera (diapositivas 13-19)
-% =====================================================================
-\setacto{teal}{Acto II · ¿Se cobra?}
-
-\divisor{teal}{Acto II}{¿Puede cobrarse ese orden frente al mercado?}
-\note{[0:10] Segundo acto. La señal queda congelada aquí y no vuelve a tocarse. Todo lo que sigue
-modifica únicamente las reglas de cartera.}
-
-% 19 · 0:35
-\begin{frame}{\textcolor{teal}{Pregunta 2, resuelta:} \NumCarteras{} carteras sobre la misma señal}
-  \vspace{-0.18cm}
-  \begin{columns}[c,onlytextwidth]
-    \begin{column}{0.63\textwidth}
-      \includegraphics[width=0.96\linewidth]{figures/f07_cartera_rejilla.png}
-    \end{column}
-    \begin{column}{0.33\textwidth}
-      \titular{$\times$2,7}{teal}{pregunta 2 · ¿cuánto pesa?}
-      \vspace{0.10cm}
-      {\footnotesize\color{slate}\centering Con la misma señal congelada:}\\[0.10cm]
-      {\small\color{navy}Information Ratio\\
-      \textbf{\IRModelo{} $\rightarrow$ \IRCartera{}}}\\[0.22cm]
-      {\small\color{navy}Exceso geométrico\\
-      \textbf{\ExcesoModelo{} $\rightarrow$ \ExcesoCartera{}}}
-    \end{column}
-  \end{columns}
-  \matiz{La cifra de la ganadora es una cota superior optimista: el hallazgo robusto es la
-  dispersión de la nube.}
-\end{frame}
-\note{[0:35] Segunda pregunta resuelta, y la respuesta es un factor de dos coma siete. Cada punto es una
-cartera completa, simulada entera, que cambia solo las seis reglas de gestión: mismo modelo, misma
-señal congelada, mismas fechas. Es un experimento controlado. La dispersión vertical es el
-resultado: con idéntica capacidad predictiva, el Information Ratio va de 0,312 a 0,841. La rejilla
-es cartesiana porque las reglas interactúan. Y el límite: la ganadora es el máximo de 1.440
-intentos, así que es una cota superior optimista. Lo que defiendo es la dispersión, no esa cifra.}
-
-% 20 · 0:30
-\begin{frame}{Tres reglas concentran casi toda la sensibilidad}
-  \begin{columns}[c,onlytextwidth]
-    \begin{column}{0.66\textwidth}
-      \includegraphics[width=\linewidth]{figures/f07_cartera_influencia.png}
-    \end{column}
-    \begin{column}{0.30\textwidth}
-      {\large\color{navy}\textbf{Mueven más}}\\[0.15cm]
-      posiciones \InfluenciaPosiciones{}\\
-      tenencia \InfluenciaTenencia{}\\
-      efectivo \InfluenciaEfectivo{}\\[0.55cm]
-      {\large\color{slate}\textbf{Casi inertes}}\\[0.15cm]
-      deriva \InfluenciaDeriva{}\\
-      reparto de pesos \InfluenciaPesos{}
-    \end{column}
-  \end{columns}
-\end{frame}
-\note{[0:30] Qué parte de la cartera lo decide. La figura compara, para cada regla, la mejor y la peor
-mediana de Information Ratio dejando variar las otras cinco. Manda lo que gobierna la exposición al
-mercado: posiciones 0,208, tenencia mínima 0,164, efectivo 0,139. La deriva mueve 0,017 y el reparto
-de pesos 0,005, casi indiferentes. Un detalle que justifica la rejilla: quien eligiera cada variable
-por su mejor valor marginal usaría un suelo de cobertura de 60, y la ganadora usa 0.}
-
-% 21 · 0:45
-\begin{frame}{La ganadora opera menos, y por eso gana}
-  \small
-  \vspace{0.10cm}
-  \begin{center}
-  \begin{tabular}{lrrr}
-    \toprule
-    Métrica & Cartera del modelo & \textbf{Ganadora} & Era reservada \\
-    \midrule
-    Information Ratio & \IRModelo{} & \textbf{\IRCartera{}} & \IRCarteraReservado{} \\
-    Exceso geométrico & \ExcesoModelo{} & \textbf{\ExcesoCartera{}} & \ExcesoCarteraReservado{} \\
-    Rotación anual (veces) & \TurnoverModelo{} & \textbf{\TurnoverCartera{}} & \TurnoverCarteraReservado{} \\
-    Máxima caída & \MDDModelo{} & \textbf{\MDDCartera{}} & \MDDCarteraReservado{} \\
-    \bottomrule
-  \end{tabular}
-  \end{center}
-  \vspace{0.25cm}
-  {\normalsize\textbf{Qué cambió:} \PosicionesCartera{} posiciones · efectivo \EfectivoModelo{}
-  $\to$ \EfectivoCartera{} · tenencia mínima medio horizonte $\to$ \textbf{horizonte completo} ·
-  deriva \DerivaModelo{} $\to$ \DerivaCartera{}.}
+% 6 · 0:40
+\begin{frame}{Por qué se aprende el rango y no la rentabilidad}
   \vspace{0.20cm}
-  \begin{center}
-    \colorbox{light}{\parbox{0.92\linewidth}{\centering
-      Rota la mitad, cae menos y multiplica por 2,7 el Information Ratio.\\
-      Para una señal a doce meses, reaccionar cada mes costaba más que no reaccionar.}}
-  \end{center}
-\end{frame}
-\note{[0:45] La cartera ganadora. La columna izquierda es la configuración real del estudio de modelo,
-así que la comparación es justa. La ganadora no toca el número de posiciones ni el reparto: baja el
-efectivo del 25 al 10 por ciento, alarga la tenencia mínima a un horizonte completo, quita el filtro
-de cobertura y tolera más deriva. Las cuatro apuntan a lo mismo, y es contraintuitivo: operar menos.
-El Information Ratio se multiplica por dos coma siete, la rotación cae a la mitad y la caída máxima
-baja pese a llevar menos efectivo. Es una señal a doce meses y la maquinaria anterior la deshacía
-antes de que madurase.}
-
-% 22 · 0:40
-\begin{frame}{Qué habría ganado quien la hubiera seguido}
-  \vspace{-0.48cm}
-  \begin{columns}[c,onlytextwidth]
-    \begin{column}{0.62\textwidth}
-      \includegraphics[width=0.98\linewidth]{figures/f07_equity_drawdown.png}
-    \end{column}
-    \begin{column}{0.34\textwidth}
-      \cifrachica{\CAGRCartera{}}{anual compuesto de la cartera}{verde}
-      \vspace{0.14cm}
-      \cifrachica{\CAGRIndice{}}{del S\&P 500 en el mismo tramo}{slate}
-      \vspace{0.14cm}
-      {\footnotesize\color{slate}Bate al índice en \textbf{los diez años}, con un alfa medio de
-      \AlfaMedioAnual{} y un peor año de \PeorAnoAlfa{}. Costes ya descontados:
-      \CosteAcumulado{} acumulado.}
-    \end{column}
-  \end{columns}
-  \matiz{Es la ventana sobre la que se optimizó la cartera: son una cota superior optimista.}
-\end{frame}
-\note{[0:40] La pregunta que todo el mundo quiere hacer, con la curva delante. La cartera compone al
-19,86 por ciento anual frente al 13,17 del índice, con los costes ya descontados. Bate al índice los
-diez años, con un alfa medio del 5,77 por ciento. La ventaja no aparece en un salto: se construye de
-forma acumulativa, que es lo que uno quiere ver si cree que hay señal y no suerte. Y el límite, que
-digo antes de que me lo pregunten: ésta es exactamente la ventana sobre la que se eligió la cartera
-entre 1.440, así que son una cota superior optimista.}
-
-% 23 · 0:30
-\begin{frame}{Qué compró: pocas acciones y mucho tiempo}
-  \vspace{-0.42cm}
-  \begin{center}
-    \includegraphics[width=0.88\linewidth]{figures/f07_cartera_narrativa.png}
-  \end{center}
-  \vspace{-0.18cm}
-  \begin{center}
-    {\small\color{navy}
-      \textbf{\NumAccionesCartera{} acciones} en diez años \quad·\quad
-      \textbf{\MedianaMesesTenencia{} meses} de tenencia mediana \quad·\quad
-      AAPL aporta \textbf{\ContribucionAAPL{}}}
-  \end{center}
-  \matiz{Es una limitación, no un mérito: hay menos apuestas independientes que años de serie, y el
-  sector es una foto actual, no \textit{point-in-time}.}
-\end{frame}
-\note{[0:30] Qué hay dentro de esa curva. En diez años pasaron 42 acciones, con una tenencia mediana de
-quince meses: compra poco y aguanta, coherente con lo de operar menos. Y el dato que debo reportar
-aunque no me favorezca: Apple sola aporta 27,8 puntos de contribución neta. El resultado descansa
-sobre muchas menos apuestas independientes de las que sugieren diez años. El panel sectorial es
-descriptivo: ninguna variable codifica el sector, así que ese reparto es consecuencia, no política.}
-
-% 24 · 1:00
-\begin{frame}{\textcolor{gold}{Pregunta 3, resuelta:} la cartera cambia el signo del resultado}
-  \vspace{-0.19cm}
-  \begin{columns}[c,onlytextwidth]
-    \begin{column}{0.55\textwidth}
-      \centering
-      \includegraphics[width=0.92\linewidth]{figures/f07_seleccion_vs_reservada.png}
-    \end{column}
-    \begin{column}{0.41\textwidth}
-      \cifracolor{\ExcesoModeloReservado{}}{cartera original}{rojo}
-      \vspace{0.10cm}
-      \cifracolor{\ExcesoCarteraReservado{}}{cartera optimizada}{verde}
-      \vspace{0.10cm}
-      \cifra{\RankICReservado{}}{la señal es idéntica en ambos casos}
-    \end{column}
-  \end{columns}
-  \vspace{-0.19cm}
-  \matiz{\CohortesReservadas{} cohortes y \AnosCarteraReservada{} años: empatar no es batir, y un
-  solo periodo de confirmación no demuestra generalización.}
-\end{frame}
-\note{[1:00] Tercera pregunta, y el momento de abrir la ventana nunca consultada. La figura tiene cuatro
-columnas. Las tres primeras son las pasadas de la cadena con la cartera por defecto: mejoran dentro
-de la ventana de selección y fracasan fuera, con Information Ratio negativo en las tres, hasta menos
-1,795. Si el trabajo hubiera terminado ahí, sería el retrato de un sobreajuste. La cuarta es la
-misma señal de esa tercera pasada, sin reentrenar nada, con la cartera que eligió el estudio de
-carteras: pasa a más 0,109. Es la única barra roja por encima de cero, y esa diferencia no la produjo
-ningún reentrenamiento: el Rank-IC reservado es 0,0364 en ambos casos. Mido la afirmación por lo que
-es: se pasa de destruir valor a empatar, no a superar. Empatar no es batir. Lo que defiendo es dónde
-estaba el cuello de botella.}
-
-% 25 · 0:35
-\setacto{navy}{Cierre}
-
-\begin{frame}{Las tres preguntas, resueltas}
-  \vspace{0.02cm}
-  \pregunta{1}{¿El sistema \textbf{aprende} a ordenar acciones fuera de muestra?}
-    {\RankICSeleccion{} de Rank-IC}{navy}{Sí: siete contrastes a favor, uno en contra}
-  \pregunta{2}{¿Cuánto pesan las \textbf{reglas de cartera} frente al modelo?}
-    {$\times$2,7 en IR}{teal}{Deciden el resultado, con la señal congelada}
-  \pregunta{3}{¿Sobrevive todo eso en una ventana \textbf{nunca consultada}?}
-    {\ExcesoCarteraReservado{} de exceso}{gold}{Deja de perder y empata: \textbf{empatar no es batir}}
-  \vspace{0.02cm}
-  \begin{center}
-    \colorbox{light}{\parbox{0.92\linewidth}{\centering
-      Ninguna afirmación práctica sobre una señal es interpretable\\
-      \textbf{sin declarar con qué cartera se midió}.}}
-  \end{center}
-\end{frame}
-\note{[0:35] Vuelvo a las tres preguntas con las respuestas. Sí aprende; las reglas de cartera deciden
-el resultado; y en la ventana nunca consultada la cartera optimizada deja de perder. De la segunda
-es de la que estoy más seguro: 1.440 carteras con la señal congelada. Sobre batir al mercado, la
-respuesta honesta es que no está demostrado. Lo que sí queda demostrado es dónde estaba el cuello de
-botella, y de ahí la frase final: ninguna afirmación práctica sobre una señal es interpretable sin
-declarar con qué cartera se midió.}
-
-% 26 · 0:10 — total 15:05
-{\setbeamertemplate{footline}{}
-\begin{frame}[plain]
-  \vspace{2.0cm}
-  \hspace*{0.55cm}\begin{minipage}{0.88\linewidth}
-    {\color{navy}\rule{2.2cm}{2pt}}\\[0.8cm]
-    {\fontsize{28}{32}\selectfont\color{navy}\textbf{Gracias}}\\[0.65cm]
-    {\large\textbf{Adrián Núñez}}\\[0.2cm]
-    {\small\color{slate}Preguntas}
-  \end{minipage}
-\end{frame}}
-\note{[0:10] Muchas gracias por vuestra atención. Quedo a vuestra disposición para preguntas.}
-
-% =====================================================================
-% Reserva · sin numeración. Una por cada pregunta que el guion anticipa y
-% que no cabía en el hilo principal.
-% =====================================================================
-{\setbeamertemplate{footline}{}
-
-\begin{frame}[plain,noframenumbering]{Reserva · El matiz incómodo: \texttt{risk} solo bate al meta}
-  \vspace{0.20cm}
-  \begin{center}
-    \begin{tikzpicture}[font=\footnotesize, x=43cm, y=1cm]
-      \foreach \v/\y/\c/\lab in {%
-          0.0690/0/slate/{promedio ingenuo de los cinco},
-          0.1067/-1/navy/{\textbf{meta-agente} (pesos aprendidos)},
-          0.1201/-2/rojo/{\texttt{risk} por separado}} {
-        \fill[\c] (0,\y-0.16) rectangle (\v,\y+0.16);
-        \node[right=1.5mm,font=\scriptsize,text=black!75] at (\v,\y) {\lab};
-      }
-      \node[left=1.5mm,font=\small,text=slate]  at (0,0)  {\RankICEquiponderado{}};
-      \node[left=1.5mm,font=\small,text=navy]   at (0,-1) {\textbf{\RankICSeleccion{}}};
-      \node[left=1.5mm,font=\small,text=rojo]   at (0,-2) {\RankICRisk{}};
-      \draw[slate,line width=0.4pt] (0,0.42) -- (0,-2.42);
-    \end{tikzpicture}
-  \end{center}
-  \vspace{0.30cm}
-  {\small El trabajo lo reporta en lugar de esconderlo: el mejor especialista por separado ordena
-  algo mejor que la combinación de los cinco, porque el meta \textbf{tarda años en descubrirlo} y
-  arrastra ese trayecto en el promedio. Elegir \texttt{risk} en 2015 no era una opción disponible:
-  en esa fecha nadie sabía cuál de los cinco iba a ganar. La consecuencia declarada es que la
-  evidencia respalda la capacidad de ordenar, pero \textbf{no demuestra que hagan falta cinco
-  agentes}.}
-\end{frame}
-
-\begin{frame}[plain,noframenumbering]{Reserva · Capacidad: hasta qué tamaño aguanta}
-  \vspace{-0.10cm}
-  \begin{center}
-    \includegraphics[width=0.62\linewidth]{figures/f07_capacidad.png}
-  \end{center}
-  \vspace{-0.05cm}
-  {\small\color{slate}Con un límite de participación del 5\,\% del volumen diario, el percentil 95
-  de capacidad se sitúa en \textbf{20,3 millones} de dólares, y en 40,6 millones si se admite un
-  10\,\%. Es el ámbito de un \textbf{patrimonio individual o familiar}, no el de un fondo: la
-  restricción no la impone la señal, la impone la liquidez de dos o tres nombres estrechos entre las
-  ocho posiciones.}
-\end{frame}
-
-\begin{frame}[plain,noframenumbering]{Reserva · Por qué tres pasadas encadenadas}
-  \vspace{0.25cm}
-  \small
-  \begin{center}
-  \begin{tabular}{lrrr}
-    \toprule
-    Pasada & Variables cambiadas & Rank-IC & IR reservado \\
-    \midrule
-    Model Study 1 & 9 & 0,1051 & $-2{,}348$ \\
-    Model Study 2 & 2 & 0,1059 & $-1{,}010$ \\
-    Model Study 3 & 2 & \textbf{0,1067} & $-1{,}795$ \\
-    \bottomrule
-  \end{tabular}
-  \end{center}
-  \vspace{0.45cm}
-  {\small La selección secuencial depende del punto de partida: el ganador de cada pasada es el
-  \textit{baseline} de la siguiente, y el procedimiento se detiene cuando deja de haber cambios que
-  hacer.\\[0.25cm]
-  El coste está declarado: encadenar multiplica las configuraciones evaluadas y encarece el Deflated
-  Sharpe. Lo que protege al resultado no es la búsqueda, es la ventana reservada.}
-\end{frame}
-
-\begin{frame}[plain,noframenumbering]{Reserva · La señal por eras: positiva, pero no homogénea}
-  \begin{columns}[c,onlytextwidth]
-    \begin{column}{0.64\textwidth}
-      \includegraphics[width=0.96\linewidth]{figures/f06_rankic_serie.png}
-    \end{column}
-    \begin{column}{0.32\textwidth}
-      \cifrachica{\FraccionICPositiva{}}{cohortes positivas de \CohortesSeleccion{}}{navy}
-      \vspace{0.12cm}
-      \cifrachica{\ICIRSeleccion{}}{IC-IR}{navy}
-      \vspace{0.12cm}
-      \cifrachica{\RankICReservado{}}{era reservada}{gold}
-    \end{column}
-  \end{columns}
-  \matiz{La era reservada aporta solo \CohortesReservadas{} cohortes cerradas y aproximadamente una
-  observación independiente efectiva.}
-\end{frame}
-
-\begin{frame}[plain,noframenumbering]{Reserva · El sesgo de cobertura: medido, no supuesto}
-  \vspace{-0.32cm}
-  \begin{center}
-    \includegraphics[width=0.56\linewidth]{figures/f03_cobertura_anual.png}
-  \end{center}
-  \vspace{-0.12cm}
-  \begin{columns}[t,onlytextwidth]
-    \begin{column}{0.31\textwidth}
-      {\color{navy}\textbf{Causa}}\\[0.08cm]
-      {\small El proveedor retira los símbolos que dejan de cotizar (36,8\,\%), no la mortalidad
-      empresarial (5,5\,\%).}
-    \end{column}
-    \begin{column}{0.31\textwidth}
-      {\color{rojo}\textbf{Dirección}}\\[0.10cm]
-      {\small Optimista: sobrestima, no infravalora. Va en mi contra declararlo.}
-    \end{column}
-    \begin{column}{0.31\textwidth}
-      {\color{verde}\textbf{Decaimiento}}\\[0.10cm]
-      {\small De 26,2 a 8,0 puntos entre evaluar 2015 y evaluar 2026.}
-    \end{column}
-  \end{columns}
-\end{frame}
-
-\begin{frame}[plain,noframenumbering]{Reserva · El resultado se concentra en muy pocos nombres}
-  \begin{center}
-    \includegraphics[width=0.91\linewidth]{figures/f07_cartera_narrativa.png}\\[-0.05cm]
-    {\large\color{navy}
-      \textbf{\NumAccionesCartera{} acciones} \quad·\quad
-      \textbf{\MedianaMesesTenencia{} meses} de mediana \quad·\quad
-      AAPL aporta \textbf{\ContribucionAAPL{}}}
-  \end{center}
-  \matiz{Es una limitación, no un mérito: hay menos apuestas independientes que años de serie. El
-  sector es una foto actual, no \textit{point-in-time}.}
-\end{frame}
-
-\begin{frame}[plain,noframenumbering]{Reserva · Cuánto margen hay antes de que los costes se lo coman}
-  \vspace{-0.05cm}
-  \begin{columns}[c,onlytextwidth]
-    \begin{column}{0.56\textwidth}
-      \includegraphics[width=0.95\linewidth]{figures/f07_costes_escalera.png}
-    \end{column}
-    \begin{column}{0.40\textwidth}
-      \cifrachica{\CosteAdoptado{} pb}{coste adoptado por operación}{navy}
-      \vspace{0.12cm}
-      \cifrachica{\CosteEquilibrio{} pb}{coste al que el exceso se anula}{teal}
-      \vspace{0.15cm}
+  \begin{columns}[T]
+    \begin{column}{0.48\linewidth}
       \begin{center}
-        {\small\color{slate}Margen de \MargenCoste{} veces en la ventana de selección.\\
-        En la era reservada baja a \MargenCosteReservado{} veces.}
+      \begin{tikzpicture}[scale=0.90]
+        \node[rotulo,text=rojo] at (2.4,3.10) {\textbf{Aprender la rentabilidad}};
+        \draw[flecha] (0,0) -- (4.9,0);
+        \draw[flecha] (0,0) -- (0,2.7);
+        \node[rotulo,rotate=90] at (-0.42,1.35) {retorno};
+        \foreach \x/\y in {0.5/0.30,1.0/0.22,1.5/0.42,2.0/0.28,2.5/0.36,3.0/0.24,3.5/0.40}{
+          \fill[slate] (\x,\y) circle (2.2pt);}
+        \fill[rojo] (4.3,2.35) circle (3.4pt);
+        \node[rotulo,text=rojo,align=left] at (3.95,1.70) {un valor\\extremo};
+        \draw[rojo,line width=1.1pt,dashed] (0.2,0.52) -- (4.7,1.62);
+        \node[rotulo,align=center,text=rojo] at (2.4,-0.72)
+          {El ajuste persigue el caso raro\\y desatiende a los demás};
+      \end{tikzpicture}
+      \end{center}
+    \end{column}
+    \begin{column}{0.48\linewidth}
+      \begin{center}
+      \begin{tikzpicture}[scale=0.90]
+        \node[rotulo,text=verde] at (2.4,3.10) {\textbf{Aprender el rango}};
+        \draw[flecha] (0,0) -- (4.9,0);
+        \draw[flecha] (0,0) -- (0,2.7);
+        \node[rotulo,rotate=90] at (-0.42,1.35) {rango};
+        \foreach \x/\y in {0.5/0.35,1.0/0.70,1.5/1.05,2.0/1.40,2.5/1.75,3.0/2.10,3.5/2.45}{
+          \fill[slate] (\x,\y) circle (2.2pt);}
+        \fill[verde] (4.3,2.45) circle (3.4pt);
+        \node[rotulo,text=verde,align=left] at (3.95,1.70) {el mismo,\\ya acotado};
+        \draw[verde,line width=1.1pt,dashed] (0.2,0.20) -- (4.7,2.58);
+        \node[rotulo,align=center,text=verde] at (2.4,-0.72)
+          {Cada acción pesa lo mismo:\\el orden es lo que importa};
+      \end{tikzpicture}
       \end{center}
     \end{column}
   \end{columns}
-  \matiz{El margen es amplio en selección y estrecho en la reserva: es ahí donde el resultado es
-  frágil, no en el supuesto de coste.}
+  \vspace{0.30cm}
+  {\footnotesize\hspace*{0.1cm}Las rentabilidades tienen colas muy pesadas: unas pocas acciones
+  dominan cualquier ajuste que las tome literalmente. Convertirlas en rangos \textbf{acota la
+  influencia de cada observación} sin perder lo que se necesita, que es quién va delante de quién.}
+\end{frame}
+\note{[0:37] ¿Por qué rangos y no la rentabilidad directamente? Por la forma de los datos: las
+rentabilidades tienen colas muy pesadas, y unas pocas acciones se disparan y arrastran la media.
+Si entreno para predecir la rentabilidad, el ajuste dedica casi todo su esfuerzo a esos casos
+extremos, porque son los que más error generan, y desatiende a las demás. Con rangos, cada
+observación pesa lo mismo y ninguna domina. Pierdo la magnitud, pero no la necesito. Y no lo
+decidí por intuición: está en el catálogo y se eligió comparando las dos opciones.}
+
+% 7 · 0:45
+\begin{frame}{El problema no es ajustar: es que el ajuste sobreviva}
+  \vspace{0.05cm}
+  \begin{center}
+  \begin{tikzpicture}[scale=0.95]
+    \draw[flecha] (0,0) -- (9.8,0);
+    \node[rotulo,anchor=north east] at (9.8,-0.08) {complejidad del modelo};
+    \draw[flecha] (0,0) -- (0,4.0);
+    \node[rotulo,rotate=90] at (-0.42,2.0) {error};
+    % Error dentro de la muestra: baja siempre
+    \draw[verde,line width=1.4pt] (0.3,3.4) .. controls (3.0,1.5) and (5.5,0.7) .. (9.2,0.38);
+    \node[rotulo,text=verde,align=left,anchor=south west] at (6.20,0.50) {error \textbf{dentro}\\de la muestra};
+    % Error fuera de muestra: baja y vuelve a subir
+    \draw[rojo,line width=1.4pt] (0.3,3.6) .. controls (2.5,1.6) and (3.2,1.35) .. (4.3,1.35)
+      .. controls (6.2,1.4) and (7.6,2.6) .. (9.2,3.75);
+    \node[rotulo,text=rojo,align=left,anchor=east] at (8.60,3.30) {error \textbf{fuera}\\de la muestra};
+    % El punto que se busca
+    \draw[slate,dashed,line width=0.7pt] (4.3,0) -- (4.3,1.35);
+    \fill[navy] (4.3,1.35) circle (3.0pt);
+    \node[rotulo,text=navy,anchor=north] at (4.3,-0.10) {lo que se busca};
+    \node[rotulo,align=center] at (1.55,-0.42) {infraajuste};
+    \node[rotulo,text=rojo,align=center] at (7.30,-0.42) {sobreajuste};
+  \end{tikzpicture}
+  \end{center}
+  \vspace{0.10cm}
+  {\footnotesize\hspace*{0.1cm}Con quinientas acciones, veinte años y \NumPredictores{} variables
+  \textbf{siempre} se puede encontrar un modelo que explique el pasado. La dificultad no es
+  encontrarlo: es distinguirlo de uno que además funcione mañana.}
+\end{frame}
+\note{[0:38] Y aquí la dificultad central del campo. Al aumentar la complejidad, el error dentro de la
+muestra baja siempre: con suficientes parámetros explico el pasado a la perfección. Pero el error
+fuera de muestra primero baja y luego sube, porque el modelo deja de aprender el patrón y memoriza
+el ruido. Eso es el sobreajuste, y en finanzas es especialmente traicionero: hay muchas más
+combinaciones posibles que datos independientes, y el ruido es enorme comparado con la señal. La
+consecuencia práctica es que un buen resultado dentro de la muestra no es evidencia de nada.}
+
+% 8 · 0:55
+\begin{frame}{Aprender con el tiempo, no a través del tiempo}
+  \vspace{0.05cm}
+  \begin{center}
+  \begin{tikzpicture}
+    % Leyenda arriba
+    \node[rotulo,anchor=west] at (0.30,3.55)
+      {\textcolor{navy}{\rule{0.35cm}{5pt}}~ventana de entrenamiento \quad
+       \textcolor{teal}{\rule{0.35cm}{5pt}}~lo que se predice, nunca visto};
+    % Tres ventanas de ejemplo
+    \foreach \y/\ini/\fin/\pred in {2.65/0.35/3.00/3.75, 1.95/0.80/3.45/4.20, 1.25/1.25/3.90/4.65}{
+      \draw[navy,line width=6pt,opacity=0.78] (\ini,\y) -- (\fin,\y);
+      \draw[teal,line width=6pt,opacity=0.88] (\fin,\y) -- (\pred,\y);}
+    \node[rotulo,anchor=west] at (5.00,2.65) {entreno con 8 años $\rightarrow$ predigo los 12 meses siguientes};
+    \node[rotulo,anchor=west] at (5.20,1.95) {la ventana rueda un mes};
+    \node[rotulo,anchor=west] at (5.40,1.25) {y otro mes\ldots};
+    \node[rotulo,anchor=west] at (2.00,0.58) {\ldots\ 135 veces};
+    % Eje temporal
+    \draw[flecha] (0,0) -- (11.3,0);
+    \foreach \x/\a in {0.35/2007,3.00/2015,7.40/2024,10.40/2026}{
+      \draw[slate,line width=0.6pt] (\x,-0.09) -- (\x,0.09);
+      \node[rotulo,anchor=north] at (\x,-0.14) {\a};}
+  \end{tikzpicture}
+  \end{center}
+  \vspace{0.10cm}
+  \begin{columns}[T]
+    \begin{column}{0.49\linewidth}
+      \colorbox{light}{\parbox{\dimexpr\linewidth-2\fboxsep\relax}{\footnotesize
+      \textbf{\color{rojo}Lo que sería trampa.} Barajar todos los datos y apartar un 20\,\% al azar.
+      El modelo vería 2023 para predecir 2016.}}
+    \end{column}
+    \begin{column}{0.49\linewidth}
+      \colorbox{light}{\parbox{\dimexpr\linewidth-2\fboxsep\relax}{\footnotesize
+      \textbf{\color{verde}Lo que se hace.} La ventana avanza. En cada punto el modelo sólo conoce
+      lo que un inversor habría conocido ese día.}}
+    \end{column}
+  \end{columns}
+\end{frame}
+\note{[0:42] La forma de protegerlo es cómo se separan los datos, y aquí hay una trampa fácil. Lo
+estándar es barajar todo y apartar un veinte por ciento al azar. Con series financieras eso es
+hacer trampa: el modelo vería dos mil veintitrés para predecir dos mil dieciséis. Lo que hago es
+validación walk-forward: entreno con ocho años, predigo los doce meses siguientes, que no ha
+visto, y después la ventana rueda un mes y reentreno desde cero. Ciento treinta y cinco veces. Es
+mucho más caro, pero es la única forma de que cada predicción use la información que un inversor
+habría tenido ese día.}
+
+% 9 · 0:40
+\begin{frame}{El catálogo se cierra antes de mirar los resultados}
+  \vspace{0.30cm}
+  \begin{center}
+  \begin{tikzpicture}
+    \node[cajac=navy,minimum width=3.5cm,minimum height=1.45cm] (cat) at (0,0)
+      {\textbf{Catálogo cerrado}\\[0.15em]
+       \scriptsize \NumParametrosCatalogo{} parámetros\\\scriptsize \NumPredictores{} predictores};
+    \node[caja,minimum width=3.2cm,minimum height=1.45cm] (opt) at (4.9,0)
+      {\textbf{Se elige dentro}\\[0.15em]\scriptsize sólo entre los valores\\\scriptsize que ya estaban};
+    \node[cajac=teal,minimum width=3.2cm,minimum height=1.45cm] (res) at (9.6,0)
+      {\textbf{Resultado auditable}\\[0.15em]\scriptsize se sabe exactamente\\\scriptsize cuánto se buscó};
+    \draw[flechac=navy] (cat) -- (opt);
+    \draw[flechac=teal] (opt) -- (res);
+    \node[cajac=rojo,minimum width=4.0cm,minimum height=0.85cm] (mal) at (4.9,-2.00)
+      {\scriptsize\textbf{Añadir una variable nueva}\\\scriptsize porque el resultado no salía};
+    \draw[rojo,line width=1.0pt,dashed] (mal) -- (opt);
+    \node[rotulo,text=rojo,anchor=west] at (7.10,-2.00) {\textbf{prohibido}};
+  \end{tikzpicture}
+  \end{center}
+  \vspace{0.35cm}
+  {\small\hspace*{0.1cm}Si se puede añadir una variable cada vez que el resultado no sale, al final
+  sale por construcción, y \textbf{nadie puede saber cuántas cosas se probaron}. Con el catálogo
+  cerrado de antemano el número de alternativas exploradas es conocido, y permite penalizar el
+  resultado por la búsqueda que costó encontrarlo.}
+\end{frame}
+\note{[0:32] Última pieza. Todo lo que el sistema puede probar está en un catálogo cerrado antes de
+ejecutar nada: treinta y tres parámetros y sesenta y ocho predictores. Parece una limitación
+gratuita y es lo contrario: si se me permite añadir una variable cada vez que algo no sale, al
+final saldrá por insistencia, y nadie sabría cuántas cosas probé. Con el catálogo cerrado el
+número de alternativas es conocido, y eso permite penalizar el resultado por lo que costó
+encontrarlo.}
+
+% =====================================================================
+% BLOQUE 3 · Los datos (diapositivas 10-11)
+% =====================================================================
+\setacto{slate}{Los datos}
+
+% 10 · 0:55
+\begin{frame}{Un histórico bueno, fiable y gratuito no existe}
+  \vspace{0.05cm}
+  \begin{center}
+  \begin{tikzpicture}[scale=0.94,every node/.style={transform shape}]
+    % Las cuatro fuentes
+    \node[fuente,minimum width=3.5cm,minimum height=0.90cm] (yh) at (0,2.55)
+      {\textbf{Yahoo Finance}\\Precios y volumen diarios};
+    \node[fuente,minimum width=3.5cm,minimum height=0.90cm] (fh) at (0,1.35)
+      {\textbf{Finnhub}\\Fundamentales trimestrales};
+    \node[fuente,minimum width=3.5cm,minimum height=0.90cm] (ed) at (0,0.15)
+      {\textbf{SEC / EDGAR}\\Fecha real de publicación};
+    \node[fuente,minimum width=3.5cm,minimum height=0.90cm] (idx) at (0,-1.05)
+      {\textbf{Composición histórica}\\Quién estaba en el índice y cuándo};
+    % El panel
+    \node[cajac=navy,minimum width=2.9cm,minimum height=3.1cm] (panel) at (5.4,0.75)
+      {\textbf{Panel}\\\textbf{point-in-time}\\[0.30em]
+       \scriptsize \NumPredictores{} variables\\[0.15em]
+       \scriptsize 12 de precios\\\scriptsize 56 de fundamentales};
+    \foreach \n in {yh,fh,ed,idx}{\draw[flecha] (\n.east) -- (panel.west);}
+    % Lo que cuesta
+    \node[caja,minimum width=4.3cm,minimum height=1.30cm,align=left] (coste) at (9.9,1.75)
+      {\scriptsize\textbf{Lo que cuesta que sea gratis}\\[0.20em]
+       \scriptsize $\cdot$ el proveedor \textbf{retira} los símbolos\\\scriptsize\phantom{$\cdot$} que dejan de cotizar\\[0.10em]
+       \scriptsize $\cdot$ cobertura incompleta hacia atrás};
+    \node[cajac=teal,minimum width=4.3cm,minimum height=1.15cm,align=left] (panelnum) at (9.9,-0.45)
+      {\scriptsize\textbf{\color{teal}Universo histórico:} 1.206 tickers\\[0.20em]
+       \scriptsize\textbf{\color{teal}En panel:} 643\\[0.10em]
+       \scriptsize\textbf{\color{teal}Miembros actuales:} 502 de 503};
+    \draw[flecha] (panel.east) -- (7.75,0.75);
+    \draw[flecha] (7.75,0.75) |- (coste.west);
+    \draw[flechac=teal] (7.75,0.75) |- (panelnum.west);
+  \end{tikzpicture}
+  \end{center}
+  \vspace{-0.05cm}
+  \matiz{Lo que se cae no se cae al azar: son sobre todo empresas que salieron del índice hace años.
+  El sesgo está \textbf{medido en causa y dirección} y decrece, pero no está cuantificado en puntos
+  de rentabilidad.}
+\end{frame}
+\note{[0:50] Paso a los datos, empezando por una dificultad que no suele aparecer en los artículos: un
+histórico bueno, fiable y gratuito no existe. Uso cuatro fuentes. De Yahoo, precios diarios. De
+Finnhub, los estados financieros, que son cincuenta y seis de las sesenta y ocho variables. De los
+archivos de la SEC, la fecha real de publicación de cada informe, que es la pieza que impide hacer
+trampa. Y la composición histórica del índice. Ahora el precio de que sea gratis: el proveedor
+retira los símbolos que dejan de cotizar. De mil doscientos seis tickers consigo seiscientos
+cuarenta y tres. Es un sesgo de supervivencia, está medido en causa y dirección, decrece con el
+tiempo, y no lo he podido traducir a puntos de rentabilidad.}
+
+% 11 · 1:00
+\begin{frame}{Tres formas de hacer trampa sin querer}
+  \vspace{0.10cm}
+  \begin{center}
+  \begin{tikzpicture}
+    % --- Carril A: el dato antes de existir
+    \node[rotulo,anchor=west,text=rojo] at (0,3.30) {\textbf{a) Usar un dato contable antes de que se publicara}};
+    \draw[flecha] (0.35,2.55) -- (11.1,2.55);
+    \foreach \x/\lab/\c in {1.10/{cierre fiscal}/slate, 4.10/{publicación real}/navy,
+                            7.20/{observación}/teal, 9.90/{ejecución}/teal}{
+      \node[hito=\c] at (\x,2.55) {};
+      \node[rotulo,anchor=south,text=\c] at (\x,2.68) {\lab};}
+    \draw[rojo,line width=1.0pt,dashed] (1.10,2.15) -- (1.10,2.45);
+    \node[rotulo,text=rojo,anchor=north,align=center] at (1.90,2.12) {aquí el dato\\aún no existe};
+    \draw[verde,line width=1.0pt] (4.10,2.15) -- (4.10,2.45);
+    \node[rotulo,text=verde,anchor=north,align=center] at (5.30,2.12)
+      {sólo se usa a partir de aquí:\\filtro por fecha de publicación};
+    \draw[teal,line width=1.0pt] (9.90,2.15) -- (9.90,2.45);
+    \node[rotulo,text=teal,anchor=north,align=center] at (9.90,2.12) {y se compra\\al precio de ese día};
+    % --- Carril B: universo de supervivientes
+    \node[rotulo,anchor=west,text=rojo] at (0,1.05) {\textbf{b) Un universo hecho sólo de supervivientes}};
+    \node[caja,minimum width=4.6cm,minimum height=0.70cm,anchor=west] at (0.35,0.35)
+      {\scriptsize\color{rojo}Las 500 de \textbf{hoy}, miradas hacia atrás};
+    \node[cajac=verde,minimum width=5.4cm,minimum height=0.70cm,anchor=west] at (5.65,0.35)
+      {\scriptsize Las que estaban en el índice \textbf{en cada fecha}};
+    \draw[flechac=verde] (5.05,0.35) -- (5.60,0.35);
+    % --- Carril C: elegir la ventana después
+    \node[rotulo,anchor=west,text=rojo] at (0,-0.75) {\textbf{c) Elegir la ventana de prueba después de ver el resultado}};
+    \node[caja,minimum width=5.0cm,minimum height=0.70cm,anchor=west] at (0.35,-1.45)
+      {\scriptsize\color{rojo}Probar periodos hasta que uno funcione};
+    \node[cajac=verde,minimum width=5.4cm,minimum height=0.70cm,anchor=west] at (5.65,-1.45)
+      {\scriptsize Ancla fija en 2015 y \textbf{2025--2026 reservado} desde el inicio};
+    \draw[flechac=verde] (5.40,-1.45) -- (5.60,-1.45);
+  \end{tikzpicture}
+  \end{center}
+  \vspace{0.05cm}
+  {\footnotesize\hspace*{0.1cm}Ninguna de las tres requiere mala fe: las tres ocurren solas si no se
+  construye el panel para impedirlas.}
+\end{frame}
+\note{[0:57] Y las tres formas de hacer trampa sin querer, que separan un backtest creíble de uno que no
+lo es. Ninguna requiere mala fe: las tres pasan solas. La primera es usar un dato contable antes
+de publicarse: los resultados de diciembre no se publican hasta marzo, y si asigno el dato a
+diciembre uso información que nadie tenía. Por eso cada dato lleva su fecha real de publicación, y
+la ejecución se retrasa todavía más. La segunda es el sesgo de supervivencia: si tomo las
+quinientas de hoy y miro hacia atrás, desaparecen las que quebraron y con ellas las pérdidas. Por
+eso el universo de cada fecha son las de entonces. Y la tercera, la más sutil: elegir la ventana
+de prueba después de ver el resultado. Por eso dos mil veinticinco y veintiséis se reservaron
+desde el primer día.}
+
+% =====================================================================
+% BLOQUE 4 · El sistema (diapositivas 12-15)
+% =====================================================================
+\setacto{navy}{El sistema}
+
+% 12 · 0:10
+\divisor{navy}{El sistema}{Cinco especialistas y un árbitro que aprende}
+\note{[0:06] Con el método y los datos sobre la mesa, paso a describir el sistema.}
+
+% 13 · 0:50
+\begin{frame}{Cinco especialistas con miradas disjuntas}
+  \vspace{0.15cm}
+  \begin{center}
+  \begin{tikzpicture}
+    \foreach \i/\nom/\num/\desc in {%
+      0/Calidad/24/{rentabilidad del capital,\\eficiencia, solvencia},
+      1/Valor/9/{precio frente a ventas,\\libros y flujo de caja},
+      2/Crecimiento/13/{aceleración y estabilidad\\de los fundamentales},
+      3/Momento/10/{tendencia y fuerza\\reciente del precio},
+      4/Riesgo/12/{volatilidad, beta,\\liquidez, huecos}}{
+      \node[cajac=navy,minimum width=2.05cm,minimum height=1.75cm,anchor=north] (a\i)
+        at (2.42*\i,1.9) {\textbf{\nom}\\[0.20em]{\color{teal}\textbf{\num}} \scriptsize variables\\[0.25em]\scriptsize\desc};}
+    \node[cajac=teal,minimum width=4.6cm,minimum height=0.95cm] (meta) at (4.84,-1.35)
+      {\textbf{Meta-agente}\\\scriptsize aprende cuánto pesa cada uno};
+    \foreach \i in {0,1,2,3,4}{\draw[flecha] (a\i.south) -- (meta.north);}
+    \node[cajac=navy,minimum width=2.6cm,minimum height=0.95cm] (rank) at (10.3,-1.35)
+      {\textbf{Un orden}\\\scriptsize de todo el universo};
+    \draw[flechac=teal] (meta.east) -- (rank.west);
+  \end{tikzpicture}
+  \end{center}
+  \vspace{0.30cm}
+  {\small\hspace*{0.1cm}Cada variable pertenece a \textbf{un solo agente}: no hay ni una compartida.
+  Cada especialista se entrena por separado y ordena el universo entero desde su propia mirada, de
+  modo que sus errores no tienen por qué coincidir.}
+\end{frame}
+\note{[0:41] El sistema son cinco agentes y un meta-agente que los combina. Cada agente se entrena por
+separado y ordena el universo entero desde su perspectiva. Calidad mira rentabilidad sobre el
+capital y solidez del balance: veinticuatro variables. Valor, el precio frente a ventas, libros y
+caja: nueve. Crecimiento, si los fundamentales aceleran: trece. Momento, la tendencia del precio:
+diez. Y riesgo, volatilidad, beta y liquidez: doce. El detalle que subrayo es que las miradas son
+disjuntas: cada variable pertenece a un solo agente, ninguna compartida. Es lo que da sentido a la
+arquitectura: si todos miraran lo mismo se equivocarían a la vez.}
+
+% 14 · 0:50
+\begin{frame}{El meta-agente no promedia: aprende a ponderar}
+  \vspace{0.20cm}
+  \begin{center}
+  \begin{tikzpicture}
+    % Paso 1
+    \node[caja,minimum width=3.0cm,minimum height=1.5cm] (p1) at (0,0)
+      {\textbf{1. Se mide}\\[0.20em]\scriptsize cada agente predijo un orden\\\scriptsize hace 12 meses:
+       \scriptsize ¿acertó?};
+    % Paso 2
+    \node[caja,minimum width=3.0cm,minimum height=1.5cm] (p2) at (4.0,0)
+      {\textbf{2. Se pondera}\\[0.20em]\scriptsize quien acertó más\\\scriptsize pesa más en la mezcla};
+    % Paso 3
+    \node[cajac=teal,minimum width=3.0cm,minimum height=1.5cm] (p3) at (8.0,0)
+      {\textbf{3. Se combina}\\[0.20em]\scriptsize un único orden\\\scriptsize para la fecha de hoy};
+    \draw[flecha] (p1) -- (p2);
+    \draw[flechac=teal] (p2) -- (p3);
+    \draw[flecha] (p3.south) -- ++(0,-0.55) -| node[pos=0.25,below,rotulo] {y se repite cada mes} (p1.south);
+    % Arranque
+    \node[cajac=gold,minimum width=4.6cm,minimum height=0.80cm] (ini) at (2.0,2.30)
+      {\scriptsize\textbf{Al principio no hay historial:}\\\scriptsize los cinco pesan igual};
+    \draw[flechac=gold] (ini.east) -- ++(0.6,0) |- (p2.north);
+  \end{tikzpicture}
+  \end{center}
+  \vspace{0.35cm}
+  {\small\hspace*{0.1cm}El peso de cada agente \textbf{no se fija a mano}: sale de lo bien que ese
+  agente ordenó en el pasado reciente, y se recalcula en cada fecha. Nadie le dice al sistema qué
+  especialista debe ganar.}
+\end{frame}
+\note{[0:40] Y cómo se combinan. Lo fácil sería promediarlos, pero eso supone que los cinco son igual de
+buenos y no hay razón para creerlo. El meta-agente aprende los pesos en tres pasos que se repiten
+cada fecha. Primero mide: cada agente predijo hace doce meses y hoy se puede comprobar si acertó.
+Segundo pondera: el que viene acertando más recibe más peso. Y tercero combina todo en un único
+orden. Al principio no hay historial, así que arranca repartiendo por igual. A partir de ahí los
+pesos los decide la evidencia: yo no le digo al sistema qué especialista debe ganar.}
+
+% 15 · 0:45
+\begin{frame}{El meta se equivoca, se corrige y acaba concentrándose}
+  \vspace{0.10cm}
+  \begin{columns}[T]
+    \begin{column}{0.62\linewidth}
+      \includegraphics[width=\linewidth,height=0.60\textheight,keepaspectratio]{figures/f06_pesos_anual.png}
+    \end{column}
+    \begin{column}{0.35\linewidth}
+      \vspace{0.20cm}
+      {\scriptsize\textbf{2015.} Sin historial: los cinco al 20\,\%.}
+      \par\smallskip
+      {\scriptsize\textbf{2016.} Se inclina hacia \textbf{momento}, que venía de acertar\ldots\ y
+      que acabaría siendo el \textbf{peor} agente de todo el periodo.}
+      \par\smallskip
+      {\scriptsize\textbf{2017 en adelante.} Se corrige solo, sin que nadie intervenga, y converge
+      hacia el agente de \textbf{riesgo}.}
+      \par\smallskip
+      {\scriptsize\color{navy}\textbf{Ese error y esa corrección son la prueba de que aprende de la
+      evidencia y no de mi criterio.}}
+    \end{column}
+  \end{columns}
+  \vspace{0.05cm}
+  \matiz{Termina muy concentrado en el agente de riesgo. Que el meta funcione no demuestra que hagan
+  falta cinco agentes.}
+\end{frame}
+\note{[0:55] Y esto es lo que pasó, que me parece el gráfico más honesto de la presentación. Cada banda
+es el peso de un especialista, año a año. En dos mil quince arranca con los cinco iguales. En dos
+mil dieciséis se inclina hacia el agente de momento, porque venía de ser el que mejor había
+ordenado el año anterior. Y esa apuesta sale mal: momento acaba siendo el peor agente de todo el
+periodo, el único con capacidad de ordenar negativa. Pero desde dos mil diecisiete se corrige solo:
+deja de acertar, su peso baja y migra al de riesgo, que era el que ordenaba bien. Esa
+secuencia —error, evidencia, corrección— es la prueba de que aprende de los datos y no de mi
+criterio. El matiz, que doy yo: termina muy concentrado en un solo agente.}
+
+% =====================================================================
+% BLOQUE 5 · Los estudios (diapositivas 16-19)
+% =====================================================================
+\setacto{teal}{Los estudios}
+
+% 16 · 0:10
+\divisor{teal}{Los estudios}{Qué se buscó, en qué orden y con qué criterio}
+\note{[0:04] Con el sistema descrito, paso a qué se hizo con él.}
+
+% 17 · 0:50
+\begin{frame}{Tres estudios para el modelo, uno para la cartera}
+  \vspace{0.20cm}
+  \begin{center}
+  \begin{tikzpicture}
+    % La cadena de model studies
+    \foreach \i/\nom/\cam in {0/{Study 1}/{9 cambios}, 1/{Study 2}/{2 cambios}, 2/{Study 3}/{2 cambios}}{
+      \node[cajac=navy,minimum width=2.15cm,minimum height=1.15cm] (m\i) at (2.55*\i,1.35)
+        {\textbf{\nom}\\[0.15em]\scriptsize\cam};}
+    \draw[flechac=navy] (m0) -- (m1);
+    \draw[flechac=navy] (m1) -- (m2);
+    \node[rotulo,anchor=south,align=center] at (2.55,2.35)
+      {\textbf{Criterio: sólo el orden ($\rankic$)}\\la rentabilidad no participa en la decisión};
+    % Señal congelada
+    \node[cajac=gold,minimum width=2.35cm,minimum height=1.15cm] (cong) at (7.75,1.35)
+      {\textbf{Señal}\\\textbf{congelada}};
+    \draw[flechac=gold] (m2) -- (cong);
+    % Portfolio study
+    \node[cajac=teal,minimum width=3.0cm,minimum height=1.15cm] (ps) at (11.0,1.35)
+      {\textbf{Portfolio Study}\\[0.15em]\scriptsize \NumCarteras{} carteras};
+    \draw[flechac=teal] (cong) -- (ps);
+    \node[rotulo,anchor=north,align=center] at (11.0,0.55)
+      {\textbf{Criterio: el dinero}\\(Information Ratio)};
+  \end{tikzpicture}
+  \end{center}
+  \vspace{0.30cm}
+  \colorbox{light}{\parbox{\dimexpr\linewidth-2\fboxsep\relax}{\small
+  \textbf{Los dos criterios nunca se mezclan.} El modelo se elige sin mirar cuánto dinero gana, y la
+  cartera se elige sin volver a tocar el modelo. Si se optimizan a la vez, resulta imposible saber si
+  el resultado viene de la señal o de las reglas de cartera.}}
+  \par\smallskip
+  {\footnotesize\hspace*{0.1cm}La cadena \textbf{converge}: nueve cambios, luego dos, luego dos. Esa
+  pequeñez decreciente es el argumento para detenerla.}
+\end{frame}
+\note{[0:45] El trabajo son cuatro estudios y el orden importa. Los tres primeros eligen el modelo
+atendiendo sólo a la calidad del orden; la rentabilidad no participa. Después la señal se congela.
+Y sólo entonces un cuarto estudio compara mil cuatrocientas cuarenta formas de convertirla en
+cartera, y ahí el criterio es el dinero. Que no se mezclen es la decisión de diseño más
+importante: si eligiera el modelo mirando la rentabilidad, no sabría si el resultado viene de que
+predice bien o de una combinación afortunada de reglas. Y sobre las tres pasadas: la primera
+cambió nueve variables, la segunda dos, la tercera dos. Converge, y las mejoras son ya de
+milésimas.}
+
+% 18 · 0:45
+\begin{frame}{Optimización secuencial: dieciocho fases, dos cambios}
+  \vspace{0.25cm}
+  \begin{center}
+  \begin{tikzpicture}
+    % 18 fases como cuadraditos
+    \foreach \i in {0,...,17}{
+      \pgfmathsetmacro{\x}{0.62*\i}
+      \node[draw=slate,line width=0.6pt,fill=light,minimum width=0.44cm,minimum height=0.44cm,
+            inner sep=0pt] at (\x,0) {};}
+    % Las dos que cambiaron
+    \foreach \i/\lab in {8/{regímenes\\de mercado}, 15/{tasa de\\aprendizaje}}{
+      \pgfmathsetmacro{\x}{0.62*\i}
+      \node[draw=teal,line width=1.4pt,fill=teal,minimum width=0.44cm,minimum height=0.44cm,
+            inner sep=0pt] at (\x,0) {};
+      \draw[teal,line width=0.8pt] (\x,-0.30) -- (\x,-0.70);
+      \node[rotulo,text=teal,anchor=north,align=center] at (\x,-0.72) {\lab};}
+    \node[rotulo,anchor=east] at (-0.45,0) {18 fases};
+    \node[rotulo,anchor=west,align=left] at (11.20,0) {\textbf{2}\\cambian};
+    % Barra de ganancia
+    \node[rotulo,anchor=west,align=left] at (-0.45,-2.00)
+      {\textbf{Ganancia total de las dieciocho fases:} $\rankic$ de 0,1059 a \RankICSeleccion{}};
+    \node[cajac=gold,minimum width=4.2cm,minimum height=0.70cm,anchor=west] at (7.10,-2.00)
+      {\scriptsize\textbf{+0,0009} en total};
+  \end{tikzpicture}
+  \end{center}
+  \vspace{0.55cm}
+  {\small\hspace*{0.1cm}Cada variable del catálogo se prueba \textbf{una vez}, en orden fijado de
+  antemano, y sólo se adopta un cambio si supera un contraste estadístico contra el incumbente.
+  Dieciséis de las dieciocho fases no encontraron nada mejor: \textbf{el sistema es robusto a sus
+  propios parámetros}.}
+\end{frame}
+\note{[0:42] Cómo se busca dentro de cada estudio. No pruebo todas las combinaciones, porque son
+millones y cada una empeora la credibilidad del resultado. Hago una optimización secuencial:
+recorro las variables una a una, en orden fijado de antemano, y sólo adopto un cambio si supera un
+contraste estadístico contra el ganador actual. De dieciocho fases, dieciséis no encontraron nada
+mejor, y las dos que cambiaron algo aportaron nueve diezmilésimas. Se puede leer como un fracaso,
+y prefiero leerlo al revés: el sistema es robusto a sus propios parámetros. No depende de un
+ajuste fino, que es lo primero que no sobrevive fuera de muestra.}
+
+% 19 · 0:40
+\begin{frame}{Las decisiones terminan antes de abrir la era reservada}
+  \vspace{0.20cm}
+  \begin{center}
+  \begin{tikzpicture}[scale=0.95,every node/.style={transform shape}]
+    % Barra temporal
+    \draw[navy,line width=11pt,opacity=0.80] (0.35,1.60) -- (8.10,1.60);
+    \draw[gold,line width=11pt,opacity=0.85] (8.10,1.60) -- (11.10,1.60);
+    \node[rotulo,text=white] at (4.20,1.60) {\textbf{2015 -- 2024 · selección}};
+    \node[rotulo,text=white] at (9.60,1.60) {\textbf{2025 -- 2026}};
+    % Eje
+    \draw[flecha] (0.35,0.90) -- (11.30,0.90);
+    \foreach \x/\a in {0.35/2015, 8.10/2024, 11.10/2026}{
+      \draw[slate,line width=0.6pt] (\x,0.81) -- (\x,0.99);
+      \node[rotulo,anchor=north] at (\x,0.76) {\a};}
+    % Muro
+    \draw[rojo,line width=1.6pt,dashed] (8.10,0.55) -- (8.10,2.55);
+    \node[rotulo,text=rojo,anchor=south,align=center] at (8.10,2.60) {\textbf{aquí terminan}\\\textbf{las decisiones}};
+    % Qué pasa a cada lado
+    \node[caja,minimum width=5.6cm,minimum height=1.35cm,anchor=north west,align=left] at (0.35,0.10)
+      {\scriptsize\textbf{\color{navy}Todo se decide aquí}\\[0.20em]
+       \scriptsize $\cdot$ los tres estudios de modelo\\
+       \scriptsize $\cdot$ la elección de la cartera\\
+       \scriptsize $\cdot$ \CohortesSeleccion{} fechas de evaluación};
+    \node[cajac=gold,minimum width=5.0cm,minimum height=1.35cm,anchor=north west,align=left] at (6.30,0.10)
+      {\scriptsize\textbf{\color{gold}Aquí no se decide nada}\\[0.20em]
+       \scriptsize $\cdot$ se abre \textbf{una vez}, al final\\
+       \scriptsize $\cdot$ sólo para confirmar o desmentir\\
+       \scriptsize $\cdot$ \CohortesReservadas{} fechas completas};
+  \end{tikzpicture}
+  \end{center}
+  \vspace{0.15cm}
+  {\footnotesize\hspace*{0.1cm}Si la era reservada hubiera participado en alguna decisión, dejaría
+  de ser una prueba: sería una parte más de la muestra de ajuste.}
+\end{frame}
+\note{[0:35] Y la regla que gobierna todo lo anterior. Todas las decisiones se toman mirando sólo el
+periodo de dos mil quince a dos mil veinticuatro: ciento diecisiete fechas. Dos mil veinticinco y
+veintiséis se apartaron desde el primer día. Se abren una sola vez, al final, para confirmar o
+desmentir lo ya decidido. Es exigente, porque si sale mal hay que contarlo: en cuanto vuelva atrás
+a cambiar algo, esa ventana deja de ser una prueba. Y ya les adelanto que ahí hay un resultado que
+salió mal.}
+
+% =====================================================================
+% BLOQUE 6 · Resultados (diapositivas 20-28)
+% =====================================================================
+\setacto{teal}{Resultados}
+
+% 20 · 0:10
+\divisor{teal}{Resultados}{¿Aprendió? ¿Y puede cobrarse?}
+\note{[0:05] Vamos con los resultados, en el mismo orden en que hice las preguntas.}
+
+% 21 · 0:50
+\begin{frame}{Pregunta 1, resuelta: ordena lo que las fórmulas no ven}
+  \vspace{0.10cm}
+  \begin{columns}[T]
+    \begin{column}{0.58\linewidth}
+      \vspace{0.20cm}
+      \begin{tikzpicture}
+        % Sistema
+        \draw[teal,line width=13pt] (0,3.10) -- (5.35,3.10);
+        \node[rotulo,text=white,anchor=west] at (0.15,3.10) {\textbf{Sistema}};
+        \node[rotulo,text=teal,anchor=west] at (5.50,3.10) {\textbf{\RankICSeleccion{}}};
+        % Baselines
+        \foreach \i/\nom/\len/\val in {%
+          0/{GARP}/0.60/{0,0119}, 1/{Valor}/0.13/{0,0026},
+          2/{Calidad}/0.12/{0,0024}, 3/{Crecimiento}/0.11/{0,0022},
+          4/{Momento}/0.06/{-0,0002}}{
+          \pgfmathsetmacro{\y}{2.35-0.52*\i}
+          \draw[slate,line width=13pt,opacity=0.55] (0,\y) -- (\len,\y);
+          \node[rotulo,anchor=west] at (0.10,\y+0.30) {\scriptsize\nom};
+          \node[rotulo,anchor=west] at (1.05,\y) {\val};}
+        \node[rotulo,anchor=west,align=left,text=slate] at (2.30,0.15)
+          {\scriptsize Fórmulas deterministas clásicas,\\\scriptsize sobre el mismo panel y las mismas fechas};
+      \end{tikzpicture}
+    \end{column}
+    \begin{column}{0.39\linewidth}
+      \titular{$\times$\,9}{teal}{frente a la mejor fórmula sin aprendizaje}
+      \vspace{0.10cm}
+      {\small El sistema ordena con un $\rankic$ de \RankICSeleccion{} sobre \CohortesSeleccion{}
+      fechas. La mejor fórmula clásica se queda en 0,0119.}
+    \end{column}
+  \end{columns}
+  \vspace{0.05cm}
+  \matiz{El $\rankic$ mide correlación de órdenes, no rentabilidad. Un 0,11 es una señal débil en
+  términos absolutos; lo relevante es que sea \textbf{persistente}, no que sea grande.}
+\end{frame}
+\note{[0:43] Primera pregunta: ¿aprende a ordenar? Sí, y la doy comparada, porque un rank-IC de cero
+coma once no dice nada por sí solo. Arriba, el sistema. Abajo, cinco fórmulas clásicas que llevan
+décadas usándose, calculadas sobre el mismo panel y las mismas fechas. El sistema ordena nueve
+veces mejor que la mejor de ellas. Y fíjense en que las clásicas están casi en cero: sobre este
+universo, comprar barato por sí solo no ordenaba nada, lo que es coherente con la literatura sobre
+degradación de factores. El matiz: cero coma once es débil en absoluto. Lo que la hace valiosa no
+es su tamaño, es que sea persistente.}
+
+% 22 · 0:45
+\begin{frame}{La señal aparece en tres de cada cuatro fechas}
+  \vspace{0.10cm}
+  \begin{columns}[T]
+    \begin{column}{0.63\linewidth}
+      \includegraphics[width=\linewidth]{figures/f06_rankic_serie.png}
+    \end{column}
+    \begin{column}{0.34\linewidth}
+      \vspace{0.15cm}
+      \cifrachica{\FraccionICPositiva}{de las fechas con orden acertado}{teal}
+      \cifrachica{\ICIRSeleccion}{consistencia de la señal (IC-IR)}{navy}
+      \cifrachica{\TNeweyWest}{$t$ corregido por solapamiento}{navy}
+    \end{column}
+  \end{columns}
+  \vspace{0.05cm}
+  \matiz{Las cohortes se solapan: cada predicción mira doce meses, y hay una nueva cada mes. El
+  estadístico $t$ ya está corregido por ello, y aun así las observaciones \textbf{verdaderamente
+  independientes son unas nueve}, no \CohortesSeleccion{}.}
+\end{frame}
+\note{[0:49] Aquí está esa persistencia. Cada barra es una de las ciento diecisiete fechas y su altura
+es cuánto acertó el orden. Lo que importa es el patrón: hay muchas más por encima de cero que por
+debajo. Acierta en el setenta y seis por ciento de las fechas. No es homogéneo, y en dos mil
+veintiuno hay una racha mala, pero el signo se mantiene toda la década. Y un matiz técnico que doy
+yo porque es la primera objeción de un estadístico: estas observaciones no son independientes,
+porque cada predicción mira doce meses y hago una nueva cada mes. El t ya está corregido por el
+solapamiento y aun así sale tres coma tres. Pero las observaciones verdaderamente independientes
+son unas nueve.}
+
+% 23 · 1:00
+\begin{frame}{Ocho contrastes adversariales: siete a favor, uno en contra}
+  \vspace{0.10cm}
+  \begin{columns}[T]
+    \begin{column}{0.50\linewidth}
+      \includegraphics[width=\linewidth,height=0.58\textheight,keepaspectratio]{figures/f06_bootstrap.png}
+    \end{column}
+    \begin{column}{0.47\linewidth}
+      \vspace{0.05cm}
+      {\scriptsize
+      \textcolor{verde}{\textbf{\checkmark}}~\textbf{Permutación.} Ninguna de \NumPermutaciones{}
+      barajadas lo iguala ($p=\PValorPermutacion{}$).\\[0.42em]
+      \textcolor{verde}{\textbf{\checkmark}}~\textbf{Placebos.} Con etiquetas falsas la señal
+      desaparece.\\[0.42em]
+      \textcolor{verde}{\textbf{\checkmark}}~\textbf{Bootstrap por bloques.} El intervalo al 95\,\%
+      no cruza cero.\\[0.42em]
+      \textcolor{verde}{\textbf{\checkmark}}~\textbf{Exclusión de eras.} Quitando cualquier trienio,
+      sigue positivo.\\[0.42em]
+      \textcolor{verde}{\textbf{\checkmark}}~\textbf{Semillas.} Tres inicializaciones, mismo
+      resultado.\\[0.42em]
+      \textcolor{verde}{\textbf{\checkmark}}~\textbf{Carteras aleatorias.} Percentil 97,3 a riesgo
+      comparable.\\[0.42em]
+      \textcolor{verde}{\textbf{\checkmark}}~\textbf{Neutralización por estilos.} Retiene el
+      87,2\,\%.\\[0.42em]
+      \textcolor{rojo}{\textbf{$\times$}}~\textbf{Deflated Sharpe.} \ProbabilidadDSR{}, bajo el
+      umbral de 0,95.}
+    \end{column}
+  \end{columns}
+  \vspace{0.05cm}
+  \matiz{El que falla penaliza por \textbf{cuántas configuraciones se probaron}: por eso no se
+  reclama rentabilidad ajustada por búsqueda.}
+\end{frame}
+\note{[0:55] Ahora la parte que más me importa, porque es donde intento tirar abajo mi propio resultado.
+Ocho contrastes diseñados para que la señal falle si no es real. Permutación: barajo al azar casi
+diez mil veces y ninguna iguala mi resultado. Placebos: con etiquetas falsas la señal desaparece.
+Bootstrap por bloques: el intervalo al noventa y cinco no cruza cero. Exclusión de eras: quito un
+trienio entero cada vez y sigue positivo. Semillas: apenas se mueve. Carteras aleatorias de riesgo
+comparable: percentil noventa y siete. Neutralización por estilos, que veremos ahora. Y el octavo
+falla: el Deflated Sharpe, que penaliza por cuántas configuraciones probé, sale cero coma cinco
+siete cuando el umbral es cero coma noventa y cinco. Lo cuento porque es lo que uno tiene la
+tentación de no enseñar, y porque delimita qué puedo afirmar.}
+
+% 24 · 0:40
+\begin{frame}{¿Y si esto ya lo hacían los factores conocidos?}
+  \vspace{0.10cm}
+  \begin{columns}[T]
+    \begin{column}{0.58\linewidth}
+      \includegraphics[width=\linewidth]{figures/f06_atribucion_factorial.png}
+    \end{column}
+    \begin{column}{0.39\linewidth}
+      \vspace{0.20cm}
+      \titular{87,2\,\%}{teal}{de la capacidad sobrevive a neutralizar los estilos}
+      {\small Se descuentan las exposiciones a valor, momento, calidad, crecimiento y baja
+      volatilidad. Lo que queda \textbf{no es un factor clásico con otro nombre}.}
+    \end{column}
+  \end{columns}
+  \vspace{0.05cm}
+  \matiz{El alfa de la regresión factorial \textbf{no es estadísticamente significativa}. La
+  evidencia sostiene que el orden no se explica por los estilos, no que genere alfa frente a ellos.}
+\end{frame}
+\note{[0:44] La objeción más seria es que el sistema haya reinventado algo ya conocido. Si lo único que
+hace es comprar barato, no he construido un sistema de aprendizaje: he construido una forma cara
+de aplicar una fórmula publicada hace treinta años. Así que lo medí: tomo las exposiciones a los
+estilos clásicos y las descuento estadísticamente. Queda el ochenta y siete por ciento. Sólo un
+trece por ciento de lo que hace se explica por los estilos conocidos. El matiz obligatorio: la alfa
+de esa misma regresión no es significativa. Puedo defender que el orden no se explica por los
+factores clásicos, no que genere alfa frente a ellos.}
+
+% 25 · 0:50
+\begin{frame}{Pregunta 2, resuelta: la misma señal, \NumCarteras{} carteras}
+  \vspace{0.10cm}
+  \begin{columns}[T]
+    \begin{column}{0.57\linewidth}
+      \includegraphics[width=\linewidth,height=0.55\textheight,keepaspectratio]{figures/f07_cartera_rejilla.png}
+    \end{column}
+    \begin{column}{0.40\linewidth}
+      \vspace{0.05cm}
+      \begin{center}
+        {\scriptsize\color{slate}\MakeUppercase{Information Ratio, señal congelada}}\\[0.25em]
+        {\fontsize{22}{24}\selectfont\color{teal}\textbf{\IRModelo{} $\rightarrow$ \IRCartera{}}}
+      \end{center}
+      \vspace{0.05cm}
+      {\scriptsize Sin reentrenar nada, sin cambiar una sola predicción: \textbf{sólo las reglas de
+      cartera}. Cuántas acciones, cuánto tiempo, cuánto efectivo.}
+      \par\smallskip
+      {\scriptsize\color{navy}\textbf{Las reglas de cartera pesan tanto como el modelo.}}
+    \end{column}
+  \end{columns}
+  \vspace{0.05cm}
+  \matiz{La ganadora es el máximo de \NumCarteras{} alternativas sobre la misma ventana: una
+  \textbf{cota superior optimista}. La evidencia sólida es la \textbf{dispersión}, no el máximo.}
+\end{frame}
+\note{[0:56] Segunda pregunta: cuánto depende el resultado de la cartera. Es la parte más útil del
+trabajo. Cogí la señal del ganador, la congelé, y construí mil cuatrocientas cuarenta carteras
+variando sólo las reglas: cuántas acciones, cuánto tiempo, cuánto efectivo, cuánta deriva. Cada
+punto es una cartera. Y el rango es enorme: con la misma capacidad de predicción, hay carteras que
+pierden y carteras que ganan claramente. La de partida daba cero coma treinta y uno; la mejor,
+cero coma ochenta y cuatro. Casi el triple sin mejorar la predicción. Entre publicar un modelo y
+reportar una rentabilidad hay una capa de decisiones que pesa tanto como el modelo y que casi
+nunca se documenta. El matiz: esa ganadora es el máximo de mil cuatrocientas cuarenta sobre la
+misma ventana. La evidencia robusta no es el máximo, es la dispersión.}
+
+% 26 · 0:45
+\begin{frame}{La cartera ganadora opera menos, y por eso gana}
+  \vspace{0.45cm}
+  \begin{center}
+  {\small
+  \begin{tabular}{lccc}
+    \toprule
+    & \textbf{Cartera de partida} & \textbf{\color{teal}Cartera elegida} & \textbf{Era reservada} \\
+    \midrule
+    Information Ratio      & \IRModelo{}       & {\color{teal}\textbf{\IRCartera{}}}       & \IRCarteraReservado{} \\
+    Exceso sobre el índice & \ExcesoModelo{}   & {\color{teal}\textbf{\ExcesoCartera{}}}   & \ExcesoCarteraReservado{} \\
+    Rotación anual         & \TurnoverModelo{} & {\color{teal}\textbf{\TurnoverCartera{}}} & \TurnoverCarteraReservado{} \\
+    Caída máxima           & \MDDModelo{}      & {\color{teal}\textbf{\MDDCartera{}}}      & \MDDCarteraReservado{} \\
+    \bottomrule
+  \end{tabular}}
+  \end{center}
+  \vspace{0.45cm}
+  {\footnotesize\hspace*{0.1cm}La ganadora \textbf{rota la mitad}: mantiene las posiciones el
+  horizonte completo en lugar de rotarlas antes. Menos operaciones significan menos costes y menos
+  ventas prematuras de posiciones que aún tenían recorrido.}
+  \matiz{Que rotar menos funcione mejor es un hallazgo \textbf{sobre esta ventana}, no una ley.}
+\end{frame}
+\note{[0:36] Merece la pena ver en qué se diferencia la ganadora, porque es contraintuitivo. Yo esperaba
+una cartera más activa, que reaccionara rápido a la señal. Y es al revés: opera la mitad. Mantiene
+las posiciones todo el horizonte de la predicción en lugar de rotarlas antes. Y tiene sentido: si
+mi modelo predice a doce meses, vender a los seis es contradecir a mi propio modelo. Cada rotación
+paga costes, y muchas de esas ventas prematuras eran de posiciones que después siguieron subiendo.
+Menos operaciones, mejor resultado y menos caída máxima.}
+
+% 27 · 0:45
+\begin{frame}{Qué habría ganado quien la hubiera seguido}
+  \vspace{0.05cm}
+  \begin{columns}[T]
+    \begin{column}{0.63\linewidth}
+      \includegraphics[width=\linewidth,height=0.58\textheight,keepaspectratio]{figures/f07_equity_drawdown.png}
+    \end{column}
+    \begin{column}{0.34\linewidth}
+      \vspace{0.25cm}
+      \cifrachica{\CAGRCartera}{rentabilidad anual de la cartera}{teal}
+      \cifrachica{\CAGRIndice}{del índice en el mismo periodo}{slate}
+      \cifrachica{\BeatRateCartera}{de los años batiendo al índice}{navy}
+      {\scriptsize\color{slate}\hspace*{0.05cm}Costes descontados: \CosteAcumulado{} acumulado.}
+    \end{column}
+  \end{columns}
+  \vspace{0.10cm}
+  \matiz{Es la ventana \textbf{sobre la que se optimizó}: la lectura más favorable posible, no una
+  previsión.}
+\end{frame}
+\note{[0:43] Traduciendo a lo que le importaría a alguien que invirtiera: arriba el valor de la cartera,
+abajo las caídas desde máximos. Habría rendido un diecinueve coma ocho seis por ciento anual
+frente al trece coma uno siete del índice, con los costes descontados y batiendo al índice todos
+los años de selección. Y quiero que se lea el panel de abajo tanto como el de arriba: una caída
+máxima del veintitrés por ciento es real. El matiz es el más importante de la presentación: ésta
+es la ventana sobre la que elegí la cartera entre mil cuatrocientas cuarenta candidatas. Es, por
+construcción, la lectura más favorable posible.}
+
+% 28 · 0:55
+% 27 · 0:45 · Perfiles de inversor
+\begin{frame}{Ocho perfiles de inversor: gana el consenso aprendido}
+  \vspace{0.20cm}
+  \begin{columns}[T]
+    \begin{column}{0.55\linewidth}
+      \vspace{0.10cm}
+      \begin{tikzpicture}[scale=0.96,every node/.style={transform shape}]
+        \foreach \i/\nom/\len/\val/\col in {%
+          0/{Consenso aprendido}/3.90/{0,841}/teal,
+          1/{Valor}/1.59/{0,342}/slate,
+          2/{Crecimiento}/1.36/{0,294}/slate,
+          3/{Defensivo}/1.16/{0,251}/slate,
+          4/{Momento}/0.64/{0,139}/slate,
+          5/{Contrario}/0.27/{0,059}/slate,
+          6/{Calidad}/0.15/{0,033}/slate,
+          7/{GARP}/0.12/{0,026}/slate}{
+          \pgfmathsetmacro{\y}{-0.56*\i}
+          \node[rotulo,anchor=east,text=\col] at (-0.12,\y) {\scriptsize\nom};
+          \draw[\col,line width=9pt] (0,\y) -- (\len,\y);
+          \node[rotulo,anchor=west,text=\col] at (\len+0.14,\y) {\textbf{\val}};}
+        \node[rotulo,anchor=west,text=slate] at (-1.85,0.60) {Information Ratio en el periodo de selección};
+      \end{tikzpicture}
+    \end{column}
+    \begin{column}{0.42\linewidth}
+      \vspace{0.15cm}
+      {\scriptsize Un perfil usa los \textbf{mismos cinco agentes entrenados}, pero fija los pesos de
+      antemano según un estilo reconocible: value, growth, defensivo\ldots}
+      \par\smallskip
+      {\scriptsize El consenso que aprende los pesos obtiene \textbf{\IRCartera{}}; el mejor estilo
+      fijo se queda en \textbf{0,342}.}
+      \par\smallskip
+      {\scriptsize\color{navy}\textbf{Y en la era reservada, seis de los siete estilos fijos se
+      vuelven negativos.} El consenso aprendido es el único que aguanta positivo.}
+    \end{column}
+  \end{columns}
+  \vspace{0.05cm}
+  \matiz{Los perfiles \textbf{no compiten} por ser elegidos: se reevalúan como diagnóstico, después
+  de congelar el ganador.}
+\end{frame}
+\note{[0:50] Una pregunta natural es si no habría sido mejor imponer un estilo de inversión, que es lo
+que hace un gestor humano. Lo medí: un perfil usa los mismos cinco agentes ya entrenados, pero
+fija los pesos de antemano según un estilo reconocible. Uno value, uno growth, uno defensivo,
+hasta ocho. El consenso aprendido obtiene cero coma ochenta y cuatro, y el mejor estilo fijo se
+queda en cero coma treinta y cuatro: menos de la mitad. Y lo más interesante pasa en la era
+reservada: seis de los siete estilos fijos se vuelven negativos, y el consenso aprendido es el
+único que aguanta positivo. Dejar que los pesos los decida la evidencia funciona mejor que imponer
+una convicción, y sobre todo envejece mejor.}
+
+% 28 · 0:40 · Qué compró la cartera
+\begin{frame}{Qué compró de verdad: pocos nombres y mucho tiempo}
+  \vspace{0.15cm}
+  \begin{columns}[T]
+    \begin{column}{0.30\linewidth}
+      {\scriptsize\color{slate}\MakeUppercase{Los que más aportaron}}
+      \par\smallskip
+      {\footnotesize
+      \textbf{AAPL} \hfill {\color{teal}+27,8\,\%}\\[0.30em]
+      \textbf{ORLY} \hfill {\color{teal}+16,8\,\%}\\[0.30em]
+      \textbf{AXP} \hfill {\color{teal}+12,4\,\%}\\[0.30em]
+      \textbf{BA} \hfill {\color{teal}+11,8\,\%}\\[0.30em]
+      \textbf{ROP} \hfill {\color{teal}+10,9\,\%}}
+      \par\medskip
+      {\scriptsize\color{slate}\MakeUppercase{Los peores}}
+      \par\smallskip
+      {\footnotesize
+      \textbf{ALGN} \hfill {\color{rojo}$-$4,2\,\%}\\[0.30em]
+      \textbf{MTCH} \hfill {\color{rojo}$-$2,8\,\%}}
+    \end{column}
+    \begin{column}{0.31\linewidth}
+      {\scriptsize\color{slate}\MakeUppercase{Dónde estuvo invertida}}
+      \par\smallskip
+      {\footnotesize
+      Tecnología \hfill 21,6\,\%\\[0.30em]
+      Distribución \hfill 13,4\,\%\\[0.30em]
+      Servicios financieros \hfill 11,2\,\%\\[0.30em]
+      Salud \hfill 9,0\,\%\\[0.30em]
+      Equipo eléctrico \hfill 7,4\,\%\\[0.30em]
+      Hostelería y ocio \hfill 5,8\,\%\\[0.30em]
+      {\color{slate}Otros 14 sectores} \hfill {\color{slate}31,6\,\%}}
+    \end{column}
+    \begin{column}{0.33\linewidth}
+      \vspace{-0.10cm}
+      \cifrachica{\PosicionesCartera{} a la vez}{posiciones simultáneas, siempre invertida}{navy}
+      \cifrachica{\NumAccionesCartera}{acciones distintas en 10 años}{navy}
+      \cifrachica{\MedianaMesesTenencia{} meses}{permanencia mediana; la más larga, 45}{teal}
+    \end{column}
+  \end{columns}
+  \vspace{0.05cm}
+  \matiz{Una sola posición aporta el \ContribucionAAPL{} de la contribución neta. El sector no es
+  \textit{point-in-time}: es una foto actual y sólo sirve para agrupar.}
+\end{frame}
+\note{[0:45] Y qué compró de verdad, porque una cartera de ocho posiciones es algo concreto. A la
+izquierda, los que más aportaron: Apple con casi veintiocho puntos de contribución neta, O'Reilly
+con dieciséis, American Express, Boeing, Roper. Y los peores, que también los hubo. En el centro,
+dónde estuvo invertida: hay sesgo hacia tecnología, con un veintiuno por ciento del peso medio,
+pero repartida en veinte sectores. A la derecha: ocho posiciones simultáneas, siempre invertida,
+cuarenta y dos acciones distintas en diez años y una permanencia mediana de quince meses. Es una
+cartera concentrada y paciente. El matiz, que es una limitación seria: una sola posición aporta
+más de un cuarto del resultado.}
+
+\begin{frame}{Pregunta 3, resuelta: la cartera cambia el signo}
+  \vspace{0.10cm}
+  \begin{columns}[T]
+    \begin{column}{0.57\linewidth}
+      \includegraphics[width=\linewidth]{figures/f07_seleccion_vs_reservada.png}
+    \end{column}
+    \begin{column}{0.40\linewidth}
+      \vspace{0.10cm}
+      \cifrachica{\ExcesoModeloReservado}{cartera de partida en 2025--2026}{rojo}
+      \cifrachica{\ExcesoCarteraReservado}{cartera elegida, misma señal}{teal}
+      \cifrachica{\RankICReservado}{$\rankic$ en la era reservada: \textbf{idéntico} en ambas}{navy}
+    \end{column}
+  \end{columns}
+  \vspace{0.05cm}
+  \matiz{De destruir valor a \textbf{empatar}, no a batir. Con \CohortesReservadas{} fechas
+  completas y \AnosCarteraReservada{} años, afirmar más sería exactamente la lectura que este
+  trabajo evita.}
+\end{frame}
+\note{[0:57] Tercera pregunta: qué pasó al abrir los años reservados. Es el resultado más interesante
+del trabajo y también el más incómodo. Con la cartera de partida, la señal habría perdido un doce
+por ciento frente al índice. Un fracaso claro. Con la cartera elegida, la misma señal, sin
+reentrenar nada, pasa a un exceso ligeramente positivo. Y la cifra de abajo es la clave: el
+rank-IC en esa ventana es idéntico en los dos casos, porque se calcula antes de construir la
+cartera. La señal era la misma y el resultado cambió de signo sólo por las reglas de
+implementación. Ahora seamos precisos: pasar de perder un doce por ciento a un más cero coma dos
+cuatro no es batir al mercado, es empatar. Lo que sí queda demostrado es dónde estaba el cuello de
+botella: en la implementación, no en el modelo.}
+
+% =====================================================================
+% CIERRE (diapositivas 29-30)
+% =====================================================================
+\setacto{navy}{Cierre}
+
+% 29 · 1:05
+\begin{frame}{Límites, amenazas y conclusión}
+  \vspace{0.15cm}
+  \begin{columns}[T]
+    \begin{column}{0.475\linewidth}
+      {\scriptsize\color{slate}\MakeUppercase{Lo que este trabajo no puede afirmar}}
+      \par\medskip
+      {\scriptsize
+      \textcolor{rojo}{\textbf{$\cdot$}}~\textbf{La búsqueda fue amplia.} Deflated Sharpe
+      \ProbabilidadDSR{}, bajo el umbral: no se reclama rentabilidad ajustada por
+      multiplicidad.\\[0.40em]
+      \textcolor{rojo}{\textbf{$\cdot$}}~\textbf{Un agente basta.} El de riesgo ordena algo mejor
+      que los cinco combinados: la arquitectura multiagente no queda demostrada como
+      necesaria.\\[0.40em]
+      \textcolor{rojo}{\textbf{$\cdot$}}~\textbf{La confirmación es corta.}
+      \CohortesReservadas{} fechas y \AnosCarteraReservada{} años no bastan para concluir sobre
+      rentabilidad.\\[0.40em]
+      \textcolor{rojo}{\textbf{$\cdot$}}~\textbf{Depende de pocos nombres.}
+      \NumAccionesCartera{} acciones, y una sola aporta el \ContribucionAAPL{} de la
+      contribución.\\[0.40em]
+      \textcolor{rojo}{\textbf{$\cdot$}}~\textbf{Sesgo de cobertura.} Medido en causa y dirección,
+      no traducido a puntos de rentabilidad.}
+    \end{column}
+    \begin{column}{0.475\linewidth}
+      {\scriptsize\color{slate}\MakeUppercase{Lo que sí queda demostrado}}
+      \par\medskip
+      {\scriptsize
+      \textcolor{verde}{\textbf{1.}}~\textbf{Aprende a ordenar.} $\rankic$ de \RankICSeleccion{},
+      nueve veces la mejor fórmula clásica, superando siete de ocho contrastes
+      adversariales.\\[0.40em]
+      \textcolor{verde}{\textbf{2.}}~\textbf{La cartera pesa tanto como el modelo.} Con la señal
+      congelada, el Information Ratio va de \IRModelo{} a \IRCartera{}.\\[0.40em]
+      \textcolor{verde}{\textbf{3.}}~\textbf{El signo cambia fuera de muestra.} En los años
+      reservados, la misma señal pasa de \ExcesoModeloReservado{} a \ExcesoCarteraReservado{}.}
+      \par\medskip
+      \colorbox{light}{\parbox{\dimexpr\linewidth-2\fboxsep\relax}{\vspace{0.08cm}\scriptsize
+      \textbf{\color{navy}La contribución es metodológica:} predecir y ganar dinero prediciendo son
+      capacidades distintas, se miden con métricas distintas, y \textbf{ninguna conclusión práctica
+      es interpretable sin decir con qué cartera se midió}.\vspace{0.08cm}}}
+    \end{column}
+  \end{columns}
+\end{frame}
+\note{[1:10] Cierro con los límites y la conclusión juntos, a propósito: un límite declarado es una
+posición defendida, y uno encontrado por el tribunal es un problema. A la izquierda, lo que no
+puedo afirmar. La búsqueda fue amplia y el Deflated Sharpe lo penaliza. El agente de riesgo por sí
+solo ordena algo mejor que los cinco combinados, así que no he demostrado que la arquitectura
+multiagente sea necesaria. La confirmación fuera de muestra es corta. Y el resultado se apoya en
+pocos nombres. A la derecha, lo demostrado: aprende a ordenar nueve veces mejor que la mejor
+fórmula clásica superando siete de ocho contrastes; las reglas de cartera pesan tanto como el
+modelo; y en los años reservados la misma señal cambia de signo según cómo se implemente. La
+conclusión que defiendo no es que haya construido algo que bata al mercado, porque no lo he
+demostrado. Es que predecir y ganar dinero prediciendo son capacidades distintas, y que ninguna
+conclusión práctica es interpretable si no se dice con qué cartera se midió. Muchas gracias.}
+
+% 30 · 0:05
+{\setbeamertemplate{footline}{}
+\begin{frame}[plain]
+  \vspace{2.1cm}
+  \hspace*{0.45cm}\begin{minipage}{0.90\linewidth}
+    {\color{navy}\rule{2.2cm}{2pt}}\\[0.9cm]
+    {\fontsize{34}{38}\selectfont\color{navy}\textbf{Gracias}}\\[0.7cm]
+    {\large\color{slate}Preguntas}
+  \end{minipage}
 \end{frame}}
+\note{[0:03] Quedo a su disposición para las preguntas.}
+
+% =====================================================================
+% RESERVA · sin numerar y sin notas, para el turno de preguntas
+% =====================================================================
+{\setbeamertemplate{footline}{}
+
+% R1 · ¿Hacen falta cinco agentes?
+\begin{frame}[plain,noframenumbering]{Reserva · El matiz incómodo: el agente de riesgo solo}
+  \vspace{0.55cm}
+  \begin{center}
+  \begin{tikzpicture}
+    \foreach \i/\nom/\len/\val/\col in {%
+      0/{Reparto a partes iguales}/2.55/{\RankICEquiponderado}/slate,
+      1/{Meta-agente aprendido}/3.95/{\RankICSeleccion}/teal,
+      2/{Sólo el agente de riesgo}/4.45/{\RankICRisk}/gold}{
+      \pgfmathsetmacro{\y}{-0.95*\i}
+      \draw[\col,line width=17pt] (0,\y) -- (\len,\y);
+      \node[rotulo,anchor=west,text=white] at (0.18,\y) {\textbf{\nom}};
+      \node[rotulo,anchor=west,text=\col] at (\len+0.20,\y) {\textbf{\val}};}
+  \end{tikzpicture}
+  \end{center}
+  \vspace{0.65cm}
+  {\small\hspace*{0.1cm}\textbf{Aprender los pesos aporta} sobre repartirlos a partes iguales:
+  de \RankICEquiponderado{} a \RankICSeleccion{}. Pero el agente de riesgo por sí solo llega a
+  \RankICRisk{}.}
+  \par\medskip
+  {\small\hspace*{0.1cm}Lo que sí queda demostrado es que el meta \textbf{aprende sin que se le fije
+  el ganador de antemano}. En 2015 elegir el agente de riesgo no era una opción disponible: sólo se
+  sabe cuál gana mirando el resultado, y eso es precisamente lo que no se puede hacer.}
+\end{frame}
+
+% R2 · ¿A qué patrimonio aplica?
+\begin{frame}[plain,noframenumbering]{Reserva · Capacidad: hasta qué tamaño aguanta}
+  \vspace{0.15cm}
+  \begin{columns}[T]
+    \begin{column}{0.60\linewidth}
+      \includegraphics[width=\linewidth]{figures/f07_capacidad.png}
+    \end{column}
+    \begin{column}{0.37\linewidth}
+      \vspace{0.30cm}
+      {\small La cartera compra ocho acciones y algunas son poco líquidas. El límite lo marca qué
+      porcentaje del volumen diario se puede absorber sin mover el precio.}
+      \par\medskip
+      {\small\color{navy}\textbf{Es el ámbito de un patrimonio individual o familiar, no el de un
+      fondo.}}
+    \end{column}
+  \end{columns}
+  \vspace{0.10cm}
+  {\small\hspace*{0.1cm}El nombre limitante en el periodo de selección es una única posición poco
+  negociada: unos 20 millones al 5\,\% de participación, 40 al 10\,\%. En la era reservada la
+  restricción se relaja unas cinco veces.}
+\end{frame}
+
+% R3 · ¿Encadenar estudios es sobreajustar?
+\begin{frame}[plain,noframenumbering]{Reserva · Por qué tres pasadas encadenadas}
+  \vspace{0.60cm}
+  \begin{center}
+  \begin{tabular}{lccc}
+    \toprule
+    & \textbf{Study 1} & \textbf{Study 2} & \textbf{Study 3} \\
+    \midrule
+    Variables modificadas & 9 & 2 & 2 \\
+    Rank-IC               & 0,1051 & 0,1059 & \RankICSeleccion{} \\
+    IR en selección       & 0,156 & 0,138 & \IRModelo{} \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+  \vspace{0.55cm}
+  {\small\hspace*{0.1cm}Cada pasada vuelve a barrer el catálogo partiendo del ganador anterior. La
+  secuencia \textbf{converge}: nueve cambios, luego dos, luego dos, con mejoras de milésimas.}
+  \par\medskip
+  {\small\hspace*{0.1cm}Detenerse ahí no es una decisión estética: seguir buscando añade
+  configuraciones al recuento que penaliza el Deflated Sharpe a cambio de una ganancia que ya no es
+  distinguible del ruido.}
+\end{frame}
+
+% R4 · ¿La señal es homogénea en el tiempo?
+\begin{frame}[plain,noframenumbering]{Reserva · La señal por eras: positiva, pero no homogénea}
+  \vspace{0.15cm}
+  \begin{columns}[T]
+    \begin{column}{0.60\linewidth}
+      \includegraphics[width=\linewidth]{figures/f06_rankic_serie.png}
+    \end{column}
+    \begin{column}{0.37\linewidth}
+      \vspace{0.20cm}
+      {\small La capacidad de ordenar \textbf{no decae}: es más fuerte en la era reciente que en la
+      antigua.}
+      \par\medskip
+      {\small Eso contradice la explicación simple por sesgo de cobertura, que sería \textbf{máximo
+      en los años antiguos} y debería producir el patrón contrario.}
+      \par\medskip
+      {\small\color{gold}\textbf{Pero el Information Ratio hace el camino inverso}: cae mientras el
+      orden mejora.}
+    \end{column}
+  \end{columns}
+  \vspace{0.10cm}
+  {\small\hspace*{0.1cm}Ordenar mejor y ganar menos a la vez es exactamente la disociación entre los
+  dos objetivos que motiva el Portfolio Study.}
+\end{frame}
+
+% R5 · Sesgo de supervivencia
+\begin{frame}[plain,noframenumbering]{Reserva · El sesgo de cobertura: medido, no supuesto}
+  \vspace{0.15cm}
+  \begin{columns}[T]
+    \begin{column}{0.58\linewidth}
+      \includegraphics[width=\linewidth]{figures/f03_cobertura_anual.png}
+    \end{column}
+    \begin{column}{0.39\linewidth}
+      \vspace{0.20cm}
+      {\small\textbf{Causa verificada.} El proveedor retira los símbolos que dejan de cotizar;
+      comprobado contra su interfaz uno a uno.}
+      \par\medskip
+      {\small\textbf{Dirección conocida.} Faltan sobre todo empresas que salieron del índice hace
+      muchos años.}
+      \par\medskip
+      {\small\textbf{Magnitud decreciente.} La cobertura sube con el tiempo y el entrenamiento es
+      móvil, así que el exceso decae a lo largo del periodo.}
+    \end{column}
+  \end{columns}
+  \vspace{0.10cm}
+  \matiz{No está traducido a puntos de rentabilidad. Se declara como límite, no se compensa.}
+\end{frame}
+
+% R6 · ¿Cuántas apuestas lo sostienen?
+\begin{frame}[plain,noframenumbering]{Reserva · El resultado se concentra en muy pocos nombres}
+  \vspace{0.15cm}
+  \begin{columns}[T]
+    \begin{column}{0.60\linewidth}
+      \includegraphics[width=\linewidth]{figures/f07_cartera_narrativa.png}
+    \end{column}
+    \begin{column}{0.37\linewidth}
+      \vspace{0.25cm}
+      \cifrachica{\NumAccionesCartera}{acciones distintas en todo el periodo}{navy}
+      \cifrachica{\MedianaMesesTenencia{} meses}{permanencia mediana de una posición}{navy}
+      \cifrachica{\ContribucionAAPL}{de la contribución, en un solo nombre}{gold}
+    \end{column}
+  \end{columns}
+  \vspace{0.05cm}
+  \matiz{Con \NumAccionesCartera{} nombres y \NumEpisodiosCartera{} episodios cerrados, el número de
+  apuestas verdaderamente independientes es pequeño. Se reporta como limitación.}
+\end{frame}
+
+% R7 · ¿Los costes son realistas?
+\begin{frame}[plain,noframenumbering]{Reserva · Cuánto margen hay antes de que los costes se lo coman}
+  \vspace{0.15cm}
+  \begin{columns}[T]
+    \begin{column}{0.58\linewidth}
+      \includegraphics[width=\linewidth]{figures/f07_costes_escalera.png}
+    \end{column}
+    \begin{column}{0.39\linewidth}
+      \vspace{0.25cm}
+      \cifrachica{\CosteAdoptado{} pb}{coste adoptado por operación}{navy}
+      \cifrachica{\CosteEquilibrio{} pb}{donde el exceso se anula, en selección}{teal}
+      \cifrachica{$\times$\,\MargenCosteReservado}{margen en la era reservada}{gold}
+    \end{column}
+  \end{columns}
+  \vspace{0.05cm}
+  {\small\hspace*{0.1cm}El margen \textbf{se mide, no se afirma}. Y la sensibilidad a costes es
+  siempre un diagnóstico: optimizar la comisión sería elegir el mundo en el que la estrategia luce
+  mejor.}
+\end{frame}
+
+% R8 · ¿Qué contraste falla exactamente?
+\begin{frame}[plain,noframenumbering]{Reserva · Deflated Sharpe: el contraste que falla}
+  \vspace{0.40cm}
+  \begin{center}
+  \begin{tikzpicture}
+    \draw[flecha] (0,0) -- (10.6,0);
+    \foreach \x/\a in {0.3/0, 5.0/{0,5}, 9.8/1}{
+      \draw[slate,line width=0.6pt] (\x,-0.09) -- (\x,0.09);
+      \node[rotulo,anchor=north] at (\x,-0.14) {\a};}
+    % Umbral
+    \draw[verde,line width=1.4pt,dashed] (9.25,-0.35) -- (9.25,1.75);
+    \node[rotulo,text=verde,anchor=south,align=center] at (9.25,1.80) {umbral\\0,95};
+    % Valor obtenido
+    \fill[rojo] (5.68,0.75) circle (4.5pt);
+    \node[rotulo,text=rojo,anchor=south,align=center] at (5.68,0.95) {\textbf{\ProbabilidadDSR{}}};
+    \draw[rojo,line width=1.0pt] (5.68,0.60) -- (5.68,0.10);
+  \end{tikzpicture}
+  \end{center}
+  \vspace{0.35cm}
+  {\footnotesize\hspace*{0.1cm}El Deflated Sharpe descuenta del resultado \textbf{cuántas
+  configuraciones se probaron} para encontrarlo. Con 46 configuraciones predictivas evaluadas, el
+  resultado económico no resiste esa corrección.}
+  \par\medskip
+  {\footnotesize\hspace*{0.1cm}\textbf{Qué implica y qué no.} Penaliza la búsqueda de la señal, no
+  invalida los contrastes de ordenación: la permutación con \NumPermutaciones{} réplicas y el
+  estadístico $t$ corregido siguen siendo favorables. Por eso el trabajo afirma capacidad de ordenar
+  y no reclama rentabilidad ajustada por búsqueda.}
+\end{frame}
+
+% R9 · Los perfiles
+\begin{frame}[plain,noframenumbering]{Reserva · Aprender el reparto gana a decidirlo por convicción}
+  \vspace{0.10cm}
+  \begin{columns}[T]
+    \begin{column}{0.485\linewidth}
+      \includegraphics[width=\linewidth]{figures/f07_perfiles_pesos.png}
+    \end{column}
+    \begin{column}{0.485\linewidth}
+      \includegraphics[width=\linewidth]{figures/f07_perfiles_resultados.png}
+    \end{column}
+  \end{columns}
+  \vspace{0.15cm}
+  {\small\hspace*{0.1cm}Un perfil usa los \textbf{mismos cinco agentes entrenados} pero fija los
+  pesos de antemano según un estilo de inversión. Ninguno de los ocho supera al consenso aprendido
+  en el periodo de selección, y en la era reservada la mayoría se vuelve negativo.}
+  \par\medskip
+  {\small\hspace*{0.1cm}No compiten por ser elegidos: se reevalúan como diagnóstico, para saber si
+  imponer una convicción de estilo habría sido mejor que dejar que los pesos los decida la
+  evidencia.}
+\end{frame}
+
+% R10 · ¿Por qué una rejilla cartesiana?
+\begin{frame}[plain,noframenumbering]{Reserva · Tres reglas concentran casi toda la sensibilidad}
+  \vspace{0.15cm}
+  \begin{columns}[T]
+    \begin{column}{0.58\linewidth}
+      \includegraphics[width=\linewidth]{figures/f07_cartera_influencia.png}
+    \end{column}
+    \begin{column}{0.39\linewidth}
+      \vspace{0.20cm}
+      {\footnotesize
+      \textbf{Número de posiciones} \hfill \InfluenciaPosiciones{}\\[0.30em]
+      \textbf{Tenencia mínima} \hfill \InfluenciaTenencia{}\\[0.30em]
+      \textbf{Tope de efectivo} \hfill \InfluenciaEfectivo{}\\[0.30em]
+      Suelo de cobertura \hfill \InfluenciaCobertura{}\\[0.30em]
+      Tolerancia de deriva \hfill \InfluenciaDeriva{}\\[0.30em]
+      Modo de reparto de pesos \hfill \InfluenciaPesos{}}
+    \end{column}
+  \end{columns}
+  \vspace{0.10cm}
+  {\small\hspace*{0.1cm}\textbf{Por qué una rejilla completa y no un eje cada vez.} Las reglas
+  interactúan: el suelo de cobertura significa cosas opuestas según el tope de efectivo. Optimizar
+  cada eje por separado no habría encontrado esta cartera.}
+\end{frame}
+
+% R11 · ¿Por qué el orden no se cobra solo?
+\begin{frame}[plain,noframenumbering]{Reserva · Ordenar bien no es acertar las que compras}
+  \vspace{0.15cm}
+  \begin{columns}[T]
+    \begin{column}{0.60\linewidth}
+      \includegraphics[width=\linewidth]{figures/f06_cola_vs_orden.png}
+    \end{column}
+    \begin{column}{0.37\linewidth}
+      \vspace{0.30cm}
+      {\small El $\rankic$ mide el orden \textbf{del universo entero}. La cartera sólo compra
+      \PosicionesCartera{} acciones: la cola de arriba.}
+      \par\medskip
+      {\small Ordenar bien quinientas acciones y acertar las ocho mejores \textbf{no son el mismo
+      problema}, y la correlación entre ambas cosas es débil.}
+      \par\medskip
+      {\small\color{navy}\textbf{Ahí está el hueco entre el objetivo 1 y el objetivo 2.}}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% R12 · ¿Sobre qué se mide?
+\begin{frame}[plain,noframenumbering]{Reserva · La muestra sobre la que se mide todo}
+  \vspace{0.15cm}
+  \begin{columns}[T]
+    \begin{column}{0.60\linewidth}
+      \includegraphics[width=\linewidth]{figures/f03_muestra_oos.png}
+    \end{column}
+    \begin{column}{0.37\linewidth}
+      \vspace{0.25cm}
+      \cifrachica{\CohortesSeleccion}{fechas de evaluación en selección}{navy}
+      \cifrachica{\CohortesReservadas}{fechas completas en la era reservada}{gold}
+      \cifrachica{\NumPredictores}{predictores en el panel}{navy}
+    \end{column}
+  \end{columns}
+  \vspace{0.05cm}
+  \matiz{Las cohortes se solapan doce meses. Las observaciones verdaderamente independientes son
+  unas nueve en selección y una en la era reservada.}
+\end{frame}
+
+}
 
 \end{document}
